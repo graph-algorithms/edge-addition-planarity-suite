@@ -37,7 +37,7 @@ A member is someone who does have SVN commit access granted by the administrator
       * This accepts "Check out... Using New Project Wizard", recursive checkout, no ignore
     # The "Select a wizard" dialog comes up
       # Choose General | Project and hit next
-      # Project Name *ubiquity-xforms*
+      # Project Name *planarity-trunk*
       # Use default location
       # Click Finish
 
