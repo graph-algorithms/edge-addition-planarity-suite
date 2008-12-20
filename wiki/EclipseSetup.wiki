@@ -1,0 +1,55 @@
+#summary Set up Eclipse and Subversive SVN client.
+#labels Featured
+
+= Introduction =
+
+This page tells you how to set up Eclipse to work on this project.  Other environments can be used if desired, in which case analogous setup processes should be used.
+
+These instructions are for Eclipse 3.4 (Ganymede) and the corresponding Subversive plugin for SVN support.  Command-line SVN can be used instead if desired.
+
+= Details =
+
+  # *Install Eclipse C++ Development Environment*
+    # Details to follow
+  # *Install Subversive plugin* 
+    # Either navigate to http://www.eclipse.org/subversive, click "Downloads" on left panel, click link to install instructions,
+    # Or follow instructions below.
+    # In Eclipse, choose menu Help | Software Updates
+    # Click Available Software tab
+    # Must install Subversive plugin
+      * It's under the Ganymede Update Site (http://download.eclipse.org/release/ganymede)
+      * Then, open up the Collaboration Tools
+      * Choose the checkbox for Subversive SVN Team Provider (choose the incubation 0.7.3 release)
+    # Before proceeding to install, must also install Subversive Connectors (incubation) as follows (all three do seem to need to be installed at the same time)
+      * Click "Add Site..."
+      * Add the external update site indicated on the Downloads site 
+        * To find out the update site, click external site link (http://www.polarion.com/products/svn/subversive.php?src=eclipseproject)
+        * Or, just use the following update site (the current one) http://www.polarion.org/projects/subversive/download/eclipse/2.0/update-site/
+        * Click OK to add the site
+      * Back on the Available Software tab, 
+        * Open the Subversive SVN Connectors subtree
+        * Choose the child Subversive SVN Connectors and SVNKit 1.1.7 (the latter is marked optional, but it isn't)
+    # Click Install...
+  # *Environment set up*
+    # Window | Preferences
+    # Go to General | Editors | Text Editors
+      * Set "Displayed Tab width: 4" and check "Insert spaces for tabs"
+    # Go to Team | SVN | Properties Configuration
+    # On the Automatic Properties tab, click Add button to add each of the following
+{{{
+	    Filename template   Properties
+	    *.pdf               svn:mime-type=application/pdf
+	    *.png               svn:mime-type=image/png
+	    *.gif               svn:mime-type=image/gif
+	    *.jpg               svn:mime-type=image/jpeg
+            *.html              svn:mime-type=text/html
+            *.xhtml             svn:mime-type=application/xhtml+xml
+            *.css               svn:mime-type=text/css
+	    *.js                svn:eol-style=native
+	    *.html              svn:eol-style=native
+	    *.xhtml             svn:eol-style=native
+            *.css               svn:eol-style=native
+            *.h                 svn:eol-style=native
+            *.c                 svn:eol-style=native
+            *.cpp               svn:eol-style=native
+}}}
