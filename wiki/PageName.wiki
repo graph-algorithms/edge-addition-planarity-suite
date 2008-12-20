@@ -1,0 +1,86 @@
+#summary Code contribution mechanics with Eclipse and Subversive.
+#labels Featured
+
+= Introduction =
+
+This page provides instructions for using Eclipse and the Subversive plugin to contribute to this project.
+
+You must first follow the instructions in EclipseSetup.
+
+Note: The Google Code Wiki numbering system is incompatible with the IE browser.  This page is best viewed with the Firefox browser.
+
+= Details =
+
+== Downloading the Trunk ==
+
+A non-member is someone who does not have SVN commit access.  By clicking on the Source tab, you can get the link for read-only 'http' access to the Trunk.
+
+A member is someone who does have SVN commit access granted by the administrator.  Once you are logged in, the Source tab will show the read-write 'https' link for the Trunk.
+
+More details to follow...
+
+== Contributing as a Non-Member ==
+
+Since non-members don't have SVN commit access, branching is difficult.  However, this is not an impediment most of the time.  Work is often done against the trunk code, but code is not committed to the trunk without a code review.
+
+Thus, the same basic instructions can be followed below for contributing as a member, except for how to request a code review.  A member would create a changes directory entry, copy the server-side trunk to it, create a patch based on the client-side trunk differences, and apply the patch to the copy of the server-side trunk in the changes directory.  A non-member would instead simply create a patch as a file and mail it to the contributor group for consideration.  A member would then create a changes directory entry, apply the patch from the non-member, and perform a code review.
+
+== Contributing as a Member ==
+
+  # *When you want to make changes, work on trunk but DO NOT COMMIT*
+    * To add a file, use Team | Add to Version Control... to add the file LOCALLY
+    * To undo local changes to a file and go back to the server copy, use Team | Revert...
+  # *When you want a code review, you need to make a copy of your changes onto a copy of the trunk.*
+    # Copy the trunk to a directory in your changes location
+      # Go to SVN Repositories perspective
+      # Right Click on the trunk, choose Refactor | Copy To...
+      # Open the changes directory and click the subdirectory with your gmail name
+      # Rename the copy using a name associated with the feature your changes implement. For reference below, let the name be *FEATURE-X*
+      # Comment should just say that you are creating a copy to patch and review.
+    # Get your new copy into your project workspace
+      # Go back to Java Perspective and Right click Package Explorer
+      # New | Project
+      # SVN | Projects from SVN | Next >>
+      # The URL/user name/password dialog should be skipped this time
+      # Next View is "Select Resource"
+        * Choose your new trunk copy named e.g. FEATURE-X from your changes directory
+      # Next View is "Check out as".  Click Finish
+        * This accepts "Check out... Using New Project Wizard", recursive checkout, no ignore
+      # The "Select a wizard" dialog comes up
+        # Choose General | Project and hit next
+        # Project Name ux-FEATURE-X
+        # Use default location and Click Finish
+  # *Apply your trunk changes to your ux-FEATURE-X copy*
+    # Right click the planarity trunk project
+    # Team | Create Patch ...
+    # Hit Finish (accepts putting patch on the clipboard)
+      * Note that changes to true binary files must be handled *manually* because the patch system only handles text
+      * Note that .xhtml files are of type application/xhtml+xml, which is being treated as binary by SVN.  However, if the only binary files that were modified are really text files, it may be possible to patch them automatically by hitting Next instead of Finish in this step, and then selecting the "Process Binary Resources" checkbox
+    # Right click the ux-FEATURE-X project
+    # Team | Apply Patch ...
+    # Hit Finish (pulls from clipboard)
+    # Right click the ux-FEATURE-X project
+    # Team | Commit
+    # Add a comment that begins *FOR REVIEW* and explain feature
+    # After commit, you will be able to see a page for your revision
+      * Go to planarity project and click the [http://code.google.com/p/planarity/source/checkout sources tab]
+      * Click the changes link, and at or near the top should be your revision ({{{http://code.google.com/p/planarity/source/detail?r=NNNN}}})
+      * The modifications can be viewed by expanding the trees OR to get a side-by-side diff comparison, don't click "Diff"! Instead, click the file link, then click "Diff" at the top right corner
+    # Do a non-rated review of your code.  In the general comments, put *CODE REVIEW NEEDED* and add any line-by-line comments that may be needed to help reviewers understand your code.
+      * This will send an email to the planarity-eng@googlegroups.com with a subject that includes your *rNNNN* and a body that includes CODE REVIEW NEEDED, which can be used to filter emails.
+      * The typical review period is 48 hours. If you need a shorter review period, send an email to planarity-eng@googlegroups.com with *URGENT* in the subject line and ask for quick reviews and also ask people to indicate if they don't intend to review (since you can't get a -1 from someone who doesn't review) 
+    # At least one +1 review is needed before committing to trunk
+      * A review can be +1 and can still request minor editorial changes needing no further review or identify issues that should be raised in the issue system once the code is committed.
+      * A -1 review halts the commit until the reason for the -1 is resolved.  A -1 review requires a detailed technical justification, including what if anything can be done to mitigate or eliminate the concerns raised in the review.
+      * A neutral review can be used to raise issues without advancing or impeding a trunk commit.
+      * Ping list again if no +1 or -1 reviews within 48 hours
+      * A +1, no -1's, and 48 hours are sufficient for a trunk commit
+      * For URGENT requests, if a +1 is received, then ping the list to ask for a same day response to whether anyone else is planning a review.  If no response that day, then assume no further reviews are coming, and proceed with commit to trunk due to +1 received. 
+      * Except for addressing minor editorial changes, a substantive change should spawn a new review copy by repeating the above process, in which case the current review copy should be deleted without committing to trunk.
+  # *Committing changes to the trunk and deleting the review copy*
+    # Ensure you have the favorable review(s) needed 
+    # Right click the trunk project and use Team | Update first
+    # Right click the trunk project and use Team | Commit...
+    # Delete ux-FEATURE-X project from the package explorer
+    # Go to SVN Repositories perspective
+    # Right-click changes/ux-FEATURE-X folder and choose Delete
