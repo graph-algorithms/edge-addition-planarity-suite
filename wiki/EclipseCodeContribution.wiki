@@ -17,7 +17,39 @@ A non-member is someone who does not have SVN commit access.  By clicking on the
 
 A member is someone who does have SVN commit access granted by the administrator.  Once you are logged in, the Source tab will show the read-write 'https' link for the Trunk.
 
-More details to follow...
+  # *Obtain a local copy of the project trunk*
+    # Right-click Package Explorer
+    # New | Project
+    # SVN | Projects from SVN | Next >>
+    # URL: https://planarity.googlecode.com/svn/
+      * Use just http for readonly download if you are a non-member
+    # User: same as your gmail login ID
+      * If readonly access, then this won't be needed
+    # Password: Google code password, not your gmail login password
+      * Log in to the Google Code Project
+      * Under the source tab, there is a link to get your Google code password
+      * If readonly access, then this won't be needed
+    # Click Save Password and then Click Next
+    # Next View is "Select Resource".  Choose the trunk and click Finish 
+      * A branch or a changes directory could be selected here instead
+      * You can obtain multiple copies of any part of the project, e.g. multiple copies of the trunk to work on different features or multiple changes directories for code reviews
+    # Next View is "Check out as".  Click Finish
+      * This accepts "Check out... Using New Project Wizard", recursive checkout, no ignore
+    # The "Select a wizard" dialog comes up
+      # Choose General | Project and hit next
+      # Project Name *ubiquity-xforms*
+      # Use default location
+      # Click Finish
+
+A member should also perform the steps below in order to be able to contribute changes for code review as described in the section below on "Contributing as a Member"
+
+  # *Make a "changes" directory for yourself*
+    # Open the SVN Repositories perspective 
+      * Window | Open Perspectives | Other... 
+      * SVN Repository Exploring
+    # Now make a code review directory for yourself in changes branch
+      * Choose changes branch, then Right click and choose New | Folder
+      * Use your gmail address for the folder name
 
 == Contributing as a Non-Member ==
 
@@ -48,18 +80,18 @@ Thus, the same basic instructions can be followed below for contributing as a me
         * This accepts "Check out... Using New Project Wizard", recursive checkout, no ignore
       # The "Select a wizard" dialog comes up
         # Choose General | Project and hit next
-        # Project Name ux-FEATURE-X
+        # Project Name FEATURE-X
         # Use default location and Click Finish
-  # *Apply your trunk changes to your ux-FEATURE-X copy*
+  # *Apply your trunk changes to your FEATURE-X copy*
     # Right click the planarity trunk project
     # Team | Create Patch ...
     # Hit Finish (accepts putting patch on the clipboard)
       * Note that changes to true binary files must be handled *manually* because the patch system only handles text
       * Note that .xhtml files are of type application/xhtml+xml, which is being treated as binary by SVN.  However, if the only binary files that were modified are really text files, it may be possible to patch them automatically by hitting Next instead of Finish in this step, and then selecting the "Process Binary Resources" checkbox
-    # Right click the ux-FEATURE-X project
+    # Right click the FEATURE-X project
     # Team | Apply Patch ...
     # Hit Finish (pulls from clipboard)
-    # Right click the ux-FEATURE-X project
+    # Right click the FEATURE-X project
     # Team | Commit
     # Add a comment that begins *FOR REVIEW* and explain feature
     # After commit, you will be able to see a page for your revision
@@ -81,6 +113,6 @@ Thus, the same basic instructions can be followed below for contributing as a me
     # Ensure you have the favorable review(s) needed 
     # Right click the trunk project and use Team | Update first
     # Right click the trunk project and use Team | Commit...
-    # Delete ux-FEATURE-X project from the package explorer
+    # Delete FEATURE-X project from the package explorer
     # Go to SVN Repositories perspective
-    # Right-click changes/ux-FEATURE-X folder and choose Delete
+    # Right-click changes/FEATURE-X folder and choose Delete
