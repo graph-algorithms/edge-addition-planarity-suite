@@ -34,12 +34,18 @@ A member is someone who does have SVN commit access granted by the administrator
       * A branch or a changes directory could be selected here instead
       * You can obtain multiple copies of any part of the project, e.g. multiple copies of the trunk to work on different features or multiple changes directories for code reviews
     # Next View is "Check out as".  Click Finish
-      * This accepts "Check out... Using New Project Wizard", recursive checkout, no ignore
+      * This accepts "Check out as a project with the name specified", recursive checkout, no ignore
     # The "Select a wizard" dialog comes up
       # Choose General | Project and hit next
       # Project Name *Planarity-trunk*
       # Feel free to use the default location
       # Click Finish
+  # *Import the C project*
+    # Right-click package explorer and choose "Import..."
+    # Choose General | Existing Projects into Workspace
+    # Under "Select root directory" choose "Browse..."
+    # Navigate to the "c" directory under Planarity-trunk and hit OK
+    # Do not check "Copy projects into workspace"; just hit Finish
 
 A member should also perform the steps below in order to be able to contribute changes for code review as described in the section below on "Contributing as a Member"
 
