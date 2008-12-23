@@ -37,8 +37,8 @@ A member is someone who does have SVN commit access granted by the administrator
       * This accepts "Check out... Using New Project Wizard", recursive checkout, no ignore
     # The "Select a wizard" dialog comes up
       # Choose General | Project and hit next
-      # Project Name *planarity-trunk*
-      # Use default location
+      # Project Name *Planarity-trunk*
+      # Feel free to use the default location
       # Click Finish
 
 A member should also perform the steps below in order to be able to contribute changes for code review as described in the section below on "Contributing as a Member"
