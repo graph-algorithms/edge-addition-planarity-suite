@@ -1,0 +1,196 @@
+/* Copyright (c) 2002-2003 by John M. Boyer, All Rights Reserved.
+        This code may not be reproduced or disseminated in whole or in part 
+        without the written permission of the author. */
+
+#include "graph.h"
+
+/* Imported functions */
+
+extern void _ClearIsolatorContext(graphP theGraph);
+extern void _FillVisitedFlags(graphP, int);
+
+extern int  _GetNextVertexOnExternalFace(graphP theGraph, int curVertex, int *pPrevLink);
+extern int  _WalkDown(graphP theGraph, int I, int RootVertex);
+extern int  _OrientVerticesInEmbedding(graphP theGraph);
+extern int  _OrientVerticesInBicomp(graphP theGraph, int BicompRoot, int PreserveSigns);
+extern int  _JoinBicomps(graphP theGraph);
+
+extern int  _InitializeNonplanarityContext(graphP theGraph, int I, int R);
+extern int  _FindNonplanarityBicompRoot(graphP theGraph);
+extern void _FindActiveVertices(graphP theGraph, int R, int *pX, int *pY);
+extern int  _FindPertinentVertex(graphP theGraph);
+extern int  _MarkHighestXYPath(graphP theGraph);
+
+extern int  _FindUnembeddedEdgeToAncestor(graphP theGraph, int cutVertex, int *pAncestor, int *pDescendant);
+extern int  _FindUnembeddedEdgeToCurVertex(graphP theGraph, int cutVertex, int *pDescendant);
+extern int  _FindUnembeddedEdgeToSubtree(graphP theGraph, int ancestor, int SubtreeRoot, int *pDescendant);
+
+extern int  _MarkPathAlongBicompExtFace(graphP theGraph, int startVert, int endVert);
+
+extern int  _AddAndMarkEdge(graphP theGraph, int ancestor, int descendant);
+
+extern int  _DeleteUnmarkedVerticesAndEdges(graphP theGraph);
+
+/* Private function declarations (exported to system) */
+
+int  _IsolateOuterplanarObstruction(graphP theGraph, int I);
+
+int  _ChooseTypeOfNonOuterplanarityMinor(graphP theGraph, int I, int R);
+
+int  _IsolateOuterplanarityObstructionA(graphP theGraph);
+int  _IsolateOuterplanarityObstructionB(graphP theGraph);
+int  _IsolateOuterplanarityObstructionE(graphP theGraph);
+
+/****************************************************************************
+ _ChooseTypeOfNonOuterplanarityMinor()
+ ****************************************************************************/
+
+int  _ChooseTypeOfNonOuterplanarityMinor(graphP theGraph, int I, int R)
+{
+int  N, X, Y, W;
+
+/* Create the initial non-outerplanarity minor state in the isolator context */
+
+     if (_InitializeNonplanarityContext(theGraph, I, R) != OK)
+         return NOTOK;
+
+     N = theGraph->N;
+     R = theGraph->IC.r;
+     X = theGraph->IC.x;
+     Y = theGraph->IC.y;
+     W = theGraph->IC.w;
+
+/* If the root copy is not a root copy of the current vertex I,
+        then the Walkdown terminated because it couldn't find 
+        a viable path along a child bicomp, which is Minor A. */
+
+     if (theGraph->V[R - N].DFSParent != I)
+     {
+         theGraph->IC.minorType |= MINORTYPE_A;
+         return OK;
+     }
+
+/* If W has an externally active pertinent child bicomp, then
+     we've found Minor B */
+
+     if (theGraph->V[W].pertinentBicompList != NIL)
+     {
+         theGraph->IC.minorType |= MINORTYPE_B;
+         return OK;
+     }
+
+/* The result must be minor E */
+
+     theGraph->IC.minorType |= MINORTYPE_E;
+     return OK;
+}
+
+/****************************************************************************
+ _IsolateOuterplanarObstruction()
+ ****************************************************************************/
+
+int  _IsolateOuterplanarObstruction(graphP theGraph, int I)
+{
+int  RetVal=NOTOK;
+
+/* Begin by determining which of the non-planarity Minors was encountered
+        and the principal bicomp on which the isolator will focus attention. */
+
+     if (_ChooseTypeOfNonOuterplanarityMinor(theGraph, I, NIL) != OK)
+         return NOTOK;
+
+/* Find the path connecting the pertinent vertex w with the current vertex v */
+
+     if (theGraph->IC.minorType & MINORTYPE_B)
+     {
+     isolatorContextP IC = &theGraph->IC;
+     int SubtreeRoot = LCGetPrev(theGraph->BicompLists,
+                                 theGraph->V[IC->w].pertinentBicompList, NIL);
+
+         if (_FindUnembeddedEdgeToSubtree(theGraph, IC->v, SubtreeRoot, &IC->dw) != OK)
+             return NOTOK;
+     }
+     else
+     {
+     isolatorContextP IC = &theGraph->IC;
+
+         if (_FindUnembeddedEdgeToCurVertex(theGraph, IC->w, &IC->dw) != OK)
+             return NOTOK;
+     }
+
+/* For minor E, we need to find and mark an X-Y path */
+
+     if (theGraph->IC.minorType & MINORTYPE_E)
+     {
+        if (_MarkHighestXYPath(theGraph) != OK)
+             return NOTOK;
+     }
+
+/* Call the appropriate isolator */
+
+     if (theGraph->IC.minorType & MINORTYPE_A)
+         RetVal = _IsolateOuterplanarityObstructionA(theGraph);
+     else if (theGraph->IC.minorType & MINORTYPE_B)
+         RetVal = _IsolateOuterplanarityObstructionB(theGraph);
+     else if (theGraph->IC.minorType & MINORTYPE_E)
+         RetVal = _IsolateOuterplanarityObstructionE(theGraph);
+
+/* Delete the unmarked edges and vertices, and return */
+
+     if (RetVal == OK)
+         RetVal = _DeleteUnmarkedVerticesAndEdges(theGraph);
+
+     return RetVal;
+}
+
+/****************************************************************************
+ _IsolateOuterplanarityObstructionA(): Isolate a K2,3 homeomorph 
+ ****************************************************************************/
+ 
+int  _IsolateOuterplanarityObstructionA(graphP theGraph)
+{
+isolatorContextP IC = &theGraph->IC;
+
+     if (_MarkPathAlongBicompExtFace(theGraph, IC->r, IC->r) != OK ||
+         theGraph->functions.fpMarkDFSPath(theGraph, IC->v, IC->r) != OK ||
+         theGraph->functions.fpMarkDFSPath(theGraph, IC->w, IC->dw) != OK ||
+         _JoinBicomps(theGraph) != OK ||
+         _AddAndMarkEdge(theGraph, IC->v, IC->dw) != OK)
+         return NOTOK;
+
+     return OK;
+}
+
+/****************************************************************************
+ _IsolateOuterplanarityObstructionB(): Isolate a K2,3 homeomorph 
+ ****************************************************************************/
+ 
+int  _IsolateOuterplanarityObstructionB(graphP theGraph)
+{
+isolatorContextP IC = &theGraph->IC;
+
+     if (_MarkPathAlongBicompExtFace(theGraph, IC->r, IC->r) != OK ||
+         theGraph->functions.fpMarkDFSPath(theGraph, IC->w, IC->dw) != OK ||
+         _JoinBicomps(theGraph) != OK ||
+         _AddAndMarkEdge(theGraph, IC->v, IC->dw) != OK)
+         return NOTOK;
+
+     return OK;
+}
+
+/****************************************************************************
+ _IsolateOuterplanarityObstructionE(): Isolate a K4 homeomorph 
+ ****************************************************************************/
+ 
+int  _IsolateOuterplanarityObstructionE(graphP theGraph)
+{
+isolatorContextP IC = &theGraph->IC;
+
+     if (_MarkPathAlongBicompExtFace(theGraph, IC->r, IC->r) != OK ||
+         theGraph->functions.fpMarkDFSPath(theGraph, IC->w, IC->dw) != OK ||
+         _JoinBicomps(theGraph) != OK ||
+         _AddAndMarkEdge(theGraph, IC->v, IC->dw) != OK)
+         return NOTOK;
+
+     return OK;
+}
