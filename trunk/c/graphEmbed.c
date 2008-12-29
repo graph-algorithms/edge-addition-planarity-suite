@@ -1,5 +1,5 @@
 /* Copyright (c) 1997-2003 by John M. Boyer, All Rights Reserved.
-        This code may not be reproduced or disseminated in whole or in part 
+        This code may not be reproduced or disseminated in whole or in part
         without the written permission of the author. */
 
 #define GRAPH_C
@@ -111,8 +111,8 @@ int I, J, N, DFSParent, theList;
  _CreateFwdArcLists()
 
  Puts the forward arcs (back edges from a vertex to its descendants)
- into a circular list indicated by the fwdArcList member, a task 
- simplified by the fact that they have already been placed in link[1] 
+ into a circular list indicated by the fwdArcList member, a task
+ simplified by the fact that they have already been placed in link[1]
  succession.
 
   Returns OK for success, NOTOK for internal code failure
@@ -124,28 +124,31 @@ int I, Jfirst, Jnext, Jlast;
 
     // For each vertex, the forward arcs are already in succession
     // along the link[1] pointers...
-    
+
     for (I=0; I < theGraph->N; I++)
     {
-        Jfirst = theGraph->G[I].link[1];
+    	// Skip this vertex if it has no edges
+    	if ((Jfirst = theGraph->G[I].link[1]) < theGraph->N)
+    		continue;
 
-        // If the vertex has any forward edges, then ... 
+        // If the vertex has any forward edges, they will be in link[1]
+        // succession.  So we test if we have a forward edge, then ...
 
         if (theGraph->G[Jfirst].type == EDGE_FORWARD)
         {
-            // Find the end of the forward edge list 
+            // Find the end of the forward edge list
 
             Jnext = Jfirst;
             while (theGraph->G[Jnext].type == EDGE_FORWARD)
                 Jnext = theGraph->G[Jnext].link[1];
             Jlast = theGraph->G[Jnext].link[0];
 
-            // Remove the forward edges from the adjacency list of I 
+            // Remove the forward edges from the adjacency list of I
 
             theGraph->G[Jnext].link[0] = I;
             theGraph->G[I].link[1] = Jnext;
 
-            // Make a circular forward edge list 
+            // Make a circular forward edge list
 
             theGraph->V[I].fwdArcList = Jfirst;
             theGraph->G[Jfirst].link[0] = Jlast;
@@ -205,11 +208,11 @@ int  TestIntegrity(graphP theGraph)
  _CreateDFSTreeEmbedding()
 
  Each vertex receives only its parent arc in the adjacency list, and
- the corresponding child arc is placed in the adjacency list of a root 
- copy of the parent.  Each root copy of a vertex is uniquely associated 
+ the corresponding child arc is placed in the adjacency list of a root
+ copy of the parent.  Each root copy of a vertex is uniquely associated
  with a child C, so it is simply stored at location C+N.
 
- The forward arcs are not lost because they are already in the 
+ The forward arcs are not lost because they are already in the
  fwdArcList of each vertex.  Each back arc can be reached as the
  twin arc of a forward arc, and the two are embedded together when
  the forward arc is processed.  Finally, the child arcs are initially
@@ -257,18 +260,18 @@ int N, I, J, Jtwin, R;
 
 /********************************************************************
  _EmbedBackEdgeToDescendant()
- The Walkdown has found a descendant vertex W to which it can 
+ The Walkdown has found a descendant vertex W to which it can
  attach a back edge up to the root of the bicomp it is processing.
  The RootSide and WPrevLink indicate the parts of the external face
  that will be replaced at each endpoint of the back edge.
  ********************************************************************/
- 
+
 void _EmbedBackEdgeToDescendant(graphP theGraph, int RootSide, int RootVertex, int W, int WPrevLink)
 {
 int fwdArc, backArc, parentCopy;
 
     /* We get the two edge records of the back edge to embed.
-        The Walkup recorded in W's adjacentTo the index of the forward arc 
+        The Walkup recorded in W's adjacentTo the index of the forward arc
         from the root's parent copy to the descendant W. */
 
     fwdArc = theGraph->V[W].adjacentTo;
@@ -470,7 +473,7 @@ int  e_w, e_r, e_ext;
 
  theGraph contains the stack of bicomp roots and cut vertices to merge
 
- I, RootVertex, W and WPrevLink are not used in this routine, but are 
+ I, RootVertex, W and WPrevLink are not used in this routine, but are
           used by overload extensions
 
  Returns OK, but an extension function may return a value other than
@@ -490,8 +493,8 @@ int  extFaceVertex;
 
          /* The external faces of the bicomps containing R and Z will
             form two corners at Z.  One corner will become part of the
-            internal face formed by adding the new back edge. The other 
-            corner will be the new external face corner at Z.  
+            internal face formed by adding the new back edge. The other
+            corner will be the new external face corner at Z.
             We first want to update the links at Z to reflect this. */
 
          extFaceVertex = theGraph->extFace[R].link[1^Rout];
@@ -530,7 +533,7 @@ int  extFaceVertex;
 
          // The endpoints of a bicomp's "root edge" are the bicomp root R and a
          // DFS child of the parent copy of the bicomp root R.
-         // The GraphNode location of the root vertices is in the range N to 2N-1 
+         // The GraphNode location of the root vertices is in the range N to 2N-1
          // at the offset indicated by the associated DFS child.  So, the location
          // of the root vertex R, less N, is the location of the DFS child and also
          // a convenient identifier for the bicomp root.
@@ -544,9 +547,9 @@ int  extFaceVertex;
          theList = LCDelete(theGraph->BicompLists, theList, RootID_DFSChild);
          theGraph->V[Z].pertinentBicompList = theList;
 
-         /* As a result of the merge, the DFS child of Z must be removed 
-            from Z's SeparatedDFSChildList because the child has just 
-            been joined directly to Z, rather than being separated by a 
+         /* As a result of the merge, the DFS child of Z must be removed
+            from Z's SeparatedDFSChildList because the child has just
+            been joined directly to Z, rather than being separated by a
             root copy. */
 
          theList = theGraph->V[Z].separatedDFSChildList;
@@ -565,14 +568,14 @@ int  extFaceVertex;
  _WalkUp()
  I is the vertex currently being embedded
  J is the forward arc to the descendant W on which the Walkup begins
- 
- The Walkup establishes pertinence for step I.  It marks W as 
+
+ The Walkup establishes pertinence for step I.  It marks W as
  'adjacentTo' I so that the Walkdown will embed an edge to W when
- it is encountered.  
- 
+ it is encountered.
+
  The Walkup also determines the pertinent child bicomps that should be
- set up as a result of the need to embed edge (I, W). It does this by 
- recording the pertinent child biconnected components of all cut 
+ set up as a result of the need to embed edge (I, W). It does this by
+ recording the pertinent child biconnected components of all cut
  vertices between W and the child of I that is a descendant of W.
  Note that it stops the traversal if it finds a visited flag set to I,
  which indicates that a prior walkup call in step I has already done
@@ -637,7 +640,7 @@ int  RootID_DFSChild, BicompList;
         {
             // The endpoints of a bicomp's "root edge" are the bicomp root R and a
             // DFS child of the parent copy of the bicomp root R.
-            // The GraphNode location of the root vertices is in the range N to 2N-1 
+            // The GraphNode location of the root vertices is in the range N to 2N-1
             // at the offset indicated by the associated DFS child.  So, the location
             // of the root vertex R, less N, is the location of the DFS child and also
             // a convenient identifier for the bicomp root.
@@ -726,7 +729,7 @@ int  _HandleInactiveVertex(graphP theGraph, int BicompRoot, int *pW, int *pWPrev
  vertex currently being processed.
 
  The Walkup previously marked all vertices adjacent to I by setting their
- adjacentTo flags.  Basically, we want to walkdown both the link[0] and 
+ adjacentTo flags.  Basically, we want to walkdown both the link[0] and
  then the link[1] sides of the bicomp rooted at RootVertex, embedding edges
  between it and descendants of I with the adjacentTo flag set.  It is sometimes
  necessary to hop to child biconnected components in order to reach the desired
@@ -736,7 +739,7 @@ int  _HandleInactiveVertex(graphP theGraph, int BicompRoot, int *pW, int *pWPrev
 
  The outer loop performs both walks, unless the first walk got all the way
  around to RootVertex (only happens when bicomp contains no external activity,
- such as when processing the last vertex), or when non-planarity is 
+ such as when processing the last vertex), or when non-planarity is
  discovered (in a pertinent child bicomp such that the stack is non-empty).
 
  For the inner loop, each iteration visits a vertex W.  If W is adjacentTo I,
@@ -750,17 +753,17 @@ int  _HandleInactiveVertex(graphP theGraph, int BicompRoot, int *pW, int *pWPrev
  the paths used to enter into it and exit from it.  Alternately, if W
  had no pertinent child bicomps, then we check to see if it is inactive.
  If so, we find the next vertex along the external face, then short-circuit
- its inactive predecessor (under certain conditions).  Finally, if W is not 
- inactive, but it has no pertinent child bicomps, then we already know its 
- adjacentTo flag is clear so both criteria for internal activity also fail.  
+ its inactive predecessor (under certain conditions).  Finally, if W is not
+ inactive, but it has no pertinent child bicomps, then we already know its
+ adjacentTo flag is clear so both criteria for internal activity also fail.
  Therefore, W must be a stopping vertex.
 
  A stopping vertex X is an externally active vertex that has no pertinent
  child bicomps and no unembedded back edge to the current vertex I.
- The inner loop of Walkdown stops walking when it reaches a stopping vertex X 
- because if it were to proceed beyond X and embed a back edge, then X would be 
- surrounded by the bounding cycle of the bicomp.  This is clearly incorrect 
- because X has a path leading from it to an ancestor of I (which is why it's 
+ The inner loop of Walkdown stops walking when it reaches a stopping vertex X
+ because if it were to proceed beyond X and embed a back edge, then X would be
+ surrounded by the bounding cycle of the bicomp.  This is clearly incorrect
+ because X has a path leading from it to an ancestor of I (which is why it's
  externally active), and this path would have to cross the bounding cycle.
 
  After the loop, if the stack is non-empty, then the Walkdown halted because
@@ -768,8 +771,8 @@ int  _HandleInactiveVertex(graphP theGraph, int BicompRoot, int *pW, int *pWPrev
  path from its root, which is easily shown to be evidence of a K_3,3, so
  we break the outer loop.  The caller performs further tests to determine
  whether Walkdown has embedded all back edges.  If the caller does not embed
- all back edges to descendants of the root vertex after walking both RootSide 
- 0 then 1 in all bicomps containing a root copy of I, then the caller can 
+ all back edges to descendants of the root vertex after walking both RootSide
+ 0 then 1 in all bicomps containing a root copy of I, then the caller can
  conclude that the input graph is non-planar.
 
   Returns OK if all possible edges were embedded, NONEMBEDDABLE if less
@@ -790,7 +793,7 @@ int  RetVal, W, WPrevLink, R, Rout, X, XPrevLink, Y, YPrevLink, RootSide, RootEd
          W = theGraph->extFace[RootVertex].link[RootSide];
 
          // The edge record in W that leads back to the root vertex
-         // is indicated by link[1^RootSide] in W because only W 
+         // is indicated by link[1^RootSide] in W because only W
          // is in the bicomp with the root vertex.  When tree edges
          // are first embedded, it is done so that W has the same
          // orientation as the root vertex.
@@ -803,9 +806,9 @@ int  RetVal, W, WPrevLink, R, Rout, X, XPrevLink, Y, YPrevLink, RootSide, RootEd
 
              if (theGraph->V[W].adjacentTo != NIL)
              {
-                /* Merge bicomps at cut vertices on theStack and add the back edge,  
+                /* Merge bicomps at cut vertices on theStack and add the back edge,
                     creating a new proper face. */
-                
+
                 if (sp_NonEmpty(theGraph->theStack))
                 {
                     if ((RetVal = theGraph->functions.fpMergeBicomps(theGraph, I, RootVertex, W, WPrevLink)) != OK)
@@ -813,13 +816,13 @@ int  RetVal, W, WPrevLink, R, Rout, X, XPrevLink, Y, YPrevLink, RootSide, RootEd
                 }
                 theGraph->functions.fpEmbedBackEdgeToDescendant(theGraph, RootSide, RootVertex, W, WPrevLink);
 
-                /* Clear W's AdjacentTo flag so we don't add another edge to W if 
-                    this invocation of Walkdown visits W again later (and more 
+                /* Clear W's AdjacentTo flag so we don't add another edge to W if
+                    this invocation of Walkdown visits W again later (and more
                     generally, so that no more back edges to W are added until
                     a future Walkup sets the flag to non-NIL again). */
 
                 theGraph->V[W].adjacentTo = NIL;
-             }     
+             }
 
              /* If there is a pertinent child bicomp, then we need to push it onto the stack
                 along with information about how we entered the cut vertex and how
@@ -837,9 +840,9 @@ int  RetVal, W, WPrevLink, R, Rout, X, XPrevLink, Y, YPrevLink, RootSide, RootEd
                  Y = theGraph->extFace[R].link[1];
                  YPrevLink = theGraph->extFace[Y].link[0]==R ? 0 : 1;
 
-                 /* If this is a bicomp with only two ext. face vertices, then 
-                    it could be that the orientation of the non-root vertex 
-                    doesn't match the orientation of the root due to our relaxed 
+                 /* If this is a bicomp with only two ext. face vertices, then
+                    it could be that the orientation of the non-root vertex
+                    doesn't match the orientation of the root due to our relaxed
                     orientation method. */
 
                  if (X == Y && theGraph->extFace[X].inversionFlag)
@@ -850,7 +853,7 @@ int  RetVal, W, WPrevLink, R, Rout, X, XPrevLink, Y, YPrevLink, RootSide, RootEd
 
                  /* Now we implement the Walkdown's simple path selection rules!
                     If either X or Y is internally active (pertinent but not
-                    externally active), then we pick it first.  Otherwise, 
+                    externally active), then we pick it first.  Otherwise,
                     we choose a pertinent vertex. If neither are pertinent,
                     then we pick a vertex since the next iteration of the
                     loop will terminate on that vertex with a non-empty stack. */
@@ -864,13 +867,13 @@ int  RetVal, W, WPrevLink, R, Rout, X, XPrevLink, Y, YPrevLink, RootSide, RootEd
                  else W = Y;
 
                  WPrevLink = W == X ? XPrevLink : YPrevLink;
-              
+
                  Rout = W == X ? 0 : 1;
                  sp_Push2(theGraph->theStack, R, Rout);
              }
 
              /* Skip inactive vertices, which will be short-circuited
-                later by our fast external face linking method (once 
+                later by our fast external face linking method (once
                 upon a time, we added false edges called short-circuit
                 edges to eliminate inactive vertices, but the extFace
                 links can do the same job and also give us the ability
@@ -882,7 +885,7 @@ int  RetVal, W, WPrevLink, R, Rout, X, XPrevLink, Y, YPrevLink, RootSide, RootEd
                      return NOTOK;
              }
 
-             /* At this point, we know that W is not inactive, but its adjacentTo flag 
+             /* At this point, we know that W is not inactive, but its adjacentTo flag
                 is clear, and it has no pertinent child bicomps.  Therefore, it
                 is an externally active stopping vertex. */
 
@@ -897,7 +900,7 @@ int  RetVal, W, WPrevLink, R, Rout, X, XPrevLink, Y, YPrevLink, RootSide, RootEd
 
          /* We short-circuit the external face of the bicomp by hooking the root
             to the terminating externally active vertex so that inactive vertices
-            are not visited in future iterations.  This setting obviates the need 
+            are not visited in future iterations.  This setting obviates the need
             for those short-circuit edges mentioned above.
 
             NOTE: We skip the step if the stack is non-empty since in that case
@@ -909,19 +912,19 @@ int  RetVal, W, WPrevLink, R, Rout, X, XPrevLink, Y, YPrevLink, RootSide, RootEd
 
          /* If the bicomp is reduced to having only two external face vertices
              (the root and W), then we need to record whether the orientation
-             of W is inverted relative to the root.  This is used later when a 
+             of W is inverted relative to the root.  This is used later when a
              future Walkdown descends to and merges the bicomp containing W.
              Going from the root to W, we only get the correct WPrevLink if
              we know whether or not W is inverted.
              NOTE: Prior code based on short-circuit edges did not have this problem
                  because the root and W would be joined by two separate short-circuit
                  edges, so G[W].link[0] != G[W].link[1].
-             NOTE: We clear the flag because it may have been set in W if W 
+             NOTE: We clear the flag because it may have been set in W if W
                  previously became part of a bicomp with only two ext. face
                  vertices, but then was flipped and merged into a larger bicomp
                  that is now again becoming a bicomp with only two ext. face vertices. */
 
-         if (theGraph->extFace[W].link[0] == theGraph->extFace[W].link[1] && 
+         if (theGraph->extFace[W].link[0] == theGraph->extFace[W].link[1] &&
              WPrevLink == RootSide)
               theGraph->extFace[W].inversionFlag = 1;
          else theGraph->extFace[W].inversionFlag = 0;
@@ -930,7 +933,7 @@ int  RetVal, W, WPrevLink, R, Rout, X, XPrevLink, Y, YPrevLink, RootSide, RootEd
             are embedded, so we stop. */
 
          if (W == RootVertex)
-             break; 
+             break;
      }
 
      return OK;
@@ -963,12 +966,12 @@ int  RetVal, W, WPrevLink, R, Rout, X, XPrevLink, Y, YPrevLink, RootSide, RootEd
   For core planarity, OK is returned when theGraph contains a planar
   embedding of the input graph, and NONEMBEDDABLE is returned when a
   subgraph homeomorphic to K5 or K3,3 has been isolated in theGraph.
-  
+
   Extension modules can overload functions used by gp_Embed to achieve
-  alternate algorithms.  In those cases, the return results are 
-  similar.  For example, a K3,3 search algorithm would return 
+  alternate algorithms.  In those cases, the return results are
+  similar.  For example, a K3,3 search algorithm would return
   NONEMBEDDABLE if it finds the K3,3 obstruction, and OK if the graph
-  is planar or only contains K5 homeomorphs.  Similarly, an 
+  is planar or only contains K5 homeomorphs.  Similarly, an
   outerplanarity module can return OK for an outerplanar embedding or
   NONEMBEDDABLE when a subgraph homeomorphic to K2,3 or K4 has been
   isolated.
@@ -986,7 +989,7 @@ int RetVal = OK;
 
     /* Basic parameter checks */
 
-    if (theGraph==NULL) 
+    if (theGraph==NULL)
     	return NOTOK;
 
     /* A little shorthand for the size of the graph */
@@ -997,17 +1000,17 @@ int RetVal = OK;
 
     theGraph->embedFlags = embedFlags;
 
-    if (gp_CreateDFSTree(theGraph) != OK) 
+    if (gp_CreateDFSTree(theGraph) != OK)
         return NOTOK;
 
     if (!(theGraph->internalFlags & FLAGS_SORTEDBYDFI))
-        if (gp_SortVertices(theGraph) != OK) 
+        if (gp_SortVertices(theGraph) != OK)
             return NOTOK;
 
     gp_LowpointAndLeastAncestor(theGraph);
 
     _CreateSortedSeparatedDFSChildLists(theGraph);
-    
+
     if (theGraph->functions.fpCreateFwdArcLists(theGraph) != OK)
         return NOTOK;
 
@@ -1022,7 +1025,7 @@ int RetVal = OK;
     for (I = theGraph->N-1; I >= 0; I--)
     {
           RetVal = OK;
-          
+
           /* Do the Walkup for each cycle edge from I to a DFS descendant W. */
 
           J = theGraph->V[I].fwdArcList;
@@ -1036,9 +1039,9 @@ int RetVal = OK;
           }
 
           /* For each DFS child C of the current vertex with a pertinent
-                child bicomp, do a Walkdown on each side of the bicomp rooted 
-                by tree edge (R, C), where R is a root copy of the current 
-                vertex stored at C+N and uniquely associated with the bicomp 
+                child bicomp, do a Walkdown on each side of the bicomp rooted
+                by tree edge (R, C), where R is a root copy of the current
+                vertex stored at C+N and uniquely associated with the bicomp
                 containing C. (NOTE: if C has no pertinent child bicomps, then
                 there are no cycle edges from I to descendants of C). */
 
@@ -1049,7 +1052,7 @@ int RetVal = OK;
               {
                   // _Walkdown returns OK even if it couldn't embed all
                   // back edges from I to the subtree rooted by child
-                  // It only returns NONEMBEDDABLE when there is a 
+                  // It only returns NONEMBEDDABLE when there is a
                   // non-empty stack of bicomps, the topmost of which
                   // is blocked up by stopping vertices along both
                   // external face paths emanating from the bicomp root
@@ -1060,7 +1063,7 @@ int RetVal = OK;
                       else break;
                   }
               }
-              child = LCGetNext(theGraph->DFSChildLists, 
+              child = LCGetNext(theGraph->DFSChildLists,
                                 theGraph->V[I].separatedDFSChildList, child);
           }
 
@@ -1086,7 +1089,7 @@ int RetVal = OK;
 
   At the end of each embedding iteration, this postprocess function
   decides whether to proceed to the next vertex.
-  If some of the cycle edges from I to its descendants were not 
+  If some of the cycle edges from I to its descendants were not
   embedded, then the forward arc list of I will be non-empty.
 
   We return NONEMBEDDABLE to cause iteration to stop because the
@@ -1096,12 +1099,12 @@ int RetVal = OK;
   so that the iteration will proceed.
 
   To stop iteration with an internal error, return NOTOK
-  
+
   Extensions may overload this function and decide to proceed with or
-  halt embedding iteration for application-specific reasons.  For 
+  halt embedding iteration for application-specific reasons.  For
   example, a search for K3,3 homeomorphs could reduce a K5 homeomorph
   to something that can be ignored, and then continue the planarity
-  algorithm in hopes of finding whether there is a K3,3 obstruction 
+  algorithm in hopes of finding whether there is a K3,3 obstruction
   elsewhere in the graph.
  ********************************************************************/
 
@@ -1113,37 +1116,37 @@ int  _EmbedIterationPostprocess(graphP theGraph, int I)
 /********************************************************************
  _EmbedPostprocess()
 
- After the loop that embeds the cycle edges from each vertex to its 
+ After the loop that embeds the cycle edges from each vertex to its
  DFS descendants, this method is invoked to postprocess the graph.
  If the graph is planar, then a consistent orientation is imposed
  on the vertices of the embedding, and any remaining separated
  biconnected components are joined together.
  If the graph is non-planar, then a subgraph homeomorphic to K5
  or K3,3 is isolated.
- Extensions may override this function to provide alternate 
- behavior.  
+ Extensions may override this function to provide alternate
+ behavior.
 
   @param theGraph - the graph ready for postprocessing
   @param I - the last vertex processed by the edge embedding loop
-  @param edgeEmbeddingResult - 
+  @param edgeEmbeddingResult -
          OK if all edge embedding iterations returned OK
-         NONEMBEDDABLE if an embedding iteration failed to embed 
+         NONEMBEDDABLE if an embedding iteration failed to embed
              all edges for a vertex
 
   @return NOTOK on internal failure
-          NONEMBEDDABLE if a subgraph homeomorphic to a topological 
+          NONEMBEDDABLE if a subgraph homeomorphic to a topological
               obstruction is isolated in the graph
           OK otherwise (for example if the graph contains a
              planar embedding or if a desired topological obstruction
              was not found)
-         
+
  *****************************************************************/
 
 int  _EmbedPostprocess(graphP theGraph, int I, int edgeEmbeddingResult)
 {
 int  RetVal = edgeEmbeddingResult;
 
-    /* If an embedding was found, then post-process the embedding structure 
+    /* If an embedding was found, then post-process the embedding structure
         to eliminate root copies and give a consistent orientation to all vertices. */
 
     if (edgeEmbeddingResult == OK)
@@ -1152,11 +1155,11 @@ int  RetVal = edgeEmbeddingResult;
         _JoinBicomps(theGraph);
     }
 
-    /* If the graph was found to be unembeddable, then we want to isolate an 
-        obstruction.  But, if a search flag was set, then we have already 
+    /* If the graph was found to be unembeddable, then we want to isolate an
+        obstruction.  But, if a search flag was set, then we have already
         found a subgraph with the desired structure, so no further work is done. */
 
-    else if (edgeEmbeddingResult == NONEMBEDDABLE) 
+    else if (edgeEmbeddingResult == NONEMBEDDABLE)
     {
         if (theGraph->embedFlags == EMBEDFLAGS_PLANAR)
         {
@@ -1187,8 +1190,8 @@ int  R, edgeOffset = theGraph->edgeOffset;
 
      sp_ClearStack(theGraph->theStack);
 
-/* Run the array of root copy vertices.  For each that is not defunct 
-        (i.e. has not been merged during embed), we orient the vertices 
+/* Run the array of root copy vertices.  For each that is not defunct
+        (i.e. has not been merged during embed), we orient the vertices
         in the bicomp for which it is the root vertex. */
 
      for (R = theGraph->N; R < edgeOffset; R++)
