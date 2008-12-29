@@ -38,6 +38,8 @@ Note: The Google Code Wiki system's numbered list feature does not work well on 
       * Back on the Available Software tab, 
         * Open the Subversive SVN Connectors subtree
         * Choose the child Subversive SVN Connectors and SVNKit 1.1.7 (the latter is marked optional, but it isn't)
+    # Go back to Ganymede Update Site | Collaboration Tools | Subversive SVN Team Provider and make sure it is still checked
+        * Doing "Add site..." is sometimes unchecking that selection
     # Click Install...
   # *Environment set up*
     # Window | Preferences
