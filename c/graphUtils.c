@@ -1,4 +1,4 @@
-/* Copyright (c) 1997-2003 by John M. Boyer, All Rights Reserved.
+/* Copyright (c) 1997-2008 by John M. Boyer, All Rights Reserved.
         This code may not be reproduced or disseminated in whole or in part
         without the written permission of the author. */
 
@@ -40,7 +40,7 @@ void _HideInternalEdges(graphP theGraph, int vertex);
 void _RestoreInternalEdges(graphP theGraph);
 int  _GetBicompSize(graphP theGraph, int BicompRoot);
 void _DeleteUnmarkedEdgesInBicomp(graphP theGraph, int BicompRoot);
-void _ClearEdgeSignsInBicomp(graphP theGraph, int BicompRoot);
+void _ClearInvertedFlagsInBicomp(graphP theGraph, int BicompRoot);
 
 void _InitFunctionTable(graphP theGraph);
 
@@ -260,7 +260,7 @@ void _InitGraphNode(graphP theGraph, int I)
      theGraph->G[I].link[1] = NIL;
      theGraph->G[I].visited = 0;
      theGraph->G[I].type = TYPE_UNKNOWN;
-     theGraph->G[I].sign = 1;
+     theGraph->G[I].flags = 0;
 }
 
 /********************************************************************
@@ -1301,13 +1301,13 @@ int  V, J;
 }
 
 /********************************************************************
- _ClearEdgeSignsInBicomp()
+ _ClearInvertedFlagsInBicomp()
 
- This function sets the sign member to 1 in each edge record of
- the adjacency list of each vertex in a given biconnected component.
+ This function clears the inverted flag markers on any edges in a
+ given biconnected component.
  ********************************************************************/
 
-void _ClearEdgeSignsInBicomp(graphP theGraph, int BicompRoot)
+void _ClearInvertedFlagsInBicomp(graphP theGraph, int BicompRoot)
 {
 int  V, J;
 
@@ -1321,9 +1321,10 @@ int  V, J;
           while (J >= theGraph->edgeOffset)
           {
              if (theGraph->G[J].type == EDGE_DFSCHILD)
+             {
                  sp_Push(theGraph->theStack, theGraph->G[J].v);
-
-             theGraph->G[J].sign = 1;
+                 CLEAR_INVERTEDFLAG(theGraph, J);
+             }
 
              J = theGraph->G[J].link[0];
           }
