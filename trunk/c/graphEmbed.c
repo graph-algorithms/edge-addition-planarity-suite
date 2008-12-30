@@ -523,7 +523,7 @@ int  extFaceVertex;
              {
                  if (theGraph->G[J].type == EDGE_DFSCHILD)
                  {
-                     theGraph->G[J].sign = -1;
+                	 SET_INVERTEDFLAG(theGraph, J);
                      break;
                  }
 
@@ -1227,18 +1227,18 @@ int  R, edgeOffset = theGraph->edgeOffset;
 
 void _OrientVerticesInBicomp(graphP theGraph, int BicompRoot, int PreserveSigns)
 {
-int  V, J, curSign;
+int  V, J, invertedFlag;
 
      sp_ClearStack(theGraph->theStack);
-     sp_Push2(theGraph->theStack, BicompRoot, 1);
+     sp_Push2(theGraph->theStack, BicompRoot, INVERTEDFLAG);
 
      while (sp_NonEmpty(theGraph->theStack))
      {
          /* Pop a vertex to orient */
-         sp_Pop2(theGraph->theStack, V, curSign);
+         sp_Pop2(theGraph->theStack, V, invertedFlag);
 
-         /* Invert the vertex if the sign is -1 */
-         if (curSign == -1)
+         /* Invert the vertex if the inverted flag is set */
+         if (invertedFlag)
              _InvertVertex(theGraph, V);
 
          /* Push the vertex's DFS children that are in the bicomp */
@@ -1248,10 +1248,10 @@ int  V, J, curSign;
              if (theGraph->G[J].type == EDGE_DFSCHILD)
              {
                  sp_Push2(theGraph->theStack, theGraph->G[J].v,
-                          curSign * theGraph->G[J].sign);
+                		  invertedFlag ^ GET_INVERTEDFLAG(theGraph, J));
 
                  if (!PreserveSigns)
-                    theGraph->G[J].sign = 1;
+                	 CLEAR_INVERTEDFLAG(theGraph, J);
              }
 
              J = theGraph->G[J].link[0];

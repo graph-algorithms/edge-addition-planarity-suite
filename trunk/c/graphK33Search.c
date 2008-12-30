@@ -17,7 +17,7 @@ extern int  _GetBicompSize(graphP theGraph, int BicompRoot);
 extern void _HideInternalEdges(graphP theGraph, int vertex);
 extern void _RestoreInternalEdges(graphP theGraph);
 extern void _DeleteUnmarkedEdgesInBicomp(graphP theGraph, int BicompRoot);
-extern void _ClearEdgeSignsInBicomp(graphP theGraph, int BicompRoot);
+extern void _ClearInvertedFlagsInBicomp(graphP theGraph, int BicompRoot);
 
 extern int  _GetNextVertexOnExternalFace(graphP theGraph, int curVertex, int *pPrevLink);
 extern int  _WalkUp(graphP theGraph, int I, int W);
@@ -1509,7 +1509,7 @@ int  rxType, xwType, wyType, yrType, xyType;
      orientations fixed if/when reduction edges are restored. */
 
      _FillVisitedFlagsInBicomp(theGraph, R, 0);
-     _ClearEdgeSignsInBicomp(theGraph, R);
+     _ClearInvertedFlagsInBicomp(theGraph, R);
 
 /* Reduce the paths to single edges. */
 
