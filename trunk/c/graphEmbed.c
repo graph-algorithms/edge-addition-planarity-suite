@@ -128,7 +128,7 @@ int I, Jfirst, Jnext, Jlast;
     for (I=0; I < theGraph->N; I++)
     {
     	// Skip this vertex if it has no edges
-    	if ((Jfirst = theGraph->G[I].link[1]) < theGraph->N)
+    	if (!((Jfirst = theGraph->G[I].link[1]) >= theGraph->edgeOffset))
     		continue;
 
         // If the vertex has any forward edges, they will be in link[1]
