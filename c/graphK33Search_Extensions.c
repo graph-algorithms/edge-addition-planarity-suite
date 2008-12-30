@@ -378,7 +378,7 @@ int _K33Search_CreateFwdArcLists(graphP theGraph)
         for (I=0; I < theGraph->N; I++)
         {
         	// Skip this vertex if it has no edges
-        	if ((Jnext = theGraph->G[I].link[1]) < theGraph->N)
+        	if (!((Jnext = theGraph->G[I].link[1]) >= theGraph->edgeOffset))
         		continue;
 
             // Skip the forward edges, which are in link[1] succession
