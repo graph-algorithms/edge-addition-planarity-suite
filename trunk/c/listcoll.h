@@ -1,7 +1,37 @@
-/* Copyright (c) 1997-2003, 2008 by John M. Boyer, All Rights Reserved.
-        This code may not be reproduced in whole or in part without
-        the written permission of the author. */
-        
+/*
+Planarity-Related Graph Algorithms Project
+Copyright (c) 1997-2009, John M. Boyer
+All rights reserved. Includes a reference implementation of the following:
+John M. Boyer and Wendy J. Myrvold, "On the Cutting Edge: Simplified O(n)
+Planarity by Edge Addition,"  Journal of Graph Algorithms and Applications,
+Vol. 8, No. 3, pp. 241-273, 2004.
+
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:
+
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+
+* Redistributions in binary form must reproduce the above copyright notice, this
+  list of conditions and the following disclaimer in the documentation and/or
+  other materials provided with the distribution.
+
+* Neither the name of the Planarity-Related Graph Algorithms Project nor the names
+  of its contributors may be used to endorse or promote products derived from this
+  software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
+
 #ifndef _LISTCOLL_H
 #define _LISTCOLL_H
 
@@ -32,12 +62,12 @@ void LCInsertBefore(listCollectionP listColl, int theAnchor, int theNewNode);
 void LCReset(listCollectionP listColl);
 void LCCopy(listCollectionP dst, listCollectionP src);
 
-int  LCGetNext(listCollectionP listColl, int theList, int theNode); 
-int  LCGetPrev(listCollectionP listColl, int theList, int theNode); 
+int  LCGetNext(listCollectionP listColl, int theList, int theNode);
+int  LCGetPrev(listCollectionP listColl, int theList, int theNode);
 
 int  LCPrepend(listCollectionP listColl, int theList, int theNode);
 int  LCAppend(listCollectionP listColl, int theList, int theNode);
-int  LCDelete(listCollectionP listColl, int theList, int theNode); 
+int  LCDelete(listCollectionP listColl, int theList, int theNode);
 
 #else
 
@@ -49,14 +79,14 @@ int  LCDelete(listCollectionP listColl, int theList, int theNode);
 
 #define LCCopy(dst, src) memcpy(dst->List, src->List, src->N*sizeof(lcnode))
 
-/* int  LCGetNext(listCollectionP listColl, int theList, int theNode); 
+/* int  LCGetNext(listCollectionP listColl, int theList, int theNode);
 	Return theNode's successor, unless it is theList head pointer */
-	
+
 #define LCGetNext(listColl, theList, theNode) listColl->List[theNode].next==theList ? NIL : listColl->List[theNode].next
 
-/* int  LCGetPrev(listCollectionP listColl, int theList, int theNode); 
+/* int  LCGetPrev(listCollectionP listColl, int theList, int theNode);
 	Return theNode's predecessor unless theNode is theList head.
-	To start going backwards, use NIL for theNode, which returns theList head's predecessor 
+	To start going backwards, use NIL for theNode, which returns theList head's predecessor
 	Usage: Obtain last node, loop while NIL not returned, process node then get predecessor.
 		After theList head processed, get predecessor returns NIL because we started with
 		theList head's predecessor. */
@@ -85,9 +115,9 @@ int  LCDelete(listCollectionP listColl, int theList, int theNode);
             listColl->List[theList].prev = theNode, \
 	    theList))
 
-/* int  LCDelete(listCollectionP listColl, int theList, int theNode); 
-	If theList contains only one node, then NIL it out and return NIL meaning empty list 
-	Otherwise, join the predecessor and successor, then 
+/* int  LCDelete(listCollectionP listColl, int theList, int theNode);
+	If theList contains only one node, then NIL it out and return NIL meaning empty list
+	Otherwise, join the predecessor and successor, then
 	return either the list head or its successor if the deleted node is the list head
 	(in that case, the caller makes the successor become the new list head).*/
 

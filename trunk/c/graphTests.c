@@ -1,6 +1,36 @@
-/* Copyright (c) 1997-2003 by John M. Boyer, All Rights Reserved.
-        This code may not be reproduced or disseminated in whole or in part 
-        without the written permission of the author. */
+/*
+Planarity-Related Graph Algorithms Project
+Copyright (c) 1997-2009, John M. Boyer
+All rights reserved. Includes a reference implementation of the following:
+John M. Boyer and Wendy J. Myrvold, "On the Cutting Edge: Simplified O(n)
+Planarity by Edge Addition,"  Journal of Graph Algorithms and Applications,
+Vol. 8, No. 3, pp. 241-273, 2004.
+
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:
+
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+
+* Redistributions in binary form must reproduce the above copyright notice, this
+  list of conditions and the following disclaimer in the documentation and/or
+  other materials provided with the distribution.
+
+* Neither the name of the Planarity-Related Graph Algorithms Project nor the names
+  of its contributors may be used to endorse or promote products derived from this
+  software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
 
 #define GRAPHTEST_C
 
@@ -27,7 +57,7 @@ void _MarkExternalFaceVertices(graphP theGraph, int startVertex);
 /********************************************************************
  gp_TestEmbedResultIntegrity()
 
-  This function tests the integrity of the graph result returned 
+  This function tests the integrity of the graph result returned
   from gp_Embed().
 
   The caller of gp_Embed() does not have to save the original graph
@@ -47,8 +77,8 @@ void _MarkExternalFaceVertices(graphP theGraph, int startVertex);
   order if that is the state of the origGraph.
 
   After all tests, the main method ensures theGraph is restored to
-  DFI order by invoking gp_SortVertices if needed, thus ensuring 
-  that theGraph has the documented post-condition of gp_Embed().  
+  DFI order by invoking gp_SortVertices if needed, thus ensuring
+  that theGraph has the documented post-condition of gp_Embed().
 
   For an embedResult of OK, fpCheckEmbeddingIntegrity is invoked.
   The core planarity implementation does a face walk of all faces
@@ -152,7 +182,7 @@ int  _CheckEmbeddingFacialIntegrity(graphP theGraph)
 stackP theStack = theGraph->theStack;
 int I, e, J, JTwin, K, L, NumFaces, connectedComponents;
 
-     if (theGraph == NULL) 
+     if (theGraph == NULL)
          return NOTOK;
 
 /* The stack need only contain 2M entries, one for each edge record. With
@@ -222,7 +252,7 @@ int I, e, J, JTwin, K, L, NumFaces, connectedComponents;
      for disconnected graphs it is extended to f=m-n+1+c where
      c is the number of connected components.*/
 
-     return NumFaces == theGraph->M - theGraph->N + 1 + connectedComponents 
+     return NumFaces == theGraph->M - theGraph->N + 1 + connectedComponents
             ? OK : NOTOK;
 }
 
@@ -270,7 +300,7 @@ int _CheckAllVerticesOnExternalFace(graphP theGraph)
   Walks the external face of the connected component containing the
   start vertex, and marks the visited flag of all vertices found.
   The start vertex is assumed to be on the external face.
-  This method assumed the embedding integrity has already been 
+  This method assumed the embedding integrity has already been
   verified to be correct.
  ********************************************************************/
 
@@ -286,19 +316,19 @@ void _MarkExternalFaceVertices(graphP theGraph, int startVertex)
         // The arc out of the vertex just visited points to the next vertex
         nextVertex = theGraph->G[Jout].v;
 
-        // Arc used to enter the next vertex is needed so we can get the 
+        // Arc used to enter the next vertex is needed so we can get the
         // next edge in rotation order.
         // Note: for bicomps, all external face vertices indicate the edges
         //       that hold them to the external face using link[0] and link[1]
         //       But _JoinBicomps() has already occurred, so cut vertices
         //       will have external face edges other than link[0] and link[1]
-        //       Hence we need this more sophisticated way of 
+        //       Hence we need this more sophisticated way of
         Jin = gp_GetTwinArc(theGraph, Jout);
 
         // Now we get the next arc in rotation order as the new arc out to the
         // vertex after nextVertex.  This sets us up for the next iteration.
-        // We also skip over one more link[0] if Jout has landed on a graph 
-        // node representing a vertex, which happens because the graph nodes 
+        // We also skip over one more link[0] if Jout has landed on a graph
+        // node representing a vertex, which happens because the graph nodes
         // for vertices are placed in their own adjacency list.
         Jout = theGraph->G[Jin].link[0];
         if (Jout >= theGraph->edgeOffset)
@@ -307,19 +337,19 @@ void _MarkExternalFaceVertices(graphP theGraph, int startVertex)
         // Note: Above, we cannot simply follow the chain of nextVertex link[0] arcs
         //       as we started out doing at the top of this method.  This is
         //       because we are no longer dealing with bicomps only.
-        //       Since _JoinBicomps() has already been invoked, there may now 
+        //       Since _JoinBicomps() has already been invoked, there may now
         //       be cut vertices on the external face whose adjacency lists
         //       contain external face arcs in positions other than link[0]
         //       and link[1].  We will visit those multiple times, but that's OK.
 
-    } while (nextVertex != startVertex); 
+    } while (nextVertex != startVertex);
 }
 
 
 /********************************************************************
  _CheckObstructionIntegrity()
 
-  Returns OK if theGraph is a subgraph of origGraph and it contains 
+  Returns OK if theGraph is a subgraph of origGraph and it contains
     an allowed homeomorph, and NOTOK otherwise.
 
   For core planarity, the allowed homeomorphs are K_5 or K_{3,3}
@@ -358,8 +388,8 @@ int _CheckObstructionIntegrity(graphP theGraph, graphP origGraph)
  The notable exception is K_{2,3}, an obstruction to outerplanarity.
  This routine does not know the obstruction it is looking for, so the
  caller must decide whether there are any degree 2 vertices that should
- be added to imageVerts. 
- 
+ be added to imageVerts.
+
  Return NOTOK if any vertex of degree 1 or higher than the max is found
         NOTOK if more than the max number of image vertices is found.
         Return OK otherwise.
@@ -381,7 +411,7 @@ int I, imageVertPos, degree;
      for (I = 0; I < theGraph->N; I++)
      {
           degree = gp_GetVertexDegree(theGraph, I);
-          if (degree == 1 || degree >= maxDegree) 
+          if (degree == 1 || degree >= maxDegree)
               return NOTOK;
 
           degrees[degree]++;
@@ -408,7 +438,7 @@ int I, imageVertPos, degree;
  This routine tests whether theGraph is a K_{numVerts} homeomorph for
  numVerts >= 4.
 
- returns NOTOK if numVerts < 4, 
+ returns NOTOK if numVerts < 4,
                if theGraph has other than numVerts image vertices
                if theGraph contains other than degree 2 vertices plus
                   the image vertices
@@ -439,7 +469,7 @@ int _TestForCompleteGraphObstruction(graphP theGraph, int numVerts,
     // For each pair of image vertices, we test that there is a path
     // between the two vertices.  If so, the visited flags of the
     // internal vertices along the path are marked
-    // 
+    //
     for (I = 0; I < numVerts; I++)
         for (J = 0; J < numVerts; J++)
            if (I != J)
@@ -474,7 +504,7 @@ int _TestForCompleteGraphObstruction(graphP theGraph, int numVerts,
 
  This routine tests whether theGraph is a K_{3,3} homeomorph.
 
- returns OK if so, NOTOK if not 
+ returns OK if so, NOTOK if not
  ********************************************************************/
 
 int _TestForK33GraphObstruction(graphP theGraph, int *degrees, int *imageVerts)
@@ -503,7 +533,7 @@ int  I, imageVertPos, temp, success;
              imageVerts[imageVertPos] = temp;
           }  while (I < 3);
 
-          if (!success) 
+          if (!success)
               return NOTOK;
      }
 
@@ -539,7 +569,7 @@ int  I, imageVertPos, temp, success;
  This function checks whether theGraph received as input contains
  either a K_5 or K_{3,3} homeomorph.
 
- RETURNS:   OK if theGraph contains a K_5 or K_{3,3} homeomorph, 
+ RETURNS:   OK if theGraph contains a K_5 or K_{3,3} homeomorph,
             NOTOK otherwise
 
  To be a K_5 homeomorph, there must be exactly 5 vertices of degree 4,
@@ -594,7 +624,7 @@ int  degrees[5], imageVerts[6];
  This routine tests whether theGraph is a K_{2,3} homeomorph.
  This routine operates over the results of _getImageVertices()
 
- returns OK if so, NOTOK if not 
+ returns OK if so, NOTOK if not
  ********************************************************************/
 
 int _TestForK23GraphObstruction(graphP theGraph, int *degrees, int *imageVerts)
@@ -615,9 +645,9 @@ int  I, J, imageVertPos;
      // that more image vertices need to be selected.
      imageVertPos = 2;
 
-     // Assign the remaining three image vertices to be the 
-     // neighbors of the first degree 3 image vertex. 
-     // Ensure that each is distinct from the second 
+     // Assign the remaining three image vertices to be the
+     // neighbors of the first degree 3 image vertex.
+     // Ensure that each is distinct from the second
      // degree 3 image vertex. This must be the case because
      // the two degree 3 image vertices are in the same partition
      // and hence must not be adjacent.
@@ -632,7 +662,7 @@ int  I, J, imageVertPos;
          J = theGraph->G[J].link[0];
      }
 
-     /* The paths from imageVerts[0] to each of the new degree 2 
+     /* The paths from imageVerts[0] to each of the new degree 2
           image vertices are the edges we just traversed.
           Now test the paths between each of the degree 2 image
           vertices and imageVerts[1]. */
@@ -653,11 +683,11 @@ int  I, J, imageVertPos;
               degrees[2]--;
 
      /* If every degree 2 vertex is used in a path between the
-          two degree 3 image vertices, then there are no extra 
-          pieces of the graph in theGraph.  Specifically, the 
-          prior tests identify a K_{2,3} and ensure that nothing 
-          else could exist in the graph except extra degree 2 
-          vertices, which must be joined in a cycle so that all 
+          two degree 3 image vertices, then there are no extra
+          pieces of the graph in theGraph.  Specifically, the
+          prior tests identify a K_{2,3} and ensure that nothing
+          else could exist in the graph except extra degree 2
+          vertices, which must be joined in a cycle so that all
           are degree 2. */
 
      if (degrees[2] != 0)
@@ -672,7 +702,7 @@ int  I, J, imageVertPos;
  This function checks whether theGraph received as input contains
  either a K_4 or K_{2,3} homeomorph.
 
- RETURNS:   OK if theGraph contains a K_4 or K_{2,3} homeomorph, 
+ RETURNS:   OK if theGraph contains a K_4 or K_{2,3} homeomorph,
             NOTOK otherwise
 
  To be a K_4 homeomorph, there must be exactly 4 vertices of degree 3,
@@ -682,15 +712,15 @@ int  I, J, imageVertPos;
  or a path of degree two vertices.
 
  To be a K_{2,3} homeomorph, there must be exactly 2 vertices of degree 3.
- All other vertices must be degree 2.  Furthermore, the two degree 3 
- vertices must have three internally disjoint paths connecting them, 
+ All other vertices must be degree 2.  Furthermore, the two degree 3
+ vertices must have three internally disjoint paths connecting them,
  and each path must contain at least two edges (i.e. at least one internal
  vertex).  The two degree 3 vertices are image vertices, and an internal
- vertex from each of the three paths contributes the remaining three 
+ vertex from each of the three paths contributes the remaining three
  image vertices.
 
  It is not necessary to check that the paths between the degree three
- vertices are distinct since if the paths had a common vertex, then the 
+ vertices are distinct since if the paths had a common vertex, then the
  common vertex would not be degree 2.
  ********************************************************************/
 
@@ -822,7 +852,7 @@ int invokeSortOnSubgraph = NOTOK;
 
     // If the graph is not sorted by DFI, but the alleged subgraph is,
     // then "unsort" the alleged subgraph so both have the same vertex order
-    if (!(theGraph->internalFlags & FLAGS_SORTEDBYDFI) && 
+    if (!(theGraph->internalFlags & FLAGS_SORTEDBYDFI) &&
          (theSubgraph->internalFlags & FLAGS_SORTEDBYDFI))
     {
         invokeSortOnSubgraph = OK;
@@ -831,7 +861,7 @@ int invokeSortOnSubgraph = NOTOK;
 
     // If the graph is not sorted by DFI, but the alleged subgraph is,
     // then "unsort" the alleged subgraph so both have the same vertex order
-    if (!(theSubgraph->internalFlags & FLAGS_SORTEDBYDFI) && 
+    if (!(theSubgraph->internalFlags & FLAGS_SORTEDBYDFI) &&
          (theGraph->internalFlags & FLAGS_SORTEDBYDFI))
     {
         invokeSortOnGraph = OK;
