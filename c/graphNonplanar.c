@@ -1,6 +1,36 @@
-/* Copyright (c) 1997-2003 by John M. Boyer, All Rights Reserved.
-        This code may not be reproduced or disseminated in whole or in part 
-        without the written permission of the author. */
+/*
+Planarity-Related Graph Algorithms Project
+Copyright (c) 1997-2009, John M. Boyer
+All rights reserved. Includes a reference implementation of the following:
+John M. Boyer and Wendy J. Myrvold, "On the Cutting Edge: Simplified O(n)
+Planarity by Edge Addition,"  Journal of Graph Algorithms and Applications,
+Vol. 8, No. 3, pp. 241-273, 2004.
+
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:
+
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+
+* Redistributions in binary form must reproduce the above copyright notice, this
+  list of conditions and the following disclaimer in the documentation and/or
+  other materials provided with the distribution.
+
+* Neither the name of the Planarity-Related Graph Algorithms Project nor the names
+  of its contributors may be used to endorse or promote products derived from this
+  software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
 
 #define GRAPHNONPLANAR_C
 
@@ -55,7 +85,7 @@ int  N, X, Y, W, Px, Py, Z, DFSChild, RootId;
      W = theGraph->IC.w;
 
 /* If the root copy is not a root copy of the current vertex I,
-        then the Walkdown terminated because it couldn't find 
+        then the Walkdown terminated because it couldn't find
         a viable path along a child bicomp, which is Minor A. */
 
      if (theGraph->V[R - N].DFSParent != I)
@@ -135,7 +165,7 @@ int  N, X, Y, W, Px, Py, Z, DFSChild, RootId;
  Otherwise, an unembedded fwdArc from the fwdArcList of vertex I is used in
  combination with the separatedDFSChildList of I to determine R.
 
- If the parameter R was not NIL, then this method assumes it must operate 
+ If the parameter R was not NIL, then this method assumes it must operate
  only on the bicomp rooted by R, so it only orients the vertices and clears
  the visited flags in bicomp R.   If this method had to determine R, then it
  assumes this is the Kuratowski subgraph isolator, so it orients the vertices
@@ -167,8 +197,8 @@ int  singleBicompMode =  (R == NIL) ? 0 : 1;
      if (R == NIL) return NOTOK;
 
      theGraph->IC.r = R;
-     
-/* For the embedding or in a given bicomp, orient the vertices, 
+
+/* For the embedding or in a given bicomp, orient the vertices,
     and clear the visited members of all vertex and edge records. */
 
      if (!singleBicompMode)
@@ -182,7 +212,7 @@ int  singleBicompMode =  (R == NIL) ? 0 : 1;
          _FillVisitedFlagsInBicomp(theGraph, R, 0);
      }
 
-/* Now we find the active vertices along both external face paths extending 
+/* Now we find the active vertices along both external face paths extending
      from R. */
 
      _FindActiveVertices(theGraph, R, &X, &Y);
@@ -224,7 +254,7 @@ int  singleBicompMode =  (R == NIL) ? 0 : 1;
 
 /* All work is done, so return success */
 
-     return OK; 
+     return OK;
 }
 
 /****************************************************************************
@@ -234,8 +264,8 @@ int  singleBicompMode =  (R == NIL) ? 0 : 1;
  Walkdown failed (whether it failed while traversing the bicomp rooted by
  R or some descendant bicomp is determined later).
 
- We iterate the forward cycle edges of the vertex I looking for a forward 
- edge (I, W) that was not embedded.  Once it is found, we figure out which 
+ We iterate the forward cycle edges of the vertex I looking for a forward
+ edge (I, W) that was not embedded.  Once it is found, we figure out which
  bicomp rooted by a root copy of I contains W or contains a DFS ancestor of W.
 
  This turns out to be an easy test.  The desired bicomp is rooted by the DFS
@@ -256,7 +286,7 @@ int  R, tempChild, fwdArc, W=NIL, C=NIL, I=theGraph->IC.v;
      if (sp_NonEmpty(theGraph->theStack))
      {
          int e;
-         
+
          sp_Pop2(theGraph->theStack, R, e);
          return R;
      }
@@ -282,7 +312,7 @@ int  R, tempChild, fwdArc, W=NIL, C=NIL, I=theGraph->IC.v;
         if (tempChild > C && tempChild < W)
             C = tempChild;
 
-        tempChild = LCGetNext(theGraph->DFSChildLists, 
+        tempChild = LCGetNext(theGraph->DFSChildLists,
                               theGraph->V[I].separatedDFSChildList, tempChild);
     }
 
@@ -298,7 +328,7 @@ int  R, tempChild, fwdArc, W=NIL, C=NIL, I=theGraph->IC.v;
 /****************************************************************************
  _FindActiveVertices()
 
- Descends from the root of a bicomp R in both the link[0] and link[1] 
+ Descends from the root of a bicomp R in both the link[0] and link[1]
  directions, returning the first active vertex appearing in either direction.
  ****************************************************************************/
 
@@ -390,12 +420,12 @@ int  V, e;
  face at points Px and Py that separates W from R such that a back edge (R, W)
  cannot be embedded within the bicomp. Recall that R is a root copy of I, so
  (R, W) is the representative of (I, W).  Also, note that W is pertinent if
- either W *or* one of its descendants in a separate bicomp has, in the input 
+ either W *or* one of its descendants in a separate bicomp has, in the input
  graph, a back edge to I.
 
  If no X-Y path separating W from R is found, then NOTOK is returned because
  the proof of correctness guarantees that one exists (although this routine
- can also be used to help test for the existence of an X-Y path, and NOTOK 
+ can also be used to help test for the existence of an X-Y path, and NOTOK
  means 'no' in that case).
 
  The desired output is to set the 'visited' flags of the X-Y path with
@@ -404,9 +434,9 @@ int  V, e;
  marking both the vertices and edges along the X-Y path.
 
  As a function of initialization, the vertices along the external face
- (other than R and W) have been classified as 'high RXW', 'low RXW', 'high RXY', 
- or 'low RXY'. Once the vertices have been categorized, we proceed with trying 
- to set the visitation flags in the way described above.  First, we remove 
+ (other than R and W) have been classified as 'high RXW', 'low RXW', 'high RXY',
+ or 'low RXY'. Once the vertices have been categorized, we proceed with trying
+ to set the visitation flags in the way described above.  First, we remove
  all edges incident to R except the two edges that join R to the external face.
  The result is that R and its two remaining edges are a 'corner' in the
  external face but also in a single proper face whose boundary includes the
@@ -444,7 +474,7 @@ int  V, e;
  iteration of the main loop visits a vertex, pushing its index and the
  location of an edge record.  If a vertex is encountered that is already
  on the stack, then it is not pushed again (and in fact part of the stack
- is removed). 
+ is removed).
  ****************************************************************************/
 
 int  _MarkHighestXYPath(graphP theGraph)
@@ -497,9 +527,9 @@ int R, X, Y, W;
           {
               /* If we find W, then there is no X-Y path. Never happens
                  for Kuratowski subgraph isolator, but this routine is
-                 also used to test for certain X-Y paths.  
+                 also used to test for certain X-Y paths.
                  So, we clean up and bail out in that case. */
-                
+
               if (Z == W)
               {
                   _PopAndUnmarkVerticesAndEdges(theGraph, NIL);
@@ -618,7 +648,7 @@ int ZPrevArc, ZNextArc, Z, R, Px, Py;
        ZNextArc = theGraph->G[ZNextArc].link[1];
     }
 
-    if (!theGraph->G[ZNextArc].visited) 
+    if (!theGraph->G[ZNextArc].visited)
         return NOTOK;
 
 /* For each internal vertex Z, determine whether it has a path to root. */
@@ -650,7 +680,7 @@ int ZPrevArc, ZNextArc, Z, R, Px, Py;
         /* If we ever encounter a non-internal vertex (other than the root R),
                 then corruption has occured, so we return NOTOK */
 
-        if (theGraph->G[Z].type != TYPE_UNKNOWN) 
+        if (theGraph->G[Z].type != TYPE_UNKNOWN)
             return NOTOK;
 
         /* Go to the next vertex indicated by ZNextArc */
@@ -688,7 +718,7 @@ int ZPrevArc, ZNextArc, Z, R, Px, Py;
 
 int  _FindExtActivityBelowXYPath(graphP theGraph)
 {
-int  Z=theGraph->IC.px, ZPrevLink=1, 
+int  Z=theGraph->IC.px, ZPrevLink=1,
      Py=theGraph->IC.py, I=theGraph->IC.v;
 
      Z = _GetNextVertexOnExternalFace(theGraph, Z, &ZPrevLink);
