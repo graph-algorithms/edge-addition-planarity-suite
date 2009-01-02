@@ -870,8 +870,42 @@ int N, I, arc, M, root, v, c, p, last, u, J, e;
 }
 
 /********************************************************************
+ gp_SetDirection()
+ Behavior depends on edgeFlag_Direction (EDGEFLAG_DIRECTION_INONLY,
+ EDGEFLAG_DIRECTION_OUTONLY, or 0).
+ A direction of 0 clears directedness. Otherwise, edge record e is set
+ to edgeFlag_Direction and e's twin arc is set to the opposing setting.
+ ********************************************************************/
+
+void gp_SetDirection(graphP theGraph, int e, int edgeFlag_Direction)
+{
+	int eTwin = gp_GetTwinArc(theGraph, e);
+
+	if (edgeFlag_Direction == EDGEFLAG_DIRECTION_INONLY)
+	{
+		theGraph->G[e].flags |= EDGEFLAG_DIRECTION_INONLY;
+		theGraph->G[eTwin].flags |= EDGEFLAG_DIRECTION_OUTONLY;
+	}
+	else if (edgeFlag_Direction == EDGEFLAG_DIRECTION_OUTONLY)
+	{
+		theGraph->G[e].flags |= EDGEFLAG_DIRECTION_OUTONLY;
+		theGraph->G[eTwin].flags |= EDGEFLAG_DIRECTION_INONLY;
+	}
+	else
+	{
+		theGraph->G[e].flags &= ~(EDGEFLAG_DIRECTION_INONLY|EDGEFLAG_DIRECTION_OUTONLY);
+		theGraph->G[eTwin].flags &= ~(EDGEFLAG_DIRECTION_INONLY|EDGEFLAG_DIRECTION_OUTONLY);
+	}
+}
+
+/********************************************************************
  gp_IsNeighbor()
- Checks whether v is already in u's adjacency list.
+
+ Checks whether v is already in u's adjacency list, i.e. does the arc
+ u -> v exist.
+ If there is an edge record for v in u's list, but it is marked INONLY,
+ then it represents the arc v->u but not u->v, so it is ignored.
+
  Returns 1 for yes, 0 for no.
  ********************************************************************/
 
@@ -882,7 +916,11 @@ int  J;
      J = theGraph->G[u].link[0];
      while (J >= theGraph->edgeOffset)
      {
-          if (theGraph->G[J].v == v) return 1;
+          if (theGraph->G[J].v == v)
+          {
+              if (!gp_GetDirection(theGraph, J, EDGEFLAG_DIRECTION_INONLY))
+            	  return 1;
+          }
           J = theGraph->G[J].link[0];
      }
      return 0;
@@ -914,6 +952,15 @@ int  J;
  data structure keeps records at locations 0 to N-1 for vertices
  AND N to 2N-1 for copies of vertices.  So edge records are stored
  at locations 2N and above.
+
+ Note: For digraphs, this method returns the total degree of the
+       vertex, including outward arcs (undirected and OUTONLY)
+       as well as INONLY arcs.  Other functions are defined to get
+       the in-degree or out-degree of the vertex.
+
+ Note: This function determines the degree by counting.  An extension
+       could cache the degree value of each vertex and update the
+       cached value as edges are added and deleted.
  ********************************************************************/
 
 int  gp_GetVertexDegree(graphP theGraph, int v)
@@ -928,6 +975,70 @@ int  J, degree;
      while (J >= theGraph->edgeOffset)
      {
          degree++;
+         J = theGraph->G[J].link[0];
+     }
+
+     return degree;
+}
+
+/********************************************************************
+ gp_GetVertexInDegree()
+
+ Counts the number of edge records in the adjacency list of a given
+ vertex V that represent arcs from another vertex into V.
+ This includes undirected edges and INONLY arcs, so it only excludes
+ edges records that are marked as OUTONLY arcs.
+
+ Note: This function determines the in-degree by counting.  An extension
+       could cache the in-degree value of each vertex and update the
+       cached value as edges are added and deleted.
+ ********************************************************************/
+
+int  gp_GetVertexInDegree(graphP theGraph, int v)
+{
+int  J, degree;
+
+     if (theGraph==NULL || v==NIL) return 0;
+
+     degree = 0;
+
+     J = theGraph->G[v].link[0];
+     while (J >= theGraph->edgeOffset)
+     {
+         if (!gp_GetDirection(theGraph, J, EDGEFLAG_DIRECTION_OUTONLY))
+             degree++;
+         J = theGraph->G[J].link[0];
+     }
+
+     return degree;
+}
+
+/********************************************************************
+ gp_GetVertexOutDegree()
+
+ Counts the number of edge records in the adjacency list of a given
+ vertex V that represent arcs from V to another vertex.
+ This includes undirected edges and OUTONLY arcs, so it only excludes
+ edges records that are marked as INONLY arcs.
+
+ Note: This function determines the out-degree by counting.  An extension
+       could cache the out-degree value of each vertex and update the
+       cached value as edges are added and deleted.
+ ********************************************************************/
+
+int  gp_GetVertexOutDegree(graphP theGraph, int v)
+{
+int  J, degree;
+
+     if (theGraph==NULL || v==NIL) return 0;
+
+     degree = 0;
+
+     J = theGraph->G[v].link[0];
+     while (J >= theGraph->edgeOffset)
+     {
+         if (!gp_GetDirection(theGraph, J, EDGEFLAG_DIRECTION_INONLY))
+             degree++;
          J = theGraph->G[J].link[0];
      }
 
@@ -1323,7 +1434,7 @@ int  V, J;
              if (theGraph->G[J].type == EDGE_DFSCHILD)
              {
                  sp_Push(theGraph->theStack, theGraph->G[J].v);
-                 CLEAR_INVERTEDFLAG(theGraph, J);
+                 CLEAR_EDGEFLAG_INVERTED(theGraph, J);
              }
 
              J = theGraph->G[J].link[0];

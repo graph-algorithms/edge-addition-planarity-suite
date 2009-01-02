@@ -90,7 +90,7 @@ extern "C" {
                 searching for certain paths in a biconnected component.
         flags: Lowest 16 bits a reserved for future expansion of the library.
                Next higher 16 bits can be safely used by consuming applications.
-               Currently, no bits are currently used by the library for vertices
+               Currently, no flag bits are used for vertices.
 
    Edges
         v: The edge record for (u,v) will be in u's list and store the index of
@@ -104,8 +104,10 @@ extern "C" {
                 FORWARD, BACK. See macro definitions above.
         flags: Lowest 16 bits a reserved for future expansion of the library.
                Next higher 16 bits can be safely used by consuming applications.
-               Currently, the planar embedder uses bit 1 on a DFSCHILD edge record
-               of the root edge of a bicomp to indicate inverted orientation
+               The library uses bits 0 and 1 to indicate the INONLY and OUTONLY
+               arcs of a directed edge.
+               The planar embedder uses bit 2 on a DFSCHILD edge record of the
+               root edge of a bicomp to indicate inverted orientation.
 */
 
 typedef struct
@@ -119,10 +121,10 @@ typedef struct
 
 typedef graphNode * graphNodeP;
 
-#define INVERTEDFLAG 2
-#define GET_INVERTEDFLAG(theGraph, e) (theGraph->G[e].flags & INVERTEDFLAG)
-#define SET_INVERTEDFLAG(theGraph, e) (theGraph->G[e].flags |= INVERTEDFLAG)
-#define CLEAR_INVERTEDFLAG(theGraph, e) (theGraph->G[e].flags &= (~INVERTEDFLAG))
+#define EDGEFLAG_INVERTED 4
+#define GET_EDGEFLAG_INVERTED(theGraph, e) (theGraph->G[e].flags & EDGEFLAG_INVERTED)
+#define SET_EDGEFLAG_INVERTED(theGraph, e) (theGraph->G[e].flags |= EDGEFLAG_INVERTED)
+#define CLEAR_EDGEFLAG_INVERTED(theGraph, e) (theGraph->G[e].flags &= (~EDGEFLAG_INVERTED))
 
 /* Additional data members needed only by vertices
         DFSParent: The DFI of the DFS tree parent of this vertex
@@ -279,6 +281,49 @@ typedef struct
 } baseGraphStructure;
 
 typedef baseGraphStructure * graphP;
+
+/********************************************************************
+ _VertexActiveStatus()
+ Tells whether a vertex is externally active, internally active
+ or inactive.
+ ********************************************************************/
+
+#define _VertexActiveStatus(theGraph, theVertex, I) \
+        (EXTERNALLYACTIVE(theGraph, theVertex, I) \
+         ? VAS_EXTERNAL \
+         : PERTINENT(theGraph, theVertex) \
+           ? VAS_INTERNAL \
+           : VAS_INACTIVE)
+
+/********************************************************************
+ _PERTINENT()
+ Tells whether a vertex is still pertinent to the processing of edges
+ from I to its descendants.  A vertex can become non-pertinent during
+ step I as edges are embedded.
+ ********************************************************************/
+
+#define PERTINENT(theGraph, theVertex) \
+        (theGraph->V[theVertex].adjacentTo != NIL || \
+         theGraph->V[theVertex].pertinentBicompList != NIL ? 1 : 0)
+
+/********************************************************************
+ _EXTERNALLYACTIVE()
+ Tells whether a vertex is still externally active in step I.
+ A vertex can become inactive during step I as edges are embedded.
+
+ For outerplanar graph embedding (and related extension algorithms),
+ we return externally active for all vertices since they must all be
+ kept on the external face.
+ ********************************************************************/
+
+#define EXTERNALLYACTIVE(theGraph, theVertex, I) \
+        (( theGraph->embedFlags & EMBEDFLAGS_OUTERPLANAR) || \
+           theGraph->V[theVertex].leastAncestor < I \
+         ? 1 \
+         : theGraph->V[theVertex].separatedDFSChildList != NIL && \
+           theGraph->V[theGraph->V[theVertex].separatedDFSChildList].Lowpoint < I \
+           ? 1 \
+           : 0)
 
 #ifdef __cplusplus
 }

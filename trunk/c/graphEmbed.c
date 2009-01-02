@@ -523,7 +523,7 @@ int  extFaceVertex;
              {
                  if (theGraph->G[J].type == EDGE_DFSCHILD)
                  {
-                	 SET_INVERTEDFLAG(theGraph, J);
+                	 SET_EDGEFLAG_INVERTED(theGraph, J);
                      break;
                  }
 
@@ -1230,7 +1230,7 @@ void _OrientVerticesInBicomp(graphP theGraph, int BicompRoot, int PreserveSigns)
 int  V, J, invertedFlag;
 
      sp_ClearStack(theGraph->theStack);
-     sp_Push2(theGraph->theStack, BicompRoot, INVERTEDFLAG);
+     sp_Push2(theGraph->theStack, BicompRoot, 0);
 
      while (sp_NonEmpty(theGraph->theStack))
      {
@@ -1248,10 +1248,10 @@ int  V, J, invertedFlag;
              if (theGraph->G[J].type == EDGE_DFSCHILD)
              {
                  sp_Push2(theGraph->theStack, theGraph->G[J].v,
-                		  invertedFlag ^ GET_INVERTEDFLAG(theGraph, J));
+                		  invertedFlag ^ GET_EDGEFLAG_INVERTED(theGraph, J));
 
                  if (!PreserveSigns)
-                	 CLEAR_INVERTEDFLAG(theGraph, J);
+                	 CLEAR_EDGEFLAG_INVERTED(theGraph, J);
              }
 
              J = theGraph->G[J].link[0];
