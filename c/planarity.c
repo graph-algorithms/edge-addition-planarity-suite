@@ -22,10 +22,10 @@ void Reconfigure();
  Configuration
  ****************************************************************************/
 
-char Mode='r', 
-     OrigOut='n', 
-     EmbeddableOut='n', 
-     ObstructedOut='n', 
+char Mode='r',
+     OrigOut='n',
+     EmbeddableOut='n',
+     ObstructedOut='n',
      AdjListsForEmbeddingsOut='n';
 
 /****************************************************************************
@@ -52,12 +52,13 @@ char Choice;
                "\nO. Outerplanar embedding and obstruction isolation"
                "\nP. Planar embedding and Kuratowski subgraph isolation"
                "\nD. Planar graph drawing"
-               "\n2. Search for subgraph homeomorphic to K2,3" 
+               "\n2. Search for subgraph homeomorphic to K2,3"
                "\n3. Search for subgraph homeomorphic to K3,3"
                "\nR. Reconfigure options"
                "\nX. Exit"
                "\n"
-               "\nEnter Choice: ");
+               "\nEnter Choice: \n");
+        fflush(stdout);
 
         fflush(stdin);
         scanf(" %c", &Choice);
@@ -84,15 +85,17 @@ char Choice;
                 case 'r' : RandomGraphs(embedFlags); break;
             }
 
-            printf("\nPress ENTER to continue...");
+            printf("\nPress ENTER to continue...\n");
+            fflush(stdout);
             fflush(stdin);
             getc(stdin);
             fflush(stdin);
             printf("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+            fflush(stdout);
         }
      }  while (Choice != 'x');
 #endif
-     
+
      return OK;
 }
 
@@ -102,28 +105,35 @@ char Choice;
 void Reconfigure()
 {
      fflush(stdin);
-     
-     printf("\nDo you want to randomly generate graphs or specify a graph (r/s)?");
+
+     printf("\nDo you want to randomly generate graphs or specify a graph (r/s)?\n");
+     fflush(stdout);
      scanf(" %c", &Mode);
 
      if (Mode != 's')
      {
         printf("\nNOTE: The directories for the graphs you want must exist.\n\n");
+        fflush(stdout);
 
         printf("Do you want original graphs in directory 'random'?");
+        fflush(stdout);
         scanf(" %c", &OrigOut);
 
         printf("Do you want adj. matrix of embeddable graphs in directory 'embedded'?");
+        fflush(stdout);
         scanf(" %c", &EmbeddableOut);
 
         printf("Do you want adj. matrix of obstructed graphs in directory 'obstructed'?");
+        fflush(stdout);
         scanf(" %c", &ObstructedOut);
 
         printf("Do you want adjacency list format of embeddings in directory 'adjlist'?");
+        fflush(stdout);
         scanf(" %c", &AdjListsForEmbeddingsOut);
      }
 
      printf("\n");
+     fflush(stdout);
 }
 
 /****************************************************************************
@@ -134,6 +144,7 @@ void SaveAsciiGraph(graphP theGraph, char *graphName)
 char Ch;
 
     printf("Do you want to save the graph in Ascii format (to test.dat)?");
+    fflush(stdout);
     scanf(" %c", &Ch);
     fflush(stdin);
 
@@ -168,10 +179,12 @@ platform_time start, end;
 graphP theGraph=NULL, origGraph;
 
      printf("Enter number of vertices:");
+     fflush(stdout);
      scanf(" %d", &numVertices);
      if (numVertices <= 0 || numVertices > 1000000)
      {
          printf("Must be between 1 and 1000000; changed to 10000\n");
+         fflush(stdout);
          numVertices = 10000;
      }
 
@@ -183,6 +196,7 @@ graphP theGraph=NULL, origGraph;
      {
           gp_Free(&theGraph);
           printf("Memory allocation/initialization error.\n");
+          fflush(stdout);
           return;
      }
 
@@ -190,10 +204,12 @@ graphP theGraph=NULL, origGraph;
      if (gp_CreateRandomGraphEx(theGraph, 3*numVertices-6+extraEdges) != OK)
      {
          printf("gp_CreateRandomGraphEx() failed\n");
+         fflush(stdout);
          return;
      }
      end = platform_GetTime();
      printf("Created random graph with %d edges in %.3lf seconds. Now processing\n", theGraph->M, platform_GetDuration(start,end));
+     fflush(stdout);
 
 #ifdef _DEBUG
      gp_Write(theGraph, "randomGraph.txt", WRITE_ADJLIST);
@@ -213,8 +229,9 @@ graphP theGraph=NULL, origGraph;
      else if (Result == NONEMBEDDABLE)
           printf("Nonplanar graph successfully justified");
      else printf("Failure occurred");
-     
+
      printf(" in %.3lf seconds.\n", platform_GetDuration(start,end));
+     fflush(stdout);
 
      SaveAsciiGraph(theGraph, "maxplanar");
 
@@ -240,19 +257,23 @@ graphP origGraph=NULL;
 #endif
 
      printf("Enter number of graphs to generate:");
+     fflush(stdout);
      scanf(" %d", &NumGraphs);
 
      if (NumGraphs <= 0 || NumGraphs > 10000000)
      {
          printf("Must be between 1 and 10000000; changed to 100\n");
+         fflush(stdout);
          NumGraphs = 100;
      }
 
      printf("Enter size of graphs:");
+     fflush(stdout);
      scanf(" %d", &SizeOfGraphs);
      if (SizeOfGraphs <= 0 || SizeOfGraphs > 10000)
      {
          printf("Must be between 1 and 10000; changed to 15\n");
+         fflush(stdout);
          SizeOfGraphs = 15;
      }
 
@@ -262,11 +283,12 @@ graphP origGraph=NULL;
           ObstructionMinorFreqs[I] = 0;
 
 /* Reuse Graphs */
-// Make a graph structure for a graph 
+// Make a graph structure for a graph
 
      if ((theGraph = gp_New()) == NULL || gp_InitGraph(theGraph, SizeOfGraphs) != OK)
      {
           printf("Error creating space for a graph of the given size.\n");
+          fflush(stdout);
           return;
      }
 
@@ -292,11 +314,12 @@ graphP origGraph=NULL;
 //         gp_RemoveExtension(theGraph, "K23Search");
 
 #ifdef DEBUG
-// Make another graph structure to store the original graph that is randomly generated 
+// Make another graph structure to store the original graph that is randomly generated
 
      if ((origGraph = gp_New()) == NULL || gp_InitGraph(origGraph, SizeOfGraphs) != OK)
      {
           printf("Error creating space for the second graph structure of the given size.\n");
+          fflush(stdout);
           return;
      }
 
@@ -319,11 +342,12 @@ graphP origGraph=NULL;
      {
 /* Use New Graphs */
 /*
-         // Make a graph structure for a graph 
+         // Make a graph structure for a graph
 
          if ((theGraph = gp_New()) == NULL || gp_InitGraph(theGraph, SizeOfGraphs) != OK)
          {
               printf("Error creating space for a graph of the given size.\n");
+              fflush(stdout);
               return;
          }
 
@@ -337,11 +361,12 @@ graphP origGraph=NULL;
          }
 
 #ifdef DEBUG
-         // Make another graph structure to store the original graph that is randomly generated 
+         // Make another graph structure to store the original graph that is randomly generated
 
          if ((origGraph = gp_New()) == NULL || gp_InitGraph(origGraph, SizeOfGraphs) != OK)
          {
               printf("Error creating space for the second graph structure of the given size.\n");
+              fflush(stdout);
               return;
          }
 
@@ -360,6 +385,7 @@ graphP origGraph=NULL;
           if (gp_CreateRandomGraph(theGraph) != OK)
           {
               printf("gp_CreateRandomGraph() failed\n");
+              fflush(stdout);
               break;
           }
 
@@ -400,7 +426,7 @@ graphP origGraph=NULL;
           if (Result == OK)
           {
                NumEmbeddableGraphs++;
-               
+
                if (tolower(EmbeddableOut) == 'y')
                {
                    sprintf(theFileName, "embedded\\%04d.txt", I+1);
@@ -450,12 +476,15 @@ graphP origGraph=NULL;
           {
                sprintf(theFileName, "error\\%04d.txt", I+1);
                gp_Write(origGraph, theFileName, WRITE_ADJLIST);
-                
+
                gp_ReinitializeGraph(theGraph);
                gp_CopyGraph(theGraph, origGraph);
                Result = gp_Embed(theGraph, embedFlags);
                if (Result == NOTOK)
+               {
                    printf("Error found twice!\n");
+                   fflush(stdout);
+               }
                else Result = NOTOK;
           }
 #endif
@@ -478,11 +507,13 @@ graphP origGraph=NULL;
 
 #ifdef DEBUG
           printf("%d\r", I+1);
+          fflush(stdout);
 #endif
 
           if (Result == NOTOK)
           {
               printf("\nError found\n");
+              fflush(stdout);
               break;
           }
      }
@@ -499,8 +530,9 @@ graphP origGraph=NULL;
 
      end = platform_GetTime();
      printf("\nDone (%.3lf seconds).\n", platform_GetDuration(start,end));
-     
-// Report statistics for planar or outerplanar embedding 
+     fflush(stdout);
+
+// Report statistics for planar or outerplanar embedding
 
      if (embedFlags == EMBEDFLAGS_PLANAR || embedFlags == EMBEDFLAGS_OUTERPLANAR)
      {
@@ -515,7 +547,7 @@ graphP origGraph=NULL;
 
              for (I=5; I<NUM_MINORS; I++)
                   printf("Minor E%d = %d\n", I-4, ObstructionMinorFreqs[I]);
-         }          
+         }
      }
 
 // Report statistics for graph drawing
@@ -523,13 +555,15 @@ graphP origGraph=NULL;
      else if (embedFlags == EMBEDFLAGS_DRAWPLANAR)
          printf("Num Graphs Embedded and Drawn=%d.\n", NumEmbeddableGraphs);
 
-// Report statistics for subgraph homeomorphism algorithms 
+// Report statistics for subgraph homeomorphism algorithms
 
      else if (embedFlags == EMBEDFLAGS_SEARCHFORK23)
          printf("Of the generated graphs, %d did not contain a K_{2,3} homeomorph as a subgraph.\n", NumEmbeddableGraphs);
 
      else if (embedFlags == EMBEDFLAGS_SEARCHFORK33)
          printf("Of the generated graphs, %d did not contain a K_{3,3} homeomorph as a subgraph.\n", NumEmbeddableGraphs);
+
+     fflush(stdout);
 }
 
 /****************************************************************************
@@ -545,7 +579,7 @@ char *resultStr = "";
 
 /* Set up the result message string and enable features based on the embedFlags */
 
-     // If the planarity bit is set, we may be doing 
+     // If the planarity bit is set, we may be doing
      // core planarity or an extension algorithms
      if (embedFlags & EMBEDFLAGS_PLANAR)
      {
@@ -555,7 +589,7 @@ char *resultStr = "";
              theMsg = "The graph is%s planar.\n";
          }
 
-         // Otherwise we test for and enable known extension algorithm(s) 
+         // Otherwise we test for and enable known extension algorithm(s)
          else if (embedFlags == EMBEDFLAGS_DRAWPLANAR)
          {
              theMsg = "The graph is%s planar.\n";
@@ -568,7 +602,7 @@ char *resultStr = "";
          }
      }
 
-     // If the outerplanarity bit is set, we may be doing 
+     // If the outerplanarity bit is set, we may be doing
      // core outerplanarity or an extension algorithms
      else if (embedFlags & EMBEDFLAGS_OUTERPLANAR)
      {
@@ -576,7 +610,7 @@ char *resultStr = "";
          if (!(embedFlags & ~EMBEDFLAGS_OUTERPLANAR))
              theMsg = "The graph is%s outerplanar.\n";
 
-         // Otherwise we test for and enable known extension algorithm(s) 
+         // Otherwise we test for and enable known extension algorithm(s)
          else if (embedFlags == EMBEDFLAGS_SEARCHFORK23)
          {
              gp_AttachK23Search(theGraph);
@@ -587,6 +621,7 @@ char *resultStr = "";
 /* Get the filename of the graph to test */
 
      printf("Enter graph file name:");
+     fflush(stdout);
      scanf(" %s", theFileName);
 
      if (!strchr(theFileName, '.'))
@@ -595,23 +630,29 @@ char *resultStr = "";
 /* Read the graph into memory */
 
      Result = gp_Read(theGraph, theFileName);
+
      if (Result == NONEMBEDDABLE)
      {
          printf("Too many edges... graph is non-planar.  Proceeding...\n");
+         fflush(stdout);
          Result = OK;
      }
- 
+
      if (Result != OK)
+     {
          printf("Failed to read graph\n");
+         fflush(stdout);
+     }
      else
      {
          platform_time start, end;
-         graphP origGraph = gp_DupGraph(theGraph); 
-          
+         graphP origGraph = gp_DupGraph(theGraph);
+
          start = platform_GetTime();
          Result = gp_Embed(theGraph, embedFlags);
          end = platform_GetTime();
          printf("gp_Embed() completed in %.3lf seconds.\n", platform_GetDuration(start,end));
+         fflush(stdout);
 
          if (gp_TestEmbedResultIntegrity(theGraph, origGraph, Result) != OK)
          {
@@ -620,6 +661,7 @@ char *resultStr = "";
          }
          else
              printf("Successful integrity check.\n");
+         fflush(stdout);
 
          gp_Free(&origGraph);
 
@@ -653,6 +695,8 @@ char *resultStr = "";
          }
 
          printf(theMsg, resultStr);
+         fflush(stdout);
+
          strcat(theFileName, ".out");
 
          if (embedFlags == EMBEDFLAGS_DRAWPLANAR && Result == OK)

@@ -1,5 +1,5 @@
 /* Copyright (c) 1997-2008 by John M. Boyer, All Rights Reserved.
-        This code may not be reproduced or disseminated in whole or in part 
+        This code may not be reproduced or disseminated in whole or in part
         without the written permission of the author. */
 
 #include <stdlib.h>
@@ -26,7 +26,7 @@ int  _WriteDebugInfo(graphP theGraph, FILE *Outfile);
 
 int _ReadAdjMatrix(graphP theGraph, FILE *Infile)
 {
-int N, I, J, Flag, ErrorCode;
+int N, I, W, Flag, ErrorCode;
 
      if (Infile == NULL) return NOTOK;
      fscanf(Infile, " %d ", &N);
@@ -36,12 +36,12 @@ int N, I, J, Flag, ErrorCode;
      for (I = 0, ErrorCode = OK; I < N-1 && ErrorCode==OK; I++)
      {
           theGraph->G[I].v = I;
-          for (J = I+1; J < N; J++)
+          for (W = I+1; W < N; W++)
           {
                fscanf(Infile, " %1d", &Flag);
                if (Flag)
                {
-                   ErrorCode = gp_AddEdge(theGraph, I, 0, J, 0);
+                   ErrorCode = gp_AddEdge(theGraph, I, 0, W, 0);
                    if (ErrorCode != OK) break;
                }
           }
@@ -59,26 +59,24 @@ int N, I, J, Flag, ErrorCode;
  On N subsequent lines: #: a b c ... -1
  where # is a vertex number and a, b, c, ... are its neighbors.
 
- NOTE:  The vertex number is skipped; the vertices are expected to be
-        in sorted order in the file.  The vertex number is for file
-        documentation only.
+ NOTE:  The vertex number is for file documentation only.  It is an
+        error if the vertices are not in sorted order in the file.
 
- NOTE:  This reader will not read all edges in the same order as
-        they exist in your input file.  When a low numbered vertex u
-        is being read, an edge to a higher numbered vertex v causes
-        this reader to add both (u,v) and (v,u) to the graph.  When
-        v is processed, the edge to u is simply ignored.  This ensures
-        that the graph from this reader is undirected, but it is an
-        error to try feeding a digraph to this reader because arcs
-        from high to low numbered vertices are ignored even if the
-        arc from low to high numbered vertex was absent.
+ NOTE:  If a loop edge is found, it is ignored without error.
+
+ NOTE:  This routine supports digraphs.  For a directed arc (I -> W),
+        an edge record is created in both vertices, I and W, and the
+        edge record in I's adjacency list is marked OUTONLY while the
+        edge record in W's list is marked INONLY.
+        This makes it easy to used edge directedness when appropriate
+        but also seamlessly process the corresponding undirected graph.
 
  Returns: OK, NOTOK on internal error, NONEMBEDDABLE if too many edges
  ********************************************************************/
 
 int  _ReadAdjList(graphP theGraph, FILE *Infile)
 {
-int N, I, J, ErrorCode;
+int N, I, W, ErrorCode, adjList, J;
 
      if (Infile == NULL) return NOTOK;
      fgetc(Infile);                             /* Skip the N= */
@@ -87,23 +85,144 @@ int N, I, J, ErrorCode;
      if (gp_InitGraph(theGraph, N) != OK)
           return NOTOK;
 
+     // Clear the visited members of the vertices so they can be used
+     // during the adjacency list read operation
+     for (I=0; I < N; I++)
+          theGraph->G[I].visited = 0;
+
+     // Do the adjacency list read operation for each vertex in order
      for (I = 0, ErrorCode = OK; I < N && ErrorCode==OK; I++)
      {
-          theGraph->G[I].v = I;
-          fscanf(Infile, "%*d");                /* Skip vertex # and colon */
+          // Read the vertext number
+          fscanf(Infile, "%d", &theGraph->G[I].v);
+
+          // The vertices are expected to be in numeric ascending order
+          if (theGraph->G[I].v != I)
+        	  return NOTOK;
+
+          // Skip the colon after the vertex number
           fgetc(Infile);
-          while (1)                             /* Read Adj List */
+
+          // If the vertex already has a non-empty adjacency list, then it is
+          // the result of adding edges during processing of preceding vertices.
+          // The list is removed from the current vertex I and saved for use
+          // during the read operation for I.  Adjacencies to preceding vertices
+          // are pulled from this list, if present, or added as directed edges
+          // if not.  Adjacencies to succeeding vertices are added as undirected
+          // edges, and will be corrected later if the succeeding vertex does not
+          // have the matching adjacency using the following mechanism.  After the
+          // read operation for a vertex I, any adjacency nodes left in the saved
+          // list are converted to directed edges from the preceding vertex to I.
+
+          if ((adjList = theGraph->G[I].link[0]) >= theGraph->edgeOffset)
           {
-             fscanf(Infile, " %d ", &J);
-             
-             if (J < 0) break;                  /* If NIL, then we are done */
-             if (J >= N)
+        	  // Store the adjacency node location in the visited member of each
+        	  // of the preceding vertices to which I is adjacent so that we can
+        	  // efficiently detect the adjacency during the read operation and
+        	  // efficiently find the adjacency node.
+        	  J = theGraph->G[I].link[1];
+			  while (J >= theGraph->edgeOffset)
+			  {
+				  theGraph->G[theGraph->G[J].v].visited = J;
+				  J = theGraph->G[J].link[1];
+			  }
+
+        	  // Remove the vertex from the list
+        	  theGraph->G[theGraph->G[I].link[0]].link[1] = theGraph->G[I].link[1];
+        	  theGraph->G[theGraph->G[I].link[1]].link[0] = theGraph->G[I].link[0];
+
+        	  // Remove the list from the vertex
+        	  theGraph->G[I].link[0] = theGraph->G[I].link[1] = I;
+          }
+
+          // Read the adjacency list.
+          while (1)
+          {
+        	 // Read the next adjacent vertex, with NIL indicating the list end
+             fscanf(Infile, " %d ", &W);
+             if (W < 0) break;
+
+             // Vertex numbers must be less than N
+             if (W >= N)
                   ErrorCode = NOTOK;
-             else if (I > J)
-                  ErrorCode = OK;
-             else ErrorCode = gp_AddEdge(theGraph, I, 0, J, 0);
-             
+
+             // Loop edges are not supported, but no reason to throw an error if they occur
+             // If a loop occurs, we just do like the ostrich and ignore it
+             else if (W == I)
+            	 ErrorCode = OK;
+
+             // If the adjacency is to a succeeding, higher numbered vertex,
+             // then we'll add an undirected edge for now
+             else if (I < W)
+             {
+             	 ErrorCode = gp_AddEdge(theGraph, I, 0, W, 0);
+             }
+
+             // If the adjacency is to a preceding, lower numbered vertex, then
+             // we have to pull the adjacency node from the preexisting adjList,
+             // if it is there, and if not then we have to add a directed edge.
+             else
+             {
+            	 // If the adjacency node (arc) already exists, then we append it to
+            	 // the link[0] side of the vertex and delete it from adjList
+            	 if (theGraph->G[W].visited)
+            	 {
+            		 J = theGraph->G[W].visited;
+
+            		 // Remove the arc J from the adjList construct
+            		 theGraph->G[W].visited = 0;
+            		 if (adjList == J)
+            		 {
+            			 if ((adjList = theGraph->G[J].link[0]) == J)
+            				 adjList = NIL;
+            		 }
+            		 theGraph->G[theGraph->G[J].link[0]].link[1] = theGraph->G[J].link[1];
+            		 theGraph->G[theGraph->G[J].link[1]].link[0] = theGraph->G[J].link[0];
+
+            		 // Put the arc into the adjacency list of vertex I
+            		 theGraph->G[J].link[0] = theGraph->G[I].link[0];
+            		 theGraph->G[J].link[1] = I;
+            		 theGraph->G[theGraph->G[I].link[0]].link[1] = J;
+            		 theGraph->G[I].link[0] = J;
+            	 }
+
+            	 // If an adjacency node to the lower numbered vertex does not
+            	 // already exist, then we make a new directed arc from the
+            	 // current vertex I to W.
+            	 else
+            	 {
+                	 ErrorCode = gp_AddEdge(theGraph, I, 0, W, 0);
+                	 if (ErrorCode == OK)
+                		 gp_SetDirection(theGraph, theGraph->G[W].link[0], EDGEFLAG_DIRECTION_INONLY);
+            	 }
+             }
+
              if (ErrorCode != OK) break;
+          }
+
+          // If there are still adjList entries after the read operation
+          // then those entries are not representative of full undirected edges.
+          // Rather, they represent are incoming directed arcs from other vertices
+          // into vertex I. They need to be added back into I's adjacency list but
+          // marked as "INONLY", while the twin is marked "OUTONLY".
+          while (adjList >= theGraph->edgeOffset)
+          {
+        	  J = adjList;
+
+			  theGraph->G[theGraph->G[J].v].visited = 0;
+
+ 			  if ((adjList = theGraph->G[J].link[0]) == J)
+ 				  adjList = NIL;
+
+     		  theGraph->G[theGraph->G[J].link[0]].link[1] = theGraph->G[J].link[1];
+     		  theGraph->G[theGraph->G[J].link[1]].link[0] = theGraph->G[J].link[0];
+
+     		  theGraph->G[J].link[0] = theGraph->G[I].link[0];
+     		  theGraph->G[J].link[1] = I;
+     		  theGraph->G[theGraph->G[I].link[0]].link[1] = J;
+     		  theGraph->G[I].link[0] = J;
+
+     		  gp_SetDirection(theGraph, J, EDGEFLAG_DIRECTION_INONLY);
           }
      }
 
@@ -160,7 +279,15 @@ int N, I, M, J, u, v;
  matrix format based on whether the file start with N or just a number,
  calls the appropriate read function, then closes the file and returns
  the graph.
+
+ Digraphs and loop edges are not supported in the adjacency matrix format,
+ which is upper triangular.
+
+ In the adjacency list format, digraphs are supported.  Loop edges are
+ ignored without producing an error.
+
  Pass "stdin" for the FileName to read from the stdin stream
+
  Returns: OK, NOTOK on internal error, NONEMBEDDABLE if too many edges
  ********************************************************************/
 
@@ -170,7 +297,7 @@ FILE *Infile;
 char Ch;
 int RetVal = NOTOK;
 
-     if (strcmp(FileName, "stdin")==OK)
+     if (strcmp(FileName, "stdin") == 0)
           Infile = stdin;
      else if ((Infile = fopen(FileName, READTEXT)) == NULL)
           return RetVal;
@@ -216,7 +343,7 @@ int RetVal = NOTOK;
          }
      }
 
-     if (strcmp(FileName, "stdin") != OK)
+     if (strcmp(FileName, "stdin") != 0)
          fclose(Infile);
 
      return RetVal;
@@ -252,9 +379,11 @@ int I, J;
           fprintf(Outfile, "%d:", I);
 
           J = theGraph->G[I].link[1];
-          while (J >= theGraph->N)
+          while (J >= theGraph->edgeOffset)
           {
-              fprintf(Outfile, " %d", theGraph->G[J].v);
+        	  if (!gp_GetDirection(theGraph, J, EDGEFLAG_DIRECTION_INONLY))
+                  fprintf(Outfile, " %d", theGraph->G[J].v);
+
               J = theGraph->G[J].link[1];
           }
           fprintf(Outfile, " %d\n", NIL);
@@ -266,6 +395,11 @@ int I, J;
  _WriteAdjMatrix()
  Outputs upper triangular matrix representation capable of being
  read by _ReadAdjMatrix()
+
+ Note: This routine does not support digraphs and will return an
+       error if a directed edge is found.
+
+ returns OK for success, NOTOK for failure
  ********************************************************************/
 
 int  _WriteAdjMatrix(graphP theGraph, FILE *Outfile)
@@ -291,8 +425,11 @@ char *Row = NULL;
                Row[K] = '0';
 
           J = theGraph->G[I].link[0];
-          while (J >= theGraph->N)
+          while (J >= theGraph->edgeOffset)
           {
+        	  if (gp_GetDirection(theGraph, J, EDGEFLAG_DIRECTION_INONLY))
+        		  return NOTOK;
+
               if (theGraph->G[J].v > I)
                   Row[theGraph->G[J].v] = '1';
 
@@ -332,7 +469,7 @@ int I, J, Gsize;
                                 theGraph->G[I].v);
 
           J = theGraph->G[I].link[0];
-          while (J >= theGraph->N)
+          while (J >= theGraph->edgeOffset)
           {
               fprintf(Outfile, " %d(J=%d)", theGraph->G[J].v, J);
               J = theGraph->G[J].link[0];
@@ -387,7 +524,10 @@ int I, J, Gsize;
  Writes theGraph into the file.
  Pass "stdout" or "stderr" to FileName to write to the corresponding stream
  Pass WRITE_ADJLIST, WRITE_ADJMATRIX or WRITE_DEBUGINFO for the Mode
- Returns NOTOK on parameter error, OK on success.
+
+ NOTE: For digraphs, it is an error to use a mode other than WRITE_ADJLIST
+
+ Returns NOTOK on error, OK on success.
  ********************************************************************/
 
 int  gp_Write(graphP theGraph, char *FileName, int Mode)
@@ -397,9 +537,9 @@ int RetVal = NOTOK;
 
      if (theGraph == NULL || FileName == NULL) return NOTOK;
 
-     if (strcmp(FileName, "stdout") == OK)
+     if (strcmp(FileName, "stdout") == 0)
           Outfile = stdout;
-     else if (strcmp(FileName, "stderr") == OK)
+     else if (strcmp(FileName, "stderr") == 0)
           Outfile = stderr;
      else if ((Outfile = fopen(FileName, WRITETEXT)) == NULL)
           return NOTOK;
@@ -428,11 +568,11 @@ int RetVal = NOTOK;
              free(extraData);
          }
      }
-     
-     if (strcmp(FileName, "stdout")==OK || strcmp(FileName, "stderr")==OK)
+
+     if (strcmp(FileName, "stdout") == 0 || strcmp(FileName, "stderr") == 0)
          fflush(Outfile);
 
-     else if (fclose(Outfile) != OK)
+     else if (fclose(Outfile) != 0)
          RetVal = NOTOK;
 
      return RetVal;
