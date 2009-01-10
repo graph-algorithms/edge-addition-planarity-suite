@@ -506,7 +506,7 @@ int  J, Z, ZNew;
 /* Find the least descendant of the cut vertex incident to the ancestor. */
 
      J = theGraph->V[ancestor].fwdArcList;
-     while (J != NIL)
+     while (gp_IsEdge(theGraph, J))
      {
           if (theGraph->G[J].v >= SubtreeRoot)
           {
@@ -514,7 +514,7 @@ int  J, Z, ZNew;
                   *pDescendant = theGraph->G[J].v;
           }
 
-          J = theGraph->G[J].link[0];
+          J = gp_GetNextEdge(theGraph, J);
           if (J == theGraph->V[ancestor].fwdArcList)
               J = NIL;
      }
@@ -621,8 +621,8 @@ int  J, parent, Z, N;
                 parent or to a root copy of the parent.
                 When the edge is found, mark it and break the loop */
 
-          J = theGraph->G[descendant].link[0];
-          while (J >= theGraph->edgeOffset)
+          J = gp_GetFirstEdge(theGraph, descendant);
+          while (gp_IsEdge(theGraph, J))
           {
               Z = theGraph->G[J].v;
               if ((Z < N && Z == parent) ||
@@ -632,7 +632,7 @@ int  J, parent, Z, N;
                   theGraph->G[gp_GetTwinArc(theGraph, J)].visited = 1;
                   break;
               }
-              J = theGraph->G[J].link[0];
+              J = gp_GetNextEdge(theGraph, J);
           }
 
           /* Mark the parent copy of the DFS parent */
@@ -705,8 +705,8 @@ int _AddAndMarkEdge(graphP theGraph, int ancestor, int descendant)
     /* Mark the edge so it is not deleted */
 
     theGraph->G[ancestor].visited = 1;
-    theGraph->G[theGraph->G[ancestor].link[0]].visited = 1;
-    theGraph->G[theGraph->G[descendant].link[0]].visited = 1;
+    theGraph->G[gp_GetFirstEdge(theGraph, ancestor)].visited = 1;
+    theGraph->G[gp_GetFirstEdge(theGraph, descendant)].visited = 1;
     theGraph->G[descendant].visited = 1;
 
     return OK;
@@ -727,12 +727,12 @@ int fwdArc, backArc;
     /* We get the two edge records of the back edge to embed. */
 
      fwdArc = theGraph->V[ancestor].fwdArcList;
-     while (fwdArc != NIL)
+     while (gp_IsEdge(theGraph, fwdArc))
      {
           if (theGraph->G[fwdArc].v == descendant)
               break;
 
-          fwdArc = theGraph->G[fwdArc].link[0];
+          fwdArc = gp_GetNextEdge(theGraph, fwdArc);
           if (fwdArc == theGraph->V[ancestor].fwdArcList)
               fwdArc = NIL;
      }
@@ -802,11 +802,11 @@ int  I, J, fwdArc, descendant;
 
      for (I = 0; I < theGraph->N; I++)
      {
-          J = theGraph->G[I].link[0];
-          while (J >= theGraph->edgeOffset)
+          J = gp_GetFirstEdge(theGraph, I);
+          while (gp_IsEdge(theGraph, J))
           {
                 if (theGraph->G[J].visited)
-                     J = theGraph->G[J].link[0];
+                     J = gp_GetNextEdge(theGraph, J);
                 else J = gp_DeleteEdge(theGraph, J, 0);
           }
      }
