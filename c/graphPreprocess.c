@@ -40,12 +40,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  gp_CreateDFSTree
  Assigns Depth First Index (DFI) to each vertex.  Also records parent
  of each vertex in the DFS tree, and marks DFS tree edges that go from
- parent to child.  Forwared arc cycle edges are also distinguished from
- edges leading from a DFS tree descendant to an ancestor-- both DFS
- edges and back arcs.  This last type is marked with EDGE_BACK, which the
- embedder ignores.  Because the embedder works in reverse DFI order,
- only forward arcs to children are needed because only the DFS descendants
- of a vertex have already been embedded.
+ parent to child.  Forward arc cycle edges are also distinguished from
+ edges leading from a DFS tree descendant to an ancestor-- both DFS tree
+ edges and back arcs.  The forward arcs are moved to the end of the
+ adjacency list to make the set easier to find and process.
  ********************************************************************/
 
 #include "platformTime.h"

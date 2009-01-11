@@ -142,8 +142,8 @@ int I, J, N, DFSParent, theList;
 
  Puts the forward arcs (back edges from a vertex to its descendants)
  into a circular list indicated by the fwdArcList member, a task
- simplified by the fact that they have already been placed in link[1]
- succession.
+ simplified by the fact that they have already been placed in
+ succession at the end of the adjacency lists by gp_CreateDFSTree().
 
   Returns OK for success, NOTOK for internal code failure
  ********************************************************************/
@@ -152,17 +152,17 @@ int _CreateFwdArcLists(graphP theGraph)
 {
 int I, Jfirst, Jnext, Jlast;
 
-    // For each vertex, the forward arcs are already in succession
-    // along the link[1] pointers...
-
     for (I=0; I < theGraph->N; I++)
     {
+    	// The forward arcs are already in succession at the end of the adjacency list
     	// Skip this vertex if it has no edges
-    	if (!((Jfirst = theGraph->G[I].link[1]) >= theGraph->edgeOffset))
+
+    	Jfirst = gp_GetLastEdge(theGraph, I);
+    	if (!gp_IsEdge(theGraph, Jfirst))
     		continue;
 
-        // If the vertex has any forward edges, they will be in link[1]
-        // succession.  So we test if we have a forward edge, then ...
+        // If the vertex has any forward edges at all, then the last edge
+    	// will be a forward edge.  So if we have any forward edges, ...
 
         if (theGraph->G[Jfirst].type == EDGE_FORWARD)
         {
@@ -170,8 +170,8 @@ int I, Jfirst, Jnext, Jlast;
 
             Jnext = Jfirst;
             while (theGraph->G[Jnext].type == EDGE_FORWARD)
-                Jnext = theGraph->G[Jnext].link[1];
-            Jlast = theGraph->G[Jnext].link[0];
+                Jnext = gp_GetPrevEdge(theGraph, Jnext);
+            Jlast = gp_GetNextEdge(theGraph, Jnext);
 
             // Remove the forward edges from the adjacency list of I
 
@@ -211,7 +211,7 @@ int  TestIntegrity(graphP theGraph)
 
                 theGraph->G[Jcur].visited = 1;
 
-                Jcur = theGraph->G[Jcur].link[0];
+                Jcur = gp_GetNextEdge(theGraph, Jcur);
                 if (Jcur == theGraph->V[I].fwdArcList)
                     Jcur = NIL;
             }
@@ -224,7 +224,7 @@ int  TestIntegrity(graphP theGraph)
 
                 theGraph->G[Jcur].visited = 0;
 
-                Jcur = theGraph->G[Jcur].link[0];
+                Jcur = gp_GetNextEdge(theGraph, Jcur);
                 if (Jcur == theGraph->V[I].fwdArcList)
                     Jcur = NIL;
             }
@@ -269,9 +269,9 @@ int N, I, J, Jtwin, R;
         }
         else
         {
-            J = theGraph->G[I].link[0];
+            J = gp_GetFirstEdge(theGraph, I);
             while (theGraph->G[J].type != EDGE_DFSPARENT)
-                J = theGraph->G[J].link[0];
+                J = gp_GetNextEdge(theGraph, J);
 
             theGraph->G[I].link[0] = theGraph->G[I].link[1] = J;
             theGraph->G[J].link[0] = theGraph->G[J].link[1] = I;
@@ -313,9 +313,9 @@ int fwdArc, backArc, parentCopy;
 
     if (theGraph->V[parentCopy].fwdArcList == fwdArc)
     {
-        if (theGraph->G[fwdArc].link[0] == fwdArc)
-             theGraph->V[parentCopy].fwdArcList = NIL;
-        else theGraph->V[parentCopy].fwdArcList = theGraph->G[fwdArc].link[0];
+    	theGraph->V[parentCopy].fwdArcList = gp_GetNextEdge(theGraph, fwdArc);
+        if (theGraph->V[parentCopy].fwdArcList == fwdArc)
+            theGraph->V[parentCopy].fwdArcList = NIL;
     }
 
     theGraph->G[theGraph->G[fwdArc].link[0]].link[1] = theGraph->G[fwdArc].link[1];
@@ -364,38 +364,30 @@ int fwdArc, backArc, parentCopy;
 
 int  _GetNextVertexOnExternalFace(graphP theGraph, int curVertex, int *pPrevLink)
 {
-int  arc, nextArc, nextVertex, newPrevLink;
+int  arc, nextArc, nextVertex;
 
      /* Exit curVertex from whichever link was not previously used to enter it */
 
      arc = theGraph->G[curVertex].link[1^(*pPrevLink)];
-
      nextArc = gp_GetTwinArc(theGraph, arc);
 
-     nextVertex = theGraph->G[nextArc].link[newPrevLink=0];
-     if (nextVertex >= theGraph->edgeOffset)
-         nextVertex = theGraph->G[nextArc].link[newPrevLink=1];
-
-     /* The setting above is how we exited an edge record to get to the
-        next vertex.  The reverse pointer leads back from the vertex to
-        the edge record. */
-
-     newPrevLink = 1^newPrevLink;
+     nextVertex = theGraph->G[arc].v;
 
      /* This if stmt assigns the new prev link that tells us which edge
         record was used to enter nextVertex (so that we exit from the
         opposing edge record).
-        However, if we are in a singleton bicomp, then both links in nextVertex
-        lead back to curVertex, so newPrevLink may get stop at the zero setting
-        when it should become one.
-        We want the two arcs of a singleton bicomp to act like a cycle, so the
-        edge record given as the prev link for curVertex should be the same as
-        the prev link for nextVertex.
-        So, we only need to modify the prev link if the links in nextVertex
-        are not equal. */
 
-     if (theGraph->G[nextVertex].link[0] != theGraph->G[nextVertex].link[1])
-         *pPrevLink = newPrevLink;
+        However, if we are in a singleton bicomp, then both links in nextVertex
+        lead back to curVertex.  We want the two arcs of a singleton bicomp to
+        act like a cycle, so we just don't change the prev link in this case.
+
+        But when nextVertex has more than one edge, we need to figure out
+        whether the first edge or last edge (which are the two on the external
+        face) was used to enter nextVertex so we can exit from the other one
+        as traversal of the external face continues later. */
+
+     if (gp_GetFirstEdge(theGraph, nextVertex) != gp_GetLastEdge(theGraph, nextVertex))
+         *pPrevLink = nextArc == gp_GetFirstEdge(theGraph, nextVertex) ? 0 : 1;
 
      return nextVertex;
 }
@@ -405,23 +397,29 @@ int  arc, nextArc, nextVertex, newPrevLink;
  This function flips the orientation of a single vertex such that
  instead of using link[0] successors to go clockwise (or counterclockwise)
  around a vertex's adjacency list, link[1] successors would be used.
- The loop is constructed using do-while so we can swap the links
- in the vertex node as well as each arc node.
  ********************************************************************/
 
 void _InvertVertex(graphP theGraph, int V)
 {
 int J, JTemp;
 
-     J = V;
-     do {
-        JTemp = theGraph->G[J].link[0];
-        theGraph->G[J].link[0] = theGraph->G[J].link[1];
-        theGraph->G[J].link[1] = JTemp;
+     // Swap the links in all the arcs of the adjacency list
+     J = gp_GetFirstEdge(theGraph, V);
+     while (gp_IsEdge(theGraph, J))
+     {
+    	 JTemp = gp_GetNextEdge(theGraph, J);
+         theGraph->G[J].link[0] = gp_GetPrevEdge(theGraph, J);
+         theGraph->G[J].link[1] = JTemp;
 
-        J = theGraph->G[J].link[0];
-     }  while (J >= theGraph->edgeOffset);
+         J = JTemp;
+     }
 
+     // Swap the first/last edge record indicators in the vertex
+     JTemp = theGraph->G[V].link[0];
+     theGraph->G[V].link[0] = theGraph->G[V].link[1];
+     theGraph->G[V].link[1] = JTemp;
+
+     // Swap the first/last external face indicators in the vertex
      JTemp = theGraph->extFace[V].link[0];
      theGraph->extFace[V].link[0] = theGraph->extFace[V].link[1];
      theGraph->extFace[V].link[1] = JTemp;
@@ -454,21 +452,19 @@ int J, JTemp;
 
 void _MergeVertex(graphP theGraph, int W, int WPrevLink, int R)
 {
-int  J, JTwin, edgeOffset;
+int  J, JTwin;
 int  e_w, e_r, e_ext;
-
-     edgeOffset = theGraph->edgeOffset;
 
      /* All arcs leading into R from its neighbors must be changed
         to say that they are leading into W */
 
-     J = theGraph->G[R].link[0];
-     while (J >= edgeOffset)
+     J = gp_GetFirstEdge(theGraph, R);
+     while (gp_IsEdge(theGraph, J))
      {
          JTwin = gp_GetTwinArc(theGraph, J);
          theGraph->G[JTwin].v = W;
 
-         J = theGraph->G[J].link[0];
+    	 J = gp_GetNextEdge(theGraph, J);
      }
 
      /* Obtain the edge records involved in the circular list union */
@@ -545,11 +541,11 @@ int  extFaceVertex;
          {
              Rout = 1^ZPrevLink;
 
-             if (theGraph->G[R].link[0] != theGraph->G[R].link[1])
+             if (gp_GetFirstEdge(theGraph, R) != gp_GetLastEdge(theGraph, R))
                 _InvertVertex(theGraph, R);
 
-             J = theGraph->G[R].link[0];
-             while (J >= theGraph->edgeOffset)
+             J = gp_GetFirstEdge(theGraph, R);
+             while (gp_IsEdge(theGraph, J))
              {
                  if (theGraph->G[J].type == EDGE_DFSCHILD)
                  {
@@ -557,7 +553,7 @@ int  extFaceVertex;
                      break;
                  }
 
-                 J = theGraph->G[J].link[0];
+                 J = gp_GetNextEdge(theGraph, J);
              }
          }
 
@@ -1063,7 +1059,7 @@ int RetVal = OK;
           {
               _WalkUp(theGraph, I, J);
 
-              J = theGraph->G[J].link[0];
+              J = gp_GetNextEdge(theGraph, J);
               if (J == theGraph->V[I].fwdArcList)
                   J = NIL;
           }
@@ -1225,7 +1221,7 @@ int  R, edgeOffset = theGraph->edgeOffset;
         in the bicomp for which it is the root vertex. */
 
      for (R = theGraph->N; R < edgeOffset; R++)
-          if (theGraph->G[R].link[0] != NIL)
+          if (gp_IsEdge(theGraph, gp_GetFirstEdge(theGraph, R)))
               _OrientVerticesInBicomp(theGraph, R, 0);
 }
 
@@ -1272,8 +1268,8 @@ int  V, J, invertedFlag;
              _InvertVertex(theGraph, V);
 
          /* Push the vertex's DFS children that are in the bicomp */
-         J = theGraph->G[V].link[0];
-         while (J >= theGraph->edgeOffset)
+         J = gp_GetFirstEdge(theGraph, V);
+         while (gp_IsEdge(theGraph, J))
          {
              if (theGraph->G[J].type == EDGE_DFSCHILD)
              {
@@ -1284,7 +1280,7 @@ int  V, J, invertedFlag;
                 	 CLEAR_EDGEFLAG_INVERTED(theGraph, J);
              }
 
-             J = theGraph->G[J].link[0];
+             J = gp_GetNextEdge(theGraph, J);
          }
      }
 }
@@ -1304,7 +1300,7 @@ int  _JoinBicomps(graphP theGraph)
 int  R, N, edgeOffset=theGraph->edgeOffset;
 
      for (R=N=theGraph->N; R < edgeOffset; R++)
-          if (theGraph->G[R].link[0] != NIL)
+          if (gp_IsEdge(theGraph, gp_GetFirstEdge(theGraph, R)))
               _MergeVertex(theGraph, theGraph->V[R-N].DFSParent, 0, R);
 
      return OK;

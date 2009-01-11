@@ -251,13 +251,13 @@ int W, P, C, V, J;
         }
 
         // Push DFS children
-        J = theEmbedding->G[W].link[0];
-        while (J >= theEmbedding->edgeOffset)
+        J = gp_GetFirstEdge(theEmbedding, W);
+        while (gp_IsEdge(theEmbedding, J))
         {
             if (theEmbedding->G[J].type == EDGE_DFSCHILD)
                 sp_Push(theEmbedding->theStack, theEmbedding->G[J].v);
 
-            J = theEmbedding->G[J].link[0];
+            J = gp_GetNextEdge(theEmbedding, J);
         }
     }
 
@@ -355,7 +355,7 @@ int eIndex, JTwin;
 
             // Now we traverse the adjacency list of the DFS tree root and
             // record each edge as the generator edge of the neighbors
-            J = theEmbedding->G[v].link[0];
+            J = gp_GetFirstEdge(theEmbedding, v);
             while (J >= theEmbedding->edgeOffset)
             {
                 e = (J - theEmbedding->edgeOffset) / 2;
@@ -366,7 +366,7 @@ int eIndex, JTwin;
                 theEmbedding->G[theEmbedding->G[J].v].visited = J;
 
                 // Go to the next node of the root's adj list
-                J = theEmbedding->G[J].link[0];
+                J = gp_GetNextEdge(theEmbedding, J);
             }
         }
 
@@ -385,8 +385,8 @@ int eIndex, JTwin;
             edgeListInsertPoint = e;
 
             Jcur = J;
-            if ((Jcur = theEmbedding->G[Jcur].link[0]) < theEmbedding->edgeOffset)
-                 Jcur = theEmbedding->G[Jcur].link[0];
+            if (gp_IsVertex(theEmbedding, Jcur = gp_GetNextEdge(theEmbedding, Jcur)))
+                 Jcur = gp_GetNextEdge(theEmbedding, Jcur);
 
             while (Jcur != J)
             {
@@ -406,8 +406,8 @@ int eIndex, JTwin;
                 }
 
                 // Go to the next node in v's adjacency list
-                if ((Jcur = theEmbedding->G[Jcur].link[0]) < theEmbedding->edgeOffset)
-                     Jcur = theEmbedding->G[Jcur].link[0];
+                if (gp_IsVertex(theEmbedding, Jcur = gp_GetNextEdge(theEmbedding, Jcur)))
+                     Jcur = gp_GetNextEdge(theEmbedding, Jcur);
             }
         }
     }
@@ -451,8 +451,8 @@ int I, J, min, max;
         min = theEmbedding->M + 1;
         max = -1;
 
-        J = theEmbedding->G[I].link[0];
-        while (J >= theEmbedding->edgeOffset)
+        J = gp_GetFirstEdge(theEmbedding, I);
+        while (gp_IsEdge(theEmbedding, J))
         {
             if (min > context->G[J].pos)
                 min = context->G[J].pos;
@@ -460,7 +460,7 @@ int I, J, min, max;
             if (max < context->G[J].pos)
                 max = context->G[J].pos;
 
-            J = theEmbedding->G[J].link[0];
+            J = gp_GetNextEdge(theEmbedding, J);
         }
 
         context->G[I].start = min;
