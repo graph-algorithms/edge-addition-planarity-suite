@@ -200,7 +200,7 @@ typedef vertexRec * vertexRecP;
     These also help in the creation of a planarity tester that does not need
     to embed the edges, which would be more efficient when one only needs to
     know whether any of a give set of graphs is planar without justifying
-    the result. */
+    the result with a combinatorial embedding. */
 
 typedef struct
 {
