@@ -501,15 +501,15 @@ int R, X, Y, W;
         intervening X-Y path, so we would return NOTOK. */
 
      Z = R;
-     J = theGraph->G[R].link[1];
+     J = gp_GetLastEdge(theGraph, R);
      while (theGraph->G[Z].type != VERTEX_HIGH_RYW &&
             theGraph->G[Z].type != VERTEX_LOW_RYW)
      {
           /* Advance J and Z along the proper face containing R */
 
-          J = theGraph->G[J].link[1];
-          if (J < theGraph->edgeOffset)
-              J = theGraph->G[J].link[1];
+          J = gp_GetPrevEdge(theGraph, J);
+          if (gp_IsVertex(theGraph, J))
+              J = gp_GetPrevEdge(theGraph, J);
           Z = theGraph->G[J].v;
           J = gp_GetTwinArc(theGraph, J);
 
@@ -640,12 +640,12 @@ int ZPrevArc, ZNextArc, Z, R, Px, Py;
    the first internal vertex of the X-Y path. */
 
     Z = Px;
-    ZNextArc = theGraph->G[Z].link[1];
-    while (ZNextArc != theGraph->G[Z].link[0])
+    ZNextArc = gp_GetLastEdge(theGraph, Z);
+    while (ZNextArc != gp_GetFirstEdge(theGraph, Z))
     {
        if (theGraph->G[ZNextArc].visited) break;
 
-       ZNextArc = theGraph->G[ZNextArc].link[1];
+       ZNextArc = gp_GetPrevEdge(theGraph, ZNextArc);
     }
 
     if (!theGraph->G[ZNextArc].visited)
@@ -656,9 +656,9 @@ int ZPrevArc, ZNextArc, Z, R, Px, Py;
     while (theGraph->G[ZNextArc].visited)
     {
         ZPrevArc = gp_GetTwinArc(theGraph, ZNextArc);
-        ZNextArc = theGraph->G[ZPrevArc].link[1];
-        if (ZNextArc < theGraph->edgeOffset)
-            ZNextArc = theGraph->G[ZNextArc].link[1];
+        ZNextArc = gp_GetPrevEdge(theGraph, ZPrevArc);
+        if (gp_IsVertex(theGraph, ZNextArc))
+            ZNextArc = gp_GetPrevEdge(theGraph, ZNextArc);
     }
 
     ZPrevArc = gp_GetTwinArc(theGraph, ZNextArc);
@@ -695,9 +695,9 @@ int ZPrevArc, ZNextArc, Z, R, Px, Py;
 
         /* Go to the next edge in the proper face */
 
-        ZNextArc = theGraph->G[ZPrevArc].link[1];
-        if (ZNextArc < theGraph->edgeOffset)
-            ZNextArc = theGraph->G[ZNextArc].link[1];
+        ZNextArc = gp_GetPrevEdge(theGraph, ZPrevArc);
+        if (gp_IsVertex(theGraph, ZNextArc))
+            ZNextArc = gp_GetPrevEdge(theGraph, ZNextArc);
 
         ZPrevArc = gp_GetTwinArc(theGraph, ZNextArc);
     }
