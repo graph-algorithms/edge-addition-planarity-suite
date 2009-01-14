@@ -193,9 +193,9 @@ K33SearchContext *context = NULL;
 
         if (C2 != NIL)
         {
-            while (D < C2 && e != NIL)
+            while (D < C2 && gp_IsEdge(theGraph, e))
             {
-                e = theGraph->G[e].link[0];
+                e = gp_GetNextEdge(theGraph, e);
                 if (e == theGraph->V[I].fwdArcList)
                      e = NIL;
                 else D = theGraph->G[e].v;
@@ -676,13 +676,13 @@ int _GetAdjacentAncestorInRange(graphP theGraph, K33SearchContext *context, int 
 {
 int J = context->V[theVertex].backArcList;
 
-    while (J != NIL)
+    while (gp_IsEdge(theGraph, J))
     {
         if (theGraph->G[J].v < closerAncestor &&
             theGraph->G[J].v > fartherAncestor)
             return theGraph->G[J].v;
 
-        J = theGraph->G[J].link[0];
+        J = gp_GetNextEdge(theGraph, J);
         if (J == context->V[theVertex].backArcList)
             J = NIL;
     }
@@ -825,7 +825,7 @@ int  listHead, child, J;
      // by an unembedded back edge.
 
      J = theGraph->V[ancestor].fwdArcList;
-     while (J != NIL)
+     while (gp_IsEdge(theGraph, J))
      {
          if (theGraph->G[J].v == cutVertex)
          {
@@ -833,7 +833,7 @@ int  listHead, child, J;
              return OK;
          }
 
-         J = theGraph->G[J].link[0];
+         J = gp_GetNextEdge(theGraph, J);
          if (J == theGraph->V[ancestor].fwdArcList)
              J = NIL;
      }
@@ -963,12 +963,12 @@ isolatorContextP IC = &theGraph->IC;
         back edge that was not embedded when step I was originally performed. */
 
      J = theGraph->V[I].fwdArcList;
-     while (J != NIL)
+     while (gp_IsEdge(theGraph, J))
      {
         W = theGraph->G[J].v;
         _WalkUp(theGraph, I, W);
 
-        J = theGraph->G[J].link[0];
+        J = gp_GetNextEdge(theGraph, J);
         if (J == theGraph->V[I].fwdArcList)
             J = NIL;
      }
@@ -1166,12 +1166,12 @@ int  v, e, w;
               theGraph->G[v].visited = NIL;
               sp_Push(resetList, v);
 
-              e = v;
+              e = gp_GetFirstEdge(theGraph, v);
           }
+          else
+              e = gp_GetNextEdge(theGraph, e);
 
-          e = theGraph->G[e].link[0];
-
-          while (e != v)
+          while (gp_IsEdge(theGraph, e))
           {
               w = theGraph->G[e].v;
               if (theGraph->G[w].visited != NIL &&
@@ -1181,7 +1181,7 @@ int  v, e, w;
                   sp_Push2(theGraph->theStack, w, NIL);
                   break;
               }
-              e = theGraph->G[e].link[0];
+              e = gp_GetNextEdge(theGraph, e);
           }
      }
 
@@ -1290,7 +1290,7 @@ int  p, c, d, excludedChild, e;
 
          /* Check for noStraddle of u_max, break if found */
 
-         e = theGraph->G[p].link[0];
+         e = gp_GetFirstEdge(theGraph, p);
          if (context->G[e].noStraddle == u_max)
              break;
 
@@ -1308,7 +1308,7 @@ int  p, c, d, excludedChild, e;
          c = IC->v;
          while (c != p)
          {
-             e = theGraph->G[c].link[0];
+             e = gp_GetFirstEdge(theGraph, c);
              if (context->G[e].noStraddle != NIL)
                  break;
 
@@ -1379,7 +1379,7 @@ int  rxType, xwType, wyType, yrType, xyType;
             cycle edge to form the path that will be reduced to the
             external face cycle edge (V, max). */
 
-         A_edge = theGraph->G[IC->r].link[1];
+         A_edge = gp_GetLastEdge(theGraph, IC->r);
          A = theGraph->G[A_edge].v;
          yrType = EDGE_BACK;
 
@@ -1391,11 +1391,11 @@ int  rxType, xwType, wyType, yrType, xyType;
 
          if (max == IC->y)
          {
-             B_edge = theGraph->G[IC->x].link[1];
-             while (B_edge != theGraph->G[IC->x].link[0])
+             B_edge = gp_GetLastEdge(theGraph, IC->x);
+             while (B_edge != gp_GetFirstEdge(theGraph, IC->x))
              {
                  if (theGraph->G[B_edge].visited) break;
-                 B_edge = theGraph->G[B_edge].link[1];
+                 B_edge = gp_GetPrevEdge(theGraph, B_edge);
              }
 
              if (!theGraph->G[B_edge].visited)
@@ -1412,7 +1412,7 @@ int  rxType, xwType, wyType, yrType, xyType;
 
          else if (max == IC->w)
          {
-             B_edge = theGraph->G[IC->x].link[0];
+             B_edge = gp_GetFirstEdge(theGraph, IC->x);
              B = theGraph->G[B_edge].v;
              xwType = EDGE_BACK;
          }
@@ -1425,17 +1425,17 @@ int  rxType, xwType, wyType, yrType, xyType;
 
      else
      {
-         A_edge = theGraph->G[IC->r].link[0];
+         A_edge = gp_GetFirstEdge(theGraph, IC->r);
          A = theGraph->G[A_edge].v;
          rxType = EDGE_BACK;
 
          if (max == IC->x)
          {
-             B_edge = theGraph->G[IC->y].link[0];
-             while (B_edge != theGraph->G[IC->y].link[1])
+             B_edge = gp_GetFirstEdge(theGraph, IC->y);
+             while (B_edge != gp_GetLastEdge(theGraph, IC->y))
              {
                  if (theGraph->G[B_edge].visited) break;
-                 B_edge = theGraph->G[B_edge].link[0];
+                 B_edge = gp_GetNextEdge(theGraph, B_edge);
              }
 
              if (!theGraph->G[B_edge].visited)
@@ -1447,7 +1447,7 @@ int  rxType, xwType, wyType, yrType, xyType;
 
          else if (max == IC->w)
          {
-             B_edge = theGraph->G[IC->y].link[1];
+             B_edge = gp_GetLastEdge(theGraph, IC->y);
              B = theGraph->G[B_edge].v;
              wyType = EDGE_BACK;
          }
@@ -1582,22 +1582,22 @@ int  prevLink, v, w, e;
         endpoint of the original path is a newly added edge,
         not a reduction edge. */
 
-     e = theGraph->G[u].link[0];
+     e = gp_GetFirstEdge(theGraph, u);
      if (context->G[e].pathConnector != NIL)
      {
          if (_RestoreReducedPath(theGraph, context, e) != OK)
              return NOTOK;
-         e = theGraph->G[u].link[0];
+         e = gp_GetFirstEdge(theGraph, u);
          v = theGraph->G[e].v;
      }
      gp_DeleteEdge(theGraph, e, 0);
 
-     e = theGraph->G[x].link[1];
+     e = gp_GetLastEdge(theGraph, x);
      if (context->G[e].pathConnector != NIL)
      {
          if (_RestoreReducedPath(theGraph, context, e) != OK)
              return NOTOK;
-         e = theGraph->G[x].link[1];
+         e = gp_GetLastEdge(theGraph, x);
          w = theGraph->G[e].v;
      }
      gp_DeleteEdge(theGraph, e, 0);
@@ -1609,11 +1609,11 @@ int  prevLink, v, w, e;
 
      gp_AddEdge(theGraph, u, 0, x, 1);
 
-     e = theGraph->G[u].link[0];
+     e = gp_GetFirstEdge(theGraph, u);
      context->G[e].pathConnector = v;
      theGraph->G[e].type = _ComputeArcType(theGraph, u, x, edgeType);
 
-     e = theGraph->G[x].link[1];
+     e = gp_GetLastEdge(theGraph, x);
      context->G[e].pathConnector = w;
      theGraph->G[e].type = _ComputeArcType(theGraph, x, u, edgeType);
 
@@ -1633,8 +1633,8 @@ int  _ReduceXYPathToEdge(graphP theGraph, K33SearchContext *context, int u, int 
 {
 int  e, v, w, e_u0, e_u1, e_x0, e_x1;
 
-     e = theGraph->G[u].link[0];
-     e = theGraph->G[e].link[0];
+     e = gp_GetFirstEdge(theGraph, u);
+     e = gp_GetNextEdge(theGraph, e);
      v = theGraph->G[e].v;
 
      /* If the XY-path is a single edge, then no reduction is needed */
@@ -1648,43 +1648,43 @@ int  e, v, w, e_u0, e_u1, e_x0, e_x1;
      {
          if (_RestoreReducedPath(theGraph, context, e) != OK)
              return NOTOK;
-         e = theGraph->G[u].link[0];
-         e = theGraph->G[e].link[0];
+         e = gp_GetFirstEdge(theGraph, u);
+         e = gp_GetNextEdge(theGraph, e);
          v = theGraph->G[e].v;
      }
      gp_DeleteEdge(theGraph, e, 0);
 
-     e = theGraph->G[x].link[0];
-     e = theGraph->G[e].link[0];
+     e = gp_GetFirstEdge(theGraph, x);
+     e = gp_GetNextEdge(theGraph, e);
      w = theGraph->G[e].v;
      if (context->G[e].pathConnector != NIL)
      {
          if (_RestoreReducedPath(theGraph, context, e) != OK)
              return NOTOK;
-         e = theGraph->G[x].link[0];
-         e = theGraph->G[e].link[0];
+         e = gp_GetFirstEdge(theGraph, x);
+         e = gp_GetNextEdge(theGraph, e);
          w = theGraph->G[e].v;
      }
      gp_DeleteEdge(theGraph, e, 0);
 
      /* Now add a single edge to represent the XY-path */
 
-     e_u0 = theGraph->G[u].link[0];
-     e_u1 = theGraph->G[u].link[1];
-     e_x0 = theGraph->G[x].link[0];
-     e_x1 = theGraph->G[x].link[1];
+     e_u0 = gp_GetFirstEdge(theGraph, u);
+     e_u1 = gp_GetLastEdge(theGraph, u);
+     e_x0 = gp_GetFirstEdge(theGraph, x);
+     e_x1 = gp_GetLastEdge(theGraph, x);
      gp_AddInternalEdge(theGraph, u, e_u0, e_u1, x, e_x0, e_x1);
 
      /* Now set up the path connectors so the original XY-path can be recovered if needed.
         Also, set the reduction edge's type to preserve the DFS tree structure */
 
-     e = theGraph->G[u].link[0];
-     e = theGraph->G[e].link[0];
+     e = gp_GetFirstEdge(theGraph, u);
+     e = gp_GetNextEdge(theGraph, e);
      context->G[e].pathConnector = v;
      theGraph->G[e].type = _ComputeArcType(theGraph, u, x, edgeType);
 
-     e = theGraph->G[x].link[0];
-     e = theGraph->G[e].link[0];
+     e = gp_GetFirstEdge(theGraph, x);
+     e = gp_GetNextEdge(theGraph, e);
      context->G[e].pathConnector = w;
      theGraph->G[e].type = _ComputeArcType(theGraph, x, u, edgeType);
 
@@ -1720,15 +1720,15 @@ int  J0, J1, JTwin0, JTwin1;
         graph nodes must be added in order to reconnect the path
         parallel to the edge. */
 
-     J0 = theGraph->G[J].link[0];
-     J1 = theGraph->G[J].link[1];
-     JTwin0 = theGraph->G[JTwin].link[0];
-     JTwin1 = theGraph->G[JTwin].link[1];
+     J0 = gp_GetNextEdge(theGraph, J);
+     J1 = gp_GetPrevEdge(theGraph, J);
+     JTwin0 = gp_GetNextEdge(theGraph, JTwin);
+     JTwin1 = gp_GetPrevEdge(theGraph, JTwin);
 
      /* Add the two edges to reconnect the reduced path. */
 
-     if (gp_AddInternalEdge(theGraph, u, J, J0, v, v, theGraph->G[v].link[0]) != OK ||
-         gp_AddInternalEdge(theGraph, x, JTwin, JTwin0, w, w, theGraph->G[w].link[0]) != OK)
+     if (gp_AddInternalEdge(theGraph, u, J, J0, v, v, gp_GetFirstEdge(theGraph, v)) != OK ||
+         gp_AddInternalEdge(theGraph, x, JTwin, JTwin0, w, w, gp_GetFirstEdge(theGraph, w)) != OK)
          return NOTOK;
 
      /* Delete the edge represented by J and JTwin */
@@ -1783,18 +1783,24 @@ int  J0, JTwin0, J1, JTwin1, PathIsOnExtFace;
                 will be between J0 and J1.  Likewise, the edge record
                 (x -> w) will be placed between JTwin0 and JTwin1. */
 
-             J0 = theGraph->G[J].link[0];
-             J1 = theGraph->G[J].link[1];
-             JTwin0 = theGraph->G[JTwin].link[0];
-             JTwin1 = theGraph->G[JTwin].link[1];
+             J0 = gp_GetNextEdge(theGraph, J);
+             J1 = gp_GetPrevEdge(theGraph, J);
+             JTwin0 = gp_GetNextEdge(theGraph, JTwin);
+             JTwin1 = gp_GetPrevEdge(theGraph, JTwin);
 
              /* We determine whether the reduction edge is on the external face,
                 in which case we will need to ensure (below) that the vertices
                 are consistently oriented.  This will accommodate future invocations
-                of MarkPathAlongBicompExtFace(). */
+                of MarkPathAlongBicompExtFace().
+                Note: If J0, J1, JTwin0 or JTwin1 is not an edge, then it is
+                      because we've walked off the end of the edge record list,
+                      which happens when J and JTwin are either the first or
+                      last edge of the containing vertex.  In turn, the first
+                      and last edges of a vertex are the ones that hold it onto
+                      the external face. */
 
-             if ((J0 < theGraph->edgeOffset && JTwin1 < theGraph->edgeOffset) ||
-                 (J1 < theGraph->edgeOffset && JTwin0 < theGraph->edgeOffset))
+             if ((!gp_IsEdge(theGraph, J0) && !gp_IsEdge(theGraph, JTwin1)) ||
+                 (!gp_IsEdge(theGraph, J1) && !gp_IsEdge(theGraph, JTwin0)))
                   PathIsOnExtFace = 1;
              else PathIsOnExtFace = 0;
 
@@ -1803,8 +1809,8 @@ int  J0, JTwin0, J1, JTwin1, PathIsOnExtFace;
                 but when edge [J, JTwin] is deleted, then the new edge record will be
                 between J0 and J1.  Likewise, JTwin and the new edge record added to x. */
 
-             if (gp_AddInternalEdge(theGraph, u, J, J1, v, v, theGraph->G[v].link[0]) != OK ||
-                 gp_AddInternalEdge(theGraph, x, JTwin, JTwin1, w, w, theGraph->G[w].link[0]) != OK)
+             if (gp_AddInternalEdge(theGraph, u, J, J1, v, v, gp_GetFirstEdge(theGraph, v)) != OK ||
+                 gp_AddInternalEdge(theGraph, x, JTwin, JTwin1, w, w, gp_GetFirstEdge(theGraph, w)) != OK)
                  return NOTOK;
 
              /* We delete the edge represented by J and JTwin. We delete the edge after
@@ -1913,18 +1919,26 @@ int  e_v, e_ulink, e_vlink;
     do {
         // Get the external face link in vertex u that indicates the
         // edge e_u which connects to the next vertex v in the path
-        e_ulink = theGraph->G[u].link[0] == e_u ? 0 : 1;
-        if (theGraph->G[u].link[e_ulink] != e_u)
-            return NOTOK;
+    	// As a sanity check, we determine whether e_u is an
+    	// external face edge, because there would be an internal
+    	// implementation error if not
+    	if (gp_GetFirstEdge(theGraph, u) == e_u)
+    		e_ulink = 0;
+    	else if (gp_GetLastEdge(theGraph, u) == e_u)
+    		e_ulink = 1;
+    	else return NOTOK;
 
         v = theGraph->G[e_u].v;
 
         // Now get the external face link in vertex v that indicates the
         // edge e_v which connects back to the prior vertex u.
         e_v = gp_GetTwinArc(theGraph, e_u);
-        e_vlink = theGraph->G[v].link[0] == e_v ? 0 : 1;
-        if (theGraph->G[v].link[e_vlink] != e_v)
-            return NOTOK;
+
+    	if (gp_GetFirstEdge(theGraph, v) == e_v)
+    		e_vlink = 0;
+    	else if (gp_GetLastEdge(theGraph, v) == e_v)
+    		e_vlink = 1;
+    	else return NOTOK;
 
         // The vertices u and v are inversely oriented if they
         // use the same link to indicate the edge [e_u, e_v].
@@ -1961,9 +1975,9 @@ int  e = gp_GetNeighborEdgeRecord(theGraph, u, v);
          e = gp_GetTwinArc(theGraph, e);
          theGraph->G[e].visited = visited;
 
-         e = theGraph->G[e].link[1];
-         if (e < theGraph->edgeOffset)
-             e = theGraph->G[e].link[1];
+         e = gp_GetNextEdge(theGraph, e);
+         if (gp_IsVertex(theGraph, e))
+             e = gp_GetNextEdge(theGraph, e);
      } while (v != x);
 }
 
@@ -1987,13 +2001,13 @@ int p, J;
      {
          theGraph->G[p].visited = 1;
 
-         J = theGraph->G[p].link[0];
-         while (J >= theGraph->edgeOffset)
+         J = gp_GetFirstEdge(theGraph, p);
+         while (gp_IsEdge(theGraph, J))
          {
               if (theGraph->G[J].type == EDGE_DFSPARENT)
                   break;
 
-              J = theGraph->G[J].link[0];
+              J = gp_GetNextEdge(theGraph, J);
          }
 
          theGraph->G[J].visited = 1;
@@ -2017,13 +2031,13 @@ int p, J;
 
      while (p != u_max)
      {
-         J = theGraph->G[p].link[0];
-         while (J >= theGraph->edgeOffset)
+         J = gp_GetFirstEdge(theGraph, p);
+         while (gp_IsEdge(theGraph, J))
          {
               if (theGraph->G[J].type == EDGE_DFSPARENT)
                   break;
 
-              J = theGraph->G[J].link[0];
+              J = gp_GetNextEdge(theGraph, J);
          }
 
          theGraph->G[J].visited = 0;

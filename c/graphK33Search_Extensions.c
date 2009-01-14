@@ -378,23 +378,24 @@ int _K33Search_CreateFwdArcLists(graphP theGraph)
         for (I=0; I < theGraph->N; I++)
         {
         	// Skip this vertex if it has no edges
-        	if (!((Jnext = theGraph->G[I].link[1]) >= theGraph->edgeOffset))
+        	Jnext = gp_GetLastEdge(theGraph, I);
+        	if (!gp_IsEdge(theGraph, Jnext))
         		continue;
 
             // Skip the forward edges, which are in link[1] succession
             while (theGraph->G[Jnext].type == EDGE_FORWARD)
-                Jnext = theGraph->G[Jnext].link[1];
+                Jnext = gp_GetPrevEdge(theGraph, Jnext);
 
             // Now we continue in the link[1] direction until we either
             // find the vertex record or we find the first child edge
             // record (the child records are in link[0] succession, so
             // when a child arc is encountered in the link[1] direction, then
             // then there won't be any more back arcs.
-            while (Jnext >= theGraph->N &&
+            while (gp_IsEdge(theGraph, Jnext) &&
                    theGraph->G[Jnext].type != EDGE_DFSCHILD)
             {
                 Jcur = Jnext;
-                Jnext = theGraph->G[Jnext].link[1];
+                Jnext = gp_GetPrevEdge(theGraph, Jnext);
 
                 if (theGraph->G[Jcur].type == EDGE_BACK)
                 {
@@ -480,7 +481,7 @@ void _K33Search_CreateDFSTreeEmbedding(graphP theGraph)
 
             for (I=0; I<N; I++)
             {
-                J = theGraph->G[I].link[0];
+                J = gp_GetFirstEdge(theGraph, I);
 
                 // If a vertex has any DFS children, the edges
                 // to them are stored in descending order of
@@ -495,7 +496,7 @@ void _K33Search_CreateDFSTreeEmbedding(graphP theGraph)
                                     context->V[I].sortedDFSChildList,
                                     theGraph->G[J].v);
 
-                    J = theGraph->G[J].link[0];
+                    J = gp_GetNextEdge(theGraph, J);
                 }
             }
         }
@@ -703,15 +704,15 @@ int  J, parent, N;
               /* Scan the edges for the one marked as the DFS parent */
 
               parent = NIL;
-              J = theGraph->G[descendant].link[0];
-              while (J >= theGraph->edgeOffset)
+              J = gp_GetFirstEdge(theGraph, descendant);
+              while (gp_IsEdge(theGraph, J))
               {
                   if (theGraph->G[J].type == EDGE_DFSPARENT)
                   {
                       parent = theGraph->G[J].v;
                       break;
                   }
-                  J = theGraph->G[J].link[0];
+                  J = gp_GetNextEdge(theGraph, J);
               }
 
               /* If the desired edge was not found, then the data structure is
