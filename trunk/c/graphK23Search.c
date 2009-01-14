@@ -1,5 +1,5 @@
 /* Copyright (c) 2002-2003 by John M. Boyer, All Rights Reserved.
-        This code may not be reproduced or disseminated in whole or in part 
+        This code may not be reproduced or disseminated in whole or in part
         without the written permission of the author. */
 
 #include "graph.h"
@@ -50,14 +50,14 @@ int  _IsolateOuterplanarityObstructionE3orE4(graphP theGraph);
 /****************************************************************************
  _SearchForK23()
     We begin by identifying all root copies of I on which the
-    Walkdown failed.  We can do this via straightforward traversal of 
-    descendant to ancestor DFS tree paths.  This is an O(n) total cost in the 
-    worst case.  If we find a K_{2,3}, then we can afford the time.  However, 
-    if we find only a K_4, then the outerplanarity algorithm must continue so 
-    we could not afford the worst case performance.  Fortunately, this 
-    operation is worst-case constant time if there are no K_{2,3} homeomorphs 
-    to be found in step I because a non-outerplanar biconnected graph either 
-    contains a K_{2,3} or is \emph{isomorphic} to K_4. 
+    Walkdown failed.  We can do this via straightforward traversal of
+    descendant to ancestor DFS tree paths.  This is an O(n) total cost in the
+    worst case.  If we find a K_{2,3}, then we can afford the time.  However,
+    if we find only a K_4, then the outerplanarity algorithm must continue so
+    we could not afford the worst case performance.  Fortunately, this
+    operation is worst-case constant time if there are no K_{2,3} homeomorphs
+    to be found in step I because a non-outerplanar biconnected graph either
+    contains a K_{2,3} or is \emph{isomorphic} to K_4.
  ****************************************************************************/
 
 int  _SearchForK23(graphP theGraph, int I)
@@ -65,10 +65,10 @@ int  _SearchForK23(graphP theGraph, int I)
 int J, W, C, RetVal=NOTOK;
 
 /* Traverse the edges of I to find the unembedded forward edges to
-    descendants.  For each such edge (I, W), traverse the DFS tree 
-    path up to mark the child of I that is the root of the subtree 
+    descendants.  For each such edge (I, W), traverse the DFS tree
+    path up to mark the child of I that is the root of the subtree
     containing W.  Optimize with visitation flag. */
-  
+
 /* Traverse each unembedded back edge to the descendant endpoint... */
 
     J = theGraph->V[I].fwdArcList;
@@ -97,12 +97,12 @@ int J, W, C, RetVal=NOTOK;
 
         /* Get the next unembedded back edge from I */
 
-        J = theGraph->G[J].link[0];
+        J = gp_GetNextEdge(theGraph, J);
         if (J == theGraph->V[I].fwdArcList)
             J = NIL;
     }
 
-/* If we got through the loop with an OK value for each bicomp on 
+/* If we got through the loop with an OK value for each bicomp on
      which the Walkdown failed, then we return OK to indicate that only
      isolated K_4's were found.  This allows the embedder to continue.
      If a K_{2,3} is ever found (or if an error occured), then RetVal
@@ -110,7 +110,7 @@ int J, W, C, RetVal=NOTOK;
      return the appropriate value.
 
      NOTE: RetVal starts out NOTOK to ensure we detect at least one
-        bicomp on which the Walkdown failed (this should always be 
+        bicomp on which the Walkdown failed (this should always be
         the case in an error-free implementation like this one!). */
 
      return RetVal;
@@ -130,7 +130,7 @@ int X, Y, XPrevLink, YPrevLink, tempFlags;
      if (_ChooseTypeOfNonOuterplanarityMinor(theGraph, I, R) != OK)
          return NOTOK;
 
-/* Minors A and B result in the desired K_{2,3} homeomorph, 
+/* Minors A and B result in the desired K_{2,3} homeomorph,
     so we isolate it and return NONEMBEDDABLE. */
 
      if (theGraph->IC.minorType & (MINORTYPE_A|MINORTYPE_B))
@@ -152,7 +152,7 @@ int X, Y, XPrevLink, YPrevLink, tempFlags;
 
              if (_FindUnembeddedEdgeToSubtree(theGraph, IC->v, SubtreeRoot, &IC->dw) != OK)
                  return NOTOK;
-            
+
              if (_IsolateOuterplanarityObstructionB(theGraph) != OK)
                  return NOTOK;
          }
@@ -163,14 +163,14 @@ int X, Y, XPrevLink, YPrevLink, tempFlags;
          return NONEMBEDDABLE;
      }
 
-/* For minor E (a K_4) , we run the additional tests to see if a K_{2,3} is 
+/* For minor E (a K_4) , we run the additional tests to see if a K_{2,3} is
     entangled with the K_4.  If not, then we return OK to indicate that
     the outerplanarity embedder should proceed as if the K_4 had not
     been found. */
 
-    /* If any vertices other than R, X, Y and W exist along the 
+    /* If any vertices other than R, X, Y and W exist along the
         external face, then we can obtain a K_{2,3} by minor E1 or E2 */
-     
+
      X = IC->x;
      Y = IC->y;
      XPrevLink = 1;
@@ -255,7 +255,7 @@ int XPrevLink = 1;
 
 /* Isolate E2 */
 
-     else if (IC->w != _GetNextVertexOnExternalFace(theGraph, IC->x, &XPrevLink)) 
+     else if (IC->w != _GetNextVertexOnExternalFace(theGraph, IC->x, &XPrevLink))
      {
          if (_MarkPathAlongBicompExtFace(theGraph, IC->r, IC->y) != OK)
              return NOTOK;
