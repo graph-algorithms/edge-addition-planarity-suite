@@ -118,12 +118,12 @@ start = platform_GetTime();
                   /* Push edges to all unvisited neighbors. These will be either
                         tree edges to children or forward arcs of back edges */
 
-                  J = theGraph->G[u].link[0];
-                  while (J >= N)
+                  J = gp_GetFirstEdge(theGraph, u);
+                  while (gp_IsEdge(theGraph, J))
                   {
                       if (!theGraph->G[theGraph->G[J].v].visited)
                           sp_Push2(theStack, u, J);
-                      J = theGraph->G[J].link[0];
+                      J = gp_GetNextEdge(theGraph, J);
                   }
               }
               else
@@ -211,12 +211,16 @@ start = platform_GetTime();
      for (e=0, J=theGraph->edgeOffset; e < M; e++, J+=2)
      {
           theGraph->G[J].v = theGraph->G[theGraph->G[J].v].v;
+          // This should not be needed once we change switch to not having
+          // vertices in their own adjacency lists
           if (theGraph->G[J].link[0] < N)
               theGraph->G[J].link[0] = theGraph->G[theGraph->G[J].link[0]].v;
           if (theGraph->G[J].link[1] < N)
               theGraph->G[J].link[1] = theGraph->G[theGraph->G[J].link[1]].v;
 
           theGraph->G[J+1].v = theGraph->G[theGraph->G[J+1].v].v;
+          // This should not be needed once we change switch to not having
+          // vertices in their own adjacency lists
           if (theGraph->G[J+1].link[0] < N)
               theGraph->G[J+1].link[0] = theGraph->G[theGraph->G[J+1].link[0]].v;
           if (theGraph->G[J+1].link[1] < N)
@@ -340,14 +344,14 @@ start = platform_GetTime();
                   sp_Push(theStack, u);
 
                   /* Push DFS children */
-                  J = theGraph->G[u].link[0];
-                  while (J >= theGraph->N)
+                  J = gp_GetFirstEdge(theGraph, u);
+                  while (gp_IsEdge(theGraph, J))
                   {
                       if (theGraph->G[J].type == EDGE_DFSCHILD)
                           sp_Push(theStack, theGraph->G[J].v);
                       else break;
 
-                      J = theGraph->G[J].link[0];
+                      J = gp_GetNextEdge(theGraph, J);
                   }
               }
               else
@@ -356,8 +360,8 @@ start = platform_GetTime();
                   L = leastAncestor = u;
 
                   /* Compute L and leastAncestor */
-                  J = theGraph->G[u].link[0];
-                  while (J >= theGraph->N)
+                  J = gp_GetFirstEdge(theGraph, u);
+                  while (gp_IsEdge(theGraph, J))
                   {
                       uneighbor = theGraph->G[J].v;
                       if (theGraph->G[J].type == EDGE_DFSCHILD)
@@ -373,7 +377,7 @@ start = platform_GetTime();
                       else if (theGraph->G[J].type == EDGE_FORWARD)
                           break;
 
-                      J = theGraph->G[J].link[0];
+                      J = gp_GetNextEdge(theGraph, J);
                   }
 
                   /* Assign leastAncestor and Lowpoint to the vertex */

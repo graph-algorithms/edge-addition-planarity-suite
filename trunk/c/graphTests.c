@@ -169,8 +169,6 @@ int _CheckEmbeddingIntegrity(graphP theGraph, graphP origGraph)
  If this algorithm succeeds without double visiting any arcs, and it
  produces the correct face count according to Euler's formula, then
  the embedding has all vertices oriented the same way.
- NOTE:  Because a vertex is in its adj. list, if we go to a link[0]
-        and it is a vertex, we simply take the vertex's link[0].
  NOTE:  In disconnected graphs, the face reader counts the external
         face of each connected component.  So, we adjust the face
         count by subtracting one for each component, then we add one
@@ -221,9 +219,9 @@ int I, e, J, JTwin, K, L, NumFaces, connectedComponents;
             while (L != J)
             {
                 K = gp_GetTwinArc(theGraph, JTwin);
-                L = theGraph->G[K].link[0];
-                if (L < theGraph->edgeOffset)
-                    L = theGraph->G[L].link[0];
+                L = gp_GetNextEdge(theGraph, K);
+                if (gp_IsVertex(theGraph, L))
+                    L = gp_GetNextEdge(theGraph, L);
                 if (theGraph->G[L].visited)
                     return NOTOK;
                 theGraph->G[L].visited++;
@@ -307,7 +305,7 @@ int _CheckAllVerticesOnExternalFace(graphP theGraph)
 void _MarkExternalFaceVertices(graphP theGraph, int startVertex)
 {
     int nextVertex = startVertex;
-    int Jout = theGraph->G[nextVertex].link[0];
+    int Jout = gp_GetFirstEdge(theGraph, nextVertex);
     int Jin;
 
     do {
@@ -327,12 +325,9 @@ void _MarkExternalFaceVertices(graphP theGraph, int startVertex)
 
         // Now we get the next arc in rotation order as the new arc out to the
         // vertex after nextVertex.  This sets us up for the next iteration.
-        // We also skip over one more link[0] if Jout has landed on a graph
-        // node representing a vertex, which happens because the graph nodes
-        // for vertices are placed in their own adjacency list.
-        Jout = theGraph->G[Jin].link[0];
-        if (Jout >= theGraph->edgeOffset)
-            Jout = theGraph->G[Jout].link[0];
+        Jout = gp_GetNextEdge(theGraph, Jin);
+        if (gp_IsVertex(theGraph, Jout))
+            Jout = gp_GetNextEdge(theGraph, Jout);
 
         // Note: Above, we cannot simply follow the chain of nextVertex link[0] arcs
         //       as we started out doing at the top of this method.  This is
@@ -340,7 +335,9 @@ void _MarkExternalFaceVertices(graphP theGraph, int startVertex)
         //       Since _JoinBicomps() has already been invoked, there may now
         //       be cut vertices on the external face whose adjacency lists
         //       contain external face arcs in positions other than link[0]
-        //       and link[1].  We will visit those multiple times, but that's OK.
+        //       and link[1].  We will visit those vertices multiple times,
+        //       which is OK (just that we have to explain why we're doing
+        //       things this way).
 
     } while (nextVertex != startVertex);
 }
@@ -652,14 +649,14 @@ int  I, J, imageVertPos;
      // the two degree 3 image vertices are in the same partition
      // and hence must not be adjacent.
 
-     J = theGraph->G[imageVerts[0]].link[0];
-     while (J > theGraph->N)
+     J = gp_GetFirstEdge(theGraph, imageVerts[0]);
+     while (gp_IsEdge(theGraph, J))
      {
          imageVerts[imageVertPos] = theGraph->G[J].v;
          if (imageVerts[imageVertPos] == imageVerts[1])
              return NOTOK;
          imageVertPos++;
-         J = theGraph->G[J].link[0];
+         J = gp_GetNextEdge(theGraph, J);
      }
 
      /* The paths from imageVerts[0] to each of the new degree 2
@@ -760,9 +757,8 @@ int  _TestPath(graphP theGraph, int U, int V)
 {
 int  J;
 
-     J = theGraph->G[U].link[0];
-
-     while (J > theGraph->N)
+     J = gp_GetFirstEdge(theGraph, U);
+     while (gp_IsEdge(theGraph, J))
      {
          if (_TryPath(theGraph, J, V) == OK)
          {
@@ -770,7 +766,7 @@ int  J;
              return OK;
          }
 
-         J = theGraph->G[J].link[0];
+         J = gp_GetNextEdge(theGraph, J);
      }
 
      return NOTOK;
@@ -791,12 +787,16 @@ int  _TryPath(graphP theGraph, int J, int V)
 int  Jin, nextVertex;
 
      nextVertex = theGraph->G[J].v;
-     while (gp_GetVertexDegree(theGraph, nextVertex) == 2)
+
+     // while nextVertex is strictly degree 2
+     while (gp_IsEdge(theGraph, gp_GetFirstEdge(theGraph, nextVertex)) &&
+    		gp_IsEdge(theGraph, gp_GetLastEdge(theGraph, nextVertex)) &&
+    		gp_GetNextEdge(theGraph, gp_GetFirstEdge(theGraph, nextVertex)) == gp_GetLastEdge(theGraph, nextVertex))
      {
          Jin = gp_GetTwinArc(theGraph, J);
-         J = theGraph->G[nextVertex].link[0];
+         J = gp_GetFirstEdge(theGraph, nextVertex);
          if (J == Jin)
-             J = theGraph->G[nextVertex].link[1];
+             J = gp_GetLastEdge(theGraph, nextVertex);
 
          nextVertex = theGraph->G[J].v;
      }
@@ -817,14 +817,17 @@ void _MarkPath(graphP theGraph, int J)
 int  Jin, nextVertex;
 
      nextVertex = theGraph->G[J].v;
-     while (gp_GetVertexDegree(theGraph, nextVertex) == 2)
+     // while nextVertex is strictly degree 2
+     while (gp_IsEdge(theGraph, gp_GetFirstEdge(theGraph, nextVertex)) &&
+    		gp_IsEdge(theGraph, gp_GetLastEdge(theGraph, nextVertex)) &&
+    		gp_GetNextEdge(theGraph, gp_GetFirstEdge(theGraph, nextVertex)) == gp_GetLastEdge(theGraph, nextVertex))
      {
          theGraph->G[nextVertex].visited = 1;
 
          Jin = gp_GetTwinArc(theGraph, J);
-         J = theGraph->G[nextVertex].link[0];
+         J = gp_GetFirstEdge(theGraph, nextVertex);
          if (J == Jin)
-             J = theGraph->G[nextVertex].link[1];
+             J = gp_GetLastEdge(theGraph, nextVertex);
 
          nextVertex = theGraph->G[J].v;
      }
@@ -880,28 +883,28 @@ int invokeSortOnSubgraph = NOTOK;
           /* For each neighbor w in the adjacency list of vertex I in the
                 subgraph, set the visited flag in w in the graph */
 
-          J = theSubgraph->G[I].link[0];
-          while (J >= theSubgraph->edgeOffset)
+          J = gp_GetFirstEdge(theSubgraph, I);
+          while (gp_IsEdge(theSubgraph, J))
           {
               theGraph->G[theSubgraph->G[J].v].visited = 1;
-              J = theSubgraph->G[J].link[0];
+              J = gp_GetNextEdge(theSubgraph, J);
           }
 
           /* For each neighbor w in the adjacency list of vertex I in the graph,
                 clear the visited flag in w in the graph */
 
-          J = theGraph->G[I].link[0];
-          while (J >= theGraph->edgeOffset)
+          J = gp_GetFirstEdge(theGraph, I);
+          while (gp_IsEdge(theGraph, J))
           {
               theGraph->G[theGraph->G[J].v].visited = 0;
-              J = theGraph->G[J].link[0];
+              J = gp_GetNextEdge(theGraph, J);
           }
 
           /* For each neighbor w in the adjacency list of vertex I in the
                 subgraph, set the visited flag in w in the graph */
 
-          J = theSubgraph->G[I].link[0];
-          while (J >= theSubgraph->edgeOffset)
+          J = gp_GetFirstEdge(theSubgraph, I);
+          while (gp_IsEdge(theSubgraph, J))
           {
               if (theGraph->G[theSubgraph->G[J].v].visited)
               {
@@ -913,7 +916,7 @@ int invokeSortOnSubgraph = NOTOK;
 
                   return NOTOK;
               }
-              J = theSubgraph->G[J].link[0];
+              J = gp_GetNextEdge(theSubgraph, J);
           }
      }
 
