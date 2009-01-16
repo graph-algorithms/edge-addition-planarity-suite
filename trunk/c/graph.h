@@ -81,6 +81,13 @@ void	gp_SetDirection(graphP theGraph, int e, int edgeFlag_Direction);
 #define gp_GetNextEdge(theGraph, e) (theGraph->G[e].link[0])
 #define gp_GetPrevEdge(theGraph, e) (theGraph->G[e].link[1])
 #define gp_IsEdge(theGraph, e) ((e) >= theGraph->edgeOffset)
+
+#define gp_GetFirstArc(theGraph, v) (theGraph->G[v].link[0])
+#define gp_GetLastArc(theGraph, v) (theGraph->G[v].link[1])
+#define gp_GetNextArc(theGraph, e) (theGraph->G[e].link[0])
+#define gp_GetPrevArc(theGraph, e) (theGraph->G[e].link[1])
+#define gp_IsArc(theGraph, e) ((e) >= theGraph->edgeOffset)
+
 #define gp_IsVertex(theGraph, v) ((v) >= 0 && (v) < theGraph->edgeOffset)
 
 int		gp_IsNeighbor(graphP theGraph, int u, int v);
