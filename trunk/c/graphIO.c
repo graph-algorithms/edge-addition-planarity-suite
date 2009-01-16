@@ -144,17 +144,17 @@ int N, I, W, ErrorCode, adjList, J;
           // read operation for a vertex I, any adjacency nodes left in the saved
           // list are converted to directed edges from the preceding vertex to I.
 
-          if (gp_IsEdge(theGraph, adjList = gp_GetFirstEdge(theGraph, I)))
+          if (gp_IsArc(theGraph, adjList = gp_GetFirstArc(theGraph, I)))
           {
         	  // Store the adjacency node location in the visited member of each
         	  // of the preceding vertices to which I is adjacent so that we can
         	  // efficiently detect the adjacency during the read operation and
         	  // efficiently find the adjacency node.
-        	  J = gp_GetFirstEdge(theGraph, I);
-			  while (gp_IsEdge(theGraph, J))
+        	  J = gp_GetFirstArc(theGraph, I);
+			  while (gp_IsArc(theGraph, J))
 			  {
 				  theGraph->G[theGraph->G[J].v].visited = J;
-				  J = gp_GetNextEdge(theGraph, J);
+				  J = gp_GetNextArc(theGraph, J);
 			  }
 
         	  // Remove the vertex from the list
@@ -203,7 +203,7 @@ int N, I, W, ErrorCode, adjList, J;
             		 theGraph->G[W].visited = 0;
             		 if (adjList == J)
             		 {
-            			 if ((adjList = gp_GetNextEdge(theGraph, J)) == J)
+            			 if ((adjList = gp_GetNextArc(theGraph, J)) == J)
             				 adjList = NIL;
             		 }
             		 theGraph->G[theGraph->G[J].link[0]].link[1] = theGraph->G[J].link[1];
@@ -235,13 +235,13 @@ int N, I, W, ErrorCode, adjList, J;
           // Rather, they represent are incoming directed arcs from other vertices
           // into vertex I. They need to be added back into I's adjacency list but
           // marked as "INONLY", while the twin is marked "OUTONLY".
-          while (gp_IsEdge(theGraph, adjList))
+          while (gp_IsArc(theGraph, adjList))
           {
         	  J = adjList;
 
 			  theGraph->G[theGraph->G[J].v].visited = 0;
 
- 			  if ((adjList = gp_GetNextEdge(theGraph, J)) == J)
+ 			  if ((adjList = gp_GetNextArc(theGraph, J)) == J)
  				  adjList = NIL;
 
      		  theGraph->G[theGraph->G[J].link[0]].link[1] = theGraph->G[J].link[1];
@@ -408,13 +408,13 @@ int I, J;
      {
           fprintf(Outfile, "%d:", I);
 
-          J = gp_GetLastEdge(theGraph, I);
-          while (gp_IsEdge(theGraph, J))
+          J = gp_GetLastArc(theGraph, I);
+          while (gp_IsArc(theGraph, J))
           {
         	  if (!gp_GetDirection(theGraph, J, EDGEFLAG_DIRECTION_INONLY))
                   fprintf(Outfile, " %d", theGraph->G[J].v);
 
-              J = gp_GetPrevEdge(theGraph, J);
+              J = gp_GetPrevArc(theGraph, J);
           }
           fprintf(Outfile, " %d\n", NIL);
      }
@@ -454,8 +454,8 @@ char *Row = NULL;
           for (K = I+1; K < theGraph->N; K++)
                Row[K] = '0';
 
-          J = gp_GetFirstEdge(theGraph, I);
-          while (gp_IsEdge(theGraph, J))
+          J = gp_GetFirstArc(theGraph, I);
+          while (gp_IsArc(theGraph, J))
           {
         	  if (gp_GetDirection(theGraph, J, EDGEFLAG_DIRECTION_INONLY))
         		  return NOTOK;
@@ -463,7 +463,7 @@ char *Row = NULL;
               if (theGraph->G[J].v > I)
                   Row[theGraph->G[J].v] = '1';
 
-              J = gp_GetNextEdge(theGraph, J);
+              J = gp_GetNextArc(theGraph, J);
           }
 
           Row[theGraph->N] = '\0';
@@ -498,11 +498,11 @@ int I, J, Gsize;
                                 theGraph->V[I].Lowpoint,
                                 theGraph->G[I].v);
 
-          J = gp_GetFirstEdge(theGraph, I);
-          while (gp_IsEdge(theGraph, J))
+          J = gp_GetFirstArc(theGraph, I);
+          while (gp_IsArc(theGraph, J))
           {
               fprintf(Outfile, " %d(J=%d)", theGraph->G[J].v, J);
-              J = gp_GetNextEdge(theGraph, J);
+              J = gp_GetNextArc(theGraph, J);
           }
 
           fprintf(Outfile, " %d\n", NIL);
@@ -518,11 +518,11 @@ int I, J, Gsize;
           fprintf(Outfile, "%d(copy of=%d, DFS child=%d):",
                            I, theGraph->G[I].v, I-theGraph->N);
 
-          J = gp_GetFirstEdge(theGraph, I);
-          while (gp_IsEdge(theGraph, J))
+          J = gp_GetFirstArc(theGraph, I);
+          while (gp_IsArc(theGraph, J))
           {
               fprintf(Outfile, " %d(J=%d)", theGraph->G[J].v, J);
-              J = gp_GetNextEdge(theGraph, J);
+              J = gp_GetNextArc(theGraph, J);
           }
 
           fprintf(Outfile, " %d\n", NIL);

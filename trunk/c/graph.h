@@ -75,19 +75,12 @@ void	gp_SetDirection(graphP theGraph, int e, int edgeFlag_Direction);
 // If the arc node is odd, then the predecessor is the twin.
 #define gp_GetTwinArc(theGraph, Arc) (((Arc) & 1) ? (Arc)-1 : (Arc)+1)
 
-// Definitions that enable expression of adjacency list iteration
-#define gp_GetFirstEdge(theGraph, v) (theGraph->G[v].link[0])
-#define gp_GetLastEdge(theGraph, v) (theGraph->G[v].link[1])
-#define gp_GetNextEdge(theGraph, e) (theGraph->G[e].link[0])
-#define gp_GetPrevEdge(theGraph, e) (theGraph->G[e].link[1])
-#define gp_IsEdge(theGraph, e) ((e) >= theGraph->edgeOffset)
-
+// Definitions that enable iteration of arcs in adjacency lists
 #define gp_GetFirstArc(theGraph, v) (theGraph->G[v].link[0])
 #define gp_GetLastArc(theGraph, v) (theGraph->G[v].link[1])
 #define gp_GetNextArc(theGraph, e) (theGraph->G[e].link[0])
 #define gp_GetPrevArc(theGraph, e) (theGraph->G[e].link[1])
 #define gp_IsArc(theGraph, e) ((e) >= theGraph->edgeOffset)
-
 #define gp_IsVertex(theGraph, v) ((v) >= 0 && (v) < theGraph->edgeOffset)
 
 int		gp_IsNeighbor(graphP theGraph, int u, int v);

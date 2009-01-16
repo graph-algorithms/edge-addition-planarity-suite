@@ -97,7 +97,7 @@ int J, W, C, RetVal=NOTOK;
 
         /* Get the next unembedded back edge from I */
 
-        J = gp_GetNextEdge(theGraph, J);
+        J = gp_GetNextArc(theGraph, J);
         if (J == theGraph->V[I].fwdArcList)
             J = NIL;
     }
