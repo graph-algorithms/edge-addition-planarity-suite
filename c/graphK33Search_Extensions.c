@@ -379,7 +379,7 @@ int _K33Search_CreateFwdArcLists(graphP theGraph)
         {
         	// Skip this vertex if it has no edges
         	Jnext = gp_GetLastEdge(theGraph, I);
-        	if (!gp_IsEdge(theGraph, Jnext))
+        	if (!gp_IsArc(theGraph, Jnext))
         		continue;
 
             // Skip the forward edges, which are in link[1] succession
@@ -391,7 +391,7 @@ int _K33Search_CreateFwdArcLists(graphP theGraph)
             // record (the child records are in link[0] succession, so
             // when a child arc is encountered in the link[1] direction, then
             // then there won't be any more back arcs.
-            while (gp_IsEdge(theGraph, Jnext) &&
+            while (gp_IsArc(theGraph, Jnext) &&
                    theGraph->G[Jnext].type != EDGE_DFSCHILD)
             {
                 Jcur = Jnext;
@@ -481,7 +481,7 @@ void _K33Search_CreateDFSTreeEmbedding(graphP theGraph)
 
             for (I=0; I<N; I++)
             {
-                J = gp_GetFirstEdge(theGraph, I);
+                J = gp_GetFirstArc(theGraph, I);
 
                 // If a vertex has any DFS children, the edges
                 // to them are stored in descending order of
@@ -704,15 +704,15 @@ int  J, parent, N;
               /* Scan the edges for the one marked as the DFS parent */
 
               parent = NIL;
-              J = gp_GetFirstEdge(theGraph, descendant);
-              while (gp_IsEdge(theGraph, J))
+              J = gp_GetFirstArc(theGraph, descendant);
+              while (gp_IsArc(theGraph, J))
               {
                   if (theGraph->G[J].type == EDGE_DFSPARENT)
                   {
                       parent = theGraph->G[J].v;
                       break;
                   }
-                  J = gp_GetNextEdge(theGraph, J);
+                  J = gp_GetNextArc(theGraph, J);
               }
 
               /* If the desired edge was not found, then the data structure is
