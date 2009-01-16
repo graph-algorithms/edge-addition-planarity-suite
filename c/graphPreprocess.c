@@ -118,12 +118,12 @@ start = platform_GetTime();
                   /* Push edges to all unvisited neighbors. These will be either
                         tree edges to children or forward arcs of back edges */
 
-                  J = gp_GetFirstEdge(theGraph, u);
-                  while (gp_IsEdge(theGraph, J))
+                  J = gp_GetFirstArc(theGraph, u);
+                  while (gp_IsArc(theGraph, J))
                   {
                       if (!theGraph->G[theGraph->G[J].v].visited)
                           sp_Push2(theStack, u, J);
-                      J = gp_GetNextEdge(theGraph, J);
+                      J = gp_GetNextArc(theGraph, J);
                   }
               }
               else
@@ -344,14 +344,14 @@ start = platform_GetTime();
                   sp_Push(theStack, u);
 
                   /* Push DFS children */
-                  J = gp_GetFirstEdge(theGraph, u);
-                  while (gp_IsEdge(theGraph, J))
+                  J = gp_GetFirstArc(theGraph, u);
+                  while (gp_IsArc(theGraph, J))
                   {
                       if (theGraph->G[J].type == EDGE_DFSCHILD)
                           sp_Push(theStack, theGraph->G[J].v);
                       else break;
 
-                      J = gp_GetNextEdge(theGraph, J);
+                      J = gp_GetNextArc(theGraph, J);
                   }
               }
               else
@@ -360,8 +360,8 @@ start = platform_GetTime();
                   L = leastAncestor = u;
 
                   /* Compute L and leastAncestor */
-                  J = gp_GetFirstEdge(theGraph, u);
-                  while (gp_IsEdge(theGraph, J))
+                  J = gp_GetFirstArc(theGraph, u);
+                  while (gp_IsArc(theGraph, J))
                   {
                       uneighbor = theGraph->G[J].v;
                       if (theGraph->G[J].type == EDGE_DFSCHILD)
@@ -377,7 +377,7 @@ start = platform_GetTime();
                       else if (theGraph->G[J].type == EDGE_FORWARD)
                           break;
 
-                      J = gp_GetNextEdge(theGraph, J);
+                      J = gp_GetNextArc(theGraph, J);
                   }
 
                   /* Assign leastAncestor and Lowpoint to the vertex */

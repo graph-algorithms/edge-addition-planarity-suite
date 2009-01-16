@@ -378,13 +378,13 @@ int _K33Search_CreateFwdArcLists(graphP theGraph)
         for (I=0; I < theGraph->N; I++)
         {
         	// Skip this vertex if it has no edges
-        	Jnext = gp_GetLastEdge(theGraph, I);
+        	Jnext = gp_GetLastArc(theGraph, I);
         	if (!gp_IsArc(theGraph, Jnext))
         		continue;
 
             // Skip the forward edges, which are in link[1] succession
             while (theGraph->G[Jnext].type == EDGE_FORWARD)
-                Jnext = gp_GetPrevEdge(theGraph, Jnext);
+                Jnext = gp_GetPrevArc(theGraph, Jnext);
 
             // Now we continue in the link[1] direction until we either
             // find the vertex record or we find the first child edge
@@ -395,7 +395,7 @@ int _K33Search_CreateFwdArcLists(graphP theGraph)
                    theGraph->G[Jnext].type != EDGE_DFSCHILD)
             {
                 Jcur = Jnext;
-                Jnext = gp_GetPrevEdge(theGraph, Jnext);
+                Jnext = gp_GetPrevArc(theGraph, Jnext);
 
                 if (theGraph->G[Jcur].type == EDGE_BACK)
                 {
@@ -496,7 +496,7 @@ void _K33Search_CreateDFSTreeEmbedding(graphP theGraph)
                                     context->V[I].sortedDFSChildList,
                                     theGraph->G[J].v);
 
-                    J = gp_GetNextEdge(theGraph, J);
+                    J = gp_GetNextArc(theGraph, J);
                 }
             }
         }

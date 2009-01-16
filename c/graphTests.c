@@ -219,9 +219,9 @@ int I, e, J, JTwin, K, L, NumFaces, connectedComponents;
             while (L != J)
             {
                 K = gp_GetTwinArc(theGraph, JTwin);
-                L = gp_GetNextEdge(theGraph, K);
+                L = gp_GetNextArc(theGraph, K);
                 if (gp_IsVertex(theGraph, L))
-                    L = gp_GetNextEdge(theGraph, L);
+                    L = gp_GetNextArc(theGraph, L);
                 if (theGraph->G[L].visited)
                     return NOTOK;
                 theGraph->G[L].visited++;
@@ -305,7 +305,7 @@ int _CheckAllVerticesOnExternalFace(graphP theGraph)
 void _MarkExternalFaceVertices(graphP theGraph, int startVertex)
 {
     int nextVertex = startVertex;
-    int Jout = gp_GetFirstEdge(theGraph, nextVertex);
+    int Jout = gp_GetFirstArc(theGraph, nextVertex);
     int Jin;
 
     do {
@@ -325,9 +325,9 @@ void _MarkExternalFaceVertices(graphP theGraph, int startVertex)
 
         // Now we get the next arc in rotation order as the new arc out to the
         // vertex after nextVertex.  This sets us up for the next iteration.
-        Jout = gp_GetNextEdge(theGraph, Jin);
+        Jout = gp_GetNextArc(theGraph, Jin);
         if (gp_IsVertex(theGraph, Jout))
-            Jout = gp_GetNextEdge(theGraph, Jout);
+            Jout = gp_GetNextArc(theGraph, Jout);
 
         // Note: Above, we cannot simply follow the chain of nextVertex link[0] arcs
         //       as we started out doing at the top of this method.  This is
@@ -649,14 +649,14 @@ int  I, J, imageVertPos;
      // the two degree 3 image vertices are in the same partition
      // and hence must not be adjacent.
 
-     J = gp_GetFirstEdge(theGraph, imageVerts[0]);
-     while (gp_IsEdge(theGraph, J))
+     J = gp_GetFirstArc(theGraph, imageVerts[0]);
+     while (gp_IsArc(theGraph, J))
      {
          imageVerts[imageVertPos] = theGraph->G[J].v;
          if (imageVerts[imageVertPos] == imageVerts[1])
              return NOTOK;
          imageVertPos++;
-         J = gp_GetNextEdge(theGraph, J);
+         J = gp_GetNextArc(theGraph, J);
      }
 
      /* The paths from imageVerts[0] to each of the new degree 2
@@ -757,8 +757,8 @@ int  _TestPath(graphP theGraph, int U, int V)
 {
 int  J;
 
-     J = gp_GetFirstEdge(theGraph, U);
-     while (gp_IsEdge(theGraph, J))
+     J = gp_GetFirstArc(theGraph, U);
+     while (gp_IsArc(theGraph, J))
      {
          if (_TryPath(theGraph, J, V) == OK)
          {
@@ -766,7 +766,7 @@ int  J;
              return OK;
          }
 
-         J = gp_GetNextEdge(theGraph, J);
+         J = gp_GetNextArc(theGraph, J);
      }
 
      return NOTOK;
@@ -789,14 +789,14 @@ int  Jin, nextVertex;
      nextVertex = theGraph->G[J].v;
 
      // while nextVertex is strictly degree 2
-     while (gp_IsEdge(theGraph, gp_GetFirstEdge(theGraph, nextVertex)) &&
-    		gp_IsEdge(theGraph, gp_GetLastEdge(theGraph, nextVertex)) &&
-    		gp_GetNextEdge(theGraph, gp_GetFirstEdge(theGraph, nextVertex)) == gp_GetLastEdge(theGraph, nextVertex))
+     while (gp_IsArc(theGraph, gp_GetFirstArc(theGraph, nextVertex)) &&
+    		gp_IsArc(theGraph, gp_GetLastArc(theGraph, nextVertex)) &&
+    		gp_GetNextArc(theGraph, gp_GetFirstArc(theGraph, nextVertex)) == gp_GetLastArc(theGraph, nextVertex))
      {
          Jin = gp_GetTwinArc(theGraph, J);
-         J = gp_GetFirstEdge(theGraph, nextVertex);
+         J = gp_GetFirstArc(theGraph, nextVertex);
          if (J == Jin)
-             J = gp_GetLastEdge(theGraph, nextVertex);
+             J = gp_GetLastArc(theGraph, nextVertex);
 
          nextVertex = theGraph->G[J].v;
      }
@@ -818,16 +818,16 @@ int  Jin, nextVertex;
 
      nextVertex = theGraph->G[J].v;
      // while nextVertex is strictly degree 2
-     while (gp_IsEdge(theGraph, gp_GetFirstEdge(theGraph, nextVertex)) &&
-    		gp_IsEdge(theGraph, gp_GetLastEdge(theGraph, nextVertex)) &&
-    		gp_GetNextEdge(theGraph, gp_GetFirstEdge(theGraph, nextVertex)) == gp_GetLastEdge(theGraph, nextVertex))
+     while (gp_IsArc(theGraph, gp_GetFirstArc(theGraph, nextVertex)) &&
+    		gp_IsArc(theGraph, gp_GetLastArc(theGraph, nextVertex)) &&
+    		gp_GetNextArc(theGraph, gp_GetFirstArc(theGraph, nextVertex)) == gp_GetLastArc(theGraph, nextVertex))
      {
          theGraph->G[nextVertex].visited = 1;
 
          Jin = gp_GetTwinArc(theGraph, J);
-         J = gp_GetFirstEdge(theGraph, nextVertex);
+         J = gp_GetFirstArc(theGraph, nextVertex);
          if (J == Jin)
-             J = gp_GetLastEdge(theGraph, nextVertex);
+             J = gp_GetLastArc(theGraph, nextVertex);
 
          nextVertex = theGraph->G[J].v;
      }
@@ -883,28 +883,28 @@ int invokeSortOnSubgraph = NOTOK;
           /* For each neighbor w in the adjacency list of vertex I in the
                 subgraph, set the visited flag in w in the graph */
 
-          J = gp_GetFirstEdge(theSubgraph, I);
-          while (gp_IsEdge(theSubgraph, J))
+          J = gp_GetFirstArc(theSubgraph, I);
+          while (gp_IsArc(theSubgraph, J))
           {
               theGraph->G[theSubgraph->G[J].v].visited = 1;
-              J = gp_GetNextEdge(theSubgraph, J);
+              J = gp_GetNextArc(theSubgraph, J);
           }
 
           /* For each neighbor w in the adjacency list of vertex I in the graph,
                 clear the visited flag in w in the graph */
 
-          J = gp_GetFirstEdge(theGraph, I);
-          while (gp_IsEdge(theGraph, J))
+          J = gp_GetFirstArc(theGraph, I);
+          while (gp_IsArc(theGraph, J))
           {
               theGraph->G[theGraph->G[J].v].visited = 0;
-              J = gp_GetNextEdge(theGraph, J);
+              J = gp_GetNextArc(theGraph, J);
           }
 
           /* For each neighbor w in the adjacency list of vertex I in the
                 subgraph, set the visited flag in w in the graph */
 
-          J = gp_GetFirstEdge(theSubgraph, I);
-          while (gp_IsEdge(theSubgraph, J))
+          J = gp_GetFirstArc(theSubgraph, I);
+          while (gp_IsArc(theSubgraph, J))
           {
               if (theGraph->G[theSubgraph->G[J].v].visited)
               {
@@ -916,7 +916,7 @@ int invokeSortOnSubgraph = NOTOK;
 
                   return NOTOK;
               }
-              J = gp_GetNextEdge(theSubgraph, J);
+              J = gp_GetNextArc(theSubgraph, J);
           }
      }
 

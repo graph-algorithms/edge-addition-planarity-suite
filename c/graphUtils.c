@@ -1260,10 +1260,10 @@ void _HideArc(graphP theGraph, int arc)
 int nextArc = gp_GetNextArc(theGraph, arc),
     prevArc = gp_GetPrevArc(theGraph, arc);
 
-    if (gp_IsArc(theGraph, nextArc) || gp_IsVertex(theGraph, nextArc))
+    if (nextArc != NIL)
         theGraph->G[nextArc].link[1] = prevArc;
 
-    if (gp_IsArc(theGraph, prevArc) || gp_IsVertex(theGraph, prevArc))
+    if (prevArc != NIL)
         theGraph->G[prevArc].link[0] = nextArc;
 }
 
@@ -1283,10 +1283,10 @@ void _RestoreArc(graphP theGraph, int arc)
 int nextArc = gp_GetNextArc(theGraph, arc),
 	prevArc = gp_GetPrevArc(theGraph, arc);
 
-	if (gp_IsArc(theGraph, nextArc) || gp_IsVertex(theGraph, nextArc))
+	if (nextArc != NIL)
 		theGraph->G[nextArc].link[1] = arc;
 
-	if (gp_IsArc(theGraph, prevArc) || gp_IsVertex(theGraph, prevArc))
+	if (prevArc != NIL)
 		theGraph->G[prevArc].link[0] = arc;
 }
 
@@ -1396,7 +1396,7 @@ int J = gp_GetFirstArc(theGraph, vertex);
 
     // If the vertex adjacency list is empty or if it contains
     // only one edge, then there are no *internal* edges to hide
-    if (J == gp_GetLastEdge(theGraph, vertex))
+    if (J == gp_GetLastArc(theGraph, vertex))
     	return;
 
     // Start with the first internal edge
@@ -1404,7 +1404,7 @@ int J = gp_GetFirstArc(theGraph, vertex);
 
     sp_ClearStack(theGraph->theStack);
 
-    while (J != gp_GetLastEdge(theGraph, vertex))
+    while (J != gp_GetLastArc(theGraph, vertex))
     {
         sp_Push(theGraph->theStack, J);
         gp_HideEdge(theGraph, J);
