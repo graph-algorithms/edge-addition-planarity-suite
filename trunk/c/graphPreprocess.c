@@ -100,7 +100,7 @@ start = platform_GetTime();
                       theGraph->G[gp_GetTwinArc(theGraph, e)].type = EDGE_DFSPARENT;
 
                      // We want the child edges to be at the beginning
-                     // of the adjacency list (link[0] side).
+                     // of the adjacency list.
 
                      // Delete the edge from the list
                      theGraph->G[theGraph->G[e].link[0]].link[1] = theGraph->G[e].link[1];
@@ -135,7 +135,7 @@ start = platform_GetTime();
                   theGraph->G[gp_GetTwinArc(theGraph, e)].type = EDGE_BACK;
 
                   // We want all of the forward edges to descendants to
-                  // be at the end of the adjacency list (link[1]).
+                  // be at the end of the adjacency list.
                   // The tree edge to the parent and the back edges to
                   // ancestors are in the middle, between the child edges
                   // and forward edges.

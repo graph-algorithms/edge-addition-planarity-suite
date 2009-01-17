@@ -384,9 +384,7 @@ int eIndex, JTwin;
             e = (J - theEmbedding->edgeOffset) / 2;
             edgeListInsertPoint = e;
 
-            Jcur = J;
-            if (gp_IsVertex(theEmbedding, Jcur = gp_GetNextArc(theEmbedding, Jcur)))
-                 Jcur = gp_GetNextArc(theEmbedding, Jcur);
+            Jcur = gp_GetNextArcCircular(theEmbedding, J);
 
             while (Jcur != J)
             {
@@ -406,8 +404,7 @@ int eIndex, JTwin;
                 }
 
                 // Go to the next node in v's adjacency list
-                if (gp_IsVertex(theEmbedding, Jcur = gp_GetNextArc(theEmbedding, Jcur)))
-                     Jcur = gp_GetNextArc(theEmbedding, Jcur);
+                Jcur = gp_GetNextArcCircular(theEmbedding, Jcur);
             }
         }
     }
@@ -520,13 +517,13 @@ int _GetNextExternalFaceVertex(graphP theGraph, int curVertex, int *pPrevLink)
 {
     int nextVertex, nextPrevLink;
 
-    nextVertex = theGraph->extFace[curVertex].link[1 ^ *pPrevLink];
+    nextVertex = theGraph->extFace[curVertex].vertex[1 ^ *pPrevLink];
 
     // If the two links in the new vertex are not equal, then only one points
     // back to the current vertex, and it is the new prev link.
-    if (theGraph->extFace[nextVertex].link[0] != theGraph->extFace[nextVertex].link[1])
+    if (theGraph->extFace[nextVertex].vertex[0] != theGraph->extFace[nextVertex].vertex[1])
     {
-        nextPrevLink = theGraph->extFace[nextVertex].link[0]==curVertex ? 0 : 1;
+        nextPrevLink = theGraph->extFace[nextVertex].vertex[0]==curVertex ? 0 : 1;
     }
     else
     {

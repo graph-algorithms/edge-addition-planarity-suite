@@ -204,7 +204,7 @@ typedef vertexRec * vertexRecP;
 
 typedef struct
 {
-    int link[2];
+    int vertex[2];
     int inversionFlag;
 } extFaceLinkRec;
 

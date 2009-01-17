@@ -343,8 +343,8 @@ void _K33Search_FreeContext(void *pContext)
 
  Puts the forward arcs (back edges from a vertex to its descendants)
  into a circular list indicated by the fwdArcList member, a task
- simplified by the fact that they have already been placed in link[1]
- succession.
+ simplified by the fact that they have already been placed in
+ succession at the end of the adjacency list.
 
  For K3,3 search, the forward edges must be sorted.  The sort is linear
  time, but it is a little slower, so we avoid this cost for the other
@@ -382,15 +382,18 @@ int _K33Search_CreateFwdArcLists(graphP theGraph)
         	if (!gp_IsArc(theGraph, Jnext))
         		continue;
 
-            // Skip the forward edges, which are in link[1] succession
+            // Skip the forward edges, which are in succession at the
+        	// end of the arc list (last and its predecessors)
             while (theGraph->G[Jnext].type == EDGE_FORWARD)
                 Jnext = gp_GetPrevArc(theGraph, Jnext);
 
-            // Now we continue in the link[1] direction until we either
-            // find the vertex record or we find the first child edge
-            // record (the child records are in link[0] succession, so
-            // when a child arc is encountered in the link[1] direction, then
-            // then there won't be any more back arcs.
+            // Now we want to put all the back arcs in a backArcList, too.
+            // Since we've already skipped past the forward arcs, we continue
+            // with the predecessor arcs until we either run out of arcs or
+            // we find a DFS child arc (the DFS child arcs are in succession
+            // at the beginning of the arc list, so when a child arc is
+            // encountered in the predecessor direction, then there won't be
+            // any more back arcs.
             while (gp_IsArc(theGraph, Jnext) &&
                    theGraph->G[Jnext].type != EDGE_DFSCHILD)
             {
@@ -485,7 +488,7 @@ void _K33Search_CreateDFSTreeEmbedding(graphP theGraph)
 
                 // If a vertex has any DFS children, the edges
                 // to them are stored in descending order of
-                // the DFI's along the link[0] pointers, so
+                // the DFI's along the successor arc pointers, so
                 // we traverse them and prepend each to the
                 // ascending order sortedDFSChildList
 
@@ -533,9 +536,9 @@ void _K33Search_EmbedBackEdgeToDescendant(graphP theGraph, int RootSide, int Roo
 
             if (context->V[W].backArcList == backArc)
             {
-                if (theGraph->G[backArc].link[0] == backArc)
+                if (gp_GetNextArc(theGraph, backArc) == backArc)
                      context->V[W].backArcList = NIL;
-                else context->V[W].backArcList = theGraph->G[backArc].link[0];
+                else context->V[W].backArcList = gp_GetNextArc(theGraph, backArc);
             }
 
             theGraph->G[theGraph->G[backArc].link[0]].link[1] = theGraph->G[backArc].link[1];

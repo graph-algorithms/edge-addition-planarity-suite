@@ -328,8 +328,9 @@ int  R, tempChild, fwdArc, W=NIL, C=NIL, I=theGraph->IC.v;
 /****************************************************************************
  _FindActiveVertices()
 
- Descends from the root of a bicomp R in both the link[0] and link[1]
- directions, returning the first active vertex appearing in either direction.
+ Descends from the root of a bicomp R along both external face paths (which
+ are indicated by the first and last arcs in R's adjacency list), returning
+ the first active vertex appearing in each direction.
  ****************************************************************************/
 
 void _FindActiveVertices(graphP theGraph, int R, int *pX, int *pY)
@@ -447,8 +448,8 @@ int  V, e;
  temporarily removed.  The algorithm removes loop of vertices and edges along
  the proper face so that only a path is identified.
 
- To walk the proper face containing R, we begin with its link[0] successor,
- then take the link[1] corner at every subsequent turn.  For each vertex,
+ To walk the proper face containing R, we begin with its first arc successor,
+ then take the *predecessor* arc at every subsequent corner.  For each vertex,
  we mark as visited the vertex as well as the edge used to enter the vertex
  (except for the edge used to enter the RXW vertex).  We also push the visited
  vertices and edges onto a stack.
@@ -507,9 +508,7 @@ int R, X, Y, W;
      {
           /* Advance J and Z along the proper face containing R */
 
-          J = gp_GetPrevArc(theGraph, J);
-          if (gp_IsVertex(theGraph, J))
-              J = gp_GetPrevArc(theGraph, J);
+    	  J = gp_GetPrevArcCircular(theGraph, J);
           Z = theGraph->G[J].v;
           J = gp_GetTwinArc(theGraph, J);
 
@@ -601,12 +600,12 @@ int R, X, Y, W;
  This function assumes that _MarkHighestXYPath() has already been called,
  which marked as visited the vertices and edges along the X-Y path.
 
- We begin at the point of attachment P_x and traverse its link[1] edge records
- until we find one marked visited, which leads to the first internal vertex
- along the X-Y path.  We begin with this vertex (and its edge of entry), and
- we run until we find P_y.  For each internal vertex Z and its edge of entry
- ZPrevArc, we take the link[1] successor edge record of ZPrevArc (skipping Z
- if it intervenes).  This is called ZNextArc.  If ZNextArc is marked visited
+ We begin at the point of attachment P_x, take the last arc and traverse
+ the predecessor arcs until we find one marked visited, which leads to the
+ first internal vertex along the X-Y path.  We begin with this vertex
+ (and its edge of entry), and we run until we find P_y. For each internal
+ vertex Z and its edge of entry ZPrevArc, we take the predecessor edge record
+ of ZPrevArc.  This is called ZNextArc.  If ZNextArc is marked visited
  then it is along the X-Y path, so we use it to exit Z and go to the next
  vertex on the X-Y path.
 
@@ -617,9 +616,9 @@ int R, X, Y, W;
 
  When we find an unvisited ZNextArc, we stop running the X-Y path and instead
  begin marking the Z to R path.  We move to successive vertices using a
- twin arc then a link[1] successor edge record, only this time we have not
- removed the internal edges incident to R, so this technique does eventually
- lead us all the way to R.
+ twin arc then its predecessor arc in the adjacency list, only this time
+ we have not removed the internal edges incident to R, so this technique does
+ eventually lead us all the way to R.
 
  If we do not find an unvisited ZNextArc for any vertex Z on the X-Y path and
  inside the bicomp, then there is no Z to R path, so we return.
@@ -656,9 +655,7 @@ int ZPrevArc, ZNextArc, Z, R, Px, Py;
     while (theGraph->G[ZNextArc].visited)
     {
         ZPrevArc = gp_GetTwinArc(theGraph, ZNextArc);
-        ZNextArc = gp_GetPrevArc(theGraph, ZPrevArc);
-        if (gp_IsVertex(theGraph, ZNextArc))
-            ZNextArc = gp_GetPrevArc(theGraph, ZNextArc);
+        ZNextArc = gp_GetPrevArcCircular(theGraph, ZPrevArc);
     }
 
     ZPrevArc = gp_GetTwinArc(theGraph, ZNextArc);
@@ -695,10 +692,7 @@ int ZPrevArc, ZNextArc, Z, R, Px, Py;
 
         /* Go to the next edge in the proper face */
 
-        ZNextArc = gp_GetPrevArc(theGraph, ZPrevArc);
-        if (gp_IsVertex(theGraph, ZNextArc))
-            ZNextArc = gp_GetPrevArc(theGraph, ZNextArc);
-
+        ZNextArc = gp_GetPrevArcCircular(theGraph, ZPrevArc);
         ZPrevArc = gp_GetTwinArc(theGraph, ZNextArc);
     }
 

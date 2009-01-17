@@ -193,8 +193,8 @@ int N, I, W, ErrorCode, adjList, J;
              // if it is there, and if not then we have to add a directed edge.
              else
              {
-            	 // If the adjacency node (arc) already exists, then we append it to
-            	 // the link[0] side of the vertex and delete it from adjList
+            	 // If the adjacency node (arc) already exists, then we add it
+            	 // as the new first arc of the vertex and delete it from adjList
             	 if (theGraph->G[W].visited)
             	 {
             		 J = theGraph->G[W].visited;
@@ -218,12 +218,12 @@ int N, I, W, ErrorCode, adjList, J;
 
             	 // If an adjacency node to the lower numbered vertex does not
             	 // already exist, then we make a new directed arc from the
-            	 // current vertex I to W.
+            	 // current vertex I to W.  It is added as the new first arc.
             	 else
             	 {
                 	 ErrorCode = gp_AddEdge(theGraph, I, 0, W, 0);
                 	 if (ErrorCode == OK)
-                		 gp_SetDirection(theGraph, theGraph->G[W].link[0], EDGEFLAG_DIRECTION_INONLY);
+                		 gp_SetDirection(theGraph, gp_GetFirstArc(theGraph, W), EDGEFLAG_DIRECTION_INONLY);
             	 }
              }
 
@@ -388,10 +388,8 @@ int  _ReadPostprocess(graphP theGraph, void *extraData, long extraDataSize)
  _WriteAdjList()
  For each vertex, we write its number, a colon, the list of adjacent vertices,
  then a NIL.  The vertices occupy the first N positions of theGraph.  Each
- vertex is also the head of a circular list kept by link[0] and link[1].
- Aside from the vertex itself, the other elements in the list represent
- the edges between the vertex and its neighbors, and these edge records
- reside at or above position 2N in theGraph.
+ vertex is also has indicators of the first and last adjacency nodes (arcs)
+ in its adjacency list.
 
  Returns: NOTOK if either param is NULL; OK otherwise (after printing
                 adjacency list representation to Outfile).
@@ -528,22 +526,36 @@ int I, J, Gsize;
           fprintf(Outfile, " %d\n", NIL);
      }
 
-     /* Print all graph node information for vertices (0 to N-1),
-        root copy vertices (N to 2N-1), and edges (2N to 8N-1) */
-
-     fprintf(Outfile, "\nGRAPH NODES\n");
-     Gsize = 2*theGraph->N + 2*EDGE_LIMIT*theGraph->N;
-     for (I=0; I < Gsize; I++)
+     /* Print information about vertices and root copy (virtual) vertices */
+     fprintf(Outfile, "\nVERTEX INFORMATION\n");
+     for (I=0; I < 2*theGraph->N; I++)
      {
-          if (theGraph->G[I].v == NIL)
+         if (theGraph->G[I].v == NIL)
+             continue;
+
+         fprintf(Outfile, "V[%3d] v=%3d, type=%c, first arc=%3d, last arc=%3d\n",
+                          I,
+                          theGraph->G[I].v,
+                          theGraph->G[I].type,
+                          gp_GetFirstArc(theGraph, I),
+                          gp_GetLastArc(theGraph, I));
+     }
+
+     /* Print information about edges */
+
+     fprintf(Outfile, "\nEDGE INFORMATION\n");
+     Gsize = theGraph->edgeOffset + 2*EDGE_LIMIT*theGraph->N;
+     for (J=theGraph->edgeOffset; J < Gsize; J++)
+     {
+          if (theGraph->G[J].v == NIL)
               continue;
 
-          fprintf(Outfile, "G[%3d] v=%3d, type=%c, link[0]=%3d, link[1]=%3d\n",
-                           I,
-                           theGraph->G[I].v,
-                           theGraph->G[I].type,
-                           theGraph->G[I].link[0],
-                           theGraph->G[I].link[1]);
+          fprintf(Outfile, "E[%3d] v=%3d, type=%c, next arc=%3d, prev arc=%3d\n",
+                           J,
+                           theGraph->G[J].v,
+                           theGraph->G[J].type,
+                           gp_GetNextArc(theGraph, J),
+                           gp_GetPrevArc(theGraph, J));
      }
 
      return OK;
