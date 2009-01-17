@@ -158,7 +158,7 @@ int _CheckEmbeddingIntegrity(graphP theGraph, graphP origGraph)
  all of them as unvisited.  For each arc popped, if it is visited,
  it is immediately discarded and the next arc is popped.  Popping an
  unvisited arc J begins a face traversal.  We move to the true twin
- arc K of J, and obtain its link[0] successor arc L.  This amounts to
+ arc K of J, and obtain its successor arc L.  This amounts to
  always going clockwise or counterclockwise (depending on how the
  graph is drawn on the plane, or alternately whether one is above
  or below the plane).  This traversal continues until we make it
@@ -219,9 +219,7 @@ int I, e, J, JTwin, K, L, NumFaces, connectedComponents;
             while (L != J)
             {
                 K = gp_GetTwinArc(theGraph, JTwin);
-                L = gp_GetNextArc(theGraph, K);
-                if (gp_IsVertex(theGraph, L))
-                    L = gp_GetNextArc(theGraph, L);
+                L = gp_GetNextArcCircular(theGraph, K);
                 if (theGraph->G[L].visited)
                     return NOTOK;
                 theGraph->G[L].visited++;
@@ -316,26 +314,24 @@ void _MarkExternalFaceVertices(graphP theGraph, int startVertex)
 
         // Arc used to enter the next vertex is needed so we can get the
         // next edge in rotation order.
-        // Note: for bicomps, all external face vertices indicate the edges
-        //       that hold them to the external face using link[0] and link[1]
+        // Note: for bicomps, first and last arcs of all external face vertices
+        //       indicate the edges that hold them to the external face
         //       But _JoinBicomps() has already occurred, so cut vertices
-        //       will have external face edges other than link[0] and link[1]
-        //       Hence we need this more sophisticated way of
+        //       will have external face edges other than the first and last arcs
+        //       Hence we need this more sophisticated traversal method
         Jin = gp_GetTwinArc(theGraph, Jout);
 
         // Now we get the next arc in rotation order as the new arc out to the
         // vertex after nextVertex.  This sets us up for the next iteration.
-        Jout = gp_GetNextArc(theGraph, Jin);
-        if (gp_IsVertex(theGraph, Jout))
-            Jout = gp_GetNextArc(theGraph, Jout);
+        Jout = gp_GetNextArcCircular(theGraph, Jin);
 
-        // Note: Above, we cannot simply follow the chain of nextVertex link[0] arcs
+        // Note: Above, we cannot simply follow the chain of nextVertex first arcs
         //       as we started out doing at the top of this method.  This is
         //       because we are no longer dealing with bicomps only.
         //       Since _JoinBicomps() has already been invoked, there may now
         //       be cut vertices on the external face whose adjacency lists
-        //       contain external face arcs in positions other than link[0]
-        //       and link[1].  We will visit those vertices multiple times,
+        //       contain external face arcs in positions other than the first and
+        //       and last arcs.  We will visit those vertices multiple times,
         //       which is OK (just that we have to explain why we're doing
         //       things this way).
 

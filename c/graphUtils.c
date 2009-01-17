@@ -229,7 +229,7 @@ int I, edgeOffset, Gsize;
 
      for (I = 0; I < edgeOffset; I++)
      {
-         theGraph->extFace[I].link[0] = theGraph->extFace[I].link[1] = NIL;
+         theGraph->extFace[I].vertex[0] = theGraph->extFace[I].vertex[1] = NIL;
          theGraph->extFace[I].inversionFlag = 0;
      }
 
@@ -265,7 +265,7 @@ int  Gsize = edgeOffset + 2*EDGE_LIMIT*N;
 
      for (I = 0; I < edgeOffset; I++)
      {
-         theGraph->extFace[I].link[0] = theGraph->extFace[I].link[1] = NIL;
+         theGraph->extFace[I].vertex[0] = theGraph->extFace[I].vertex[1] = NIL;
          theGraph->extFace[I].inversionFlag = 0;
      }
 
@@ -538,8 +538,8 @@ int  Gsize = edgeOffset + 2*EDGE_LIMIT*N;
      // Copy the external face array
      for (I = 0; I < edgeOffset; I++)
      {
-         dstGraph->extFace[I].link[0] = srcGraph->extFace[I].link[0];
-         dstGraph->extFace[I].link[1] = srcGraph->extFace[I].link[1];
+         dstGraph->extFace[I].vertex[0] = srcGraph->extFace[I].vertex[0];
+         dstGraph->extFace[I].vertex[1] = srcGraph->extFace[I].vertex[1];
          dstGraph->extFace[I].inversionFlag = srcGraph->extFace[I].inversionFlag;
      }
 
@@ -678,19 +678,19 @@ int J = gp_GetFirstArc(theGraph, parent);
 int JTwin = gp_GetTwinArc(theGraph, J);
 int child = theGraph->G[J].v;
 
-    /* The tree edges were added to the link[0] side of each vertex,
-        and we move processed tree edge records to the link[1] side,
-        so if the immediate link[0] edge record is not a tree edge
+    /* The tree edges were added to the beginning of the adjacency list,
+        and we move processed tree edge records to the end of the list,
+        so if the immediate next arc (edge record) is not a tree edge
         then we return NIL because the vertex has no remaining
         unprocessed children */
 
     if (theGraph->G[J].type == TYPE_UNKNOWN)
         return NIL;
 
-    /* if the child has already been processed, then all children
-        have been pushed to the link[1] side and we have just encountered
-        the first child we processed, so there are no remaining
-        unprocessed children */
+    /* If the child has already been processed, then all children
+        have been pushed to the end of the list, and we have just
+        encountered the first child we processed, so there are no
+        remaining unprocessed children */
 
     if (theGraph->G[J].visited)
         return NIL;
@@ -702,10 +702,10 @@ int child = theGraph->G[J].v;
     theGraph->G[J].visited = 1;
     theGraph->G[JTwin].visited = 1;
 
-    /* Now we move the edge record in the parent vertex to the
-        link[1] side of that vertex. Of course, we need do nothing
-        if the arc J is alone in the adjacency list, which is the
-        case only when its next and previous arcs are equal */
+    /* Now we move the edge record in the parent vertex to the end
+        of the adjacency list of that vertex. Of course, we need do
+        nothing if the arc J is alone in the adjacency list, which
+        is the case only when its next and previous arcs are equal */
 
     if (gp_GetNextArc(theGraph, J) != gp_GetPrevArc(theGraph, J))
     {
@@ -718,7 +718,7 @@ int child = theGraph->G[J].v;
     }
 
     /* Now we move the edge record in the child vertex to the
-        link[1] of the child. */
+        end of the adjacency list of the child. */
 
     if (gp_GetNextArc(theGraph, JTwin) != gp_GetPrevArc(theGraph, JTwin))
     {
@@ -1091,12 +1091,9 @@ int  J, degree;
 /********************************************************************
  _AddArc()
  This routine adds arc (u,v) to u's edge list, storing the record for
- v at position arcPos.  The record is either added to the link[0] or
- link[1] side of vertex u, depending on the link parameter.
- The links of a vertex record can be viewed as previous (link[0]) and
- next (link[1]) pointers.  Thus, an edge record is appended to u's
- list by hooking it to u.link[0], and it is prepended by hooking it
- to u.link[1].  The use of exclusive-or (i.e. 1^link) is simply to get
+ v at position arcPos.  The record is added to the beginning of u's
+ adjacency list if the link parameter is 0 and to the end if it is 1.
+ The use of exclusive-or (i.e. 1^link) is simply to get
  the other link (if link is 0 then 1^link is 1, and vice versa).
  ********************************************************************/
 
@@ -1250,9 +1247,9 @@ int vertMax = theGraph->edgeOffset - 1,
  an edge, perform some calculation, and eventually put the edge back.
  This routine supports that operation.
 
- The neighboring adjacency list nodes are cross-linked, but the
- link[0] and link[1] fields of the arc are retained so it can
- reinsert itself when _RestoreArc() is called.
+ The neighboring adjacency list nodes are cross-linked, but the two
+ link members of the arc are retained so it can reinsert itself when
+ _RestoreArc() is called.
  ********************************************************************/
 
 void _HideArc(graphP theGraph, int arc)
@@ -1298,8 +1295,8 @@ int nextArc = gp_GetNextArc(theGraph, arc),
  put the edge back. This routine supports that operation.
 
  For each arc, the neighboring adjacency list nodes are cross-linked,
- but the link[0] and link[1] fields of the arc are retained so it can
- be reinserted by calling gp_RestoreEdge().
+ but the links in the arc are retained because they indicate the
+ neighbor arcs to which the arc can be reattached by gp_RestoreEdge().
  ********************************************************************/
 
 void gp_HideEdge(graphP theGraph, int arcPos)
@@ -1335,10 +1332,10 @@ void gp_RestoreEdge(graphP theGraph, int arcPos)
 
  This function deletes the given edge record J and its twin, reducing the
  number of edges M in the graph.
- Before the Jth record is deleted, its link[nextLink] is collected as the
- return result.  This is useful when iterating through an edge list and
- making deletions because link[nextLink] is the 'next' edge record in the
- iteration, but it is hard to obtain from record J after the deletion.
+ Before the Jth record is deleted, its 'nextLink' adjacency list neighbor
+ is collected as the return result.  This is useful when iterating through
+ an edge list and making deletions because the nextLink arc is the 'next'
+ arc in the iteration, but it is hard to obtain *after* deleting arc J.
  ****************************************************************************/
 
 int  gp_DeleteEdge(graphP theGraph, int J, int nextLink)
@@ -1350,7 +1347,7 @@ int  nextArc, JPos, MPos;
 /* Calculate the nextArc after J so that, when J is deleted, the return result
         informs a calling loop of the next edge to be processed. */
 
-     nextArc = theGraph->G[J].link[nextLink];
+     nextArc = gp_GetAdjacentArc(theGraph, J, nextLink);
 
 /* Delete the edge records J and JTwin. */
 
@@ -1385,9 +1382,11 @@ int  nextArc, JPos, MPos;
 /********************************************************************
  _HideInternalEdges()
  Pushes onto the graph's stack and hides all arc nodes of the vertex
- except those indicated by its link[0] and link[1] pointers.  For
- a vertex on the external face, this removes all internal edges,
- leaving only the two that hold it to the external face.
+ except the first and last arcs in the adjacency list of the vertex.
+ This method is typically called on a vertex that is on the external
+ face of a biconnected component, because the first and last arcs are
+ the ones that attach the vertex to the external face cycle, and any
+ other arcs in the adjacency list are inside that cycle.
  ********************************************************************/
 
 void _HideInternalEdges(graphP theGraph, int vertex)

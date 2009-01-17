@@ -1619,8 +1619,8 @@ int  prevLink, v, w, e;
 
      /* Set the external face info */
 
-     theGraph->extFace[u].link[0] = x;
-     theGraph->extFace[x].link[1] = u;
+     theGraph->extFace[u].vertex[0] = x;
+     theGraph->extFace[x].vertex[1] = u;
 
      return OK;
 }
@@ -1752,11 +1752,11 @@ int  J0, J1, JTwin0, JTwin1;
  Note that the new path may contain more edges that are representative of a
  path, and these will be iteratively expanded.
 
- If the edge records of an edge being expanded are the link[0] or link[1]
- edge records of the edge's vertex endpoints, then the edge may be along
- the external face.  If so, then the vertices along the path being restored
- must be given a consistent orientation with the endpoints.  It is expected
- that the embedding will have been oriented prior to this operation.
+ If the edge records of an edge being expanded are the first or last arcs
+ of the edge's vertex endpoints, then the edge may be along the external face.
+ If so, then the vertices along the path being restored must be given a
+ consistent orientation with the endpoints.  It is expected that the embedding
+ will have been oriented prior to this operation.
  ****************************************************************************/
 
 int  _RestoreAndOrientReducedPaths(graphP theGraph, K33SearchContext *context)
@@ -1948,11 +1948,11 @@ int  e_v, e_ulink, e_vlink;
             e_vlink = 1^e_vlink;
         }
 
-        theGraph->extFace[u].link[e_ulink] = v;
-        theGraph->extFace[v].link[e_vlink] = u;
+        theGraph->extFace[u].vertex[e_ulink] = v;
+        theGraph->extFace[v].vertex[e_vlink] = u;
 
         u = v;
-        e_u = theGraph->G[v].link[1^e_vlink];
+        e_u = gp_GetArc(theGraph, v, 1^e_vlink);
     } while (u != x);
 
     return OK;
@@ -1975,9 +1975,7 @@ int  e = gp_GetNeighborEdgeRecord(theGraph, u, v);
          e = gp_GetTwinArc(theGraph, e);
          theGraph->G[e].visited = visited;
 
-         e = gp_GetNextArc(theGraph, e);
-         if (gp_IsVertex(theGraph, e))
-             e = gp_GetNextArc(theGraph, e);
+         e = gp_GetNextArcCircular(theGraph, e);
      } while (v != x);
 }
 

@@ -174,15 +174,12 @@ int I, Jfirst, Jnext, Jlast;
             Jlast = gp_GetNextArc(theGraph, Jnext);
 
             // Remove the forward edges from the adjacency list of I
-
-            theGraph->G[Jnext].link[0] = I;
-            theGraph->G[I].link[1] = Jnext;
+            gp_AttachLastArc(theGraph, I, Jnext);
 
             // Make a circular forward edge list
-
             theGraph->V[I].fwdArcList = Jfirst;
-            theGraph->G[Jfirst].link[0] = Jlast;
-            theGraph->G[Jlast].link[1] = Jfirst;
+            gp_SetNextArc(theGraph, Jfirst, Jlast);
+            gp_SetPrevArc(theGraph, Jlast, Jfirst);
         }
     }
 
@@ -265,7 +262,8 @@ int N, I, J, Jtwin, R;
     {
         if (theGraph->V[I].DFSParent == NIL)
         {
-            theGraph->G[I].link[0] = theGraph->G[I].link[1] = I;
+        	gp_SetFirstArc(theGraph, I, gp_AdjacencyListEndMark(I));
+        	gp_SetLastArc(theGraph, I, gp_AdjacencyListEndMark(I));
         }
         else
         {
@@ -273,17 +271,24 @@ int N, I, J, Jtwin, R;
             while (theGraph->G[J].type != EDGE_DFSPARENT)
                 J = gp_GetNextArc(theGraph, J);
 
-            theGraph->G[I].link[0] = theGraph->G[I].link[1] = J;
-            theGraph->G[J].link[0] = theGraph->G[J].link[1] = I;
-            theGraph->G[J].v = R;
+        	gp_SetFirstArc(theGraph, I, J);
+        	gp_SetLastArc(theGraph, I, J);
+
+        	gp_SetNextArc(theGraph, J, gp_AdjacencyListEndMark(I));
+        	gp_SetPrevArc(theGraph, J, gp_AdjacencyListEndMark(I));
+
+        	theGraph->G[J].v = R;
 
             Jtwin = gp_GetTwinArc(theGraph, J);
 
-            theGraph->G[R].link[0] = theGraph->G[R].link[1] = Jtwin;
-            theGraph->G[Jtwin].link[0] = theGraph->G[Jtwin].link[1] = R;
+        	gp_SetFirstArc(theGraph, R, Jtwin);
+        	gp_SetLastArc(theGraph, R, Jtwin);
 
-            theGraph->extFace[R].link[0] = theGraph->extFace[R].link[1] = I;
-            theGraph->extFace[I].link[0] = theGraph->extFace[I].link[1] = R;
+        	gp_SetNextArc(theGraph, Jtwin, gp_AdjacencyListEndMark(R));
+        	gp_SetPrevArc(theGraph, Jtwin, gp_AdjacencyListEndMark(R));
+
+            theGraph->extFace[R].vertex[0] = theGraph->extFace[R].vertex[1] = I;
+            theGraph->extFace[I].vertex[0] = theGraph->extFace[I].vertex[1] = R;
         }
     }
 }
@@ -318,38 +323,39 @@ int fwdArc, backArc, parentCopy;
             theGraph->V[parentCopy].fwdArcList = NIL;
     }
 
-    theGraph->G[theGraph->G[fwdArc].link[0]].link[1] = theGraph->G[fwdArc].link[1];
-    theGraph->G[theGraph->G[fwdArc].link[1]].link[0] = theGraph->G[fwdArc].link[0];
+    gp_SetNextArc(theGraph, gp_GetPrevArc(theGraph, fwdArc), gp_GetNextArc(theGraph, fwdArc));
+    gp_SetPrevArc(theGraph, gp_GetNextArc(theGraph, fwdArc), gp_GetPrevArc(theGraph, fwdArc));
 
-    /* The forward arc is added to the adjacency list of the RootVertex. */
+    // The forward arc is added to the adjacency list of the RootVertex.
+    // Note that we're guaranteed that the RootVertex adjacency list is non-empty,
+    // so tests for NIL are not needed
+    gp_SetAdjacentArc(theGraph, fwdArc, 1^RootSide, gp_AdjacencyListEndMark(RootVertex));
+    gp_SetAdjacentArc(theGraph, fwdArc, RootSide, gp_GetArc(theGraph, RootVertex, RootSide));
+    gp_SetAdjacentArc(theGraph, gp_GetArc(theGraph, RootVertex, RootSide), 1^RootSide, fwdArc);
+    gp_SetArc(theGraph, RootVertex, RootSide, fwdArc);
 
-    theGraph->G[fwdArc].link[1^RootSide] = RootVertex;
-    theGraph->G[fwdArc].link[RootSide] = theGraph->G[RootVertex].link[RootSide];
-    theGraph->G[theGraph->G[RootVertex].link[RootSide]].link[1^RootSide] = fwdArc;
-    theGraph->G[RootVertex].link[RootSide] = fwdArc;
+    // The back arc is added to the adjacency list of W.
+    // The adjacency list of W is also guaranteed non-empty
 
-    /* The back arc is added to the adjacency list of W. */
+    gp_SetAdjacentArc(theGraph, backArc, 1^WPrevLink, gp_AdjacencyListEndMark(W));
+    gp_SetAdjacentArc(theGraph, backArc, WPrevLink, gp_GetArc(theGraph, W, WPrevLink));
+    gp_SetAdjacentArc(theGraph, gp_GetArc(theGraph, W, WPrevLink), 1^WPrevLink, backArc);
+    gp_SetArc(theGraph, W, WPrevLink, backArc);
 
     theGraph->G[backArc].v = RootVertex;
 
-    theGraph->G[backArc].link[1^WPrevLink] = W;
-    theGraph->G[backArc].link[WPrevLink] = theGraph->G[W].link[WPrevLink];
-    theGraph->G[theGraph->G[W].link[WPrevLink]].link[1^WPrevLink] = backArc;
-    theGraph->G[W].link[WPrevLink] = backArc;
-
     /* Link the two endpoint vertices together on the external face */
 
-    theGraph->extFace[RootVertex].link[RootSide] = W;
-    theGraph->extFace[W].link[WPrevLink] = RootVertex;
+    theGraph->extFace[RootVertex].vertex[RootSide] = W;
+    theGraph->extFace[W].vertex[WPrevLink] = RootVertex;
 }
 
 /********************************************************************
  _GetNextVertexOnExternalFace()
- Each vertex contains a link[0] and link[1] that link it into its
- list of edges.  If the vertex is on the external face, then the two
- edge nodes pointed to by link[0] and link[1] are also on the
- external face.  We want to take one of those edges to get to the
- next vertex on the external face.
+ Each vertex contains two 'link' index pointers that indicate the
+ first and last adjacency list arc.  If the vertex is on the external face,
+ then these two arcs are also on the external face.  We want to take one of
+ those edges to get to the next vertex on the external face.
  On input *pPrevLink indicates which link we followed to arrive at
  curVertex.  On output *pPrevLink will be set to the link we follow to
  get into the next vertex.
@@ -368,7 +374,7 @@ int  arc, nextArc, nextVertex;
 
      /* Exit curVertex from whichever link was not previously used to enter it */
 
-     arc = theGraph->G[curVertex].link[1^(*pPrevLink)];
+     arc = gp_GetArc(theGraph, curVertex, 1^(*pPrevLink));
      nextArc = gp_GetTwinArc(theGraph, arc);
 
      nextVertex = theGraph->G[arc].v;
@@ -395,34 +401,34 @@ int  arc, nextArc, nextVertex;
 /********************************************************************
  _InvertVertex()
  This function flips the orientation of a single vertex such that
- instead of using link[0] successors to go clockwise (or counterclockwise)
- around a vertex's adjacency list, link[1] successors would be used.
+ instead of using link successors to go clockwise (or counterclockwise)
+ around a vertex's adjacency list, link predecessors would be used.
  ********************************************************************/
 
 void _InvertVertex(graphP theGraph, int V)
 {
-int J, JTemp;
+int J, temp;
 
      // Swap the links in all the arcs of the adjacency list
      J = gp_GetFirstArc(theGraph, V);
      while (gp_IsArc(theGraph, J))
      {
-    	 JTemp = gp_GetNextArc(theGraph, J);
-         theGraph->G[J].link[0] = gp_GetPrevArc(theGraph, J);
-         theGraph->G[J].link[1] = JTemp;
+    	 temp = gp_GetNextArc(theGraph, J);
+    	 gp_SetNextArc(theGraph, J, gp_GetPrevArc(theGraph, J));
+    	 gp_SetPrevArc(theGraph, J, temp);
 
-         J = JTemp;
+         J = temp;
      }
 
      // Swap the first/last edge record indicators in the vertex
-     JTemp = theGraph->G[V].link[0];
-     theGraph->G[V].link[0] = theGraph->G[V].link[1];
-     theGraph->G[V].link[1] = JTemp;
+     temp = gp_GetFirstArc(theGraph, V);
+     gp_SetFirstArc(theGraph, V, gp_GetLastArc(theGraph, V));
+     gp_SetLastArc(theGraph, V, temp);
 
      // Swap the first/last external face indicators in the vertex
-     JTemp = theGraph->extFace[V].link[0];
-     theGraph->extFace[V].link[0] = theGraph->extFace[V].link[1];
-     theGraph->extFace[V].link[1] = JTemp;
+     temp = theGraph->extFace[V].vertex[0];
+     theGraph->extFace[V].vertex[0] = theGraph->extFace[V].vertex[1];
+     theGraph->extFace[V].vertex[1] = temp;
 }
 
 /********************************************************************
@@ -440,14 +446,14 @@ int J, JTemp;
  After this is done, a regular circular list union occurs. The only
  consideration is that WPrevLink is used to indicate the two edge
  records e_w and e_r that will become consecutive in the resulting
- adjacency list of W.  We set e_w to W's link[WPrevLink] and e_r to
- R's link[1^WPrevLink] so that e_w and e_r indicate W and R with
+ adjacency list of W.  We set e_w to W's link [WPrevLink] and e_r to
+ R's link [1^WPrevLink] so that e_w and e_r indicate W and R with
  opposing links, which become free to be cross-linked.  Finally,
- the edge record e_ext, set equal to R's link[WPrevLink], is the edge
+ the edge record e_ext, set equal to R's link [WPrevLink], is the edge
  that, with e_r, held R to the external face.  Now, e_ext will be the
- new link[WPrevLink] edge record for W.  If e_w and e_r become part
- of a proper face, then e_ext and W's link[1^WPrevLink] are the two
- edges that hold W to the external face.
+ new link [WPrevLink] edge record for W.  If e_w and e_r become part
+ of a proper face, then e_ext and W's link [1^WPrevLink] are the two
+ edges that attach W to the external face cycle of the containing bicomp.
  ********************************************************************/
 
 void _MergeVertex(graphP theGraph, int W, int WPrevLink, int R)
@@ -455,9 +461,8 @@ void _MergeVertex(graphP theGraph, int W, int WPrevLink, int R)
 int  J, JTwin;
 int  e_w, e_r, e_ext;
 
-     /* All arcs leading into R from its neighbors must be changed
-        to say that they are leading into W */
-
+     // All arcs leading into R from its neighbors must be changed
+     // to say that they are leading into W
      J = gp_GetFirstArc(theGraph, R);
      while (gp_IsArc(theGraph, J))
      {
@@ -467,27 +472,24 @@ int  e_w, e_r, e_ext;
     	 J = gp_GetNextArc(theGraph, J);
      }
 
-     /* Obtain the edge records involved in the circular list union */
+     // Obtain the edge records involved in the list union
+     e_w = gp_GetArc(theGraph, W, WPrevLink);
+     e_r = gp_GetArc(theGraph, R, 1^WPrevLink);
+     e_ext = gp_GetArc(theGraph, R, WPrevLink);
 
-     e_w = theGraph->G[W].link[WPrevLink];
-     e_r = theGraph->G[R].link[1^WPrevLink];
-     e_ext = theGraph->G[R].link[WPrevLink];
+     // The WPrevLink arc of W is e_w, so the 1^WPrevLink arc in e_w leads back to W.
+     // Now it must lead to e_r.  Likewise, e_r needs to lead back to e_w with the
+     // opposing link, which is WPrevLink
+     // Note that the adjacency lists of W and R are guaranteed non-empty, which is
+     // why these linkages can be made without NIL tests.
+     gp_SetAdjacentArc(theGraph, e_w, 1^WPrevLink, e_r);
+     gp_SetAdjacentArc(theGraph, e_r, WPrevLink, e_w);
 
-     /* WPrevLink leads away from W to e_w, so 1^WPrevLink in e_w leads back to W.
-        Now it must lead to e_r.  Likewise, e_r needs to lead back to e_w
-        with the opposing link, which is link[WPrevLink] */
+     // Cross-link W's WPrevLink arc and the 1^WPrevLink arc in e_ext
+     gp_SetArc(theGraph, W, WPrevLink, e_ext);
+     gp_SetAdjacentArc(theGraph, e_ext, 1^WPrevLink, gp_AdjacencyListEndMark(W));
 
-     theGraph->G[e_w].link[1^WPrevLink] = e_r;
-     theGraph->G[e_r].link[WPrevLink] = e_w;
-
-     /* Now we cross-link W's link[WPrevLink] and link[1^WPrevLink] in the
-        edge record e_ext */
-
-     theGraph->G[W].link[WPrevLink] = e_ext;
-     theGraph->G[e_ext].link[1^WPrevLink] = W;
-
-     /* Erase the entries in R, which is a root copy that is no longer needed. */
-
+     // Erase the entries in R, which is a root copy that is no longer needed
      theGraph->functions.fpInitGraphNode(theGraph, R);
 }
 
@@ -523,13 +525,13 @@ int  extFaceVertex;
             corner will be the new external face corner at Z.
             We first want to update the links at Z to reflect this. */
 
-         extFaceVertex = theGraph->extFace[R].link[1^Rout];
-         theGraph->extFace[Z].link[ZPrevLink] = extFaceVertex;
+         extFaceVertex = theGraph->extFace[R].vertex[1^Rout];
+         theGraph->extFace[Z].vertex[ZPrevLink] = extFaceVertex;
 
-         if (theGraph->extFace[extFaceVertex].link[0] == theGraph->extFace[extFaceVertex].link[1])
-            theGraph->extFace[extFaceVertex].link[Rout ^ theGraph->extFace[extFaceVertex].inversionFlag] = Z;
+         if (theGraph->extFace[extFaceVertex].vertex[0] == theGraph->extFace[extFaceVertex].vertex[1])
+            theGraph->extFace[extFaceVertex].vertex[Rout ^ theGraph->extFace[extFaceVertex].inversionFlag] = Z;
          else
-            theGraph->extFace[extFaceVertex].link[theGraph->extFace[extFaceVertex].link[0] == R ? 0 : 1] = Z;
+            theGraph->extFace[extFaceVertex].vertex[theGraph->extFace[extFaceVertex].vertex[0] == R ? 0 : 1] = Z;
 
          /* If the path used to enter Z is opposed to the path
             used to exit R, then we have to flip the bicomp
@@ -711,12 +713,12 @@ int  RootID_DFSChild, BicompList;
 
         else
         {
-            nextVertex = theGraph->extFace[Zig].link[1^ZigPrevLink];
-            ZigPrevLink = theGraph->extFace[nextVertex].link[0] == Zig ? 0 : 1;
+            nextVertex = theGraph->extFace[Zig].vertex[1^ZigPrevLink];
+            ZigPrevLink = theGraph->extFace[nextVertex].vertex[0] == Zig ? 0 : 1;
             Zig = nextVertex;
 
-            nextVertex = theGraph->extFace[Zag].link[1^ZagPrevLink];
-            ZagPrevLink = theGraph->extFace[nextVertex].link[0] == Zag ? 0 : 1;
+            nextVertex = theGraph->extFace[Zag].vertex[1^ZagPrevLink];
+            ZagPrevLink = theGraph->extFace[nextVertex].vertex[0] == Zag ? 0 : 1;
             Zag = nextVertex;
         }
      }
@@ -728,8 +730,8 @@ int  RootID_DFSChild, BicompList;
 
 int  _HandleInactiveVertex(graphP theGraph, int BicompRoot, int *pW, int *pWPrevLink)
 {
-     int X = theGraph->extFace[*pW].link[1^*pWPrevLink];
-     *pWPrevLink = theGraph->extFace[X].link[0] == *pW ? 0 : 1;
+     int X = theGraph->extFace[*pW].vertex[1^*pWPrevLink];
+     *pWPrevLink = theGraph->extFace[X].vertex[0] == *pW ? 0 : 1;
      *pW = X;
 
      return OK;
@@ -755,11 +757,14 @@ int  _HandleInactiveVertex(graphP theGraph, int BicompRoot, int *pW, int *pWPrev
  vertex currently being processed.
 
  The Walkup previously marked all vertices adjacent to I by setting their
- adjacentTo flags.  Basically, we want to walkdown both the link[0] and
- then the link[1] sides of the bicomp rooted at RootVertex, embedding edges
- between it and descendants of I with the adjacentTo flag set.  It is sometimes
- necessary to hop to child biconnected components in order to reach the desired
- vertices and, in such cases, the biconnected components are merged together
+ adjacentTo flags.  Basically, we want to walk down both external face
+ paths emanating from RootVertex, embedding edges between the RootVertex
+ (a root copy of vertex I) and descendants of vertex I that have the
+ adjacentTo flag set.
+
+ During each walk down, it is sometimes necessary to hop from a vertex
+ to one of its child biconnected components in order to reach the desired
+ vertices.  In such cases, the biconnected components are merged together
  such that adding the back edge forms a new proper face in the biconnected
  component rooted at RootVertex (which, again, is a root copy of I).
 
@@ -816,10 +821,10 @@ int  RetVal, W, WPrevLink, R, Rout, X, XPrevLink, Y, YPrevLink, RootSide, RootEd
 
      for (RootSide = 0; RootSide < 2; RootSide++)
      {
-         W = theGraph->extFace[RootVertex].link[RootSide];
+         W = theGraph->extFace[RootVertex].vertex[RootSide];
 
          // The edge record in W that leads back to the root vertex
-         // is indicated by link[1^RootSide] in W because only W
+         // is indicated by link [1^RootSide] in W because only W
          // is in the bicomp with the root vertex.  When tree edges
          // are first embedded, it is done so that W has the same
          // orientation as the root vertex.
@@ -861,10 +866,10 @@ int  RetVal, W, WPrevLink, R, Rout, X, XPrevLink, Y, YPrevLink, RootSide, RootEd
 
                  /* Get next active vertices X and Y on ext. face paths emanating from R */
 
-                 X = theGraph->extFace[R].link[0];
-                 XPrevLink = theGraph->extFace[X].link[1]==R ? 1 : 0;
-                 Y = theGraph->extFace[R].link[1];
-                 YPrevLink = theGraph->extFace[Y].link[0]==R ? 0 : 1;
+                 X = theGraph->extFace[R].vertex[0];
+                 XPrevLink = theGraph->extFace[X].vertex[1]==R ? 1 : 0;
+                 Y = theGraph->extFace[R].vertex[1];
+                 YPrevLink = theGraph->extFace[Y].vertex[0]==R ? 0 : 1;
 
                  /* If this is a bicomp with only two ext. face vertices, then
                     it could be that the orientation of the non-root vertex
@@ -933,8 +938,8 @@ int  RetVal, W, WPrevLink, R, Rout, X, XPrevLink, Y, YPrevLink, RootSide, RootEd
                     we did not actually merge the bicomps necessary to put
                     W and RootVertex into the same bicomp. */
 
-         theGraph->extFace[RootVertex].link[RootSide] = W;
-         theGraph->extFace[W].link[WPrevLink] = RootVertex;
+         theGraph->extFace[RootVertex].vertex[RootSide] = W;
+         theGraph->extFace[W].vertex[WPrevLink] = RootVertex;
 
          /* If the bicomp is reduced to having only two external face vertices
              (the root and W), then we need to record whether the orientation
@@ -942,15 +947,12 @@ int  RetVal, W, WPrevLink, R, Rout, X, XPrevLink, Y, YPrevLink, RootSide, RootEd
              future Walkdown descends to and merges the bicomp containing W.
              Going from the root to W, we only get the correct WPrevLink if
              we know whether or not W is inverted.
-             NOTE: Prior code based on short-circuit edges did not have this problem
-                 because the root and W would be joined by two separate short-circuit
-                 edges, so G[W].link[0] != G[W].link[1].
              NOTE: We clear the flag because it may have been set in W if W
                  previously became part of a bicomp with only two ext. face
                  vertices, but then was flipped and merged into a larger bicomp
                  that is now again becoming a bicomp with only two ext. face vertices. */
 
-         if (theGraph->extFace[W].link[0] == theGraph->extFace[W].link[1] &&
+         if (theGraph->extFace[W].vertex[0] == theGraph->extFace[W].vertex[1] &&
              WPrevLink == RootSide)
               theGraph->extFace[W].inversionFlag = 1;
          else theGraph->extFace[W].inversionFlag = 0;

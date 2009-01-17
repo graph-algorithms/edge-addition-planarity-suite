@@ -542,8 +542,8 @@ int  J, Z, ZNew;
  _MarkPathAlongBicompExtFace()
 
  Sets the visited flags of vertices and edges on the external face of a
- bicomp from startVert to endVert, inclusive, by following the link[0] out of
- each visited vertex.
+ bicomp from startVert to endVert, inclusive, by following the 'first' arc
+ link out of each visited vertex.
  ****************************************************************************/
 
 int  _MarkPathAlongBicompExtFace(graphP theGraph, int startVert, int endVert)
@@ -562,7 +562,7 @@ int  Z, ZPrevLink, ZPrevArc;
      do {
         Z = _GetNextVertexOnExternalFace(theGraph, Z, &ZPrevLink);
 
-        ZPrevArc = theGraph->G[Z].link[ZPrevLink];
+        ZPrevArc = gp_GetArc(theGraph, Z, ZPrevLink);
 
         theGraph->G[ZPrevArc].visited = 1;
         theGraph->G[gp_GetTwinArc(theGraph, ZPrevArc)].visited = 1;
@@ -746,9 +746,9 @@ int fwdArc, backArc;
 
     if (theGraph->V[ancestor].fwdArcList == fwdArc)
     {
-        if (theGraph->G[fwdArc].link[0] == fwdArc)
+        if (gp_GetNextArc(theGraph, fwdArc) == fwdArc)
              theGraph->V[ancestor].fwdArcList = NIL;
-        else theGraph->V[ancestor].fwdArcList = theGraph->G[fwdArc].link[0];
+        else theGraph->V[ancestor].fwdArcList = gp_GetNextArc(theGraph, fwdArc);
     }
 
     theGraph->G[theGraph->G[fwdArc].link[0]].link[1] = theGraph->G[fwdArc].link[1];

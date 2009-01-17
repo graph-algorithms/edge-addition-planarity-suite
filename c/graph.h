@@ -81,7 +81,46 @@ void	gp_SetDirection(graphP theGraph, int e, int edgeFlag_Direction);
 #define gp_GetNextArc(theGraph, e) (theGraph->G[e].link[0])
 #define gp_GetPrevArc(theGraph, e) (theGraph->G[e].link[1])
 #define gp_IsArc(theGraph, e) ((e) >= theGraph->edgeOffset)
-#define gp_IsVertex(theGraph, v) ((v) >= 0 && (v) < theGraph->edgeOffset)
+
+// Definitions that parameterize getting either a first or last arc in a vertex
+// and getting either a next or prev arc in a given arc
+#define gp_GetArc(theGraph, v, theLink) (theGraph->G[v].link[theLink])
+#define gp_GetAdjacentArc(theGraph, e, theLink) (theGraph->G[e].link[theLink])
+
+// Definitions that enable getting the next or previous arc
+// as if the adjacency list were circular, i.e. that the
+// first arc and last arc were linked
+#define gp_GetNextArcCircular(theGraph, e) \
+	(gp_IsArc(theGraph, theGraph->G[e].link[0]) ? \
+			theGraph->G[e].link[0] : \
+			gp_GetFirstArc(theGraph, theGraph->G[gp_GetTwinArc(theGraph, e)].v))
+
+#define gp_GetPrevArcCircular(theGraph, e) \
+(gp_IsArc(theGraph, theGraph->G[e].link[1]) ? \
+		theGraph->G[e].link[1] : \
+		gp_GetLastArc(theGraph, theGraph->G[gp_GetTwinArc(theGraph, e)].v))
+
+// This definition is used to mark the adjacency links in arcs that are the
+// first and last arcs in an adjacency list
+// CHANGE_ADJ_LIST: Change this to NIL
+#define gp_AdjacencyListEndMark(v) (v)
+
+// Definitions for very low-level adjacency list manipulations
+#define gp_SetFirstArc(theGraph, v, newFirstArc) (theGraph->G[v].link[0] = newFirstArc)
+#define gp_SetLastArc(theGraph, v, newLastArc) (theGraph->G[v].link[1] = newLastArc)
+#define gp_SetNextArc(theGraph, e, newNextArc) (theGraph->G[e].link[0] = newNextArc)
+#define gp_SetPrevArc(theGraph, e, newPrevArc) (theGraph->G[e].link[1] = newPrevArc)
+
+#define gp_SetArc(theGraph, v, theLink, newArc) (theGraph->G[v].link[theLink] = newArc)
+#define gp_SetAdjacentArc(theGraph, e, theLink, newArc) (theGraph->G[e].link[theLink] = newArc)
+
+#define gp_AttachFirstArc(theGraph, v, arc) \
+	gp_SetPrevArc(theGraph, arc, gp_AdjacencyListEndMark(v)); \
+    gp_SetFirstArc(theGraph, v, arc)
+
+#define gp_AttachLastArc(theGraph, v, arc) \
+	gp_SetNextArc(theGraph, arc, gp_AdjacencyListEndMark(v)); \
+    gp_SetLastArc(theGraph, v, arc)
 
 int		gp_IsNeighbor(graphP theGraph, int u, int v);
 int		gp_GetNeighborEdgeRecord(graphP theGraph, int u, int v);
