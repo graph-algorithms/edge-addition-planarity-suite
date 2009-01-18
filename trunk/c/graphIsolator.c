@@ -743,7 +743,6 @@ int fwdArc, backArc;
     backArc = gp_GetTwinArc(theGraph, fwdArc);
 
     /* The forward arc is removed from the fwdArcList of the ancestor. */
-
     if (theGraph->V[ancestor].fwdArcList == fwdArc)
     {
         if (gp_GetNextArc(theGraph, fwdArc) == fwdArc)
@@ -751,24 +750,22 @@ int fwdArc, backArc;
         else theGraph->V[ancestor].fwdArcList = gp_GetNextArc(theGraph, fwdArc);
     }
 
-    theGraph->G[theGraph->G[fwdArc].link[0]].link[1] = theGraph->G[fwdArc].link[1];
-    theGraph->G[theGraph->G[fwdArc].link[1]].link[0] = theGraph->G[fwdArc].link[0];
+    gp_SetNextArc(theGraph, gp_GetPrevArc(theGraph, fwdArc), gp_GetNextArc(theGraph, fwdArc));
+    gp_SetPrevArc(theGraph, gp_GetNextArc(theGraph, fwdArc), gp_GetPrevArc(theGraph, fwdArc));
 
     /* The forward arc is added to the adjacency list of the ancestor. */
-
-    theGraph->G[fwdArc].link[1] = ancestor;
-    theGraph->G[fwdArc].link[0] = theGraph->G[ancestor].link[0];
-    theGraph->G[theGraph->G[ancestor].link[0]].link[1] = fwdArc;
-    theGraph->G[ancestor].link[0] = fwdArc;
+    gp_SetPrevArc(theGraph, fwdArc, gp_AdjacencyListEndMark(ancestor));
+    gp_SetNextArc(theGraph, fwdArc, gp_GetFirstArc(theGraph, ancestor));
+    gp_SetPrevArc(theGraph, gp_GetFirstArc(theGraph, ancestor), fwdArc);
+    gp_SetFirstArc(theGraph, ancestor, fwdArc);
 
     /* The back arc is added to the adjacency list of the descendant. */
+    gp_SetPrevArc(theGraph, backArc, gp_AdjacencyListEndMark(descendant));
+    gp_SetNextArc(theGraph, backArc, gp_GetFirstArc(theGraph, descendant));
+    gp_SetPrevArc(theGraph, gp_GetFirstArc(theGraph, descendant), backArc);
+    gp_SetFirstArc(theGraph, descendant, backArc);
 
     theGraph->G[backArc].v = ancestor;
-
-    theGraph->G[backArc].link[1] = descendant;
-    theGraph->G[backArc].link[0] = theGraph->G[descendant].link[0];
-    theGraph->G[theGraph->G[descendant].link[0]].link[1] = backArc;
-    theGraph->G[descendant].link[0] = backArc;
 }
 
 /****************************************************************************
