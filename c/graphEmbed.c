@@ -336,7 +336,6 @@ int fwdArc, backArc, parentCopy;
 
     // The back arc is added to the adjacency list of W.
     // The adjacency list of W is also guaranteed non-empty
-
     gp_SetAdjacentArc(theGraph, backArc, 1^WPrevLink, gp_AdjacencyListEndMark(W));
     gp_SetAdjacentArc(theGraph, backArc, WPrevLink, gp_GetArc(theGraph, W, WPrevLink));
     gp_SetAdjacentArc(theGraph, gp_GetArc(theGraph, W, WPrevLink), 1^WPrevLink, backArc);
