@@ -37,6 +37,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "graph.h"
 
+/* Imported functions */
+
+extern void _AddArc(graphP theGraph, int u, int v, int arcPos, int link);
+
 /* Private functions (exported to system) */
 
 int  _ReadAdjMatrix(graphP theGraph, FILE *Infile);
@@ -123,7 +127,7 @@ int N, I, W, ErrorCode, adjList, J;
      // Do the adjacency list read operation for each vertex in order
      for (I = 0, ErrorCode = OK; I < N && ErrorCode==OK; I++)
      {
-          // Read the vertext number
+          // Read the vertex number
           fscanf(Infile, "%d", &theGraph->G[I].v);
 
           // The vertices are expected to be in numeric ascending order
@@ -143,8 +147,8 @@ int N, I, W, ErrorCode, adjList, J;
           // have the matching adjacency using the following mechanism.  After the
           // read operation for a vertex I, any adjacency nodes left in the saved
           // list are converted to directed edges from the preceding vertex to I.
-
-          if (gp_IsArc(theGraph, adjList = gp_GetFirstArc(theGraph, I)))
+          adjList = gp_GetFirstArc(theGraph, I);
+          if (gp_IsArc(theGraph, adjList))
           {
         	  // Store the adjacency node location in the visited member of each
         	  // of the preceding vertices to which I is adjacent so that we can
@@ -157,12 +161,13 @@ int N, I, W, ErrorCode, adjList, J;
 				  J = gp_GetNextArc(theGraph, J);
 			  }
 
-        	  // Remove the vertex from the list
-        	  theGraph->G[theGraph->G[I].link[0]].link[1] = theGraph->G[I].link[1];
-        	  theGraph->G[theGraph->G[I].link[1]].link[0] = theGraph->G[I].link[0];
+        	  // Make the adjacency list circular, for later ease of processing
+			  gp_SetPrevArc(theGraph, adjList, gp_GetLastArc(theGraph, I));
+			  gp_SetNextArc(theGraph, gp_GetLastArc(theGraph, I), adjList);
 
         	  // Remove the list from the vertex
-        	  theGraph->G[I].link[0] = theGraph->G[I].link[1] = I;
+			  gp_SetFirstArc(theGraph, I, gp_AdjacencyListEndMark(I));
+			  gp_SetLastArc(theGraph, I, gp_AdjacencyListEndMark(I));
           }
 
           // Read the adjacency list.
@@ -206,23 +211,22 @@ int N, I, W, ErrorCode, adjList, J;
             			 if ((adjList = gp_GetNextArc(theGraph, J)) == J)
             				 adjList = NIL;
             		 }
-            		 theGraph->G[theGraph->G[J].link[0]].link[1] = theGraph->G[J].link[1];
-            		 theGraph->G[theGraph->G[J].link[1]].link[0] = theGraph->G[J].link[0];
+            		 gp_SetPrevArc(theGraph, gp_GetNextArc(theGraph, J), gp_GetPrevArc(theGraph, J));
+            		 gp_SetNextArc(theGraph, gp_GetPrevArc(theGraph, J), gp_GetNextArc(theGraph, J));
 
-            		 // Put the arc into the adjacency list of vertex I
-            		 theGraph->G[J].link[0] = theGraph->G[I].link[0];
-            		 theGraph->G[J].link[1] = I;
-            		 theGraph->G[theGraph->G[I].link[0]].link[1] = J;
-            		 theGraph->G[I].link[0] = J;
+            		 // Add the arc J as the new first arc of vertex I
+            		 _AddArc(theGraph, I, theGraph->G[J].v, J, 0);
             	 }
 
-            	 // If an adjacency node to the lower numbered vertex does not
-            	 // already exist, then we make a new directed arc from the
-            	 // current vertex I to W.  It is added as the new first arc.
+            	 // If an adjacency node to the lower numbered vertex W does not
+            	 // already exist, then we make a new directed arc from the current
+            	 // vertex I to W.
             	 else
             	 {
+            		 // It is added as the new first arc in both vertices
                 	 ErrorCode = gp_AddEdge(theGraph, I, 0, W, 0);
                 	 if (ErrorCode == OK)
+                		 // Note that this call also sets OUTONLY on the twin arc
                 		 gp_SetDirection(theGraph, gp_GetFirstArc(theGraph, W), EDGEFLAG_DIRECTION_INONLY);
             	 }
              }
@@ -232,9 +236,9 @@ int N, I, W, ErrorCode, adjList, J;
 
           // If there are still adjList entries after the read operation
           // then those entries are not representative of full undirected edges.
-          // Rather, they represent are incoming directed arcs from other vertices
+          // Rather, they represent incoming directed arcs from other vertices
           // into vertex I. They need to be added back into I's adjacency list but
-          // marked as "INONLY", while the twin is marked "OUTONLY".
+          // marked as "INONLY", while the twin is marked "OUTONLY" (by the same function).
           while (gp_IsArc(theGraph, adjList))
           {
         	  J = adjList;
@@ -244,14 +248,10 @@ int N, I, W, ErrorCode, adjList, J;
  			  if ((adjList = gp_GetNextArc(theGraph, J)) == J)
  				  adjList = NIL;
 
-     		  theGraph->G[theGraph->G[J].link[0]].link[1] = theGraph->G[J].link[1];
-     		  theGraph->G[theGraph->G[J].link[1]].link[0] = theGraph->G[J].link[0];
+     		  gp_SetPrevArc(theGraph, gp_GetNextArc(theGraph, J), gp_GetPrevArc(theGraph, J));
+     		  gp_SetNextArc(theGraph, gp_GetPrevArc(theGraph, J), gp_GetNextArc(theGraph, J));
 
-     		  theGraph->G[J].link[0] = theGraph->G[I].link[0];
-     		  theGraph->G[J].link[1] = I;
-     		  theGraph->G[theGraph->G[I].link[0]].link[1] = J;
-     		  theGraph->G[I].link[0] = J;
-
+     		  _AddArc(theGraph, I, theGraph->G[J].v, J, 0);
      		  gp_SetDirection(theGraph, J, EDGEFLAG_DIRECTION_INONLY);
           }
      }

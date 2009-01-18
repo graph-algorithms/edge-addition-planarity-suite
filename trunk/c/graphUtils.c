@@ -72,6 +72,8 @@ int  _GetBicompSize(graphP theGraph, int BicompRoot);
 void _DeleteUnmarkedEdgesInBicomp(graphP theGraph, int BicompRoot);
 void _ClearInvertedFlagsInBicomp(graphP theGraph, int BicompRoot);
 
+void _AddArc(graphP theGraph, int u, int v, int arcPos, int link);
+
 void _InitFunctionTable(graphP theGraph);
 
 /********************************************************************
@@ -82,7 +84,6 @@ void _ClearGraph(graphP theGraph);
 
 int  _GetRandomNumber(int NMin, int NMax);
 
-void _AddArc(graphP theGraph, int u, int v, int arcPos, int link);
 void _HideArc(graphP theGraph, int arcPos);
 
 /* Private functions for which there are FUNCTION POINTERS */
@@ -1103,19 +1104,23 @@ void _AddArc(graphP theGraph, int u, int v, int arcPos, int link)
 
      if (gp_IsArc(theGraph, gp_GetFirstArc(theGraph, u)))
      {
-     int u0 = theGraph->G[u].link[link];
-
-         theGraph->G[arcPos].link[link] = u0;
-         theGraph->G[arcPos].link[1^link] = u;
-
-         theGraph->G[u].link[link] = arcPos;
-
-         theGraph->G[u0].link[1^link] = arcPos;
+    	 if (link == 0)
+    	 {
+    		 gp_SetNextArc(theGraph, arcPos, gp_GetFirstArc(theGraph, u));
+    		 gp_SetPrevArc(theGraph, gp_GetFirstArc(theGraph, u), arcPos);
+    		 gp_AttachFirstArc(theGraph, u, arcPos);
+    	 }
+    	 else
+    	 {
+    		 gp_SetPrevArc(theGraph, arcPos, gp_GetLastArc(theGraph, u));
+    		 gp_SetNextArc(theGraph, gp_GetLastArc(theGraph, u), arcPos);
+    		 gp_AttachLastArc(theGraph, u, arcPos);
+    	 }
      }
      else
      {
-         theGraph->G[u].link[0] = theGraph->G[u].link[1] = arcPos;
-         theGraph->G[arcPos].link[0] = theGraph->G[arcPos].link[1] = u;
+		 gp_AttachLastArc(theGraph, u, arcPos);
+		 gp_AttachFirstArc(theGraph, u, arcPos);
      }
 }
 
