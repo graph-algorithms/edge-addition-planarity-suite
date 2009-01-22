@@ -99,20 +99,9 @@ start = platform_GetTime();
                       theGraph->G[e].type = EDGE_DFSCHILD;
                       theGraph->G[gp_GetTwinArc(theGraph, e)].type = EDGE_DFSPARENT;
 
-                     // We want the child edges to be at the beginning
-                     // of the adjacency list.
-
-                     // Delete the edge from the list
-                     theGraph->G[theGraph->G[e].link[0]].link[1] = theGraph->G[e].link[1];
-                     theGraph->G[theGraph->G[e].link[1]].link[0] = theGraph->G[e].link[0];
-
-                     // Tell the edge where it belongs now
-                     theGraph->G[e].link[0] = theGraph->G[uparent].link[0];
-                     theGraph->G[e].link[1] = uparent;
-
-                     // Tell the rest of the list where the edge belongs
-                     theGraph->G[uparent].link[0] = e;
-                     theGraph->G[theGraph->G[e].link[0]].link[1] = e;
+                      // We want the child arcs to be at the beginning
+                      // of the adjacency list.
+                      gp_MoveArcToFirst(theGraph, uparent, e);
                   }
 
                   /* Push edges to all unvisited neighbors. These will be either
@@ -128,29 +117,16 @@ start = platform_GetTime();
               }
               else
               {
-             /* If the edge leads to a visited vertex, then it is the forward
-                arc of a back edge. */
-
+                  // If the edge leads to a visited vertex, then it is
+            	  // the forward arc of a back edge.
                   theGraph->G[e].type = EDGE_FORWARD;
                   theGraph->G[gp_GetTwinArc(theGraph, e)].type = EDGE_BACK;
 
                   // We want all of the forward edges to descendants to
                   // be at the end of the adjacency list.
-                  // The tree edge to the parent and the back edges to
-                  // ancestors are in the middle, between the child edges
-                  // and forward edges.
-
-                  // Delete the edge from the list
-                  theGraph->G[theGraph->G[e].link[0]].link[1] = theGraph->G[e].link[1];
-                  theGraph->G[theGraph->G[e].link[1]].link[0] = theGraph->G[e].link[0];
-
-                  // Tell the edge where it belongs now
-                  theGraph->G[e].link[0] = uparent;
-                  theGraph->G[e].link[1] = theGraph->G[uparent].link[1];
-
-                  // Tell the rest of the list where the edge belongs
-                  theGraph->G[uparent].link[1] = e;
-                  theGraph->G[theGraph->G[e].link[1]].link[0] = e;
+                  // The tree edge to the parent and the back edges to ancestors
+                  // are in the middle, between the child edges and forward edges.
+                  gp_MoveArcToLast(theGraph, uparent, e);
               }
           }
      }
@@ -211,20 +187,24 @@ start = platform_GetTime();
      for (e=0, J=theGraph->edgeOffset; e < M; e++, J+=2)
      {
           theGraph->G[J].v = theGraph->G[theGraph->G[J].v].v;
-          // This should not be needed once we change switch to not having
+          // CHANGE_ADJ_LIST: This should not be needed once we change switch to not having
           // vertices in their own adjacency lists
+#ifndef CHANGE_ADJ_LIST
           if (theGraph->G[J].link[0] < N)
               theGraph->G[J].link[0] = theGraph->G[theGraph->G[J].link[0]].v;
           if (theGraph->G[J].link[1] < N)
               theGraph->G[J].link[1] = theGraph->G[theGraph->G[J].link[1]].v;
+#endif
 
           theGraph->G[J+1].v = theGraph->G[theGraph->G[J+1].v].v;
-          // This should not be needed once we change switch to not having
+          // CHANGE_ADJ_LIST: This should not be needed once we change switch to not having
           // vertices in their own adjacency lists
+#ifndef CHANGE_ADJ_LIST
           if (theGraph->G[J+1].link[0] < N)
               theGraph->G[J+1].link[0] = theGraph->G[theGraph->G[J+1].link[0]].v;
           if (theGraph->G[J+1].link[1] < N)
               theGraph->G[J+1].link[1] = theGraph->G[theGraph->G[J+1].link[1]].v;
+#endif
      }
 
 /* Convert DFSParent from v to DFI(v) or vice versa */

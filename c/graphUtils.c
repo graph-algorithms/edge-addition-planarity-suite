@@ -284,14 +284,14 @@ int  Gsize = edgeOffset + 2*EDGE_LIMIT*N;
  Sets the fields in a single graph node structure to initial values
  ********************************************************************/
 
-void _InitGraphNode(graphP theGraph, int I)
+void _InitGraphNode(graphP theGraph, int J)
 {
-     theGraph->G[I].v =
-     theGraph->G[I].link[0] =
-     theGraph->G[I].link[1] = NIL;
-     theGraph->G[I].visited = 0;
-     theGraph->G[I].type = TYPE_UNKNOWN;
-     theGraph->G[I].flags = 0;
+     theGraph->G[J].v = NIL;
+     gp_SetPrevArc(theGraph, J, NIL);
+     gp_SetNextArc(theGraph, J, NIL);
+     theGraph->G[J].visited = 0;
+     theGraph->G[J].type = TYPE_UNKNOWN;
+     theGraph->G[J].flags = 0;
 }
 
 /********************************************************************
@@ -679,60 +679,36 @@ int J = gp_GetFirstArc(theGraph, parent);
 int JTwin = gp_GetTwinArc(theGraph, J);
 int child = theGraph->G[J].v;
 
-    /* The tree edges were added to the beginning of the adjacency list,
-        and we move processed tree edge records to the end of the list,
-        so if the immediate next arc (edge record) is not a tree edge
-        then we return NIL because the vertex has no remaining
-        unprocessed children */
-
+    // The tree edges were added to the beginning of the adjacency list,
+    // and we move processed tree edge records to the end of the list,
+    // so if the immediate next arc (edge record) is not a tree edge
+    // then we return NIL because the vertex has no remaining
+    // unprocessed children
     if (theGraph->G[J].type == TYPE_UNKNOWN)
         return NIL;
 
-    /* If the child has already been processed, then all children
-        have been pushed to the end of the list, and we have just
-        encountered the first child we processed, so there are no
-        remaining unprocessed children */
-
+    // If the child has already been processed, then all children
+    // have been pushed to the end of the list, and we have just
+    // encountered the first child we processed, so there are no
+    // remaining unprocessed children */
     if (theGraph->G[J].visited)
         return NIL;
 
-    /* We have found an edge leading to an unprocessed child, so
-        we mark it as processed so that it doesn't get returned
-        again in future iterations. */
-
+    // We have found an edge leading to an unprocessed child, so
+    // we mark it as processed so that it doesn't get returned
+    // again in future iterations.
     theGraph->G[J].visited = 1;
     theGraph->G[JTwin].visited = 1;
 
-    /* Now we move the edge record in the parent vertex to the end
-        of the adjacency list of that vertex. Of course, we need do
-        nothing if the arc J is alone in the adjacency list, which
-        is the case only when its next and previous arcs are equal */
+    // Now we move the edge record in the parent vertex to the end
+    // of the adjacency list of that vertex.
+    gp_MoveArcToLast(theGraph, parent, J);
 
-    if (gp_GetNextArc(theGraph, J) != gp_GetPrevArc(theGraph, J))
-    {
-        theGraph->G[parent].link[0] = theGraph->G[J].link[0];
-        theGraph->G[theGraph->G[J].link[0]].link[1] = parent;
-        theGraph->G[J].link[0] = parent;
-        theGraph->G[J].link[1] = theGraph->G[parent].link[1];
-        theGraph->G[theGraph->G[parent].link[1]].link[0] = J;
-        theGraph->G[parent].link[1] = J;
-    }
+    // Now we move the edge record in the child vertex to the
+    // end of the adjacency list of the child.
+    gp_MoveArcToLast(theGraph, child, JTwin);
 
-    /* Now we move the edge record in the child vertex to the
-        end of the adjacency list of the child. */
-
-    if (gp_GetNextArc(theGraph, JTwin) != gp_GetPrevArc(theGraph, JTwin))
-    {
-        theGraph->G[theGraph->G[JTwin].link[0]].link[1] = theGraph->G[JTwin].link[1];
-        theGraph->G[theGraph->G[JTwin].link[1]].link[0] = theGraph->G[JTwin].link[0];
-        theGraph->G[JTwin].link[0] = child;
-        theGraph->G[JTwin].link[1] = theGraph->G[child].link[1];
-        theGraph->G[theGraph->G[child].link[1]].link[0] = JTwin;
-        theGraph->G[child].link[1] = JTwin;
-    }
-
-    /* Now we set the child's parent and return the child. */
-
+    // Now we set the child's parent and return the child.
     theGraph->V[child].DFSParent = parent;
 
     return child;
@@ -1119,8 +1095,8 @@ void _AddArc(graphP theGraph, int u, int v, int arcPos, int link)
      }
      else
      {
-		 gp_AttachLastArc(theGraph, u, arcPos);
 		 gp_AttachFirstArc(theGraph, u, arcPos);
+		 gp_AttachLastArc(theGraph, u, arcPos);
      }
 }
 
@@ -1170,61 +1146,74 @@ int  upos, vpos;
 
 /********************************************************************
  _AddInternalArc()
- This routine adds arc (u,v) to u's edge list, storing the record for
- v at position arcPos.  The record is added between the edge records
- e_u0 and e_u1.
+ This routine adds a new arc (u,v) to u's adjacency list adjacent to
+ the edge record for e, before or after depending on elink.  If e is
+ not an arc, then elink is assumed to indicate whether the new arc
+ is to be placed at the beginning or end of the list.
  ********************************************************************/
 
-void _AddInternalArc(graphP theGraph, int u, int e_u0, int e_u1, int v, int arcPos)
+void _AddInternalArc(graphP theGraph, int u, int e, int elink, int v, int newArc)
 {
-int e_u0_link, e_u1_link;
+     theGraph->G[newArc].v = v;
 
-     theGraph->G[arcPos].v = v;
+     if (gp_IsArc(theGraph, e))
+     {
+    	 int e2 = gp_GetAdjacentArc(theGraph, e, elink);
 
-     e_u0_link = theGraph->G[e_u0].link[0] == e_u1 ? 0 : 1;
-     e_u1_link = 1^e_u0_link;
+         // e's elink is newArc, and newArc's 1^elink is e
+    	 gp_SetAdjacentArc(theGraph, e, elink, newArc);
+    	 gp_SetAdjacentArc(theGraph, newArc, 1^elink, e);
 
-     theGraph->G[e_u0].link[e_u0_link] = arcPos;
-     theGraph->G[e_u1].link[e_u1_link] = arcPos;
+    	 // newArcs's elink is e2
+    	 gp_SetAdjacentArc(theGraph, newArc, elink, e2);
 
-     theGraph->G[arcPos].link[1^e_u0_link] = e_u0;
-     theGraph->G[arcPos].link[1^e_u1_link] = e_u1;
+    	 // if e2 is an arc, then e2's 1^elink is newArc, else u's 1^elink is newArc
+    	 if (gp_IsArc(theGraph, e2))
+    		 gp_SetAdjacentArc(theGraph, e2, 1^elink, newArc);
+    	 else
+    		 gp_SetArc(theGraph, u, 1^elink, newArc);
+     }
+     else
+     {
+    	 int e2 = gp_GetArc(theGraph, u, elink);
+
+    	 // u's elink is newArc, and newArc's 1^elink is gp_AdjacencyListEndMark(u)
+    	 gp_SetArc(theGraph, u, elink, newArc);
+    	 gp_SetAdjacentArc(theGraph, newArc, 1^elink, gp_AdjacencyListEndMark(u));
+
+    	 // newArcs's elink is e2
+    	 gp_SetAdjacentArc(theGraph, newArc, elink, e2);
+
+    	 // if e2 is an arc, then e2's 1^elink is newArc, else u's 1^elink is newArc
+    	 if (gp_IsArc(theGraph, e2))
+    		 gp_SetAdjacentArc(theGraph, e2, 1^elink, newArc);
+    	 else
+    		 gp_SetArc(theGraph, u, 1^elink, newArc);
+     }
 }
 
 /********************************************************************
  gp_AddInternalEdge()
 
  This function adds the edge (u, v) such that the edge record added
- to the adjacency list of u is between records e_u0 and e_u1 and
- the edge record added to the adjacency list of v is between records
- e_v0 and e_v1.  Note that each of e_u0, e_u1, e_v0 and e_v1 could
- indicate an edge record or a vertex record.
+ to the adjacency list of u is adjacent to e_u and the edge record
+ added to the adjacency list of v is adjacent to e_v.  Direction of
+ adjacency is given by e_ulink for e_u and e_vlink for e_v.
+ If e_u (or e_v) is not an arc, then e_ulink (or e_vlink) indicates
+ whether ot prepend or append to the adjacency list for u (or v).
  ********************************************************************/
 
-int  gp_AddInternalEdge(graphP theGraph, int u, int e_u0, int e_u1,
-                                         int v, int e_v0, int e_v1)
+int  gp_AddInternalEdge(graphP theGraph, int u, int e_u, int e_ulink,
+                                         int v, int e_v, int e_vlink)
 {
-int vertMax = theGraph->edgeOffset - 1,
-    edgeMax = vertMax + 2*theGraph->M,
+int vertMax = 2*theGraph->N - 1,
+    edgeMax = theGraph->edgeOffset + 2*theGraph->M + 2*sp_GetCurrentSize(theGraph->edgeHoles) - 1,
     upos, vpos;
 
-     edgeMax += 2*sp_GetCurrentSize(theGraph->edgeHoles);
-
      if (theGraph==NULL || u<0 || v<0 || u>vertMax || v>vertMax ||
-         e_u0<0 || e_u0>edgeMax || e_u1<0 || e_u1>edgeMax ||
-         e_v0<0 || e_v0>edgeMax || e_v1<0 || e_v1>edgeMax)
-         return NOTOK;
-
-     if (gp_GetNextArc(theGraph, e_u0) != e_u1 && gp_GetPrevArc(theGraph, e_u0) != e_u1)
-         return NOTOK;
-
-     if (gp_GetNextArc(theGraph, e_u1) != e_u0 && gp_GetPrevArc(theGraph, e_u1) != e_u0)
-         return NOTOK;
-
-     if (gp_GetNextArc(theGraph, e_v0) != e_v1 && gp_GetPrevArc(theGraph, e_v0) != e_v1)
-         return NOTOK;
-
-     if (gp_GetNextArc(theGraph, e_v1) != e_v0 && gp_GetPrevArc(theGraph, e_v1) != e_v0)
+         e_u>edgeMax || (e_u<theGraph->edgeOffset && e_u != gp_AdjacencyListEndMark(u)) ||
+         e_v>edgeMax || (e_v<theGraph->edgeOffset && e_v != gp_AdjacencyListEndMark(v)) ||
+         e_ulink<0 || e_ulink>1 || e_vlink<0 || e_vlink>1)
          return NOTOK;
 
      if (theGraph->M >= EDGE_LIMIT*theGraph->N)
@@ -1237,8 +1226,8 @@ int vertMax = theGraph->edgeOffset - 1,
 
      upos = gp_GetTwinArc(theGraph, vpos);
 
-     _AddInternalArc(theGraph, u, e_u0, e_u1, v, upos);
-     _AddInternalArc(theGraph, v, e_v0, e_v1, u, vpos);
+     _AddInternalArc(theGraph, u, e_u, e_ulink, v, upos);
+     _AddInternalArc(theGraph, v, e_v, e_vlink, u, vpos);
 
      theGraph->M++;
 
@@ -1262,11 +1251,15 @@ void _HideArc(graphP theGraph, int arc)
 int nextArc = gp_GetNextArc(theGraph, arc),
     prevArc = gp_GetPrevArc(theGraph, arc);
 
-    if (nextArc != NIL)
-        theGraph->G[nextArc].link[1] = prevArc;
+    if (gp_IsArc(theGraph, nextArc))
+    	gp_SetPrevArc(theGraph, nextArc, prevArc);
+    else
+    	gp_SetLastArc(theGraph, theGraph->G[gp_GetTwinArc(theGraph, arc)].v, prevArc);
 
-    if (prevArc != NIL)
-        theGraph->G[prevArc].link[0] = nextArc;
+    if (gp_IsArc(theGraph, prevArc))
+    	gp_SetNextArc(theGraph, prevArc, nextArc);
+    else
+    	gp_SetFirstArc(theGraph, theGraph->G[gp_GetTwinArc(theGraph, arc)].v, nextArc);
 }
 
 /********************************************************************
@@ -1285,11 +1278,15 @@ void _RestoreArc(graphP theGraph, int arc)
 int nextArc = gp_GetNextArc(theGraph, arc),
 	prevArc = gp_GetPrevArc(theGraph, arc);
 
-	if (nextArc != NIL)
-		theGraph->G[nextArc].link[1] = arc;
+	if (gp_IsArc(theGraph, nextArc))
+		gp_SetPrevArc(theGraph, nextArc, arc);
+	else
+		gp_SetLastArc(theGraph, theGraph->G[gp_GetTwinArc(theGraph, arc)].v, arc);
 
-	if (prevArc != NIL)
-		theGraph->G[prevArc].link[0] = arc;
+    if (gp_IsArc(theGraph, prevArc))
+    	gp_SetNextArc(theGraph, prevArc, arc);
+    else
+    	gp_SetFirstArc(theGraph, theGraph->G[gp_GetTwinArc(theGraph, arc)].v, arc);
 }
 
 /********************************************************************
@@ -1356,10 +1353,8 @@ int  nextArc, JPos, MPos;
 
 /* Delete the edge records J and JTwin. */
 
-     theGraph->G[theGraph->G[J].link[0]].link[1] = theGraph->G[J].link[1];
-     theGraph->G[theGraph->G[J].link[1]].link[0] = theGraph->G[J].link[0];
-     theGraph->G[theGraph->G[JTwin].link[0]].link[1] = theGraph->G[JTwin].link[1];
-     theGraph->G[theGraph->G[JTwin].link[1]].link[0] = theGraph->G[JTwin].link[0];
+     gp_DetachArc(theGraph, theGraph->G[JTwin].v, J);
+     gp_DetachArc(theGraph, theGraph->G[J].v, JTwin);
 
 /* Clear the edge record contents */
 
