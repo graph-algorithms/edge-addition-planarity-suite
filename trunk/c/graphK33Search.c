@@ -1631,7 +1631,7 @@ int  prevLink, v, w, e;
 
 int  _ReduceXYPathToEdge(graphP theGraph, K33SearchContext *context, int u, int x, int edgeType)
 {
-int  e, v, w, e_u0, e_u1, e_x0, e_x1;
+int  e, v, w;
 
      e = gp_GetFirstArc(theGraph, u);
      e = gp_GetNextArc(theGraph, e);
@@ -1668,12 +1668,8 @@ int  e, v, w, e_u0, e_u1, e_x0, e_x1;
      gp_DeleteEdge(theGraph, e, 0);
 
      /* Now add a single edge to represent the XY-path */
-
-     e_u0 = gp_GetFirstArc(theGraph, u);
-     e_u1 = gp_GetLastArc(theGraph, u);
-     e_x0 = gp_GetFirstArc(theGraph, x);
-     e_x1 = gp_GetLastArc(theGraph, x);
-     gp_AddInternalEdge(theGraph, u, e_u0, e_u1, x, e_x0, e_x1);
+     gp_AddInternalEdge(theGraph, u, gp_GetFirstArc(theGraph, u), 0,
+    		                      x, gp_GetFirstArc(theGraph, x), 0);
 
      /* Now set up the path connectors so the original XY-path can be recovered if needed.
         Also, set the reduction edge's type to preserve the DFS tree structure */
@@ -1727,8 +1723,8 @@ int  J0, J1, JTwin0, JTwin1;
 
      /* Add the two edges to reconnect the reduced path. */
 
-     if (gp_AddInternalEdge(theGraph, u, J, J0, v, v, gp_GetFirstArc(theGraph, v)) != OK ||
-         gp_AddInternalEdge(theGraph, x, JTwin, JTwin0, w, w, gp_GetFirstArc(theGraph, w)) != OK)
+     if (gp_AddInternalEdge(theGraph, u, J, 0, v, gp_AdjacencyListEndMark(v), 0) != OK ||
+         gp_AddInternalEdge(theGraph, x, JTwin, 0, w, gp_AdjacencyListEndMark(w), 0) != OK)
          return NOTOK;
 
      /* Delete the edge represented by J and JTwin */
@@ -1809,8 +1805,8 @@ int  J0, JTwin0, J1, JTwin1, PathIsOnExtFace;
                 but when edge [J, JTwin] is deleted, then the new edge record will be
                 between J0 and J1.  Likewise, JTwin and the new edge record added to x. */
 
-             if (gp_AddInternalEdge(theGraph, u, J, J1, v, v, gp_GetFirstArc(theGraph, v)) != OK ||
-                 gp_AddInternalEdge(theGraph, x, JTwin, JTwin1, w, w, gp_GetFirstArc(theGraph, w)) != OK)
+             if (gp_AddInternalEdge(theGraph, u, J, 1, v, gp_AdjacencyListEndMark(v), 0) != OK ||
+                 gp_AddInternalEdge(theGraph, x, JTwin, 1, w, gp_AdjacencyListEndMark(w), 0) != OK)
                  return NOTOK;
 
              /* We delete the edge represented by J and JTwin. We delete the edge after

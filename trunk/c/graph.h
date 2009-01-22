@@ -103,7 +103,11 @@ void	gp_SetDirection(graphP theGraph, int e, int edgeFlag_Direction);
 // This definition is used to mark the adjacency links in arcs that are the
 // first and last arcs in an adjacency list
 // CHANGE_ADJ_LIST: Change this to NIL
+#ifndef CHANGE_ADJ_LIST
 #define gp_AdjacencyListEndMark(v) (v)
+#else
+#define gp_AdjacencyListEndMark(v) (NIL)
+#endif
 
 // Definitions for very low-level adjacency list manipulations
 #define gp_SetFirstArc(theGraph, v, newFirstArc) (theGraph->G[v].link[0] = newFirstArc)
@@ -122,6 +126,73 @@ void	gp_SetDirection(graphP theGraph, int e, int edgeFlag_Direction);
 	gp_SetNextArc(theGraph, arc, gp_AdjacencyListEndMark(v)); \
     gp_SetLastArc(theGraph, v, arc)
 
+#define gp_DetachArc(theGraph, v, arc) \
+	if (arc == gp_GetFirstArc(theGraph, v)) \
+	{ \
+		gp_SetFirstArc(theGraph, v, gp_GetNextArc(theGraph, arc)); \
+		if (arc == gp_GetLastArc(theGraph, v)) \
+            gp_SetLastArc(theGraph, v, gp_AdjacencyListEndMark(v)); \
+        else \
+	        gp_SetPrevArc(theGraph, gp_GetNextArc(theGraph, arc), gp_AdjacencyListEndMark(v)); \
+	} \
+    else \
+    { \
+		gp_SetNextArc(theGraph, gp_GetPrevArc(theGraph, arc), gp_GetNextArc(theGraph, arc)); \
+		if (arc == gp_GetLastArc(theGraph, v)) \
+			gp_SetLastArc(theGraph, v, gp_GetPrevArc(theGraph, arc)); \
+		else \
+			gp_SetPrevArc(theGraph, gp_GetNextArc(theGraph, arc), gp_GetPrevArc(theGraph, arc)); \
+    }
+
+#define gp_MoveArcToFirst(theGraph, v, arc) \
+	if (arc != gp_GetFirstArc(theGraph, v)) \
+	{ \
+		/* If the arc is last in the adjacency list of uparent,
+		   then we delete it by adjacency list end management */ \
+		if (arc == gp_GetLastArc(theGraph, v)) \
+		{ \
+		    gp_SetNextArc(theGraph, gp_GetPrevArc(theGraph, arc), gp_AdjacencyListEndMark(v)); \
+			gp_SetLastArc(theGraph, v, gp_GetPrevArc(theGraph, arc)); \
+		} \
+		/* Otherwise, we delete the arc from the middle of the list */ \
+		else \
+		{ \
+			gp_SetNextArc(theGraph, gp_GetPrevArc(theGraph, arc), gp_GetNextArc(theGraph, arc)); \
+			gp_SetPrevArc(theGraph, gp_GetNextArc(theGraph, arc), gp_GetPrevArc(theGraph, arc)); \
+		} \
+\
+		/* Now add arc e as the new first arc of uparent.
+		   Note that the adjacency list is non-empty at this time */ \
+		 gp_SetNextArc(theGraph, arc, gp_GetFirstArc(theGraph, v)); \
+		 gp_SetPrevArc(theGraph, gp_GetFirstArc(theGraph, v), arc); \
+		 gp_AttachFirstArc(theGraph, v, arc); \
+	}
+
+#define gp_MoveArcToLast(theGraph, v, arc) \
+	if (arc != gp_GetLastArc(theGraph, v)) \
+	{ \
+		 /* If the arc is first in the adjacency list of vertex v,
+		    then we delete it by adjacency list end management */ \
+		 if (arc == gp_GetFirstArc(theGraph, v)) \
+		 { \
+			 gp_SetPrevArc(theGraph, gp_GetNextArc(theGraph, arc), gp_AdjacencyListEndMark(v)); \
+			 gp_SetFirstArc(theGraph, v, gp_GetNextArc(theGraph, arc)); \
+		 } \
+		 /* Otherwise, we delete the arc from the middle of the list */ \
+		 else \
+		 { \
+			 gp_SetNextArc(theGraph, gp_GetPrevArc(theGraph, arc), gp_GetNextArc(theGraph, arc)); \
+			 gp_SetPrevArc(theGraph, gp_GetNextArc(theGraph, arc), gp_GetPrevArc(theGraph, arc)); \
+		 } \
+\
+		 /* Now add the arc as the new last arc of v.
+		    Note that the adjacency list is non-empty at this time */ \
+		 gp_SetPrevArc(theGraph, arc, gp_GetLastArc(theGraph, v)); \
+		 gp_SetNextArc(theGraph, gp_GetLastArc(theGraph, v), arc); \
+		 gp_AttachLastArc(theGraph, v, arc); \
+	}
+
+
 int		gp_IsNeighbor(graphP theGraph, int u, int v);
 int		gp_GetNeighborEdgeRecord(graphP theGraph, int u, int v);
 int		gp_GetVertexDegree(graphP theGraph, int v);
@@ -129,8 +200,8 @@ int		gp_GetVertexInDegree(graphP theGraph, int v);
 int		gp_GetVertexOutDegree(graphP theGraph, int v);
 
 int		gp_AddEdge(graphP theGraph, int u, int ulink, int v, int vlink);
-int		gp_AddInternalEdge(graphP theGraph, int u, int e_u0, int e_u1,
-                                            int v, int e_v0, int e_v1);
+int     gp_AddInternalEdge(graphP theGraph, int u, int e_u, int e_ulink,
+                                            int v, int e_v, int e_vlink);
 
 void	gp_HideEdge(graphP theGraph, int arcPos);
 void	gp_RestoreEdge(graphP theGraph, int arcPos);
