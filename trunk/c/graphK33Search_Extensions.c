@@ -403,44 +403,39 @@ int _K33Search_CreateFwdArcLists(graphP theGraph)
                 if (theGraph->G[Jcur].type == EDGE_BACK)
                 {
                     // Remove the back arc from the adjacency list
-                    // and put it in the backArcList
-                    theGraph->G[theGraph->G[Jcur].link[0]].link[1] = theGraph->G[Jcur].link[1];
-                    theGraph->G[theGraph->G[Jcur].link[1]].link[0] = theGraph->G[Jcur].link[0];
+                	gp_DeleteArc(theGraph, I, Jcur);
+
+                    // Put the back arc in the backArcList
                     if (context->V[I].backArcList == NIL)
                     {
-                        theGraph->G[Jcur].link[0] = theGraph->G[Jcur].link[1] = Jcur;
                         context->V[I].backArcList = Jcur;
+                        gp_SetPrevArc(theGraph, Jcur, Jcur);
+                        gp_SetNextArc(theGraph, Jcur, Jcur);
                     }
                     else
                     {
-                        theGraph->G[Jcur].link[0] = context->V[I].backArcList;
-                        theGraph->G[Jcur].link[1] = theGraph->G[context->V[I].backArcList].link[1];
-                        theGraph->G[theGraph->G[context->V[I].backArcList].link[1]].link[0] = Jcur;
-                        theGraph->G[context->V[I].backArcList].link[1] = Jcur;
+                    	gp_InsertArc(theGraph, NIL, context->V[I].backArcList, 1, Jcur);
                     }
 
-                    // Determine the ancestor
+                    // Determine the ancestor of vertex I to which Jcur connects
                     ancestor = theGraph->G[Jcur].v;
 
                     // Go to the forward arc in the ancestor
                     Jcur = gp_GetTwinArc(theGraph, Jcur);
 
                     // Remove the forward arc from the adjacency list
-                    theGraph->G[theGraph->G[Jcur].link[0]].link[1] = theGraph->G[Jcur].link[1];
-                    theGraph->G[theGraph->G[Jcur].link[1]].link[0] = theGraph->G[Jcur].link[0];
+                	gp_DeleteArc(theGraph, ancestor, Jcur);
 
                     // Add the forward arc to the end of the fwdArcList.
                     if (theGraph->V[ancestor].fwdArcList == NIL)
                     {
-                        theGraph->G[Jcur].link[0] = theGraph->G[Jcur].link[1] = Jcur;
                         theGraph->V[ancestor].fwdArcList = Jcur;
+                        gp_SetPrevArc(theGraph, Jcur, Jcur);
+                        gp_SetNextArc(theGraph, Jcur, Jcur);
                     }
                     else
                     {
-                        theGraph->G[Jcur].link[0] = theGraph->V[ancestor].fwdArcList;
-                        theGraph->G[Jcur].link[1] = theGraph->G[theGraph->V[ancestor].fwdArcList].link[1];
-                        theGraph->G[theGraph->G[theGraph->V[ancestor].fwdArcList].link[1]].link[0] = Jcur;
-                        theGraph->G[theGraph->V[ancestor].fwdArcList].link[1] = Jcur;
+                    	gp_InsertArc(theGraph, NIL, theGraph->V[ancestor].fwdArcList, 1, Jcur);
                     }
                 }
             }
@@ -529,11 +524,10 @@ void _K33Search_EmbedBackEdgeToDescendant(graphP theGraph, int RootSide, int Roo
         // K33 search may have been attached, but not enabled
         if (theGraph->embedFlags == EMBEDFLAGS_SEARCHFORK33)
         {
-            int fwdArc, backArc;
+        	// Get the fwdArc from the adjacentTo field, and use it to get the backArc
+            int backArc = gp_GetTwinArc(theGraph, theGraph->V[W].adjacentTo);
 
-            fwdArc = theGraph->V[W].adjacentTo;
-            backArc = gp_GetTwinArc(theGraph, fwdArc);
-
+            // Remove the backArc from the backArcList
             if (context->V[W].backArcList == backArc)
             {
                 if (gp_GetNextArc(theGraph, backArc) == backArc)
@@ -541,8 +535,8 @@ void _K33Search_EmbedBackEdgeToDescendant(graphP theGraph, int RootSide, int Roo
                 else context->V[W].backArcList = gp_GetNextArc(theGraph, backArc);
             }
 
-            theGraph->G[theGraph->G[backArc].link[0]].link[1] = theGraph->G[backArc].link[1];
-            theGraph->G[theGraph->G[backArc].link[1]].link[0] = theGraph->G[backArc].link[0];
+            gp_SetNextArc(theGraph, gp_GetPrevArc(theGraph, backArc), gp_GetNextArc(theGraph, backArc));
+            gp_SetPrevArc(theGraph, gp_GetNextArc(theGraph, backArc), gp_GetPrevArc(theGraph, backArc));
         }
 
         // Invoke the superclass version of the function

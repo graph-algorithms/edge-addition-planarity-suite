@@ -11,6 +11,8 @@
 extern "C" {
 #endif
 
+#define DRAWPLANAR_NAME "DrawPlanar"
+
 int gp_AttachDrawPlanar(graphP theGraph);
 int gp_DetachDrawPlanar(graphP theGraph);
 

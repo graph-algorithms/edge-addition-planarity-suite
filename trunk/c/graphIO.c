@@ -37,10 +37,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "graph.h"
 
-/* Imported functions */
-
-extern void _AddArc(graphP theGraph, int u, int v, int arcPos, int link);
-
 /* Private functions (exported to system) */
 
 int  _ReadAdjMatrix(graphP theGraph, FILE *Infile);
@@ -117,7 +113,10 @@ int N, I, W, ErrorCode, adjList, J;
      fgetc(Infile);
      fscanf(Infile, " %d ", &N);                /* Read N */
      if (gp_InitGraph(theGraph, N) != OK)
+     {
+    	  printf("Failed to init graph");
           return NOTOK;
+     }
 
      // Clear the visited members of the vertices so they can be used
      // during the adjacency list read operation
@@ -215,7 +214,7 @@ int N, I, W, ErrorCode, adjList, J;
             		 gp_SetNextArc(theGraph, gp_GetPrevArc(theGraph, J), gp_GetNextArc(theGraph, J));
 
             		 // Add the arc J as the new first arc of vertex I
-            		 _AddArc(theGraph, I, theGraph->G[J].v, J, 0);
+            		 gp_AddArc(theGraph, I, 0, J);
             	 }
 
             	 // If an adjacency node to the lower numbered vertex W does not
@@ -251,7 +250,7 @@ int N, I, W, ErrorCode, adjList, J;
      		  gp_SetPrevArc(theGraph, gp_GetNextArc(theGraph, J), gp_GetPrevArc(theGraph, J));
      		  gp_SetNextArc(theGraph, gp_GetPrevArc(theGraph, J), gp_GetNextArc(theGraph, J));
 
-     		  _AddArc(theGraph, I, theGraph->G[J].v, J, 0);
+     		  gp_AddArc(theGraph, I, 0, J);
      		  gp_SetDirection(theGraph, J, EDGEFLAG_DIRECTION_INONLY);
           }
      }

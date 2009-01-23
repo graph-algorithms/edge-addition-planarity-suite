@@ -69,7 +69,7 @@ int  gp_AttachDrawPlanar(graphP theGraph)
 
      // If the drawing feature has already been attached to the graph,
      // then there is no need to attach it again
-     gp_FindExtension(theGraph, "DrawPlanar", (void *)&context);
+     gp_FindExtension(theGraph, DRAWPLANAR_NAME, (void *)&context);
      if (context != NULL)
      {
          return OK;
@@ -113,7 +113,7 @@ int  gp_AttachDrawPlanar(graphP theGraph)
 
      // Store the Draw context, including the data structure and the
      // function pointers, as an extension of the graph
-     if (gp_AddExtension(theGraph, "DrawPlanar", (void *) context,
+     if (gp_AddExtension(theGraph, DRAWPLANAR_NAME, (void *) context,
                          _DrawPlanar_DupContext, _DrawPlanar_FreeContext,
                          &context->functions) != OK)
      {
@@ -148,7 +148,7 @@ int  gp_AttachDrawPlanar(graphP theGraph)
 
 int gp_DetachDrawPlanar(graphP theGraph)
 {
-    return gp_RemoveExtension(theGraph, "DrawPlanar");
+    return gp_RemoveExtension(theGraph, DRAWPLANAR_NAME);
 }
 
 /********************************************************************
@@ -282,16 +282,21 @@ void _DrawPlanar_FreeContext(void *pContext)
 int  _DrawPlanar_InitGraph(graphP theGraph, int N)
 {
     DrawPlanarContext *context = NULL;
-    gp_FindExtension(theGraph, "Draw", (void *)&context);
+    gp_FindExtension(theGraph, DRAWPLANAR_NAME, (void *)&context);
 
     if (context == NULL)
+    {
         return NOTOK;
+    }
+    else
     {
         theGraph->N = N;
         theGraph->edgeOffset = 2*N;
 
         if (_DrawPlanar_CreateStructures(context) != OK)
+        {
             return NOTOK;
+        }
 
         // This call initializes the base graph structures, but it also
         // initializes the custom graphnode and vertex level structures
@@ -308,7 +313,7 @@ int  _DrawPlanar_InitGraph(graphP theGraph, int N)
 void _DrawPlanar_ReinitializeGraph(graphP theGraph)
 {
     DrawPlanarContext *context = NULL;
-    gp_FindExtension(theGraph, "Draw", (void *)&context);
+    gp_FindExtension(theGraph, DRAWPLANAR_NAME, (void *)&context);
 
     if (context != NULL)
     {
@@ -353,7 +358,7 @@ void _DrawPlanar_ReinitializeGraph(graphP theGraph)
 int  _DrawPlanar_SortVertices(graphP theGraph)
 {
     DrawPlanarContext *context = NULL;
-    gp_FindExtension(theGraph, "Draw", (void *)&context);
+    gp_FindExtension(theGraph, DRAWPLANAR_NAME, (void *)&context);
 
     if (context != NULL)
     {
@@ -416,7 +421,7 @@ int  _DrawPlanar_SortVertices(graphP theGraph)
 int  _DrawPlanar_MergeBicomps(graphP theGraph, int I, int RootVertex, int W, int WPrevLink)
 {
     DrawPlanarContext *context = NULL;
-    gp_FindExtension(theGraph, "Draw", (void *)&context);
+    gp_FindExtension(theGraph, DRAWPLANAR_NAME, (void *)&context);
 
     if (context != NULL)
     {
@@ -437,7 +442,7 @@ int  _DrawPlanar_MergeBicomps(graphP theGraph, int I, int RootVertex, int W, int
 int _DrawPlanar_HandleInactiveVertex(graphP theGraph, int BicompRoot, int *pW, int *pWPrevLink)
 {
     DrawPlanarContext *context = NULL;
-    gp_FindExtension(theGraph, "Draw", (void *)&context);
+    gp_FindExtension(theGraph, DRAWPLANAR_NAME, (void *)&context);
 
     if (context != NULL)
     {
@@ -461,7 +466,7 @@ int _DrawPlanar_HandleInactiveVertex(graphP theGraph, int BicompRoot, int *pW, i
 void _DrawPlanar_InitGraphNode(graphP theGraph, int I)
 {
     DrawPlanarContext *context = NULL;
-    gp_FindExtension(theGraph, "Draw", (void *)&context);
+    gp_FindExtension(theGraph, DRAWPLANAR_NAME, (void *)&context);
 
     if (context != NULL)
     {
@@ -486,7 +491,7 @@ void _InitDrawGraphNode(DrawPlanarContext *context, int I)
 void _DrawPlanar_InitVertexRec(graphP theGraph, int I)
 {
     DrawPlanarContext *context = NULL;
-    gp_FindExtension(theGraph, "Draw", (void *)&context);
+    gp_FindExtension(theGraph, DRAWPLANAR_NAME, (void *)&context);
 
     if (context != NULL)
     {
@@ -512,7 +517,7 @@ void _InitDrawVertexRec(DrawPlanarContext *context, int I)
 int _DrawPlanar_EmbedPostprocess(graphP theGraph, int I, int edgeEmbeddingResult)
 {
     DrawPlanarContext *context = NULL;
-    gp_FindExtension(theGraph, "Draw", (void *)&context);
+    gp_FindExtension(theGraph, DRAWPLANAR_NAME, (void *)&context);
 
     if (context != NULL)
     {
@@ -538,7 +543,7 @@ int _DrawPlanar_EmbedPostprocess(graphP theGraph, int I, int edgeEmbeddingResult
 int  _DrawPlanar_CheckEmbeddingIntegrity(graphP theGraph, graphP origGraph)
 {
     DrawPlanarContext *context = NULL;
-    gp_FindExtension(theGraph, "Draw", (void *)&context);
+    gp_FindExtension(theGraph, DRAWPLANAR_NAME, (void *)&context);
 
     if (context != NULL)
     {
@@ -565,19 +570,19 @@ int  _DrawPlanar_CheckObstructionIntegrity(graphP theGraph, graphP origGraph)
 int  _DrawPlanar_ReadPostprocess(graphP theGraph, void *extraData, long extraDataSize)
 {
     DrawPlanarContext *context = NULL;
-    gp_FindExtension(theGraph, "Draw", (void *)&context);
+    gp_FindExtension(theGraph, DRAWPLANAR_NAME, (void *)&context);
 
     if (context != NULL)
     {
         if (context->functions.fpReadPostprocess(theGraph, extraData, extraDataSize) != OK)
             return NOTOK;
 
-        else
+        else if (extraData != NULL && extraDataSize > 0)
         {
             int I, tempInt;
             char line[64], tempChar;
 
-            sprintf(line, "<%s>", "draw");
+            sprintf(line, "<%s>", DRAWPLANAR_NAME);
 
             // Find the start of the data for this feature
             extraData = strstr(extraData, line);
@@ -622,7 +627,7 @@ int  _DrawPlanar_ReadPostprocess(graphP theGraph, void *extraData, long extraDat
 int  _DrawPlanar_WritePostprocess(graphP theGraph, void **pExtraData, long *pExtraDataSize)
 {
     DrawPlanarContext *context = NULL;
-    gp_FindExtension(theGraph, "Draw", (void *)&context);
+    gp_FindExtension(theGraph, DRAWPLANAR_NAME, (void *)&context);
 
     if (context != NULL)
     {
@@ -646,7 +651,7 @@ int  _DrawPlanar_WritePostprocess(graphP theGraph, void **pExtraData, long *pExt
                 return NOTOK;
             }
 
-            sprintf(line, "<%s>\n", "draw");
+            sprintf(line, "<%s>\n", DRAWPLANAR_NAME);
             strcpy(extraData+extraDataPos, line);
             extraDataPos += (int) strlen(line);
 
@@ -670,7 +675,7 @@ int  _DrawPlanar_WritePostprocess(graphP theGraph, void **pExtraData, long *pExt
                 extraDataPos += (int) strlen(line);
             }
 
-            sprintf(line, "</%s>\n", "draw");
+            sprintf(line, "</%s>\n", DRAWPLANAR_NAME);
             strcpy(extraData+extraDataPos, line);
             extraDataPos += (int) strlen(line);
 

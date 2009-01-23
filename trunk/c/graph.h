@@ -96,18 +96,13 @@ void	gp_SetDirection(graphP theGraph, int e, int edgeFlag_Direction);
 			gp_GetFirstArc(theGraph, theGraph->G[gp_GetTwinArc(theGraph, e)].v))
 
 #define gp_GetPrevArcCircular(theGraph, e) \
-(gp_IsArc(theGraph, theGraph->G[e].link[1]) ? \
+	(gp_IsArc(theGraph, theGraph->G[e].link[1]) ? \
 		theGraph->G[e].link[1] : \
 		gp_GetLastArc(theGraph, theGraph->G[gp_GetTwinArc(theGraph, e)].v))
 
 // This definition is used to mark the adjacency links in arcs that are the
 // first and last arcs in an adjacency list
-// CHANGE_ADJ_LIST: Change this to NIL
-#ifndef CHANGE_ADJ_LIST
-#define gp_AdjacencyListEndMark(v) (v)
-#else
 #define gp_AdjacencyListEndMark(v) (NIL)
-#endif
 
 // Definitions for very low-level adjacency list manipulations
 #define gp_SetFirstArc(theGraph, v, newFirstArc) (theGraph->G[v].link[0] = newFirstArc)
@@ -118,6 +113,8 @@ void	gp_SetDirection(graphP theGraph, int e, int edgeFlag_Direction);
 #define gp_SetArc(theGraph, v, theLink, newArc) (theGraph->G[v].link[theLink] = newArc)
 #define gp_SetAdjacentArc(theGraph, e, theLink, newArc) (theGraph->G[e].link[theLink] = newArc)
 
+// Definitions that make the vertex attachment for an arc
+// The old first or last arc should be attached to this arc by separate calls
 #define gp_AttachFirstArc(theGraph, v, arc) \
 	gp_SetPrevArc(theGraph, arc, gp_AdjacencyListEndMark(v)); \
     gp_SetFirstArc(theGraph, v, arc)
@@ -125,24 +122,6 @@ void	gp_SetDirection(graphP theGraph, int e, int edgeFlag_Direction);
 #define gp_AttachLastArc(theGraph, v, arc) \
 	gp_SetNextArc(theGraph, arc, gp_AdjacencyListEndMark(v)); \
     gp_SetLastArc(theGraph, v, arc)
-
-#define gp_DetachArc(theGraph, v, arc) \
-	if (arc == gp_GetFirstArc(theGraph, v)) \
-	{ \
-		gp_SetFirstArc(theGraph, v, gp_GetNextArc(theGraph, arc)); \
-		if (arc == gp_GetLastArc(theGraph, v)) \
-            gp_SetLastArc(theGraph, v, gp_AdjacencyListEndMark(v)); \
-        else \
-	        gp_SetPrevArc(theGraph, gp_GetNextArc(theGraph, arc), gp_AdjacencyListEndMark(v)); \
-	} \
-    else \
-    { \
-		gp_SetNextArc(theGraph, gp_GetPrevArc(theGraph, arc), gp_GetNextArc(theGraph, arc)); \
-		if (arc == gp_GetLastArc(theGraph, v)) \
-			gp_SetLastArc(theGraph, v, gp_GetPrevArc(theGraph, arc)); \
-		else \
-			gp_SetPrevArc(theGraph, gp_GetNextArc(theGraph, arc), gp_GetPrevArc(theGraph, arc)); \
-    }
 
 #define gp_MoveArcToFirst(theGraph, v, arc) \
 	if (arc != gp_GetFirstArc(theGraph, v)) \
@@ -192,7 +171,15 @@ void	gp_SetDirection(graphP theGraph, int e, int edgeFlag_Direction);
 		 gp_AttachLastArc(theGraph, v, arc); \
 	}
 
+// Methods adding an arc into an adjacency list or deleting an arc from it
+// Adding or deleting an arc changes both attachments
+void 	gp_AddArc(graphP theGraph, int v, int vlink, int newArc);
+void	gp_InsertArc(graphP theGraph, int v, int e, int elink, int newArc);
+void 	gp_DeleteArc(graphP theGraph, int v, int arc);
 
+//////////////////////////////////////////////////////////////////////////////
+// Definitions for higher-order operations at the vertex, edge and graph level
+//////////////////////////////////////////////////////////////////////////////
 int		gp_IsNeighbor(graphP theGraph, int u, int v);
 int		gp_GetNeighborEdgeRecord(graphP theGraph, int u, int v);
 int		gp_GetVertexDegree(graphP theGraph, int v);
@@ -200,8 +187,8 @@ int		gp_GetVertexInDegree(graphP theGraph, int v);
 int		gp_GetVertexOutDegree(graphP theGraph, int v);
 
 int		gp_AddEdge(graphP theGraph, int u, int ulink, int v, int vlink);
-int     gp_AddInternalEdge(graphP theGraph, int u, int e_u, int e_ulink,
-                                            int v, int e_v, int e_vlink);
+int     gp_InsertEdge(graphP theGraph, int u, int e_u, int e_ulink,
+                                       int v, int e_v, int e_vlink);
 
 void	gp_HideEdge(graphP theGraph, int arcPos);
 void	gp_RestoreEdge(graphP theGraph, int arcPos);

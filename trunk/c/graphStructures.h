@@ -114,8 +114,7 @@ extern "C" {
                 are put in DFI order (i.e. not same as array index)
         visited: helps detect vertex visitation during various algorithms
                 such as Walkup
-        link: array indices that 'point' to the start and end of the edge list
-
+        link: array indices that 'point' to the start and end arcs of the adjacency list
         type: Used by Kuratowski subgraph isolator to classify vertices when
                 searching for certain paths in a biconnected component.
         flags: Lowest 16 bits a reserved for future expansion of the library.
@@ -156,7 +155,7 @@ typedef graphNode * graphNodeP;
 #define SET_EDGEFLAG_INVERTED(theGraph, e) (theGraph->G[e].flags |= EDGEFLAG_INVERTED)
 #define CLEAR_EDGEFLAG_INVERTED(theGraph, e) (theGraph->G[e].flags &= (~EDGEFLAG_INVERTED))
 
-/* Additional data members needed only by vertices
+/* Data members needed by vertices
         DFSParent: The DFI of the DFS tree parent of this vertex
         leastAncestor: min(DFI of neighbors connected by backedge)
         Lowpoint: min(leastAncestor, min(Lowpoint of DFS Children))

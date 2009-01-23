@@ -476,17 +476,33 @@ int  e_w, e_r, e_ext;
      e_r = gp_GetArc(theGraph, R, 1^WPrevLink);
      e_ext = gp_GetArc(theGraph, R, WPrevLink);
 
-     // The WPrevLink arc of W is e_w, so the 1^WPrevLink arc in e_w leads back to W.
-     // Now it must lead to e_r.  Likewise, e_r needs to lead back to e_w with the
-     // opposing link, which is WPrevLink
-     // Note that the adjacency lists of W and R are guaranteed non-empty, which is
-     // why these linkages can be made without NIL tests.
-     gp_SetAdjacentArc(theGraph, e_w, 1^WPrevLink, e_r);
-     gp_SetAdjacentArc(theGraph, e_r, WPrevLink, e_w);
+     // If W has any edges, then join the list with that of R
+     if (gp_IsArc(theGraph, e_w))
+     {
+         // The WPrevLink arc of W is e_w, so the 1^WPrevLink arc in e_w leads back to W.
+         // Now it must lead to e_r.  Likewise, e_r needs to lead back to e_w with the
+         // opposing link, which is WPrevLink
+         // Note that the adjacency lists of W and R are guaranteed non-empty, which is
+         // why these linkages can be made without NIL tests.
+         gp_SetAdjacentArc(theGraph, e_w, 1^WPrevLink, e_r);
+         gp_SetAdjacentArc(theGraph, e_r, WPrevLink, e_w);
 
-     // Cross-link W's WPrevLink arc and the 1^WPrevLink arc in e_ext
-     gp_SetArc(theGraph, W, WPrevLink, e_ext);
-     gp_SetAdjacentArc(theGraph, e_ext, 1^WPrevLink, gp_AdjacencyListEndMark(W));
+         // Cross-link W's WPrevLink arc and the 1^WPrevLink arc in e_ext
+         gp_SetArc(theGraph, W, WPrevLink, e_ext);
+         gp_SetAdjacentArc(theGraph, e_ext, 1^WPrevLink, gp_AdjacencyListEndMark(W));
+     }
+     // Otherwise, W just receives R's list.  This happens, for example, on a
+     // DFS tree root vertex during JoinBicomps()
+     else
+     {
+         // Cross-link W's 1^WPrevLink arc and the WPrevLink arc in e_r
+         gp_SetArc(theGraph, W, 1^WPrevLink, e_r);
+         gp_SetAdjacentArc(theGraph, e_r, WPrevLink, gp_AdjacencyListEndMark(W));
+
+         // Cross-link W's WPrevLink arc and the 1^WPrevLink arc in e_ext
+         gp_SetArc(theGraph, W, WPrevLink, e_ext);
+         gp_SetAdjacentArc(theGraph, e_ext, 1^WPrevLink, gp_AdjacencyListEndMark(W));
+     }
 
      // Erase the entries in R, which is a root copy that is no longer needed
      theGraph->functions.fpInitGraphNode(theGraph, R);

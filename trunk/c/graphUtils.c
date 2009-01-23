@@ -72,8 +72,6 @@ int  _GetBicompSize(graphP theGraph, int BicompRoot);
 void _DeleteUnmarkedEdgesInBicomp(graphP theGraph, int BicompRoot);
 void _ClearInvertedFlagsInBicomp(graphP theGraph, int BicompRoot);
 
-void _AddArc(graphP theGraph, int u, int v, int arcPos, int link);
-
 void _InitFunctionTable(graphP theGraph);
 
 /********************************************************************
@@ -301,13 +299,15 @@ void _InitGraphNode(graphP theGraph, int J)
 
 void _InitVertexRec(graphP theGraph, int I)
 {
-     theGraph->V[I].leastAncestor =
-     theGraph->V[I].Lowpoint = I;
-     theGraph->V[I].DFSParent = NIL;
-     theGraph->V[I].adjacentTo = NIL;
-     theGraph->V[I].pertinentBicompList = NIL;
-     theGraph->V[I].separatedDFSChildList = NIL;
-     theGraph->V[I].fwdArcList = NIL;
+    gp_SetFirstArc(theGraph, I, NIL);
+    gp_SetLastArc(theGraph, I, NIL);
+    theGraph->V[I].leastAncestor =
+    theGraph->V[I].Lowpoint = I;
+    theGraph->V[I].DFSParent = NIL;
+    theGraph->V[I].adjacentTo = NIL;
+    theGraph->V[I].pertinentBicompList = NIL;
+    theGraph->V[I].separatedDFSChildList = NIL;
+    theGraph->V[I].fwdArcList = NIL;
 }
 
 /********************************************************************
@@ -1066,37 +1066,35 @@ int  J, degree;
 }
 
 /********************************************************************
- _AddArc()
- This routine adds arc (u,v) to u's edge list, storing the record for
- v at position arcPos.  The record is added to the beginning of u's
- adjacency list if the link parameter is 0 and to the end if it is 1.
- The use of exclusive-or (i.e. 1^link) is simply to get
- the other link (if link is 0 then 1^link is 1, and vice versa).
+ gp_AddArc()
+ This routine attaches the newArc into v's adjacency list.  The newArc
+ record is added to the beginning of v's adjacency list if the vlink
+ parameter is 0 and to the end if it is 1.
+ The use of exclusive-or (i.e. 1^link) is simply to get the other link
+ (i.e., if link is 0 then 1^link is 1, and vice versa).
  ********************************************************************/
 
-void _AddArc(graphP theGraph, int u, int v, int arcPos, int link)
+void gp_AddArc(graphP theGraph, int v, int vlink, int newArc)
 {
-     theGraph->G[arcPos].v = v;
-
-     if (gp_IsArc(theGraph, gp_GetFirstArc(theGraph, u)))
+     if (gp_IsArc(theGraph, gp_GetFirstArc(theGraph, v)))
      {
-    	 if (link == 0)
+    	 if (vlink == 0)
     	 {
-    		 gp_SetNextArc(theGraph, arcPos, gp_GetFirstArc(theGraph, u));
-    		 gp_SetPrevArc(theGraph, gp_GetFirstArc(theGraph, u), arcPos);
-    		 gp_AttachFirstArc(theGraph, u, arcPos);
+    		 gp_SetNextArc(theGraph, newArc, gp_GetFirstArc(theGraph, v));
+    		 gp_SetPrevArc(theGraph, gp_GetFirstArc(theGraph, v), newArc);
+    		 gp_AttachFirstArc(theGraph, v, newArc);
     	 }
     	 else
     	 {
-    		 gp_SetPrevArc(theGraph, arcPos, gp_GetLastArc(theGraph, u));
-    		 gp_SetNextArc(theGraph, gp_GetLastArc(theGraph, u), arcPos);
-    		 gp_AttachLastArc(theGraph, u, arcPos);
+    		 gp_SetPrevArc(theGraph, newArc, gp_GetLastArc(theGraph, v));
+    		 gp_SetNextArc(theGraph, gp_GetLastArc(theGraph, v), newArc);
+    		 gp_AttachLastArc(theGraph, v, newArc);
     	 }
      }
      else
      {
-		 gp_AttachFirstArc(theGraph, u, arcPos);
-		 gp_AttachLastArc(theGraph, u, arcPos);
+		 gp_AttachFirstArc(theGraph, v, newArc);
+		 gp_AttachLastArc(theGraph, v, newArc);
      }
 }
 
@@ -1122,7 +1120,7 @@ int  gp_AddEdge(graphP theGraph, int u, int ulink, int v, int vlink)
 int  upos, vpos;
 
      if (theGraph==NULL || u<0 || v<0 ||
-         u>=theGraph->edgeOffset || v>=theGraph->edgeOffset)
+         u>=2*theGraph->N || v>=2*theGraph->N)
          return NOTOK;
 
      /* We enforce the edge limit */
@@ -1137,25 +1135,26 @@ int  upos, vpos;
 
      upos = gp_GetTwinArc(theGraph, vpos);
 
-     _AddArc(theGraph, u, v, vpos, ulink);
-     _AddArc(theGraph, v, u, upos, vlink);
+     theGraph->G[upos].v = v;
+     gp_AddArc(theGraph, u, ulink, upos);
+     theGraph->G[vpos].v = u;
+     gp_AddArc(theGraph, v, vlink, vpos);
 
      theGraph->M++;
      return OK;
 }
 
 /********************************************************************
- _AddInternalArc()
- This routine adds a new arc (u,v) to u's adjacency list adjacent to
- the edge record for e, before or after depending on elink.  If e is
- not an arc, then elink is assumed to indicate whether the new arc
- is to be placed at the beginning or end of the list.
+ gp_InsertArc()
+ This routine adds newArc into v's adjacency list at a position
+ adjacent to the edge record for e, either before or after e,
+ depending on elink.  If e is not an arc, then elink is assumed to
+ indicate whether the new arc is to be placed at the beginning or end
+ of the list.
  ********************************************************************/
 
-void _AddInternalArc(graphP theGraph, int u, int e, int elink, int v, int newArc)
+void gp_InsertArc(graphP theGraph, int v, int e, int elink, int newArc)
 {
-     theGraph->G[newArc].v = v;
-
      if (gp_IsArc(theGraph, e))
      {
     	 int e2 = gp_GetAdjacentArc(theGraph, e, elink);
@@ -1167,33 +1166,33 @@ void _AddInternalArc(graphP theGraph, int u, int e, int elink, int v, int newArc
     	 // newArcs's elink is e2
     	 gp_SetAdjacentArc(theGraph, newArc, elink, e2);
 
-    	 // if e2 is an arc, then e2's 1^elink is newArc, else u's 1^elink is newArc
+    	 // if e2 is an arc, then e2's 1^elink is newArc, else v's 1^elink is newArc
     	 if (gp_IsArc(theGraph, e2))
     		 gp_SetAdjacentArc(theGraph, e2, 1^elink, newArc);
     	 else
-    		 gp_SetArc(theGraph, u, 1^elink, newArc);
+    		 gp_SetArc(theGraph, v, 1^elink, newArc);
      }
      else
      {
-    	 int e2 = gp_GetArc(theGraph, u, elink);
+    	 int e2 = gp_GetArc(theGraph, v, elink);
 
-    	 // u's elink is newArc, and newArc's 1^elink is gp_AdjacencyListEndMark(u)
-    	 gp_SetArc(theGraph, u, elink, newArc);
-    	 gp_SetAdjacentArc(theGraph, newArc, 1^elink, gp_AdjacencyListEndMark(u));
+    	 // v's elink is newArc, and newArc's 1^elink is gp_AdjacencyListEndMark(v)
+    	 gp_SetArc(theGraph, v, elink, newArc);
+    	 gp_SetAdjacentArc(theGraph, newArc, 1^elink, gp_AdjacencyListEndMark(v));
 
     	 // newArcs's elink is e2
     	 gp_SetAdjacentArc(theGraph, newArc, elink, e2);
 
-    	 // if e2 is an arc, then e2's 1^elink is newArc, else u's 1^elink is newArc
+    	 // if e2 is an arc, then e2's 1^elink is newArc, else v's 1^elink is newArc
     	 if (gp_IsArc(theGraph, e2))
     		 gp_SetAdjacentArc(theGraph, e2, 1^elink, newArc);
     	 else
-    		 gp_SetArc(theGraph, u, 1^elink, newArc);
+    		 gp_SetArc(theGraph, v, 1^elink, newArc);
      }
 }
 
 /********************************************************************
- gp_AddInternalEdge()
+ gp_InsertEdge()
 
  This function adds the edge (u, v) such that the edge record added
  to the adjacency list of u is adjacent to e_u and the edge record
@@ -1203,7 +1202,7 @@ void _AddInternalArc(graphP theGraph, int u, int e, int elink, int v, int newArc
  whether ot prepend or append to the adjacency list for u (or v).
  ********************************************************************/
 
-int  gp_AddInternalEdge(graphP theGraph, int u, int e_u, int e_ulink,
+int  gp_InsertEdge(graphP theGraph, int u, int e_u, int e_ulink,
                                          int v, int e_v, int e_vlink)
 {
 int vertMax = 2*theGraph->N - 1,
@@ -1226,8 +1225,11 @@ int vertMax = 2*theGraph->N - 1,
 
      upos = gp_GetTwinArc(theGraph, vpos);
 
-     _AddInternalArc(theGraph, u, e_u, e_ulink, v, upos);
-     _AddInternalArc(theGraph, v, e_v, e_vlink, u, vpos);
+     theGraph->G[upos].v = v;
+     gp_InsertArc(theGraph, u, e_u, e_ulink, upos);
+
+     theGraph->G[vpos].v = u;
+     gp_InsertArc(theGraph, v, e_v, e_vlink, vpos);
 
      theGraph->M++;
 
@@ -1330,6 +1332,31 @@ void gp_RestoreEdge(graphP theGraph, int arcPos)
 }
 
 /****************************************************************************
+ gp_DeleteArc()
+ Removes arc from v's adjacency list
+ ****************************************************************************/
+
+void gp_DeleteArc(graphP theGraph, int v, int arc)
+{
+	if (arc == gp_GetFirstArc(theGraph, v))
+	{
+		gp_SetFirstArc(theGraph, v, gp_GetNextArc(theGraph, arc));
+		if (arc == gp_GetLastArc(theGraph, v))
+            gp_SetLastArc(theGraph, v, gp_AdjacencyListEndMark(v));
+        else
+	        gp_SetPrevArc(theGraph, gp_GetNextArc(theGraph, arc), gp_AdjacencyListEndMark(v));
+	}
+    else
+    {
+		gp_SetNextArc(theGraph, gp_GetPrevArc(theGraph, arc), gp_GetNextArc(theGraph, arc));
+		if (arc == gp_GetLastArc(theGraph, v))
+			gp_SetLastArc(theGraph, v, gp_GetPrevArc(theGraph, arc));
+		else
+			gp_SetPrevArc(theGraph, gp_GetNextArc(theGraph, arc), gp_GetPrevArc(theGraph, arc));
+    }
+}
+
+/****************************************************************************
  gp_DeleteEdge()
 
  This function deletes the given edge record J and its twin, reducing the
@@ -1353,8 +1380,8 @@ int  nextArc, JPos, MPos;
 
 /* Delete the edge records J and JTwin. */
 
-     gp_DetachArc(theGraph, theGraph->G[JTwin].v, J);
-     gp_DetachArc(theGraph, theGraph->G[J].v, JTwin);
+     gp_DeleteArc(theGraph, theGraph->G[JTwin].v, J);
+     gp_DeleteArc(theGraph, theGraph->G[J].v, JTwin);
 
 /* Clear the edge record contents */
 

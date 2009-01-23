@@ -692,7 +692,7 @@ int WPredNextLink = 1^WPrevLink,
 char *_RenderToString(graphP theEmbedding)
 {
     DrawPlanarContext *context = NULL;
-    gp_FindExtension(theEmbedding, "Draw", (void *) &context);
+    gp_FindExtension(theEmbedding, DRAWPLANAR_NAME, (void *) &context);
 
     if (context != NULL)
     {
