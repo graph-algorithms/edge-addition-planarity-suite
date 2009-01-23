@@ -1668,8 +1668,8 @@ int  e, v, w;
      gp_DeleteEdge(theGraph, e, 0);
 
      /* Now add a single edge to represent the XY-path */
-     gp_AddInternalEdge(theGraph, u, gp_GetFirstArc(theGraph, u), 0,
-    		                      x, gp_GetFirstArc(theGraph, x), 0);
+     gp_InsertEdge(theGraph, u, gp_GetFirstArc(theGraph, u), 0,
+    		                 x, gp_GetFirstArc(theGraph, x), 0);
 
      /* Now set up the path connectors so the original XY-path can be recovered if needed.
         Also, set the reduction edge's type to preserve the DFS tree structure */
@@ -1723,8 +1723,8 @@ int  J0, J1, JTwin0, JTwin1;
 
      /* Add the two edges to reconnect the reduced path. */
 
-     if (gp_AddInternalEdge(theGraph, u, J, 0, v, gp_AdjacencyListEndMark(v), 0) != OK ||
-         gp_AddInternalEdge(theGraph, x, JTwin, 0, w, gp_AdjacencyListEndMark(w), 0) != OK)
+     if (gp_InsertEdge(theGraph, u, J, 0, v, gp_AdjacencyListEndMark(v), 0) != OK ||
+         gp_InsertEdge(theGraph, x, JTwin, 0, w, gp_AdjacencyListEndMark(w), 0) != OK)
          return NOTOK;
 
      /* Delete the edge represented by J and JTwin */
@@ -1805,8 +1805,8 @@ int  J0, JTwin0, J1, JTwin1, PathIsOnExtFace;
                 but when edge [J, JTwin] is deleted, then the new edge record will be
                 between J0 and J1.  Likewise, JTwin and the new edge record added to x. */
 
-             if (gp_AddInternalEdge(theGraph, u, J, 1, v, gp_AdjacencyListEndMark(v), 0) != OK ||
-                 gp_AddInternalEdge(theGraph, x, JTwin, 1, w, gp_AdjacencyListEndMark(w), 0) != OK)
+             if (gp_InsertEdge(theGraph, u, J, 1, v, gp_AdjacencyListEndMark(v), 0) != OK ||
+                 gp_InsertEdge(theGraph, x, JTwin, 1, w, gp_AdjacencyListEndMark(w), 0) != OK)
                  return NOTOK;
 
              /* We delete the edge represented by J and JTwin. We delete the edge after
