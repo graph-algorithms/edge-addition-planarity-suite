@@ -43,12 +43,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "graphK33Search.h"
 #include "graphDrawPlanar.h"
 
-void SpecificGraph(int);
-void RandomGraph(int extraEdges);
-void RandomGraphs(int);
+void SpecificGraph(int embedFlags, char *infileName, char *outfileName, char *outfile2Name);
+void RandomGraph(int extraEdges, int numVertices, char *outfileName, char *outfile2Name);
+void RandomGraphs(int, int, int);
 void Reconfigure();
 
-int newCommandLine(int argc, char *argv[]);
+int commandLine(int argc, char *argv[]);
 int legacyCommandLine(int argc, char *argv[]);
 int menu();
 
@@ -61,7 +61,7 @@ char Mode='r',
      EmbeddableOut='n',
      ObstructedOut='n',
      AdjListsForEmbeddingsOut='n',
-     menuMode='n';
+     quietMode='n';
 
 /****************************************************************************
  MESSAGE - prints a string, but when debugging adds \n and flushes stdout
@@ -72,7 +72,7 @@ char Line[MAXLINE];
 
 void Message(char *message)
 {
-	if (menuMode == 'y')
+	if (quietMode == 'n')
 	{
 	    fprintf(stdout, "%s", message);
 
@@ -85,12 +85,24 @@ void Message(char *message)
 
 void ErrorMessage(char *message)
 {
-    fprintf(stderr, "%s", message);
+	if (quietMode == 'n')
+	{
+		fprintf(stderr, "%s", message);
 
 #ifdef DEBUG
-    fprintf(stderr, "\n");
-    fflush(stderr);
+		fprintf(stderr, "\n");
+		fflush(stderr);
 #endif
+	}
+}
+
+void ProjectTitle()
+{
+    Message("\n=================================================="
+            "\nPlanarity version 2.0"
+            "\nby John M. Boyer (jboyer@acm.org)"
+            "\n=================================================="
+            "\n");
 }
 
 /****************************************************************************
@@ -99,29 +111,28 @@ void ErrorMessage(char *message)
 
 int main(int argc, char *argv[])
 {
-	if (argc == 1)
+	if (argc <= 1)
 		return menu();
 
 	if (argv[1][0] == '-')
-		return newCommandLine(argc, argv);
+		return commandLine(argc, argv);
 
 	return legacyCommandLine(argc, argv);
 }
 
 int helpMessage()
 {
-	char menuModeTemp = menuMode;
-	menuMode = 'y';
+	ProjectTitle();
 
     Message(
     	"'planarity': menu-driven\n"
         "'planarity (-h|-help)': this message\n"
     	"'planarity -unit': runs unit tests\n"
     	"'planarity -nauty ...': runs nauty testing\n"
-    	"'planarity -r C K N': Random graphs\n"
-    	"'planarity -s C I O [O2]': Specific graph\n"
-        "'planarity -m N O [O2]': Maximal planar random graph\n"
-        "'planarity -n N O [O2]': Non-planar random graph (maximal planar plus edge)\n"
+    	"'planarity -r [-q] C K N': Random graphs\n"
+    	"'planarity -s [-q] C I O [O2]': Specific graph\n"
+        "'planarity -m [-q] N O [O2]': Maximal planar random graph\n"
+        "'planarity -n [-q] N O [O2]': Non-planar random graph (maximal planar plus edge)\n"
         "'planarity I O [-n O2]': Legacy command-line (default -s -p)\n"
     	"\n"
     );
@@ -150,7 +161,6 @@ int helpMessage()
     	"\n"
     );
 
-    menuMode = menuModeTemp;
     return 0;
 }
 
@@ -166,31 +176,128 @@ int callUnitTests(int argc, char *argv[])
 	return 0;
 }
 
+// 'planarity -r [-q] C K N': Random graphs
 int callRandomGraphs(int argc, char *argv[])
 {
-	ErrorMessage("It's on the to-do list!");
+	int  embedFlags = EMBEDFLAGS_PLANAR;
+	char Choice = 0;
+	int offset = 0, NumGraphs, SizeOfGraphs;
+
+	if (argc < 5)
+		return -1;
+
+	if (argv[2][0] == '-' && (Choice = argv[2][1]) == 'q')
+	{
+		Choice = argv[3][1];
+		if (argc < 6)
+			return -1;
+		offset = 1;
+	}
+
+	NumGraphs = atoi(argv[3+offset]);
+	SizeOfGraphs = atoi(argv[4+offset]);
+
+    switch (Choice)
+    {
+        case 'o' : embedFlags = EMBEDFLAGS_OUTERPLANAR; break;
+        case 'p' : embedFlags = EMBEDFLAGS_PLANAR; break;
+        case 'd' : embedFlags = EMBEDFLAGS_DRAWPLANAR; break;
+        case '2' : embedFlags = EMBEDFLAGS_SEARCHFORK23; break;
+        case '3' : embedFlags = EMBEDFLAGS_SEARCHFORK33; break;
+    }
+
+    RandomGraphs(embedFlags, NumGraphs, SizeOfGraphs);
+
 	return 0;
 }
 
+// 'planarity -s [-q] C I O [O2]': Specific graph
 int callSpecificGraph(int argc, char *argv[])
 {
-	ErrorMessage("It's on the to-do list!");
+	int  embedFlags = EMBEDFLAGS_PLANAR;
+	char Choice=0, *infileName=NULL, *outfileName=NULL, *outfile2Name=NULL;
+	int offset = 0;
+
+	if (argc < 5)
+		return -1;
+
+	if (argv[2][0] == '-' && (Choice = argv[2][1]) == 'q')
+	{
+		Choice = argv[3][1];
+		if (argc < 6)
+			return -1;
+		offset = 1;
+	}
+
+	infileName = argv[3+offset];
+	outfileName = argv[4+offset];
+	if (argc == 6+offset)
+	    outfile2Name = argv[5+offset];
+
+    switch (Choice)
+    {
+        case 'o' : embedFlags = EMBEDFLAGS_OUTERPLANAR; break;
+        case 'p' : embedFlags = EMBEDFLAGS_PLANAR; break;
+        case 'd' : embedFlags = EMBEDFLAGS_DRAWPLANAR; break;
+        case '2' : embedFlags = EMBEDFLAGS_SEARCHFORK23; break;
+        case '3' : embedFlags = EMBEDFLAGS_SEARCHFORK33; break;
+    }
+
+	SpecificGraph(embedFlags, infileName, outfileName, outfile2Name);
 	return 0;
 }
 
+// 'planarity -m [-q] N O [O2]': Maximal planar random graph
 int callRandomMaxPlanarGraph(int argc, char *argv[])
 {
-	ErrorMessage("It's on the to-do list!");
+	int offset = 0, numVertices;
+	char *outfileName = NULL, *outfile2Name = NULL;
+
+	if (argc < 4)
+		return -1;
+
+	if (argv[2][0] == '-' && argv[2][1] == 'q')
+	{
+		if (argc < 5)
+			return -1;
+		offset = 1;
+	}
+
+	numVertices = atoi(argv[2+offset]);
+	outfileName = argv[3+offset];
+	if (argc == 5+offset)
+	    outfile2Name = argv[4+offset];
+
+	RandomGraph(0, numVertices, outfileName, outfile2Name);
 	return 0;
 }
 
+// 'planarity -n [-q] N O [O2]': Non-planar random graph (maximal planar plus edge)
 int callRandomNonplanarGraph(int argc, char *argv[])
 {
-	ErrorMessage("It's on the to-do list!");
+	int offset = 0, numVertices;
+	char *outfileName = NULL, *outfile2Name = NULL;
+
+	if (argc < 4)
+		return -1;
+
+	if (argv[2][0] == '-' && argv[2][1] == 'q')
+	{
+		if (argc < 5)
+			return -1;
+		offset = 1;
+	}
+
+	numVertices = atoi(argv[2+offset]);
+	outfileName = argv[3+offset];
+	if (argc == 5+offset)
+	    outfile2Name = argv[4+offset];
+
+	RandomGraph(1, numVertices, outfileName, outfile2Name);
 	return 0;
 }
 
-int newCommandLine(int argc, char *argv[])
+int commandLine(int argc, char *argv[])
 {
 	if (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "-help") == 0)
 		return helpMessage();
@@ -200,6 +307,9 @@ int newCommandLine(int argc, char *argv[])
 
 	if (strcmp(argv[1], "-unit") == 0)
 		return callUnitTests(argc, argv);
+
+	if (strcmp(argv[2], "-q") == 0)
+		quietMode = 'y';
 
 	if (strcmp(argv[1], "-r") == 0)
 		return callRandomGraphs(argc, argv);
@@ -272,21 +382,16 @@ int  embedFlags = EMBEDFLAGS_PLANAR;
 
 #ifdef PROFILING  // If profiling, then only run RandomGraphs()
 
-     RandomGraphs(embedFlags);
+     RandomGraphs(embedFlags, 0, 0);
 
 #else
 
 char Choice;
 
-	 menuMode = 'y';
-
      do {
-        Message("\n=================================================="
-                "\nPlanarity Algorithms"
-                "\nby John M. Boyer"
-                "\n=================================================="
-                "\n"
-                "\nM. Maximal planar random graph"
+    	ProjectTitle();
+
+        Message("\nM. Maximal planar random graph"
                 "\nN. Non-planar random graph (maximal planar plus edge)"
                 "\nO. Outerplanar embedding and obstruction isolation"
                 "\nP. Planar embedding and Kuratowski subgraph isolation"
@@ -306,8 +411,8 @@ char Choice;
         embedFlags = 0;
         switch (Choice)
         {
-            case 'm' : RandomGraph(0); break;
-            case 'n' : RandomGraph(1); break;
+            case 'm' : RandomGraph(0, 0, NULL, NULL); break;
+            case 'n' : RandomGraph(1, 0, NULL, NULL); break;
             case 'o' : embedFlags = EMBEDFLAGS_OUTERPLANAR; break;
             case 'p' : embedFlags = EMBEDFLAGS_PLANAR; break;
             case 'd' : embedFlags = EMBEDFLAGS_DRAWPLANAR; break;
@@ -321,8 +426,8 @@ char Choice;
         {
             switch (tolower(Mode))
             {
-                case 's' : SpecificGraph(embedFlags); break;
-                case 'r' : RandomGraphs(embedFlags); break;
+                case 's' : SpecificGraph(embedFlags, NULL, NULL, ""); break;
+                case 'r' : RandomGraphs(embedFlags, 0, 0); break;
             }
 
             Message("\nPress ENTER to continue...");
@@ -402,18 +507,21 @@ char Ch;
  Creates a random maximal planar graph, then addes extraEdges edges to it.
  ****************************************************************************/
 
-void RandomGraph(int extraEdges)
+void RandomGraph(int extraEdges, int numVertices, char *outfileName, char *outfile2Name)
 {
-int  numVertices, Result;
+int  Result;
 platform_time start, end;
 graphP theGraph=NULL, origGraph;
 
-     Message("Enter number of vertices:");
-     scanf(" %d", &numVertices);
-     if (numVertices <= 0 || numVertices > 1000000)
+     if (numVertices <= 0)
      {
-         ErrorMessage("Must be between 1 and 1000000; changed to 10000\n");
-         numVertices = 10000;
+         Message("Enter number of vertices:");
+         scanf(" %d", &numVertices);
+         if (numVertices <= 0 || numVertices > 1000000)
+         {
+             ErrorMessage("Must be between 1 and 1000000; changed to 10000\n");
+             numVertices = 10000;
+         }
      }
 
      srand(platform_GetTime());
@@ -439,15 +547,21 @@ graphP theGraph=NULL, origGraph;
      Message(Line);
      Message("Now processing\n");
 
-#ifdef _DEBUG
-     gp_Write(theGraph, "randomGraph.txt", WRITE_ADJLIST);
-#endif
+     if (outfile2Name != NULL)
+     {
+         gp_Write(theGraph, outfile2Name, WRITE_ADJLIST);
+     }
 
      origGraph = gp_DupGraph(theGraph);
 
      start = platform_GetTime();
      Result = gp_Embed(theGraph, EMBEDFLAGS_PLANAR);
      end = platform_GetTime();
+
+     sprintf(Line, "Finished processing in %.3lf seconds. Testing integrity of result...\n", platform_GetDuration(start,end));
+     Message(Line);
+
+	 gp_SortVertices(theGraph);
 
      if (gp_TestEmbedResultIntegrity(theGraph, origGraph, Result) != OK)
          Result = NOTOK;
@@ -458,10 +572,16 @@ graphP theGraph=NULL, origGraph;
     	  Message("Nonplanar graph successfully justified");
      else ErrorMessage("Failure occurred");
 
-     sprintf(Line, " in %.3lf seconds.\n", platform_GetDuration(start,end));
-     Message(Line);
+     if (Result == OK || Result == NONEMBEDDABLE)
+     {
+    	 if (outfileName != NULL)
+    		 gp_Write(theGraph, outfileName, WRITE_ADJLIST);
+     }
 
-     SaveAsciiGraph(theGraph, "maxplanar");
+#ifdef DEBUG
+     if (extraEdges == 0)
+         SaveAsciiGraph(theGraph, "maxPlanarEdgeList.txt");
+#endif
 
      gp_Free(&theGraph);
      gp_Free(&origGraph);
@@ -472,11 +592,11 @@ graphP theGraph=NULL, origGraph;
 
 #define NUM_MINORS  9
 
-void RandomGraphs(int embedFlags)
+void RandomGraphs(int embedFlags, int NumGraphs, int SizeOfGraphs)
 {
 char theFileName[256];
 int  Result=OK, I;
-int  NumGraphs=0, SizeOfGraphs=0, NumEmbeddableGraphs=0;
+int  NumEmbeddableGraphs=0;
 int  ObstructionMinorFreqs[NUM_MINORS];
 graphP theGraph=NULL;
 platform_time start, end;
@@ -484,8 +604,11 @@ platform_time start, end;
 graphP origGraph=NULL;
 #endif
 
-	 Message("Enter number of graphs to generate:");
-     scanf(" %d", &NumGraphs);
+     if (NumGraphs == 0)
+     {
+	     Message("Enter number of graphs to generate:");
+         scanf(" %d", &NumGraphs);
+     }
 
      if (NumGraphs <= 0 || NumGraphs > 10000000)
      {
@@ -493,8 +616,12 @@ graphP origGraph=NULL;
          NumGraphs = 100;
      }
 
-     Message("Enter size of graphs:");
-     scanf(" %d", &SizeOfGraphs);
+     if (SizeOfGraphs == 0)
+     {
+         Message("Enter size of graphs:");
+         scanf(" %d", &SizeOfGraphs);
+     }
+
      if (SizeOfGraphs <= 0 || SizeOfGraphs > 10000)
      {
     	 ErrorMessage("Must be between 1 and 10000; changed to 15\n");
@@ -724,9 +851,9 @@ graphP origGraph=NULL;
 /* End Use New Graphs */
 
 #ifdef DEBUG
-          if (menuMode == 'y')
+          if (quietMode == 'n')
           {
-              printf(Line, "%d\r", I+1);
+              fprintf(stdout, "%d\r", I+1);
               fflush(stdout);
           }
 #endif
@@ -810,10 +937,11 @@ graphP origGraph=NULL;
 /****************************************************************************
  ****************************************************************************/
 
-void SpecificGraph(int embedFlags)
+#define FILENAMELENGTH 100
+void SpecificGraph(int embedFlags, char *infileName, char *outfileName, char *outfile2Name)
 {
 graphP theGraph = gp_New();
-char theFileName[100];
+char theFileName[FILENAMELENGTH+10];
 int  Result;
 char *theMsg = "The embedFlags were incorrectly set.\n";
 char *resultStr = "";
@@ -861,11 +989,24 @@ char *resultStr = "";
 
 /* Get the filename of the graph to test */
 
-     Message("Enter graph file name:\n");
-     scanf(" %s", theFileName);
+     if (infileName == NULL)
+     {
+		 Message("Enter graph file name:\n");
+		 scanf(" %s", theFileName);
 
-     if (!strchr(theFileName, '.'))
-         strcat(theFileName, ".txt");
+		 if (!strchr(theFileName, '.'))
+			 strcat(theFileName, ".txt");
+     }
+     else
+     {
+    	 if (strlen(infileName) > FILENAMELENGTH)
+    	 {
+    		 ErrorMessage("Filename is too long");
+    		 return;
+    	 }
+
+    	 strcpy(theFileName, infileName);
+     }
 
 /* Read the graph into memory */
 
@@ -873,7 +1014,11 @@ char *resultStr = "";
 
      if (Result == NONEMBEDDABLE)
      {
-         ErrorMessage("Too many edges... graph is non-planar.  Proceeding...\n");
+    	 // If the graph in the input file has too many edges, then some
+    	 // were ignored by the reader if NONEMBEDDABLE was returned.
+    	 // However, the reader adds enough edges to run any of the
+    	 // algorithms successfully, e.g. planar embedding would return
+    	 // a Kuratowski subgraph
          Result = OK;
      }
 
@@ -927,33 +1072,96 @@ char *resultStr = "";
                  break;
 
             default :
+            	 Result = NOTOK;
                  theMsg = "The embedder failed.";
                  break;
          }
 
-         sprintf(Line, theMsg, resultStr);
-         Message(Line);
-
-         strcat(theFileName, ".out");
-
-         if (embedFlags == EMBEDFLAGS_DRAWPLANAR && Result == OK)
-             gp_DrawPlanar_RenderToFile(theGraph, "render.beforeSort.txt");
-
-         // Restore the vertex ordering of the original graph and the write the result
-         gp_SortVertices(theGraph);
-         gp_Write(theGraph, theFileName, WRITE_ADJLIST);
-
-         if (embedFlags == EMBEDFLAGS_DRAWPLANAR && Result == OK)
+         if (Result != NOTOK)
          {
-             graphP testGraph = gp_New();
+             sprintf(Line, theMsg, resultStr);
+             Message(Line);
 
-             gp_AttachDrawPlanar(testGraph);
+#ifdef DEBUG
+             if (embedFlags == EMBEDFLAGS_DRAWPLANAR && Result == OK)
+                 gp_DrawPlanar_RenderToFile(theGraph, "render.beforeSort.txt");
+#endif
 
-             gp_DrawPlanar_RenderToFile(theGraph, "render.afterSort.txt");
+             // Restore the vertex ordering of the original graph (undo DFS numbering)
+             gp_SortVertices(theGraph);
 
-             Result = gp_Read(testGraph, theFileName);
+             // Write the primary output file
+             if (outfileName == NULL)
+                 strcat(theFileName, ".out");
+             else
+             {
+            	 if (strlen(outfileName) > FILENAMELENGTH)
+            	 {
+            		 sprintf(Line, "Outfile filename is too long. Result placed in %s", theFileName);
+            		 ErrorMessage(Line);
+            	 }
+            	 else
+            		 strcpy(theFileName, outfileName);
+             }
 
-             gp_DrawPlanar_RenderToFile(testGraph, "render.afterRead.txt");
+             // Write the primary output
+        	 if (embedFlags == EMBEDFLAGS_PLANAR || embedFlags == EMBEDFLAGS_OUTERPLANAR)
+        	 {
+        		 if (Result == OK)
+        	         gp_Write(theGraph, theFileName, WRITE_ADJLIST);
+        	 }
+             else if (embedFlags == EMBEDFLAGS_DRAWPLANAR)
+             {
+            	 if (Result == OK)
+        	         gp_Write(theGraph, theFileName, WRITE_ADJLIST);
+        	 }
+             else if (embedFlags == EMBEDFLAGS_SEARCHFORK33 || embedFlags == EMBEDFLAGS_SEARCHFORK23)
+             {
+            	 if (Result == NONEMBEDDABLE)
+        	         gp_Write(theGraph, theFileName, WRITE_ADJLIST);
+             }
+
+             // When called from the menu system, we want to write the planar or outerplanar
+        	 // obstruction, if one exists.
+             if (outfile2Name != NULL && strlen(outfile2Name) == 0)
+             {
+            	 if (embedFlags == EMBEDFLAGS_PLANAR || embedFlags == EMBEDFLAGS_OUTERPLANAR)
+            		 outfile2Name = theFileName;
+             }
+
+             // Write the secondary output file, if it is required
+             if (outfile2Name != NULL)
+             {
+            	 // For planar and outerplanar embedding, the secondary file receives
+            	 // the obstruction to embedding
+            	 if (embedFlags == EMBEDFLAGS_PLANAR || embedFlags == EMBEDFLAGS_OUTERPLANAR)
+            	 {
+            		 if (Result == NONEMBEDDABLE)
+            	         gp_Write(theGraph, outfile2Name, WRITE_ADJLIST);
+            	 }
+            	 // For planar graph drawing, the secondary file receives the drawing
+                 else if (embedFlags == EMBEDFLAGS_DRAWPLANAR)
+                 {
+                	 if (Result == OK)
+                	     gp_DrawPlanar_RenderToFile(theGraph, outfile2Name);
+                 }
+            	 // The secondary file should not have been provided otherwise
+                 else
+                 {
+                	 ErrorMessage("Unsupported command for secondary output file request.");
+                 }
+             }
+
+#ifdef DEBUG
+             if (embedFlags == EMBEDFLAGS_DRAWPLANAR && Result == OK)
+             {
+                 graphP testGraph = gp_New();
+                 gp_AttachDrawPlanar(testGraph);
+                 gp_DrawPlanar_RenderToFile(theGraph, "render.afterSort.txt");
+                 Result = gp_Read(testGraph, theFileName);
+                 gp_DrawPlanar_RenderToFile(testGraph, "render.afterRead.txt");
+             }
+#endif
          }
      }
 
