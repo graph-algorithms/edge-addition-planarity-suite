@@ -43,9 +43,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "graphK33Search.h"
 #include "graphDrawPlanar.h"
 
-void SpecificGraph(int embedFlags, char *infileName, char *outfileName, char *outfile2Name);
-void RandomGraph(int extraEdges, int numVertices, char *outfileName, char *outfile2Name);
-void RandomGraphs(int, int, int);
+int SpecificGraph(int embedFlags, char *infileName, char *outfileName, char *outfile2Name);
+int RandomGraph(int extraEdges, int numVertices, char *outfileName, char *outfile2Name);
+int RandomGraphs(int, int, int);
+
 void Reconfigure();
 
 int commandLine(int argc, char *argv[]);
@@ -132,10 +133,12 @@ int helpMessage()
     	"'planarity -r [-q] C K N': Random graphs\n"
     	"'planarity -s [-q] C I O [O2]': Specific graph\n"
         "'planarity -m [-q] N O [O2]': Maximal planar random graph\n"
-        "'planarity -n [-q] N O [O2]': Non-planar random graph (maximal planar plus edge)\n"
+        "'planarity -n [-q] N O [O2]': Nonplanar random graph (maximal planar + edge)\n"
         "'planarity I O [-n O2]': Legacy command-line (default -s -p)\n"
     	"\n"
     );
+
+    Message("-q is for quiet mode (no messages to stdout and stderr)\n");
 
     Message(
     	"C = command from menu\n"
@@ -161,7 +164,15 @@ int helpMessage()
     	"\n"
     );
 
-    return 0;
+    Message(
+        "planarity process results: 0=OK, -1=NOTOK, 1=NONEMBEDDABLE\n"
+    	"    1 result only for specific graph mode (-s)\n"
+        "      with command -2,-3: found K2,3 or K3,3\n"
+    	"      with command -p,-d: found planarity obstruction\n"
+    	"      with command -o: found outerplanarity obstruction\n"
+    );
+
+    return OK;
 }
 
 int callNauty(int argc, char *argv[])
@@ -206,9 +217,7 @@ int callRandomGraphs(int argc, char *argv[])
         case '3' : embedFlags = EMBEDFLAGS_SEARCHFORK33; break;
     }
 
-    RandomGraphs(embedFlags, NumGraphs, SizeOfGraphs);
-
-	return 0;
+    return RandomGraphs(embedFlags, NumGraphs, SizeOfGraphs);
 }
 
 // 'planarity -s [-q] C I O [O2]': Specific graph
@@ -243,8 +252,7 @@ int callSpecificGraph(int argc, char *argv[])
         case '3' : embedFlags = EMBEDFLAGS_SEARCHFORK33; break;
     }
 
-	SpecificGraph(embedFlags, infileName, outfileName, outfile2Name);
-	return 0;
+	return SpecificGraph(embedFlags, infileName, outfileName, outfile2Name);
 }
 
 // 'planarity -m [-q] N O [O2]': Maximal planar random graph
@@ -268,8 +276,7 @@ int callRandomMaxPlanarGraph(int argc, char *argv[])
 	if (argc == 5+offset)
 	    outfile2Name = argv[4+offset];
 
-	RandomGraph(0, numVertices, outfileName, outfile2Name);
-	return 0;
+	return RandomGraph(0, numVertices, outfileName, outfile2Name);
 }
 
 // 'planarity -n [-q] N O [O2]': Non-planar random graph (maximal planar plus edge)
@@ -293,39 +300,45 @@ int callRandomNonplanarGraph(int argc, char *argv[])
 	if (argc == 5+offset)
 	    outfile2Name = argv[4+offset];
 
-	RandomGraph(1, numVertices, outfileName, outfile2Name);
-	return 0;
+	return RandomGraph(1, numVertices, outfileName, outfile2Name);
 }
 
 int commandLine(int argc, char *argv[])
 {
-	if (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "-help") == 0)
-		return helpMessage();
+	int Result = NOTOK;
 
-	if (strcmp(argv[1], "-nauty") == 0)
-		return callNauty(argc, argv);
-
-	if (strcmp(argv[1], "-unit") == 0)
-		return callUnitTests(argc, argv);
-
-	if (strcmp(argv[2], "-q") == 0)
+	if (argc >= 3 && strcmp(argv[2], "-q") == 0)
 		quietMode = 'y';
 
-	if (strcmp(argv[1], "-r") == 0)
-		return callRandomGraphs(argc, argv);
+	if (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "-help") == 0)
+		Result = helpMessage();
 
-	if (strcmp(argv[1], "-s") == 0)
-		return callSpecificGraph(argc, argv);
+	else if (strcmp(argv[1], "-nauty") == 0)
+		Result = callNauty(argc, argv);
 
-	if (strcmp(argv[1], "-m") == 0)
-		return callRandomMaxPlanarGraph(argc, argv);
+	else if (strcmp(argv[1], "-unit") == 0)
+		Result = callUnitTests(argc, argv);
 
-	if (strcmp(argv[1], "-n") == 0)
-		return callRandomNonplanarGraph(argc, argv);
+	else if (strcmp(argv[1], "-r") == 0)
+		Result = callRandomGraphs(argc, argv);
 
-	ErrorMessage("Unsupported command line.  Here is the help for this program.\n");
-	helpMessage();
-	return -1;
+	else if (strcmp(argv[1], "-s") == 0)
+		Result = callSpecificGraph(argc, argv);
+
+	else if (strcmp(argv[1], "-m") == 0)
+		Result = callRandomMaxPlanarGraph(argc, argv);
+
+	else if (strcmp(argv[1], "-n") == 0)
+		Result = callRandomNonplanarGraph(argc, argv);
+
+	else
+	{
+		ErrorMessage("Unsupported command line.  Here is the help for this program.\n");
+		helpMessage();
+		Result = NOTOK;
+	}
+
+	return Result == OK ? 0 : (Result == NONEMBEDDABLE ? 1 : -1);
 }
 
 int legacyCommandLine(int argc, char *argv[])
@@ -507,7 +520,7 @@ char Ch;
  Creates a random maximal planar graph, then addes extraEdges edges to it.
  ****************************************************************************/
 
-void RandomGraph(int extraEdges, int numVertices, char *outfileName, char *outfile2Name)
+int RandomGraph(int extraEdges, int numVertices, char *outfileName, char *outfile2Name)
 {
 int  Result;
 platform_time start, end;
@@ -532,14 +545,14 @@ graphP theGraph=NULL, origGraph;
      {
           gp_Free(&theGraph);
           ErrorMessage("Memory allocation/initialization error.\n");
-          return;
+          return NOTOK;
      }
 
      start = platform_GetTime();
      if (gp_CreateRandomGraphEx(theGraph, 3*numVertices-6+extraEdges) != OK)
      {
          ErrorMessage("gp_CreateRandomGraphEx() failed\n");
-         return;
+         return NOTOK;
      }
      end = platform_GetTime();
 
@@ -585,6 +598,8 @@ graphP theGraph=NULL, origGraph;
 
      gp_Free(&theGraph);
      gp_Free(&origGraph);
+
+     return Result;
 }
 
 /****************************************************************************
@@ -592,7 +607,7 @@ graphP theGraph=NULL, origGraph;
 
 #define NUM_MINORS  9
 
-void RandomGraphs(int embedFlags, int NumGraphs, int SizeOfGraphs)
+int  RandomGraphs(int embedFlags, int NumGraphs, int SizeOfGraphs)
 {
 char theFileName[256];
 int  Result=OK, I;
@@ -600,9 +615,7 @@ int  NumEmbeddableGraphs=0;
 int  ObstructionMinorFreqs[NUM_MINORS];
 graphP theGraph=NULL;
 platform_time start, end;
-#ifdef DEBUG
 graphP origGraph=NULL;
-#endif
 
      if (NumGraphs == 0)
      {
@@ -639,7 +652,7 @@ graphP origGraph=NULL;
      if ((theGraph = gp_New()) == NULL || gp_InitGraph(theGraph, SizeOfGraphs) != OK)
      {
     	  ErrorMessage("Error creating space for a graph of the given size.\n");
-          return;
+          return  NOTOK;
      }
 
 // Enable the appropriate feature
@@ -663,13 +676,12 @@ graphP origGraph=NULL;
 //     if (embedFlags != EMBEDFLAGS_SEARCHFORK23)
 //         gp_RemoveExtension(theGraph, "K23Search");
 
-#ifdef DEBUG
 // Make another graph structure to store the original graph that is randomly generated
 
      if ((origGraph = gp_New()) == NULL || gp_InitGraph(origGraph, SizeOfGraphs) != OK)
      {
     	  ErrorMessage("Error creating space for the second graph structure of the given size.\n");
-          return;
+          return NOTOK;
      }
 
 // Enable the appropriate feature
@@ -680,7 +692,7 @@ graphP origGraph=NULL;
         case EMBEDFLAGS_SEARCHFORK23 : gp_AttachK23Search(origGraph); break;
         case EMBEDFLAGS_DRAWPLANAR   : gp_AttachDrawPlanar(origGraph); break;
      }
-#endif
+
 /* End Reuse graphs */
 
      // Generate the graphs and try to embed each
@@ -696,7 +708,7 @@ graphP origGraph=NULL;
          if ((theGraph = gp_New()) == NULL || gp_InitGraph(theGraph, SizeOfGraphs) != OK)
          {
               ErrorMessage("Error creating space for a graph of the given size.\n");
-              return;
+              return NOTOK;
          }
 
          // Enable the appropriate feature
@@ -714,7 +726,7 @@ graphP origGraph=NULL;
          if ((origGraph = gp_New()) == NULL || gp_InitGraph(origGraph, SizeOfGraphs) != OK)
          {
               ErrorMessage("Error creating space for the second graph structure of the given size.\n");
-              return;
+              return NOTOK;
          }
 
          // Enable the appropriate feature
@@ -732,6 +744,7 @@ graphP origGraph=NULL;
           if (gp_CreateRandomGraph(theGraph) != OK)
           {
         	  ErrorMessage("gp_CreateRandomGraph() failed\n");
+        	  Result = NOTOK;
               break;
           }
 
@@ -741,9 +754,7 @@ graphP origGraph=NULL;
               gp_Write(theGraph, theFileName, WRITE_ADJLIST);
           }
 
-#ifdef DEBUG
           gp_CopyGraph(origGraph, theGraph);
-#endif
 
 #ifdef _DEBUG
 /* This is useful for capturing the originals of graphs
@@ -764,10 +775,8 @@ graphP origGraph=NULL;
 
           Result = gp_Embed(theGraph, embedFlags);
 
-#ifdef DEBUG
           if (gp_TestEmbedResultIntegrity(theGraph, origGraph, Result) != OK)
               Result = NOTOK;
-#endif
 
           if (Result == OK)
           {
@@ -932,13 +941,15 @@ graphP origGraph=NULL;
          sprintf(Line, "Of the generated graphs, %d did not contain a K_{3,3} homeomorph as a subgraph.\n", NumEmbeddableGraphs);
          Message(Line);
      }
+
+     return Result==NOTOK ? NOTOK : OK;
 }
 
 /****************************************************************************
  ****************************************************************************/
 
 #define FILENAMELENGTH 100
-void SpecificGraph(int embedFlags, char *infileName, char *outfileName, char *outfile2Name)
+int SpecificGraph(int embedFlags, char *infileName, char *outfileName, char *outfile2Name)
 {
 graphP theGraph = gp_New();
 char theFileName[FILENAMELENGTH+10];
@@ -1002,7 +1013,7 @@ char *resultStr = "";
     	 if (strlen(infileName) > FILENAMELENGTH)
     	 {
     		 ErrorMessage("Filename is too long");
-    		 return;
+    		 return NOTOK;
     	 }
 
     	 strcpy(theFileName, infileName);
@@ -1158,7 +1169,7 @@ char *resultStr = "";
                  graphP testGraph = gp_New();
                  gp_AttachDrawPlanar(testGraph);
                  gp_DrawPlanar_RenderToFile(theGraph, "render.afterSort.txt");
-                 Result = gp_Read(testGraph, theFileName);
+                 gp_Read(testGraph, theFileName);
                  gp_DrawPlanar_RenderToFile(testGraph, "render.afterRead.txt");
              }
 #endif
@@ -1166,4 +1177,6 @@ char *resultStr = "";
      }
 
      gp_Free(&theGraph);
+
+     return Result;
 }
