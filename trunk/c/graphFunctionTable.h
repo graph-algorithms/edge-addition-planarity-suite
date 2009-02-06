@@ -44,30 +44,6 @@ extern "C" {
  also be initialized in _InitFunctionTable() in graphUtils.c.
 */
 
-/*
-#define CreateFwdArcLists           0
-#define CreateDFSTreeEmbedding      1
-#define EmbedBackEdgeToDescendant   2
-#define MergeBicomps                3
-#define HandleInactiveVertex        4
-#define MarkDFSPath                 5
-#define EmbedIterationPostprocess   6
-#define EmbedPostprocess            7
-#define CheckEmbeddingIntegrity     8
-#define CheckObstructionIntegrity   9
-
-#define InitGraphNode               10
-#define InitVertexRec               11
-
-#define InitGraph                   12
-#define ReinitializeGraph           13
-
-#define SortVertices                14
-
-#define ReadPostprocess             15
-#define WritePostprocess            16
-*/
-
 typedef struct
 {
         // These function pointers allow extension modules to overload some of
@@ -96,6 +72,7 @@ typedef struct
         // of the behaviors of gp_* function in the public API
         int  (*fpInitGraph)();
         void (*fpReinitializeGraph)();
+        int  (*fpEnsureEdgeCapacity)();
         int  (*fpSortVertices)();
 
         int  (*fpReadPostprocess)();

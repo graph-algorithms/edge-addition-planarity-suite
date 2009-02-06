@@ -34,6 +34,7 @@ void _InitDrawVertexRec(DrawPlanarContext *context, int I);
 
 int  _DrawPlanar_InitGraph(graphP theGraph, int N);
 void _DrawPlanar_ReinitializeGraph(graphP theGraph);
+int  _DrawPlanar_EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity);
 int  _DrawPlanar_SortVertices(graphP theGraph);
 
 int  _DrawPlanar_ReadPostprocess(graphP theGraph, void *extraData, long extraDataSize);
@@ -104,6 +105,7 @@ int  gp_AttachDrawPlanar(graphP theGraph)
 
      context->functions.fpInitGraph = _DrawPlanar_InitGraph;
      context->functions.fpReinitializeGraph = _DrawPlanar_ReinitializeGraph;
+     context->functions.fpEnsureEdgeCapacity = _DrawPlanar_EnsureEdgeCapacity;
      context->functions.fpSortVertices = _DrawPlanar_SortVertices;
 
      context->functions.fpReadPostprocess = _DrawPlanar_ReadPostprocess;
@@ -189,7 +191,7 @@ void _DrawPlanar_ClearStructures(DrawPlanarContext *context)
 int  _DrawPlanar_CreateStructures(DrawPlanarContext *context)
 {
      int N = context->theGraph->N;
-     int Gsize = context->theGraph->edgeOffset + 2*EDGE_LIMIT*N;
+     int Gsize = context->theGraph->edgeOffset + context->theGraph->edgeCapacity;
 
      if (N <= 0)
          return NOTOK;
@@ -213,7 +215,7 @@ int  _DrawPlanar_CreateStructures(DrawPlanarContext *context)
 int  _DrawPlanar_InitStructures(DrawPlanarContext *context)
 {
      int I, N = context->theGraph->N;
-     int Gsize = context->theGraph->edgeOffset + 2*EDGE_LIMIT*N;
+     int Gsize = context->theGraph->edgeOffset + context->theGraph->edgeCapacity;
 
      if (N <= 0)
          return NOTOK;
@@ -239,7 +241,7 @@ void *_DrawPlanar_DupContext(void *pContext, void *theGraph)
      if (newContext != NULL)
      {
          int N = ((graphP) theGraph)->N;
-         int Gsize = ((graphP) theGraph)->edgeOffset + 2*EDGE_LIMIT*N;
+         int Gsize = ((graphP) theGraph)->edgeOffset + ((graphP) theGraph)->edgeCapacity;
 
          *newContext = *context;
 
@@ -350,6 +352,14 @@ void _DrawPlanar_ReinitializeGraph(graphP theGraph)
             context->functions.fpReinitializeGraph(theGraph);
         }
     }
+}
+
+/********************************************************************
+ ********************************************************************/
+
+int  _DrawPlanar_EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity)
+{
+	return NOTOK;
 }
 
 /********************************************************************
@@ -637,7 +647,7 @@ int  _DrawPlanar_WritePostprocess(graphP theGraph, void **pExtraData, long *pExt
         {
             char line[64];
             int maxLineSize = 64, extraDataPos = 0, I;
-            int GSize = theGraph->edgeOffset + 2*EDGE_LIMIT*theGraph->N;
+            int GSize = theGraph->edgeOffset + theGraph->edgeCapacity;
             char *extraData = (char *) malloc((GSize + 2) * maxLineSize * sizeof(char));
 
             if (extraData == NULL)
