@@ -40,6 +40,7 @@ void _InitK33SearchVertexRec(K33SearchContext *context, int I);
 
 int  _K33Search_InitGraph(graphP theGraph, int N);
 void _K33Search_ReinitializeGraph(graphP theGraph);
+int  _K33Search_EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity);
 
 /* Forward declarations of functions used by the extension system */
 
@@ -98,6 +99,7 @@ int  gp_AttachK33Search(graphP theGraph)
 
      context->functions.fpInitGraph = _K33Search_InitGraph;
      context->functions.fpReinitializeGraph = _K33Search_ReinitializeGraph;
+     context->functions.fpEnsureEdgeCapacity = _K33Search_EnsureEdgeCapacity;
 
      _K33Search_ClearStructures(context);
 
@@ -179,7 +181,7 @@ void _K33Search_ClearStructures(K33SearchContext *context)
 int  _K33Search_CreateStructures(K33SearchContext *context)
 {
      int N = context->theGraph->N;
-     int Gsize = context->theGraph->edgeOffset + 2*EDGE_LIMIT*N;
+     int Gsize = context->theGraph->edgeOffset + context->theGraph->edgeCapacity;
 
      if (N <= 0)
          return NOTOK;
@@ -201,7 +203,7 @@ int  _K33Search_CreateStructures(K33SearchContext *context)
 int  _K33Search_InitStructures(K33SearchContext *context)
 {
      int I, N = context->theGraph->N;
-     int Gsize = context->theGraph->edgeOffset + 2*EDGE_LIMIT*N;
+     int Gsize = context->theGraph->edgeOffset + context->theGraph->edgeCapacity;
 
      if (N <= 0)
          return OK;
@@ -281,12 +283,22 @@ void _K33Search_ReinitializeGraph(graphP theGraph)
         {
             LCReset(context->sortedDFSChildLists);
 
-            // The underlying function fpReinitializeGraph() already does this
-            // due to the overloads of fpInitGraphNode() and fpInitVertexRec()
-            // _K33Search_InitStructures(context);
+            // The underlying function fpReinitializeGraph() implicitly initializes the K33
+            // structures due to the overloads of fpInitGraphNode() and fpInitVertexRec().
+            // It just does so less efficiently because each invocation of InitGraphNode
+            // and InitVertexRec has to look up the extension again.
+            //// _K33Search_InitStructures(context);
             context->functions.fpReinitializeGraph(theGraph);
         }
     }
+}
+
+/********************************************************************
+ ********************************************************************/
+
+int  _K33Search_EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity)
+{
+	return NOTOK;
 }
 
 /********************************************************************
@@ -301,7 +313,7 @@ void *_K33Search_DupContext(void *pContext, void *theGraph)
      if (newContext != NULL)
      {
          int N = ((graphP) theGraph)->N;
-         int Gsize = ((graphP) theGraph)->edgeOffset + 2*EDGE_LIMIT*N;
+         int Gsize = ((graphP) theGraph)->edgeOffset + ((graphP) theGraph)->edgeCapacity;
 
          *newContext = *context;
 
