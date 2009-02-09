@@ -102,7 +102,7 @@ void	gp_SetDirection(graphP theGraph, int e, int edgeFlag_Direction);
 
 // This definition is used to mark the adjacency links in arcs that are the
 // first and last arcs in an adjacency list
-#define gp_AdjacencyListEndMark(v) (NIL)
+#define gp_AdjacencyListEndMark(v) (v)
 
 // Definitions for very low-level adjacency list manipulations
 #define gp_SetFirstArc(theGraph, v, newFirstArc) (theGraph->G[v].link[0] = newFirstArc)

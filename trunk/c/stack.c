@@ -82,13 +82,11 @@ int  sp_GetCurrentSize(stackP theStack)
 
 int  sp_CopyContent(stackP stackDst, stackP stackSrc)
 {
-int  I;
-
      if (stackDst->Size < stackSrc->Top)
          return NOTOK;
 
-     for (I=0; I < stackSrc->Top; I++)
-          stackDst->S[I] = stackSrc->S[I];
+     if (stackSrc->Top > 0)
+         memcpy(stackDst->S, stackSrc->S, stackSrc->Top*sizeof(int));
 
      stackDst->Top = stackSrc->Top;
      return OK;
@@ -97,13 +95,12 @@ int  I;
 stackP sp_Duplicate(stackP theStack)
 {
 stackP newStack = sp_New(theStack->Size);
-int I;
 
     if (newStack == NULL)
         return NULL;
 
-    for (I=0; I < theStack->Top; I++)
-        newStack->S[I] = theStack->S[I];
+    if (theStack->Top > 0)
+        memcpy(newStack->S, theStack->S, theStack->Top*sizeof(int));
 
     return newStack;
 }

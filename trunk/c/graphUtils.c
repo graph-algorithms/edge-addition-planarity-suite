@@ -108,8 +108,6 @@ graphP theGraph = (graphP) malloc(sizeof(baseGraphStructure));
          theGraph->G = NULL;
          theGraph->V = NULL;
 
-         theGraph->edgeCapacity = 0;
-
          theGraph->BicompLists = NULL;
          theGraph->DFSChildLists = NULL;
          theGraph->theStack = NULL;
@@ -664,16 +662,23 @@ int  Gsize = edgeOffset + srcGraph->edgeCapacity;
 
      /* Parameter checks */
      if (dstGraph == NULL || srcGraph == NULL)
+     {
          return NOTOK;
+     }
 
-     if (dstGraph->N != srcGraph->N)
+     // The graphs need to be the same order and initialized
+     if (dstGraph->N != srcGraph->N || dstGraph->N == 0)
+     {
          return NOTOK;
+     }
 
      // Ensure dstGraph has the required edge capacity; this expands
      // dstGraph if needed, but does not contract.  An error is only
      // returned if the expansion fails.
      if (gp_EnsureEdgeCapacity(dstGraph, srcGraph->edgeCapacity) != OK)
+     {
     	 return NOTOK;
+     }
 
      // Copy the basic GraphNode structures.  Augmentations to
      // the graph node structure created by extensions are copied
@@ -695,7 +700,7 @@ int  Gsize = edgeOffset + srcGraph->edgeCapacity;
          dstGraph->extFace[I].inversionFlag = srcGraph->extFace[I].inversionFlag;
      }
 
-     // Give the dstGraph the same size and instrinsic properties
+     // Give the dstGraph the same size and intrinsic properties
      dstGraph->N = srcGraph->N;
      dstGraph->M = srcGraph->M;
      dstGraph->edgeOffset = srcGraph->edgeOffset;

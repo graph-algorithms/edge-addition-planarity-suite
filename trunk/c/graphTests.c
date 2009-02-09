@@ -204,6 +204,12 @@ int I, e, J, JTwin, K, L, NumFaces, connectedComponents;
           theGraph->G[JTwin].visited = 0;
      }
 
+     // There are M edges, so we better have pushed 2M arcs just now
+     // i.e. testing that the continue above skipped only edge holes
+     if (sp_GetCurrentSize(theStack) != 2*theGraph->M)
+    	 return NOTOK;
+
+
 /* Read faces until every arc is used */
 
      NumFaces = 0;
@@ -276,14 +282,16 @@ int _CheckAllVerticesOnExternalFace(graphP theGraph)
     for (I=0; I < theGraph->N; I++)
     {
          if (theGraph->V[I].DFSParent == NIL)
-             _MarkExternalFaceVertices(theGraph, I);
+        	 _MarkExternalFaceVertices(theGraph, I);
     }
 
     // If any vertex is unvisited, then the embedding is not an outerplanar
     // embedding, so we return NOTOK
     for (I=0; I < theGraph->N; I++)
         if (!theGraph->G[I].visited)
+        {
             return NOTOK;
+        }
 
     // All vertices were found on external faces of the connected components
     // so the embedding is an outerplanar embedding and we return OK
@@ -298,6 +306,10 @@ int _CheckAllVerticesOnExternalFace(graphP theGraph)
   The start vertex is assumed to be on the external face.
   This method assumed the embedding integrity has already been
   verified to be correct.
+  This method correctly handles components that have cut vertices,
+  i.e. it does not assume that the outer face is a simple cycle;
+  it only assumes that all vertices are reachable by walking a
+  single face that starts with startVertex.
  ********************************************************************/
 
 void _MarkExternalFaceVertices(graphP theGraph, int startVertex)
@@ -306,6 +318,7 @@ void _MarkExternalFaceVertices(graphP theGraph, int startVertex)
     int Jout = gp_GetFirstArc(theGraph, nextVertex);
     int Jin;
 
+    // Process a non-trivial connected component
     do {
         theGraph->G[nextVertex].visited = 1;
 
@@ -323,19 +336,29 @@ void _MarkExternalFaceVertices(graphP theGraph, int startVertex)
 
         // Now we get the next arc in rotation order as the new arc out to the
         // vertex after nextVertex.  This sets us up for the next iteration.
-        Jout = gp_GetNextArcCircular(theGraph, Jin);
-
-        // Note: Above, we cannot simply follow the chain of nextVertex first arcs
+        // Note: We cannot simply follow the chain of nextVertex first arcs
         //       as we started out doing at the top of this method.  This is
         //       because we are no longer dealing with bicomps only.
         //       Since _JoinBicomps() has already been invoked, there may now
         //       be cut vertices on the external face whose adjacency lists
         //       contain external face arcs in positions other than the first and
         //       and last arcs.  We will visit those vertices multiple times,
-        //       which is OK (just that we have to explain why we're doing
-        //       things this way).
+        //       which is OK (just that we have to explain why we're calculating
+        //       jout in this way).
+        Jout = gp_GetNextArcCircular(theGraph, Jin);
 
-    } while (nextVertex != startVertex);
+        // Now things get really interesting.  The DFS root (startVertex) may
+        // itself be a cut vertex to which multiple bicomps have been joined.
+        // So we cannot simply stop when the external face walk gets back to
+        // startVertex.  We must actually get back to startVertex using its
+        // last arc.  This ensures that we've looped down into all the DFS
+        // subtrees rooted at startVertex and walked their external faces.
+
+        // Since we started the whole external face walk with the first arc
+        // of startVertex, we need to proceed until we reenter startVertex
+        // using its last arc.
+
+    } while (Jin != gp_GetLastArc(theGraph, startVertex));
 }
 
 
@@ -358,7 +381,9 @@ int _CheckObstructionIntegrity(graphP theGraph, graphP origGraph)
         return NOTOK;
 
     if (_TestSubgraph(theGraph, origGraph) != OK)
+    {
         return NOTOK;
+    }
 
     if (theGraph->embedFlags == EMBEDFLAGS_PLANAR)
         return _CheckKuratowskiSubgraphIntegrity(theGraph);
@@ -846,6 +871,7 @@ int  Jin, nextVertex;
 int  _TestSubgraph(graphP theSubgraph, graphP theGraph)
 {
 int I, J;
+int Result = OK;
 int invokeSortOnGraph = NOTOK;
 int invokeSortOnSubgraph = NOTOK;
 
@@ -882,9 +908,17 @@ int invokeSortOnSubgraph = NOTOK;
           J = gp_GetFirstArc(theSubgraph, I);
           while (gp_IsArc(theSubgraph, J))
           {
+        	  if (theSubgraph->G[J].v == NIL)
+        	  {
+        		  Result = NOTOK;
+        		  break;
+        	  }
               theGraph->G[theSubgraph->G[J].v].visited = 1;
               J = gp_GetNextArc(theSubgraph, J);
           }
+
+          if (Result != OK)
+        	  break;
 
           /* For each neighbor w in the adjacency list of vertex I in the graph,
                 clear the visited flag in w in the graph */
@@ -892,9 +926,17 @@ int invokeSortOnSubgraph = NOTOK;
           J = gp_GetFirstArc(theGraph, I);
           while (gp_IsArc(theGraph, J))
           {
+        	  if (theGraph->G[J].v == NIL)
+        	  {
+        		  Result = NOTOK;
+        		  break;
+        	  }
               theGraph->G[theGraph->G[J].v].visited = 0;
               J = gp_GetNextArc(theGraph, J);
           }
+
+          if (Result != OK)
+        	  break;
 
           /* For each neighbor w in the adjacency list of vertex I in the
                 subgraph, set the visited flag in w in the graph */
@@ -904,16 +946,14 @@ int invokeSortOnSubgraph = NOTOK;
           {
               if (theGraph->G[theSubgraph->G[J].v].visited)
               {
-                  // Restore the DFI sort order of either graph if it had to be reordered at the start
-                  if (invokeSortOnSubgraph == OK)
-                      gp_SortVertices(theSubgraph);
-                  if (invokeSortOnGraph == OK)
-                      gp_SortVertices(theGraph);
-
-                  return NOTOK;
+            	  Result = NOTOK;
+            	  break;
               }
               J = gp_GetNextArc(theSubgraph, J);
           }
+
+          if (Result != OK)
+        	  break;
      }
 
     // Restore the DFI sort order of either graph if it had to be reordered at the start
@@ -922,5 +962,5 @@ int invokeSortOnSubgraph = NOTOK;
     if (invokeSortOnGraph == OK)
         gp_SortVertices(theGraph);
 
-     return OK;
+     return Result;
 }

@@ -230,6 +230,8 @@ int  _K33Search_InitGraph(graphP theGraph, int N)
     {
         theGraph->N = N;
         theGraph->edgeOffset = 2*N;
+        if (theGraph->edgeCapacity == 0)
+        	theGraph->edgeCapacity = 2*DEFAULT_EDGE_LIMIT*N;
 
         if (_K33Search_CreateStructures(context) != OK)
             return NOTOK;
