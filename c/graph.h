@@ -35,11 +35,11 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "graphStructures.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#include "graphStructures.h"
 
 /* Public functions for graphs */
 

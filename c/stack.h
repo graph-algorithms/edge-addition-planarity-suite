@@ -35,6 +35,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef STACK_H
 #define STACK_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+// includes mem functions like memcpy
+#include <string.h>
+
 typedef struct
 {
         int *S;
@@ -85,6 +92,10 @@ int  sp_Top(stackP);
 
 #define sp_Top(theStack) (theStack->S[theStack->Top])
 
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif

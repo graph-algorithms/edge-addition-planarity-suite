@@ -35,6 +35,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef _LISTCOLL_H
 #define _LISTCOLL_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* This include is needed for memset and memcpy */
 #include <string.h>
 
@@ -129,6 +133,10 @@ int  LCDelete(listCollectionP listColl, int theList, int theNode);
            listColl->List[listColl->List[theNode].next].prev = listColl->List[theNode].prev, \
 	   (theList==theNode ? listColl->List[theNode].next : theList))
 
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif
