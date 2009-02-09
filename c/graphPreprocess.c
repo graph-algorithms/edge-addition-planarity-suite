@@ -186,8 +186,11 @@ start = platform_GetTime();
 
      for (e=0, J=theGraph->edgeOffset; e < M; e++, J+=2)
      {
-          theGraph->G[J].v = theGraph->G[theGraph->G[J].v].v;
-          theGraph->G[J+1].v = theGraph->G[theGraph->G[J+1].v].v;
+    	 if (theGraph->G[J].v != NIL)
+    	 {
+    		 theGraph->G[J].v = theGraph->G[theGraph->G[J].v].v;
+    		 theGraph->G[J+1].v = theGraph->G[theGraph->G[J+1].v].v;
+    	 }
      }
 
 /* Convert DFSParent from v to DFI(v) or vice versa */
