@@ -1606,8 +1606,7 @@ int  e;
      while (!sp_IsEmpty(theGraph->theStack))
      {
           sp_Pop(theGraph->theStack, e);
-          if (gp_IsArc(theGraph, e))
-              gp_RestoreEdge(theGraph, e);
+          gp_RestoreEdge(theGraph, e);
      }
 }
 

@@ -90,7 +90,7 @@ int  sp_Top(stackP);
 #define sp_Pop(theStack, a) a=theStack->S[--theStack->Top]
 #define sp_Pop2(theStack, a, b) {sp_Pop(theStack, b);sp_Pop(theStack, a);}
 
-#define sp_Top(theStack) (theStack->S[theStack->Top])
+#define sp_Top(theStack) (theStack->Top ? theStack->S[theStack->Top-1] : NIL)
 
 #endif
 

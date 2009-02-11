@@ -80,7 +80,16 @@ void	gp_SetDirection(graphP theGraph, int e, int edgeFlag_Direction);
 #define gp_GetLastArc(theGraph, v) (theGraph->G[v].link[1])
 #define gp_GetNextArc(theGraph, e) (theGraph->G[e].link[0])
 #define gp_GetPrevArc(theGraph, e) (theGraph->G[e].link[1])
+
+#define gp_IsVertex(theGraph, v) ((v) < theGraph->edgeOffset)
+
+//#define CIRCULAR "Non-circular is faster due to simpler comparison"
+
+#ifdef CIRCULAR
 #define gp_IsArc(theGraph, e) ((e) >= theGraph->edgeOffset)
+#else
+#define gp_IsArc(theGraph, e) ((e) != NIL)
+#endif
 
 // Definitions that parameterize getting either a first or last arc in a vertex
 // and getting either a next or prev arc in a given arc
@@ -102,7 +111,11 @@ void	gp_SetDirection(graphP theGraph, int e, int edgeFlag_Direction);
 
 // This definition is used to mark the adjacency links in arcs that are the
 // first and last arcs in an adjacency list
+#ifdef CIRCULAR
 #define gp_AdjacencyListEndMark(v) (v)
+#else
+#define gp_AdjacencyListEndMark(v) (NIL)
+#endif
 
 // Definitions for very low-level adjacency list manipulations
 #define gp_SetFirstArc(theGraph, v, newFirstArc) (theGraph->G[v].link[0] = newFirstArc)
