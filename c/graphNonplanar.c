@@ -59,7 +59,7 @@ int  _FindNonplanarityBicompRoot(graphP theGraph);
 void _FindActiveVertices(graphP theGraph, int R, int *pX, int *pY);
 int  _FindPertinentVertex(graphP theGraph);
 
-void _PopAndUnmarkVerticesAndEdges(graphP theGraph, int Z);
+void _PopAndUnmarkVerticesAndEdges(graphP theGraph, int Z, int stackBottom);
 
 int  _MarkHighestXYPath(graphP theGraph);
 int  _MarkZtoRPath(graphP theGraph);
@@ -380,37 +380,34 @@ int  W=theGraph->IC.x, WPrevLink=1;
  Pop all vertex/edge pairs from the top of the stack up to a terminating
  vertex Z and mark as unvisited.  If Z is NIL, then all vertex/edge pairs
  are popped and marked as unvisited.
+ The stackBottom indicates where other material besides the vertex/edge
+ pairs may appear.
  ****************************************************************************/
 
-void _PopAndUnmarkVerticesAndEdges(graphP theGraph, int Z)
+void _PopAndUnmarkVerticesAndEdges(graphP theGraph, int Z, int stackBottom)
 {
 int  V, e;
 
-     while (sp_NonEmpty(theGraph->theStack))
+     // Pop vertex/edge pairs until all have been popped from the stack,
+     // and all that's left is what was under the pairs, or until...
+     while (sp_GetCurrentSize(theGraph->theStack) > stackBottom)
      {
-            sp_Pop(theGraph->theStack, e);
+         sp_Pop(theGraph->theStack, V);
 
-            /* If we popped a vertex other than the termination vertex Z, then
-                we also pop the edge we pushed, and we clear the visited flags
-                for the vertex and the edge's two edge records. */
+         // If we pop the terminating vertex Z, then put it back and break
+         if (V == Z)
+         {
+             sp_Push(theGraph->theStack, V);
+             break;
+         }
 
-            if (gp_IsVertex(theGraph, e) && e != Z)
-            {
-                V = e;
-                sp_Pop(theGraph->theStack, e);
-                theGraph->G[V].visited = 0;
-                theGraph->G[e].visited = 0;
-                theGraph->G[gp_GetTwinArc(theGraph, e)].visited = 0;
-            }
+         // Otherwise, pop the edge part of the vertex/edge pair
+         sp_Pop(theGraph->theStack, e);
 
-            /* If we popped an edge or the terminating vertex Z, then put it
-                back and break */
-
-            else
-            {
-                sp_Push(theGraph->theStack, e);
-                break;
-            }
+         // Now unmark the vertex and edge (i.e. revert to "unvisited")
+         theGraph->G[V].visited = 0;
+         theGraph->G[e].visited = 0;
+         theGraph->G[gp_GetTwinArc(theGraph, e)].visited = 0;
      }
 }
 
@@ -480,8 +477,9 @@ int  V, e;
 
 int  _MarkHighestXYPath(graphP theGraph)
 {
-int J, Z, e;
+int J, Z;
 int R, X, Y, W;
+int stackBottom;
 
 /* Initialization */
 
@@ -496,6 +494,7 @@ int R, X, Y, W;
 /* Remove the internal edges incident to vertex R */
 
      _HideInternalEdges(theGraph, R);
+     stackBottom = sp_GetCurrentSize(theGraph->theStack);
 
 /* Walk the proper face containing R to find and mark the highest
         X-Y path. Note that if W is encountered, then there is no
@@ -517,7 +516,7 @@ int R, X, Y, W;
 
           if (theGraph->G[Z].visited)
           {
-              _PopAndUnmarkVerticesAndEdges(theGraph, Z);
+              _PopAndUnmarkVerticesAndEdges(theGraph, Z, stackBottom);
           }
 
           /* If we have not visited this vertex before... */
@@ -531,7 +530,7 @@ int R, X, Y, W;
 
               if (Z == W)
               {
-                  _PopAndUnmarkVerticesAndEdges(theGraph, NIL);
+                  _PopAndUnmarkVerticesAndEdges(theGraph, NIL, stackBottom);
                   break;
               }
 
@@ -543,7 +542,7 @@ int R, X, Y, W;
                   theGraph->G[Z].type == VERTEX_LOW_RXW)
               {
                   theGraph->IC.px = Z;
-                  _PopAndUnmarkVerticesAndEdges(theGraph, NIL);
+                  _PopAndUnmarkVerticesAndEdges(theGraph, NIL, stackBottom);
               }
 
               /* Push the current vertex onto the stack of vertices visited
@@ -575,20 +574,10 @@ int R, X, Y, W;
           }
      }
 
-/* Skip any vertex-edge pairs on the top of the stack, then
+/* Remove any remaining vertex-edge pairs on the top of the stack, then
     Restore the internal edges incident to R that were previously removed. */
 
-     while (sp_NonEmpty(theGraph->theStack))
-     {
-    	 if (gp_IsVertex(theGraph, sp_Top(theGraph->theStack)))
-    	 {
-             sp_Pop(theGraph->theStack, Z);
-             sp_Pop(theGraph->theStack, e);
-    	 }
-    	 else
-             break;
-     }
-
+     sp_SetCurrentSize(theGraph->theStack, stackBottom);
      _RestoreInternalEdges(theGraph);
 
 /* Return the result */

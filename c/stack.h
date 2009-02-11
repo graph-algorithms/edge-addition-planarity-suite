@@ -45,7 +45,7 @@ extern "C" {
 typedef struct
 {
         int *S;
-        int Top, Size;
+        int size, capacity;
 } stack;
 
 typedef stack * stackP;
@@ -55,13 +55,14 @@ void sp_Free(stackP *);
 
 int  sp_Copy(stackP, stackP);
 
-int  sp_GetCurrentSize(stackP theStack);
 int  sp_CopyContent(stackP stackDst, stackP stackSrc);
 stackP sp_Duplicate(stackP theStack);
 
 #ifndef SPEED_MACROS
 
 int  sp_ClearStack(stackP);
+int  sp_GetCurrentSize(stackP theStack);
+int  sp_SetCurrentSize(stackP theStack, int top);
 
 int  sp_IsEmpty(stackP);
 int  sp_NonEmpty(stackP);
@@ -79,18 +80,20 @@ int  sp_Top(stackP);
 
 #else
 
-#define sp_ClearStack(theStack) theStack->Top=0
+#define sp_ClearStack(theStack) theStack->size=0
+#define sp_GetCurrentSize(theStack) (theStack->size)
+#define sp_SetCurrentSize(theStack, Size) ((Size) > theStack->capacity ? NOTOK : (theStack->size = (Size), OK))
 
-#define sp_IsEmpty(theStack) !theStack->Top
-#define sp_NonEmpty(theStack) theStack->Top
+#define sp_IsEmpty(theStack) !theStack->size
+#define sp_NonEmpty(theStack) theStack->size
 
-#define sp_Push(theStack, a) theStack->S[theStack->Top++] = a
+#define sp_Push(theStack, a) theStack->S[theStack->size++] = a
 #define sp_Push2(theStack, a, b) {sp_Push(theStack, a); sp_Push(theStack, b);}
 
-#define sp_Pop(theStack, a) a=theStack->S[--theStack->Top]
+#define sp_Pop(theStack, a) a=theStack->S[--theStack->size]
 #define sp_Pop2(theStack, a, b) {sp_Pop(theStack, b);sp_Pop(theStack, a);}
 
-#define sp_Top(theStack) (theStack->Top ? theStack->S[theStack->Top-1] : NIL)
+#define sp_Top(theStack) (theStack->size ? theStack->S[theStack->size-1] : NIL)
 
 #endif
 
