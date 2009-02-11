@@ -394,7 +394,7 @@ int  V, e;
                 we also pop the edge we pushed, and we clear the visited flags
                 for the vertex and the edge's two edge records. */
 
-            if (e < theGraph->edgeOffset && e != Z)
+            if (gp_IsVertex(theGraph, e) && e != Z)
             {
                 V = e;
                 sp_Pop(theGraph->theStack, e);
@@ -580,11 +580,13 @@ int R, X, Y, W;
 
      while (sp_NonEmpty(theGraph->theStack))
      {
-         if(sp_Top(theGraph->theStack) >= theGraph->edgeOffset)
+    	 if (gp_IsVertex(theGraph, sp_Top(theGraph->theStack)))
+    	 {
+             sp_Pop(theGraph->theStack, Z);
+             sp_Pop(theGraph->theStack, e);
+    	 }
+    	 else
              break;
-
-          sp_Pop(theGraph->theStack, e);
-          sp_Pop(theGraph->theStack, e);
      }
 
      _RestoreInternalEdges(theGraph);

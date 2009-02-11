@@ -187,7 +187,7 @@ int  sp__Pop2(stackP theStack, int *pA, int *pB)
 
 int  sp_Top(stackP theStack)
 {
-    return theStack->S[theStack->Top];
+    return theStack->Top ? theStack->S[theStack->Top-1] : NIL;
 }
 
 #endif // not defined SPEED_MACROS
