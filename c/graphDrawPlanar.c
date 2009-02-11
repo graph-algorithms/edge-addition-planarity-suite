@@ -780,24 +780,32 @@ int gp_DrawPlanar_RenderToFile(graphP theEmbedding, char *theFileName)
 {
     if (sp_IsEmpty(theEmbedding->edgeHoles))
     {
-        FILE *outfile = fopen(theFileName, "wt");
+        FILE *outfile;
         char *theRendition;
+
+        if (strcmp(theFileName, "stdout") == 0)
+             outfile = stdout;
+        else if (strcmp(theFileName, "stderr") == 0)
+             outfile = stderr;
+        else outfile = fopen(theFileName, WRITETEXT);
 
         if (outfile == NULL)
             return NOTOK;
 
         theRendition = _RenderToString(theEmbedding);
-        if (theRendition == NULL)
+        if (theRendition != NULL)
         {
-            fclose(outfile);
-            return NOTOK;
+            fprintf(outfile, "%s", theRendition);
+            free(theRendition);
         }
 
-        fprintf(outfile, "%s", theRendition);
-        free(theRendition);
-        fclose(outfile);
+        if (strcmp(theFileName, "stdout") == 0 || strcmp(theFileName, "stderr") == 0)
+            fflush(outfile);
 
-        return OK;
+        else if (fclose(outfile) != 0)
+            return NOTOK;
+
+        return theRendition ? OK : NOTOK;
     }
 
     return NOTOK;
