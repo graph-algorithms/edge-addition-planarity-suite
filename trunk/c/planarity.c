@@ -1134,7 +1134,10 @@ char *resultStr = "";
              if (outfile2Name != NULL && strlen(outfile2Name) == 0)
              {
             	 if (embedFlags == EMBEDFLAGS_PLANAR || embedFlags == EMBEDFLAGS_OUTERPLANAR)
+            	 {
             		 outfile2Name = theFileName;
+            		 strcat(outfile2Name, ".render");
+            	 }
              }
 
              // Write the secondary output file, if it is required

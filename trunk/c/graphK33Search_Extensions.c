@@ -833,10 +833,14 @@ int  _K33Search_CheckObstructionIntegrity(graphP theGraph, graphP origGraph)
          int  degrees[5], imageVerts[6];
 
          if (_TestSubgraph(theGraph, origGraph) != OK)
+         {
              return NOTOK;
+         }
 
          if (_getImageVertices(theGraph, degrees, 5, imageVerts, 6) != OK)
+         {
              return NOTOK;
+         }
 
          if (_TestForK33GraphObstruction(theGraph, degrees, imageVerts) == OK)
          {

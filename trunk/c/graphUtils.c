@@ -660,7 +660,7 @@ int  gp_CopyGraph(graphP dstGraph, graphP srcGraph)
 int  I, N = srcGraph->N, edgeOffset = srcGraph->edgeOffset;
 int  Gsize = edgeOffset + srcGraph->edgeCapacity;
 
-     /* Parameter checks */
+     // Parameter checks
      if (dstGraph == NULL || srcGraph == NULL)
      {
          return NOTOK;
@@ -714,15 +714,26 @@ int  Gsize = edgeOffset + srcGraph->edgeCapacity;
      sp_Copy(dstGraph->theStack, srcGraph->theStack);
      sp_Copy(dstGraph->edgeHoles, srcGraph->edgeHoles);
 
-     // Copy the graph's function table, which only has pointers to
+     // Copy the set of extensions, which includes copying the
+     // extension data as well as the function overload tables
+     if (gp_CopyExtensions(dstGraph, srcGraph) != OK)
+    	 return NOTOK;
+
+     // Copy the graph's function table, which has the pointers to
      // the most recent extension overloads of each function (or
      // the original function pointer if a particular function has
      // not been overloaded).
+     // This must be done after copying the extension because the
+     // first step of copying the extensions is to delete the
+     // dstGraph extensions, which clears its function table.
+     // Therefore, no good to assign the srcGraph functions *before*
+     // copying the extensions because the assignment would be wiped out
+     // This, in turn, means that the DupContext function of an extension
+     // *cannot* depend on any extension function overloads; the extension
+     // must directly invoke extension functions only.
      dstGraph->functions = srcGraph->functions;
 
-     // Copy the set of extensions, which includes copying the
-     // extension data as well as the function overload tables
-     return gp_CopyExtensions(dstGraph, srcGraph);
+     return OK;
 }
 
 /********************************************************************
