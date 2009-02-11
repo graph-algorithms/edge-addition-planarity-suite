@@ -81,8 +81,6 @@ void	gp_SetDirection(graphP theGraph, int e, int edgeFlag_Direction);
 #define gp_GetNextArc(theGraph, e) (theGraph->G[e].link[0])
 #define gp_GetPrevArc(theGraph, e) (theGraph->G[e].link[1])
 
-#define gp_IsVertex(theGraph, v) ((v) < theGraph->edgeOffset)
-
 //#define CIRCULAR "Non-circular is faster due to simpler comparison"
 
 #ifdef CIRCULAR

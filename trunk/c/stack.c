@@ -36,7 +36,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "stack.h"
 #include <stdlib.h>
 
-stackP sp_New(int Size)
+stackP sp_New(int capacity)
 {
 stackP theStack;
 
@@ -44,7 +44,7 @@ stackP theStack;
 
      if (theStack != NULL)
      {
-         theStack->S = (int *) malloc(Size*sizeof(int));
+         theStack->S = (int *) malloc(capacity*sizeof(int));
          if (theStack->S == NULL)
          {
              free(theStack);
@@ -54,7 +54,7 @@ stackP theStack;
 
      if (theStack != NULL)
      {
-         theStack->Size = Size;
+         theStack->capacity = capacity;
          sp_ClearStack(theStack);
      }
 
@@ -65,7 +65,7 @@ void sp_Free(stackP *pStack)
 {
      if (pStack == NULL || *pStack == NULL) return;
 
-     (*pStack)->Size = (*pStack)->Top = 0;
+     (*pStack)->capacity = (*pStack)->size = 0;
 
      if ((*pStack)->S != NULL)
           free((*pStack)->S);
@@ -75,32 +75,27 @@ void sp_Free(stackP *pStack)
      *pStack = NULL;
 }
 
-int  sp_GetCurrentSize(stackP theStack)
-{
-     return theStack->Top;
-}
-
 int  sp_CopyContent(stackP stackDst, stackP stackSrc)
 {
-     if (stackDst->Size < stackSrc->Top)
+     if (stackDst->capacity < stackSrc->size)
          return NOTOK;
 
-     if (stackSrc->Top > 0)
-         memcpy(stackDst->S, stackSrc->S, stackSrc->Top*sizeof(int));
+     if (stackSrc->size > 0)
+         memcpy(stackDst->S, stackSrc->S, stackSrc->size*sizeof(int));
 
-     stackDst->Top = stackSrc->Top;
+     stackDst->size = stackSrc->size;
      return OK;
 }
 
 stackP sp_Duplicate(stackP theStack)
 {
-stackP newStack = sp_New(theStack->Size);
+stackP newStack = sp_New(theStack->capacity);
 
     if (newStack == NULL)
         return NULL;
 
-    if (theStack->Top > 0)
-        memcpy(newStack->S, theStack->S, theStack->Top*sizeof(int));
+    if (theStack->size > 0)
+        memcpy(newStack->S, theStack->S, theStack->size*sizeof(int));
 
     return newStack;
 }
@@ -118,11 +113,11 @@ int  sp_Copy(stackP stackDst, stackP stackSrc)
          p = stackDst->S;
          stackDst->S = newStack->S;
          newStack->S = p;
-         newStack->Size = stackDst->Size;
+         newStack->capacity = stackDst->capacity;
          sp_Free(&newStack);
 
-         stackDst->Top = stackSrc->Top;
-         stackDst->Size = stackSrc->Size;
+         stackDst->size = stackSrc->size;
+         stackDst->capacity = stackSrc->capacity;
     }
 
     return OK;
@@ -132,62 +127,72 @@ int  sp_Copy(stackP stackDst, stackP stackSrc)
 
 int  sp_ClearStack(stackP theStack)
 {
-     theStack->Top = 0;
+     theStack->size = 0;
      return OK;
+}
+
+int  sp_GetCurrentSize(stackP theStack)
+{
+     return theStack->size;
+}
+
+int  sp_SetCurrentSize(stackP theStack, int size)
+{
+	 return size > theStack->capacity ? NOTOK : (theStack->size = size, OK);
 }
 
 int  sp_IsEmpty(stackP theStack)
 {
-     return !theStack->Top;
+     return !theStack->size;
 }
 
 int  sp_NonEmpty(stackP theStack)
 {
-     return theStack->Top;
+     return theStack->size;
 }
 
 int  sp_Push(stackP theStack, int a)
 {
-     if (theStack->Top >= theStack->Size)
+     if (theStack->size >= theStack->capacity)
          return NOTOK;
 
-     theStack->S[theStack->Top++] = a;
+     theStack->S[theStack->size++] = a;
      return OK;
 }
 
 int  sp_Push2(stackP theStack, int a, int b)
 {
-     if (theStack->Top + 1 >= theStack->Size)
+     if (theStack->size + 1 >= theStack->capacity)
          return NOTOK;
 
-     theStack->S[theStack->Top++] = a;
-     theStack->S[theStack->Top++] = b;
+     theStack->S[theStack->size++] = a;
+     theStack->S[theStack->size++] = b;
      return OK;
 }
 
 int  sp__Pop(stackP theStack, int *pA)
 {
-     if (theStack->Top <= 0)
+     if (theStack->size <= 0)
          return NOTOK;
 
-     *pA = theStack->S[--theStack->Top];
+     *pA = theStack->S[--theStack->size];
      return OK;
 }
 
 int  sp__Pop2(stackP theStack, int *pA, int *pB)
 {
-     if (theStack->Top <= 1)
+     if (theStack->size <= 1)
          return NOTOK;
 
-     *pB = theStack->S[--theStack->Top];
-     *pA = theStack->S[--theStack->Top];
+     *pB = theStack->S[--theStack->size];
+     *pA = theStack->S[--theStack->size];
 
      return OK;
 }
 
 int  sp_Top(stackP theStack)
 {
-    return theStack->Top ? theStack->S[theStack->Top-1] : NIL;
+    return theStack->size ? theStack->S[theStack->size-1] : NIL;
 }
 
 #endif // not defined SPEED_MACROS

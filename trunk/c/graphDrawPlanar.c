@@ -578,7 +578,7 @@ int K, Parent, BicompRoot, DFSChild, direction, descendant;
 
     /* Process all of the merge points to set their drawing flags. */
 
-    for (K = 0; K < theEmbedding->theStack->Top; K += 4)
+    for (K = 0; K < sp_GetCurrentSize(theEmbedding->theStack); K += 4)
     {
          /* Get the parent and child that are about to be merged from
             the 4-tuple in the merge stack */
