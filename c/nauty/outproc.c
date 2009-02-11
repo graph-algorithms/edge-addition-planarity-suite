@@ -173,7 +173,7 @@ void outprocTest(FILE *f, graph *g, int n, char command, unsigned long *pStat)
 		}
 	}
 
-	if (TransferGraph(theGraph, g, n) != OK)
+	if (TransferGraph(origGraph, g, n) != OK)
 	{
 		if (!numErrors)
 		{
@@ -198,7 +198,7 @@ void outprocTest(FILE *f, graph *g, int n, char command, unsigned long *pStat)
 		}
 
 		// Save to origGraph a copy of theGraph in its initial state
-		if ((Result = gp_CopyGraph(origGraph, theGraph)) != OK)
+		if ((Result = gp_CopyGraph(theGraph, origGraph)) != OK)
 			fprintf(f, "\rFailed to copy graph #%lu\n", numGraphs);
 		else
 		{
@@ -211,6 +211,8 @@ void outprocTest(FILE *f, graph *g, int n, char command, unsigned long *pStat)
 				if (gp_TestEmbedResultIntegrity(theGraph, origGraph, Result) != OK)
 				{
 					Result = NOTOK;
+					if (!numErrors)
+						fprintf(f, "\rIntegrity check failed on graph #%lu.\n", numGraphs);
 				}
 			}
 		}
