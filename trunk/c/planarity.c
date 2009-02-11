@@ -995,7 +995,7 @@ char *resultStr = "";
 
      if (infileName == NULL)
      {
-		 Message("Enter graph file name:\n");
+		 Message("Enter graph file name: ");
 		 scanf(" %s", theFileName);
 
 		 if (!strchr(theFileName, '.'))
@@ -1136,7 +1136,19 @@ char *resultStr = "";
             	 if (embedFlags == EMBEDFLAGS_PLANAR || embedFlags == EMBEDFLAGS_OUTERPLANAR)
             	 {
             		 outfile2Name = theFileName;
-            		 strcat(outfile2Name, ".render");
+            	 }
+            	 else if (embedFlags == EMBEDFLAGS_DRAWPLANAR)
+            	 {
+            		 char ch;
+            		 Message("Do you want to see rendition now (y=screen/n=file)? ");
+            		 scanf(" %c", &ch);
+
+            		 if (ch == 'y')
+            		     strcpy(theFileName, "stdout");
+            		 else
+            			 strcat(theFileName, ".render");
+
+            		 outfile2Name = theFileName;
             	 }
              }
 
