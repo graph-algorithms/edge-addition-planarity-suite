@@ -329,7 +329,7 @@ void _MarkExternalFaceVertices(graphP theGraph, int startVertex)
     int Jin;
 
     // Handle the case of an isolated vertex
-    if (Jout == gp_AdjacencyListEndMark(startVertex))
+    if (!gp_IsArc(theGraph, Jout))
     {
     	theGraph->G[startVertex].visited = 1;
     	return;
