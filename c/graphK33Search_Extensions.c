@@ -877,7 +877,7 @@ int  _K33Search_CheckObstructionIntegrity(graphP theGraph, graphP origGraph)
              return NOTOK;
          }
 
-         if (_getImageVertices(theGraph, degrees, 5, imageVerts, 6) != OK)
+         if (_getImageVertices(theGraph, degrees, 4, imageVerts, 6) != OK)
          {
              return NOTOK;
          }

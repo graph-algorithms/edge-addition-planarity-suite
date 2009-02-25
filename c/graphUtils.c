@@ -452,8 +452,8 @@ void _InitGraphNode(graphP theGraph, int J)
 
 void _InitVertexRec(graphP theGraph, int I)
 {
-    gp_SetFirstArc(theGraph, I, NIL);
-    gp_SetLastArc(theGraph, I, NIL);
+    gp_SetFirstArc(theGraph, I, gp_AdjacencyListEndMark(I));
+    gp_SetLastArc(theGraph, I, gp_AdjacencyListEndMark(I));
     theGraph->V[I].leastAncestor =
     theGraph->V[I].Lowpoint = I;
     theGraph->V[I].DFSParent = NIL;
