@@ -328,6 +328,13 @@ void _MarkExternalFaceVertices(graphP theGraph, int startVertex)
     int Jout = gp_GetFirstArc(theGraph, nextVertex);
     int Jin;
 
+    // Handle the case of an isolated vertex
+    if (Jout == gp_AdjacencyListEndMark(startVertex))
+    {
+    	theGraph->G[startVertex].visited = 1;
+    	return;
+    }
+
     // Process a non-trivial connected component
     do {
         theGraph->G[nextVertex].visited = 1;
@@ -428,7 +435,7 @@ int  _getImageVertices(graphP theGraph, int *degrees, int maxDegree,
 {
 int I, imageVertPos, degree;
 
-     for (I = 0; I < maxDegree; I++)
+     for (I = 0; I <= maxDegree; I++)
           degrees[I] = 0;
 
      for (I = 0; I < maxNumImageVerts; I++)
@@ -439,7 +446,7 @@ int I, imageVertPos, degree;
      for (I = 0; I < theGraph->N; I++)
      {
           degree = gp_GetVertexDegree(theGraph, I);
-          if (degree == 1 || degree >= maxDegree)
+          if (degree == 1 || degree > maxDegree)
               return NOTOK;
 
           degrees[degree]++;
@@ -625,7 +632,7 @@ int  _CheckKuratowskiSubgraphIntegrity(graphP theGraph)
 {
 int  degrees[5], imageVerts[6];
 
-     if (_getImageVertices(theGraph, degrees, 5, imageVerts, 6) != OK)
+     if (_getImageVertices(theGraph, degrees, 4, imageVerts, 6) != OK)
          return NOTOK;
 
      if (_TestForCompleteGraphObstruction(theGraph, 5, degrees, imageVerts) == OK)
@@ -714,12 +721,8 @@ int  I, J, imageVertPos;
           two degree 3 image vertices, then there are no extra
           pieces of the graph in theGraph.  Specifically, the
           prior tests identify a K_{2,3} and ensure that nothing
-          else could exist in the graph except extra degree 2
-          vertices, which must be joined in a cycle so that all
-          are degree 2. */
-
-     if (degrees[2] != 0)
-         return NOTOK;
+          else could exist in the graph... except extra degree 2
+          vertices joined in a cycle. We return NOTOK in that case. */
 
      return degrees[2] == 0 ? OK : NOTOK;
 }
@@ -756,7 +759,7 @@ int  _CheckOuterplanarObstructionIntegrity(graphP theGraph)
 {
 int  degrees[4], imageVerts[5];
 
-     if (_getImageVertices(theGraph, degrees, 4, imageVerts, 5) != OK)
+     if (_getImageVertices(theGraph, degrees, 3, imageVerts, 5) != OK)
          return NOTOK;
 
      if (_TestForCompleteGraphObstruction(theGraph, 4, degrees, imageVerts) == OK)

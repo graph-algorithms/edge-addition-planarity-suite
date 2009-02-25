@@ -238,7 +238,7 @@ int  _K23Search_CheckObstructionIntegrity(graphP theGraph, graphP origGraph)
          if (_TestSubgraph(theGraph, origGraph) != OK)
              return NOTOK;
 
-         if (_getImageVertices(theGraph, degrees, 4, imageVerts, 5) != OK)
+         if (_getImageVertices(theGraph, degrees, 3, imageVerts, 5) != OK)
              return NOTOK;
 
          if (_TestForK23GraphObstruction(theGraph, degrees, imageVerts) == OK)
