@@ -53,13 +53,7 @@ Note: The Google Code Wiki system's numbered list feature does not work well on 
 	    *.png               svn:mime-type=image/png
 	    *.gif               svn:mime-type=image/gif
 	    *.jpg               svn:mime-type=image/jpeg
-            *.html              svn:mime-type=text/html
-            *.xhtml             svn:mime-type=application/xhtml+xml
-            *.css               svn:mime-type=text/css
-	    *.js                svn:eol-style=native
-	    *.html              svn:eol-style=native
-	    *.xhtml             svn:eol-style=native
-            *.css               svn:eol-style=native
+            *.tif               svn:mime-type=image/tiff
             *.h                 svn:eol-style=native
             *.c                 svn:eol-style=native
             *.cpp               svn:eol-style=native
