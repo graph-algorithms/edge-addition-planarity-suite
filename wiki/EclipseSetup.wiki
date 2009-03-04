@@ -18,17 +18,17 @@ Note: The Google Code Wiki system's numbered list feature does not work well on 
     # Eclipse executable will be in the directory eclipse/34-cpp-ganymede/eclipse
     # Launch eclipse and create workspace in eclipse/workspaces-cpp
       * You're obviously free to adopt whatever directory structure you want, but this organization is suggested to allow your source code to be independent of installing future versions of eclipse.  If the next version follows the Jupiter moon naming convention, then you'd expand it into eclipse/35-cpp-callisto and then load projects from your workspaces-cpp area without having to move them.
-    # Get the MinGW C/C++ compiler version 5.1.3 (MinGW-5.1.3.exe) and install to eclipse/cpp-mingw
-    # Get the GDB debugger version 6.6 (gdb-6.6.zip) and unzip into eclipse/cpp-mingw/bin
+    # For Windows, also get the MinGW C/C++ compiler version 5.1.3 (MinGW-5.1.3.exe) and install to eclipse/cpp-mingw
+    # For windows, also get the GDB debugger version 6.6 (gdb-6.6.zip) and unzip into eclipse/cpp-mingw/bin
   # *Install Subversive plugin* 
     # Either navigate to http://www.eclipse.org/subversive, click "Downloads" on left panel, click link to install instructions,
     # Or follow instructions below.
     # In Eclipse, choose menu Help | Software Updates
     # Click Available Software tab
     # Must install Subversive plugin
-      * It's under the Ganymede Update Site (http://download.eclipse.org/release/ganymede)
-      * Then, open up the Collaboration Tools
-      * Choose the checkbox for Subversive SVN Team Provider (choose the incubation 0.7.3 release)
+      * For windows, it's under the Ganymede Update Site, under Collaboration Tools
+      * For linux, it may not be there, in which case you have to click "Add Site..." and add http://download.eclipse.org/technology/subversive/0.7/update-site/
+      * Choose the checkbox for Subversive SVN Team Provider (choose the incubation 0.7.3 release, or the 0.7.7 release can now be used)
     # Before proceeding to install, must also install Subversive Connectors (incubation) as follows (all three do seem to need to be installed at the same time)
       * Click "Add Site..."
       * Add the external update site indicated on the Downloads site 
@@ -39,8 +39,8 @@ Note: The Google Code Wiki system's numbered list feature does not work well on 
         * Open the Subversive SVN Connectors subtree
         * Choose the child Subversive SVN Connectors and SVNKit 1.1.7 (the latter is marked optional, but it isn't)
     # Go back to Ganymede Update Site | Collaboration Tools | Subversive SVN Team Provider and make sure it is still checked
-        * Doing "Add site..." is sometimes unchecking that selection
-    # Click Install...
+        * Doing "Add site..." is often unchecking that selection
+    # With all three items checked, click Install...
   # *Environment set up*
     # Window | Preferences
     # Go to General | Editors | Text Editors
