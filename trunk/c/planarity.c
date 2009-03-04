@@ -476,9 +476,9 @@ char Choice;
                 case 'r' : RandomGraphs(embedFlags, 0, 0); break;
             }
 
-            Message("\nPress ENTER to continue...");
+            Message("\nPress a key then hit ENTER to continue...");
             fflush(stdin);
-            getc(stdin);
+            scanf(" %*c");
             fflush(stdin);
             Message("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
         }
@@ -869,7 +869,7 @@ graphP origGraph=NULL;
 /* End Use New Graphs */
 
 //#ifdef DEBUG
-          if (quietMode == 'n')
+          if (quietMode == 'n' && (I+1) % 379 == 0)
           {
               fprintf(stdout, "%d\r", I+1);
               fflush(stdout);
@@ -892,6 +892,8 @@ graphP origGraph=NULL;
 // Print some demographic results
 
      end = platform_GetTime();
+     fprintf(stdout, "%d\n", NumGraphs);
+     fflush(stdout);
      if (Result != NOTOK)
          Message("\nNo Errors Found.");
      sprintf(Line, "\nDone (%.3lf seconds).\n", platform_GetDuration(start,end));
