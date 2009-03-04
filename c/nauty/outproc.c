@@ -234,8 +234,12 @@ void outprocTest(FILE *f, graph *g, int n, char command, unsigned long *pStat)
 		}
 	}
 
-	if (++numGraphs % 379 == 0)
+	numGraphs++;
+	if (numGraphs % 379 == 0)
+	{
 		fprintf(f, "\r%ld ", numGraphs);
+		fflush(f);
+	}
 }
 
 /***********************************************************************

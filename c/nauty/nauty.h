@@ -5,6 +5,10 @@
 #ifndef  NAUTYH_READ    /* only process this file once */
 
 #include <stdio.h>
+// CHANGE start
+// Adding this to remove warnings about needing declaration for exit()
+#include <stdlib.h>
+// CHANGE end
 
 /* Exactly one of the symbols with names starting with "SYS_" should
    have the value 1.  All the others should have the value 0. */

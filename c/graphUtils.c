@@ -790,7 +790,7 @@ int N, I, M, u, v;
 
      for (I=1; I < N; I++)
           if (gp_AddEdge(theGraph, _GetRandomNumber(0, I-1), 0, I, 0) != OK)
-                return NOTOK;
+              return NOTOK;
 
 /* Generate a random number of additional edges
         (actually, leave open a small chance that no
@@ -837,6 +837,7 @@ int  N = rand();
 
      N += ((N&0xFFFF0000)>>16);
      N += ((N&0x0000FF00)>>8);
+     N &= 0x7FFFFFF;
      N %= (NMax-NMin+1);
      return N+NMin;
 }
