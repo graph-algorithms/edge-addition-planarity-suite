@@ -141,7 +141,7 @@ int  N, X, Y, W, Px, Py, Z, DFSChild, RootId;
 /* For Minor D, we search for a path from an internal
      vertex Z along the X-Y path up to the root R of the bicomp. */
 
-     if (_MarkZtoRPath(theGraph) == NOTOK)
+     if (_MarkZtoRPath(theGraph) != OK)
          return NOTOK;
 
      if (theGraph->IC.z != NIL)

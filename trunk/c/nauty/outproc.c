@@ -173,6 +173,7 @@ void outprocTest(FILE *f, graph *g, int n, char command, unsigned long *pStat)
 		}
 	}
 
+	// Copy from the nauty graph to the origGraph
 	if (TransferGraph(origGraph, g, n) != OK)
 	{
 		if (!numErrors)
@@ -197,7 +198,7 @@ void outprocTest(FILE *f, graph *g, int n, char command, unsigned long *pStat)
 			case '3' : embedFlags = EMBEDFLAGS_SEARCHFORK33; break;
 		}
 
-		// Save to origGraph a copy of theGraph in its initial state
+		// Now copy from the origGraph into theGraph on which the work will be done
 		if ((Result = gp_CopyGraph(theGraph, origGraph)) != OK)
 			fprintf(f, "\rFailed to copy graph #%lu\n", numGraphs);
 		else

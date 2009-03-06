@@ -95,7 +95,7 @@ int  _AddAndMarkUnembeddedEdges(graphP theGraph);
 
 int  _IsolateKuratowskiSubgraph(graphP theGraph, int I)
 {
-int  RetVal = NOTOK;
+int  RetVal;
 
 /* Begin by determining which of the non-planarity Minors was encountered
         and the principal bicomp on which the isolator will focus attention. */
@@ -118,6 +118,8 @@ int  RetVal = NOTOK;
          RetVal = _IsolateMinorD(theGraph);
      else if (theGraph->IC.minorType & MINORTYPE_E)
          RetVal = _IsolateMinorE(theGraph);
+     else
+    	 RetVal = NOTOK;
 
 /* Delete the unmarked edges and vertices, and return */
 

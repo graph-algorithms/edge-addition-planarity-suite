@@ -158,7 +158,7 @@ int  _IsolateMinorE7(graphP theGraph, K33SearchContext *context);
 
 int  _SearchForK33(graphP theGraph, int I)
 {
-int  C1, C2, D, e, RetVal=NOTOK;
+int  C1, C2, D, e, RetVal=OK, FoundOne;
 K33SearchContext *context = NULL;
 
     gp_FindExtension(theGraph, "K33Search", (void *)&context);
@@ -203,6 +203,8 @@ K33SearchContext *context = NULL;
 
      C1 = context->V[I].sortedDFSChildList;
 
+     FoundOne = FALSE;
+
      while (C1 != NIL && e != NIL)
      {
         C2 = LCGetNext(context->sortedDFSChildLists,
@@ -216,6 +218,7 @@ K33SearchContext *context = NULL;
 
         if (D < C2 || C2 == NIL)
         {
+        	FoundOne = TRUE;
             RetVal = _SearchForK33InBicomp(theGraph, context, I, C1+theGraph->N);
 
             // If something went wrong, NOTOK was returned;
@@ -258,11 +261,11 @@ K33SearchContext *context = NULL;
      also handle the fact that some paths of the input graph may have
      been reduced to single edges by prior _ReduceBicomp() calls.
 
-     NOTE: RetVal starts out NOTOK to ensure we detect at least one
+     NOTE: The variable FoundOne helps ensure we detect at least one
         bicomp on which the Walkdown failed (this should always be
         the case in an error-free implementation like this one!). */
 
-     return RetVal;
+     return FoundOne ? RetVal : NOTOK;
 }
 
 /****************************************************************************

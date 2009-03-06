@@ -201,14 +201,19 @@ int callNauty(int argc, char *argv[])
 
 	command = argv[2][1];
 
-//	args[0] = "makeg";
-//	args[1] = "-c";
-//	args[2] = argv[3];
-//	numArgs = 3;
-
 	args[0] = "makeg";
-	args[1] = argv[3];
-	numArgs = 2;
+	args[1] = "-c";
+	args[2] = argv[3];
+	numArgs = 3;
+
+	// TESTTEST
+	//args[3] = "27";
+	//args[4] = "27";
+	//numArgs = 5;//
+
+//	args[0] = "makeg";
+//	args[1] = argv[3];
+//	numArgs = 2;
 
 	return makeg_main(command, numArgs, args);
 }

@@ -229,7 +229,7 @@ int gp_AddExtension(graphP theGraph,
     }
 
     // If the extension already exists, then don't redefine it.
-    if (gp_FindExtension(theGraph, module, NULL) == OK)
+    if (gp_FindExtension(theGraph, module, NULL) == TRUE)
     {
         return NOTOK;
     }
@@ -305,9 +305,9 @@ int  I;
  @param pContext - the return parameter that receives the value of the
                 extension, if found.  This may be NULL if the extension was
                 not found or if the extension context value was NULL.
- @return OK if the extension was found, NOTOK if not found
-         If NOTOK is returned, then the context returned is guaranteed to be NULL
-         If OK is returned, the context returned may be NULL if that is the
+ @return TRUE if the extension was found, NOTOK if not found
+         If FALSE is returned, then the context returned is guaranteed to be NULL
+         If TRUE is returned, the context returned may be NULL if that is the
          current value of the module extension
  ********************************************************************/
 
@@ -322,7 +322,7 @@ int gp_FindExtension(graphP theGraph, char *module, void **pContext)
 
     if (theGraph==NULL || module==NULL)
     {
-        return NOTOK;
+        return FALSE;
     }
 
     first = theGraph->extensions;
@@ -336,12 +336,12 @@ int gp_FindExtension(graphP theGraph, char *module, void **pContext)
             {
                 *pContext = first->context;
             }
-            return OK;
+            return TRUE;
         }
         first = next;
     }
 
-    return NOTOK;
+    return FALSE;
 }
 
 /********************************************************************
