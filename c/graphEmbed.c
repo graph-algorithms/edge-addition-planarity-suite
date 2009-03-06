@@ -1111,9 +1111,10 @@ int RetVal = OK;
                   // external face paths emanating from the bicomp root
                   if ((RetVal = _WalkDown(theGraph, I, child + N)) != OK)
                   {
-                      if (RetVal == NOTOK)
-                           return NOTOK;
-                      else break;
+                      if (RetVal == NONEMBEDDABLE)
+                    	  break;
+                      else
+                    	  return NOTOK;
                   }
               }
               child = LCGetNext(theGraph->DFSChildLists,

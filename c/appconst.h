@@ -70,7 +70,17 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #define OK              1
 #define NOTOK           0
+// TESTTEST
+//#define NOTOK           (printf("NOTOK on Line %d of %s\n", __LINE__, __FILE__),0)
 #define NONEMBEDDABLE   -3
+
+#ifndef TRUE
+#define TRUE            1
+#endif
+
+#ifndef FALSE
+#define FALSE           0
+#endif
 
 /* Array indices are used as pointers, and this means bad pointer */
 

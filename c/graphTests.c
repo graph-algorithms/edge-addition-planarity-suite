@@ -105,9 +105,9 @@ void _MarkExternalFaceVertices(graphP theGraph, int startVertex);
 
 int gp_TestEmbedResultIntegrity(graphP theGraph, graphP origGraph, int embedResult)
 {
-int RetVal = NOTOK;
+int RetVal = embedResult;
 
-    if (theGraph == NULL || origGraph == NULL || embedResult == NOTOK)
+    if (theGraph == NULL || origGraph == NULL)
         return NOTOK;
 
     if (embedResult == OK)
@@ -813,7 +813,8 @@ int  J;
  given edge out of a starting vertex U.  The path is allowed to
  contain zero or more degree two vertices, but we stop as soon as
  a vertex of degree higher than two is encountered.
- The function returns OK if that vertex is V, and NOTOK otherwise.
+ The function returns boolean true if that vertex is V, and
+ boolean false otherwise.
  ********************************************************************/
 
 int  _TryPath(graphP theGraph, int J, int V)
@@ -835,7 +836,7 @@ int  Jin, nextVertex;
          nextVertex = theGraph->G[J].v;
      }
 
-     return nextVertex == V ? OK : NOTOK;
+     return nextVertex == V ? TRUE : FALSE;
 }
 
 /********************************************************************
@@ -885,15 +886,15 @@ int  _TestSubgraph(graphP theSubgraph, graphP theGraph)
 {
 int I, J;
 int Result = OK;
-int invokeSortOnGraph = NOTOK;
-int invokeSortOnSubgraph = NOTOK;
+int invokeSortOnGraph = FALSE;
+int invokeSortOnSubgraph = FALSE;
 
     // If the graph is not sorted by DFI, but the alleged subgraph is,
     // then "unsort" the alleged subgraph so both have the same vertex order
     if (!(theGraph->internalFlags & FLAGS_SORTEDBYDFI) &&
          (theSubgraph->internalFlags & FLAGS_SORTEDBYDFI))
     {
-        invokeSortOnSubgraph = OK;
+        invokeSortOnSubgraph = TRUE;
         gp_SortVertices(theSubgraph);
     }
 
@@ -902,7 +903,7 @@ int invokeSortOnSubgraph = NOTOK;
     if (!(theSubgraph->internalFlags & FLAGS_SORTEDBYDFI) &&
          (theGraph->internalFlags & FLAGS_SORTEDBYDFI))
     {
-        invokeSortOnGraph = OK;
+        invokeSortOnGraph = TRUE;
         gp_SortVertices(theGraph);
     }
 
@@ -970,9 +971,9 @@ int invokeSortOnSubgraph = NOTOK;
      }
 
     // Restore the DFI sort order of either graph if it had to be reordered at the start
-    if (invokeSortOnSubgraph == OK)
+    if (invokeSortOnSubgraph)
         gp_SortVertices(theSubgraph);
-    if (invokeSortOnGraph == OK)
+    if (invokeSortOnGraph)
         gp_SortVertices(theGraph);
 
      return Result;
