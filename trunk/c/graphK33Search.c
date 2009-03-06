@@ -1106,7 +1106,7 @@ int  result;
 
 /* If we found the low X-Y path, then return. */
 
-     if (result == OK)
+     if (result == TRUE)
          return OK;
 
 /* Create a stack and use it to hide the internal edges of Y */
@@ -1128,7 +1128,7 @@ int  result;
 
 /* If we found the low X-Y path, then return. */
 
-     if (result == OK)
+     if (result == TRUE)
          return OK;
 
 /* Restore the original X-Y path and return with no error

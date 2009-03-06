@@ -162,7 +162,7 @@ int  RetVal=NOTOK;
 
      if (theGraph->IC.minorType & MINORTYPE_E)
      {
-        if (_MarkHighestXYPath(theGraph) != OK)
+        if (_MarkHighestXYPath(theGraph) != TRUE)
              return NOTOK;
      }
 

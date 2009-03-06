@@ -121,7 +121,7 @@ int  N, X, Y, W, Px, Py, Z, DFSChild, RootId;
 
 /* Find the highest obstructing X-Y path */
 
-     if (_MarkHighestXYPath(theGraph) != OK)
+     if (_MarkHighestXYPath(theGraph) != TRUE)
          return NOTOK;
 
      Px = theGraph->IC.px;
@@ -592,7 +592,7 @@ int stackBottom;
 
 /* Return the result */
 
-     return theGraph->IC.py==NIL ? NOTOK : OK;
+     return theGraph->IC.py==NIL ? FALSE : TRUE;
 }
 
 /****************************************************************************
