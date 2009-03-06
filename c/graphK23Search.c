@@ -275,7 +275,7 @@ int  _IsolateOuterplanarityObstructionE1orE2(graphP theGraph)
 isolatorContextP IC = &theGraph->IC;
 int XPrevLink = 1;
 
-     if (_MarkHighestXYPath(theGraph) != OK)
+     if (_MarkHighestXYPath(theGraph) != TRUE)
          return NOTOK;
 
 /* Isolate E1 */
@@ -334,7 +334,7 @@ int  tempEmbedFlags = theGraph->embedFlags;
      if (_VertexActiveStatus(theGraph, theGraph->IC.x, theGraph->IC.v) == VAS_EXTERNAL ||
          _VertexActiveStatus(theGraph, theGraph->IC.y, theGraph->IC.v) == VAS_EXTERNAL)
      {
-         if (_MarkHighestXYPath(theGraph) != OK)
+         if (_MarkHighestXYPath(theGraph) != TRUE)
              return NOTOK;
 
          if (_VertexActiveStatus(theGraph, theGraph->IC.x, theGraph->IC.v) == VAS_EXTERNAL)
