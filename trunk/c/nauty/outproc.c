@@ -268,4 +268,7 @@ unsigned long result = 0;
     }
 
     fprintf(msgfile, "# %s=%ld\n", msg, result);
+
+    gp_Free(&theGraph);
+    gp_Free(&origGraph);
 }
