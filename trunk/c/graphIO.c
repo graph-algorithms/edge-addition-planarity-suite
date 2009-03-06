@@ -588,6 +588,9 @@ int RetVal = NOTOK;
 
      if (theGraph == NULL || FileName == NULL) return NOTOK;
 
+     if (strcmp(FileName, "nullwrite") == 0)
+    	  return OK;
+
      if (strcmp(FileName, "stdout") == 0)
           Outfile = stdout;
      else if (strcmp(FileName, "stderr") == 0)
