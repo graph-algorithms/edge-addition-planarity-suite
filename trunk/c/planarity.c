@@ -470,9 +470,15 @@ char Choice;
 
         if (embedFlags)
         {
+        	char *secondOutfile = NULL;
+        	if (embedFlags == EMBEDFLAGS_PLANAR ||
+        		embedFlags == EMBEDFLAGS_OUTERPLANAR ||
+        		embedFlags == EMBEDFLAGS_DRAWPLANAR)
+        		secondOutfile ="";
+
             switch (tolower(Mode))
             {
-                case 's' : SpecificGraph(embedFlags, NULL, NULL, ""); break;
+                case 's' : SpecificGraph(embedFlags, NULL, NULL, secondOutfile); break;
                 case 'r' : RandomGraphs(embedFlags, 0, 0); break;
             }
 
