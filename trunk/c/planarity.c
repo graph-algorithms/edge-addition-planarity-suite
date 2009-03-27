@@ -343,7 +343,7 @@ int callRandomNonplanarGraph(int argc, char *argv[])
 
 int commandLine(int argc, char *argv[])
 {
-	int Result = NOTOK;
+	int Result = OK;
 
 	if (argc >= 3 && strcmp(argv[2], "-q") == 0)
 		quietMode = 'y';
