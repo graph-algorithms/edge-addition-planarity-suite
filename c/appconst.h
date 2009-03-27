@@ -70,8 +70,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #define OK              1
 #define NOTOK           0
-// TESTTEST
-//#define NOTOK           (printf("NOTOK on Line %d of %s\n", __LINE__, __FILE__),0)
+
+#ifdef DEBUG
+#undef NOTOK
+extern int debugNOTOK();
+#define NOTOK           (printf("NOTOK on Line %d of %s\n", __LINE__, __FILE__), debugNOTOK())
+#endif
+
 #define NONEMBEDDABLE   -3
 
 #ifndef TRUE

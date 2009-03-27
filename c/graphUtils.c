@@ -1719,3 +1719,17 @@ int  theSize = 0;
      }
      return theSize;
 }
+
+/********************************************************************
+ debugNOTOK()
+ This function provides a non-void wrapper for exit().
+ This is useful for debugging as it allows compilation of an exit
+ command in places where NOTOK is returned.
+ In exhaustive testing, we want to bail on the first NOTOK that occurs.
+ ********************************************************************/
+
+int debugNOTOK()
+{
+	exit(-1);
+	return 0; // NOTOK is normally defined to be zero
+}
