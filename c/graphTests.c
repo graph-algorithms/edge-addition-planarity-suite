@@ -509,7 +509,7 @@ int _TestForCompleteGraphObstruction(graphP theGraph, int numVerts,
         for (J = 0; J < numVerts; J++)
            if (I != J)
                if (_TestPath(theGraph, imageVerts[I],
-                                       imageVerts[J]) != OK)
+                                       imageVerts[J]) != TRUE)
                    return NOTOK;
 
     // The visited flags should have marked only degree two vertices,
@@ -556,9 +556,9 @@ int  I, imageVertPos, temp, success;
      {
           I = success = 0;
           do {
-             if (_TestPath(theGraph, imageVerts[imageVertPos], imageVerts[0]) == OK)
+             if (_TestPath(theGraph, imageVerts[imageVertPos], imageVerts[0]) == TRUE)
              {
-                 success = 1;
+                 success = TRUE;
                  break;
              }
 
@@ -581,7 +581,7 @@ int  I, imageVertPos, temp, success;
      for (imageVertPos=0; imageVertPos<3; imageVertPos++)
           for (I=3; I<6; I++)
                if (_TestPath(theGraph, imageVerts[imageVertPos],
-                                       imageVerts[I]) != OK)
+                                       imageVerts[I]) != TRUE)
                    return NOTOK;
 
      for (I = 0; I < theGraph->N; I++)
@@ -708,7 +708,7 @@ int  I, J, imageVertPos;
      for (imageVertPos=2; imageVertPos<5; imageVertPos++)
      {
           if (_TestPath(theGraph, imageVerts[imageVertPos],
-                                  imageVerts[1]) != OK)
+                                  imageVerts[1]) != TRUE)
                    return NOTOK;
           theGraph->G[imageVerts[imageVertPos]].visited = 1;
      }
@@ -783,8 +783,8 @@ int  degrees[4], imageVerts[5];
 
  This function determines whether there exists a path of degree two
  vertices between two given vertices.  The function marks each
- degree two vertex as visited.  It returns NOTOK if it cannot find
- such a path.
+ degree two vertex as visited.  It returns TRUE if it finds the
+ path and FALSE otherwise.
  ********************************************************************/
 
 int  _TestPath(graphP theGraph, int U, int V)
@@ -797,13 +797,13 @@ int  J;
          if (_TryPath(theGraph, J, V) == OK)
          {
              _MarkPath(theGraph, J);
-             return OK;
+             return TRUE;
          }
 
          J = gp_GetNextArc(theGraph, J);
      }
 
-     return NOTOK;
+     return FALSE;
  }
 
 /********************************************************************
