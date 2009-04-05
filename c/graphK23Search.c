@@ -179,7 +179,7 @@ int X, Y, XPrevLink, YPrevLink, tempFlags;
 
          if (theGraph->IC.minorType & MINORTYPE_A)
          {
-             if (_FindUnembeddedEdgeToCurVertex(theGraph, IC->w, &IC->dw) != OK)
+             if (_FindUnembeddedEdgeToCurVertex(theGraph, IC->w, &IC->dw) != TRUE)
                  return NOTOK;
 
              if (_IsolateOuterplanarityObstructionA(theGraph) != OK)
@@ -190,7 +190,7 @@ int X, Y, XPrevLink, YPrevLink, tempFlags;
          int SubtreeRoot = LCGetPrev(theGraph->BicompLists,
                                      theGraph->V[IC->w].pertinentBicompList, NIL);
 
-             if (_FindUnembeddedEdgeToSubtree(theGraph, IC->v, SubtreeRoot, &IC->dw) != OK)
+             if (_FindUnembeddedEdgeToSubtree(theGraph, IC->v, SubtreeRoot, &IC->dw) != TRUE)
                  return NOTOK;
 
              if (_IsolateOuterplanarityObstructionB(theGraph) != OK)
@@ -309,7 +309,7 @@ int XPrevLink = 1;
 
 /* Final bits are in common */
 
-     if (_FindUnembeddedEdgeToCurVertex(theGraph, IC->w, &IC->dw) != OK ||
+     if (_FindUnembeddedEdgeToCurVertex(theGraph, IC->w, &IC->dw) != TRUE ||
          theGraph->functions.fpMarkDFSPath(theGraph, IC->w, IC->dw) != OK ||
          _JoinBicomps(theGraph) != OK ||
          _AddAndMarkEdge(theGraph, IC->v, IC->dw) != OK)
@@ -360,10 +360,10 @@ int  tempEmbedFlags = theGraph->embedFlags;
                  return NOTOK;
          }
 
-         if (_FindUnembeddedEdgeToCurVertex(theGraph, IC->w, &IC->dw) != OK)
+         if (_FindUnembeddedEdgeToCurVertex(theGraph, IC->w, &IC->dw) != TRUE)
              return NOTOK;
 
-         if (_FindUnembeddedEdgeToAncestor(theGraph, XorY, &u, &d) != OK)
+         if (_FindUnembeddedEdgeToAncestor(theGraph, XorY, &u, &d) != TRUE)
              return NOTOK;
 
          if (theGraph->functions.fpMarkDFSPath(theGraph, u, IC->v) != OK ||
@@ -381,7 +381,7 @@ int  tempEmbedFlags = theGraph->embedFlags;
 
      theGraph->embedFlags = tempEmbedFlags;
 
-     if (_FindUnembeddedEdgeToAncestor(theGraph, IC->w, &u, &d) != OK)
+     if (_FindUnembeddedEdgeToAncestor(theGraph, IC->w, &u, &d) != TRUE)
          return NOTOK;
 
      IC->v = u;
