@@ -251,7 +251,9 @@ void outprocTest(FILE *f, graph *g, int n, char command, unsigned long *pStat)
 	}
 
 	numGraphs++;
+#ifndef DEBUG
 	if (numGraphs % 379 == 0)
+#endif
 	{
 		fprintf(f, "\r%ld ", numGraphs);
 		fflush(f);
