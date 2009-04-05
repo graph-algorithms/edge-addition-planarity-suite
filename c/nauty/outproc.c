@@ -63,12 +63,12 @@ void outprocTestK33Search(FILE *f, graph *g, int n)
 int CreateGraphs(int n, char command)
 {
     if ((theGraph = gp_New()) == NULL ||
-    		gp_EnsureEdgeCapacity(theGraph, n*(n-1)/2) != OK ||
+    		gp_EnsureEdgeCapacity(theGraph, n*(n-1)) != OK ||
     		gp_InitGraph(theGraph, n) != OK)
         return NOTOK;
 
     if ((origGraph = gp_New()) == NULL ||
-    		gp_EnsureEdgeCapacity(origGraph, n*(n-1)/2) != OK ||
+    		gp_EnsureEdgeCapacity(origGraph, n*(n-1)) != OK ||
     		gp_InitGraph(origGraph, n) != OK)
     {
         gp_Free(&theGraph);
@@ -143,13 +143,28 @@ unsigned long PO2;
                  ErrorCode = gp_AddEdge(theGraph, i, 0, j, 0);
                  if (ErrorCode != OK)
                  {
-                     /* If we only stopped because the graph contains too
-                        many edges, then the planarity implementation will
-                        find the graph to be non-planar without needing
-                        any more edges, so we change to a status of OK.
-                        But if a real NOTOK error happened, it is reported. */
+                     // If we only stopped because the graph contains too
+                     // many edges, then we determine whether or not this is
+                     // a real error as described below
                      if (ErrorCode == NONEMBEDDABLE)
-                         ErrorCode = OK;
+                     {
+                    	 // In the default case of this implementation, the graph's
+                    	 // edge capacity is set to accommodate a complete graph,
+                    	 // so if there was a failure to add an edge, then some
+                    	 // corruption has occurred and we report an error.
+                    	 if (gp_GetEdgeCapacity(theGraph)/2 == (n*(n-1)/2))
+                    		 ErrorCode = NOTOK;
+
+                    	 // Many of the algorithms require only a small sampling
+                    	 // of edges to be successful.  For example, planar embedding
+                    	 // and Kuratowski subgraph isolation required only 3n-5
+                    	 // edges.  K3,3 search requires only 3n edges from the input
+                    	 // graph.  If a user modifies the test code to exploit this
+                    	 // lower limit, then we permit the failure to add an edge since
+                    	 // the failure to add an edge is expected.
+                    	 else
+                    		 ErrorCode = OK;
+                     }
                      break;
                  }
              }

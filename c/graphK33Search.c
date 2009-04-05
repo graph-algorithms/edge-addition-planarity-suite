@@ -1844,9 +1844,14 @@ int  J0, JTwin0, J1, JTwin1, PathIsOnExtFace;
              else PathIsOnExtFace = 0;
 
              /* Now we add the two edges to reconnect the reduced path represented
-                by the edge [J, JTwin].  The edge record in u is added between J and J1,
-                but when edge [J, JTwin] is deleted, then the new edge record will be
-                between J0 and J1.  Likewise, JTwin and the new edge record added to x. */
+                by the edge [J, JTwin].  The edge record in u is added between J0 and J1.
+                Likewise, the new edge record in x is added between JTwin0 and JTwin1.
+                The special case happens when the path is on the external face. One of
+                J0 and J1 is not an arc, and one of JTwin0 and JTwin1 is not an arc.
+                This temporarily creates one more edge, since the reduction edge
+                [J, JTwin] is not deleted until afterward. This is not an issue if the
+                graph structure can accommodate a complete graph, but should be rewritten
+                to delete the edge first */
 
              if (gp_InsertEdge(theGraph, u, J, 1, v, gp_AdjacencyListEndMark(v), 0) != OK ||
                  gp_InsertEdge(theGraph, x, JTwin, 1, w, gp_AdjacencyListEndMark(w), 0) != OK)
@@ -1872,7 +1877,7 @@ int  J0, JTwin0, J1, JTwin1, PathIsOnExtFace;
 
              if (PathIsOnExtFace)
                  if (_OrientPath(theGraph, u, v, w, x) != OK)
-                     return OK;
+                     return NOTOK;
 
              /* The internal XY path was already marked as part of the decision logic
                 that made us decide we could find a K3,3 and hence that we should
