@@ -584,9 +584,10 @@ int I, J, Gsize;
 int  gp_Write(graphP theGraph, char *FileName, int Mode)
 {
 FILE *Outfile;
-int RetVal = NOTOK;
+int RetVal;
 
-     if (theGraph == NULL || FileName == NULL) return NOTOK;
+     if (theGraph == NULL || FileName == NULL)
+    	 return NOTOK;
 
      if (strcmp(FileName, "nullwrite") == 0)
     	  return OK;
@@ -600,12 +601,18 @@ int RetVal = NOTOK;
 
      switch (Mode)
      {
-         case WRITE_ADJLIST   : RetVal = _WriteAdjList(theGraph, Outfile);
-                                break;
-         case WRITE_ADJMATRIX : RetVal = _WriteAdjMatrix(theGraph, Outfile);
-                                break;
-         case WRITE_DEBUGINFO : RetVal = _WriteDebugInfo(theGraph, Outfile);
-                                break;
+         case WRITE_ADJLIST   :
+        	 RetVal = _WriteAdjList(theGraph, Outfile);
+             break;
+         case WRITE_ADJMATRIX :
+        	 RetVal = _WriteAdjMatrix(theGraph, Outfile);
+             break;
+         case WRITE_DEBUGINFO :
+        	 RetVal = _WriteDebugInfo(theGraph, Outfile);
+             break;
+         default :
+        	 RetVal = NOTOK;
+        	 break;
      }
 
      if (RetVal == OK)
