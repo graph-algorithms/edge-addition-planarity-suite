@@ -147,14 +147,14 @@ int  RetVal=NOTOK;
      int SubtreeRoot = LCGetPrev(theGraph->BicompLists,
                                  theGraph->V[IC->w].pertinentBicompList, NIL);
 
-         if (_FindUnembeddedEdgeToSubtree(theGraph, IC->v, SubtreeRoot, &IC->dw) != OK)
+         if (_FindUnembeddedEdgeToSubtree(theGraph, IC->v, SubtreeRoot, &IC->dw) != TRUE)
              return NOTOK;
      }
      else
      {
      isolatorContextP IC = &theGraph->IC;
 
-         if (_FindUnembeddedEdgeToCurVertex(theGraph, IC->w, &IC->dw) != OK)
+         if (_FindUnembeddedEdgeToCurVertex(theGraph, IC->w, &IC->dw) != TRUE)
              return NOTOK;
      }
 

@@ -66,7 +66,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #undef SPEED_MACROS
 #endif
 
-/* Return status values */
+/* Return status values; OK/NOTOK behave like Boolean true/false,
+   not like program exit codes. */
 
 #define OK              1
 #define NOTOK           0

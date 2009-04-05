@@ -139,8 +139,8 @@ isolatorContextP IC = &theGraph->IC;
 
 /* Obtains the edges connecting X and Y to ancestors of the current vertex */
 
-     if (_FindUnembeddedEdgeToAncestor(theGraph, IC->x, &IC->ux, &IC->dx) != OK ||
-         _FindUnembeddedEdgeToAncestor(theGraph, IC->y, &IC->uy, &IC->dy) != OK)
+     if (_FindUnembeddedEdgeToAncestor(theGraph, IC->x, &IC->ux, &IC->dx) != TRUE ||
+         _FindUnembeddedEdgeToAncestor(theGraph, IC->y, &IC->uy, &IC->dy) != TRUE)
          return NOTOK;
 
 /* For Minor B, we seek the last pertinent child biconnected component, which
@@ -155,8 +155,8 @@ isolatorContextP IC = &theGraph->IC;
 
          IC->uz = theGraph->V[SubtreeRoot].Lowpoint;
 
-         if (_FindUnembeddedEdgeToSubtree(theGraph, IC->v, SubtreeRoot, &IC->dw) != OK ||
-             _FindUnembeddedEdgeToSubtree(theGraph, IC->uz, SubtreeRoot, &IC->dz) != OK)
+         if (_FindUnembeddedEdgeToSubtree(theGraph, IC->v, SubtreeRoot, &IC->dw) != TRUE ||
+             _FindUnembeddedEdgeToSubtree(theGraph, IC->uz, SubtreeRoot, &IC->dz) != TRUE)
              return NOTOK;
      }
 
@@ -164,11 +164,11 @@ isolatorContextP IC = &theGraph->IC;
 
      else
      {
-         if (_FindUnembeddedEdgeToCurVertex(theGraph, IC->w, &IC->dw) != OK)
+         if (_FindUnembeddedEdgeToCurVertex(theGraph, IC->w, &IC->dw) != TRUE)
              return NOTOK;
 
          if (theGraph->IC.minorType & MINORTYPE_E)
-             if (_FindUnembeddedEdgeToAncestor(theGraph, IC->z, &IC->uz, &IC->dz) != OK)
+             if (_FindUnembeddedEdgeToAncestor(theGraph, IC->z, &IC->uz, &IC->dz) != TRUE)
                  return NOTOK;
      }
 
@@ -448,6 +448,7 @@ int  ancestor = theGraph->V[cutVertex].leastAncestor;
  leastAncestor or the lowpoint of a separated DFS child is less than I.
  We obtain the minimum possible connection from the cutVertex to an ancestor
  of I, then compute the descendant accordingly.
+ Returns TRUE if found, FALSE otherwise.
  ****************************************************************************/
 
 int  _FindUnembeddedEdgeToAncestor(graphP theGraph, int cutVertex,
@@ -458,7 +459,7 @@ int  _FindUnembeddedEdgeToAncestor(graphP theGraph, int cutVertex,
      if (*pAncestor == theGraph->V[cutVertex].leastAncestor)
      {
          *pDescendant = cutVertex;
-         return OK;
+         return TRUE;
      }
      else
      {
@@ -475,11 +476,12 @@ int  _FindUnembeddedEdgeToAncestor(graphP theGraph, int cutVertex,
  Given the current vertex I, we search for an edge connecting I to either
  a given pertinent vertex W or one of its DFS descendants in the subtree
  indicated by the the last pertinent child biconnected component.
+ Returns TRUE if founds, FALSE otherwise.
  ****************************************************************************/
 
 int  _FindUnembeddedEdgeToCurVertex(graphP theGraph, int cutVertex, int *pDescendant)
 {
-int  RetVal = OK, I = theGraph->IC.v;
+int  RetVal = TRUE, I = theGraph->IC.v;
 
      if (theGraph->V[cutVertex].adjacentTo != NIL)
          *pDescendant = cutVertex;
@@ -500,6 +502,7 @@ int  RetVal = OK, I = theGraph->IC.v;
  Given the root vertex of a DFS subtree and an ancestor of that subtree,
  find a vertex in the subtree that is adjacent to the ancestor by a
  cycle edge.
+ Returns TRUE if found, FALSE if not found.
  ****************************************************************************/
 
 int  _FindUnembeddedEdgeToSubtree(graphP theGraph, int ancestor,
@@ -531,7 +534,8 @@ int  J, Z, ZNew;
               J = NIL;
      }
 
-     if (*pDescendant == NIL) return NOTOK;
+     if (*pDescendant == NIL)
+    	 return FALSE;
 
 /* Make sure the identified descendant actually descends from the cut vertex */
 
@@ -540,13 +544,13 @@ int  J, Z, ZNew;
      {
          ZNew = theGraph->V[Z].DFSParent;
          if (ZNew == NIL || ZNew == Z)
-             return NOTOK;
+             return FALSE;
          Z = ZNew;
      }
 
 /* Return successfully */
 
-     return OK;
+     return TRUE;
 }
 
 

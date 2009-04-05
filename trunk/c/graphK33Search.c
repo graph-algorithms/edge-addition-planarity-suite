@@ -700,7 +700,7 @@ isolatorContextP IC = &theGraph->IC;
 /* Finally, we obtain the descendant end of an unembedded back edge to
      the current vertex. */
 
-     if (_FindUnembeddedEdgeToCurVertex(theGraph, IC->w, &IC->dw) != OK)
+     if (_FindUnembeddedEdgeToCurVertex(theGraph, IC->w, &IC->dw) != TRUE)
          return NOTOK;
 
      return OK;
@@ -889,7 +889,7 @@ int  listHead, child, J;
          if (theGraph->V[child].Lowpoint >= theGraph->IC.v)
              break;
 
-         if (_FindUnembeddedEdgeToSubtree(theGraph, ancestor, child, pDescendant) == OK)
+         if (_FindUnembeddedEdgeToSubtree(theGraph, ancestor, child, pDescendant) == TRUE)
              return OK;
 
          child = LCGetNext(theGraph->DFSChildLists, listHead, child);
