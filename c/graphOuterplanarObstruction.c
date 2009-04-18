@@ -52,7 +52,6 @@ extern void _FillVisitedFlags(graphP, int);
 extern int  _GetNextVertexOnExternalFace(graphP theGraph, int curVertex, int *pPrevLink);
 extern int  _WalkDown(graphP theGraph, int I, int RootVertex);
 extern int  _OrientVerticesInEmbedding(graphP theGraph);
-extern int  _OrientVerticesInBicomp(graphP theGraph, int BicompRoot, int PreserveSigns);
 extern int  _JoinBicomps(graphP theGraph);
 
 extern int  _InitializeNonplanarityContext(graphP theGraph, int I, int R);
@@ -131,7 +130,7 @@ int  N, X, Y, W;
 
 int  _IsolateOuterplanarObstruction(graphP theGraph, int I)
 {
-int  RetVal=NOTOK;
+int  RetVal;
 
 /* Begin by determining which of the non-planarity Minors was encountered
         and the principal bicomp on which the isolator will focus attention. */
@@ -174,6 +173,8 @@ int  RetVal=NOTOK;
          RetVal = _IsolateOuterplanarityObstructionB(theGraph);
      else if (theGraph->IC.minorType & MINORTYPE_E)
          RetVal = _IsolateOuterplanarityObstructionE(theGraph);
+     else
+    	 RetVal = NOTOK;
 
 /* Delete the unmarked edges and vertices, and return */
 
