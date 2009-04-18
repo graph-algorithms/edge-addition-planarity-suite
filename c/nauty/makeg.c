@@ -181,6 +181,9 @@ boolean nautyformat;            /* presence of -n */
 boolean nooutput;               /* presence of -u */
 boolean canonise;               /* presence of -l */
 static int maxdeg,maxn,mine,maxe,nprune,mod,res,curres;
+// CHANGE start
+int g_maxe, g_mod, g_res;
+// CHANGE end
 static graph gcan[MAXN];
 
 static int xbit[] = {0x0001,0x0002,0x0004,0x0008,
@@ -1648,6 +1651,11 @@ int makeg_main(char command, int argc, char *argv[])
         outfile = stdout;
         fprintf(msgfile,">A n=%d e=%d:%d d=%d class=%d/%d\n",
                         maxn,mine,maxe,maxdeg,mod,res);
+// CHANGE start
+        g_maxe = maxe;
+        g_mod = mod;
+        g_res = res;
+// CHANGE end
 
         g[0] = 0;
         deg[0] = 0;

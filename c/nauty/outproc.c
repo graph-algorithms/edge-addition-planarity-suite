@@ -9,6 +9,7 @@
 #define EXTDEFS
 #define MAXN 16
 #include "naututil.h"
+extern int g_maxe, g_mod, g_res;
 
 #include "outproc.h"
 
@@ -23,37 +24,40 @@ graphP theGraph=NULL, origGraph=NULL;
 
 unsigned long numGraphs = 0;
 unsigned long numErrors = 0;
+unsigned long numOKs = 0;
 
-unsigned long numNonplanar = 0;
-unsigned long numNotOuterplanar = 0;
-unsigned long numWithK23 = 0;
-unsigned long numWithK33 = 0;
+void Test_InitStats()
+{
+	numGraphs = 0;
+	numErrors = 0;
+	numOKs = 0;
+}
 
-void outprocTest(FILE *f, graph *g, int n, char command, unsigned long *pStat);
+void outprocTest(FILE *f, graph *g, int n, char command);
 
 void outprocTestPlanarity(FILE *f, graph *g, int n)
 {
-    outprocTest(f, g, n, 'p', &numNonplanar);
+    outprocTest(f, g, n, 'p');
 }
 
 void outprocTestDrawPlanar(FILE *f, graph *g, int n)
 {
-    outprocTest(f, g, n, 'd', &numNonplanar);
+    outprocTest(f, g, n, 'd');
 }
 
 void outprocTestOuterplanarity(FILE *f, graph *g, int n)
 {
-    outprocTest(f, g, n, 'o', &numNotOuterplanar);
+    outprocTest(f, g, n, 'o');
 }
 
 void outprocTestK23Search(FILE *f, graph *g, int n)
 {
-    outprocTest(f, g, n, '2', &numWithK23);
+    outprocTest(f, g, n, '2');
 }
 
 void outprocTestK33Search(FILE *f, graph *g, int n)
 {
-    outprocTest(f, g, n, '3', &numWithK33);
+    outprocTest(f, g, n, '3');
 }
 
 /***********************************************************************
@@ -62,13 +66,15 @@ void outprocTestK33Search(FILE *f, graph *g, int n)
 
 int CreateGraphs(int n, char command)
 {
+	int numArcs = 2*(g_maxe > 0 ? g_maxe : 1);
+
     if ((theGraph = gp_New()) == NULL ||
-    		gp_EnsureEdgeCapacity(theGraph, n*(n-1)) != OK ||
+    		gp_EnsureArcCapacity(theGraph, numArcs) != OK ||
     		gp_InitGraph(theGraph, n) != OK)
         return NOTOK;
 
     if ((origGraph = gp_New()) == NULL ||
-    		gp_EnsureEdgeCapacity(origGraph, n*(n-1)) != OK ||
+    		gp_EnsureArcCapacity(origGraph, numArcs) != OK ||
     		gp_InitGraph(origGraph, n) != OK)
     {
         gp_Free(&theGraph);
@@ -149,10 +155,10 @@ unsigned long PO2;
                      if (ErrorCode == NONEMBEDDABLE)
                      {
                     	 // In the default case of this implementation, the graph's
-                    	 // edge capacity is set to accommodate a complete graph,
+                    	 // arc capacity is set to accommodate a complete graph,
                     	 // so if there was a failure to add an edge, then some
                     	 // corruption has occurred and we report an error.
-                    	 if (gp_GetEdgeCapacity(theGraph)/2 == (n*(n-1)/2))
+                    	 if (gp_GetArcCapacity(theGraph)/2 == (n*(n-1)/2))
                     		 ErrorCode = NOTOK;
 
                     	 // Many of the algorithms require only a small sampling
@@ -176,10 +182,12 @@ unsigned long PO2;
 	 return ErrorCode;
 }
 
-void outprocTest(FILE *f, graph *g, int n, char command, unsigned long *pStat)
+void outprocTest(FILE *f, graph *g, int n, char command)
 {
 	if (theGraph == NULL)
 	{
+		Test_InitStats();
+
 		if (CreateGraphs(n, command) != OK)
 		{
 			if (!numErrors)
@@ -234,9 +242,9 @@ void outprocTest(FILE *f, graph *g, int n, char command, unsigned long *pStat)
 		}
 
 		if (Result == OK)
-			;
+			numOKs++;
 		else if (Result == NONEMBEDDABLE)
-			(*pStat)++;
+			;
 		else
 		{
 			if (!numErrors)
@@ -267,10 +275,15 @@ void outprocTest(FILE *f, graph *g, int n, char command, unsigned long *pStat)
 void Test_PrintStats(FILE *msgfile, char command)
 {
 char *msg = NULL;
-unsigned long result = 0;
 
-    // Print the final number of graphs generated.
+    // Print the final counter value
     fprintf(msgfile, "\r%ld ", numGraphs);
+
+    // Report the number of graphs, and the modulus and residue class of the generator
+    if (g_mod > 1)
+    	fprintf(msgfile, "# Graphs=%ld, mod=%d, res=%d\n", numGraphs, g_mod, g_res);
+    else
+    	fprintf(msgfile, "# Graphs=%ld\n", numGraphs);
 
     // Report the number of errors
     fprintf(msgfile, "# Errors=%ld\n", numErrors);
@@ -279,13 +292,13 @@ unsigned long result = 0;
     switch (command)
     {
         case 'p' :
-        case 'd' : msg = "not Planar"; result = numNonplanar; break;
-        case 'o' : msg = "not Outerplanar"; result = numNotOuterplanar; break;
-        case '2' : msg = "with K2,3"; result = numWithK23; break;
-        case '3' : msg = "with K3,3"; result = numWithK33; break;
+        case 'd' : msg = "not Planar"; break;
+        case 'o' : msg = "not Outerplanar"; break;
+        case '2' : msg = "with K2,3"; break;
+        case '3' : msg = "with K3,3"; break;
     }
 
-    fprintf(msgfile, "# %s=%ld\n", msg, result);
+    fprintf(msgfile, "# %s=%ld\n", msg, numGraphs - numOKs);
 
     gp_Free(&theGraph);
     gp_Free(&origGraph);
