@@ -101,7 +101,7 @@ void _InitVertexRec(graphP theGraph, int I);
 
 int  _InitGraph(graphP theGraph, int N);
 void _ReinitializeGraph(graphP theGraph);
-int  _EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity);
+int  _EnsureArcCapacity(graphP theGraph, int requiredArcCapacity);
 
 /********************************************************************
  gp_New()
@@ -171,7 +171,7 @@ void _InitFunctionTable(graphP theGraph)
 
      theGraph->functions.fpInitGraph = _InitGraph;
      theGraph->functions.fpReinitializeGraph = _ReinitializeGraph;
-     theGraph->functions.fpEnsureEdgeCapacity = _EnsureEdgeCapacity;
+     theGraph->functions.fpEnsureArcCapacity = _EnsureArcCapacity;
      theGraph->functions.fpSortVertices = _SortVertices;
 
      theGraph->functions.fpReadPostprocess = _ReadPostprocess;
@@ -181,20 +181,20 @@ void _InitFunctionTable(graphP theGraph)
 /********************************************************************
  gp_InitGraph()
  Allocates memory for vertex and edge records now that N is known.
- The edgeCapacity is set to (2 * DEFAULT_EDGE_LIMIT * N) unless it
-	 has already been set by gp_EnsureEdgeCapacity()
+ The arcCapacity is set to (2 * DEFAULT_EDGE_LIMIT * N) unless it
+	 has already been set by gp_EnsureArcCapacity()
 
  For G, we need N vertex nodes, N more vertex nodes for root copies,
-         and edgeCapacity edge records.
+         and arcCapacity edge records.
 
  For V, we need N vertex records.
 
  The BicompLists and DFSChildLists are of size N and start out empty.
 
  The stack, initially empty, is made big enough for a pair of integers
-	 per edge record, or 2 * edgeCapacity.
+	 per edge record, or 2 * arcCapacity.
 
- The edgeHoles stack, initially empty, is set to edgeCapacity / 2,
+ The edgeHoles stack, initially empty, is set to arcCapacity / 2,
 	 which is big enough to push every edge (to indicate an edge
 	 you only need to indicate one of its two edge records)
 
@@ -221,14 +221,14 @@ int gp_InitGraph(graphP theGraph, int N)
 
 int  _InitGraph(graphP theGraph, int N)
 {
-int I, edgeOffset, edgeCapacity, Gsize, Vsize;
+int I, edgeOffset, arcCapacity, Gsize, Vsize;
 
 /* Compute the vertex and edge capacities of the graph */
 
      Vsize = 2*N;
      edgeOffset = Vsize;
-     edgeCapacity = theGraph->edgeCapacity > 0 ? theGraph->edgeCapacity : 2*DEFAULT_EDGE_LIMIT*N;
-     Gsize = edgeOffset + edgeCapacity;
+     arcCapacity = theGraph->arcCapacity > 0 ? theGraph->arcCapacity : 2*DEFAULT_EDGE_LIMIT*N;
+     Gsize = edgeOffset + arcCapacity;
 
 /* Allocate memory as described above */
 
@@ -236,11 +236,11 @@ int I, edgeOffset, edgeCapacity, Gsize, Vsize;
          (theGraph->V = (vertexRecP) malloc(N*sizeof(vertexRec))) == NULL ||
          (theGraph->BicompLists = LCNew(N)) == NULL ||
          (theGraph->DFSChildLists = LCNew(N)) == NULL ||
-         (theGraph->theStack = sp_New(2 * edgeCapacity)) == NULL ||
+         (theGraph->theStack = sp_New(2 * arcCapacity)) == NULL ||
          (theGraph->buckets = (int *) malloc(N * sizeof(int))) == NULL ||
          (theGraph->bin = LCNew(N)) == NULL ||
          (theGraph->extFace = (extFaceLinkRecP) malloc(Vsize*sizeof(extFaceLinkRec))) == NULL ||
-         (theGraph->edgeHoles = sp_New(edgeCapacity / 2)) == NULL ||
+         (theGraph->edgeHoles = sp_New(arcCapacity / 2)) == NULL ||
          0)
      {
          _ClearGraph(theGraph);
@@ -251,7 +251,7 @@ int I, edgeOffset, edgeCapacity, Gsize, Vsize;
 
      theGraph->N = N;
      theGraph->edgeOffset = edgeOffset;
-     theGraph->edgeCapacity = Gsize - edgeOffset;
+     theGraph->arcCapacity = Gsize - edgeOffset;
 
      for (I = 0; I < Gsize; I++)
           theGraph->functions.fpInitGraphNode(theGraph, I);
@@ -287,7 +287,7 @@ void gp_ReinitializeGraph(graphP theGraph)
 void _ReinitializeGraph(graphP theGraph)
 {
 int  I, N = theGraph->N, edgeOffset = theGraph->edgeOffset;
-int  Vsize = 2*N, Gsize = edgeOffset + theGraph->edgeCapacity;
+int  Vsize = 2*N, Gsize = edgeOffset + theGraph->arcCapacity;
 
      theGraph->M = 0;
      theGraph->internalFlags = theGraph->embedFlags = 0;
@@ -314,94 +314,100 @@ int  Vsize = 2*N, Gsize = edgeOffset + theGraph->edgeCapacity;
 }
 
 /********************************************************************
- gp_GetEdgeCapacity()
- Returns the edgeCapacity of theGraph, which is twice the maximum
+ gp_GetArcCapacity()
+ Returns the arcCapacity of theGraph, which is twice the maximum
  number of edges that can be added to the theGraph.
  ********************************************************************/
-int gp_GetEdgeCapacity(graphP theGraph)
+int gp_GetArcCapacity(graphP theGraph)
 {
-	return theGraph->edgeCapacity;
+	return theGraph->arcCapacity;
 }
 
 /********************************************************************
- gp_EnsureEdgeCapacity()
+ gp_EnsureArcCapacity()
  This method ensures that theGraph is or will be capable of storing
- at least requiredEdgeCapacity edge records.  Two edge records are
+ at least requiredArcCapacity edge records.  Two edge records are
  needed per edge.
 
  This method is most performant when invoked immediately after
- gp_New(), since it must only set the edgeCapacity and then let
+ gp_New(), since it must only set the arcCapacity and then let
  normal initialization to occur through gp_InitGraph().
 
  This method is also a constant time operation if the graph already
- has at least the requiredEdgeCapacity, since it will return OK
+ has at least the requiredArcCapacity, since it will return OK
  without making any structural changes.
 
  This method is generally more performant if it is invoked before
  attaching extensions to the graph.  Some extensions associate
  parallel data with edge records, which is a faster operation if
  the associated data is created and initialized only after the
- proper edgeCapacity is specified.
+ proper arcCapacity is specified.
 
- If the graph has been initialized and has a lower edge capacity,
+ If the graph has been initialized and has a lower arc capacity,
  then the array of edge records is reallocated to satisfy the
- requiredEdgeCapacity.  The new array contains the old edges and
+ requiredArcCapacity.  The new array contains the old edges and
  edge holes at the same locations, and all newly created edge records
  are initialized.
 
- Also, if the edge capacity must be increased, then the
- edgeCapacity member of theGraph is changed and both
+ Also, if the arc capacity must be increased, then the
+ arcCapacity member of theGraph is changed and both
  theStack and edgeHoles are expanded (since the sizes of both
- are based on the edge capacity).
+ are based on the arc capacity).
 
  Extensions that add to data associated with edges must overload
  this method to ensure capacity in the parallel extension data
  structures.  An extension can return NOTOK if it does not
- support edge capacity expansion.  The extension function will
- not be called if edgeCapacity is expanded before the graph is
+ support arc capacity expansion.  The extension function will
+ not be called if arcCapacity is expanded before the graph is
  initialized, and it is assumed that extensions will allocate
- parallel data structures according to the edge capacity.
+ parallel data structures according to the arc capacity.
 
- If an extension supports edge capacity expansion, then higher
+ If an extension supports arc capacity expansion, then higher
  performance can be obtained by using the method of unhooking
  the initializers for individual edge records before invoking
- the superclass version of fpEnsureEdgeCapacity().  Ideally,
- application authors should ensure the proper edge capacity before
+ the superclass version of fpEnsureArcCapacity().  Ideally,
+ application authors should ensure the proper arc capacity before
  attaching extensions to achieve better performance.
 
  Returns NOTOK on failure to reallocate the edge record array to
-         satisfy the requiredEdgeCapacity, and OK if reallocation
-         is not required or if reallocation succeeds
+         satisfy the requiredArcCapacity, or if the requested
+         capacity is odd
+         OK if reallocation is not required or if reallocation succeeds
  ********************************************************************/
-int gp_EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity)
+int gp_EnsureArcCapacity(graphP theGraph, int requiredArcCapacity)
 {
-	if (theGraph == NULL || requiredEdgeCapacity <= 0)
+	if (theGraph == NULL || requiredArcCapacity <= 0)
 		return NOTOK;
 
-    if (theGraph->edgeCapacity >= requiredEdgeCapacity)
+	// Train callers to only ask for an even number of arcs, since
+	// two are required per edge or directed edge.
+	if (requiredArcCapacity & 1)
+		return NOTOK;
+
+    if (theGraph->arcCapacity >= requiredArcCapacity)
     	return OK;
 
     // In the special case where gp_InitGraph() has not yet been called,
-    // we can simply set the higher edgeCapacity since normal initialization
+    // we can simply set the higher arcCapacity since normal initialization
     // will then allocate the correct number of edge records.
     if (theGraph->N == 0)
     {
-    	theGraph->edgeCapacity = requiredEdgeCapacity;
+    	theGraph->arcCapacity = requiredArcCapacity;
     	return OK;
     }
 
-    // Try to expand the edge capacity
-    return theGraph->functions.fpEnsureEdgeCapacity(theGraph, requiredEdgeCapacity);
+    // Try to expand the arc capacity
+    return theGraph->functions.fpEnsureArcCapacity(theGraph, requiredArcCapacity);
 }
 
-int _EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity)
+int _EnsureArcCapacity(graphP theGraph, int requiredArcCapacity)
 {
 stackP newStack;
-int J, Gsize=theGraph->edgeOffset + theGraph->edgeCapacity;
-int newGsize = theGraph->edgeOffset + requiredEdgeCapacity;
+int J, Gsize=theGraph->edgeOffset + theGraph->arcCapacity;
+int newGsize = theGraph->edgeOffset + requiredArcCapacity;
 
     // Expand theStack
-	if ((newStack = sp_New(2 * requiredEdgeCapacity)) == NULL)
+	if ((newStack = sp_New(2 * requiredArcCapacity)) == NULL)
 		return NOTOK;
 
 	sp_CopyContent(newStack, theGraph->theStack);
@@ -409,7 +415,7 @@ int newGsize = theGraph->edgeOffset + requiredEdgeCapacity;
 	theGraph->theStack = newStack;
 
 	// Expand edgeHoles
-    if ((newStack = sp_New(requiredEdgeCapacity / 2)) == NULL)
+    if ((newStack = sp_New(requiredArcCapacity / 2)) == NULL)
     	return NOTOK;
 
 	sp_CopyContent(newStack, theGraph->edgeHoles);
@@ -425,8 +431,8 @@ int newGsize = theGraph->edgeOffset + requiredEdgeCapacity;
     for (J = Gsize; J < newGsize; J++)
          theGraph->functions.fpInitGraphNode(theGraph, J);
 
-    // The new edgeCapacity has been successfully achieved
-	theGraph->edgeCapacity = requiredEdgeCapacity;
+    // The new arcCapacity has been successfully achieved
+	theGraph->arcCapacity = requiredArcCapacity;
 	return OK;
 }
 
@@ -610,7 +616,7 @@ void _ClearGraph(graphP theGraph)
           theGraph->V = NULL;
      }
 
-     theGraph->N = theGraph->M = theGraph->edgeOffset = theGraph->edgeCapacity = 0;
+     theGraph->N = theGraph->M = theGraph->edgeOffset = theGraph->arcCapacity = 0;
      theGraph->internalFlags = theGraph->embedFlags = 0;
 
      _ClearIsolatorContext(theGraph);
@@ -668,7 +674,7 @@ void gp_Free(graphP *pGraph)
 int  gp_CopyGraph(graphP dstGraph, graphP srcGraph)
 {
 int  I, N = srcGraph->N, edgeOffset = srcGraph->edgeOffset;
-int  Gsize = edgeOffset + srcGraph->edgeCapacity;
+int  Gsize = edgeOffset + srcGraph->arcCapacity;
 
      // Parameter checks
      if (dstGraph == NULL || srcGraph == NULL)
@@ -682,10 +688,10 @@ int  Gsize = edgeOffset + srcGraph->edgeCapacity;
          return NOTOK;
      }
 
-     // Ensure dstGraph has the required edge capacity; this expands
+     // Ensure dstGraph has the required arc capacity; this expands
      // dstGraph if needed, but does not contract.  An error is only
      // returned if the expansion fails.
-     if (gp_EnsureEdgeCapacity(dstGraph, srcGraph->edgeCapacity) != OK)
+     if (gp_EnsureArcCapacity(dstGraph, srcGraph->arcCapacity) != OK)
      {
     	 return NOTOK;
      }
@@ -796,7 +802,7 @@ int N, I, M, u, v;
         (actually, leave open a small chance that no
         additional edges will be added). */
 
-     M = _GetRandomNumber(7*N/8, theGraph->edgeCapacity/2);
+     M = _GetRandomNumber(7*N/8, theGraph->arcCapacity/2);
 
      if (M > N*(N-1)/2) M = N*(N-1)/2;
 
@@ -933,8 +939,8 @@ int N, I, arc, M, root, v, c, p, last, u, J, e;
 
      N = theGraph->N;
 
-     if (numEdges > theGraph->edgeCapacity/2)
-         numEdges = theGraph->edgeCapacity/2;
+     if (numEdges > theGraph->arcCapacity/2)
+         numEdges = theGraph->arcCapacity/2;
 
 /* Generate a random tree. */
 
@@ -1303,7 +1309,7 @@ int  upos, vpos;
 
      /* We enforce the edge limit */
 
-     if (theGraph->M >= theGraph->edgeCapacity/2)
+     if (theGraph->M >= theGraph->arcCapacity/2)
          return NONEMBEDDABLE;
 
      if (sp_NonEmpty(theGraph->edgeHoles))
@@ -1393,7 +1399,7 @@ int vertMax = 2*theGraph->N - 1,
          e_ulink<0 || e_ulink>1 || e_vlink<0 || e_vlink>1)
          return NOTOK;
 
-     if (theGraph->M >= theGraph->edgeCapacity/2)
+     if (theGraph->M >= theGraph->arcCapacity/2)
          return NONEMBEDDABLE;
 
      if (sp_NonEmpty(theGraph->edgeHoles))

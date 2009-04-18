@@ -75,6 +75,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifdef DEBUG
 #undef NOTOK
 extern int debugNOTOK();
+#include <stdio.h>
 #define NOTOK           (printf("NOTOK on Line %d of %s\n", __LINE__, __FILE__), debugNOTOK())
 #endif
 
@@ -86,6 +87,10 @@ extern int debugNOTOK();
 
 #ifndef FALSE
 #define FALSE           0
+#endif
+
+#ifndef NULL
+#define NULL			0L
 #endif
 
 /* Array indices are used as pointers, and this means bad pointer */

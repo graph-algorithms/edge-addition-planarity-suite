@@ -68,6 +68,8 @@ int  sp_Copy(stackP, stackP);
 int  sp_CopyContent(stackP stackDst, stackP stackSrc);
 stackP sp_Duplicate(stackP theStack);
 
+#define sp_GetCapacity(theStack) (theStack->capacity)
+
 #ifndef SPEED_MACROS
 
 int  sp_ClearStack(stackP);
