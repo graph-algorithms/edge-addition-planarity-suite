@@ -46,20 +46,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Imported functions */
 
-extern void _ClearIsolatorContext(graphP theGraph);
 extern void _FillVisitedFlags(graphP, int);
 
 extern int  _GetNextVertexOnExternalFace(graphP theGraph, int curVertex, int *pPrevLink);
-extern int  _GetPertinentChildBicomp(graphP theGraph, int W);
-extern int  _WalkDown(graphP theGraph, int I, int RootVertex);
-extern void _OrientVerticesInEmbedding(graphP theGraph);
 extern void _OrientVerticesInBicomp(graphP theGraph, int BicompRoot, int PreserveSigns);
 extern int  _JoinBicomps(graphP theGraph);
 
-extern int  _InitializeNonplanarityContext(graphP theGraph, int I, int R);
-extern int  _FindNonplanarityBicompRoot(graphP theGraph);
-extern void _FindActiveVertices(graphP theGraph, int R, int *pX, int *pY);
-extern int  _FindPertinentVertex(graphP theGraph);
 extern int  _MarkHighestXYPath(graphP theGraph);
 
 extern int  _FindUnembeddedEdgeToAncestor(graphP theGraph, int cutVertex, int *pAncestor, int *pDescendant);
@@ -72,16 +64,13 @@ extern int  _AddAndMarkEdge(graphP theGraph, int ancestor, int descendant);
 
 extern int  _DeleteUnmarkedVerticesAndEdges(graphP theGraph);
 
-/* Private function declarations (exported to system) */
+extern int  _ChooseTypeOfNonOuterplanarityMinor(graphP theGraph, int I, int R);
+extern int  _IsolateOuterplanarityObstructionA(graphP theGraph);
+extern int  _IsolateOuterplanarityObstructionB(graphP theGraph);
 
-int  _IsolateOuterplanarObstruction(graphP theGraph, int I);
+/* Private function declarations for K_{2,3} searching */
+
 int  _SearchForK23(graphP theGraph, int I);
-
-int  _ChooseTypeOfNonOuterplanarityMinor(graphP theGraph, int I, int R);
-
-int  _IsolateOuterplanarityObstructionA(graphP theGraph);
-int  _IsolateOuterplanarityObstructionB(graphP theGraph);
-int  _IsolateOuterplanarityObstructionE(graphP theGraph);
 
 int  _SearchForK23InBicomp(graphP theGraph, int I, int R);
 int  _IsolateOuterplanarityObstructionE1orE2(graphP theGraph);
@@ -102,7 +91,7 @@ int  _IsolateOuterplanarityObstructionE3orE4(graphP theGraph);
 
 int  _SearchForK23(graphP theGraph, int I)
 {
-int J, W, C, RetVal=NOTOK;
+int J, W, C, RetVal=OK;
 
 /* Traverse the edges of I to find the unembedded forward edges to
     descendants.  For each such edge (I, W), traverse the DFS tree
@@ -112,6 +101,12 @@ int J, W, C, RetVal=NOTOK;
 /* Traverse each unembedded back edge to the descendant endpoint... */
 
     J = theGraph->V[I].fwdArcList;
+
+    // Ensure we have at least one bicomp on which Walkdown failed, which
+    // should always be the case in an error free implementation
+    if (!gp_IsArc(theGraph, J))
+    	return NOTOK;
+
     while (J != NIL)
     {
         W = theGraph->G[J].v;
@@ -145,13 +140,9 @@ int J, W, C, RetVal=NOTOK;
 /* If we got through the loop with an OK value for each bicomp on
      which the Walkdown failed, then we return OK to indicate that only
      isolated K_4's were found.  This allows the embedder to continue.
-     If a K_{2,3} is ever found (or if an error occured), then RetVal
+     If a K_{2,3} is ever found (or if an error occurred), then RetVal
      will not be OK, and the loop terminates immediately so we can
-     return the appropriate value.
-
-     NOTE: RetVal starts out NOTOK to ensure we detect at least one
-        bicomp on which the Walkdown failed (this should always be
-        the case in an error-free implementation like this one!). */
+     return the appropriate value. */
 
      return RetVal;
 }
