@@ -57,7 +57,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 extern "C" {
 #endif
 
-/* The DEFAULT_EDGE_LIMIT expresses the initial setting for the edgeCapacity
+/* The DEFAULT_EDGE_LIMIT expresses the initial setting for the arcCapacity
  * as a constant factor of N, the number of vertices. We allow 3N edges, but
  * this number can be safely set to a larger integer value.
  */
@@ -280,7 +280,7 @@ typedef isolatorContext * isolatorContextP;
         N: Number of vertices
         M: Number of edges
         edgeOffset: always 2*N; location of the start of edge records in G
-        edgeCapacity: the maximum number of edge records allowed in G
+        arcCapacity: the maximum number of edge records allowed in G
         edgeHoles: free locations where edges have been deleted
         theStack: Used by various graph routines needing a stack
         internalFlags: Additional state information about the graph
@@ -305,7 +305,7 @@ typedef struct
 {
         graphNodeP G;
         vertexRecP V;
-        int N, M, edgeOffset, edgeCapacity;
+        int N, M, edgeOffset, arcCapacity;
         stackP edgeHoles;
         stackP theStack;
         int internalFlags, embedFlags;

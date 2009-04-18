@@ -207,8 +207,8 @@ int		gp_GetVertexDegree(graphP theGraph, int v);
 int		gp_GetVertexInDegree(graphP theGraph, int v);
 int		gp_GetVertexOutDegree(graphP theGraph, int v);
 
-int		gp_GetEdgeCapacity(graphP theGraph);
-int		gp_EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity);
+int		gp_GetArcCapacity(graphP theGraph);
+int		gp_EnsureArcCapacity(graphP theGraph, int requiredArcCapacity);
 
 int		gp_AddEdge(graphP theGraph, int u, int ulink, int v, int vlink);
 int     gp_InsertEdge(graphP theGraph, int u, int e_u, int e_ulink,

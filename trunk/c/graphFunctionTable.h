@@ -82,7 +82,7 @@ typedef struct
         // of the behaviors of gp_* function in the public API
         int  (*fpInitGraph)();
         void (*fpReinitializeGraph)();
-        int  (*fpEnsureEdgeCapacity)();
+        int  (*fpEnsureArcCapacity)();
         int  (*fpSortVertices)();
 
         int  (*fpReadPostprocess)();

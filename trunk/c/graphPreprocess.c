@@ -74,11 +74,13 @@ start = platform_GetTime();
      N = theGraph->N;
      theStack  = theGraph->theStack;
 
-/* There are 2M edge records and for each we can push 2 integers,
-        and M can be up to edgeCapacity, so a stack of 4 * edgeCapacity
-        integers suffices. This is already in theGraph structure, so we
-        make sure it's empty, then clear all visited flags in prep for the
-        Depth first search. */
+/* There are 2M edge records (arcs) and for each we can push 2 integers,
+        so a stack of 2 * arcCapacity integers suffices.
+        This is already in theGraph structure, so we make sure it's empty,
+        then clear all visited flags in prep for the Depth first search. */
+
+     if (sp_GetCapacity(theStack) < 2*gp_GetArcCapacity(theGraph))
+    	 return NOTOK;
 
      sp_ClearStack(theStack);
 
