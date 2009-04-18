@@ -186,7 +186,7 @@ int I, index;
   positions in the order of the parent and given ancestor of the
   vertex.  If the ancestor is above the parent, then 'between' means
   put the vertex immediately above its parent and 'beyond' means put
-  the vertex immeidately below its parent in the order.  And if the
+  the vertex immediately below its parent in the order.  And if the
   ancestor is below the parent, then the meaning of between and
   beyond are simply reversed.
 
@@ -336,7 +336,7 @@ int _ComputeEdgePositions(DrawPlanarContext *context)
 {
 graphP theEmbedding = context->theGraph;
 int *vertexOrder = NULL;
-listCollectionP edgeList;
+listCollectionP edgeList = NULL;
 int edgeListHead, edgeListInsertPoint;
 int I, J, Jcur, e, v, vpos;
 int eIndex, JTwin;
@@ -356,7 +356,7 @@ int eIndex, JTwin;
     //    represented by a pair of adjacent graph nodes
     //    starting at index 2N + 2X.
 
-    if ((edgeList = LCNew(theEmbedding->M)) == NULL)
+    if (theEmbedding->M > 0 && (edgeList = LCNew(theEmbedding->M)) == NULL)
     {
         free(vertexOrder);
         return NOTOK;
@@ -371,10 +371,10 @@ int eIndex, JTwin;
 
     // Perform the vertical sweep of the combinatorial embedding, using
     // the vertex ordering to guide the sweep.
-    // For each vertex, each edges leading to a vertex with a higher number in
+    // For each vertex, each edge leading to a vertex with a higher number in
     // the vertex order is recorded as the "generator edge", or the edge of
-    // first discovery of that vertex, unless the vertex already has a
-    // recorded generator edge
+    // first discovery of that higher numbered vertex, unless the vertex already has
+    // a recorded generator edge
     for (vpos=0; vpos < theEmbedding->N; vpos++)
     {
         // Get the vertex associated with the position
@@ -396,7 +396,7 @@ int eIndex, JTwin;
             // Now we traverse the adjacency list of the DFS tree root and
             // record each edge as the generator edge of the neighbors
             J = gp_GetFirstArc(theEmbedding, v);
-            while (J >= theEmbedding->edgeOffset)
+            while (gp_IsArc(theGraph, J))
             {
                 e = (J - theEmbedding->edgeOffset) / 2;
 
@@ -488,16 +488,26 @@ int I, J, min, max;
         min = theEmbedding->M + 1;
         max = -1;
 
+        // Iterate the edges, except in the isolated vertex case we just
+        // set the min and max to 1 since there no edges controlling where
+        // it gets drawn.
         J = gp_GetFirstArc(theEmbedding, I);
-        while (gp_IsArc(theEmbedding, J))
+        if (!gp_IsArc(theEmbedding, J))
         {
-            if (min > context->G[J].pos)
-                min = context->G[J].pos;
+        	min = max = 0;
+        }
+        else
+        {
+            while (gp_IsArc(theEmbedding, J))
+            {
+                if (min > context->G[J].pos)
+                    min = context->G[J].pos;
 
-            if (max < context->G[J].pos)
-                max = context->G[J].pos;
+                if (max < context->G[J].pos)
+                    max = context->G[J].pos;
 
-            J = gp_GetNextArc(theEmbedding, J);
+                J = gp_GetNextArc(theEmbedding, J);
+            }
         }
 
         context->G[I].start = min;
@@ -870,16 +880,25 @@ int I, e, J, JTwin, JPos, JIndex;
 
     for (I = 0; I < theEmbedding->N; I++)
     {
-        if (context->G[I].pos < 0 ||
-            context->G[I].pos >= theEmbedding->N ||
-            context->G[I].start < 0 ||
-            context->G[I].start > context->G[I].end ||
-            context->G[I].end >= theEmbedding->M)
-            return NOTOK;
+    	if (theEmbedding->M > 0)
+    	{
+            if (context->G[I].pos < 0 ||
+                context->G[I].pos >= theEmbedding->N ||
+                context->G[I].start < 0 ||
+                context->G[I].start > context->G[I].end ||
+                context->G[I].end >= theEmbedding->M)
+                return NOTOK;
+    	}
 
+        // Has the vertex position (context->G[I].pos) been used by a
+        // vertex before vertex I?
         if (theEmbedding->G[context->G[I].pos].visited)
             return NOTOK;
 
+        // Mark the vertex position as used by vertex I.
+        // Note that this marking is made on some other vertex unrelated to I
+        // We're just reusing the vertex visited array as cheap storage for a
+        // detector of reusing vertex position integers.
         theEmbedding->G[context->G[I].pos].visited = 1;
     }
 
