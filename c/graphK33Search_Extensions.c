@@ -80,7 +80,7 @@ void _InitK33SearchVertexRec(K33SearchContext *context, int I);
 
 int  _K33Search_InitGraph(graphP theGraph, int N);
 void _K33Search_ReinitializeGraph(graphP theGraph);
-int  _K33Search_EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity);
+int  _K33Search_EnsureArcCapacity(graphP theGraph, int requiredArcCapacity);
 
 /* Forward declarations of functions used by the extension system */
 
@@ -139,7 +139,7 @@ int  gp_AttachK33Search(graphP theGraph)
 
      context->functions.fpInitGraph = _K33Search_InitGraph;
      context->functions.fpReinitializeGraph = _K33Search_ReinitializeGraph;
-     context->functions.fpEnsureEdgeCapacity = _K33Search_EnsureEdgeCapacity;
+     context->functions.fpEnsureArcCapacity = _K33Search_EnsureArcCapacity;
 
      _K33Search_ClearStructures(context);
 
@@ -221,7 +221,7 @@ void _K33Search_ClearStructures(K33SearchContext *context)
 int  _K33Search_CreateStructures(K33SearchContext *context)
 {
      int N = context->theGraph->N;
-     int Gsize = context->theGraph->edgeOffset + context->theGraph->edgeCapacity;
+     int Gsize = context->theGraph->edgeOffset + context->theGraph->arcCapacity;
 
      if (N <= 0)
          return NOTOK;
@@ -243,7 +243,7 @@ int  _K33Search_CreateStructures(K33SearchContext *context)
 int  _K33Search_InitStructures(K33SearchContext *context)
 {
      int I, N = context->theGraph->N;
-     int Gsize = context->theGraph->edgeOffset + context->theGraph->edgeCapacity;
+     int Gsize = context->theGraph->edgeOffset + context->theGraph->arcCapacity;
 
      if (N <= 0)
          return OK;
@@ -270,8 +270,8 @@ int  _K33Search_InitGraph(graphP theGraph, int N)
     {
         theGraph->N = N;
         theGraph->edgeOffset = 2*N;
-        if (theGraph->edgeCapacity == 0)
-        	theGraph->edgeCapacity = 2*DEFAULT_EDGE_LIMIT*N;
+        if (theGraph->arcCapacity == 0)
+        	theGraph->arcCapacity = 2*DEFAULT_EDGE_LIMIT*N;
 
         if (_K33Search_CreateStructures(context) != OK)
             return NOTOK;
@@ -336,9 +336,15 @@ void _K33Search_ReinitializeGraph(graphP theGraph)
 }
 
 /********************************************************************
+ The current implementation does not support an increase of arc
+ (edge record) capacity once the extension is attached to the graph
+ data structure.  This is only due to not being necessary to support.
+ For now, it is easy to ensure the correct capacity before attaching
+ the extension, but support could be added later if there is some
+ reason to do so.
  ********************************************************************/
 
-int  _K33Search_EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity)
+int  _K33Search_EnsureArcCapacity(graphP theGraph, int requiredArcCapacity)
 {
 	return NOTOK;
 }
@@ -355,7 +361,7 @@ void *_K33Search_DupContext(void *pContext, void *theGraph)
      if (newContext != NULL)
      {
          int N = ((graphP) theGraph)->N;
-         int Gsize = ((graphP) theGraph)->edgeOffset + ((graphP) theGraph)->edgeCapacity;
+         int Gsize = ((graphP) theGraph)->edgeOffset + ((graphP) theGraph)->arcCapacity;
 
          *newContext = *context;
 
@@ -882,7 +888,7 @@ int  _K33Search_CheckObstructionIntegrity(graphP theGraph, graphP origGraph)
              return NOTOK;
          }
 
-         if (_TestForK33GraphObstruction(theGraph, degrees, imageVerts) == OK)
+         if (_TestForK33GraphObstruction(theGraph, degrees, imageVerts) == TRUE)
          {
              return OK;
          }

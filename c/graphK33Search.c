@@ -89,7 +89,7 @@ extern int  _GetLeastAncestorConnection(graphP theGraph, int cutVertex);
 extern int  _MarkDFSPathsToDescendants(graphP theGraph);
 extern int  _AddAndMarkUnembeddedEdges(graphP theGraph);
 
-/* Private functions for K3,3 searching. */
+/* Private functions for K_{3,3} searching. */
 
 int  _SearchForK33(graphP theGraph, int I);
 
@@ -133,7 +133,7 @@ int  _IsolateMinorE7(graphP theGraph, K33SearchContext *context);
   as non-mergeable prior to some ancestor of I.  If this function is
   invoked for step I, then we have found the connection from that bicomp
   prior to reaching the limiting ancestor of I. The bicomp and I are
-  therefore part of a K_{3,3} that can be isolated.
+  therefore part of a K_{3,3} that can now be isolated.
 
   Otherwise, a Walkdown failure in step I with a non-empty merge stack
   would have already resulted in an identified K_{3,3} by minor A, so
@@ -165,13 +165,13 @@ K33SearchContext *context = NULL;
     if (context == NULL)
         return NOTOK;
 
-/* Before we begin with the standard array of K3,3 tests, we handle
+/* Before we begin with the standard array of K_{3,3} tests, we handle
     one optimization case that may be left over from a prior step
     of the embedding algorithm.  If the embedding stack is non-empty,
     then the Walkdown either halted due to non-planarity minor A or
     because of the merge blocking optimization (see CASE 3 in the
     function RunExtraK33Tests()).  We test for the latter condition,
-    and if it is found, then we isolate a K3,3 and return. */
+    and if it is found, then we isolate a K_{3,3} and return. */
 
      if (!sp_IsEmpty(theGraph->theStack))
      {
@@ -251,13 +251,13 @@ K33SearchContext *context = NULL;
 
 /* If we got through the loop with an OK value for each bicomp on
      which the Walkdown failed, then we return OK to indicate that only
-     K5's were found (or there is a special case K3,3 that may be discovered
+     K5's were found (or there is a special case K_{3,3} that may be discovered
      later based on a setting we made in the data structure).
      The OK return allows the embedder to continue.
 
-     If a K3,3 is ever found (or if an error occured), then RetVal
+     If a K_{3,3} is ever found (or if an error occured), then RetVal
      will not be OK, and the loop terminates immediately so we can
-     return the appropriate value.  If a K3,3 is found, then we must
+     return the appropriate value.  If a K_{3,3} is found, then we must
      also handle the fact that some paths of the input graph may have
      been reduced to single edges by prior _ReduceBicomp() calls.
 
@@ -286,7 +286,7 @@ int tempResult;
 
      else R = IC->r;
 
-/* Minors A to D result in the desired K3,3 homeomorph,
+/* Minors A to D result in the desired K_{3,3} homeomorph,
     so we isolate it and return NONEMBEDDABLE. */
 
      if (theGraph->IC.minorType & (MINORTYPE_A|MINORTYPE_B|MINORTYPE_C|MINORTYPE_D))
@@ -299,14 +299,14 @@ int tempResult;
         /* Next we restore the orientation of the embedding so we
            can restore the reduced paths (because we avoid modifying
            the Kuratowski subgraph isolator to restore reduced paths,
-           which are a construct of the K3,3 search). */
+           which are a construct of the K_{3,3} search). */
 
         _OrientVerticesInEmbedding(theGraph);
         if (_RestoreAndOrientReducedPaths(theGraph, context) != OK)
             return NOTOK;
 
         /* Next we simply call the Kuratowski subgraph isolation since
-            we know now that it will isolate a K3,3.
+            we know now that it will isolate a K_{3,3}.
             For minor A, we need to set up the stack that would be
             available immediately after a Walkdown failure. */
 
@@ -323,7 +323,7 @@ int tempResult;
      }
 
 /* For minor E (a K5 minor), we run the additional tests to see if
-    minors E1 to E4 apply since these minors isolate a K3,3 entangled
+    minors E1 to E4 apply since these minors isolate a K_{3,3} entangled
     with the K5. */
 
      IC->ux = _GetLeastAncestorConnection(theGraph, IC->x);
@@ -347,13 +347,13 @@ int tempResult;
         return NONEMBEDDABLE;
      }
 
-/* If the Kuratowski subgraph isolator will not isolate a K3,3 based on minor E,
-    then a K5 homeomorph could be isolated.  However, a K3,3 may still be tangled
-    with the K5, so we now run the additional tests of the K3,3 search algorithm.
+/* If the Kuratowski subgraph isolator will not isolate a K_{3,3} based on minor E,
+    then a K5 homeomorph could be isolated.  However, a K_{3,3} may still be tangled
+    with the K5, so we now run the additional tests of the K_{3,3} search algorithm.
 
-    If the search finds a K3,3 (tempResult of NONEMBEDDABLE), then we remove unwanted
+    If the search finds a K_{3,3} (tempResult of NONEMBEDDABLE), then we remove unwanted
     edges from the graph and return NONEMBEDDABLE.  If the search has a fault (NOTOK),
-    then we return.  If the result is OK, then a K3,3 was not found at this time
+    then we return.  If the result is OK, then a K_{3,3} was not found at this time
     and we proceed with some clean-up work below. */
 
      if ((tempResult = _RunExtraK33Tests(theGraph, context)) != OK)
@@ -365,8 +365,8 @@ int tempResult;
          return tempResult;
      }
 
-/* The extra cases for finding a K3,3 did not succeed, so the bicomp rooted by R
-    is either a K5 homeomorph (with at most a superficially entangled K3,3) or
+/* The extra cases for finding a K_{3,3} did not succeed, so the bicomp rooted by R
+    is either a K5 homeomorph (with at most a superficially entangled K_{3,3}) or
     we have made the special setting that allows us to detect the one case that
     would be too costly to try now.  Either way, we can safely reduce the bicomp
     to the 4-cycle (R, X, W, Y, R) and proceed with the planarity algorithm.
@@ -388,7 +388,7 @@ int tempResult;
     bicomps listed in the pertinentBicompList (nor their respective subtrees)
     will be visited again by the planarity algorithm because they must've
     been internally active.  If they were externally active and pertinent,
-    then we would've found a K3,3 by non-planarity minor B. Thus, the original
+    then we would've found a K_{3,3} by non-planarity minor B. Thus, the original
     Walkup costs that identified the pertinent bicomps we intend to ignore are
     one-time costs, preserving linear time. */
 
@@ -409,7 +409,7 @@ int u_max = MAX3(IC->ux, IC->uy, IC->uz), u;
 
 /* Case 1: If there is a pertinent or externally active vertex other than W
             on the lower external face path between X and Y (the points of
-            attachment of the x-y path), then we can isolate a K3,3 homeomorph
+            attachment of the x-y path), then we can isolate a K_{3,3} homeomorph
             by Minor E1. */
 
     if (_SearchForMinorE1(theGraph) != OK)
@@ -425,13 +425,13 @@ int u_max = MAX3(IC->ux, IC->uy, IC->uz), u;
     }
 
 /* Case 2: If W/Z can make an external connection to an ancestor of V
-            that is descendant to u_{max}, then a K3,3 homeomorph can
+            that is descendant to u_{max}, then a K_{3,3} homeomorph can
             be isolated with Minor E2.
 
             NOTE: It may seem costly to check the entire subtree, but
             if it succeeds then we're done, and if the only connection
             is to u_{max} then we are sure to never make this check
-            again on this subtree (if all the other K3,3 tests fail).
+            again on this subtree (if all the other K_{3,3} tests fail).
 
             OPTIMIZATION: We do not check for the connection if the
             least ancestor connection from W/Z leads to an ancestor
@@ -440,7 +440,7 @@ int u_max = MAX3(IC->ux, IC->uy, IC->uz), u;
             numbered ancestor H of the current vertex with an external
             connection from W is a descendant u_{max} (and if no other
             tests in this function succeed), then we will discover a
-            K3,3 by Minor A or B in step H.
+            K_{3,3} by Minor A or B in step H.
 
             OPTIMIZATION: When we do test for an external connection to
             an ancestor of V descendant to u_{max}, the result may be that
@@ -464,13 +464,13 @@ int u_max = MAX3(IC->ux, IC->uy, IC->uz), u;
     }
 
 /* Case 3: If X or Y can make an external connection to an ancestor of V
-            that is descendant to u_{max}, then a K3,3 homeomorph
+            that is descendant to u_{max}, then a K_{3,3} homeomorph
             can be isolated with Minor E3.
 
             NOTE: It may seem costly to check the entire subtree, but
             if it succeeds then we're done, and if the only connection
             is to u_{max} then we are sure to never make this check
-            again on this subtree (if all the other K3,3 tests fail).
+            again on this subtree (if all the other K_{3,3} tests fail).
 
             OPTIMIZATION:  Due to the prior use of the Kuratowski subgraph
             isolator, we know that at most one of X, Y or W/Z could have an
@@ -480,7 +480,7 @@ int u_max = MAX3(IC->ux, IC->uy, IC->uz), u;
             costly.  Instead, we mark the vertex with a 'merge barrier'
             of u_{max}.  If the planar embedder attempts to merge the vertex
             prior to step u_{max}, then the embedder has found the desired
-            connection and a K3,3 is isolated at that time.
+            connection and a K_{3,3} is isolated at that time.
 
             OPTIMIZATION: When we can test for an external connection to
             an ancestor of V descendant to u_{max}, the result may be that
@@ -522,7 +522,7 @@ int u_max = MAX3(IC->ux, IC->uy, IC->uz), u;
     }
 
 /* Case 4: If there exists any x-y path with points of attachment px and py
-            such that px!=x or py!=y, then a K3,3 homeomorph can be isolated
+            such that px!=x or py!=y, then a K_{3,3} homeomorph can be isolated
             with Minor E4. */
 
     if (_TestForLowXYPath(theGraph) != OK)
@@ -538,7 +538,7 @@ int u_max = MAX3(IC->ux, IC->uy, IC->uz), u;
     }
 
 /* Case 5: If the x-y path contains an internal vertex that starts a second
-            internal path from the internal vertex to W/Z, then a K3,3 homeomorph
+            internal path from the internal vertex to W/Z, then a K_{3,3} homeomorph
             can be isolated with Minor E5. */
 
     if (_TestForZtoWPath(theGraph) != OK)
@@ -555,7 +555,7 @@ int u_max = MAX3(IC->ux, IC->uy, IC->uz), u;
 
 /* Case 6: If uz < u_{max} and there is an external connection (other than external
             connections involving X, Y and W/Z) between an ancestor of u_{max} and a
-            vertex in the range [V...u_{max}), then a K3,3 homeomorph can be
+            vertex in the range [V...u_{max}), then a K_{3,3} homeomorph can be
             isolated with Minor E6.
 
             OPTIMIZATION:  See _TestForStraddlingBridge() */
@@ -574,7 +574,7 @@ int u_max = MAX3(IC->ux, IC->uy, IC->uz), u;
 
 /* Case 7: If ux < u_{max} or uy < u_{max} and there is an external connection
             between an ancestor of u_{max} and a vertex in the range [V...u_{max})
-            (except for external connections involving X, Y and W/Z), then a K3,3
+            (except for external connections involving X, Y and W/Z), then a K_{3,3}
             homeomorph can be isolated with Minor E7.
 
             OPTIMIZATION: Same as Case 6.*/
@@ -591,8 +591,8 @@ int u_max = MAX3(IC->ux, IC->uy, IC->uz), u;
         }
     }
 
-/* If none of the tests found a K3,3, then we return OK to indicate that nothing
-    went wrong, but a K3,3 was not found. */
+/* If none of the tests found a K_{3,3}, then we return OK to indicate that nothing
+    went wrong, but a K_{3,3} was not found. */
 
     return OK;
 }
@@ -750,10 +750,10 @@ int J = context->V[theVertex].backArcList;
  then we use that setting.  If both of these tests fail, then
  we examine the vertex and push its children for consideration.
  This ensures that this procedure never explores a subtree more than
- once during the life of the K3,3 search algorithm.
+ once during the life of the K_{3,3} search algorithm.
 
  Note that if a subtree is explored and the desired external connection
- descendant to u_{max} is found, then a K3,3 will be found, so we only
+ descendant to u_{max} is found, then a K_{3,3} will be found, so we only
  have to concern ourselves with subtrees that connect only to u_{max}.
  Between steps v and u_{max}, the subtree search is optimized by setting
  'externalConnectionAncestor', and steps after u_{max} process ancestors
@@ -908,7 +908,7 @@ int  listHead, child, J;
  embedding stack for a merge blocker before merging any biconnected components.
  If a merge blocker is found, then the embedder's Walkdown function is
  terminated and SearchForK33() is subsequently called.  The blocked merge
- point is then used as the basis for isolating a K3,3.
+ point is then used as the basis for isolating a K_{3,3}.
 
  Returns OK on success (whether or not the search found a merge blocker)
          NOTOK on internal function failure
@@ -955,7 +955,7 @@ int  R, Rout, Z, ZPrevLink;
 /****************************************************************************
  _FindK33WithMergeBlocker()
 
- This function completes the merge blocking optimization by isolating a K3,3
+ This function completes the merge blocking optimization by isolating a K_{3,3}
  based on minor E3 if a merge blocked vertex was previously found.
 
  Returns OK on success, NOTOK on internal function failure
@@ -1058,7 +1058,7 @@ isolatorContextP IC = &theGraph->IC;
      }
      else return NOTOK;
 
-/* Do the final clean-up to obtain the K3,3 */
+/* Do the final clean-up to obtain the K_{3,3} */
 
      if (_DeleteUnmarkedVerticesAndEdges(theGraph) != OK ||
          _RestoreAndOrientReducedPaths(theGraph, context) != OK)
@@ -1291,7 +1291,7 @@ int  v, e, w;
         The condition described in the first question cannot occur because it
         would imply the ability to detect a straddling bridge now.
         The condition described by the second question may occur, but in the
-        future step, the bicomp now being tested for a K3,3 will be part of
+        future step, the bicomp now being tested for a K_{3,3} will be part of
         a straddling bridge in that future step.  Thus, the straddling
         bridge query is asked at most twice along any DFS tree path.
  ****************************************************************************/
@@ -1373,10 +1373,10 @@ int  p, c, d, excludedChild, e;
  We want to reduce the given biconnected component to a 4-cycle plus an
  internal edge connecting X and Y.  Each edge is to be associated with a
  path from the original graph, preserving the depth first search tree
- paths that help connect the vertices R, X, Y, and W.  If a K3,3 is later found,
+ paths that help connect the vertices R, X, Y, and W.  If a K_{3,3} is later found,
  the paths are restored, but it is necessary to preserve the DFS tree so that
  functions like MarkDFSPath() will be able to pass through the restored bicomp.
- Also, if a K3,3 later found due to the merge blocker optimization, then the
+ Also, if a K_{3,3} later found due to the merge blocker optimization, then the
  internal X-Y path may be needed and, once the bicomp reduction is reversed,
  a full DFS subtree connecting all vertices in the bicomp will need to be
  restored or else functions that traverse the bicomp will not work.
@@ -1764,15 +1764,36 @@ int  J0, J1, JTwin0, JTwin1;
      JTwin0 = gp_GetNextArc(theGraph, JTwin);
      JTwin1 = gp_GetPrevArc(theGraph, JTwin);
 
-     /* Add the two edges to reconnect the reduced path. */
-
-     if (gp_InsertEdge(theGraph, u, J, 0, v, gp_AdjacencyListEndMark(v), 0) != OK ||
-         gp_InsertEdge(theGraph, x, JTwin, 0, w, gp_AdjacencyListEndMark(w), 0) != OK)
-         return NOTOK;
-
-     /* Delete the edge represented by J and JTwin */
+     /* We first delete the edge represented by J and JTwin. We do so before
+        restoring the path to ensure we do not exceed the maximum arc capacity. */
 
      gp_DeleteEdge(theGraph, J, 0);
+
+     /* Now we add the two edges to reconnect the reduced path represented
+        by the edge [J, JTwin].  The edge record in u is added between J0 and J1.
+        Likewise, the new edge record in x is added between JTwin0 and JTwin1. */
+
+     if (gp_IsArc(theGraph, J0))
+     {
+    	 if (gp_InsertEdge(theGraph, u, J0, 1, v, gp_AdjacencyListEndMark(v), 0) != OK)
+    		 return NOTOK;
+     }
+     else
+     {
+    	 if (gp_InsertEdge(theGraph, u, J1, 0, v, gp_AdjacencyListEndMark(v), 0) != OK)
+    		 return NOTOK;
+     }
+
+     if (gp_IsArc(theGraph, JTwin0))
+     {
+    	 if (gp_InsertEdge(theGraph, x, JTwin0, 1, w, gp_AdjacencyListEndMark(w), 0) != OK)
+    		 return NOTOK;
+     }
+     else
+     {
+    	 if (gp_InsertEdge(theGraph, x, JTwin1, 0, w, gp_AdjacencyListEndMark(w), 0) != OK)
+    		 return NOTOK;
+     }
 
      /* Set the types of the newly added edges */
 
@@ -1788,8 +1809,8 @@ int  J0, J1, JTwin0, JTwin1;
  This function searches the embedding for any edges that are specially marked
  as being representative of a path that was previously reduced to a
  single edge by _ReduceBicomp().  The edge is replaced by the path.
- Note that the new path may contain more edges that are representative of a
- path, and these will be iteratively expanded.
+ Note that the new path may contain more reduction edges, and these will be
+ iteratively expanded by the outer for loop.
 
  If the edge records of an edge being expanded are the first or last arcs
  of the edge's vertex endpoints, then the edge may be along the external face.
@@ -1801,7 +1822,7 @@ int  J0, J1, JTwin0, JTwin1;
 int  _RestoreAndOrientReducedPaths(graphP theGraph, K33SearchContext *context)
 {
 int  e, J, JTwin, u, v, w, x, visited;
-int  J0, JTwin0, J1, JTwin1, PathIsOnExtFace;
+int  J0, JTwin0, J1, JTwin1;
 
      for (e = 0; e < theGraph->M + sp_GetCurrentSize(theGraph->edgeHoles);)
      {
@@ -1827,44 +1848,36 @@ int  J0, JTwin0, J1, JTwin1, PathIsOnExtFace;
              JTwin0 = gp_GetNextArc(theGraph, JTwin);
              JTwin1 = gp_GetPrevArc(theGraph, JTwin);
 
-             /* We determine whether the reduction edge is on the external face,
-                in which case we will need to ensure (below) that the vertices
-                are consistently oriented.  This will accommodate future invocations
-                of MarkPathAlongBicompExtFace().
-                Note: If J0, J1, JTwin0 or JTwin1 is not an edge, then it is
-                      because we've walked off the end of the edge record list,
-                      which happens when J and JTwin are either the first or
-                      last edge of the containing vertex.  In turn, the first
-                      and last edges of a vertex are the ones that hold it onto
-                      the external face. */
+             /* We first delete the edge represented by J and JTwin. We do so before
+                restoring the path to ensure we do not exceed the maximum arc capacity. */
 
-             if ((!gp_IsArc(theGraph, J0) && !gp_IsArc(theGraph, JTwin1)) ||
-                 (!gp_IsArc(theGraph, J1) && !gp_IsArc(theGraph, JTwin0)))
-                  PathIsOnExtFace = 1;
-             else PathIsOnExtFace = 0;
+             gp_DeleteEdge(theGraph, J, 0);
 
              /* Now we add the two edges to reconnect the reduced path represented
                 by the edge [J, JTwin].  The edge record in u is added between J0 and J1.
-                Likewise, the new edge record in x is added between JTwin0 and JTwin1.
-                The special case happens when the path is on the external face. One of
-                J0 and J1 is not an arc, and one of JTwin0 and JTwin1 is not an arc.
-                This temporarily creates one more edge, since the reduction edge
-                [J, JTwin] is not deleted until afterward. This is not an issue if the
-                graph structure can accommodate a complete graph, but should be rewritten
-                to delete the edge first */
+                Likewise, the new edge record in x is added between JTwin0 and JTwin1. */
 
-             if (gp_InsertEdge(theGraph, u, J, 1, v, gp_AdjacencyListEndMark(v), 0) != OK ||
-                 gp_InsertEdge(theGraph, x, JTwin, 1, w, gp_AdjacencyListEndMark(w), 0) != OK)
-                 return NOTOK;
+             if (gp_IsArc(theGraph, J0))
+             {
+            	 if (gp_InsertEdge(theGraph, u, J0, 1, v, gp_AdjacencyListEndMark(v), 0) != OK)
+            		 return NOTOK;
+             }
+             else
+             {
+            	 if (gp_InsertEdge(theGraph, u, J1, 0, v, gp_AdjacencyListEndMark(v), 0) != OK)
+            		 return NOTOK;
+             }
 
-             /* We delete the edge represented by J and JTwin. We delete the edge after
-                adding the path because if the deletion were done first, then one of
-                the incident vertices might become degree 1, which would make it harder
-                to add the edges that restore the reduced paths; in particular, it would
-                be more difficult to determine which external face link should receive the
-                new edge record being added.*/
-
-             gp_DeleteEdge(theGraph, J, 0);
+             if (gp_IsArc(theGraph, JTwin0))
+             {
+            	 if (gp_InsertEdge(theGraph, x, JTwin0, 1, w, gp_AdjacencyListEndMark(w), 0) != OK)
+            		 return NOTOK;
+             }
+             else
+             {
+            	 if (gp_InsertEdge(theGraph, x, JTwin1, 0, w, gp_AdjacencyListEndMark(w), 0) != OK)
+            		 return NOTOK;
+             }
 
              /* Set the types of the newly added edges */
 
@@ -1872,15 +1885,26 @@ int  J0, JTwin0, J1, JTwin1, PathIsOnExtFace;
                  _SetEdgeType(theGraph, w, x) != OK)
                  return NOTOK;
 
-             /* If the path is along the external face, then we need it to act like an oriented
-                path because we subsequently call functions like MarkPathAlongBicompExtFace() */
+             /* We determine whether the reduction edge may be on the external face,
+                in which case we will need to ensure that the vertices on the path
+                being restored are consistently oriented.  This will accommodate
+                future invocations of MarkPathAlongBicompExtFace().
+                Note: If J0, J1, JTwin0 or JTwin1 is not an edge, then it is
+                      because we've walked off the end of the edge record list,
+                      which happens when J and JTwin are either the first or
+                      last edge of the containing vertex.  In turn, the first
+                      and last edges of a vertex are the ones that hold it onto
+                      the external face, if it is on the external face. */
 
-             if (PathIsOnExtFace)
+             if ((!gp_IsArc(theGraph, J0) && !gp_IsArc(theGraph, JTwin1)) ||
+                 (!gp_IsArc(theGraph, J1) && !gp_IsArc(theGraph, JTwin0)))
+             {
                  if (_OrientPath(theGraph, u, v, w, x) != OK)
                      return NOTOK;
+             }
 
              /* The internal XY path was already marked as part of the decision logic
-                that made us decide we could find a K3,3 and hence that we should
+                that made us decide we could find a K_{3,3} and hence that we should
                 reverse all of the reductions.  Subsequent code counts on the fact
                 that the X-Y path is already marked, so if we replace a marked edge
                 with a path, then we need to mark the path. Similarly, for an unmarked
@@ -2066,7 +2090,7 @@ int p, J;
      }
 
 /* Unmark the path (p ... u_max), which was marked to help find p.
-    The path from v to u_{max} is not needed to form a K3,3 except
+    The path from v to u_{max} is not needed to form a K_{3,3} except
     for the portion of the path up to p that, with the straddling
     bridge path, comprises part of the connection to u_d. In the
     minor, the path between v and p is edge contracted. */
