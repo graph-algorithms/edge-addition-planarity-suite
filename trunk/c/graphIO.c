@@ -553,7 +553,7 @@ int I, J, Gsize;
      /* Print information about edges */
 
      fprintf(Outfile, "\nEDGE INFORMATION\n");
-     Gsize = theGraph->edgeOffset + theGraph->edgeCapacity;
+     Gsize = theGraph->edgeOffset + theGraph->arcCapacity;
      for (J=theGraph->edgeOffset; J < Gsize; J++)
      {
           if (theGraph->G[J].v == NIL)

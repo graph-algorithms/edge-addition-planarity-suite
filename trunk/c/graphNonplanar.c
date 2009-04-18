@@ -361,8 +361,7 @@ int  XPrevLink=1, YPrevLink=0, I=theGraph->IC.v;
  _FindPertinentVertex()
 
  Get the first vertex after x. Since x was obtained using a prevlink of 1 on r,
- we use the same prevlink so we don't go back to r (works because all vertices
- have the same orientation).
+ we use the same prevlink so we don't go back to R.
  Then, we proceed around the lower path until we find a vertex W that either
  has pertinent child bicomps or is directly adjacent to the current vertex I.
  ****************************************************************************/

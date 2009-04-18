@@ -473,13 +473,13 @@ int I, imageVertPos, degree;
  This routine tests whether theGraph is a K_{numVerts} homeomorph for
  numVerts >= 4.
 
- returns NOTOK if numVerts < 4,
+ returns FALSE if numVerts < 4,
                if theGraph has other than numVerts image vertices
                if theGraph contains other than degree 2 vertices plus
                   the image vertices
                if any pair of image vertices lacks a connecting path
                if any degree two vertices are not in the connecting paths
-         OK otherwise
+         TRUE  otherwise
  ********************************************************************/
 
 int _TestForCompleteGraphObstruction(graphP theGraph, int numVerts,
@@ -491,11 +491,11 @@ int _TestForCompleteGraphObstruction(graphP theGraph, int numVerts,
     // For example, if numVerts==5, then we're looking for a K5, so we
     // need to have degrees[4] == 5 (5 vertices of degree 4)
     if (degrees[numVerts-1] != numVerts)
-        return NOTOK;
+        return FALSE;
 
     // All vertices need to be degree 0, degree 2 or degree numVerts-1
     if (degrees[0]+degrees[2]+degrees[numVerts-1] != theGraph->N)
-        return NOTOK;
+        return FALSE;
 
     // We clear all the vertex visited flags
     for (I = 0; I < theGraph->N; I++)
@@ -510,7 +510,7 @@ int _TestForCompleteGraphObstruction(graphP theGraph, int numVerts,
            if (I != J)
                if (_TestPath(theGraph, imageVerts[I],
                                        imageVerts[J]) != TRUE)
-                   return NOTOK;
+                   return FALSE;
 
     // The visited flags should have marked only degree two vertices,
     // so for every marked vertex, we subtract one from the count of
@@ -526,7 +526,7 @@ int _TestForCompleteGraphObstruction(graphP theGraph, int numVerts,
         graph except extra degree 2 vertices, which must be
         joined in a cycle so that all are degree 2. */
 
-    return degrees[2] == 0 ? OK : NOTOK;
+    return degrees[2] == 0 ? TRUE : FALSE;
 }
 
 /********************************************************************
@@ -539,7 +539,7 @@ int _TestForCompleteGraphObstruction(graphP theGraph, int numVerts,
 
  This routine tests whether theGraph is a K_{3,3} homeomorph.
 
- returns OK if so, NOTOK if not
+ returns TRUE if so, FALSE if not
  ********************************************************************/
 
 int _TestForK33GraphObstruction(graphP theGraph, int *degrees, int *imageVerts)
@@ -547,7 +547,7 @@ int _TestForK33GraphObstruction(graphP theGraph, int *degrees, int *imageVerts)
 int  I, imageVertPos, temp, success;
 
      if (degrees[3] != 6 && degrees[4] != 0)
-         return NOTOK;
+         return FALSE;
 
      /* Partition the six image vertices into two sets of 3
             (or report failure) */
@@ -569,7 +569,7 @@ int  I, imageVertPos, temp, success;
           }  while (I < 3);
 
           if (!success)
-              return NOTOK;
+              return FALSE;
      }
 
      /* Now test the paths between each of the first three vertices and
@@ -582,7 +582,7 @@ int  I, imageVertPos, temp, success;
           for (I=3; I<6; I++)
                if (_TestPath(theGraph, imageVerts[imageVertPos],
                                        imageVerts[I]) != TRUE)
-                   return NOTOK;
+                   return FALSE;
 
      for (I = 0; I < theGraph->N; I++)
           if (theGraph->G[I].visited)
@@ -595,7 +595,7 @@ int  I, imageVertPos, temp, success;
             graph except extra degree 2 vertices, which must be
             joined in a cycle so that all are degree 2. */
 
-     return degrees[2] == 0 ? OK : NOTOK;
+     return degrees[2] == 0 ? TRUE : FALSE;
 }
 
 /********************************************************************
@@ -635,12 +635,12 @@ int  degrees[5], imageVerts[6];
      if (_getImageVertices(theGraph, degrees, 4, imageVerts, 6) != OK)
          return NOTOK;
 
-     if (_TestForCompleteGraphObstruction(theGraph, 5, degrees, imageVerts) == OK)
+     if (_TestForCompleteGraphObstruction(theGraph, 5, degrees, imageVerts) == TRUE)
      {
          return OK;
      }
 
-     if (_TestForK33GraphObstruction(theGraph, degrees, imageVerts) == OK)
+     if (_TestForK33GraphObstruction(theGraph, degrees, imageVerts) == TRUE)
      {
          return OK;
      }
@@ -659,7 +659,7 @@ int  degrees[5], imageVerts[6];
  This routine tests whether theGraph is a K_{2,3} homeomorph.
  This routine operates over the results of _getImageVertices()
 
- returns OK if so, NOTOK if not
+ returns TRUE if so, FALSE if not
  ********************************************************************/
 
 int _TestForK23GraphObstruction(graphP theGraph, int *degrees, int *imageVerts)
@@ -671,7 +671,7 @@ int  I, J, imageVertPos;
      // So, for a K2,3, there must be exactly two degree 3 vertices and
      // no degree 4 vertices.
      if (degrees[3] != 2)
-         return NOTOK;
+         return FALSE;
 
      // For K_{2,3}, the three vertices of degree 2 were not
      // detected as image vertices because degree 2 vertices
@@ -692,7 +692,7 @@ int  I, J, imageVertPos;
      {
          imageVerts[imageVertPos] = theGraph->G[J].v;
          if (imageVerts[imageVertPos] == imageVerts[1])
-             return NOTOK;
+             return FALSE;
          imageVertPos++;
          J = gp_GetNextArc(theGraph, J);
      }
@@ -709,7 +709,7 @@ int  I, J, imageVertPos;
      {
           if (_TestPath(theGraph, imageVerts[imageVertPos],
                                   imageVerts[1]) != TRUE)
-                   return NOTOK;
+                   return FALSE;
           theGraph->G[imageVerts[imageVertPos]].visited = 1;
      }
 
@@ -724,7 +724,7 @@ int  I, J, imageVertPos;
           else could exist in the graph... except extra degree 2
           vertices joined in a cycle. We return NOTOK in that case. */
 
-     return degrees[2] == 0 ? OK : NOTOK;
+     return degrees[2] == 0 ? TRUE : FALSE;
 }
 
 /********************************************************************
@@ -762,12 +762,12 @@ int  degrees[4], imageVerts[5];
      if (_getImageVertices(theGraph, degrees, 3, imageVerts, 5) != OK)
          return NOTOK;
 
-     if (_TestForCompleteGraphObstruction(theGraph, 4, degrees, imageVerts) == OK)
+     if (_TestForCompleteGraphObstruction(theGraph, 4, degrees, imageVerts) == TRUE)
      {
          return OK;
      }
 
-     if (_TestForK23GraphObstruction(theGraph, degrees, imageVerts) == OK)
+     if (_TestForK23GraphObstruction(theGraph, degrees, imageVerts) == TRUE)
      {
          return OK;
      }
