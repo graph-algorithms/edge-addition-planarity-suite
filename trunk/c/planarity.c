@@ -327,11 +327,13 @@ int callNauty(int argc, char *argv[])
 		{
 			minEdges = 0;
 			maxEdges = n*(n-1)/2;
-			numArgs = nIndex + 3;
 		}
 
-		// Set the string used for the mine and maxe settings
+		// Set the string used for the mine and maxe settings into the args
+		// and ensure numArgs is set so that the string will be used by makeg
 		args[nIndex+1] = args[nIndex+2] = edgeStr;
+		if (numArgs < nIndex + 3)
+			numArgs = nIndex + 3;
 
 		// Do an edge-by-edge generation
 	    platform_GetTime(start);
