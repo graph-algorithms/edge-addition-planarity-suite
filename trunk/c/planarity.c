@@ -334,7 +334,7 @@ int callNauty(int argc, char *argv[])
 		args[nIndex+1] = args[nIndex+2] = edgeStr;
 
 		// Do an edge-by-edge generation
-	    start = platform_GetTime();
+	    platform_GetTime(start);
 
 	    for (j = minEdges; j <= maxEdges; j++)
 		{
@@ -352,7 +352,7 @@ int callNauty(int argc, char *argv[])
 			totalOKs += numOKs;
 		}
 
-		end = platform_GetTime();
+		platform_GetTime(end);
 
 		// Indicate if there were errors
 		if (totalErrors > 0)
@@ -743,7 +743,7 @@ graphP theGraph=NULL, origGraph;
          }
      }
 
-     srand(platform_GetTime());
+     srand(time(NULL));
 
 /* Make a graph structure for a graph and the embedding of that graph */
 
@@ -754,13 +754,13 @@ graphP theGraph=NULL, origGraph;
           return NOTOK;
      }
 
-     start = platform_GetTime();
+     platform_GetTime(start);
      if (gp_CreateRandomGraphEx(theGraph, 3*numVertices-6+extraEdges) != OK)
      {
          ErrorMessage("gp_CreateRandomGraphEx() failed\n");
          return NOTOK;
      }
-     end = platform_GetTime();
+     platform_GetTime(end);
 
      sprintf(Line, "Created random graph with %d edges in %.3lf seconds. ", theGraph->M, platform_GetDuration(start,end));
      Message(Line);
@@ -773,9 +773,9 @@ graphP theGraph=NULL, origGraph;
 
      origGraph = gp_DupGraph(theGraph);
 
-     start = platform_GetTime();
+     platform_GetTime(start);
      Result = gp_Embed(theGraph, EMBEDFLAGS_PLANAR);
-     end = platform_GetTime();
+     platform_GetTime(end);
 
      sprintf(Line, "Finished processing in %.3lf seconds. Testing integrity of result...\n", platform_GetDuration(start,end));
      Message(Line);
@@ -847,7 +847,7 @@ graphP origGraph=NULL;
          SizeOfGraphs = 15;
      }
 
-     srand(platform_GetTime());
+     srand(time(NULL));
 
      for (I=0; I<NUM_MINORS; I++)
           ObstructionMinorFreqs[I] = 0;
@@ -903,7 +903,7 @@ graphP origGraph=NULL;
 
      // Generate the graphs and try to embed each
 
-     start = platform_GetTime();
+     platform_GetTime(start);
 
      for (I=0; I < NumGraphs; I++)
      {
@@ -1064,7 +1064,7 @@ graphP origGraph=NULL;
 
 // Print some demographic results
 
-     end = platform_GetTime();
+     platform_GetTime(end);
      fprintf(stdout, "%d\n", NumGraphs);
      fflush(stdout);
      if (Result != NOTOK)
@@ -1224,9 +1224,9 @@ char *resultStr = "";
          platform_time start, end;
          graphP origGraph = gp_DupGraph(theGraph);
 
-         start = platform_GetTime();
+         platform_GetTime(start);
          Result = gp_Embed(theGraph, embedFlags);
-         end = platform_GetTime();
+         platform_GetTime(end);
          sprintf(Line, "gp_Embed() completed in %.3lf seconds.\n", platform_GetDuration(start,end));
          Message(Line);
 

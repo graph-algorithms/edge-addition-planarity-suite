@@ -65,7 +65,7 @@ int N, DFI = 0, I, uparent, u, e, J;
 
 #ifdef PROFILE
 platform_time start, end;
-start = platform_GetTime();
+platform_GetTime(start);
 #endif
 
      if (theGraph==NULL) return NOTOK;
@@ -146,7 +146,7 @@ start = platform_GetTime();
      theGraph->internalFlags |= FLAGS_DFSNUMBERED;
 
 #ifdef PROFILE
-end = platform_GetTime();
+platform_GetTime(end);
 printf("DFS in %.3lf seconds.\n", platform_GetDuration(start,end));
 #endif
 
@@ -179,7 +179,7 @@ graphNode tempG;
 
 #ifdef PROFILE
 platform_time start, end;
-start = platform_GetTime();
+platform_GetTime(start);
 #endif
 
      if (theGraph == NULL) return NOTOK;
@@ -256,7 +256,7 @@ start = platform_GetTime();
      else theGraph->internalFlags |= FLAGS_SORTEDBYDFI;
 
 #ifdef PROFILE
-end = platform_GetTime();
+platform_GetTime(end);
 printf("SortVertices in %.3lf seconds.\n", platform_GetDuration(start,end));
 #endif
 
@@ -294,7 +294,7 @@ int totalVisited = 0;
 
 #ifdef PROFILE
 platform_time start, end;
-start = platform_GetTime();
+platform_GetTime(start);
 #endif
 
      sp_ClearStack(theStack);
@@ -366,7 +366,7 @@ start = platform_GetTime();
      }
 
 #ifdef PROFILE
-end = platform_GetTime();
+platform_GetTime(end);
 printf("Lowpoint in %.3lf seconds.\n", platform_GetDuration(start,end));
 #endif
 }
