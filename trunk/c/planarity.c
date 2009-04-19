@@ -287,6 +287,8 @@ int callNauty(int argc, char *argv[])
 		int nIndex;
 		char edgeStr[10];
 		unsigned long stats[16*15/2+1][3];
+		platform_time start, end;
+		int minEdges=-1, maxEdges=-1;
 
 		// Find where the order of the graph is set
 		nIndex = -1;
@@ -307,18 +309,34 @@ int callNauty(int argc, char *argv[])
 		if (n > 16)
 			return -1;
 
+		// If the caller did set the min and max edges, then we want to get those
+		// values and respect them
+		if (numArgs > nIndex + 1)
+		{
+			minEdges = atoi(args[nIndex+1]);
+			if (numArgs > nIndex + 2)
+				maxEdges = atoi(args[nIndex+2]);
+			if (minEdges < 0 || minEdges > n*(n-1)/2)
+				minEdges = 0;
+			if (maxEdges < minEdges)
+				maxEdges = minEdges;
+			if (maxEdges > n*(n-1)/2)
+				maxEdges = n*(n-1)/2;
+		}
+		else
+		{
+			minEdges = 0;
+			maxEdges = n*(n-1)/2;
+			numArgs = nIndex + 3;
+		}
+
 		// Set the string used for the mine and maxe settings
 		args[nIndex+1] = args[nIndex+2] = edgeStr;
 
-		// The caller may have been forced to falsely set mine and maxe
-		// in order to set mod and res... or maybe not.  If not, we need
-		// to increase numArgs to ensure the edge settings are respected
-		// by makeg
-		if (numArgs < nIndex+3)
-			numArgs = nIndex + 3;
-
 		// Do an edge-by-edge generation
-		for (j = 0; j <= n*(n-1)/2; j++)
+	    start = platform_GetTime();
+
+	    for (j = minEdges; j <= maxEdges; j++)
 		{
 			sprintf(edgeStr, "%d", j);
 
@@ -334,20 +352,25 @@ int callNauty(int argc, char *argv[])
 			totalOKs += numOKs;
 		}
 
+		end = platform_GetTime();
+
+		// Indicate if there were errors
 		if (totalErrors > 0)
 		{
 			printf("Errors occurred\n");
 			return -1;
 		}
 
-		// Provide the statistics
+		// Otherwise, provide the statistics
 		printf("# Edges  # graphs    # OKs       # NoEmbeds\n");
 		printf("-------  ----------  ----------  ----------\n");
-		for (j = 0; j <= n*(n-1)/2; j++)
+		for (j = minEdges; j <= maxEdges; j++)
 		{
 			printf("%7d  %10lu  %10lu  %10lu\n", j, stats[j][0], stats[j][2], stats[j][0]-stats[j][2]);
 		}
 		printf("Totals   %10lu  %10lu  %10lu\n", totalGraphs, totalOKs, totalGraphs-totalOKs);
+
+		printf("\nTotal time = %.3lf seconds\n", platform_GetDuration(start,end));
 
 		return 0;
 	}
