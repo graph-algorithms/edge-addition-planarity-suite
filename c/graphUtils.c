@@ -58,7 +58,7 @@ extern void _EmbedBackEdgeToDescendant(graphP theGraph, int RootSide, int RootVe
 extern int  _MergeBicomps(graphP theGraph, int I, int RootVertex, int W, int WPrevLink);
 extern int  _HandleInactiveVertex(graphP theGraph, int BicompRoot, int *pW, int *pWPrevLink);
 extern int  _MarkDFSPath(graphP theGraph, int ancestor, int descendant);
-extern int  _EmbedIterationPostprocess(graphP theGraph, int I);
+extern int  _HandleBlockedEmbedIteration(graphP theGraph, int I);
 extern int  _EmbedPostprocess(graphP theGraph, int I, int edgeEmbeddingResult);
 extern int  _CheckEmbeddingIntegrity(graphP theGraph, graphP origGraph);
 extern int  _CheckObstructionIntegrity(graphP theGraph, graphP origGraph);
@@ -161,7 +161,7 @@ void _InitFunctionTable(graphP theGraph)
      theGraph->functions.fpMergeBicomps = _MergeBicomps;
      theGraph->functions.fpHandleInactiveVertex = _HandleInactiveVertex;
      theGraph->functions.fpMarkDFSPath = _MarkDFSPath;
-     theGraph->functions.fpEmbedIterationPostprocess = _EmbedIterationPostprocess;
+     theGraph->functions.fpHandleBlockedEmbedIteration = _HandleBlockedEmbedIteration;
      theGraph->functions.fpEmbedPostprocess = _EmbedPostprocess;
      theGraph->functions.fpCheckEmbeddingIntegrity = _CheckEmbeddingIntegrity;
      theGraph->functions.fpCheckObstructionIntegrity = _CheckObstructionIntegrity;

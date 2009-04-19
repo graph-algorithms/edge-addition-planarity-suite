@@ -56,7 +56,7 @@ extern int  _TestSubgraph(graphP theSubgraph, graphP theGraph);
 
 /* Forward declarations of overloading functions */
 
-int  _K23Search_EmbedIterationPostprocess(graphP theGraph, int I);
+int  _K23Search_HandleBlockedEmbedIteration(graphP theGraph, int I);
 int  _K23Search_EmbedPostprocess(graphP theGraph, int I, int edgeEmbeddingResult);
 int  _K23Search_CheckEmbeddingIntegrity(graphP theGraph, graphP origGraph);
 int  _K23Search_CheckObstructionIntegrity(graphP theGraph, graphP origGraph);
@@ -97,7 +97,7 @@ int  gp_AttachK23Search(graphP theGraph)
      // return the base function pointers in the context function table
      memset(&context->functions, 0, sizeof(graphFunctionTable));
 
-     context->functions.fpEmbedIterationPostprocess = _K23Search_EmbedIterationPostprocess;
+     context->functions.fpHandleBlockedEmbedIteration = _K23Search_HandleBlockedEmbedIteration;
      context->functions.fpEmbedPostprocess = _K23Search_EmbedPostprocess;
      context->functions.fpCheckEmbeddingIntegrity = _K23Search_CheckEmbeddingIntegrity;
      context->functions.fpCheckObstructionIntegrity = _K23Search_CheckObstructionIntegrity;
@@ -153,7 +153,7 @@ void _K23Search_FreeContext(void *pContext)
 /********************************************************************
  ********************************************************************/
 
-int  _K23Search_EmbedIterationPostprocess(graphP theGraph, int I)
+int  _K23Search_HandleBlockedEmbedIteration(graphP theGraph, int I)
 {
     if (theGraph->embedFlags == EMBEDFLAGS_SEARCHFORK23)
         return _SearchForK23(theGraph, I);
@@ -165,7 +165,7 @@ int  _K23Search_EmbedIterationPostprocess(graphP theGraph, int I)
 
         if (context != NULL)
         {
-            return context->functions.fpEmbedIterationPostprocess(theGraph, I);
+            return context->functions.fpHandleBlockedEmbedIteration(theGraph, I);
         }
     }
 

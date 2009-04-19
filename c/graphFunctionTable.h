@@ -65,7 +65,7 @@ typedef struct
         int  (*fpMergeBicomps)();
         int  (*fpHandleInactiveVertex)();
         int  (*fpMarkDFSPath)();
-        int  (*fpEmbedIterationPostprocess)();
+        int  (*fpHandleBlockedEmbedIteration)();
         int  (*fpEmbedPostprocess)();
 
         int  (*fpCheckEmbeddingIntegrity)();
