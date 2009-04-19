@@ -72,7 +72,7 @@ int  _MergeBicomps(graphP theGraph, int I, int RootVertex, int W, int WPrevLink)
 void _WalkUp(graphP theGraph, int I, int J);
 int  _WalkDown(graphP theGraph, int I, int RootVertex);
 
-int  _EmbedIterationPostprocess(graphP theGraph, int I);
+int  _HandleBlockedEmbedIteration(graphP theGraph, int I);
 int  _EmbedPostprocess(graphP theGraph, int I, int edgeEmbeddingResult);
 
 void _OrientVerticesInEmbedding(graphP theGraph);
@@ -1126,7 +1126,7 @@ int RetVal = OK;
 
           if (theGraph->V[I].fwdArcList != NIL)
           {
-              RetVal = theGraph->functions.fpEmbedIterationPostprocess(theGraph, I);
+              RetVal = theGraph->functions.fpHandleBlockedEmbedIteration(theGraph, I);
               if (RetVal != OK)
                   break;
           }
@@ -1139,30 +1139,40 @@ int RetVal = OK;
 }
 
 /********************************************************************
- _EmbedIterationPostprocess()
+ HandleBlockedEmbedIteration()
 
-  At the end of each embedding iteration, this postprocess function
-  decides whether to proceed to the next vertex.
-  If some of the cycle edges from I to its descendants were not
-  embedded, then the forward arc list of I will be non-empty.
+  At the end of each embedding iteration, this function is invoked
+  if there are any unembedded cycle edges from the current vertex I
+  to its DFS descendants. Specifically, the forward arc list of I is
+  non-empty at the end of the edge addition processing for I.
 
   We return NONEMBEDDABLE to cause iteration to stop because the
   graph is non-planar if any edges could not be embedded.
-  Otherwise, if the forward arc list is empty, then all cycle
-  edges from I to its descendants were embedded, so we return OK
-  so that the iteration will proceed.
-
-  To stop iteration with an internal error, return NOTOK
 
   Extensions may overload this function and decide to proceed with or
-  halt embedding iteration for application-specific reasons.  For
-  example, a search for K3,3 homeomorphs could reduce a K5 homeomorph
-  to something that can be ignored, and then continue the planarity
-  algorithm in hopes of finding whether there is a K3,3 obstruction
-  elsewhere in the graph.
+  halt embedding iteration for application-specific reasons.
+  For example, a search for K_{3,3} homeomorphs could reduce an
+  isolated K5 homeomorph to something that can be ignored, and then
+  return OK in order to continue the planarity algorithm in order to
+  search for a K_{3,3} homeomorph elsewhere in the graph.  On the
+  other hand, if such an algorithm found a K_{3,3} homeomorph,
+  perhaps alone or perhaps entangled with the K5 homeomorph, it would
+  return NONEMBEDDABLE since there is no need to continue with
+  embedding iterations once the desired embedding obstruction is found.
+
+  If this function returns OK, then embedding will proceed to the
+  next iteration, or return OK if it finished the last iteration.
+
+  If this function returns NONEMBEDDABLE, then the embedder will
+  stop iteration and return NONEMBEDDABLE.  Note that the function
+  _EmbedPostprocess() is still called in this case, allowing for
+  further processing of the non-embeddable result, e.g. isolation
+  of the desired embedding obstruction.
+
+  This function can return NOTOK to signify an internal error.
  ********************************************************************/
 
-int  _EmbedIterationPostprocess(graphP theGraph, int I)
+int  _HandleBlockedEmbedIteration(graphP theGraph, int I)
 {
      return NONEMBEDDABLE;
 }

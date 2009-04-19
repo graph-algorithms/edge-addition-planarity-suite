@@ -68,7 +68,7 @@ void _K33Search_CreateDFSTreeEmbedding(graphP theGraph);
 void _K33Search_EmbedBackEdgeToDescendant(graphP theGraph, int RootSide, int RootVertex, int W, int WPrevLink);
 int  _K33Search_MergeBicomps(graphP theGraph, int I, int RootVertex, int W, int WPrevLink);
 int  _K33Search_MarkDFSPath(graphP theGraph, int ancestor, int descendant);
-int  _K33Search_EmbedIterationPostprocess(graphP theGraph, int I);
+int  _K33Search_HandleBlockedEmbedIteration(graphP theGraph, int I);
 int  _K33Search_EmbedPostprocess(graphP theGraph, int I, int edgeEmbeddingResult);
 int  _K33Search_CheckEmbeddingIntegrity(graphP theGraph, graphP origGraph);
 int  _K33Search_CheckObstructionIntegrity(graphP theGraph, graphP origGraph);
@@ -129,7 +129,7 @@ int  gp_AttachK33Search(graphP theGraph)
      context->functions.fpEmbedBackEdgeToDescendant = _K33Search_EmbedBackEdgeToDescendant;
      context->functions.fpMergeBicomps = _K33Search_MergeBicomps;
      context->functions.fpMarkDFSPath = _K33Search_MarkDFSPath;
-     context->functions.fpEmbedIterationPostprocess = _K33Search_EmbedIterationPostprocess;
+     context->functions.fpHandleBlockedEmbedIteration = _K33Search_HandleBlockedEmbedIteration;
      context->functions.fpEmbedPostprocess = _K33Search_EmbedPostprocess;
      context->functions.fpCheckEmbeddingIntegrity = _K33Search_CheckEmbeddingIntegrity;
      context->functions.fpCheckObstructionIntegrity = _K33Search_CheckObstructionIntegrity;
@@ -796,7 +796,7 @@ int  J, parent, N;
 /********************************************************************
  ********************************************************************/
 
-int  _K33Search_EmbedIterationPostprocess(graphP theGraph, int I)
+int  _K33Search_HandleBlockedEmbedIteration(graphP theGraph, int I)
 {
     if (theGraph->embedFlags == EMBEDFLAGS_SEARCHFORK33)
         return _SearchForK33(theGraph, I);
@@ -808,7 +808,7 @@ int  _K33Search_EmbedIterationPostprocess(graphP theGraph, int I)
 
         if (context != NULL)
         {
-            return context->functions.fpEmbedIterationPostprocess(theGraph, I);
+            return context->functions.fpHandleBlockedEmbedIteration(theGraph, I);
         }
     }
 
