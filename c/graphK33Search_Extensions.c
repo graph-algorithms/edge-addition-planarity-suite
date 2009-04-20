@@ -88,6 +88,14 @@ void *_K33Search_DupContext(void *pContext, void *theGraph);
 void _K33Search_FreeContext(void *);
 
 /****************************************************************************
+ * K33SEARCH_ID - the variable used to hold the integer identifier for this
+ * extension, enabling this feature's extension context to be distinguished
+ * from other features' extension contexts that may be attached to a graph.
+ ****************************************************************************/
+
+int K33SEARCH_ID = 0;
+
+/****************************************************************************
  gp_AttachK33Search()
 
  This function adjusts the graph data structure to attach the K3,3 search
@@ -100,7 +108,7 @@ int  gp_AttachK33Search(graphP theGraph)
 
      // If the K3,3 search feature has already been attached to the graph,
      // then there is no need to attach it again
-     gp_FindExtension(theGraph, "K33Search", (void *)&context);
+     gp_FindExtension(theGraph, K33SEARCH_ID, (void *)&context);
      if (context != NULL)
      {
          return OK;
@@ -145,7 +153,7 @@ int  gp_AttachK33Search(graphP theGraph)
 
      // Store the K33 search context, including the data structure and the
      // function pointers, as an extension of the graph
-     if (gp_AddExtension(theGraph, "K33Search", (void *) context,
+     if (gp_AddExtension(theGraph, &K33SEARCH_ID, (void *) context,
                          _K33Search_DupContext, _K33Search_FreeContext,
                          &context->functions) != OK)
      {
@@ -178,7 +186,7 @@ int  gp_AttachK33Search(graphP theGraph)
 
 int gp_DetachK33Search(graphP theGraph)
 {
-    return gp_RemoveExtension(theGraph, "K33Search");
+    return gp_RemoveExtension(theGraph, K33SEARCH_ID);
 }
 
 /********************************************************************
@@ -263,7 +271,7 @@ int  _K33Search_InitStructures(K33SearchContext *context)
 int  _K33Search_InitGraph(graphP theGraph, int N)
 {
     K33SearchContext *context = NULL;
-    gp_FindExtension(theGraph, "K33Search", (void *)&context);
+    gp_FindExtension(theGraph, K33SEARCH_ID, (void *)&context);
 
     if (context == NULL)
         return NOTOK;
@@ -291,7 +299,7 @@ int  _K33Search_InitGraph(graphP theGraph, int N)
 void _K33Search_ReinitializeGraph(graphP theGraph)
 {
     K33SearchContext *context = NULL;
-    gp_FindExtension(theGraph, "K33Search", (void *)&context);
+    gp_FindExtension(theGraph, K33SEARCH_ID, (void *)&context);
 
     if (context != NULL)
     {
@@ -417,7 +425,7 @@ int _K33Search_CreateFwdArcLists(graphP theGraph)
 {
     K33SearchContext *context = NULL;
 
-    gp_FindExtension(theGraph, "K33Search", (void *)&context);
+    gp_FindExtension(theGraph, K33SEARCH_ID, (void *)&context);
     if (context == NULL)
         return NOTOK;
 
@@ -522,7 +530,7 @@ int _K33Search_CreateFwdArcLists(graphP theGraph)
 void _K33Search_CreateDFSTreeEmbedding(graphP theGraph)
 {
     K33SearchContext *context = NULL;
-    gp_FindExtension(theGraph, "K33Search", (void *)&context);
+    gp_FindExtension(theGraph, K33SEARCH_ID, (void *)&context);
 
     if (context != NULL)
     {
@@ -577,7 +585,7 @@ void _K33Search_CreateDFSTreeEmbedding(graphP theGraph)
 void _K33Search_EmbedBackEdgeToDescendant(graphP theGraph, int RootSide, int RootVertex, int W, int WPrevLink)
 {
     K33SearchContext *context = NULL;
-    gp_FindExtension(theGraph, "K33Search", (void *)&context);
+    gp_FindExtension(theGraph, K33SEARCH_ID, (void *)&context);
 
     if (context != NULL)
     {
@@ -618,7 +626,7 @@ void _K33Search_EmbedBackEdgeToDescendant(graphP theGraph, int RootSide, int Roo
 int  _K33Search_MergeBicomps(graphP theGraph, int I, int RootVertex, int W, int WPrevLink)
 {
     K33SearchContext *context = NULL;
-    gp_FindExtension(theGraph, "K33Search", (void *)&context);
+    gp_FindExtension(theGraph, K33SEARCH_ID, (void *)&context);
 
     if (context != NULL)
     {
@@ -668,7 +676,7 @@ int  _K33Search_MergeBicomps(graphP theGraph, int I, int RootVertex, int W, int 
 void _K33Search_InitGraphNode(graphP theGraph, int I)
 {
     K33SearchContext *context = NULL;
-    gp_FindExtension(theGraph, "K33Search", (void *)&context);
+    gp_FindExtension(theGraph, K33SEARCH_ID, (void *)&context);
 
     if (context != NULL)
     {
@@ -689,7 +697,7 @@ void _InitK33SearchGraphNode(K33SearchContext *context, int I)
 void _K33Search_InitVertexRec(graphP theGraph, int I)
 {
     K33SearchContext *context = NULL;
-    gp_FindExtension(theGraph, "K33Search", (void *)&context);
+    gp_FindExtension(theGraph, K33SEARCH_ID, (void *)&context);
 
     if (context != NULL)
     {
@@ -804,7 +812,7 @@ int  _K33Search_HandleBlockedEmbedIteration(graphP theGraph, int I)
     else
     {
         K33SearchContext *context = NULL;
-        gp_FindExtension(theGraph, "K33Search", (void *)&context);
+        gp_FindExtension(theGraph, K33SEARCH_ID, (void *)&context);
 
         if (context != NULL)
         {
@@ -831,7 +839,7 @@ int  _K33Search_EmbedPostprocess(graphP theGraph, int I, int edgeEmbeddingResult
      else
      {
         K33SearchContext *context = NULL;
-        gp_FindExtension(theGraph, "K33Search", (void *)&context);
+        gp_FindExtension(theGraph, K33SEARCH_ID, (void *)&context);
 
         if (context != NULL)
         {
@@ -856,7 +864,7 @@ int  _K33Search_CheckEmbeddingIntegrity(graphP theGraph, graphP origGraph)
      else
      {
         K33SearchContext *context = NULL;
-        gp_FindExtension(theGraph, "K33Search", (void *)&context);
+        gp_FindExtension(theGraph, K33SEARCH_ID, (void *)&context);
 
         if (context != NULL)
         {
@@ -900,7 +908,7 @@ int  _K33Search_CheckObstructionIntegrity(graphP theGraph, graphP origGraph)
      else
      {
         K33SearchContext *context = NULL;
-        gp_FindExtension(theGraph, "K33Search", (void *)&context);
+        gp_FindExtension(theGraph, K33SEARCH_ID, (void *)&context);
 
         if (context != NULL)
         {

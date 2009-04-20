@@ -45,6 +45,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "graphK33Search.h"
 #include "graphK33Search.private.h"
 
+extern int K33SEARCH_ID;
+
 #include "graph.h"
 
 /* Imported functions */
@@ -161,7 +163,7 @@ int  _SearchForK33(graphP theGraph, int I)
 int  C1, C2, D, e, RetVal=OK, FoundOne;
 K33SearchContext *context = NULL;
 
-    gp_FindExtension(theGraph, "K33Search", (void *)&context);
+    gp_FindExtension(theGraph, K33SEARCH_ID, (void *)&context);
     if (context == NULL)
         return NOTOK;
 

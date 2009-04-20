@@ -875,15 +875,6 @@ graphP origGraph=NULL;
         case EMBEDFLAGS_DRAWPLANAR   : gp_AttachDrawPlanar(theGraph); break;
      }
 
-//     if (embedFlags != EMBEDFLAGS_SEARCHFORK23)
-//         gp_AttachK23Search(theGraph);
-
-//     if (embedFlags != EMBEDFLAGS_SEARCHFORK33)
-//         gp_RemoveExtension(theGraph, "K33Search");
-
-//     if (embedFlags != EMBEDFLAGS_SEARCHFORK23)
-//         gp_RemoveExtension(theGraph, "K23Search");
-
 // Make another graph structure to store the original graph that is randomly generated
 
      if ((origGraph = gp_New()) == NULL || gp_InitGraph(origGraph, SizeOfGraphs) != OK)
