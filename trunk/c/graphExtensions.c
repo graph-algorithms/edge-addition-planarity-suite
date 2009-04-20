@@ -63,6 +63,17 @@ void _FixupFunctionTables(graphP theGraph, graphExtensionP curr);
 graphExtensionP _FindNearestOverload(graphP theGraph, graphExtensionP target, int functionIndex);
 
 /********************************************************************
+ * The moduleIDGenerator is used to help ensure that all extensions
+ * added during a run-time have a different integer identifier.
+ * An ID identifies an extension, which may be added to multiple
+ * graphs.  It is used in lieu of identifying extensions by a string
+ * name, which is noticeably expensive when a frequently called
+ * overload function seeks the extension context for a graph.
+ ********************************************************************/
+
+static int moduleIDGenerator = 0;
+
+/********************************************************************
  The extension mechanism allows new modules to equip a graph with the
  data structures and functions needed to implement new algorithms
  without impeding the performance of the core graph planar embedding
@@ -70,8 +81,9 @@ graphExtensionP _FindNearestOverload(graphP theGraph, graphExtensionP target, in
 
  The following steps must be used to create a graph extension:
 
-  1) Determine a distinct name for the extension, which will
-     be passed to the "module" parameter of gp_AddExtension()
+  1) Create a moduleID variable initialized to zero that will be
+     assigned a positive integer the first time the extension is
+     added to a graph by gp_AddExtension()
 
   2) Define an extension context structure to contain all of the data
      and function pointers that extend the graph.  The context must
@@ -191,8 +203,10 @@ graphExtensionP _FindNearestOverload(graphP theGraph, graphExtensionP target, in
  gp_AddExtension()
 
  @param theGraph - pointer to the graph to which the extension is being added
- @param module - the name of the module that is adding the extension.
-                 Memory for the parameter string is owned by the caller
+ @param pModuleID - address of the variable that contains the feature's
+				 extension identifier.  If the variable is equal to zero,
+				 it is assigned a positive number.  Thereafter, the variable
+				 value can be used to find and remove the extension from any graph
  @param context - the data storage for the extension being added
                The context is owned by the extension and freed with freeContext()
  @param dupContext - a function capable of duplicating the context data
@@ -213,7 +227,7 @@ graphExtensionP _FindNearestOverload(graphP theGraph, graphExtensionP target, in
  ********************************************************************/
 
 int gp_AddExtension(graphP theGraph,
-                    char *module,
+                    int  *pModuleID,
                     void *context,
                     void *(*dupContext)(void *, void *),
                     void (*freeContext)(void *),
@@ -221,7 +235,7 @@ int gp_AddExtension(graphP theGraph,
 {
     graphExtensionP newExtension = NULL;
 
-    if (theGraph == NULL || module == NULL ||
+    if (theGraph == NULL || pModuleID == NULL ||
         context == NULL || dupContext == NULL || freeContext == NULL ||
         functions == NULL)
     {
@@ -229,24 +243,25 @@ int gp_AddExtension(graphP theGraph,
     }
 
     // If the extension already exists, then don't redefine it.
-    if (gp_FindExtension(theGraph, module, NULL) == TRUE)
+    if (gp_FindExtension(theGraph, *pModuleID, NULL) == TRUE)
     {
         return NOTOK;
     }
 
-    // Duplicate the module name string
-    if ((module = strdup(module)) == NULL)
-        return NOTOK;
+    // Assign a unique ID to the extension if it does not already have one
+    if (*pModuleID == 0)
+    {
+    	*pModuleID = ++moduleIDGenerator;
+    }
 
     // Allocate the new extension
     if ((newExtension = (graphExtensionP) malloc(sizeof(graphExtension))) == NULL)
     {
-        free(module);
         return NOTOK;
     }
 
     // Assign the data payload of the extension
-    newExtension->module = module;
+    newExtension->moduleID = *pModuleID;
     newExtension->context = context;
     newExtension->dupContext = dupContext;
     newExtension->freeContext = freeContext;
@@ -301,7 +316,7 @@ int  I;
  gp_FindExtension()
 
  @param theGraph - the graph whose extension list is to be searched
- @param module - the name of the module that added the extension to be found
+ @param moduleID - the identifier of the module whose extension context is desired
  @param pContext - the return parameter that receives the value of the
                 extension, if found.  This may be NULL if the extension was
                 not found or if the extension context value was NULL.
@@ -311,7 +326,7 @@ int  I;
          current value of the module extension
  ********************************************************************/
 
-int gp_FindExtension(graphP theGraph, char *module, void **pContext)
+int gp_FindExtension(graphP theGraph, int moduleID, void **pContext)
 {
     graphExtensionP first = NULL, next = NULL;
 
@@ -320,7 +335,7 @@ int gp_FindExtension(graphP theGraph, char *module, void **pContext)
         *pContext = NULL;
     }
 
-    if (theGraph==NULL || module==NULL)
+    if (theGraph==NULL || moduleID==0)
     {
         return FALSE;
     }
@@ -330,7 +345,7 @@ int gp_FindExtension(graphP theGraph, char *module, void **pContext)
     while (first != NULL)
     {
         next = (graphExtensionP) first->next;
-        if (strcmp(first->module, module)==0)
+        if (first->moduleID == moduleID)
         {
             if (pContext != NULL)
             {
@@ -347,15 +362,15 @@ int gp_FindExtension(graphP theGraph, char *module, void **pContext)
 /********************************************************************
  gp_RemoveExtension()
  @param theGraph - the graph from which to remove an extension
- @param module - the name of the extension module to remove
+ @param moduleID - the ID of the module whose extension context is to be removed
  @return OK if the module is successfully removed or not in the list
          NOTOK for internal errors, such as invalid parameters
  ********************************************************************/
-int gp_RemoveExtension(graphP theGraph, char *module)
+int gp_RemoveExtension(graphP theGraph, int moduleID)
 {
     graphExtensionP prev, curr, next;
 
-    if (theGraph==NULL || module==NULL)
+    if (theGraph==NULL || moduleID==0)
         return NOTOK;
 
     prev = NULL;
@@ -365,7 +380,7 @@ int gp_RemoveExtension(graphP theGraph, char *module)
     {
         next = (graphExtensionP) curr->next;
 
-        if (strcmp(curr->module, module)==0)
+        if (curr->moduleID == moduleID)
             break;
 
         prev = curr;
@@ -477,13 +492,7 @@ int gp_CopyExtensions(graphP dstGraph, graphP srcGraph)
             return NOTOK;
         }
 
-        if ((newNext->module = strdup(next->module)) == NULL)
-        {
-            free(newNext);
-            gp_FreeExtensions(dstGraph);
-            return NOTOK;
-        }
-
+        newNext->moduleID = next->moduleID;
         newNext->context = next->dupContext(next->context, dstGraph);
         newNext->dupContext = next->dupContext;
         newNext->freeContext = next->freeContext;
@@ -535,7 +544,6 @@ void gp_FreeExtensions(graphP theGraph)
  ********************************************************************/
 void _FreeExtension(graphExtensionP extension)
 {
-    free(extension->module);
     if (extension->context != NULL && extension->freeContext != NULL)
     {
         extension->freeContext(extension->context);

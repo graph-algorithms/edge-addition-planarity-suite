@@ -45,6 +45,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "graphDrawPlanar.h"
 #include "graphDrawPlanar.private.h"
 
+extern int DRAWPLANAR_ID;
+
 #include "graph.h"
 
 #include <string.h>
@@ -742,7 +744,7 @@ int WPredNextLink = 1^WPrevLink,
 char *_RenderToString(graphP theEmbedding)
 {
     DrawPlanarContext *context = NULL;
-    gp_FindExtension(theEmbedding, DRAWPLANAR_NAME, (void *) &context);
+    gp_FindExtension(theEmbedding, DRAWPLANAR_ID, (void *) &context);
 
     if (context != NULL)
     {

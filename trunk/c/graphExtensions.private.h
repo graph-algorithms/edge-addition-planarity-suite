@@ -53,7 +53,7 @@ extern "C" {
 
 typedef struct
 {
-    char *module;
+    int  moduleID;
     void *context;
     void *(*dupContext)(void *, void *);
     void (*freeContext)(void *);

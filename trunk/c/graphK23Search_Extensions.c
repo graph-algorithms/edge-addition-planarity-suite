@@ -67,6 +67,14 @@ void *_K23Search_DupContext(void *pContext, void *theGraph);
 void _K23Search_FreeContext(void *);
 
 /****************************************************************************
+ * K23SEARCH_ID - the variable used to hold the integer identifier for this
+ * extension, enabling this feature's extension context to be distinguished
+ * from other features' extension contexts that may be attached to a graph.
+ ****************************************************************************/
+
+int K23SEARCH_ID = 0;
+
+/****************************************************************************
  gp_AttachK23Search()
 
  This function adjusts the graph data structure to attach the K2,3 search
@@ -79,7 +87,7 @@ int  gp_AttachK23Search(graphP theGraph)
 
      // If the K2,3 search feature has already been attached to the graph
      // then there is no need to attach it again
-     gp_FindExtension(theGraph, "K23Search", (void *)&context);
+     gp_FindExtension(theGraph, K23SEARCH_ID, (void *)&context);
      if (context != NULL)
      {
          return OK;
@@ -104,7 +112,7 @@ int  gp_AttachK23Search(graphP theGraph)
 
      // Store the K23 search context, including the data structure and the
      // function pointers, as an extension of the graph
-     if (gp_AddExtension(theGraph, "K23Search", (void *) context,
+     if (gp_AddExtension(theGraph, &K23SEARCH_ID, (void *) context,
                          _K23Search_DupContext, _K23Search_FreeContext,
                          &context->functions) != OK)
      {
@@ -121,7 +129,7 @@ int  gp_AttachK23Search(graphP theGraph)
 
 int gp_DetachK23Search(graphP theGraph)
 {
-    return gp_RemoveExtension(theGraph, "K23Search");
+    return gp_RemoveExtension(theGraph, K23SEARCH_ID);
 }
 
 /********************************************************************
@@ -161,7 +169,7 @@ int  _K23Search_HandleBlockedEmbedIteration(graphP theGraph, int I)
     else
     {
         K23SearchContext *context = NULL;
-        gp_FindExtension(theGraph, "K23Search", (void *)&context);
+        gp_FindExtension(theGraph, K23SEARCH_ID, (void *)&context);
 
         if (context != NULL)
         {
@@ -188,7 +196,7 @@ int  _K23Search_EmbedPostprocess(graphP theGraph, int I, int edgeEmbeddingResult
      else
      {
         K23SearchContext *context = NULL;
-        gp_FindExtension(theGraph, "K23Search", (void *)&context);
+        gp_FindExtension(theGraph, K23SEARCH_ID, (void *)&context);
 
         if (context != NULL)
         {
@@ -213,7 +221,7 @@ int  _K23Search_CheckEmbeddingIntegrity(graphP theGraph, graphP origGraph)
      else
      {
         K23SearchContext *context = NULL;
-        gp_FindExtension(theGraph, "K23Search", (void *)&context);
+        gp_FindExtension(theGraph, K23SEARCH_ID, (void *)&context);
 
         if (context != NULL)
         {
@@ -253,7 +261,7 @@ int  _K23Search_CheckObstructionIntegrity(graphP theGraph, graphP origGraph)
      else
      {
         K23SearchContext *context = NULL;
-        gp_FindExtension(theGraph, "K23Search", (void *)&context);
+        gp_FindExtension(theGraph, K23SEARCH_ID, (void *)&context);
 
         if (context != NULL)
         {

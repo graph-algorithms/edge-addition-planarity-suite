@@ -52,15 +52,15 @@ extern "C" {
 #include "graphStructures.h"
 
 int gp_AddExtension(graphP theGraph,
-                    char *module,
+                    int  *pModuleID,
                     void *context,
                     void *(*dupContext)(void *, void *),
                     void (*freeContext)(void *),
                     graphFunctionTableP overloadTable);
 
-int gp_FindExtension(graphP theGraph, char *module, void **pContext);
+int gp_FindExtension(graphP theGraph, int moduleID, void **pContext);
 
-int gp_RemoveExtension(graphP theGraph, char *module);
+int gp_RemoveExtension(graphP theGraph, int moduleID);
 
 int gp_CopyExtensions(graphP dstGraph, graphP srcGraph);
 
