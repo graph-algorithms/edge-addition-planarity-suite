@@ -62,7 +62,6 @@ extern void _DeleteUnmarkedEdgesInBicomp(graphP theGraph, int BicompRoot);
 extern void _ClearInvertedFlagsInBicomp(graphP theGraph, int BicompRoot);
 
 extern int  _GetNextVertexOnExternalFace(graphP theGraph, int curVertex, int *pPrevLink);
-extern int  _WalkUp(graphP theGraph, int I, int W);
 extern int  _JoinBicomps(graphP theGraph);
 extern void _OrientVerticesInBicomp(graphP theGraph, int BicompRoot, int PreserveSigns);
 extern void _OrientVerticesInEmbedding(graphP theGraph);
@@ -1011,7 +1010,7 @@ isolatorContextP IC = &theGraph->IC;
      while (gp_IsArc(theGraph, J))
      {
         W = theGraph->G[J].v;
-        _WalkUp(theGraph, I, W);
+        theGraph->functions.fpWalkUp(theGraph, I, W);
 
         J = gp_GetNextArc(theGraph, J);
         if (J == theGraph->V[I].fwdArcList)

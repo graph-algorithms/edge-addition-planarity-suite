@@ -55,7 +55,10 @@ extern int  _CreateFwdArcLists(graphP);
 extern void _CreateDFSTreeEmbedding(graphP theGraph);
 extern int  _SortVertices(graphP theGraph);
 extern void _EmbedBackEdgeToDescendant(graphP theGraph, int RootSide, int RootVertex, int W, int WPrevLink);
+extern void _WalkUp(graphP theGraph, int I, int J);
+extern int  _WalkDown(graphP theGraph, int I, int RootVertex);
 extern int  _MergeBicomps(graphP theGraph, int I, int RootVertex, int W, int WPrevLink);
+extern int  _HandleBlockedDescendantBicomp(graphP theGraph, int I, int RootVertex, int R, int *pRout, int *pW, int *pWPrevLink);
 extern int  _HandleInactiveVertex(graphP theGraph, int BicompRoot, int *pW, int *pWPrevLink);
 extern int  _MarkDFSPath(graphP theGraph, int ancestor, int descendant);
 extern int  _HandleBlockedEmbedIteration(graphP theGraph, int I);
@@ -158,11 +161,14 @@ void _InitFunctionTable(graphP theGraph)
      theGraph->functions.fpCreateFwdArcLists = _CreateFwdArcLists;
      theGraph->functions.fpCreateDFSTreeEmbedding = _CreateDFSTreeEmbedding;
      theGraph->functions.fpEmbedBackEdgeToDescendant = _EmbedBackEdgeToDescendant;
+     theGraph->functions.fpWalkUp = _WalkUp;
+     theGraph->functions.fpWalkDown = _WalkDown;
      theGraph->functions.fpMergeBicomps = _MergeBicomps;
+     theGraph->functions.fpHandleBlockedDescendantBicomp = _HandleBlockedDescendantBicomp;
      theGraph->functions.fpHandleInactiveVertex = _HandleInactiveVertex;
-     theGraph->functions.fpMarkDFSPath = _MarkDFSPath;
      theGraph->functions.fpHandleBlockedEmbedIteration = _HandleBlockedEmbedIteration;
      theGraph->functions.fpEmbedPostprocess = _EmbedPostprocess;
+     theGraph->functions.fpMarkDFSPath = _MarkDFSPath;
      theGraph->functions.fpCheckEmbeddingIntegrity = _CheckEmbeddingIntegrity;
      theGraph->functions.fpCheckObstructionIntegrity = _CheckObstructionIntegrity;
 

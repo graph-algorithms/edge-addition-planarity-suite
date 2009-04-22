@@ -50,7 +50,6 @@ extern void _ClearIsolatorContext(graphP theGraph);
 extern void _FillVisitedFlags(graphP, int);
 
 extern int  _GetNextVertexOnExternalFace(graphP theGraph, int curVertex, int *pPrevLink);
-extern int  _WalkDown(graphP theGraph, int I, int RootVertex);
 extern int  _OrientVerticesInEmbedding(graphP theGraph);
 extern int  _JoinBicomps(graphP theGraph);
 

@@ -749,6 +749,29 @@ int  RootID_DFSChild, BicompList;
      }
 }
 
+
+/********************************************************************
+ _HandleBlockedDescendantBicomp()
+ The core planarity/outerplanarity algorithm handles the blockage
+ by pushing the root of the blocked bicomp onto the top of the stack
+ because it is the central focus for obstruction minor A.
+ Then NONEMBEDDABLE is returned so that the WalkDown can terminate,
+ and the embedder can proceed to isolate the obstruction.
+ Some algorithms may be able to clear the blockage, in which case
+ a function overload would set Rout, W and WPrevLink, then return
+ OK to indicate that the WalkDown may proceed.
+
+ Returns OK to proceed with WalkDown at W,
+         NONEMBEDDABLE to terminate WalkDown of Root Vertex
+         NOTOK for internal error
+ ********************************************************************/
+
+int  _HandleBlockedDescendantBicomp(graphP theGraph, int I, int RootVertex, int R, int *pRout, int *pW, int *pWPrevLink)
+{
+    sp_Push2(theGraph->theStack, R, 0);
+	return NONEMBEDDABLE;
+}
+
 /********************************************************************
  _HandleInactiveVertex()
  ********************************************************************/
@@ -911,20 +934,45 @@ int  RetVal, W, WPrevLink, R, Rout, X, XPrevLink, Y, YPrevLink, RootSide, RootEd
                     If either X or Y is internally active (pertinent but not
                     externally active), then we pick it first.  Otherwise,
                     we choose a pertinent vertex. If neither are pertinent,
-                    then we pick a vertex since the next iteration of the
-                    loop will terminate on that vertex with a non-empty stack. */
+                    then we let a handler decide.  The default handler for
+                    core planarity/outerplanarity decides to stop the WalkDown
+                    with the current blocked bicomp at the top of the stack. */
 
                  if (_VertexActiveStatus(theGraph, X, I) == VAS_INTERNAL)
+                 {
                       W = X;
+                      WPrevLink = XPrevLink;
+                      Rout = 0;
+                 }
                  else if (_VertexActiveStatus(theGraph, Y, I) == VAS_INTERNAL)
+                 {
                       W = Y;
+                      WPrevLink = YPrevLink;
+                      Rout = 1;
+                 }
                  else if (PERTINENT(theGraph, X))
+                 {
                       W = X;
-                 else W = Y;
+                      WPrevLink = XPrevLink;
+                      Rout = 0;
+                 }
+                 else if (PERTINENT(theGraph, Y))
+                 {
+                	 W = Y;
+                     WPrevLink = YPrevLink;
+                     Rout = 1;
+                 }
+                 else
+                 {
+                	 // Both the X and Y sides of the bicomp are blocked.
+                	 // Let the application decide whether it can unblock the bicomp.
+                	 // The core planarity embedder simply pushes (R, 0) onto the top of
+                	 // the stack and returns NONEMBEDDABLE, which causes a return here
+                	 // and enables isolation of planarity/outerplanary obstruction minor A
+                     if ((RetVal = theGraph->functions.fpHandleBlockedDescendantBicomp(theGraph, I, RootVertex, R, &Rout, &W, &WPrevLink)) != OK)
+                         return RetVal;
+                 }
 
-                 WPrevLink = W == X ? XPrevLink : YPrevLink;
-
-                 Rout = W == X ? 0 : 1;
                  sp_Push2(theGraph->theStack, R, Rout);
              }
 
@@ -947,12 +995,6 @@ int  RetVal, W, WPrevLink, R, Rout, X, XPrevLink, Y, YPrevLink, RootSide, RootEd
 
              else break;
          }
-
-         /* If the stack is non-empty, then we had a non-planarity condition,
-            so we stop. */
-
-         if (sp_NonEmpty(theGraph->theStack))
-             return NONEMBEDDABLE;
 
          /* We short-circuit the external face of the bicomp by hooking the root
             to the terminating externally active vertex so that inactive vertices
@@ -1084,7 +1126,7 @@ int RetVal = OK;
           J = theGraph->V[I].fwdArcList;
           while (J != NIL)
           {
-              _WalkUp(theGraph, I, J);
+        	  theGraph->functions.fpWalkUp(theGraph, I, J);
 
               J = gp_GetNextArc(theGraph, J);
               if (J == theGraph->V[I].fwdArcList)
@@ -1109,7 +1151,7 @@ int RetVal = OK;
                   // non-empty stack of bicomps, the topmost of which
                   // is blocked up by stopping vertices along both
                   // external face paths emanating from the bicomp root
-                  if ((RetVal = _WalkDown(theGraph, I, child + N)) != OK)
+                  if ((RetVal = theGraph->functions.fpWalkDown(theGraph, I, child + N)) != OK)
                   {
                       if (RetVal == NONEMBEDDABLE)
                     	  break;
@@ -1122,7 +1164,11 @@ int RetVal = OK;
           }
 
           /* If all Walkdown calls succeed, but they don't embed all of the
-                forward edges, then the graph is non-planar. */
+                forward edges, then the graph is not planar/outerplanar.
+                Some algorithms are able to clear the blockage and continue
+                the embedder (they return OK below).  The default implementation
+                simply returns NONEMBEDDABLE, which stops the embedding process
+                and allows the obstruction isolation to be invoked. */
 
           if (theGraph->V[I].fwdArcList != NIL)
           {
@@ -1133,7 +1179,7 @@ int RetVal = OK;
     }
 
     /* Postprocessing to orient the embedding and merge any remaining
-       separated bicomps, or to isolate a Kuratowski subgraph */
+       separated bicomps, or to isolate an obstruction to planarity/outerplanarity */
 
     return theGraph->functions.fpEmbedPostprocess(theGraph, I, RetVal);
 }

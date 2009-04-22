@@ -56,7 +56,6 @@ extern void _HideInternalEdges(graphP theGraph, int vertex);
 extern void _RestoreInternalEdges(graphP theGraph);
 
 extern int  _GetNextVertexOnExternalFace(graphP theGraph, int curVertex, int *pPrevLink);
-extern void _WalkDown(graphP theGraph, int I, int RootVertex);
 extern void _OrientVerticesInEmbedding(graphP theGraph);
 extern void _OrientVerticesInBicomp(graphP theGraph, int BicompRoot, int PreserveSigns);
 

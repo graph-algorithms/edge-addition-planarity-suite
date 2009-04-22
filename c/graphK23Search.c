@@ -154,7 +154,7 @@ int J, W, C, RetVal=OK;
 int  _SearchForK23InBicomp(graphP theGraph, int I, int R)
 {
 isolatorContextP IC = &theGraph->IC;
-int X, Y, XPrevLink, YPrevLink, tempFlags;
+int X, Y, XPrevLink, YPrevLink;
 
 /* Begin by determining whether minor A, B or E is detected */
 
@@ -226,15 +226,11 @@ int X, Y, XPrevLink, YPrevLink, tempFlags;
         E3 or E4. Note that this question is query on X, Y and W is
         equivalent to the planarity version of external activity. */
 
-     tempFlags = theGraph->embedFlags;
-     theGraph->embedFlags = EMBEDFLAGS_PLANAR;
-     if (_VertexActiveStatus(theGraph, X, I) == VAS_EXTERNAL ||
-         _VertexActiveStatus(theGraph, Y, I) == VAS_EXTERNAL ||
-         _VertexActiveStatus(theGraph, IC->w, I) == VAS_EXTERNAL)
+     if (FUTUREPERTINENT(theGraph, X, I) ||
+         FUTUREPERTINENT(theGraph, Y, I) ||
+         FUTUREPERTINENT(theGraph, IC->w, I))
      {
          _FillVisitedFlags(theGraph, 0);
-
-         theGraph->embedFlags = tempFlags;
 
          if (_IsolateOuterplanarityObstructionE3orE4(theGraph) != OK)
              return NOTOK;
@@ -244,7 +240,6 @@ int X, Y, XPrevLink, YPrevLink, tempFlags;
 
          return NONEMBEDDABLE;
      }
-     theGraph->embedFlags = tempFlags;
 
 /* The extra cases for finding a K_{2,3} failed, so the bicomp rooted
     by R is a separable subgraph of the input that is isomorphic
@@ -317,22 +312,18 @@ int  _IsolateOuterplanarityObstructionE3orE4(graphP theGraph)
 {
 isolatorContextP IC = &theGraph->IC;
 int u, d, XorY;
-int  tempEmbedFlags = theGraph->embedFlags;
 
 /* Minor E3 */
 
-     theGraph->embedFlags = EMBEDFLAGS_PLANAR;
-     if (_VertexActiveStatus(theGraph, theGraph->IC.x, theGraph->IC.v) == VAS_EXTERNAL ||
-         _VertexActiveStatus(theGraph, theGraph->IC.y, theGraph->IC.v) == VAS_EXTERNAL)
+     if (FUTUREPERTINENT(theGraph, theGraph->IC.x, theGraph->IC.v) ||
+         FUTUREPERTINENT(theGraph, theGraph->IC.y, theGraph->IC.v))
      {
          if (_MarkHighestXYPath(theGraph) != TRUE)
              return NOTOK;
 
-         if (_VertexActiveStatus(theGraph, theGraph->IC.x, theGraph->IC.v) == VAS_EXTERNAL)
+         if (FUTUREPERTINENT(theGraph, theGraph->IC.x, theGraph->IC.v))
               XorY = theGraph->IC.x;
          else XorY = theGraph->IC.y;
-
-         theGraph->embedFlags = tempEmbedFlags;
 
          /* The cases of X externally active and Y externally active
                 are the same except for the bicomp external face marking
@@ -369,8 +360,6 @@ int  tempEmbedFlags = theGraph->embedFlags;
      }
 
 /* Otherwise, isolate Minor E4 (reduce to minor A) */
-
-     theGraph->embedFlags = tempEmbedFlags;
 
      if (_FindUnembeddedEdgeToAncestor(theGraph, IC->w, &u, &d) != TRUE)
          return NOTOK;

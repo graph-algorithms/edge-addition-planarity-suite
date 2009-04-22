@@ -50,8 +50,8 @@ extern "C" {
 #endif
 
 /*
- NOTE: If you add a function pointer to the function table, then it must
- also be initialized in _InitFunctionTable() in graphUtils.c.
+ NOTE: If you add any FUNCTION POINTERS to this function table, then you must
+       also initialize them in _InitFunctionTable() in graphUtils.c.
 */
 
 typedef struct
@@ -62,11 +62,14 @@ typedef struct
         int  (*fpCreateFwdArcLists)();
         void (*fpCreateDFSTreeEmbedding)();
         void (*fpEmbedBackEdgeToDescendant)();
+        void (*fpWalkUp)();
+        int  (*fpWalkDown)();
         int  (*fpMergeBicomps)();
         int  (*fpHandleInactiveVertex)();
-        int  (*fpMarkDFSPath)();
+        int  (*fpHandleBlockedDescendantBicomp)();
         int  (*fpHandleBlockedEmbedIteration)();
         int  (*fpEmbedPostprocess)();
+        int  (*fpMarkDFSPath)();
 
         int  (*fpCheckEmbeddingIntegrity)();
         int  (*fpCheckObstructionIntegrity)();
