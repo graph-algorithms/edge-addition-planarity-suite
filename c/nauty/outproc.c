@@ -10,6 +10,7 @@
 #define MAXN 16
 #include "naututil.h"
 extern int g_maxe, g_mod, g_res;
+extern char quietMode;
 
 #include "outproc.h"
 
@@ -259,12 +260,16 @@ void outprocTest(FILE *f, graph *g, int n, char command)
 	}
 
 	numGraphs++;
-#ifndef DEBUG
-	if (numGraphs % 379 == 0)
-#endif
+
+	if (quietMode == 'n')
 	{
-		fprintf(f, "\r%ld ", numGraphs);
-		fflush(f);
+#ifndef DEBUG
+		if (numGraphs % 379 == 0)
+#endif
+		{
+			fprintf(f, "\r%ld ", numGraphs);
+			fflush(f);
+		}
 	}
 }
 
@@ -276,29 +281,32 @@ void Test_PrintStats(FILE *msgfile, char command)
 {
 char *msg = NULL;
 
-    // Print the final counter value
-    fprintf(msgfile, "\r%ld ", numGraphs);
+	if (quietMode == 'n')
+	{
+	    // Print the final counter value
+	    fprintf(msgfile, "\r%ld \n", numGraphs);
 
-    // Report the number of graphs, and the modulus and residue class of the generator
-    if (g_mod > 1)
-    	fprintf(msgfile, "# Graphs=%ld, mod=%d, res=%d\n", numGraphs, g_mod, g_res);
-    else
-    	fprintf(msgfile, "# Graphs=%ld\n", numGraphs);
+	    // Report the number of graphs, and the modulus and residue class of the generator
+	    if (g_mod > 1)
+	    	fprintf(msgfile, "# Graphs=%ld, mod=%d, res=%d\n", numGraphs, g_mod, g_res);
+	    else
+	    	fprintf(msgfile, "# Graphs=%ld\n", numGraphs);
 
-    // Report the number of errors
-    fprintf(msgfile, "# Errors=%ld\n", numErrors);
+	    // Report the number of errors
+	    fprintf(msgfile, "# Errors=%ld\n", numErrors);
 
-    // Report the stats
-    switch (command)
-    {
-        case 'p' :
-        case 'd' : msg = "not Planar"; break;
-        case 'o' : msg = "not Outerplanar"; break;
-        case '2' : msg = "with K2,3"; break;
-        case '3' : msg = "with K3,3"; break;
-    }
+	    // Report the stats
+	    switch (command)
+	    {
+	        case 'p' :
+	        case 'd' : msg = "not Planar"; break;
+	        case 'o' : msg = "not Outerplanar"; break;
+	        case '2' : msg = "with K2,3"; break;
+	        case '3' : msg = "with K3,3"; break;
+	    }
 
-    fprintf(msgfile, "# %s=%ld\n", msg, numGraphs - numOKs);
+	    fprintf(msgfile, "# %s=%ld\n", msg, numGraphs - numOKs);
+	}
 
     gp_Free(&theGraph);
     gp_Free(&origGraph);
