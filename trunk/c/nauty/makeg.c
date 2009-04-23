@@ -1649,8 +1649,11 @@ int makeg_main(char command, int argc, char *argv[])
 
         msgfile = stderr;
         outfile = stdout;
-        fprintf(msgfile,">A n=%d e=%d:%d d=%d class=%d/%d\n",
-                        maxn,mine,maxe,maxdeg,mod,res);
+// CHANGE start (commented this out)
+//        fprintf(msgfile,">A n=%d e=%d:%d d=%d class=%d/%d\n",
+//                        maxn,mine,maxe,maxdeg,mod,res);
+// CHANGE end
+
 // CHANGE start
         g_maxe = maxe;
         g_mod = mod;
@@ -1716,7 +1719,9 @@ int makeg_main(char command, int argc, char *argv[])
         Test_PrintStats(msgfile, command);
 // CHANGE end
 
-        fprintf(msgfile,">Z %ld graphs generated in %3.2f sec\n",nout,t2-t1);
+// CHANGE start (commented this out)
+//        fprintf(msgfile,">Z %ld graphs generated in %3.2f sec\n",nout,t2-t1);
+// CHANGE end
 
 // CHANGE start
         return 0;
