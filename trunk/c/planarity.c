@@ -54,7 +54,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "graphDrawPlanar.h"
 
 int SpecificGraph(int embedFlags, char *infileName, char *outfileName, char *outfile2Name);
-int RandomGraph(int extraEdges, int numVertices, char *outfileName, char *outfile2Name);
+int RandomGraph(int embedFlags, int extraEdges, int numVertices, char *outfileName, char *outfile2Name);
 int RandomGraphs(int, int, int);
 
 void Reconfigure();
@@ -154,7 +154,7 @@ int helpMessage(char *param)
             "'planarity (-h|-help)': this message\n"
             "'planarity (-h|-help) -gen': more help with nauty generator command line\n"
             "'planarity (-h|-help) -menu': more help with menu-based command line\n"
-    	    "'planarity -test': runs tests\n"
+    	    "'planarity -test [-q]': runs tests (optional quiet mode)\n"
 	    	"\n"
 	    );
 
@@ -387,14 +387,13 @@ int callNauty(int argc, char *argv[])
 	}
 }
 
-// This will be used to create more pointed tests of the graph API
-
-#define NUMCOMMANDSTOTEST	5
-
+// Quick regression test
 int runTests(int argc, char *argv[])
 {
+#define NUMCOMMANDSTOTEST	5
+
 	char *commandLine[] = {
-			"planarity", "-gen", "-q", "C", "9"
+			"planarity", "-gen", "C", "9"
 	};
 	char *commands[NUMCOMMANDSTOTEST] = {
 			"-p", "-d", "-o", "-2", "-3"
@@ -404,8 +403,8 @@ int runTests(int argc, char *argv[])
 
 	for (i=0; i < NUMCOMMANDSTOTEST; i++)
 	{
-		commandLine[3] = commands[i];
-		if (callNauty(5, commandLine) != 0)
+		commandLine[2] = commands[i];
+		if (callNauty(4, commandLine) != 0)
 		{
 			printf("An error occurred.\n");
 			return -1;
@@ -490,7 +489,7 @@ int callSpecificGraph(int argc, char *argv[])
 	return SpecificGraph(embedFlags, infileName, outfileName, outfile2Name);
 }
 
-// 'planarity -m [-q] N O [O2]': Maximal planar random graph
+// 'planarity -rm [-q] N O [O2]': Maximal planar random graph
 int callRandomMaxPlanarGraph(int argc, char *argv[])
 {
 	int offset = 0, numVertices;
@@ -511,10 +510,10 @@ int callRandomMaxPlanarGraph(int argc, char *argv[])
 	if (argc == 5+offset)
 	    outfile2Name = argv[4+offset];
 
-	return RandomGraph(0, numVertices, outfileName, outfile2Name);
+	return RandomGraph(EMBEDFLAGS_PLANAR, 0, numVertices, outfileName, outfile2Name);
 }
 
-// 'planarity -n [-q] N O [O2]': Non-planar random graph (maximal planar plus edge)
+// 'planarity -rn [-q] N O [O2]': Non-planar random graph (maximal planar plus edge)
 int callRandomNonplanarGraph(int argc, char *argv[])
 {
 	int offset = 0, numVertices;
@@ -535,7 +534,7 @@ int callRandomNonplanarGraph(int argc, char *argv[])
 	if (argc == 5+offset)
 	    outfile2Name = argv[4+offset];
 
-	return RandomGraph(1, numVertices, outfileName, outfile2Name);
+	return RandomGraph(EMBEDFLAGS_PLANAR, 1, numVertices, outfileName, outfile2Name);
 }
 
 int commandLine(int argc, char *argv[])
@@ -562,10 +561,10 @@ int commandLine(int argc, char *argv[])
 	else if (strcmp(argv[1], "-s") == 0)
 		Result = callSpecificGraph(argc, argv);
 
-	else if (strcmp(argv[1], "-m") == 0)
+	else if (strcmp(argv[1], "-rm") == 0)
 		Result = callRandomMaxPlanarGraph(argc, argv);
 
-	else if (strcmp(argv[1], "-n") == 0)
+	else if (strcmp(argv[1], "-rn") == 0)
 		Result = callRandomNonplanarGraph(argc, argv);
 
 	else
@@ -647,8 +646,6 @@ char Choice;
                 "\nO. Outerplanar embedding and obstruction isolation"
                 "\n2. Search for subgraph homeomorphic to K_{2,3}"
                 "\n3. Search for subgraph homeomorphic to K_{3,3}"
-        		"\nM. Maximal planar random graph"
-                "\nN. Non-planar random graph (maximal planar plus edge)"
         		"\nH. Help message for command line version"
                 "\nR. Reconfigure options"
                 "\nX. Exit"
@@ -668,8 +665,6 @@ char Choice;
             case 'o' : embedFlags = EMBEDFLAGS_OUTERPLANAR; break;
             case '2' : embedFlags = EMBEDFLAGS_SEARCHFORK23; break;
             case '3' : embedFlags = EMBEDFLAGS_SEARCHFORK33; break;
-            case 'm' : RandomGraph(0, 0, NULL, NULL); break;
-            case 'n' : RandomGraph(1, 0, NULL, NULL); break;
             case 'h' : helpMessage(NULL); break;
             case 'r' : Reconfigure(); break;
         }
@@ -686,14 +681,20 @@ char Choice;
             {
                 case 's' : SpecificGraph(embedFlags, NULL, NULL, secondOutfile); break;
                 case 'r' : RandomGraphs(embedFlags, 0, 0); break;
+                case 'm' : RandomGraph(embedFlags, 0, 0, NULL, NULL); break;
+                case 'n' : RandomGraph(embedFlags, 1, 0, NULL, NULL); break;
             }
+        }
 
+        if (Choice != 'r')
+        {
             Message("\nPress a key then hit ENTER to continue...");
             fflush(stdin);
             scanf(" %*c");
             fflush(stdin);
             Message("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
         }
+
      }  while (Choice != 'x');
 #endif
 
@@ -707,10 +708,18 @@ void Reconfigure()
 {
      fflush(stdin);
 
-     Message("\nDo you want to randomly generate graphs or specify a graph (r/s)?");
+     Message("\nDo you want to \n"
+    		 "  Randomly generate graphs (r),\n"
+    		 "  Specify a graph (s),\n"
+    		 "  Randomly generate a maximal planar graph (m), or\n"
+    		 "  Randomly generate a non-planar graph (n)?");
      scanf(" %c", &Mode);
 
-     if (Mode != 's')
+     Mode = tolower(Mode);
+     if (!strchr("rsmn", Mode))
+    	 Mode = 's';
+
+     if (Mode == 'r')
      {
         Message("\nNOTE: The directories for the graphs you want must exist.\n\n");
 
@@ -765,11 +774,17 @@ char Ch;
  Creates a random maximal planar graph, then addes extraEdges edges to it.
  ****************************************************************************/
 
-int RandomGraph(int extraEdges, int numVertices, char *outfileName, char *outfile2Name)
+int RandomGraph(int embedFlags, int extraEdges, int numVertices, char *outfileName, char *outfile2Name)
 {
 int  Result;
 platform_time start, end;
 graphP theGraph=NULL, origGraph;
+
+     if (embedFlags != EMBEDFLAGS_PLANAR)
+     {
+    	 ErrorMessage("Random max planar graph and non-planar modes only support planarity command\n");
+    	 return NOTOK;
+     }
 
      if (numVertices <= 0)
      {
@@ -813,7 +828,7 @@ graphP theGraph=NULL, origGraph;
      origGraph = gp_DupGraph(theGraph);
 
      platform_GetTime(start);
-     Result = gp_Embed(theGraph, EMBEDFLAGS_PLANAR);
+     Result = gp_Embed(theGraph, embedFlags);
      platform_GetTime(end);
 
      sprintf(Line, "Finished processing in %.3lf seconds. Testing integrity of result...\n", platform_GetDuration(start,end));
