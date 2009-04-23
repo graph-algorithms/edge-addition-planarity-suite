@@ -210,8 +210,8 @@ int helpMessage(char *param)
 	    Message(
 	    	"'planarity -r [-q] C K N': Random graphs\n"
 	    	"'planarity -s [-q] C I O [O2]': Specific graph\n"
-	        "'planarity -m [-q] N O [O2]': Maximal planar random graph\n"
-	        "'planarity -n [-q] N O [O2]': Nonplanar random graph (maximal planar + edge)\n"
+	        "'planarity -rm [-q] N O [O2]': Maximal planar random graph\n"
+	        "'planarity -rn [-q] N O [O2]': Nonplanar random graph (maximal planar + edge)\n"
 	        "'planarity I O [-n O2]': Legacy command-line (default -s -p)\n"
 	    	"\n"
 	    );
@@ -686,13 +686,13 @@ char Choice;
             }
         }
 
-        if (Choice != 'r')
+        if (Choice != 'r' && Choice != 'x')
         {
             Message("\nPress a key then hit ENTER to continue...");
             fflush(stdin);
             scanf(" %*c");
             fflush(stdin);
-            Message("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+            Message("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
         }
 
      }  while (Choice != 'x');
