@@ -1,4 +1,4 @@
-#Test Results for Planarity-Related Graph Algorithms Package, version 2.0.0
+Test Results for Planarity-Related Graph Algorithms Package, version 2.0.0
 
 = Introduction =
 
@@ -85,6 +85,72 @@ Totals   1018997864    18681008  1000316856
 }}}
 
 = Outerplanar Graph Embedding and Obstruction Isolation =
+
+This section reports the results of executing the outerplanarity algorithms on all 11 vertex graphs.  Each outerplanar graph is checked to ensure it is a combinatorial planar embedding, but also that all vertices are on the outer face.  For each non-outerplanar graph, a subgraph homeomorphic to K_{2,3} or K_4 is obtained.  The integrity check ensures it is a subgraph of the original graph and that it has the structure of a K_{2,3} or K_4 homeomorph. These results were obtained using the following command-line:
+
+  * ./planarity.exe -gens -o 11
+
+{{{
+# Edges  # graphs    # OKs       # NoEmbeds
+-------  ----------  ----------  ----------
+      0           1           1           0
+      1           1           1           0
+      2           2           2           0
+      3           5           5           0
+      4          11          11           0
+      5          26          26           0
+      6          67          65           2
+      7         172         164           8
+      8         467         429          38
+      9        1305        1135         170
+     10        3664        2916         748
+     11       10250        7017        3233
+     12       28259       14771       13488
+     13       75415       25183       50232
+     14      192788       32642      160146
+     15      467807       30656      437151
+     16     1069890       19952     1049938
+     17     2295898        8450     2287448
+     18     4609179        2090     4607089
+     19     8640134         228     8639906
+     20    15108047           0    15108047
+     21    24630887           0    24630887
+     22    37433760           0    37433760
+     23    53037356           0    53037356
+     24    70065437           0    70065437
+     25    86318670           0    86318670
+     26    99187806           0    99187806
+     27   106321628           0   106321628
+     28   106321628           0   106321628
+     29    99187806           0    99187806
+     30    86318670           0    86318670
+     31    70065437           0    70065437
+     32    53037356           0    53037356
+     33    37433760           0    37433760
+     34    24630887           0    24630887
+     35    15108047           0    15108047
+     36     8640134           0     8640134
+     37     4609179           0     4609179
+     38     2295898           0     2295898
+     39     1069890           0     1069890
+     40      467807           0      467807
+     41      192788           0      192788
+     42       75415           0       75415
+     43       28259           0       28259
+     44       10250           0       10250
+     45        3664           0        3664
+     46        1305           0        1305
+     47         467           0         467
+     48         172           0         172
+     49          67           0          67
+     50          26           0          26
+     51          11           0          11
+     52           5           0           5
+     53           2           0           2
+     54           1           0           1
+     55           1           0           1
+Totals   1018997864      145744  1018852120
+}}}
 
 = Searching for a Subgraph Homeomorphic to K_{2,3} =
 
