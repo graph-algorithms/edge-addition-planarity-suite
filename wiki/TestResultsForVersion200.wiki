@@ -1,0 +1,91 @@
+#Test Results for Planarity-Related Graph Algorithms Package, version 2.0.0
+
+= Introduction =
+
+This page provides the results obtained from executing the various algorithms of the Planarity-Related Graph Algorithms package, version 2.0.0.
+
+The graph generator from the Brendan McKay's nauty package was incorporated for the purposes of testing the planarity-related graph algorithm implementations on all graphs of given orders (numbers of vertices) and sizes (numbers of edges).  This page reports results for each size of graph of order 11.  This includes graphs that have isolated vertices, are disconnected, and have cut vertices, not just graphs that are biconnected.
+
+For each algorithm, every graph is provided, the algorithm is performed, and then an integrity check on the result is performed. Depending on the algorithm, this testing of all 11 vertex graphs takes between 28000 and 46000 seconds on a late 2001 model Windows-based computer with a 2GHz CPU and 1GB memory.  The same results have also been obtained on a similar vintage Intel-based computer running Linux.
+
+The sections below provide the tables for the various algorithms tested, along with further details about each algorithm.  The numerics are intrinsically interesting and also demonstrate various well-known mathematical results.
+
+= Planar Graph Embedding, Drawing and Obstruction Isolation =
+
+The core planar graph embedding algorithm produces a combinatorial planar embedding for each planar graph and a subgraph homeomorphic to K_{3,3} or K_5 for each non-planar graph.  The integrity test for the planar embedding does an embedding face count, and the integrity test for the non-planar graphs ensures that the result is a subgraph of the original graph and that it does have precisely the structure of a K_{3,3} or K_5 homeomorph. The table in this section is generated with the following command line:
+
+  * ./planarity.exe -gens -p 11
+
+The table below is also generated as the result of the planar graph drawing algorithm.  The numerics are the same as for the core planarity algorithm, as one would expect, but the algorithm integrity checking is different.  Each non-planar graph is simply ignored. For each planar graph, as the core planarity algorithm runs, key information needed to generate a visibility representation is collected. The embedder post-processing function is defined to generate the visibility representatino, and the integrity check function is augmented to test that in fact none of the vertical or horizontal lines of the visibility representation intersect, except for edge lines meeting up with the lines representing their vertex endpoints.  These results are produced with the following command line:
+
+  * ./planarity.exe -gens -d 11
+
+The column labelled _# OKs_ can be interpreted as the number of planar graphs found.  Notice how this number tapers off to zero after 27 edges, due to the well-known Euler limit of 3n-6 edges for planar graphs (n=11 in these tests).
+
+{{{
+# Edges  # graphs    # OKs       # NoEmbeds
+-------  ----------  ----------  ----------
+      0           1           1           0
+      1           1           1           0
+      2           2           2           0
+      3           5           5           0
+      4          11          11           0
+      5          26          26           0
+      6          67          67           0
+      7         172         172           0
+      8         467         467           0
+      9        1305        1304           1
+     10        3664        3659           5
+     11       10250       10222          28
+     12       28259       28094         165
+     13       75415       74407        1008
+     14      192788      186664        6124
+     15      467807      433303       34504
+     16     1069890      903573      166317
+     17     2295898     1642808      653090
+     18     4609179     2535353     2073826
+     19     8640134     3252691     5387443
+     20    15108047     3407101    11700946
+     21    24630887     2866079    21764808
+     22    37433760     1897492    35536268
+     23    53037356      964363    52072993
+     24    70065437      361848    69703589
+     25    86318670       94684    86223986
+     26    99187806       15362    99172444
+     27   106321628        1249   106320379
+     28   106321628           0   106321628
+     29    99187806           0    99187806
+     30    86318670           0    86318670
+     31    70065437           0    70065437
+     32    53037356           0    53037356
+     33    37433760           0    37433760
+     34    24630887           0    24630887
+     35    15108047           0    15108047
+     36     8640134           0     8640134
+     37     4609179           0     4609179
+     38     2295898           0     2295898
+     39     1069890           0     1069890
+     40      467807           0      467807
+     41      192788           0      192788
+     42       75415           0       75415
+     43       28259           0       28259
+     44       10250           0       10250
+     45        3664           0        3664
+     46        1305           0        1305
+     47         467           0         467
+     48         172           0         172
+     49          67           0          67
+     50          26           0          26
+     51          11           0          11
+     52           5           0           5
+     53           2           0           2
+     54           1           0           1
+     55           1           0           1
+Totals   1018997864    18681008  1000316856
+}}}
+
+= Outerplanar Graph Embedding and Obstruction Isolation =
+
+= Searching for a Subgraph Homeomorphic to K_{2,3} =
+
+= Searching for a Subgraph Homeomorphic to K_{3,3} =
