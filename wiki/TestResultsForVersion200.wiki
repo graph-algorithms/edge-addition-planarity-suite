@@ -4,7 +4,7 @@ Test Results for Planarity-Related Graph Algorithms Package, version 2.0.0
 
 This page provides the results obtained from executing the various algorithms of the Planarity-Related Graph Algorithms package, version 2.0.0.
 
-The graph generator from the Brendan McKay's nauty package was incorporated for the purposes of testing the planarity-related graph algorithm implementations on all graphs of given orders (numbers of vertices) and sizes (numbers of edges).  This page reports results for each size of graph of order 11.  This includes graphs that have isolated vertices, are disconnected, and have cut vertices, not just graphs that are biconnected.
+The graph generator from the Brendan !McKay's nauty package was incorporated for the purposes of testing the planarity-related graph algorithm implementations on all graphs of given orders (numbers of vertices) and sizes (numbers of edges).  This page reports results for each size of graph of order 11.  This includes graphs that have isolated vertices, are disconnected, and have cut vertices, not just graphs that are biconnected.
 
 For each algorithm, every graph is provided, the algorithm is performed, and then an integrity check on the result is performed. Depending on the algorithm, this testing of all 11 vertex graphs takes between 28000 and 46000 seconds on a late 2001 model Windows-based computer with a 2GHz CPU and 1GB memory.  The same results have also been obtained on a similar vintage Intel-based computer running Linux.
 
