@@ -6,7 +6,8 @@ by John Boyer
 
 Early in my graduate studies (1996), I took a graph algorithms course from Wendy Myrvold, who later became my Ph.D. supervisor.  For my course project, I chose to study linear time planarity algorithms, which were widely regarded as being quite complex.  
 
-The Lempel-Even-Cederbaum (LEC) planarity algorithm is a _vertex addition_ method that was optimized to linear time by the PQ-tree data structure created by Booth and Lueker. In a selected order, each vertex is added to a partial embedding, along with the edges incident to that new vertex and the vertices previously added to the partial embedding. 
+The Lempel-Even-Cederbaum (LEC) planarity algorithm is a _vertex addition_ method that was optimized to linear time by the PQ-tree data structure created by Booth and Lueker. In a selected order, each vertex is added to a partial embedding, along with the edges incident to that new vertex and the vertices previously added to the partial embedding. The LEC algorithm relies for its correctness on adding vertices in the order produced by an _st_-numbering.
+
+In an _st_-numbering, the first vertex _s_ is the source, the last vertex _t_ is the target, and every vertex in between has a path of lower numbered vertices leading back to _s_ and a path of higher numbered vertices leading to _t_.  The fact that all vertices have a path of lower numbered vertices back to _s_ means that a single PQ-tree can be used to manage the partial embedding as vertices are added. The fact that all vertices have a path of higher numbered vertices leading to _t_ means that, at each vertex step, the partial embedding can be arranged so that all vertices with connections to unembedded vertices appear in a single face of the partial embedding.
 
 = A New Planar Embedding Algorithm =
-
