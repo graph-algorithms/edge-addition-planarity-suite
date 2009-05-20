@@ -25,3 +25,17 @@ For linear time performance, I felt it was best to create an implementation as a
 Not only did the new approach give a clear picture of how the partial embedding changed as a particular edge was embedded, but it was even clear how the notions of internal activity and external activity would also dynamically change in response to the addition of a single edge. It was clear that this had become an *edge addition* method. 
 
 Although I had managed to implement this version by mid-1998, I had not yet created a formal proof of correctness.  The corresponding vertex addition method had more complicated path selection rules in the _Walkup_, but the path selection rules resulted from case analysis in a straightforward manner.  It had still to be proven that this new edge addition approach, with it's very simple path selection rules in the _Walkdown_ and its dynamic external and internal activity, was correct based on more sophisticated analysis.  Hence, Wendy and I decided to report our vertex addition method is the SODA paper that appeared in 1999.  Meanwhile, I was to proceed into a Ph.D. program with this new approach to prove it correct and efficient, and to create a full Kuratowski subgraph isolator.
+
+= Planarity-Related Algorithms =
+
+TBD
+
+Outerplanarity
+
+Subgraph Homeomorphism
+
+Drawing
+
+= An Extensible Implementation and Test Framework =
+
+TBD
