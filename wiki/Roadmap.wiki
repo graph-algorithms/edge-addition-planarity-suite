@@ -1,17 +1,36 @@
 #summary Roadmap for Future Development
+#labels Featured
 
 This page presents the roadmap for future development of this project.
 
 == Version 2.0.x ==
 
-Minor adjustments and tweaks that may be desired from time to time.
+Minor adjustments and tweaks that may be desired from time to time. This may include service routines such as:
+
+  * Edge contract and uncontract
+  * Identifying two vertices (i.e. merging two vertices)
+  * Planar graph dual
+  * BFS
+  * Refinements to I/O routines
+  * 
 
 == Version 2.x ==
 
-Additional extension algorithms to be developed over time.
+Extension implementations for additional extension algorithms to be developed over time.
 
   * 2.1: K4 subgraph homeomorphism
   * 2.2: Maximal planar subgraph
+
+A fuller range of algorithm implementations may also be developed, such as
+
+  * Vertex coloring by min. degree, esp. including planar graph 5-coloring with the Tarjan optimization
+  * Directed graph methods, esp. topological sort
+  * Weighted graph methods, esp. Dijkstra's shortest path with my implementation of Tarjan's Fibonacci heap.
+
+Other algorithms that may be formulated in the future could be supported as extensions, such as:
+
+  * K5 subgraph homeomorphism
+  * Projective planarity
 
 == Version 3.0 ==
 
