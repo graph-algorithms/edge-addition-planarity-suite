@@ -12,7 +12,6 @@ Minor adjustments and tweaks that may be desired from time to time. This may inc
   * Planar graph dual
   * BFS
   * Refinements to I/O routines
-  * 
 
 == Version 2.x ==
 
@@ -24,8 +23,9 @@ Extension implementations for additional extension algorithms to be developed ov
 A fuller range of algorithm implementations may also be developed, such as
 
   * Vertex coloring by min. degree, esp. including planar graph 5-coloring with the Tarjan optimization
-  * Directed graph methods, esp. topological sort
+  * Directed graph methods, e.g. topological sort, 2SAT
   * Weighted graph methods, esp. Dijkstra's shortest path with my implementation of Tarjan's Fibonacci heap.
+  * An O(log n) improvement to the Karger-Stein randomized min-cut method
 
 Other algorithms that may be formulated in the future could be supported as extensions, such as:
 
