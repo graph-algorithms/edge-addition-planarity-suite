@@ -1,0 +1,18 @@
+#summary Roadmap for Future Development
+
+This page presents the roadmap for future development of this project.
+
+== Version 2.0.x ==
+
+Minor adjustments and tweaks that may be desired from time to time.
+
+== Version 2.x ==
+
+Additional extension algorithms to be developed over time.
+
+  * 2.1: K4 subgraph homeomorphism
+  * 2.2: Maximal planar subgraph
+
+== Version 3.0 ==
+
+Major revisions to the graph library framework.  This may include changes needed to make more generic data structures and interface changes that may be needed to have consistency across multiple implementation languages such as C++ and Java.
