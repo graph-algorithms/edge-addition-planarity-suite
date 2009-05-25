@@ -13,7 +13,7 @@ In an _st_-numbering, the first vertex _s_ is the source, the last vertex _t_ is
 
 The PQ-tree has many templates that characterize how to manipulate it, and a number of optimizations for how to detect and apply those template patterns efficiently.  I began to focus on the LEC algorithm over other planarity algorithms because it seemed that it might be possible to make a significant simplification.  I realized that a DFS tree taken from the bottom up had the key property needed for correctness, i.e. that all vertices had a path of ancestors to the root.  Not having a single source seemed only to introduce the need to handle a forest, but some PQ tree templates seemed to be unnecessary and others were simpler.
 
-About a month after the course was over, Wendy contacted me and asked if I was going to pursue my project any further, and if not then could she pursue it independently.  More than once I've said that I didn't need a load of bricks to fall on my head to realize that as a potential thesis topic, this had legs. 
+About a month after the course was over, Wendy contacted me and asked if I was going to pursue my project any further, and if not then could she pursue it independently.  Clearly, as a potential thesis topic, this project had legs. 
 
 = Edge Addition: A New Planar Embedding Algorithm =
 
