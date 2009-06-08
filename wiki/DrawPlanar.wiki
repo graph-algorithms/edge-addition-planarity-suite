@@ -2,7 +2,7 @@
 
 = Introduction =
 
-A sample graph is given in adjacency list format.  The two possible result files from the planar graph drawing algorithm are then shown.  The first file gives the combinatorial planar embedding followed by a special section for the visibility representation.  The second file is a character art rendition of the visibility representation.  This rendtion uses m**n characters, so it is produced by a separate optional API call.
+A sample graph is given in adjacency list format.  The two possible result files from the [http://www.springerlink.com/content/y13n582714695305/ planar graph drawing algorithm] are then shown.  The first file gives the combinatorial planar embedding followed by a special section for the visibility representation.  The second file is a character art rendition of the visibility representation.  This rendtion uses m**n characters, so it is produced by a separate optional API call.
 
 = Details =
 
