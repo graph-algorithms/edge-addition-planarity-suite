@@ -1061,8 +1061,7 @@ isolatorContextP IC = &theGraph->IC;
 
 /* Do the final clean-up to obtain the K_{3,3} */
 
-     if (_DeleteUnmarkedVerticesAndEdges(theGraph) != OK ||
-         _RestoreAndOrientReducedPaths(theGraph, context) != OK)
+     if (_DeleteUnmarkedVerticesAndEdges(theGraph) != OK)
          return NOTOK;
 
      return OK;
