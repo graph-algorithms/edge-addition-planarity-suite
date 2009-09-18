@@ -30,7 +30,7 @@
 <tool id="cdt.managedbuild.tool.gnu.c.compiler.mingw.exe.debug.1701767443" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.mingw.exe.debug">
 <option defaultValue="gnu.c.optimization.level.none" id="gnu.c.compiler.mingw.exe.debug.option.optimization.level.574124342" name="Optimization Level" superClass="gnu.c.compiler.mingw.exe.debug.option.optimization.level" valueType="enumerated"/>
 <option id="gnu.c.compiler.mingw.exe.debug.option.debugging.level.1805329480" name="Debug Level" superClass="gnu.c.compiler.mingw.exe.debug.option.debugging.level" value="gnu.c.debugging.level.max" valueType="enumerated"/>
-<option id="gnu.c.compiler.option.preprocessor.def.symbols.462075370" superClass="gnu.c.compiler.option.preprocessor.def.symbols" valueType="definedSymbols">
+<option id="gnu.c.compiler.option.preprocessor.def.symbols.462075370" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" valueType="definedSymbols">
 <listOptionValue builtIn="false" value="DEBUG"/>
 </option>
 <inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1030655622" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
@@ -44,6 +44,9 @@
 <tool id="cdt.managedbuild.tool.gnu.cpp.linker.mingw.exe.debug.1461156275" name="MinGW C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.mingw.exe.debug"/>
 </toolChain>
 </folderInfo>
+<sourceEntries>
+<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+</sourceEntries>
 </configuration>
 </storageModule>
 
@@ -338,6 +341,9 @@
 <tool id="cdt.managedbuild.tool.gnu.cpp.linker.mingw.exe.release.239158268" name="MinGW C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.mingw.exe.release"/>
 </toolChain>
 </folderInfo>
+<sourceEntries>
+<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+</sourceEntries>
 </configuration>
 </storageModule>
 

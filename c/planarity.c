@@ -51,6 +51,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "graphK23Search.h"
 #include "graphK33Search.h"
+#include "graphK4Search.h"
 #include "graphDrawPlanar.h"
 
 int SpecificGraph(int embedFlags, char *infileName, char *outfileName, char *outfile2Name);
@@ -112,7 +113,7 @@ void ErrorMessage(char *message)
 void ProjectTitle()
 {
     Message("\n=================================================="
-            "\nPlanarity version 2.0"
+            "\nPlanarity version 2.1 Alpha 1"
             "\nCopyright (c) 2009 by John M. Boyer"
     		"\nContact info: jboyer at acm.org"
             "\n=================================================="
@@ -143,6 +144,7 @@ int helpMessage(char *param)
         "    -d = Planar graph drawing\n"
         "    -2 = Search for subgraph homeomorphic to K_{2,3}\n"
         "    -3 = Search for subgraph homeomorphic to K_{3,3}\n"
+        "    -4 = Search for subgraph homeomorphic to K_4\n"
     	"\n";
 
 	ProjectTitle();
@@ -237,7 +239,7 @@ int helpMessage(char *param)
 	    Message(
 	        "planarity process results: 0=OK, -1=NOTOK, 1=NONEMBEDDABLE\n"
 	    	"    1 result only produced by specific graph mode (-s)\n"
-	        "      with command -2,-3: found K_{2,3} or K_{3,3}\n"
+	        "      with command -2,-3,-4: found K_{2,3}, K_{3,3} or K_4\n"
 	    	"      with command -p,-d: found planarity obstruction\n"
 	    	"      with command -o: found outerplanarity obstruction\n"
 	    );
@@ -390,15 +392,15 @@ int callNauty(int argc, char *argv[])
 // Quick regression test
 int runTests(int argc, char *argv[])
 {
-#define NUMCOMMANDSTOTEST	5
+#define NUMCOMMANDSTOTEST	6
 
 	char *commandLine[] = {
 			"planarity", "-gen", "C", "9"
 	};
 	char *commands[NUMCOMMANDSTOTEST] = {
-			"-p", "-d", "-o", "-2", "-3"
+			"-p", "-d", "-o", "-2", "-3", "-4"
 	};
-	int results[] = { 194815, 194815, 269377, 268948, 191091 };
+	int results[] = { 194815, 194815, 269377, 268948, 191091, 0 };
 	int i;
 
 	for (i=0; i < NUMCOMMANDSTOTEST; i++)
@@ -449,6 +451,7 @@ int callRandomGraphs(int argc, char *argv[])
         case 'd' : embedFlags = EMBEDFLAGS_DRAWPLANAR; break;
         case '2' : embedFlags = EMBEDFLAGS_SEARCHFORK23; break;
         case '3' : embedFlags = EMBEDFLAGS_SEARCHFORK33; break;
+        case '4' : embedFlags = EMBEDFLAGS_SEARCHFORK4; break;
     }
 
     return RandomGraphs(embedFlags, NumGraphs, SizeOfGraphs);
@@ -484,6 +487,7 @@ int callSpecificGraph(int argc, char *argv[])
         case 'd' : embedFlags = EMBEDFLAGS_DRAWPLANAR; break;
         case '2' : embedFlags = EMBEDFLAGS_SEARCHFORK23; break;
         case '3' : embedFlags = EMBEDFLAGS_SEARCHFORK33; break;
+        case '4' : embedFlags = EMBEDFLAGS_SEARCHFORK4; break;
     }
 
 	return SpecificGraph(embedFlags, infileName, outfileName, outfile2Name);
@@ -646,6 +650,7 @@ char Choice;
                 "\nO. Outerplanar embedding and obstruction isolation"
                 "\n2. Search for subgraph homeomorphic to K_{2,3}"
                 "\n3. Search for subgraph homeomorphic to K_{3,3}"
+                "\n4. Search for subgraph homeomorphic to K_4"
         		"\nH. Help message for command line version"
                 "\nR. Reconfigure options"
                 "\nX. Exit"
@@ -665,6 +670,7 @@ char Choice;
             case 'o' : embedFlags = EMBEDFLAGS_OUTERPLANAR; break;
             case '2' : embedFlags = EMBEDFLAGS_SEARCHFORK23; break;
             case '3' : embedFlags = EMBEDFLAGS_SEARCHFORK33; break;
+            case '4' : embedFlags = EMBEDFLAGS_SEARCHFORK4; break;
             case 'h' : helpMessage(NULL); break;
             case 'r' : Reconfigure(); break;
         }
@@ -922,6 +928,7 @@ graphP origGraph=NULL;
 
      switch (embedFlags)
      {
+        case EMBEDFLAGS_SEARCHFORK4  : gp_AttachK4Search(theGraph); break;
         case EMBEDFLAGS_SEARCHFORK33 : gp_AttachK33Search(theGraph); break;
         case EMBEDFLAGS_SEARCHFORK23 : gp_AttachK23Search(theGraph); break;
         case EMBEDFLAGS_DRAWPLANAR   : gp_AttachDrawPlanar(theGraph); break;
@@ -939,6 +946,7 @@ graphP origGraph=NULL;
 
      switch (embedFlags)
      {
+        case EMBEDFLAGS_SEARCHFORK4  : gp_AttachK4Search(origGraph); break;
         case EMBEDFLAGS_SEARCHFORK33 : gp_AttachK33Search(origGraph); break;
         case EMBEDFLAGS_SEARCHFORK23 : gp_AttachK23Search(origGraph); break;
         case EMBEDFLAGS_DRAWPLANAR   : gp_AttachDrawPlanar(origGraph); break;
@@ -966,6 +974,7 @@ graphP origGraph=NULL;
 
          switch (embedFlags)
          {
+            case EMBEDFLAGS_SEARCHFORK4  : gp_AttachK4Search(theGraph); break;
             case EMBEDFLAGS_SEARCHFORK33 : gp_AttachK33Search(theGraph); break;
             case EMBEDFLAGS_SEARCHFORK23 : gp_AttachK23Search(theGraph); break;
             case EMBEDFLAGS_DRAWPLANAR   : gp_AttachDrawPlanar(theGraph); break;
@@ -983,6 +992,7 @@ graphP origGraph=NULL;
 
          switch (embedFlags)
          {
+            case EMBEDFLAGS_SEARCHFORK4  : gp_AttachK4Search(origGraph); break;
             case EMBEDFLAGS_SEARCHFORK33 : gp_AttachK33Search(origGraph); break;
             case EMBEDFLAGS_SEARCHFORK23 : gp_AttachK23Search(origGraph); break;
             case EMBEDFLAGS_DRAWPLANAR   : gp_AttachDrawPlanar(origGraph); break;
@@ -1169,6 +1179,12 @@ graphP origGraph=NULL;
          Message(Line);
      }
 
+     else if (embedFlags == EMBEDFLAGS_SEARCHFORK4)
+     {
+         sprintf(Line, "Of the generated graphs, %d did not contain a K_4 homeomorph as a subgraph.\n", NumEmbeddableGraphs);
+         Message(Line);
+     }
+
      return Result==NOTOK ? NOTOK : OK;
 }
 
@@ -1222,6 +1238,11 @@ char *resultStr = "";
          {
              gp_AttachK23Search(theGraph);
              theMsg = "A subgraph homeomorphic to K_{2,3} was%s found.\n";
+         }
+         else if (embedFlags == EMBEDFLAGS_SEARCHFORK4)
+         {
+             gp_AttachK4Search(theGraph);
+             theMsg = "A subgraph homeomorphic to K_4 was%s found.\n";
          }
      }
 
@@ -1292,6 +1313,9 @@ char *resultStr = "";
          switch (Result)
          {
             case OK :
+                if (embedFlags == EMBEDFLAGS_SEARCHFORK4)
+                    resultStr = " not";
+
                  if (embedFlags == EMBEDFLAGS_SEARCHFORK33)
                      resultStr = " not";
 
@@ -1357,7 +1381,9 @@ char *resultStr = "";
             	 if (Result == OK)
         	         gp_Write(theGraph, theFileName, WRITE_ADJLIST);
         	 }
-             else if (embedFlags == EMBEDFLAGS_SEARCHFORK33 || embedFlags == EMBEDFLAGS_SEARCHFORK23)
+             else if (embedFlags == EMBEDFLAGS_SEARCHFORK33 ||
+            		  embedFlags == EMBEDFLAGS_SEARCHFORK23 ||
+            		  embedFlags == EMBEDFLAGS_SEARCHFORK4)
              {
             	 if (Result == NONEMBEDDABLE)
         	         gp_Write(theGraph, theFileName, WRITE_ADJLIST);
