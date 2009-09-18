@@ -17,6 +17,7 @@ extern char quietMode;
 #include "../graph.h"
 #include "../graphK23Search.h"
 #include "../graphK33Search.h"
+#include "../graphK4Search.h"
 #include "../graphDrawPlanar.h"
 
 #include <stdlib.h>
@@ -61,6 +62,11 @@ void outprocTestK33Search(FILE *f, graph *g, int n)
     outprocTest(f, g, n, '3');
 }
 
+void outprocTestK4Search(FILE *f, graph *g, int n)
+{
+    outprocTest(f, g, n, '4');
+}
+
 /***********************************************************************
  CreateGraphs() - creates theGraph given the number of vertices n
  ***********************************************************************/
@@ -99,6 +105,10 @@ int CreateGraphs(int n, char command)
 		case '3' :
 			gp_AttachK33Search(theGraph);
 			gp_AttachK33Search(origGraph);
+			break;
+		case '4' :
+			gp_AttachK4Search(theGraph);
+			gp_AttachK4Search(origGraph);
 			break;
 		default  :
 			return NOTOK;
@@ -220,6 +230,7 @@ void outprocTest(FILE *f, graph *g, int n, char command)
 			case 'd' : embedFlags = EMBEDFLAGS_DRAWPLANAR; break;
 			case '2' : embedFlags = EMBEDFLAGS_SEARCHFORK23; break;
 			case '3' : embedFlags = EMBEDFLAGS_SEARCHFORK33; break;
+			case '4' : embedFlags = EMBEDFLAGS_SEARCHFORK4; break;
 		}
 
 		// Now copy from the origGraph into theGraph on which the work will be done
@@ -303,6 +314,7 @@ char *msg = NULL;
 	        case 'o' : msg = "not Outerplanar"; break;
 	        case '2' : msg = "with K2,3"; break;
 	        case '3' : msg = "with K3,3"; break;
+	        case '4' : msg = "with K4"; break;
 	    }
 
 	    fprintf(msgfile, "# %s=%ld\n", msg, numGraphs - numOKs);
