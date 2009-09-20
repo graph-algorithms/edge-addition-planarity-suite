@@ -67,6 +67,7 @@ int  _InitializeNonplanarityContext(graphP theGraph, int I, int R);
 int  _FindNonplanarityBicompRoot(graphP theGraph);
 void _FindActiveVertices(graphP theGraph, int R, int *pX, int *pY);
 int  _FindPertinentVertex(graphP theGraph);
+void _SetVertexTypesForMarkingXYPath(graphP theGraph);
 
 void _PopAndUnmarkVerticesAndEdges(graphP theGraph, int Z, int stackBottom);
 
@@ -187,19 +188,16 @@ int  N, X, Y, W, Px, Py, Z, DFSChild, RootId;
 
 int  _InitializeNonplanarityContext(graphP theGraph, int I, int R)
 {
-int  X, Y, W, Z, ZPrevLink, ZType;
 int  singleBicompMode =  (R == NIL) ? 0 : 1;
 
-/* Blank out the isolator context, then assign the input graph reference
-     and the current vertext I into the context. */
-
+	 // Blank out the isolator context, then assign the input graph reference
+     // and the current vertext I into the context.
      _ClearIsolatorContext(theGraph);
      theGraph->IC.v = I;
 
-/* The Walkdown halted on one or more bicomps without embedding all back
-    edges to descendants of the root(s) of said bicomp(s).
-    We now find the root of one such bicomp. */
-
+     // The Walkdown halted on one or more bicomps without embedding all back
+     // edges to descendants of the root(s) of said bicomp(s).
+     // We now find the root of one such bicomp.
      if (!singleBicompMode || sp_NonEmpty(theGraph->theStack))
          R = _FindNonplanarityBicompRoot(theGraph);
 
@@ -207,9 +205,8 @@ int  singleBicompMode =  (R == NIL) ? 0 : 1;
 
      theGraph->IC.r = R;
 
-/* For the embedding or in a given bicomp, orient the vertices,
-    and clear the visited members of all vertex and edge records. */
-
+     // For the embedding or in a given bicomp, orient the vertices,
+     // and clear the visited members of all vertex and edge records.
      if (!singleBicompMode)
      {
          _OrientVerticesInEmbedding(theGraph);
@@ -221,49 +218,64 @@ int  singleBicompMode =  (R == NIL) ? 0 : 1;
          _FillVisitedFlagsInBicomp(theGraph, R, 0);
      }
 
-/* Now we find the active vertices along both external face paths extending
-     from R. */
+     // Now we find the active vertices along both external face paths
+     // extending from R.
+     _FindActiveVertices(theGraph, R, &theGraph->IC.x, &theGraph->IC.y);
 
-     _FindActiveVertices(theGraph, R, &X, &Y);
+     // Now, we obtain the pertinent vertex W on the lower external face
+     // path between X and Y (that path that does not include R).
+     theGraph->IC.w = _FindPertinentVertex(theGraph);
 
-     theGraph->IC.x = X;
-     theGraph->IC.y = Y;
+ 	 // Now we can classify the vertices along the external face of the bicomp
+ 	 // rooted at R as 'high RXW', 'low RXW', 'high RXY', 'low RXY'
+     _SetVertexTypesForMarkingXYPath(theGraph);
 
-/* Now, we obtain the pertinent vertex W on the lower external face
-    path between X and Y (that path that does not include R). */
-
-     theGraph->IC.w = W = _FindPertinentVertex(theGraph);
-
-/* In the current bicomp, we clear the type flags */
-
-/* Now we can classify the vertices along the external face of the bicomp
-    rooted at R as 'high RXW', 'low RXW', 'high RXY', 'low RXY' */
-
-     _SetVertexTypeInBicomp(theGraph, R, TYPE_UNKNOWN);
-
-     ZPrevLink = 1;
-     Z = _GetNextVertexOnExternalFace(theGraph, R, &ZPrevLink);
-     ZType = VERTEX_HIGH_RXW;
-     while (Z != W)
-     {
-         if (Z == X) ZType = VERTEX_LOW_RXW;
-         theGraph->G[Z].type = ZType;
-         Z = _GetNextVertexOnExternalFace(theGraph, Z, &ZPrevLink);
-     }
-
-     ZPrevLink = 0;
-     Z = _GetNextVertexOnExternalFace(theGraph, R, &ZPrevLink);
-     ZType = VERTEX_HIGH_RYW;
-     while (Z != W)
-     {
-         if (Z == Y) ZType = VERTEX_LOW_RYW;
-         theGraph->G[Z].type = ZType;
-         Z = _GetNextVertexOnExternalFace(theGraph, Z, &ZPrevLink);
-     }
-
-/* All work is done, so return success */
-
+     // All work is done, so return success
      return OK;
+}
+
+/****************************************************************************
+ _SetVertexTypesForMarkingXYPath()
+
+ Label the vertices along the external face of the bicomp rooted at R as
+ 'high RXW', 'low RXW', 'high RXY', 'low RXY'
+ ****************************************************************************/
+
+void _SetVertexTypesForMarkingXYPath(graphP theGraph)
+{
+	int  I, R, X, Y, W, Z, ZPrevLink, ZType;
+
+	// Unpack the context for efficiency of loops
+	I = theGraph->IC.v;
+	R = theGraph->IC.r;
+	X = theGraph->IC.x;
+	Y = theGraph->IC.y;
+	W = theGraph->IC.w;
+
+	// Clear the type member of each vertex in the bicomp
+	_SetVertexTypeInBicomp(theGraph, R, TYPE_UNKNOWN);
+
+	// Traverse from R to W in the X direction
+	ZPrevLink = 1;
+	Z = _GetNextVertexOnExternalFace(theGraph, R, &ZPrevLink);
+	ZType = VERTEX_HIGH_RXW;
+	while (Z != W)
+	{
+		if (Z == X) ZType = VERTEX_LOW_RXW;
+		theGraph->G[Z].type = ZType;
+		Z = _GetNextVertexOnExternalFace(theGraph, Z, &ZPrevLink);
+	}
+
+	// Traverse from R to W in the Y direction
+	ZPrevLink = 0;
+	Z = _GetNextVertexOnExternalFace(theGraph, R, &ZPrevLink);
+	ZType = VERTEX_HIGH_RYW;
+	while (Z != W)
+	{
+		if (Z == Y) ZType = VERTEX_LOW_RYW;
+		theGraph->G[Z].type = ZType;
+		Z = _GetNextVertexOnExternalFace(theGraph, Z, &ZPrevLink);
+	}
 }
 
 /****************************************************************************
@@ -439,15 +451,15 @@ int  V, e;
  attachment that are closest to R along the external face).  This includes
  marking both the vertices and edges along the X-Y path.
 
- As a function of initialization, the vertices along the external face
- (other than R and W) have been classified as 'high RXW', 'low RXW', 'high RXY',
- or 'low RXY'. Once the vertices have been categorized, we proceed with trying
- to set the visitation flags in the way described above.  First, we remove
- all edges incident to R except the two edges that join R to the external face.
- The result is that R and its two remaining edges are a 'corner' in the
- external face but also in a single proper face whose boundary includes the
- X-Y path with the highest attachment points. Thus, we simply need to walk
- this proper face to find the desired X-Y path. Note, however, that the
+ Previously, during non-planarity context initialization, the vertices along
+ the external face (other than R and W) have been classified as 'high RXW',
+ 'low RXW', 'high RXY', or 'low RXY'. Once the vertices have been categorized,
+ we proceed with trying to set the visitation flags in the way described above.
+ First, we remove all edges incident to R except the two edges that join R to
+ the external face. The result is that R and its two remaining edges are a
+ 'corner' in the external face but also in a single proper face whose boundary
+ includes the X-Y path with the highest attachment points. Thus, we simply need
+ to walk this proper face to find the desired X-Y path. Note, however, that the
  resulting face boundary may have attached cut vertices.  Any such separable
  component contains a vertex neighbor of R, but the edge to R has been
  temporarily removed.  The algorithm removes loop of vertices and edges along
@@ -506,7 +518,7 @@ int stackBottom;
 
 /* Walk the proper face containing R to find and mark the highest
         X-Y path. Note that if W is encountered, then there is no
-        intervening X-Y path, so we would return NOTOK. */
+        intervening X-Y path, so we would return FALSE in that case. */
 
      Z = R;
      J = gp_GetLastArc(theGraph, R);
