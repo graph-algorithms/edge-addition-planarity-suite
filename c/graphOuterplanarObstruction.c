@@ -54,9 +54,6 @@ extern int  _OrientVerticesInEmbedding(graphP theGraph);
 extern int  _JoinBicomps(graphP theGraph);
 
 extern int  _InitializeNonplanarityContext(graphP theGraph, int I, int R);
-extern int  _FindNonplanarityBicompRoot(graphP theGraph);
-extern void _FindActiveVertices(graphP theGraph, int R, int *pX, int *pY);
-extern int  _FindPertinentVertex(graphP theGraph);
 extern int  _MarkHighestXYPath(graphP theGraph);
 
 extern int  _FindUnembeddedEdgeToAncestor(graphP theGraph, int cutVertex, int *pAncestor, int *pDescendant);
@@ -81,14 +78,19 @@ int  _IsolateOuterplanarityObstructionE(graphP theGraph);
 
 /****************************************************************************
  _ChooseTypeOfNonOuterplanarityMinor()
+ A constant time implementation is easily feasible but only constant amortized
+ time is needed for the outerplanarity obstruction isolation, which also
+ benefits from having the bicomp rooted by R oriented.
+ If an extension algorithm requires constant actual time, then this function
+ should not be used and instead the minor should be decided without orienting
+ the bicomp.
  ****************************************************************************/
 
 int  _ChooseTypeOfNonOuterplanarityMinor(graphP theGraph, int I, int R)
 {
 int  N, X, Y, W;
 
-/* Create the initial non-outerplanarity minor state in the isolator context */
-
+	 // Create the initial non-outerplanarity obstruction isolator state.
      if (_InitializeNonplanarityContext(theGraph, I, R) != OK)
          return NOTOK;
 
@@ -98,27 +100,25 @@ int  N, X, Y, W;
      Y = theGraph->IC.y;
      W = theGraph->IC.w;
 
-/* If the root copy is not a root copy of the current vertex I,
-        then the Walkdown terminated because it couldn't find
-        a viable path along a child bicomp, which is Minor A. */
-
+     // If the root copy is not a root copy of the current vertex I,
+     // then the Walkdown terminated on a descendant bicomp, which is Minor A.
      if (theGraph->V[R - N].DFSParent != I)
      {
          theGraph->IC.minorType |= MINORTYPE_A;
          return OK;
      }
 
-/* If W has an externally active pertinent child bicomp, then
-     we've found Minor B */
-
+     // If W has a pertinent child bicomp, then we've found Minor B.
+     // Notice this is different from planarity, in which minor B is indicated
+     // only if the pertinent child bicomp is also externally active under the
+     // planarity processing model (i.e. future pertinent).
      if (theGraph->V[W].pertinentBicompList != NIL)
      {
          theGraph->IC.minorType |= MINORTYPE_B;
          return OK;
      }
 
-/* The result must be minor E */
-
+     // The only other result is minor E (we will search for the X-Y path later)
      theGraph->IC.minorType |= MINORTYPE_E;
      return OK;
 }

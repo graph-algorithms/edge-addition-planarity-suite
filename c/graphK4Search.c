@@ -26,11 +26,13 @@ extern void _DeleteUnmarkedEdgesInBicomp(graphP theGraph, int BicompRoot);
 extern void _ClearInvertedFlagsInBicomp(graphP theGraph, int BicompRoot);
 
 extern int  _GetNextVertexOnExternalFace(graphP theGraph, int curVertex, int *pPrevLink);
+extern void _FindActiveVertices(graphP theGraph, int R, int *pX, int *pY);
 extern int  _JoinBicomps(graphP theGraph);
 extern void _OrientVerticesInBicomp(graphP theGraph, int BicompRoot, int PreserveSigns);
 extern void _OrientVerticesInEmbedding(graphP theGraph);
 extern void _InvertVertex(graphP theGraph, int V);
 
+extern void _SetVertexTypesForMarkingXYPath(graphP theGraph);
 extern int  _MarkHighestXYPath(graphP theGraph);
 
 extern int  _FindUnembeddedEdgeToCurVertex(graphP theGraph, int cutVertex, int *pDescendant);
@@ -57,8 +59,12 @@ int  _SearchForK4InBicomp(graphP theGraph, K4SearchContext *context, int I, int 
 
 /* Private functions for K4 searching. */
 
+int  _K4_ChooseTypeOfNonOuterplanarityMinor(graphP theGraph, int I, int R);
+
 int  _K4_FindSecondActiveVertexOnLowExtFacePath(graphP theGraph);
-int  _K4_ReduceBicompToEdge(graphP theGraph, int R);
+int  _K4_ReduceBicompToEdge(graphP theGraph);
+int  _K4_FindPlanarityActiveVertex(graphP theGraph, int I, int R, int prevLink, int *pW);
+int  _K4_FindSeparatingInternalEdge(theGraph, int R, int W, int prevLink, int *pW, int *pX, int *pY);
 
 int  _K4_FinishIsolatorContextInitialization(graphP theGraph, K4SearchContext *context);
 int  _K4_ReduceExternalFacePathToEdge(graphP theGraph, K4SearchContext *context, int u, int x, int edgeType);
@@ -128,6 +134,16 @@ K4SearchContext *context = NULL;
             // (and reduced to a non-obstruction), so we continue
             // searching any other bicomps on which the Walkdown failed.
 
+            // TO DO: if a reduction occurs, we actually need to do more
+            // walking down *on that bicomp*, which may remove some of the
+            // edges from the fwdArcList on which we're iterating.
+            // This routine is only getting called on B and E, not A
+            // Rename to accommodate
+            // Need to keep hammering on a given bicomp until the front of the
+            // list is empty or has edges to another bicomp.  Then, the bicomp
+            // pertinence is finished.  Only other reason to stop is an
+            // identified K4.
+
             if (RetVal != OK)
              break;
         }
@@ -176,26 +192,131 @@ isolatorContextP IC = &theGraph->IC;
 			return NOTOK;
 	}
 
-	// TO DO
-	//Can't really do this because orients the whole bicomp, but we
-	//can't touch the whole bicomp in the B case
-
 	// Begin by determining whether minor A, B or E is detected
-	if (_ChooseTypeOfNonOuterplanarityMinor(theGraph, I, R) != OK)
+	if (_K4_ChooseTypeOfNonOuterplanarityMinor(theGraph, I, R) != OK)
 		return NOTOK;
 
-	// Minor E indicates the desired K4 homeomorph, so we isolate it and return NONEMBEDDABLE
-    if (theGraph->IC.minorType & MINORTYPE_E)
+    // Minor A indicates the existence of K_{2,3} homeomorphs, but
+    // we run additional tests to see whether we can either find an
+    // entwined K4 homeomorph or reduce the bicomp so that the WalkDown
+	// is enabled to continue to resolve pertinence
+    if (theGraph->IC.minorType & MINORTYPE_A)
     {
-    	// Restore the orientations of the vertices in the bicomp, which were
-    	// adjusted during the invocation of ChooseTypeOfNonOuterplanarityMinor()
+    	// Now that we know we have minor A, we can afford to orient the
+    	// bicomp because we will either find the desired K4 or we will
+    	// reduce the bicomp to an edge. The tests for A1 and A2 are easier
+    	// to implement on an oriented bicomp.
         _OrientVerticesInBicomp(theGraph, R, 1);
 
-        // Now impose consistent orientation on the embedding so we can then
+    	// Case A1: Test whether there is an active vertex Z other than W
+    	// along the external face path [X, ..., W, ..., Y]
+    	if (_K4_FindSecondActiveVertexOnLowExtFacePath(theGraph) == TRUE)
+    	{
+        	// Restore the orientations of the vertices in the bicomp, then orient
+    		// the whole embedding, so we can restore and orient the reduced paths
+            _OrientVerticesInBicomp(theGraph, R, 1);
+            _OrientVerticesInEmbedding(theGraph);
+            if (_K4_RestoreAndOrientReducedPaths(theGraph, context) != OK)
+                return NOTOK;
+
+            // TO DO: there needs to be some kind of "FinishIsolatorContextInitialization"
+            // logic that does more work on the visited flags.  Maybe because we're catching
+            // it before any markings at all, we could just fill all flags with 0?
+            // What about the "find" calls in that function?
+
+    		// Isolate the K4 homeomorph
+    		if (_K4_IsolateMinorA1(theGraph) != OK  ||
+    			_DeleteUnmarkedVerticesAndEdges(theGraph) != OK)
+    			return NOTOK;
+
+            // Indicate success by returning NONEMBEDDABLE
+    		return NONEMBEDDABLE;
+    	}
+
+    	// Case A2: Test whether the bicomp has an XY path
+    	_SetVertexTypesForMarkingXYPath(graphP theGraph);
+        if (_MarkHighestXYPath(theGraph) == TRUE)
+        {
+        	// Restore the orientations of the vertices in the bicomp, then orient
+    		// the whole embedding, so we can restore and orient the reduced paths
+            _OrientVerticesInBicomp(theGraph, R, 1);
+            _OrientVerticesInEmbedding(theGraph);
+            if (_K4_RestoreAndOrientReducedPaths(theGraph, context) != OK)
+                return NOTOK;
+
+            // TO DO: there needs to be some kind of "FinishIsolatorContextInitialization"
+            // logic that does more work on the visited flags.  Maybe because we're catching
+            // it before any markings at all, we could just fill all flags with 0?
+            // What about the "find" calls in that function?
+
+    		// Isolate the K4 homeomorph
+    		if (_K4_IsolateMinorA2(theGraph) != OK ||
+    			_DeleteUnmarkedVerticesAndEdges(theGraph) != OK)
+    			return NOTOK;
+
+            // Indicate success by returning NONEMBEDDABLE
+    		return NONEMBEDDABLE;
+        }
+
+        // Since neither A1 nor A2 is found, then we reduce the bicomp to the
+        // tree edge (R, W).
+    	if (_K4_ReduceBicompToEdge(theGraph, R, IC->w) != OK)
+    		return NOTOK;
+
+        // Return OK so that the WalkDown can continue resolving the pertinence of I.
+    	return OK;
+    }
+
+    // Minor B also indicates the existence of K_{2,3} homeomorphs, but
+    // we run additional tests to see whether we can either find an
+    // entwined K4 homeomorph or reduce a portion of the bicomp so that
+    // the WalkDown can be reinvoked on the bicomp
+    else if (theGraph->IC.minorType & MINORTYPE_B)
+    {
+    	int a_x, a_y;
+
+    	// Find the vertices a_x and a_y that are active (pertinent or future pertinent)
+    	// and also first along the external face paths emanating from the bicomp root
+    	if (_K4_FindPlanarityActiveVertex(theGraph, I, R, 1, &a_x) != OK ||
+    		_K4_FindPlanarityActiveVertex(theGraph, I, R, 0, &a_y) != OK)
+    		return NOTOK;
+
+    	// Case B1: If both a_x and a_y are future pertinent, then we can stop and
+    	// isolate a subgraph homeomorphic to K4.
+    	if (FUTUREPERTINENT(theGraph, a_x, I) && FUTUREPERTINENT(theGraph, a_y, I))
+    	{
+    		// TO DO: finish init then isolate K4 from case B1, then return NONEMBEDDABLE
+    		return NOTOK;
+    	}
+
+    	// Case B2: Determine whether there is an internal separating X-Y path for a_x or for a_y
+    	// The method makes appropriate isolator context settings if the separator edge is found
+    	if (_K4_FindSeparatingInternalEdge(theGraph, R, a_x, 1, &IC->w, &IC->px, &IC->py) == TRUE ||
+    		_K4_FindSeparatingInternalEdge(theGraph, R, a_y, 0, &IC->w, &IC->py, &IC->px) == TRUE)
+    	{
+    		// TO DO: finish init then isolate K4 from case B2, then return NONEMBEDDABLE
+    		return NOTOK;
+    	}
+
+    	// TO DO: If pattern not found, make reductions along a_x and a_y paths, then return OK
+
+    	// TO DO: Returning OK is the way to get the embedder to proceed to the next
+    	// iteration, but we actually need to continue the *WalkDown* on the bicomp
+    	return NOTOK;
+    }
+
+	// Minor E indicates the desired K4 homeomorph, so we isolate it and return NONEMBEDDABLE
+    else if (theGraph->IC.minorType & MINORTYPE_E)
+    {
+        // Impose consistent orientation on the embedding so we can then
         // restore the reduced paths.
         _OrientVerticesInEmbedding(theGraph);
         if (_K4_RestoreAndOrientReducedPaths(theGraph, context) != OK)
             return NOTOK;
+
+        // TO DO: there needs to be some kind of "FinishIsolatorContextInitialization"
+        // logic that does more work on the visited flags.  Maybe because we're catching
+        // it before any markings below, we could just fill all flags with 0?
 
         // Set up to isolate minor E
         if (_FindUnembeddedEdgeToCurVertex(theGraph, IC->w, &IC->dw) != TRUE)
@@ -204,92 +325,13 @@ isolatorContextP IC = &theGraph->IC;
         if (_MarkHighestXYPath(theGraph) != TRUE)
              return NOTOK;
 
-        // Mark the vertices and edges of the K4 homeomorph
-        if (_IsolateOuterplanarityObstructionE(theGraph) != OK)
-            return NOTOK;
-
-        // Remove edges not in the K4 homeomorph
-        if (_DeleteUnmarkedVerticesAndEdges(theGraph) != OK)
+        // Isolate the K4 homeomorph
+        if (_IsolateOuterplanarityObstructionE(theGraph) != OK ||
+        	_DeleteUnmarkedVerticesAndEdges(theGraph) != OK)
             return NOTOK;
 
         // Return indication that K4 homeomorph has been found
         return NONEMBEDDABLE;
-    }
-
-    // Minors A and B indicate the existence of K_{2,3} homeomorphs, but
-    // we run additional tests to see whether we can either find an
-    // entwined K4 homeomorph or reduce part of the graph so that the
-    // outerplanarity method can resolve more of the pertinence in
-    // the current iteration
-    if (theGraph->IC.minorType & MINORTYPE_A)
-    {
-    	// Case A1: Test whether there is an active vertex Z other than W
-    	// along the external face path [X, ..., W, ..., Y]
-    	if (_K4_FindSecondActiveVertexOnLowExtFacePath(theGraph) == TRUE)
-    	{
-        	// Restore the orientations of the vertices in the bicomp, which were
-        	// adjusted during the invocation of ChooseTypeOfNonOuterplanarityMinor()
-            _OrientVerticesInBicomp(theGraph, R, 1);
-
-            // Now impose consistent orientation on the embedding so we can then
-            // restore the reduced paths.
-            _OrientVerticesInEmbedding(theGraph);
-            if (_K4_RestoreAndOrientReducedPaths(theGraph, context) != OK)
-                return NOTOK;
-
-    		// Isolate the K4 homeomorph
-    		if (_K4_IsolateMinorA1(theGraph) != OK)
-    			return NOTOK;
-
-            // Remove edges not in the K4 homeomorph
-            if (_DeleteUnmarkedVerticesAndEdges(theGraph) != OK)
-                return NOTOK;
-
-            // Indicate success by returning NONEMBEDDABLE
-    		return NONEMBEDDABLE;
-    	}
-
-    	// Case A2: Test whether the bicomp has an XY path
-        if (_MarkHighestXYPath(theGraph) == TRUE)
-        {
-        	// Restore the orientations of the vertices in the bicomp, which were
-        	// adjusted during the invocation of ChooseTypeOfNonOuterplanarityMinor()
-            _OrientVerticesInBicomp(theGraph, R, 1);
-
-            // Now impose consistent orientation on the embedding so we can then
-            // restore the reduced paths.
-            _OrientVerticesInEmbedding(theGraph);
-            if (_K4_RestoreAndOrientReducedPaths(theGraph, context) != OK)
-                return NOTOK;
-
-    		// Isolate the K4 homeomorph
-    		if (_K4_IsolateMinorA2(theGraph) != OK)
-    			return NOTOK;
-
-            // Remove edges not in the K4 homeomorph
-            if (_DeleteUnmarkedVerticesAndEdges(theGraph) != OK)
-                return NOTOK;
-
-            // Indicate success by returning NONEMBEDDABLE
-    		return NONEMBEDDABLE;
-        }
-
-        // Since neither A1 nor A2 is found, then we reduce the bicomp
-        // to the edge (R, W) then
-    	if (_K4_ReduceBicompToEdge(theGraph, R) != OK)
-    		return NOTOK;
-
-        // Return OK so that the WalkDown can continue resolving the pertinence of I.
-    	return OK;
-    }
-    else if (theGraph->IC.minorType & MINORTYPE_B)
-    {
-    	// TO DO: Patterns for finding K4;
-    	// if found, isolate K4, return NONEMBEDDABLE
-    	// else return OK;
-    	// To DO: Returning OK is the way to get the embedder to proceed to the next
-    	// iteration, but we actually need to continue the *WalkDown* on the bicomp
-    	return NOTOK;
     }
 
     // You never get here in an error-free implementation like this one
@@ -297,35 +339,127 @@ isolatorContextP IC = &theGraph->IC;
 }
 
 /****************************************************************************
- _FindSecondActiveVertexOnLowExtFacePath()
+ _K4_ChooseTypeOfNonOuterplanarityMinor()
+ This is an overload of the function _ChooseTypeOfNonOuterplanarityMinor()
+ that avoids processing the whole bicomp rooted by R, e.g. to orient its
+ vertices or label the vertices of its external face.
+ This is necessary in particular because of the reduction processing on
+ MINORTYPE_B.  When a K2,3 is found by minor B, we may not be able to find
+ an entangled K4, so a reduction is performed, but it only eliminates
+ part of the bicomp and the operations here need to avoid touching parts
+ of the bicomp that won't be reduced, except by a constant amount of course.
+ ****************************************************************************/
+int  _K4_ChooseTypeOfNonOuterplanarityMinor(graphP theGraph, int I, int R)
+{
+    int  XPrevLink=1, YPrevLink=0;
+    int  Wx, WxPrevLink, Wy, WyPrevLink;
+
+    _ClearIsolatorContext(theGraph);
+
+    theGraph->IC.v = I;
+    theGraph->IC.r = R;
+
+    // We are essentially doing a _FindActiveVertices() here, except two things:
+    // 1) for outerplanarity we know the first vertices along the paths from R
+    //    are the desired vertices because all vertices are "externally active"
+    // 2) We have purposely not oriented the bicomp, so the XPrevLink result is
+    //    needed to help find the pertinent vertex W
+    theGraph->IC.x = _GetNextVertexOnExternalFace(theGraph, R, &XPrevLink);
+    theGraph->IC.y = _GetNextVertexOnExternalFace(theGraph, R, &YPrevLink);
+
+    // We are essentially doing a _FindPertinentVertex() here, except two things:
+    // 1) It is not known whether the reduction of the path through X or the path
+    //    through Y will enable the pertinence of W to be resolved, so it is
+    //    necessary to perform parallel face traversal to find W with a cost no
+    //    more than twice what it will take to resolve the W's pertinence
+    //    (assuming we have to do a reduction rather than finding an entangled K4)
+    // 2) In the normal _FindPertinentVertex(), the bicomp is already oriented, so
+    //    the "prev link" is hard coded to traverse down the X side.  In this
+    //    implementation, the  bicomp is purposely not oriented, so we need to know
+    //    XPrevLink and YPrevLink in order to set off in the correct directions.
+    Wx = theGraph->IC.x;
+    WxPrevLink = XPrevLink;
+    Wy = theGraph->IC.y;
+    WyPrevLink = YPrevLink;
+    theGraph->IC.w = NIL;
+
+    while (Wx != theGraph->IC.y)
+    {
+        Wx = _GetNextVertexOnExternalFace(theGraph, Wx, &WxPrevLink);
+        if (PERTINENT(theGraph, Wx))
+        {
+        	theGraph->IC.w = Wx;
+        	break;
+        }
+        Wy = _GetNextVertexOnExternalFace(theGraph, Wy, &WyPrevLink);
+        if (PERTINENT(theGraph, Wy))
+        {
+        	theGraph->IC.w = Wy;
+        	break;
+        }
+    }
+
+    if (theGraph->IC.w == NIL)
+    	return NOTOK;
+
+    // If the root copy is not a root copy of the current vertex I,
+    // then the Walkdown terminated on a descendant bicomp, which is Minor A.
+	if (theGraph->V[R - theGraph->N].DFSParent != I)
+		theGraph->IC.minorType |= MINORTYPE_A;
+
+    // If W has a pertinent child bicomp, then we've found Minor B.
+    // Notice this is different from planarity, in which minor B is indicated
+    // only if the pertinent child bicomp is also externally active under the
+    // planarity processing model (i.e. future pertinent).
+	else if (theGraph->V[theGraph->IC.w].pertinentBicompList != NIL)
+		theGraph->IC.minorType |= MINORTYPE_B;
+
+    // The only other result is minor E (we will search for the X-Y path later)
+	else
+		theGraph->IC.minorType |= MINORTYPE_E;
+
+	return OK;
+}
+
+/****************************************************************************
+ _K4_FindSecondActiveVertexOnLowExtFacePath()
+
+ This method is used in the processing of obstruction A, so it can take
+ advantage of the bicomp being oriented beforehand.
+
  This method determines whether there is an active vertex Z other than W on
  the path [X, ..., W, ..., Y].  By active, we mean a vertex that connects
  by an unembedded edge to either I or an ancestor of I.  That is, a vertext
  that is pertinent or future pertinent (would be pertinent in a future step
  of the embedder).
- In the core planarity embedder, future pertinence and external activity are
- the same, so we temporarily flip to the planar embedder flags as a quick way
- to get the right behavior out of _VertexActiveStatus().
+
+ Unlike the core planarity embedder, in outerplanarity-related algorithms,
+ future pertinence is different from external activity, and we need to know
+ about *actual connections* from each vertex to ancestors of IC.v, so we
+ use PERTINENT() and FUTUREPERTINENT() rather than _VertexActiveStatus().
+
+ TO DO: Double-check the isolator context input requirements and output expectations
  ****************************************************************************/
 int _K4_FindSecondActiveVertexOnLowExtFacePath(graphP theGraph)
 {
-    int Z = theGraph->IC.x, ZPrevLink=1;
+    int Z, ZPrevLink;
 
 	// First we test X for future pertinence only (if it were pertinent, then
 	// we wouldn't have been blocked up on this bicomp)
-    if (FUTUREPERTINENT(theGraph, Z, theGraph->IC.v))
+    if (FUTUREPERTINENT(theGraph, theGraph->IC.x, theGraph->IC.v))
 	{
-		theGraph->IC.z = Z;
-		theGraph->IC.uz = _GetLeastAncestorConnection(theGraph, Z);
+		theGraph->IC.z = theGraph->IC.x;
+		theGraph->IC.uz = _GetLeastAncestorConnection(theGraph, theGraph->IC.x);
 		return TRUE;
 	}
 
 	// Now we move on to test all the vertices strictly between X and Y on
 	// the lower external face path, except W, for either pertinence or
 	// future pertinence.
-	Z = _GetNextVertexOnExternalFace(theGraph, Z, &ZPrevLink);
+    ZPrevLink = 1;
+	Z = _GetNextVertexOnExternalFace(theGraph, theGraph->IC.x, &ZPrevLink);
 
-	while (Z != theGraph->IC.py)
+	while (Z != theGraph->IC.y)
 	{
 		if (Z != theGraph->IC.w)
 		{
@@ -347,10 +481,10 @@ int _K4_FindSecondActiveVertexOnLowExtFacePath(graphP theGraph)
 	}
 
 	// Now we test Y for future pertinence (same explanation as for X above)
-    if (FUTUREPERTINENT(theGraph, Z, theGraph->IC.v))
+    if (FUTUREPERTINENT(theGraph, theGraph->IC.y, theGraph->IC.v))
 	{
-		theGraph->IC.z = Z;
-		theGraph->IC.uz = _GetLeastAncestorConnection(theGraph, Z);
+		theGraph->IC.z = theGraph->IC.y;
+		theGraph->IC.uz = _GetLeastAncestorConnection(theGraph, theGraph->IC.y);
 		return TRUE;
 	}
 
@@ -359,42 +493,164 @@ int _K4_FindSecondActiveVertexOnLowExtFacePath(graphP theGraph)
 }
 
 /****************************************************************************
+ _K4_ReduceBicompToEdge()
+
+ This method is used when reducing the main bicomp of obstruction A to a
+ single edge (R, W).  We first delete all edges from the bicomp except
+ those on the DFS tree path W to R, then we reduce that DFS tree path to
+ a DFS tree edge.
+
+ After the reduction, the outerplanarity Walkdown traversal can continue
+ R to W without being blocked as was the case when R was adjacent to X and Y.
+
+ Returns OK for success, NOTOK for internal (implementation) error.
  ****************************************************************************/
 
-int  _K4_ReduceBicompToEdge(graphP theGraph, int R)
+int  _K4_ReduceBicompToEdge(graphP theGraph, int R, int W)
 {
-	// Rather than reducing just a path, we need to exploit
-	// the fact that (R, W) is a 2-cut.  Hook the adj list
-	// of R into a circular list and the adj list of W into
-	// a circular list.  The connectors of R and W can then
-	// point to those lists.  Then we just need a new edge
-	// for (R, W).
-	// Only problem here is that ideally we would like to have
-	// net zero growth of edges. It's not strictly necessary
-	// for maintaining a linear bound, but from an implementation
-	// standpoint, it avoids having to expand the arc capacity.
-	// implementation standpoint.
+	// TO DO: finish this
 	return NOTOK;
 }
 
+/****************************************************************************
+ _K4_FindPlanarityActiveVertex()
+ This service routine starts out at R and heads off in the direction opposite
+ the prevLink to find the first "planarity active" vertex, i.e. the first one
+ that is pertinent or future pertinent.
+ ****************************************************************************/
+int  _K4_FindPlanarityActiveVertex(graphP theGraph, int I, int R, int prevLink, int *pW)
+{
+	int W = R, WPrevLink = prevLink;
+
+	W = _GetNextVertexOnExternalFace(theGraph, R, &WPrevLink);
+
+	while (W != R)
+	{
+	    if (PERTINENT(theGraph, W) || FUTUREPERTINENT(theGraph, W, I))
+		{
+	    	*pW = W;
+	    	return OK;
+		}
+
+		W = _GetNextVertexOnExternalFace(theGraph, W, &WPrevLink);
+	}
+
+	return NOTOK;
+}
+
+/****************************************************************************
+ _K4_FindSeparatingInternalEdge()
+
+ Logically, this method is similar to calling MarkHighestXYPath() to
+ see if there is an internal separator between R and W.
+ However, that method cannot be called because the bicomp is not oriented.
+
+ Because this is an outerplanarity related algorithm, there are no internal
+ vertices to contend with, so it is easier to inspect the internal edges
+ incident to each vertex internal to the path (R ... W), i.e. excluding endpoints,
+ to see whether any of the edges connects outside of the path [R ... W],
+ including endpoints.
+
+ We will count on the pre-initialization of the vertex types to TYPE_UNKNOWN
+ so that we don't have to initialize the whole bicomp. Each vertex along
+ the path [R ... W] is marked TYPE_VERTEX_VISITED.  Then, for each vertex in the
+ range (R ... W), if there is any edge that is also not incident to a vertex
+ with TYPE_UNKNOWN, then that edge is the desired separator edge between
+ R and W.  We mark that edge and save information about it.
+
+ Finally, we put the vertex types along [R ... W] back to TYPE_UNKNOWN.
+
+ This method sets the * pW, *pX and *pY values with the endpoints of
+ the separator edge, if one is found.  It does not set the visited flags in
+ the edge records because it is easier to set it later.
+
+ Returns TRUE if separator edge found or FALSE otherwise
+ ****************************************************************************/
+
+int _K4_FindSeparatingInternalEdge(theGraph, int R, int W, int prevLink, int *pW, int *pX, int *pY)
+{
+	int Z, ZPrevLink, J, neighbor;
+
+	// Mark the vertex types along the path [R ... W] as visited
+	theGraph->G[R].type = TYPE_VERTEX_VISITED;
+	ZPrevLink = prevLink;
+	Z = R;
+	while (Z != W)
+	{
+		Z = _GetNextVertexOnExternalFace(theGraph, Z, &ZPrevLink);
+		theGraph->G[Z].type = TYPE_VERTEX_VISITED;
+	}
+
+	// Search each of the vertices in the range (R ... W)
+	*pX = *pY = NIL;
+	ZPrevLink = prevLink;
+	Z = _GetNextVertexOnExternalFace(theGraph, R, &ZPrevLink);;
+	while (Z != W)
+	{
+		// Search for a separator among the edges of Z
+		// It is OK to not bother skipping the external face edges, since we
+		// know they are marked with TYPE_VERTEX_VISITED
+	    J = gp_GetFirstArc(theGraph, Z);
+	    while (gp_IsArc(theGraph, J))
+	    {
+	        neighbor = theGraph->G[J].v;
+	        if (theGraph->G[neighbor].type == TYPE_UNKNOWN)
+	        {
+	        	*pW = W;
+	        	*pX = Z;
+	        	*pY = neighbor;
+	        	break;
+	        }
+	        J = gp_GetNextArc(theGraph, J);
+	    }
+
+	    // If we found the separator edge, then we don't need to go on
+	    if (*pX != NIL)
+	    	break;
+
+		// Go to the next vertex
+		Z = _GetNextVertexOnExternalFace(theGraph, Z, &ZPrevLink);
+	}
+
+	// Restore the vertex types along the path [R ... W] to the unknown state
+	theGraph->G[R].type = TYPE_UNKNOWN;
+	ZPrevLink = prevLink;
+	Z = R;
+	while (Z != W)
+	{
+		Z = _GetNextVertexOnExternalFace(theGraph, Z, &ZPrevLink);
+		theGraph->G[Z].type = TYPE_UNKNOWN;
+	}
+
+	return *pX == NIL ? FALSE : TRUE;
+}
+
+/****************************************************************************
+ ****************************************************************************/
 int  _K4_IsolateMinorA1(graphP theGraph)
 {
 	// TO DO
 	return NOTOK;
 }
 
+/****************************************************************************
+ ****************************************************************************/
 int  _K4_IsolateMinorA2(graphP theGraph)
 {
 	// TO DO
 	return NOTOK;
 }
 
+/****************************************************************************
+ ****************************************************************************/
 int  _K4_IsolateMinorB1(graphP theGraph)
 {
 	// TO DO
 	return NOTOK;
 }
 
+/****************************************************************************
+ ****************************************************************************/
 int  _K4_IsolateMinorB2(graphP theGraph)
 {
 	// TO DO

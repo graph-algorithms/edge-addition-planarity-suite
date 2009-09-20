@@ -103,6 +103,8 @@ extern "C" {
 
 #define TYPE_UNKNOWN            0
 
+#define TYPE_VERTEX_VISITED		1
+
 #define EDGE_DFSCHILD           1
 #define EDGE_FORWARD            2
 #define EDGE_BACK               3
