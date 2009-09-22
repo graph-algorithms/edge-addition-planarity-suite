@@ -15,6 +15,7 @@ extern int K4SEARCH_ID;
 
 /* Imported functions */
 
+extern void _ClearIsolatorContext(graphP theGraph);
 extern void _FillVisitedFlags(graphP, int);
 extern void _FillVisitedFlagsInBicomp(graphP theGraph, int BicompRoot, int FillValue);
 extern void _FillVisitedFlagsInOtherBicomps(graphP theGraph, int BicompRoot, int FillValue);
@@ -35,6 +36,7 @@ extern void _InvertVertex(graphP theGraph, int V);
 extern void _SetVertexTypesForMarkingXYPath(graphP theGraph);
 extern int  _MarkHighestXYPath(graphP theGraph);
 
+extern int  _FindUnembeddedEdgeToAncestor(graphP theGraph, int cutVertex, int *pAncestor, int *pDescendant);
 extern int  _FindUnembeddedEdgeToCurVertex(graphP theGraph, int cutVertex, int *pDescendant);
 extern int  _FindUnembeddedEdgeToSubtree(graphP theGraph, int ancestor, int SubtreeRoot, int *pDescendant);
 
@@ -48,7 +50,8 @@ extern int  _GetLeastAncestorConnection(graphP theGraph, int cutVertex);
 extern int  _MarkDFSPathsToDescendants(graphP theGraph);
 extern int  _AddAndMarkUnembeddedEdges(graphP theGraph);
 
-extern int  _ChooseTypeOfNonOuterplanarityMinor(graphP theGraph, int I, int R);
+extern int  _IsolateOuterplanarityObstructionA(graphP theGraph);
+extern int  _IsolateOuterplanarityObstructionB(graphP theGraph);
 extern int  _IsolateOuterplanarityObstructionE(graphP theGraph);
 
 /* Private functions for K4 searching (exposed to the extension). */
@@ -62,9 +65,9 @@ int  _SearchForK4InBicomp(graphP theGraph, K4SearchContext *context, int I, int 
 int  _K4_ChooseTypeOfNonOuterplanarityMinor(graphP theGraph, int I, int R);
 
 int  _K4_FindSecondActiveVertexOnLowExtFacePath(graphP theGraph);
-int  _K4_ReduceBicompToEdge(graphP theGraph);
+int  _K4_ReduceBicompToEdge(graphP theGraph, int R, int W);
 int  _K4_FindPlanarityActiveVertex(graphP theGraph, int I, int R, int prevLink, int *pW);
-int  _K4_FindSeparatingInternalEdge(theGraph, int R, int W, int prevLink, int *pW, int *pX, int *pY);
+int  _K4_FindSeparatingInternalEdge(graphP theGraph, int R, int W, int prevLink, int *pW, int *pX, int *pY);
 
 int  _K4_FinishIsolatorContextInitialization(graphP theGraph, K4SearchContext *context);
 int  _K4_ReduceExternalFacePathToEdge(graphP theGraph, K4SearchContext *context, int u, int x, int edgeType);
@@ -219,10 +222,22 @@ isolatorContextP IC = &theGraph->IC;
             if (_K4_RestoreAndOrientReducedPaths(theGraph, context) != OK)
                 return NOTOK;
 
-            // TO DO: there needs to be some kind of "FinishIsolatorContextInitialization"
-            // logic that does more work on the visited flags.  Maybe because we're catching
-            // it before any markings at all, we could just fill all flags with 0?
-            // What about the "find" calls in that function?
+            // Set up to isolate K4 homeomorph
+            _FillVisitedFlags(theGraph, 0);
+
+            if (_FindUnembeddedEdgeToCurVertex(theGraph, IC->w, &IC->dw) != TRUE)
+                return NOTOK;
+
+            if (IC->uz < IC->v)
+            {
+            	if (_FindUnembeddedEdgeToAncestor(theGraph, IC->z, &IC->uz, &IC->dz) != TRUE)
+            		return NOTOK;
+            }
+            else
+            {
+                if (_FindUnembeddedEdgeToCurVertex(theGraph, IC->z, &IC->dz) != TRUE)
+                    return NOTOK;
+            }
 
     		// Isolate the K4 homeomorph
     		if (_K4_IsolateMinorA1(theGraph) != OK  ||
@@ -234,7 +249,7 @@ isolatorContextP IC = &theGraph->IC;
     	}
 
     	// Case A2: Test whether the bicomp has an XY path
-    	_SetVertexTypesForMarkingXYPath(graphP theGraph);
+    	_SetVertexTypesForMarkingXYPath(theGraph);
         if (_MarkHighestXYPath(theGraph) == TRUE)
         {
         	// Restore the orientations of the vertices in the bicomp, then orient
@@ -244,10 +259,11 @@ isolatorContextP IC = &theGraph->IC;
             if (_K4_RestoreAndOrientReducedPaths(theGraph, context) != OK)
                 return NOTOK;
 
-            // TO DO: there needs to be some kind of "FinishIsolatorContextInitialization"
-            // logic that does more work on the visited flags.  Maybe because we're catching
-            // it before any markings at all, we could just fill all flags with 0?
-            // What about the "find" calls in that function?
+            // Set up to isolate K4 homeomorph
+            _FillVisitedFlags(theGraph, 0);
+
+            if (_FindUnembeddedEdgeToCurVertex(theGraph, IC->w, &IC->dw) != TRUE)
+                return NOTOK;
 
     		// Isolate the K4 homeomorph
     		if (_K4_IsolateMinorA2(theGraph) != OK ||
@@ -285,8 +301,16 @@ isolatorContextP IC = &theGraph->IC;
     	// isolate a subgraph homeomorphic to K4.
     	if (FUTUREPERTINENT(theGraph, a_x, I) && FUTUREPERTINENT(theGraph, a_y, I))
     	{
+            _OrientVerticesInEmbedding(theGraph);
+            if (_K4_RestoreAndOrientReducedPaths(theGraph, context) != OK)
+                return NOTOK;
+
+            // Set up to isolate K4 homeomorph
+            _FillVisitedFlags(theGraph, 0);
+
     		// TO DO: finish init then isolate K4 from case B1, then return NONEMBEDDABLE
     		return NOTOK;
+    		//return NONEMBEDDABLE;
     	}
 
     	// Case B2: Determine whether there is an internal separating X-Y path for a_x or for a_y
@@ -294,8 +318,20 @@ isolatorContextP IC = &theGraph->IC;
     	if (_K4_FindSeparatingInternalEdge(theGraph, R, a_x, 1, &IC->w, &IC->px, &IC->py) == TRUE ||
     		_K4_FindSeparatingInternalEdge(theGraph, R, a_y, 0, &IC->w, &IC->py, &IC->px) == TRUE)
     	{
+            _OrientVerticesInEmbedding(theGraph);
+            if (_K4_RestoreAndOrientReducedPaths(theGraph, context) != OK)
+                return NOTOK;
+
+            // Set up to isolate K4 homeomorph
+            _FillVisitedFlags(theGraph, 0);
+
     		// TO DO: finish init then isolate K4 from case B2, then return NONEMBEDDABLE
+
+    		// First subcase of B2 can be reduced to E
+    		// Second subcase of B2 can be reduced to A2 by changing v to u
+
     		return NOTOK;
+    		//return NONEMBEDDABLE;
     	}
 
     	// TO DO: If pattern not found, make reductions along a_x and a_y paths, then return OK
@@ -303,6 +339,7 @@ isolatorContextP IC = &theGraph->IC;
     	// TO DO: Returning OK is the way to get the embedder to proceed to the next
     	// iteration, but we actually need to continue the *WalkDown* on the bicomp
     	return NOTOK;
+		//return OK;
     }
 
 	// Minor E indicates the desired K4 homeomorph, so we isolate it and return NONEMBEDDABLE
@@ -314,11 +351,9 @@ isolatorContextP IC = &theGraph->IC;
         if (_K4_RestoreAndOrientReducedPaths(theGraph, context) != OK)
             return NOTOK;
 
-        // TO DO: there needs to be some kind of "FinishIsolatorContextInitialization"
-        // logic that does more work on the visited flags.  Maybe because we're catching
-        // it before any markings below, we could just fill all flags with 0?
-
         // Set up to isolate minor E
+        _FillVisitedFlags(theGraph, 0);
+
         if (_FindUnembeddedEdgeToCurVertex(theGraph, IC->w, &IC->dw) != TRUE)
             return NOTOK;
 
@@ -567,7 +602,7 @@ int  _K4_FindPlanarityActiveVertex(graphP theGraph, int I, int R, int prevLink, 
  Returns TRUE if separator edge found or FALSE otherwise
  ****************************************************************************/
 
-int _K4_FindSeparatingInternalEdge(theGraph, int R, int W, int prevLink, int *pW, int *pX, int *pY)
+int _K4_FindSeparatingInternalEdge(graphP theGraph, int R, int W, int prevLink, int *pW, int *pX, int *pY)
 {
 	int Z, ZPrevLink, J, neighbor;
 
@@ -626,19 +661,43 @@ int _K4_FindSeparatingInternalEdge(theGraph, int R, int W, int prevLink, int *pW
 }
 
 /****************************************************************************
+ _K4_IsolateMinorA1()
+
+ This pattern is essentially outerplanarity minor A, a K_{2,3}, except we get
+ a K_4 via the additional path from some vertex Z to the current vertex.
+ This path may be via some descendant of Z, and it may be a future pertinent
+ connection to an ancestor of the current vertex.
  ****************************************************************************/
 int  _K4_IsolateMinorA1(graphP theGraph)
 {
-	// TO DO
-	return NOTOK;
+	isolatorContextP IC = &theGraph->IC;
+
+	if (IC->uz < IC->v)
+	{
+		if (theGraph->functions.fpMarkDFSPath(theGraph, IC->uz, IC->v) != OK)
+			return OK;
+	}
+
+	if (theGraph->functions.fpMarkDFSPath(theGraph, IC->z, IC->dz) != OK)
+    	return NOTOK;
+
+	if (_IsolateOuterplanarityObstructionA(theGraph) != OK)
+		return NOTOK;
+
+    if (_AddAndMarkEdge(theGraph, IC->uz, IC->dz) != OK)
+        return NOTOK;
+
+	return OK;
 }
 
 /****************************************************************************
  ****************************************************************************/
 int  _K4_IsolateMinorA2(graphP theGraph)
 {
-	// TO DO
-	return NOTOK;
+    if (_MarkHighestXYPath(theGraph) != TRUE)
+    	return NOTOK;
+
+	return _IsolateOuterplanarityObstructionA(theGraph);
 }
 
 /****************************************************************************
