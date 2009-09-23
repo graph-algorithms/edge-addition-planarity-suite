@@ -423,6 +423,9 @@ isolatorContextP IC = &theGraph->IC;
  such that either the leastAncestor or the lowpoint of a separated DFS child
  is less than I.  We obtain the minimum possible connection from the cutVertex
  to an ancestor of I.
+ NOTE: the separatedDFSChildList is sorted by lowpoint, so the first entry
+       has the lowest lowpoint, i.e. is the "most" externally active.
+       This is why we only need to look at the first entry.
  ****************************************************************************/
 
 int  _GetLeastAncestorConnection(graphP theGraph, int cutVertex)
@@ -448,6 +451,14 @@ int  ancestor = theGraph->V[cutVertex].leastAncestor;
  leastAncestor or the lowpoint of a separated DFS child is less than I.
  We obtain the minimum possible connection from the cutVertex to an ancestor
  of I, then compute the descendant accordingly.
+
+ NOTE: the separatedDFSChildList is sorted by lowpoint, so the first entry
+       has the lowest lowpoint, i.e. is the "most" externally active.
+       This is why we only need to look at the first entry. Even if the
+       cutVertex is externally active but pertinent, any internally active
+       pertinent child bicomps would be later in the separatedDFSChildList
+       because their internal activity suggests a higher lowpoint value.
+
  Returns TRUE if found, FALSE otherwise.
  ****************************************************************************/
 
