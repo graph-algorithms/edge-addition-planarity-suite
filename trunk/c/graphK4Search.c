@@ -308,9 +308,23 @@ isolatorContextP IC = &theGraph->IC;
             // Set up to isolate K4 homeomorph
             _FillVisitedFlags(theGraph, 0);
 
-    		// TO DO: finish init then isolate K4 from case B1, then return NONEMBEDDABLE
-    		return NOTOK;
-    		//return NONEMBEDDABLE;
+            if (_FindUnembeddedEdgeToCurVertex(theGraph, IC->w, &IC->dw) != TRUE)
+                return NOTOK;
+
+            IC->x = a_x;
+            IC->y = a_y;
+
+           	if (_FindUnembeddedEdgeToAncestor(theGraph, IC->x, &IC->ux, &IC->dx) != TRUE ||
+           		_FindUnembeddedEdgeToAncestor(theGraph, IC->y, &IC->uy, &IC->dy) != TRUE)
+           		return NOTOK;
+
+    		// Isolate the K4 homeomorph
+    		if (_K4_IsolateMinorB1(theGraph) != OK  ||
+    			_DeleteUnmarkedVerticesAndEdges(theGraph) != OK)
+    			return NOTOK;
+
+            // Indicate success by returning NONEMBEDDABLE
+    		return NONEMBEDDABLE;
     	}
 
     	// Case B2: Determine whether there is an internal separating X-Y path for a_x or for a_y
@@ -691,6 +705,11 @@ int  _K4_IsolateMinorA1(graphP theGraph)
 }
 
 /****************************************************************************
+ _K4_IsolateMinorA2()
+
+ This pattern is essentially outerplanarity minor A, a K_{2,3}, except we get
+ a K_4 via an additional path within the main bicomp, which is guaranteed to
+ exist by the time this method is invoked.
  ****************************************************************************/
 int  _K4_IsolateMinorA2(graphP theGraph)
 {
@@ -701,11 +720,34 @@ int  _K4_IsolateMinorA2(graphP theGraph)
 }
 
 /****************************************************************************
+ _K4_IsolateMinorB1()
+
+ This is essentially outerplanarity minor B, a K_{2,3}, except we geta  K_4
+ via an additional path from a_x through ancestors of the current vertex to a_y.
  ****************************************************************************/
 int  _K4_IsolateMinorB1(graphP theGraph)
 {
-	// TO DO
-	return NOTOK;
+	isolatorContextP IC = &theGraph->IC;
+
+	if (theGraph->functions.fpMarkDFSPath(theGraph, IC->x, IC->dx) != OK)
+    	return NOTOK;
+
+	if (theGraph->functions.fpMarkDFSPath(theGraph, IC->y, IC->dy) != OK)
+    	return NOTOK;
+
+	if (theGraph->functions.fpMarkDFSPath(theGraph, MIN(IC->ux, IC->uy), MAX(IC->ux, IC->uy)) != OK)
+    	return NOTOK;
+
+	if (_IsolateOuterplanarityObstructionB(theGraph) != OK)
+		return NOTOK;
+
+    if (_AddAndMarkEdge(theGraph, IC->ux, IC->dx) != OK)
+        return NOTOK;
+
+    if (_AddAndMarkEdge(theGraph, IC->uy, IC->dy) != OK)
+        return NOTOK;
+
+	return OK;
 }
 
 /****************************************************************************
