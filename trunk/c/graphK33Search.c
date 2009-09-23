@@ -852,6 +852,14 @@ int  listHead, child, descendant;
 
 /****************************************************************************
  _FindExternalConnectionDescendantEndpoint()
+
+ This operation is similar to _FindUnembeddedEdgeToAncestor() except that
+ we need to be more precise in this case, finding an external connection
+ from a given cut vertex to a *particular* given ancestor.
+
+ NOTE: By external we don't mean externall active so much as not embedded in
+       the bicomp containing the cut vertex.
+
  Returns OK if it finds that either the given cutVertex or one of its
     descendants in a separated bicomp has an unembedded back edge
     connection to the given ancestor vertex.
