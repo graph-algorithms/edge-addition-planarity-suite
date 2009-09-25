@@ -80,6 +80,9 @@ int  _K4_SetEdgeType(graphP theGraph, int u, int v);
 int  _K4_OrientPath(graphP theGraph, int u, int v, int w, int x);
 void _K4_SetVisitedOnPath(graphP theGraph, int u, int v, int w, int x, int visited);
 
+int _MarkEdge(graphP theGraph, int u, int v);
+
+
 /****************************************************************************
  _SearchForK4()
  ****************************************************************************/
@@ -333,11 +336,23 @@ isolatorContextP IC = &theGraph->IC;
             // Set up to isolate K4 homeomorph
             _FillVisitedFlags(theGraph, 0);
 
-    		// TO DO: finish init then isolate K4 from case B2, then return NONEMBEDDABLE
+            if (PERTINENT(theGraph, IC->w))
+            {
+                if (_FindUnembeddedEdgeToCurVertex(theGraph, IC->w, &IC->dw) != TRUE)
+                    return NOTOK;
+            }
+            else
+            {
+            	if (_FindUnembeddedEdgeToAncestor(theGraph, IC->z, &IC->uz, &IC->dz) != TRUE)
+            		return NOTOK;
+            }
 
-    		// First subcase of B2 can be reduced to E
-    		// Second subcase of B2 can be reduced to A2 by changing v to u
+    		// Isolate the K4 homeomorph
+    		if (_K4_IsolateMinorB2(theGraph) != OK  ||
+    			_DeleteUnmarkedVerticesAndEdges(theGraph) != OK)
+    			return NOTOK;
 
+            // Indicate success by returning NONEMBEDDABLE
     		return NONEMBEDDABLE;
     	}
 
@@ -747,6 +762,7 @@ int _K4_FindSeparatingInternalEdge(graphP theGraph, int R, int W, int prevLink, 
  This path may be via some descendant of Z, and it may be a future pertinent
  connection to an ancestor of the current vertex.
  ****************************************************************************/
+
 int  _K4_IsolateMinorA1(graphP theGraph)
 {
 	isolatorContextP IC = &theGraph->IC;
@@ -773,12 +789,20 @@ int  _K4_IsolateMinorA1(graphP theGraph)
  _K4_IsolateMinorA2()
 
  This pattern is essentially outerplanarity minor A, a K_{2,3}, except we get
- a K_4 via an additional path within the main bicomp, which is guaranteed to
- exist by the time this method is invoked.
+ a K_4 via an additional X-Y path within the main bicomp, which is guaranteed
+ to exist by the time this method is invoked.
+ One might think to simply invoke _MarkHighestXYPath() to obtain the path,
+ but the IC->px and IC->py values are already set before invoking this method,
+ and the bicomp is outerplanar, so the XY path is just an edge. Also, one
+ subcase of pattern B2 reduces to this pattern, except that the XY path is
+ determined by the B2 isolator.
  ****************************************************************************/
+
 int  _K4_IsolateMinorA2(graphP theGraph)
 {
-    if (_MarkHighestXYPath(theGraph) != TRUE)
+	isolatorContextP IC = &theGraph->IC;
+
+    if (_MarkEdge(theGraph, IC->px, IC->py) != TRUE)
     	return NOTOK;
 
 	return _IsolateOuterplanarityObstructionA(theGraph);
@@ -790,6 +814,7 @@ int  _K4_IsolateMinorA2(graphP theGraph)
  This is essentially outerplanarity minor B, a K_{2,3}, except we geta  K_4
  via an additional path from a_x through ancestors of the current vertex to a_y.
  ****************************************************************************/
+
 int  _K4_IsolateMinorB1(graphP theGraph)
 {
 	isolatorContextP IC = &theGraph->IC;
@@ -816,11 +841,36 @@ int  _K4_IsolateMinorB1(graphP theGraph)
 }
 
 /****************************************************************************
+ _K4_IsolateMinorB2()
+
+ The first subcase of B2 can be reduced to outerplanarity obstruction E
+ The second subcase of B2 can be reduced to A2 by changing v to u
  ****************************************************************************/
+
 int  _K4_IsolateMinorB2(graphP theGraph)
 {
-	// TO DO
-	return NOTOK;
+	isolatorContextP IC = &theGraph->IC;
+
+	// First subcase, the active vertex is pertinent
+    if (PERTINENT(theGraph, IC->w))
+    {
+        if (_MarkEdge(theGraph, IC->px, IC->py) != TRUE)
+        	return NOTOK;
+
+    	return _IsolateOuterplanarityObstructionE(theGraph);
+    }
+
+    // Second subcase, the active vertex is future pertinent
+    else if (FUTUREPERTINENT(theGraph, IC->w, IC->v))
+    {
+    	IC->r = IC->v;
+    	IC->v = IC->uz;
+    	IC->dw = IC->dz;
+
+    	return _K4_IsolateMinorA2(theGraph);
+    }
+
+	return OK;
 }
 
 /****************************************************************************
@@ -1146,3 +1196,23 @@ int  e = gp_GetNeighborEdgeRecord(theGraph, u, v);
          e = gp_GetNextArcCircular(theGraph, e);
      } while (v != x);
 }
+
+/****************************************************************************
+ _MarkEdge()
+ If the edge (u, v) is found, it is marked visited.
+ Returns TRUE if the edge is found, FALSE otherwise.
+ ****************************************************************************/
+
+int _MarkEdge(graphP theGraph, int u, int v)
+{
+	int eu = gp_GetNeighborEdgeRecord(theGraph, u, v);
+	if (gp_IsArc(theGraph, eu))
+	{
+		int ev = gp_GetTwinArc(theGraph, eu);
+		theGraph->G[u].visited = theGraph->G[v].visited =
+		theGraph->G[eu].visited = theGraph->G[ev].visited = 1;
+		return TRUE;
+	}
+	return FALSE;
+}
+
