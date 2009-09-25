@@ -38,7 +38,6 @@ extern int  _MarkHighestXYPath(graphP theGraph);
 
 extern int  _FindUnembeddedEdgeToAncestor(graphP theGraph, int cutVertex, int *pAncestor, int *pDescendant);
 extern int  _FindUnembeddedEdgeToCurVertex(graphP theGraph, int cutVertex, int *pDescendant);
-extern int  _FindUnembeddedEdgeToSubtree(graphP theGraph, int ancestor, int SubtreeRoot, int *pDescendant);
 
 extern int  _MarkPathAlongBicompExtFace(graphP theGraph, int startVert, int endVert);
 
@@ -57,7 +56,6 @@ extern int  _IsolateOuterplanarityObstructionE(graphP theGraph);
 /* Private functions for K4 searching (exposed to the extension). */
 
 int  _SearchForK4(graphP theGraph, int I);
-
 int  _SearchForK4InBicomp(graphP theGraph, K4SearchContext *context, int I, int R);
 
 /* Private functions for K4 searching. */
@@ -65,26 +63,22 @@ int  _SearchForK4InBicomp(graphP theGraph, K4SearchContext *context, int I, int 
 int  _K4_ChooseTypeOfNonOuterplanarityMinor(graphP theGraph, int I, int R);
 
 int  _K4_FindSecondActiveVertexOnLowExtFacePath(graphP theGraph);
-int  _K4_ReduceBicompToEdge(graphP theGraph, int R, int W);
 int  _K4_FindPlanarityActiveVertex(graphP theGraph, int I, int R, int prevLink, int *pW);
 int  _K4_FindSeparatingInternalEdge(graphP theGraph, int R, int W, int prevLink, int *pW, int *pX, int *pY);
-
-int  _K4_FinishIsolatorContextInitialization(graphP theGraph, K4SearchContext *context);
-int  _K4_ReduceExternalFacePathToEdge(graphP theGraph, K4SearchContext *context, int u, int x, int edgeType);
-int  _K4_ReduceXYPathToEdge(graphP theGraph, K4SearchContext *context, int u, int x, int edgeType);
-int  _K4_RestoreReducedPath(graphP theGraph, K4SearchContext *context, int J);
-int  _K4_RestoreAndOrientReducedPaths(graphP theGraph, K4SearchContext *context);
-int  _K4_SetEdgeType(graphP theGraph, int u, int v);
-int  _K4_OrientPath(graphP theGraph, int u, int v, int w, int x);
-void _K4_SetVisitedOnPath(graphP theGraph, int u, int v, int w, int x, int visited);
-int  _K4_FindExternalConnectionDescendantEndpoint(graphP theGraph, int ancestor,
-                                                  int cutVertex, int *pDescendant);
 
 int  _K4_IsolateMinorA1(graphP theGraph);
 int  _K4_IsolateMinorA2(graphP theGraph);
 int  _K4_IsolateMinorB1(graphP theGraph);
 int  _K4_IsolateMinorB2(graphP theGraph);
 
+int  _K4_ReducePathComponent(graphP theGraph, int R, int A);
+int  _K4_ReduceBicompToEdge(graphP theGraph, int R, int W);
+
+int  _K4_RestoreReducedPath(graphP theGraph, K4SearchContext *context, int J);
+int  _K4_RestoreAndOrientReducedPaths(graphP theGraph, K4SearchContext *context);
+int  _K4_SetEdgeType(graphP theGraph, int u, int v);
+int  _K4_OrientPath(graphP theGraph, int u, int v, int w, int x);
+void _K4_SetVisitedOnPath(graphP theGraph, int u, int v, int w, int x, int visited);
 
 /****************************************************************************
  _SearchForK4()
@@ -344,16 +338,17 @@ isolatorContextP IC = &theGraph->IC;
     		// First subcase of B2 can be reduced to E
     		// Second subcase of B2 can be reduced to A2 by changing v to u
 
-    		return NOTOK;
-    		//return NONEMBEDDABLE;
+    		return NONEMBEDDABLE;
     	}
 
-    	// TO DO: If pattern not found, make reductions along a_x and a_y paths, then return OK
+    	// If K_4 homeomorph not found, make reductions along a_x and a_y paths.
+    	if (_K4_ReducePathComponent(theGraph, R, a_x) != OK ||
+    		_K4_ReducePathComponent(theGraph, R, a_y) != OK)
+    		return NOTOK;
 
-    	// TO DO: Returning OK is the way to get the embedder to proceed to the next
-    	// iteration, but we actually need to continue the *WalkDown* on the bicomp
-    	return NOTOK;
-		//return OK;
+    	// Return OK to indicate that WalkDown processing may proceed to resolve
+    	// more of the pertinence of this bicomp.
+		return OK;
     }
 
 	// Minor E indicates the desired K4 homeomorph, so we isolate it and return NONEMBEDDABLE
@@ -398,6 +393,7 @@ isolatorContextP IC = &theGraph->IC;
  part of the bicomp and the operations here need to avoid touching parts
  of the bicomp that won't be reduced, except by a constant amount of course.
  ****************************************************************************/
+
 int  _K4_ChooseTypeOfNonOuterplanarityMinor(graphP theGraph, int I, int R)
 {
     int  XPrevLink=1, YPrevLink=0;
@@ -489,6 +485,7 @@ int  _K4_ChooseTypeOfNonOuterplanarityMinor(graphP theGraph, int I, int R)
 
  TO DO: Double-check the isolator context input requirements and output expectations
  ****************************************************************************/
+
 int _K4_FindSecondActiveVertexOnLowExtFacePath(graphP theGraph)
 {
     int Z, ZPrevLink;
@@ -562,11 +559,79 @@ int  _K4_ReduceBicompToEdge(graphP theGraph, int R, int W)
 }
 
 /****************************************************************************
+ _K4_ReducePathComponent()
+
+ This method is invoked when the bicomp rooted by R contains a component
+ subgraph that is separable from the bicomp by the 2-cut (R, A). The K_4
+ homeomorph isolator will have processed a significant fraction of the
+ component, and so it must be reduced to an edge to ensure that said
+ processing happens at most once on the component (except for future
+ operations that are bound to linear time in total by other arguments).
+
+ Because the bicomp is an outerplanar embedding, the component is known to
+ consists of an external face path plus some internal edges that are parallel
+ to that path. Otherwise, it wouldn't be separable by the 2-cut (R, A).
+
+ The goal of this method is to reduce the component to the edge (R, A). This
+ is done in such a way that, if the reduction must be restored, the DFS tree
+ structure connecting the restored vertices is retained.
+
+ The first step is to ensure that (R, A) is not already just an edge, in which
+ case no reduction is needed. This can occur if A is future pertinent.
+
+ Assuming a non-trivial reduction component, the next step is to determine
+ the DFS tree structure within the component. Because it is separable by the
+ 2-cut (R, A), there are only two cases:
+
+ Case 1: The DFS tree path from A to R is within the reduction component.
+
+ In this case, the DFS tree path is marked, the remaining edges of the
+ reduction component are eliminated, and then the DFS tree path is reduced to
+ the the tree edge (R, A).
+
+ Note that the reduction component may also contain descendants of A as well
+ as vertices that are descendant to R but are neither ancestors nor
+ descendants of A. This depends on where the tree edge from R meets the
+ external face path (R ... A). However, the reduction component can only
+ contribute one path to any future K_4, so it suffices to preserve only the
+ DFS tree path (A --> R).
+
+ Case 2: The DFS tree path from A to R is not within the reduction component.
+
+ In this case, the external face edge from R leads to a descendant D of A.
+ We mark that back edge (R, D) plus the DFS tree path (D --> A). The
+ remaining edges of the reduction component can be removed, and then the
+ path (R, D, ..., A) is reduced to the edge (R, A).
+
+ For the sake of contradiction, suppose that only part of the DFS tree path
+ from A to R were contained by the reduction component. Then, a DFS tree edge
+ would have to exit the reduction component and connect to some vertex not
+ on the external face path (R, ..., A). This contradicts the assumption that
+ the reduction subgraph is separable from the bicomp by the 2-cut (R, A).
+
+ Returns OK for success, NOTOK for internal (implementation) error.
+ ****************************************************************************/
+
+int  _K4_ReducePathComponent(graphP theGraph, int R, int A)
+{
+	// Check whether the external face path (R, ..., A) is just an edge
+
+	// Check for Case 1: The DFS tree path from A to R is within the reduction component
+
+	// Otherwise Case 2: The DFS tree path from A to R is not within the reduction component
+
+	// TO DO: finish this, then return OK
+	// RETURN OK;
+	return NOTOK;
+}
+
+/****************************************************************************
  _K4_FindPlanarityActiveVertex()
  This service routine starts out at R and heads off in the direction opposite
  the prevLink to find the first "planarity active" vertex, i.e. the first one
  that is pertinent or future pertinent.
  ****************************************************************************/
+
 int  _K4_FindPlanarityActiveVertex(graphP theGraph, int I, int R, int prevLink, int *pW)
 {
 	int W = R, WPrevLink = prevLink;
@@ -759,275 +824,6 @@ int  _K4_IsolateMinorB2(graphP theGraph)
 }
 
 /****************************************************************************
- _K4_FinishIsolatorContextInitialization()
- Once it has been decided that a desired subgraph can be isolated, it
- becomes safe to finish the isolator context initialization.
- IMPLEMENTATION NOT CHECKED FOR CORRECTNESS
- ****************************************************************************/
-
-int  _K4_FinishIsolatorContextInitialization(graphP theGraph, K4SearchContext *context)
-{
-isolatorContextP IC = &theGraph->IC;
-
-/* Restore the orientation of the bicomp on which we're working, then
-    perform orientation of all vertices in graph. (An unnecessary but
-    polite step that simplifies the description of key states of the
-    data structures). */
-
-     _OrientVerticesInBicomp(theGraph, IC->r, 1);
-     _OrientVerticesInEmbedding(theGraph);
-
-/* Restore any paths that were reduced to single edges */
-
-     if (_K4_RestoreAndOrientReducedPaths(theGraph, context) != OK)
-         return NOTOK;
-
-/* We assume that the current bicomp has been marked appropriately,
-     but we must now clear the visitation flags of all other bicomps. */
-
-     _FillVisitedFlagsInOtherBicomps(theGraph, IC->r, 0);
-
-/* To complete the normal behavior of _FillVisitedFlags() in the
-    normal isolator context initialization, we also have to clear
-    the visited flags on all edges that have not yet been embedded */
-
-     _FillVisitedFlagsInUnembeddedEdges(theGraph, 0);
-
-/* Now we can find the descendant ends of unembedded back edges based on
-     the ancestor settings ux, uy and uz. */
-
-     if (_K4_FindExternalConnectionDescendantEndpoint(theGraph, IC->ux, IC->x, &IC->dx) != OK ||
-         _K4_FindExternalConnectionDescendantEndpoint(theGraph, IC->uy, IC->y, &IC->dy) != OK ||
-         _K4_FindExternalConnectionDescendantEndpoint(theGraph, IC->uz, IC->z, &IC->dz) != OK)
-         return NOTOK;
-
-/* Finally, we obtain the descendant end of an unembedded back edge to
-     the current vertex. */
-
-     if (_FindUnembeddedEdgeToCurVertex(theGraph, IC->w, &IC->dw) != TRUE)
-         return NOTOK;
-
-     return OK;
-}
-
-/****************************************************************************
- _K4_FindExternalConnectionDescendantEndpoint()
- Returns OK if it finds that either the given cutVertex or one of its
-    descendants in a separated bicomp has an unembedded back edge
-    connection to the given ancestor vertex.
- Returns NOTOK otherwise (it is an error to not find the descendant because
-    this function is only called if _SearchForDescendantExternalConnection()
-    has already determined the existence of the descendant).
-  NOT CHECKED FOR CORRECTNESS OR SUITABILITY TO THIS ALGORITHM; MAY BE ABLE TO MAKE INTO A COMMON UTIL
- ****************************************************************************/
-
-int  _K4_FindExternalConnectionDescendantEndpoint(graphP theGraph, int ancestor,
-                                               int cutVertex, int *pDescendant)
-{
-int  listHead, child, J;
-
-     // Check whether the cutVertex is directly adjacent to the ancestor
-     // by an unembedded back edge.
-
-     J = theGraph->V[ancestor].fwdArcList;
-     while (gp_IsArc(theGraph, J))
-     {
-         if (theGraph->G[J].v == cutVertex)
-         {
-             *pDescendant = cutVertex;
-             return OK;
-         }
-
-         J = gp_GetNextArc(theGraph, J);
-         if (J == theGraph->V[ancestor].fwdArcList)
-             J = NIL;
-     }
-
-     // Now check the descendants of the cut vertex to see if any make
-     // a connection to the ancestor.
-     listHead = child = theGraph->V[cutVertex].separatedDFSChildList;
-     while (child != NIL)
-     {
-         if (theGraph->V[child].Lowpoint >= theGraph->IC.v)
-             break;
-
-         if (_FindUnembeddedEdgeToSubtree(theGraph, ancestor, child, pDescendant) == TRUE)
-             return OK;
-
-         child = LCGetNext(theGraph->DFSChildLists, listHead, child);
-     }
-
-     return NOTOK;
-}
-
-/****************************************************************************
- _K4_ComputeArcType()
- This is just a little helper function that automates a sequence of decisions
- that has to be made a number of times.
- An edge record is being added to the adjacency list of a; it indicates that
- b is a neighbor.  The edgeType can be either 'tree' (EDGE_DFSPARENT) or
- 'cycle' (EDGE_BACK).  If a or b is a root copy, we translate to the
- non-virtual counterpart, then determine which has the lesser DFI.  If a
- has the lower DFI then the edge record is a tree edge to a child
- (EDGE_DFSCHILD) if edgeType indicates a tree edge.  If edgeType indicates a
- cycle edge, then it is a forward cycle edge (EDGE_FORWARD) to a descendant.
- Symmetric conditions define the types for a > b.
-
-  NOT CHECKED FOR CORRECTNESS OR SUITABILITY TO THIS ALGORITHM; MAY BE ABLE TO MAKE INTO A COMMON UTIL
-
- ****************************************************************************/
-
-int  _K4_ComputeArcType(graphP theGraph, int a, int b, int edgeType)
-{
-     if (a >= theGraph->N)
-         a = theGraph->V[a - theGraph->N].DFSParent;
-     if (b >= theGraph->N)
-         b = theGraph->V[b - theGraph->N].DFSParent;
-
-     if (a < b)
-         return edgeType == EDGE_DFSPARENT ? EDGE_DFSCHILD : EDGE_FORWARD;
-
-     return edgeType == EDGE_DFSPARENT ? EDGE_DFSPARENT : EDGE_BACK;
-}
-
-/****************************************************************************
- _K4_ReduceExternalFacePathToEdge()
-  NOT CHECKED FOR CORRECTNESS OR SUITABILITY TO THIS ALGORITHM; MAY BE ABLE TO MAKE INTO A COMMON UTIL
- ****************************************************************************/
-
-int  _K4_ReduceExternalFacePathToEdge(graphP theGraph, K4SearchContext *context, int u, int x, int edgeType)
-{
-int  prevLink, v, w, e;
-
-     /* If the path is a single edge, then no need for a reduction */
-
-     prevLink = 1;
-     v = _GetNextVertexOnExternalFace(theGraph, u, &prevLink);
-     if (v == x)
-         return OK;
-
-     /* We have the endpoints u and x of the path, and we just computed the
-        first vertex internal to the path and a neighbor of u.  Now we
-        compute the vertex internal to the path and a neighbor of x. */
-
-     prevLink = 0;
-     w = _GetNextVertexOnExternalFace(theGraph, x, &prevLink);
-
-     /* Delete the two edges that connect the path to the bicomp.
-        If either edge is a reduction edge, then we have to restore
-        the path it represents. We can only afford to visit the
-        endpoints of the path.
-        Note that in the restored path, the edge incident to each
-        endpoint of the original path is a newly added edge,
-        not a reduction edge. */
-
-     e = gp_GetFirstArc(theGraph, u);
-     if (context->G[e].pathConnector != NIL)
-     {
-         if (_K4_RestoreReducedPath(theGraph, context, e) != OK)
-             return NOTOK;
-         e = gp_GetFirstArc(theGraph, u);
-         v = theGraph->G[e].v;
-     }
-     gp_DeleteEdge(theGraph, e, 0);
-
-     e = gp_GetLastArc(theGraph, x);
-     if (context->G[e].pathConnector != NIL)
-     {
-         if (_K4_RestoreReducedPath(theGraph, context, e) != OK)
-             return NOTOK;
-         e = gp_GetLastArc(theGraph, x);
-         w = theGraph->G[e].v;
-     }
-     gp_DeleteEdge(theGraph, e, 0);
-
-     /* Add the reduction edge, then set its path connectors so the original
-        path can be recovered and set the edge type so the essential structure
-        of the DFS tree can be maintained (The 'Do X to Bicomp' functions
-        and functions like MarkDFSPath(0 depend on this). */
-
-     gp_AddEdge(theGraph, u, 0, x, 1);
-
-     e = gp_GetFirstArc(theGraph, u);
-     context->G[e].pathConnector = v;
-     theGraph->G[e].type = _K4_ComputeArcType(theGraph, u, x, edgeType);
-
-     e = gp_GetLastArc(theGraph, x);
-     context->G[e].pathConnector = w;
-     theGraph->G[e].type = _K4_ComputeArcType(theGraph, x, u, edgeType);
-
-     /* Set the external face info */
-
-     theGraph->extFace[u].vertex[0] = x;
-     theGraph->extFace[x].vertex[1] = u;
-
-     return OK;
-}
-
-/****************************************************************************
- _K4_ReduceXYPathToEdge()
-  NOT CHECKED FOR CORRECTNESS OR SUITABILITY TO THIS ALGORITHM; MAY BE ABLE TO MAKE INTO A COMMON UTIL
- ****************************************************************************/
-
-int  _K4_ReduceXYPathToEdge(graphP theGraph, K4SearchContext *context, int u, int x, int edgeType)
-{
-int  e, v, w;
-
-     e = gp_GetFirstArc(theGraph, u);
-     e = gp_GetNextArc(theGraph, e);
-     v = theGraph->G[e].v;
-
-     /* If the XY-path is a single edge, then no reduction is needed */
-
-     if (v == x)
-         return OK;
-
-     /* Otherwise, remove the two edges that join the XY-path to the bicomp */
-
-     if (context->G[e].pathConnector != NIL)
-     {
-         if (_K4_RestoreReducedPath(theGraph, context, e) != OK)
-             return NOTOK;
-         e = gp_GetFirstArc(theGraph, u);
-         e = gp_GetNextArc(theGraph, e);
-         v = theGraph->G[e].v;
-     }
-     gp_DeleteEdge(theGraph, e, 0);
-
-     e = gp_GetFirstArc(theGraph, x);
-     e = gp_GetNextArc(theGraph, e);
-     w = theGraph->G[e].v;
-     if (context->G[e].pathConnector != NIL)
-     {
-         if (_K4_RestoreReducedPath(theGraph, context, e) != OK)
-             return NOTOK;
-         e = gp_GetFirstArc(theGraph, x);
-         e = gp_GetNextArc(theGraph, e);
-         w = theGraph->G[e].v;
-     }
-     gp_DeleteEdge(theGraph, e, 0);
-
-     /* Now add a single edge to represent the XY-path */
-     gp_InsertEdge(theGraph, u, gp_GetFirstArc(theGraph, u), 0,
-    		                 x, gp_GetFirstArc(theGraph, x), 0);
-
-     /* Now set up the path connectors so the original XY-path can be recovered if needed.
-        Also, set the reduction edge's type to preserve the DFS tree structure */
-
-     e = gp_GetFirstArc(theGraph, u);
-     e = gp_GetNextArc(theGraph, e);
-     context->G[e].pathConnector = v;
-     theGraph->G[e].type = _K4_ComputeArcType(theGraph, u, x, edgeType);
-
-     e = gp_GetFirstArc(theGraph, x);
-     e = gp_GetNextArc(theGraph, e);
-     context->G[e].pathConnector = w;
-     theGraph->G[e].type = _K4_ComputeArcType(theGraph, x, u, edgeType);
-
-     return OK;
-}
-
-/****************************************************************************
  _K4_RestoreReducedPath()
 
  Given an edge record of an edge used to reduce a path, we want to restore
@@ -1036,7 +832,7 @@ int  e, v, w;
  search for and process those since it would violate the constant time
  bound required of this function.
  return OK on success, NOTOK on failure
-  NOT CHECKED FOR CORRECTNESS OR SUITABILITY TO THIS ALGORITHM; MAY BE ABLE TO MAKE INTO A COMMON UTIL
+ TO DO: NOT CHECKED FOR CORRECTNESS OR SUITABILITY TO THIS ALGORITHM; MAY BE ABLE TO MAKE INTO A COMMON UTIL
  ****************************************************************************/
 
 int  _K4_RestoreReducedPath(graphP theGraph, K4SearchContext *context, int J)
@@ -1117,7 +913,7 @@ int  J0, J1, JTwin0, JTwin1;
  If so, then the vertices along the path being restored must be given a
  consistent orientation with the endpoints.  It is expected that the embedding
  will have been oriented prior to this operation.
-  NOT CHECKED FOR CORRECTNESS OR SUITABILITY TO THIS ALGORITHM; MAY BE ABLE TO MAKE INTO A COMMON UTIL
+ TO DO: NOT CHECKED FOR CORRECTNESS OR SUITABILITY TO THIS ALGORITHM; MAY BE ABLE TO MAKE INTO A COMMON UTIL
  ****************************************************************************/
 
 int  _K4_RestoreAndOrientReducedPaths(graphP theGraph, K4SearchContext *context)
@@ -1223,7 +1019,7 @@ int  J0, JTwin0, J1, JTwin1;
  _K4_SetEdgeType()
  When we are restoring an edge, we must restore its type.  We can deduce
  what the type was based on other information in the graph.
- NOT CHECKED FOR SUITABILITY TO THIS ALGORITHM; MAY BE ABLE TO MAKE INTO A COMMON UTIL
+ TO DO: NOT CHECKED FOR SUITABILITY TO THIS ALGORITHM; MAY BE ABLE TO MAKE INTO A COMMON UTIL
  ****************************************************************************/
 
 int  _K4_SetEdgeType(graphP theGraph, int u, int v)
@@ -1279,7 +1075,7 @@ int  e, eTwin, u_orig, v_orig, N;
 
 /****************************************************************************
  _K4_OrientPath()
- NOT CHECKED FOR CORRECNTESS OR SUITABILITY
+ TO DO: NOT CHECKED FOR SUITABILITY TO THIS ALGORITHM; MAY BE ABLE TO MAKE INTO A COMMON UTIL
  ****************************************************************************/
 
 int  _K4_OrientPath(graphP theGraph, int u, int v, int w, int x)
@@ -1331,7 +1127,7 @@ int  e_v, e_ulink, e_vlink;
 
 /****************************************************************************
  _K4_SetVisitedOnPath()
-  NOT CHECKED FOR SUITABILITY TO THIS ALGORITHM; MAY BE ABLE TO MAKE INTO A COMMON UTIL
+ TO DO: NOT CHECKED FOR SUITABILITY TO THIS ALGORITHM; MAY BE ABLE TO MAKE INTO A COMMON UTIL
  ****************************************************************************/
 
 void _K4_SetVisitedOnPath(graphP theGraph, int u, int v, int w, int x, int visited)
