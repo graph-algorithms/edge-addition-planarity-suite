@@ -400,27 +400,36 @@ int runTests(int argc, char *argv[])
 	char *commands[NUMCOMMANDSTOTEST] = {
 			"-p", "-d", "-o", "-2", "-3", "-4"
 	};
+	char *commandNames[NUMCOMMANDSTOTEST] = {
+			"planarity", "planar drawing", "outerplanarity",
+			"K_{2,3} search", "K_{3,3} search", "K_4 search"
+	};
+	int success = TRUE;
 	int results[] = { 194815, 194815, 269377, 268948, 191091, 0 };
 	int i;
 
 	for (i=0; i < NUMCOMMANDSTOTEST; i++)
 	{
+		printf("Testing %s\n", commandNames[i]);
+
 		commandLine[2] = commands[i];
 		if (callNauty(4, commandLine) != 0)
 		{
 			printf("An error occurred.\n");
-			return -1;
+			success = FALSE;
 		}
 
 		if (results[i] != numGraphs-numOKs)
 		{
 			printf("Incorrect result on command %s.\n", commands[i]);
-			return -1;
+			success = FALSE;
 		}
 	}
 
-	printf("Tests of all commands succeeded.\n");
-	return 0;
+	if (success)
+	    printf("Tests of all commands succeeded.\n");
+
+	return success ? 0 : -1;
 }
 
 // 'planarity -r [-q] C K N': Random graphs
