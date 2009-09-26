@@ -64,14 +64,14 @@ int  _K4_ChooseTypeOfNonOuterplanarityMinor(graphP theGraph, int I, int R);
 
 int  _K4_FindSecondActiveVertexOnLowExtFacePath(graphP theGraph);
 int  _K4_FindPlanarityActiveVertex(graphP theGraph, int I, int R, int prevLink, int *pW);
-int  _K4_FindSeparatingInternalEdge(graphP theGraph, int R, int W, int prevLink, int *pW, int *pX, int *pY);
+int  _K4_FindSeparatingInternalEdge(graphP theGraph, int R, int prevLink, int A, int *pW, int *pX, int *pY);
 
 int  _K4_IsolateMinorA1(graphP theGraph);
 int  _K4_IsolateMinorA2(graphP theGraph);
 int  _K4_IsolateMinorB1(graphP theGraph);
 int  _K4_IsolateMinorB2(graphP theGraph);
 
-int  _K4_ReducePathComponent(graphP theGraph, int R, int A);
+int  _K4_ReducePathComponent(graphP theGraph, int R, int prevLink, int A);
 int  _K4_ReduceBicompToEdge(graphP theGraph, int R, int W);
 
 int  _K4_RestoreReducedPath(graphP theGraph, K4SearchContext *context, int J);
@@ -80,7 +80,7 @@ int  _K4_SetEdgeType(graphP theGraph, int u, int v);
 int  _K4_OrientPath(graphP theGraph, int u, int v, int w, int x);
 void _K4_SetVisitedOnPath(graphP theGraph, int u, int v, int w, int x, int visited);
 
-int _MarkEdge(graphP theGraph, int u, int v);
+int  _MarkEdge(graphP theGraph, int u, int v);
 
 
 /****************************************************************************
@@ -326,8 +326,8 @@ isolatorContextP IC = &theGraph->IC;
 
     	// Case B2: Determine whether there is an internal separating X-Y path for a_x or for a_y
     	// The method makes appropriate isolator context settings if the separator edge is found
-    	if (_K4_FindSeparatingInternalEdge(theGraph, R, a_x, 1, &IC->w, &IC->px, &IC->py) == TRUE ||
-    		_K4_FindSeparatingInternalEdge(theGraph, R, a_y, 0, &IC->w, &IC->py, &IC->px) == TRUE)
+    	if (_K4_FindSeparatingInternalEdge(theGraph, R, 1, a_x, &IC->w, &IC->px, &IC->py) == TRUE ||
+    		_K4_FindSeparatingInternalEdge(theGraph, R, 0, a_y, &IC->w, &IC->py, &IC->px) == TRUE)
     	{
             _OrientVerticesInEmbedding(theGraph);
             if (_K4_RestoreAndOrientReducedPaths(theGraph, context) != OK)
@@ -357,8 +357,8 @@ isolatorContextP IC = &theGraph->IC;
     	}
 
     	// If K_4 homeomorph not found, make reductions along a_x and a_y paths.
-    	if (_K4_ReducePathComponent(theGraph, R, a_x) != OK ||
-    		_K4_ReducePathComponent(theGraph, R, a_y) != OK)
+    	if (_K4_ReducePathComponent(theGraph, R, 1, a_x) != OK ||
+    		_K4_ReducePathComponent(theGraph, R, 0, a_y) != OK)
     		return NOTOK;
 
     	// Return OK to indicate that WalkDown processing may proceed to resolve
@@ -627,7 +627,7 @@ int  _K4_ReduceBicompToEdge(graphP theGraph, int R, int W)
  Returns OK for success, NOTOK for internal (implementation) error.
  ****************************************************************************/
 
-int  _K4_ReducePathComponent(graphP theGraph, int R, int A)
+int  _K4_ReducePathComponent(graphP theGraph, int R, int prevLink, int A)
 {
 	// Check whether the external face path (R, ..., A) is just an edge
 
@@ -671,50 +671,50 @@ int  _K4_FindPlanarityActiveVertex(graphP theGraph, int I, int R, int prevLink, 
  _K4_FindSeparatingInternalEdge()
 
  Logically, this method is similar to calling MarkHighestXYPath() to
- see if there is an internal separator between R and W.
+ see if there is an internal separator between R and A.
  However, that method cannot be called because the bicomp is not oriented.
 
  Because this is an outerplanarity related algorithm, there are no internal
  vertices to contend with, so it is easier to inspect the internal edges
- incident to each vertex internal to the path (R ... W), i.e. excluding endpoints,
- to see whether any of the edges connects outside of the path [R ... W],
+ incident to each vertex internal to the path (R ... A), i.e. excluding endpoints,
+ to see whether any of the edges connects outside of the path [R ... A],
  including endpoints.
 
  We will count on the pre-initialization of the vertex types to TYPE_UNKNOWN
  so that we don't have to initialize the whole bicomp. Each vertex along
- the path [R ... W] is marked TYPE_VERTEX_VISITED.  Then, for each vertex in the
- range (R ... W), if there is any edge that is also not incident to a vertex
+ the path [R ... A] is marked TYPE_VERTEX_VISITED.  Then, for each vertex in the
+ range (R ... A), if there is any edge that is also not incident to a vertex
  with TYPE_UNKNOWN, then that edge is the desired separator edge between
  R and W.  We mark that edge and save information about it.
 
- Finally, we put the vertex types along [R ... W] back to TYPE_UNKNOWN.
+ If the separator edge is found, then this method sets the *pW to A, and it
+ sets *pX and *pY values with the endpoints of the separator edge.
+ No visited flags are set at this time because it is easier to set them later.
 
- This method sets the * pW, *pX and *pY values with the endpoints of
- the separator edge, if one is found.  It does not set the visited flags in
- the edge records because it is easier to set it later.
+ Lastly, we put the vertex types along [R ... A] back to TYPE_UNKNOWN.
 
  Returns TRUE if separator edge found or FALSE otherwise
  ****************************************************************************/
 
-int _K4_FindSeparatingInternalEdge(graphP theGraph, int R, int W, int prevLink, int *pW, int *pX, int *pY)
+int _K4_FindSeparatingInternalEdge(graphP theGraph, int R, int prevLink, int A, int *pW, int *pX, int *pY)
 {
 	int Z, ZPrevLink, J, neighbor;
 
-	// Mark the vertex types along the path [R ... W] as visited
+	// Mark the vertex types along the path [R ... A] as visited
 	theGraph->G[R].type = TYPE_VERTEX_VISITED;
 	ZPrevLink = prevLink;
 	Z = R;
-	while (Z != W)
+	while (Z != A)
 	{
 		Z = _GetNextVertexOnExternalFace(theGraph, Z, &ZPrevLink);
 		theGraph->G[Z].type = TYPE_VERTEX_VISITED;
 	}
 
-	// Search each of the vertices in the range (R ... W)
+	// Search each of the vertices in the range (R ... A)
 	*pX = *pY = NIL;
 	ZPrevLink = prevLink;
-	Z = _GetNextVertexOnExternalFace(theGraph, R, &ZPrevLink);;
-	while (Z != W)
+	Z = _GetNextVertexOnExternalFace(theGraph, R, &ZPrevLink);
+	while (Z != A)
 	{
 		// Search for a separator among the edges of Z
 		// It is OK to not bother skipping the external face edges, since we
@@ -725,7 +725,7 @@ int _K4_FindSeparatingInternalEdge(graphP theGraph, int R, int W, int prevLink, 
 	        neighbor = theGraph->G[J].v;
 	        if (theGraph->G[neighbor].type == TYPE_UNKNOWN)
 	        {
-	        	*pW = W;
+	        	*pW = A;
 	        	*pX = Z;
 	        	*pY = neighbor;
 	        	break;
@@ -741,11 +741,11 @@ int _K4_FindSeparatingInternalEdge(graphP theGraph, int R, int W, int prevLink, 
 		Z = _GetNextVertexOnExternalFace(theGraph, Z, &ZPrevLink);
 	}
 
-	// Restore the vertex types along the path [R ... W] to the unknown state
+	// Restore the vertex types along the path [R ... A] to the unknown state
 	theGraph->G[R].type = TYPE_UNKNOWN;
 	ZPrevLink = prevLink;
 	Z = R;
-	while (Z != W)
+	while (Z != A)
 	{
 		Z = _GetNextVertexOnExternalFace(theGraph, Z, &ZPrevLink);
 		theGraph->G[Z].type = TYPE_UNKNOWN;
