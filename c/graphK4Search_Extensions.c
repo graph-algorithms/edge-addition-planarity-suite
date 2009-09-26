@@ -573,13 +573,12 @@ void _InitK4SearchVertexRec(K4SearchContext *context, int I)
 // This function used to be implemented by going to each
 // vertex, asking for its DFS parent, then finding the
 // edge that lead to that DFS parent and marking it.
-// However, the K4 search performs a certain bicomp
-// reduction that is required to preserve the essential
-// structure of the DFS tree.  As a result, sometimes a
-// DFSParent has been reduced out of the graph, but the
-// tree edge leads to the nearest ancestor still in the
-// graph.  So, when we want to leave a vertex, we search
-// for the DFS tree edge to the "parent" (nearest ancestor).
+// However, the K4 search performs certain bicomp reductions
+// that are required to preserve the essential structure of
+// the DFS tree.  As a result, sometimes a DFSParent has been
+// reduced out of the graph, but the tree edge leads to the nearest
+// ancestor still in the graph.  So, when we want to leave a vertex,
+// we search for the DFS tree edge to the "parent" (nearest ancestor),
 // then we mark the edge and use it to go up to the "parent".
  ********************************************************************/
 
