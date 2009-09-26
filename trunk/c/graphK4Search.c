@@ -28,26 +28,19 @@ extern void _ClearInvertedFlagsInBicomp(graphP theGraph, int BicompRoot);
 
 extern int  _GetNextVertexOnExternalFace(graphP theGraph, int curVertex, int *pPrevLink);
 extern void _FindActiveVertices(graphP theGraph, int R, int *pX, int *pY);
-extern int  _JoinBicomps(graphP theGraph);
 extern void _OrientVerticesInBicomp(graphP theGraph, int BicompRoot, int PreserveSigns);
 extern void _OrientVerticesInEmbedding(graphP theGraph);
 extern void _InvertVertex(graphP theGraph, int V);
 
-extern void _SetVertexTypesForMarkingXYPath(graphP theGraph);
-extern int  _MarkHighestXYPath(graphP theGraph);
-
 extern int  _FindUnembeddedEdgeToAncestor(graphP theGraph, int cutVertex, int *pAncestor, int *pDescendant);
 extern int  _FindUnembeddedEdgeToCurVertex(graphP theGraph, int cutVertex, int *pDescendant);
-
-extern int  _MarkPathAlongBicompExtFace(graphP theGraph, int startVert, int endVert);
-
-extern int  _AddAndMarkEdge(graphP theGraph, int ancestor, int descendant);
-
-extern int  _DeleteUnmarkedVerticesAndEdges(graphP theGraph);
-
 extern int  _GetLeastAncestorConnection(graphP theGraph, int cutVertex);
-extern int  _MarkDFSPathsToDescendants(graphP theGraph);
-extern int  _AddAndMarkUnembeddedEdges(graphP theGraph);
+
+extern void _SetVertexTypesForMarkingXYPath(graphP theGraph);
+extern int  _MarkHighestXYPath(graphP theGraph);
+extern int  _MarkPathAlongBicompExtFace(graphP theGraph, int startVert, int endVert);
+extern int  _AddAndMarkEdge(graphP theGraph, int ancestor, int descendant);
+extern int  _DeleteUnmarkedVerticesAndEdges(graphP theGraph);
 
 extern int  _IsolateOuterplanarityObstructionA(graphP theGraph);
 extern int  _IsolateOuterplanarityObstructionB(graphP theGraph);
@@ -71,8 +64,9 @@ int  _K4_IsolateMinorA2(graphP theGraph);
 int  _K4_IsolateMinorB1(graphP theGraph);
 int  _K4_IsolateMinorB2(graphP theGraph);
 
-int  _K4_ReducePathComponent(graphP theGraph, int R, int prevLink, int A);
-int  _K4_ReduceBicompToEdge(graphP theGraph, int R, int W);
+int  _K4_ReduceBicompToEdge(graphP theGraph, K4SearchContext *context, int R, int W);
+int  _K4_ReducePathComponent(graphP theGraph, K4SearchContext *context, int R, int prevLink, int A);
+int  _K4_ReducePathToEdge(graphP theGraph, K4SearchContext *context, int R, int prevLink, int A);
 
 int  _K4_RestoreReducedPath(graphP theGraph, K4SearchContext *context, int J);
 int  _K4_RestoreAndOrientReducedPaths(graphP theGraph, K4SearchContext *context);
@@ -273,7 +267,7 @@ isolatorContextP IC = &theGraph->IC;
 
         // Since neither A1 nor A2 is found, then we reduce the bicomp to the
         // tree edge (R, W).
-    	if (_K4_ReduceBicompToEdge(theGraph, R, IC->w) != OK)
+    	if (_K4_ReduceBicompToEdge(theGraph, context, R, IC->w) != OK)
     		return NOTOK;
 
         // Return OK so that the WalkDown can continue resolving the pertinence of I.
@@ -357,8 +351,8 @@ isolatorContextP IC = &theGraph->IC;
     	}
 
     	// If K_4 homeomorph not found, make reductions along a_x and a_y paths.
-    	if (_K4_ReducePathComponent(theGraph, R, 1, a_x) != OK ||
-    		_K4_ReducePathComponent(theGraph, R, 0, a_y) != OK)
+    	if (_K4_ReducePathComponent(theGraph, context, R, 1, a_x) != OK ||
+    		_K4_ReducePathComponent(theGraph, context, R, 0, a_y) != OK)
     		return NOTOK;
 
     	// Return OK to indicate that WalkDown processing may proceed to resolve
@@ -551,93 +545,6 @@ int _K4_FindSecondActiveVertexOnLowExtFacePath(graphP theGraph)
 
 	// We didn't find the desired second vertex, so report FALSE
 	return FALSE;
-}
-
-/****************************************************************************
- _K4_ReduceBicompToEdge()
-
- This method is used when reducing the main bicomp of obstruction A to a
- single edge (R, W).  We first delete all edges from the bicomp except
- those on the DFS tree path W to R, then we reduce that DFS tree path to
- a DFS tree edge.
-
- After the reduction, the outerplanarity Walkdown traversal can continue
- R to W without being blocked as was the case when R was adjacent to X and Y.
-
- Returns OK for success, NOTOK for internal (implementation) error.
- ****************************************************************************/
-
-int  _K4_ReduceBicompToEdge(graphP theGraph, int R, int W)
-{
-	// TO DO: finish this
-	return NOTOK;
-}
-
-/****************************************************************************
- _K4_ReducePathComponent()
-
- This method is invoked when the bicomp rooted by R contains a component
- subgraph that is separable from the bicomp by the 2-cut (R, A). The K_4
- homeomorph isolator will have processed a significant fraction of the
- component, and so it must be reduced to an edge to ensure that said
- processing happens at most once on the component (except for future
- operations that are bound to linear time in total by other arguments).
-
- Because the bicomp is an outerplanar embedding, the component is known to
- consists of an external face path plus some internal edges that are parallel
- to that path. Otherwise, it wouldn't be separable by the 2-cut (R, A).
-
- The goal of this method is to reduce the component to the edge (R, A). This
- is done in such a way that, if the reduction must be restored, the DFS tree
- structure connecting the restored vertices is retained.
-
- The first step is to ensure that (R, A) is not already just an edge, in which
- case no reduction is needed. This can occur if A is future pertinent.
-
- Assuming a non-trivial reduction component, the next step is to determine
- the DFS tree structure within the component. Because it is separable by the
- 2-cut (R, A), there are only two cases:
-
- Case 1: The DFS tree path from A to R is within the reduction component.
-
- In this case, the DFS tree path is marked, the remaining edges of the
- reduction component are eliminated, and then the DFS tree path is reduced to
- the the tree edge (R, A).
-
- Note that the reduction component may also contain descendants of A as well
- as vertices that are descendant to R but are neither ancestors nor
- descendants of A. This depends on where the tree edge from R meets the
- external face path (R ... A). However, the reduction component can only
- contribute one path to any future K_4, so it suffices to preserve only the
- DFS tree path (A --> R).
-
- Case 2: The DFS tree path from A to R is not within the reduction component.
-
- In this case, the external face edge from R leads to a descendant D of A.
- We mark that back edge (R, D) plus the DFS tree path (D --> A). The
- remaining edges of the reduction component can be removed, and then the
- path (R, D, ..., A) is reduced to the edge (R, A).
-
- For the sake of contradiction, suppose that only part of the DFS tree path
- from A to R were contained by the reduction component. Then, a DFS tree edge
- would have to exit the reduction component and connect to some vertex not
- on the external face path (R, ..., A). This contradicts the assumption that
- the reduction subgraph is separable from the bicomp by the 2-cut (R, A).
-
- Returns OK for success, NOTOK for internal (implementation) error.
- ****************************************************************************/
-
-int  _K4_ReducePathComponent(graphP theGraph, int R, int prevLink, int A)
-{
-	// Check whether the external face path (R, ..., A) is just an edge
-
-	// Check for Case 1: The DFS tree path from A to R is within the reduction component
-
-	// Otherwise Case 2: The DFS tree path from A to R is not within the reduction component
-
-	// TO DO: finish this, then return OK
-	// RETURN OK;
-	return NOTOK;
 }
 
 /****************************************************************************
@@ -871,6 +778,118 @@ int  _K4_IsolateMinorB2(graphP theGraph)
     }
 
 	return OK;
+}
+
+/****************************************************************************
+ _K4_ReduceBicompToEdge()
+
+ This method is used when reducing the main bicomp of obstruction A to a
+ single edge (R, W).  We first delete all edges from the bicomp except
+ those on the DFS tree path W to R, then we reduce that DFS tree path to
+ a DFS tree edge.
+
+ After the reduction, the outerplanarity Walkdown traversal can continue
+ R to W without being blocked as was the case when R was adjacent to X and Y.
+
+ Returns OK for success, NOTOK for internal (implementation) error.
+ ****************************************************************************/
+
+int  _K4_ReduceBicompToEdge(graphP theGraph, K4SearchContext *context, int R, int W)
+{
+	int Rvisited = theGraph->G[R].visited, Wvisited = theGraph->G[W].visited;
+
+    _FillVisitedFlagsInBicomp(theGraph, R, 0);
+    if (theGraph->functions.fpMarkDFSPath(theGraph, R, W) != OK)
+        return NOTOK;
+    _DeleteUnmarkedEdgesInBicomp(theGraph, R);
+
+    // Now we have to reduce the path W -> R to the tree edge (R, W)
+    if (_K4_ReducePathToEdge(theGraph, context, R, 0, W) != OK)
+    	return NOTOK;
+
+    // Finally, restore the visited flag settings of R and W, so that
+    // the core embedder (esp. Walkup) will not have any problems.
+	theGraph->G[R].visited = Rvisited;
+	theGraph->G[W].visited = Wvisited;
+
+	return OK;
+}
+
+/****************************************************************************
+ _K4_ReducePathComponent()
+
+ This method is invoked when the bicomp rooted by R contains a component
+ subgraph that is separable from the bicomp by the 2-cut (R, A). The K_4
+ homeomorph isolator will have processed a significant fraction of the
+ component, and so it must be reduced to an edge to ensure that said
+ processing happens at most once on the component (except for future
+ operations that are bound to linear time in total by other arguments).
+
+ Because the bicomp is an outerplanar embedding, the component is known to
+ consists of an external face path plus some internal edges that are parallel
+ to that path. Otherwise, it wouldn't be separable by the 2-cut (R, A).
+
+ The goal of this method is to reduce the component to the edge (R, A). This
+ is done in such a way that, if the reduction must be restored, the DFS tree
+ structure connecting the restored vertices is retained.
+
+ The first step is to ensure that (R, A) is not already just an edge, in which
+ case no reduction is needed. This can occur if A is future pertinent.
+
+ Assuming a non-trivial reduction component, the next step is to determine
+ the DFS tree structure within the component. Because it is separable by the
+ 2-cut (R, A), there are only two cases:
+
+ Case 1: The DFS tree path from A to R is within the reduction component.
+
+ In this case, the DFS tree path is marked, the remaining edges of the
+ reduction component are eliminated, and then the DFS tree path is reduced to
+ the the tree edge (R, A).
+
+ Note that the reduction component may also contain descendants of A as well
+ as vertices that are descendant to R but are neither ancestors nor
+ descendants of A. This depends on where the tree edge from R meets the
+ external face path (R ... A). However, the reduction component can only
+ contribute one path to any future K_4, so it suffices to preserve only the
+ DFS tree path (A --> R).
+
+ Case 2: The DFS tree path from A to R is not within the reduction component.
+
+ In this case, the external face edge from R leads to a descendant D of A.
+ We mark that back edge (R, D) plus the DFS tree path (D --> A). The
+ remaining edges of the reduction component can be removed, and then the
+ path (R, D, ..., A) is reduced to the edge (R, A).
+
+ For the sake of contradiction, suppose that only part of the DFS tree path
+ from A to R were contained by the reduction component. Then, a DFS tree edge
+ would have to exit the reduction component and connect to some vertex not
+ on the external face path (R, ..., A). This contradicts the assumption that
+ the reduction subgraph is separable from the bicomp by the 2-cut (R, A).
+
+ Returns OK for success, NOTOK for internal (implementation) error.
+ ****************************************************************************/
+
+int  _K4_ReducePathComponent(graphP theGraph, K4SearchContext *context, int R, int prevLink, int A)
+{
+	// Check whether the external face path (R, ..., A) is just an edge
+
+	// Check for Case 1: The DFS tree path from A to R is within the reduction component
+
+	// Otherwise Case 2: The DFS tree path from A to R is not within the reduction component
+
+	// TO DO: finish this, then return OK
+	// RETURN OK;
+	return NOTOK;
+}
+
+/****************************************************************************
+ _K4_ReducePathToEdge()
+ ****************************************************************************/
+
+int  _K4_ReducePathToEdge(graphP theGraph, K4SearchContext *context, int R, int prevLink, int A)
+{
+	// TO DO: finish this
+	return NOTOK;
 }
 
 /****************************************************************************
