@@ -1393,6 +1393,24 @@ int  p, c, d, excludedChild, e;
  to help reconstruct the context under which the mergeBlocker was set.
  ChooseTypeOfNonplanarityMinor() calls _FillVisitedFlagsInBicomp(), which
  depends on the DFS tree.
+
+ NOTE: The following are some general steps taken in this method:
+       1) All edges in the bicomp are marked unvisited
+       2) selected paths are marked visited
+       3) unvisited edges are deleted
+       4) the edges of the bicomp are marked unvisited again
+       5) the remaining paths of the bicomp are reduced
+       Some of the edges that get deleted in step 3 above may represent
+       paths that were reduced in prior embedder iterations.  We delete
+       the reduction edge but not the path it represents.
+       If a K_{3,3} is ever found, then the edges of these reduced paths
+       are still in the graph, though not connected to anything important.
+       The desired K_{3,3} is marked visited, but step 4 above ensures that
+       these reduction paths are not marked visited. Hence, they will be
+       deleted when the K_{3,3} is isolated, and this routine does not
+       need to restore any reduced paths on the edges it deletes.
+       We also don't (and don't have the time to) restore any reduction
+       edges along the paths we intend to keep.
  ****************************************************************************/
 
 int  _ReduceBicomp(graphP theGraph, K33SearchContext *context, int R)
@@ -1548,18 +1566,24 @@ int  rxType, xwType, wyType, yrType, xyType;
      theGraph->G[B_edge].visited = 1;
      theGraph->G[gp_GetTwinArc(theGraph, B_edge)].visited = 1;
 
-/* Delete the unmarked edges in the bicomp. */
+/* Delete the unmarked edges in the bicomp. Note that if an unmarked edge
+ * represents a reduced path, then only the reduction edge is deleted here.
+ * The path it represents is only deleted later (see NOTE above) */
 
      _DeleteUnmarkedEdgesInBicomp(theGraph, R);
 
-/* Clear all visited flags and orientation signs in the bicomp.
-     Note that the bicomp may not be properly oriented at this point
-     because we may have exchanged external face paths for internal
-     DFS tree paths.  However, the reduced bicomp will be properly
-     oriented, and the paths of degree 2 vertices will have their
-     orientations fixed if/when reduction edges are restored. */
+/* Clear all visited flags in the bicomp.
+     This is the important "step 4" mentioned in the NOTE above */
 
      _FillVisitedFlagsInBicomp(theGraph, R, 0);
+
+/* Clear all orientation signs in the bicomp.
+	Note that the bicomp may not be properly oriented at this point
+	because we may have exchanged external face paths for internal
+	DFS tree paths.  However, the reduced bicomp will be properly
+	oriented, and the paths of degree 2 vertices will have their
+	orientations fixed if/when reduction edges are restored. */
+
      _ClearInvertedFlagsInBicomp(theGraph, R);
 
 /* Reduce the paths to single edges. */
@@ -1572,6 +1596,15 @@ int  rxType, xwType, wyType, yrType, xyType;
 
      if (_ReduceXYPathToEdge(theGraph, context, IC->x, IC->y, xyType) != OK)
          return NOTOK;
+
+/* The core planarity method used vertex visited flags in the Walkup, so we have to
+   set the vertex visited flags so the remaining vertices will behave as though they
+   are unvisited by Walkup when the embedder moves to the next vertex. */
+
+     theGraph->G[R].visited =
+     theGraph->G[IC->x].visited =
+     theGraph->G[IC->y].visited =
+     theGraph->G[IC->w].visited = IC->v;
 
      return OK;
 }
