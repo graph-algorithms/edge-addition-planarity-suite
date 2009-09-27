@@ -904,13 +904,8 @@ int  _K4_ReducePathToEdge(graphP theGraph, K4SearchContext *context, int R, int 
 	 Rlink = theGraph->G[R].link[0] == e_R ? 0 : 1;
 	 Alink = theGraph->G[A].link[0] == e_A ? 0 : 1;
 
-	 // Save the vertex neighbors of R and A indicated by e_R and e_A for
-	 // later use in setting up the path connectors.
-	 v_R = theGraph->G[e_R].v;
-	 v_A = theGraph->G[e_A].v;
-
-	 // Remove the two edges that join the path to the bicomp. If either edge is
-	 // a reduction edge, then unreduce it first (a constant time operation)
+	 // Prepare for removing each of the two edges that join the path to the bicomp by
+	 // restoring it if it is a reduction edge (a constant time operation)
 	 if (context->G[e_R].pathConnector != NIL)
 	 {
 		 if (_K4_RestoreReducedPath(theGraph, context, e_R) != OK)
@@ -918,7 +913,6 @@ int  _K4_ReducePathToEdge(graphP theGraph, K4SearchContext *context, int R, int 
 
 		 e_R = gp_GetArc(theGraph, R, Rlink);
 	 }
-	 gp_DeleteEdge(theGraph, e_R, 0);
 
 	 if (context->G[e_A].pathConnector != NIL)
 	 {
@@ -926,6 +920,14 @@ int  _K4_ReducePathToEdge(graphP theGraph, K4SearchContext *context, int R, int 
 			 return NOTOK;
 		 e_A = gp_GetArc(theGraph, A, Alink);
 	 }
+
+	 // Save the vertex neighbors of R and A indicated by e_R and e_A for
+	 // later use in setting up the path connectors.
+	 v_R = theGraph->G[e_R].v;
+	 v_A = theGraph->G[e_A].v;
+
+	 // Now delete the two edges that join the path to the bicomp.
+	 gp_DeleteEdge(theGraph, e_R, 0);
 	 gp_DeleteEdge(theGraph, e_A, 0);
 
 	 // Now add a single edge to represent the path
@@ -933,7 +935,6 @@ int  _K4_ReducePathToEdge(graphP theGraph, K4SearchContext *context, int R, int 
 							 A, gp_GetArc(theGraph, A, Alink), Alink);
 
 	 // Now set up the path connectors so the original path can be recovered if needed.
-
 	 e_R = gp_GetArc(theGraph, R, Rlink);
 	 context->G[e_R].pathConnector = v_R;
 
@@ -1226,4 +1227,3 @@ int _MarkEdge(graphP theGraph, int u, int v)
 	}
 	return FALSE;
 }
-
