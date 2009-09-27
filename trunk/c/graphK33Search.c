@@ -60,6 +60,7 @@ extern void _HideInternalEdges(graphP theGraph, int vertex);
 extern void _RestoreInternalEdges(graphP theGraph);
 extern void _DeleteUnmarkedEdgesInBicomp(graphP theGraph, int BicompRoot);
 extern void _ClearInvertedFlagsInBicomp(graphP theGraph, int BicompRoot);
+extern int  _ComputeArcType(graphP theGraph, int a, int b, int edgeType);
 
 extern int  _GetNextVertexOnExternalFace(graphP theGraph, int curVertex, int *pPrevLink);
 extern int  _JoinBicomps(graphP theGraph);
@@ -1607,33 +1608,6 @@ int  rxType, xwType, wyType, yrType, xyType;
      theGraph->G[IC->w].visited = IC->v;
 
      return OK;
-}
-
-/****************************************************************************
- _ComputeArcType()
- This is just a little helper function that automates a sequence of decisions
- that has to be made a number of times.
- An edge record is being added to the adjacency list of a; it indicates that
- b is a neighbor.  The edgeType can be either 'tree' (EDGE_DFSPARENT) or
- 'cycle' (EDGE_BACK).  If a or b is a root copy, we translate to the
- non-virtual counterpart, then determine which has the lesser DFI.  If a
- has the lower DFI then the edge record is a tree edge to a child
- (EDGE_DFSCHILD) if edgeType indicates a tree edge.  If edgeType indicates a
- cycle edge, then it is a forward cycle edge (EDGE_FORWARD) to a descendant.
- Symmetric conditions define the types for a > b.
- ****************************************************************************/
-
-int  _ComputeArcType(graphP theGraph, int a, int b, int edgeType)
-{
-     if (a >= theGraph->N)
-         a = theGraph->V[a - theGraph->N].DFSParent;
-     if (b >= theGraph->N)
-         b = theGraph->V[b - theGraph->N].DFSParent;
-
-     if (a < b)
-         return edgeType == EDGE_DFSPARENT ? EDGE_DFSCHILD : EDGE_FORWARD;
-
-     return edgeType == EDGE_DFSPARENT ? EDGE_DFSPARENT : EDGE_BACK;
 }
 
 /****************************************************************************
