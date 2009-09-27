@@ -23,6 +23,7 @@ extern void _FillVisitedFlagsInUnembeddedEdges(graphP theGraph, int FillValue);
 extern void _DeleteUnmarkedEdgesInBicomp(graphP theGraph, int BicompRoot);
 extern void _ClearInvertedFlagsInBicomp(graphP theGraph, int BicompRoot);
 extern int  _ComputeArcType(graphP theGraph, int a, int b, int edgeType);
+extern int  _SetEdgeType(graphP theGraph, int u, int v);
 
 extern int  _GetNextVertexOnExternalFace(graphP theGraph, int curVertex, int *pPrevLink);
 extern void _FindActiveVertices(graphP theGraph, int R, int *pX, int *pY);
@@ -68,7 +69,6 @@ int  _K4_ReducePathToEdge(graphP theGraph, K4SearchContext *context, int R, int 
 
 int  _K4_RestoreReducedPath(graphP theGraph, K4SearchContext *context, int J);
 int  _K4_RestoreAndOrientReducedPaths(graphP theGraph, K4SearchContext *context);
-int  _K4_SetEdgeType(graphP theGraph, int u, int v);
 int  _K4_OrientPath(graphP theGraph, int u, int v, int w, int x);
 void _K4_SetVisitedOnPath(graphP theGraph, int u, int v, int w, int x, int visited);
 
@@ -956,7 +956,6 @@ int  _K4_ReducePathToEdge(graphP theGraph, K4SearchContext *context, int R, int 
  search for and process those since it would violate the constant time
  bound required of this function.
  return OK on success, NOTOK on failure
- TO DO: NOT CHECKED FOR CORRECTNESS OR SUITABILITY TO THIS ALGORITHM; MAY BE ABLE TO MAKE INTO A COMMON UTIL
  ****************************************************************************/
 
 int  _K4_RestoreReducedPath(graphP theGraph, K4SearchContext *context, int J)
@@ -974,24 +973,20 @@ int  J0, J1, JTwin0, JTwin1;
      w = context->G[JTwin].pathConnector;
      x = theGraph->G[J].v;
 
-     /* Get the locations of the graph nodes between which the new
-        graph nodes must be added in order to reconnect the path
-        parallel to the edge. */
-
+     // Get the locations of the graph nodes between which the new graph nodes
+     // must be added in order to reconnect the path parallel to the edge.
      J0 = gp_GetNextArc(theGraph, J);
      J1 = gp_GetPrevArc(theGraph, J);
      JTwin0 = gp_GetNextArc(theGraph, JTwin);
      JTwin1 = gp_GetPrevArc(theGraph, JTwin);
 
-     /* We first delete the edge represented by J and JTwin. We do so before
-        restoring the path to ensure we do not exceed the maximum arc capacity. */
-
+     // We first delete the edge represented by J and JTwin. We do so before
+     // restoring the path to ensure we do not exceed the maximum arc capacity.
      gp_DeleteEdge(theGraph, J, 0);
 
-     /* Now we add the two edges to reconnect the reduced path represented
-        by the edge [J, JTwin].  The edge record in u is added between J0 and J1.
-        Likewise, the new edge record in x is added between JTwin0 and JTwin1. */
-
+     // Now we add the two edges to reconnect the reduced path represented
+     // by the edge [J, JTwin].  The edge record in u is added between J0 and J1.
+     // Likewise, the new edge record in x is added between JTwin0 and JTwin1.
      if (gp_IsArc(theGraph, J0))
      {
     	 if (gp_InsertEdge(theGraph, u, J0, 1, v, gp_AdjacencyListEndMark(v), 0) != OK)
@@ -1014,10 +1009,10 @@ int  J0, J1, JTwin0, JTwin1;
     		 return NOTOK;
      }
 
-     /* Set the types of the newly added edges */
-
-     if (_K4_SetEdgeType(theGraph, u, v) != OK ||
-         _K4_SetEdgeType(theGraph, w, x) != OK)
+     // Set the types of the newly added edges. In both cases, the first of the two
+     // vertex parameters is known to be degree 2 because they are internal to the
+     // path being restored, so this operation is constant time.
+     if (_SetEdgeType(theGraph, v, u) != OK || _SetEdgeType(theGraph, w, x) != OK)
          return NOTOK;
 
      return OK;
@@ -1102,8 +1097,8 @@ int  J0, JTwin0, J1, JTwin1;
 
              /* Set the types of the newly added edges */
 
-             if (_K4_SetEdgeType(theGraph, u, v) != OK ||
-                 _K4_SetEdgeType(theGraph, w, x) != OK)
+             if (_SetEdgeType(theGraph, v, u) != OK ||
+                 _SetEdgeType(theGraph, w, x) != OK)
                  return NOTOK;
 
              /* We determine whether the reduction edge may be on the external face,
@@ -1134,64 +1129,6 @@ int  J0, JTwin0, J1, JTwin1;
              _K4_SetVisitedOnPath(theGraph, u, v, w, x, visited);
          }
          else e++;
-     }
-
-     return OK;
-}
-
-/****************************************************************************
- _K4_SetEdgeType()
- When we are restoring an edge, we must restore its type.  We can deduce
- what the type was based on other information in the graph.
- TO DO: NOT CHECKED FOR SUITABILITY TO THIS ALGORITHM; MAY BE ABLE TO MAKE INTO A COMMON UTIL
- ****************************************************************************/
-
-int  _K4_SetEdgeType(graphP theGraph, int u, int v)
-{
-int  e, eTwin, u_orig, v_orig, N;
-
-     // If u or v is a virtual vertex (a root copy), then get the non-virtual counterpart.
-
-     N = theGraph->N;
-     u_orig = u < N ? u : (theGraph->V[u - N].DFSParent);
-     v_orig = v < N ? v : (theGraph->V[v - N].DFSParent);
-
-     // Get the edge for which we will set the type
-
-     e = gp_GetNeighborEdgeRecord(theGraph, u, v);
-     eTwin = gp_GetTwinArc(theGraph, e);
-
-     // If u_orig is the parent of v_orig, or vice versa, then the edge is a tree edge
-
-     if (theGraph->V[v_orig].DFSParent == u_orig ||
-         theGraph->V[u_orig].DFSParent == v_orig)
-     {
-         if (u_orig > v_orig)
-         {
-             theGraph->G[e].type = EDGE_DFSPARENT;
-             theGraph->G[eTwin].type = EDGE_DFSCHILD;
-         }
-         else
-         {
-             theGraph->G[eTwin].type = EDGE_DFSPARENT;
-             theGraph->G[e].type = EDGE_DFSCHILD;
-         }
-     }
-
-     // Otherwise it is a back edge
-
-     else
-     {
-         if (u_orig > v_orig)
-         {
-             theGraph->G[e].type = EDGE_BACK;
-             theGraph->G[eTwin].type = EDGE_FORWARD;
-         }
-         else
-         {
-             theGraph->G[eTwin].type = EDGE_BACK;
-             theGraph->G[e].type = EDGE_FORWARD;
-         }
      }
 
      return OK;

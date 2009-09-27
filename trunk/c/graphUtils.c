@@ -1456,6 +1456,65 @@ int  _ComputeArcType(graphP theGraph, int a, int b, int edgeType)
      return edgeType == EDGE_DFSPARENT ? EDGE_DFSPARENT : EDGE_BACK;
 }
 
+/****************************************************************************
+ _SetEdgeType()
+ When we are restoring an edge, we must restore its type (tree edge or cycle edge).
+ We can deduce what the type was based on other information in the graph. Each
+ arc of the edge gets the appropriate type setting (parent/child or back/forward).
+ This method runs in constant time plus the degree of vertex u, or constant
+ time if u is known to have a degree bound by a constant.
+ ****************************************************************************/
+
+int  _SetEdgeType(graphP theGraph, int u, int v)
+{
+int  e, eTwin, u_orig, v_orig, N;
+
+     // If u or v is a virtual vertex (a root copy), then get the non-virtual counterpart.
+     N = theGraph->N;
+     u_orig = u < N ? u : (theGraph->V[u - N].DFSParent);
+     v_orig = v < N ? v : (theGraph->V[v - N].DFSParent);
+
+     // Get the edge for which we will set the type
+
+     e = gp_GetNeighborEdgeRecord(theGraph, u, v);
+     eTwin = gp_GetTwinArc(theGraph, e);
+
+     // If u_orig is the parent of v_orig, or vice versa, then the edge is a tree edge
+
+     if (theGraph->V[v_orig].DFSParent == u_orig ||
+         theGraph->V[u_orig].DFSParent == v_orig)
+     {
+         if (u_orig > v_orig)
+         {
+             theGraph->G[e].type = EDGE_DFSPARENT;
+             theGraph->G[eTwin].type = EDGE_DFSCHILD;
+         }
+         else
+         {
+             theGraph->G[eTwin].type = EDGE_DFSPARENT;
+             theGraph->G[e].type = EDGE_DFSCHILD;
+         }
+     }
+
+     // Otherwise it is a back edge
+
+     else
+     {
+         if (u_orig > v_orig)
+         {
+             theGraph->G[e].type = EDGE_BACK;
+             theGraph->G[eTwin].type = EDGE_FORWARD;
+         }
+         else
+         {
+             theGraph->G[eTwin].type = EDGE_BACK;
+             theGraph->G[e].type = EDGE_FORWARD;
+         }
+     }
+
+     return OK;
+}
+
 /********************************************************************
  _HideArc()
  This routine removes an arc from an edge list, but does not delete
