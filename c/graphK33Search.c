@@ -61,6 +61,7 @@ extern void _RestoreInternalEdges(graphP theGraph);
 extern void _DeleteUnmarkedEdgesInBicomp(graphP theGraph, int BicompRoot);
 extern void _ClearInvertedFlagsInBicomp(graphP theGraph, int BicompRoot);
 extern int  _ComputeArcType(graphP theGraph, int a, int b, int edgeType);
+extern int  _SetEdgeType(graphP theGraph, int u, int v);
 
 extern int  _GetNextVertexOnExternalFace(graphP theGraph, int curVertex, int *pPrevLink);
 extern int  _JoinBicomps(graphP theGraph);
@@ -116,7 +117,6 @@ int  _ReduceExternalFacePathToEdge(graphP theGraph, K33SearchContext *context, i
 int  _ReduceXYPathToEdge(graphP theGraph, K33SearchContext *context, int u, int x, int edgeType);
 int  _RestoreReducedPath(graphP theGraph, K33SearchContext *context, int J);
 int  _RestoreAndOrientReducedPaths(graphP theGraph, K33SearchContext *context);
-int  _SetEdgeType(graphP theGraph, int u, int v);
 int  _OrientPath(graphP theGraph, int u, int v, int w, int x);
 void _SetVisitedOnPath(graphP theGraph, int u, int v, int w, int x, int visited);
 
@@ -1810,9 +1810,10 @@ int  J0, J1, JTwin0, JTwin1;
     		 return NOTOK;
      }
 
-     /* Set the types of the newly added edges */
-
-     if (_SetEdgeType(theGraph, u, v) != OK ||
+     // Set the types of the newly added edges. In both cases, the first of the two
+     // vertex parameters is known to be degree 2 because they are internal to the
+     // path being restored, so this operation is constant time.
+     if (_SetEdgeType(theGraph, v, u) != OK ||
          _SetEdgeType(theGraph, w, x) != OK)
          return NOTOK;
 
@@ -1928,63 +1929,6 @@ int  J0, JTwin0, J1, JTwin1;
              _SetVisitedOnPath(theGraph, u, v, w, x, visited);
          }
          else e++;
-     }
-
-     return OK;
-}
-
-/****************************************************************************
- _SetEdgeType()
- When we are restoring an edge, we must restore its type.  We can deduce
- what the type was based on other information in the graph.
- ****************************************************************************/
-
-int  _SetEdgeType(graphP theGraph, int u, int v)
-{
-int  e, eTwin, u_orig, v_orig, N;
-
-     // If u or v is a virtual vertex (a root copy), then get the non-virtual counterpart.
-
-     N = theGraph->N;
-     u_orig = u < N ? u : (theGraph->V[u - N].DFSParent);
-     v_orig = v < N ? v : (theGraph->V[v - N].DFSParent);
-
-     // Get the edge for which we will set the type
-
-     e = gp_GetNeighborEdgeRecord(theGraph, u, v);
-     eTwin = gp_GetTwinArc(theGraph, e);
-
-     // If u_orig is the parent of v_orig, or vice versa, then the edge is a tree edge
-
-     if (theGraph->V[v_orig].DFSParent == u_orig ||
-         theGraph->V[u_orig].DFSParent == v_orig)
-     {
-         if (u_orig > v_orig)
-         {
-             theGraph->G[e].type = EDGE_DFSPARENT;
-             theGraph->G[eTwin].type = EDGE_DFSCHILD;
-         }
-         else
-         {
-             theGraph->G[eTwin].type = EDGE_DFSPARENT;
-             theGraph->G[e].type = EDGE_DFSCHILD;
-         }
-     }
-
-     // Otherwise it is a back edge
-
-     else
-     {
-         if (u_orig > v_orig)
-         {
-             theGraph->G[e].type = EDGE_BACK;
-             theGraph->G[eTwin].type = EDGE_FORWARD;
-         }
-         else
-         {
-             theGraph->G[eTwin].type = EDGE_BACK;
-             theGraph->G[e].type = EDGE_FORWARD;
-         }
      }
 
      return OK;
