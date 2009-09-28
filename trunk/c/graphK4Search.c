@@ -65,7 +65,7 @@ int  _K4_IsolateMinorB2(graphP theGraph);
 
 int  _K4_ReduceBicompToEdge(graphP theGraph, K4SearchContext *context, int R, int W);
 int  _K4_ReducePathComponent(graphP theGraph, K4SearchContext *context, int R, int prevLink, int A);
-int  _K4_ReducePathToEdge(graphP theGraph, K4SearchContext *context, int R, int e_R, int A, int e_A, int edgeType);
+int  _K4_ReducePathToEdge(graphP theGraph, K4SearchContext *context, int edgeType, int R, int e_R, int A, int e_A);
 
 int  _K4_RestoreReducedPath(graphP theGraph, K4SearchContext *context, int J);
 int  _K4_RestoreAndOrientReducedPaths(graphP theGraph, K4SearchContext *context);
@@ -796,16 +796,15 @@ int  _K4_ReduceBicompToEdge(graphP theGraph, K4SearchContext *context, int R, in
 {
 	int Rvisited = theGraph->G[R].visited, Wvisited = theGraph->G[W].visited;
 
+	_OrientVerticesInBicomp(theGraph, R, 0);
     _FillVisitedFlagsInBicomp(theGraph, R, 0);
     if (theGraph->functions.fpMarkDFSPath(theGraph, R, W) != OK)
         return NOTOK;
     _DeleteUnmarkedEdgesInBicomp(theGraph, R);
 
     // Now we have to reduce the path W -> R to the DFS tree edge (R, W)
-    if (_K4_ReducePathToEdge(theGraph, context,
-    		R, gp_GetFirstArc(theGraph, R),
-    		W, gp_GetFirstArc(theGraph, W),
-    		EDGE_DFSPARENT) != OK)
+    if (_K4_ReducePathToEdge(theGraph, context, EDGE_DFSPARENT,
+    		R, gp_GetFirstArc(theGraph, R), W, gp_GetFirstArc(theGraph, W)) != OK)
     	return NOTOK;
 
     // Finally, restore the visited flag settings of R and W, so that
@@ -884,6 +883,11 @@ int  _K4_ReducePathComponent(graphP theGraph, K4SearchContext *context, int R, i
 	// Otherwise Case 2: The DFS tree path from A to R is not within the reduction component
 
 	// TO DO: finish this, then return OK
+
+	//if (_K4_ReducePathToEdge(theGraph, context, edgeType,
+	//		R, gp_GetArc(theGraph, R, Rlink), A, gp_GetArc(theGraph, A, Alink)) != OK)
+	//	return NOTOK;
+
 	// RETURN OK;
 	return NOTOK;
 }
@@ -892,7 +896,7 @@ int  _K4_ReducePathComponent(graphP theGraph, K4SearchContext *context, int R, i
  _K4_ReducePathToEdge()
  ****************************************************************************/
 
-int  _K4_ReducePathToEdge(graphP theGraph, K4SearchContext *context, int R, int e_R, int A, int e_A, int edgeType)
+int  _K4_ReducePathToEdge(graphP theGraph, K4SearchContext *context, int edgeType, int R, int e_R, int A, int e_A)
 {
 	 int Rlink, Alink, v_R, v_A;
 
@@ -944,6 +948,19 @@ int  _K4_ReducePathToEdge(graphP theGraph, K4SearchContext *context, int R, int 
 	 // Also, set the reduction edge's type to preserve the DFS tree structure
 	 theGraph->G[e_R].type = _ComputeArcType(theGraph, R, A, edgeType);
 	 theGraph->G[e_A].type = _ComputeArcType(theGraph, A, R, edgeType);
+
+	 // Set the external face data structure
+     theGraph->extFace[R].vertex[Rlink] = A;
+     theGraph->extFace[A].vertex[Alink] = R;
+
+     // If the edge represents an entire bicomp, then more external face
+     // settings are needed.
+     if (gp_GetFirstArc(theGraph, R) == gp_GetLastArc(theGraph, R))
+     {
+         theGraph->extFace[R].vertex[1^Rlink] = A;
+         theGraph->extFace[A].vertex[1^Alink] = R;
+         theGraph->extFace[A].inversionFlag = 0;
+     }
 
 	 return OK;
 }
@@ -1023,23 +1040,23 @@ int  J0, J1, JTwin0, JTwin1;
  _K4_RestoreAndOrientReducedPaths()
 
  This function searches the embedding for any edges that are specially marked
- as being representative of a path that was previously reduced to a
- single edge by _ReduceBicomp().  The edge is replaced by the path.
- Note that the new path may contain more reduction edges, and these will be
- iteratively expanded by the outer for loop.
+ as being representative of a path that was previously reduced to a single edge
+ by _ReducePathToEdge().  This method restores the path by replacing the edge
+ with the path.
 
- If the edge records of an edge being expanded are the first or last arcs
- of the edge's vertex endpoints, then the edge may be along the external face.
- If so, then the vertices along the path being restored must be given a
- consistent orientation with the endpoints.  It is expected that the embedding
+ Note that the new path may contain more reduction edges, and these will be
+ iteratively expanded by the outer for loop.  Equally, a reduced path may
+ be restored into a path that itself is a reduction path that will only be
+ attached to the embedding by some future step of the outer loop.
+
+ The vertices along the path being restored must be given a consistent
+ orientation with the endpoints.  It is expected that the embedding
  will have been oriented prior to this operation.
- TO DO: NOT CHECKED FOR CORRECTNESS OR SUITABILITY TO THIS ALGORITHM; MAY BE ABLE TO MAKE INTO A COMMON UTIL
  ****************************************************************************/
 
 int  _K4_RestoreAndOrientReducedPaths(graphP theGraph, K4SearchContext *context)
 {
 int  e, J, JTwin, u, v, w, x, visited;
-int  J0, JTwin0, J1, JTwin1;
 
      for (e = 0; e < theGraph->M + sp_GetCurrentSize(theGraph->edgeHoles);)
      {
@@ -1054,78 +1071,11 @@ int  J0, JTwin0, J1, JTwin1;
              w = context->G[JTwin].pathConnector;
              x = theGraph->G[J].v;
 
-             /* Now we need the predecessor and successor edge records
-                of J and JTwin.  The edge (u, v) will be inserted so
-                that the record in u's adjacency list that indicates v
-                will be between J0 and J1.  Likewise, the edge record
-                (x -> w) will be placed between JTwin0 and JTwin1. */
+    		 if (_K4_RestoreReducedPath(theGraph, context, J) != OK)
+    			 return NOTOK;
 
-             J0 = gp_GetNextArc(theGraph, J);
-             J1 = gp_GetPrevArc(theGraph, J);
-             JTwin0 = gp_GetNextArc(theGraph, JTwin);
-             JTwin1 = gp_GetPrevArc(theGraph, JTwin);
-
-             /* We first delete the edge represented by J and JTwin. We do so before
-                restoring the path to ensure we do not exceed the maximum arc capacity. */
-
-             gp_DeleteEdge(theGraph, J, 0);
-
-             /* Now we add the two edges to reconnect the reduced path represented
-                by the edge [J, JTwin].  The edge record in u is added between J0 and J1.
-                Likewise, the new edge record in x is added between JTwin0 and JTwin1. */
-
-             if (gp_IsArc(theGraph, J0))
-             {
-            	 if (gp_InsertEdge(theGraph, u, J0, 1, v, gp_AdjacencyListEndMark(v), 0) != OK)
-            		 return NOTOK;
-             }
-             else
-             {
-            	 if (gp_InsertEdge(theGraph, u, J1, 0, v, gp_AdjacencyListEndMark(v), 0) != OK)
-            		 return NOTOK;
-             }
-
-             if (gp_IsArc(theGraph, JTwin0))
-             {
-            	 if (gp_InsertEdge(theGraph, x, JTwin0, 1, w, gp_AdjacencyListEndMark(w), 0) != OK)
-            		 return NOTOK;
-             }
-             else
-             {
-            	 if (gp_InsertEdge(theGraph, x, JTwin1, 0, w, gp_AdjacencyListEndMark(w), 0) != OK)
-            		 return NOTOK;
-             }
-
-             /* Set the types of the newly added edges */
-
-             if (_SetEdgeType(theGraph, v, u) != OK ||
-                 _SetEdgeType(theGraph, w, x) != OK)
-                 return NOTOK;
-
-             /* We determine whether the reduction edge may be on the external face,
-                in which case we will need to ensure that the vertices on the path
-                being restored are consistently oriented.  This will accommodate
-                future invocations of MarkPathAlongBicompExtFace().
-                Note: If J0, J1, JTwin0 or JTwin1 is not an edge, then it is
-                      because we've walked off the end of the edge record list,
-                      which happens when J and JTwin are either the first or
-                      last edge of the containing vertex.  In turn, the first
-                      and last edges of a vertex are the ones that hold it onto
-                      the external face, if it is on the external face. */
-
-             if ((!gp_IsArc(theGraph, J0) && !gp_IsArc(theGraph, JTwin1)) ||
-                 (!gp_IsArc(theGraph, J1) && !gp_IsArc(theGraph, JTwin0)))
-             {
-                 if (_K4_OrientPath(theGraph, u, v, w, x) != OK)
-                     return NOTOK;
-             }
-
-             /* The internal XY path was already marked as part of the decision logic
-                that made us decide we could find a K3,3 and hence that we should
-                reverse all of the reductions.  Subsequent code counts on the fact
-                that the X-Y path is already marked, so if we replace a marked edge
-                with a path, then we need to mark the path. Similarly, for an unmarked
-                edge, the replacement path should be unmarked. */
+			 if (_K4_OrientPath(theGraph, u, v, w, x) != OK)
+				 return NOTOK;
 
              _K4_SetVisitedOnPath(theGraph, u, v, w, x, visited);
          }
