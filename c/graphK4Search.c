@@ -67,6 +67,10 @@ int  _K4_ReduceBicompToEdge(graphP theGraph, K4SearchContext *context, int R, in
 int  _K4_ReducePathComponent(graphP theGraph, K4SearchContext *context, int R, int prevLink, int A);
 int  _K4_ReducePathToEdge(graphP theGraph, K4SearchContext *context, int edgeType, int R, int e_R, int A, int e_A);
 
+int  _K4_TestPathComponentForAncestor(graphP theGraph, int R, int prevLink, int A);
+void _K4_SetVisitedInPathComponent(graphP theGraph, int R, int prevLink, int A, int fill);
+void _K4_DeleteUnmarkedEdgesInPathComponent(graphP theGraph, int R, int prevLink, int A);
+
 int  _K4_RestoreReducedPath(graphP theGraph, K4SearchContext *context, int J);
 int  _K4_RestoreAndOrientReducedPaths(graphP theGraph, K4SearchContext *context);
 int  _K4_OrientPath(graphP theGraph, int u, int v, int w, int x);
@@ -871,25 +875,95 @@ int  _K4_ReduceBicompToEdge(graphP theGraph, K4SearchContext *context, int R, in
 
 int  _K4_ReducePathComponent(graphP theGraph, K4SearchContext *context, int R, int prevLink, int A)
 {
-	int  e_R, e_A, Z, ZPrevLink;
+	int  e_R, e_A, Z, ZPrevLink, edgeType;
 
 	// Check whether the external face path (R, ..., A) is just an edge
-	 e_R = gp_GetArc(theGraph, R, 1^prevLink);
-	 if (theGraph->G[e_R].v == A)
-		 return OK;
+	e_R = gp_GetArc(theGraph, R, 1^prevLink);
+	if (theGraph->G[e_R].v == A)
+	    return OK;
 
 	// Check for Case 1: The DFS tree path from A to R is within the reduction component
+	if (_K4_TestPathComponentForAncestor(theGraph, R, prevLink, A))
+	{
+		_K4_SetVisitedInPathComponent(theGraph, R, prevLink, A, 0);
+	    if (theGraph->functions.fpMarkDFSPath(theGraph, R, A) != OK)
+	        return NOTOK;
+	    edgeType = EDGE_DFSPARENT;
+	}
 
 	// Otherwise Case 2: The DFS tree path from A to R is not within the reduction component
+	else
+	{
+		_K4_SetVisitedInPathComponent(theGraph, R, prevLink, A, 0);
+		Z = theGraph->G[e_R].v;
+		theGraph->G[e_R].visited = 1;
+		theGraph->G[gp_GetTwinArc(theGraph, e_R)].visited = 1;
+	    if (theGraph->functions.fpMarkDFSPath(theGraph, A, Z) != OK)
+	        return NOTOK;
+		edgeType = EDGE_BACK;
+	}
 
-	// TO DO: finish this, then return OK
+	// The path to be kept/reduced is marked, so the other edges can go
+	_K4_DeleteUnmarkedEdgesInPathComponent(theGraph, R, prevLink, A);
+	_K4_SetVisitedInPathComponent(theGraph, R, prevLink, A, theGraph->N);
 
-	//if (_K4_ReducePathToEdge(theGraph, context, edgeType,
-	//		R, gp_GetArc(theGraph, R, Rlink), A, gp_GetArc(theGraph, A, Alink)) != OK)
-	//	return NOTOK;
+	// Find the proper edges incident to A and R along the external face
+	ZPrevLink = prevLink;
+	Z = R;
+	while (Z != A)
+	{
+		Z = _GetNextVertexOnExternalFace(theGraph, Z, &ZPrevLink);
+	}
+	e_A = gp_GetArc(theGraph, A, ZPrevLink);
+	e_R = gp_GetArc(theGraph, R, 1^prevLink);
 
-	// RETURN OK;
-	return NOTOK;
+	// Reduce the path (R ... A) to an edge
+	if (_K4_ReducePathToEdge(theGraph, context, edgeType, R, e_R, A, e_A) != OK)
+		return NOTOK;
+
+	return OK;
+}
+
+/****************************************************************************
+ _K4_TestPathComponentForAncestor()
+ Tests the external face path between R and A for a DFS ancestor of A.
+ Returns TRUE if found, FALSE otherwise.
+ ****************************************************************************/
+
+int _K4_TestPathComponentForAncestor(graphP theGraph, int R, int prevLink, int A)
+{
+	return FALSE;
+}
+
+/****************************************************************************
+ _K4_SetVisitedInPathComponent()
+
+ There is a subcomponent of the bicomp rooted by R that is separable by the
+ 2-cut (R, A) and contains the edge e_R = theGraph->G[R].link[1^prevLink].
+
+ All vertices in this component are along the external face, so we first
+ mark them specially. Then, for each edge incident to R and one of the
+ marked vertices, and for each edge incident to A and one of the vertices,
+ and for all edges incident to the internal vertices on the path, we set
+ their visited members to the 'fill' value. Finally, we clear the special
+ markings on the vertices to avoid side effects.
+ ****************************************************************************/
+
+void _K4_SetVisitedInPathComponent(graphP theGraph, int R, int prevLink, int A, int fill)
+{
+}
+
+/****************************************************************************
+ _K4_DeleteUnmarkedEdgesInPathComponent()
+
+ There is a subcomponent of the bicomp rooted by R that is separable by the
+ 2-cut (R, A) and contains the edge e_R = theGraph->G[R].link[1^prevLink].
+ The edges in the component have been marked unvisited except for a path we
+ intend to preserve. This routine deletes the unvisited edges.
+ ****************************************************************************/
+
+void _K4_DeleteUnmarkedEdgesInPathComponent(graphP theGraph, int R, int prevLink, int A)
+{
 }
 
 /****************************************************************************
