@@ -57,6 +57,7 @@ int  _K4_ChooseTypeOfNonOuterplanarityMinor(graphP theGraph, int I, int R);
 int  _K4_FindSecondActiveVertexOnLowExtFacePath(graphP theGraph);
 int  _K4_FindPlanarityActiveVertex(graphP theGraph, int I, int R, int prevLink, int *pW);
 int  _K4_FindSeparatingInternalEdge(graphP theGraph, int R, int prevLink, int A, int *pW, int *pX, int *pY);
+void _K4_SetTypeOnExternalFacePath(graphP theGraph, int R, int prevLink, int A, int type);
 
 int  _K4_IsolateMinorA1(graphP theGraph);
 int  _K4_IsolateMinorA2(graphP theGraph);
@@ -610,14 +611,7 @@ int _K4_FindSeparatingInternalEdge(graphP theGraph, int R, int prevLink, int A, 
 	int Z, ZPrevLink, J, neighbor;
 
 	// Mark the vertex types along the path [R ... A] as visited
-	theGraph->G[R].type = TYPE_VERTEX_VISITED;
-	ZPrevLink = prevLink;
-	Z = R;
-	while (Z != A)
-	{
-		Z = _GetNextVertexOnExternalFace(theGraph, Z, &ZPrevLink);
-		theGraph->G[Z].type = TYPE_VERTEX_VISITED;
-	}
+	_K4_SetTypeOnExternalFacePath(theGraph, R, prevLink, A, TYPE_VERTEX_VISITED);
 
 	// Search each of the vertices in the range (R ... A)
 	*pX = *pY = NIL;
@@ -651,16 +645,31 @@ int _K4_FindSeparatingInternalEdge(graphP theGraph, int R, int prevLink, int A, 
 	}
 
 	// Restore the vertex types along the path [R ... A] to the unknown state
-	theGraph->G[R].type = TYPE_UNKNOWN;
+	_K4_SetTypeOnExternalFacePath(theGraph, R, prevLink, A, TYPE_UNKNOWN);
+
+	return *pX == NIL ? FALSE : TRUE;
+}
+
+/****************************************************************************
+ _K4_SetTypeOnExternalFacePath()
+
+ Assumes A is a vertex along the external face of the bicomp rooted by R.
+ Places 'type' into the type member of vertices along the path (R ... A)
+ that begins with R's link[1^prevLink] arc.
+ ****************************************************************************/
+
+void _K4_SetTypeOnExternalFacePath(graphP theGraph, int R, int prevLink, int A, int type)
+{
+	int Z, ZPrevLink;
+
+	theGraph->G[R].type = type;
 	ZPrevLink = prevLink;
 	Z = R;
 	while (Z != A)
 	{
 		Z = _GetNextVertexOnExternalFace(theGraph, Z, &ZPrevLink);
-		theGraph->G[Z].type = TYPE_UNKNOWN;
+		theGraph->G[Z].type = type;
 	}
-
-	return *pX == NIL ? FALSE : TRUE;
 }
 
 /****************************************************************************
@@ -905,9 +914,15 @@ int  _K4_ReducePathComponent(graphP theGraph, K4SearchContext *context, int R, i
 
 	// The path to be kept/reduced is marked, so the other edges can go
 	_K4_DeleteUnmarkedEdgesInPathComponent(theGraph, R, prevLink, A);
-	_K4_SetVisitedInPathComponent(theGraph, R, prevLink, A, theGraph->N);
 
-	// Find the proper edges incident to A and R along the external face
+	// Clear all the visited flags for safety, except the vertices R and A
+	// will remain in the embedding, and the core embedder (Walkup) uses a
+	// value greater than the current vertex to indicate an unvisited vertex
+	_K4_SetVisitedInPathComponent(theGraph, R, prevLink, A, 0);
+	theGraph->G[R].visited = theGraph->N;
+	theGraph->G[A].visited = theGraph->N;
+
+	// Find the component's remaining edges e_A and e_R incident to A and R
 	ZPrevLink = prevLink;
 	Z = R;
 	while (Z != A)
@@ -932,6 +947,16 @@ int  _K4_ReducePathComponent(graphP theGraph, K4SearchContext *context, int R, i
 
 int _K4_TestPathComponentForAncestor(graphP theGraph, int R, int prevLink, int A)
 {
+	int Z, ZPrevLink;
+
+	ZPrevLink = prevLink;
+	Z = R;
+	while (Z != A)
+	{
+		Z = _GetNextVertexOnExternalFace(theGraph, Z, &ZPrevLink);
+		if (Z < A)
+			return TRUE;
+	}
 	return FALSE;
 }
 
@@ -941,16 +966,36 @@ int _K4_TestPathComponentForAncestor(graphP theGraph, int R, int prevLink, int A
  There is a subcomponent of the bicomp rooted by R that is separable by the
  2-cut (R, A) and contains the edge e_R = theGraph->G[R].link[1^prevLink].
 
- All vertices in this component are along the external face, so we first
- mark them specially. Then, for each edge incident to R and one of the
- marked vertices, and for each edge incident to A and one of the vertices,
- and for all edges incident to the internal vertices on the path, we set
- their visited members to the 'fill' value. Finally, we clear the special
- markings on the vertices to avoid side effects.
+ All vertices in this component are along the external face, so we
+ traverse along the external face vertices strictly between R and A and
+ mark all the edges and their incident vertices with the 'visitedValue'.
+
+ Note that the vertices along the path (R ... A) only have edges incident
+ to each other and to R and A because the component is separable by the
+ (R, A)-cut.
  ****************************************************************************/
 
-void _K4_SetVisitedInPathComponent(graphP theGraph, int R, int prevLink, int A, int fill)
+void _K4_SetVisitedInPathComponent(graphP theGraph, int R, int prevLink, int A, int visitedValue)
 {
+	int Z, ZPrevLink, e;
+
+	ZPrevLink = prevLink;
+	Z = _GetNextVertexOnExternalFace(theGraph, R, &ZPrevLink);
+	while (Z != A)
+	{
+		theGraph->G[Z].visited = visitedValue;
+		e = gp_GetFirstArc(theGraph, Z);
+		while (gp_IsArc(theGraph, e))
+		{
+			theGraph->G[e].visited = visitedValue;
+			theGraph->G[gp_GetTwinArc(theGraph, e)].visited = visitedValue;
+			theGraph->G[theGraph->G[e].v].visited = visitedValue;
+
+			e = gp_GetNextArcCircular(theGraph, e);
+		}
+
+		Z = _GetNextVertexOnExternalFace(theGraph, Z, &ZPrevLink);
+	}
 }
 
 /****************************************************************************
@@ -964,6 +1009,9 @@ void _K4_SetVisitedInPathComponent(graphP theGraph, int R, int prevLink, int A, 
 
 void _K4_DeleteUnmarkedEdgesInPathComponent(graphP theGraph, int R, int prevLink, int A)
 {
+	// This doesn't need to modify extFace
+	// _GetNextVertexOnExternalFace() needs comment update
+	// _OrientPath shouldn't need to set extFace (K3,3 and K4)
 }
 
 /****************************************************************************
