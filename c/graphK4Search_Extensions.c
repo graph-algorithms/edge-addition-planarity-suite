@@ -396,7 +396,7 @@ int _K4Search_CreateFwdArcLists(graphP theGraph)
     if (context == NULL)
         return NOTOK;
 
-    // For isolating a K_{3,3} homeomorph, we need the forward edges
+    // For isolating a K_4 homeomorph, we need the forward edges
     // of each vertex to be in sorted order by DFI of descendants.
     // Otherwise we just drop through to the normal processing...
 
@@ -547,6 +547,7 @@ void _K4Search_InitGraphNode(graphP theGraph, int I)
 void _InitK4SearchGraphNode(K4SearchContext *context, int I)
 {
     context->G[I].pathConnector = NIL;
+    context->G[I].subtree = NIL;
 }
 
 /********************************************************************
@@ -566,6 +567,7 @@ void _K4Search_InitVertexRec(graphP theGraph, int I)
 
 void _InitK4SearchVertexRec(K4SearchContext *context, int I)
 {
+    context->V[I].p2dFwdArcCount = 0;
     context->V[I].sortedDFSChildList = NIL;
 }
 
