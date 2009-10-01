@@ -1010,7 +1010,6 @@ void _K4_SetVisitedInPathComponent(graphP theGraph, int R, int prevLink, int A, 
 void _K4_DeleteUnmarkedEdgesInPathComponent(graphP theGraph, int R, int prevLink, int A)
 {
 	// This doesn't need to modify extFace
-	// _GetNextVertexOnExternalFace() needs comment update
 	// _OrientPath shouldn't need to set extFace (K3,3 and K4)
 }
 

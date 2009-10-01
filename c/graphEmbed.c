@@ -375,18 +375,21 @@ int fwdArc, backArc, parentCopy;
  node in G, which is the next vertex.  Once we arrive at the next
  vertex, at least one of its links will lead back to the edge node, and
  that link becomes the output value of *pPrevLink.
+
+ NOTE: This method intentionally ignores the extFace optimization
+       links. It is invoked when the "real" external face must be
+       traversed and hence when the constant time guarantee is not
+       needed from the extFace short-circuit that connects the
+       bicomp root to the first active vertices along each external
+       face path emanating from the bicomp root.
  ********************************************************************/
 
 int  _GetNextVertexOnExternalFace(graphP theGraph, int curVertex, int *pPrevLink)
 {
-int  arc, nextArc, nextVertex;
-
      /* Exit curVertex from whichever link was not previously used to enter it */
 
-     arc = gp_GetArc(theGraph, curVertex, 1^(*pPrevLink));
-     nextArc = gp_GetTwinArc(theGraph, arc);
-
-     nextVertex = theGraph->G[arc].v;
+     int arc = gp_GetArc(theGraph, curVertex, 1^(*pPrevLink));
+     int nextVertex = theGraph->G[arc].v;
 
      /* This if stmt assigns the new prev link that tells us which edge
         record was used to enter nextVertex (so that we exit from the
@@ -402,7 +405,7 @@ int  arc, nextArc, nextVertex;
         as traversal of the external face continues later. */
 
      if (gp_GetFirstArc(theGraph, nextVertex) != gp_GetLastArc(theGraph, nextVertex))
-         *pPrevLink = nextArc == gp_GetFirstArc(theGraph, nextVertex) ? 0 : 1;
+         *pPrevLink = gp_GetTwinArc(theGraph, arc) == gp_GetFirstArc(theGraph, nextVertex) ? 0 : 1;
 
      return nextVertex;
 }
