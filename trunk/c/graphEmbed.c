@@ -761,8 +761,18 @@ int  RootID_DFSChild, BicompList;
  Then NONEMBEDDABLE is returned so that the WalkDown can terminate,
  and the embedder can proceed to isolate the obstruction.
  Some algorithms may be able to clear the blockage, in which case
- a function overload would set Rout, W and WPrevLink, then return
- OK to indicate that the WalkDown may proceed.
+ a function overload would set Rout, W and WPrevLink, then return OK
+ to indicate that the WalkDown may proceed.
+
+ NOTE: When returning OK, the overload implementation should NOT
+       call this base implementation or otherwise push R onto the
+       stack because the core WalkDown implementation will push the
+       appropriate stack entries based on R, Rout, W and WPrevLink
+       Similarly, when returning NONEMBEDDABLE, it is typically not
+       necessary to call this base implementation because pushing
+       the bicomp root R is not usually necessary, i.e. the overload
+       implementation usually does all embed post-processing before
+       returning NONEMBEDDABLE.
 
  Returns OK to proceed with WalkDown at W,
          NONEMBEDDABLE to terminate WalkDown of Root Vertex
