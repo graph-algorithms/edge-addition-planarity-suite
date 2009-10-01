@@ -1975,6 +1975,9 @@ int  e_v, e_ulink, e_vlink;
             e_vlink = 1^e_vlink;
         }
 
+        // This update of the extFace short-circuit is polite but unnecessary.
+        // This orientation only occurs once we know we can isolate a K_{3,3},
+        // at which point the extFace data structure is not used.
         theGraph->extFace[u].vertex[e_ulink] = v;
         theGraph->extFace[v].vertex[e_vlink] = u;
 
