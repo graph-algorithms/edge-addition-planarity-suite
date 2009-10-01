@@ -70,7 +70,7 @@ int  _K4_ReducePathToEdge(graphP theGraph, K4SearchContext *context, int edgeTyp
 
 int  _K4_TestPathComponentForAncestor(graphP theGraph, int R, int prevLink, int A);
 void _K4_SetVisitedInPathComponent(graphP theGraph, int R, int prevLink, int A, int fill);
-void _K4_DeleteUnmarkedEdgesInPathComponent(graphP theGraph, int R, int prevLink, int A);
+int  _K4_DeleteUnmarkedEdgesInPathComponent(graphP theGraph, int R, int prevLink, int A);
 
 int  _K4_RestoreReducedPath(graphP theGraph, K4SearchContext *context, int J);
 int  _K4_RestoreAndOrientReducedPaths(graphP theGraph, K4SearchContext *context);
@@ -913,7 +913,8 @@ int  _K4_ReducePathComponent(graphP theGraph, K4SearchContext *context, int R, i
 	}
 
 	// The path to be kept/reduced is marked, so the other edges can go
-	_K4_DeleteUnmarkedEdgesInPathComponent(theGraph, R, prevLink, A);
+	if (_K4_DeleteUnmarkedEdgesInPathComponent(theGraph, R, prevLink, A) != OK)
+		return NOTOK;
 
 	// Clear all the visited flags for safety, except the vertices R and A
 	// will remain in the embedding, and the core embedder (Walkup) uses a
@@ -1005,12 +1006,60 @@ void _K4_SetVisitedInPathComponent(graphP theGraph, int R, int prevLink, int A, 
  2-cut (R, A) and contains the edge e_R = theGraph->G[R].link[1^prevLink].
  The edges in the component have been marked unvisited except for a path we
  intend to preserve. This routine deletes the unvisited edges.
+
+ NOTE: This reduction has invalidated the short-circuit extFace data structure,
+       but it will be repaired for use by WalkUp and WalkDown when the path
+       component reduction is completed.
+
+ Returns OK on success, NOTOK on internal error
  ****************************************************************************/
 
-void _K4_DeleteUnmarkedEdgesInPathComponent(graphP theGraph, int R, int prevLink, int A)
+int  _K4_DeleteUnmarkedEdgesInPathComponent(graphP theGraph, int R, int prevLink, int A)
 {
-	// This doesn't need to modify extFace
-	// _OrientPath shouldn't need to set extFace (K3,3 and K4)
+	int Z, ZPrevLink, e;
+
+	// We need to use the stack to store up the edges we're going to delete.
+	// We want to make sure there is enough stack capacity to handle it,
+	// which is of course true because the stack is supposed to be empty.
+	// We're doing a reduction on a bicomp on which the WalkDown has completed,
+	// so the sack contains no bicomp roots to merge.
+	if (sp_NonEmpty(theGraph->theStack))
+		return NOTOK;
+
+	// Traverse all vertices internal to the path (R ... A) and push
+	// all non-visited edges
+	ZPrevLink = prevLink;
+	Z = _GetNextVertexOnExternalFace(theGraph, R, &ZPrevLink);
+	while (Z != A)
+	{
+		e = gp_GetFirstArc(theGraph, Z);
+		while (gp_IsArc(theGraph, e))
+		{
+			// The comparison of e to its twin is a useful way of ensuring we
+			// don't push the edge twice, which is of course only applicable
+			// when processing an edge whose endpoints are both internal to
+			// the path (R ... A)
+			if (!theGraph->G[e].visited &&
+					(e < gp_GetTwinArc(theGraph, e) ||
+					 theGraph->G[e].v == R || theGraph->G[e].v == A))
+			{
+				sp_Push(theGraph->theStack, e);
+			}
+
+			e = gp_GetNextArcCircular(theGraph, e);
+		}
+
+		Z = _GetNextVertexOnExternalFace(theGraph, Z, &ZPrevLink);
+	}
+
+	// Delete all the non-visited edges
+	while (sp_NonEmpty(theGraph->theStack))
+	{
+		sp_Pop(theGraph->theStack, e);
+		gp_DeleteEdge(theGraph, e, 0);
+	}
+
+	return OK;
 }
 
 /****************************************************************************
