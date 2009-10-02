@@ -381,9 +381,9 @@ void _K4Search_FreeContext(void *pContext)
  simplified by the fact that they have already been placed in
  succession at the end of the adjacency list.
 
- For K4 search, the forward edges must be sorted.  The sort is linear
- time, but it is a little slower, so we avoid this cost for the other
- planarity-related algorithms.
+ For K4 search, the forward edges must be sorted by DFS number of
+ the descendant endpoint.  The sort is linear time, but it is a little
+ slower, so we avoid this cost for the other planarity-related algorithms.
 
   Returns OK on success, NOTOK on internal code failure
  ********************************************************************/
@@ -480,8 +480,34 @@ int _K4Search_CreateFwdArcLists(graphP theGraph)
  _K4Search_CreateDFSTreeEmbedding()
 
  This function overloads the basic planarity version in the manner
- explained by the comments below.  Once the extra behavior is
- performed, the basic planarity version is invoked.
+ explained below.  Once the extra behavior is performed, the basic
+ planarity version is invoked.
+
+ First, the sortedDFSChildList of each vertex is computed. Each vertex
+ receives the list of its DFS children sorted by their DFS numbers.
+ This is linear time overall. The core planarity/outerplanarity
+ algorithm computes a different list of the DFS children, the
+ separatedDFSChildList, in which the DFS children are stored in order
+ of their lowpoint values.
+
+ Second, the p2dFwdArcCount of each vertex is computed. This is the
+ number of forward arcs from the DFS parent of the vertex to DFS
+ descendants of the vertex. This is computed based on a simultaneous
+ traversal through the sortedDFSChildList and the sorted fwdArcList.
+
+ Third, the subtree value of each forward arc (V, D) is determined. This
+ value indicates the DFS child C of V whose DFS subtree contains the DFS
+ descendant endpoint D of the forward arc. This can be computed during
+ the setting of the p2dFwdArcCount values.
+
+ Each DFS child is listed in DFI order in V[I].sortedDFSChildList.
+ In V[I].fwdArcList, the forward arcs of all back edges are in order
+ by DFI of the descendant endpoint of the edge.
+
+ DFS descendants have a higher DFI than ancestors, so given two
+ successive children C1 and C2, if a forward arc leads to a
+ vertex D such that DFI(C1) < DFI(D) < DFI(C2), then the
+ forward arc contributes to the count of C1 and has C1 as subtree.
  ********************************************************************/
 
 void _K4Search_CreateDFSTreeEmbedding(graphP theGraph)
@@ -491,17 +517,12 @@ void _K4Search_CreateDFSTreeEmbedding(graphP theGraph)
 
     if (context != NULL)
     {
-        // When searching for K_4 homeomorphs, we need the
-        // list of DFS children for each vertex, which gets lost
-        // during the initial tree embedding (each DFS tree child
-        // arc is moved to the root copy of the vertex)
-
         if (theGraph->embedFlags == EMBEDFLAGS_SEARCHFORK4)
         {
-            int I, J, N;
+            int I, J, C1, C2, D, e;
+            int N = theGraph->N;
 
-            N = theGraph->N;
-
+            // First compute the sortedDFSChildList of each vertex
             for (I=0; I<N; I++)
             {
                 J = gp_GetFirstArc(theGraph, I);
@@ -511,7 +532,6 @@ void _K4Search_CreateDFSTreeEmbedding(graphP theGraph)
                 // the DFI's along the successor arc pointers, so
                 // we traverse them and prepend each to the
                 // ascending order sortedDFSChildList
-
                 while (theGraph->G[J].type == EDGE_DFSCHILD)
                 {
                     context->V[I].sortedDFSChildList =
@@ -522,9 +542,65 @@ void _K4Search_CreateDFSTreeEmbedding(graphP theGraph)
                     J = gp_GetNextArc(theGraph, J);
                 }
             }
-        }
+
+            // Next compute the p2dFwdArcCount of each vertex and the
+            // subtree of each forward arc.
+            for (I=0; I<N; I++)
+            {
+            	// For each DFS child of the vertex I, ...
+                C1 = context->V[I].sortedDFSChildList;
+                e = theGraph->V[I].fwdArcList;
+                while (C1 != NIL && gp_IsArc(theGraph, e))
+                {
+                	// Get the next higher numbered child C2
+                    C2 = LCGetNext(context->sortedDFSChildLists,
+                                   context->V[I].sortedDFSChildList, C1);
+
+                    // If there is a next child C2, then we can restrict attention
+                    // to the forward arcs with DFI less than C2
+                    if (C2 != NIL)
+                    {
+    					D = theGraph->G[e].v;
+    					while (D < C2)
+    					{
+                    		context->V[C1].p2dFwdArcCount++;
+                    		context->G[e].subtree = C1;
+
+                    		// Go to the next forward arc
+							e = gp_GetNextArc(theGraph, e);
+							if (e == theGraph->V[I].fwdArcList)
+							{
+								e = NIL;
+								break;
+							}
+							D = theGraph->G[e].v;
+    					}
+                    }
+
+                    // If C1 is the last DFS child (C2==NIL), then all remaining
+                    // forward edges must connect to descendants of C1.
+                    else
+                    {
+                    	while (gp_IsArc(theGraph, e))
+                    	{
+                    		context->V[C1].p2dFwdArcCount++;
+                    		context->G[e].subtree = C1;
+
+                    		// Go to the next forward arc
+							e = gp_GetNextArc(theGraph, e);
+							if (e == theGraph->V[I].fwdArcList)
+								e = NIL;
+                    	}
+                    }
+
+					// Move the DFS child context to C2
+					C1 = C2;
+                }
+            }
+       }
 
         // Invoke the superclass version of the function
+        // Each DFS tree child arc is moved to the root copy of the vertex
         context->functions.fpCreateDFSTreeEmbedding(theGraph);
     }
 }
