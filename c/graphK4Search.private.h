@@ -36,8 +36,8 @@ extern "C" {
       fwdArcList of each vertex is sorted by descendant endpoint DFS number,
       and the sortedDFSChildList of each vertex is computed. This enables
       the subtree settings to be made with a single pass simultaneously
-      through the fwdArcList and sortedDFSChildList. See CreateFwdArcLists
-      for implementation details.
+      through the fwdArcList and sortedDFSChildList. See the implementation
+      of CreateDFSTreeEmbedding for details.
  */
 typedef struct
 {
