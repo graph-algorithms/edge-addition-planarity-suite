@@ -136,8 +136,9 @@ K4SearchContext *context = NULL;
      {
     	 if (context->V[C].p2dFwdArcCount == 0)
     	 {
-    		 //remove C from I's sortedDFSChildList
-    		 // note: you still have to overload EmbedBackEdge
+    		 context->V[I].sortedDFSChildList = LCDelete(
+    				 context->sortedDFSChildLists,
+    				 context->V[I].sortedDFSChildList, C);
     	 }
     	 else
     	 {
@@ -145,7 +146,8 @@ K4SearchContext *context = NULL;
              RetVal = _SearchForK4InBicomp(theGraph, context, I, R);
     		 if (RetVal != OK)
     			 break;
-    		 //do Walkdown
+             if ((RetVal = theGraph->functions.fpWalkDown(theGraph, I, R)) != OK)
+            	 return RetVal;
     	 }
      }
 
