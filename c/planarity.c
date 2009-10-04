@@ -394,6 +394,7 @@ int runTests(int argc, char *argv[])
 {
 #define NUMCOMMANDSTOTEST	6
 
+	platform_time start, end;
 	char *commandLine[] = {
 			"planarity", "-gen", "C", "9"
 	};
@@ -406,10 +407,10 @@ int runTests(int argc, char *argv[])
 	};
 	int success = TRUE;
 	int results[] = { 194815, 194815, 269377, 268948, 191091, 0 };
-	int i, start, stop;
+	int i, startCommand, stopCommand;
 
-	start = 0;
-	stop = NUMCOMMANDSTOTEST;
+	startCommand = 0;
+	stopCommand = NUMCOMMANDSTOTEST;
 
 	// If a single test command is given...
 	if (argc == 4 || (argc == 3 && quietMode != 'y'))
@@ -421,15 +422,17 @@ int runTests(int argc, char *argv[])
 		{
 			if (strcmp(commandToTest, commands[i]) == 0)
 			{
-				start = i;
-				stop = i+1;
+				startCommand = i;
+				stopCommand = i+1;
 				break;
 			}
 		}
 	}
 
 	// Either run all tests or the selected test
-	for (i=start; i < stop; i++)
+    platform_GetTime(start);
+
+    for (i=startCommand; i < stopCommand; i++)
 	{
 		printf("Testing %s\n", commandNames[i]);
 
@@ -446,6 +449,16 @@ int runTests(int argc, char *argv[])
 			success = FALSE;
 		}
 	}
+
+	platform_GetTime(end);
+    sprintf(Line, "Finished processing in %.3lf seconds.\n", platform_GetDuration(start,end));
+	if (quietMode == 'y')
+	{
+		quietMode = 'n';
+	    Message(Line);
+		quietMode = 'y';
+	}
+	else Message(Line);
 
 	if (success)
 	    printf("Tests of all commands succeeded.\n");
