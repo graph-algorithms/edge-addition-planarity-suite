@@ -34,6 +34,7 @@ int  _K4Search_InitStructures(K4SearchContext *context);
 
 int  _K4Search_CreateFwdArcLists(graphP theGraph);
 void _K4Search_CreateDFSTreeEmbedding(graphP theGraph);
+void _K4Search_EmbedBackEdgeToDescendant(graphP theGraph, int RootSide, int RootVertex, int W, int WPrevLink);
 int  _K4Search_MarkDFSPath(graphP theGraph, int ancestor, int descendant);
 int  _K4Search_HandleBlockedEmbedIteration(graphP theGraph, int I);
 int  _K4Search_HandleBlockedDescendantBicomp(graphP theGraph, int I, int RootVertex, int R, int *pRout, int *pW, int *pWPrevLink);
@@ -102,6 +103,7 @@ int  gp_AttachK4Search(graphP theGraph)
 
      context->functions.fpCreateFwdArcLists = _K4Search_CreateFwdArcLists;
      context->functions.fpCreateDFSTreeEmbedding = _K4Search_CreateDFSTreeEmbedding;
+     context->functions.fpEmbedBackEdgeToDescendant = _K4Search_EmbedBackEdgeToDescendant;
      context->functions.fpMarkDFSPath = _K4Search_MarkDFSPath;
      context->functions.fpHandleBlockedEmbedIteration = _K4Search_HandleBlockedEmbedIteration;
      context->functions.fpHandleBlockedDescendantBicomp = _K4Search_HandleBlockedDescendantBicomp;
@@ -602,6 +604,42 @@ void _K4Search_CreateDFSTreeEmbedding(graphP theGraph)
         // Invoke the superclass version of the function
         // Each DFS tree child arc is moved to the root copy of the vertex
         context->functions.fpCreateDFSTreeEmbedding(theGraph);
+    }
+}
+
+/********************************************************************
+ _K4Search_EmbedBackEdgeToDescendant()
+
+ The forward and back arcs of the cycle edge are embedded by the planarity
+ version of this function.
+ However, for K_4 subgraph homeomorphism, we also maintain a forward
+ arc counter in a DFS child C of each vertex V to indicate how many
+ forward arcs there are from V to descendants of C.  Each forward arc
+ has an indicator, 'subtree', of C.  When we embed the edge, we decrement
+ the counter so that when the WalkDown resolves as much pertinence as
+ possible along the external face of the bicomp rooted by R=C+N, then
+ we can easily determine whether there is more unresolved pertinence
+ by testing whether the forward arc count has dropped to zero.
+ If not, then we either find a K4 or perform a reduction that enables
+ the WalkDown to make more progress when reinvoked.
+ ********************************************************************/
+
+void _K4Search_EmbedBackEdgeToDescendant(graphP theGraph, int RootSide, int RootVertex, int W, int WPrevLink)
+{
+    K4SearchContext *context = NULL;
+    gp_FindExtension(theGraph, K4SEARCH_ID, (void *)&context);
+
+    if (context != NULL)
+    {
+        // K4 search may have been attached, but not enabled
+        if (theGraph->embedFlags == EMBEDFLAGS_SEARCHFORK4)
+        {
+        	int fwdArc = theGraph->V[W].adjacentTo;
+        	context->V[context->G[fwdArc].subtree].p2dFwdArcCount--;
+        }
+
+        // Invoke the superclass version of the function
+        context->functions.fpEmbedBackEdgeToDescendant(theGraph, RootSide, RootVertex, W, WPrevLink);
     }
 }
 
