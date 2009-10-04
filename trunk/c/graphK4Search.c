@@ -81,97 +81,75 @@ int  _MarkEdge(graphP theGraph, int u, int v);
 
 
 /****************************************************************************
- _SearchForK4()
+ _SearchForK4InBicomps()
+
+ This method is the main handler for a blocked iteration of the core
+ planarity/outerplanarity algorithm. At the end of processing for the
+ current vertex I, if there is unresolved pertinence for I (i.e. if
+ there are unembedded forward arcs from I to its DFS descendants), then
+ this method is called.
+
+ In this case, the fwdArcList of I is non-empty; it is also sorted by
+ DFI of the descendants endpoints.  Also, the sortedDFSChildList of I
+ is non-empty, and it is also sorted by DFI of the children.
+
+ Any DFS child C of I that has a p2dFwdArcCount of zero is simply
+ removed from the sortedDFSChildList of I as it is encountered because
+ the zero value means that there are no unembedded forward arcs from I
+ to descendants of C.
+
+ As soon as a DFS child C is encountered that has a p2dFwdArcCount
+ greater than zero, we simply invoke SearchForK4InBicomp(). The result
+ will either be an isolated K4 homeomorph, or an indication that a
+ reduction has occurred. In the latter case, the WalkDown can be
+ invoked to resolve more of the pertinence of the bicomp. The WalkDown
+ may or may not resolve all the remaining pertinence in the DFS
+ subtree rooted by C.  If it does, then the p2dFwdArcCount of C will
+ drop to zero, and the next iteration of the loop in this method will
+ remove C from the sortedDFSChildList of I.  If the p2dFwdArcCount of
+ C does not drop to zero during the WalkDown, then the bicomp that
+ contains C is ready for another search in the next iteration of the
+ main loop of this method.
+
+ Overall, the only two legitimate outcomes of this method call are
+ 1) reductions have enabled further WalkDown calls to resolve all
+    of the pertinence of I
+ 2) a subgraph homeomorphic to K4 has been isolated
+
+ Returns
+    OK if the pertinence of I was fully resolved, indicating that the
+       core planarity/outerplanarity algorithm can proceed
+    NONEMBEDDABLE if a subgraph homeomorphic to K4 has been isolated
+    NOTOK on failure
  ****************************************************************************/
 
-int  _SearchForK4(graphP theGraph, int I)
+int  _SearchForK4InBicomps(graphP theGraph, int I)
 {
-int  C1, C2, D, e, RetVal=OK, FoundOne;
+int  C, R, RetVal=OK;
 K4SearchContext *context = NULL;
 
     gp_FindExtension(theGraph, K4SEARCH_ID, (void *)&context);
     if (context == NULL)
         return NOTOK;
 
-     /* Each DFS child is listed in DFI order in V[I].sortedDFSChildList.
-        In V[I].fwdArcList, the forward arcs of all unembedded back edges are
-        in order by DFI of the descendant endpoint of the edge.
-
-        DFS descendants have a higher DFI than ancestors, so given two
-        successive children C1 and C2, if any forward arcs lead to a
-        vertex D such that DFI(C1) < DFI(D) < DFI(C2), then the Walkdown
-        failed to embed a back edge from I to a descendant D of C1. */
-
-     e = theGraph->V[I].fwdArcList;
-     D = theGraph->G[e].v;
-
-     C1 = context->V[I].sortedDFSChildList;
-
-     FoundOne = FALSE;
-
-     while (C1 != NIL && e != NIL)
+     while ((C = context->V[I].sortedDFSChildList) != NIL)
      {
-        C2 = LCGetNext(context->sortedDFSChildLists,
-                       context->V[I].sortedDFSChildList, C1);
-
-        // If the edge e leads from I to a descendant D of C1,
-        // then D will be less than C2 (as explained above),
-        // so we search for a K_4 in the bicomp rooted
-        // by the root copy of I associated with C1.
-        // (If C2 is NIL, then C1 is the last child)
-
-        if (D < C2 || C2 == NIL)
-        {
-        	FoundOne = TRUE;
-            RetVal = _SearchForK4InBicomp(theGraph, context, I, C1+theGraph->N);
-
-            // If something went wrong, NOTOK was returned;
-            // If a K_4 was found, NONEMBEDDABLE was returned;
-            // If OK was returned, then only a K_{2,3} was found
-            // (and reduced to a non-obstruction), so we continue
-            // searching any other bicomps on which the Walkdown failed.
-
-            // TO DO: if a reduction occurs, we actually need to do more
-            // walking down *on that bicomp*, which may remove some of the
-            // edges from the fwdArcList on which we're iterating.
-            // This routine is only getting called on B and E, not A
-            // Rename to accommodate
-            // Need to keep hammering on a given bicomp until the front of the
-            // list is empty or has edges to another bicomp.  Then, the bicomp
-            // pertinence is finished.  Only other reason to stop is an
-            // identified K4.
-
-            if (RetVal != OK)
-             break;
-        }
-
-        // Skip the edges that lead to descendants of C1 to get to those
-        // edges that lead to descendants of C2.
-
-        if (C2 != NIL)
-        {
-            while (D < C2 && gp_IsArc(theGraph, e))
-            {
-                e = gp_GetNextArc(theGraph, e);
-                if (e == theGraph->V[I].fwdArcList)
-                     e = NIL;
-                else D = theGraph->G[e].v;
-            }
-        }
-
-        // Move the DFS child context to C2
-        C1 = C2;
+    	 if (context->V[C].p2dFwdArcCount == 0)
+    	 {
+    		 //remove C from I's sortedDFSChildList
+    		 // note: you still have to overload EmbedBackEdge
+    	 }
+    	 else
+    	 {
+    		 R = C + theGraph->N;
+             RetVal = _SearchForK4InBicomp(theGraph, context, I, R);
+    		 if (RetVal != OK)
+    			 break;
+    		 //do Walkdown
+    	 }
      }
 
-/* If we got through the loop with an OK value for each bicomp on
-     which the Walkdown failed, then we return OK to indicate that only
-     K_{2,3}'s were found. The OK return allows the embedder to continue.
-
-     NOTE: The variable FoundOne helps ensure we detect at least one
-        bicomp on which the Walkdown failed (this should always be
-        the case in an error-free implementation like this one!). */
-
-     return FoundOne ? RetVal : NOTOK;
+     return RetVal;
 }
 
 /****************************************************************************

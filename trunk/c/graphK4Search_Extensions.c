@@ -13,7 +13,7 @@ the expressed written permission of the copyright holder.
 
 extern int  _GetNextVertexOnExternalFace(graphP theGraph, int curVertex, int *pPrevLink);
 
-extern int  _SearchForK4(graphP theGraph, int I);
+extern int  _SearchForK4InBicomps(graphP theGraph, int I);
 extern int  _SearchForK4InBicomp(graphP theGraph, K4SearchContext *context, int I, int R);
 
 extern int _TestForCompleteGraphObstruction(graphP theGraph, int numVerts,
@@ -746,7 +746,7 @@ int  J, parent, N;
 int  _K4Search_HandleBlockedEmbedIteration(graphP theGraph, int I)
 {
     if (theGraph->embedFlags == EMBEDFLAGS_SEARCHFORK4)
-        return _SearchForK4(theGraph, I);
+        return _SearchForK4InBicomps(theGraph, I);
 
     else
     {
