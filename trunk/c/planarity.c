@@ -451,14 +451,7 @@ int runTests(int argc, char *argv[])
 	}
 
 	platform_GetTime(end);
-    sprintf(Line, "Finished processing in %.3lf seconds.\n", platform_GetDuration(start,end));
-	if (quietMode == 'y')
-	{
-		quietMode = 'n';
-	    Message(Line);
-		quietMode = 'y';
-	}
-	else Message(Line);
+    printf("Finished processing in %.3lf seconds.\n", platform_GetDuration(start,end));
 
 	if (success)
 	    printf("Tests of all commands succeeded.\n");
