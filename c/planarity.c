@@ -156,7 +156,7 @@ int helpMessage(char *param)
             "'planarity (-h|-help)': this message\n"
             "'planarity (-h|-help) -gen': more help with nauty generator command line\n"
             "'planarity (-h|-help) -menu': more help with menu-based command line\n"
-    	    "'planarity -test [-q]': runs tests (optional quiet mode)\n"
+    	    "'planarity -test[-q] [C]': runs tests (optional quiet mode, single test)\n"
 	    	"\n"
 	    );
 
@@ -406,9 +406,30 @@ int runTests(int argc, char *argv[])
 	};
 	int success = TRUE;
 	int results[] = { 194815, 194815, 269377, 268948, 191091, 0 };
-	int i;
+	int i, start, stop;
 
-	for (i=0; i < NUMCOMMANDSTOTEST; i++)
+	start = 0;
+	stop = NUMCOMMANDSTOTEST;
+
+	// If a single test command is given...
+	if (argc == 4 || (argc == 3 && quietMode != 'y'))
+	{
+		char *commandToTest = argv[2 + (quietMode == 'y' ? 1 : 0)];
+
+		// Determine which test to run...
+		for (i = 0; i < NUMCOMMANDSTOTEST; i++)
+		{
+			if (strcmp(commandToTest, commands[i]) == 0)
+			{
+				start = i;
+				stop = i+1;
+				break;
+			}
+		}
+	}
+
+	// Either run all tests or the selected test
+	for (i=start; i < stop; i++)
 	{
 		printf("Testing %s\n", commandNames[i]);
 
