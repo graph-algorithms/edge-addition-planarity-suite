@@ -334,12 +334,12 @@ int gp_Read(graphP theGraph, char *FileName)
 {
 FILE *Infile;
 char Ch;
-int RetVal = NOTOK;
+int RetVal;
 
      if (strcmp(FileName, "stdin") == 0)
           Infile = stdin;
      else if ((Infile = fopen(FileName, READTEXT)) == NULL)
-          return RetVal;
+          return NOTOK;
 
      Ch = (char) fgetc(Infile);
      ungetc(Ch, Infile);
@@ -364,7 +364,7 @@ int RetVal = NOTOK;
             extraData = malloc(fileSize - filePos + 1);
             fread(extraData, fileSize - filePos, 1, Infile);
          }
-/*
+/*// Useful for quick debugging of IO extensibility
          if (extraData == NULL)
              printf("extraData == NULL\n");
          else

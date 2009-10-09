@@ -49,7 +49,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 extern void _FillVisitedFlags(graphP, int);
 
 extern int  _GetNextVertexOnExternalFace(graphP theGraph, int curVertex, int *pPrevLink);
-extern void _OrientVerticesInBicomp(graphP theGraph, int BicompRoot, int PreserveSigns);
+extern int  _OrientVerticesInBicomp(graphP theGraph, int BicompRoot, int PreserveSigns);
 extern int  _JoinBicomps(graphP theGraph);
 
 extern int  _MarkHighestXYPath(graphP theGraph);
@@ -248,7 +248,9 @@ int X, Y, XPrevLink, YPrevLink;
     Then, we return OK to tell the outerplanarity embedder that it
     can ignore this K_4 and keep processing. */
 
-    _OrientVerticesInBicomp(theGraph, R, 1);
+    if (_OrientVerticesInBicomp(theGraph, R, 1) != OK)
+    	return NOTOK;
+
     return OK;
 }
 

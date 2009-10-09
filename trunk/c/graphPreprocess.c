@@ -286,7 +286,7 @@ printf("SortVertices in %.3lf seconds.\n", platform_GetDuration(start,end));
  A stack of size N suffices because we push each vertex only once.
  ********************************************************************/
 
-void gp_LowpointAndLeastAncestor(graphP theGraph)
+int  gp_LowpointAndLeastAncestor(graphP theGraph)
 {
 stackP theStack = theGraph->theStack;
 int I, u, uneighbor, J, L, leastAncestor;
@@ -369,5 +369,7 @@ platform_GetTime(start);
 platform_GetTime(end);
 printf("Lowpoint in %.3lf seconds.\n", platform_GetDuration(start,end));
 #endif
+
+     return OK;
 }
 

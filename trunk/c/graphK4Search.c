@@ -17,25 +17,24 @@ extern int K4SEARCH_ID;
 
 extern void _ClearIsolatorContext(graphP theGraph);
 extern void _FillVisitedFlags(graphP, int);
-extern void _FillVisitedFlagsInBicomp(graphP theGraph, int BicompRoot, int FillValue);
-extern void _FillVisitedFlagsInOtherBicomps(graphP theGraph, int BicompRoot, int FillValue);
+extern int  _FillVisitedFlagsInBicomp(graphP theGraph, int BicompRoot, int FillValue);
+extern int  _FillVisitedFlagsInOtherBicomps(graphP theGraph, int BicompRoot, int FillValue);
 extern void _FillVisitedFlagsInUnembeddedEdges(graphP theGraph, int FillValue);
-extern void _DeleteUnmarkedEdgesInBicomp(graphP theGraph, int BicompRoot);
-extern void _ClearInvertedFlagsInBicomp(graphP theGraph, int BicompRoot);
+extern int  _DeleteUnmarkedEdgesInBicomp(graphP theGraph, int BicompRoot);
 extern int  _ComputeArcType(graphP theGraph, int a, int b, int edgeType);
 extern int  _SetEdgeType(graphP theGraph, int u, int v);
 
 extern int  _GetNextVertexOnExternalFace(graphP theGraph, int curVertex, int *pPrevLink);
 extern void _FindActiveVertices(graphP theGraph, int R, int *pX, int *pY);
-extern void _OrientVerticesInBicomp(graphP theGraph, int BicompRoot, int PreserveSigns);
-extern void _OrientVerticesInEmbedding(graphP theGraph);
+extern int  _OrientVerticesInBicomp(graphP theGraph, int BicompRoot, int PreserveSigns);
+extern int  _OrientVerticesInEmbedding(graphP theGraph);
 extern void _InvertVertex(graphP theGraph, int V);
 
 extern int  _FindUnembeddedEdgeToAncestor(graphP theGraph, int cutVertex, int *pAncestor, int *pDescendant);
 extern int  _FindUnembeddedEdgeToCurVertex(graphP theGraph, int cutVertex, int *pDescendant);
 extern int  _GetLeastAncestorConnection(graphP theGraph, int cutVertex);
 
-extern void _SetVertexTypesForMarkingXYPath(graphP theGraph);
+extern int  _SetVertexTypesForMarkingXYPath(graphP theGraph);
 extern int  _MarkHighestXYPath(graphP theGraph);
 extern int  _MarkPathAlongBicompExtFace(graphP theGraph, int startVert, int endVert);
 extern int  _AddAndMarkEdge(graphP theGraph, int ancestor, int descendant);
@@ -183,7 +182,8 @@ isolatorContextP IC = &theGraph->IC;
     	// bicomp because we will either find the desired K4 or we will
     	// reduce the bicomp to an edge. The tests for A1 and A2 are easier
     	// to implement on an oriented bicomp.
-        _OrientVerticesInBicomp(theGraph, R, 1);
+        if (_OrientVerticesInBicomp(theGraph, R, 1) != OK)
+        	return NOTOK;
 
     	// Case A1: Test whether there is an active vertex Z other than W
     	// along the external face path [X, ..., W, ..., Y]
@@ -191,9 +191,9 @@ isolatorContextP IC = &theGraph->IC;
     	{
         	// Restore the orientations of the vertices in the bicomp, then orient
     		// the whole embedding, so we can restore and orient the reduced paths
-            _OrientVerticesInBicomp(theGraph, R, 1);
-            _OrientVerticesInEmbedding(theGraph);
-            if (_K4_RestoreAndOrientReducedPaths(theGraph, context) != OK)
+            if (_OrientVerticesInBicomp(theGraph, R, 1) != OK ||
+                _OrientVerticesInEmbedding(theGraph) != OK ||
+                _K4_RestoreAndOrientReducedPaths(theGraph, context) != OK)
                 return NOTOK;
 
             // Set up to isolate K4 homeomorph
@@ -223,14 +223,15 @@ isolatorContextP IC = &theGraph->IC;
     	}
 
     	// Case A2: Test whether the bicomp has an XY path
-    	_SetVertexTypesForMarkingXYPath(theGraph);
+    	if (_SetVertexTypesForMarkingXYPath(theGraph) != OK)
+    		return NOTOK;
         if (_MarkHighestXYPath(theGraph) == TRUE)
         {
         	// Restore the orientations of the vertices in the bicomp, then orient
     		// the whole embedding, so we can restore and orient the reduced paths
-            _OrientVerticesInBicomp(theGraph, R, 1);
-            _OrientVerticesInEmbedding(theGraph);
-            if (_K4_RestoreAndOrientReducedPaths(theGraph, context) != OK)
+            if (_OrientVerticesInBicomp(theGraph, R, 1) != OK ||
+                _OrientVerticesInEmbedding(theGraph) != OK ||
+                _K4_RestoreAndOrientReducedPaths(theGraph, context) != OK)
                 return NOTOK;
 
             // Set up to isolate K4 homeomorph
@@ -275,8 +276,8 @@ isolatorContextP IC = &theGraph->IC;
     	// isolate a subgraph homeomorphic to K4.
     	if (FUTUREPERTINENT(theGraph, a_x, I) && FUTUREPERTINENT(theGraph, a_y, I))
     	{
-            _OrientVerticesInEmbedding(theGraph);
-            if (_K4_RestoreAndOrientReducedPaths(theGraph, context) != OK)
+            if (_OrientVerticesInEmbedding(theGraph) != OK ||
+                _K4_RestoreAndOrientReducedPaths(theGraph, context) != OK)
                 return NOTOK;
 
             // Set up to isolate K4 homeomorph
@@ -306,8 +307,8 @@ isolatorContextP IC = &theGraph->IC;
     	if (_K4_FindSeparatingInternalEdge(theGraph, R, 1, a_x, &IC->w, &IC->px, &IC->py) == TRUE ||
     		_K4_FindSeparatingInternalEdge(theGraph, R, 0, a_y, &IC->w, &IC->py, &IC->px) == TRUE)
     	{
-            _OrientVerticesInEmbedding(theGraph);
-            if (_K4_RestoreAndOrientReducedPaths(theGraph, context) != OK)
+            if (_OrientVerticesInEmbedding(theGraph) != OK ||
+                _K4_RestoreAndOrientReducedPaths(theGraph, context) != OK)
                 return NOTOK;
 
             // Set up to isolate K4 homeomorph
@@ -348,8 +349,8 @@ isolatorContextP IC = &theGraph->IC;
     {
         // Impose consistent orientation on the embedding so we can then
         // restore the reduced paths.
-        _OrientVerticesInEmbedding(theGraph);
-        if (_K4_RestoreAndOrientReducedPaths(theGraph, context) != OK)
+        if (_OrientVerticesInEmbedding(theGraph) != OK ||
+            _K4_RestoreAndOrientReducedPaths(theGraph, context) != OK)
             return NOTOK;
 
         // Set up to isolate minor E
@@ -358,6 +359,8 @@ isolatorContextP IC = &theGraph->IC;
         if (_FindUnembeddedEdgeToCurVertex(theGraph, IC->w, &IC->dw) != TRUE)
             return NOTOK;
 
+    	if (_SetVertexTypesForMarkingXYPath(theGraph) != OK)
+    		return NOTOK;
         if (_MarkHighestXYPath(theGraph) != TRUE)
              return NOTOK;
 
@@ -395,6 +398,10 @@ int  _K4_ChooseTypeOfNonOuterplanarityMinor(graphP theGraph, int I, int R)
 
     theGraph->IC.v = I;
     theGraph->IC.r = R;
+
+    // Reality check on data structure integrity
+    if (!gp_IsArc(theGraph, gp_GetFirstArc(theGraph, R)))
+    	return NOTOK;
 
     // We are essentially doing a _FindActiveVertices() here, except two things:
     // 1) for outerplanarity we know the first vertices along the paths from R
@@ -789,11 +796,13 @@ int  _K4_ReduceBicompToEdge(graphP theGraph, K4SearchContext *context, int R, in
 {
 	int Rvisited = theGraph->G[R].visited, Wvisited = theGraph->G[W].visited;
 
-	_OrientVerticesInBicomp(theGraph, R, 0);
-    _FillVisitedFlagsInBicomp(theGraph, R, 0);
+	if (_OrientVerticesInBicomp(theGraph, R, 0) != OK ||
+		_FillVisitedFlagsInBicomp(theGraph, R, 0) != OK)
+		return NOTOK;
     if (theGraph->functions.fpMarkDFSPath(theGraph, R, W) != OK)
         return NOTOK;
-    _DeleteUnmarkedEdgesInBicomp(theGraph, R);
+    if (_DeleteUnmarkedEdgesInBicomp(theGraph, R) != OK)
+    	return NOTOK;
 
     // Now we have to reduce the path W -> R to the DFS tree edge (R, W)
     if (_K4_ReducePathToEdge(theGraph, context, EDGE_DFSPARENT,
@@ -972,7 +981,7 @@ void _K4_SetVisitedInPathComponent(graphP theGraph, int R, int prevLink, int A, 
 			theGraph->G[gp_GetTwinArc(theGraph, e)].visited = visitedValue;
 			theGraph->G[theGraph->G[e].v].visited = visitedValue;
 
-			e = gp_GetNextArcCircular(theGraph, e);
+			e = gp_GetNextArc(theGraph, e);
 		}
 
 		Z = _GetNextVertexOnExternalFace(theGraph, Z, &ZPrevLink);
@@ -1026,7 +1035,7 @@ int  _K4_DeleteUnmarkedEdgesInPathComponent(graphP theGraph, int R, int prevLink
 				sp_Push(theGraph->theStack, e);
 			}
 
-			e = gp_GetNextArcCircular(theGraph, e);
+			e = gp_GetNextArc(theGraph, e);
 		}
 
 		Z = _GetNextVertexOnExternalFace(theGraph, Z, &ZPrevLink);

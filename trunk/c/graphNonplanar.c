@@ -50,14 +50,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 extern void _ClearIsolatorContext(graphP theGraph);
 extern void _FillVisitedFlags(graphP, int);
-extern void _FillVisitedFlagsInBicomp(graphP theGraph, int BicompRoot, int FillValue);
-extern void _SetVertexTypeInBicomp(graphP theGraph, int BicompRoot, int theType);
+extern int  _FillVisitedFlagsInBicomp(graphP theGraph, int BicompRoot, int FillValue);
+extern int  _SetVertexTypeInBicomp(graphP theGraph, int BicompRoot, int theType);
 extern void _HideInternalEdges(graphP theGraph, int vertex);
-extern void _RestoreInternalEdges(graphP theGraph);
+extern int  _RestoreInternalEdges(graphP theGraph);
 
 extern int  _GetNextVertexOnExternalFace(graphP theGraph, int curVertex, int *pPrevLink);
-extern void _OrientVerticesInEmbedding(graphP theGraph);
-extern void _OrientVerticesInBicomp(graphP theGraph, int BicompRoot, int PreserveSigns);
+extern int  _OrientVerticesInEmbedding(graphP theGraph);
+extern int  _OrientVerticesInBicomp(graphP theGraph, int BicompRoot, int PreserveSigns);
 
 /* Private functions (exported to system) */
 
@@ -67,9 +67,9 @@ int  _InitializeNonplanarityContext(graphP theGraph, int I, int R);
 int  _FindNonplanarityBicompRoot(graphP theGraph);
 void _FindActiveVertices(graphP theGraph, int R, int *pX, int *pY);
 int  _FindPertinentVertex(graphP theGraph);
-void _SetVertexTypesForMarkingXYPath(graphP theGraph);
+int  _SetVertexTypesForMarkingXYPath(graphP theGraph);
 
-void _PopAndUnmarkVerticesAndEdges(graphP theGraph, int Z, int stackBottom);
+int  _PopAndUnmarkVerticesAndEdges(graphP theGraph, int Z, int stackBottom);
 
 int  _MarkHighestXYPath(graphP theGraph);
 int  _MarkZtoRPath(graphP theGraph);
@@ -201,7 +201,8 @@ int  singleBicompMode =  (R == NIL) ? 0 : 1;
      if (!singleBicompMode || sp_NonEmpty(theGraph->theStack))
          R = _FindNonplanarityBicompRoot(theGraph);
 
-     if (R == NIL) return NOTOK;
+     if (R == NIL)
+    	 return NOTOK;
 
      theGraph->IC.r = R;
 
@@ -209,13 +210,15 @@ int  singleBicompMode =  (R == NIL) ? 0 : 1;
      // and clear the visited members of all vertex and edge records.
      if (!singleBicompMode)
      {
-         _OrientVerticesInEmbedding(theGraph);
+         if (_OrientVerticesInEmbedding(theGraph) != OK)
+        	 return NOTOK;
          _FillVisitedFlags(theGraph, 0);
      }
      else
      {
-         _OrientVerticesInBicomp(theGraph, R, 1);
-         _FillVisitedFlagsInBicomp(theGraph, R, 0);
+         if (_OrientVerticesInBicomp(theGraph, R, 1) != OK ||
+        	 _FillVisitedFlagsInBicomp(theGraph, R, 0) != OK)
+        	 return NOTOK;
      }
 
      // Now we find the active vertices along both external face paths
@@ -228,7 +231,8 @@ int  singleBicompMode =  (R == NIL) ? 0 : 1;
 
  	 // Now we can classify the vertices along the external face of the bicomp
  	 // rooted at R as 'high RXW', 'low RXW', 'high RXY', 'low RXY'
-     _SetVertexTypesForMarkingXYPath(theGraph);
+     if (_SetVertexTypesForMarkingXYPath(theGraph) != OK)
+    	 return NOTOK;
 
      // All work is done, so return success
      return OK;
@@ -241,7 +245,7 @@ int  singleBicompMode =  (R == NIL) ? 0 : 1;
  'high RXW', 'low RXW', 'high RXY', 'low RXY'
  ****************************************************************************/
 
-void _SetVertexTypesForMarkingXYPath(graphP theGraph)
+int  _SetVertexTypesForMarkingXYPath(graphP theGraph)
 {
 	int  I, R, X, Y, W, Z, ZPrevLink, ZType;
 
@@ -253,7 +257,8 @@ void _SetVertexTypesForMarkingXYPath(graphP theGraph)
 	W = theGraph->IC.w;
 
 	// Clear the type member of each vertex in the bicomp
-	_SetVertexTypeInBicomp(theGraph, R, TYPE_UNKNOWN);
+	if (_SetVertexTypeInBicomp(theGraph, R, TYPE_UNKNOWN) != OK)
+		return NOTOK;
 
 	// Traverse from R to W in the X direction
 	ZPrevLink = 1;
@@ -276,6 +281,8 @@ void _SetVertexTypesForMarkingXYPath(graphP theGraph)
 		theGraph->G[Z].type = ZType;
 		Z = _GetNextVertexOnExternalFace(theGraph, Z, &ZPrevLink);
 	}
+
+	return OK;
 }
 
 /****************************************************************************
@@ -404,7 +411,7 @@ int  W=theGraph->IC.x, WPrevLink=1;
  pairs may appear.
  ****************************************************************************/
 
-void _PopAndUnmarkVerticesAndEdges(graphP theGraph, int Z, int stackBottom)
+int  _PopAndUnmarkVerticesAndEdges(graphP theGraph, int Z, int stackBottom)
 {
 int  V, e;
 
@@ -429,6 +436,8 @@ int  V, e;
          theGraph->G[e].visited = 0;
          theGraph->G[gp_GetTwinArc(theGraph, e)].visited = 0;
      }
+
+     return OK;
 }
 
 /****************************************************************************
@@ -536,7 +545,11 @@ int stackBottom;
 
           if (theGraph->G[Z].visited)
           {
-              _PopAndUnmarkVerticesAndEdges(theGraph, Z, stackBottom);
+              // It is useful to return NOTOK on error even though it equals FALSE.
+              // FALSE is a better return value on error, and NOTOK both distinguishes
+        	  // error from negative results and shows up in debug messages.
+              if (_PopAndUnmarkVerticesAndEdges(theGraph, Z, stackBottom) != OK)
+            	  return NOTOK;
           }
 
           /* If we have not visited this vertex before... */
@@ -550,7 +563,11 @@ int stackBottom;
 
               if (Z == W)
               {
-                  _PopAndUnmarkVerticesAndEdges(theGraph, NIL, stackBottom);
+                  // It is useful to return NOTOK on error even though it equals FALSE.
+                  // FALSE is a better return value on error, and NOTOK both distinguishes
+            	  // error from negative results and shows up in debug messages.
+                  if (_PopAndUnmarkVerticesAndEdges(theGraph, NIL, stackBottom) != OK)
+                	  return NOTOK;
                   break;
               }
 
@@ -562,7 +579,11 @@ int stackBottom;
                   theGraph->G[Z].type == VERTEX_LOW_RXW)
               {
                   theGraph->IC.px = Z;
-                  _PopAndUnmarkVerticesAndEdges(theGraph, NIL, stackBottom);
+                  // It is useful to return NOTOK on error even though it equals FALSE.
+                  // FALSE is a better return value on error, and NOTOK both distinguishes
+            	  // error from negative results and shows up in debug messages.
+                  if (_PopAndUnmarkVerticesAndEdges(theGraph, NIL, stackBottom) != OK)
+                	  return NOTOK;
               }
 
               /* Push the current vertex onto the stack of vertices visited
@@ -598,7 +619,12 @@ int stackBottom;
     Restore the internal edges incident to R that were previously removed. */
 
      sp_SetCurrentSize(theGraph->theStack, stackBottom);
-     _RestoreInternalEdges(theGraph);
+
+     // It is useful to return NOTOK on error even though it equals FALSE.
+     // FALSE is a better return value on error, and NOTOK both distinguishes
+	  // error from negative results and shows up in debug messages.
+     if (_RestoreInternalEdges(theGraph) != OK)
+    	 return NOTOK;
 
 /* Return the result */
 

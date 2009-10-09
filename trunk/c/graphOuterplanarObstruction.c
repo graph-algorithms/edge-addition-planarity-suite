@@ -47,10 +47,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* Imported functions */
 
 extern void _ClearIsolatorContext(graphP theGraph);
-extern void _FillVisitedFlags(graphP, int);
 
 extern int  _GetNextVertexOnExternalFace(graphP theGraph, int curVertex, int *pPrevLink);
-extern int  _OrientVerticesInEmbedding(graphP theGraph);
 extern int  _JoinBicomps(graphP theGraph);
 
 extern int  _InitializeNonplanarityContext(graphP theGraph, int I, int R);
