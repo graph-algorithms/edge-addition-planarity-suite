@@ -74,16 +74,16 @@ extern int  _WritePostprocess(graphP theGraph, void **pExtraData, long *pExtraDa
 
 void _ClearIsolatorContext(graphP theGraph);
 void _FillVisitedFlags(graphP theGraph, int FillValue);
-void _FillVisitedFlagsInBicomp(graphP theGraph, int BicompRoot, int FillValue);
-void _FillVisitedFlagsInOtherBicomps(graphP theGraph, int BicompRoot, int FillValue);
+int  _FillVisitedFlagsInBicomp(graphP theGraph, int BicompRoot, int FillValue);
+int  _FillVisitedFlagsInOtherBicomps(graphP theGraph, int BicompRoot, int FillValue);
 void _FillVisitedFlagsInUnembeddedEdges(graphP theGraph, int FillValue);
-void _SetVertexTypeInBicomp(graphP theGraph, int BicompRoot, int theType);
+int  _SetVertexTypeInBicomp(graphP theGraph, int BicompRoot, int theType);
 
 void _HideInternalEdges(graphP theGraph, int vertex);
-void _RestoreInternalEdges(graphP theGraph);
+int  _RestoreInternalEdges(graphP theGraph);
 int  _GetBicompSize(graphP theGraph, int BicompRoot);
-void _DeleteUnmarkedEdgesInBicomp(graphP theGraph, int BicompRoot);
-void _ClearInvertedFlagsInBicomp(graphP theGraph, int BicompRoot);
+int  _DeleteUnmarkedEdgesInBicomp(graphP theGraph, int BicompRoot);
+int  _ClearInvertedFlagsInBicomp(graphP theGraph, int BicompRoot);
 
 void _InitFunctionTable(graphP theGraph);
 
@@ -505,7 +505,7 @@ int  limit = theGraph->edgeOffset + 2*(theGraph->M + sp_GetCurrentSize(theGraph-
  _FillVisitedFlagsInBicomp()
  ********************************************************************/
 
-void _FillVisitedFlagsInBicomp(graphP theGraph, int BicompRoot, int FillValue)
+int  _FillVisitedFlagsInBicomp(graphP theGraph, int BicompRoot, int FillValue)
 {
 int  V, J;
 
@@ -527,6 +527,7 @@ int  V, J;
              J = gp_GetNextArc(theGraph, J);
           }
      }
+     return OK;
 }
 
 /********************************************************************
@@ -542,14 +543,19 @@ int  V, J;
  the given bicomp).
  ********************************************************************/
 
-void _FillVisitedFlagsInOtherBicomps(graphP theGraph, int BicompRoot, int FillValue)
+int  _FillVisitedFlagsInOtherBicomps(graphP theGraph, int BicompRoot, int FillValue)
 {
 int  R, edgeOffset = theGraph->edgeOffset;
 
      for (R = theGraph->N; R < edgeOffset; R++)
-          if (R != BicompRoot &&
-        	  gp_IsArc(theGraph, gp_GetFirstArc(theGraph, R)) )
-              _FillVisitedFlagsInBicomp(theGraph, R, FillValue);
+     {
+          if (R != BicompRoot && gp_IsArc(theGraph, gp_GetFirstArc(theGraph, R)) )
+          {
+              if (_FillVisitedFlagsInBicomp(theGraph, R, FillValue) != OK)
+            	  return NOTOK;
+          }
+     }
+     return OK;
 }
 
 /********************************************************************
@@ -581,7 +587,7 @@ int I, J;
  _SetVertexTypeInBicomp()
  ********************************************************************/
 
-void _SetVertexTypeInBicomp(graphP theGraph, int BicompRoot, int theType)
+int  _SetVertexTypeInBicomp(graphP theGraph, int BicompRoot, int theType)
 {
 int  V, J;
 
@@ -601,6 +607,7 @@ int  V, J;
              J = gp_GetNextArc(theGraph, J);
           }
      }
+     return OK;
 }
 
 /********************************************************************
@@ -1319,7 +1326,9 @@ int  upos, vpos;
          return NONEMBEDDABLE;
 
      if (sp_NonEmpty(theGraph->edgeHoles))
+     {
          sp_Pop(theGraph->edgeHoles, vpos);
+     }
      else
          vpos = theGraph->edgeOffset + 2*theGraph->M;
 
@@ -1412,7 +1421,9 @@ int vertMax = 2*theGraph->N - 1,
          return NONEMBEDDABLE;
 
      if (sp_NonEmpty(theGraph->edgeHoles))
+     {
          sp_Pop(theGraph->edgeHoles, vpos);
+     }
      else
          vpos = theGraph->edgeOffset + 2*theGraph->M;
 
@@ -1722,7 +1733,7 @@ int J = gp_GetFirstArc(theGraph, vertex);
  Reverses the effects of _HideInternalEdges()
  ********************************************************************/
 
-void _RestoreInternalEdges(graphP theGraph)
+int  _RestoreInternalEdges(graphP theGraph)
 {
 int  e;
 
@@ -1731,6 +1742,7 @@ int  e;
           sp_Pop(theGraph->theStack, e);
           gp_RestoreEdge(theGraph, e);
      }
+     return OK;
 }
 
 /********************************************************************
@@ -1740,7 +1752,7 @@ int  e;
  whose visited member is zero.
  ********************************************************************/
 
-void _DeleteUnmarkedEdgesInBicomp(graphP theGraph, int BicompRoot)
+int  _DeleteUnmarkedEdgesInBicomp(graphP theGraph, int BicompRoot)
 {
 int  V, J;
 
@@ -1761,6 +1773,7 @@ int  V, J;
              else J = gp_GetNextArc(theGraph, J);
           }
      }
+     return OK;
 }
 
 /********************************************************************
@@ -1770,7 +1783,7 @@ int  V, J;
  given biconnected component.
  ********************************************************************/
 
-void _ClearInvertedFlagsInBicomp(graphP theGraph, int BicompRoot)
+int  _ClearInvertedFlagsInBicomp(graphP theGraph, int BicompRoot)
 {
 int  V, J;
 
@@ -1792,6 +1805,7 @@ int  V, J;
              J = gp_GetNextArc(theGraph, J);
           }
      }
+     return OK;
 }
 
 /********************************************************************
@@ -1827,10 +1841,11 @@ int  theSize = 0;
  This is useful for debugging as it allows compilation of an exit
  command in places where NOTOK is returned.
  In exhaustive testing, we want to bail on the first NOTOK that occurs.
+ Comment out the exit() call to get a stack trace.
  ********************************************************************/
 
 int debugNOTOK()
 {
-	exit(-1);
+	// exit(-1);
 	return 0; // NOTOK is normally defined to be zero
 }

@@ -52,21 +52,21 @@ extern int K33SEARCH_ID;
 /* Imported functions */
 
 extern void _FillVisitedFlags(graphP, int);
-extern void _FillVisitedFlagsInBicomp(graphP theGraph, int BicompRoot, int FillValue);
-extern void _FillVisitedFlagsInOtherBicomps(graphP theGraph, int BicompRoot, int FillValue);
+extern int  _FillVisitedFlagsInBicomp(graphP theGraph, int BicompRoot, int FillValue);
+extern int  _FillVisitedFlagsInOtherBicomps(graphP theGraph, int BicompRoot, int FillValue);
 extern void _FillVisitedFlagsInUnembeddedEdges(graphP theGraph, int FillValue);
 extern int  _GetBicompSize(graphP theGraph, int BicompRoot);
 extern void _HideInternalEdges(graphP theGraph, int vertex);
-extern void _RestoreInternalEdges(graphP theGraph);
-extern void _DeleteUnmarkedEdgesInBicomp(graphP theGraph, int BicompRoot);
-extern void _ClearInvertedFlagsInBicomp(graphP theGraph, int BicompRoot);
+extern int  _RestoreInternalEdges(graphP theGraph);
+extern int  _DeleteUnmarkedEdgesInBicomp(graphP theGraph, int BicompRoot);
+extern int  _ClearInvertedFlagsInBicomp(graphP theGraph, int BicompRoot);
 extern int  _ComputeArcType(graphP theGraph, int a, int b, int edgeType);
 extern int  _SetEdgeType(graphP theGraph, int u, int v);
 
 extern int  _GetNextVertexOnExternalFace(graphP theGraph, int curVertex, int *pPrevLink);
 extern int  _JoinBicomps(graphP theGraph);
-extern void _OrientVerticesInBicomp(graphP theGraph, int BicompRoot, int PreserveSigns);
-extern void _OrientVerticesInEmbedding(graphP theGraph);
+extern int  _OrientVerticesInBicomp(graphP theGraph, int BicompRoot, int PreserveSigns);
+extern int  _OrientVerticesInEmbedding(graphP theGraph);
 extern void _InvertVertex(graphP theGraph, int V);
 
 extern int  _ChooseTypeOfNonplanarityMinor(graphP theGraph, int I, int R);
@@ -296,15 +296,16 @@ int tempResult;
         /* First we restore the orientations of the vertices in the
             one bicomp we have messed with so that there is no confusion. */
 
-        _OrientVerticesInBicomp(theGraph, R, 1);
+        if (_OrientVerticesInBicomp(theGraph, R, 1) != OK)
+        	return NOTOK;
 
         /* Next we restore the orientation of the embedding so we
            can restore the reduced paths (because we avoid modifying
            the Kuratowski subgraph isolator to restore reduced paths,
            which are a construct of the K_{3,3} search). */
 
-        _OrientVerticesInEmbedding(theGraph);
-        if (_RestoreAndOrientReducedPaths(theGraph, context) != OK)
+        if (_OrientVerticesInEmbedding(theGraph) != OK ||
+        	_RestoreAndOrientReducedPaths(theGraph, context) != OK)
             return NOTOK;
 
         /* Next we simply call the Kuratowski subgraph isolation since
@@ -337,10 +338,11 @@ int tempResult;
          (IC->uz < MAX(IC->ux, IC->uy) && IC->ux != IC->uy) ||
          (IC->x != IC->px || IC->y != IC->py))
      {
-        _OrientVerticesInBicomp(theGraph, R, 1);
+        if (_OrientVerticesInBicomp(theGraph, R, 1) != OK)
+        	return NOTOK;
 
-        _OrientVerticesInEmbedding(theGraph);
-        if (_RestoreAndOrientReducedPaths(theGraph, context) != OK)
+        if (_OrientVerticesInEmbedding(theGraph) != OK ||
+        	_RestoreAndOrientReducedPaths(theGraph, context) != OK)
             return NOTOK;
 
         if (_IsolateKuratowskiSubgraph(theGraph, I) != OK)
@@ -376,14 +378,17 @@ int tempResult;
     orientation in the context of the edge signs) because this code can work
     when ReduceBicomp doesn't do any actual work. */
 
-     _OrientVerticesInBicomp(theGraph, R, 1);
+     if (_OrientVerticesInBicomp(theGraph, R, 1) != OK)
+    	 return NOTOK;
+
      if (_ReduceBicomp(theGraph, context, R) != OK)
          return NOTOK;
 
 /* Set visited flags to a high number so planarity algorithm
     can properly do Walkup procedure in future steps */
 
-     _FillVisitedFlagsInBicomp(theGraph, IC->r, theGraph->N);
+     if (_FillVisitedFlagsInBicomp(theGraph, IC->r, theGraph->N) != OK)
+    	 return NOTOK;
 
 /* We now intend to ignore the pertinence of W (conceptually eliminating
     the connection from W to the current vertex).  Note that none of the
@@ -672,8 +677,11 @@ isolatorContextP IC = &theGraph->IC;
     polite step that simplifies the description of key states of the
     data structures). */
 
-     _OrientVerticesInBicomp(theGraph, IC->r, 1);
-     _OrientVerticesInEmbedding(theGraph);
+     if (_OrientVerticesInBicomp(theGraph, IC->r, 1) != OK)
+    	 return NOTOK;
+
+     if (_OrientVerticesInEmbedding(theGraph) != OK)
+    	 return NOTOK;
 
 /* Restore any paths that were reduced to single edges */
 
@@ -683,7 +691,8 @@ isolatorContextP IC = &theGraph->IC;
 /* We assume that the current bicomp has been marked appropriately,
      but we must now clear the visitation flags of all other bicomps. */
 
-     _FillVisitedFlagsInOtherBicomps(theGraph, IC->r, 0);
+     if (_FillVisitedFlagsInOtherBicomps(theGraph, IC->r, 0) != OK)
+    	 return NOTOK;
 
 /* To complete the normal behavior of _FillVisitedFlags() in the
     normal isolator context initialization, we also have to clear
@@ -982,8 +991,8 @@ isolatorContextP IC = &theGraph->IC;
     using the Walkup to I from a descendant of I, which will not work if
     the descendant is in one of the reduced paths. */
 
-     _OrientVerticesInEmbedding(theGraph);
-     if (_RestoreAndOrientReducedPaths(theGraph, context) != OK)
+     if (_OrientVerticesInEmbedding(theGraph) != OK ||
+    	 _RestoreAndOrientReducedPaths(theGraph, context) != OK)
          return NOTOK;
 
 /* Reconstruct the context that was present for CASE 3 of RunExtraK33Tests()
@@ -1094,7 +1103,8 @@ int  result;
 
 /* Clear the previously marked X-Y path */
 
-     _FillVisitedFlagsInBicomp(theGraph, IC->r, 0);
+     if (_FillVisitedFlagsInBicomp(theGraph, IC->r, 0) != OK)
+    	 return NOTOK;
 
 /* Create a stack and use it to hide the internal edges of X */
 
@@ -1109,7 +1119,8 @@ int  result;
 
      result = _MarkHighestXYPath(theGraph);
      theGraph->theStack = auxStack;
-     _RestoreInternalEdges(theGraph);
+     if (_RestoreInternalEdges(theGraph) != OK)
+    	 return NOTOK;
      theGraph->theStack = realStack;
      sp_Free(&auxStack);
 
@@ -1121,7 +1132,8 @@ int  result;
 /* Create a stack and use it to hide the internal edges of Y */
 
      auxStack = sp_New(gp_GetVertexDegree(theGraph, IC->y));
-     if (auxStack == NULL) return NOTOK;
+     if (auxStack == NULL)
+    	 return NOTOK;
      theGraph->theStack = auxStack;
      _HideInternalEdges(theGraph, IC->y);
      theGraph->theStack = realStack;
@@ -1131,7 +1143,8 @@ int  result;
 
      result = _MarkHighestXYPath(theGraph);
      theGraph->theStack = auxStack;
-     _RestoreInternalEdges(theGraph);
+     if (_RestoreInternalEdges(theGraph) != OK)
+    	 return NOTOK;
      theGraph->theStack = realStack;
      sp_Free(&auxStack);
 
@@ -1143,7 +1156,9 @@ int  result;
 /* Restore the original X-Y path and return with no error
         (the search failure is reflected by no change to px and py */
 
-     _MarkHighestXYPath(theGraph);
+     if (_MarkHighestXYPath(theGraph) != TRUE)
+    	 return NOTOK;
+
      return OK;
 }
 
@@ -1423,7 +1438,8 @@ int  rxType, xwType, wyType, yrType, xyType;
 /* The vertices in the bicomp need to be oriented so that functions
     like MarkPathAlongBicompExtFace() will work. */
 
-     _OrientVerticesInBicomp(theGraph, R, 0);
+     if (_OrientVerticesInBicomp(theGraph, R, 0) != OK)
+    	 return NOTOK;
 
 /* The reduced edges start with a default type of 'tree' edge. The
      tests below, which identify the additional non-tree paths
@@ -1530,7 +1546,8 @@ int  rxType, xwType, wyType, yrType, xyType;
     flags so the current X-Y path will not be retained (an X-Y path
     formed mostly or entirely from DFS tree edges is retained). */
 
-     _FillVisitedFlagsInBicomp(theGraph, R, 0);
+     if (_FillVisitedFlagsInBicomp(theGraph, R, 0) != OK)
+    	 return NOTOK;
 
 /* Now we mark the tree path from the maximum numbered vertex up
       to the bicomp root. This marks one of the following four paths:
@@ -1571,12 +1588,14 @@ int  rxType, xwType, wyType, yrType, xyType;
  * represents a reduced path, then only the reduction edge is deleted here.
  * The path it represents is only deleted later (see NOTE above) */
 
-     _DeleteUnmarkedEdgesInBicomp(theGraph, R);
+     if (_DeleteUnmarkedEdgesInBicomp(theGraph, R) != OK)
+    	 return NOTOK;
 
 /* Clear all visited flags in the bicomp.
      This is the important "step 4" mentioned in the NOTE above */
 
-     _FillVisitedFlagsInBicomp(theGraph, R, 0);
+     if (_FillVisitedFlagsInBicomp(theGraph, R, 0) != OK)
+    	 return NOTOK;
 
 /* Clear all orientation signs in the bicomp.
 	Note that the bicomp may not be properly oriented at this point
@@ -1585,7 +1604,8 @@ int  rxType, xwType, wyType, yrType, xyType;
 	oriented, and the paths of degree 2 vertices will have their
 	orientations fixed if/when reduction edges are restored. */
 
-     _ClearInvertedFlagsInBicomp(theGraph, R);
+     if (_ClearInvertedFlagsInBicomp(theGraph, R) != OK)
+    	 return NOTOK;
 
 /* Reduce the paths to single edges. */
 
@@ -2131,7 +2151,8 @@ int u_min, u_max, d, u_d;
 
 /* Clear the previously marked x-y path */
 
-     _FillVisitedFlagsInBicomp(theGraph, IC->r, 0);
+     if (_FillVisitedFlagsInBicomp(theGraph, IC->r, 0) != OK)
+    	 return NOTOK;
 
 /* Clear dw to stop the marking of path (v, w) */
 

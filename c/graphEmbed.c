@@ -75,8 +75,8 @@ int  _WalkDown(graphP theGraph, int I, int RootVertex);
 int  _HandleBlockedEmbedIteration(graphP theGraph, int I);
 int  _EmbedPostprocess(graphP theGraph, int I, int edgeEmbeddingResult);
 
-void _OrientVerticesInEmbedding(graphP theGraph);
-void _OrientVerticesInBicomp(graphP theGraph, int BicompRoot, int PreserveSigns);
+int  _OrientVerticesInEmbedding(graphP theGraph);
+int  _OrientVerticesInBicomp(graphP theGraph, int BicompRoot, int PreserveSigns);
 int  _JoinBicomps(graphP theGraph);
 
 /********************************************************************
@@ -1115,7 +1115,8 @@ int RetVal = OK;
         if (gp_SortVertices(theGraph) != OK)
             return NOTOK;
 
-    gp_LowpointAndLeastAncestor(theGraph);
+    if (gp_LowpointAndLeastAncestor(theGraph) != OK)
+    	return NOTOK;
 
     _CreateSortedSeparatedDFSChildLists(theGraph);
 
@@ -1274,8 +1275,9 @@ int  RetVal = edgeEmbeddingResult;
 
     if (edgeEmbeddingResult == OK)
     {
-        _OrientVerticesInEmbedding(theGraph);
-        _JoinBicomps(theGraph);
+    	if (_OrientVerticesInEmbedding(theGraph) != OK ||
+    		_JoinBicomps(theGraph) != OK)
+    		RetVal = NOTOK;
     }
 
     /* If the graph was found to be unembeddable, then we want to isolate an
@@ -1307,7 +1309,7 @@ int  RetVal = edgeEmbeddingResult;
  same orientation.
  ********************************************************************/
 
-void _OrientVerticesInEmbedding(graphP theGraph)
+int  _OrientVerticesInEmbedding(graphP theGraph)
 {
 int  R, edgeOffset = theGraph->edgeOffset;
 
@@ -1318,8 +1320,14 @@ int  R, edgeOffset = theGraph->edgeOffset;
         in the bicomp for which it is the root vertex. */
 
      for (R = theGraph->N; R < edgeOffset; R++)
+     {
           if (gp_IsArc(theGraph, gp_GetFirstArc(theGraph, R)))
-              _OrientVerticesInBicomp(theGraph, R, 0);
+          {
+        	  if (_OrientVerticesInBicomp(theGraph, R, 0) != OK)
+        		  return NOTOK;
+          }
+     }
+     return OK;
 }
 
 /********************************************************************
@@ -1348,7 +1356,7 @@ int  R, edgeOffset = theGraph->edgeOffset;
  as it was before the first call.
  ********************************************************************/
 
-void _OrientVerticesInBicomp(graphP theGraph, int BicompRoot, int PreserveSigns)
+int  _OrientVerticesInBicomp(graphP theGraph, int BicompRoot, int PreserveSigns)
 {
 int  V, J, invertedFlag;
 
@@ -1380,6 +1388,7 @@ int  V, J, invertedFlag;
              J = gp_GetNextArc(theGraph, J);
          }
      }
+     return OK;
 }
 
 /********************************************************************

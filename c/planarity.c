@@ -156,7 +156,7 @@ int helpMessage(char *param)
             "'planarity (-h|-help)': this message\n"
             "'planarity (-h|-help) -gen': more help with nauty generator command line\n"
             "'planarity (-h|-help) -menu': more help with menu-based command line\n"
-    	    "'planarity -test[-q] [C]': runs tests (optional quiet mode, single test)\n"
+    	    "'planarity -test [-q] [C]': runs tests (optional quiet mode, single test)\n"
 	    	"\n"
 	    );
 
@@ -657,8 +657,8 @@ int Result;
 
 	gp_Free(&theGraph);
 
-	// In the legacy program, NOTOK was -2 and OK was 0
-	return Result==NOTOK ? -2 : 0;
+	// In the legacy 1.x versions, OK/NONEMBEDDABLE was 0 and NOTOK was -2
+	return Result==OK || Result==NONEMBEDDABLE ? 0 : -2;
 }
 
 /****************************************************************************
@@ -680,18 +680,18 @@ char Choice;
      do {
     	ProjectTitle();
 
-        Message(
-                "\nP. Planar embedding and Kuratowski subgraph isolation"
-                "\nD. Planar graph drawing"
-                "\nO. Outerplanar embedding and obstruction isolation"
-                "\n2. Search for subgraph homeomorphic to K_{2,3}"
-                "\n3. Search for subgraph homeomorphic to K_{3,3}"
-                "\n4. Search for subgraph homeomorphic to K_4"
-        		"\nH. Help message for command line version"
-                "\nR. Reconfigure options"
-                "\nX. Exit"
+        Message("\n"
+                "P. Planar embedding and Kuratowski subgraph isolation\n"
+                "D. Planar graph drawing\n"
+                "O. Outerplanar embedding and obstruction isolation\n"
+                "2. Search for subgraph homeomorphic to K_{2,3}\n"
+                "3. Search for subgraph homeomorphic to K_{3,3}\n"
+                "4. Search for subgraph homeomorphic to K_4\n"
+        		"H. Help message for command line version\n"
+                "R. Reconfigure options\n"
+                "X. Exit\n"
                 "\n"
-                "\nEnter Choice: "
+                "Enter Choice: "
         );
 
         fflush(stdin);
@@ -1112,11 +1112,11 @@ graphP origGraph=NULL;
                gp_ReinitializeGraph(theGraph);
                gp_CopyGraph(theGraph, origGraph);
                Result = gp_Embed(theGraph, embedFlags);
-               if (Result == NOTOK)
+               if (Result != OK && Result != NONEMBEDDABLE)
                {
             	   ErrorMessage("Error found twice!\n");
                }
-               else Result = NOTOK;
+               Result = NOTOK;
           }
 
 /* Reuse Graphs */
@@ -1140,9 +1140,10 @@ graphP origGraph=NULL;
           }
 //#endif
 
-          if (Result == NOTOK)
+          if (Result != OK && Result != NONEMBEDDABLE)
           {
         	  ErrorMessage("\nError found\n");
+              Result = NOTOK;
               break;
           }
      }
@@ -1158,7 +1159,7 @@ graphP origGraph=NULL;
      platform_GetTime(end);
      fprintf(stdout, "%d\n", NumGraphs);
      fflush(stdout);
-     if (Result != NOTOK)
+     if (Result == OK || Result == NONEMBEDDABLE)
          Message("\nNo Errors Found.");
      sprintf(Line, "\nDone (%.3lf seconds).\n", platform_GetDuration(start,end));
      Message(Line);
@@ -1221,7 +1222,7 @@ graphP origGraph=NULL;
          Message(Line);
      }
 
-     return Result==NOTOK ? NOTOK : OK;
+     return Result==OK || Result==NONEMBEDDABLE ? OK : NOTOK;
 }
 
 /****************************************************************************
@@ -1332,7 +1333,7 @@ char *resultStr = "";
          sprintf(Line, "gp_Embed() completed in %.3lf seconds.\n", platform_GetDuration(start,end));
          Message(Line);
 
-         if (Result == NOTOK)
+         if (Result != OK && Result != NONEMBEDDABLE)
         	 ErrorMessage("gp_Embed() returned an error.\n");
          else if (gp_TestEmbedResultIntegrity(theGraph, origGraph, Result) != OK)
          {
@@ -1379,7 +1380,7 @@ char *resultStr = "";
                  break;
          }
 
-         if (Result != NOTOK)
+         if (Result == OK || Result == NONEMBEDDABLE)
          {
              sprintf(Line, theMsg, resultStr);
              Message(Line);
