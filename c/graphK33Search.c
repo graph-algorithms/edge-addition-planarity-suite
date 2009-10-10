@@ -56,8 +56,8 @@ extern int  _FillVisitedFlagsInBicomp(graphP theGraph, int BicompRoot, int FillV
 extern int  _FillVisitedFlagsInOtherBicomps(graphP theGraph, int BicompRoot, int FillValue);
 extern void _FillVisitedFlagsInUnembeddedEdges(graphP theGraph, int FillValue);
 extern int  _GetBicompSize(graphP theGraph, int BicompRoot);
-extern void _HideInternalEdges(graphP theGraph, int vertex);
-extern int  _RestoreInternalEdges(graphP theGraph);
+extern int  _HideInternalEdges(graphP theGraph, int vertex);
+extern int  _RestoreInternalEdges(graphP theGraph, int stackBottom);
 extern int  _DeleteUnmarkedEdgesInBicomp(graphP theGraph, int BicompRoot);
 extern int  _ClearInvertedFlagsInBicomp(graphP theGraph, int BicompRoot);
 extern int  _ComputeArcType(graphP theGraph, int a, int b, int edgeType);
@@ -1093,60 +1093,56 @@ isolatorContextP IC = &theGraph->IC;
  If such a low x-y path exists, then we adjust px or py accordingly,
     and we make sure that X or Y (whichever is excluded) and its edges are
     not marked visited.
+ This method uses the stack, though it is called with an empty stack currently,
+ it does happen to preserve any preceding stack content. This method pushes
+ at most one integer per edge incident to the bicomp root plus two integers
+ per vertex in the bicomp.
  ****************************************************************************/
 
 int  _TestForLowXYPath(graphP theGraph)
 {
 isolatorContextP IC = &theGraph->IC;
-stackP realStack=theGraph->theStack, auxStack=NULL;
 int  result;
+int  stackBottom;
 
 /* Clear the previously marked X-Y path */
 
      if (_FillVisitedFlagsInBicomp(theGraph, IC->r, 0) != OK)
     	 return NOTOK;
 
-/* Create a stack and use it to hide the internal edges of X */
+/* Save the size of the stack before hiding any edges, so we will know
+   how many edges to restore */
 
-     auxStack = sp_New(gp_GetVertexDegree(theGraph, IC->x));
-     if (auxStack == NULL) return NOTOK;
-     theGraph->theStack = auxStack;
-     _HideInternalEdges(theGraph, IC->x);
-     theGraph->theStack = realStack;
+     stackBottom = sp_GetCurrentSize(theGraph->theStack);
+
+/* Hide the internal edges of X */
+
+     if (_HideInternalEdges(theGraph, IC->x) != OK)
+    	 return NOTOK;
 
 /* Try to find a low X-Y path that excludes X, then restore the
     internal edges of X. */
 
      result = _MarkHighestXYPath(theGraph);
-     theGraph->theStack = auxStack;
-     if (_RestoreInternalEdges(theGraph) != OK)
+     if (_RestoreInternalEdges(theGraph, stackBottom) != OK)
     	 return NOTOK;
-     theGraph->theStack = realStack;
-     sp_Free(&auxStack);
 
 /* If we found the low X-Y path, then return. */
 
      if (result == TRUE)
          return OK;
 
-/* Create a stack and use it to hide the internal edges of Y */
+/* Hide the internal edges of Y */
 
-     auxStack = sp_New(gp_GetVertexDegree(theGraph, IC->y));
-     if (auxStack == NULL)
+     if (_HideInternalEdges(theGraph, IC->y) != OK)
     	 return NOTOK;
-     theGraph->theStack = auxStack;
-     _HideInternalEdges(theGraph, IC->y);
-     theGraph->theStack = realStack;
 
 /* Try to find a low X-Y path that excludes Y, then restore the
     internal edges of Y. */
 
      result = _MarkHighestXYPath(theGraph);
-     theGraph->theStack = auxStack;
-     if (_RestoreInternalEdges(theGraph) != OK)
+     if (_RestoreInternalEdges(theGraph, stackBottom) != OK)
     	 return NOTOK;
-     theGraph->theStack = realStack;
-     sp_Free(&auxStack);
 
 /* If we found the low X-Y path, then return. */
 

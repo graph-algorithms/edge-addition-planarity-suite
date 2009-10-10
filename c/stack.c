@@ -161,7 +161,7 @@ int  sp_NonEmpty(stackP theStack)
      return theStack->size;
 }
 
-int  sp_Push(stackP theStack, int a)
+int  sp__Push(stackP theStack, int a)
 {
      if (theStack->size >= theStack->capacity)
          return NOTOK;
@@ -170,7 +170,7 @@ int  sp_Push(stackP theStack, int a)
      return OK;
 }
 
-int  sp_Push2(stackP theStack, int a, int b)
+int  sp__Push2(stackP theStack, int a, int b)
 {
      if (theStack->size + 1 >= theStack->capacity)
          return NOTOK;

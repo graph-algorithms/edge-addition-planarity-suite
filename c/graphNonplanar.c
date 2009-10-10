@@ -52,8 +52,8 @@ extern void _ClearIsolatorContext(graphP theGraph);
 extern void _FillVisitedFlags(graphP, int);
 extern int  _FillVisitedFlagsInBicomp(graphP theGraph, int BicompRoot, int FillValue);
 extern int  _SetVertexTypeInBicomp(graphP theGraph, int BicompRoot, int theType);
-extern void _HideInternalEdges(graphP theGraph, int vertex);
-extern int  _RestoreInternalEdges(graphP theGraph);
+extern int  _HideInternalEdges(graphP theGraph, int vertex);
+extern int  _RestoreInternalEdges(graphP theGraph, int stackBottom);
 
 extern int  _GetNextVertexOnExternalFace(graphP theGraph, int curVertex, int *pPrevLink);
 extern int  _OrientVerticesInEmbedding(graphP theGraph);
@@ -496,19 +496,26 @@ int  V, e;
 
  Once the X-Y path is identified, we restore the edges incident to R.
 
+ This method uses the stack, but it preserves any prior content.
  The stack space used is no greater than 3N.  The first N accounts for removing
  the edges incident to R.  The other 2N accounts for the fact that each
  iteration of the main loop visits a vertex, pushing its index and the
  location of an edge record.  If a vertex is encountered that is already
  on the stack, then it is not pushed again (and in fact part of the stack
  is removed).
+
+ Returns TRUE if the X-Y path is found, FALSE otherwise.
+ In debug mode it can also return NOTOK. This is equivalent to FALSE, but
+ NOTOK is better for documenting the error condition in the code, and
+ it produces a debug message. Also, in many cases the equivalent-to-FALSE
+ result is an error condition for the caller, so NOTOK usually percolates up.
  ****************************************************************************/
 
 int  _MarkHighestXYPath(graphP theGraph)
 {
 int J, Z;
 int R, X, Y, W;
-int stackBottom;
+int stackBottom1, stackBottom2;
 
 /* Initialization */
 
@@ -518,12 +525,22 @@ int stackBottom;
      W = theGraph->IC.w;
      theGraph->IC.px = theGraph->IC.py = NIL;
 
-     sp_ClearStack(theGraph->theStack);
+/* Save the stack bottom before we start hiding internal edges, so
+   we will know how many edges to restore */
+
+     stackBottom1 = sp_GetCurrentSize(theGraph->theStack);
 
 /* Remove the internal edges incident to vertex R */
 
-     _HideInternalEdges(theGraph, R);
-     stackBottom = sp_GetCurrentSize(theGraph->theStack);
+     if (_HideInternalEdges(theGraph, R) != OK)
+    	 return NOTOK;
+
+/* Now we're going to use the stack to collect the vertices of potential
+ * X-Y paths, so we need to store where the hidden internal edges are
+ * located because we must, at times, pop the collected vertices if
+ * the path being collected doesn't work out. */
+
+     stackBottom2 = sp_GetCurrentSize(theGraph->theStack);
 
 /* Walk the proper face containing R to find and mark the highest
         X-Y path. Note that if W is encountered, then there is no
@@ -545,10 +562,7 @@ int stackBottom;
 
           if (theGraph->G[Z].visited)
           {
-              // It is useful to return NOTOK on error even though it equals FALSE.
-              // FALSE is a better return value on error, and NOTOK both distinguishes
-        	  // error from negative results and shows up in debug messages.
-              if (_PopAndUnmarkVerticesAndEdges(theGraph, Z, stackBottom) != OK)
+              if (_PopAndUnmarkVerticesAndEdges(theGraph, Z, stackBottom2) != OK)
             	  return NOTOK;
           }
 
@@ -563,10 +577,7 @@ int stackBottom;
 
               if (Z == W)
               {
-                  // It is useful to return NOTOK on error even though it equals FALSE.
-                  // FALSE is a better return value on error, and NOTOK both distinguishes
-            	  // error from negative results and shows up in debug messages.
-                  if (_PopAndUnmarkVerticesAndEdges(theGraph, NIL, stackBottom) != OK)
+                  if (_PopAndUnmarkVerticesAndEdges(theGraph, NIL, stackBottom2) != OK)
                 	  return NOTOK;
                   break;
               }
@@ -579,10 +590,7 @@ int stackBottom;
                   theGraph->G[Z].type == VERTEX_LOW_RXW)
               {
                   theGraph->IC.px = Z;
-                  // It is useful to return NOTOK on error even though it equals FALSE.
-                  // FALSE is a better return value on error, and NOTOK both distinguishes
-            	  // error from negative results and shows up in debug messages.
-                  if (_PopAndUnmarkVerticesAndEdges(theGraph, NIL, stackBottom) != OK)
+                  if (_PopAndUnmarkVerticesAndEdges(theGraph, NIL, stackBottom2) != OK)
                 	  return NOTOK;
               }
 
@@ -618,12 +626,9 @@ int stackBottom;
 /* Remove any remaining vertex-edge pairs on the top of the stack, then
     Restore the internal edges incident to R that were previously removed. */
 
-     sp_SetCurrentSize(theGraph->theStack, stackBottom);
+     sp_SetCurrentSize(theGraph->theStack, stackBottom2);
 
-     // It is useful to return NOTOK on error even though it equals FALSE.
-     // FALSE is a better return value on error, and NOTOK both distinguishes
-	  // error from negative results and shows up in debug messages.
-     if (_RestoreInternalEdges(theGraph) != OK)
+     if (_RestoreInternalEdges(theGraph, stackBottom1) != OK)
     	 return NOTOK;
 
 /* Return the result */

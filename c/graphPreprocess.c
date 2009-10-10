@@ -326,7 +326,9 @@ platform_GetTime(start);
                   while (gp_IsArc(theGraph, J))
                   {
                       if (theGraph->G[J].type == EDGE_DFSCHILD)
+                      {
                           sp_Push(theStack, theGraph->G[J].v);
+                      }
                       else break;
 
                       J = gp_GetNextArc(theGraph, J);

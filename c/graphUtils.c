@@ -79,8 +79,8 @@ int  _FillVisitedFlagsInOtherBicomps(graphP theGraph, int BicompRoot, int FillVa
 void _FillVisitedFlagsInUnembeddedEdges(graphP theGraph, int FillValue);
 int  _SetVertexTypeInBicomp(graphP theGraph, int BicompRoot, int theType);
 
-void _HideInternalEdges(graphP theGraph, int vertex);
-int  _RestoreInternalEdges(graphP theGraph);
+int  _HideInternalEdges(graphP theGraph, int vertex);
+int  _RestoreInternalEdges(graphP theGraph, int stackBottom);
 int  _GetBicompSize(graphP theGraph, int BicompRoot);
 int  _DeleteUnmarkedEdgesInBicomp(graphP theGraph, int BicompRoot);
 int  _ClearInvertedFlagsInBicomp(graphP theGraph, int BicompRoot);
@@ -227,7 +227,7 @@ int gp_InitGraph(graphP theGraph, int N)
 
 int  _InitGraph(graphP theGraph, int N)
 {
-int I, edgeOffset, arcCapacity, Gsize, Vsize;
+int I, edgeOffset, arcCapacity, Gsize, Vsize, stackSize;
 
 /* Compute the vertex and edge capacities of the graph */
 
@@ -235,6 +235,8 @@ int I, edgeOffset, arcCapacity, Gsize, Vsize;
      edgeOffset = Vsize;
      arcCapacity = theGraph->arcCapacity > 0 ? theGraph->arcCapacity : 2*DEFAULT_EDGE_LIMIT*N;
      Gsize = edgeOffset + arcCapacity;
+     stackSize = 2 * arcCapacity;
+     stackSize = stackSize < 6*N ? 6*N : stackSize;
 
 /* Allocate memory as described above */
 
@@ -242,7 +244,7 @@ int I, edgeOffset, arcCapacity, Gsize, Vsize;
          (theGraph->V = (vertexRecP) malloc(N*sizeof(vertexRec))) == NULL ||
          (theGraph->BicompLists = LCNew(N)) == NULL ||
          (theGraph->DFSChildLists = LCNew(N)) == NULL ||
-         (theGraph->theStack = sp_New(2 * arcCapacity)) == NULL ||
+         (theGraph->theStack = sp_New(stackSize)) == NULL ||
          (theGraph->buckets = (int *) malloc(N * sizeof(int))) == NULL ||
          (theGraph->bin = LCNew(N)) == NULL ||
          (theGraph->extFace = (extFaceLinkRecP) malloc(Vsize*sizeof(extFaceLinkRec))) == NULL ||
@@ -413,12 +415,15 @@ int J, Gsize=theGraph->edgeOffset + theGraph->arcCapacity;
 int newGsize = theGraph->edgeOffset + requiredArcCapacity;
 
     // Expand theStack
-	if ((newStack = sp_New(2 * requiredArcCapacity)) == NULL)
-		return NOTOK;
+    if (sp_GetCapacity(theGraph->theStack) < 2 * requiredArcCapacity)
+    {
+    	if ((newStack = sp_New(2 * requiredArcCapacity)) == NULL)
+    		return NOTOK;
 
-	sp_CopyContent(newStack, theGraph->theStack);
-	sp_Free(&theGraph->theStack);
-	theGraph->theStack = newStack;
+    	sp_CopyContent(newStack, theGraph->theStack);
+    	sp_Free(&theGraph->theStack);
+    	theGraph->theStack = newStack;
+    }
 
 	// Expand edgeHoles
     if ((newStack = sp_New(requiredArcCapacity / 2)) == NULL)
@@ -503,15 +508,24 @@ int  limit = theGraph->edgeOffset + 2*(theGraph->M + sp_GetCurrentSize(theGraph-
 
 /********************************************************************
  _FillVisitedFlagsInBicomp()
+
+ Places the FillValue into the 'visited' members of the vertices and
+ arcs in the bicomp rooted by BicompRoot.
+
+ This method uses the stack but preserves whatever may have been
+ on it.  In debug mode, it will return NOTOK if the stack overflows.
+ This method pushes at most one integer per vertex in the bicomp.
+
+ Returns OK on success, NOTOK on implementation failure.
  ********************************************************************/
 
 int  _FillVisitedFlagsInBicomp(graphP theGraph, int BicompRoot, int FillValue)
 {
 int  V, J;
+int  stackBottom = sp_GetCurrentSize(theGraph->theStack);
 
-     sp_ClearStack(theGraph->theStack);
      sp_Push(theGraph->theStack, BicompRoot);
-     while (sp_NonEmpty(theGraph->theStack))
+     while (sp_GetCurrentSize(theGraph->theStack) > stackBottom)
      {
           sp_Pop(theGraph->theStack, V);
           theGraph->G[V].visited = FillValue;
@@ -585,15 +599,24 @@ int I, J;
 
 /********************************************************************
  _SetVertexTypeInBicomp()
+
+ Sets the 'type' member to theType for each vertex in the bicomp
+ rooted by BicompRoot.
+
+ This method uses the stack but preserves whatever may have been
+ on it.  In debug mode, it will return NOTOK if the stack overflows.
+ This method pushes at most one integer per vertex in the bicomp.
+
+ Returns OK on success, NOTOK on implementation failure.
  ********************************************************************/
 
 int  _SetVertexTypeInBicomp(graphP theGraph, int BicompRoot, int theType)
 {
 int  V, J;
+int  stackBottom = sp_GetCurrentSize(theGraph->theStack);
 
-     sp_ClearStack(theGraph->theStack);
      sp_Push(theGraph->theStack, BicompRoot);
-     while (sp_NonEmpty(theGraph->theStack))
+     while (sp_GetCurrentSize(theGraph->theStack) > stackBottom)
      {
           sp_Pop(theGraph->theStack, V);
           theGraph->G[V].type = theType;
@@ -1704,28 +1727,34 @@ int  nextArc, JPos, MPos;
  face of a biconnected component, because the first and last arcs are
  the ones that attach the vertex to the external face cycle, and any
  other arcs in the adjacency list are inside that cycle.
+
+ This method uses the stack. The caller is expected to clear the stack
+ or save the stack size before invocation, since the stack size is
+ needed to _RestoreInternalEdges().
  ********************************************************************/
 
-void _HideInternalEdges(graphP theGraph, int vertex)
+int  _HideInternalEdges(graphP theGraph, int vertex)
 {
 int J = gp_GetFirstArc(theGraph, vertex);
 
     // If the vertex adjacency list is empty or if it contains
     // only one edge, then there are no *internal* edges to hide
     if (J == gp_GetLastArc(theGraph, vertex))
-    	return;
+    	return OK;
 
     // Start with the first internal edge
     J = gp_GetNextArc(theGraph, J);
 
-    sp_ClearStack(theGraph->theStack);
-
+    // Cycle through all the edges, pushing each except stop
+    // before pushing the last edge, which is not internal
     while (J != gp_GetLastArc(theGraph, vertex))
     {
         sp_Push(theGraph->theStack, J);
         gp_HideEdge(theGraph, J);
         J = gp_GetNextArc(theGraph, J);
     }
+
+    return OK;
 }
 
 /********************************************************************
@@ -1733,15 +1762,16 @@ int J = gp_GetFirstArc(theGraph, vertex);
  Reverses the effects of _HideInternalEdges()
  ********************************************************************/
 
-int  _RestoreInternalEdges(graphP theGraph)
+int  _RestoreInternalEdges(graphP theGraph, int stackBottom)
 {
 int  e;
 
-     while (!sp_IsEmpty(theGraph->theStack))
+     while (sp_GetCurrentSize(theGraph->theStack) > stackBottom)
      {
           sp_Pop(theGraph->theStack, e);
           gp_RestoreEdge(theGraph, e);
      }
+
      return OK;
 }
 
@@ -1750,15 +1780,21 @@ int  e;
 
  This function deletes from a given biconnected component all edges
  whose visited member is zero.
+
+ The stack is used but preserved. In debug mode, NOTOK can result if
+ there is a stack overflow. This method pushes at most one integer
+ per vertex in the bicomp.
+
+ Returns OK on success, NOTOK on implementation failure
  ********************************************************************/
 
 int  _DeleteUnmarkedEdgesInBicomp(graphP theGraph, int BicompRoot)
 {
 int  V, J;
+int  stackBottom = sp_GetCurrentSize(theGraph->theStack);
 
-     sp_ClearStack(theGraph->theStack);
      sp_Push(theGraph->theStack, BicompRoot);
-     while (!sp_IsEmpty(theGraph->theStack))
+     while (sp_GetCurrentSize(theGraph->theStack) > stackBottom)
      {
           sp_Pop(theGraph->theStack, V);
 
@@ -1781,15 +1817,21 @@ int  V, J;
 
  This function clears the inverted flag markers on any edges in a
  given biconnected component.
+
+ The stack is used but preserved. In debug mode, NOTOK can result if
+ there is a stack overflow. This method pushes at most one integer
+ per vertex in the bicomp.
+
+ Returns OK on success, NOTOK on implementation failure
  ********************************************************************/
 
 int  _ClearInvertedFlagsInBicomp(graphP theGraph, int BicompRoot)
 {
 int  V, J;
+int  stackBottom = sp_GetCurrentSize(theGraph->theStack);
 
-     sp_ClearStack(theGraph->theStack);
      sp_Push(theGraph->theStack, BicompRoot);
-     while (!sp_IsEmpty(theGraph->theStack))
+     while (sp_GetCurrentSize(theGraph->theStack) > stackBottom)
      {
           sp_Pop(theGraph->theStack, V);
 
@@ -1810,16 +1852,24 @@ int  V, J;
 
 /********************************************************************
  _GetBicompSize()
+
+ Determine the number of vertices in the bicomp.
+
+ The stack is used but preserved. In debug mode, NOTOK can result if
+ there is a stack overflow. This method pushes at most one integer
+ per vertex in the bicomp.
+
+ Returns a positive number on success, NOTOK on implementation failure
  ********************************************************************/
 
 int  _GetBicompSize(graphP theGraph, int BicompRoot)
 {
 int  V, J;
 int  theSize = 0;
+int  stackBottom = sp_GetCurrentSize(theGraph->theStack);
 
-     sp_ClearStack(theGraph->theStack);
      sp_Push(theGraph->theStack, BicompRoot);
-     while (!sp_IsEmpty(theGraph->theStack))
+     while (sp_GetCurrentSize(theGraph->theStack) > stackBottom)
      {
           sp_Pop(theGraph->theStack, V);
           theSize++;
