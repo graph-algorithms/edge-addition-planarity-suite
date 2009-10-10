@@ -79,8 +79,11 @@ int  sp_SetCurrentSize(stackP theStack, int top);
 int  sp_IsEmpty(stackP);
 int  sp_NonEmpty(stackP);
 
-int  sp_Push(stackP, int);
-int  sp_Push2(stackP, int, int);
+#define sp_Push(theStack, a) { if (sp__Push(theStack, (a)) != OK) return NOTOK; }
+#define sp_Push2(theStack, a, b) { if (sp__Push2(theStack, (a), (b)) != OK) return NOTOK; }
+
+int  sp__Push(stackP, int);
+int  sp__Push2(stackP, int, int);
 
 #define sp_Pop(theStack, a) { if (sp__Pop(theStack, &(a)) != OK) return NOTOK; }
 #define sp_Pop2(theStack, a, b) { if (sp__Pop2(theStack, &(a), &(b)) != OK) return NOTOK; }

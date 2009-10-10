@@ -446,7 +446,9 @@ int I, imageVertPos, degree;
      for (I = 0; I < theGraph->N; I++)
      {
           degree = gp_GetVertexDegree(theGraph, I);
-          if (degree == 1 || degree > maxDegree)
+          if (degree == 1)
+              return NOTOK;
+          if (degree > maxDegree)
               return NOTOK;
 
           degrees[degree]++;

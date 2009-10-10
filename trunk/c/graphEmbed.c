@@ -1307,6 +1307,9 @@ int  RetVal = edgeEmbeddingResult;
  Each vertex will then have an orientation, either clockwise or
  counterclockwise.  All vertices in each bicomp need to have the
  same orientation.
+ This method clears the stack, and the stack is clear when it
+ is finished.
+ Returns OK on success, NOTOK on implementation failure.
  ********************************************************************/
 
 int  _OrientVerticesInEmbedding(graphP theGraph)
@@ -1354,16 +1357,22 @@ int  R, edgeOffset = theGraph->edgeOffset;
  but does not change any of the edge signs.  This allows a second
  invocation of this function to restore the state of the bicomp
  as it was before the first call.
+
+ This method uses the stack but preserves whatever may have been
+ on it.  In debug mode, it will return NOTOK if the stack overflows.
+ This method pushes at most two integers per vertext in the bicomp.
+
+ Returns OK on success, NOTOK on implementation failure.
  ********************************************************************/
 
 int  _OrientVerticesInBicomp(graphP theGraph, int BicompRoot, int PreserveSigns)
 {
 int  V, J, invertedFlag;
+int  stackBottom = sp_GetCurrentSize(theGraph->theStack);
 
-     sp_ClearStack(theGraph->theStack);
      sp_Push2(theGraph->theStack, BicompRoot, 0);
 
-     while (sp_NonEmpty(theGraph->theStack))
+     while (sp_GetCurrentSize(theGraph->theStack) > stackBottom)
      {
          /* Pop a vertex to orient */
          sp_Pop2(theGraph->theStack, V, invertedFlag);

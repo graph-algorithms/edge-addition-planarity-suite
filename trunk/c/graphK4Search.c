@@ -182,6 +182,12 @@ isolatorContextP IC = &theGraph->IC;
     	// bicomp because we will either find the desired K4 or we will
     	// reduce the bicomp to an edge. The tests for A1 and A2 are easier
     	// to implement on an oriented bicomp.
+    	// NOTE: We're in the midst of the WalkDown, so the stack may be
+    	//       non-empty, and it has to be preserved with constant cost.
+    	//       The stack will have at most 4 integers per cut vertex
+    	//       merge point, and this operation will push at most two
+    	//       integers per tree edge in the bicomp, so the stack
+    	//       will not overflow.
         if (_OrientVerticesInBicomp(theGraph, R, 1) != OK)
         	return NOTOK;
 
@@ -189,6 +195,10 @@ isolatorContextP IC = &theGraph->IC;
     	// along the external face path [X, ..., W, ..., Y]
     	if (_K4_FindSecondActiveVertexOnLowExtFacePath(theGraph) == TRUE)
     	{
+    		// Now that we know we can find a K4, the Walkdown will not continue
+    		// and we can do away with the stack content.
+    		sp_ClearStack(theGraph->theStack);
+
         	// Restore the orientations of the vertices in the bicomp, then orient
     		// the whole embedding, so we can restore and orient the reduced paths
             if (_OrientVerticesInBicomp(theGraph, R, 1) != OK ||
@@ -223,10 +233,22 @@ isolatorContextP IC = &theGraph->IC;
     	}
 
     	// Case A2: Test whether the bicomp has an XY path
+    	// NOTE: As mentioned above, the stack is also preserved here.
+    	//       It will have at most 4 integers per cut vertex merge point,
+    	//       and this operation will push at most one integer per tree
+    	//       edge in the bicomp, so the stack will not overflow.
     	if (_SetVertexTypesForMarkingXYPath(theGraph) != OK)
     		return NOTOK;
+    	// NOTE: This call preserves the stack and does not overflow. There
+    	//       are at most 4 integers per cut vertex merge point, all of which
+    	//       are not in the bicomp, and this call pushes at most 3 integers
+    	//       per bicomp vertex, so the maximum stack requirement is 4N
         if (_MarkHighestXYPath(theGraph) == TRUE)
         {
+    		// Now that we know we can find a K4, the Walkdown will not continue
+    		// and we can do away with the stack content.
+    		sp_ClearStack(theGraph->theStack);
+
         	// Restore the orientations of the vertices in the bicomp, then orient
     		// the whole embedding, so we can restore and orient the reduced paths
             if (_OrientVerticesInBicomp(theGraph, R, 1) != OK ||
@@ -251,6 +273,10 @@ isolatorContextP IC = &theGraph->IC;
 
         // Since neither A1 nor A2 is found, then we reduce the bicomp to the
         // tree edge (R, W).
+        // NOTE: This method invokes several routines that use the stack, but
+        //       all of them preserve the stack and each pushes at most one
+        //       integer per bicomp vertex and pops all of them before returning.
+        //       Again, this means the stack will not overflow.
     	if (_K4_ReduceBicompToEdge(theGraph, context, R, IC->w) != OK)
     		return NOTOK;
 
@@ -266,6 +292,10 @@ isolatorContextP IC = &theGraph->IC;
     {
     	int a_x, a_y;
 
+    	// Reality check on stack state
+    	if (sp_NonEmpty(theGraph->theStack))
+    		return NOTOK;
+
     	// Find the vertices a_x and a_y that are active (pertinent or future pertinent)
     	// and also first along the external face paths emanating from the bicomp root
     	if (_K4_FindPlanarityActiveVertex(theGraph, I, R, 1, &a_x) != OK ||
@@ -274,7 +304,7 @@ isolatorContextP IC = &theGraph->IC;
 
     	// Case B1: If both a_x and a_y are future pertinent, then we can stop and
     	// isolate a subgraph homeomorphic to K4.
-    	if (FUTUREPERTINENT(theGraph, a_x, I) && FUTUREPERTINENT(theGraph, a_y, I))
+    	if (a_x != a_y && FUTUREPERTINENT(theGraph, a_x, I) && FUTUREPERTINENT(theGraph, a_y, I))
     	{
             if (_OrientVerticesInEmbedding(theGraph) != OK ||
                 _K4_RestoreAndOrientReducedPaths(theGraph, context) != OK)
@@ -301,6 +331,12 @@ isolatorContextP IC = &theGraph->IC;
             // Indicate success by returning NONEMBEDDABLE
     		return NONEMBEDDABLE;
     	}
+
+    	// Reality check: The bicomp with root R is pertinent, and the only
+    	// pertinent or future pertinent vertex on the external face is a_x,
+    	// so it must also be pertinent.
+    	if (a_x == a_y && !PERTINENT(theGraph, a_x))
+    		return NOTOK;
 
     	// Case B2: Determine whether there is an internal separating X-Y path for a_x or for a_y
     	// The method makes appropriate isolator context settings if the separator edge is found
@@ -347,6 +383,10 @@ isolatorContextP IC = &theGraph->IC;
 	// Minor E indicates the desired K4 homeomorph, so we isolate it and return NONEMBEDDABLE
     else if (theGraph->IC.minorType & MINORTYPE_E)
     {
+    	// Reality check on stack state
+    	if (sp_NonEmpty(theGraph->theStack))
+    		return NOTOK;
+
         // Impose consistent orientation on the embedding so we can then
         // restore the reduced paths.
         if (_OrientVerticesInEmbedding(theGraph) != OK ||
@@ -1011,7 +1051,7 @@ int  _K4_DeleteUnmarkedEdgesInPathComponent(graphP theGraph, int R, int prevLink
 	// We want to make sure there is enough stack capacity to handle it,
 	// which is of course true because the stack is supposed to be empty.
 	// We're doing a reduction on a bicomp on which the WalkDown has completed,
-	// so the sack contains no bicomp roots to merge.
+	// so the stack contains no bicomp roots to merge.
 	if (sp_NonEmpty(theGraph->theStack))
 		return NOTOK;
 
