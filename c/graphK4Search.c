@@ -1134,8 +1134,11 @@ int  _K4_ReducePathToEdge(graphP theGraph, K4SearchContext *context, int edgeTyp
 	 gp_DeleteEdge(theGraph, e_A, 0);
 
 	 // Now add a single edge to represent the path
-	 gp_InsertEdge(theGraph, R, gp_GetArc(theGraph, R, Rlink), Rlink,
-							 A, gp_GetArc(theGraph, A, Alink), Alink);
+	 // We use 1^Rlink, for example, because Rlink was the link from R that indicated e_R,
+	 // so 1^Rlink is the link that indicated e_R in the other arc that was adjacent to e_R.
+	 // We want gp_InsertEdge to place the new arc where e_R was in R's adjacency list
+	 gp_InsertEdge(theGraph, R, gp_GetArc(theGraph, R, Rlink), 1^Rlink,
+							 A, gp_GetArc(theGraph, A, Alink), 1^Alink);
 
 	 // Now set up the path connectors so the original path can be recovered if needed.
 	 e_R = gp_GetArc(theGraph, R, Rlink);
