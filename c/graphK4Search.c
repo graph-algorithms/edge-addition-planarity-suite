@@ -239,6 +239,11 @@ isolatorContextP IC = &theGraph->IC;
     	//       edge in the bicomp, so the stack will not overflow.
     	if (_SetVertexTypesForMarkingXYPath(theGraph) != OK)
     		return NOTOK;
+
+    	// Marking the X-Y path relies on the bicomp visited flags being zero
+    	if (_FillVisitedFlagsInBicomp(theGraph, R, 0) != OK)
+    		return NOTOK;
+
     	// NOTE: This call preserves the stack and does not overflow. There
     	//       are at most 4 integers per cut vertex merge point, all of which
     	//       are not in the bicomp, and this call pushes at most 3 integers
