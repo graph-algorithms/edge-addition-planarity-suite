@@ -547,7 +547,10 @@ int stackBottom1, stackBottom2;
         intervening X-Y path, so we would return FALSE in that case. */
 
      Z = R;
+     // This setting of J is the arc equivalent of prevLink=1
+     // As loop progresses, J indicates the arc used to enter Z, not the exit arc
      J = gp_GetLastArc(theGraph, R);
+
      while (theGraph->G[Z].type != VERTEX_HIGH_RYW &&
             theGraph->G[Z].type != VERTEX_LOW_RYW)
      {
