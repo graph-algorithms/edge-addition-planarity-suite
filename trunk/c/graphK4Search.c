@@ -30,6 +30,8 @@ extern void _FindActiveVertices(graphP theGraph, int R, int *pX, int *pY);
 extern int  _OrientVerticesInBicomp(graphP theGraph, int BicompRoot, int PreserveSigns);
 extern int  _OrientVerticesInEmbedding(graphP theGraph);
 extern void _InvertVertex(graphP theGraph, int V);
+extern int  _SetVisitedOnPath(graphP theGraph, int u, int v, int w, int x, int visited);
+extern int  _OrientExternalFacePath(graphP theGraph, int u, int v, int w, int x);
 
 extern int  _FindUnembeddedEdgeToAncestor(graphP theGraph, int cutVertex, int *pAncestor, int *pDescendant);
 extern int  _FindUnembeddedEdgeToCurVertex(graphP theGraph, int cutVertex, int *pDescendant);
@@ -74,8 +76,6 @@ int  _K4_DeleteUnmarkedEdgesInPathComponent(graphP theGraph, int R, int prevLink
 
 int  _K4_RestoreReducedPath(graphP theGraph, K4SearchContext *context, int J);
 int  _K4_RestoreAndOrientReducedPaths(graphP theGraph, K4SearchContext *context);
-int  _K4_OrientPath(graphP theGraph, int u, int v, int w, int x);
-void _K4_SetVisitedOnPath(graphP theGraph, int u, int v, int w, int x, int visited);
 
 int  _MarkEdge(graphP theGraph, int u, int v);
 
@@ -534,8 +534,6 @@ int  _K4_ChooseTypeOfNonOuterplanarityMinor(graphP theGraph, int I, int R)
  future pertinence is different from external activity, and we need to know
  about *actual connections* from each vertex to ancestors of IC.v, so we
  use PERTINENT() and FUTUREPERTINENT() rather than _VertexActiveStatus().
-
- TO DO: Double-check the isolator context input requirements and output expectations
  ****************************************************************************/
 
 int _K4_FindSecondActiveVertexOnLowExtFacePath(graphP theGraph)
@@ -1286,89 +1284,27 @@ int  e, J, JTwin, u, v, w, x, visited;
     		 if (_K4_RestoreReducedPath(theGraph, context, J) != OK)
     			 return NOTOK;
 
-			 if (_K4_OrientPath(theGraph, u, v, w, x) != OK)
-				 return NOTOK;
+    		 // If the path is on the external face, orient it
+    		 if (theGraph->G[gp_GetFirstArc(theGraph, u)].v == v ||
+    		     theGraph->G[gp_GetLastArc(theGraph, u)].v == v)
+    		 {
+    			 // Reality check: ensure the path is connected to the
+    			 // external face at both vertices.
+        		 if (theGraph->G[gp_GetFirstArc(theGraph, x)].v != w &&
+        		     theGraph->G[gp_GetLastArc(theGraph, x)].v != w)
+        			 return NOTOK;
 
-             _K4_SetVisitedOnPath(theGraph, u, v, w, x, visited);
+    			 if (_OrientExternalFacePath(theGraph, u, v, w, x) != OK)
+    				 return NOTOK;
+    		 }
+
+             if (_SetVisitedOnPath(theGraph, u, v, w, x, visited) !=OK)
+            	 return NOTOK;
          }
          else e++;
      }
 
      return OK;
-}
-
-/****************************************************************************
- _K4_OrientPath()
- TO DO: NOT CHECKED FOR SUITABILITY TO THIS ALGORITHM; MAY BE ABLE TO MAKE INTO A COMMON UTIL
- ****************************************************************************/
-
-int  _K4_OrientPath(graphP theGraph, int u, int v, int w, int x)
-{
-int  e_u = gp_GetNeighborEdgeRecord(theGraph, u, v);
-int  e_v, e_ulink, e_vlink;
-
-    do {
-        // Get the external face link in vertex u that indicates the
-        // edge e_u which connects to the next vertex v in the path
-    	// As a sanity check, we determine whether e_u is an
-    	// external face edge, because there would be an internal
-    	// implementation error if not
-    	if (gp_GetFirstArc(theGraph, u) == e_u)
-    		e_ulink = 0;
-    	else if (gp_GetLastArc(theGraph, u) == e_u)
-    		e_ulink = 1;
-    	else return NOTOK;
-
-        v = theGraph->G[e_u].v;
-
-        // Now get the external face link in vertex v that indicates the
-        // edge e_v which connects back to the prior vertex u.
-        e_v = gp_GetTwinArc(theGraph, e_u);
-
-    	if (gp_GetFirstArc(theGraph, v) == e_v)
-    		e_vlink = 0;
-    	else if (gp_GetLastArc(theGraph, v) == e_v)
-    		e_vlink = 1;
-    	else return NOTOK;
-
-        // The vertices u and v are inversely oriented if they
-        // use the same link to indicate the edge [e_u, e_v].
-        if (e_vlink == e_ulink)
-        {
-            _InvertVertex(theGraph, v);
-            e_vlink = 1^e_vlink;
-        }
-
-        theGraph->extFace[u].vertex[e_ulink] = v;
-        theGraph->extFace[v].vertex[e_vlink] = u;
-
-        u = v;
-        e_u = gp_GetArc(theGraph, v, 1^e_vlink);
-    } while (u != x);
-
-    return OK;
-}
-
-/****************************************************************************
- _K4_SetVisitedOnPath()
- TO DO: NOT CHECKED FOR SUITABILITY TO THIS ALGORITHM; MAY BE ABLE TO MAKE INTO A COMMON UTIL
- ****************************************************************************/
-
-void _K4_SetVisitedOnPath(graphP theGraph, int u, int v, int w, int x, int visited)
-{
-int  e = gp_GetNeighborEdgeRecord(theGraph, u, v);
-
-     theGraph->G[v].visited = visited;
-
-     do {
-         v = theGraph->G[e].v;
-         theGraph->G[v].visited = visited;
-         theGraph->G[e].visited = visited;
-         e = gp_GetTwinArc(theGraph, e);
-         theGraph->G[e].visited = visited;
-
-         e = gp_GetNextArcCircular(theGraph, e);
-     } while (v != x);
 }
 
 /****************************************************************************
