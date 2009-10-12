@@ -1427,3 +1427,115 @@ int  R, N, edgeOffset=theGraph->edgeOffset;
 
      return OK;
 }
+
+/****************************************************************************
+ _OrientExternalFacePath()
+
+ The vertices along the path (v ... w) are assumed to be degree two vertices
+ in an external face path connecting u and x.  This method imparts the
+ orientation of u and x onto the vertices v ... w.
+ The work done is on the order of the path length.
+ Returns OK if the external face path was oriented, NOTOK on implementation
+ error (i.e. if a condition arises providing the path is not on the
+ external face).
+ ****************************************************************************/
+
+int  _OrientExternalFacePath(graphP theGraph, int u, int v, int w, int x)
+{
+int  e_u, e_v, e_ulink, e_vlink;
+
+    // Get the edge record in u that indicates v; uses the twinarc method to
+    // ensure the cost is dominated by the degree of v (which is 2), not u
+    // (which can be any degree).
+    e_u = gp_GetTwinArc(theGraph, gp_GetNeighborEdgeRecord(theGraph, v, u));
+
+    do {
+        // Get the external face link in vertex u that indicates the
+        // edge e_u which connects to the next vertex v in the path
+    	// As a sanity check, we determine whether e_u is an
+    	// external face edge, because there would be an internal
+    	// implementation error if not
+    	if (gp_GetFirstArc(theGraph, u) == e_u)
+    		e_ulink = 0;
+    	else if (gp_GetLastArc(theGraph, u) == e_u)
+    		e_ulink = 1;
+    	else return NOTOK;
+
+        v = theGraph->G[e_u].v;
+
+        // Now get the external face link in vertex v that indicates the
+        // edge e_v which connects back to the prior vertex u.
+        e_v = gp_GetTwinArc(theGraph, e_u);
+
+    	if (gp_GetFirstArc(theGraph, v) == e_v)
+    		e_vlink = 0;
+    	else if (gp_GetLastArc(theGraph, v) == e_v)
+    		e_vlink = 1;
+    	else return NOTOK;
+
+        // The vertices u and v are inversely oriented if they
+        // use the same link to indicate the edge [e_u, e_v].
+        if (e_vlink == e_ulink)
+        {
+            _InvertVertex(theGraph, v);
+            e_vlink = 1^e_vlink;
+        }
+
+        // This update of the extFace short-circuit is polite but unnecessary.
+        // This orientation only occurs once we know we can isolate a K_{3,3},
+        // at which point the extFace data structure is not used.
+        theGraph->extFace[u].vertex[e_ulink] = v;
+        theGraph->extFace[v].vertex[e_vlink] = u;
+
+        u = v;
+        e_u = gp_GetArc(theGraph, v, 1^e_vlink);
+    } while (u != x);
+
+    return OK;
+}
+
+/****************************************************************************
+ _SetVisitedOnPath()
+ This method sets the visited flags to 'visited' on the vertices and edges on
+ the path (u, v, ..., w, x) in which all vertices except the endpoints u and x
+ are degree 2.  This method avoids performing more than constant work at the
+ path endpoints u and x, so the total work is on the order of the path length.
+
+ Returns OK on success, NOTOK on internal failure
+ ****************************************************************************/
+
+int  _SetVisitedOnPath(graphP theGraph, int u, int v, int w, int x, int visited)
+{
+int  e, eTwin, pathLength=0;
+
+     // We want to exit u from e, but we get eTwin first here in order to avoid
+     // work, in case the degree of u is greater than 2.
+     eTwin = gp_GetNeighborEdgeRecord(theGraph, v, u);
+     if (!gp_IsArc(theGraph, eTwin))
+    	 return NOTOK;
+     e = gp_GetTwinArc(theGraph, eTwin);
+
+     v = u;
+
+     do {
+    	 // Mark the vertex and the exiting edge
+         theGraph->G[v].visited = visited;
+         theGraph->G[e].visited = visited;
+         theGraph->G[eTwin].visited = visited;
+
+    	 // Get the next vertex
+         v = theGraph->G[e].v;
+         e = gp_GetNextArcCircular(theGraph, eTwin);
+         eTwin = gp_GetTwinArc(theGraph, e);
+
+         // A simple reality check on the preconditions of this method
+         if (++pathLength > theGraph->N)
+        	 return NOTOK;
+
+     } while (v != x);
+
+     // Mark the last vertex with 'visited'
+     theGraph->G[x].visited = visited;
+
+     return OK;
+}

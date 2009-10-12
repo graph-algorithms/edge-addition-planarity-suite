@@ -68,6 +68,8 @@ extern int  _JoinBicomps(graphP theGraph);
 extern int  _OrientVerticesInBicomp(graphP theGraph, int BicompRoot, int PreserveSigns);
 extern int  _OrientVerticesInEmbedding(graphP theGraph);
 extern void _InvertVertex(graphP theGraph, int V);
+extern int  _SetVisitedOnPath(graphP theGraph, int u, int v, int w, int x, int visited);
+extern int  _OrientExternalFacePath(graphP theGraph, int u, int v, int w, int x);
 
 extern int  _ChooseTypeOfNonplanarityMinor(graphP theGraph, int I, int R);
 extern int  _MarkHighestXYPath(graphP theGraph);
@@ -117,8 +119,6 @@ int  _ReduceExternalFacePathToEdge(graphP theGraph, K33SearchContext *context, i
 int  _ReduceXYPathToEdge(graphP theGraph, K33SearchContext *context, int u, int x, int edgeType);
 int  _RestoreReducedPath(graphP theGraph, K33SearchContext *context, int J);
 int  _RestoreAndOrientReducedPaths(graphP theGraph, K33SearchContext *context);
-int  _OrientPath(graphP theGraph, int u, int v, int w, int x);
-void _SetVisitedOnPath(graphP theGraph, int u, int v, int w, int x, int visited);
 
 int  _IsolateMinorE5(graphP theGraph);
 int  _IsolateMinorE6(graphP theGraph, K33SearchContext *context);
@@ -1931,7 +1931,7 @@ int  J0, JTwin0, J1, JTwin1;
              if ((!gp_IsArc(theGraph, J0) && !gp_IsArc(theGraph, JTwin1)) ||
                  (!gp_IsArc(theGraph, J1) && !gp_IsArc(theGraph, JTwin0)))
              {
-                 if (_OrientPath(theGraph, u, v, w, x) != OK)
+                 if (_OrientExternalFacePath(theGraph, u, v, w, x) != OK)
                      return NOTOK;
              }
 
@@ -1942,87 +1942,13 @@ int  J0, JTwin0, J1, JTwin1;
                 with a path, then we need to mark the path. Similarly, for an unmarked
                 edge, the replacement path should be unmarked. */
 
-             _SetVisitedOnPath(theGraph, u, v, w, x, visited);
+             if (_SetVisitedOnPath(theGraph, u, v, w, x, visited) != OK)
+            	 return NOTOK;
          }
          else e++;
      }
 
      return OK;
-}
-
-/****************************************************************************
- _OrientPath()
- ****************************************************************************/
-
-int  _OrientPath(graphP theGraph, int u, int v, int w, int x)
-{
-int  e_u = gp_GetNeighborEdgeRecord(theGraph, u, v);
-int  e_v, e_ulink, e_vlink;
-
-    do {
-        // Get the external face link in vertex u that indicates the
-        // edge e_u which connects to the next vertex v in the path
-    	// As a sanity check, we determine whether e_u is an
-    	// external face edge, because there would be an internal
-    	// implementation error if not
-    	if (gp_GetFirstArc(theGraph, u) == e_u)
-    		e_ulink = 0;
-    	else if (gp_GetLastArc(theGraph, u) == e_u)
-    		e_ulink = 1;
-    	else return NOTOK;
-
-        v = theGraph->G[e_u].v;
-
-        // Now get the external face link in vertex v that indicates the
-        // edge e_v which connects back to the prior vertex u.
-        e_v = gp_GetTwinArc(theGraph, e_u);
-
-    	if (gp_GetFirstArc(theGraph, v) == e_v)
-    		e_vlink = 0;
-    	else if (gp_GetLastArc(theGraph, v) == e_v)
-    		e_vlink = 1;
-    	else return NOTOK;
-
-        // The vertices u and v are inversely oriented if they
-        // use the same link to indicate the edge [e_u, e_v].
-        if (e_vlink == e_ulink)
-        {
-            _InvertVertex(theGraph, v);
-            e_vlink = 1^e_vlink;
-        }
-
-        // This update of the extFace short-circuit is polite but unnecessary.
-        // This orientation only occurs once we know we can isolate a K_{3,3},
-        // at which point the extFace data structure is not used.
-        theGraph->extFace[u].vertex[e_ulink] = v;
-        theGraph->extFace[v].vertex[e_vlink] = u;
-
-        u = v;
-        e_u = gp_GetArc(theGraph, v, 1^e_vlink);
-    } while (u != x);
-
-    return OK;
-}
-
-/****************************************************************************
- _SetVisitedOnPath()
- ****************************************************************************/
-
-void _SetVisitedOnPath(graphP theGraph, int u, int v, int w, int x, int visited)
-{
-int  e = gp_GetNeighborEdgeRecord(theGraph, u, v);
-
-     theGraph->G[v].visited = visited;
-
-     do {
-         v = theGraph->G[e].v;
-         theGraph->G[v].visited = visited;
-         theGraph->G[e].visited = visited;
-         e = gp_GetTwinArc(theGraph, e);
-         theGraph->G[e].visited = visited;
-
-         e = gp_GetNextArcCircular(theGraph, e);
-     } while (v != x);
 }
 
 /****************************************************************************
