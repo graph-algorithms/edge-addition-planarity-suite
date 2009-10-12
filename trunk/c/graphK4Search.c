@@ -20,6 +20,7 @@ extern void _FillVisitedFlags(graphP, int);
 extern int  _FillVisitedFlagsInBicomp(graphP theGraph, int BicompRoot, int FillValue);
 extern int  _FillVisitedFlagsInOtherBicomps(graphP theGraph, int BicompRoot, int FillValue);
 extern void _FillVisitedFlagsInUnembeddedEdges(graphP theGraph, int FillValue);
+extern int  _SetVertexTypeInBicomp(graphP theGraph, int BicompRoot, int theType);
 extern int  _DeleteUnmarkedEdgesInBicomp(graphP theGraph, int BicompRoot);
 extern int  _ComputeArcType(graphP theGraph, int a, int b, int edgeType);
 extern int  _SetEdgeType(graphP theGraph, int u, int v);
@@ -276,8 +277,15 @@ isolatorContextP IC = &theGraph->IC;
     		return NONEMBEDDABLE;
         }
 
+        // else if there was no X-Y path, then we restore the vertex types to
+        // unknown (though it would suffice to do it just to R and W)
+		if (_SetVertexTypeInBicomp(theGraph, R, TYPE_UNKNOWN) != OK)
+			return NOTOK;
+
         // Since neither A1 nor A2 is found, then we reduce the bicomp to the
         // tree edge (R, W).
+		// NOTE: The visited flags for R and W are restored to values appropriate
+		//       for continuing with future embedding steps
         // NOTE: This method invokes several routines that use the stack, but
         //       all of them preserve the stack and each pushes at most one
         //       integer per bicomp vertex and pops all of them before returning.
@@ -839,8 +847,6 @@ int  _K4_IsolateMinorB2(graphP theGraph)
 
 int  _K4_ReduceBicompToEdge(graphP theGraph, K4SearchContext *context, int R, int W)
 {
-	int Rvisited = theGraph->G[R].visited, Wvisited = theGraph->G[W].visited;
-
 	if (_OrientVerticesInBicomp(theGraph, R, 0) != OK ||
 		_FillVisitedFlagsInBicomp(theGraph, R, 0) != OK)
 		return NOTOK;
@@ -854,10 +860,9 @@ int  _K4_ReduceBicompToEdge(graphP theGraph, K4SearchContext *context, int R, in
     		R, gp_GetFirstArc(theGraph, R), W, gp_GetFirstArc(theGraph, W)) != OK)
     	return NOTOK;
 
-    // Finally, restore the visited flag settings of R and W, so that
+    // Finally, put the visited state of R and W to unvisted so that
     // the core embedder (esp. Walkup) will not have any problems.
-	theGraph->G[R].visited = Rvisited;
-	theGraph->G[W].visited = Wvisited;
+	theGraph->G[R].visited = theGraph->G[W].visited = theGraph->N;
 
 	return OK;
 }
