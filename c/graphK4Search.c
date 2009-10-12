@@ -127,9 +127,9 @@ int  _SearchForK4InBicomps(graphP theGraph, int I)
 int  C, R, RetVal=OK;
 K4SearchContext *context = NULL;
 
-    gp_FindExtension(theGraph, K4SEARCH_ID, (void *)&context);
-    if (context == NULL)
-        return NOTOK;
+     gp_FindExtension(theGraph, K4SEARCH_ID, (void *)&context);
+     if (context == NULL)
+         return NOTOK;
 
      while ((C = context->V[I].sortedDFSChildList) != NIL)
      {

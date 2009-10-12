@@ -764,10 +764,10 @@ int  RootID_DFSChild, BicompList;
  a function overload would set Rout, W and WPrevLink, then return OK
  to indicate that the WalkDown may proceed.
 
- NOTE: When returning OK, the overload implementation should NOT
-       call this base implementation or otherwise push R onto the
-       stack because the core WalkDown implementation will push the
-       appropriate stack entries based on R, Rout, W and WPrevLink
+ NOTE: When returning OK (blockage cleared), the overload implementation
+       should NOT call this base implementation nor otherwise push R
+       onto the stack because the core WalkDown implementation will push
+       the appropriate stack entries based on R, Rout, W and WPrevLink
        Similarly, when returning NONEMBEDDABLE, it is typically not
        necessary to call this base implementation because pushing
        the bicomp root R is not usually necessary, i.e. the overload
@@ -1161,10 +1161,12 @@ int RetVal = OK;
               {
                   // _Walkdown returns OK even if it couldn't embed all
                   // back edges from I to the subtree rooted by child
-                  // It only returns NONEMBEDDABLE when there is a
-                  // non-empty stack of bicomps, the topmost of which
-                  // is blocked up by stopping vertices along both
-                  // external face paths emanating from the bicomp root
+                  // It only returns NONEMBEDDABLE when it was blocked
+            	  // on a descendant bicomp with stopping vertices along
+            	  // both external face paths emanating from the bicomp root
+            	  // Some extension algorithms are able to clear some such
+            	  // blockages with a reduction, and those algorithms only
+            	  // return NONEMBEDDABLE when unable to clear the blockage
                   if ((RetVal = theGraph->functions.fpWalkDown(theGraph, I, child + N)) != OK)
                   {
                       if (RetVal == NONEMBEDDABLE)
@@ -1177,14 +1179,16 @@ int RetVal = OK;
                                 theGraph->V[I].separatedDFSChildList, child);
           }
 
-          /* If all Walkdown calls succeed, but they don't embed all of the
-                forward edges, then the graph is not planar/outerplanar.
-                Some algorithms are able to clear the blockage and continue
-                the embedder (they return OK below).  The default implementation
-                simply returns NONEMBEDDABLE, which stops the embedding process
-                and allows the obstruction isolation to be invoked. */
+          /* If the Walkdown sequence is completed but not all forward edges
+             are embedded or an explicit NONEMBEDDABLE result was returned,
+             then the graph is not planar/outerplanar.
+             The handler below is invoked because some extension algorithms are
+             able to clear the blockage to planarity/outerplanarity and continue
+             the embedder iteration loop (they return OK below).
+             The default implementation simply returns NONEMBEDDABLE, which stops
+             the embedding process. */
 
-          if (theGraph->V[I].fwdArcList != NIL)
+          if (theGraph->V[I].fwdArcList != NIL || RetVal == NONEMBEDDABLE)
           {
               RetVal = theGraph->functions.fpHandleBlockedEmbedIteration(theGraph, I);
               if (RetVal != OK)
@@ -1192,8 +1196,11 @@ int RetVal = OK;
           }
     }
 
-    /* Postprocessing to orient the embedding and merge any remaining
-       separated bicomps, or to isolate an obstruction to planarity/outerplanarity */
+    /* Postprocessing to orient the embedding and merge any remaining separated bicomps,
+       or to isolate an obstruction to planarity/outerplanarity.  Some extension algorithms
+       either do nothing if they have already isolated a subgraph of interest, or they may
+       do so now based on information collected by their implementations of
+       HandleBlockedDescendantBicomp or HandleBlockedEmbedIteration */
 
     return theGraph->functions.fpEmbedPostprocess(theGraph, I, RetVal);
 }

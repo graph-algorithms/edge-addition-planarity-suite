@@ -784,8 +784,16 @@ int  J, parent, N;
 int  _K4Search_HandleBlockedEmbedIteration(graphP theGraph, int I)
 {
     if (theGraph->embedFlags == EMBEDFLAGS_SEARCHFORK4)
-        return _SearchForK4InBicomps(theGraph, I);
+    {
+    	// If the fwdArcList is empty, then the K4 was already isolated
+    	// by _K4Search_HandleBlockedDescendantBicomp(), and we just
+    	// return the NONEMBEDDABLE result in order to stop the embedding
+    	// iteration loop.
+		if (theGraph->V[I].fwdArcList == NIL)
+			return NONEMBEDDABLE;
 
+        return _SearchForK4InBicomps(theGraph, I);
+    }
     else
     {
         K4SearchContext *context = NULL;
