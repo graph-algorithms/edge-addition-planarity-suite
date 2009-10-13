@@ -1105,59 +1105,62 @@ int  _K4_DeleteUnmarkedEdgesInPathComponent(graphP theGraph, int R, int prevLink
 
 int  _K4_ReducePathToEdge(graphP theGraph, K4SearchContext *context, int edgeType, int R, int e_R, int A, int e_A)
 {
-	 int Rlink, Alink, v_R, v_A;
-
-	 // If the path is a single edge, then no reduction is needed
-	 if (theGraph->G[e_R].v == A)
-		 return OK;
-
 	 // Find out the links used in vertex R for edge e_R and in vertex A for edge e_A
-	 Rlink = theGraph->G[R].link[0] == e_R ? 0 : 1;
-	 Alink = theGraph->G[A].link[0] == e_A ? 0 : 1;
+	 int Rlink = theGraph->G[R].link[0] == e_R ? 0 : 1;
+	 int Alink = theGraph->G[A].link[0] == e_A ? 0 : 1;
 
-	 // Prepare for removing each of the two edges that join the path to the bicomp by
-	 // restoring it if it is a reduction edge (a constant time operation)
-	 if (context->G[e_R].pathConnector != NIL)
+	 // If the path is more than a single edge, then it must be reduced to an edge.
+	 // Note that even if the path is a single edge, the external face data structure
+	 // must still be modified since many edges connecting the external face have
+	 // been deleted
+	 if (theGraph->G[e_R].v != A)
 	 {
-		 if (_K4_RestoreReducedPath(theGraph, context, e_R) != OK)
-			 return NOTOK;
+		 int v_R, v_A;
 
+		 // Prepare for removing each of the two edges that join the path to the bicomp by
+		 // restoring it if it is a reduction edge (a constant time operation)
+		 if (context->G[e_R].pathConnector != NIL)
+		 {
+			 if (_K4_RestoreReducedPath(theGraph, context, e_R) != OK)
+				 return NOTOK;
+
+			 e_R = gp_GetArc(theGraph, R, Rlink);
+		 }
+
+		 if (context->G[e_A].pathConnector != NIL)
+		 {
+			 if (_K4_RestoreReducedPath(theGraph, context, e_A) != OK)
+				 return NOTOK;
+			 e_A = gp_GetArc(theGraph, A, Alink);
+		 }
+
+		 // Save the vertex neighbors of R and A indicated by e_R and e_A for
+		 // later use in setting up the path connectors.
+		 v_R = theGraph->G[e_R].v;
+		 v_A = theGraph->G[e_A].v;
+
+		 // Now delete the two edges that join the path to the bicomp.
+		 gp_DeleteEdge(theGraph, e_R, 0);
+		 gp_DeleteEdge(theGraph, e_A, 0);
+
+		 // Now add a single edge to represent the path
+		 // We use 1^Rlink, for example, because Rlink was the link from R that indicated e_R,
+		 // so 1^Rlink is the link that indicated e_R in the other arc that was adjacent to e_R.
+		 // We want gp_InsertEdge to place the new arc where e_R was in R's adjacency list
+		 gp_InsertEdge(theGraph, R, gp_GetArc(theGraph, R, Rlink), 1^Rlink,
+								 A, gp_GetArc(theGraph, A, Alink), 1^Alink);
+
+		 // Now set up the path connectors so the original path can be recovered if needed.
 		 e_R = gp_GetArc(theGraph, R, Rlink);
-	 }
+		 context->G[e_R].pathConnector = v_R;
 
-	 if (context->G[e_A].pathConnector != NIL)
-	 {
-		 if (_K4_RestoreReducedPath(theGraph, context, e_A) != OK)
-			 return NOTOK;
 		 e_A = gp_GetArc(theGraph, A, Alink);
+		 context->G[e_A].pathConnector = v_A;
+
+		 // Also, set the reduction edge's type to preserve the DFS tree structure
+		 theGraph->G[e_R].type = _ComputeArcType(theGraph, R, A, edgeType);
+		 theGraph->G[e_A].type = _ComputeArcType(theGraph, A, R, edgeType);
 	 }
-
-	 // Save the vertex neighbors of R and A indicated by e_R and e_A for
-	 // later use in setting up the path connectors.
-	 v_R = theGraph->G[e_R].v;
-	 v_A = theGraph->G[e_A].v;
-
-	 // Now delete the two edges that join the path to the bicomp.
-	 gp_DeleteEdge(theGraph, e_R, 0);
-	 gp_DeleteEdge(theGraph, e_A, 0);
-
-	 // Now add a single edge to represent the path
-	 // We use 1^Rlink, for example, because Rlink was the link from R that indicated e_R,
-	 // so 1^Rlink is the link that indicated e_R in the other arc that was adjacent to e_R.
-	 // We want gp_InsertEdge to place the new arc where e_R was in R's adjacency list
-	 gp_InsertEdge(theGraph, R, gp_GetArc(theGraph, R, Rlink), 1^Rlink,
-							 A, gp_GetArc(theGraph, A, Alink), 1^Alink);
-
-	 // Now set up the path connectors so the original path can be recovered if needed.
-	 e_R = gp_GetArc(theGraph, R, Rlink);
-	 context->G[e_R].pathConnector = v_R;
-
-	 e_A = gp_GetArc(theGraph, A, Alink);
-	 context->G[e_A].pathConnector = v_A;
-
-	 // Also, set the reduction edge's type to preserve the DFS tree structure
-	 theGraph->G[e_R].type = _ComputeArcType(theGraph, R, A, edgeType);
-	 theGraph->G[e_A].type = _ComputeArcType(theGraph, A, R, edgeType);
 
 	 // Set the external face data structure
      theGraph->extFace[R].vertex[Rlink] = A;
@@ -1183,7 +1186,12 @@ int  _K4_ReducePathToEdge(graphP theGraph, K4SearchContext *context, int edgeTyp
  The path may contain more reduction edges internally, but we do not
  search for and process those since it would violate the constant time
  bound required of this function.
- return OK on success, NOTOK on failure
+
+ Note that we don't bother amending the external face data structure because
+ a reduced path is only restored when it will shortly be reduced again or
+ when we don't really need the external face data structure anymore.
+
+ Return OK on success, NOTOK on failure
  ****************************************************************************/
 
 int  _K4_RestoreReducedPath(graphP theGraph, K4SearchContext *context, int J)
