@@ -26,6 +26,7 @@ extern int  _ComputeArcType(graphP theGraph, int a, int b, int edgeType);
 extern int  _SetEdgeType(graphP theGraph, int u, int v);
 
 extern int  _GetNextVertexOnExternalFace(graphP theGraph, int curVertex, int *pPrevLink);
+extern int  _JoinBicomps(graphP theGraph);
 extern void _FindActiveVertices(graphP theGraph, int R, int *pX, int *pY);
 extern int  _OrientVerticesInBicomp(graphP theGraph, int BicompRoot, int PreserveSigns);
 extern int  _OrientVerticesInEmbedding(graphP theGraph);
@@ -775,17 +776,36 @@ int  _K4_IsolateMinorB1(graphP theGraph)
 {
 	isolatorContextP IC = &theGraph->IC;
 
+    if (theGraph->functions.fpMarkDFSPath(theGraph, IC->w, IC->dw) != OK)
+    	return NOTOK;
+
 	if (theGraph->functions.fpMarkDFSPath(theGraph, IC->x, IC->dx) != OK)
     	return NOTOK;
 
 	if (theGraph->functions.fpMarkDFSPath(theGraph, IC->y, IC->dy) != OK)
     	return NOTOK;
 
-	if (theGraph->functions.fpMarkDFSPath(theGraph, MIN(IC->ux, IC->uy), MAX(IC->ux, IC->uy)) != OK)
+	if (theGraph->functions.fpMarkDFSPath(theGraph, MIN(IC->ux, IC->uy), IC->r) != OK)
     	return NOTOK;
 
-	if (_IsolateOuterplanarityObstructionB(theGraph) != OK)
-		return NOTOK;
+	// Choose the part of the bicomp ext face to mark. Typically (r ... x ... w ... y)
+	// except the edge case in which x==w, where it's (w ... y ... r)
+	if (IC->x != IC->w)
+	{
+	    if (_MarkPathAlongBicompExtFace(theGraph, IC->r, IC->y) != OK)
+	    	return NOTOK;
+	}
+	else
+	{
+	    if (_MarkPathAlongBicompExtFace(theGraph, IC->w, IC->r) != OK)
+	    	return NOTOK;
+	}
+
+    if (_JoinBicomps(theGraph) != OK)
+    	return NOTOK;
+
+    if (_AddAndMarkEdge(theGraph, IC->v, IC->dw) != OK)
+    	return NOTOK;
 
     if (_AddAndMarkEdge(theGraph, IC->ux, IC->dx) != OK)
         return NOTOK;
