@@ -78,8 +78,7 @@ int  _K4_DeleteUnmarkedEdgesInPathComponent(graphP theGraph, int R, int prevLink
 int  _K4_RestoreReducedPath(graphP theGraph, K4SearchContext *context, int J);
 int  _K4_RestoreAndOrientReducedPaths(graphP theGraph, K4SearchContext *context);
 
-int  _MarkEdge(graphP theGraph, int u, int v);
-
+int _MarkEdge(graphP theGraph, int x, int y);
 
 /****************************************************************************
  _SearchForK4InBicomps()
@@ -190,6 +189,9 @@ isolatorContextP IC = &theGraph->IC;
     	//       merge point, and this operation will push at most two
     	//       integers per tree edge in the bicomp, so the stack
     	//       will not overflow.
+        if (sp_GetCapacity(theGraph->theStack) < 6*theGraph->N)
+    		return NOTOK;
+
         if (_OrientVerticesInBicomp(theGraph, R, 1) != OK)
         	return NOTOK;
 
@@ -270,7 +272,8 @@ isolatorContextP IC = &theGraph->IC;
                 return NOTOK;
 
     		// Isolate the K4 homeomorph
-    		if (_K4_IsolateMinorA2(theGraph) != OK ||
+    		if (_MarkHighestXYPath(theGraph) != TRUE ||
+    			_K4_IsolateMinorA2(theGraph) != OK ||
     			_DeleteUnmarkedVerticesAndEdges(theGraph) != OK)
     			return NOTOK;
 
@@ -371,9 +374,16 @@ isolatorContextP IC = &theGraph->IC;
             }
             else
             {
+            	IC->z = IC->w;
             	if (_FindUnembeddedEdgeToAncestor(theGraph, IC->z, &IC->uz, &IC->dz) != TRUE)
             		return NOTOK;
             }
+
+            // The X-Y path doesn't have to be the same one that was associated with the
+            // separating internal edge.
+        	if (_SetVertexTypesForMarkingXYPath(theGraph) != OK ||
+        		_MarkHighestXYPath(theGraph) != TRUE)
+        		return NOTOK;
 
     		// Isolate the K4 homeomorph
     		if (_K4_IsolateMinorB2(theGraph) != OK  ||
@@ -759,7 +769,8 @@ int  _K4_IsolateMinorA2(graphP theGraph)
 {
 	isolatorContextP IC = &theGraph->IC;
 
-    if (_MarkEdge(theGraph, IC->px, IC->py) != TRUE)
+	// We assume the X-Y path was already marked
+	if (!theGraph->G[IC->px].visited || !theGraph->G[IC->py].visited)
     	return NOTOK;
 
 	return _IsolateOuterplanarityObstructionA(theGraph);
@@ -830,7 +841,8 @@ int  _K4_IsolateMinorB2(graphP theGraph)
 	// First subcase, the active vertex is pertinent
     if (PERTINENT(theGraph, IC->w))
     {
-        if (_MarkEdge(theGraph, IC->px, IC->py) != TRUE)
+    	// We assume the X-Y path was already marked
+    	if (!theGraph->G[IC->px].visited || !theGraph->G[IC->py].visited)
         	return NOTOK;
 
     	return _IsolateOuterplanarityObstructionE(theGraph);
@@ -839,7 +851,6 @@ int  _K4_IsolateMinorB2(graphP theGraph)
     // Second subcase, the active vertex is future pertinent
     else if (FUTUREPERTINENT(theGraph, IC->w, IC->v))
     {
-    	IC->r = IC->v;
     	IC->v = IC->uz;
     	IC->dw = IC->dz;
 
@@ -1333,23 +1344,4 @@ int  e, J, JTwin, u, v, w, x, visited;
      }
 
      return OK;
-}
-
-/****************************************************************************
- _MarkEdge()
- If the edge (u, v) is found, it is marked visited.
- Returns TRUE if the edge is found, FALSE otherwise.
- ****************************************************************************/
-
-int _MarkEdge(graphP theGraph, int u, int v)
-{
-	int eu = gp_GetNeighborEdgeRecord(theGraph, u, v);
-	if (gp_IsArc(theGraph, eu))
-	{
-		int ev = gp_GetTwinArc(theGraph, eu);
-		theGraph->G[u].visited = theGraph->G[v].visited =
-		theGraph->G[eu].visited = theGraph->G[ev].visited = 1;
-		return TRUE;
-	}
-	return FALSE;
 }
