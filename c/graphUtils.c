@@ -417,7 +417,19 @@ int newGsize = theGraph->edgeOffset + requiredArcCapacity;
     // Expand theStack
     if (sp_GetCapacity(theGraph->theStack) < 2 * requiredArcCapacity)
     {
-    	if ((newStack = sp_New(2 * requiredArcCapacity)) == NULL)
+    	int stackSize = 2 * requiredArcCapacity;
+
+    	if (stackSize < 6*theGraph->N)
+    	{
+			// NOTE: Since this routine only makes the stack bigger, this
+    		//       calculation is not needed here because we already ensured
+			//       we had stack capacity of the greater of 2*arcs and 6*N
+    		//       But we do it for clarity and consistency (e.g. so this rule
+    		//       is not forgotten whenever a "SetArcCapacity" method is added)
+    		stackSize = 6*theGraph->N;
+    	}
+
+    	if ((newStack = sp_New(stackSize)) == NULL)
     		return NOTOK;
 
     	sp_CopyContent(newStack, theGraph->theStack);
