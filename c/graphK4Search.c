@@ -395,9 +395,21 @@ isolatorContextP IC = &theGraph->IC;
     	}
 
     	// If K_4 homeomorph not found, make reductions along a_x and a_y paths.
-    	if (_K4_ReducePathComponent(theGraph, context, R, 1, a_x) != OK ||
-    		_K4_ReducePathComponent(theGraph, context, R, 0, a_y) != OK)
-    		return NOTOK;
+    	if (a_x == a_y)
+    	{
+        	// In the special case where both paths lead to the same vertex, we can
+        	// reduce the bicomp to a single edge, which avoids issues of reversed
+        	// orientation between the bicomp root and the vertex.
+        	if (_K4_ReduceBicompToEdge(theGraph, context, R, a_x) != OK)
+        		return NOTOK;
+    	}
+    	else
+    	{
+    		// When a_x and a_y are distinct, we reduce each path from root to the vertex
+        	if (_K4_ReducePathComponent(theGraph, context, R, 1, a_x) != OK ||
+        		_K4_ReducePathComponent(theGraph, context, R, 0, a_y) != OK)
+        		return NOTOK;
+    	}
 
     	// Return OK to indicate that WalkDown processing may proceed to resolve
     	// more of the pertinence of this bicomp.
