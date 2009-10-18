@@ -876,6 +876,11 @@ int  _WalkDown(graphP theGraph, int I, int RootVertex)
 {
 int  RetVal, W, WPrevLink, R, Rout, X, XPrevLink, Y, YPrevLink, RootSide, RootEdgeChild;
 
+#ifdef DEBUG
+     // Resolves typical watch expressions
+     R = RootVertex;
+#endif
+
      RootEdgeChild = RootVertex - theGraph->N;
 
      sp_ClearStack(theGraph->theStack);
@@ -884,12 +889,28 @@ int  RetVal, W, WPrevLink, R, Rout, X, XPrevLink, Y, YPrevLink, RootSide, RootEd
      {
          W = theGraph->extFace[RootVertex].vertex[RootSide];
 
-         // The edge record in W that leads back to the root vertex
-         // is indicated by link [1^RootSide] in W because only W
-         // is in the bicomp with the root vertex.  When tree edges
-         // are first embedded, it is done so that W has the same
-         // orientation as the root vertex.
-         WPrevLink = 1^RootSide;
+         // If the main bicomp rooted by RootVertex is a single tree edge,
+         // (always the case for core planarity) then the external face links
+         // of W will be equal
+         if (theGraph->extFace[W].vertex[0] == theGraph->extFace[W].vertex[1])
+         {
+        	 // In this case, we treat the bicomp external face as if it were
+        	 // a cycle of two edges and as if RootVertex and W had the same
+        	 // orientation. Thus, the edge record leading back to RootVertex
+        	 // would be indicated by link[1^RootSide] as this is the reverse of
+        	 // link[RootSide], which was used to exit RootVertex and get to W
+             WPrevLink = 1^RootSide;
+         }
+         // Otherwise, Walkdown has been called on a bicomp with two distinct
+         // external face paths from RootVertex (a possibility in extension
+         // algorithms), so both external face path links from W do not indicate
+         // the RootVertex.
+         else
+         {
+        	 WPrevLink = theGraph->extFace[W].vertex[0] == RootVertex ? 0 : 1;
+        	 if (theGraph->extFace[W].vertex[WPrevLink] != RootVertex)
+        		 return NOTOK;
+         }
 
          while (W != RootVertex)
          {
