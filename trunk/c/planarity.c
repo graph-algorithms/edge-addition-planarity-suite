@@ -406,7 +406,7 @@ int runTests(int argc, char *argv[])
 			"K_{2,3} search", "K_{3,3} search", "K_4 search"
 	};
 	int success = TRUE;
-	int results[] = { 194815, 194815, 269377, 268948, 191091, 0 };
+	int results[] = { 194815, 194815, 269377, 268948, 191091, 265312 };
 	int i, startCommand, stopCommand;
 
 	startCommand = 0;
