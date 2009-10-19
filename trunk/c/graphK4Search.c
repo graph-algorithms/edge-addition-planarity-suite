@@ -561,22 +561,22 @@ int  _K4_ChooseTypeOfNonOuterplanarityMinor(graphP theGraph, int I, int R)
 
 int _K4_FindSecondActiveVertexOnLowExtFacePath(graphP theGraph)
 {
-    int Z, ZPrevLink;
+    int Z=theGraph->IC.r, ZPrevLink=1;
 
 	// First we test X for future pertinence only (if it were pertinent, then
 	// we wouldn't have been blocked up on this bicomp)
-    if (FUTUREPERTINENT(theGraph, theGraph->IC.x, theGraph->IC.v))
+	Z = _GetNextVertexOnExternalFace(theGraph, Z, &ZPrevLink);
+    if (FUTUREPERTINENT(theGraph, Z, theGraph->IC.v))
 	{
-		theGraph->IC.z = theGraph->IC.x;
-		theGraph->IC.uz = _GetLeastAncestorConnection(theGraph, theGraph->IC.x);
+		theGraph->IC.z = Z;
+		theGraph->IC.uz = _GetLeastAncestorConnection(theGraph, Z);
 		return TRUE;
 	}
 
 	// Now we move on to test all the vertices strictly between X and Y on
 	// the lower external face path, except W, for either pertinence or
 	// future pertinence.
-    ZPrevLink = 1;
-	Z = _GetNextVertexOnExternalFace(theGraph, theGraph->IC.x, &ZPrevLink);
+	Z = _GetNextVertexOnExternalFace(theGraph, Z, &ZPrevLink);
 
 	while (Z != theGraph->IC.y)
 	{
@@ -600,10 +600,10 @@ int _K4_FindSecondActiveVertexOnLowExtFacePath(graphP theGraph)
 	}
 
 	// Now we test Y for future pertinence (same explanation as for X above)
-    if (FUTUREPERTINENT(theGraph, theGraph->IC.y, theGraph->IC.v))
+    if (FUTUREPERTINENT(theGraph, Z, theGraph->IC.v))
 	{
-		theGraph->IC.z = theGraph->IC.y;
-		theGraph->IC.uz = _GetLeastAncestorConnection(theGraph, theGraph->IC.y);
+		theGraph->IC.z = Z;
+		theGraph->IC.uz = _GetLeastAncestorConnection(theGraph, Z);
 		return TRUE;
 	}
 
@@ -749,7 +749,7 @@ int  _K4_IsolateMinorA1(graphP theGraph)
 	if (IC->uz < IC->v)
 	{
 		if (theGraph->functions.fpMarkDFSPath(theGraph, IC->uz, IC->v) != OK)
-			return OK;
+			return NOTOK;
 	}
 
 	if (theGraph->functions.fpMarkDFSPath(theGraph, IC->z, IC->dz) != OK)
