@@ -71,6 +71,7 @@ int  _K4_ReduceBicompToEdge(graphP theGraph, K4SearchContext *context, int R, in
 int  _K4_ReducePathComponent(graphP theGraph, K4SearchContext *context, int R, int prevLink, int A);
 int  _K4_ReducePathToEdge(graphP theGraph, K4SearchContext *context, int edgeType, int R, int e_R, int A, int e_A);
 
+int  _K4_GetCumulativeOrientationOnDFSPath(graphP theGraph, int ancestor, int descendant);
 int  _K4_TestPathComponentForAncestor(graphP theGraph, int R, int prevLink, int A);
 void _K4_SetVisitedInPathComponent(graphP theGraph, int R, int prevLink, int A, int fill);
 int  _K4_DeleteUnmarkedEdgesInPathComponent(graphP theGraph, int R, int prevLink, int A);
@@ -888,6 +889,8 @@ int  _K4_IsolateMinorB2(graphP theGraph)
 
 int  _K4_ReduceBicompToEdge(graphP theGraph, K4SearchContext *context, int R, int W)
 {
+	int newEdge;
+
 	if (_OrientVerticesInBicomp(theGraph, R, 0) != OK ||
 		_FillVisitedFlagsInBicomp(theGraph, R, 0) != OK)
 		return NOTOK;
@@ -897,8 +900,9 @@ int  _K4_ReduceBicompToEdge(graphP theGraph, K4SearchContext *context, int R, in
     	return NOTOK;
 
     // Now we have to reduce the path W -> R to the DFS tree edge (R, W)
-    if (_K4_ReducePathToEdge(theGraph, context, EDGE_DFSPARENT,
-    		R, gp_GetFirstArc(theGraph, R), W, gp_GetFirstArc(theGraph, W)) != OK)
+    newEdge =_K4_ReducePathToEdge(theGraph, context, EDGE_DFSPARENT,
+					R, gp_GetFirstArc(theGraph, R), W, gp_GetFirstArc(theGraph, W));
+    if (!gp_IsArc(theGraph, newEdge))
     	return NOTOK;
 
     // Finally, put the visited state of R and W to unvisted so that
@@ -964,7 +968,7 @@ int  _K4_ReduceBicompToEdge(graphP theGraph, K4SearchContext *context, int R, in
 
 int  _K4_ReducePathComponent(graphP theGraph, K4SearchContext *context, int R, int prevLink, int A)
 {
-	int  e_R, e_A, Z, ZPrevLink, edgeType;
+	int  e_R, e_A, Z, ZPrevLink, edgeType, invertedFlag;
 
 	// Check whether the external face path (R, ..., A) is just an edge
 	e_R = gp_GetArc(theGraph, R, 1^prevLink);
@@ -978,6 +982,8 @@ int  _K4_ReducePathComponent(graphP theGraph, K4SearchContext *context, int R, i
 	    if (theGraph->functions.fpMarkDFSPath(theGraph, R, A) != OK)
 	        return NOTOK;
 	    edgeType = EDGE_DFSPARENT;
+
+	    invertedFlag = _K4_GetCumulativeOrientationOnDFSPath(theGraph, R, A);
 	}
 
 	// Otherwise Case 2: The DFS tree path from A to R is not within the reduction component
@@ -1014,10 +1020,77 @@ int  _K4_ReducePathComponent(graphP theGraph, K4SearchContext *context, int R, i
 	e_R = gp_GetArc(theGraph, R, 1^prevLink);
 
 	// Reduce the path (R ... A) to an edge
-	if (_K4_ReducePathToEdge(theGraph, context, edgeType, R, e_R, A, e_A) != OK)
+	e_R = _K4_ReducePathToEdge(theGraph, context, edgeType, R, e_R, A, e_A);
+	if (!gp_IsArc(theGraph, e_R))
 		return NOTOK;
 
+	// Preserve the net orientation along the DFS path in the case of a tree edge
+	if (theGraph->G[e_R].type == EDGE_DFSCHILD)
+	{
+		if (invertedFlag)
+			SET_EDGEFLAG_INVERTED(theGraph, e_R);
+	}
+
 	return OK;
+}
+
+/****************************************************************************
+ _K4_GetCumulativeOrientationOnDFSPath()
+ ****************************************************************************/
+int  _K4_GetCumulativeOrientationOnDFSPath(graphP theGraph, int ancestor, int descendant)
+{
+int  J, parent;
+int  N = theGraph->N, invertedFlag=0;
+
+     /* If we are marking from a root vertex upward, then go up to the parent
+        copy before starting the loop */
+
+     if (descendant >= N)
+         descendant = theGraph->V[descendant-N].DFSParent;
+
+     while (descendant != ancestor)
+     {
+          if (descendant == NIL)
+              return NOTOK;
+
+          // If we are at a bicomp root, then ascend to its parent copy
+          if (descendant >= N)
+          {
+              parent = theGraph->V[descendant-N].DFSParent;
+          }
+
+          // If we are on a regular, non-virtual vertex then get the edge to the parent
+          else
+          {
+              // Scan the edges for the one marked as the DFS parent
+              parent = NIL;
+              J = gp_GetFirstArc(theGraph, descendant);
+              while (gp_IsArc(theGraph, J))
+              {
+                  if (theGraph->G[J].type == EDGE_DFSPARENT)
+                  {
+                      parent = theGraph->G[J].v;
+                      break;
+                  }
+                  J = gp_GetNextArc(theGraph, J);
+              }
+
+              // If the parent edge was not found, then the data structure is corrupt
+              if (parent == NIL)
+                  return NOTOK;
+
+              // Add the inversion flag on the child arc to the cumulative result
+              J = gp_GetTwinArc(theGraph, J);
+              if (theGraph->G[J].type != EDGE_DFSCHILD || theGraph->G[J].v != descendant)
+            	  return NOTOK;
+              invertedFlag ^= GET_EDGEFLAG_INVERTED(theGraph, J);
+          }
+
+          // Hop to the parent and reiterate
+          descendant = parent;
+     }
+
+     return invertedFlag;
 }
 
 /****************************************************************************
@@ -1144,6 +1217,10 @@ int  _K4_DeleteUnmarkedEdgesInPathComponent(graphP theGraph, int R, int prevLink
 
 /****************************************************************************
  _K4_ReducePathToEdge()
+
+ Returns an arc of the edge created on success, a non-arc (NOTOK) on failure
+ On success, the arc is in the adjacency list of R. The result can be tested
+ for success or failure using gp_IsArc()
  ****************************************************************************/
 
 int  _K4_ReducePathToEdge(graphP theGraph, K4SearchContext *context, int edgeType, int R, int e_R, int A, int e_A)
@@ -1218,7 +1295,7 @@ int  _K4_ReducePathToEdge(graphP theGraph, K4SearchContext *context, int edgeTyp
          theGraph->extFace[A].inversionFlag = 0;
      }
 
-	 return OK;
+	 return e_R;
 }
 
 /****************************************************************************
