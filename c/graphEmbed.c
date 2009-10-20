@@ -1342,7 +1342,7 @@ int  RetVal = edgeEmbeddingResult;
 
 int  _OrientVerticesInEmbedding(graphP theGraph)
 {
-int  R, edgeOffset = theGraph->edgeOffset;
+int  R=0, edgeOffset = theGraph->edgeOffset;
 
      sp_ClearStack(theGraph->theStack);
 
