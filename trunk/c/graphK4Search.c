@@ -968,7 +968,7 @@ int  _K4_ReduceBicompToEdge(graphP theGraph, K4SearchContext *context, int R, in
 
 int  _K4_ReducePathComponent(graphP theGraph, K4SearchContext *context, int R, int prevLink, int A)
 {
-	int  e_R, e_A, Z, ZPrevLink, edgeType, invertedFlag;
+	int  e_R, e_A, Z, ZPrevLink, edgeType, invertedFlag=0;
 
 	// Check whether the external face path (R, ..., A) is just an edge
 	e_R = gp_GetArc(theGraph, R, 1^prevLink);
