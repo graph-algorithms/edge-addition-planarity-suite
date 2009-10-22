@@ -331,9 +331,6 @@ isolatorContextP IC = &theGraph->IC;
             // Set up to isolate K4 homeomorph
             _FillVisitedFlags(theGraph, 0);
 
-            if (_FindUnembeddedEdgeToCurVertex(theGraph, IC->w, &IC->dw) != TRUE)
-                return NOTOK;
-
             IC->x = a_x;
             IC->y = a_y;
 
@@ -792,16 +789,22 @@ int  _K4_IsolateMinorA2(graphP theGraph)
 /****************************************************************************
  _K4_IsolateMinorB1()
 
- This is essentially outerplanarity minor B, a K_{2,3}, except we geta  K_4
- via an additional path from a_x through ancestors of the current vertex to a_y.
+ It is possible to get a K_4 based on the pertinence of w, but we don't do it
+ that way.  If we use the pertinence of w, then we have to eliminate part of
+ the bicomp external face, which has special cases if a_x==w or a_y==w.
+ Typically we would mark (r ... a_x ... w ... a_y), which works even when a_y==w,
+ but if instead a_x==w, then we'd have to mark (w ... a_y ... r).
+
+ Since a_x and a_y are guaranteed to be distinct, it is easier to just ignore
+ the pertinence of w, and instead use the lower bicomp external face path
+ as the connection between a_x and a_y.  This includes w, but then the
+ isolation process is the same even if a_x==w or a_y==w.  The other two
+ connections for a_x and a_y are to v and MAX(ux, uy).
  ****************************************************************************/
 
 int  _K4_IsolateMinorB1(graphP theGraph)
 {
 	isolatorContextP IC = &theGraph->IC;
-
-    if (theGraph->functions.fpMarkDFSPath(theGraph, IC->w, IC->dw) != OK)
-    	return NOTOK;
 
 	if (theGraph->functions.fpMarkDFSPath(theGraph, IC->x, IC->dx) != OK)
     	return NOTOK;
@@ -809,26 +812,18 @@ int  _K4_IsolateMinorB1(graphP theGraph)
 	if (theGraph->functions.fpMarkDFSPath(theGraph, IC->y, IC->dy) != OK)
     	return NOTOK;
 
+	// The path from the bicomp root to MIN(ux,uy) is marked to ensure the
+	// connection from the image vertices v and MAX(ux,uy) as well as the
+	// connection from MAX(ux,uy) through MIN(ux,uy) to (ux==MIN(ux,uy)?x:y)
 	if (theGraph->functions.fpMarkDFSPath(theGraph, MIN(IC->ux, IC->uy), IC->r) != OK)
     	return NOTOK;
 
-	// Choose the part of the bicomp ext face to mark. Typically (r ... x ... w ... y)
-	// except the edge case in which x==w, where it's (w ... y ... r)
-	if (IC->x != IC->w)
-	{
-	    if (_MarkPathAlongBicompExtFace(theGraph, IC->r, IC->y) != OK)
-	    	return NOTOK;
-	}
-	else
-	{
-	    if (_MarkPathAlongBicompExtFace(theGraph, IC->w, IC->r) != OK)
-	    	return NOTOK;
-	}
+	// This makes the following connections (a_x ... v), (a_y ... v), and
+	// (a_x ... w ... a_y), the last being tolerant of a_x==w or a_y==w
+	if (_MarkPathAlongBicompExtFace(theGraph, IC->r, IC->r) != OK)
+		return NOTOK;
 
     if (_JoinBicomps(theGraph) != OK)
-    	return NOTOK;
-
-    if (_AddAndMarkEdge(theGraph, IC->v, IC->dw) != OK)
     	return NOTOK;
 
     if (_AddAndMarkEdge(theGraph, IC->ux, IC->dx) != OK)
