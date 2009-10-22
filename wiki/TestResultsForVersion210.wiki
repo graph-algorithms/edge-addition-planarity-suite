@@ -1,4 +1,4 @@
-#summary Counts of Graphs containing a subgraph homeomorphic to K,,4,,.
+#summary Counts of Graphs containing a subgraph homeomorphic to K4.
 
 = Introduction =
 
