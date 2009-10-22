@@ -900,6 +900,16 @@ int  RetVal, W, WPrevLink, R, Rout, X, XPrevLink, Y, YPrevLink, RootSide, RootEd
         	 // would be indicated by link[1^RootSide] as this is the reverse of
         	 // link[RootSide], which was used to exit RootVertex and get to W
              WPrevLink = 1^RootSide;
+             // We don't bother with the inversionFlag here because WalkDown is
+             // never called on a singleton bicomp with an inverted orientation
+             // Before the first Walkdown, the bicomp truly is a single edge
+             // with proper orientation, and an extension algorithm does call
+             // Walkdown again in post-processing, it wouldn't do so on this
+             // bicomp because a singleton, whether inverted or not, would no
+             // longer be pertinent (until a future vertex step).
+             // Thus only the inner loop below accommodates the inversionFlag
+             // when it walks down to a *pertinent* child biconnected component
+             //WPrevLink = theGraph->extFace[W].inversionFlag ? RootSide : 1^RootSide;
          }
          // Otherwise, Walkdown has been called on a bicomp with two distinct
          // external face paths from RootVertex (a possibility in extension
