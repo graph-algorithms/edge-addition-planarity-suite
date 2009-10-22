@@ -1,24 +1,24 @@
-#summary Counts of Graphs containing a subgraph homeomorphic to K4.
+#summary Counts of Graphs containing a subgraph homeomorphic to K,,4,,.
 
 = Introduction =
 
-The new algorithm added to Planarity-Related Graph Algorithms package, version 2.1.0, is a method for isolating a subgraph homeomorphic to K4 in a given graph.  This page reports the results of running that new algorithm.  
+The new algorithm added to Planarity-Related Graph Algorithms package, version 2.1.0, is a method for isolating a subgraph homeomorphic to K,,4,, in a given graph.  This page reports the results of running that new algorithm.  
 
 As with the other algorithm implementations in the package, the new implementation does extensive error checking.  The results were checked on all graphs with 11 or fewer vertices in both debug and release modes on a Windows-based and an Intel-Linux computer.  In release mode, the results for 11 vertex graphs took just over 33000 seconds on a 2.4GHz CPU.
 
-To round out testing of version 2.1.0, the results for the core planarity algorithm and the search for subgraphs homeomorphic to K{3,3} were retested, and the same results were obtained as reported in TestResultsForVersion200. 
+To round out testing of version 2.1.0, the results for the core planarity algorithm and the search for subgraphs homeomorphic to K,,3,3,, were retested, and the same results were obtained as reported in TestResultsForVersion200. 
 
 = Details =
 
-This section reports the results of executing the search for K4 algorithm on all 11 vertex graphs.  The outerplanarity algorithm was used as a basis, with some additional code refactored due to commonalities with the algorithms for finding a subgraph homeomorphic to K{3,3}.  
+This section reports the results of executing the search for K,,4,, algorithm on all 11 vertex graphs.  The outerplanarity algorithm was used as a basis, with some additional code refactored due to commonalities with the algorithms for finding a subgraph homeomorphic to K,,3,3,,.  
 
-Any time an outerplanarity obstruction is found, it is either the desired subgraph homeomorphic to K4 or it is a subgraph homeomorphic to K{2,3}.  In the latter case, several tests are executed to determine whether a desire subgraph homeomorphic to K4 is entangled with the subgraph homeomorphic to K{2,3}.  If not, then one or two components of the graph each separable by a 2-cut are reduced to one or two single edges.  This allows the core outerplanarity algorithm to proceed.  
+Any time an outerplanarity obstruction is found, it is either the desired subgraph homeomorphic to K,,4,, or it is a subgraph homeomorphic to K,,2,3,,.  In the latter case, several tests are executed to determine whether a desire subgraph homeomorphic to K,,4,, is entangled with the subgraph homeomorphic to K,,2,3,,.  If not, then one or two components of the graph each separable by a 2-cut are reduced to one or two single edges.  This allows the core outerplanarity algorithm to proceed.  
 
-The _# OKs_ column below reports the number of graphs in which a subgraph homeomorphic to K4 was not found.  The _# !NoEmbeds_ column tells the number of graphs in which a subgraph homeomorphic to K4 was found.  The integrity checker would, in this case, then ensure that the result is a subgraph of the original graph and that it has the structure of a K4 homeomorph. These results were obtained using the following command-line:
+The _# OKs_ column below reports the number of graphs in which a subgraph homeomorphic to K,,4,, was not found.  The _# !NoEmbeds_ column tells the number of graphs in which a subgraph homeomorphic to K,,4,, was found.  The integrity checker would, in this case, then ensure that the result is a subgraph of the original graph and that it has the structure of a K,,4,, homeomorph. These results were obtained using the following command-line:
 
   * ./planarity.exe -gens -4 11
 
-It is interesting to note that the _# OKs_ column number tapers to zero after 19 edges, in accordance with the result of Asano [1] that any graph with more than 2n-3 edges is guaranteed to contain a subgraph homeomorphic to K4.
+It is interesting to note that the _# OKs_ column number tapers to zero after 19 edges, in accordance with the result of Asano [1] that any graph with more than 2n-3 edges is guaranteed to contain a subgraph homeomorphic to K,,4,,.
 
 {{{
 # Edges  # graphs    # OKs       # NoEmbeds
@@ -82,4 +82,4 @@ It is interesting to note that the _# OKs_ column number tapers to zero after 19
 Totals   1018997864      375597  1018622267
 }}}
 
-[1] Takao ASANO. An Approach to the Subgraph Homeomorphism Problem. _Theoretical Computer Science_ Volume 38, pp. 249-267, 1985.
+{{{[1]}}} Takao ASANO. An Approach to the Subgraph Homeomorphism Problem. _Theoretical Computer Science_ Volume 38, pp. 249-267, 1985.
