@@ -579,7 +579,15 @@ int  extFaceVertex;
              {
                  if (theGraph->G[J].type == EDGE_DFSCHILD)
                  {
-                	 SET_EDGEFLAG_INVERTED(theGraph, J);
+                	 // A bicomp root edge cannot be inverted in the core planarity algorithm
+                	 // but extensions may perform edge reductions on tree edges, resulting in
+                	 // an inversion sign being promoted to the root edge.  So, now we reverse
+                	 // the inversion flag on the root edge if the bicomp root must be
+                	 // inverted before it is merged.
+                	 if (GET_EDGEFLAG_INVERTED(theGraph, J))
+                		 CLEAR_EDGEFLAG_INVERTED(theGraph, J);
+                	 else
+                		 SET_EDGEFLAG_INVERTED(theGraph, J);
                      break;
                  }
 
