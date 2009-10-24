@@ -765,16 +765,16 @@ void Reconfigure()
      {
         Message("\nNOTE: The directories for the graphs you want must exist.\n\n");
 
-        Message("Do you want original graphs in directory 'random'?");
+        Message("Do you want original graphs in directory 'random' (last 10 max)?");
         scanf(" %c", &OrigOut);
 
-        Message("Do you want adj. matrix of embeddable graphs in directory 'embedded'?");
+        Message("Do you want adj. matrix of embeddable graphs in directory 'embedded' (last 10 max))?");
         scanf(" %c", &EmbeddableOut);
 
-        Message("Do you want adj. matrix of obstructed graphs in directory 'obstructed'?");
+        Message("Do you want adj. matrix of obstructed graphs in directory 'obstructed' (last 10 max)?");
         scanf(" %c", &ObstructedOut);
 
-        Message("Do you want adjacency list format of embeddings in directory 'adjlist'?");
+        Message("Do you want adjacency list format of embeddings in directory 'adjlist' (last 10 max)?");
         scanf(" %c", &AdjListsForEmbeddingsOut);
      }
 
@@ -990,6 +990,9 @@ graphP origGraph=NULL;
 
 /* End Reuse graphs */
 
+     fprintf(stdout, "0\r");
+     fflush(stdout);
+
      // Generate the graphs and try to embed each
 
      platform_GetTime(start);
@@ -1045,7 +1048,7 @@ graphP origGraph=NULL;
 
           if (tolower(OrigOut)=='y')
           {
-              sprintf(theFileName, "random\\%04d.txt", I+1);
+              sprintf(theFileName, "random\\%d.txt", I%10);
               gp_Write(theGraph, theFileName, WRITE_ADJLIST);
           }
 
@@ -1062,13 +1065,13 @@ graphP origGraph=NULL;
 
                if (tolower(EmbeddableOut) == 'y')
                {
-                   sprintf(theFileName, "embedded\\%04d.txt", I+1);
+                   sprintf(theFileName, "embedded\\%d.txt", I%10);
                    gp_Write(theGraph, theFileName, WRITE_ADJMATRIX);
                }
 
                if (tolower(AdjListsForEmbeddingsOut) == 'y')
                {
-                   sprintf(theFileName, "adjlist\\%04d.txt", I+1);
+                   sprintf(theFileName, "adjlist\\%d.txt", I%10);
                    gp_Write(theGraph, theFileName, WRITE_ADJLIST);
                }
           }
@@ -1098,7 +1101,7 @@ graphP origGraph=NULL;
 
                    if (tolower(ObstructedOut) == 'y')
                    {
-                       sprintf(theFileName, "obstructed\\%04d.txt", I+1);
+                       sprintf(theFileName, "obstructed\\%d.txt", I%10);
                        gp_Write(theGraph, theFileName, WRITE_ADJMATRIX);
                    }
                }
@@ -1106,7 +1109,7 @@ graphP origGraph=NULL;
 
           else
           {
-               sprintf(theFileName, "error\\%04d.txt", I+1);
+               sprintf(theFileName, "error\\%d.txt", I%10);
                gp_Write(origGraph, theFileName, WRITE_ADJLIST);
 
                gp_ReinitializeGraph(theGraph);
