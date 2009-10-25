@@ -7,8 +7,6 @@ This page provides instructions for using Eclipse and the Subversive plugin to c
 
 You must first follow the instructions in EclipseSetup.
 
-Note: The Google Code Wiki numbering system is incompatible with the IE browser.  This page is best viewed with the Firefox browser.
-
 = Details =
 
 == Downloading the Trunk ==
