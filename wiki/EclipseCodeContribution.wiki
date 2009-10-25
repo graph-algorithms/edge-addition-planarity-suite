@@ -135,3 +135,14 @@ Thus, the same basic instructions can be followed below for contributing as a me
     # Delete FEATURE-X project from the package explorer
     # Go to SVN Repositories perspective
     # Right-click changes/FEATURE-X folder and choose Delete
+
+
+== Working with a Tag, Branch or FEATURE-X Code Review Project ==
+
+There is a limitation of creating only one Planarity-C project at a time in a workspace because Eclipse does not currently allow the imported project to be renamed.  So, while one can download the trunk as well as any number of tag, branch or FEATURE-X projects into the workspace simultaneously, the Planarity-C project from only one of them at a time can be imported into the workspace.  
+
+To download a tag, branch or code review project, the instructions are very similar to those given above for downloading the trunk.  The main difference is that the repository will already exist, so you won't have to type in the details nor give your user name and password again.  When presented with "Select Resource" dialog, choose the desired tag or branch rather than selecting trunk, and then hit Finish.  On the "Check out as..." dialog, provide an alternative descriptive name, such as Planarity-_tagname_, before clicking Finish.
+
+Once this project is obtained, it is necessary to Import the C project in order to be able to compile and debug.  If the workspace already contains a Planarity-C project, then right click and Delete it.  Do not check the checkbox that asks to delete the files on disk.  Then, follow the same instructions as are given above for the trunk to import the C project, perform the first-time build, and perform first-time debug.
+
+When you are done with this Planarity-C project, you can delete it.  Optionally, you can also delete the tag, branch or code review project.  Once done, you can then import the C project from the Planarity-trunk again, then perform the first-time build and first-time debug operations again.
