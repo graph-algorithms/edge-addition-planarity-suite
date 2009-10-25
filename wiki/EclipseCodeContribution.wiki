@@ -39,6 +39,26 @@ A member is someone who does have SVN commit access granted by the administrator
     # Under "Select root directory" choose "Browse..."
     # Navigate to the "c" directory under Planarity-trunk and hit OK
     # Do not check "Copy projects into workspace"; just hit Finish
+    # This creates the Planarity-C project
+  # *First-time Build*
+    # Right-click Planarity-C project
+    # Choose "Build Configurations..." | Build | All and wait for builds to finish
+    # Right click "Debug" directory and choose Team | "Add to svn:ignore"
+    # Right click "Release" directory and choose Team | "Add to svn:ignore"
+  # *First-time Debug*
+    # Switch to the Debug Perspective
+    # From Toolbar, choose Run | "Debug Configurations..."
+    # Click C/C++ Local Application
+    # On the Main tab:
+      # Name: planarity.exe
+      # Project: Use "Browse..." to pick Planarity-c
+      # C/C++ App: Use "Search Projects..." to pick Debug\planarity.exe
+    # On the Debugger tab:
+      # Debugger: Choose "MinGW gdb Debugger"
+      # Optionallly, uncheck the "Stop on startup at main" option
+      # Debugger options: Use "Browse..." to select full path and name of gdb.exe
+      # Hit Apply to save this debug configuration
+      # Hit Debug to start debugging or Close to debug later
 
 A member should also perform the steps below in order to be able to contribute changes for code review as described in the section below on "Contributing as a Member"
 
