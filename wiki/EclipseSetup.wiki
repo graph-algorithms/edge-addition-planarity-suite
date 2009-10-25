@@ -6,8 +6,6 @@ This page tells you how to set up Eclipse to work on this project.  Other enviro
 
 These instructions are for Eclipse 3.4 (Ganymede) and the corresponding Subversive plugin for SVN support.  Command-line SVN can be used instead if desired.
 
-Note: The Google Code Wiki system's numbered list feature does not work well on the IE browser.  This pages is best viewed with the Firefox browser.
-
 = Details =
 
   # *Install Eclipse C++ Development Environment*
