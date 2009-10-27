@@ -52,7 +52,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 extern void _FillVisitedFlags(graphP, int);
 
-extern int _IsolateKuratowskiSubgraph(graphP theGraph, int I);
+extern int _IsolateKuratowskiSubgraph(graphP theGraph, int I, int R);
 extern int _IsolateOuterplanarObstruction(graphP theGraph, int I);
 
 /* Private functions (some are exported to system only) */
@@ -1273,7 +1273,7 @@ int  RetVal = edgeEmbeddingResult;
     {
         if (theGraph->embedFlags == EMBEDFLAGS_PLANAR)
         {
-            if (_IsolateKuratowskiSubgraph(theGraph, I) != OK)
+            if (_IsolateKuratowskiSubgraph(theGraph, I, NIL) != OK)
                 RetVal = NOTOK;
         }
         else if (theGraph->embedFlags == EMBEDFLAGS_OUTERPLANAR)

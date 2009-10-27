@@ -70,7 +70,7 @@ extern void _InvertVertex(graphP theGraph, int V);
 extern int  _ChooseTypeOfNonplanarityMinor(graphP theGraph, int I, int R);
 extern int  _MarkHighestXYPath(graphP theGraph);
 
-extern int  _IsolateKuratowskiSubgraph(graphP theGraph, int I);
+extern int  _IsolateKuratowskiSubgraph(graphP theGraph, int I, int R);
 
 extern int  _FindUnembeddedEdgeToCurVertex(graphP theGraph, int cutVertex, int *pDescendant);
 extern int  _FindUnembeddedEdgeToSubtree(graphP theGraph, int ancestor, int SubtreeRoot, int *pDescendant);
@@ -317,7 +317,7 @@ int tempResult;
             sp_Push2(theGraph->theStack, R, NIL);
         }
 
-        if (_IsolateKuratowskiSubgraph(theGraph, I) != OK)
+        if (_IsolateKuratowskiSubgraph(theGraph, I, R) != OK)
             return NOTOK;
 
         return NONEMBEDDABLE;
@@ -342,7 +342,7 @@ int tempResult;
         if (_RestoreAndOrientReducedPaths(theGraph, context) != OK)
             return NOTOK;
 
-        if (_IsolateKuratowskiSubgraph(theGraph, I) != OK)
+        if (_IsolateKuratowskiSubgraph(theGraph, I, R) != OK)
             return NOTOK;
 
         return NONEMBEDDABLE;
@@ -1609,7 +1609,11 @@ int  prevLink, v, w, e;
      prevLink = 1;
      v = _GetNextVertexOnExternalFace(theGraph, u, &prevLink);
      if (v == x)
+     {
+         theGraph->extFace[u].vertex[0] = x;
+         theGraph->extFace[x].vertex[1] = u;
          return OK;
+     }
 
      /* We have the endpoints u and x of the path, and we just computed the
         first vertex internal to the path and a neighbor of u.  Now we
