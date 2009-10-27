@@ -51,6 +51,6 @@ One approach to creating an extensible framework was to port to C++.  The origin
 
 = Ongoing Work =
 
-[http://code.google.com/p/planarity/source/browse/#svn/tags/2.1.0 Version 2.1.0] includes a new extension method for isolating a subgraph homeomorphic to K,,4,, in a given graph.
+[http://code.google.com/p/planarity/source/browse/#svn/tags/Version%202.1.0 Version 2.1.0] includes a new extension method for isolating a subgraph homeomorphic to K,,4,, in a given graph.
 
 For future work, see the [http://code.google.com/p/planarity/wiki/Roadmap Roadmap].
