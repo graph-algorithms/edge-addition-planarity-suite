@@ -17,8 +17,13 @@ Minor adjustments and tweaks that may be desired from time to time. This may inc
 
 Extension implementations for additional extension algorithms to be developed over time.
 
-  * 2.1: K4 subgraph homeomorphism
-  * 2.2: Maximal planar subgraph
+  * 2.1: K4 subgraph homeomorphism (DONE)
+
+Other algorithms that may be formulated in the future could be supported as extensions, such as:
+ 
+  * Maximal planar subgraph
+  * K5 subgraph homeomorphism
+  * Projective planarity
 
 A fuller range of algorithm implementations may also be developed, such as
 
@@ -27,11 +32,6 @@ A fuller range of algorithm implementations may also be developed, such as
   * Weighted graph methods, esp. Dijkstra's shortest path with my implementation of Tarjan's Fibonacci heap.
   * An O(log n) improvement to the Karger-Stein randomized min-cut method
 
-Other algorithms that may be formulated in the future could be supported as extensions, such as:
-
-  * K5 subgraph homeomorphism
-  * Projective planarity
-
-== Version 3.0 ==
+== Version 3.x ==
 
 Major revisions to the graph library framework.  This may include changes needed to make more generic data structures and interface changes that may be needed to have consistency across multiple implementation languages such as C++ and Java.
