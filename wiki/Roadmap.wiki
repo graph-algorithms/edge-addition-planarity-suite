@@ -3,19 +3,14 @@
 
 This page presents the roadmap for future development of this project.
 
-== Version 2.0.x ==
-
-Minor adjustments and tweaks that may be desired from time to time. This may include service routines such as:
-
-  * Edge contract and uncontract
-  * Identifying two vertices (i.e. merging two vertices)
-  * Planar graph dual
-  * BFS
-  * Refinements to I/O routines
-
 == Version 2.x ==
 
-Extension implementations for additional extension algorithms to be developed over time.
+  * 2.0: Planar Embedding and Kuratowski Subgraph Isolation (DONE)
+  * 2.0: Outerplanar Embedding and Obstruction Isolation (DONE)
+  * 2.0: Extensible Planarity-Related Algorithm Framework (DONE)
+  * 2.0: Planar Graph Drawing by Visibility Representation (DONE)
+  * 2.0: K23 subgraph homeomorphism (DONE)
+  * 2.0: K33 subgraph homeomorphism (DONE)
 
   * 2.1: K4 subgraph homeomorphism (DONE)
 
@@ -31,6 +26,16 @@ A fuller range of algorithm implementations may also be developed, such as
   * Directed graph methods, e.g. topological sort, 2SAT
   * Weighted graph methods, esp. Dijkstra's shortest path with my implementation of Tarjan's Fibonacci heap.
   * An O(log n) improvement to the Karger-Stein randomized min-cut method
+
+== Version 2.x.y ==
+
+Minor adjustments and tweaks that may be desired from time to time. This may include service routines such as:
+
+  * Edge contract and uncontract
+  * Identifying two vertices (i.e. merging two vertices)
+  * Planar graph dual
+  * BFS
+  * Refinements to I/O routines
 
 == Version 3.x ==
 
