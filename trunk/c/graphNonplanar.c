@@ -176,19 +176,23 @@ int  N, X, Y, W, Px, Py, Z, DFSChild, RootId;
  combination with the separatedDFSChildList of I to determine R.
 
  If the parameter R was not NIL, then this method assumes it must operate
- only on the bicomp rooted by R, so it only orients the vertices and clears
- the visited flags in bicomp R.   If this method had to determine R, then it
- assumes this is the Kuratowski subgraph isolator, so it orients the vertices
- and clears the visited flags in all bicomps.
+ only on the bicomp rooted by R, and it also assumes that the caller has
+ not cleared the visited flags in the bicomp, so they are cleared.
+
+ This routine imparts consistent orientation to all vertices in bicomp R
+ since several subroutines count on this. The edge signs are preserved so that
+ the original orientations of all vertices can be restored.  If the vertices
+ of the embedding are already consistently oriented, then this operation
+ simply has no effect.
 
  Finally, in the bicomp R, the vertex types of all non-root vertices on the
  external face are classified according to whether or not they are closer to
- the root R than X and Y along the external face paths.
+ the root R than X and Y along the external face paths (R X W) and (R Y W).
  ****************************************************************************/
 
 int  _InitializeNonplanarityContext(graphP theGraph, int I, int R)
 {
-int  singleBicompMode =  (R == NIL) ? 0 : 1;
+int  singleBicompMode =  (R == NIL) ? FALSE : TRUE;
 
 	 // Blank out the isolator context, then assign the input graph reference
      // and the current vertext I into the context.
@@ -197,8 +201,14 @@ int  singleBicompMode =  (R == NIL) ? 0 : 1;
 
      // The Walkdown halted on one or more bicomps without embedding all back
      // edges to descendants of the root(s) of said bicomp(s).
-     // We now find the root of one such bicomp.
-     if (!singleBicompMode || sp_NonEmpty(theGraph->theStack))
+     // If the bicomp root has not been provided, we now find the root of one such bicomp.
+     if (!singleBicompMode)
+         R = _FindNonplanarityBicompRoot(theGraph);
+
+     // When in singleBicompMode, the bicomp root provided was the one on which
+     // the WalkDown was performed, but in the case of Minor A, the central bicomp
+     // of the minor is at the top of the stack, so R must be changed to that value.
+     else if (sp_NonEmpty(theGraph->theStack))
          R = _FindNonplanarityBicompRoot(theGraph);
 
      if (R == NIL)
@@ -206,18 +216,15 @@ int  singleBicompMode =  (R == NIL) ? 0 : 1;
 
      theGraph->IC.r = R;
 
-     // For the embedding or in a given bicomp, orient the vertices,
-     // and clear the visited members of all vertex and edge records.
-     if (!singleBicompMode)
+     // A number of subroutines require the main bicomp of the minor to be
+     // consistently oriented and its visited flags clear.
+     if (_OrientVerticesInBicomp(theGraph, R, 1) != OK)
+    	 return NOTOK;
+
+     // In singleBicompMode, clear the visited members of all vertex and edge records.
+     if (singleBicompMode)
      {
-         if (_OrientVerticesInEmbedding(theGraph) != OK)
-        	 return NOTOK;
-         _FillVisitedFlags(theGraph, 0);
-     }
-     else
-     {
-         if (_OrientVerticesInBicomp(theGraph, R, 1) != OK ||
-        	 _FillVisitedFlagsInBicomp(theGraph, R, 0) != OK)
+    	 if (_FillVisitedFlagsInBicomp(theGraph, R, 0) != OK)
         	 return NOTOK;
      }
 
@@ -255,6 +262,10 @@ int  _SetVertexTypesForMarkingXYPath(graphP theGraph)
 	X = theGraph->IC.x;
 	Y = theGraph->IC.y;
 	W = theGraph->IC.w;
+
+	// Ensure basic preconditions of this routine are met
+	if (R==NIL || X==NIL || Y==NIL || W==NIL)
+		return NOTOK;
 
 	// Clear the type member of each vertex in the bicomp
 	if (_SetVertexTypeInBicomp(theGraph, R, TYPE_UNKNOWN) != OK)

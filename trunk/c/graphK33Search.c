@@ -74,7 +74,7 @@ extern int  _OrientExternalFacePath(graphP theGraph, int u, int v, int w, int x)
 extern int  _ChooseTypeOfNonplanarityMinor(graphP theGraph, int I, int R);
 extern int  _MarkHighestXYPath(graphP theGraph);
 
-extern int  _IsolateKuratowskiSubgraph(graphP theGraph, int I);
+extern int  _IsolateKuratowskiSubgraph(graphP theGraph, int I, int R);
 
 extern int  _FindUnembeddedEdgeToCurVertex(graphP theGraph, int cutVertex, int *pDescendant);
 extern int  _FindUnembeddedEdgeToSubtree(graphP theGraph, int ancestor, int SubtreeRoot, int *pDescendant);
@@ -319,7 +319,7 @@ int tempResult;
             sp_Push2(theGraph->theStack, R, NIL);
         }
 
-        if (_IsolateKuratowskiSubgraph(theGraph, I) != OK)
+        if (_IsolateKuratowskiSubgraph(theGraph, I, R) != OK)
             return NOTOK;
 
         return NONEMBEDDABLE;
@@ -345,7 +345,7 @@ int tempResult;
         	_RestoreAndOrientReducedPaths(theGraph, context) != OK)
             return NOTOK;
 
-        if (_IsolateKuratowskiSubgraph(theGraph, I) != OK)
+        if (_IsolateKuratowskiSubgraph(theGraph, I, R) != OK)
             return NOTOK;
 
         return NONEMBEDDABLE;
@@ -1396,7 +1396,7 @@ int  p, c, d, excludedChild, e;
  paths that help connect the vertices R, X, Y, and W.  If a K_{3,3} is later found,
  the paths are restored, but it is necessary to preserve the DFS tree so that
  functions like MarkDFSPath() will be able to pass through the restored bicomp.
- Also, if a K_{3,3} later found due to the merge blocker optimization, then the
+ Also, if a K_{3,3} is later found due to the merge blocker optimization, then the
  internal X-Y path may be needed and, once the bicomp reduction is reversed,
  a full DFS subtree connecting all vertices in the bicomp will need to be
  restored or else functions that traverse the bicomp will not work.
@@ -1594,7 +1594,7 @@ int  rxType, xwType, wyType, yrType, xyType;
     	 return NOTOK;
 
 /* Clear all orientation signs in the bicomp.
-	Note that the bicomp may not be properly oriented at this point
+	Note that the whole bicomp may not be properly oriented at this point
 	because we may have exchanged external face paths for internal
 	DFS tree paths.  However, the reduced bicomp will be properly
 	oriented, and the paths of degree 2 vertices will have their
@@ -1603,7 +1603,12 @@ int  rxType, xwType, wyType, yrType, xyType;
      if (_ClearInvertedFlagsInBicomp(theGraph, R) != OK)
     	 return NOTOK;
 
-/* Reduce the paths to single edges. */
+/* Reduce the paths to single edges.
+	 Note that although the whole bicomp may not be properly oriented at this
+	 point (as noted above), the four principal vertices R, X, W and Y still
+	 are consistently oriented with one another, e.g. R's link[0] indicates
+	 the external face path toward X that excludes W and Y, and X's link[1]
+	 indicates that same path. */
 
      if (_ReduceExternalFacePathToEdge(theGraph, context, R, IC->x, rxType) != OK ||
          _ReduceExternalFacePathToEdge(theGraph, context, IC->x, IC->w, xwType) != OK ||
@@ -1639,7 +1644,11 @@ int  prevLink, v, w, e;
      prevLink = 1;
      v = _GetNextVertexOnExternalFace(theGraph, u, &prevLink);
      if (v == x)
+     {
+         theGraph->extFace[u].vertex[0] = x;
+         theGraph->extFace[x].vertex[1] = u;
          return OK;
+     }
 
      /* We have the endpoints u and x of the path, and we just computed the
         first vertex internal to the path and a neighbor of u.  Now we

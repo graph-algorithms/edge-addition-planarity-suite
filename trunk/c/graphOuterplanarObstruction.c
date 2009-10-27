@@ -46,6 +46,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Imported functions */
 
+extern void _FillVisitedFlags(graphP, int);
 extern void _ClearIsolatorContext(graphP theGraph);
 
 extern int  _GetNextVertexOnExternalFace(graphP theGraph, int curVertex, int *pPrevLink);
@@ -66,7 +67,7 @@ extern int  _DeleteUnmarkedVerticesAndEdges(graphP theGraph);
 
 /* Private function declarations (exported to system) */
 
-int  _IsolateOuterplanarObstruction(graphP theGraph, int I);
+int  _IsolateOuterplanarObstruction(graphP theGraph, int I, int R);
 
 int  _ChooseTypeOfNonOuterplanarityMinor(graphP theGraph, int I, int R);
 
@@ -125,14 +126,20 @@ int  N, X, Y, W;
  _IsolateOuterplanarObstruction()
  ****************************************************************************/
 
-int  _IsolateOuterplanarObstruction(graphP theGraph, int I)
+int  _IsolateOuterplanarObstruction(graphP theGraph, int I, int R)
 {
 int  RetVal;
 
-/* Begin by determining which of the non-planarity Minors was encountered
+/* A subgraph homeomorphic to K_{2,3} or K_4 will be isolated by using the visited
+   flags, 1=keep edge/vertex and 0=omit. Here we initialize to omit all, then we
+   subsequently set visited to 1 on all edges and vertices in the homeomorph. */
+
+	 _FillVisitedFlags(theGraph, 0);
+
+/* Next we determineg which of the non-outerplanarity Minors was encountered
         and the principal bicomp on which the isolator will focus attention. */
 
-     if (_ChooseTypeOfNonOuterplanarityMinor(theGraph, I, NIL) != OK)
+     if (_ChooseTypeOfNonOuterplanarityMinor(theGraph, I, R) != OK)
          return NOTOK;
 
 /* Find the path connecting the pertinent vertex w with the current vertex v */
