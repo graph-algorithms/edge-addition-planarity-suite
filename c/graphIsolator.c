@@ -57,7 +57,7 @@ extern int _ChooseTypeOfNonplanarityMinor(graphP theGraph, int I, int R);
 
 /* Private function declarations (exported within system) */
 
-int _IsolateKuratowskiSubgraph(graphP theGraph, int I);
+int _IsolateKuratowskiSubgraph(graphP theGraph, int I, int R);
 
 int  _FindUnembeddedEdgeToAncestor(graphP theGraph, int cutVertex,
                                    int *pAncestor, int *pDescendant);
@@ -93,14 +93,20 @@ int  _AddAndMarkUnembeddedEdges(graphP theGraph);
  gp_IsolateKuratowskiSubgraph()
  ****************************************************************************/
 
-int  _IsolateKuratowskiSubgraph(graphP theGraph, int I)
+int  _IsolateKuratowskiSubgraph(graphP theGraph, int I, int R)
 {
 int  RetVal;
 
-/* Begin by determining which of the non-planarity Minors was encountered
+/* A subgraph homeomorphic to K_{3,3} or K_5 will be isolated by using the visited
+   flags, 1=keep edge/vertex and 0=omit. Here we initialize to omit all, then we
+   subsequently set visited to 1 on all edges and vertices in the homeomorph. */
+
+	 _FillVisitedFlags(theGraph, 0);
+
+/* Next, we determine which of the non-planarity Minors was encountered
         and the principal bicomp on which the isolator will focus attention. */
 
-     if (_ChooseTypeOfNonplanarityMinor(theGraph, I, NIL) != OK)
+     if (_ChooseTypeOfNonplanarityMinor(theGraph, I, R) != OK)
          return NOTOK;
 
      if (_InitializeIsolatorContext(theGraph) != OK)

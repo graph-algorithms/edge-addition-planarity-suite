@@ -548,8 +548,11 @@ int _TestForK33GraphObstruction(graphP theGraph, int *degrees, int *imageVerts)
 {
 int  I, imageVertPos, temp, success;
 
-     if (degrees[3] != 6 && degrees[4] != 0)
-         return FALSE;
+	if (degrees[4] != 0)
+		return FALSE;
+
+	if (degrees[3] != 6)
+    	 return FALSE;
 
      /* Partition the six image vertices into two sets of 3
             (or report failure) */

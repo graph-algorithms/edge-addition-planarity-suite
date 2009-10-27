@@ -925,9 +925,9 @@ graphP origGraph=NULL;
          scanf(" %d", &NumGraphs);
      }
 
-     if (NumGraphs <= 0 || NumGraphs > 10000000)
+     if (NumGraphs <= 0 || NumGraphs > 1000000000)
      {
-    	 ErrorMessage("Must be between 1 and 10000000; changed to 100\n");
+    	 ErrorMessage("Must be between 1 and 1000000000; changed to 100\n");
          NumGraphs = 100;
      }
 
