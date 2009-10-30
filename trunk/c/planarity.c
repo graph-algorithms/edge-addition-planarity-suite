@@ -1429,6 +1429,17 @@ char *resultStr = "";
         	         gp_Write(theGraph, theFileName, WRITE_ADJLIST);
              }
 
+#ifdef DEBUG
+             if (embedFlags == EMBEDFLAGS_DRAWPLANAR && Result == OK)
+             {
+                 graphP testGraph = gp_New();
+                 gp_AttachDrawPlanar(testGraph);
+                 gp_DrawPlanar_RenderToFile(theGraph, "render.afterSort.txt");
+                 gp_Read(testGraph, theFileName);
+                 gp_DrawPlanar_RenderToFile(testGraph, "render.afterRead.txt");
+             }
+#endif
+
              // When called from the menu system, we want to write the planar or outerplanar
         	 // obstruction, if one exists.
              if (outfile2Name != NULL && strlen(outfile2Name) == 0)
@@ -1474,17 +1485,6 @@ char *resultStr = "";
                 	 ErrorMessage("Unsupported command for secondary output file request.");
                  }
              }
-
-#ifdef DEBUG
-             if (embedFlags == EMBEDFLAGS_DRAWPLANAR && Result == OK)
-             {
-                 graphP testGraph = gp_New();
-                 gp_AttachDrawPlanar(testGraph);
-                 gp_DrawPlanar_RenderToFile(theGraph, "render.afterSort.txt");
-                 gp_Read(testGraph, theFileName);
-                 gp_DrawPlanar_RenderToFile(testGraph, "render.afterRead.txt");
-             }
-#endif
          }
      }
 
