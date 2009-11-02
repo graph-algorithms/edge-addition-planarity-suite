@@ -11,11 +11,11 @@ The adjacency list format for the sample input graph is as follows:
 {{{
 N=15
 0: 1 3 14 -1
-1: 2 11 5 8 0 -1
+1: 2 11 0 5 8 -1
 2: 5 11 1 -1
 3: 0 4 7 -1
-4: 6 12 10 3 -1
-5: 9 1 2 -1
+4: 6 10 3 12 -1
+5: 9 2 1 -1
 6: 13 4 -1
 7: 3 10 14 -1
 8: 1 13 -1
@@ -23,8 +23,8 @@ N=15
 10: 7 4 12 -1
 11: 1 2 -1
 12: 10 4 13 -1
-13: 8 12 6 -1
-14: 0 7 9 -1
+13: 8 6 12 -1
+14: 0 9 7 -1
 }}}
 
 The result of 'gp_Embed()' with the DrawPlanar algorithm extension is below.  A _rotation scheme_ is imparted to the adjacency list of each vertex, resulting in a combinatorial planar embedding, and then a _visibility representation_ is produced and stored in a specially marked section of the output adjacency list file.  The DrawPlanar extension is also able to read the _visibility representation_ back in from this file format.
@@ -88,10 +88,10 @@ N=15
 51: 9 1 8
 52: 16 2 3
 53: 16 2 3
-54: 14 2 5
-55: 14 2 5
-56: 12 2 6
-57: 12 2 6
+54: 12 2 6
+55: 12 2 6
+56: 14 2 5
+57: 14 2 5
 58: 2 10 11
 59: 2 10 11
 60: 17 3 4
