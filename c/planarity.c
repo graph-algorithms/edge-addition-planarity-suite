@@ -126,13 +126,21 @@ void ProjectTitle()
 
 int main(int argc, char *argv[])
 {
+	int retVal=0;
+
 	if (argc <= 1)
-		return menu();
+		retVal = menu();
 
-	if (argv[1][0] == '-')
-		return commandLine(argc, argv);
+	else if (argv[1][0] == '-')
+		retVal = commandLine(argc, argv);
 
-	return legacyCommandLine(argc, argv);
+	else
+		retVal = legacyCommandLine(argc, argv);
+
+	// Close the log file if logging
+	gp_Log(NULL);
+
+	return retVal;
 }
 
 int helpMessage(char *param)

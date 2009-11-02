@@ -326,6 +326,9 @@ int fwdArc, backArc, parentCopy;
 
     parentCopy = theGraph->V[RootVertex - theGraph->N].DFSParent;
 
+    gp_LogLine(gp_MakeLogStr5("graphEmbed.c/_EmbedBackEdgeToDescendant() V=%d, R=%d, R_out=%d, W=%d, W_in=%d",
+    		parentCopy, RootVertex, RootSide, W, WPrevLink));
+
     if (theGraph->V[parentCopy].fwdArcList == fwdArc)
     {
     	theGraph->V[parentCopy].fwdArcList = gp_GetNextArc(theGraph, fwdArc);
@@ -421,6 +424,8 @@ void _InvertVertex(graphP theGraph, int V)
 {
 int J, temp;
 
+	 gp_LogLine(gp_MakeLogStr1("graphEmbed.c/_InvertVertex() V=%d", V));
+
      // Swap the links in all the arcs of the adjacency list
      J = gp_GetFirstArc(theGraph, V);
      while (gp_IsArc(theGraph, J))
@@ -472,6 +477,9 @@ void _MergeVertex(graphP theGraph, int W, int WPrevLink, int R)
 {
 int  J, JTwin;
 int  e_w, e_r, e_ext;
+
+	 gp_LogLine(gp_MakeLogStr4("graphEmbed.c/_MergeVertex() W=%d, W_in=%d, R=%d, R_out=%d",
+			 W, WPrevLink, R, 1^WPrevLink));
 
      // All arcs leading into R from its neighbors must be changed
      // to say that they are leading into W
