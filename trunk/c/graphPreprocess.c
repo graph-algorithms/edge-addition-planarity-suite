@@ -71,6 +71,8 @@ platform_GetTime(start);
      if (theGraph==NULL) return NOTOK;
      if (theGraph->internalFlags & FLAGS_DFSNUMBERED) return OK;
 
+     gp_LogLine("\ngraphPreprocess.c/gp_CreateDFSTree() start");
+
      N = theGraph->N;
      theStack  = theGraph->theStack;
 
@@ -103,7 +105,9 @@ platform_GetTime(start);
 
               if (!theGraph->G[u].visited)
               {
-                  theGraph->G[u].visited = 1;
+            	  gp_LogLine(gp_MakeLogStr3("V=%d, DFI=%d, Parent=%d", u, DFI, uparent));
+
+            	  theGraph->G[u].visited = 1;
                   theGraph->G[u].v = DFI++;
                   theGraph->V[u].DFSParent = uparent;
                   if (e != NIL)
@@ -142,6 +146,8 @@ platform_GetTime(start);
               }
           }
      }
+
+     gp_LogLine("graphPreprocess.c/gp_CreateDFSTree() end\n");
 
      theGraph->internalFlags |= FLAGS_DFSNUMBERED;
 

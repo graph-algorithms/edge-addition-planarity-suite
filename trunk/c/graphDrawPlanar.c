@@ -318,6 +318,34 @@ int W, P, C, V, J;
     return OK;
 }
 
+
+#ifdef LOGGING
+/********************************************************************
+ _LogEdgeList()
+ Used to show the progressive calculation of the edge position list.
+ ********************************************************************/
+void _LogEdgeList(graphP theEmbedding, listCollectionP edgeList, int edgeListHead)
+{
+    int e = edgeListHead, J, JTwin;
+
+    gp_Log("EdgeList: [ ");
+
+    while (e != NIL)
+    {
+        J = theEmbedding->edgeOffset + 2*e;
+        JTwin = gp_GetTwinArc(theEmbedding, J);
+
+        gp_Log(gp_MakeLogStr2("(%d, %d) ",
+        		theEmbedding->G[theEmbedding->G[J].v].v,
+        		theEmbedding->G[theEmbedding->G[JTwin].v].v));
+
+        e = LCGetNext(edgeList, edgeListHead, e);
+    }
+
+    gp_LogLine("]");
+}
+#endif
+
 /********************************************************************
  _ComputeEdgePositions()
 
@@ -342,6 +370,8 @@ listCollectionP edgeList = NULL;
 int edgeListHead, edgeListInsertPoint;
 int I, J, Jcur, e, v, vpos;
 int eIndex, JTwin;
+
+	gp_LogLine("\ngraphDrawPlanar.c/_ComputeEdgePositions() start");
 
     // Sort the vertices by vertical position (in linear time)
 
@@ -381,6 +411,8 @@ int eIndex, JTwin;
     {
         // Get the vertex associated with the position
         v = vertexOrder[vpos];
+        gp_LogLine(gp_MakeLogStr3("Processing vertex %d with DFI=%d at position=%d",
+    				 theEmbedding->G[v].v, v, vpos));
 
         // The DFS tree root of a connected component is always the least
         // number vertex in the vertex ordering.  We have to give it a
@@ -403,6 +435,8 @@ int eIndex, JTwin;
                 e = (J - theEmbedding->edgeOffset) / 2;
 
                 edgeListHead = LCAppend(edgeList, edgeListHead, e);
+                gp_LogLine(gp_MakeLogStr2("Append generator edge (%d, %d) to edgeList",
+                		theEmbedding->G[v].v, theEmbedding->G[theEmbedding->G[J].v].v));
 
                 // Set the generator edge for the root's neighbor
                 theEmbedding->G[theEmbedding->G[J].v].visited = J;
@@ -438,17 +472,33 @@ int eIndex, JTwin;
                 {
                     e = (Jcur - theEmbedding->edgeOffset) / 2;
                     LCInsertAfter(edgeList, edgeListInsertPoint, e);
+
+                    gp_LogLine(gp_MakeLogStr4("Insert (%d, %d) after (%d, %d)",
+                    		theEmbedding->G[v].v,
+                    		theEmbedding->G[theEmbedding->G[Jcur].v].v,
+                    		theEmbedding->G[theEmbedding->G[gp_GetTwinArc(theEmbedding, J)].v].v,
+                    		theEmbedding->G[theEmbedding->G[J].v].v));
+
                     edgeListInsertPoint = e;
 
                     // If the vertex does not yet have a generator edge, then set it.
                     if (theEmbedding->G[theEmbedding->G[Jcur].v].visited == NIL)
+                    {
                         theEmbedding->G[theEmbedding->G[Jcur].v].visited = Jcur;
+                        gp_LogLine(gp_MakeLogStr2("Generator edge (%d, %d)",
+                        		theEmbedding->G[theEmbedding->G[gp_GetTwinArc(theEmbedding, J)].v].v,
+                        		theEmbedding->G[theEmbedding->G[Jcur].v].v));
+                    }
                 }
 
                 // Go to the next node in v's adjacency list
                 Jcur = gp_GetNextArcCircular(theEmbedding, Jcur);
             }
         }
+
+#ifdef LOGGING
+        _LogEdgeList(theEmbedding, edgeList, edgeListHead);
+#endif
     }
 
     // Now iterate through the edgeList and assign positions to the edges.
@@ -469,6 +519,9 @@ int eIndex, JTwin;
     // Clean up and return
     LCFree(&edgeList);
     free(vertexOrder);
+
+	gp_LogLine("graphDrawPlanar.c/_ComputeEdgePositions() end\n");
+
     return OK;
 }
 
@@ -628,6 +681,10 @@ graphP theEmbedding = context->theGraph;
 //int ancestor = theEmbedding->V[ancestorChild].DFSParent;
 int K, Parent, BicompRoot, DFSChild, direction, descendant;
 
+    gp_LogLine("\ngraphDrawPlanar.c/_CollectDrawingData() start");
+    gp_LogLine(gp_MakeLogStr3("_CollectDrawingData(RootVertex=%d, W=%d, W_in=%d)",
+				 RootVertex, W, WPrevLink));
+
     /* Process all of the merge points to set their drawing flags. */
 
     for (K = 0; K < sp_GetCurrentSize(theEmbedding->theStack); K += 4)
@@ -661,11 +718,17 @@ int K, Parent, BicompRoot, DFSChild, direction, descendant;
 
          direction = theEmbedding->theStack->S[K+1];
          context->V[Parent].tie[direction] = DFSChild;
+
+         gp_LogLine(gp_MakeLogStr5("V[Parent=%d]=.tie[%d] = V[descendant=%d].tie[%d] = (child=%d)",
+					 Parent, direction, descendant, theEmbedding->theStack->S[K+3], DFSChild));
     }
+
+    gp_LogLine("graphDrawPlanar.c/_CollectDrawingData() end\n");
 }
 
 /********************************************************************
  _BreakTie()
+
  The given vertex W has just been arrived at by the core planarity
  algorithm.  Using WPrevLink, we seek its predecessor WPred on the
  external face and test whether the two are involved in a tie that
@@ -675,10 +738,22 @@ int K, Parent, BicompRoot, DFSChild, direction, descendant;
  safe to conclude that WPred can go between W and the current vertex.
 
  Of course, if W was the parent to some DFS child whose subtree
- contains WPred, then the DFS child is marked 'between', but if
- WPred was the parent of some DFS child whose subtree contained
- W, then we achieve the effect of putting WPred 'between' by
- marking the DFS child 'beyond'.
+ contains WPred, then the DFS child is marked 'between', placing
+ the whole subtree including WPred between W and the current vertex.
+ On the other hand, if WPred was the parent of some DFS child whose
+ subtree contained W, then we achieve the same effect of putting WPred
+ 'between' W and the curent vertex by marking the DFS child 'beyond'.
+ Since the DFS child and hence W are beyond W relative to the current
+ vertex, WPred is also between W and the current vertex.
+
+ Thus the certain positional relationship between W and WPred
+ relative to a specific ancestor, the current vertex, is used to
+ indirectly break the positional tie between MIN(W, WPred) and the
+ DFS child of MIN(W, WPred) whose subtree contains MAX(W, WPred).
+
+ The ancestorChild is the DFS child of the current vertex whose DFS
+ subtree contains W and WPred, and it is recorded here in order to
+ optimize the post-processing calculation of vertex positions.
  ********************************************************************/
 
 int _BreakTie(DrawPlanarContext *context, int BicompRoot, int W, int WPrevLink)
@@ -690,9 +765,16 @@ graphP theEmbedding = context->theGraph;
 int WPredNextLink = 1^WPrevLink,
     WPred = _GetNextExternalFaceVertex(theEmbedding, W, &WPredNextLink);
 
+	gp_LogLine("\ngraphDrawPlanar.c/::_BreakTie() start");
+    gp_LogLine(gp_MakeLogStr3("_BreakTie(BicompRoot=%d, W=%d, W_in=%d)",
+				 BicompRoot, W, WPrevLink));
+
     /* Ties happen only within a bicomp (i.e. between two non-root vertices) */
     if (W > theEmbedding->N || WPred >= theEmbedding->N)
+    {
+    	gp_LogLine("graphDrawPlanar.c/_BreakTie() end\n");
         return OK;
+    }
 
     /* The two vertices are either tied or not; having one tied and the other
         not is an error */
@@ -711,16 +793,26 @@ int WPredNextLink = 1^WPrevLink,
         context->V[DFSChild].ancestorChild = BicompRoot - theEmbedding->N;
         context->V[DFSChild].ancestor = theEmbedding->V[BicompRoot - theEmbedding->N].DFSParent;
 
+        gp_LogLine(gp_MakeLogStr4("V[child=%d]=.ancestorChild = %d, V[child=%d]=.ancestor = %d",
+					 DFSChild, context->V[DFSChild].ancestorChild, DFSChild, context->V[DFSChild].ancestor));
+
         /* If W is the ancestor of WPred, then the DFSChild subtree contains
             WPred, and so must go between W and some ancestor. */
         if (W < WPred)
+        {
             context->V[DFSChild].drawingFlag = DRAWINGFLAG_BETWEEN;
+            gp_LogLine(gp_MakeLogStr3("Child=%d is 'between' ancestorChild=%d and ancestor=%d",
+    					 DFSChild, context->V[DFSChild].ancestorChild, context->V[DFSChild].ancestor));
+        }
 
-        /* If W is the descendant, so we achieve the effect of putting
-            WPred between DFSChild and ancestor by putting the DFSChild
-            'beyond' WPred. */
+        /* If W is the descendant, so we achieve the effect of putting WPred
+           between DFSChild and ancestor by putting the DFSChild 'beyond' WPred. */
         else
+        {
             context->V[DFSChild].drawingFlag = DRAWINGFLAG_BEYOND;
+            gp_LogLine(gp_MakeLogStr3("Child=%d is 'beyond' ancestorChild=%d relative to ancestor=%d",
+    					 DFSChild, context->V[DFSChild].ancestorChild, context->V[DFSChild].ancestor));
+        }
 
         /* The tie is resolved so clear the flags*/
         context->V[W].tie[WPrevLink] = context->V[WPred].tie[WPredNextLink] = NIL;
@@ -728,6 +820,7 @@ int WPredNextLink = 1^WPrevLink,
     else
         return NOTOK;
 
+	gp_LogLine("graphDrawPlanar.c/_BreakTie() end\n");
     return OK;
 }
 

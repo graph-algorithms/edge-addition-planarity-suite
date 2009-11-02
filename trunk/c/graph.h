@@ -225,6 +225,42 @@ int 	gp_LowpointAndLeastAncestor(graphP theGraph);
 int		gp_Embed(graphP theGraph, int embedFlags);
 int		gp_TestEmbedResultIntegrity(graphP theGraph, graphP origGraph, int embedResult);
 
+/* If LOGGING is defined, then write to the log, otherwise no-op
+   By default, neither release nor DEBUG builds including LOGGING.
+   Logging is useful for seeing details of how various algorithms
+   handle a particular graph. */
+
+//#define LOGGING
+#ifdef LOGGING
+
+#define gp_LogLine _LogLine
+#define gp_Log _Log
+
+void _LogLine(char *Line);
+void _Log(char *Line);
+
+#define gp_MakeLogStr1 _MakeLogStr1
+#define gp_MakeLogStr2 _MakeLogStr2
+#define gp_MakeLogStr3 _MakeLogStr3
+#define gp_MakeLogStr4 _MakeLogStr4
+#define gp_MakeLogStr5 _MakeLogStr5
+
+char *_MakeLogStr1(char *format, int);
+char *_MakeLogStr2(char *format, int, int);
+char *_MakeLogStr3(char *format, int, int, int);
+char *_MakeLogStr4(char *format, int, int, int, int);
+char *_MakeLogStr5(char *format, int, int, int, int, int);
+
+#else
+#define gp_LogLine(Line)
+#define gp_Log(Line)
+#define gp_MakeLogStr1(format, one)
+#define gp_MakeLogStr2(format, one, two)
+#define gp_MakeLogStr3(format, one, two, three)
+#define gp_MakeLogStr4(format, one, two, three, four)
+#define gp_MakeLogStr5(format, one, two, three, four, five)
+#endif
+
 /* Possible Flags for gp_Embed.  The planar and outerplanar settings are supported
    natively.  The rest require extension modules. */
 

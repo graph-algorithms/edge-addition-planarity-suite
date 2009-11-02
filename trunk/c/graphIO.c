@@ -639,7 +639,79 @@ int RetVal;
      return RetVal;
 }
 
+/********************************************************************
+ _WritePostprocess()
+
+ By default, no additional information is written.
+ ********************************************************************/
+
 int  _WritePostprocess(graphP theGraph, void **pExtraData, long *pExtraDataSize)
 {
      return OK;
+}
+
+/********************************************************************
+ _Log()
+
+ When the project is compiled with LOGGING enabled, this method writes
+ a string to the file PLANARITY.LOG in the current working directory.
+ On first write, the file is created or cleared.
+ Call this method with NULL to close the log file.
+ ********************************************************************/
+
+void _Log(char *Str)
+{
+static FILE *logfile = NULL;
+
+    if (logfile == NULL)
+    {
+        if ((logfile = fopen("PLANARITY.LOG", WRITETEXT)) == NULL)
+        	return;
+    }
+
+    if (Str != NULL)
+    {
+        fprintf(logfile, "%s", Str);
+        fflush(logfile);
+    }
+    else
+        fclose(logfile);
+}
+
+void _LogLine(char *Str)
+{
+	_Log(Str);
+	_Log("\n");
+}
+
+static char LogStr[512];
+
+char *_MakeLogStr1(char *format, int one)
+{
+	sprintf(LogStr, format, one);
+	return LogStr;
+}
+
+char *_MakeLogStr2(char *format, int one, int two)
+{
+	sprintf(LogStr, format, one, two);
+	return LogStr;
+}
+
+char *_MakeLogStr3(char *format, int one, int two, int three)
+{
+	sprintf(LogStr, format, one, two, three);
+	return LogStr;
+}
+
+char *_MakeLogStr4(char *format, int one, int two, int three, int four)
+{
+	sprintf(LogStr, format, one, two, three, four);
+	return LogStr;
+}
+
+char *_MakeLogStr5(char *format, int one, int two, int three, int four, int five)
+{
+	sprintf(LogStr, format, one, two, three, four, five);
+	return LogStr;
 }
