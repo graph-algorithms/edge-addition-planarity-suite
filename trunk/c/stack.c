@@ -205,4 +205,20 @@ int  sp_Top(stackP theStack)
     return theStack->size ? theStack->S[theStack->size-1] : NIL;
 }
 
+int  sp_Get(stackP theStack, int pos)
+{
+	 if (theStack == NULL || pos < 0 || pos >= theStack->size)
+		 return NOTOK;
+
+     return (theStack->S[pos]);
+}
+
+int  sp_Set(stackP theStack, int pos, int val)
+{
+	 if (theStack == NULL || pos < 0 || pos >= theStack->size)
+		 return NOTOK;
+
+	 return (theStack->S[pos] = val);
+}
+
 #endif // not defined SPEED_MACROS

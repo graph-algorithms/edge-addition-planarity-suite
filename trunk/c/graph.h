@@ -218,6 +218,10 @@ void	gp_HideEdge(graphP theGraph, int arcPos);
 void	gp_RestoreEdge(graphP theGraph, int arcPos);
 int		gp_DeleteEdge(graphP theGraph, int J, int nextLink);
 
+int		gp_ContractEdge(graphP theGraph, int e);
+int		gp_IdentifyVertices(graphP theGraph, int u, int v, int eBefore);
+int		gp_RestoreIdentifications(graphP theGraph);
+
 int		gp_CreateDFSTree(graphP theGraph);
 int		gp_SortVertices(graphP theGraph);
 int 	gp_LowpointAndLeastAncestor(graphP theGraph);

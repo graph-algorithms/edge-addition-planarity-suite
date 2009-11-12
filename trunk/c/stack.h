@@ -92,6 +92,8 @@ int  sp__Pop(stackP, int *);
 int  sp__Pop2(stackP, int *, int *);
 
 int  sp_Top(stackP);
+int  sp_Get(stackP, int);
+int  sp_Set(stackP, int, int);
 
 #else
 
@@ -109,6 +111,8 @@ int  sp_Top(stackP);
 #define sp_Pop2(theStack, a, b) {sp_Pop(theStack, b);sp_Pop(theStack, a);}
 
 #define sp_Top(theStack) (theStack->size ? theStack->S[theStack->size-1] : NIL)
+#define sp_Get(theStack, pos) (theStack->S[pos])
+#define sp_Set(theStack, pos, val) (theStack->S[pos] = val)
 
 #endif
 
