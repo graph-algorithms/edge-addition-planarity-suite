@@ -1867,11 +1867,7 @@ int gp_ContractEdge(graphP theGraph, int e)
  The following are pushed, in order, onto the graph's built-in stack:
  1) an integer for each hidden edge
  2) the stack size before any hidden edges were pushed
- 3) six integers that indicate the edges moved from v to u
- 4) the stack size before any edges were moved
-
- The stack size values in #2 and #4 are useful to the implementations
- of both this method and gp_RestoreIdentifications().
+ 3) six integers that indicate u, v and the edges moved from v to u
 
  Returns OK on success, NOTOK on internal failure
  ********************************************************************/
@@ -1879,7 +1875,7 @@ int gp_ContractEdge(graphP theGraph, int e)
 int gp_IdentifyVertices(graphP theGraph, int u, int v, int eBefore)
 {
 	int e = gp_GetNeighborEdgeRecord(theGraph, u, v);
-	int hiddenEdgeStackBottom, movedEdgeStackBottom, eBeforePred, J;
+	int hiddenEdgeStackBottom, eBeforePred, J;
 
 	// If the vertices are adjacent, then the identification is
 	// essentially an edge contraction with a bit of fixup.
@@ -1895,12 +1891,13 @@ int gp_IdentifyVertices(graphP theGraph, int u, int v, int eBefore)
 		// number of hidden edges to K+1.
 		// After pushing the K hidden edges and the stackBottom of
 		// the hidden edges, the recursive call to this method pushes
-		// more edges that were moved from v to u, then it pushes the
-		// stackBottom of the moved edges, which happens to indicate
-		// where in the stack the hidden edge stackBottom is located.
-		sp_Set(theGraph->theStack,
-				sp_Top(theGraph->theStack) - 1,
-				sp_Get(theGraph->theStack, sp_Top(theGraph->theStack) - 1) - 1);
+		// six more integers to indicate edges that were moved from
+		// v to u, so the "hidden edges stackBottom" is in the next
+		// position down.
+		int hiddenEdgesStackBottomIndex = sp_GetCurrentSize(theGraph->theStack)-7;
+		int hiddenEdgesStackBottomValue = sp_Get(theGraph->theStack, hiddenEdgesStackBottomIndex);
+
+		sp_Set(theGraph->theStack, hiddenEdgesStackBottomIndex,	hiddenEdgesStackBottomValue - 1);
 
 		return result;
 	}
@@ -1946,10 +1943,6 @@ int gp_IdentifyVertices(graphP theGraph, int u, int v, int eBefore)
 	// edges were pushed (also, see above for Contract Edge adjustment)
 	sp_Push(theGraph->theStack, hiddenEdgeStackBottom);
 
-	// Now record the current top of stack, as this will be the
-	// stackBottom indicator for the edges moved from v to u.
-	movedEdgeStackBottom = sp_GetCurrentSize(theGraph->theStack);
-
 	// Moving v's adjacency list to u is aided by knowing the predecessor
 	// of u's eBefore (the edge record in u's list before which the
 	// edge records of v will be added).
@@ -1959,17 +1952,12 @@ int gp_IdentifyVertices(graphP theGraph, int u, int v, int eBefore)
 
 	// Turns out we only need to record six integers related to the edges
 	// being moved in order to easily restore them later.
+	sp_Push(theGraph->theStack, eBefore);
+	sp_Push(theGraph->theStack, gp_GetLastArc(theGraph, v));
+	sp_Push(theGraph->theStack, gp_GetFirstArc(theGraph, v));
+	sp_Push(theGraph->theStack, eBeforePred);
 	sp_Push(theGraph->theStack, u);
 	sp_Push(theGraph->theStack, v);
-	sp_Push(theGraph->theStack, eBefore);
-	sp_Push(theGraph->theStack, eBeforePred);
-	sp_Push(theGraph->theStack, gp_GetFirstArc(theGraph, v));
-	sp_Push(theGraph->theStack, gp_GetLastArc(theGraph, v));
-
-    // Push the movedEdgeStackBottom as a record of how much information
-	// was pushed to record the moved edges.  See the Contract Edge
-	// adjustment above for one way in which this information is used.
-	sp_Push(theGraph->theStack, movedEdgeStackBottom);
 
 	// For the remaining edge records of v, reassign the 'v' member
 	//    of each twin arc to indicate u rather than v.
@@ -2019,15 +2007,121 @@ int gp_IdentifyVertices(graphP theGraph, int u, int v, int eBefore)
  This method assumes the built-in graph stack has content consistent
  with numerous vertex identification or edge contraction operations.
  This method unwinds the stack, moving edges back to their original
- owners and restoring hidden edges.
+ vertex owners and restoring hidden edges.
+ This method is a simple iterator that invokes gp_RestoreVertex()
+ until the stack is empty, so extension algorithms are more likely
+ to overload gp_RestoreVertex().
 
  Returns OK for success, NOTOK for internal failure.
  ********************************************************************/
 
 int gp_RestoreIdentifications(graphP theGraph)
 {
-	// to do; don't forget degree 0 cases
-    return NOTOK;
+    if (theGraph == NULL || theGraph->theStack == NULL)
+    	return NOTOK;
+
+    while (sp_NonEmpty(theGraph->theStack))
+    {
+    	if (gp_RestoreVertex(theGraph) != OK)
+    		return NOTOK;
+    }
+
+    return OK;
+}
+
+/********************************************************************
+ gp_RestoreVertex()
+
+ This method assumes the built-in graph stack has content consistent
+ with numerous vertex identification or edge contraction operations.
+ This content consists of segments of integers, each segment
+ corresponding to the removal of a vertex during an edge contraction
+ or vertex identification in which a vertex v was merged into a
+ vertex u.  The segment contains two blocks of integers.
+ The first block contains information about u, v, the edge records
+ in v's adjacency list that were added to u, and where in u's
+ adjacency list they were added.  The second block of integers
+ contains a list of edges incident to v that were hidden from the
+ graph because they were incident to neighbors of v that were also
+ neighbors of u (so they would have produced duplicate edges had
+ they been left in v's adjacency list when it was merged with u's
+ adjacency list).
+
+ This method pops the first block of the segment off the stack and
+ uses the information to help remove v's adjacency list from u and
+ restore it into v.  Then, the second block is removed from the
+ stack, and each indicated edge is restored from the hidden state.
+
+ It is anticipated that this method will be overloaded by extension
+ algorithms to perform some processing as each vertex is restored.
+ Before restoration, the topmost segment has the following structure:
+
+ ... FHE ... LHE HESB e_u_succ e_v_last e_v_first e_u_pred u v
+      ^------------|
+
+ FHE = First hidden edge
+ LHE = Last hidden edge
+ HESB = Hidden edge stack bottom
+ e_u_succ, e_u_pred = The edges of u between which the edges of v
+                      were inserted. NIL can appear if the edges of v
+                      were added to the beginning or end of u's list
+ e_v_first, e_v_last = The first and last edges of v's list, once
+                       the hidden edges were removed
+
+ Returns OK for success, NOTOK for internal failure.
+ ********************************************************************/
+
+int gp_RestoreVertex(graphP theGraph)
+{
+int u, v, e_u_succ, e_u_pred, e_v_first, e_v_last, HESB;
+
+    if (theGraph == NULL || theGraph->theStack == NULL ||
+    		sp_GetCurrentSize(theGraph->theStack) < 7)
+    	return NOTOK;
+
+    sp_Pop(theGraph->theStack, v);
+    sp_Pop(theGraph->theStack, u);
+	sp_Pop(theGraph->theStack, e_u_pred);
+	sp_Pop(theGraph->theStack, e_v_first);
+	sp_Pop(theGraph->theStack, e_v_last);
+	sp_Pop(theGraph->theStack, e_u_succ);
+
+	// Remove v's adjacency list from u, including accounting for degree 0 case
+	if (gp_IsArc(theGraph, e_u_pred))
+	{
+		gp_SetNextArc(theGraph, e_u_pred, e_u_succ);
+		// If the successor edge exists, link it to the predecessor,
+		// otherwise the predecessor is the new last arc
+		if (gp_IsArc(theGraph, e_u_succ))
+			gp_SetPrevArc(theGraph, e_u_succ, e_u_pred);
+		else
+			gp_SetLastArc(theGraph, u, e_u_pred);
+	}
+	else if (gp_IsArc(theGraph, e_u_succ))
+	{
+		// The successor arc exists, but not the predecessor,
+		// so the successor is the new first arc
+		gp_SetPrevArc(theGraph, e_u_succ, NIL);
+		gp_SetFirstArc(theGraph, u, e_u_succ);
+	}
+	else
+	{
+		// Just in case u was degree zero
+		gp_SetFirstArc(theGraph, u, NIL);
+		gp_SetLastArc(theGraph, u, NIL);
+	}
+
+	// Place v's adjacency list into v, including accounting for degree 0 case
+	gp_SetFirstArc(theGraph, v, e_v_first);
+	gp_SetLastArc(theGraph, v, e_v_last);
+	if (gp_IsArc(theGraph, e_v_first))
+		gp_SetPrevArc(theGraph, e_v_first, NIL);
+	if (gp_IsArc(theGraph, e_v_last))
+		gp_SetPrevArc(theGraph, e_v_last, NIL);
+
+	// Restore the hidden edges of v, if any
+	sp_Pop(theGraph->theStack, HESB);
+	return _RestoreHiddenEdges(theGraph, HESB);
 }
 
 /********************************************************************
