@@ -81,6 +81,8 @@ int  _SetVertexTypeInBicomp(graphP theGraph, int BicompRoot, int theType);
 
 int  _HideInternalEdges(graphP theGraph, int vertex);
 int  _RestoreInternalEdges(graphP theGraph, int stackBottom);
+int  _RestoreHiddenEdges(graphP theGraph, int stackBottom);
+
 int  _GetBicompSize(graphP theGraph, int BicompRoot);
 int  _DeleteUnmarkedEdgesInBicomp(graphP theGraph, int BicompRoot);
 int  _ClearInvertedFlagsInBicomp(graphP theGraph, int BicompRoot);
@@ -1785,17 +1787,7 @@ int J = gp_GetFirstArc(theGraph, vertex);
 
 int  _RestoreInternalEdges(graphP theGraph, int stackBottom)
 {
-int  e;
-
-     while (sp_GetCurrentSize(theGraph->theStack) > stackBottom)
-     {
-          sp_Pop(theGraph->theStack, e);
-          if (!gp_IsArc(theGraph, e))
-        	  return NOTOK;
-          gp_RestoreEdge(theGraph, e);
-     }
-
-     return OK;
+	return _RestoreHiddenEdges(theGraph, stackBottom);
 }
 
 /********************************************************************
@@ -1811,8 +1803,51 @@ int  e;
 
 int  _RestoreHiddenEdges(graphP theGraph, int stackBottom)
 {
-	// This non-public function happens to already do what we want
-	return _RestoreInternalEdges(theGraph, stackBottom);
+	int  e;
+
+	 while (sp_GetCurrentSize(theGraph->theStack) > stackBottom)
+	 {
+		  sp_Pop(theGraph->theStack, e);
+		  if (!gp_IsArc(theGraph, e))
+			  return NOTOK;
+		  gp_RestoreEdge(theGraph, e);
+	 }
+
+	 return OK;
+}
+
+/********************************************************************
+ gp_HideVertex()
+
+ Pushes onto the graph's stack and hides all arc nodes of the vertex.
+ Additional integers are then pushed so that the result is reversible
+ by gp_RestoreVertex().  See that method for details on the expected
+ stack segment.
+ ********************************************************************/
+
+int  gp_HideVertex(graphP theGraph, int vertex)
+{
+	int hiddenEdgeStackBottom = sp_GetCurrentSize(theGraph->theStack);
+	int J = gp_GetFirstArc(theGraph, vertex);
+
+    // Cycle through all the edges, pushing and hiding each
+    while (gp_IsArc(theGraph, J))
+    {
+        sp_Push(theGraph->theStack, J);
+        gp_HideEdge(theGraph, J);
+        J = gp_GetNextArc(theGraph, J);
+    }
+
+    // Push the additional integers needed by gp_RestoreVertex()
+	sp_Push(theGraph->theStack, hiddenEdgeStackBottom);
+	sp_Push(theGraph->theStack, NIL);
+	sp_Push(theGraph->theStack, NIL);
+	sp_Push(theGraph->theStack, NIL);
+	sp_Push(theGraph->theStack, NIL);
+	sp_Push(theGraph->theStack, NIL);
+	sp_Push(theGraph->theStack, vertex);
+
+    return OK;
 }
 
 /********************************************************************
@@ -2002,38 +2037,10 @@ int gp_IdentifyVertices(graphP theGraph, int u, int v, int eBefore)
 }
 
 /********************************************************************
- gp_RestoreIdentifications()
-
- This method assumes the built-in graph stack has content consistent
- with numerous vertex identification or edge contraction operations.
- This method unwinds the stack, moving edges back to their original
- vertex owners and restoring hidden edges.
- This method is a simple iterator that invokes gp_RestoreVertex()
- until the stack is empty, so extension algorithms are more likely
- to overload gp_RestoreVertex().
-
- Returns OK for success, NOTOK for internal failure.
- ********************************************************************/
-
-int gp_RestoreIdentifications(graphP theGraph)
-{
-    if (theGraph == NULL || theGraph->theStack == NULL)
-    	return NOTOK;
-
-    while (sp_NonEmpty(theGraph->theStack))
-    {
-    	if (gp_RestoreVertex(theGraph) != OK)
-    		return NOTOK;
-    }
-
-    return OK;
-}
-
-/********************************************************************
  gp_RestoreVertex()
 
- This method assumes the built-in graph stack has content consistent
- with numerous vertex identification or edge contraction operations.
+ This method assumes the built-in graph stack contents are the result
+ of vertex hide, vertex identify and edge contract operations.
  This content consists of segments of integers, each segment
  corresponding to the removal of a vertex during an edge contraction
  or vertex identification in which a vertex v was merged into a
@@ -2075,8 +2082,7 @@ int gp_RestoreVertex(graphP theGraph)
 {
 int u, v, e_u_succ, e_u_pred, e_v_first, e_v_last, HESB;
 
-    if (theGraph == NULL || theGraph->theStack == NULL ||
-    		sp_GetCurrentSize(theGraph->theStack) < 7)
+    if (sp_GetCurrentSize(theGraph->theStack) < 7)
     	return NOTOK;
 
     sp_Pop(theGraph->theStack, v);
@@ -2086,42 +2092,72 @@ int u, v, e_u_succ, e_u_pred, e_v_first, e_v_last, HESB;
 	sp_Pop(theGraph->theStack, e_v_last);
 	sp_Pop(theGraph->theStack, e_u_succ);
 
-	// Remove v's adjacency list from u, including accounting for degree 0 case
-	if (gp_IsArc(theGraph, e_u_pred))
+	// If u is not NIL, then vertex v was identified with u.  Otherwise, v was
+	// simply hidden, so we skip to restoring the hidden edges.
+	if (u != NIL)
 	{
-		gp_SetNextArc(theGraph, e_u_pred, e_u_succ);
-		// If the successor edge exists, link it to the predecessor,
-		// otherwise the predecessor is the new last arc
-		if (gp_IsArc(theGraph, e_u_succ))
-			gp_SetPrevArc(theGraph, e_u_succ, e_u_pred);
+		// Remove v's adjacency list from u, including accounting for degree 0 case
+		if (gp_IsArc(theGraph, e_u_pred))
+		{
+			gp_SetNextArc(theGraph, e_u_pred, e_u_succ);
+			// If the successor edge exists, link it to the predecessor,
+			// otherwise the predecessor is the new last arc
+			if (gp_IsArc(theGraph, e_u_succ))
+				gp_SetPrevArc(theGraph, e_u_succ, e_u_pred);
+			else
+				gp_SetLastArc(theGraph, u, e_u_pred);
+		}
+		else if (gp_IsArc(theGraph, e_u_succ))
+		{
+			// The successor arc exists, but not the predecessor,
+			// so the successor is the new first arc
+			gp_SetPrevArc(theGraph, e_u_succ, NIL);
+			gp_SetFirstArc(theGraph, u, e_u_succ);
+		}
 		else
-			gp_SetLastArc(theGraph, u, e_u_pred);
-	}
-	else if (gp_IsArc(theGraph, e_u_succ))
-	{
-		// The successor arc exists, but not the predecessor,
-		// so the successor is the new first arc
-		gp_SetPrevArc(theGraph, e_u_succ, NIL);
-		gp_SetFirstArc(theGraph, u, e_u_succ);
-	}
-	else
-	{
-		// Just in case u was degree zero
-		gp_SetFirstArc(theGraph, u, NIL);
-		gp_SetLastArc(theGraph, u, NIL);
-	}
+		{
+			// Just in case u was degree zero
+			gp_SetFirstArc(theGraph, u, NIL);
+			gp_SetLastArc(theGraph, u, NIL);
+		}
 
-	// Place v's adjacency list into v, including accounting for degree 0 case
-	gp_SetFirstArc(theGraph, v, e_v_first);
-	gp_SetLastArc(theGraph, v, e_v_last);
-	if (gp_IsArc(theGraph, e_v_first))
-		gp_SetPrevArc(theGraph, e_v_first, NIL);
-	if (gp_IsArc(theGraph, e_v_last))
-		gp_SetPrevArc(theGraph, e_v_last, NIL);
+		// Place v's adjacency list into v, including accounting for degree 0 case
+		gp_SetFirstArc(theGraph, v, e_v_first);
+		gp_SetLastArc(theGraph, v, e_v_last);
+		if (gp_IsArc(theGraph, e_v_first))
+			gp_SetPrevArc(theGraph, e_v_first, NIL);
+		if (gp_IsArc(theGraph, e_v_last))
+			gp_SetPrevArc(theGraph, e_v_last, NIL);
+	}
 
 	// Restore the hidden edges of v, if any
 	sp_Pop(theGraph->theStack, HESB);
 	return _RestoreHiddenEdges(theGraph, HESB);
+}
+
+/********************************************************************
+ gp_RestoreIdentifications()
+
+ This method assumes the built-in graph stack has content consistent
+ with numerous vertex identification or edge contraction operations.
+ This method unwinds the stack, moving edges back to their original
+ vertex owners and restoring hidden edges.
+ This method is a simple iterator that invokes gp_RestoreVertex()
+ until the stack is empty, so extension algorithms are more likely
+ to overload gp_RestoreVertex().
+
+ Returns OK for success, NOTOK for internal failure.
+ ********************************************************************/
+
+int gp_RestoreIdentifications(graphP theGraph)
+{
+    while (sp_NonEmpty(theGraph->theStack))
+    {
+    	if (gp_RestoreVertex(theGraph) != OK)
+    		return NOTOK;
+    }
+
+    return OK;
 }
 
 /********************************************************************
