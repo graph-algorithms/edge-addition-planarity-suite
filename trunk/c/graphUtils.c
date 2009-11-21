@@ -106,8 +106,6 @@ void _ClearGraph(graphP theGraph);
 
 int  _GetRandomNumber(int NMin, int NMax);
 
-void _HideArc(graphP theGraph, int arcPos);
-
 /* Private functions for which there are FUNCTION POINTERS */
 
 void _InitGraphNode(graphP theGraph, int I);
@@ -1357,6 +1355,100 @@ void gp_AddArc(graphP theGraph, int v, int vlink, int newArc)
 }
 
 /********************************************************************
+ gp_AttachArc()
+
+ This routine adds newArc into v's adjacency list at a position
+ adjacent to the edge record for e, either before or after e,
+ depending on link.  If e is not an arc (e.g. if e is NIL),
+ then link is assumed to indicate whether the new arc is to be
+ placed at the beginning or end of v's adjacency list.
+
+ NOTE: The caller can pass NIL for v if e is not NIL, since the
+       vertex is implied (theGraph->G[eTwin].v)
+
+ The arc is assumed to already exist in the data structure (i.e.
+ the storage of edges), as only a whole edge (two arcs) can be
+ inserted into or deleted from the data structure.  Hence there is
+ no such thing as gp_InsertArc() or gp_DeleteArc().
+
+ See also gp_DetachArc(), gp_InsertEdge() and gp_DeleteEdge()
+ ********************************************************************/
+
+void gp_AttachArc(graphP theGraph, int v, int e, int link, int newArc)
+{
+     if (gp_IsArc(theGraph, e))
+     {
+    	 int e2 = gp_GetAdjacentArc(theGraph, e, link);
+
+         // e's link is newArc, and newArc's 1^link is e
+    	 gp_SetAdjacentArc(theGraph, e, link, newArc);
+    	 gp_SetAdjacentArc(theGraph, newArc, 1^link, e);
+
+    	 // newArcs's link is e2
+    	 gp_SetAdjacentArc(theGraph, newArc, link, e2);
+
+    	 // if e2 is an arc, then e2's 1^link is newArc, else v's 1^link is newArc
+    	 if (gp_IsArc(theGraph, e2))
+    		 gp_SetAdjacentArc(theGraph, e2, 1^link, newArc);
+    	 else
+    		 gp_SetArc(theGraph, v, 1^link, newArc);
+     }
+     else
+     {
+    	 int e2 = gp_GetArc(theGraph, v, link);
+
+    	 // v's link is newArc, and newArc's 1^link is gp_AdjacencyListEndMark(v)
+    	 gp_SetArc(theGraph, v, link, newArc);
+    	 gp_SetAdjacentArc(theGraph, newArc, 1^link, gp_AdjacencyListEndMark(v));
+
+    	 // newArcs's elink is e2
+    	 gp_SetAdjacentArc(theGraph, newArc, link, e2);
+
+    	 // if e2 is an arc, then e2's 1^link is newArc, else v's 1^link is newArc
+    	 if (gp_IsArc(theGraph, e2))
+    		 gp_SetAdjacentArc(theGraph, e2, 1^link, newArc);
+    	 else
+    		 gp_SetArc(theGraph, v, 1^link, newArc);
+     }
+}
+
+/****************************************************************************
+ gp_DetachArc()
+
+ This routine detaches arc from its adjacency list, but it does not delete
+ it from the data structure (only a whole edge can be deleted).
+
+ Some algorithms must temporarily detach an edge, perform some calculation,
+ and eventually put the edge back. This routine supports that operation.
+ The neighboring adjacency list nodes are cross-linked, but the two link
+ members of the arc are retained, so the arc can be reattached later by
+ invoking _RestoreArc().  A sequence of detached arcs can only be restored
+ in the exact opposite order of their detachment.  Thus, algorithms do not
+ directly use this method to implement the temporary detach/restore method.
+ Instead, gp_HideEdge() and gp_RestoreEdge are used, and algorithms push
+ edge hidden edge onto the stack.  One example of this stack usage is
+ provided by detaching edges with gp_ContractEdge() or gp_IdentifyVertices(),
+ and reattaching with gp_RestoreIdentifications(), which unwinds the stack
+ by invoking gp_RestoreVertex().
+ ****************************************************************************/
+
+void gp_DetachArc(graphP theGraph, int arc)
+{
+	int nextArc = gp_GetNextArc(theGraph, arc),
+	    prevArc = gp_GetPrevArc(theGraph, arc);
+
+	    if (gp_IsArc(theGraph, nextArc))
+	    	gp_SetPrevArc(theGraph, nextArc, prevArc);
+	    else
+	    	gp_SetLastArc(theGraph, theGraph->G[gp_GetTwinArc(theGraph, arc)].v, prevArc);
+
+	    if (gp_IsArc(theGraph, prevArc))
+	    	gp_SetNextArc(theGraph, prevArc, nextArc);
+	    else
+	    	gp_SetFirstArc(theGraph, theGraph->G[gp_GetTwinArc(theGraph, arc)].v, nextArc);
+}
+
+/********************************************************************
  gp_AddEdge()
  Adds the undirected edge (u,v) to the graph by placing edge records
  representing u into v's circular edge record list and v into u's
@@ -1396,59 +1488,12 @@ int  upos, vpos;
      upos = gp_GetTwinArc(theGraph, vpos);
 
      theGraph->G[upos].v = v;
-     gp_AddArc(theGraph, u, ulink, upos);
+     gp_AttachArc(theGraph, u, NIL, ulink, upos);
      theGraph->G[vpos].v = u;
-     gp_AddArc(theGraph, v, vlink, vpos);
+     gp_AttachArc(theGraph, v, NIL, vlink, vpos);
 
      theGraph->M++;
      return OK;
-}
-
-/********************************************************************
- gp_InsertArc()
- This routine adds newArc into v's adjacency list at a position
- adjacent to the edge record for e, either before or after e,
- depending on elink.  If e is not an arc, then elink is assumed to
- indicate whether the new arc is to be placed at the beginning or end
- of the list.
- ********************************************************************/
-
-void gp_InsertArc(graphP theGraph, int v, int e, int elink, int newArc)
-{
-     if (gp_IsArc(theGraph, e))
-     {
-    	 int e2 = gp_GetAdjacentArc(theGraph, e, elink);
-
-         // e's elink is newArc, and newArc's 1^elink is e
-    	 gp_SetAdjacentArc(theGraph, e, elink, newArc);
-    	 gp_SetAdjacentArc(theGraph, newArc, 1^elink, e);
-
-    	 // newArcs's elink is e2
-    	 gp_SetAdjacentArc(theGraph, newArc, elink, e2);
-
-    	 // if e2 is an arc, then e2's 1^elink is newArc, else v's 1^elink is newArc
-    	 if (gp_IsArc(theGraph, e2))
-    		 gp_SetAdjacentArc(theGraph, e2, 1^elink, newArc);
-    	 else
-    		 gp_SetArc(theGraph, v, 1^elink, newArc);
-     }
-     else
-     {
-    	 int e2 = gp_GetArc(theGraph, v, elink);
-
-    	 // v's elink is newArc, and newArc's 1^elink is gp_AdjacencyListEndMark(v)
-    	 gp_SetArc(theGraph, v, elink, newArc);
-    	 gp_SetAdjacentArc(theGraph, newArc, 1^elink, gp_AdjacencyListEndMark(v));
-
-    	 // newArcs's elink is e2
-    	 gp_SetAdjacentArc(theGraph, newArc, elink, e2);
-
-    	 // if e2 is an arc, then e2's 1^elink is newArc, else v's 1^elink is newArc
-    	 if (gp_IsArc(theGraph, e2))
-    		 gp_SetAdjacentArc(theGraph, e2, 1^elink, newArc);
-    	 else
-    		 gp_SetArc(theGraph, v, 1^elink, newArc);
-     }
 }
 
 /********************************************************************
@@ -1491,10 +1536,10 @@ int vertMax = 2*theGraph->N - 1,
      upos = gp_GetTwinArc(theGraph, vpos);
 
      theGraph->G[upos].v = v;
-     gp_InsertArc(theGraph, u, e_u, e_ulink, upos);
+     gp_AttachArc(theGraph, u, e_u, e_ulink, upos);
 
      theGraph->G[vpos].v = u;
-     gp_InsertArc(theGraph, v, e_v, e_vlink, vpos);
+     gp_AttachArc(theGraph, v, e_v, e_vlink, vpos);
 
      theGraph->M++;
 
@@ -1502,124 +1547,59 @@ int vertMax = 2*theGraph->N - 1,
 }
 
 /****************************************************************************
- _ComputeArcType()
- This is just a little helper function that automates a sequence of decisions
- that has to be made a number of times.
- An edge record is being added to the adjacency list of a; it indicates that
- b is a neighbor.  The edgeType can be either 'tree' (EDGE_DFSPARENT or
- EDGE_DFSCHILD) or 'cycle' (EDGE_BACK or EDGE_FORWARD).
- If a or b is a root copy, we translate to the non-virtual counterpart,
- then wedetermine which has the lesser DFI.  If a has the lower DFI then the
- edge record is a tree edge to a child (EDGE_DFSCHILD) if edgeType indicates
- a tree edge.  If edgeType indicates a cycle edge, then it is a forward cycle
- edge (EDGE_FORWARD) to a descendant.
- Symmetric conditions define the types for a > b.
+ gp_DeleteEdge()
+
+ This function deletes the given edge record J and its twin, reducing the
+ number of edges M in the graph.
+ Before the Jth record is deleted, its 'nextLink' adjacency list neighbor
+ is collected as the return result.  This is useful when iterating through
+ an edge list and making deletions because the nextLink arc is the 'next'
+ arc in the iteration, but it is hard to obtain *after* deleting arc J.
  ****************************************************************************/
 
-int  _ComputeArcType(graphP theGraph, int a, int b, int edgeType)
+int  gp_DeleteEdge(graphP theGraph, int J, int nextLink)
 {
-     if (a >= theGraph->N)
-         a = theGraph->V[a - theGraph->N].DFSParent;
-     if (b >= theGraph->N)
-         b = theGraph->V[b - theGraph->N].DFSParent;
+int  JTwin = gp_GetTwinArc(theGraph, J);
+int  M = theGraph->M;
+int  nextArc, JPos, MPos;
 
-     if (a < b)
-         return edgeType == EDGE_DFSPARENT || edgeType == EDGE_DFSCHILD ? EDGE_DFSCHILD : EDGE_FORWARD;
+/* Calculate the nextArc after J so that, when J is deleted, the return result
+        informs a calling loop of the next edge to be processed. */
 
-     return edgeType == EDGE_DFSPARENT || edgeType == EDGE_DFSCHILD ? EDGE_DFSPARENT : EDGE_BACK;
-}
+     nextArc = gp_GetAdjacentArc(theGraph, J, nextLink);
 
-/****************************************************************************
- _SetEdgeType()
- When we are restoring an edge, we must restore its type (tree edge or cycle edge).
- We can deduce what the type was based on other information in the graph. Each
- arc of the edge gets the appropriate type setting (parent/child or back/forward).
- This method runs in constant time plus the degree of vertex u, or constant
- time if u is known to have a degree bound by a constant.
- ****************************************************************************/
+/* Delete the edge records J and JTwin from their adjacency lists. */
 
-int  _SetEdgeType(graphP theGraph, int u, int v)
-{
-int  e, eTwin, u_orig, v_orig, N;
+     gp_DetachArc(theGraph, J);
+     gp_DetachArc(theGraph, JTwin);
 
-     // If u or v is a virtual vertex (a root copy), then get the non-virtual counterpart.
-     N = theGraph->N;
-     u_orig = u < N ? u : (theGraph->V[u - N].DFSParent);
-     v_orig = v < N ? v : (theGraph->V[v - N].DFSParent);
+/* Clear the edge record contents */
 
-     // Get the edge for which we will set the type
+    theGraph->functions.fpInitGraphNode(theGraph, J);
+    theGraph->functions.fpInitGraphNode(theGraph, JTwin);
 
-     e = gp_GetNeighborEdgeRecord(theGraph, u, v);
-     eTwin = gp_GetTwinArc(theGraph, e);
+/* If records J and JTwin are not the last in the edge record array, then
+     we want to record a new hole in the edge array. */
 
-     // If u_orig is the parent of v_orig, or vice versa, then the edge is a tree edge
+     JPos = (J < JTwin ? J : JTwin);
+     MPos = theGraph->edgeOffset + 2*(M-1) + 2*sp_GetCurrentSize(theGraph->edgeHoles);
 
-     if (theGraph->V[v_orig].DFSParent == u_orig ||
-         theGraph->V[u_orig].DFSParent == v_orig)
+     if (JPos < MPos)
      {
-         if (u_orig > v_orig)
-         {
-             theGraph->G[e].type = EDGE_DFSPARENT;
-             theGraph->G[eTwin].type = EDGE_DFSCHILD;
-         }
-         else
-         {
-             theGraph->G[eTwin].type = EDGE_DFSPARENT;
-             theGraph->G[e].type = EDGE_DFSCHILD;
-         }
+         sp_Push(theGraph->edgeHoles, JPos);
      }
 
-     // Otherwise it is a back edge
+/* Now we reduce the number of edges in the data structure, and then
+        return the previously calculated successor of J. */
 
-     else
-     {
-         if (u_orig > v_orig)
-         {
-             theGraph->G[e].type = EDGE_BACK;
-             theGraph->G[eTwin].type = EDGE_FORWARD;
-         }
-         else
-         {
-             theGraph->G[eTwin].type = EDGE_BACK;
-             theGraph->G[e].type = EDGE_FORWARD;
-         }
-     }
-
-     return OK;
-}
-
-/********************************************************************
- _HideArc()
- This routine removes an arc from an edge list, but does not delete
- it from the data structure.  Many algorithms must temporarily remove
- an edge, perform some calculation, and eventually put the edge back.
- This routine supports that operation.
-
- The neighboring adjacency list nodes are cross-linked, but the two
- link members of the arc are retained so it can reinsert itself when
- _RestoreArc() is called.
- ********************************************************************/
-
-void _HideArc(graphP theGraph, int arc)
-{
-int nextArc = gp_GetNextArc(theGraph, arc),
-    prevArc = gp_GetPrevArc(theGraph, arc);
-
-    if (gp_IsArc(theGraph, nextArc))
-    	gp_SetPrevArc(theGraph, nextArc, prevArc);
-    else
-    	gp_SetLastArc(theGraph, theGraph->G[gp_GetTwinArc(theGraph, arc)].v, prevArc);
-
-    if (gp_IsArc(theGraph, prevArc))
-    	gp_SetNextArc(theGraph, prevArc, nextArc);
-    else
-    	gp_SetFirstArc(theGraph, theGraph->G[gp_GetTwinArc(theGraph, arc)].v, nextArc);
+     theGraph->M--;
+     return nextArc;
 }
 
 /********************************************************************
  _RestoreArc()
  This routine reinserts an arc into the edge list from which it
- was previously removed by _HideArc().
+ was previously removed by gp_DetachArc().
 
  The assumed processing model is that arcs will be restored in reverse
  of the order in which they were hidden, i.e. it is assumed that the
@@ -1662,8 +1642,8 @@ void gp_HideEdge(graphP theGraph, int arcPos)
 
 void _HideEdge(graphP theGraph, int arcPos)
 {
-    _HideArc(theGraph, arcPos);
-    _HideArc(theGraph, gp_GetTwinArc(theGraph, arcPos));
+	gp_DetachArc(theGraph, arcPos);
+	gp_DetachArc(theGraph, gp_GetTwinArc(theGraph, arcPos));
 }
 
 /********************************************************************
@@ -1691,81 +1671,6 @@ void _RestoreEdge(graphP theGraph, int arcPos)
 {
      _RestoreArc(theGraph, gp_GetTwinArc(theGraph, arcPos));
      _RestoreArc(theGraph, arcPos);
-}
-
-/****************************************************************************
- gp_DeleteArc()
- Removes arc from v's adjacency list
- ****************************************************************************/
-
-void gp_DeleteArc(graphP theGraph, int v, int arc)
-{
-	if (arc == gp_GetFirstArc(theGraph, v))
-	{
-		gp_SetFirstArc(theGraph, v, gp_GetNextArc(theGraph, arc));
-		if (arc == gp_GetLastArc(theGraph, v))
-            gp_SetLastArc(theGraph, v, gp_AdjacencyListEndMark(v));
-        else
-	        gp_SetPrevArc(theGraph, gp_GetNextArc(theGraph, arc), gp_AdjacencyListEndMark(v));
-	}
-    else
-    {
-		gp_SetNextArc(theGraph, gp_GetPrevArc(theGraph, arc), gp_GetNextArc(theGraph, arc));
-		if (arc == gp_GetLastArc(theGraph, v))
-			gp_SetLastArc(theGraph, v, gp_GetPrevArc(theGraph, arc));
-		else
-			gp_SetPrevArc(theGraph, gp_GetNextArc(theGraph, arc), gp_GetPrevArc(theGraph, arc));
-    }
-}
-
-/****************************************************************************
- gp_DeleteEdge()
-
- This function deletes the given edge record J and its twin, reducing the
- number of edges M in the graph.
- Before the Jth record is deleted, its 'nextLink' adjacency list neighbor
- is collected as the return result.  This is useful when iterating through
- an edge list and making deletions because the nextLink arc is the 'next'
- arc in the iteration, but it is hard to obtain *after* deleting arc J.
- ****************************************************************************/
-
-int  gp_DeleteEdge(graphP theGraph, int J, int nextLink)
-{
-int  JTwin = gp_GetTwinArc(theGraph, J);
-int  M = theGraph->M;
-int  nextArc, JPos, MPos;
-
-/* Calculate the nextArc after J so that, when J is deleted, the return result
-        informs a calling loop of the next edge to be processed. */
-
-     nextArc = gp_GetAdjacentArc(theGraph, J, nextLink);
-
-/* Delete the edge records J and JTwin. */
-
-     gp_DeleteArc(theGraph, theGraph->G[JTwin].v, J);
-     gp_DeleteArc(theGraph, theGraph->G[J].v, JTwin);
-
-/* Clear the edge record contents */
-
-    theGraph->functions.fpInitGraphNode(theGraph, J);
-    theGraph->functions.fpInitGraphNode(theGraph, JTwin);
-
-/* If records J and JTwin are not the last in the edge record array, then
-     we want to record a new hole in the edge array. */
-
-     JPos = (J < JTwin ? J : JTwin);
-     MPos = theGraph->edgeOffset + 2*(M-1) + 2*sp_GetCurrentSize(theGraph->edgeHoles);
-
-     if (JPos < MPos)
-     {
-         sp_Push(theGraph->edgeHoles, JPos);
-     }
-
-/* Now we reduce the number of edges in the data structure, and then
-        return the previously calculated successor of J. */
-
-     theGraph->M--;
-     return nextArc;
 }
 
 /********************************************************************
@@ -1849,6 +1754,8 @@ int  _RestoreHiddenEdges(graphP theGraph, int stackBottom)
  Additional integers are then pushed so that the result is reversible
  by gp_RestoreVertex().  See that method for details on the expected
  stack segment.
+
+ Returns OK for success, NOTOK for internal failure.
  ********************************************************************/
 
 int  gp_HideVertex(graphP theGraph, int vertex)
@@ -1939,6 +1846,11 @@ int _ContractEdge(graphP theGraph, int e)
  1) an integer for each hidden edge
  2) the stack size before any hidden edges were pushed
  3) six integers that indicate u, v and the edges moved from v to u
+
+ An algorithm that identifies a series of vertices, either through
+ directly calling this method or via gp_ContractEdge(), can unwind
+ the identifications using gp_RestoreIdentifications(), which
+ invokes gp_RestoreVertex() repeatedly.
 
  Returns OK on success, NOTOK on internal failure
  ********************************************************************/
@@ -2204,6 +2116,93 @@ int gp_RestoreIdentifications(graphP theGraph)
     }
 
     return OK;
+}
+
+/****************************************************************************
+ _ComputeArcType()
+ This is just a little helper function that automates a sequence of decisions
+ that has to be made a number of times.
+ An edge record is being added to the adjacency list of a; it indicates that
+ b is a neighbor.  The edgeType can be either 'tree' (EDGE_DFSPARENT or
+ EDGE_DFSCHILD) or 'cycle' (EDGE_BACK or EDGE_FORWARD).
+ If a or b is a root copy, we translate to the non-virtual counterpart,
+ then wedetermine which has the lesser DFI.  If a has the lower DFI then the
+ edge record is a tree edge to a child (EDGE_DFSCHILD) if edgeType indicates
+ a tree edge.  If edgeType indicates a cycle edge, then it is a forward cycle
+ edge (EDGE_FORWARD) to a descendant.
+ Symmetric conditions define the types for a > b.
+ ****************************************************************************/
+
+int  _ComputeArcType(graphP theGraph, int a, int b, int edgeType)
+{
+     if (a >= theGraph->N)
+         a = theGraph->V[a - theGraph->N].DFSParent;
+     if (b >= theGraph->N)
+         b = theGraph->V[b - theGraph->N].DFSParent;
+
+     if (a < b)
+         return edgeType == EDGE_DFSPARENT || edgeType == EDGE_DFSCHILD ? EDGE_DFSCHILD : EDGE_FORWARD;
+
+     return edgeType == EDGE_DFSPARENT || edgeType == EDGE_DFSCHILD ? EDGE_DFSPARENT : EDGE_BACK;
+}
+
+/****************************************************************************
+ _SetEdgeType()
+ When we are restoring an edge, we must restore its type (tree edge or cycle edge).
+ We can deduce what the type was based on other information in the graph. Each
+ arc of the edge gets the appropriate type setting (parent/child or back/forward).
+ This method runs in constant time plus the degree of vertex u, or constant
+ time if u is known to have a degree bound by a constant.
+ ****************************************************************************/
+
+int  _SetEdgeType(graphP theGraph, int u, int v)
+{
+int  e, eTwin, u_orig, v_orig, N;
+
+     // If u or v is a virtual vertex (a root copy), then get the non-virtual counterpart.
+     N = theGraph->N;
+     u_orig = u < N ? u : (theGraph->V[u - N].DFSParent);
+     v_orig = v < N ? v : (theGraph->V[v - N].DFSParent);
+
+     // Get the edge for which we will set the type
+
+     e = gp_GetNeighborEdgeRecord(theGraph, u, v);
+     eTwin = gp_GetTwinArc(theGraph, e);
+
+     // If u_orig is the parent of v_orig, or vice versa, then the edge is a tree edge
+
+     if (theGraph->V[v_orig].DFSParent == u_orig ||
+         theGraph->V[u_orig].DFSParent == v_orig)
+     {
+         if (u_orig > v_orig)
+         {
+             theGraph->G[e].type = EDGE_DFSPARENT;
+             theGraph->G[eTwin].type = EDGE_DFSCHILD;
+         }
+         else
+         {
+             theGraph->G[eTwin].type = EDGE_DFSPARENT;
+             theGraph->G[e].type = EDGE_DFSCHILD;
+         }
+     }
+
+     // Otherwise it is a back edge
+
+     else
+     {
+         if (u_orig > v_orig)
+         {
+             theGraph->G[e].type = EDGE_BACK;
+             theGraph->G[eTwin].type = EDGE_FORWARD;
+         }
+         else
+         {
+             theGraph->G[eTwin].type = EDGE_BACK;
+             theGraph->G[e].type = EDGE_FORWARD;
+         }
+     }
+
+     return OK;
 }
 
 /********************************************************************

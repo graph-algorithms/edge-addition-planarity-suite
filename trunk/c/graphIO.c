@@ -223,8 +223,7 @@ int N, I, W, ErrorCode, adjList, J;
             		 gp_SetPrevArc(theGraph, gp_GetNextArc(theGraph, J), gp_GetPrevArc(theGraph, J));
             		 gp_SetNextArc(theGraph, gp_GetPrevArc(theGraph, J), gp_GetNextArc(theGraph, J));
 
-            		 // Add the arc J as the new first arc of vertex I
-            		 gp_AddArc(theGraph, I, 0, J);
+            		 gp_AttachFirstArc(theGraph, I, J);
             	 }
 
             	 // If an adjacency node to the lower numbered vertex W does not
@@ -260,7 +259,7 @@ int N, I, W, ErrorCode, adjList, J;
      		  gp_SetPrevArc(theGraph, gp_GetNextArc(theGraph, J), gp_GetPrevArc(theGraph, J));
      		  gp_SetNextArc(theGraph, gp_GetPrevArc(theGraph, J), gp_GetNextArc(theGraph, J));
 
-     		  gp_AddArc(theGraph, I, 0, J);
+     		  gp_AttachFirstArc(theGraph, I, J);
      		  gp_SetDirection(theGraph, J, EDGEFLAG_DIRECTION_INONLY);
           }
      }

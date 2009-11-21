@@ -470,8 +470,8 @@ int _K33Search_CreateFwdArcLists(graphP theGraph)
 
                 if (theGraph->G[Jcur].type == EDGE_BACK)
                 {
-                    // Remove the back arc from the adjacency list
-                	gp_DeleteArc(theGraph, I, Jcur);
+                    // Remove the back arc from I's adjacency list
+                	gp_DetachArc(theGraph, Jcur);
 
                     // Put the back arc in the backArcList
                     if (context->V[I].backArcList == NIL)
@@ -482,7 +482,7 @@ int _K33Search_CreateFwdArcLists(graphP theGraph)
                     }
                     else
                     {
-                    	gp_InsertArc(theGraph, NIL, context->V[I].backArcList, 1, Jcur);
+                    	gp_AttachArc(theGraph, NIL, context->V[I].backArcList, 1, Jcur);
                     }
 
                     // Determine the ancestor of vertex I to which Jcur connects
@@ -491,8 +491,8 @@ int _K33Search_CreateFwdArcLists(graphP theGraph)
                     // Go to the forward arc in the ancestor
                     Jcur = gp_GetTwinArc(theGraph, Jcur);
 
-                    // Remove the forward arc from the adjacency list
-                	gp_DeleteArc(theGraph, ancestor, Jcur);
+                    // Remove the forward arc from the ancestor's adjacency list
+                	gp_DetachArc(theGraph, Jcur);
 
                     // Add the forward arc to the end of the fwdArcList.
                     if (theGraph->V[ancestor].fwdArcList == NIL)
@@ -503,7 +503,7 @@ int _K33Search_CreateFwdArcLists(graphP theGraph)
                     }
                     else
                     {
-                    	gp_InsertArc(theGraph, NIL, theGraph->V[ancestor].fwdArcList, 1, Jcur);
+                    	gp_AttachArc(theGraph, NIL, theGraph->V[ancestor].fwdArcList, 1, Jcur);
                     }
                 }
             }
