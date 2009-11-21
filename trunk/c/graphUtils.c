@@ -68,6 +68,15 @@ extern int  _CheckObstructionIntegrity(graphP theGraph, graphP origGraph);
 extern int  _ReadPostprocess(graphP theGraph, void *extraData, long extraDataSize);
 extern int  _WritePostprocess(graphP theGraph, void **pExtraData, long *pExtraDataSize);
 
+/* Internal util functions for FUNCTION POINTERS */
+
+int  _HideVertex(graphP theGraph, int vertex);
+void _HideEdge(graphP theGraph, int arcPos);
+void _RestoreEdge(graphP theGraph, int arcPos);
+int  _ContractEdge(graphP theGraph, int e);
+int  _IdentifyVertices(graphP theGraph, int u, int v, int eBefore);
+int  _RestoreVertex(graphP theGraph);
+
 /********************************************************************
  Private functions, except exported within library
  ********************************************************************/
@@ -184,6 +193,13 @@ void _InitFunctionTable(graphP theGraph)
 
      theGraph->functions.fpReadPostprocess = _ReadPostprocess;
      theGraph->functions.fpWritePostprocess = _WritePostprocess;
+
+     theGraph->functions.fpHideVertex = _HideVertex;
+     theGraph->functions.fpHideEdge = _HideEdge;
+     theGraph->functions.fpRestoreEdge = _RestoreEdge;
+     theGraph->functions.fpContractEdge = _ContractEdge;
+     theGraph->functions.fpIdentifyVertices = _IdentifyVertices;
+     theGraph->functions.fpRestoreVertex = _RestoreVertex;
 }
 
 /********************************************************************
@@ -1641,8 +1657,13 @@ int nextArc = gp_GetNextArc(theGraph, arc),
 
 void gp_HideEdge(graphP theGraph, int arcPos)
 {
-     _HideArc(theGraph, arcPos);
-     _HideArc(theGraph, gp_GetTwinArc(theGraph, arcPos));
+	theGraph->functions.fpHideEdge(theGraph, arcPos);
+}
+
+void _HideEdge(graphP theGraph, int arcPos)
+{
+    _HideArc(theGraph, arcPos);
+    _HideArc(theGraph, gp_GetTwinArc(theGraph, arcPos));
 }
 
 /********************************************************************
@@ -1662,6 +1683,11 @@ void gp_HideEdge(graphP theGraph, int arcPos)
  ********************************************************************/
 
 void gp_RestoreEdge(graphP theGraph, int arcPos)
+{
+	theGraph->functions.fpRestoreEdge(theGraph, arcPos);
+}
+
+void _RestoreEdge(graphP theGraph, int arcPos)
 {
      _RestoreArc(theGraph, gp_GetTwinArc(theGraph, arcPos));
      _RestoreArc(theGraph, arcPos);
@@ -1827,6 +1853,11 @@ int  _RestoreHiddenEdges(graphP theGraph, int stackBottom)
 
 int  gp_HideVertex(graphP theGraph, int vertex)
 {
+	return theGraph->functions.fpHideVertex(theGraph, vertex);
+}
+
+int  _HideVertex(graphP theGraph, int vertex)
+{
 	int hiddenEdgeStackBottom = sp_GetCurrentSize(theGraph->theStack);
 	int J = gp_GetFirstArc(theGraph, vertex);
 
@@ -1861,6 +1892,11 @@ int  gp_HideVertex(graphP theGraph, int vertex)
  ********************************************************************/
 
 int gp_ContractEdge(graphP theGraph, int e)
+{
+	return theGraph->functions.fpContractEdge(theGraph, e);
+}
+
+int _ContractEdge(graphP theGraph, int e)
 {
 	int eBefore, u, v;
 
@@ -1908,6 +1944,11 @@ int gp_ContractEdge(graphP theGraph, int e)
  ********************************************************************/
 
 int gp_IdentifyVertices(graphP theGraph, int u, int v, int eBefore)
+{
+	return theGraph->functions.fpIdentifyVertices(theGraph, u, v, eBefore);
+}
+
+int _IdentifyVertices(graphP theGraph, int u, int v, int eBefore)
 {
 	int e = gp_GetNeighborEdgeRecord(theGraph, u, v);
 	int hiddenEdgeStackBottom, eBeforePred, J;
@@ -2079,6 +2120,11 @@ int gp_IdentifyVertices(graphP theGraph, int u, int v, int eBefore)
  ********************************************************************/
 
 int gp_RestoreVertex(graphP theGraph)
+{
+	return theGraph->functions.fpRestoreVertex(theGraph);
+}
+
+int _RestoreVertex(graphP theGraph)
 {
 int u, v, e_u_succ, e_u_pred, e_v_first, e_v_last, HESB;
 

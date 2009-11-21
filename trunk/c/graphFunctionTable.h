@@ -91,6 +91,13 @@ typedef struct
         int  (*fpReadPostprocess)();
         int  (*fpWritePostprocess)();
 
+        int  (*fpHideVertex)();
+        void (*fpHideEdge)();
+        void (*fpRestoreEdge)();
+        int  (*fpContractEdge)();
+        int  (*fpIdentifyVertices)();
+        int  (*fpRestoreVertex)();
+
 } graphFunctionTable;
 
 typedef graphFunctionTable * graphFunctionTableP;
