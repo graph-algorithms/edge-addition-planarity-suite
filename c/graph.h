@@ -194,9 +194,17 @@ void	gp_SetDirection(graphP theGraph, int e, int edgeFlag_Direction);
 
 // Methods adding an arc into an adjacency list or deleting an arc from it
 // Adding or deleting an arc changes both attachments
-void 	gp_AddArc(graphP theGraph, int v, int vlink, int newArc);
-void	gp_InsertArc(graphP theGraph, int v, int e, int elink, int newArc);
-void 	gp_DeleteArc(graphP theGraph, int v, int arc);
+
+//void 	gp_AddArc(graphP theGraph, int v, int vlink, int newArc);
+//void	gp_InsertArc(graphP theGraph, int v, int e, int elink, int newArc);
+//void 	gp_DeleteArc(graphP theGraph, int v, int arc);
+
+// Methods for attaching an arc into the adjacency list or detaching an arc from it.
+// The terms AddArc, InsertArc and DeleteArc are not used because the arcs are not
+// added to or deleted from storage (only whole edges are inserted or deleted)
+void	gp_AttachArc(graphP theGraph, int v, int e, int link, int newArc);
+void 	gp_DetachArc(graphP theGraph, int arc);
+
 
 //////////////////////////////////////////////////////////////////////////////
 // Definitions for higher-order operations at the vertex, edge and graph level
