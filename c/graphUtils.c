@@ -1511,7 +1511,7 @@ int  upos, vpos;
  ********************************************************************/
 
 int  gp_InsertEdge(graphP theGraph, int u, int e_u, int e_ulink,
-                                         int v, int e_v, int e_vlink)
+                                    int v, int e_v, int e_vlink)
 {
 int vertMax = 2*theGraph->N - 1,
     edgeMax = theGraph->edgeOffset + 2*theGraph->M + 2*sp_GetCurrentSize(theGraph->edgeHoles) - 1,
@@ -1549,39 +1549,39 @@ int vertMax = 2*theGraph->N - 1,
 /****************************************************************************
  gp_DeleteEdge()
 
- This function deletes the given edge record J and its twin, reducing the
+ This function deletes the given edge record e and its twin, reducing the
  number of edges M in the graph.
- Before the Jth record is deleted, its 'nextLink' adjacency list neighbor
+ Before the e^th record is deleted, its 'nextLink' adjacency list neighbor
  is collected as the return result.  This is useful when iterating through
  an edge list and making deletions because the nextLink arc is the 'next'
- arc in the iteration, but it is hard to obtain *after* deleting arc J.
+ arc in the iteration, but it is hard to obtain *after* deleting e.
  ****************************************************************************/
 
-int  gp_DeleteEdge(graphP theGraph, int J, int nextLink)
+int  gp_DeleteEdge(graphP theGraph, int e, int nextLink)
 {
-int  JTwin = gp_GetTwinArc(theGraph, J);
+int  eTwin = gp_GetTwinArc(theGraph, e);
 int  M = theGraph->M;
 int  nextArc, JPos, MPos;
 
-/* Calculate the nextArc after J so that, when J is deleted, the return result
+/* Calculate the nextArc after e so that, when e is deleted, the return result
         informs a calling loop of the next edge to be processed. */
 
-     nextArc = gp_GetAdjacentArc(theGraph, J, nextLink);
+     nextArc = gp_GetAdjacentArc(theGraph, e, nextLink);
 
 /* Delete the edge records J and JTwin from their adjacency lists. */
 
-     gp_DetachArc(theGraph, J);
-     gp_DetachArc(theGraph, JTwin);
+     gp_DetachArc(theGraph, e);
+     gp_DetachArc(theGraph, eTwin);
 
 /* Clear the edge record contents */
 
-    theGraph->functions.fpInitGraphNode(theGraph, J);
-    theGraph->functions.fpInitGraphNode(theGraph, JTwin);
+    theGraph->functions.fpInitGraphNode(theGraph, e);
+    theGraph->functions.fpInitGraphNode(theGraph, eTwin);
 
-/* If records J and JTwin are not the last in the edge record array, then
+/* If records e and eTwin are not the last in the edge record array, then
      we want to record a new hole in the edge array. */
 
-     JPos = (J < JTwin ? J : JTwin);
+     JPos = (e < eTwin ? e : eTwin);
      MPos = theGraph->edgeOffset + 2*(M-1) + 2*sp_GetCurrentSize(theGraph->edgeHoles);
 
      if (JPos < MPos)
@@ -1625,31 +1625,35 @@ int nextArc = gp_GetNextArc(theGraph, arc),
 
 /********************************************************************
  gp_HideEdge()
- This routine removes an arc and its twin arc from its edge list,
- but does not delete them from the data structure.  Many algorithms must
- temporarily remove an edge, perform some calculation, and eventually
- put the edge back. This routine supports that operation.
+ This routine removes the two arcs of an edge from the adjacency lists
+ of its endpoint vertices, but does not delete them from the storage
+ data structure.
+
+ Many algorithms must temporarily remove an edge, perform some
+ calculation, and eventually put the edge back. This routine supports
+ that operation.
 
  For each arc, the neighboring adjacency list nodes are cross-linked,
  but the links in the arc are retained because they indicate the
  neighbor arcs to which the arc can be reattached by gp_RestoreEdge().
  ********************************************************************/
 
-void gp_HideEdge(graphP theGraph, int arcPos)
+void gp_HideEdge(graphP theGraph, int e)
 {
-	theGraph->functions.fpHideEdge(theGraph, arcPos);
+	theGraph->functions.fpHideEdge(theGraph, e);
 }
 
-void _HideEdge(graphP theGraph, int arcPos)
+void _HideEdge(graphP theGraph, int e)
 {
-	gp_DetachArc(theGraph, arcPos);
-	gp_DetachArc(theGraph, gp_GetTwinArc(theGraph, arcPos));
+	gp_DetachArc(theGraph, e);
+	gp_DetachArc(theGraph, gp_GetTwinArc(theGraph, e));
 }
 
 /********************************************************************
  gp_RestoreEdge()
- This routine reinserts an arc and its twin arc into the edge list
- from which it was previously removed by gp_HideEdge().
+ This routine reinserts two two arcs of an edge into the adjacency
+ lists of the edge's endpoints, the arcs having been previously
+ removed by gp_HideEdge().
 
  The assumed processing model is that edges will be restored in
  reverse of the order in which they were hidden, i.e. it is assumed
@@ -1662,15 +1666,15 @@ void _HideEdge(graphP theGraph, int arcPos)
         in which they are hidden by gp_HideEdge().
  ********************************************************************/
 
-void gp_RestoreEdge(graphP theGraph, int arcPos)
+void gp_RestoreEdge(graphP theGraph, int e)
 {
-	theGraph->functions.fpRestoreEdge(theGraph, arcPos);
+	theGraph->functions.fpRestoreEdge(theGraph, e);
 }
 
-void _RestoreEdge(graphP theGraph, int arcPos)
+void _RestoreEdge(graphP theGraph, int e)
 {
-     _RestoreArc(theGraph, gp_GetTwinArc(theGraph, arcPos));
-     _RestoreArc(theGraph, arcPos);
+     _RestoreArc(theGraph, gp_GetTwinArc(theGraph, e));
+     _RestoreArc(theGraph, e);
 }
 
 /********************************************************************
