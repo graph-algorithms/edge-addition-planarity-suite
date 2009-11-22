@@ -192,13 +192,6 @@ void	gp_SetDirection(graphP theGraph, int e, int edgeFlag_Direction);
 		 gp_AttachLastArc(theGraph, v, arc); \
 	}
 
-// Methods adding an arc into an adjacency list or deleting an arc from it
-// Adding or deleting an arc changes both attachments
-
-//void 	gp_AddArc(graphP theGraph, int v, int vlink, int newArc);
-//void	gp_InsertArc(graphP theGraph, int v, int e, int elink, int newArc);
-//void 	gp_DeleteArc(graphP theGraph, int v, int arc);
-
 // Methods for attaching an arc into the adjacency list or detaching an arc from it.
 // The terms AddArc, InsertArc and DeleteArc are not used because the arcs are not
 // added to or deleted from storage (only whole edges are inserted or deleted)
@@ -222,9 +215,9 @@ int		gp_AddEdge(graphP theGraph, int u, int ulink, int v, int vlink);
 int     gp_InsertEdge(graphP theGraph, int u, int e_u, int e_ulink,
                                        int v, int e_v, int e_vlink);
 
-void	gp_HideEdge(graphP theGraph, int arcPos);
-void	gp_RestoreEdge(graphP theGraph, int arcPos);
-int		gp_DeleteEdge(graphP theGraph, int J, int nextLink);
+void	gp_HideEdge(graphP theGraph, int e);
+void	gp_RestoreEdge(graphP theGraph, int e);
+int		gp_DeleteEdge(graphP theGraph, int e, int nextLink);
 
 int		gp_ContractEdge(graphP theGraph, int e);
 int		gp_IdentifyVertices(graphP theGraph, int u, int v, int eBefore);
