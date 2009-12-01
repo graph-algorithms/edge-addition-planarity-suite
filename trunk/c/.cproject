@@ -36,7 +36,7 @@
 <inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1030655622" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 </tool>
 <tool id="cdt.managedbuild.tool.gnu.c.linker.mingw.exe.debug.1540674296" name="MinGW C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.mingw.exe.debug">
-<option id="gnu.c.link.option.libs.1413798495" name="Libraries (-l)" superClass="gnu.c.link.option.libs" valueType="libs"/>
+<option id="gnu.c.link.option.libs.1413798495" name="Libraries (-l)" superClass="gnu.c.link.option.libs"/>
 <inputType id="cdt.managedbuild.tool.gnu.c.linker.input.2085249104" superClass="cdt.managedbuild.tool.gnu.c.linker.input">
 <additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 <additionalInput kind="additionalinput" paths="$(LIBS)"/>
@@ -46,7 +46,7 @@
 </toolChain>
 </folderInfo>
 <sourceEntries>
-<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+<entry excluding="graphColorVertices.private.h|graphColorVertices.h|graphColorVertices.c|graphColorVertices_Extensions.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 </sourceEntries>
 </configuration>
 </storageModule>
@@ -335,7 +335,7 @@
 <inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.2121520919" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 </tool>
 <tool id="cdt.managedbuild.tool.gnu.c.linker.mingw.exe.release.515488007" name="MinGW C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.mingw.exe.release">
-<option id="gnu.c.link.option.libs.374025466" name="Libraries (-l)" superClass="gnu.c.link.option.libs" valueType="libs"/>
+<option id="gnu.c.link.option.libs.374025466" name="Libraries (-l)" superClass="gnu.c.link.option.libs"/>
 <inputType id="cdt.managedbuild.tool.gnu.c.linker.input.994989084" superClass="cdt.managedbuild.tool.gnu.c.linker.input">
 <additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 <additionalInput kind="additionalinput" paths="$(LIBS)"/>
@@ -345,7 +345,7 @@
 </toolChain>
 </folderInfo>
 <sourceEntries>
-<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+<entry excluding="graphColorVertices.private.h|graphColorVertices.h|graphColorVertices.c|graphColorVertices_Extensions.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 </sourceEntries>
 </configuration>
 </storageModule>

@@ -257,8 +257,8 @@ int  _DrawPlanar_CreateStructures(DrawPlanarContext *context)
 /********************************************************************
  _DrawPlanar_InitStructures()
  Intended to be called when N>0.
- Creates any custom data structures for the graph, vertex and graph node
- levels, and initializes the custom structures only.
+ Initializes vertex and graph node levels only. Graph level is
+ already initialized in _CreateStructures()
  ********************************************************************/
 int  _DrawPlanar_InitStructures(DrawPlanarContext *context)
 {
@@ -305,7 +305,7 @@ void *_DrawPlanar_DupContext(void *pContext, void *theGraph)
                  return NULL;
              }
 
-             // Initialize custom GraphNode and VertexRec data by copying
+             // Initialize custom data structures by copying
              memcpy(newContext->G, context->G, Gsize*sizeof(DrawPlanar_GraphNode));
              memcpy(newContext->V, context->V, N*sizeof(DrawPlanar_VertexRec));
          }
@@ -345,6 +345,8 @@ int  _DrawPlanar_InitGraph(graphP theGraph, int N)
         if (theGraph->arcCapacity == 0)
         	theGraph->arcCapacity = 2*DEFAULT_EDGE_LIMIT*N;
 
+        // Create custom structures, initialized at graph level,
+        // uninitialized at vertex and graph node levels.
         if (_DrawPlanar_CreateStructures(context) != OK)
         {
             return NOTOK;
@@ -388,7 +390,9 @@ void _DrawPlanar_ReinitializeGraph(graphP theGraph)
             theGraph->functions.fpInitVertexRec = _DrawPlanar_InitVertexRec;
 
             // Do the reinitialization that is specific to this module
+            // InitStructures does vertex and graphnode levels
             _DrawPlanar_InitStructures(context);
+            // Initialization of any graph level data structures follows here
         }
 
         // If optimization is not possible, then just stick with what works.
@@ -396,10 +400,11 @@ void _DrawPlanar_ReinitializeGraph(graphP theGraph)
         // and then invoke the reinitialize function.
         else
         {
-            // The underlying function fpReinitializeGraph() already does this
-            // due to the overloads of fpInitGraphNode() and fpInitVertexRec()
-            // _DrawPlanar_InitStructures(context);
+            // No need to call _InitStructures(context) here because the underlying
+        	// function fpReinitializeGraph() already does the vertex and graph node
+        	// levels due to the overloads of fpInitGraphNode() and fpInitVertexRec().
             context->functions.fpReinitializeGraph(theGraph);
+            // Graph level reintializations would follow here
         }
     }
 }
