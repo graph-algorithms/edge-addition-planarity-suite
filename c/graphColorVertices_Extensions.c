@@ -353,6 +353,21 @@ int  _ColorVertices_InitGraph(graphP theGraph, int N)
 /********************************************************************
  ********************************************************************/
 
+void _ColorVertices_Reinitialize(ColorVerticesContext *context)
+{
+	int I;
+
+    LCReset(context->degLists);
+    for (I=0; I<N; I++)
+    {
+      	 context->degListHeads[I] = NIL;
+      	 context->color[I] = -1;
+    }
+}
+
+/********************************************************************
+ ********************************************************************/
+
 void _ColorVertices_ReinitializeGraph(graphP theGraph)
 {
     ColorVerticesContext *context = NULL;
@@ -360,20 +375,13 @@ void _ColorVertices_ReinitializeGraph(graphP theGraph)
 
     if (context != NULL)
     {
-    	int I;
-
 		// Some extensions attempt to unhook overloads of fpInitGraphNode() and
     	// fpInitVertexRec() before calling this method, when possible, but this
     	// extension doesn't overload those functions so we just reinitialize
 		context->functions.fpReinitializeGraph(theGraph);
 
         // Graph level reintializations
-        LCReset(context->degLists);
-        for (I=0; I<N; I++)
-        {
-          	 context->degListHeads[I] = NIL;
-          	 context->color[I] = -1;
-        }
+		_ColorVertices_Reinitialize(context);
     }
 }
 
@@ -529,8 +537,26 @@ int _ColorVertices_IdentifyVertices(graphP theGraph, int u, int v, int eBefore)
 
     if (context != NULL)
     {
+    	int e_v_last, e_v_first;
+
+    	// First, identify u and v.  No point in taking v's degree beforehand
+    	// because some of its incident edges may indicate neighbors of u. This
+    	// causes v to be moved to a lower degree list than deg(v).
         if (context->functions.fpIdentifyVertices(theGraph, u, v, eBefore) != OK)
             return NOTOK;
+
+        // The edges transferred from v to u are indicated on the top of the
+        // stack, which looks like this after identifying u and v:
+        // ... e_u_succ e_v_last e_v_first e_u_pred u v
+		e_v_first = sp_Get(theGraph->theStack, sp_GetCurrentSize(theGraph->theStack)-4);
+		e_v_last = sp_Get(theGraph->theStack, sp_GetCurrentSize(theGraph->theStack)-5);
+
+        // We count the number of edges K transferred from v to u after the
+        // common edges were hidden
+
+        // Remove v from the degree list K
+
+        // We move u from degree list deg(u)-K to degree list deg(u)
 
         return OK;
     }
