@@ -221,7 +221,7 @@ int		gp_DeleteEdge(graphP theGraph, int e, int nextLink);
 
 int		gp_ContractEdge(graphP theGraph, int e);
 int		gp_IdentifyVertices(graphP theGraph, int u, int v, int eBefore);
-int		gp_RestoreIdentifications(graphP theGraph);
+int		gp_RestoreVertices(graphP theGraph);
 
 int		gp_CreateDFSTree(graphP theGraph);
 int		gp_SortVertices(graphP theGraph);

@@ -56,6 +56,8 @@ extern "C" {
 int gp_AttachColorVertices(graphP theGraph);
 int gp_DetachColorVertices(graphP theGraph);
 
+int gp_ColorVertices(graphP theGraph);
+
 #ifdef __cplusplus
 }
 #endif

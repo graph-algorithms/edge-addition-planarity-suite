@@ -197,6 +197,7 @@ void _ColorVertices_ClearStructures(ColorVerticesContext *context)
         context->degLists = NULL;
         context->degListHeads = NULL;
         context->color = NULL;
+        context->numVerticesToReduce = 0;
 
         context->initialized = 1;
     }
@@ -216,6 +217,7 @@ void _ColorVertices_ClearStructures(ColorVerticesContext *context)
             free(context->color);
             context->color = NULL;
         }
+        context->numVerticesToReduce = 0;
     }
 }
 
@@ -245,6 +247,8 @@ int  _ColorVertices_CreateStructures(ColorVerticesContext *context)
     	 context->degListHeads[I] = NIL;
     	 context->color[I] = -1;
      }
+
+     context->numVerticesToReduce = 0;
 
      return OK;
 }
@@ -295,6 +299,7 @@ void *_ColorVertices_DupContext(void *pContext, void *theGraph)
             	 newcontext->degListHeads[I] = context->degListHeads[I];
             	 newcontext->color[I] = context->color[I];
              }
+             newcontext->numVerticesToReduce = context->numVerticesToReduce;
          }
      }
 
@@ -363,6 +368,7 @@ void _ColorVertices_Reinitialize(ColorVerticesContext *context)
       	 context->degListHeads[I] = NIL;
       	 context->color[I] = -1;
     }
+    context->numVerticesToReduce = 0;
 }
 
 /********************************************************************
@@ -380,7 +386,7 @@ void _ColorVertices_ReinitializeGraph(graphP theGraph)
     	// extension doesn't overload those functions so we just reinitialize
 		context->functions.fpReinitializeGraph(theGraph);
 
-        // Graph level reintializations
+        // Graph level reinitialization
 		_ColorVertices_Reinitialize(context);
     }
 }
