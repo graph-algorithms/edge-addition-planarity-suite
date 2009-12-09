@@ -59,10 +59,12 @@ extern void _ColorVertices_Reinitialize(ColorVerticesContext *context);
 
 /* Private functions exported to system */
 
+void _AddVertexToDegList(ColorVerticesContext *context, graphP theGraph, int v, int deg);
+void _RemoveVertexFromDegList(ColorVerticesContext *context, graphP theGraph, int v, int deg);
 
 /* Private functions */
 
-void _AddVertexToDegList(ColorVerticesContext *context, graphP theGraph, int v, int deg);
+int _GetVertexToReduce(ColorVerticesContext *context, graphP theGraph);
 
 /********************************************************************
  gp_ColorVertices()
@@ -96,28 +98,92 @@ int gp_ColorVertices(graphP theGraph)
     if (color > -1)
     	_ColorVertices_Reinitialize(context);
 
-    // Initialize the degree lists
+    // Initialize the degree lists, and provide a color for any trivial vertices
     for (v = 0; v < theGraph->N; v++)
     {
     	deg = gp_GetVertexDegree(theGraph, v);
     	_AddVertexToDegList(context, theGraph, v, deg);
+
+    	if (deg == 0)
+    		context->color[v] = 0;
     }
 
     // Initialize the visited flags so they can be used during reductions
     _FillVisitedFlags(theGraph, 0);
 
     // Reduce the graph using minimum degree selection
+    while (context->numVerticesToReduce > 0)
+    {
+    	v = _GetVertexToReduce(context, theGraph);
+
+    	// Remove the vertex from the graph. This calls the fpHideEdge
+    	// overload, which performs the correct _RemoveVertexFromDegList()
+    	// and _AddVertexToDegList() operations on v and its neighbors.
+    	if (gp_HideVertex(theGraph, v) != OK)
+    		return NOTOK;
+    }
 
     // Restore the graph, coloring each vertex distinctly from its neighbors
     // in the partially restored graph
+    if (gp_RestoreVertices(theGraph) != OK)
+    	return NOTOK;
 
-	return NOTOK;
+	return OK;
 }
 
 /********************************************************************
+ _AddVertexToDegList()
+
+ This function adds vertex v to degree list deg.
+ The current method simply appends the vertex to the degree list.
+
+ This method will be improved later to handle the degree 5 list
+ specially by prepending those degree 5 vertices that have two
+ non-adjacent neighbors with a constant degree bound. These vertices
+ can be specially handled by identifying the non-adjacent neighbors
+ during reduction so that the neighborhood of v receives only three
+ colors.  This ensures that all planar graphs use at most 5 colors.
+ Matula, Shiloach and Tarjan (1980) introduced this contraction
+ method, and the tighter degree bound on the neighbors used in this
+ implementation is due to Frederickson (1984).
  ********************************************************************/
 
 void _AddVertexToDegList(ColorVerticesContext *context, graphP theGraph, int v, int deg)
 {
+	if (deg > 0)
+	{
+		context->degListHeads[deg] = LCAppend(context->degLists, context->degListHeads[deg], v);
+        context->numVerticesToReduce++;
+	}
 }
 
+/********************************************************************
+ _RemoveVertexFromDegList()
+ ********************************************************************/
+
+void _RemoveVertexFromDegList(ColorVerticesContext *context, graphP theGraph, int v, int deg)
+{
+	context->degListHeads[deg] = LCDelete(context->degLists, context->degListHeads[deg], v);
+    context->numVerticesToReduce--;
+}
+
+/********************************************************************
+ _GetVertexToReduce()
+ ********************************************************************/
+
+int _GetVertexToReduce(ColorVerticesContext *context, graphP theGraph)
+{
+	int v = NIL, deg;
+
+	for (deg = 1; deg < theGraph->N; deg++)
+	{
+		if (context->degListHeads[deg] != NIL)
+		{
+			// Get the first vertex in the list
+			v = context->degListHeads[deg];
+			break;
+		}
+	}
+
+	return v;
+}

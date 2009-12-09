@@ -68,6 +68,7 @@ typedef struct
     listCollectionP degLists;
     int *degListHeads;
     int *color;
+    int numVerticesToReduce;
 
 } ColorVerticesContext;
 

@@ -1764,6 +1764,9 @@ int  _RestoreHiddenEdges(graphP theGraph, int stackBottom)
 
 int  gp_HideVertex(graphP theGraph, int vertex)
 {
+	if (vertex == NIL)
+		return NOTOK;
+
 	return theGraph->functions.fpHideVertex(theGraph, vertex);
 }
 
@@ -1804,6 +1807,9 @@ int  _HideVertex(graphP theGraph, int vertex)
 
 int gp_ContractEdge(graphP theGraph, int e)
 {
+	if (!gp_IsArc(theGraph, e))
+		return NOTOK;
+
 	return theGraph->functions.fpContractEdge(theGraph, e);
 }
 
@@ -2098,7 +2104,7 @@ int u, v, e_u_succ, e_u_pred, e_v_first, e_v_last, HESB;
 }
 
 /********************************************************************
- gp_RestoreIdentifications()
+ gp_RestoreVertices()
 
  This method assumes the built-in graph stack has content consistent
  with numerous vertex identification or edge contraction operations.
@@ -2111,7 +2117,7 @@ int u, v, e_u_succ, e_u_pred, e_v_first, e_v_last, HESB;
  Returns OK for success, NOTOK for internal failure.
  ********************************************************************/
 
-int gp_RestoreIdentifications(graphP theGraph)
+int gp_RestoreVertices(graphP theGraph)
 {
     while (sp_NonEmpty(theGraph->theStack))
     {
