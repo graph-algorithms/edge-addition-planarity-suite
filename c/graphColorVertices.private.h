@@ -70,6 +70,8 @@ typedef struct
     int *color;
     int numVerticesToReduce;
 
+    int *colorDetector;
+
 } ColorVerticesContext;
 
 #ifdef __cplusplus

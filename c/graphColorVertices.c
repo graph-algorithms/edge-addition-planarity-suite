@@ -61,6 +61,7 @@ extern void _ColorVertices_Reinitialize(ColorVerticesContext *context);
 
 void _AddVertexToDegList(ColorVerticesContext *context, graphP theGraph, int v, int deg);
 void _RemoveVertexFromDegList(ColorVerticesContext *context, graphP theGraph, int v, int deg);
+int  _AssignColorToVertex(ColorVerticesContext *context, graphP theGraph, int v);
 
 /* Private functions */
 
@@ -123,10 +124,17 @@ int gp_ColorVertices(graphP theGraph)
     		return NOTOK;
     }
 
-    // Restore the graph, coloring each vertex distinctly from its neighbors
-    // in the partially restored graph
+    // Restore the graph one vertex at a time, coloring each vertex distinctly
+    // from its neighbors as it is restored.
+    context->colorDetector = (int *) calloc(theGraph->N, sizeof(int));
+    if (context->colorDetector == NULL)
+    	return NOTOK;
+
     if (gp_RestoreVertices(theGraph) != OK)
     	return NOTOK;
+
+    free(context->colorDetector);
+    context->colorDetector = NULL;
 
 	return OK;
 }
@@ -186,4 +194,51 @@ int _GetVertexToReduce(ColorVerticesContext *context, graphP theGraph)
 	}
 
 	return v;
+}
+
+/********************************************************************
+ _AssignColorToVertex()
+ ********************************************************************/
+
+int _AssignColorToVertex(ColorVerticesContext *context, graphP theGraph, int v)
+{
+	int J, w, color;
+
+	// Run the neighbor list of v and flag all the colors in use
+    J = gp_GetFirstArc(theGraph, v);
+    while (gp_IsArc(theGraph, J))
+    {
+         w = theGraph->G[J].v;
+         if (context->color[w] < 0)
+        	 return NOTOK;
+         context->colorDetector[context->color[w]] = 1;
+
+         J = gp_GetNextArc(theGraph, J);
+    }
+
+    // Find the least numbered unused color and assign it to v
+    // Note that this loop never runs more than deg(v) steps
+    for (color = 0; color < theGraph->N; color++)
+    {
+        if (context->colorDetector[color] == 0)
+        {
+        	context->color[v] = color;
+        	break;
+        }
+    }
+
+    if (context->color[v] < 0)
+    	return NOTOK;
+
+    // Run the neighbor list of v and unflag all the colors in use
+    J = gp_GetFirstArc(theGraph, v);
+    while (gp_IsArc(theGraph, J))
+    {
+         w = theGraph->G[J].v;
+         context->colorDetector[context->color[w]] = 0;
+
+         J = gp_GetNextArc(theGraph, J);
+    }
+
+	return OK;
 }

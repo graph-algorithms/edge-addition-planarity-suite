@@ -47,6 +47,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "graphColorVertices.private.h"
 #include "graphColorVertices.h"
 
+extern void _AddVertexToDegList(ColorVerticesContext *context, graphP theGraph, int v, int deg);
+extern void _RemoveVertexFromDegList(ColorVerticesContext *context, graphP theGraph, int v, int deg);
+extern int  _AssignColorToVertex(ColorVerticesContext *context, graphP theGraph, int v);
+
 /* Forward declarations of local functions */
 
 void _ColorVertices_ClearStructures(ColorVerticesContext *context);
@@ -198,6 +202,7 @@ void _ColorVertices_ClearStructures(ColorVerticesContext *context)
         context->degListHeads = NULL;
         context->color = NULL;
         context->numVerticesToReduce = 0;
+        context->colorDetector = NULL;
 
         context->initialized = 1;
     }
@@ -218,6 +223,7 @@ void _ColorVertices_ClearStructures(ColorVerticesContext *context)
             context->color = NULL;
         }
         context->numVerticesToReduce = 0;
+        context->colorDetector = NULL;
     }
 }
 
@@ -249,6 +255,7 @@ int  _ColorVertices_CreateStructures(ColorVerticesContext *context)
      }
 
      context->numVerticesToReduce = 0;
+     context->colorDetector = NULL;
 
      return OK;
 }
@@ -300,6 +307,7 @@ void *_ColorVertices_DupContext(void *pContext, void *theGraph)
             	 newcontext->color[I] = context->color[I];
              }
              newcontext->numVerticesToReduce = context->numVerticesToReduce;
+             newcontext->colorDetector = NULL;
          }
      }
 
@@ -369,6 +377,7 @@ void _ColorVertices_Reinitialize(ColorVerticesContext *context)
       	 context->color[I] = -1;
     }
     context->numVerticesToReduce = 0;
+    context->colorDetector = NULL;
 }
 
 /********************************************************************
@@ -505,18 +514,30 @@ void _ColorVertices_HideEdge(graphP theGraph, int e)
 
     if (context != NULL)
     {
+    	int u, v, udeg, vdeg;
+
     	// Get the endpoint vertices of the edge
+    	u = theGraph->G[e].v;
+    	v = theGraph->G[gp_GetTwinArc(theGraph, e)].v;
 
     	// Get the degrees of the vertices
+    	udeg = gp_GetVertexDegree(theGraph, u);
+    	vdeg = gp_GetVertexDegree(theGraph, v);
 
     	// Remove them from the degree lists that contain them
+    	_RemoveVertexFromDegList(context, theGraph, u, udeg);
+    	_RemoveVertexFromDegList(context, theGraph, v, vdeg);
 
     	// Hide the edge
         context->functions.fpHideEdge(theGraph, e);
 
         // Decrement the degrees of the endpoint vertices
+        udeg--;
+        vdeg--;
 
         // Add them to the new degree lists
+    	_AddVertexToDegList(context, theGraph, u, udeg);
+    	_AddVertexToDegList(context, theGraph, v, vdeg);
 
         return OK;
     }
@@ -584,13 +605,38 @@ int _ColorVertices_RestoreVertex(graphP theGraph)
 
     if (context != NULL)
     {
+    	int u, v;
+
     	// Read the stack to figure out which vertex is being restored
+		u = sp_Get(theGraph->theStack, sp_GetCurrentSize(theGraph->theStack)-2);
+		v = sp_Get(theGraph->theStack, sp_GetCurrentSize(theGraph->theStack)-1);
 
     	// Restore the vertex
         if (context->functions.fpRestoreVertex(theGraph) != OK)
             return NOTOK;
 
-        // Give the restored vertex a color distinct from its neighbors
+        // If the restored vertex v was hidden, then give it a color distinct from its neighbors
+        // Note that u is NIL in this case
+        if (u == NIL)
+        {
+        	if (context->color[v] >= 0)
+        		return NOTOK;
+
+        	if (_AssignColorToVertex(context, theGraph, v) != OK)
+        		return NOTOK;
+
+        	if (context->color[v] < 0)
+        		return NOTOK;
+        }
+
+        // Else if the restored vertex v was identified, then give v the same color as the
+        // vertex u with which it was identified.
+        else
+        {
+        	if (context->color[u] < 0 || context->color[v] >= 0)
+        		return NOTOK;
+        	context->color[v] = context->color[u];
+        }
 
         return OK;
     }
