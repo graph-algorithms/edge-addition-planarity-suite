@@ -113,7 +113,7 @@ void ErrorMessage(char *message)
 void ProjectTitle()
 {
     Message("\n=================================================="
-            "\nPlanarity version 2.1 Alpha 1"
+            "\nPlanarity version 2.1"
             "\nCopyright (c) 2009 by John M. Boyer"
     		"\nContact info: jboyer at acm.org"
             "\n=================================================="
