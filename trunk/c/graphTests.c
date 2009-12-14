@@ -100,7 +100,13 @@ void _MarkExternalFaceVertices(graphP theGraph, int startVertex);
   For an embedResult of NONEMBEDDABLE, fpCheckObstructionIntegrity
   is invoked.  The core planarity algorithm checks that the result
   graph is homeomorphic to K5 or K3,3 and that it is in fact a
-  subgraph of the input graph.
+  subgraph of the input graph.  Other algorithms use overloads to
+  make appropriate checks.
+
+  Returns NOTOK on integrity check failure or embedResult of NOTOK
+          OK for successful integrity check of OK embedResult
+          NONEMBEDDABLE for successful integrity check of an
+                        embedResult of NONEMBEDDABLE
  ********************************************************************/
 
 int gp_TestEmbedResultIntegrity(graphP theGraph, graphP origGraph, int embedResult)
@@ -118,6 +124,9 @@ int RetVal = embedResult;
     {
         RetVal = theGraph->functions.fpCheckObstructionIntegrity(theGraph, origGraph);
     }
+
+    if (RetVal == OK)
+    	RetVal = embedResult;
 
     return RetVal;
 }

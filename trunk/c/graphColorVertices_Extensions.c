@@ -202,6 +202,7 @@ void _ColorVertices_ClearStructures(ColorVerticesContext *context)
         context->degListHeads = NULL;
         context->color = NULL;
         context->numVerticesToReduce = 0;
+        context->highestColorUsed = -1;
         context->colorDetector = NULL;
 
         context->initialized = 1;
@@ -223,6 +224,7 @@ void _ColorVertices_ClearStructures(ColorVerticesContext *context)
             context->color = NULL;
         }
         context->numVerticesToReduce = 0;
+        context->highestColorUsed = -1;
         context->colorDetector = NULL;
     }
 }
@@ -240,7 +242,7 @@ int  _ColorVertices_CreateStructures(ColorVerticesContext *context)
      if (N <= 0)
          return NOTOK;
 
-     if ((context->degLists = LCNew(N)) == NULL
+     if ((context->degLists = LCNew(N)) == NULL ||
     	 (context->degListHeads = (int *) malloc(N*sizeof(int))) == NULL ||
          (context->color = (int *) malloc(N*sizeof(int))) == NULL
         )
@@ -255,6 +257,7 @@ int  _ColorVertices_CreateStructures(ColorVerticesContext *context)
      }
 
      context->numVerticesToReduce = 0;
+     context->highestColorUsed = -1;
      context->colorDetector = NULL;
 
      return OK;
@@ -300,14 +303,15 @@ void *_ColorVertices_DupContext(void *pContext, void *theGraph)
              }
 
              // Initialize custom data structures by copying
-             LCCopy(newcontext->degLists, context->degLists);
+             LCCopy(newContext->degLists, context->degLists);
              for (I=0; I<N; I++)
              {
-            	 newcontext->degListHeads[I] = context->degListHeads[I];
-            	 newcontext->color[I] = context->color[I];
+            	 newContext->degListHeads[I] = context->degListHeads[I];
+            	 newContext->color[I] = context->color[I];
              }
-             newcontext->numVerticesToReduce = context->numVerticesToReduce;
-             newcontext->colorDetector = NULL;
+             newContext->numVerticesToReduce = context->numVerticesToReduce;
+             newContext->highestColorUsed = context->highestColorUsed;
+             newContext->colorDetector = NULL;
          }
      }
 
@@ -340,8 +344,6 @@ int  _ColorVertices_InitGraph(graphP theGraph, int N)
     }
     else
     {
-    	int I;
-
         theGraph->N = N;
         theGraph->edgeOffset = 2*N;
         if (theGraph->arcCapacity == 0)
@@ -368,15 +370,17 @@ int  _ColorVertices_InitGraph(graphP theGraph, int N)
 
 void _ColorVertices_Reinitialize(ColorVerticesContext *context)
 {
-	int I;
+	int I, N;
 
     LCReset(context->degLists);
+    N = context->theGraph->N;
     for (I=0; I<N; I++)
     {
       	 context->degListHeads[I] = NIL;
       	 context->color[I] = -1;
     }
     context->numVerticesToReduce = 0;
+    context->highestColorUsed = -1;
     context->colorDetector = NULL;
 }
 
@@ -538,11 +542,7 @@ void _ColorVertices_HideEdge(graphP theGraph, int e)
         // Add them to the new degree lists
     	_AddVertexToDegList(context, theGraph, u, udeg);
     	_AddVertexToDegList(context, theGraph, v, vdeg);
-
-        return OK;
     }
-
-    return NOTOK;
 }
 
 /********************************************************************

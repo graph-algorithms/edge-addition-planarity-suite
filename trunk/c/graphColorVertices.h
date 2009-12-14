@@ -57,6 +57,8 @@ int gp_AttachColorVertices(graphP theGraph);
 int gp_DetachColorVertices(graphP theGraph);
 
 int gp_ColorVertices(graphP theGraph);
+int gp_GetNumColorsUsed(graphP theGraph);
+int gp_ColorVerticesIntegrityCheck(graphP theGraph, graphP origGraph);
 
 #ifdef __cplusplus
 }

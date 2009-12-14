@@ -217,6 +217,7 @@ int     gp_InsertEdge(graphP theGraph, int u, int e_u, int e_ulink,
 
 void	gp_HideEdge(graphP theGraph, int e);
 void	gp_RestoreEdge(graphP theGraph, int e);
+int		gp_HideVertex(graphP theGraph, int vertex);
 int		gp_DeleteEdge(graphP theGraph, int e, int nextLink);
 
 int		gp_ContractEdge(graphP theGraph, int e);

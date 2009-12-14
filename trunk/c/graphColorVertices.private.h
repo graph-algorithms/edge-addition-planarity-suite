@@ -68,7 +68,7 @@ typedef struct
     listCollectionP degLists;
     int *degListHeads;
     int *color;
-    int numVerticesToReduce;
+    int numVerticesToReduce, highestColorUsed;
 
     int *colorDetector;
 
