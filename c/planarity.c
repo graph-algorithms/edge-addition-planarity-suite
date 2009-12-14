@@ -53,10 +53,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "graphK33Search.h"
 #include "graphK4Search.h"
 #include "graphDrawPlanar.h"
+#include "graphColorVertices.h"
 
-int SpecificGraph(int embedFlags, char *infileName, char *outfileName, char *outfile2Name);
-int RandomGraph(int embedFlags, int extraEdges, int numVertices, char *outfileName, char *outfile2Name);
-int RandomGraphs(int, int, int);
+int SpecificGraph(char command, char *infileName, char *outfileName, char *outfile2Name);
+int RandomGraph(char command, int extraEdges, int numVertices, char *outfileName, char *outfile2Name);
+int RandomGraphs(char command, int, int);
 
 void Reconfigure();
 
@@ -113,7 +114,7 @@ void ErrorMessage(char *message)
 void ProjectTitle()
 {
     Message("\n=================================================="
-            "\nPlanarity version 2.1 Alpha 1"
+            "\nPlanarity version 2.2"
             "\nCopyright (c) 2009 by John M. Boyer"
     		"\nContact info: jboyer at acm.org"
             "\n=================================================="
@@ -153,6 +154,7 @@ int helpMessage(char *param)
         "    -2 = Search for subgraph homeomorphic to K_{2,3}\n"
         "    -3 = Search for subgraph homeomorphic to K_{3,3}\n"
         "    -4 = Search for subgraph homeomorphic to K_4\n"
+		"    -c = Color the vertices of the graph\n"
     	"\n";
 
 	ProjectTitle();
@@ -470,7 +472,6 @@ int runTests(int argc, char *argv[])
 // 'planarity -r [-q] C K N': Random graphs
 int callRandomGraphs(int argc, char *argv[])
 {
-	int  embedFlags = EMBEDFLAGS_PLANAR;
 	char Choice = 0;
 	int offset = 0, NumGraphs, SizeOfGraphs;
 
@@ -488,23 +489,12 @@ int callRandomGraphs(int argc, char *argv[])
 	NumGraphs = atoi(argv[3+offset]);
 	SizeOfGraphs = atoi(argv[4+offset]);
 
-    switch (Choice)
-    {
-        case 'o' : embedFlags = EMBEDFLAGS_OUTERPLANAR; break;
-        case 'p' : embedFlags = EMBEDFLAGS_PLANAR; break;
-        case 'd' : embedFlags = EMBEDFLAGS_DRAWPLANAR; break;
-        case '2' : embedFlags = EMBEDFLAGS_SEARCHFORK23; break;
-        case '3' : embedFlags = EMBEDFLAGS_SEARCHFORK33; break;
-        case '4' : embedFlags = EMBEDFLAGS_SEARCHFORK4; break;
-    }
-
-    return RandomGraphs(embedFlags, NumGraphs, SizeOfGraphs);
+    return RandomGraphs(Choice, NumGraphs, SizeOfGraphs);
 }
 
 // 'planarity -s [-q] C I O [O2]': Specific graph
 int callSpecificGraph(int argc, char *argv[])
 {
-	int  embedFlags = EMBEDFLAGS_PLANAR;
 	char Choice=0, *infileName=NULL, *outfileName=NULL, *outfile2Name=NULL;
 	int offset = 0;
 
@@ -524,17 +514,7 @@ int callSpecificGraph(int argc, char *argv[])
 	if (argc == 6+offset)
 	    outfile2Name = argv[5+offset];
 
-    switch (Choice)
-    {
-        case 'o' : embedFlags = EMBEDFLAGS_OUTERPLANAR; break;
-        case 'p' : embedFlags = EMBEDFLAGS_PLANAR; break;
-        case 'd' : embedFlags = EMBEDFLAGS_DRAWPLANAR; break;
-        case '2' : embedFlags = EMBEDFLAGS_SEARCHFORK23; break;
-        case '3' : embedFlags = EMBEDFLAGS_SEARCHFORK33; break;
-        case '4' : embedFlags = EMBEDFLAGS_SEARCHFORK4; break;
-    }
-
-	return SpecificGraph(embedFlags, infileName, outfileName, outfile2Name);
+	return SpecificGraph(Choice, infileName, outfileName, outfile2Name);
 }
 
 // 'planarity -rm [-q] N O [O2]': Maximal planar random graph
@@ -558,7 +538,7 @@ int callRandomMaxPlanarGraph(int argc, char *argv[])
 	if (argc == 5+offset)
 	    outfile2Name = argv[4+offset];
 
-	return RandomGraph(EMBEDFLAGS_PLANAR, 0, numVertices, outfileName, outfile2Name);
+	return RandomGraph('p', 0, numVertices, outfileName, outfile2Name);
 }
 
 // 'planarity -rn [-q] N O [O2]': Non-planar random graph (maximal planar plus edge)
@@ -582,7 +562,7 @@ int callRandomNonplanarGraph(int argc, char *argv[])
 	if (argc == 5+offset)
 	    outfile2Name = argv[4+offset];
 
-	return RandomGraph(EMBEDFLAGS_PLANAR, 1, numVertices, outfileName, outfile2Name);
+	return RandomGraph('p', 1, numVertices, outfileName, outfile2Name);
 }
 
 int commandLine(int argc, char *argv[])
@@ -675,11 +655,9 @@ int Result;
 
 int menu()
 {
-int  embedFlags = EMBEDFLAGS_PLANAR;
-
 #ifdef PROFILING  // If profiling, then only run RandomGraphs()
 
-     RandomGraphs(embedFlags, 0, 0);
+     RandomGraphs('p', 0, 0);
 
 #else
 
@@ -695,6 +673,7 @@ char Choice;
                 "2. Search for subgraph homeomorphic to K_{2,3}\n"
                 "3. Search for subgraph homeomorphic to K_{3,3}\n"
                 "4. Search for subgraph homeomorphic to K_4\n"
+        		"C. Color the vertices of the graph\n"
         		"H. Help message for command line version\n"
                 "R. Reconfigure options\n"
                 "X. Exit\n"
@@ -706,33 +685,24 @@ char Choice;
         scanf(" %c", &Choice);
         Choice = tolower(Choice);
 
-        embedFlags = 0;
-        switch (Choice)
-        {
-            case 'p' : embedFlags = EMBEDFLAGS_PLANAR; break;
-            case 'd' : embedFlags = EMBEDFLAGS_DRAWPLANAR; break;
-            case 'o' : embedFlags = EMBEDFLAGS_OUTERPLANAR; break;
-            case '2' : embedFlags = EMBEDFLAGS_SEARCHFORK23; break;
-            case '3' : embedFlags = EMBEDFLAGS_SEARCHFORK33; break;
-            case '4' : embedFlags = EMBEDFLAGS_SEARCHFORK4; break;
-            case 'h' : helpMessage(NULL); break;
-            case 'r' : Reconfigure(); break;
-        }
+        if (Choice == 'h')
+        	helpMessage(NULL);
 
-        if (embedFlags)
+        else if (Choice == 'r')
+        	Reconfigure();
+
+        else if (Choice != 'x')
         {
         	char *secondOutfile = NULL;
-        	if (embedFlags == EMBEDFLAGS_PLANAR ||
-        		embedFlags == EMBEDFLAGS_OUTERPLANAR ||
-        		embedFlags == EMBEDFLAGS_DRAWPLANAR)
+        	if (Choice == 'p'  || Choice == 'o' || Choice == 'd')
         		secondOutfile ="";
 
             switch (tolower(Mode))
             {
-                case 's' : SpecificGraph(embedFlags, NULL, NULL, secondOutfile); break;
-                case 'r' : RandomGraphs(embedFlags, 0, 0); break;
-                case 'm' : RandomGraph(embedFlags, 0, 0, NULL, NULL); break;
-                case 'n' : RandomGraph(embedFlags, 1, 0, NULL, NULL); break;
+                case 's' : SpecificGraph(Choice, NULL, NULL, secondOutfile); break;
+                case 'r' : RandomGraphs(Choice, 0, 0); break;
+                case 'm' : RandomGraph(Choice, 0, 0, NULL, NULL); break;
+                case 'n' : RandomGraph(Choice, 1, 0, NULL, NULL); break;
             }
         }
 
@@ -821,14 +791,35 @@ char Ch;
 }
 
 /****************************************************************************
+ ****************************************************************************/
+
+int GetEmbedFlags(char command)
+{
+	int embedFlags = 0;
+
+	switch (command)
+	{
+		case 'o' : embedFlags = EMBEDFLAGS_OUTERPLANAR; break;
+		case 'p' : embedFlags = EMBEDFLAGS_PLANAR; break;
+		case 'd' : embedFlags = EMBEDFLAGS_DRAWPLANAR; break;
+		case '2' : embedFlags = EMBEDFLAGS_SEARCHFORK23; break;
+		case '3' : embedFlags = EMBEDFLAGS_SEARCHFORK33; break;
+		case '4' : embedFlags = EMBEDFLAGS_SEARCHFORK4; break;
+	}
+
+	return embedFlags;
+}
+
+/****************************************************************************
  Creates a random maximal planar graph, then addes extraEdges edges to it.
  ****************************************************************************/
 
-int RandomGraph(int embedFlags, int extraEdges, int numVertices, char *outfileName, char *outfile2Name)
+int RandomGraph(char command, int extraEdges, int numVertices, char *outfileName, char *outfile2Name)
 {
 int  Result;
 platform_time start, end;
 graphP theGraph=NULL, origGraph;
+int embedFlags = GetEmbedFlags(command);
 
      if (embedFlags != EMBEDFLAGS_PLANAR)
      {
@@ -917,7 +908,7 @@ graphP theGraph=NULL, origGraph;
 
 #define NUM_MINORS  9
 
-int  RandomGraphs(int embedFlags, int NumGraphs, int SizeOfGraphs)
+int  RandomGraphs(char command, int NumGraphs, int SizeOfGraphs)
 {
 char theFileName[256];
 int  Result=OK, I;
@@ -926,6 +917,7 @@ int  ObstructionMinorFreqs[NUM_MINORS];
 graphP theGraph=NULL;
 platform_time start, end;
 graphP origGraph=NULL;
+int embedFlags = GetEmbedFlags(command);
 
      if (NumGraphs == 0)
      {
@@ -1239,264 +1231,211 @@ graphP origGraph=NULL;
 /****************************************************************************
  ****************************************************************************/
 
-#define FILENAMELENGTH 100
-int SpecificGraph(int embedFlags, char *infileName, char *outfileName, char *outfile2Name)
+#define FILENAMELENGTH 128
+int SpecificGraph(char command, char *infileName, char *outfileName, char *outfile2Name)
 {
 graphP theGraph = gp_New();
-char theFileName[FILENAMELENGTH+10];
+char theFileName[FILENAMELENGTH+16];
 int  Result;
-char *theMsg = "The embedFlags were incorrectly set.\n";
-char *resultStr = "";
 
-/* Set up the result message string and enable features based on the embedFlags */
+	// Get the filename of the graph to test
+	if (infileName == NULL)
+	{
+		Message("Enter graph file name: ");
+		scanf(" %s", theFileName);
 
-     // If the planarity bit is set, we may be doing
-     // core planarity or an extension algorithms
-     if (embedFlags & EMBEDFLAGS_PLANAR)
-     {
-         // If only the planar flag is set, then we're doing core planarity
-         if (!(embedFlags & ~EMBEDFLAGS_PLANAR))
-         {
-             theMsg = "The graph is%s planar.\n";
-         }
+		if (!strchr(theFileName, '.'))
+			strcat(theFileName, ".txt");
+	}
+	else
+	{
+		if (strlen(infileName) > FILENAMELENGTH)
+		{
+			ErrorMessage("Filename is too long");
+			return NOTOK;
+		}
+		strcpy(theFileName, infileName);
+	}
 
-         // Otherwise we test for and enable known extension algorithm(s)
-         else if (embedFlags == EMBEDFLAGS_DRAWPLANAR)
-         {
-             theMsg = "The graph is%s planar.\n";
-             gp_AttachDrawPlanar(theGraph);
-         }
-         else if (embedFlags == EMBEDFLAGS_SEARCHFORK33)
-         {
-             gp_AttachK33Search(theGraph);
-             theMsg = "A subgraph homeomorphic to K_{3,3} was%s found.\n";
-         }
-     }
+    // Read the graph into memory
+	Result = gp_Read(theGraph, theFileName);
+	if (Result == NONEMBEDDABLE)
+	{
+		Message("The graph contains too many edges.\n");
+		// Some of the algorithms will still run correctly with some edges removed.
+		if (strchr("pdo234", command))
+		{
+			Message("Some edges were removed, but the algorithm will still run correctly.\n");
+			Result = OK;
+		}
+	}
 
-     // If the outerplanarity bit is set, we may be doing
-     // core outerplanarity or an extension algorithms
-     else if (embedFlags & EMBEDFLAGS_OUTERPLANAR)
-     {
-         // If only the outerplanar flag is set, then we're doing core outerplanarity
-         if (!(embedFlags & ~EMBEDFLAGS_OUTERPLANAR))
-             theMsg = "The graph is%s outerplanar.\n";
+	// If there was an unrecoverable error, report it
+	if (Result != OK)
+		ErrorMessage("Failed to read graph\n");
 
-         // Otherwise we test for and enable known extension algorithm(s)
-         else if (embedFlags == EMBEDFLAGS_SEARCHFORK23)
-         {
-             gp_AttachK23Search(theGraph);
-             theMsg = "A subgraph homeomorphic to K_{2,3} was%s found.\n";
-         }
-         else if (embedFlags == EMBEDFLAGS_SEARCHFORK4)
-         {
-             gp_AttachK4Search(theGraph);
-             theMsg = "A subgraph homeomorphic to K_4 was%s found.\n";
-         }
-     }
+	// Otherwise, call the correct algorithm on it
+	else
+	{
+        graphP origGraph = gp_DupGraph(theGraph);
+        platform_time start, end;
 
-/* Get the filename of the graph to test */
+    	switch (command)
+    	{
+    		case 'p' :
+    	        platform_GetTime(start);
+    			Result = gp_Embed(theGraph, EMBEDFLAGS_PLANAR);
+    	        platform_GetTime(end);
+    	        sprintf(Line, "The graph is%s planar.\n", Result==OK ? "" : " not");
+    	        Result = gp_TestEmbedResultIntegrity(theGraph, origGraph, Result);
+    			break;
+    		case 'd' :
+    			gp_AttachDrawPlanar(theGraph);
+    	        platform_GetTime(start);
+    			Result = gp_Embed(theGraph, EMBEDFLAGS_DRAWPLANAR);
+    	        platform_GetTime(end);
+    	        sprintf(Line, "The graph is%s planar.\n", Result==OK ? "" : " not");
+    	        Result = gp_TestEmbedResultIntegrity(theGraph, origGraph, Result);
+    			break;
+    		case 'o' :
+    	        platform_GetTime(start);
+    			Result = gp_Embed(theGraph, EMBEDFLAGS_OUTERPLANAR);
+    	        platform_GetTime(end);
+    	        sprintf(Line, "The graph is%s outer planar.\n", Result==OK ? "" : " not");
+    	        Result = gp_TestEmbedResultIntegrity(theGraph, origGraph, Result);
+    			break;
+    		case '2' :
+    			gp_AttachK23Search(theGraph);
+    	        platform_GetTime(start);
+    			Result = gp_Embed(theGraph, EMBEDFLAGS_SEARCHFORK23);
+    	        platform_GetTime(end);
+    	        sprintf(Line, "The graph %s a subgraph homeomorphic to K_{2,3}.\n", Result==OK ? "does not contain" : "contains");
+    	        Result = gp_TestEmbedResultIntegrity(theGraph, origGraph, Result);
+    			break;
+    		case '3' :
+    			gp_AttachK33Search(theGraph);
+    	        platform_GetTime(start);
+				Result = gp_Embed(theGraph, EMBEDFLAGS_SEARCHFORK33);
+		        platform_GetTime(end);
+    	        sprintf(Line, "The graph %s a subgraph homeomorphic to K_{3,3}.\n", Result==OK ? "does not contain" : "contains");
+    	        Result = gp_TestEmbedResultIntegrity(theGraph, origGraph, Result);
+				break;
+    		case '4' :
+    			gp_AttachK4Search(theGraph);
+    	        platform_GetTime(start);
+    			Result = gp_Embed(theGraph, EMBEDFLAGS_SEARCHFORK4);
+    	        platform_GetTime(end);
+    	        sprintf(Line, "The graph %s a subgraph homeomorphic to K_4.\n", Result==OK ? "does not contain" : "contains");
+    	        Result = gp_TestEmbedResultIntegrity(theGraph, origGraph, Result);
+    			break;
+    		case 'c' :
+    			gp_AttachColorVertices(theGraph);
+    	        platform_GetTime(start);
+    			Result = gp_ColorVertices(theGraph);
+    	        platform_GetTime(end);
+    	        sprintf(Line, "The graph has been %d-colored.\n", gp_GetNumColorsUsed(theGraph));
+    	        Result = gp_ColorVerticesIntegrityCheck(theGraph, origGraph);
+    			break;
+    		default :
+    	        platform_GetTime(start);
+    			Result = NOTOK;
+    	        platform_GetTime(end);
+    	        sprintf(Line, "Unrecognized Command\n");
+    			break;
+    	}
 
-     if (infileName == NULL)
-     {
-		 Message("Enter graph file name: ");
-		 scanf(" %s", theFileName);
+    	// Show the result message for the algorithm
+        Message(Line);
 
-		 if (!strchr(theFileName, '.'))
-			 strcat(theFileName, ".txt");
-     }
-     else
-     {
-    	 if (strlen(infileName) > FILENAMELENGTH)
-    	 {
-    		 ErrorMessage("Filename is too long");
-    		 return NOTOK;
-    	 }
+    	// Report the length of time it took
+        sprintf(Line, "Algorithm executed in %.3lf seconds.\n", platform_GetDuration(start,end));
+        Message(Line);
 
-    	 strcpy(theFileName, infileName);
-     }
+        // Free the graph obtained for integrity checking.
+        gp_Free(&origGraph);
+	}
 
-/* Read the graph into memory */
+	// Report an error, if there was one, free the graph, and return
+	if (Result != OK)
+	{
+		ErrorMessage("AN ERROR HAS BEEN DETECTED\n");
+		Result = NOTOK;
+	}
 
-     Result = gp_Read(theGraph, theFileName);
+	// Provide the output file(s)
+	else
+	{
+        // Restore the vertex ordering of the original graph (undo DFS numbering)
+        gp_SortVertices(theGraph);
 
-     if (Result == NONEMBEDDABLE)
-     {
-    	 // If the graph in the input file has too many edges, then some
-    	 // were ignored by the reader if NONEMBEDDABLE was returned.
-    	 // However, the reader adds enough edges to run any of the
-    	 // algorithms successfully, e.g. planar embedding would return
-    	 // a Kuratowski subgraph
-         Result = OK;
-     }
+        // Determine the name of the primary output file
+        if (outfileName == NULL)
+            strcat(theFileName, ".out");
+        else
+        {
+			if (strlen(outfileName) > FILENAMELENGTH)
+			{
+	            strcat(theFileName, ".out");
+				sprintf(Line, "Outfile filename is too long. Result placed in %s", theFileName);
+				ErrorMessage(Line);
+			}
+			else
+				strcpy(theFileName, outfileName);
+        }
 
-     if (Result != OK)
-     {
-         ErrorMessage("Failed to read graph\n");
-     }
-     else
-     {
-         platform_time start, end;
-         graphP origGraph = gp_DupGraph(theGraph);
+        // For some algorithms, the primary output file is not always written
+        outfileName = theFileName;
+        if ((strchr("pdo", command) && Result == NONEMBEDDABLE) ||
+        	(strchr("234", command) && Result == OK))
+        	outfileName = NULL;
 
-         platform_GetTime(start);
-         Result = gp_Embed(theGraph, embedFlags);
-         platform_GetTime(end);
-         sprintf(Line, "gp_Embed() completed in %.3lf seconds.\n", platform_GetDuration(start,end));
-         Message(Line);
+        // Write the primary output file, if appropriate to do so
+        if (outfileName != NULL)
+			gp_Write(theGraph, outfileName, WRITE_ADJLIST);
 
-         if (Result != OK && Result != NONEMBEDDABLE)
-        	 ErrorMessage("gp_Embed() returned an error.\n");
-         else if (gp_TestEmbedResultIntegrity(theGraph, origGraph, Result) != OK)
-         {
-        	 sprintf(Line, "gp_Embed() returned %s and result FAILED integrity check.\n",
-        			 Result==OK ? "OK" : "NONEMBEDDABLE");
-             ErrorMessage(Line);
-             Result = NOTOK;
-         }
-         else
-             Message("Successful integrity check.\n");
+        // NOW WE WANT TO WRITE THE SECONDARY OUTPUT FILE
 
-         gp_Free(&origGraph);
+		// When called from the menu system, we want to write the planar or outerplanar
+		// obstruction, if one exists. For planar graph drawing, we want the character
+        // art rendition.  A non-NULL empty string is passed to indicate the necessity
+        // of selecting a default name for the second output file.
+		if (outfile2Name != NULL && strlen(outfile2Name) == 0)
+		{
+			if (command == 'p' || command == 'o')
+				outfile2Name = theFileName;
 
-         switch (Result)
-         {
-            case OK :
-                if (embedFlags == EMBEDFLAGS_SEARCHFORK4)
-                    resultStr = " not";
+			else if (command == 'd' && Result == OK)
+			{
+				strcat(theFileName, ".render");
+				outfile2Name = theFileName;
+			}
+		}
 
-                 if (embedFlags == EMBEDFLAGS_SEARCHFORK33)
-                     resultStr = " not";
+        // Write the secondary output file, if it is required
+        if (outfile2Name != NULL)
+        {
+			// For planar and outerplanar embedding, the secondary file receives
+			// the obstruction to embedding
+			if (command == 'p' || command == 'o')
+			{
+				if (Result == NONEMBEDDABLE)
+					gp_Write(theGraph, outfile2Name, WRITE_ADJLIST);
+			}
+			// For planar graph drawing, the secondary file receives the drawing
+			else if (command == 'd')
+			{
+				if (Result == OK)
+					gp_DrawPlanar_RenderToFile(theGraph, outfile2Name);
+			}
+			// The secondary file should not have been provided otherwise
+			else
+			{
+				ErrorMessage("Unsupported command for secondary output file request.");
+			}
+        }
+	}
 
-                 if (embedFlags == EMBEDFLAGS_SEARCHFORK23)
-                     resultStr = " not";
-
-                 break;
-
-            case NONEMBEDDABLE :
-
-                 if (embedFlags == EMBEDFLAGS_PLANAR)
-                     resultStr = " not";
-
-                 if (embedFlags == EMBEDFLAGS_DRAWPLANAR)
-                     resultStr = " not";
-
-                 if (embedFlags == EMBEDFLAGS_OUTERPLANAR)
-                     resultStr = " not";
-
-                 break;
-
-            default :
-            	 Result = NOTOK;
-                 theMsg = "The embedder failed.";
-                 break;
-         }
-
-         if (Result == OK || Result == NONEMBEDDABLE)
-         {
-             sprintf(Line, theMsg, resultStr);
-             Message(Line);
-
-#ifdef DEBUG
-             if (embedFlags == EMBEDFLAGS_DRAWPLANAR && Result == OK)
-                 gp_DrawPlanar_RenderToFile(theGraph, "render.beforeSort.txt");
-#endif
-
-             // Restore the vertex ordering of the original graph (undo DFS numbering)
-             gp_SortVertices(theGraph);
-
-             // Write the primary output file
-             if (outfileName == NULL)
-                 strcat(theFileName, ".out");
-             else
-             {
-            	 if (strlen(outfileName) > FILENAMELENGTH)
-            	 {
-            		 sprintf(Line, "Outfile filename is too long. Result placed in %s", theFileName);
-            		 ErrorMessage(Line);
-            	 }
-            	 else
-            		 strcpy(theFileName, outfileName);
-             }
-
-             // Write the primary output
-        	 if (embedFlags == EMBEDFLAGS_PLANAR || embedFlags == EMBEDFLAGS_OUTERPLANAR)
-        	 {
-        		 if (Result == OK)
-        	         gp_Write(theGraph, theFileName, WRITE_ADJLIST);
-        	 }
-             else if (embedFlags == EMBEDFLAGS_DRAWPLANAR)
-             {
-            	 if (Result == OK)
-        	         gp_Write(theGraph, theFileName, WRITE_ADJLIST);
-        	 }
-             else if (embedFlags == EMBEDFLAGS_SEARCHFORK33 ||
-            		  embedFlags == EMBEDFLAGS_SEARCHFORK23 ||
-            		  embedFlags == EMBEDFLAGS_SEARCHFORK4)
-             {
-            	 if (Result == NONEMBEDDABLE)
-        	         gp_Write(theGraph, theFileName, WRITE_ADJLIST);
-             }
-
-#ifdef DEBUG
-             if (embedFlags == EMBEDFLAGS_DRAWPLANAR && Result == OK)
-             {
-                 graphP testGraph = gp_New();
-                 gp_AttachDrawPlanar(testGraph);
-                 gp_DrawPlanar_RenderToFile(theGraph, "render.afterSort.txt");
-                 gp_Read(testGraph, theFileName);
-                 gp_DrawPlanar_RenderToFile(testGraph, "render.afterRead.txt");
-             }
-#endif
-
-             // When called from the menu system, we want to write the planar or outerplanar
-        	 // obstruction, if one exists.
-             if (outfile2Name != NULL && strlen(outfile2Name) == 0)
-             {
-            	 if (embedFlags == EMBEDFLAGS_PLANAR || embedFlags == EMBEDFLAGS_OUTERPLANAR)
-            	 {
-            		 outfile2Name = theFileName;
-            	 }
-            	 else if (embedFlags == EMBEDFLAGS_DRAWPLANAR)
-            	 {
-            		 char ch;
-            		 Message("Do you want to see rendition now (y=screen/n=file)? ");
-            		 scanf(" %c", &ch);
-
-            		 if (ch == 'y')
-            		     strcpy(theFileName, "stdout");
-            		 else
-            			 strcat(theFileName, ".render");
-
-            		 outfile2Name = theFileName;
-            	 }
-             }
-
-             // Write the secondary output file, if it is required
-             if (outfile2Name != NULL)
-             {
-            	 // For planar and outerplanar embedding, the secondary file receives
-            	 // the obstruction to embedding
-            	 if (embedFlags == EMBEDFLAGS_PLANAR || embedFlags == EMBEDFLAGS_OUTERPLANAR)
-            	 {
-            		 if (Result == NONEMBEDDABLE)
-            	         gp_Write(theGraph, outfile2Name, WRITE_ADJLIST);
-            	 }
-            	 // For planar graph drawing, the secondary file receives the drawing
-                 else if (embedFlags == EMBEDFLAGS_DRAWPLANAR)
-                 {
-                	 if (Result == OK)
-                	     gp_DrawPlanar_RenderToFile(theGraph, outfile2Name);
-                 }
-            	 // The secondary file should not have been provided otherwise
-                 else
-                 {
-                	 ErrorMessage("Unsupported command for secondary output file request.");
-                 }
-             }
-         }
-     }
-
-     gp_Free(&theGraph);
-
-     return Result;
+	// Free the graph and return the result
+	gp_Free(&theGraph);
+	return Result;
 }

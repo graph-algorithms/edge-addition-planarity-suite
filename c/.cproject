@@ -46,7 +46,7 @@
 </toolChain>
 </folderInfo>
 <sourceEntries>
-<entry excluding="graphColorVertices.private.h|graphColorVertices.h|graphColorVertices.c|graphColorVertices_Extensions.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 </sourceEntries>
 </configuration>
 </storageModule>
@@ -345,7 +345,7 @@
 </toolChain>
 </folderInfo>
 <sourceEntries>
-<entry excluding="graphColorVertices.private.h|graphColorVertices.h|graphColorVertices.c|graphColorVertices_Extensions.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 </sourceEntries>
 </configuration>
 </storageModule>

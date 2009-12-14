@@ -96,7 +96,7 @@ int gp_ColorVertices(graphP theGraph)
 
     gp_FindExtension(theGraph, COLORVERTICES_ID, (void *)&context);
 
-    if (color > -1)
+    if (context->color[0] > -1)
     	_ColorVertices_Reinitialize(context);
 
     // Initialize the degree lists, and provide a color for any trivial vertices
@@ -223,6 +223,8 @@ int _AssignColorToVertex(ColorVerticesContext *context, graphP theGraph, int v)
         if (context->colorDetector[color] == 0)
         {
         	context->color[v] = color;
+        	if (context->highestColorUsed < color)
+        		context->highestColorUsed = color;
         	break;
         }
     }
@@ -241,4 +243,24 @@ int _AssignColorToVertex(ColorVerticesContext *context, graphP theGraph, int v)
     }
 
 	return OK;
+}
+
+/********************************************************************
+ gp_GetNumColorsUsed()
+ ********************************************************************/
+
+int gp_GetNumColorsUsed(graphP theGraph)
+{
+    ColorVerticesContext *context = NULL;
+    gp_FindExtension(theGraph, COLORVERTICES_ID, (void *)&context);
+	return context == NULL ? 0 : context->highestColorUsed+1;
+}
+
+/********************************************************************
+ gp_ColorVerticesIntegrityCheck()
+ ********************************************************************/
+
+int gp_ColorVerticesIntegrityCheck(graphP theGraph, graphP origGraph)
+{
+	return NOTOK;
 }
