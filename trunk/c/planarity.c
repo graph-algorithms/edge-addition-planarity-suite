@@ -1229,13 +1229,19 @@ int embedFlags = GetEmbedFlags(command);
 }
 
 /****************************************************************************
+ SpecificGraph()
  ****************************************************************************/
 
-#define FILENAMELENGTH 128
+#define FILENAMEMAXLENGTH 128
+#define ALGORITHMNAMEMAXLENGTH 32
+#define SUFFIXMAXLENGTH 32
+void ConstructPrimaryOutputFilename(char *theFileName, char *outfileName, char *algorithmName);
+
 int SpecificGraph(char command, char *infileName, char *outfileName, char *outfile2Name)
 {
 graphP theGraph = gp_New();
-char theFileName[FILENAMELENGTH+16];
+char theFileName[FILENAMEMAXLENGTH+1+ALGORITHMNAMEMAXLENGTH+1+SUFFIXMAXLENGTH+1];
+char *algorithmName = "";
 int  Result;
 
 	// Get the filename of the graph to test
@@ -1249,7 +1255,7 @@ int  Result;
 	}
 	else
 	{
-		if (strlen(infileName) > FILENAMELENGTH)
+		if (strlen(infileName) > FILENAMEMAXLENGTH)
 		{
 			ErrorMessage("Filename is too long");
 			return NOTOK;
@@ -1288,6 +1294,7 @@ int  Result;
     	        platform_GetTime(end);
     	        sprintf(Line, "The graph is%s planar.\n", Result==OK ? "" : " not");
     	        Result = gp_TestEmbedResultIntegrity(theGraph, origGraph, Result);
+    	        algorithmName = "PlanarEmbed";
     			break;
     		case 'd' :
     			gp_AttachDrawPlanar(theGraph);
@@ -1296,6 +1303,7 @@ int  Result;
     	        platform_GetTime(end);
     	        sprintf(Line, "The graph is%s planar.\n", Result==OK ? "" : " not");
     	        Result = gp_TestEmbedResultIntegrity(theGraph, origGraph, Result);
+    	        algorithmName = DRAWPLANAR_NAME;
     			break;
     		case 'o' :
     	        platform_GetTime(start);
@@ -1303,6 +1311,7 @@ int  Result;
     	        platform_GetTime(end);
     	        sprintf(Line, "The graph is%s outer planar.\n", Result==OK ? "" : " not");
     	        Result = gp_TestEmbedResultIntegrity(theGraph, origGraph, Result);
+    	        algorithmName = "OuterplanarEmbed";
     			break;
     		case '2' :
     			gp_AttachK23Search(theGraph);
@@ -1311,6 +1320,7 @@ int  Result;
     	        platform_GetTime(end);
     	        sprintf(Line, "The graph %s a subgraph homeomorphic to K_{2,3}.\n", Result==OK ? "does not contain" : "contains");
     	        Result = gp_TestEmbedResultIntegrity(theGraph, origGraph, Result);
+    	        algorithmName = K23SEARCH_NAME;
     			break;
     		case '3' :
     			gp_AttachK33Search(theGraph);
@@ -1319,6 +1329,7 @@ int  Result;
 		        platform_GetTime(end);
     	        sprintf(Line, "The graph %s a subgraph homeomorphic to K_{3,3}.\n", Result==OK ? "does not contain" : "contains");
     	        Result = gp_TestEmbedResultIntegrity(theGraph, origGraph, Result);
+    	        algorithmName = K33SEARCH_NAME;
 				break;
     		case '4' :
     			gp_AttachK4Search(theGraph);
@@ -1327,6 +1338,7 @@ int  Result;
     	        platform_GetTime(end);
     	        sprintf(Line, "The graph %s a subgraph homeomorphic to K_4.\n", Result==OK ? "does not contain" : "contains");
     	        Result = gp_TestEmbedResultIntegrity(theGraph, origGraph, Result);
+    	        algorithmName = K4SEARCH_NAME;
     			break;
     		case 'c' :
     			gp_AttachColorVertices(theGraph);
@@ -1335,6 +1347,7 @@ int  Result;
     	        platform_GetTime(end);
     	        sprintf(Line, "The graph has been %d-colored.\n", gp_GetNumColorsUsed(theGraph));
     	        Result = gp_ColorVerticesIntegrityCheck(theGraph, origGraph);
+    	        algorithmName = COLORVERTICES_NAME;
     			break;
     		default :
     	        platform_GetTime(start);
@@ -1348,7 +1361,7 @@ int  Result;
         Message(Line);
 
     	// Report the length of time it took
-        sprintf(Line, "Algorithm executed in %.3lf seconds.\n", platform_GetDuration(start,end));
+        sprintf(Line, "Algorithm '%s' executed in %.3lf seconds.\n", algorithmName, platform_GetDuration(start,end));
         Message(Line);
 
         // Free the graph obtained for integrity checking.
@@ -1369,19 +1382,7 @@ int  Result;
         gp_SortVertices(theGraph);
 
         // Determine the name of the primary output file
-        if (outfileName == NULL)
-            strcat(theFileName, ".out");
-        else
-        {
-			if (strlen(outfileName) > FILENAMELENGTH)
-			{
-	            strcat(theFileName, ".out");
-				sprintf(Line, "Outfile filename is too long. Result placed in %s", theFileName);
-				ErrorMessage(Line);
-			}
-			else
-				strcpy(theFileName, outfileName);
-        }
+        ConstructPrimaryOutputFilename(theFileName, outfileName, algorithmName);
 
         // For some algorithms, the primary output file is not always written
         outfileName = theFileName;
@@ -1406,7 +1407,7 @@ int  Result;
 
 			else if (command == 'd' && Result == OK)
 			{
-				strcat(theFileName, ".render");
+				strcat(theFileName, ".render.txt");
 				outfile2Name = theFileName;
 			}
 		}
@@ -1439,3 +1440,38 @@ int  Result;
 	gp_Free(&theGraph);
 	return Result;
 }
+
+void ConstructPrimaryOutputFilename(char *theFileName, char *outfileName, char *algorithmName)
+{
+	if (outfileName == NULL)
+	{
+		// If the primary output filename has not been given, then we use
+		// the input filename + the algorithm name + a simple suffix
+		if (strlen(algorithmName) <= ALGORITHMNAMEMAXLENGTH)
+		{
+			strcat(theFileName, ".");
+			strcat(theFileName, algorithmName);
+		}
+		else
+			ErrorMessage("Algorithm Name is too long, so it will not be used in output filename.");
+
+	    strcat(theFileName, ".out.txt");
+	}
+	else
+	{
+		if (strlen(outfileName) > FILENAMEMAXLENGTH)
+		{
+	    	if (strlen(algorithmName) <= ALGORITHMNAMEMAXLENGTH)
+	    	{
+	    		strcat(theFileName, ".");
+	    		strcat(theFileName, algorithmName);
+	    	}
+	        strcat(theFileName, ".out.txt");
+			sprintf(Line, "Outfile filename is too long. Result placed in %s", theFileName);
+			ErrorMessage(Line);
+		}
+		else
+			strcpy(theFileName, outfileName);
+	}
+}
+

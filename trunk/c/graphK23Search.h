@@ -51,6 +51,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 extern "C" {
 #endif
 
+#define K23SEARCH_NAME "K23Search"
+
 int gp_AttachK23Search(graphP theGraph);
 int gp_DetachK23Search(graphP theGraph);
 

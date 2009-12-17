@@ -15,6 +15,8 @@ the expressed written permission of the copyright holder.
 extern "C" {
 #endif
 
+#define K4SEARCH_NAME "K4Search"
+
 int gp_AttachK4Search(graphP theGraph);
 int gp_DetachK4Search(graphP theGraph);
 
