@@ -134,16 +134,38 @@ void	gp_SetDirection(graphP theGraph, int e, int edgeFlag_Direction);
 #define gp_SetArc(theGraph, v, theLink, newArc) (theGraph->G[v].link[theLink] = newArc)
 #define gp_SetAdjacentArc(theGraph, e, theLink, newArc) (theGraph->G[e].link[theLink] = newArc)
 
-// Definitions that make the vertex attachment for an arc
-// The old first or last arc should be attached to this arc by separate calls
-#define gp_AttachFirstArc(theGraph, v, arc) \
+// Definitions that make the cross-link binding between a vertex and an arc
+// The old first or last arc should be bound to this arc by separate calls,
+// e.g. see gp_AttachFirstArc() and gp_AttachLastArc()
+#define gp_BindFirstArc(theGraph, v, arc) \
 	gp_SetPrevArc(theGraph, arc, gp_AdjacencyListEndMark(v)); \
     gp_SetFirstArc(theGraph, v, arc)
 
-#define gp_AttachLastArc(theGraph, v, arc) \
+#define gp_BindLastArc(theGraph, v, arc) \
 	gp_SetNextArc(theGraph, arc, gp_AdjacencyListEndMark(v)); \
     gp_SetLastArc(theGraph, v, arc)
 
+// Attaches an arc between the current binding between a vertex and its first arc
+#define gp_AttachFirstArc(theGraph, v, arc) \
+	if (gp_IsArc(theGraph, gp_GetFirstArc(theGraph, v))) \
+	{ \
+		gp_SetNextArc(theGraph, arc, gp_GetFirstArc(theGraph, v)); \
+		gp_SetPrevArc(theGraph, gp_GetFirstArc(theGraph, v), arc); \
+	} \
+	else gp_BindLastArc(theGraph, v, arc); \
+	gp_BindFirstArc(theGraph, v, arc); \
+
+// Attaches an arc between the current binding betwen a vertex and its last arc
+#define gp_AttachLastArc(theGraph, v, arc) \
+	if (gp_IsArc(theGraph, gp_GetLastArc(theGraph, v))) \
+	{ \
+		gp_SetPrevArc(theGraph, arc, gp_GetLastArc(theGraph, v)); \
+		gp_SetNextArc(theGraph, gp_GetLastArc(theGraph, v), arc); \
+	} \
+	else gp_BindFirstArc(theGraph, v, arc); \
+	gp_BindLastArc(theGraph, v, arc); \
+
+// Moves an arc that is in the adjacency list of v to the start of the adjacency list
 #define gp_MoveArcToFirst(theGraph, v, arc) \
 	if (arc != gp_GetFirstArc(theGraph, v)) \
 	{ \
@@ -165,9 +187,10 @@ void	gp_SetDirection(graphP theGraph, int e, int edgeFlag_Direction);
 		   Note that the adjacency list is non-empty at this time */ \
 		 gp_SetNextArc(theGraph, arc, gp_GetFirstArc(theGraph, v)); \
 		 gp_SetPrevArc(theGraph, gp_GetFirstArc(theGraph, v), arc); \
-		 gp_AttachFirstArc(theGraph, v, arc); \
+		 gp_BindFirstArc(theGraph, v, arc); \
 	}
 
+// Moves an arc that is in the adjacency list of v to the end of the adjacency list
 #define gp_MoveArcToLast(theGraph, v, arc) \
 	if (arc != gp_GetLastArc(theGraph, v)) \
 	{ \
@@ -189,12 +212,12 @@ void	gp_SetDirection(graphP theGraph, int e, int edgeFlag_Direction);
 		    Note that the adjacency list is non-empty at this time */ \
 		 gp_SetPrevArc(theGraph, arc, gp_GetLastArc(theGraph, v)); \
 		 gp_SetNextArc(theGraph, gp_GetLastArc(theGraph, v), arc); \
-		 gp_AttachLastArc(theGraph, v, arc); \
+		 gp_BindLastArc(theGraph, v, arc); \
 	}
 
 // Methods for attaching an arc into the adjacency list or detaching an arc from it.
 // The terms AddArc, InsertArc and DeleteArc are not used because the arcs are not
-// added to or deleted from storage (only whole edges are inserted or deleted)
+// inserted or added to or deleted from storage (only whole edges are inserted or deleted)
 void	gp_AttachArc(graphP theGraph, int v, int e, int link, int newArc);
 void 	gp_DetachArc(graphP theGraph, int arc);
 

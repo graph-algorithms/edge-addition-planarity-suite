@@ -184,7 +184,7 @@ int I, Jfirst, Jnext, Jlast;
             Jlast = gp_GetNextArc(theGraph, Jnext);
 
             // Remove the forward edges from the adjacency list of I
-            gp_AttachLastArc(theGraph, I, Jnext);
+            gp_BindLastArc(theGraph, I, Jnext);
 
             // Make a circular forward edge list
             theGraph->V[I].fwdArcList = Jfirst;

@@ -114,6 +114,8 @@ int N, I, W, Flag, ErrorCode;
  Returns: OK, NOTOK on internal error, NONEMBEDDABLE if too many edges
  ********************************************************************/
 
+extern void gp_AddArc(graphP theGraph, int v, int vlink, int newArc);
+
 int  _ReadAdjList(graphP theGraph, FILE *Infile)
 {
 int N, I, W, ErrorCode, adjList, J;
@@ -223,7 +225,8 @@ int N, I, W, ErrorCode, adjList, J;
             		 gp_SetPrevArc(theGraph, gp_GetNextArc(theGraph, J), gp_GetPrevArc(theGraph, J));
             		 gp_SetNextArc(theGraph, gp_GetPrevArc(theGraph, J), gp_GetNextArc(theGraph, J));
 
-            		 gp_AttachFirstArc(theGraph, I, J);
+            		 //gp_AttachFirstArc(theGraph, I, J);
+            		 gp_AddArc(theGraph, I, 0, J);
             	 }
 
             	 // If an adjacency node to the lower numbered vertex W does not
@@ -259,7 +262,8 @@ int N, I, W, ErrorCode, adjList, J;
      		  gp_SetPrevArc(theGraph, gp_GetNextArc(theGraph, J), gp_GetPrevArc(theGraph, J));
      		  gp_SetNextArc(theGraph, gp_GetPrevArc(theGraph, J), gp_GetNextArc(theGraph, J));
 
-     		  gp_AttachFirstArc(theGraph, I, J);
+     		  gp_AddArc(theGraph, I, 0, J);
+     		  //gp_AttachFirstArc(theGraph, I, J);
      		  gp_SetDirection(theGraph, J, EDGEFLAG_DIRECTION_INONLY);
           }
      }
