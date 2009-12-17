@@ -1322,39 +1322,6 @@ int  J, degree;
 }
 
 /********************************************************************
- gp_AddArc()
- This routine attaches the newArc into v's adjacency list.  The newArc
- record is added to the beginning of v's adjacency list if the vlink
- parameter is 0 and to the end if it is 1.
- The use of exclusive-or (i.e. 1^link) is simply to get the other link
- (i.e., if link is 0 then 1^link is 1, and vice versa).
- ********************************************************************/
-
-void gp_AddArc(graphP theGraph, int v, int vlink, int newArc)
-{
-     if (gp_IsArc(theGraph, gp_GetFirstArc(theGraph, v)))
-     {
-    	 if (vlink == 0)
-    	 {
-    		 gp_SetNextArc(theGraph, newArc, gp_GetFirstArc(theGraph, v));
-    		 gp_SetPrevArc(theGraph, gp_GetFirstArc(theGraph, v), newArc);
-    		 gp_BindFirstArc(theGraph, v, newArc);
-    	 }
-    	 else
-    	 {
-    		 gp_SetPrevArc(theGraph, newArc, gp_GetLastArc(theGraph, v));
-    		 gp_SetNextArc(theGraph, gp_GetLastArc(theGraph, v), newArc);
-    		 gp_BindLastArc(theGraph, v, newArc);
-    	 }
-     }
-     else
-     {
-		 gp_BindFirstArc(theGraph, v, newArc);
-		 gp_BindLastArc(theGraph, v, newArc);
-     }
-}
-
-/********************************************************************
  gp_AttachArc()
 
  This routine adds newArc into v's adjacency list at a position
@@ -1488,11 +1455,9 @@ int  upos, vpos;
      upos = gp_GetTwinArc(theGraph, vpos);
 
      theGraph->G[upos].v = v;
-     gp_AddArc(theGraph, u, ulink, upos);
-//     gp_AttachArc(theGraph, u, NIL, ulink, upos);
+     gp_AttachArc(theGraph, u, NIL, ulink, upos);
      theGraph->G[vpos].v = u;
-     gp_AddArc(theGraph, v, vlink, vpos);
-//     gp_AttachArc(theGraph, v, NIL, vlink, vpos);
+     gp_AttachArc(theGraph, v, NIL, vlink, vpos);
 
      theGraph->M++;
      return OK;

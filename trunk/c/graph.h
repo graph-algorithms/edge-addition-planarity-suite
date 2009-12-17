@@ -138,32 +138,40 @@ void	gp_SetDirection(graphP theGraph, int e, int edgeFlag_Direction);
 // The old first or last arc should be bound to this arc by separate calls,
 // e.g. see gp_AttachFirstArc() and gp_AttachLastArc()
 #define gp_BindFirstArc(theGraph, v, arc) \
-	gp_SetPrevArc(theGraph, arc, gp_AdjacencyListEndMark(v)); \
-    gp_SetFirstArc(theGraph, v, arc)
+	{ \
+		gp_SetPrevArc(theGraph, arc, gp_AdjacencyListEndMark(v)); \
+		gp_SetFirstArc(theGraph, v, arc); \
+    }
 
 #define gp_BindLastArc(theGraph, v, arc) \
-	gp_SetNextArc(theGraph, arc, gp_AdjacencyListEndMark(v)); \
-    gp_SetLastArc(theGraph, v, arc)
+	{ \
+    	gp_SetNextArc(theGraph, arc, gp_AdjacencyListEndMark(v)); \
+    	gp_SetLastArc(theGraph, v, arc); \
+    }
 
 // Attaches an arc between the current binding between a vertex and its first arc
 #define gp_AttachFirstArc(theGraph, v, arc) \
-	if (gp_IsArc(theGraph, gp_GetFirstArc(theGraph, v))) \
 	{ \
-		gp_SetNextArc(theGraph, arc, gp_GetFirstArc(theGraph, v)); \
-		gp_SetPrevArc(theGraph, gp_GetFirstArc(theGraph, v), arc); \
-	} \
-	else gp_BindLastArc(theGraph, v, arc); \
-	gp_BindFirstArc(theGraph, v, arc); \
+		if (gp_IsArc(theGraph, gp_GetFirstArc(theGraph, v))) \
+		{ \
+			gp_SetNextArc(theGraph, arc, gp_GetFirstArc(theGraph, v)); \
+			gp_SetPrevArc(theGraph, gp_GetFirstArc(theGraph, v), arc); \
+		} \
+		else gp_BindLastArc(theGraph, v, arc); \
+		gp_BindFirstArc(theGraph, v, arc); \
+	}
 
 // Attaches an arc between the current binding betwen a vertex and its last arc
 #define gp_AttachLastArc(theGraph, v, arc) \
-	if (gp_IsArc(theGraph, gp_GetLastArc(theGraph, v))) \
 	{ \
-		gp_SetPrevArc(theGraph, arc, gp_GetLastArc(theGraph, v)); \
-		gp_SetNextArc(theGraph, gp_GetLastArc(theGraph, v), arc); \
-	} \
-	else gp_BindFirstArc(theGraph, v, arc); \
-	gp_BindLastArc(theGraph, v, arc); \
+		if (gp_IsArc(theGraph, gp_GetLastArc(theGraph, v))) \
+		{ \
+			gp_SetPrevArc(theGraph, arc, gp_GetLastArc(theGraph, v)); \
+			gp_SetNextArc(theGraph, gp_GetLastArc(theGraph, v), arc); \
+		} \
+		else gp_BindFirstArc(theGraph, v, arc); \
+		gp_BindLastArc(theGraph, v, arc); \
+	}
 
 // Moves an arc that is in the adjacency list of v to the start of the adjacency list
 #define gp_MoveArcToFirst(theGraph, v, arc) \
