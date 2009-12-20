@@ -244,7 +244,7 @@ void outprocTest(FILE *f, graph *g, int n, char command)
 			{
 				gp_SortVertices(theGraph);
 
-				if (gp_TestEmbedResultIntegrity(theGraph, origGraph, Result) != OK)
+				if (gp_TestEmbedResultIntegrity(theGraph, origGraph, Result) != Result)
 				{
 					Result = NOTOK;
 					if (!numErrors)
