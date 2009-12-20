@@ -877,7 +877,7 @@ int embedFlags = GetEmbedFlags(command);
 
 	 gp_SortVertices(theGraph);
 
-     if (gp_TestEmbedResultIntegrity(theGraph, origGraph, Result) != OK)
+     if (gp_TestEmbedResultIntegrity(theGraph, origGraph, Result) != Result)
          Result = NOTOK;
 
      if (Result == OK)
@@ -1056,7 +1056,7 @@ int embedFlags = GetEmbedFlags(command);
 
           Result = gp_Embed(theGraph, embedFlags);
 
-          if (gp_TestEmbedResultIntegrity(theGraph, origGraph, Result) != OK)
+          if (gp_TestEmbedResultIntegrity(theGraph, origGraph, Result) != Result)
               Result = NOTOK;
 
           if (Result == OK)
@@ -1369,7 +1369,7 @@ int  Result;
 	}
 
 	// Report an error, if there was one, free the graph, and return
-	if (Result != OK)
+	if (Result != OK && Result != NONEMBEDDABLE)
 	{
 		ErrorMessage("AN ERROR HAS BEEN DETECTED\n");
 		Result = NOTOK;
