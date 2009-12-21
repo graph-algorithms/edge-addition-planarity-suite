@@ -62,23 +62,37 @@ extern "C" {
 #include "graphDrawPlanar.h"
 #include "graphColorVertices.h"
 
+/* Functions that call the Graph Library */
 int SpecificGraph(char command, char *infileName, char *outfileName, char *outfile2Name);
 int RandomGraph(char command, int extraEdges, int numVertices, char *outfileName, char *outfile2Name);
 int RandomGraphs(char command, int, int);
 
-void Reconfigure();
+int makeg_main(char command, int argc, char *argv[]);
 
+/* Command line, Menu, and Configuration */
 int commandLine(int argc, char *argv[]);
 int legacyCommandLine(int argc, char *argv[]);
 int menu();
 
-int makeg_main(char command, int argc, char *argv[]);
+char Mode,
+     OrigOut,
+     EmbeddableOut,
+     ObstructedOut,
+     AdjListsForEmbeddingsOut,
+     quietMode;
 
+void Reconfigure();
+
+/* Low-level Utilities */
 #define MAXLINE 1024
 char Line[MAXLINE];
 
 void Message(char *message);
 void ErrorMessage(char *message);
+
+int GetEmbedFlags(char command);
+
+void SaveAsciiGraph(graphP theGraph, char *graphName);
 
 #ifdef __cplusplus
 }
