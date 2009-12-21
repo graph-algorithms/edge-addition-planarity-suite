@@ -292,7 +292,23 @@ int callNauty(int argc, char *argv[])
  Quick regression test
  ****************************************************************************/
 
-int runTests(int argc, char *argv[])
+int runNautyTests(int argc, char *argv[]);
+int runSpecificGraphTests(int argc, char *argv[]);
+
+int runQuickRegressionTests(int argc, char *argv[])
+{
+	if (runSpecificGraphTests(argc, argv) < 0)
+		return -1;
+
+	return runNautyTests(argc, argv);
+}
+
+int runSpecificGraphTests(int argc, char *argv[])
+{
+	return 0;
+}
+
+int runNautyTests(int argc, char *argv[])
 {
 #define NUMCOMMANDSTOTEST	6
 
