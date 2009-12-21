@@ -62,6 +62,9 @@ extern "C" {
 #include "graphDrawPlanar.h"
 #include "graphColorVertices.h"
 
+void ProjectTitle();
+int helpMessage(char *param);
+
 /* Functions that call the Graph Library */
 int SpecificGraph(char command, char *infileName, char *outfileName, char *outfile2Name);
 int RandomGraph(char command, int extraEdges, int numVertices, char *outfileName, char *outfile2Name);
