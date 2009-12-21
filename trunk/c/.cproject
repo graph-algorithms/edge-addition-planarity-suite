@@ -46,7 +46,7 @@
 </toolChain>
 </folderInfo>
 <sourceEntries>
-<entry excluding="planarityCommandLine.c|planarityCallNauty.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+<entry excluding="planarityCallNauty.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 </sourceEntries>
 </configuration>
 </storageModule>
@@ -345,7 +345,7 @@
 </toolChain>
 </folderInfo>
 <sourceEntries>
-<entry excluding="planarityCommandLine.c|planarityCallNauty.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+<entry excluding="planarityCallNauty.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 </sourceEntries>
 </configuration>
 </storageModule>
