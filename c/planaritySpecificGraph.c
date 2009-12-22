@@ -58,9 +58,17 @@ int Result;
     if ((infileName = ConstructInputFilename(infileName)) == NULL)
 	    return NOTOK;
 
-    // Create the graph and attach the correct algorithm to it
+    // Create the graph and, if needed, attach the correct algorithm to it
     theGraph = gp_New();
-    AttachAlgorithm(theGraph, command);
+
+	switch (command)
+	{
+		case 'd' : gp_AttachDrawPlanar(theGraph); break;
+		case '2' : gp_AttachK23Search(theGraph); break;
+		case '3' : gp_AttachK33Search(theGraph); break;
+		case '4' : gp_AttachK4Search(theGraph); break;
+		case 'c' : gp_AttachColorVertices(theGraph); break;
+	}
 
     // Read the graph into memory
 	Result = gp_Read(theGraph, infileName);
@@ -82,68 +90,45 @@ int Result;
 	// Otherwise, call the correct algorithm on it
 	else
 	{
+		// Copy the graph for integrity checking
         origGraph = gp_DupGraph(theGraph);
 
+        // Run the algorithm
+        if (strchr("pdo234", command))
+        {
+    		int embedFlags = GetEmbedFlags(command);
+	        platform_GetTime(start);
+			Result = gp_Embed(theGraph, embedFlags);
+	        platform_GetTime(end);
+	        Result = gp_TestEmbedResultIntegrity(theGraph, origGraph, Result);
+        }
+        else
+        {
+	        platform_GetTime(start);
+        	if (command == 'c')
+        	{
+    			Result = gp_ColorVertices(theGraph);
+    	        Result = gp_ColorVerticesIntegrityCheck(theGraph, origGraph);
+        	}
+        	else
+    			Result = NOTOK;
+   	        platform_GetTime(end);
+        }
+
+        // Write the human-readable result
+        sprintf(Line, "The graph '%s' ", infileName);
+        Message(Line);
     	switch (command)
     	{
-    		case 'p' :
-    	        platform_GetTime(start);
-    			Result = gp_Embed(theGraph, EMBEDFLAGS_PLANAR);
-    	        platform_GetTime(end);
-    	        sprintf(Line, "The graph is%s planar.\n", Result==OK ? "" : " not");
-    	        Result = gp_TestEmbedResultIntegrity(theGraph, origGraph, Result);
-    			break;
-    		case 'd' :
-    	        platform_GetTime(start);
-    			Result = gp_Embed(theGraph, EMBEDFLAGS_DRAWPLANAR);
-    	        platform_GetTime(end);
-    	        sprintf(Line, "The graph is%s planar.\n", Result==OK ? "" : " not");
-    	        Result = gp_TestEmbedResultIntegrity(theGraph, origGraph, Result);
-    			break;
-    		case 'o' :
-    	        platform_GetTime(start);
-    			Result = gp_Embed(theGraph, EMBEDFLAGS_OUTERPLANAR);
-    	        platform_GetTime(end);
-    	        sprintf(Line, "The graph is%s outerplanar.\n", Result==OK ? "" : " not");
-    	        Result = gp_TestEmbedResultIntegrity(theGraph, origGraph, Result);
-    			break;
-    		case '2' :
-    	        platform_GetTime(start);
-    			Result = gp_Embed(theGraph, EMBEDFLAGS_SEARCHFORK23);
-    	        platform_GetTime(end);
-    	        sprintf(Line, "The graph %s a subgraph homeomorphic to K_{2,3}.\n", Result==OK ? "does not contain" : "contains");
-    	        Result = gp_TestEmbedResultIntegrity(theGraph, origGraph, Result);
-    			break;
-    		case '3' :
-    	        platform_GetTime(start);
-				Result = gp_Embed(theGraph, EMBEDFLAGS_SEARCHFORK33);
-		        platform_GetTime(end);
-    	        sprintf(Line, "The graph %s a subgraph homeomorphic to K_{3,3}.\n", Result==OK ? "does not contain" : "contains");
-    	        Result = gp_TestEmbedResultIntegrity(theGraph, origGraph, Result);
-				break;
-    		case '4' :
-    	        platform_GetTime(start);
-    			Result = gp_Embed(theGraph, EMBEDFLAGS_SEARCHFORK4);
-    	        platform_GetTime(end);
-    	        sprintf(Line, "The graph %s a subgraph homeomorphic to K_4.\n", Result==OK ? "does not contain" : "contains");
-    	        Result = gp_TestEmbedResultIntegrity(theGraph, origGraph, Result);
-    			break;
-    		case 'c' :
-    	        platform_GetTime(start);
-    			Result = gp_ColorVertices(theGraph);
-    	        platform_GetTime(end);
-    	        sprintf(Line, "The graph has been %d-colored.\n", gp_GetNumColorsUsed(theGraph));
-    	        Result = gp_ColorVerticesIntegrityCheck(theGraph, origGraph);
-    			break;
-    		default :
-    	        platform_GetTime(start);
-    			Result = NOTOK;
-    	        platform_GetTime(end);
-    	        sprintf(Line, "Unrecognized Command\n");
-    			break;
+    		case 'p' : sprintf(Line, "is%s planar.\n", Result==OK ? "" : " not"); break;
+    		case 'd' : sprintf(Line, "is%s planar.\n", Result==OK ? "" : " not"); break;
+    		case 'o' : sprintf(Line, "is%s outerplanar.\n", Result==OK ? "" : " not"); break;
+    		case '2' : sprintf(Line, "has %s subgraph homeomorphic to K_{2,3}.\n", Result==OK ? "no" : "a"); break;
+    		case '3' : sprintf(Line, "has %s subgraph homeomorphic to K_{3,3}.\n", Result==OK ? "no" : "a"); break;
+    		case '4' : sprintf(Line, "has %s subgraph homeomorphic to K_4.\n", Result==OK ? "no" : "a"); break;
+    		case 'c' : sprintf(Line, "has been %d-colored.\n", gp_GetNumColorsUsed(theGraph)); break;
+    		default  : sprintf(Line, "nas not been processed due to unrecognized command.\n"); break;
     	}
-
-    	// Show the result message for the algorithm
         Message(Line);
 
     	// Report the length of time it took
@@ -184,18 +169,20 @@ int Result;
 
 		// When called from the menu system, we want to write the planar or outerplanar
 		// obstruction, if one exists. For planar graph drawing, we want the character
-        // art rendition.  A non-NULL empty string is passed to indicate the necessity
+        // art rendition.  An empty but non-NULL string is passed to indicate the necessity
         // of selecting a default name for the second output file.
 		if (outfile2Name != NULL)
 		{
 			if ((command == 'p' || command == 'o') && Result == NONEMBEDDABLE)
 			{
+				// By default, use the same name as the primary output filename
 				if (strlen(outfile2Name) == 0)
 				    outfile2Name = outfileName;
 				gp_Write(theGraph, outfile2Name, WRITE_ADJLIST);
 			}
 			else if (command == 'd' && Result == OK)
 			{
+				// By default, add ".render.txt" to the primary output filename
 				if (strlen(outfile2Name) == 0)
    				    strcat((outfile2Name = outfileName), ".render.txt");
 				gp_DrawPlanar_RenderToFile(theGraph, outfile2Name);

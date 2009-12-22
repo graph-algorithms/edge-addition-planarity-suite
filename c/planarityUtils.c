@@ -104,7 +104,7 @@ void Message(char *message)
 	    fprintf(stdout, "%s", message);
 
 #ifdef DEBUG
-	    fprintf(stdout, "\n");
+//	    fprintf(stdout, "\n");
 	    fflush(stdout);
 #endif
 	}
@@ -114,10 +114,14 @@ void ErrorMessage(char *message)
 {
 	if (quietMode == 'n')
 	{
+//		fprintf(stdout, "ERROR: %s\n", message);
 		fprintf(stderr, "%s", message);
 
 #ifdef DEBUG
-		fprintf(stderr, "\n");
+//	    fprintf(stdout, "\n");
+//		fflush(stdout);
+
+//		fprintf(stderr, "\n");
 		fflush(stderr);
 #endif
 	}
@@ -152,6 +156,57 @@ char Ch;
 
         fclose(outfile);
     }
+}
+
+/****************************************************************************
+ ****************************************************************************/
+
+int  FilesEqual(char *file1Name, char *file2Name)
+{
+	FILE *infile1 = NULL, *infile2 = NULL;
+	int Result = TRUE;
+
+	infile1 = fopen(file1Name, "r");
+	infile2 = fopen(file2Name, "r");
+
+	if (infile1 == NULL || infile2 == NULL)
+		Result = FALSE;
+	else
+	{
+		int c1=0, c2=0;
+
+		// Read the first file to the end
+		while ((c1 = fgetc(infile1)) != EOF)
+		{
+			// If we got a char from the first file, but not from the second
+			// then the second file is shorter, so files are not equal
+			if ((c2 = fgetc(infile2)) == EOF)
+			{
+				Result = FALSE;
+				break;
+			}
+
+			// If we got a char from second file, but not equal to char from
+			// first file, then files are not equal
+			if (c1 != c2)
+			{
+				Result = FALSE;
+				break;
+			}
+		}
+
+		// If we got to the end of the first file without breaking the loop...
+		if (c1 == EOF)
+		{
+			// Then attempt to read from the second file to ensure it also ends.
+			if (fgetc(infile2) != EOF)
+				Result = FALSE;
+		}
+	}
+
+	if (infile1 != NULL) fclose(infile1);
+	if (infile2 != NULL) fclose(infile2);
+	return Result;
 }
 
 /****************************************************************************
@@ -196,25 +251,9 @@ char *GetAlgorithmName(char command)
 }
 
 /****************************************************************************
- AttachAlgorithm()
- ****************************************************************************/
-
-void AttachAlgorithm(graphP theGraph, char command)
-{
-	switch (command)
-	{
-		case 'p' : break;
-		case 'd' : gp_AttachDrawPlanar(theGraph); break;
-		case 'o' : break;
-		case '2' : gp_AttachK23Search(theGraph); break;
-		case '3' : gp_AttachK33Search(theGraph); break;
-		case '4' : gp_AttachK4Search(theGraph); break;
-		case 'c' : gp_AttachColorVertices(theGraph); break;
-	}
-}
-
-/****************************************************************************
  A string used to construct input and output filenames.
+
+ The SUFFIXMAXLENGTH is 32 to accommodate ".out.txt" + ".render.txt" + ".test.txt"
  ****************************************************************************/
 
 #define FILENAMEMAXLENGTH 128
@@ -271,7 +310,7 @@ char *ConstructPrimaryOutputFilename(char *infileName, char *outfileName, char c
 	if (outfileName == NULL)
 	{
 		// The output filename is based on the input filename
-		if (infileName != theFileName)
+		if (theFileName != infileName)
 		    strcpy(theFileName, infileName);
 
 		// If the primary output filename has not been given, then we use
@@ -291,7 +330,7 @@ char *ConstructPrimaryOutputFilename(char *infileName, char *outfileName, char c
 		if (strlen(outfileName) > FILENAMEMAXLENGTH)
 		{
 			// The output filename is based on the input filename
-			if (infileName != theFileName)
+			if (theFileName != infileName)
 			    strcpy(theFileName, infileName);
 
 	    	if (strlen(algorithmName) <= ALGORITHMNAMEMAXLENGTH)
@@ -304,7 +343,10 @@ char *ConstructPrimaryOutputFilename(char *infileName, char *outfileName, char c
 			ErrorMessage(Line);
 		}
 		else
-			strcpy(theFileName, outfileName);
+		{
+			if (theFileName != outfileName)
+			    strcpy(theFileName, outfileName);
+		}
 	}
 
 	return theFileName;

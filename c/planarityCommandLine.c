@@ -347,8 +347,76 @@ int runSpecificGraphTest(char *command, char *infileName)
 	char *commandLine[] = {
 			"planarity", "-s", "C", "infile", "outfile", "outfile2"
 	};
+	char *outfileName = ConstructPrimaryOutputFilename(infileName, NULL, command[1]);
+	char *outfile2Name = "";
+	char *testfileName = strdup(outfileName);
+	int Result = 0;
 
-	return -1;
+	if (testfileName == NULL)
+		return -1;
+
+	outfileName = strdup(strcat(outfileName, ".test.txt"));
+	if (outfileName == NULL)
+	{
+		free(testfileName);
+		return -1;
+	}
+
+	// 'planarity -s [-q] C I O [O2]': Specific graph
+	commandLine[2] = command;
+	commandLine[3] = infileName;
+	commandLine[4] = outfileName;
+	commandLine[5] = outfile2Name;
+
+	Result = callSpecificGraph(6, commandLine);
+	if (Result == OK || Result == NONEMBEDDABLE)
+		Result = 0;
+	else
+	{
+		ErrorMessage("Test failed (graph processor returned failure result).\n");
+		Result = -1;
+	}
+
+	if (Result == 0)
+	{
+		if (FilesEqual(testfileName, outfileName) == TRUE)
+			Message("Test succeeded (result equal to exemplar).\n");
+		else
+		{
+			ErrorMessage("Test failed (result not equal to exemplar).\n");
+			Result = -1;
+		}
+		unlink(outfileName);
+	}
+
+	// For graph drawing, secondary file is outfileName + ".render.txt"
+
+	if (command[1] == 'd')
+	{
+		outfile2Name = ConstructPrimaryOutputFilename(NULL, outfileName, command[1]);
+		free(outfileName);
+		outfileName = strdup(strcat(outfile2Name, ".render.txt"));
+
+		free(testfileName);
+		testfileName = ConstructPrimaryOutputFilename(infileName, NULL, command[1]);
+		testfileName = strdup(strcat(testfileName, ".render.txt"));
+
+		if (Result == 0)
+		{
+			if (FilesEqual(testfileName, outfileName) == TRUE)
+				Message("Test succeeded (secondary result equal to exemplar).\n");
+			else
+			{
+				ErrorMessage("Test failed (secondary result not equal to exemplar).\n");
+				Result = -1;
+			}
+			unlink(outfileName);
+		}
+	}
+
+	free(outfileName);
+	free(testfileName);
+	return Result;
 }
 
 int runNautyTests(int argc, char *argv[])
