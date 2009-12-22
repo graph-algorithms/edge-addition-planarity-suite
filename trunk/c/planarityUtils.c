@@ -173,3 +173,139 @@ int GetEmbedFlags(char command)
 
 	return embedFlags;
 }
+
+/****************************************************************************
+ ****************************************************************************/
+
+char *GetAlgorithmName(char command)
+{
+	char *algorithmName = "UnsupportedAlgorithm";
+
+	switch (command)
+	{
+		case 'p' : algorithmName = "PlanarEmbed"; break;
+		case 'd' : algorithmName = DRAWPLANAR_NAME;	break;
+		case 'o' : algorithmName = "OuterplanarEmbed"; break;
+		case '2' : algorithmName = K23SEARCH_NAME; break;
+		case '3' : algorithmName = K33SEARCH_NAME; break;
+		case '4' : algorithmName = K4SEARCH_NAME; break;
+		case 'c' : algorithmName = COLORVERTICES_NAME; break;
+	}
+
+	return algorithmName;
+}
+
+/****************************************************************************
+ AttachAlgorithm()
+ ****************************************************************************/
+
+void AttachAlgorithm(graphP theGraph, char command)
+{
+	switch (command)
+	{
+		case 'p' : break;
+		case 'd' : gp_AttachDrawPlanar(theGraph); break;
+		case 'o' : break;
+		case '2' : gp_AttachK23Search(theGraph); break;
+		case '3' : gp_AttachK33Search(theGraph); break;
+		case '4' : gp_AttachK4Search(theGraph); break;
+		case 'c' : gp_AttachColorVertices(theGraph); break;
+	}
+}
+
+/****************************************************************************
+ A string used to construct input and output filenames.
+ ****************************************************************************/
+
+#define FILENAMEMAXLENGTH 128
+#define ALGORITHMNAMEMAXLENGTH 32
+#define SUFFIXMAXLENGTH 32
+
+char theFileName[FILENAMEMAXLENGTH+1+ALGORITHMNAMEMAXLENGTH+1+SUFFIXMAXLENGTH+1];
+
+/****************************************************************************
+ ConstructInputFilename()
+ Returns a string not owned by the caller (do not free string).
+ String contains infileName content if infileName is non-NULL.
+ If infileName is NULL, then the user is asked to supply a name.
+ Returns NULL on error, or a non-NULL string on success.
+ ****************************************************************************/
+
+char *ConstructInputFilename(char *infileName)
+{
+	if (infileName == NULL)
+	{
+		Message("Enter graph file name: ");
+		scanf(" %s", theFileName);
+
+		if (!strchr(theFileName, '.'))
+			strcat(theFileName, ".txt");
+	}
+	else
+	{
+		if (strlen(infileName) > FILENAMEMAXLENGTH)
+		{
+			ErrorMessage("Filename is too long");
+			return NULL;
+		}
+		strcpy(theFileName, infileName);
+	}
+
+	return theFileName;
+}
+
+/****************************************************************************
+ ConstructPrimaryOutputFilename()
+ Returns a string not owned by the caller (do not free string).
+ Reuses the same memory space as ConstructinputFilename().
+ If outfileName is non-NULL, then the result string contains its content.
+ If outfileName is NULL, then the infileName and the command's algorithm name
+ are used to construct a string.
+ Returns non-NULL string
+ ****************************************************************************/
+
+char *ConstructPrimaryOutputFilename(char *infileName, char *outfileName, char command)
+{
+	char *algorithmName = GetAlgorithmName(command);
+
+	if (outfileName == NULL)
+	{
+		// The output filename is based on the input filename
+		if (infileName != theFileName)
+		    strcpy(theFileName, infileName);
+
+		// If the primary output filename has not been given, then we use
+		// the input filename + the algorithm name + a simple suffix
+		if (strlen(algorithmName) <= ALGORITHMNAMEMAXLENGTH)
+		{
+			strcat(theFileName, ".");
+			strcat(theFileName, algorithmName);
+		}
+		else
+			ErrorMessage("Algorithm Name is too long, so it will not be used in output filename.");
+
+	    strcat(theFileName, ".out.txt");
+	}
+	else
+	{
+		if (strlen(outfileName) > FILENAMEMAXLENGTH)
+		{
+			// The output filename is based on the input filename
+			if (infileName != theFileName)
+			    strcpy(theFileName, infileName);
+
+	    	if (strlen(algorithmName) <= ALGORITHMNAMEMAXLENGTH)
+	    	{
+	    		strcat(theFileName, ".");
+	    		strcat(theFileName, algorithmName);
+	    	}
+	        strcat(theFileName, ".out.txt");
+			sprintf(Line, "Outfile filename is too long. Result placed in %s", theFileName);
+			ErrorMessage(Line);
+		}
+		else
+			strcpy(theFileName, outfileName);
+	}
+
+	return theFileName;
+}

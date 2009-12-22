@@ -44,8 +44,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "planarity.h"
 
+#include <unistd.h>
+
 int callNauty(int argc, char *argv[]);
-int runTests(int argc, char *argv[]);
+int runQuickRegressionTests(int argc, char *argv[]);
 int callRandomGraphs(int argc, char *argv[]);
 int callSpecificGraph(int argc, char *argv[]);
 int callRandomMaxPlanarGraph(int argc, char *argv[]);
@@ -71,7 +73,7 @@ int commandLine(int argc, char *argv[])
 		Result = callNauty(argc, argv);
 
 	else if (strcmp(argv[1], "-test") == 0)
-		Result = runTests(argc, argv);
+		Result = runQuickRegressionTests(argc, argv);
 
 	else if (strcmp(argv[1], "-r") == 0)
 		Result = callRandomGraphs(argc, argv);
@@ -293,19 +295,60 @@ int callNauty(int argc, char *argv[])
  ****************************************************************************/
 
 int runNautyTests(int argc, char *argv[]);
-int runSpecificGraphTests(int argc, char *argv[]);
+int runSpecificGraphTests();
+int runSpecificGraphTest(char *command, char *infileName);
 
 int runQuickRegressionTests(int argc, char *argv[])
 {
-	if (runSpecificGraphTests(argc, argv) < 0)
+	if (runSpecificGraphTests() < 0)
 		return -1;
 
 	return runNautyTests(argc, argv);
 }
 
-int runSpecificGraphTests(int argc, char *argv[])
+int runSpecificGraphTests()
 {
+	if (chdir("samples") != 0)
+	{
+		if (chdir("..") != 0 || chdir("samples") != 0)
+		{
+			// Warn but give success result
+			printf("WARNING: Unable to change to samples directory to run tests on samples.\n");
+			return 0;
+		}
+	}
+
+	if (runSpecificGraphTest("-p", "maxPlanar5.txt") < 0)
+		return -1;
+
+	if (runSpecificGraphTest("-d", "drawExample.txt") < 0)
+		return -1;
+
+	if (runSpecificGraphTest("-p", "Petersen.txt") < 0)
+		return -1;
+
+	if (runSpecificGraphTest("-o", "Petersen.txt") < 0)
+		return -1;
+
+	if (runSpecificGraphTest("-2", "Petersen.txt") < 0)
+		return -1;
+
+	if (runSpecificGraphTest("-3", "Petersen.txt") < 0)
+		return -1;
+
+	if (runSpecificGraphTest("-4", "Petersen.txt") < 0)
+		return -1;
+
 	return 0;
+}
+
+int runSpecificGraphTest(char *command, char *infileName)
+{
+	char *commandLine[] = {
+			"planarity", "-s", "C", "infile", "outfile", "outfile2"
+	};
+
+	return -1;
 }
 
 int runNautyTests(int argc, char *argv[])

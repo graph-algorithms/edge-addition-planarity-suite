@@ -93,9 +93,14 @@ char Line[MAXLINE];
 void Message(char *message);
 void ErrorMessage(char *message);
 
-int GetEmbedFlags(char command);
-
 void SaveAsciiGraph(graphP theGraph, char *graphName);
+
+int GetEmbedFlags(char command);
+char *GetAlgorithmName(char command);
+void AttachAlgorithm(graphP theGraph, char command);
+
+char *ConstructInputFilename(char *infileName);
+char *ConstructPrimaryOutputFilename(char *infileName, char *outfileName, char command);
 
 #ifdef __cplusplus
 }
