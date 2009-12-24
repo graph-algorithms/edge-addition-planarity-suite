@@ -190,7 +190,10 @@ int Result;
 		}
 	}
 
-	// Free the graph and return the result
+	// Free the graph
 	gp_Free(&theGraph);
+
+	// Flush any remaining message content to the user, and return the result
+    FlushConsole(stdout);
 	return Result;
 }

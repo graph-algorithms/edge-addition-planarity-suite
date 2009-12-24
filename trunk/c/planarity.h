@@ -92,8 +92,10 @@ char Line[MAXLINE];
 
 void Message(char *message);
 void ErrorMessage(char *message);
+void FlushConsole(FILE *f);
+void Prompt(char *message);
 
-void SaveAsciiGraph(graphP theGraph, char *graphName);
+void SaveAsciiGraph(graphP theGraph, char *filename);
 
 int  FilesEqual(char *file1Name, char *file2Name);
 

@@ -63,7 +63,7 @@ int embedFlags = GetEmbedFlags(command);
 
      if (NumGraphs == 0)
      {
-	     Message("Enter number of graphs to generate:");
+	     Prompt("Enter number of graphs to generate:");
          scanf(" %d", &NumGraphs);
      }
 
@@ -75,7 +75,7 @@ int embedFlags = GetEmbedFlags(command);
 
      if (SizeOfGraphs == 0)
      {
-         Message("Enter size of graphs:");
+         Prompt("Enter size of graphs:");
          scanf(" %d", &SizeOfGraphs);
      }
 
@@ -293,6 +293,12 @@ int embedFlags = GetEmbedFlags(command);
           }
      }
 
+     platform_GetTime(end);
+
+     // Finish the count
+     fprintf(stdout, "%d\n", NumGraphs);
+     fflush(stdout);
+
 // Free the graph structures created before the loop
 /* Reuse Graphs */
      gp_Free(&theGraph);
@@ -301,9 +307,6 @@ int embedFlags = GetEmbedFlags(command);
 
 // Print some demographic results
 
-     platform_GetTime(end);
-     fprintf(stdout, "%d\n", NumGraphs);
-     fflush(stdout);
      if (Result == OK || Result == NONEMBEDDABLE)
          Message("\nNo Errors Found.");
      sprintf(Line, "\nDone (%.3lf seconds).\n", platform_GetDuration(start,end));
@@ -367,6 +370,8 @@ int embedFlags = GetEmbedFlags(command);
          Message(Line);
      }
 
+     FlushConsole(stdout);
+
      return Result==OK || Result==NONEMBEDDABLE ? OK : NOTOK;
 }
 
@@ -380,6 +385,7 @@ int  Result;
 platform_time start, end;
 graphP theGraph=NULL, origGraph;
 int embedFlags = GetEmbedFlags(command);
+char saveEdgeListFormat;
 
      if (embedFlags != EMBEDFLAGS_PLANAR)
      {
@@ -389,7 +395,7 @@ int embedFlags = GetEmbedFlags(command);
 
      if (numVertices <= 0)
      {
-         Message("Enter number of vertices:");
+         Prompt("Enter number of vertices:");
          scanf(" %d", &numVertices);
          if (numVertices <= 0 || numVertices > 1000000)
          {
@@ -420,6 +426,7 @@ int embedFlags = GetEmbedFlags(command);
      sprintf(Line, "Created random graph with %d edges in %.3lf seconds. ", theGraph->M, platform_GetDuration(start,end));
      Message(Line);
      Message("Now processing\n");
+     FlushConsole(stdout);
 
      if (outfile2Name != NULL)
      {
@@ -452,13 +459,23 @@ int embedFlags = GetEmbedFlags(command);
     		 gp_Write(theGraph, outfileName, WRITE_ADJLIST);
      }
 
-#ifdef DEBUG
-     if (extraEdges == 0)
-         SaveAsciiGraph(theGraph, "maxPlanarEdgeList.txt");
-#endif
+     Prompt("Do you want to save the generated graph in edge list format (y/n)? ");
+     fflush(stdin);
+     scanf(" %c", &saveEdgeListFormat);
+     if (tolower(saveEdgeListFormat) == 'y')
+     {
+    	 char *fileName = "maxPlanarEdgeList.txt";
+         if (extraEdges > 0)
+        	 fileName = "nonPlanarEdgeList.txt";
+
+         SaveAsciiGraph(theGraph, fileName);
+         sprintf(Line, "Edge list format saved to '%s'\n", fileName);
+    	 Message(Line);
+     }
 
      gp_Free(&theGraph);
      gp_Free(&origGraph);
 
+     FlushConsole(stdout);
      return Result;
 }
