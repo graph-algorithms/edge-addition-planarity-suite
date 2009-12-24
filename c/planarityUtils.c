@@ -59,11 +59,11 @@ void Reconfigure()
 {
      fflush(stdin);
 
-     Message("\nDo you want to \n"
-    		 "  Randomly generate graphs (r),\n"
-    		 "  Specify a graph (s),\n"
-    		 "  Randomly generate a maximal planar graph (m), or\n"
-    		 "  Randomly generate a non-planar graph (n)?");
+     Prompt("\nDo you want to \n"
+    		"  Randomly generate graphs (r),\n"
+    		"  Specify a graph (s),\n"
+    		"  Randomly generate a maximal planar graph (m), or\n"
+    		"  Randomly generate a non-planar graph (n)?");
      scanf(" %c", &Mode);
 
      Mode = tolower(Mode);
@@ -74,20 +74,20 @@ void Reconfigure()
      {
         Message("\nNOTE: The directories for the graphs you want must exist.\n\n");
 
-        Message("Do you want original graphs in directory 'random' (last 10 max)?");
+        Prompt("Do you want original graphs in directory 'random' (last 10 max)?");
         scanf(" %c", &OrigOut);
 
-        Message("Do you want adj. matrix of embeddable graphs in directory 'embedded' (last 10 max))?");
+        Prompt("Do you want adj. matrix of embeddable graphs in directory 'embedded' (last 10 max))?");
         scanf(" %c", &EmbeddableOut);
 
-        Message("Do you want adj. matrix of obstructed graphs in directory 'obstructed' (last 10 max)?");
+        Prompt("Do you want adj. matrix of obstructed graphs in directory 'obstructed' (last 10 max)?");
         scanf(" %c", &ObstructedOut);
 
-        Message("Do you want adjacency list format of embeddings in directory 'adjlist' (last 10 max)?");
+        Prompt("Do you want adjacency list format of embeddings in directory 'adjlist' (last 10 max)?");
         scanf(" %c", &AdjListsForEmbeddingsOut);
      }
 
-     Message("\n");
+     FlushConsole(stdout);
 }
 
 /****************************************************************************
@@ -114,48 +114,50 @@ void ErrorMessage(char *message)
 {
 	if (quietMode == 'n')
 	{
-//		fprintf(stdout, "ERROR: %s\n", message);
 		fprintf(stderr, "%s", message);
 
 #ifdef DEBUG
-//	    fprintf(stdout, "\n");
-//		fflush(stdout);
-
-//		fprintf(stderr, "\n");
+		fprintf(stderr, "\n");
 		fflush(stderr);
 #endif
 	}
 }
 
+void FlushConsole(FILE *f)
+{
+#ifdef DEBUG
+	    // Certain debuggers only flush completed lines of output to the console
+	    fprintf(f, "\n");
+#endif
+	    fflush(f);
+}
+
+void Prompt(char *message)
+{
+	Message(message);
+	FlushConsole(stdout);
+}
+
 /****************************************************************************
  ****************************************************************************/
 
-void SaveAsciiGraph(graphP theGraph, char *graphName)
+void SaveAsciiGraph(graphP theGraph, char *filename)
 {
-char Ch;
+	int  e, limit;
+	FILE *outfile = fopen(filename, "wt");
+	fprintf(outfile, "%s\n", filename);
 
-    Message("Do you want to save the graph in Ascii format (to test.dat)?");
-    scanf(" %c", &Ch);
-    fflush(stdin);
+	limit = theGraph->edgeOffset + 2*(theGraph->M + sp_GetCurrentSize(theGraph->edgeHoles));
 
-    if (Ch == 'y')
-    {
-        int  e, limit;
-        FILE *outfile = fopen("test.dat", "wt");
-        fprintf(outfile, "%s\n", graphName);
+	for (e = theGraph->edgeOffset; e < limit; e+=2)
+	{
+		if (theGraph->G[e].v != NIL)
+			fprintf(outfile, "%d %d\n", theGraph->G[e].v+1, theGraph->G[e+1].v+1);
+	}
 
-        limit = theGraph->edgeOffset + 2*(theGraph->M + sp_GetCurrentSize(theGraph->edgeHoles));
+	fprintf(outfile, "0 0\n");
 
-        for (e = theGraph->edgeOffset; e < limit; e+=2)
-        {
-            if (theGraph->G[e].v != NIL)
-                fprintf(outfile, "%d %d\n", theGraph->G[e].v+1, theGraph->G[e+1].v+1);
-        }
-
-        fprintf(outfile, "0 0\n");
-
-        fclose(outfile);
-    }
+	fclose(outfile);
 }
 
 /****************************************************************************
@@ -274,7 +276,8 @@ char *ConstructInputFilename(char *infileName)
 {
 	if (infileName == NULL)
 	{
-		Message("Enter graph file name: ");
+		Prompt("Enter graph file name: ");
+		fflush(stdin);
 		scanf(" %s", theFileName);
 
 		if (!strchr(theFileName, '.'))

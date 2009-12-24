@@ -192,6 +192,7 @@ int helpMessage(char *param)
 	    );
 	}
 
+    FlushConsole(stdout);
     return 0;
 }
 
@@ -217,10 +218,10 @@ char Choice;
         		"H. Help message for command line version\n"
                 "R. Reconfigure options\n"
                 "X. Exit\n"
-                "\n"
-                "Enter Choice: "
+        		"\n"
         );
 
+        Prompt("Enter Choice: ");
         fflush(stdin);
         scanf(" %c", &Choice);
         Choice = tolower(Choice);
@@ -248,14 +249,19 @@ char Choice;
 
         if (Choice != 'r' && Choice != 'x')
         {
-            Message("\nPress a key then hit ENTER to continue...");
+            Prompt("\nPress a key then hit ENTER to continue...");
             fflush(stdin);
             scanf(" %*c");
             fflush(stdin);
             Message("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+            FlushConsole(stdout);
         }
 
      }  while (Choice != 'x');
+
+     // Certain debuggers don't terminate correctly with pending output content
+     FlushConsole(stdout);
+     FlushConsole(stderr);
 
      return 0;
 }

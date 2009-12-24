@@ -339,6 +339,7 @@ int runSpecificGraphTests()
 	if (runSpecificGraphTest("-4", "Petersen.txt") < 0)
 		return -1;
 
+    FlushConsole(stdout);
 	return 0;
 }
 
