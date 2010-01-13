@@ -151,7 +151,8 @@ int Result;
 	else
 	{
         // Restore the vertex ordering of the original graph (undo DFS numbering)
-        gp_SortVertices(theGraph);
+        if (strchr("pdo234", command))
+            gp_SortVertices(theGraph);
 
         // Determine the name of the primary output file
         outfileName = ConstructPrimaryOutputFilename(infileName, outfileName, command);

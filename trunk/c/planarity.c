@@ -48,7 +48,7 @@ void ProjectTitle()
 {
     Message("\n=================================================="
             "\nPlanarity version 2.2"
-            "\nCopyright (c) 2009 by John M. Boyer"
+            "\nCopyright (c) 2010 by John M. Boyer"
     		"\nContact info: jboyer at acm.org"
             "\n=================================================="
             "\n");
