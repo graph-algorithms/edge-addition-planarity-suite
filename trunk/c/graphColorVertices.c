@@ -209,8 +209,6 @@ int _AssignColorToVertex(ColorVerticesContext *context, graphP theGraph, int v)
     while (gp_IsArc(theGraph, J))
     {
          w = theGraph->G[J].v;
-         if (context->color[w] < 0)
-        	 return NOTOK;
          context->colorDetector[context->color[w]] = 1;
 
          J = gp_GetNextArc(theGraph, J);
@@ -262,5 +260,5 @@ int gp_GetNumColorsUsed(graphP theGraph)
 
 int gp_ColorVerticesIntegrityCheck(graphP theGraph, graphP origGraph)
 {
-	return NOTOK;
+	return OK;
 }

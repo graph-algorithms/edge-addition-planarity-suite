@@ -253,7 +253,7 @@ int  _ColorVertices_CreateStructures(ColorVerticesContext *context)
      for (I=0; I<N; I++)
      {
     	 context->degListHeads[I] = NIL;
-    	 context->color[I] = -1;
+    	 context->color[I] = 0;
      }
 
      context->numVerticesToReduce = 0;
@@ -377,7 +377,7 @@ void _ColorVertices_Reinitialize(ColorVerticesContext *context)
     for (I=0; I<N; I++)
     {
       	 context->degListHeads[I] = NIL;
-      	 context->color[I] = -1;
+      	 context->color[I] = 0;
     }
     context->numVerticesToReduce = 0;
     context->highestColorUsed = -1;
@@ -619,9 +619,6 @@ int _ColorVertices_RestoreVertex(graphP theGraph)
         // Note that u is NIL in this case
         if (u == NIL)
         {
-        	if (context->color[v] >= 0)
-        		return NOTOK;
-
         	if (_AssignColorToVertex(context, theGraph, v) != OK)
         		return NOTOK;
 
