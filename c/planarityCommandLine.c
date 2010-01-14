@@ -418,6 +418,8 @@ int runSpecificGraphTest(char *command, char *infileName)
 		}
 	}
 
+	Message("\n");
+
 	free(outfileName);
 	free(testfileName);
 	return Result;
