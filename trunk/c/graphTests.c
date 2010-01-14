@@ -150,10 +150,10 @@ int _CheckEmbeddingIntegrity(graphP theGraph, graphP origGraph)
     if (theGraph == NULL || origGraph == NULL)
         return NOTOK;
 
-    if (_TestSubgraph(theGraph, origGraph) != OK)
+    if (_TestSubgraph(theGraph, origGraph) != TRUE)
         return NOTOK;
 
-    if (_TestSubgraph(origGraph, theGraph) != OK)
+    if (_TestSubgraph(origGraph, theGraph) != TRUE)
         return NOTOK;
 
     if (_CheckEmbeddingFacialIntegrity(theGraph) != OK)
@@ -406,7 +406,7 @@ int _CheckObstructionIntegrity(graphP theGraph, graphP origGraph)
     if (theGraph == NULL || origGraph == NULL)
         return NOTOK;
 
-    if (_TestSubgraph(theGraph, origGraph) != OK)
+    if (_TestSubgraph(theGraph, origGraph) != TRUE)
     {
         return NOTOK;
     }
@@ -892,14 +892,14 @@ int  Jin, nextVertex;
  neighbor w was unmarked.  If there exists a marked neighbor, then
  H(v) contains an incident edge that is not incident to G(v).
 
- Returns OK if theSubgraph contains only edges from theGraph,
-         NOTOK otherwise
+ Returns TRUE if theSubgraph contains only edges from theGraph,
+         FALSE otherwise
  ********************************************************************/
 
 int  _TestSubgraph(graphP theSubgraph, graphP theGraph)
 {
 int I, J;
-int Result = OK;
+int Result = TRUE;
 int invokeSortOnGraph = FALSE;
 int invokeSortOnSubgraph = FALSE;
 
@@ -938,14 +938,14 @@ int invokeSortOnSubgraph = FALSE;
           {
         	  if (theSubgraph->G[J].v == NIL)
         	  {
-        		  Result = NOTOK;
+        		  Result = FALSE;
         		  break;
         	  }
               theGraph->G[theSubgraph->G[J].v].visited = 1;
               J = gp_GetNextArc(theSubgraph, J);
           }
 
-          if (Result != OK)
+          if (Result != TRUE)
         	  break;
 
           /* For each neighbor w in the adjacency list of vertex I in the graph,
@@ -956,14 +956,14 @@ int invokeSortOnSubgraph = FALSE;
           {
         	  if (theGraph->G[J].v == NIL)
         	  {
-        		  Result = NOTOK;
+        		  Result = FALSE;
         		  break;
         	  }
               theGraph->G[theGraph->G[J].v].visited = 0;
               J = gp_GetNextArc(theGraph, J);
           }
 
-          if (Result != OK)
+          if (Result != TRUE)
         	  break;
 
           /* For each neighbor w in the adjacency list of vertex I in the
@@ -974,13 +974,13 @@ int invokeSortOnSubgraph = FALSE;
           {
               if (theGraph->G[theSubgraph->G[J].v].visited)
               {
-            	  Result = NOTOK;
+            	  Result = FALSE;
             	  break;
               }
               J = gp_GetNextArc(theSubgraph, J);
           }
 
-          if (Result != OK)
+          if (Result != TRUE)
         	  break;
      }
 

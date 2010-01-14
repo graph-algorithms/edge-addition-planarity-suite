@@ -54,6 +54,7 @@ extern int COLORVERTICES_ID;
 #include <stdio.h>
 
 extern void _FillVisitedFlags(graphP theGraph, int FillValue);
+extern int  _TestSubgraph(graphP theSubgraph, graphP theGraph);
 
 extern void _ColorVertices_Reinitialize(ColorVerticesContext *context);
 
@@ -260,5 +261,37 @@ int gp_GetNumColorsUsed(graphP theGraph)
 
 int gp_ColorVerticesIntegrityCheck(graphP theGraph, graphP origGraph)
 {
+	int I, J, w;
+    ColorVerticesContext *context = NULL;
+
+    if (theGraph == NULL || origGraph == NULL)
+        return NOTOK;
+
+    gp_FindExtension(theGraph, COLORVERTICES_ID, (void *)&context);
+    if (context == NULL)
+    	return NOTOK;
+
+    if (gp_GetNumColorsUsed(theGraph) <= 0)
+    	return NOTOK;
+
+    if (_TestSubgraph(theGraph, origGraph) != TRUE)
+        return NOTOK;
+
+    if (_TestSubgraph(origGraph, theGraph) != TRUE)
+        return NOTOK;
+
+    for (I=0; I < theGraph->N; I++)
+    {
+        J = gp_GetFirstArc(theGraph, I);
+        while (gp_IsArc(theGraph, J))
+        {
+             w = theGraph->G[J].v;
+             if (context->color[I] < 0 || context->color[I] == context->color[w])
+            	 return NOTOK;
+
+             J = gp_GetNextArc(theGraph, J);
+        }
+    }
+
 	return OK;
 }

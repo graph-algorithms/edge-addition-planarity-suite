@@ -886,7 +886,7 @@ int  _K33Search_CheckObstructionIntegrity(graphP theGraph, graphP origGraph)
      {
          int  degrees[5], imageVerts[6];
 
-         if (_TestSubgraph(theGraph, origGraph) != OK)
+         if (_TestSubgraph(theGraph, origGraph) != TRUE)
          {
              return NOTOK;
          }
