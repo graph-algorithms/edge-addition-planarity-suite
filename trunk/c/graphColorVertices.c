@@ -271,7 +271,7 @@ int gp_ColorVerticesIntegrityCheck(graphP theGraph, graphP origGraph)
     if (context == NULL)
     	return NOTOK;
 
-    if (gp_GetNumColorsUsed(theGraph) <= 0)
+    if (gp_GetNumColorsUsed(theGraph) <= 0 && theGraph->M > 0)
     	return NOTOK;
 
     if (_TestSubgraph(theGraph, origGraph) != TRUE)

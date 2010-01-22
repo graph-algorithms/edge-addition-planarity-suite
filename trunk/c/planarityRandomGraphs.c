@@ -448,9 +448,9 @@ char saveEdgeListFormat;
          Result = NOTOK;
 
      if (Result == OK)
-          Message("Planar graph successfully embedded");
+          Message("Planar graph successfully embedded\n");
      else if (Result == NONEMBEDDABLE)
-    	  Message("Nonplanar graph successfully justified");
+    	  Message("Nonplanar graph successfully justified\n");
      else ErrorMessage("Failure occurred");
 
      if (Result == OK || Result == NONEMBEDDABLE)

@@ -1638,6 +1638,7 @@ int makeg_main(char command, int argc, char *argv[])
         	case '2' : outproc = outprocTestK23Search; break;
         	case '3' : outproc = outprocTestK33Search; break;
         	case '4' : outproc = outprocTestK4Search; break;
+        	case 'c' : outproc = outprocTestColorVertices; break;
         	default  : return -1;
         }
 //        if (nautyformat)   outproc = writenauty;

@@ -342,6 +342,12 @@ int runSpecificGraphTests()
 	if (runSpecificGraphTest("-c", "maxPlanar5.txt") < 0)
 		return -1;
 
+	if (runSpecificGraphTest("-c", "Petersen.txt") < 0)
+		return -1;
+
+	if (runSpecificGraphTest("-c", "drawExample.txt") < 0)
+		return -1;
+
     FlushConsole(stdout);
 	return 0;
 }
@@ -427,21 +433,22 @@ int runSpecificGraphTest(char *command, char *infileName)
 
 int runNautyTests(int argc, char *argv[])
 {
-#define NUMCOMMANDSTOTEST	6
+#define NUMCOMMANDSTOTEST	7
 
 	platform_time start, end;
 	char *commandLine[] = {
 			"planarity", "-gen", "C", "9"
 	};
 	char *commands[NUMCOMMANDSTOTEST] = {
-			"-p", "-d", "-o", "-2", "-3", "-4"
+			"-p", "-d", "-o", "-2", "-3", "-4", "-c"
 	};
 	char *commandNames[NUMCOMMANDSTOTEST] = {
 			"planarity", "planar drawing", "outerplanarity",
-			"K_{2,3} search", "K_{3,3} search", "K_4 search"
+			"K_{2,3} search", "K_{3,3} search", "K_4 search",
+			"vertex coloring"
 	};
 	int success = TRUE;
-	int results[] = { 194815, 194815, 269377, 268948, 191091, 265312 };
+	int results[] = { 194815, 194815, 269377, 268948, 191091, 265312, 2276 };
 	int i, startCommand, stopCommand;
 
 	startCommand = 0;
@@ -481,6 +488,7 @@ int runNautyTests(int argc, char *argv[])
 		if (results[i] != numGraphs-numOKs)
 		{
 			printf("Incorrect result on command %s.\n", commands[i]);
+			printf("Expected result=%d, Actual result=%ld.\n", results[i], numGraphs-numOKs);
 			success = FALSE;
 		}
 	}
