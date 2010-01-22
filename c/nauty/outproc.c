@@ -1,6 +1,6 @@
 /***********************************************************************
  Author: John Boyer
- Date: 16 May 2001, 2 Jan 2004, 7 Feb 2009
+ Date: 16 May 2001, 2 Jan 2004, 7 Feb 2009, 4 Oct 2009, 21 Jan 2010
 
  This file contains functions that connect McKay's makeg program output
  with planarity-related graph algorithm implementations.
@@ -19,6 +19,7 @@ extern char quietMode;
 #include "../graphK33Search.h"
 #include "../graphK4Search.h"
 #include "../graphDrawPlanar.h"
+#include "../graphColorVertices.h"
 
 #include <stdlib.h>
 
@@ -67,6 +68,11 @@ void outprocTestK4Search(FILE *f, graph *g, int n)
     outprocTest(f, g, n, '4');
 }
 
+void outprocTestColorVertices(FILE *f, graph *g, int n)
+{
+    outprocTest(f, g, n, 'c');
+}
+
 /***********************************************************************
  CreateGraphs() - creates theGraph given the number of vertices n
  ***********************************************************************/
@@ -109,6 +115,10 @@ int CreateGraphs(int n, char command)
 		case '4' :
 			gp_AttachK4Search(theGraph);
 			gp_AttachK4Search(origGraph);
+			break;
+		case 'c' :
+			gp_AttachColorVertices(theGraph);
+			gp_AttachColorVertices(origGraph);
 			break;
 		default  :
 			return NOTOK;
@@ -238,19 +248,37 @@ void outprocTest(FILE *f, graph *g, int n, char command)
 			fprintf(f, "\rFailed to copy graph #%lu\n", numGraphs);
 		else
 		{
-			Result = gp_Embed(theGraph, embedFlags);
-
-			if (Result == OK || Result == NONEMBEDDABLE)
+			if (strchr("pdo234", command))
 			{
-				gp_SortVertices(theGraph);
+				Result = gp_Embed(theGraph, embedFlags);
 
-				if (gp_TestEmbedResultIntegrity(theGraph, origGraph, Result) != Result)
+				if (Result == OK || Result == NONEMBEDDABLE)
 				{
-					Result = NOTOK;
-					if (!numErrors)
-						fprintf(f, "\rIntegrity check failed on graph #%lu.\n", numGraphs);
+					gp_SortVertices(theGraph);
+
+					if (gp_TestEmbedResultIntegrity(theGraph, origGraph, Result) != Result)
+					{
+						Result = NOTOK;
+						if (!numErrors)
+							fprintf(f, "\rIntegrity check failed on graph #%lu.\n", numGraphs);
+					}
 				}
 			}
+			else if (command == 'c')
+			{
+    			if ((Result = gp_ColorVertices(theGraph)) != OK)
+    				 Result = NOTOK;
+    			else Result = gp_ColorVerticesIntegrityCheck(theGraph, origGraph);
+
+    			if (Result != OK)
+    				Result = NOTOK;
+    			else
+    			{
+    				if (gp_GetNumColorsUsed(theGraph) >= 6)
+    					Result = NONEMBEDDABLE;
+    			}
+			}
+			else Result = NOTOK;
 		}
 
 		if (Result == OK)
@@ -315,6 +343,7 @@ char *msg = NULL;
 	        case '2' : msg = "with K2,3"; break;
 	        case '3' : msg = "with K3,3"; break;
 	        case '4' : msg = "with K4"; break;
+	        case 'c' : msg = "with 6 or more colors"; break;
 	    }
 
 	    fprintf(msgfile, "# %s=%ld\n", msg, numGraphs - numOKs);
