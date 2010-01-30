@@ -107,8 +107,8 @@ int Result;
 	        platform_GetTime(start);
         	if (command == 'c')
         	{
-    			Result = gp_ColorVertices(theGraph);
-    	        Result = gp_ColorVerticesIntegrityCheck(theGraph, origGraph);
+    			if ((Result = gp_ColorVertices(theGraph)) == OK)
+    				 Result = gp_ColorVerticesIntegrityCheck(theGraph, origGraph);
         	}
         	else
     			Result = NOTOK;

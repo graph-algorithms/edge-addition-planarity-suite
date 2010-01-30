@@ -101,6 +101,7 @@ int  FilesEqual(char *file1Name, char *file2Name);
 
 int GetEmbedFlags(char command);
 char *GetAlgorithmName(char command);
+void AttachAlgorithm(graphP theGraph, char command);
 
 char *ConstructInputFilename(char *infileName);
 char *ConstructPrimaryOutputFilename(char *infileName, char *outfileName, char command);

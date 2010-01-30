@@ -253,6 +253,21 @@ char *GetAlgorithmName(char command)
 }
 
 /****************************************************************************
+ ****************************************************************************/
+
+void AttachAlgorithm(graphP theGraph, char command)
+{
+	switch (command)
+	{
+		case 'd' : gp_AttachDrawPlanar(theGraph); break;
+		case '2' : gp_AttachK23Search(theGraph); break;
+		case '3' : gp_AttachK33Search(theGraph); break;
+		case '4' : gp_AttachK4Search(theGraph); break;
+		case 'c' : gp_AttachColorVertices(theGraph); break;
+	}
+}
+
+/****************************************************************************
  A string used to construct input and output filenames.
 
  The SUFFIXMAXLENGTH is 32 to accommodate ".out.txt" + ".render.txt" + ".test.txt"

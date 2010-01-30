@@ -845,6 +845,8 @@ graphP result;
  we retry until a non-existent edge is picked.
 
  This function assumes the caller has already called srand().
+
+ Returns OK on success, NOTOK on failure
  ********************************************************************/
 
 int  gp_CreateRandomGraph(graphP theGraph)

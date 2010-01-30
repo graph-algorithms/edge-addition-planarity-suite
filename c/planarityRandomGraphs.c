@@ -44,8 +44,17 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "planarity.h"
 
+void GetNumGraphsAndSize(int *pNumGraphs, int *pSize);
+void ReinitializeGraph(graphP *pGraph, int ReuseGraphs, char command);
+graphP MakeGraph(int Size, char command);
+
 /****************************************************************************
  RandomGraphs()
+ Top-level method to randomly generate graphs to test the algorithm given by
+ the command parameter.
+ The number of graphs to generate, and the number of vertices for each graph,
+ can be sent as the second and third params.  For each that is sent as zero,
+ this method will prompt the user for a value.
  ****************************************************************************/
 
 #define NUM_MINORS  9
@@ -53,238 +62,143 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 int  RandomGraphs(char command, int NumGraphs, int SizeOfGraphs)
 {
 char theFileName[256];
-int  Result=OK, I;
-int  NumEmbeddableGraphs=0;
+int  I, countUpdateFreq;
+int Result=OK, MainStatistic=0;
 int  ObstructionMinorFreqs[NUM_MINORS];
-graphP theGraph=NULL;
+graphP theGraph=NULL, origGraph=NULL;
 platform_time start, end;
-graphP origGraph=NULL;
 int embedFlags = GetEmbedFlags(command);
+int ReuseGraphs = TRUE;
 
-     if (NumGraphs == 0)
-     {
-	     Prompt("Enter number of graphs to generate:");
-         scanf(" %d", &NumGraphs);
-     }
+     GetNumGraphsAndSize(&NumGraphs, &SizeOfGraphs);
 
-     if (NumGraphs <= 0 || NumGraphs > 1000000000)
-     {
-    	 ErrorMessage("Must be between 1 and 1000000000; changed to 100\n");
-         NumGraphs = 100;
-     }
+   	 theGraph = MakeGraph(SizeOfGraphs, command);
+   	 origGraph = MakeGraph(SizeOfGraphs, command);
+   	 if (theGraph == NULL || origGraph == NULL)
+   	 {
+   		 gp_Free(&theGraph);
+   		 return NOTOK;
+   	 }
 
-     if (SizeOfGraphs == 0)
-     {
-         Prompt("Enter size of graphs:");
-         scanf(" %d", &SizeOfGraphs);
-     }
-
-     if (SizeOfGraphs <= 0 || SizeOfGraphs > 10000)
-     {
-    	 ErrorMessage("Must be between 1 and 10000; changed to 15\n");
-         SizeOfGraphs = 15;
-     }
-
-     srand(time(NULL));
-
+     // Initialize a secondary statistics array
      for (I=0; I<NUM_MINORS; I++)
           ObstructionMinorFreqs[I] = 0;
 
-/* Reuse Graphs */
-// Make a graph structure for a graph
+   	 // Seed the random number generator with "now". Do it after any prompting
+   	 // to tie randomness to human process of answering the prompt.
+   	 srand(time(NULL));
 
-     if ((theGraph = gp_New()) == NULL || gp_InitGraph(theGraph, SizeOfGraphs) != OK)
-     {
-    	  ErrorMessage("Error creating space for a graph of the given size.\n");
-          return  NOTOK;
-     }
+   	 // Select a counter update frequency that updates more frequently with larger graphs
+   	 // and which is relatively prime with 10 so that all digits of the count will change
+   	 // even though we aren't showing the count value on every iteration
+   	 countUpdateFreq = 3579 / SizeOfGraphs;
+   	 countUpdateFreq = countUpdateFreq < 1 ? 1 : countUpdateFreq;
+   	 countUpdateFreq = countUpdateFreq % 2 == 0 ? countUpdateFreq+1 : countUpdateFreq;
+   	 countUpdateFreq = countUpdateFreq % 5 == 0 ? countUpdateFreq+2 : countUpdateFreq;
 
-// Enable the appropriate feature
-
-//     if (embedFlags != EMBEDFLAGS_SEARCHFORK33)
-//         gp_AttachK33Search(theGraph);
-
-     switch (embedFlags)
-     {
-        case EMBEDFLAGS_SEARCHFORK4  : gp_AttachK4Search(theGraph); break;
-        case EMBEDFLAGS_SEARCHFORK33 : gp_AttachK33Search(theGraph); break;
-        case EMBEDFLAGS_SEARCHFORK23 : gp_AttachK23Search(theGraph); break;
-        case EMBEDFLAGS_DRAWPLANAR   : gp_AttachDrawPlanar(theGraph); break;
-     }
-
-// Make another graph structure to store the original graph that is randomly generated
-
-     if ((origGraph = gp_New()) == NULL || gp_InitGraph(origGraph, SizeOfGraphs) != OK)
-     {
-    	  ErrorMessage("Error creating space for the second graph structure of the given size.\n");
-          return NOTOK;
-     }
-
-// Enable the appropriate feature
-
-     switch (embedFlags)
-     {
-        case EMBEDFLAGS_SEARCHFORK4  : gp_AttachK4Search(origGraph); break;
-        case EMBEDFLAGS_SEARCHFORK33 : gp_AttachK33Search(origGraph); break;
-        case EMBEDFLAGS_SEARCHFORK23 : gp_AttachK23Search(origGraph); break;
-        case EMBEDFLAGS_DRAWPLANAR   : gp_AttachDrawPlanar(origGraph); break;
-     }
-
-/* End Reuse graphs */
-
+   	 // Start the count
      fprintf(stdout, "0\r");
      fflush(stdout);
 
-     // Generate the graphs and try to embed each
-
+     // Start the timer
      platform_GetTime(start);
 
+     // Generate and process the number of graphs requested
      for (I=0; I < NumGraphs; I++)
      {
-/* Use New Graphs */
-/*
-         // Make a graph structure for a graph
-
-         if ((theGraph = gp_New()) == NULL || gp_InitGraph(theGraph, SizeOfGraphs) != OK)
-         {
-              ErrorMessage("Error creating space for a graph of the given size.\n");
-              return NOTOK;
-         }
-
-         // Enable the appropriate feature
-
-         switch (embedFlags)
-         {
-            case EMBEDFLAGS_SEARCHFORK4  : gp_AttachK4Search(theGraph); break;
-            case EMBEDFLAGS_SEARCHFORK33 : gp_AttachK33Search(theGraph); break;
-            case EMBEDFLAGS_SEARCHFORK23 : gp_AttachK23Search(theGraph); break;
-            case EMBEDFLAGS_DRAWPLANAR   : gp_AttachDrawPlanar(theGraph); break;
-         }
-
-         // Make another graph structure to store the original graph that is randomly generated
-
-         if ((origGraph = gp_New()) == NULL || gp_InitGraph(origGraph, SizeOfGraphs) != OK)
-         {
-              ErrorMessage("Error creating space for the second graph structure of the given size.\n");
-              return NOTOK;
-         }
-
-         // Enable the appropriate feature
-
-         switch (embedFlags)
-         {
-            case EMBEDFLAGS_SEARCHFORK4  : gp_AttachK4Search(origGraph); break;
-            case EMBEDFLAGS_SEARCHFORK33 : gp_AttachK33Search(origGraph); break;
-            case EMBEDFLAGS_SEARCHFORK23 : gp_AttachK23Search(origGraph); break;
-            case EMBEDFLAGS_DRAWPLANAR   : gp_AttachDrawPlanar(origGraph); break;
-         }
-*/
-/* End Use New Graphs */
-
-          if (gp_CreateRandomGraph(theGraph) != OK)
+          if ((Result = gp_CreateRandomGraph(theGraph)) == OK)
           {
-        	  ErrorMessage("gp_CreateRandomGraph() failed\n");
-        	  Result = NOTOK;
-              break;
+              if (tolower(OrigOut)=='y')
+              {
+                  sprintf(theFileName, "random\\%d.txt", I%10);
+                  gp_Write(theGraph, theFileName, WRITE_ADJLIST);
+              }
+
+              gp_CopyGraph(origGraph, theGraph);
+
+              if (strchr("pdo234", command))
+              {
+                  Result = gp_Embed(theGraph, embedFlags);
+
+                  if (gp_TestEmbedResultIntegrity(theGraph, origGraph, Result) != Result)
+                      Result = NOTOK;
+
+                  if (Result == OK)
+                  {
+                       MainStatistic++;
+
+                       if (tolower(EmbeddableOut) == 'y')
+                       {
+                           sprintf(theFileName, "embedded\\%d.txt", I%10);
+                           gp_Write(theGraph, theFileName, WRITE_ADJMATRIX);
+                       }
+
+                       if (tolower(AdjListsForEmbeddingsOut) == 'y')
+                       {
+                           sprintf(theFileName, "adjlist\\%d.txt", I%10);
+                           gp_Write(theGraph, theFileName, WRITE_ADJLIST);
+                       }
+                  }
+                  else if (Result == NONEMBEDDABLE)
+                  {
+                       if (embedFlags == EMBEDFLAGS_PLANAR || embedFlags == EMBEDFLAGS_OUTERPLANAR)
+                       {
+                           if (theGraph->IC.minorType & MINORTYPE_A)
+                                ObstructionMinorFreqs[0] ++;
+                           else if (theGraph->IC.minorType & MINORTYPE_B)
+                                ObstructionMinorFreqs[1] ++;
+                           else if (theGraph->IC.minorType & MINORTYPE_C)
+                                ObstructionMinorFreqs[2] ++;
+                           else if (theGraph->IC.minorType & MINORTYPE_D)
+                                ObstructionMinorFreqs[3] ++;
+                           else if (theGraph->IC.minorType & MINORTYPE_E)
+                                ObstructionMinorFreqs[4] ++;
+
+                           if (theGraph->IC.minorType & MINORTYPE_E1)
+                                ObstructionMinorFreqs[5] ++;
+                           else if (theGraph->IC.minorType & MINORTYPE_E2)
+                                ObstructionMinorFreqs[6] ++;
+                           else if (theGraph->IC.minorType & MINORTYPE_E3)
+                                ObstructionMinorFreqs[7] ++;
+                           else if (theGraph->IC.minorType & MINORTYPE_E4)
+                                ObstructionMinorFreqs[8] ++;
+
+                           if (tolower(ObstructedOut) == 'y')
+                           {
+                               sprintf(theFileName, "obstructed\\%d.txt", I%10);
+                               gp_Write(theGraph, theFileName, WRITE_ADJMATRIX);
+                           }
+                       }
+                  }
+              }
+              else if (command == 'c')
+              {
+      			if ((Result = gp_ColorVertices(theGraph)) == OK)
+      				 Result = gp_ColorVerticesIntegrityCheck(theGraph, origGraph);
+				if (Result == OK && gp_GetNumColorsUsed(theGraph) <= 5)
+					MainStatistic++;
+              }
+
+              // If there is an error in processing, then write the file for debugging
+              if (Result != OK && Result != NONEMBEDDABLE)
+              {
+                   sprintf(theFileName, "error\\%d.txt", I%10);
+                   gp_Write(origGraph, theFileName, WRITE_ADJLIST);
+              }
           }
 
-          if (tolower(OrigOut)=='y')
-          {
-              sprintf(theFileName, "random\\%d.txt", I%10);
-              gp_Write(theGraph, theFileName, WRITE_ADJLIST);
-          }
+          // Reinitialize or recreate graphs for next iteration
+          ReinitializeGraph(&theGraph, ReuseGraphs, command);
+          ReinitializeGraph(&origGraph, ReuseGraphs, command);
 
-          gp_CopyGraph(origGraph, theGraph);
-
-          Result = gp_Embed(theGraph, embedFlags);
-
-          if (gp_TestEmbedResultIntegrity(theGraph, origGraph, Result) != Result)
-              Result = NOTOK;
-
-          if (Result == OK)
-          {
-               NumEmbeddableGraphs++;
-
-               if (tolower(EmbeddableOut) == 'y')
-               {
-                   sprintf(theFileName, "embedded\\%d.txt", I%10);
-                   gp_Write(theGraph, theFileName, WRITE_ADJMATRIX);
-               }
-
-               if (tolower(AdjListsForEmbeddingsOut) == 'y')
-               {
-                   sprintf(theFileName, "adjlist\\%d.txt", I%10);
-                   gp_Write(theGraph, theFileName, WRITE_ADJLIST);
-               }
-          }
-          else if (Result == NONEMBEDDABLE)
-          {
-               if (embedFlags == EMBEDFLAGS_PLANAR || embedFlags == EMBEDFLAGS_OUTERPLANAR)
-               {
-                   if (theGraph->IC.minorType & MINORTYPE_A)
-                        ObstructionMinorFreqs[0] ++;
-                   else if (theGraph->IC.minorType & MINORTYPE_B)
-                        ObstructionMinorFreqs[1] ++;
-                   else if (theGraph->IC.minorType & MINORTYPE_C)
-                        ObstructionMinorFreqs[2] ++;
-                   else if (theGraph->IC.minorType & MINORTYPE_D)
-                        ObstructionMinorFreqs[3] ++;
-                   else if (theGraph->IC.minorType & MINORTYPE_E)
-                        ObstructionMinorFreqs[4] ++;
-
-                   if (theGraph->IC.minorType & MINORTYPE_E1)
-                        ObstructionMinorFreqs[5] ++;
-                   else if (theGraph->IC.minorType & MINORTYPE_E2)
-                        ObstructionMinorFreqs[6] ++;
-                   else if (theGraph->IC.minorType & MINORTYPE_E3)
-                        ObstructionMinorFreqs[7] ++;
-                   else if (theGraph->IC.minorType & MINORTYPE_E4)
-                        ObstructionMinorFreqs[8] ++;
-
-                   if (tolower(ObstructedOut) == 'y')
-                   {
-                       sprintf(theFileName, "obstructed\\%d.txt", I%10);
-                       gp_Write(theGraph, theFileName, WRITE_ADJMATRIX);
-                   }
-               }
-          }
-
-          else
-          {
-               sprintf(theFileName, "error\\%d.txt", I%10);
-               gp_Write(origGraph, theFileName, WRITE_ADJLIST);
-
-               gp_ReinitializeGraph(theGraph);
-               gp_CopyGraph(theGraph, origGraph);
-               Result = gp_Embed(theGraph, embedFlags);
-               if (Result != OK && Result != NONEMBEDDABLE)
-               {
-            	   ErrorMessage("Error found twice!\n");
-               }
-               Result = NOTOK;
-          }
-
-/* Reuse Graphs */
-          gp_ReinitializeGraph(theGraph);
-          gp_ReinitializeGraph(origGraph);
-
-/* End Reuse Graphs*/
-
-/* Use New Graphs */
-/*
-          gp_Free(&theGraph);
-          gp_Free(&origGraph);
-*/
-/* End Use New Graphs */
-
-//#ifdef DEBUG
-          if (quietMode == 'n' && (I+1) % 379 == 0)
+          // Show progress, but not so often that it bogs down progress
+          if (quietMode == 'n' && (I+1) % countUpdateFreq == 0)
           {
               fprintf(stdout, "%d\r", I+1);
               fflush(stdout);
           }
-//#endif
 
+          // Terminate loop on error
           if (Result != OK && Result != NONEMBEDDABLE)
           {
         	  ErrorMessage("\nError found\n");
@@ -293,30 +207,27 @@ int embedFlags = GetEmbedFlags(command);
           }
      }
 
+     // Stop the timer
      platform_GetTime(end);
 
      // Finish the count
      fprintf(stdout, "%d\n", NumGraphs);
      fflush(stdout);
 
-// Free the graph structures created before the loop
-/* Reuse Graphs */
+     // Free the graph structures created before the loop
      gp_Free(&theGraph);
      gp_Free(&origGraph);
-/* End Reuse Graphs */
 
-// Print some demographic results
-
+     // Print some demographic results
      if (Result == OK || Result == NONEMBEDDABLE)
          Message("\nNo Errors Found.");
      sprintf(Line, "\nDone (%.3lf seconds).\n", platform_GetDuration(start,end));
      Message(Line);
 
-// Report statistics for planar or outerplanar embedding
-
+     // Report statistics for planar or outerplanar embedding
      if (embedFlags == EMBEDFLAGS_PLANAR || embedFlags == EMBEDFLAGS_OUTERPLANAR)
      {
-         sprintf(Line, "Num Embedded=%d.\n", NumEmbeddableGraphs);
+         sprintf(Line, "Num Embedded=%d.\n", MainStatistic);
          Message(Line);
 
          for (I=0; I<5; I++)
@@ -342,37 +253,123 @@ int embedFlags = GetEmbedFlags(command);
          }
      }
 
-// Report statistics for graph drawing
-
+     // Report statistics for graph drawing
      else if (embedFlags == EMBEDFLAGS_DRAWPLANAR)
      {
-         sprintf(Line, "Num Graphs Embedded and Drawn=%d.\n", NumEmbeddableGraphs);
+         sprintf(Line, "Num Graphs Embedded and Drawn=%d.\n", MainStatistic);
          Message(Line);
      }
 
-// Report statistics for subgraph homeomorphism algorithms
-
+     // Report statistics for subgraph homeomorphism algorithms
      else if (embedFlags == EMBEDFLAGS_SEARCHFORK23)
      {
-         sprintf(Line, "Of the generated graphs, %d did not contain a K_{2,3} homeomorph as a subgraph.\n", NumEmbeddableGraphs);
+         sprintf(Line, "Of the generated graphs, %d did not contain a K_{2,3} homeomorph as a subgraph.\n", MainStatistic);
          Message(Line);
      }
-
      else if (embedFlags == EMBEDFLAGS_SEARCHFORK33)
      {
-         sprintf(Line, "Of the generated graphs, %d did not contain a K_{3,3} homeomorph as a subgraph.\n", NumEmbeddableGraphs);
+         sprintf(Line, "Of the generated graphs, %d did not contain a K_{3,3} homeomorph as a subgraph.\n", MainStatistic);
+         Message(Line);
+     }
+     else if (embedFlags == EMBEDFLAGS_SEARCHFORK4)
+     {
+         sprintf(Line, "Of the generated graphs, %d did not contain a K_4 homeomorph as a subgraph.\n", MainStatistic);
          Message(Line);
      }
 
-     else if (embedFlags == EMBEDFLAGS_SEARCHFORK4)
+     // Report statistics for vertex coloring
+     else if (command == 'c')
      {
-         sprintf(Line, "Of the generated graphs, %d did not contain a K_4 homeomorph as a subgraph.\n", NumEmbeddableGraphs);
+         sprintf(Line, "Num Graphs colored with 5 or fewer colors=%d.\n", MainStatistic);
          Message(Line);
      }
 
      FlushConsole(stdout);
 
      return Result==OK || Result==NONEMBEDDABLE ? OK : NOTOK;
+}
+
+/****************************************************************************
+ GetNumGraphsAndSize()
+ Internal function to get number of graphs and size, if not already given.
+ ****************************************************************************/
+
+void GetNumGraphsAndSize(int *pNumGraphs, int *pSize)
+{
+	if (*pNumGraphs == 0)
+	{
+	    Prompt("Enter number of graphs to generate:");
+	    scanf(" %d", pNumGraphs);
+	}
+
+	if (*pNumGraphs <= 0 || *pNumGraphs > 1000000000)
+	{
+		ErrorMessage("Must be between 1 and 1000000000; changed to 100\n");
+		*pNumGraphs = 100;
+	}
+
+	if (*pSize == 0)
+	{
+	    Prompt("Enter size of graphs:");
+	    scanf(" %d", pSize);
+	}
+
+	if (*pSize <= 0 || *pSize > 10000)
+	{
+		ErrorMessage("Must be between 1 and 10000; changed to 15\n");
+		*pSize = 15;
+	}
+}
+
+/****************************************************************************
+ MakeGraph()
+ Internal function that makes a new graph, initializes it, and attaches an
+ algorithm to it based on the command.
+ ****************************************************************************/
+
+graphP MakeGraph(int Size, char command)
+{
+	graphP theGraph;
+    if ((theGraph = gp_New()) == NULL || gp_InitGraph(theGraph, Size) != OK)
+    {
+    	ErrorMessage("Error creating space for a graph of the given size.\n");
+    	gp_Free(&theGraph);
+    	return NULL;
+    }
+
+// Enable the appropriate feature. Although the same code appears in SpecificGraph,
+// it is deliberately not separated to a common utility because SpecificGraph is
+// used as a self-contained tutorial.  It is not that hard to update both locations
+// when new algorithms are added.
+
+	switch (command)
+	{
+		case 'd' : gp_AttachDrawPlanar(theGraph); break;
+		case '2' : gp_AttachK23Search(theGraph); break;
+		case '3' : gp_AttachK33Search(theGraph); break;
+		case '4' : gp_AttachK4Search(theGraph); break;
+		case 'c' : gp_AttachColorVertices(theGraph); break;
+	}
+
+	return theGraph;
+}
+
+/****************************************************************************
+ ReinitializeGraph()
+ Internal function that will either reinitialize the given graph or free it
+ and make a new one just like it.
+ ****************************************************************************/
+
+void ReinitializeGraph(graphP *pGraph, int ReuseGraphs, char command)
+{
+	if (ReuseGraphs)
+		gp_ReinitializeGraph(*pGraph);
+	else
+	{
+		graphP newGraph = MakeGraph((*pGraph)->N, command);
+		gp_Free(pGraph);
+		*pGraph = newGraph;
+	}
 }
 
 /****************************************************************************
