@@ -13,6 +13,7 @@ This page presents the roadmap for future development of this project.
   * 2.0: K33 subgraph homeomorphism (DONE)
 
   * 2.1: K4 subgraph homeomorphism (DONE)
+  * 2.2: Vertex coloring by min. degree selection, esp. including linear time planar graph 5-coloring with the Matula-Shiloach-Tarjan optimization (IN PROGRESS)
 
 Other algorithms that may be formulated in the future could be supported as extensions, such as:
  
@@ -22,7 +23,6 @@ Other algorithms that may be formulated in the future could be supported as exte
 
 A fuller range of algorithm implementations may also be developed, such as
 
-  * Vertex coloring by min. degree, esp. including planar graph 5-coloring with the Tarjan optimization
   * Directed graph methods, e.g. topological sort, 2SAT
   * Weighted graph methods, esp. Dijkstra's shortest path with my implementation of Tarjan's Fibonacci heap.
   * An O(log n) improvement to the Karger-Stein randomized min-cut method
@@ -31,8 +31,8 @@ A fuller range of algorithm implementations may also be developed, such as
 
 Minor adjustments and tweaks that may be desired from time to time. This may include service routines such as:
 
-  * Edge contract and uncontract
-  * Identifying two vertices (i.e. merging two vertices)
+  * Edge contract and uncontract (IN PROGRESS)
+  * Identifying two vertices, i.e. merging two vertices (IN PROGRESS)
   * Planar graph dual
   * BFS
   * Refinements to I/O routines
