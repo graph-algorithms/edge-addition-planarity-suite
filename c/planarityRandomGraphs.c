@@ -418,36 +418,20 @@ char saveEdgeListFormat;
          Result = gp_Embed(theGraph, embedFlags);
          platform_GetTime(end);
 
-         sprintf(Line, "Finished processing in %.3lf seconds. Testing integrity of result...\n", platform_GetDuration(start,end));
-         Message(Line);
-
     	 gp_SortVertices(theGraph);
 
          if (gp_TestEmbedResultIntegrity(theGraph, origGraph, Result) != Result)
              Result = NOTOK;
-
-         if (Result == OK)
-              Message("Planar graph successfully embedded\n");
-         else if (Result == NONEMBEDDABLE)
-        	  Message("Nonplanar graph successfully justified\n");
      }
      else if (command == 'c')
      {
          platform_GetTime(start);
     	 Result = gp_ColorVertices(theGraph);
          platform_GetTime(end);
-
-         sprintf(Line, "Finished processing in %.3lf seconds. Testing integrity of result...\n", platform_GetDuration(start,end));
-         Message(Line);
-
-    	 if (Result == OK)
-    	 	 Result = gp_ColorVerticesIntegrityCheck(theGraph, origGraph);
-    	 if (Result == OK)
-    	 {
-    		 sprintf(Line, "Graph successfully %d-colored.\n", gp_GetNumColorsUsed(theGraph));
-    		 Message(Line);
-    	 }
      }
+
+     // Write what the algorithm determined and how long it took
+     WriteAlgorithmResults(theGraph, Result, command, start, end, NULL);
 
      // On successful algorithm result, write the output file and see if the
      // user wants the edge list formatted file.
