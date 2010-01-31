@@ -115,26 +115,8 @@ int Result;
    	        platform_GetTime(end);
         }
 
-        // Write the human-readable result
-        sprintf(Line, "The graph '%s' ", infileName);
-        Message(Line);
-    	switch (command)
-    	{
-    		case 'p' : sprintf(Line, "is%s planar.\n", Result==OK ? "" : " not"); break;
-    		case 'd' : sprintf(Line, "is%s planar.\n", Result==OK ? "" : " not"); break;
-    		case 'o' : sprintf(Line, "is%s outerplanar.\n", Result==OK ? "" : " not"); break;
-    		case '2' : sprintf(Line, "has %s subgraph homeomorphic to K_{2,3}.\n", Result==OK ? "no" : "a"); break;
-    		case '3' : sprintf(Line, "has %s subgraph homeomorphic to K_{3,3}.\n", Result==OK ? "no" : "a"); break;
-    		case '4' : sprintf(Line, "has %s subgraph homeomorphic to K_4.\n", Result==OK ? "no" : "a"); break;
-    		case 'c' : sprintf(Line, "has been %d-colored.\n", gp_GetNumColorsUsed(theGraph)); break;
-    		default  : sprintf(Line, "nas not been processed due to unrecognized command.\n"); break;
-    	}
-        Message(Line);
-
-    	// Report the length of time it took
-        sprintf(Line, "Algorithm '%s' executed in %.3lf seconds.\n",
-        		GetAlgorithmName(command), platform_GetDuration(start,end));
-        Message(Line);
+        // Write what the algorithm determined and how long it took
+        WriteAlgorithmResults(theGraph, Result, command, start, end, infileName);
 
         // Free the graph obtained for integrity checking.
         gp_Free(&origGraph);
@@ -197,4 +179,33 @@ int Result;
 	// Flush any remaining message content to the user, and return the result
     FlushConsole(stdout);
 	return Result;
+}
+
+/****************************************************************************
+ WriteAlgorithmResults()
+ ****************************************************************************/
+
+void WriteAlgorithmResults(graphP theGraph, int Result, char command, platform_time start, platform_time end, char *infileName)
+{
+	if (infileName)
+		 sprintf(Line, "The graph '%s' ", infileName);
+	else sprintf(Line, "The graph ");
+	Message(Line);
+
+	switch (command)
+	{
+		case 'p' : sprintf(Line, "is%s planar.\n", Result==OK ? "" : " not"); break;
+		case 'd' : sprintf(Line, "is%s planar.\n", Result==OK ? "" : " not"); break;
+		case 'o' : sprintf(Line, "is%s outerplanar.\n", Result==OK ? "" : " not"); break;
+		case '2' : sprintf(Line, "has %s subgraph homeomorphic to K_{2,3}.\n", Result==OK ? "no" : "a"); break;
+		case '3' : sprintf(Line, "has %s subgraph homeomorphic to K_{3,3}.\n", Result==OK ? "no" : "a"); break;
+		case '4' : sprintf(Line, "has %s subgraph homeomorphic to K_4.\n", Result==OK ? "no" : "a"); break;
+		case 'c' : sprintf(Line, "has been %d-colored.\n", gp_GetNumColorsUsed(theGraph)); break;
+		default  : sprintf(Line, "nas not been processed due to unrecognized command.\n"); break;
+	}
+	Message(Line);
+
+	sprintf(Line, "Algorithm '%s' executed in %.3lf seconds.\n",
+			GetAlgorithmName(command), platform_GetDuration(start,end));
+	Message(Line);
 }
