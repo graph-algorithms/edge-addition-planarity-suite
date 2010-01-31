@@ -44,7 +44,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "planarity.h"
 
-void GetNumGraphsAndSize(int *pNumGraphs, int *pSize);
+void GetNumberIfZero(int *pNum, char *prompt, int min, int max);
 void ReinitializeGraph(graphP *pGraph, int ReuseGraphs, char command);
 graphP MakeGraph(int Size, char command);
 
@@ -70,7 +70,8 @@ platform_time start, end;
 int embedFlags = GetEmbedFlags(command);
 int ReuseGraphs = TRUE;
 
-     GetNumGraphsAndSize(&NumGraphs, &SizeOfGraphs);
+     GetNumberIfZero(&NumGraphs, "Enter number of graphs to generate:", 1, 1000000000);
+     GetNumberIfZero(&SizeOfGraphs, "Enter size of graphs:", 1, 10000);
 
    	 theGraph = MakeGraph(SizeOfGraphs, command);
    	 origGraph = MakeGraph(SizeOfGraphs, command);
@@ -290,34 +291,30 @@ int ReuseGraphs = TRUE;
 }
 
 /****************************************************************************
- GetNumGraphsAndSize()
- Internal function to get number of graphs and size, if not already given.
+ GetNumberIfZero()
+ Internal function that gets a number if the given *pNum is zero.
+ The prompt is displayed if the number must be obtained from the user.
+ Whether the given number is used or obtained from the user, the function
+ ensures it is in the range [min, max] and assigns the midpoint value if
+ it is not.
  ****************************************************************************/
 
-void GetNumGraphsAndSize(int *pNumGraphs, int *pSize)
+void GetNumberIfZero(int *pNum, char *prompt, int min, int max)
 {
-	if (*pNumGraphs == 0)
+	if (*pNum == 0)
 	{
-	    Prompt("Enter number of graphs to generate:");
-	    scanf(" %d", pNumGraphs);
+	    Prompt(prompt);
+	    scanf(" %d", pNum);
 	}
 
-	if (*pNumGraphs <= 0 || *pNumGraphs > 1000000000)
-	{
-		ErrorMessage("Must be between 1 and 1000000000; changed to 100\n");
-		*pNumGraphs = 100;
-	}
+	if (min < 1) min = 1;
+	if (max < min) max = min;
 
-	if (*pSize == 0)
+	if (*pNum < min || *pNum > max)
 	{
-	    Prompt("Enter size of graphs:");
-	    scanf(" %d", pSize);
-	}
-
-	if (*pSize <= 0 || *pSize > 10000)
-	{
-		ErrorMessage("Must be between 1 and 10000; changed to 15\n");
-		*pSize = 15;
+		*pNum = (max + min) / 2;
+        sprintf(Line, "Number out of range [%d, %d]; changed to %d\n", min, max, *pNum);
+        ErrorMessage(Line);
 	}
 }
 
@@ -384,34 +381,13 @@ graphP theGraph=NULL, origGraph;
 int embedFlags = GetEmbedFlags(command);
 char saveEdgeListFormat;
 
-     if (embedFlags != EMBEDFLAGS_PLANAR)
-     {
-    	 ErrorMessage("Random max planar graph and non-planar modes only support planarity command\n");
+     GetNumberIfZero(&numVertices, "Enter number of vertices:", 1, 1000000);
+     if ((theGraph = MakeGraph(numVertices, command)) == NULL)
     	 return NOTOK;
-     }
-
-     if (numVertices <= 0)
-     {
-         Prompt("Enter number of vertices:");
-         scanf(" %d", &numVertices);
-         if (numVertices <= 0 || numVertices > 1000000)
-         {
-             ErrorMessage("Must be between 1 and 1000000; changed to 10000\n");
-             numVertices = 10000;
-         }
-     }
 
      srand(time(NULL));
 
-/* Make a graph structure for a graph and the embedding of that graph */
-
-     if ((theGraph = gp_New()) == NULL || gp_InitGraph(theGraph, numVertices) != OK)
-     {
-          gp_Free(&theGraph);
-          ErrorMessage("Memory allocation/initialization error.\n");
-          return NOTOK;
-     }
-
+     Message("Creating the random graph...\n");
      platform_GetTime(start);
      if (gp_CreateRandomGraphEx(theGraph, 3*numVertices-6+extraEdges) != OK)
      {
@@ -422,9 +398,9 @@ char saveEdgeListFormat;
 
      sprintf(Line, "Created random graph with %d edges in %.3lf seconds. ", theGraph->M, platform_GetDuration(start,end));
      Message(Line);
-     Message("Now processing\n");
      FlushConsole(stdout);
 
+     // The user may have requested a copy of the random graph before processing
      if (outfile2Name != NULL)
      {
          gp_Write(theGraph, outfile2Name, WRITE_ADJLIST);
@@ -432,43 +408,69 @@ char saveEdgeListFormat;
 
      origGraph = gp_DupGraph(theGraph);
 
-     platform_GetTime(start);
-     Result = gp_Embed(theGraph, embedFlags);
-     platform_GetTime(end);
+     // Do the requested algorithm on the randomly generated graph
+     Message("Now processing\n");
+     FlushConsole(stdout);
 
-     sprintf(Line, "Finished processing in %.3lf seconds. Testing integrity of result...\n", platform_GetDuration(start,end));
-     Message(Line);
+     if (strchr("pdo234", command))
+     {
+         platform_GetTime(start);
+         Result = gp_Embed(theGraph, embedFlags);
+         platform_GetTime(end);
 
-	 gp_SortVertices(theGraph);
+         sprintf(Line, "Finished processing in %.3lf seconds. Testing integrity of result...\n", platform_GetDuration(start,end));
+         Message(Line);
 
-     if (gp_TestEmbedResultIntegrity(theGraph, origGraph, Result) != Result)
-         Result = NOTOK;
+    	 gp_SortVertices(theGraph);
 
-     if (Result == OK)
-          Message("Planar graph successfully embedded\n");
-     else if (Result == NONEMBEDDABLE)
-    	  Message("Nonplanar graph successfully justified\n");
-     else ErrorMessage("Failure occurred");
+         if (gp_TestEmbedResultIntegrity(theGraph, origGraph, Result) != Result)
+             Result = NOTOK;
 
+         if (Result == OK)
+              Message("Planar graph successfully embedded\n");
+         else if (Result == NONEMBEDDABLE)
+        	  Message("Nonplanar graph successfully justified\n");
+     }
+     else if (command == 'c')
+     {
+         platform_GetTime(start);
+    	 Result = gp_ColorVertices(theGraph);
+         platform_GetTime(end);
+
+         sprintf(Line, "Finished processing in %.3lf seconds. Testing integrity of result...\n", platform_GetDuration(start,end));
+         Message(Line);
+
+    	 if (Result == OK)
+    	 	 Result = gp_ColorVerticesIntegrityCheck(theGraph, origGraph);
+    	 if (Result == OK)
+    	 {
+    		 sprintf(Line, "Graph successfully %d-colored.\n", gp_GetNumColorsUsed(theGraph));
+    		 Message(Line);
+    	 }
+     }
+
+     // On successful algorithm result, write the output file and see if the
+     // user wants the edge list formatted file.
      if (Result == OK || Result == NONEMBEDDABLE)
      {
     	 if (outfileName != NULL)
     		 gp_Write(theGraph, outfileName, WRITE_ADJLIST);
-     }
 
-     Prompt("Do you want to save the generated graph in edge list format (y/n)? ");
-     fflush(stdin);
-     scanf(" %c", &saveEdgeListFormat);
-     if (tolower(saveEdgeListFormat) == 'y')
-     {
-    	 char *fileName = "maxPlanarEdgeList.txt";
-         if (extraEdges > 0)
-        	 fileName = "nonPlanarEdgeList.txt";
+         Prompt("Do you want to save the generated graph in edge list format (y/n)? ");
+         fflush(stdin);
+         scanf(" %c", &saveEdgeListFormat);
+         if (tolower(saveEdgeListFormat) == 'y')
+         {
+        	 char *fileName = "maxPlanarEdgeList.txt";
+             if (extraEdges > 0)
+            	 fileName = "nonPlanarEdgeList.txt";
 
-         SaveAsciiGraph(theGraph, fileName);
-         sprintf(Line, "Edge list format saved to '%s'\n", fileName);
-    	 Message(Line);
+             SaveAsciiGraph(theGraph, fileName);
+             sprintf(Line, "Edge list format saved to '%s'\n", fileName);
+        	 Message(Line);
+         }
      }
+     else ErrorMessage("Failure occurred");
 
      gp_Free(&theGraph);
      gp_Free(&origGraph);
