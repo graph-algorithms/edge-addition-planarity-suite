@@ -86,6 +86,7 @@ int _GetVertexToReduce(ColorVerticesContext *context, graphP theGraph);
 
  Returns OK on success, NOTOK on failure
  ********************************************************************/
+#include "platformTime.h"
 
 int gp_ColorVertices(graphP theGraph)
 {
@@ -164,6 +165,22 @@ void _AddVertexToDegList(ColorVerticesContext *context, graphP theGraph, int v, 
 		context->degListHeads[deg] = LCAppend(context->degLists, context->degListHeads[deg], v);
         context->numVerticesToReduce++;
 	}
+	context->degree[v] = deg;
+}
+
+/********************************************************************
+ _GetVertexDegree()
+ ********************************************************************/
+
+int _GetVertexDegree(ColorVerticesContext *context, int v)
+{
+	return context->degree[v];
+
+	// We cache vertex degree values because the API function is O(deg(v)),
+	// which would make this algorithm implementation have quadratic behavior
+	// in the worst case
+	//
+	// return gp_GetVertexDegree(context->theGraph, v);
 }
 
 /********************************************************************
