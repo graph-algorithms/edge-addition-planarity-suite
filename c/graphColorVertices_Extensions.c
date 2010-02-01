@@ -50,6 +50,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 extern void _AddVertexToDegList(ColorVerticesContext *context, graphP theGraph, int v, int deg);
 extern void _RemoveVertexFromDegList(ColorVerticesContext *context, graphP theGraph, int v, int deg);
 extern int  _AssignColorToVertex(ColorVerticesContext *context, graphP theGraph, int v);
+extern int _GetVertexDegree(ColorVerticesContext *context, int v);
 
 /* Forward declarations of local functions */
 
@@ -200,6 +201,7 @@ void _ColorVertices_ClearStructures(ColorVerticesContext *context)
         // Once NULL or allocated, free() or LCFree() can do the job
         context->degLists = NULL;
         context->degListHeads = NULL;
+        context->degree = NULL;
         context->color = NULL;
         context->numVerticesToReduce = 0;
         context->highestColorUsed = -1;
@@ -217,6 +219,11 @@ void _ColorVertices_ClearStructures(ColorVerticesContext *context)
         {
             free(context->degListHeads);
             context->degListHeads = NULL;
+        }
+        if (context->degree != NULL)
+        {
+            free(context->degree);
+            context->degree = NULL;
         }
         if (context->color != NULL)
         {
@@ -244,6 +251,7 @@ int  _ColorVertices_CreateStructures(ColorVerticesContext *context)
 
      if ((context->degLists = LCNew(N)) == NULL ||
     	 (context->degListHeads = (int *) malloc(N*sizeof(int))) == NULL ||
+    	 (context->degree = (int *) malloc(N*sizeof(int))) == NULL ||
          (context->color = (int *) malloc(N*sizeof(int))) == NULL
         )
      {
@@ -253,6 +261,7 @@ int  _ColorVertices_CreateStructures(ColorVerticesContext *context)
      for (I=0; I<N; I++)
      {
     	 context->degListHeads[I] = NIL;
+    	 context->degree[I] = 0;
     	 context->color[I] = 0;
      }
 
@@ -307,6 +316,7 @@ void *_ColorVertices_DupContext(void *pContext, void *theGraph)
              for (I=0; I<N; I++)
              {
             	 newContext->degListHeads[I] = context->degListHeads[I];
+            	 newContext->degree[I] = context->degree[I];
             	 newContext->color[I] = context->color[I];
              }
              newContext->numVerticesToReduce = context->numVerticesToReduce;
@@ -377,6 +387,7 @@ void _ColorVertices_Reinitialize(ColorVerticesContext *context)
     for (I=0; I<N; I++)
     {
       	 context->degListHeads[I] = NIL;
+      	 context->degree[I] = 0;
       	 context->color[I] = 0;
     }
     context->numVerticesToReduce = 0;
@@ -510,7 +521,6 @@ int  _ColorVertices_WritePostprocess(graphP theGraph, void **pExtraData, long *p
  This routine also covers the work done by _HideVertex() and part of
  the work done by _ContractEdge() and _IdentifyVertices().
  ********************************************************************/
-
 void _ColorVertices_HideEdge(graphP theGraph, int e)
 {
     ColorVerticesContext *context = NULL;
@@ -525,8 +535,8 @@ void _ColorVertices_HideEdge(graphP theGraph, int e)
     	v = theGraph->G[gp_GetTwinArc(theGraph, e)].v;
 
     	// Get the degrees of the vertices
-    	udeg = gp_GetVertexDegree(theGraph, u);
-    	vdeg = gp_GetVertexDegree(theGraph, v);
+    	udeg = _GetVertexDegree(context, u);
+    	vdeg = _GetVertexDegree(context, v);
 
     	// Remove them from the degree lists that contain them
     	_RemoveVertexFromDegList(context, theGraph, u, udeg);

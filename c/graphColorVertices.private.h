@@ -67,6 +67,7 @@ typedef struct
     // for storing each vertex color (e.g. vertex K has color[K])
     listCollectionP degLists;
     int *degListHeads;
+    int *degree;
     int *color;
     int numVerticesToReduce, highestColorUsed;
 
