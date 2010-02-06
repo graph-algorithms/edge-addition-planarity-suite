@@ -321,6 +321,9 @@ int runSpecificGraphTests()
 	if (runSpecificGraphTest("-p", "maxPlanar5.txt") < 0)
 		return -1;
 
+	if (runSpecificGraphTest("-d", "maxPlanar5.txt") < 0)
+		return -1;
+
 	if (runSpecificGraphTest("-d", "drawExample.txt") < 0)
 		return -1;
 
@@ -390,18 +393,20 @@ int runSpecificGraphTest(char *command, char *infileName)
 	if (Result == 0)
 	{
 		if (FilesEqual(testfileName, outfileName) == TRUE)
+		{
 			Message("Test succeeded (result equal to exemplar).\n");
+			unlink(outfileName);
+		}
 		else
 		{
 			ErrorMessage("Test failed (result not equal to exemplar).\n");
 			Result = -1;
 		}
-		unlink(outfileName);
 	}
 
 	// For graph drawing, secondary file is outfileName + ".render.txt"
 
-	if (command[1] == 'd')
+	if (command[1] == 'd' && Result == 0)
 	{
 		outfile2Name = ConstructPrimaryOutputFilename(NULL, outfileName, command[1]);
 		free(outfileName);
@@ -414,13 +419,15 @@ int runSpecificGraphTest(char *command, char *infileName)
 		if (Result == 0)
 		{
 			if (FilesEqual(testfileName, outfileName) == TRUE)
+			{
 				Message("Test succeeded (secondary result equal to exemplar).\n");
+				unlink(outfileName);
+			}
 			else
 			{
 				ErrorMessage("Test failed (secondary result not equal to exemplar).\n");
 				Result = -1;
 			}
-			unlink(outfileName);
 		}
 	}
 
