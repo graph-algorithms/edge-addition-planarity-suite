@@ -455,7 +455,7 @@ int runNautyTests(int argc, char *argv[])
 			"vertex coloring"
 	};
 	int success = TRUE;
-	int results[] = { 194815, 194815, 269377, 268948, 191091, 265312, 2276 };
+	int results[] = { 194815, 194815, 269377, 268948, 191091, 265312, 2223 };
 	int i, startCommand, stopCommand;
 
 	startCommand = 0;

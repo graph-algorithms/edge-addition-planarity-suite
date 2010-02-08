@@ -67,6 +67,8 @@ int  _AssignColorToVertex(ColorVerticesContext *context, graphP theGraph, int v)
 /* Private functions */
 
 int _GetVertexToReduce(ColorVerticesContext *context, graphP theGraph);
+int _IsConstantTimeContractible(ColorVerticesContext *context, int v);
+int _GetContractibleNeighbors(ColorVerticesContext *context, int v, int *pu, int *pw);
 
 /********************************************************************
  gp_ColorVertices()
@@ -162,7 +164,11 @@ void _AddVertexToDegList(ColorVerticesContext *context, graphP theGraph, int v, 
 {
 	if (deg > 0)
 	{
-		context->degListHeads[deg] = LCAppend(context->degLists, context->degListHeads[deg], v);
+		if (_IsConstantTimeContractible(context, v))
+			context->degListHeads[deg] = LCPrepend(context->degLists, context->degListHeads[deg], v);
+		else
+			context->degListHeads[deg] = LCAppend(context->degLists, context->degListHeads[deg], v);
+
         context->numVerticesToReduce++;
 	}
 	context->degree[v] = deg;
@@ -182,6 +188,93 @@ int _GetVertexDegree(ColorVerticesContext *context, int v)
 	//
 	// return gp_GetVertexDegree(context->theGraph, v);
 }
+
+/********************************************************************
+ _IsConstantTimeContractible()
+ Wrapper function that just returns the result of _GetContractibleNeighbors()
+ Return TRUE if v is degree 5 and has a pair of non-adjacent neighbors
+ of degree 7 or lower; FALSE otherwise.
+ ********************************************************************/
+
+int _IsConstantTimeContractible(ColorVerticesContext *context, int v)
+{
+	int u, w;
+	return _GetContractibleNeighbors(context, v, &u, &w);
+}
+
+/********************************************************************
+ _GetContractibleNeighbors()
+ Wrapper function that just returns the result of _GetContractibleNeighbors()
+
+ This function returns TRUE if the vertex v is degree 5 and has two
+ non-adjacent neighbors of degree at most 7.  In 1980, Matula, Shiloach
+ and Tarjan proved the sequential contraction method of five-coloring
+ planar graphs could run in linear time based on deleting any vertices
+ less than degree 5 and, if none exist, contracting a degree 5 vertex
+ with two non-adjacent neighbors of degree less than 12.  In 1984,
+ Greg N. Frederickson improved the result to 7.
+ When a vertex is being added to the degree list, it is appended
+ unless this function returns TRUE, in which case it is placed
+ at the front of the degree 5 list.
+ When a vertex is removed from a degree list for reduction, it is
+ tested again, and if this function returns TRUE, then two non-adjacent
+ neighbors of degree at most 7 are found. The vertex is hidden in
+ either case, but if the neighbors were found, then they are
+ identified.  In the recursion, the neighbors will get the same
+ color so that when the vertex is restored, its neighborhood has at
+ most four colors.  The vertex takes the fifth color.
+ Hence, planar graphs are colored with at most five colors. Non-planar
+ graphs are still colored, but perhaps with more than five colors since
+ the 5 list may become empty or may not start with a constant time
+ contractible vertex (in which case we stick with the constant time
+ per edge deletion only).
+
+ This function operates in constant time, so it only finds a pair of
+ contractible neighbors for degree 5 vertices, it determines the degree
+ of all neighbors in constant time, it determines whether each pair of
+ low degree neighbors is non-adjacent in constant time, and the degree
+ bound on the pair of neighbors returned ensures that they can be
+ identified (including removal of duplicate edges) in constant time.
+
+ Return TRUE if v is degree 5 and has a pair of non-adjacent neighbors
+ of degree 7 or lower; FALSE otherwise.
+
+ Also returns the two neighbors found if TRUE is returned. The pointer
+ variables are not altered in the FALSE case.
+ ********************************************************************/
+
+int _GetContractibleNeighbors(ColorVerticesContext *context, int v, int *pu, int *pw)
+{
+	int lowDegreeNeighbors[5], i, j, n=0, J;
+	graphP theGraph = context->theGraph;
+
+	// This method is only applicable to degree 5 vertices
+	if (_GetVertexDegree(context, v) != 5)
+		return FALSE;
+
+	// Get all neighbors of degree at most 7
+    J = gp_GetFirstArc(theGraph, v);
+    while (gp_IsArc(theGraph, J))
+    {
+    	if (_GetVertexDegree(context, theGraph->G[J].v) <= 7)
+    		lowDegreeNeighbors[n++] = theGraph->G[J].v;
+        J = gp_GetNextArc(theGraph, J);
+    }
+
+    // Seek the pair of *non-adjacent* neighbors of degree at most 7
+    for (i=0; i < (n-1); i++)
+    	for (j=i+1; j < n; j++)
+    		if (!gp_IsNeighbor(theGraph, i, j))
+    		{
+    			*pu = i;
+    			*pw = j;
+    			return TRUE;
+    		}
+
+    // The desired pair of neighbors was not found
+    return FALSE;
+}
+
 
 /********************************************************************
  _RemoveVertexFromDegList()
