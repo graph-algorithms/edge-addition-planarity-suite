@@ -308,6 +308,12 @@ int runQuickRegressionTests(int argc, char *argv[])
 
 int runSpecificGraphTests()
 {
+	char origDir[2049];
+	int retVal = 0;
+
+	if (!getcwd(origDir, 2048))
+		return -1;
+
 	if (chdir("samples") != 0)
 	{
 		if (chdir("..") != 0 || chdir("samples") != 0)
@@ -319,40 +325,41 @@ int runSpecificGraphTests()
 	}
 
 	if (runSpecificGraphTest("-p", "maxPlanar5.txt") < 0)
-		return -1;
+		retVal = -1;
 
 	if (runSpecificGraphTest("-d", "maxPlanar5.txt") < 0)
-		return -1;
+		retVal = -1;
 
 	if (runSpecificGraphTest("-d", "drawExample.txt") < 0)
-		return -1;
+		retVal = -1;
 
 	if (runSpecificGraphTest("-p", "Petersen.txt") < 0)
-		return -1;
+		retVal = -1;
 
 	if (runSpecificGraphTest("-o", "Petersen.txt") < 0)
-		return -1;
+		retVal = -1;
 
 	if (runSpecificGraphTest("-2", "Petersen.txt") < 0)
-		return -1;
+		retVal = -1;
 
 	if (runSpecificGraphTest("-3", "Petersen.txt") < 0)
-		return -1;
+		retVal = -1;
 
 	if (runSpecificGraphTest("-4", "Petersen.txt") < 0)
-		return -1;
+		retVal = -1;
 
 	if (runSpecificGraphTest("-c", "maxPlanar5.txt") < 0)
-		return -1;
+		retVal = -1;
 
 	if (runSpecificGraphTest("-c", "Petersen.txt") < 0)
-		return -1;
+		retVal = -1;
 
 	if (runSpecificGraphTest("-c", "drawExample.txt") < 0)
-		return -1;
+		retVal = -1;
 
+	chdir(origDir);
     FlushConsole(stdout);
-	return 0;
+	return retVal;
 }
 
 int runSpecificGraphTest(char *command, char *infileName)
