@@ -1935,35 +1935,39 @@ int _IdentifyVertices(graphP theGraph, int u, int v, int eBefore)
          J = gp_GetNextArc(theGraph, J);
     }
 
-	// Perform the list union of v into u between eBeforePred and eBefore
-    if (gp_IsArc(theGraph, eBeforePred))
+    // If v has any edges left after hiding edges indicating common neighbors with u, ...
+    if (gp_IsArc(theGraph, gp_GetFirstArc(theGraph, v)))
     {
-    	if (gp_IsArc(theGraph, gp_GetFirstArc(theGraph, v)))
-    	{
-        	gp_SetNextArc(theGraph, eBeforePred, gp_GetFirstArc(theGraph, v));
-        	gp_SetPrevArc(theGraph, gp_GetFirstArc(theGraph, v), eBeforePred);
-    	}
-    }
-    else
-    {
-    	gp_SetFirstArc(theGraph, u, gp_GetFirstArc(theGraph, v));
-    }
+    	// Then perform the list union of v into u between eBeforePred and eBefore
+        if (gp_IsArc(theGraph, eBeforePred))
+        {
+        	if (gp_IsArc(theGraph, gp_GetFirstArc(theGraph, v)))
+        	{
+            	gp_SetNextArc(theGraph, eBeforePred, gp_GetFirstArc(theGraph, v));
+            	gp_SetPrevArc(theGraph, gp_GetFirstArc(theGraph, v), eBeforePred);
+        	}
+        }
+        else
+        {
+        	gp_SetFirstArc(theGraph, u, gp_GetFirstArc(theGraph, v));
+        }
 
-    if (gp_IsArc(theGraph, eBefore))
-    {
-    	if (gp_IsArc(theGraph, gp_GetLastArc(theGraph, v)))
-    	{
-        	gp_SetNextArc(theGraph, gp_GetLastArc(theGraph, v), eBefore);
-        	gp_SetPrevArc(theGraph, eBefore, gp_GetLastArc(theGraph, v));
-    	}
-    }
-    else
-    {
-    	gp_SetLastArc(theGraph, u, gp_GetLastArc(theGraph, v));
-    }
+        if (gp_IsArc(theGraph, eBefore))
+        {
+        	if (gp_IsArc(theGraph, gp_GetLastArc(theGraph, v)))
+        	{
+            	gp_SetNextArc(theGraph, gp_GetLastArc(theGraph, v), eBefore);
+            	gp_SetPrevArc(theGraph, eBefore, gp_GetLastArc(theGraph, v));
+        	}
+        }
+        else
+        {
+        	gp_SetLastArc(theGraph, u, gp_GetLastArc(theGraph, v));
+        }
 
-    gp_SetFirstArc(theGraph, v, NIL);
-    gp_SetLastArc(theGraph, v, NIL);
+        gp_SetFirstArc(theGraph, v, NIL);
+        gp_SetLastArc(theGraph, v, NIL);
+    }
 
     return OK;
 }
@@ -2305,6 +2309,6 @@ int  stackBottom = sp_GetCurrentSize(theGraph->theStack);
 
 int debugNOTOK()
 {
-	// exit(-1);
+	//exit(-1);
 	return 0; // NOTOK is normally defined to be zero
 }
