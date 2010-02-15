@@ -3,7 +3,7 @@
 
 /*
 Planarity-Related Graph Algorithms Project
-Copyright (c) 1997-2009, John M. Boyer
+Copyright (c) 1997-2010, John M. Boyer
 All rights reserved. Includes a reference implementation of the following:
 
 * John M. Boyer. "Simplified O(n) Algorithms for Planar Graph Embedding,
