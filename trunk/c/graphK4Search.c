@@ -1,6 +1,6 @@
 /*
 Planarity-Related Graph Algorithms Project
-Copyright (c) 1997-2009, John M. Boyer
+Copyright (c) 1997-2010, John M. Boyer
 All rights reserved.
 No part of this file can be copied or used for any reason without
 the expressed written permission of the copyright holder.
