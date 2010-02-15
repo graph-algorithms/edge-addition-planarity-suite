@@ -590,10 +590,22 @@ int _ColorVertices_IdentifyVertices(graphP theGraph, int u, int v, int eBefore)
 
         // We count the number of edges K transferred from v to u after the
         // common edges were hidden
+		if (gp_IsArc(theGraph, e_v_first))
+		{
+			int J, K, degu;
 
-        // Remove v from the degree list K
+			for (J=e_v_first, K=1; J != e_v_last; J=gp_GetNextArc(theGraph, J))
+				K++;
 
-        // We move u from degree list deg(u)-K to degree list deg(u)
+	        // Remove v from the degree list K. During IdentifyVertices(), if v had any
+			// common edges with u, they were "hidden", which reduced the degree of v to K.
+			_RemoveVertexFromDegList(context, theGraph, v, K);
+
+	        // We move u from degree list deg(u)-K to degree list deg(u)
+			degu = gp_GetVertexDegree(theGraph, u);
+			_RemoveVertexFromDegList(context, theGraph, u, degu-K);
+			_AddVertexToDegList(context, theGraph, u, degu);
+		}
 
         return OK;
     }
@@ -640,7 +652,7 @@ int _ColorVertices_RestoreVertex(graphP theGraph)
         // vertex u with which it was identified.
         else
         {
-        	if (context->color[u] < 0 || context->color[v] >= 0)
+        	if (context->color[v] >= 0)
         		return NOTOK;
         	context->color[v] = context->color[u];
         }

@@ -94,6 +94,7 @@ int gp_ColorVertices(graphP theGraph)
 {
     ColorVerticesContext *context = NULL;
     int v, deg;
+    int u, w, contractible;
 
 	if (gp_AttachColorVertices(theGraph) != OK)
 		return NOTOK;
@@ -121,11 +122,21 @@ int gp_ColorVertices(graphP theGraph)
     {
     	v = _GetVertexToReduce(context, theGraph);
 
+    	// Find out if v is contractible and the neighbors to contract
+    	contractible = _GetContractibleNeighbors(context, v, &u, &w);
+
     	// Remove the vertex from the graph. This calls the fpHideEdge
     	// overload, which performs the correct _RemoveVertexFromDegList()
     	// and _AddVertexToDegList() operations on v and its neighbors.
     	if (gp_HideVertex(theGraph, v) != OK)
     		return NOTOK;
+
+    	// If v was contractibile, then identify u and w
+    	if (contractible)
+    	{
+    		if (gp_IdentifyVertices(theGraph, u, w, NIL) != OK)
+    			return NOTOK;
+    	}
     }
 
     // Restore the graph one vertex at a time, coloring each vertex distinctly
@@ -264,10 +275,10 @@ int _GetContractibleNeighbors(ColorVerticesContext *context, int v, int *pu, int
     // Seek the pair of *non-adjacent* neighbors of degree at most 7
     for (i=0; i < (n-1); i++)
     	for (j=i+1; j < n; j++)
-    		if (!gp_IsNeighbor(theGraph, i, j))
+    		if (!gp_IsNeighbor(theGraph, lowDegreeNeighbors[i], lowDegreeNeighbors[j]))
     		{
-    			*pu = i;
-    			*pw = j;
+    			*pu = lowDegreeNeighbors[i];
+    			*pw = lowDegreeNeighbors[j];
     			return TRUE;
     		}
 
@@ -282,8 +293,11 @@ int _GetContractibleNeighbors(ColorVerticesContext *context, int v, int *pu, int
 
 void _RemoveVertexFromDegList(ColorVerticesContext *context, graphP theGraph, int v, int deg)
 {
-	context->degListHeads[deg] = LCDelete(context->degLists, context->degListHeads[deg], v);
-    context->numVerticesToReduce--;
+	if (deg > 0)
+	{
+		context->degListHeads[deg] = LCDelete(context->degLists, context->degListHeads[deg], v);
+	    context->numVerticesToReduce--;
+	}
 }
 
 /********************************************************************
