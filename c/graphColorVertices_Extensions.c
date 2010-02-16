@@ -400,8 +400,7 @@ void _ColorVertices_Reinitialize(ColorVerticesContext *context)
 
 void _ColorVertices_ReinitializeGraph(graphP theGraph)
 {
-    ColorVerticesContext *context = NULL;
-    gp_FindExtension(theGraph, COLORVERTICES_ID, (void *)&context);
+    ColorVerticesContext *context = (ColorVerticesContext *) gp_GetExtension(theGraph, COLORVERTICES_ID);
 
     if (context != NULL)
     {
@@ -420,8 +419,7 @@ void _ColorVertices_ReinitializeGraph(graphP theGraph)
 
 int  _ColorVertices_ReadPostprocess(graphP theGraph, void *extraData, long extraDataSize)
 {
-    ColorVerticesContext *context = NULL;
-    gp_FindExtension(theGraph, COLORVERTICES_ID, (void *)&context);
+    ColorVerticesContext *context = (ColorVerticesContext *) gp_GetExtension(theGraph, COLORVERTICES_ID);
 
     if (context != NULL)
     {
@@ -464,8 +462,7 @@ int  _ColorVertices_ReadPostprocess(graphP theGraph, void *extraData, long extra
 
 int  _ColorVertices_WritePostprocess(graphP theGraph, void **pExtraData, long *pExtraDataSize)
 {
-    ColorVerticesContext *context = NULL;
-    gp_FindExtension(theGraph, COLORVERTICES_ID, (void *)&context);
+    ColorVerticesContext *context = (ColorVerticesContext *) gp_GetExtension(theGraph, COLORVERTICES_ID);
 
     if (context != NULL)
     {
@@ -523,8 +520,7 @@ int  _ColorVertices_WritePostprocess(graphP theGraph, void **pExtraData, long *p
  ********************************************************************/
 void _ColorVertices_HideEdge(graphP theGraph, int e)
 {
-    ColorVerticesContext *context = NULL;
-    gp_FindExtension(theGraph, COLORVERTICES_ID, (void *)&context);
+    ColorVerticesContext *context = (ColorVerticesContext *) gp_GetExtension(theGraph, COLORVERTICES_ID);
 
     if (context != NULL)
     {
@@ -569,8 +565,7 @@ void _ColorVertices_HideEdge(graphP theGraph, int e)
 
 int _ColorVertices_IdentifyVertices(graphP theGraph, int u, int v, int eBefore)
 {
-    ColorVerticesContext *context = NULL;
-    gp_FindExtension(theGraph, COLORVERTICES_ID, (void *)&context);
+    ColorVerticesContext *context = (ColorVerticesContext *) gp_GetExtension(theGraph, COLORVERTICES_ID);
 
     if (context != NULL)
     {
@@ -622,8 +617,7 @@ int _ColorVertices_IdentifyVertices(graphP theGraph, int u, int v, int eBefore)
 
 int _ColorVertices_RestoreVertex(graphP theGraph)
 {
-    ColorVerticesContext *context = NULL;
-    gp_FindExtension(theGraph, COLORVERTICES_ID, (void *)&context);
+    ColorVerticesContext *context = (ColorVerticesContext *) gp_GetExtension(theGraph, COLORVERTICES_ID);
 
     if (context != NULL)
     {

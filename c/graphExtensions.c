@@ -360,6 +360,33 @@ int gp_FindExtension(graphP theGraph, int moduleID, void **pContext)
 }
 
 /********************************************************************
+ gp_GetExtension()
+
+ Calling this function is equivalent to invoking gp_FindExtension()
+ except that some debuggers have difficulty stepping into a function
+ that (properly) start by setting a local variable pointer to NULL
+ when the debugger has watch expressions that dereference a pointer
+ of the same name.  In such cases,
+
+ MyContext *context = NULL;
+ gp_FindExtension(theGraph, MYEXTENSION_ID, &context);
+
+ can be replaced by
+
+ MyContext *context = gp_GetExtension(theGraph, MYEXTENSION_ID);
+
+ @param theGraph - the graph whose extension list is to be searched
+ @param moduleID - the identifier of the module whose extension context is desired
+ @return void pointer to the extension if found, or NULL if not found.
+ ********************************************************************/
+void *gp_GetExtension(graphP theGraph, int moduleID)
+{
+	void *context = NULL;
+	int result = gp_FindExtension(theGraph, moduleID, &context);
+	return result ? context : NULL;
+}
+
+/********************************************************************
  gp_RemoveExtension()
  @param theGraph - the graph from which to remove an extension
  @param moduleID - the ID of the module whose extension context is to be removed
