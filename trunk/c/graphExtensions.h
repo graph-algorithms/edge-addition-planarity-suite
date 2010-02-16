@@ -59,6 +59,7 @@ int gp_AddExtension(graphP theGraph,
                     graphFunctionTableP overloadTable);
 
 int gp_FindExtension(graphP theGraph, int moduleID, void **pContext);
+void *gp_GetExtension(graphP theGraph, int moduleID);
 
 int gp_RemoveExtension(graphP theGraph, int moduleID);
 

@@ -374,8 +374,7 @@ int _AssignColorToVertex(ColorVerticesContext *context, graphP theGraph, int v)
 
 int gp_GetNumColorsUsed(graphP theGraph)
 {
-    ColorVerticesContext *context = NULL;
-    gp_FindExtension(theGraph, COLORVERTICES_ID, (void *)&context);
+    ColorVerticesContext *context = (ColorVerticesContext *) gp_GetExtension(theGraph, COLORVERTICES_ID);
 	return context == NULL ? 0 : context->highestColorUsed+1;
 }
 
@@ -386,14 +385,10 @@ int gp_GetNumColorsUsed(graphP theGraph)
 int gp_ColorVerticesIntegrityCheck(graphP theGraph, graphP origGraph)
 {
 	int I, J, w;
-    ColorVerticesContext *context = NULL;
+    ColorVerticesContext *context = (ColorVerticesContext *) gp_GetExtension(theGraph, COLORVERTICES_ID);
 
-    if (theGraph == NULL || origGraph == NULL)
+    if (theGraph == NULL || origGraph == NULL || context == NULL)
         return NOTOK;
-
-    gp_FindExtension(theGraph, COLORVERTICES_ID, (void *)&context);
-    if (context == NULL)
-    	return NOTOK;
 
     if (gp_GetNumColorsUsed(theGraph) <= 0 && theGraph->M > 0)
     	return NOTOK;
