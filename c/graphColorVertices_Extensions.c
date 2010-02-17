@@ -646,8 +646,6 @@ int _ColorVertices_RestoreVertex(graphP theGraph)
         // vertex u with which it was identified.
         else
         {
-        	if (context->color[v] >= 0)
-        		return NOTOK;
         	context->color[v] = context->color[u];
         }
 

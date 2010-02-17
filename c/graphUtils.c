@@ -1935,7 +1935,7 @@ int _IdentifyVertices(graphP theGraph, int u, int v, int eBefore)
          J = gp_GetNextArc(theGraph, J);
     }
 
-    // If v has any edges left after hiding edges indicating common neighbors with u, ...
+    // If v has any edges left after hiding edges, indicating common neighbors with u, ...
     if (gp_IsArc(theGraph, gp_GetFirstArc(theGraph, v)))
     {
     	// Then perform the list union of v into u between eBeforePred and eBefore
