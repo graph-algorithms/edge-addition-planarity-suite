@@ -2021,7 +2021,7 @@ int gp_RestoreVertex(graphP theGraph)
 
 int _RestoreVertex(graphP theGraph)
 {
-int u, v, e_u_succ, e_u_pred, e_v_first, e_v_last, HESB;
+int u, v, e_u_succ, e_u_pred, e_v_first, e_v_last, HESB, J;
 
     if (sp_GetCurrentSize(theGraph->theStack) < 7)
     	return NOTOK;
@@ -2069,6 +2069,19 @@ int u, v, e_u_succ, e_u_pred, e_v_first, e_v_last, HESB;
 			gp_SetPrevArc(theGraph, e_v_first, NIL);
 		if (gp_IsArc(theGraph, e_v_last))
 			gp_SetPrevArc(theGraph, e_v_last, NIL);
+
+		// For each edge record restored to v's adjacency list, reassign the 'v' member
+		//    of each twin arc to indicate v rather than u.
+	    J = e_v_first;
+	    while (gp_IsArc(theGraph, J))
+	    {
+	         theGraph->G[gp_GetTwinArc(theGraph, J)].v = v;
+
+	         if (J == e_v_last)
+	        	 J = NIL;
+	         else
+	        	 J = gp_GetNextArc(theGraph, J);
+	    }
 	}
 
 	// Restore the hidden edges of v, if any
