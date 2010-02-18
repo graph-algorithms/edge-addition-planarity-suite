@@ -429,6 +429,8 @@ char saveEdgeListFormat;
     	 Result = gp_ColorVertices(theGraph);
          platform_GetTime(end);
      }
+     else
+    	 Result = NOTOK;
 
      // Write what the algorithm determined and how long it took
      WriteAlgorithmResults(theGraph, Result, command, start, end, NULL);
