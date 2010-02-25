@@ -1,4 +1,4 @@
-#summary History of the Planarity Project up to Version 2.1
+#summary History of the Planarity Project up to Version 2.2
 #labels Featured
 
 by John Boyer
@@ -52,5 +52,7 @@ One approach to creating an extensible framework was to port to C++.  The origin
 = Ongoing Work =
 
 [http://code.google.com/p/planarity/source/browse/#svn/tags/Version%202.1.0 Version 2.1.0] includes a new extension method for isolating a subgraph homeomorphic to K,,4,, in a given graph.
+
+[http://code.google.com/p/planarity/source/browse/#svn/tags/Version%202.2.0 Version 2.2.0] includes a new extension method for coloring the vertices of any graph. The method of minimal degree selection is used to reduce the graph.  Also, a method pioneered by Matula, Shiloach and Tarjan and improved by Frederickson is used to ensure that any graph that happens to be planar will receive at most 5 colors.  The method runs in time linear to the size of the graph.
 
 For future work, see the [http://code.google.com/p/planarity/wiki/Roadmap Roadmap].
