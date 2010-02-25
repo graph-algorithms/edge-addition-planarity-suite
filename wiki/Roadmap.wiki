@@ -13,7 +13,7 @@ This page presents the roadmap for future development of this project.
   * 2.0: K33 subgraph homeomorphism (DONE)
 
   * 2.1: K4 subgraph homeomorphism (DONE)
-  * 2.2: Vertex coloring by min. degree selection, esp. including linear time planar graph 5-coloring with the Matula-Shiloach-Tarjan optimization (IN PROGRESS)
+  * 2.2: Vertex coloring by minimal degree selection, including linear time planar graph 5-coloring with the Matula-Shiloach-Tarjan-Frederickson optimization (DONE)
 
 Other algorithms that may be formulated in the future could be supported as extensions, such as:
  
@@ -31,8 +31,8 @@ A fuller range of algorithm implementations may also be developed, such as
 
 Minor adjustments and tweaks that may be desired from time to time. This may include service routines such as:
 
-  * Edge contract and uncontract (IN PROGRESS)
-  * Identifying two vertices, i.e. merging two vertices (IN PROGRESS)
+  * Edge contract and uncontract (DONE)
+  * Identifying two vertices, i.e. merging two vertices (DONE)
   * Planar graph dual
   * BFS
   * Refinements to I/O routines
