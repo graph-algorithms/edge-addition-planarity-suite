@@ -276,8 +276,13 @@ int callNauty(int argc, char *argv[])
 		// Otherwise, provide the statistics
 		printf("\nNO ERRORS\n\n");
 
-		printf("# Edges  # graphs    # OKs       # NoEmbeds\n");
-		printf("-------  ----------  ----------  ----------\n");
+		if (command == 'c')
+			printf("# Edges  # graphs    <=5 colors  > 5 colors\n");
+		else
+			printf("# Edges  # graphs    # OKs       # NoEmbeds\n");
+
+	    printf("-------  ----------  ----------  ----------\n");
+
 		for (j = minEdges; j <= maxEdges; j++)
 		{
 			printf("%7d  %10lu  %10lu  %10lu\n", j, stats[j][0], stats[j][2], stats[j][0]-stats[j][2]);

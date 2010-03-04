@@ -96,9 +96,28 @@ int gp_ColorVertices(graphP theGraph)
     int v, deg;
     int u, w, contractible;
 
+    // Attach the algorithm if it is not already attached
 	if (gp_AttachColorVertices(theGraph) != OK)
 		return NOTOK;
 
+	// Ensure there is enough stack to perform this operation.
+	// At a maximum, the graph reduction will push 7N+M integers.
+	// One integer is pushed per edge that is hidden. Plus, whether
+	// a vertex is hidden or identified with another vertex, 7 integers
+	// are used to store enough information to restore it.
+	if (sp_NonEmpty(theGraph->theStack))
+		return NOTOK;
+
+	if (sp_GetCapacity(theGraph->theStack) < 7*theGraph->N + theGraph->M)
+	{
+		stackP newStack = sp_New(7*theGraph->N + theGraph->M);
+		if (newStack == NULL)
+			return NOTOK;
+		sp_Free(&theGraph->theStack);
+		theGraph->theStack = newStack;
+	}
+
+	// Get the extension context and reinitialize it if necessary
     gp_FindExtension(theGraph, COLORVERTICES_ID, (void *)&context);
 
     if (context->color[0] > -1)
@@ -222,8 +241,9 @@ int _IsConstantTimeContractible(ColorVerticesContext *context, int v)
  and Tarjan proved the sequential contraction method of five-coloring
  planar graphs could run in linear time based on deleting any vertices
  less than degree 5 and, if none exist, contracting a degree 5 vertex
- with two non-adjacent neighbors of degree less than 12.  In 1984,
+ with two non-adjacent neighbors of degree at most 11.  In 1984,
  Greg N. Frederickson improved the result to 7.
+
  When a vertex is being added to the degree list, it is appended
  unless this function returns TRUE, in which case it is placed
  at the front of the degree 5 list.
@@ -272,7 +292,7 @@ int _GetContractibleNeighbors(ColorVerticesContext *context, int v, int *pu, int
         J = gp_GetNextArc(theGraph, J);
     }
 
-    // Seek the pair of *non-adjacent* neighbors of degree at most 7
+    // Seek the pair of *non-adjacent* low degree neighbors
     for (i=0; i < (n-1); i++)
     	for (j=i+1; j < n; j++)
     		if (!gp_IsNeighbor(theGraph, lowDegreeNeighbors[i], lowDegreeNeighbors[j]))

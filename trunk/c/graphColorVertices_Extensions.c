@@ -91,16 +91,16 @@ int COLORVERTICES_ID = 0;
 /****************************************************************************
  gp_AttachColorVertices()
 
- This function adjusts the graph data structure to attach the planar graph
- drawing feature.
+ This function adjusts the graph data structure to attach the graph
+ vertex coloringfeature.
 
- To activate this feature during gp_Embed(), use EMBEDFLAGS_ColorVertices.
+ To activate this feature, call gp_ColorVertices().
 
  This method may be called immediately after gp_New() in the case of
  invoking gp_Read().  For generating graphs, gp_InitGraph() can be invoked
  before or after this enabling method.  This method detects if the core
  graph has already been initialized, and if so, it will initialize the
- additional data structures specific to planar graph drawing.  This makes
+ additional data structures specific to vertex coloring.  This makes
  it possible to invoke gp_New() and gp_InitGraph() together, and then attach
  this feature only if it is requested at run-time.
 
@@ -111,7 +111,7 @@ int  gp_AttachColorVertices(graphP theGraph)
 {
      ColorVerticesContext *context = NULL;
 
-     // If the drawing feature has already been attached to the graph,
+     // If the vertex coloring feature has already been attached to the graph,
      // then there is no need to attach it again
      gp_FindExtension(theGraph, COLORVERTICES_ID, (void *)&context);
      if (context != NULL)
@@ -149,7 +149,7 @@ int  gp_AttachColorVertices(graphP theGraph)
 
      _ColorVertices_ClearStructures(context);
 
-     // Store the Draw context, including the data structure and the
+     // Store the context, including the data structure and the
      // function pointers, as an extension of the graph
      if (gp_AddExtension(theGraph, &COLORVERTICES_ID, (void *) context,
                          _ColorVertices_DupContext, _ColorVertices_FreeContext,
@@ -159,7 +159,7 @@ int  gp_AttachColorVertices(graphP theGraph)
          return NOTOK;
      }
 
-     // Create the Draw-specific structures if the size of the graph is known
+     // Create the algorithm-specific structures if the size of the graph is known
      // Attach functions are typically invoked after gp_New(), but if a graph
      // extension must be attached before gp_Read(), then the attachment
      // also happens before gp_InitGraph() because gp_Read() invokes init only
