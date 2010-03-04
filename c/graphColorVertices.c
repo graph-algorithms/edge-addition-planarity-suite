@@ -94,7 +94,7 @@ int gp_ColorVertices(graphP theGraph)
 {
     ColorVerticesContext *context = NULL;
     int v, deg;
-    int u, w, contractible;
+    int u=0, w=0, contractible;
 
     // Attach the algorithm if it is not already attached
 	if (gp_AttachColorVertices(theGraph) != OK)
