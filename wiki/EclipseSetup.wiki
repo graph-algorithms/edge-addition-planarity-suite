@@ -17,7 +17,7 @@ These instructions are for Eclipse 3.4 (Ganymede) and the corresponding Subversi
     # Unzip to eclipse/34-cpp-ganymede
     # Eclipse executable will be in the directory eclipse/34-cpp-ganymede/eclipse
     # Launch eclipse and create workspace in eclipse/workspaces-cpp
-      * You're obviously free to adopt whatever directory structure you want, but this organization is suggested to allow your source code to be independent of installing future versions of eclipse.  If the next version follows the Jupiter moon naming convention, then you'd expand it into eclipse/35-cpp-callisto and then load projects from your workspaces-cpp area without having to move them.
+      * You're obviously free to adopt whatever directory structure you want, but this organization is suggested to allow your source code to be independent of installing future versions of eclipse, e.g. you can expand into eclipse/35-cpp-galileo and then load projects from your workspaces-cpp area without having to move them.
   # *Install Subversive plugin* 
     # Either navigate to http://www.eclipse.org/subversive, click "Downloads" on left panel, click link to install instructions,
     # Or follow instructions below.
