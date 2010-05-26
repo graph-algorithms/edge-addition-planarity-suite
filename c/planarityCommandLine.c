@@ -184,7 +184,17 @@ int callNauty(int argc, char *argv[])
 
 	// Generate order N graphs of all sizes (number of edges)
 	if (strcmp(argv[1], "-gen") == 0)
-		return makeg_main(command, numArgs, args) == 0 ? 0 : -1;
+	{
+		int result;
+		platform_time start, end;
+
+	    platform_GetTime(start);
+		result = makeg_main(command, numArgs, args) == 0 ? 0 : -1;
+		platform_GetTime(end);
+
+		printf("\nTotal time = %.3lf seconds\n", platform_GetDuration(start,end));
+		return result;
+	}
 
 	// Otherwise, generate statistics for each number of edges
 	// and provide totals
