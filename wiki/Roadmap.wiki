@@ -29,10 +29,11 @@ A fuller range of algorithm implementations may also be developed, such as
 
 == Version 2.x.y ==
 
-Minor adjustments and tweaks that may be desired from time to time. This may include service routines such as:
+Minor adjustments and tweaks that may be desired from time to time. This may include optimizations and service routines such as:
 
   * Edge contract and uncontract (DONE)
   * Identifying two vertices, i.e. merging two vertices (DONE)
+  * Consolidated DFS and Lowpoint Preprocessing Optimization
   * Planar graph dual
   * BFS
   * Refinements to I/O routines
