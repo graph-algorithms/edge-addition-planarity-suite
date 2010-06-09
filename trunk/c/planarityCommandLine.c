@@ -505,7 +505,7 @@ int runNautyTests(int argc, char *argv[])
 
     for (i=startCommand; i < stopCommand; i++)
 	{
-		printf("Testing %s\n", commandNames[i]);
+		printf("\nTesting %s\n", commandNames[i]);
 
 		commandLine[2] = commands[i];
 		if (callNauty(4, commandLine) != 0)
@@ -523,7 +523,7 @@ int runNautyTests(int argc, char *argv[])
 	}
 
 	platform_GetTime(end);
-    printf("Finished processing in %.3lf seconds.\n", platform_GetDuration(start,end));
+    printf("\nFinished all processing in %.3lf seconds.\n", platform_GetDuration(start,end));
 
 	if (success)
 	    printf("Tests of all commands succeeded.\n");

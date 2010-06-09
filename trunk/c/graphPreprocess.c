@@ -381,3 +381,178 @@ printf("Lowpoint in %.3lf seconds.\n", platform_GetDuration(start,end));
      return OK;
 }
 
+/********************************************************************
+ gp_PreprocessForEmbedding()
+
+ For greater efficiency, this method consolidates steps of preprocessing
+ for embedding. The depth first search and the lowpoint/leastAncestor
+ calculations can be done as a single composite operation.
+********************************************************************/
+
+int  gp_PreprocessForEmbedding(graphP theGraph)
+{
+	stackP theStack;
+	int N, DFI, I, uparent, u, e, J, uneighbor, L, leastAncestor;
+
+#ifdef PROFILE
+platform_time start, end;
+platform_GetTime(start);
+#endif
+
+	if (theGraph==NULL) return NOTOK;
+
+	gp_LogLine("\ngraphPreprocess.c/gp_PreprocessForEmbedding() start");
+
+	if (theGraph->internalFlags & FLAGS_DFSNUMBERED)
+		theGraph->internalFlags &= ~FLAGS_SORTEDBYDFI;
+
+	N = theGraph->N;
+	theStack  = theGraph->theStack;
+
+	// At most we push 2 integers per edge from a vertex to each *unvisited* neighbor
+	// plus one additional integer to help detect post-processing.  This is less
+	// than the 2 * arcCapacity integer stack that is already in theGraph structure,
+	// so we make sure it's still there and cleared, then we clear all vertex
+	// visited flags in prep for the Depth first search operation. */
+
+	if (sp_GetCapacity(theStack) < 2*gp_GetArcCapacity(theGraph))
+		return NOTOK;
+
+	sp_ClearStack(theStack);
+
+	for (I=0; I < N; I++)
+		 theGraph->G[I].visited = 0;
+
+	// This outer loop causes the connected subgraphs of a disconnected graph to be numbered
+	for (I=DFI=0; I < N && DFI < N; I++)
+	{
+		if (theGraph->V[I].DFSParent != NIL)
+		  continue;
+
+		// DFS a connected component
+		sp_Push2(theStack, NIL, NIL);
+		while (sp_NonEmpty(theStack))
+		{
+			sp_Pop2(theStack, uparent, e);
+
+			// For vertex uparent and edge e, obtain the opposing endpoint u of e
+			// If uparent is NIL, then e is also NIL and we have encountered the
+			// false edge to the DFS tree root as pushed above.
+			// If uparent is not NIL but e is NIL, then this is a false edge to u
+			// pushed to mark the end of processing of u's DFS subtrees
+			u = uparent == NIL ? I : (e == NIL ? uparent : theGraph->G[e].v);
+
+			// We popped an edge to an unvisited vertex, so it is either a DFS tree edge
+			// or a false edge to the DFS tree root (u).
+			if (!theGraph->G[u].visited)
+			{
+				gp_LogLine(gp_MakeLogStr3("V=%d, DFI=%d, Parent=%d", u, DFI, uparent));
+
+				theGraph->G[u].visited = 1;
+				theGraph->G[u].v = DFI++;
+				theGraph->V[u].DFSParent = uparent;
+				if (e != NIL)
+				{
+					theGraph->G[e].type = EDGE_DFSCHILD;
+					theGraph->G[gp_GetTwinArc(theGraph, e)].type = EDGE_DFSPARENT;
+
+					// We want the child arcs to be at the beginning
+					// of the adjacency list.
+					gp_MoveArcToFirst(theGraph, uparent, e);
+				}
+
+				// First, push a false edge to u so that we can detect when processing
+				// all of the DFS subtrees of u has been completed. */
+				sp_Push2(theStack, u, NIL);
+
+				// Push edges to all unvisited neighbors. These will be either
+				// tree edges to children or forward arcs of back edges
+				// Edges not pushed are marked as back edges here, except the
+				// edge leading back to the immediate DFS parent.
+				J = gp_GetFirstArc(theGraph, u);
+				while (gp_IsArc(theGraph, J))
+				{
+					if (!theGraph->G[theGraph->G[J].v].visited)
+					{
+						sp_Push2(theStack, u, J);
+					}
+					else if (theGraph->G[J].type != EDGE_DFSPARENT)
+						theGraph->G[J].type = EDGE_BACK;
+
+					J = gp_GetNextArc(theGraph, J);
+				}
+			}
+
+			// Otherwise we popped an edge to a visited vertex, so it is either
+			// a back edge or a false edge indicating that u can be post-processed.
+			else
+			{
+				// If we detect the marker that indicates completion of searching
+				// the DFS subtrees of u, then we post-process u by computing its
+				// least ancestor and lowpoint.
+				if (e == NIL)
+				{
+					// Start with high values because we are doing a min function.
+					// Unlike gp_LowpointAndLeastAncestor(), we refer here to G[u].v
+					// rather than just u because the gp_SortVertices() has not
+					// yet occurred.
+					L = leastAncestor = theGraph->G[u].v;
+
+					// Compute L and leastAncestor
+					J = gp_GetFirstArc(theGraph, u);
+					while (gp_IsArc(theGraph, J))
+					{
+						uneighbor = theGraph->G[J].v;
+						if (theGraph->G[J].type == EDGE_DFSCHILD)
+						{
+							if (L > theGraph->V[uneighbor].Lowpoint)
+								L = theGraph->V[uneighbor].Lowpoint;
+						}
+						else if (theGraph->G[J].type == EDGE_BACK)
+						{
+							// Unlike gp_LowpointAndLeastAncestor(), we refer here to
+							// G[uneighbor].v rather than just uneighbor because the
+							// gp_SortVertices() has not yet occurred. */
+							if (leastAncestor > theGraph->G[uneighbor].v)
+								leastAncestor = theGraph->G[uneighbor].v;
+						}
+						else if (theGraph->G[J].type == EDGE_FORWARD)
+							break;
+
+						J = gp_GetNextArc(theGraph, J);
+					}
+
+					// Assign leastAncestor and Lowpoint to the vertex
+					theGraph->V[u].leastAncestor = leastAncestor;
+					theGraph->V[u].Lowpoint = leastAncestor < L ? leastAncestor : L;
+				}
+
+				// Else process the back edge
+				else
+				{
+					// If the edge leads to a visited vertex, then it is
+					// the forward arc of a back edge.
+					theGraph->G[e].type = EDGE_FORWARD;
+
+					// We want all of the forward edges to descendants to
+					// be at the end of the adjacency list.
+					// The tree edge to the parent and the back edges to ancestors
+					// are in the middle, between the child edges and forward edges.
+					gp_MoveArcToLast(theGraph, uparent, e);
+				}
+			}
+		}
+	}
+
+	gp_LogLine("graphPreprocess.c/gp_PreprocessForEmbedding() end\n");
+
+	theGraph->internalFlags |= FLAGS_DFSNUMBERED;
+
+#ifdef PROFILE
+platform_GetTime(end);
+printf("Preprocess in %.3lf seconds.\n", platform_GetDuration(start,end));
+#endif
+
+	return OK;
+}
+

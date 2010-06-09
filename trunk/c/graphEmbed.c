@@ -81,8 +81,9 @@ int  _JoinBicomps(graphP theGraph);
 
 /********************************************************************
  _CreateSortedSeparatedDFSChildLists()
- We create a separatedDFSChildList in each vertex which contains the
- Lowpoint values of the vertex's DFS children sorted in non-descending order.
+ We create a separatedDFSChildList in each vertex to contain references
+ to the DFS children vertices sorted in non-descending order by their
+ Lowpoint values.
  To accomplish this in linear time for the whole graph, we must not
  sort the DFS children in each vertex, but rather bucket sort the
  Lowpoint values of all vertices, then traverse the buckets sequentially,
@@ -99,7 +100,7 @@ void  _CreateSortedSeparatedDFSChildLists(graphP theGraph)
 {
 int *buckets;
 listCollectionP bin;
-int I, J, N, DFSParent, theList;
+int I, L, N, DFSParent, theList;
 
      N = theGraph->N;
      buckets = theGraph->buckets;
@@ -116,8 +117,8 @@ int I, J, N, DFSParent, theList;
 
      for (I=0; I < N; I++)
      {
-          J = theGraph->V[I].Lowpoint;
-          buckets[J] = LCAppend(bin, buckets[J], I);
+          L = theGraph->V[I].Lowpoint;
+          buckets[L] = LCAppend(bin, buckets[L], I);
      }
 
      /* For each bucket, add each vertex in the bucket to the
@@ -128,20 +129,20 @@ int I, J, N, DFSParent, theList;
 
      for (I = 0; I < N; I++)
      {
-          if ((J=buckets[I]) != NIL)
+          if ((L=buckets[I]) != NIL)
           {
-              while (J != NIL)
+              while (L != NIL)
               {
-                  DFSParent = theGraph->V[J].DFSParent;
+                  DFSParent = theGraph->V[L].DFSParent;
 
-                  if (DFSParent != NIL && DFSParent != J)
+                  if (DFSParent != NIL && DFSParent != L)
                   {
                       theList = theGraph->V[DFSParent].separatedDFSChildList;
-                      theList = LCAppend(theGraph->DFSChildLists, theList, J);
+                      theList = LCAppend(theGraph->DFSChildLists, theList, L);
                       theGraph->V[DFSParent].separatedDFSChildList = theList;
                   }
 
-                  J = LCGetNext(bin, buckets[I], J);
+                  L = LCGetNext(bin, buckets[I], L);
               }
           }
      }
@@ -1155,15 +1156,17 @@ int RetVal = OK;
 
     theGraph->embedFlags = embedFlags;
 
-    if (gp_CreateDFSTree(theGraph) != OK)
-        return NOTOK;
+//    if (gp_CreateDFSTree(theGraph) != OK)
+//        return NOTOK;
+    if (gp_PreprocessForEmbedding(theGraph) != OK)
+          return NOTOK;
 
     if (!(theGraph->internalFlags & FLAGS_SORTEDBYDFI))
         if (gp_SortVertices(theGraph) != OK)
             return NOTOK;
 
-    if (gp_LowpointAndLeastAncestor(theGraph) != OK)
-    	return NOTOK;
+//    if (gp_LowpointAndLeastAncestor(theGraph) != OK)
+//    	return NOTOK;
 
     _CreateSortedSeparatedDFSChildLists(theGraph);
 
