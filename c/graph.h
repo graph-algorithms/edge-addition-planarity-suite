@@ -258,6 +258,7 @@ int		gp_RestoreVertices(graphP theGraph);
 int		gp_CreateDFSTree(graphP theGraph);
 int		gp_SortVertices(graphP theGraph);
 int 	gp_LowpointAndLeastAncestor(graphP theGraph);
+int		gp_PreprocessForEmbedding(graphP theGraph);
 
 int		gp_Embed(graphP theGraph, int embedFlags);
 int		gp_TestEmbedResultIntegrity(graphP theGraph, graphP origGraph, int embedResult);
