@@ -47,7 +47,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 void ProjectTitle()
 {
     Message("\n=================================================="
-            "\nPlanarity version 2.2"
+            "\nPlanarity version 2.2.1"
             "\nCopyright (c) 2010 by John M. Boyer"
     		"\nContact info: jboyer at acm.org"
             "\n=================================================="
