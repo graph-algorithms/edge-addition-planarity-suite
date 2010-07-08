@@ -708,8 +708,8 @@ int  _DrawPlanar_WritePostprocess(graphP theGraph, void **pExtraData, long *pExt
         {
             char line[64];
             int maxLineSize = 64, extraDataPos = 0, I;
-            int GSize = theGraph->edgeOffset + theGraph->arcCapacity;
-            char *extraData = (char *) malloc((GSize + 2) * maxLineSize * sizeof(char));
+            int Gsize = theGraph->edgeOffset + theGraph->arcCapacity;
+            char *extraData = (char *) malloc((Gsize + 2) * maxLineSize * sizeof(char));
 
             if (extraData == NULL)
                 return NOTOK;

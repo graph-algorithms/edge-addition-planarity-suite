@@ -528,9 +528,9 @@ isolatorContextP IC = &theGraph->IC;
 void _FillVisitedFlags(graphP theGraph, int FillValue)
 {
 int  i;
-int  limit = theGraph->edgeOffset + 2*(theGraph->M + sp_GetCurrentSize(theGraph->edgeHoles));
+int  GsizeOccupied = theGraph->edgeOffset + 2*(theGraph->M + sp_GetCurrentSize(theGraph->edgeHoles));
 
-     for (i=0; i < limit; i++)
+     for (i=0; i < GsizeOccupied; i++)
           theGraph->G[i].visited = FillValue;
 }
 
@@ -724,6 +724,47 @@ void gp_Free(graphP *pGraph)
 
      free(*pGraph);
      *pGraph = NULL;
+}
+
+/********************************************************************
+ gp_CopyAdjacencyLists()
+ Copies the adjacency lists from the srcGraph to the dstGraph.
+ Returns OK on success, NOTOK on failures, e.g. if the two graphs have different orders N
+ ********************************************************************/
+int  gp_CopyAdjacencyLists(graphP dstGraph, graphP srcGraph)
+{
+	int v, e, GsizeOccupied;
+
+	if (dstGraph == NULL || srcGraph == NULL)
+		return NOTOK;
+
+	if (dstGraph->N != srcGraph->N || dstGraph->N == 0)
+		return NOTOK;
+
+    if (gp_EnsureArcCapacity(dstGraph, srcGraph->arcCapacity) != OK)
+    	return NOTOK;
+
+	// Copy the links that hook each owning vertex to its adjacency list
+	for (v = 0; v < srcGraph->N; v++)
+	{
+		dstGraph->G[v].link[0] = srcGraph->G[v].link[0];
+		dstGraph->G[v].link[1] = srcGraph->G[v].link[1];
+	}
+
+	// Copy the adjacency links and neighbor pointers for each arc
+	GsizeOccupied = srcGraph->edgeOffset + 2*(srcGraph->M + sp_GetCurrentSize(srcGraph->edgeHoles));
+	for (e = srcGraph->edgeOffset; e < GsizeOccupied; e++)
+	{
+		dstGraph->G[e].v = srcGraph->G[e].v;
+		dstGraph->G[e].link[0] = srcGraph->G[e].link[0];
+		dstGraph->G[e].link[1] = srcGraph->G[e].link[1];
+	}
+
+	// Tell the dstGraph how many edges it now has and where the edge holes are
+	dstGraph->M = srcGraph->M;
+    sp_Copy(dstGraph->edgeHoles, srcGraph->edgeHoles);
+
+	return OK;
 }
 
 /********************************************************************

@@ -59,6 +59,7 @@ graphP	gp_New(void);
 
 int		gp_InitGraph(graphP theGraph, int N);
 void	gp_ReinitializeGraph(graphP theGraph);
+int		gp_CopyAdjacencyLists(graphP dstGraph, graphP srcGraph);
 int		gp_CopyGraph(graphP dstGraph, graphP srcGraph);
 graphP	gp_DupGraph(graphP theGraph);
 

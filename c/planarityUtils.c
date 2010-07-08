@@ -143,13 +143,13 @@ void Prompt(char *message)
 
 void SaveAsciiGraph(graphP theGraph, char *filename)
 {
-	int  e, limit;
+	int  e, GsizeOccupied;
 	FILE *outfile = fopen(filename, "wt");
 	fprintf(outfile, "%s\n", filename);
 
-	limit = theGraph->edgeOffset + 2*(theGraph->M + sp_GetCurrentSize(theGraph->edgeHoles));
+	GsizeOccupied = theGraph->edgeOffset + 2*(theGraph->M + sp_GetCurrentSize(theGraph->edgeHoles));
 
-	for (e = theGraph->edgeOffset; e < limit; e+=2)
+	for (e = theGraph->edgeOffset; e < GsizeOccupied; e+=2)
 	{
 		if (theGraph->G[e].v != NIL)
 			fprintf(outfile, "%d %d\n", theGraph->G[e].v+1, theGraph->G[e+1].v+1);
