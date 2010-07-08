@@ -472,8 +472,8 @@ int  _ColorVertices_WritePostprocess(graphP theGraph, void **pExtraData, long *p
         {
             char line[32];
             int maxLineSize = 32, extraDataPos = 0, I;
-            int GSize = theGraph->edgeOffset + theGraph->arcCapacity;
-            char *extraData = (char *) malloc((GSize + 2) * maxLineSize * sizeof(char));
+            int Gsize = theGraph->edgeOffset + theGraph->arcCapacity;
+            char *extraData = (char *) malloc((Gsize + 2) * maxLineSize * sizeof(char));
 
             if (extraData == NULL)
                 return NOTOK;
