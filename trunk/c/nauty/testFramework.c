@@ -1,0 +1,243 @@
+/*
+Planarity-Related Graph Algorithms Project
+Copyright (c) 1997-2010, John M. Boyer
+All rights reserved. Includes a reference implementation of the following:
+
+* John M. Boyer. "Simplified O(n) Algorithms for Planar Graph Embedding,
+  Kuratowski Subgraph Isolation, and Related Problems". Ph.D. Dissertation,
+  University of Victoria, 2001.
+
+* John M. Boyer and Wendy J. Myrvold. "On the Cutting Edge: Simplified O(n)
+  Planarity by Edge Addition". Journal of Graph Algorithms and Applications,
+  Vol. 8, No. 3, pp. 241-273, 2004.
+
+* John M. Boyer. "A New Method for Efficiently Generating Planar Graph
+  Visibility Representations". In P. Eades and P. Healy, editors,
+  Proceedings of the 13th International Conference on Graph Drawing 2005,
+  Lecture Notes Comput. Sci., Volume 3843, pp. 508-511, Springer-Verlag, 2006.
+
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:
+
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+
+* Redistributions in binary form must reproduce the above copyright notice, this
+  list of conditions and the following disclaimer in the documentation and/or
+  other materials provided with the distribution.
+
+* Neither the name of the Planarity-Related Graph Algorithms Project nor the names
+  of its contributors may be used to endorse or promote products derived from this
+  software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
+
+#include <stdlib.h>
+
+#include "testFramework.h"
+
+char *commands = "pdo234c";
+
+#include "../graphK23Search.h"
+#include "../graphK33Search.h"
+#include "../graphK4Search.h"
+#include "../graphDrawPlanar.h"
+#include "../graphColorVertices.h"
+
+/* Forward Declarations of Private functions */
+int attachAlgorithmExtension(char command, graphP aGraph);
+graphP createGraph(int n, int maxe);
+void initBaseTestResult(baseTestResult *pBaseResult);
+int initTestResult(testResultP result, char command, int n, int maxe);
+void releaseTestResult(testResultP result);
+
+/***********************************************************************
+ tf_AllocateTestFramework()
+ ***********************************************************************/
+
+testResultFrameworkP tf_AllocateTestFramework(char command, int n, int maxe)
+{
+	testResultFrameworkP framework = (testResultFrameworkP) malloc(sizeof(testResultFramework));
+
+	if (framework != NULL)
+	{
+		int i;
+
+		if ((framework->testGraph = createGraph(n, maxe)) == NULL)
+		{
+			framework->algResultsSize = 0;
+			tf_FreeTestFramework(&framework);
+			return NULL;
+		}
+
+		framework->algResultsSize = command == 'a' ? NUMCOMMANDSTOTEST : 1;
+		framework->algResults = (testResultP) malloc(framework->algResultsSize * sizeof(testResult));
+		for (i=0; i < framework->algResultsSize; i++)
+			if (initTestResult(framework->algResults+i,
+					command=='a'?commands[i]:command, n, maxe) != OK)
+			{
+				framework->algResultsSize = i;
+				tf_FreeTestFramework(&framework);
+				return NULL;
+			}
+	}
+
+	return framework;
+}
+
+/***********************************************************************
+ tf_FreeTestFramework()
+ ***********************************************************************/
+
+void tf_FreeTestFramework(testResultFrameworkP *pTestFramework)
+{
+	if (pTestFramework == NULL && *pTestFramework != NULL)
+	{
+		testResultFrameworkP framework = *pTestFramework;
+
+		if (framework->algResults != NULL)
+		{
+			int i;
+			for (i=0; i < framework->algResultsSize; i++)
+				releaseTestResult(framework->algResults+i);
+
+			free((void *) framework->algResults);
+			framework->algResults = NULL;
+			framework->algResultsSize = 0;
+		}
+
+		gp_Free(&(framework->testGraph));
+
+		free(*pTestFramework);
+		*pTestFramework = framework = NULL;
+	}
+}
+
+/***********************************************************************
+ tf_GetTestResult()
+ ***********************************************************************/
+
+testResultP tf_GetTestResult(testResultFrameworkP framework, char command)
+{
+	testResultP result = NULL;
+
+	if (framework != NULL && framework->algResults != NULL)
+	{
+		int i;
+		for (i=0; i < framework->algResultsSize; i++)
+			if (framework->algResults[i].command == command)
+				result = framework->algResults+i;
+	}
+
+	return result;
+}
+
+/***********************************************************************
+ initTestResult()
+ ***********************************************************************/
+
+int initTestResult(testResultP result, char command, int n, int maxe)
+{
+	if (result != NULL)
+	{
+		result->command = command;
+		initBaseTestResult(&result->result);
+		result->edgeResults = NULL;
+		result->edgeResultsSize = maxe;
+		result->theGraph = NULL;
+		result->origGraph = NULL;
+
+		result->edgeResults = (baseTestResult *) malloc((maxe+1) * sizeof(baseTestResult));
+		if (result->edgeResults == NULL)
+		{
+			releaseTestResult(result);
+			return NOTOK;
+		}
+
+		if ((result->theGraph = createGraph(n, maxe)) == NULL ||
+			(result->origGraph = createGraph(n, maxe)) == NULL ||
+			attachAlgorithmExtension(command, result->theGraph) != OK ||
+			attachAlgorithmExtension(command, result->origGraph) != OK)
+		{
+			releaseTestResult(result);
+			return NOTOK;
+		}
+	}
+
+	return OK;
+}
+
+/***********************************************************************
+ releaseTestResult()
+ Releases all memory resources used by the testResult pointed to by result,
+ but does not free the testResult since result points into an array.
+ ***********************************************************************/
+
+void releaseTestResult(testResultP result)
+{
+	if (result->edgeResults != NULL)
+	{
+		free(result->edgeResults);
+		result->edgeResults = NULL;
+	}
+	gp_Free(&(result->theGraph));
+	gp_Free(&(result->origGraph));
+}
+
+/***********************************************************************
+ initBaseTestResult()
+ ***********************************************************************/
+
+void initBaseTestResult(baseTestResult *pBaseResult)
+{
+	memset(pBaseResult, 0, sizeof(baseTestResult));
+}
+
+/***********************************************************************
+ createGraph()
+ ***********************************************************************/
+
+graphP createGraph(int n, int maxe)
+{
+	graphP theGraph;
+	int numArcs = 2*(maxe > 0 ? maxe : 1);
+
+    if ((theGraph = gp_New()) != NULL)
+    {
+		if (gp_EnsureArcCapacity(theGraph, numArcs) != OK || gp_InitGraph(theGraph, n) != OK)
+			gp_Free(&theGraph);
+    }
+
+    return theGraph;
+}
+
+/***********************************************************************
+ attachAlgorithmExtension()
+ ***********************************************************************/
+
+int attachAlgorithmExtension(char command, graphP aGraph)
+{
+    switch (command)
+    {
+		case 'p' : break;
+		case 'd' : gp_AttachDrawPlanar(aGraph);	break;
+		case 'o' : break;
+		case '2' : gp_AttachK23Search(aGraph); break;
+		case '3' : gp_AttachK33Search(aGraph); break;
+		case '4' : gp_AttachK4Search(aGraph); break;
+		case 'c' : gp_AttachColorVertices(aGraph); break;
+		default  : return NOTOK;
+    }
+
+    return OK;
+}
