@@ -55,8 +55,8 @@ char *commands = "pdo234c";
 #include "../graphColorVertices.h"
 
 /* Forward Declarations of Private functions */
+graphP createGraph(char command, int n, int maxe);
 int attachAlgorithmExtension(char command, graphP aGraph);
-graphP createGraph(int n, int maxe);
 void initBaseTestResult(baseTestResult *pBaseResult);
 int initTestResult(testResultP result, char command, int n, int maxe);
 void releaseTestResult(testResultP result);
@@ -72,13 +72,6 @@ testResultFrameworkP tf_AllocateTestFramework(char command, int n, int maxe)
 	if (framework != NULL)
 	{
 		int i;
-
-		if ((framework->testGraph = createGraph(n, maxe)) == NULL)
-		{
-			framework->algResultsSize = 0;
-			tf_FreeTestFramework(&framework);
-			return NULL;
-		}
 
 		framework->algResultsSize = command == 'a' ? NUMCOMMANDSTOTEST : 1;
 		framework->algResults = (testResultP) malloc(framework->algResultsSize * sizeof(testResult));
@@ -115,8 +108,6 @@ void tf_FreeTestFramework(testResultFrameworkP *pTestFramework)
 			framework->algResults = NULL;
 			framework->algResultsSize = 0;
 		}
-
-		gp_Free(&(framework->testGraph));
 
 		free(*pTestFramework);
 		*pTestFramework = framework = NULL;
@@ -164,10 +155,8 @@ int initTestResult(testResultP result, char command, int n, int maxe)
 			return NOTOK;
 		}
 
-		if ((result->theGraph = createGraph(n, maxe)) == NULL ||
-			(result->origGraph = createGraph(n, maxe)) == NULL ||
-			attachAlgorithmExtension(command, result->theGraph) != OK ||
-			attachAlgorithmExtension(command, result->origGraph) != OK)
+		if ((result->theGraph = createGraph(command, n, maxe)) == NULL ||
+			(result->origGraph = createGraph(command, n, maxe)) == NULL)
 		{
 			releaseTestResult(result);
 			return NOTOK;
@@ -207,14 +196,16 @@ void initBaseTestResult(baseTestResult *pBaseResult)
  createGraph()
  ***********************************************************************/
 
-graphP createGraph(int n, int maxe)
+graphP createGraph(char command, int n, int maxe)
 {
 	graphP theGraph;
 	int numArcs = 2*(maxe > 0 ? maxe : 1);
 
     if ((theGraph = gp_New()) != NULL)
     {
-		if (gp_EnsureArcCapacity(theGraph, numArcs) != OK || gp_InitGraph(theGraph, n) != OK)
+		if (gp_EnsureArcCapacity(theGraph, numArcs) != OK ||
+				gp_InitGraph(theGraph, n) != OK ||
+				attachAlgorithmExtension(command, theGraph) != OK)
 			gp_Free(&theGraph);
     }
 
