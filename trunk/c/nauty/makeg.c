@@ -182,7 +182,8 @@ boolean nooutput;               /* presence of -u */
 boolean canonise;               /* presence of -l */
 static int maxdeg,maxn,mine,maxe,nprune,mod,res,curres;
 // CHANGE start
-int g_maxe, g_mod, g_res;
+int g_maxn, g_mine, g_maxe, g_mod, g_res;
+char g_command;
 // CHANGE end
 static graph gcan[MAXN];
 
@@ -1511,8 +1512,9 @@ boolean rigid;
 /**************************************************************************/
 
 // CHANGE start
-// Added this include file...
+// Added this include file and extern...
 #include "outproc.h"
+extern int errorFound;
 // And changed main to makeg_main, changed prototype declaration,
 // and added command char (e.g. p=planarity, d=planar drawing,
 // o=outerplanarity, 2=K2,3 search, 3=K3,3 search, ...
@@ -1630,17 +1632,14 @@ int makeg_main(char command, int argc, char *argv[])
         }
 
 // CHANGE start
-        switch (command)
-        {
-        	case 'p' : outproc = outprocTestPlanarity; break;
-        	case 'd' : outproc = outprocTestDrawPlanar; break;
-        	case 'o' : outproc = outprocTestOuterplanarity; break;
-        	case '2' : outproc = outprocTestK23Search; break;
-        	case '3' : outproc = outprocTestK33Search; break;
-        	case '4' : outproc = outprocTestK4Search; break;
-        	case 'c' : outproc = outprocTestColorVertices; break;
-        	default  : return -1;
-        }
+        g_maxn = maxn;
+        g_mine = mine;
+        g_maxe = maxe;
+        g_mod = mod;
+        g_res = res;
+        g_command = command;
+        errorFound = 0;
+        outproc = outprocTest;
 //        if (nautyformat)   outproc = writenauty;
 //        else if (nooutput) outproc = nullwrite;
 //        else               outproc = writeny;
@@ -1654,12 +1653,6 @@ int makeg_main(char command, int argc, char *argv[])
 // CHANGE start (commented this out)
 //        fprintf(msgfile,">A n=%d e=%d:%d d=%d class=%d/%d\n",
 //                        maxn,mine,maxe,maxdeg,mod,res);
-// CHANGE end
-
-// CHANGE start
-        g_maxe = maxe;
-        g_mod = mod;
-        g_res = res;
 // CHANGE end
 
         g[0] = 0;
@@ -1718,7 +1711,7 @@ int makeg_main(char command, int argc, char *argv[])
 #endif
 
 // CHANGE start
-        Test_PrintStats(msgfile, command);
+        Test_PrintStats(msgfile);
 // CHANGE end
 
 // CHANGE start (commented this out)

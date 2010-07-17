@@ -49,17 +49,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 extern "C" {
 #endif
 
-void outprocTestPlanarity(FILE *f, graph *g, int n);
-void outprocTestDrawPlanar(FILE *f, graph *g, int n);
-void outprocTestOuterplanarity(FILE *f, graph *g, int n);
-void outprocTestK23Search(FILE *f, graph *g, int n);
-void outprocTestK33Search(FILE *f, graph *g, int n);
-void outprocTestK4Search(FILE *f, graph *g, int n);
-void outprocTestColorVertices(FILE *f, graph *g, int n);
-
-void outprocTestAll(FILE *f, graph *g, int n);
-
-void Test_PrintStats(FILE *, char);
+void outprocTest(FILE *f, graph *g, int n);
+void Test_PrintStats(FILE *);
 
 #ifdef __cplusplus
 }
