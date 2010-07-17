@@ -57,9 +57,9 @@ char *commands = "pdo234c";
 /* Forward Declarations of Private functions */
 graphP createGraph(char command, int n, int maxe);
 int attachAlgorithmExtension(char command, graphP aGraph);
-void initBaseTestResult(baseTestResult *pBaseResult);
-int initTestResult(testResultP result, char command, int n, int maxe);
-void releaseTestResult(testResultP result);
+void initBaseTestResult(baseTestResultStruct *pBaseResult);
+int initTestResult(testResultP testResult, char command, int n, int maxe);
+void releaseTestResult(testResultP testResult);
 
 /***********************************************************************
  tf_AllocateTestFramework()
@@ -67,14 +67,14 @@ void releaseTestResult(testResultP result);
 
 testResultFrameworkP tf_AllocateTestFramework(char command, int n, int maxe)
 {
-	testResultFrameworkP framework = (testResultFrameworkP) malloc(sizeof(testResultFramework));
+	testResultFrameworkP framework = (testResultFrameworkP) malloc(sizeof(testResultFrameworkStruct));
 
 	if (framework != NULL)
 	{
 		int i;
 
 		framework->algResultsSize = command == 'a' ? NUMCOMMANDSTOTEST : 1;
-		framework->algResults = (testResultP) malloc(framework->algResultsSize * sizeof(testResult));
+		framework->algResults = (testResultP) malloc(framework->algResultsSize * sizeof(testResultStruct));
 		for (i=0; i < framework->algResultsSize; i++)
 			if (initTestResult(framework->algResults+i,
 					command=='a'?commands[i]:command, n, maxe) != OK)
@@ -120,45 +120,51 @@ void tf_FreeTestFramework(testResultFrameworkP *pTestFramework)
 
 testResultP tf_GetTestResult(testResultFrameworkP framework, char command)
 {
-	testResultP result = NULL;
+	testResultP testResult = NULL;
 
 	if (framework != NULL && framework->algResults != NULL)
 	{
 		int i;
 		for (i=0; i < framework->algResultsSize; i++)
 			if (framework->algResults[i].command == command)
-				result = framework->algResults+i;
+				testResult = framework->algResults+i;
 	}
 
-	return result;
+	return testResult;
 }
 
 /***********************************************************************
  initTestResult()
  ***********************************************************************/
 
-int initTestResult(testResultP result, char command, int n, int maxe)
+int initTestResult(testResultP testResult, char command, int n, int maxe)
 {
-	if (result != NULL)
+	if (testResult != NULL)
 	{
-		result->command = command;
-		initBaseTestResult(&result->result);
-		result->edgeResults = NULL;
-		result->edgeResultsSize = maxe;
-		result->theGraph = NULL;
-		result->origGraph = NULL;
+		testResult->command = command;
+		initBaseTestResult(&testResult->result);
+		testResult->edgeResults = NULL;
+		testResult->edgeResultsSize = maxe;
+		testResult->theGraph = NULL;
+		testResult->origGraph = NULL;
 
-		result->edgeResults = (baseTestResult *) malloc((maxe+1) * sizeof(baseTestResult));
-		if (result->edgeResults == NULL)
+		testResult->edgeResults = (baseTestResultStruct *) malloc((maxe+1) * sizeof(baseTestResultStruct));
+		if (testResult->edgeResults == NULL)
 		{
-			releaseTestResult(result);
+			releaseTestResult(testResult);
 			return NOTOK;
 		}
-
-		if ((result->theGraph = createGraph(command, n, maxe)) == NULL ||
-			(result->origGraph = createGraph(command, n, maxe)) == NULL)
+		else
 		{
-			releaseTestResult(result);
+			int j;
+			for (j=0; j < maxe; j++)
+				initBaseTestResult(&testResult->edgeResults[j]);
+		}
+
+		if ((testResult->theGraph = createGraph(command, n, maxe)) == NULL ||
+			(testResult->origGraph = createGraph(command, n, maxe)) == NULL)
+		{
+			releaseTestResult(testResult);
 			return NOTOK;
 		}
 	}
@@ -168,28 +174,28 @@ int initTestResult(testResultP result, char command, int n, int maxe)
 
 /***********************************************************************
  releaseTestResult()
- Releases all memory resources used by the testResult pointed to by result,
- but does not free the testResult since result points into an array.
+ Releases all memory resources used by the testResult, but does not
+ free the testResult since it points into an array.
  ***********************************************************************/
 
-void releaseTestResult(testResultP result)
+void releaseTestResult(testResultP testResult)
 {
-	if (result->edgeResults != NULL)
+	if (testResult->edgeResults != NULL)
 	{
-		free(result->edgeResults);
-		result->edgeResults = NULL;
+		free(testResult->edgeResults);
+		testResult->edgeResults = NULL;
 	}
-	gp_Free(&(result->theGraph));
-	gp_Free(&(result->origGraph));
+	gp_Free(&(testResult->theGraph));
+	gp_Free(&(testResult->origGraph));
 }
 
 /***********************************************************************
  initBaseTestResult()
  ***********************************************************************/
 
-void initBaseTestResult(baseTestResult *pBaseResult)
+void initBaseTestResult(baseTestResultStruct *pBaseResult)
 {
-	memset(pBaseResult, 0, sizeof(baseTestResult));
+	memset(pBaseResult, 0, sizeof(baseTestResultStruct));
 }
 
 /***********************************************************************
