@@ -56,22 +56,13 @@ extern char *commands;
 
 // numGraphs: the number of graphs that met the test criteria
 //            (e.g. were generated and had a specific number of edges)
-// numErrors: the number of graphs on which an algorithm or its integrity
-//            check failed (i.e. produced NOTOK; should be 0)
 // numOKs: the number of graphs on which the test produced OK
-//         (as opposed to NONEMBEDDABLE or NOTOK)
-// *_carry: The above are 32-bit integers, so we ensure that we can
-//          take the result up to the capacity of a 64-bit integer
-//          (and if a *_carry loops to 0, then we report an error)
+//         (as opposed to NONEMBEDDABLE (or NOTOK))
 typedef struct
 {
 	unsigned long numGraphs;
-	unsigned long numErrors;
 	unsigned long numOKs;
-	unsigned long numGraphs_carry;
-	unsigned long numErrors_carry;
-	unsigned long numOKs_carry;
-} baseTestResult;
+} baseTestResultStruct;
 
 // command: Indicates the algorithm being tested
 // result: Cumulative result of tests on graphs of all sizes
@@ -93,23 +84,23 @@ typedef struct
 typedef struct
 {
 	char command;
-	baseTestResult result;
-	baseTestResult *edgeResults;
+	baseTestResultStruct result;
+	baseTestResultStruct *edgeResults;
 	int edgeResultsSize;
 	graphP theGraph, origGraph;
-} testResult;
+} testResultStruct;
 
-typedef testResult * testResultP;
+typedef testResultStruct * testResultP;
 
 // algResults: An array of testResults for each algorithm being tested
 // algResultsSize: the number of algorithms being tested
 typedef struct
 {
-	testResult *algResults;
+	testResultStruct *algResults;
 	int algResultsSize;
-} testResultFramework;
+} testResultFrameworkStruct;
 
-typedef testResultFramework * testResultFrameworkP;
+typedef testResultFrameworkStruct * testResultFrameworkP;
 
 // Returns a pointer to the testResult for the given command character
 // or NULL if there is no test result for the algorithm
