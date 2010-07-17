@@ -160,7 +160,7 @@ extern unsigned long numOKs;
 int callNauty(int argc, char *argv[])
 {
 	char command;
-	int numArgs, argsOffset, i, j, n;
+	int numArgs, argsOffset, i;
 	char *args[12];
 
 	if (argc < 4 || argc > 12)
@@ -195,13 +195,13 @@ int callNauty(int argc, char *argv[])
 		printf("\nTotal time = %.3lf seconds\n", platform_GetDuration(start,end));
 		return result;
 	}
-
+/*
 	// Otherwise, generate statistics for each number of edges
 	// and provide totals
 	else
 	{
 		unsigned long totalGraphs=0, totalErrors=0, totalOKs=0;
-		int nIndex;
+		int nIndex, j, n;
 		char edgeStr[10];
 		unsigned long stats[16*15/2+1][3];
 		platform_time start, end;
@@ -303,6 +303,8 @@ int callNauty(int argc, char *argv[])
 
 		return 0;
 	}
+*/
+	return 0;
 }
 
 /****************************************************************************
@@ -460,6 +462,9 @@ int runSpecificGraphTest(char *command, char *infileName)
 	return Result;
 }
 
+extern int unittestMode;
+extern unsigned long unittestNumGraphs, unittestNumOKs;
+
 int runNautyTests(int argc, char *argv[])
 {
 #define NUMCOMMANDSTOTEST	7
@@ -477,7 +482,7 @@ int runNautyTests(int argc, char *argv[])
 			"vertex coloring"
 	};
 	int success = TRUE;
-	int results[] = { 194815, 194815, 269377, 268948, 191091, 265312, 2178 };
+	unsigned long results[] = { 194815, 194815, 269377, 268948, 191091, 265312, 2178 };
 	int i, startCommand, stopCommand;
 
 	startCommand = 0;
@@ -501,6 +506,7 @@ int runNautyTests(int argc, char *argv[])
 	}
 
 	// Either run all tests or the selected test
+	unittestMode = 1;
     platform_GetTime(start);
 
     for (i=startCommand; i < stopCommand; i++)
@@ -514,15 +520,16 @@ int runNautyTests(int argc, char *argv[])
 			success = FALSE;
 		}
 
-		if (results[i] != numGraphs-numOKs)
+		if (results[i] != unittestNumGraphs - unittestNumOKs)
 		{
 			printf("Incorrect result on command %s.\n", commands[i]);
-			printf("Expected result=%d, Actual result=%ld.\n", results[i], numGraphs-numOKs);
+			printf("Expected result=%lu, Actual result=%lu.\n", results[i], unittestNumGraphs - unittestNumOKs);
 			success = FALSE;
 		}
 	}
 
 	platform_GetTime(end);
+	unittestMode = 0;
     printf("\nFinished all processing in %.3lf seconds.\n", platform_GetDuration(start,end));
 
 	if (success)
