@@ -462,13 +462,56 @@ int runSpecificGraphTest(char *command, char *infileName)
 	return Result;
 }
 
+#include "nauty/testFramework.h"
 extern int unittestMode;
+extern testResultFrameworkP testFramework;
+extern int errorFound;
+
+int runNautyTestAll(int argc, char *argv[])
+{
+	platform_time start, end;
+	int success = TRUE;
+	unsigned long results[NUMCOMMANDSTOTEST] = { 194815, 194815, 269377, 268948, 191091, 265312, 2178 };
+	char *commandLine[] = {
+			"planarity", "-gen", "-a", "9"
+	};
+
+	platform_GetTime(start);
+
+	unittestMode = 1;
+
+	printf("Testing all %s vertex graphs\n", commandLine[3]);
+
+	if (callNauty(4, commandLine) != 0)
+		success = FALSE;
+	else
+	{
+		int i;
+		testResultP testResult;
+
+	    for (i=0; i < NUMCOMMANDSTOTEST; i++)
+	    {
+	    	testResult = testFramework->algResults + i;
+	    	if (results[i] != testResult->result.numGraphs - testResult->result.numOKs)
+	    		success = FALSE;
+	    }
+	}
+
+	unittestMode = 0;
+	tf_FreeTestFramework(&testFramework);
+	errorFound = 0;
+
+	platform_GetTime(end);
+    printf("\nFinished all processing in %.3lf seconds.\n", platform_GetDuration(start,end));
+    printf("Status = %s\n", success ? "SUCCESS" : "ERROR");
+
+	return success ? 0 : -1;
+}
+
 extern unsigned long unittestNumGraphs, unittestNumOKs;
 
 int runNautyTests(int argc, char *argv[])
 {
-#define NUMCOMMANDSTOTEST	7
-
 	platform_time start, end;
 	char *commandLine[] = {
 			"planarity", "-gen", "C", "9"
@@ -506,8 +549,8 @@ int runNautyTests(int argc, char *argv[])
 	}
 
 	// Either run all tests or the selected test
-	unittestMode = 1;
     platform_GetTime(start);
+	unittestMode = 1;
 
     for (i=startCommand; i < stopCommand; i++)
 	{
@@ -519,6 +562,8 @@ int runNautyTests(int argc, char *argv[])
 			printf("An error occurred.\n");
 			success = FALSE;
 		}
+		tf_FreeTestFramework(&testFramework);
+		errorFound = 0;
 
 		if (results[i] != unittestNumGraphs - unittestNumOKs)
 		{
@@ -528,12 +573,14 @@ int runNautyTests(int argc, char *argv[])
 		}
 	}
 
-	platform_GetTime(end);
 	unittestMode = 0;
+	platform_GetTime(end);
     printf("\nFinished all processing in %.3lf seconds.\n", platform_GetDuration(start,end));
 
 	if (success)
 	    printf("Tests of all commands succeeded.\n");
+
+	success = runNautyTestAll(argc, argv) == 0 ? TRUE : FALSE;
 
 	return success ? 0 : -1;
 }
