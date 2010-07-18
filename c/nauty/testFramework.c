@@ -94,7 +94,7 @@ testResultFrameworkP tf_AllocateTestFramework(char command, int n, int maxe)
 
 void tf_FreeTestFramework(testResultFrameworkP *pTestFramework)
 {
-	if (pTestFramework == NULL && *pTestFramework != NULL)
+	if (pTestFramework != NULL && *pTestFramework != NULL)
 	{
 		testResultFrameworkP framework = *pTestFramework;
 
