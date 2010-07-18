@@ -394,8 +394,7 @@ void Test_PrintStats(FILE *msgfile)
 		unittestNumGraphs = testFramework->algResults[0].result.numGraphs;
 		unittestNumOKs = testFramework->algResults[0].result.numOKs;
 	}
-	//else
-	if (g_command == 'a')
+	else if (g_command == 'a')
 	{
 		int i;
 		for (i=0; i < testFramework->algResultsSize; i++)
@@ -406,6 +405,9 @@ void Test_PrintStats(FILE *msgfile)
 		printStats(msgfile, &testFramework->algResults[0]);
 	}
 
-	tf_FreeTestFramework(&testFramework);
-	errorFound = 0;
+	if (!unittestMode)
+	{
+		tf_FreeTestFramework(&testFramework);
+		errorFound = 0;
+	}
 }
