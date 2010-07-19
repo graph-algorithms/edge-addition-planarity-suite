@@ -70,7 +70,6 @@ testResultFrameworkP testFramework = NULL;
 int errorFound = 0;
 
 int unittestMode = 0;
-unsigned long unittestNumGraphs, unittestNumOKs;
 
 /***********************************************************************
  WriteMatrixGraph()
@@ -329,6 +328,24 @@ int runTest(FILE *msgfile, char command)
 /***********************************************************************
  ***********************************************************************/
 
+int getCommandIndex(char command)
+{
+	switch (command)
+	{
+		case 'p' : return 0;
+		case 'd' : return 1;
+		case 'o' : return 2;
+		case '2' : return 3;
+		case '3' : return 4;
+		case '4' : return 5;
+		case 'c' : return 6;
+	}
+	return -1;
+}
+
+/***********************************************************************
+ ***********************************************************************/
+
 void getMessages(char command, char **pMsgAlg, char **pMsgOK, char **pMsgNoEmbed)
 {
 	switch (command)
@@ -391,8 +408,32 @@ void Test_PrintStats(FILE *msgfile)
 
 	if (unittestMode)
 	{
-		unittestNumGraphs = testFramework->algResults[0].result.numGraphs;
-		unittestNumOKs = testFramework->algResults[0].result.numOKs;
+		unsigned long results[NUMCOMMANDSTOTEST] = { 194815, 194815, 269377, 268948, 191091, 265312, 2178 };
+		int i;
+		testResultP testResult;
+
+		if (g_command == 'a')
+		{
+		    for (i=0; i < NUMCOMMANDSTOTEST; i++)
+		    {
+		    	testResult = testFramework->algResults + i;
+		    	if (results[i] != testResult->result.numGraphs - testResult->result.numOKs)
+		    		errorFound = 1;
+		    }
+		}
+		else
+		{
+			i = getCommandIndex(g_command);
+
+			if (i < 0 || i >= NUMCOMMANDSTOTEST)
+				errorFound = 1;
+			else
+			{
+				testResult = testFramework->algResults + 0;
+		    	if (results[i] != testResult->result.numGraphs - testResult->result.numOKs)
+		    		errorFound = 1;
+			}
+		}
 	}
 	else if (g_command == 'a')
 	{
@@ -405,9 +446,8 @@ void Test_PrintStats(FILE *msgfile)
 		printStats(msgfile, &testFramework->algResults[0]);
 	}
 
+	tf_FreeTestFramework(&testFramework);
+
 	if (!unittestMode)
-	{
-		tf_FreeTestFramework(&testFramework);
 		errorFound = 0;
-	}
 }

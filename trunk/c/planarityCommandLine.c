@@ -374,6 +374,9 @@ int runSpecificGraphTests()
 	if (runSpecificGraphTest("-c", "drawExample.txt") < 0)
 		retVal = -1;
 
+	if (retVal == 0)
+		printf("Tests of all specific graphs succeeded\n");
+
 	chdir(origDir);
     FlushConsole(stdout);
 	return retVal;
@@ -467,120 +470,43 @@ extern int unittestMode;
 extern testResultFrameworkP testFramework;
 extern int errorFound;
 
-int runNautyTestAll(int argc, char *argv[])
+int runNautyTests(int argc, char *argv[])
 {
 	platform_time start, end;
 	int success = TRUE;
-	unsigned long results[NUMCOMMANDSTOTEST] = { 194815, 194815, 269377, 268948, 191091, 265312, 2178 };
-	char *commandLine[] = {
+	char *commandLine[4] = {
 			"planarity", "-gen", "-a", "9"
 	};
 
 	platform_GetTime(start);
 
-	unittestMode = 1;
+	// If a single command test, then get the command, otherwise restore 'a' for all
+	if (argc == 4 || (argc == 3 && quietMode != 'y'))
+		commandLine[2] = argv[2 + (quietMode == 'y' ? 1 : 0)];
+	else
+		commandLine[2] = "-a";
 
+	// Go to unit test mode, tell the user what is happening
+	unittestMode = 1;
 	printf("Testing all %s vertex graphs\n", commandLine[3]);
 
+	// Run the test and obtain the result
 	if (callNauty(4, commandLine) != 0)
 		success = FALSE;
 	else
 	{
-		int i;
-		testResultP testResult;
-
-	    for (i=0; i < NUMCOMMANDSTOTEST; i++)
-	    {
-	    	testResult = testFramework->algResults + i;
-	    	if (results[i] != testResult->result.numGraphs - testResult->result.numOKs)
-	    		success = FALSE;
-	    }
+		if (errorFound)
+			success = FALSE;
+		errorFound = 0;
 	}
 
+	// Get out of unit test mode
 	unittestMode = 0;
-	tf_FreeTestFramework(&testFramework);
-	errorFound = 0;
 
+	// Report the time duration and the result
 	platform_GetTime(end);
     printf("\nFinished all processing in %.3lf seconds.\n", platform_GetDuration(start,end));
     printf("Status = %s\n", success ? "SUCCESS" : "ERROR");
-
-	return success ? 0 : -1;
-}
-
-extern unsigned long unittestNumGraphs, unittestNumOKs;
-
-int runNautyTests(int argc, char *argv[])
-{
-	platform_time start, end;
-	char *commandLine[] = {
-			"planarity", "-gen", "C", "9"
-	};
-	char *commands[NUMCOMMANDSTOTEST] = {
-			"-p", "-d", "-o", "-2", "-3", "-4", "-c"
-	};
-	char *commandNames[NUMCOMMANDSTOTEST] = {
-			"planarity", "planar drawing", "outerplanarity",
-			"K_{2,3} search", "K_{3,3} search", "K_4 search",
-			"vertex coloring"
-	};
-	int success = TRUE;
-	unsigned long results[] = { 194815, 194815, 269377, 268948, 191091, 265312, 2178 };
-	int i, startCommand, stopCommand;
-
-	startCommand = 0;
-	stopCommand = NUMCOMMANDSTOTEST;
-
-	// If a single test command is given...
-	if (argc == 4 || (argc == 3 && quietMode != 'y'))
-	{
-		char *commandToTest = argv[2 + (quietMode == 'y' ? 1 : 0)];
-
-		// Determine which test to run...
-		for (i = 0; i < NUMCOMMANDSTOTEST; i++)
-		{
-			if (strcmp(commandToTest, commands[i]) == 0)
-			{
-				startCommand = i;
-				stopCommand = i+1;
-				break;
-			}
-		}
-	}
-
-	// Either run all tests or the selected test
-    platform_GetTime(start);
-	unittestMode = 1;
-
-    for (i=startCommand; i < stopCommand; i++)
-	{
-		printf("\nTesting %s\n", commandNames[i]);
-
-		commandLine[2] = commands[i];
-		if (callNauty(4, commandLine) != 0)
-		{
-			printf("An error occurred.\n");
-			success = FALSE;
-		}
-		tf_FreeTestFramework(&testFramework);
-		errorFound = 0;
-
-		if (results[i] != unittestNumGraphs - unittestNumOKs)
-		{
-			printf("Incorrect result on command %s.\n", commands[i]);
-			printf("Expected result=%lu, Actual result=%lu.\n", results[i], unittestNumGraphs - unittestNumOKs);
-			success = FALSE;
-		}
-	}
-
-	unittestMode = 0;
-	platform_GetTime(end);
-    printf("\nFinished all processing in %.3lf seconds.\n", platform_GetDuration(start,end));
-
-	if (success)
-	    printf("Tests of all commands succeeded.\n");
-
-	success = runNautyTestAll(argc, argv) == 0 ? TRUE : FALSE;
 
 	return success ? 0 : -1;
 }

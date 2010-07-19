@@ -99,7 +99,7 @@ int helpMessage(char *param)
 	if (param == NULL)
 	{
 	    Message(
-            "'planarity': menu-driven\n"
+            "'planarity': if no command-line, then menu-driven\n"
             "'planarity (-h|-help)': this message\n"
             "'planarity (-h|-help) -gen': more help with nauty generator command line\n"
             "'planarity (-h|-help) -menu': more help with menu-based command line\n"
