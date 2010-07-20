@@ -1711,7 +1711,7 @@ int makeg_main(char command, int argc, char *argv[])
 #endif
 
 // CHANGE start
-        Test_PrintStats(msgfile);
+        Test_PrintStats(outfile);
 // CHANGE end
 
 // CHANGE start (commented this out)
