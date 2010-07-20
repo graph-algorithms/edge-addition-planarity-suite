@@ -374,7 +374,7 @@ void printStats(FILE *outfile, testResultP testResult)
 
 	getMessages(command, &msgAlg, &msgOK, &msgNoEmbed);
 
-	fprintf(outfile, "Begin Stats for Algorithm %s\n", msgAlg);
+	fprintf(outfile, "\nBegin Stats for Algorithm %s\n", msgAlg);
 	fprintf(outfile, "Status=%s\n", errorFound?"ERROR":"SUCCESS");
 
 	fprintf(outfile, "maxn=%d, mine=%d, maxe=%d, arcCapacity=%d\n",
