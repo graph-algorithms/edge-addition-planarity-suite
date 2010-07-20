@@ -86,8 +86,8 @@ int helpMessage(char *param)
 	char *commandStr =
     	"C = command from menu\n"
     	"    -p = Planar embedding and Kuratowski subgraph isolation\n"
+        "    -d = Planar graph drawing by visibility representation\n"
         "    -o = Outerplanar embedding and obstruction isolation\n"
-        "    -d = Planar graph drawing\n"
         "    -2 = Search for subgraph homeomorphic to K_{2,3}\n"
         "    -3 = Search for subgraph homeomorphic to K_{3,3}\n"
         "    -4 = Search for subgraph homeomorphic to K_4\n"
@@ -209,7 +209,7 @@ char Choice;
 
         Message("\n"
                 "P. Planar embedding and Kuratowski subgraph isolation\n"
-                "D. Planar graph drawing\n"
+                "D. Planar graph drawing by visibility representation\n"
                 "O. Outerplanar embedding and obstruction isolation\n"
                 "2. Search for subgraph homeomorphic to K_{2,3}\n"
                 "3. Search for subgraph homeomorphic to K_{3,3}\n"
