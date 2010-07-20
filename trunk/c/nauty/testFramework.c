@@ -157,7 +157,7 @@ int initTestResult(testResultP testResult, char command, int n, int maxe)
 		else
 		{
 			int j;
-			for (j=0; j < maxe; j++)
+			for (j=0; j <= maxe; j++)
 				initBaseTestResult(&testResult->edgeResults[j]);
 		}
 
