@@ -64,7 +64,7 @@ extern char quietMode;
 #include "testFramework.h"
 #include "../graphColorVertices.h"
 
-int runTest(FILE *msgfile, char command);
+int runTest(FILE *outfile, char command);
 
 testResultFrameworkP testFramework = NULL;
 int errorFound = 0;
@@ -234,7 +234,7 @@ void outprocTest(FILE *f, graph *g, int n)
 	}
 }
 
-int runTest(FILE *msgfile, char command)
+int runTest(FILE *outfile, char command)
 {
 	int Result = OK;
 	testResultP testResult = tf_GetTestResult(testFramework, command);
@@ -244,7 +244,7 @@ int runTest(FILE *msgfile, char command)
 	// Increment the main graph counter
 	if (++testResult->result.numGraphs == 0)
 	{
-		fprintf(msgfile, "\rExceeded maximum number of supported graphs\n");
+		fprintf(outfile, "\rExceeded maximum number of supported graphs\n");
 		errorFound = 1;
 		return NOTOK;
 	}
@@ -252,7 +252,7 @@ int runTest(FILE *msgfile, char command)
 	// Now copy from the origGraph into theGraph on which the work will be done
 	if ((Result = gp_CopyGraph(theGraph, origGraph)) != OK)
 	{
-		fprintf(msgfile, "\rFailed to copy graph #%lu\n", testResult->result.numGraphs);
+		fprintf(outfile, "\rFailed to copy graph #%lu\n", testResult->result.numGraphs);
 		errorFound++;
 		return NOTOK;
 	}
@@ -266,7 +266,7 @@ int runTest(FILE *msgfile, char command)
 		{
 			if (gp_ColorVerticesIntegrityCheck(theGraph, origGraph) != OK)
 			{
-				fprintf(msgfile, "\rIntegrity check failed on graph #%lu.\n", testResult->result.numGraphs);
+				fprintf(outfile, "\rIntegrity check failed on graph #%lu.\n", testResult->result.numGraphs);
 				Result = NOTOK;
 			}
 			if (Result == OK)
@@ -299,7 +299,7 @@ int runTest(FILE *msgfile, char command)
 			if (gp_TestEmbedResultIntegrity(theGraph, origGraph, Result) != Result)
 			{
 				Result = NOTOK;
-				fprintf(msgfile, "\rIntegrity check failed on graph #%lu.\n", testResult->result.numGraphs);
+				fprintf(outfile, "\rIntegrity check failed on graph #%lu.\n", testResult->result.numGraphs);
 			}
 		}
 	}
@@ -318,7 +318,7 @@ int runTest(FILE *msgfile, char command)
 	else
 	{
 		errorFound++;
-		fprintf(msgfile, "\rFailed to runTest() on graph #%lu.\n",
+		fprintf(outfile, "\rFailed to runTest() on graph #%lu.\n",
 				testResult->result.numGraphs);
 	}
 
@@ -364,7 +364,7 @@ void getMessages(char command, char **pMsgAlg, char **pMsgOK, char **pMsgNoEmbed
 /***********************************************************************
  ***********************************************************************/
 
-void printStats(FILE *msgfile, testResultP testResult)
+void printStats(FILE *outfile, testResultP testResult)
 {
 	char *msgAlg, *msgOK, *msgNoEmbed;
 	int j;
@@ -374,16 +374,16 @@ void printStats(FILE *msgfile, testResultP testResult)
 
 	getMessages(command, &msgAlg, &msgOK, &msgNoEmbed);
 
-	fprintf(msgfile, "Begin Stats for Algorithm %s\n", msgAlg);
-	fprintf(msgfile, "Status=%s\n", errorFound?"ERROR":"SUCCESS");
+	fprintf(outfile, "Begin Stats for Algorithm %s\n", msgAlg);
+	fprintf(outfile, "Status=%s\n", errorFound?"ERROR":"SUCCESS");
 
-	fprintf(msgfile, "maxn=%d, mine=%d, maxe=%d, arcCapacity=%d\n",
+	fprintf(outfile, "maxn=%d, mine=%d, maxe=%d, arcCapacity=%d\n",
 			          g_maxn, g_mine, g_maxe, arcCapacity);
 	if (g_mod > 1)
-		fprintf(msgfile, "mod=%d, res=%d\n", g_mod, g_res);
+		fprintf(outfile, "mod=%d, res=%d\n", g_mod, g_res);
 
-	fprintf(msgfile, "# Edges  %10s  %10s  %10s\n", "# Graphs", msgOK, msgNoEmbed);
-	fprintf(msgfile, "-------  ----------  ----------  ----------\n");
+	fprintf(outfile, "# Edges  %10s  %10s  %10s\n", "# Graphs", msgOK, msgNoEmbed);
+	fprintf(outfile, "-------  ----------  ----------  ----------\n");
 	for (j = g_mine; j <= g_maxe; j++)
 	{
 		if (testResult == NULL)
@@ -394,7 +394,7 @@ void printStats(FILE *msgfile, testResultP testResult)
 			numOKs = testResult->edgeResults[j].numOKs;
 			numNoEmbeds = numGraphs - numOKs;
 		}
-		fprintf(msgfile, "%7d  %10lu  %10lu  %10lu\n", j, numGraphs, numOKs, numNoEmbeds);
+		fprintf(outfile, "%7d  %10lu  %10lu  %10lu\n", j, numGraphs, numOKs, numNoEmbeds);
 	}
 
 	if (testResult == NULL)
@@ -406,24 +406,24 @@ void printStats(FILE *msgfile, testResultP testResult)
 		numNoEmbeds = numGraphs - numOKs;
 	}
 
-	fprintf(msgfile, "TOTALS   %10lu  %10lu  %10lu\n", numGraphs, numOKs, numNoEmbeds);
+	fprintf(outfile, "TOTALS   %10lu  %10lu  %10lu\n", numGraphs, numOKs, numNoEmbeds);
 
-	fprintf(msgfile, "End Stats for Algorithm %s\n", msgAlg);
+	fprintf(outfile, "End Stats for Algorithm %s\n", msgAlg);
 }
 
 /***********************************************************************
  Test_PrintStats() - called by makeg to print the final stats.
  ***********************************************************************/
 
-void Test_PrintStats(FILE *msgfile)
+void Test_PrintStats(FILE *outfile)
 {
 	if (quietMode == 'n' && testFramework != NULL)
-		fprintf(msgfile, "\r%lu \n", testFramework->algResults[0].result.numGraphs);
+		fprintf(outfile, "\r%lu \n", testFramework->algResults[0].result.numGraphs);
 
 	if (testFramework == NULL)
 	{
 		if (!unittestMode)
-			printStats(msgfile, NULL);
+			printStats(outfile, NULL);
 	}
 	else if (unittestMode)
 	{
@@ -458,11 +458,11 @@ void Test_PrintStats(FILE *msgfile)
 	{
 		int i;
 		for (i=0; i < testFramework->algResultsSize; i++)
-			printStats(msgfile, &testFramework->algResults[i]);
+			printStats(outfile, &testFramework->algResults[i]);
 	}
 	else
 	{
-		printStats(msgfile, &testFramework->algResults[0]);
+		printStats(outfile, &testFramework->algResults[0]);
 	}
 
 	tf_FreeTestFramework(&testFramework);
