@@ -369,13 +369,16 @@ void printStats(FILE *msgfile, testResultP testResult)
 	char *msgAlg, *msgOK, *msgNoEmbed;
 	int j;
 	unsigned long numGraphs, numOKs, numNoEmbeds;
+	char command = testResult == NULL ? g_command : testResult->command;
+	int arcCapacity = testFramework == NULL ? 2*g_maxe : testFramework->algResults[0].origGraph->arcCapacity;
 
-	getMessages(testResult->command, &msgAlg, &msgOK, &msgNoEmbed);
+	getMessages(command, &msgAlg, &msgOK, &msgNoEmbed);
 
 	fprintf(msgfile, "Begin Stats for Algorithm %s\n", msgAlg);
 	fprintf(msgfile, "Status=%s\n", errorFound?"ERROR":"SUCCESS");
 
-	fprintf(msgfile, "maxn=%d, mine=%d, maxe=%d\n", g_maxn, g_mine, g_maxe);
+	fprintf(msgfile, "maxn=%d, mine=%d, maxe=%d, arcCapacity=%d\n",
+			          g_maxn, g_mine, g_maxe, arcCapacity);
 	if (g_mod > 1)
 		fprintf(msgfile, "mod=%d, res=%d\n", g_mod, g_res);
 
@@ -383,15 +386,26 @@ void printStats(FILE *msgfile, testResultP testResult)
 	fprintf(msgfile, "-------  ----------  ----------  ----------\n");
 	for (j = g_mine; j <= g_maxe; j++)
 	{
-		numGraphs = testResult->edgeResults[j].numGraphs;
-		numOKs = testResult->edgeResults[j].numOKs;
-		numNoEmbeds = numGraphs - numOKs;
+		if (testResult == NULL)
+			numGraphs = numOKs = numNoEmbeds = 0;
+		else
+		{
+			numGraphs = testResult->edgeResults[j].numGraphs;
+			numOKs = testResult->edgeResults[j].numOKs;
+			numNoEmbeds = numGraphs - numOKs;
+		}
 		fprintf(msgfile, "%7d  %10lu  %10lu  %10lu\n", j, numGraphs, numOKs, numNoEmbeds);
 	}
 
-	numGraphs = testResult->result.numGraphs;
-	numOKs = testResult->result.numOKs;
-	numNoEmbeds = numGraphs - numOKs;
+	if (testResult == NULL)
+		numGraphs = numOKs = numNoEmbeds = 0;
+	else
+	{
+		numGraphs = testResult->result.numGraphs;
+		numOKs = testResult->result.numOKs;
+		numNoEmbeds = numGraphs - numOKs;
+	}
+
 	fprintf(msgfile, "TOTALS   %10lu  %10lu  %10lu\n", numGraphs, numOKs, numNoEmbeds);
 
 	fprintf(msgfile, "End Stats for Algorithm %s\n", msgAlg);
@@ -403,10 +417,15 @@ void printStats(FILE *msgfile, testResultP testResult)
 
 void Test_PrintStats(FILE *msgfile)
 {
-	if (quietMode == 'n')
+	if (quietMode == 'n' && testFramework != NULL)
 		fprintf(msgfile, "\r%lu \n", testFramework->algResults[0].result.numGraphs);
 
-	if (unittestMode)
+	if (testFramework == NULL)
+	{
+		if (!unittestMode)
+			printStats(msgfile, NULL);
+	}
+	else if (unittestMode)
 	{
 		unsigned long results[NUMCOMMANDSTOTEST] = { 194815, 194815, 269377, 268948, 191091, 265312, 2178 };
 		int i;
