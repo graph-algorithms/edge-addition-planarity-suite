@@ -184,6 +184,7 @@ static int maxdeg,maxn,mine,maxe,nprune,mod,res,curres;
 // CHANGE start
 int g_maxn, g_mine, g_maxe, g_mod, g_res;
 char g_command;
+FILE *g_msgfile;
 // CHANGE end
 static graph gcan[MAXN];
 
@@ -1650,6 +1651,10 @@ int makeg_main(char command, int argc, char *argv[])
 
         msgfile = stderr;
         outfile = stdout;
+// CHANGE start
+        g_msgfile = msgfile;
+// CHANGE end
+
 // CHANGE start (commented this out)
 //        fprintf(msgfile,">A n=%d e=%d:%d d=%d class=%d/%d\n",
 //                        maxn,mine,maxe,maxdeg,mod,res);

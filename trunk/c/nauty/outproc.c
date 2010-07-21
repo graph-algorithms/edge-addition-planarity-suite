@@ -56,6 +56,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "naututil.h"
 extern int g_maxn, g_mine, g_maxe, g_mod, g_res;
 extern char g_command;
+extern FILE *g_msgfile;
 extern char quietMode;
 
 #include <stdlib.h>
@@ -226,10 +227,16 @@ void outprocTest(FILE *f, graph *g, int n)
 #ifndef DEBUG
 		// In release mode, print numbers less often for faster results
 		if (testFramework->algResults[0].result.numGraphs % 379 == 0)
+#else
+		// In DEBUG mode, unittestMode should still print numbers less often
+		if (!unittestMode || testFramework->algResults[0].result.numGraphs % 379 == 0)
 #endif
 		{
-			fprintf(f, "\r%lu ", testFramework->algResults[0].result.numGraphs);
-			fflush(f);
+			// msgfile is used because it is mapped to stderr, wherease f is mapped to stdout
+			// In cases where output is redirected to a file, we don't want this count
+			// going to the file in case the caller forgets to set quiet mode
+			fprintf(g_msgfile, "\r%lu ", testFramework->algResults[0].result.numGraphs);
+			fflush(g_msgfile);
 		}
 	}
 }
@@ -417,9 +424,6 @@ void printStats(FILE *outfile, testResultP testResult)
 
 void Test_PrintStats(FILE *outfile)
 {
-	if (quietMode == 'n' && testFramework != NULL)
-		fprintf(outfile, "\r%lu \n", testFramework->algResults[0].result.numGraphs);
-
 	if (testFramework == NULL)
 	{
 		if (!unittestMode)
