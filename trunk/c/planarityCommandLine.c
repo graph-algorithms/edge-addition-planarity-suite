@@ -153,8 +153,8 @@ int Result;
  The format of the command line is:
  planarity -gen -q -a n j j 12 i > TestResult_n_j_j_12_i.txt
 
- The n is for the number of vertices and is set equal to 12.
- The j j is the number of edges, between 0 and 66, the maximum for 12 vertex graphs.
+ The n is for the number of vertices.
+ The j j is the number of edges, between 0 and n(n-1)/2.
  The mod divides the problem into partitions that can be run on separate threads.
  The i is a partition number between 0 and mod-1. Each test batch file receives
  a number i, and within it are all the command lines for that partition to test
@@ -163,24 +163,32 @@ int Result;
  a smaller data structure for graphs that are of a guaranteed maximum size.
  ****************************************************************************/
 
-void WriteTestFiles()
+void WriteTestFiles(int n, int mod)
 {
-	char filename[32];
+	char filename[64];
 	FILE *outfile;
 	int i, j;
-	int n=12, maxe=n*(n-1)/2, mod=12;
+	int maxe=n*(n-1)/2;
 
 	for (i = 0; i < mod; i++)
 	{
-		sprintf(filename, "Test%d.bat", i);
+		sprintf(filename, "test_n%02d\\test_n%02d_mod%02d.bat", n, n, i);
 		outfile = fopen(filename, "wt");
+		if (outfile == NULL)
+		{
+			printf("Error creating test file %s\nRemember to create directory Test_n%02d\n", filename, n);
+			return;
+		}
+
 		for (j = 0; j <= maxe; j++)
 		{
-			sprintf(filename, "TestResult_%d_%d_%d_%d_%d.txt", n, j, j, mod, i);
-			fprintf(outfile, "planarity -gen -q -a %d %d %d %d %d > %s", n, j, j, mod, i, filename);
+			sprintf(filename, "results\\result_%02d_%02d_%02d_%02d_%02d.txt", n, j, j, mod, i);
+			fprintf(outfile, "..\\planarity -gen -a %d %d %d %d %d > %s\n", n, j, j, mod, i, filename);
 		}
 		fclose(outfile);
 	}
+
+	printf("Created test files. Remember to create 'results' in test subdirectory\n");
 }
 
 /****************************************************************************
@@ -203,7 +211,8 @@ int callNauty(int argc, char *argv[])
 	int result;
 	platform_time start, end;
 
-//	WriteTestFiles();
+//	WriteTestFiles(11, 12);
+//	WriteTestFiles(12, 12);
 
 	if (argc < 4 || argc > 12)
 		return -1;
