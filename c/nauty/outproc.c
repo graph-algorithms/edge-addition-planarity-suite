@@ -424,11 +424,18 @@ void printStats(FILE *outfile, testResultP testResult)
 
 void Test_PrintStats(FILE *outfile)
 {
+	// Need to print the final count of graphs, since the counter is usually modulated due to cost
+	if (quietMode == 'n' && testFramework != NULL)
+		fprintf(g_msgfile, "\r%lu \n", testFramework->algResults[0].result.numGraphs);
+
+	// If no graphs were generated, we have a special case for printing stats
 	if (testFramework == NULL)
 	{
 		if (!unittestMode)
 			printStats(outfile, NULL);
 	}
+
+	// Another special case for unit test mode
 	else if (unittestMode)
 	{
 		unsigned long results[NUMCOMMANDSTOTEST] = { 194815, 194815, 269377, 268948, 191091, 265312, 2178 };
@@ -458,19 +465,25 @@ void Test_PrintStats(FILE *outfile)
 			}
 		}
 	}
+
+	// Iterated stat printing in "all commands" mode
 	else if (g_command == 'a')
 	{
 		int i;
 		for (i=0; i < testFramework->algResultsSize; i++)
 			printStats(outfile, &testFramework->algResults[i]);
 	}
+
+	// The basis case of printing stats for a single command
 	else
 	{
 		printStats(outfile, &testFramework->algResults[0]);
 	}
 
+	// Done with the framework
 	tf_FreeTestFramework(&testFramework);
 
+	// Done with the error flag, except unittestMode needs the result and must clear it
 	if (!unittestMode)
 		errorFound = 0;
 }
