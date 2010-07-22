@@ -424,19 +424,24 @@ void printStats(FILE *outfile, testResultP testResult)
 
 void Test_PrintStats(FILE *outfile)
 {
+	// If no graphs were generated, then we need to generate an initialized testFramework
+	if (testFramework == NULL)
+	{
+		testFramework = tf_AllocateTestFramework(g_command, g_maxn, g_maxe);
+		if (testFramework == NULL)
+		{
+			fprintf(g_msgfile, "\rUnable to create the test framework.\n");
+			errorFound++;
+			return;
+		}
+	}
+
 	// Need to print the final count of graphs, since the counter is usually modulated due to cost
 	if (quietMode == 'n' && testFramework != NULL)
 		fprintf(g_msgfile, "\r%lu \n", testFramework->algResults[0].result.numGraphs);
 
-	// If no graphs were generated, we have a special case for printing stats
-	if (testFramework == NULL)
-	{
-		if (!unittestMode)
-			printStats(outfile, NULL);
-	}
-
-	// Another special case for unit test mode
-	else if (unittestMode)
+	// The unit test mode has special case handling to test whether the stat are correct
+	if (unittestMode)
 	{
 		unsigned long results[NUMCOMMANDSTOTEST] = { 194815, 194815, 269377, 268948, 191091, 265312, 2178 };
 		int i;
@@ -466,7 +471,7 @@ void Test_PrintStats(FILE *outfile)
 		}
 	}
 
-	// Iterated stat printing in "all commands" mode
+	// Iterated stats printing in "all commands" mode
 	else if (g_command == 'a')
 	{
 		int i;
