@@ -1,12 +1,3 @@
-/***********************************************************************
- Author: John Boyer
- Date: 16 May 2001, 2 Jan 2004, 7 Feb 2009, 4 Oct 2009, 21 Jan 2010,
-       17 Jul 2010
-
- This file contains functions that connect McKay's makeg program output
- with planarity-related graph algorithm implementations.
- ***********************************************************************/
-
 /*
 Planarity-Related Graph Algorithms Project
 Copyright (c) 1997-2010, John M. Boyer
@@ -50,6 +41,12 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
+
+/***********************************************************************
+ This file contains functions that connect McKay's makeg program output
+ with planarity-related graph algorithm implementations.
+ ***********************************************************************/
+
 
 #define EXTDEFS
 #define MAXN 16
