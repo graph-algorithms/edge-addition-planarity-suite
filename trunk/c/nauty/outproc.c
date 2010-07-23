@@ -65,7 +65,7 @@ extern char quietMode;
 #include "testFramework.h"
 #include "../graphColorVertices.h"
 
-int runTest(FILE *outfile, char command);
+int runTest(FILE *, char);
 
 testResultFrameworkP testFramework = NULL;
 int errorFound = 0;
@@ -162,7 +162,7 @@ void outprocTest(FILE *f, graph *g, int n)
 		testFramework = tf_AllocateTestFramework(g_command, n, g_maxe);
 		if (testFramework == NULL)
 		{
-			fprintf(f, "\rUnable to create the test framework.\n");
+			fprintf(g_msgfile, "\nUnable to create the test framework.\n");
 			errorFound++;
 		}
 	}
@@ -173,7 +173,7 @@ void outprocTest(FILE *f, graph *g, int n)
 	// Copy from the nauty graph to the test graph(s)
 	if (TransferGraph(testFramework->algResults[0].origGraph, g, n) != OK)
 	{
-		fprintf(f, "\rFailed to initialize with generated graph in errorMatrix.txt\n");
+		fprintf(g_msgfile, "\nFailed to initialize with generated graph in errorMatrix.txt\n");
 		WriteMatrixGraph("errorMatrix.txt", g, n);
 		errorFound++;
 	}
@@ -191,7 +191,7 @@ void outprocTest(FILE *f, graph *g, int n)
 			if (gp_CopyAdjacencyLists(testFramework->algResults[i].origGraph,
 					                  testFramework->algResults[0].origGraph) != OK)
 			{
-				fprintf(f, "\rFailed to copy adjacency lists\n");
+				fprintf(g_msgfile, "\nFailed to copy adjacency lists\n");
 				errorFound++;
 				return;
 			}
@@ -206,7 +206,7 @@ void outprocTest(FILE *f, graph *g, int n)
 		for (i=0, len=strlen(commands); i < len; i++)
 			if (runTest(f, commands[i]) != OK)
 			{
-				fprintf(f, "See error.txt and errorMatrix.txt\n");
+				fprintf(g_msgfile, "See error.txt and errorMatrix.txt\n");
 				gp_Write(testFramework->algResults[0].origGraph, "error.txt", WRITE_ADJLIST);
 				WriteMatrixGraph("errorMatrix.txt", g, n);
 				break;
@@ -216,7 +216,7 @@ void outprocTest(FILE *f, graph *g, int n)
 	{
 		if (runTest(f, g_command) != OK)
 		{
-			fprintf(f, "See error.txt and errorMatrix.txt\n");
+			fprintf(g_msgfile, "See error.txt and errorMatrix.txt\n");
 			gp_Write(testFramework->algResults[0].origGraph, "error.txt", WRITE_ADJLIST);
 			WriteMatrixGraph("errorMatrix.txt", g, n);
 		}
@@ -241,6 +241,9 @@ void outprocTest(FILE *f, graph *g, int n)
 	}
 }
 
+/***********************************************************************
+ ***********************************************************************/
+
 int runTest(FILE *outfile, char command)
 {
 	int Result = OK;
@@ -251,7 +254,8 @@ int runTest(FILE *outfile, char command)
 	// Increment the main graph counter
 	if (++testResult->result.numGraphs == 0)
 	{
-		fprintf(outfile, "\rExceeded maximum number of supported graphs\n");
+		fprintf(g_msgfile, "\nExceeded maximum number of graphs supported by this application\n");
+		fprintf(g_msgfile, "Use mine, maxe, mod and res to test in parts\n");
 		errorFound = 1;
 		return NOTOK;
 	}
@@ -259,7 +263,7 @@ int runTest(FILE *outfile, char command)
 	// Now copy from the origGraph into theGraph on which the work will be done
 	if ((Result = gp_CopyGraph(theGraph, origGraph)) != OK)
 	{
-		fprintf(outfile, "\rFailed to copy graph #%lu\n", testResult->result.numGraphs);
+		fprintf(g_msgfile, "\nFailed to copy graph #%lu\n", testResult->result.numGraphs);
 		errorFound++;
 		return NOTOK;
 	}
@@ -273,7 +277,7 @@ int runTest(FILE *outfile, char command)
 		{
 			if (gp_ColorVerticesIntegrityCheck(theGraph, origGraph) != OK)
 			{
-				fprintf(outfile, "\rIntegrity check failed on graph #%lu.\n", testResult->result.numGraphs);
+				fprintf(g_msgfile, "\nIntegrity check failed on graph #%lu.\n", testResult->result.numGraphs);
 				Result = NOTOK;
 			}
 			if (Result == OK)
@@ -306,7 +310,7 @@ int runTest(FILE *outfile, char command)
 			if (gp_TestEmbedResultIntegrity(theGraph, origGraph, Result) != Result)
 			{
 				Result = NOTOK;
-				fprintf(outfile, "\rIntegrity check failed on graph #%lu.\n", testResult->result.numGraphs);
+				fprintf(g_msgfile, "\nIntegrity check failed on graph #%lu.\n", testResult->result.numGraphs);
 			}
 		}
 	}
@@ -325,8 +329,11 @@ int runTest(FILE *outfile, char command)
 	else
 	{
 		errorFound++;
-		fprintf(outfile, "\rFailed to runTest() on graph #%lu.\n",
-				testResult->result.numGraphs);
+		fprintf(g_msgfile, "\nFailed to runTest() on graph #%lu.\n", testResult->result.numGraphs);
+		// If the command-line shunts the output to a file, then we ensure that the file also
+		// contains the error message (if stdout is not redirected, then the error prints
+		// twice, but there's no real way around that).
+		fprintf(outfile, "\nFailed to runTest() on graph #%lu.\n", testResult->result.numGraphs);
 	}
 
 	return Result == OK || Result == NONEMBEDDABLE ? OK : NOTOK;
@@ -430,7 +437,7 @@ void Test_PrintStats(FILE *outfile)
 		testFramework = tf_AllocateTestFramework(g_command, g_maxn, g_maxe);
 		if (testFramework == NULL)
 		{
-			fprintf(g_msgfile, "\rUnable to create the test framework.\n");
+			fprintf(g_msgfile, "\nUnable to create the test framework.\n");
 			errorFound++;
 			return;
 		}
