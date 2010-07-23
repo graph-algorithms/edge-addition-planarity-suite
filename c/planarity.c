@@ -84,7 +84,7 @@ int main(int argc, char *argv[])
 int helpMessage(char *param)
 {
 	char *commandStr =
-    	"C = command from menu\n"
+    	"C = command (algorithm implementation to run)\n"
     	"    -p = Planar embedding and Kuratowski subgraph isolation\n"
         "    -d = Planar graph drawing by visibility representation\n"
         "    -o = Outerplanar embedding and obstruction isolation\n"
@@ -92,6 +92,7 @@ int helpMessage(char *param)
         "    -3 = Search for subgraph homeomorphic to K_{3,3}\n"
         "    -4 = Search for subgraph homeomorphic to K_4\n"
 		"    -c = Color the vertices of the graph\n"
+		"    -a = All of the above\n"
     	"\n";
 
 	ProjectTitle();
@@ -104,6 +105,7 @@ int helpMessage(char *param)
             "'planarity (-h|-help) -gen': more help with graph generator command line\n"
             "'planarity (-h|-help) -menu': more help with menu-based command line\n"
     	    "'planarity -test [-q] [C]': runs tests (optional quiet mode, single test)\n"
+	    	"'planarity -gen [-q] C [...] n [...]': run command C on n-vertex graphs\n"
 	    	"\n"
 	    );
 
@@ -119,7 +121,6 @@ int helpMessage(char *param)
             "If graph in infile.txt is planar, then put embedding in embedding.out \n"
             "and (optionally) an ASCII art drawing in drawing.out\n"
             "Process returns 0=planar, 1=nonplanar, -1=error\n"
-	    	"\n"
 	    );
 	}
 
