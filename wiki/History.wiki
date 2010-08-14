@@ -1,11 +1,11 @@
 #summary History of the Planarity Project up to Version 2.2.1
 #labels Featured
 
-by John Boyer
+by John M. Boyer
 
 = Origin =
 
-Early in my graduate studies (1996), I took a graph algorithms course from Wendy Myrvold, who later became my Ph.D. supervisor.  For my course project, I chose to study linear time planarity algorithms, which were widely regarded as being quite complex.  
+Early in my graduate studies (1996), I took a graph algorithms course from Wendy J. Myrvold, who later became my Ph.D. supervisor.  For my course project, I chose to study linear time planarity algorithms, which were widely regarded as being quite complex.  
 
 The Lempel-Even-Cederbaum (LEC) planarity algorithm is a _vertex addition_ method that was optimized to linear time by the PQ-tree data structure created by Booth and Lueker. In a selected order, each vertex is added to a partial embedding, along with the edges incident to that new vertex and the vertices previously added to the partial embedding. The LEC algorithm relies for its correctness on adding vertices in the order produced by an _st_-numbering.
 
