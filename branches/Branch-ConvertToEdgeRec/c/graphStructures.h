@@ -76,9 +76,7 @@ extern "C" {
           list that contains this edge record.
 
  v: The vertex neighbor of the vertex whose adjacency list contains
-    this edge record.
-    If less than N, then a primary vertex (an index into array V).
-    If N or greater, then a virtual vertex (subtracting N, an index into VV).
+    this edge record (an index into array V).
 
  flags: Bits 0-15 reserved for library; bits 16 and higher for apps
         Bit 0: Visited
@@ -111,116 +109,66 @@ typedef edgeRec * edgeRecP;
 #define CLEAR_EDGEFLAG_INVERTED(theGraph, e) (theGraph->G[e].flags &= (~EDGEFLAG_INVERTED))
 
 /********************************************************************
- Virtual Vertex Record Definition
+ Vertex Record Definition
 
- Virtual vertices are secondary vertex data structures used to help
- represent a primary vertex in components of a graph.
+ This record definition provides the data members needed for the
+ core structural information for both vertices and virtual vertices.
+ Vertices are also equipped with additional information provided by
+ the vertexInfo structure.
+
+ The vertices of a graph are stored in the first N locations of array V.
+ Virtual vertices are secondary vertices used to help represent the
+ main vertices in substructural components of a graph (e.g. biconnected
+ components).
 
  link[2]: the first and last edge records (arcs) in the adjacency list
-          of the virtual vertex.
+          of the vertex.
 
- v: The primary vertex associated with the virtual vertex
-    (an index into array V)
+ index: In vertices, stores either the depth first index of a vertex or
+        the original array index of the vertex if the vertices of the
+        graph are sorted by DFI.
+        In virtual vertices, the index may be used to indicate the vertex
+        that the virtual vertex represents, unless an algorithm has some
+        other way of making the association (for example, the planarity
+        algorithms rely on biconnected components and therefore place
+        virtual vertices of a vertex at positions corresponding to the
+        DFS children of the vertex).
 
  flags: Bits 0-15 reserved for library; bits 16 and higher for apps
-        Bit 0: visited
+        Bit 0: visited, for vertices and virtual vertices
+		Bit 1: Obstruction VERTEX_TYPE_SET (versus VERTEX_TYPE_UNKNOWN)
+				Used in lieu of TYPE_VERTEX_VISITED in K4 algorithm
+		Bit 2: Obstruction VERTEX_HIGH_RXW (versus VERTEX_LOW_RXW)
+				VERTEX_HIGH_RXW - On the external face path between vertices R and X
+				VERTEX_LOW_RXW  - X or on the external face path between vertices X and W
+		Bit 3: Obstruction VERTEX_HIGH_RYW (versus VERTEX_LOW_RYW)
+				VERTEX_HIGH_RYW - On the external face path between vertices R and Y
+				VERTEX_LOW_RYW  - Y or on the external face path between vertices Y and W
  ********************************************************************/
 
 typedef struct
 {
 	int  link[2];
-	int  v;
+	int  index;
 	unsigned flags;
-} virtualVertexRec;
+} vertexRec;
 
-typedef virtualVertexRec * virtualVertexRecP;
+typedef vertexRec * vertexRecP;
 
-/* Types:
+#define VERTEX_HIGH_RXW         6
+#define VERTEX_LOW_RXW          7
+#define VERTEX_HIGH_RYW         8
+#define VERTEX_LOW_RYW          9
 
-   TYPE_UNKNOWN - initial assignment
+/********************************************************************
+ Vertex Info Structure Definition.
 
-   Edge types: (assigned by depth first search; used throughout algorithms)
+ This structure equips the primary (non-virtual) vertices with addtional
+ information needed for lowpoint and planarity-related algorithms.
 
-   EDGE_DFSCHILD - the arc is an edge to a DFS child; these are embedded first
-                        as singleton bicomps.
-   EDGE_FORWARD - back edge directed from DFS ancestor to descendant
-   EDGE_BACK - DFS tree edge _or_ back edge directed from descendant to
-                ancestor.  Embedder ignores these because the ancestors of a
-                vertex are only embedded after the vertex.
-   EDGE_DFSPARENT - If the arc (u,v) is of type EDGE_DFSCHILD, then the
-                        twin arc (v,u) is marked with EDGE_DFSPARENT
-
-   Vertex types: (used when searching paths of interest in a non-planar graph)
-
-   VERTEX_HIGH_RXW - On the external face path between vertices R and X
-   VERTEX_LOW_RXW  - X or on the external face path between vertices X and W
-   VERTEX_HIGH_RYW - On the external face path between vertices R and Y
-   VERTEX_LOW_RYW  - Y or on the external face path between vertices Y and W
-*/
-
-/* Data members needed by vertices and edges
-
-   Vertices
-        v: Carries original vertex number (same as array index)
-                DFSNumber then uses it to store DFI.
-                SortVertices then restores original vertex numbers when vertices
-                are put in DFI order (i.e. not same as array index)
-        visited: helps detect vertex visitation during various algorithms
-                such as Walkup
-        link: array indices that 'point' to the start and end arcs of the adjacency list
-        type: Used by Kuratowski subgraph isolator to classify vertices when
-                searching for certain paths in a biconnected component.
-        flags: Lowest 16 bits a reserved for future expansion of the library.
-               Next higher 16 bits can be safely used by consuming applications.
-               Currently, no flag bits are used for vertices.
-
-   Edges
-        v: The edge record for (u,v) will be in u's list and store the index of
-                the neighbour v. Starts out being original vertex number, but
-                SortVertices renumbers to DFI so we get constant time access.
-        visited: helps detect edge visitation, e.g. during the initial depth
-                        first search, during a face reading, and during
-                        Kuratowski subgraph isolation
-        link: Linkages to other edges in an adjacency list.
-        type: Used by DFSNumber to classify edges as DFSCHILD, DFSPARENT,
-                FORWARD, BACK. See macro definitions above.
-        flags: Lowest 16 bits a reserved for future expansion of the library.
-               Next higher 16 bits can be safely used by consuming applications.
-               The library uses bits 0 and 1 to indicate the INONLY and OUTONLY
-               arcs of a directed edge.
-               The planar embedder uses bit 2 on a DFSCHILD edge record of the
-               root edge of a bicomp to indicate inverted orientation.
-*/
-
-/*
-typedef struct
-{
-     int  v;
-     int  visited;
-     int  link[2];
-     int  type;
-     int  flags;
-} graphNode;
-
-typedef graphNode * graphNodeP;
-*/
-
-/* Data members needed by vertices
-	link: array indices that 'point' to the start and end arcs of the adjacency list
-	v: Carries original vertex number (same as array index)
-                DFSNumber then uses it to store DFI.
-                SortVertices then restores original vertex numbers when vertices
-                are put in DFI order (i.e. not same as array index)
-	flags: Bits 0-15 reserved for library; bits 16 and higher for apps
-				Bit 0: visited
-				Bit 1: Obstruction VERTEX_TYPE_SET (versus VERTEX_TYPE_UNKNOWN)
-				Bit 2: Obstruction VERTEX_HIGH_RXW (versus VERTEX_LOW_RXW)
-				Bit 3: Obstruction VERTEX_HIGH_RYW (versus VERTEX_LOW_RYW)
-
-
-	DFSParent: The DFI of the DFS tree parent of this vertex
+	parent: The DFI of the DFS tree parent of this vertex
 	leastAncestor: min(DFI of neighbors connected by backedge)
-	Lowpoint: min(leastAncestor, min(Lowpoint of DFS Children))
+	lowpoint: min(leastAncestor, min(Lowpoint of DFS Children))
 
 	stepVisited: helps detect vertex visitation during methods such as Walkup
 	adjacentTo: Used by the embedder; during walk-up, each vertex that is
@@ -252,34 +200,21 @@ typedef graphNode * graphNodeP;
 
 typedef struct
 {
-	int  link[2];
-	int  v;
-	unsigned flags;
-
-	int DFSParent, leastAncestor, Lowpoint;
+	int parent, leastAncestor, lowpoint;
 
     int stepVisited, adjacentTo;
     int pertinentBicompList, separatedDFSChildList, fwdArcList;
 } vertexRec;
 
-typedef vertexRec * vertexRecP;
+typedef vertexInfo * vertexInfoP;
 
-#define TYPE_UNKNOWN            0
+/* This structure defines a pair of links used by each vertex and virtual vertex
+    to create "short circuit" paths that eliminate unimportant vertices from
+    the external face, enabling more efficient traversal of the external face.
 
-// This was added for K4 and can just use the visited bit flag
-#define TYPE_VERTEX_VISITED		1
-
-#define VERTEX_HIGH_RXW         6
-#define VERTEX_LOW_RXW          7
-#define VERTEX_HIGH_RYW         8
-#define VERTEX_LOW_RYW          9
-
-/* This structure defines a pair of links used by each vertex and root copy
-    to more efficiently traverse the external face.
-    These also help in the creation of a planarity tester that does not need
-    to embed the edges, which would be more efficient when one only needs to
-    know whether any of a give set of graphs is planar without justifying
-    the result with a combinatorial embedding. */
+    It is also possible to embed the "short circuit" edges, but this approach
+    creates a better separation of concerns, imparts greater clarity, and
+    removes exceptionalities for handling additional false edges. */
 
 typedef struct
 {
@@ -346,10 +281,10 @@ typedef isolatorContext * isolatorContextP;
 #define MINORTYPE_E7        2048
 
 /* Container for graph functions
-        V : Array of vertices
-        VV: Array of virtual vertices
-        N : Number of vertices (the size of V)
-        NN: Number of virtual vertices (the size of VV, currently always equal to N)
+        V : Array of core vertex records (size N + NV)
+        VI: Array of additional vertexInfo structures (size N)
+        N : Number of primary vertices
+        NV: Number of virtual vertices (currently always equal to N)
 
         E : Array of edge records (edge records come in pairs and represent half edges, or arcs)
         M: Number of edges
@@ -369,6 +304,7 @@ typedef isolatorContext * isolatorContextP;
                     of all vertices (see _CreateSortedSeparatedDFSChildLists())
         bin: Used to help bucket sort the separatedDFSChildList elements
                     of all vertices (see _CreateSortedSeparatedDFSChildLists())
+        extFace: Array of (N + NV) external face short circuit records
 
         extensions: a list of extension data structures
         functions: a table of function pointers that can be overloaded to provide
@@ -377,12 +313,9 @@ typedef isolatorContext * isolatorContextP;
 
 typedef struct
 {
-        //graphNodeP G;
-	    //int edgeOffset;
-
         vertexRecP V;
-        virtualVertexRecP VV;
-        int N, NN;
+        vertexInfoP VI;
+        int N, NV;
 
         edgeRecP E;
         int M, arcCapacity;
