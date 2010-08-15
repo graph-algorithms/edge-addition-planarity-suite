@@ -58,25 +58,82 @@ extern "C" {
 #endif
 
 /* The DEFAULT_EDGE_LIMIT expresses the initial setting for the arcCapacity
- * as a constant factor of N, the number of vertices. We allow 3N edges, but
- * this number can be safely set to a larger integer value.
+ * as a constant factor of N, the number of vertices. By default, E is
+ * allocated enough space to contain 3N edges, which is 6N arcs (half edges),
+ * but this setting can be overridden using gp_EnsureArcCapacity().
  */
 
 #define DEFAULT_EDGE_LIMIT      3
 
-/* Simple integer selection macros */
+/********************************************************************
+ Edge Record Definition
 
-#define MIN(x, y) ((x) < (y) ? (x) : (y))
-#define MAX(x, y) ((x) > (y) ? (x) : (y))
+ An edge is defined by a pair of edge records, or arcs, allocated in
+ array E of a graph.  An edge record represents the edge in the
+ adjacency list of each vertex to which the edge is incident.
 
-#define MIN3(x, y, z) MIN(MIN((x), (y)), MIN((y), (z)))
-#define MAX3(x, y, z) MAX(MAX((x), (y)), MAX((y), (z)))
+ link[2]: the next and previous edge records (arcs) in the adjacency
+          list that contains this edge record.
 
-/* Vertex activity categories */
+ v: The vertex neighbor of the vertex whose adjacency list contains
+    this edge record.
+    If less than N, then a primary vertex (an index into array V).
+    If N or greater, then a virtual vertex (subtracting N, an index into VV).
 
-#define VAS_INACTIVE    0
-#define VAS_INTERNAL    1
-#define VAS_EXTERNAL    2
+ flags: Bits 0-15 reserved for library; bits 16 and higher for apps
+        Bit 0: Visited
+        Bit 1: DFS Child (edge record is an arc to a DFS child)
+        Bit 2: DFS Parent (edge record is an arc to the DFS parent)
+        Bit 3: Forward Arc (edge record is arc to DFS descendant)
+        Bit 4: Back Arc (edge record is arc to DFS ancestor)
+        Bit 5: Inverted (same as marking an edge with a "sign" of -1)
+
+ ********************************************************************/
+
+typedef struct
+{
+	int  link[2];
+	int  v;
+	unsigned flags;
+} edgeRec;
+
+typedef edgeRec * edgeRecP;
+
+// TODO
+#define EDGE_DFSCHILD           1
+#define EDGE_FORWARD            2
+#define EDGE_BACK               3
+#define EDGE_DFSPARENT          4
+
+#define EDGEFLAG_INVERTED 32
+#define GET_EDGEFLAG_INVERTED(theGraph, e) (theGraph->G[e].flags & EDGEFLAG_INVERTED)
+#define SET_EDGEFLAG_INVERTED(theGraph, e) (theGraph->G[e].flags |= EDGEFLAG_INVERTED)
+#define CLEAR_EDGEFLAG_INVERTED(theGraph, e) (theGraph->G[e].flags &= (~EDGEFLAG_INVERTED))
+
+/********************************************************************
+ Virtual Vertex Record Definition
+
+ Virtual vertices are secondary vertex data structures used to help
+ represent a primary vertex in components of a graph.
+
+ link[2]: the first and last edge records (arcs) in the adjacency list
+          of the virtual vertex.
+
+ v: The primary vertex associated with the virtual vertex
+    (an index into array V)
+
+ flags: Bits 0-15 reserved for library; bits 16 and higher for apps
+        Bit 0: visited
+ ********************************************************************/
+
+typedef struct
+{
+	int  link[2];
+	int  v;
+	unsigned flags;
+} virtualVertexRec;
+
+typedef virtualVertexRec * virtualVertexRecP;
 
 /* Types:
 
@@ -100,20 +157,6 @@ extern "C" {
    VERTEX_HIGH_RYW - On the external face path between vertices R and Y
    VERTEX_LOW_RYW  - Y or on the external face path between vertices Y and W
 */
-
-#define TYPE_UNKNOWN            0
-
-#define TYPE_VERTEX_VISITED		1
-
-#define EDGE_DFSCHILD           1
-#define EDGE_FORWARD            2
-#define EDGE_BACK               3
-#define EDGE_DFSPARENT          4
-
-#define VERTEX_HIGH_RXW         6
-#define VERTEX_LOW_RXW          7
-#define VERTEX_HIGH_RYW         8
-#define VERTEX_LOW_RYW          9
 
 /* Data members needed by vertices and edges
 
@@ -149,6 +192,7 @@ extern "C" {
                root edge of a bicomp to indicate inverted orientation.
 */
 
+/*
 typedef struct
 {
      int  v;
@@ -159,29 +203,39 @@ typedef struct
 } graphNode;
 
 typedef graphNode * graphNodeP;
-
-#define EDGEFLAG_INVERTED 4
-#define GET_EDGEFLAG_INVERTED(theGraph, e) (theGraph->G[e].flags & EDGEFLAG_INVERTED)
-#define SET_EDGEFLAG_INVERTED(theGraph, e) (theGraph->G[e].flags |= EDGEFLAG_INVERTED)
-#define CLEAR_EDGEFLAG_INVERTED(theGraph, e) (theGraph->G[e].flags &= (~EDGEFLAG_INVERTED))
+*/
 
 /* Data members needed by vertices
-        DFSParent: The DFI of the DFS tree parent of this vertex
-        leastAncestor: min(DFI of neighbors connected by backedge)
-        Lowpoint: min(leastAncestor, min(Lowpoint of DFS Children))
-        adjacentTo: Used by the embedder; during walk-up, each vertex that is
+	link: array indices that 'point' to the start and end arcs of the adjacency list
+	v: Carries original vertex number (same as array index)
+                DFSNumber then uses it to store DFI.
+                SortVertices then restores original vertex numbers when vertices
+                are put in DFI order (i.e. not same as array index)
+	flags: Bits 0-15 reserved for library; bits 16 and higher for apps
+				Bit 0: visited
+				Bit 1: Obstruction VERTEX_TYPE_SET (versus VERTEX_TYPE_UNKNOWN)
+				Bit 2: Obstruction VERTEX_HIGH_RXW (versus VERTEX_LOW_RXW)
+				Bit 3: Obstruction VERTEX_HIGH_RYW (versus VERTEX_LOW_RYW)
+
+
+	DFSParent: The DFI of the DFS tree parent of this vertex
+	leastAncestor: min(DFI of neighbors connected by backedge)
+	Lowpoint: min(leastAncestor, min(Lowpoint of DFS Children))
+
+	stepVisited: helps detect vertex visitation during methods such as Walkup
+	adjacentTo: Used by the embedder; during walk-up, each vertex that is
                 directly adjacent via a back edge to the vertex currently
                 being embedded will have the forward edge's index stored in
                 this field.  During walkdown, each vertex whose AdjacentTo
                 field is set will cause a back edge to be embedded.
-        pertinentBicompList: used by Walkup to store a list of child bicomps of
+	pertinentBicompList: used by Walkup to store a list of child bicomps of
                 a vertex descendant of the current vertex that are pertinent
                 and must be merged by the Walkdown in order to embed the cycle
                 edges of the current vertex.  In this implementation,
                 externally active pertinent child bicomps are placed at the end
                 of the list as an easy way to make sure all internally active
                 bicomps are processed first.
-        separatedDFSChildList: contains list DFS children of this vertex in
+	separatedDFSChildList: contains list DFS children of this vertex in
                 non-descending order by Lowpoint (sorted in linear time).
                 When merging bicomp rooted by edge (r, c) into vertex v (i.e.
                 merging root copy r with parent copy v), the vertex c is
@@ -190,7 +244,7 @@ typedef graphNode * graphNodeP;
                 active-- is determined by the lesser of its leastAncestor and
                 the least lowpoint from among only those DFS children that
                 aren't in the same bicomp with the vertex.
-        fwdArcList: at the start of embedding, the back edges from a vertex
+	fwdArcList: at the start of embedding, the back edges from a vertex
                 to its DFS descendants are separated from the main adjacency
                 list and placed in a circular list until they are embedded.
                 This member indicates a node in that list.
@@ -198,11 +252,27 @@ typedef graphNode * graphNodeP;
 
 typedef struct
 {
-        int DFSParent, leastAncestor, Lowpoint, adjacentTo;
-        int pertinentBicompList, separatedDFSChildList, fwdArcList;
+	int  link[2];
+	int  v;
+	unsigned flags;
+
+	int DFSParent, leastAncestor, Lowpoint;
+
+    int stepVisited, adjacentTo;
+    int pertinentBicompList, separatedDFSChildList, fwdArcList;
 } vertexRec;
 
 typedef vertexRec * vertexRecP;
+
+#define TYPE_UNKNOWN            0
+
+// This was added for K4 and can just use the visited bit flag
+#define TYPE_VERTEX_VISITED		1
+
+#define VERTEX_HIGH_RXW         6
+#define VERTEX_LOW_RXW          7
+#define VERTEX_HIGH_RYW         8
+#define VERTEX_LOW_RYW          9
 
 /* This structure defines a pair of links used by each vertex and root copy
     to more efficiently traverse the external face.
@@ -276,14 +346,16 @@ typedef isolatorContext * isolatorContextP;
 #define MINORTYPE_E7        2048
 
 /* Container for graph functions
-        G: Vertices stored at 0 to n-1, second vertex buffer at n to 2n-1,
-                edges at 2n and above
-        V: Additional information about vertices
-        N: Number of vertices
+        V : Array of vertices
+        VV: Array of virtual vertices
+        N : Number of vertices (the size of V)
+        NN: Number of virtual vertices (the size of VV, currently always equal to N)
+
+        E : Array of edge records (edge records come in pairs and represent half edges, or arcs)
         M: Number of edges
-        edgeOffset: always 2*N; location of the start of edge records in G
-        arcCapacity: the maximum number of edge records allowed in G
-        edgeHoles: free locations where edges have been deleted
+        arcCapacity: the maximum number of edge records allowed in E (the size of E)
+        edgeHoles: free locations in E where edges have been deleted
+
         theStack: Used by various graph routines needing a stack
         internalFlags: Additional state information about the graph
         embedFlags: controls type of embedding (e.g. planar)
@@ -305,10 +377,17 @@ typedef isolatorContext * isolatorContextP;
 
 typedef struct
 {
-        graphNodeP G;
+        //graphNodeP G;
+	    //int edgeOffset;
+
         vertexRecP V;
-        int N, M, edgeOffset, arcCapacity;
+        virtualVertexRecP VV;
+        int N, NN;
+
+        edgeRecP E;
+        int M, arcCapacity;
         stackP edgeHoles;
+
         stackP theStack;
         int internalFlags, embedFlags;
 
@@ -324,6 +403,24 @@ typedef struct
 } baseGraphStructure;
 
 typedef baseGraphStructure * graphP;
+
+/********************************************************************
+ A few simple integer selection macros
+ ********************************************************************/
+
+#define MIN(x, y) ((x) < (y) ? (x) : (y))
+#define MAX(x, y) ((x) > (y) ? (x) : (y))
+
+#define MIN3(x, y, z) MIN(MIN((x), (y)), MIN((y), (z)))
+#define MAX3(x, y, z) MAX(MAX((x), (y)), MAX((y), (z)))
+
+/********************************************************************
+ Vertex activity categories
+ ********************************************************************/
+
+#define VAS_INACTIVE    0
+#define VAS_INTERNAL    1
+#define VAS_EXTERNAL    2
 
 /********************************************************************
  _VertexActiveStatus()
