@@ -84,7 +84,8 @@ extern "C" {
         Bit 2: DFS tree edge, versus cycle edge (co-tree edge, etc.)
         Bit 3: DFS arc to descendant, versus arc to ancestor
         Bit 4: Inverted (same as marking an edge with a "sign" of -1)
-
+        Bit 5: Arc is directed into the containing vertex only
+        Bit 6: Arc is directed from the containing vertex only
  ********************************************************************/
 
 typedef struct
@@ -96,6 +97,26 @@ typedef struct
 
 typedef edgeRec * edgeRecP;
 
+#define gp_IsArc(theGraph, e) ((e) != NIL)
+
+// An edge is represented by two consecutive edge records (arcs)
+// in the edge array E.
+#define gp_GetTwinArc(theGraph, Arc) (((Arc) & 1) ? (Arc)-1 : (Arc)+1)
+
+// Accessors for link[] array
+#define gp_GetNextArc(theGraph, e) (theGraph->E[e].link[0])
+#define gp_GetPrevArc(theGraph, e) (theGraph->E[e].link[1])
+#define gp_GetAdjacentArc(theGraph, e, theLink) (theGraph->E[e].link[theLink])
+
+#define gp_SetNextArc(theGraph, e, newNextArc) (theGraph->E[e].link[0] = newNextArc)
+#define gp_SetPrevArc(theGraph, e, newPrevArc) (theGraph->E[e].link[1] = newPrevArc)
+#define gp_SetAdjacentArc(theGraph, e, theLink, newArc) (theGraph->E[e].link[theLink] = newArc)
+
+// Accessors for 'v' member
+#define gp_GetEdgeNeighbor(theGraph, e) (theGraph->E[e].v)
+#define gp_SetEdgeNeighbor(theGraph, e, neighbor) (theGraph->E[e].v = neighbor)
+
+// Definitions and accessors for edge flags
 #define EDGE_VISITED_MASK		1
 #define gp_GetEdgeVisited(theGraph, e) (theGraph->E[e].flags&EDGE_VISITED_MASK)
 #define gp_ClearEdgeVisited(theGraph, e) (theGraph->E[e].flags &= ~EDGE_VISITED_MASK)
@@ -126,6 +147,11 @@ typedef edgeRec * edgeRecP;
 #define gp_SetEdgeFlagInverted(theGraph, e) (theGraph->E[e].flags |= EDGEFLAG_INVERTED_MASK)
 #define gp_ClearEdgeFlagInverted(theGraph, e) (theGraph->E[e].flags &= (~EDGEFLAG_INVERTED_MASK))
 #define gp_XorEdgeFlagInverted(theGraph, e) (theGraph->E[e].flags ^= EDGEFLAG_INVERTED_MASK)
+
+#define EDGEFLAG_DIRECTION_INONLY	32
+#define EDGEFLAG_DIRECTION_OUTONLY	64
+#define gp_GetDirection(theGraph, e, edgeFlag_Direction) (theGraph->E[e].flags & edgeFlag_Direction)
+void	gp_SetDirection(graphP theGraph, int e, int edgeFlag_Direction);
 
 /********************************************************************
  Vertex Record Definition
@@ -170,6 +196,22 @@ typedef struct
 
 typedef vertexRec * vertexRecP;
 
+#define gp_AdjacencyListEndMark(v) (NIL)
+
+// Accessors for vertex adjacency list links
+#define gp_GetFirstArc(theGraph, v) (theGraph->V[v].link[0])
+#define gp_GetLastArc(theGraph, v) (theGraph->V[v].link[1])
+#define gp_GetArc(theGraph, v, theLink) (theGraph->G[v].link[theLink])
+
+#define gp_SetFirstArc(theGraph, v, newFirstArc) (theGraph->V[v].link[0] = newFirstArc)
+#define gp_SetLastArc(theGraph, v, newLastArc) (theGraph->V[v].link[1] = newLastArc)
+#define gp_SetArc(theGraph, v, theLink, newArc) (theGraph->V[v].link[theLink] = newArc)
+
+// Accessors for vertex index
+#define gp_GetVertexIndex(theGraph, v) (theGraph->V[v].index)
+#define gp_SetVertexIndex(theGraph, v, theIndex) (theGraph->V[v].index = theIndex)
+
+// Definitions and accessors for vertex flags
 #define VERTEX_VISITED_MASK		1
 #define gp_GetVertexVisited(theGraph, v) (theGraph->V[v].flags&VERTEX_VISITED_MASK)
 #define gp_ClearVertexVisited(theGraph, v) (theGraph->V[v].flags &= ~VERTEX_VISITED_MASK)
@@ -373,15 +415,113 @@ typedef struct
 
 typedef baseGraphStructure * graphP;
 
-/********************************************************************
- A few simple integer selection macros
- ********************************************************************/
+// Definitions that enable getting the next or previous arc
+// as if the adjacency list were circular, i.e. that the
+// first arc and last arc were linked
+#define gp_GetNextArcCircular(theGraph, e) \
+	(gp_IsArc(theGraph, theGraph->E[e].link[0]) ? \
+			theGraph->E[e].link[0] : \
+			gp_GetFirstArc(theGraph, theGraph->E[gp_GetTwinArc(theGraph, e)].v))
 
-#define MIN(x, y) ((x) < (y) ? (x) : (y))
-#define MAX(x, y) ((x) > (y) ? (x) : (y))
+#define gp_GetPrevArcCircular(theGraph, e) \
+	(gp_IsArc(theGraph, theGraph->E[e].link[1]) ? \
+		theGraph->E[e].link[1] : \
+		gp_GetLastArc(theGraph, theGraph->E[gp_GetTwinArc(theGraph, e)].v))
 
-#define MIN3(x, y, z) MIN(MIN((x), (y)), MIN((y), (z)))
-#define MAX3(x, y, z) MAX(MAX((x), (y)), MAX((y), (z)))
+// Definitions that make the cross-link binding between a vertex and an arc
+// The old first or last arc should be bound to this arc by separate calls,
+// e.g. see gp_AttachFirstArc() and gp_AttachLastArc()
+#define gp_BindFirstArc(theGraph, v, arc) \
+	{ \
+		gp_SetPrevArc(theGraph, arc, gp_AdjacencyListEndMark(v)); \
+		gp_SetFirstArc(theGraph, v, arc); \
+    }
+
+#define gp_BindLastArc(theGraph, v, arc) \
+	{ \
+    	gp_SetNextArc(theGraph, arc, gp_AdjacencyListEndMark(v)); \
+    	gp_SetLastArc(theGraph, v, arc); \
+    }
+
+// Attaches an arc between the current binding between a vertex and its first arc
+#define gp_AttachFirstArc(theGraph, v, arc) \
+	{ \
+		if (gp_IsArc(theGraph, gp_GetFirstArc(theGraph, v))) \
+		{ \
+			gp_SetNextArc(theGraph, arc, gp_GetFirstArc(theGraph, v)); \
+			gp_SetPrevArc(theGraph, gp_GetFirstArc(theGraph, v), arc); \
+		} \
+		else gp_BindLastArc(theGraph, v, arc); \
+		gp_BindFirstArc(theGraph, v, arc); \
+	}
+
+// Attaches an arc between the current binding betwen a vertex and its last arc
+#define gp_AttachLastArc(theGraph, v, arc) \
+	{ \
+		if (gp_IsArc(theGraph, gp_GetLastArc(theGraph, v))) \
+		{ \
+			gp_SetPrevArc(theGraph, arc, gp_GetLastArc(theGraph, v)); \
+			gp_SetNextArc(theGraph, gp_GetLastArc(theGraph, v), arc); \
+		} \
+		else gp_BindFirstArc(theGraph, v, arc); \
+		gp_BindLastArc(theGraph, v, arc); \
+	}
+
+// Moves an arc that is in the adjacency list of v to the start of the adjacency list
+#define gp_MoveArcToFirst(theGraph, v, arc) \
+	if (arc != gp_GetFirstArc(theGraph, v)) \
+	{ \
+		/* If the arc is last in the adjacency list of uparent,
+		   then we delete it by adjacency list end management */ \
+		if (arc == gp_GetLastArc(theGraph, v)) \
+		{ \
+		    gp_SetNextArc(theGraph, gp_GetPrevArc(theGraph, arc), gp_AdjacencyListEndMark(v)); \
+			gp_SetLastArc(theGraph, v, gp_GetPrevArc(theGraph, arc)); \
+		} \
+		/* Otherwise, we delete the arc from the middle of the list */ \
+		else \
+		{ \
+			gp_SetNextArc(theGraph, gp_GetPrevArc(theGraph, arc), gp_GetNextArc(theGraph, arc)); \
+			gp_SetPrevArc(theGraph, gp_GetNextArc(theGraph, arc), gp_GetPrevArc(theGraph, arc)); \
+		} \
+\
+		/* Now add arc e as the new first arc of uparent.
+		   Note that the adjacency list is non-empty at this time */ \
+		 gp_SetNextArc(theGraph, arc, gp_GetFirstArc(theGraph, v)); \
+		 gp_SetPrevArc(theGraph, gp_GetFirstArc(theGraph, v), arc); \
+		 gp_BindFirstArc(theGraph, v, arc); \
+	}
+
+// Moves an arc that is in the adjacency list of v to the end of the adjacency list
+#define gp_MoveArcToLast(theGraph, v, arc) \
+	if (arc != gp_GetLastArc(theGraph, v)) \
+	{ \
+		 /* If the arc is first in the adjacency list of vertex v,
+		    then we delete it by adjacency list end management */ \
+		 if (arc == gp_GetFirstArc(theGraph, v)) \
+		 { \
+			 gp_SetPrevArc(theGraph, gp_GetNextArc(theGraph, arc), gp_AdjacencyListEndMark(v)); \
+			 gp_SetFirstArc(theGraph, v, gp_GetNextArc(theGraph, arc)); \
+		 } \
+		 /* Otherwise, we delete the arc from the middle of the list */ \
+		 else \
+		 { \
+			 gp_SetNextArc(theGraph, gp_GetPrevArc(theGraph, arc), gp_GetNextArc(theGraph, arc)); \
+			 gp_SetPrevArc(theGraph, gp_GetNextArc(theGraph, arc), gp_GetPrevArc(theGraph, arc)); \
+		 } \
+\
+		 /* Now add the arc as the new last arc of v.
+		    Note that the adjacency list is non-empty at this time */ \
+		 gp_SetPrevArc(theGraph, arc, gp_GetLastArc(theGraph, v)); \
+		 gp_SetNextArc(theGraph, gp_GetLastArc(theGraph, v), arc); \
+		 gp_BindLastArc(theGraph, v, arc); \
+	}
+
+// Methods for attaching an arc into the adjacency list or detaching an arc from it.
+// The terms AddArc, InsertArc and DeleteArc are not used because the arcs are not
+// inserted or added to or deleted from storage (only whole edges are inserted or deleted)
+void	gp_AttachArc(graphP theGraph, int v, int e, int link, int newArc);
+void 	gp_DetachArc(graphP theGraph, int arc);
 
 /********************************************************************
  Vertex activity categories

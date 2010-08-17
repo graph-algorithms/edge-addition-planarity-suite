@@ -1182,18 +1182,18 @@ void gp_SetDirection(graphP theGraph, int e, int edgeFlag_Direction)
 
 	if (edgeFlag_Direction == EDGEFLAG_DIRECTION_INONLY)
 	{
-		theGraph->G[e].flags |= EDGEFLAG_DIRECTION_INONLY;
-		theGraph->G[eTwin].flags |= EDGEFLAG_DIRECTION_OUTONLY;
+		theGraph->E[e].flags |= EDGEFLAG_DIRECTION_INONLY;
+		theGraph->E[eTwin].flags |= EDGEFLAG_DIRECTION_OUTONLY;
 	}
 	else if (edgeFlag_Direction == EDGEFLAG_DIRECTION_OUTONLY)
 	{
-		theGraph->G[e].flags |= EDGEFLAG_DIRECTION_OUTONLY;
-		theGraph->G[eTwin].flags |= EDGEFLAG_DIRECTION_INONLY;
+		theGraph->E[e].flags |= EDGEFLAG_DIRECTION_OUTONLY;
+		theGraph->E[eTwin].flags |= EDGEFLAG_DIRECTION_INONLY;
 	}
 	else
 	{
-		theGraph->G[e].flags &= ~(EDGEFLAG_DIRECTION_INONLY|EDGEFLAG_DIRECTION_OUTONLY);
-		theGraph->G[eTwin].flags &= ~(EDGEFLAG_DIRECTION_INONLY|EDGEFLAG_DIRECTION_OUTONLY);
+		theGraph->E[e].flags &= ~(EDGEFLAG_DIRECTION_INONLY|EDGEFLAG_DIRECTION_OUTONLY);
+		theGraph->E[eTwin].flags &= ~(EDGEFLAG_DIRECTION_INONLY|EDGEFLAG_DIRECTION_OUTONLY);
 	}
 }
 
