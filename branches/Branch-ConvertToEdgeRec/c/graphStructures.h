@@ -239,6 +239,45 @@ typedef vertexRec * vertexRecP;
 	(theGraph->V[v].flags = (theGraph->V[v].flags & ~VERTEX_OBSTRUCTIONTYPE_MASK) | type)
 
 /********************************************************************
+ This structure defines a pair of links used by each vertex and virtual vertex
+ to create "short circuit" paths that eliminate unimportant vertices from
+ the external face, enabling more efficient traversal of the external face.
+
+ It is also possible to embed the "short circuit" edges, but this approach
+ creates a better separation of concerns, imparts greater clarity, and
+ removes exceptionalities for handling additional false edges.
+
+ vertex[2]: The two adjacent vertices along the external face, ignoring
+            inactive vertices.
+ inversionFlag: In the special case where the external face is reduced to
+            two vertices, a virtual vertex bicomp root R plus one non-virtual
+            vertex W, then vertex[0] becomes equal to vertex[1], so this
+            flag is used to indicate whether W has an inverse orientation
+            from R.  This is needed when (R, W) is eventually merged into
+            a larger bicomp.
+            This is distinct from the edge inverted flag, which takes a record
+            of whether a bicomp was flipped when it was merged so that the
+            imparting of a consistent orientation of vertices in a bicomp
+            can be deferred to a post-processing step of the embedding method.
+*/
+
+typedef struct
+{
+    int vertex[2];
+    int inversionFlag;
+} extFaceLinkRec;
+
+typedef extFaceLinkRec * extFaceLinkRecP;
+
+#define gp_GetExtFaceVertex(theGraph, v, link) (theGraph->extFace[v].vertex[link])
+#define gp_SetExtFaceVertex(theGraph, v, link, theVertex) (theGraph->extFace[v].vertex[link] = theVertex)
+
+#define gp_GetExtFaceInversionFlag(theGraph, v) (theGraph->extFace[v].inversionFlag)
+#define gp_SetExtFaceInversionFlag(theGraph, v) (theGraph->extFace[v].inversionFlag = 1)
+#define gp_ClearExtFaceInversionFlag(theGraph, v) (theGraph->extFace[v].inversionFlag = 0)
+#define gp_XorExtFaceInversionFlag(theGraph, v) (theGraph->extFace[v].inversionFlag ^= 1)
+
+/********************************************************************
  Vertex Info Structure Definition.
 
  This structure equips the primary (non-virtual) vertices with additional
@@ -248,12 +287,14 @@ typedef vertexRec * vertexRecP;
 	leastAncestor: min(DFI of neighbors connected by backedge)
 	lowpoint: min(leastAncestor, min(lowpoint of DFS Children))
 
-	stepVisited: helps detect vertex visitation during methods such as Walkup
-	adjacentTo: Used by the embedder; during walk-up, each vertex that is
-                directly adjacent via a back edge to the vertex currently
+	stepVisited: helps detect vertex visitation during methods such as Walkup.
+	             Implicitly resets at each vertex step of the planarity method
+	stepAdjacentTo: Used by the planarity method; during walk-up, each vertex
+	            that is directly adjacent via a back edge to the vertex currently
                 being embedded will have the forward edge's index stored in
-                this field.  During walkdown, each vertex whose AdjacentTo
+                this field.  During walkdown, each vertex for which this
                 field is set will cause a back edge to be embedded.
+                Implicitly resets at each vertex step of the planarity method
 	pertinentBicompList: used by Walkup to store a list of child bicomps of
                 a vertex descendant of the current vertex that are pertinent
                 and must be merged by the Walkdown in order to embed the cycle
@@ -280,44 +321,38 @@ typedef struct
 {
 	int parent, leastAncestor, lowpoint;
 
-    int stepVisited, adjacentTo;
+    int stepVisited, stepAdjacentTo;
     int pertinentBicompList, separatedDFSChildList, fwdArcList;
 } vertexInfo;
 
 typedef vertexInfo * vertexInfoP;
 
-/* This structure defines a pair of links used by each vertex and virtual vertex
-    to create "short circuit" paths that eliminate unimportant vertices from
-    the external face, enabling more efficient traversal of the external face.
+#define gp_GetVertexParent(theGraph, v) (theGraph->VI[v].parent)
+#define gp_SetVertexParent(theGraph, v, theParent) (theGraph->VI[v].parent = theParent)
 
-    It is also possible to embed the "short circuit" edges, but this approach
-    creates a better separation of concerns, imparts greater clarity, and
-    removes exceptionalities for handling additional false edges. */
+#define gp_GetVertexLeastAncestor(theGraph, v) (theGraph->VI[v].leastAncestor)
+#define gp_SetVertexLeastAncestor(theGraph, v, theLeastAncestor) (theGraph->VI[v].leastAncestor = theLeastAncestor)
 
-typedef struct
-{
-    int vertex[2];
-    int inversionFlag;
-} extFaceLinkRec;
+#define gp_GetVertexLowpoint(theGraph, v) (theGraph->VI[v].lowpoint)
+#define gp_SetVertexLowpoint(theGraph, v, theLowpoint) (theGraph->VI[v].lowpoint = theLowpoint)
 
-typedef extFaceLinkRec * extFaceLinkRecP;
+#define gp_GetVertexStepVisited(theGraph, v) (theGraph->VI[v].stepVisited)
+#define gp_SetVertexStepVisited(theGraph, v, theStepVisited) (theGraph->VI[v].stepVisited = theStepVisited)
 
-/* Flags for graph:
-        FLAGS_DFSNUMBERED is set if DFSNumber() has succeeded for the graph
-        FLAGS_SORTEDBYDFI records whether the graph is in original vertex
-                order or sorted by depth first index.  Successive calls to
-                SortVertices() toggle this bit.
-        FLAGS_OBSTRUCTIONFOUND is set by gp_Embed() if an embedding obstruction
-                was isolated in the graph returned.  It is cleared by gp_Embed()
-                if an obstruction was not found.  The flag is used by
-                gp_TestEmbedResultIntegrity() to decide what integrity tests to run.
-*/
+#define gp_GetVertexStepAdjacentTo(theGraph, v) (theGraph->VI[v].stepAdjacentTo)
+#define gp_SetVertexStepAdjacentTo(theGraph, v, theStepAdjacentTo) (theGraph->VI[v].stepAdjacentTo = theStepAdjacentTo)
 
-#define FLAGS_DFSNUMBERED       1
-#define FLAGS_SORTEDBYDFI       2
-#define FLAGS_OBSTRUCTIONFOUND  4
+#define gp_GetVertexPertinentBicompList(theGraph, v) (theGraph->VI[v].pertinentBicompList)
+#define gp_SetVertexPertinentBicompList(theGraph, v, thePertinentBicompList) (theGraph->VI[v].pertinentBicompList = thePertinentBicompList)
 
-/* Variables needed in embedding by Kuratowski subgraph isolator:
+#define gp_GetVertexSeparatedDFSChildList(theGraph, v) (theGraph->VI[v].separatedDFSChildList)
+#define gp_SetVertexSeparatedDFSChildList(theGraph, v, theSeparatedDFSChildList) (theGraph->VI[v].separatedDFSChildList = theSeparatedDFSChildList)
+
+#define gp_GetVertexFwdArcList(theGraph, v) (theGraph->VI[v].fwdArcList)
+#define gp_SetVertexFwdArcList(theGraph, v, theFwdArcList) (theGraph->VI[v].fwdArcList = theFwdArcList)
+
+/********************************************************************
+ Variables needed in embedding by Kuratowski subgraph isolator:
         minorType: the type of planarity obstruction found.
         v: the current vertex I
         r: the root of the bicomp on which the Walkdown failed
@@ -358,14 +393,15 @@ typedef isolatorContext * isolatorContextP;
 #define MINORTYPE_E6        1024
 #define MINORTYPE_E7        2048
 
-/* Container for graph functions
-        V : Array of core vertex records (size N + NV)
-        VI: Array of additional vertexInfo structures (size N)
-        N : Number of primary vertices
+/********************************************************************
+ Graph structure definition
+        V : Array of vertex records (allocated size N + NV)
+        VI: Array of additional vertexInfo structures (allocated size N)
+        N : Number of primary vertices (the "order" of the graph)
         NV: Number of virtual vertices (currently always equal to N)
 
         E : Array of edge records (edge records come in pairs and represent half edges, or arcs)
-        M: Number of edges
+        M: Number of edges (the "size" of the graph)
         arcCapacity: the maximum number of edge records allowed in E (the size of E)
         edgeHoles: free locations in E where edges have been deleted
 
@@ -414,6 +450,25 @@ typedef struct
 } baseGraphStructure;
 
 typedef baseGraphStructure * graphP;
+
+/* Flags for graph:
+        FLAGS_DFSNUMBERED is set if DFSNumber() has succeeded for the graph
+        FLAGS_SORTEDBYDFI records whether the graph is in original vertex
+                order or sorted by depth first index.  Successive calls to
+                SortVertices() toggle this bit.
+        FLAGS_OBSTRUCTIONFOUND is set by gp_Embed() if an embedding obstruction
+                was isolated in the graph returned.  It is cleared by gp_Embed()
+                if an obstruction was not found.  The flag is used by
+                gp_TestEmbedResultIntegrity() to decide what integrity tests to run.
+*/
+
+#define FLAGS_DFSNUMBERED       1
+#define FLAGS_SORTEDBYDFI       2
+#define FLAGS_OBSTRUCTIONFOUND  4
+
+/********************************************************************
+ More link structure accessors/manipulators
+ ********************************************************************/
 
 // Definitions that enable getting the next or previous arc
 // as if the adjacency list were circular, i.e. that the

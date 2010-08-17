@@ -1072,10 +1072,11 @@ int  RetVal, W, WPrevLink, R, Rout, X, XPrevLink, Y, YPrevLink, RootSide, RootEd
              future Walkdown descends to and merges the bicomp containing W.
              Going from the root to W, we only get the correct WPrevLink if
              we know whether or not W is inverted.
-             NOTE: We clear the flag because it may have been set in W if W
-                 previously became part of a bicomp with only two ext. face
-                 vertices, but then was flipped and merged into a larger bicomp
-                 that is now again becoming a bicomp with only two ext. face vertices. */
+             NOTE: In the case where we have to clear the flag here, it is because
+                 it may have been set in W if W previously became part of a bicomp
+                 with only two ext. face vertices, but then was flipped and merged
+                 into a larger bicomp that is now again becoming a bicomp with only
+                 two ext. face vertices. */
 
          if (theGraph->extFace[W].vertex[0] == theGraph->extFace[W].vertex[1] &&
              WPrevLink == RootSide)
