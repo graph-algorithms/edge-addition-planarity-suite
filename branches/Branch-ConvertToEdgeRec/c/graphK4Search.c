@@ -1059,7 +1059,7 @@ int  _K4_ReducePathComponent(graphP theGraph, K4SearchContext *context, int R, i
 	if (theGraph->G[e_R].type == EDGE_DFSCHILD)
 	{
 		if (invertedFlag)
-			SET_EDGEFLAG_INVERTED(theGraph, e_R);
+			gp_SetEdgeFlagInverted(theGraph, e_R);
 	}
 
 	return OK;
@@ -1114,7 +1114,7 @@ int  N = theGraph->N, invertedFlag=0;
               J = gp_GetTwinArc(theGraph, J);
               if (theGraph->G[J].type != EDGE_DFSCHILD || theGraph->G[J].v != descendant)
             	  return NOTOK;
-              invertedFlag ^= GET_EDGEFLAG_INVERTED(theGraph, J);
+              invertedFlag ^= gp_GetEdgeFlagInverted(theGraph, J);
           }
 
           // Hop to the parent and reiterate

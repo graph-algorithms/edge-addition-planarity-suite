@@ -586,15 +586,14 @@ int  extFaceVertex;
              {
                  if (theGraph->G[J].type == EDGE_DFSCHILD)
                  {
-                	 // A bicomp root edge cannot be inverted in the core planarity algorithm
-                	 // but extensions may perform edge reductions on tree edges, resulting in
-                	 // an inversion sign being promoted to the root edge.  So, now we reverse
-                	 // the inversion flag on the root edge if the bicomp root must be
-                	 // inverted before it is merged.
-                	 if (GET_EDGEFLAG_INVERTED(theGraph, J))
-                		 CLEAR_EDGEFLAG_INVERTED(theGraph, J);
-                	 else
-                		 SET_EDGEFLAG_INVERTED(theGraph, J);
+                	 // The core planarity algorithm could simply "set" the inverted flag
+                	 // because a bicomp root edge cannot be already inverted in the core
+                	 // planarity algorithm at the time of this merge.
+                	 // However, extensions may perform edge reductions on tree edges, resulting
+                	 // in an inversion sign being promoted to the root edge of a bicomp before
+                	 // it gets merged.  So, now we use xor to reverse the inversion flag on the
+                	 // root edge if the bicomp root must be inverted before it is merged.
+                	 gp_XorEdgeFlagInverted(theGraph, J);
                      break;
                  }
 
@@ -1443,10 +1442,10 @@ int  stackBottom = sp_GetCurrentSize(theGraph->theStack);
              if (theGraph->G[J].type == EDGE_DFSCHILD)
              {
                  sp_Push2(theGraph->theStack, theGraph->G[J].v,
-                		  invertedFlag ^ GET_EDGEFLAG_INVERTED(theGraph, J));
+                		  invertedFlag ^ gp_GetEdgeFlagInverted(theGraph, J));
 
                  if (!PreserveSigns)
-                	 CLEAR_EDGEFLAG_INVERTED(theGraph, J);
+                	 gp_ClearEdgeFlagInverted(theGraph, J);
              }
 
              J = gp_GetNextArc(theGraph, J);

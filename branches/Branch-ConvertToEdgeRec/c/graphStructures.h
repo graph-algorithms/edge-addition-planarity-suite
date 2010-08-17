@@ -80,11 +80,10 @@ extern "C" {
 
  flags: Bits 0-15 reserved for library; bits 16 and higher for apps
         Bit 0: Visited
-        Bit 1: DFS Child (edge record is an arc to a DFS child)
-        Bit 2: DFS Parent (edge record is an arc to the DFS parent)
-        Bit 3: Forward Arc (edge record is arc to DFS descendant)
-        Bit 4: Back Arc (edge record is arc to DFS ancestor)
-        Bit 5: Inverted (same as marking an edge with a "sign" of -1)
+        Bit 1: DFS type has been set, versus not set
+        Bit 2: DFS tree edge, versus cycle edge (co-tree edge, etc.)
+        Bit 3: DFS arc to descendant, versus arc to ancestor
+        Bit 4: Inverted (same as marking an edge with a "sign" of -1)
 
  ********************************************************************/
 
@@ -97,16 +96,36 @@ typedef struct
 
 typedef edgeRec * edgeRecP;
 
-// TODO
-#define EDGE_DFSCHILD           1
-#define EDGE_FORWARD            2
-#define EDGE_BACK               3
-#define EDGE_DFSPARENT          4
+#define EDGE_VISITED_MASK		1
+#define gp_GetEdgeVisited(theGraph, e) (theGraph->E[e].flags&EDGE_VISITED_MASK)
+#define gp_ClearEdgeVisited(theGraph, e) (theGraph->E[e].flags &= ~EDGE_VISITED_MASK)
+#define gp_SetEdgeVisited(theGraph, e) (theGraph->E[e].flags |= EDGE_VISITED_MASK)
 
-#define EDGEFLAG_INVERTED 32
-#define GET_EDGEFLAG_INVERTED(theGraph, e) (theGraph->G[e].flags & EDGEFLAG_INVERTED)
-#define SET_EDGEFLAG_INVERTED(theGraph, e) (theGraph->G[e].flags |= EDGEFLAG_INVERTED)
-#define CLEAR_EDGEFLAG_INVERTED(theGraph, e) (theGraph->G[e].flags &= (~EDGEFLAG_INVERTED))
+// The edge DFS type is defined by bits 1-3, 2+4+8=14
+#define EDGE_DFSTYPE_MASK		14
+
+// Call GET_EDGE_DFSTYPE, then compare to one of these four possibilities
+// EDGE_DFSCHILD - edge record is an arc to a DFS child
+// EDGE_FORWARD - edge record is an arc to a DFS descendant, not a DFS child
+// EDGE_DFSPARENT - edge record is an arc to the DFS parent
+// EDGE_BACK - edge record is an arc to a DFS ancestor, not the DFS parent
+#define EDGE_DFSCHILD           14
+#define EDGE_FORWARD            10
+#define EDGE_DFSPARENT          6
+#define EDGE_BACK               2
+#define EDGE_DFSTYPE_UNKNOWN	0
+
+#define gp_GetEdgeDFSType(theGraph, e) (theGraph->E[e].flags&EDGE_DFSTYPE_MASK)
+#define gp_ClearEdgeDFSType(theGraph, e) (theGraph->E[e].flags &= ~EDGE_DFSTYPE_MASK)
+#define gp_SetEdgeDFSType(theGraph, e, type) (theGraph->E[e].flags |= type)
+#define gp_ResetEdgeDFSType(theGraph, e, type) \
+	(theGraph->E[e].flags = (theGraph->E[e].flags & ~EDGE_DFSTYPE_MASK) | type)
+
+#define EDGEFLAG_INVERTED_MASK 16
+#define gp_GetEdgeFlagInverted(theGraph, e) (theGraph->E[e].flags & EDGEFLAG_INVERTED_MASK)
+#define gp_SetEdgeFlagInverted(theGraph, e) (theGraph->E[e].flags |= EDGEFLAG_INVERTED_MASK)
+#define gp_ClearEdgeFlagInverted(theGraph, e) (theGraph->E[e].flags &= (~EDGEFLAG_INVERTED_MASK))
+#define gp_XorEdgeFlagInverted(theGraph, e) (theGraph->E[e].flags ^= EDGEFLAG_INVERTED_MASK)
 
 /********************************************************************
  Vertex Record Definition
@@ -136,14 +155,10 @@ typedef edgeRec * edgeRecP;
 
  flags: Bits 0-15 reserved for library; bits 16 and higher for apps
         Bit 0: visited, for vertices and virtual vertices
-		Bit 1: Obstruction VERTEX_TYPE_SET (versus VERTEX_TYPE_UNKNOWN)
-				Used in lieu of TYPE_VERTEX_VISITED in K4 algorithm
-		Bit 2: Obstruction VERTEX_HIGH_RXW (versus VERTEX_LOW_RXW)
-				VERTEX_HIGH_RXW - On the external face path between vertices R and X
-				VERTEX_LOW_RXW  - X or on the external face path between vertices X and W
-		Bit 3: Obstruction VERTEX_HIGH_RYW (versus VERTEX_LOW_RYW)
-				VERTEX_HIGH_RYW - On the external face path between vertices R and Y
-				VERTEX_LOW_RYW  - Y or on the external face path between vertices Y and W
+				Use in lieu of TYPE_VERTEX_VISITED in K4 algorithm
+		Bit 1: Obstruction type VERTEX_TYPE_SET (versus not set, i.e. VERTEX_TYPE_UNKNOWN)
+		Bit 2: Obstruction type qualifier RYW (set) versus RXW (clear)
+		Bit 3: Obstruction type qualifier high (set) versus low (clear)
  ********************************************************************/
 
 typedef struct
@@ -155,20 +170,41 @@ typedef struct
 
 typedef vertexRec * vertexRecP;
 
-#define VERTEX_HIGH_RXW         6
-#define VERTEX_LOW_RXW          7
-#define VERTEX_HIGH_RYW         8
-#define VERTEX_LOW_RYW          9
+#define VERTEX_VISITED_MASK		1
+#define gp_GetVertexVisited(theGraph, v) (theGraph->V[v].flags&VERTEX_VISITED_MASK)
+#define gp_ClearVertexVisited(theGraph, v) (theGraph->V[v].flags &= ~VERTEX_VISITED_MASK)
+#define gp_SetVertexVisited(theGraph, v) (theGraph->V[v].flags |= VERTEX_VISITED_MASK)
+
+// The obstruction type is defined by bits 1-3, 2+4+8=14
+#define VERTEX_OBSTRUCTIONTYPE_MASK		14
+
+// Call GET_VERTEX_OBSTRUCTIONTYPE, then compare to one of these four possibilities
+// VERTEX_HIGH_RXW - On the external face path between vertices R and X
+// VERTEX_LOW_RXW  - X or on the external face path between vertices X and W
+// VERTEX_HIGH_RYW - On the external face path between vertices R and Y
+// VERTEX_LOW_RYW  - Y or on the external face path between vertices Y and W
+// VERTEX_OBSTRUCTIONTYPE_UNKNOWN (formerly TYPE_UNKNOWN) corresponds to all three bits off
+#define VERTEX_HIGH_RXW         			10
+#define VERTEX_LOW_RXW          			2
+#define VERTEX_HIGH_RYW         			14
+#define VERTEX_LOW_RYW    				    6
+#define VERTEX_OBSTRUCTIONTYPE_UNKNOWN		0
+
+#define gp_GetVertexObstructionType(theGraph, v) (theGraph->V[v].flags&VERTEX_OBSTRUCTIONTYPE_MASK)
+#define gp_ClearVertexObstructionType(theGraph, v) (theGraph->V[v].flags &= ~VERTEX_OBSTRUCTIONTYPE_MASK)
+#define gp_SetVertexObstructionType(theGraph, v, type) (theGraph->V[v].flags |= type)
+#define gp_ResetVertexObstructionType(theGraph, v, type) \
+	(theGraph->V[v].flags = (theGraph->V[v].flags & ~VERTEX_OBSTRUCTIONTYPE_MASK) | type)
 
 /********************************************************************
  Vertex Info Structure Definition.
 
- This structure equips the primary (non-virtual) vertices with addtional
+ This structure equips the primary (non-virtual) vertices with additional
  information needed for lowpoint and planarity-related algorithms.
 
 	parent: The DFI of the DFS tree parent of this vertex
 	leastAncestor: min(DFI of neighbors connected by backedge)
-	lowpoint: min(leastAncestor, min(Lowpoint of DFS Children))
+	lowpoint: min(leastAncestor, min(lowpoint of DFS Children))
 
 	stepVisited: helps detect vertex visitation during methods such as Walkup
 	adjacentTo: Used by the embedder; during walk-up, each vertex that is
@@ -204,7 +240,7 @@ typedef struct
 
     int stepVisited, adjacentTo;
     int pertinentBicompList, separatedDFSChildList, fwdArcList;
-} vertexRec;
+} vertexInfo;
 
 typedef vertexInfo * vertexInfoP;
 
@@ -386,8 +422,8 @@ typedef baseGraphStructure * graphP;
  ********************************************************************/
 
 #define PERTINENT(theGraph, theVertex) \
-        (theGraph->V[theVertex].adjacentTo != NIL || \
-         theGraph->V[theVertex].pertinentBicompList != NIL)
+        (theGraph->VI[theVertex].adjacentTo != NIL || \
+         theGraph->VI[theVertex].pertinentBicompList != NIL)
 
 /********************************************************************
  FUTUREPERTINENT()
@@ -416,9 +452,9 @@ typedef baseGraphStructure * graphP;
  ********************************************************************/
 
 #define FUTUREPERTINENT(theGraph, theVertex, I) \
-        (  theGraph->V[theVertex].leastAncestor < I || \
-           (theGraph->V[theVertex].separatedDFSChildList != NIL && \
-            theGraph->V[theGraph->V[theVertex].separatedDFSChildList].Lowpoint < I) )
+        (  theGraph->VI[theVertex].leastAncestor < I || \
+           (theGraph->VI[theVertex].separatedDFSChildList != NIL && \
+            theGraph->VI[theGraph->VI[theVertex].separatedDFSChildList].lowpoint < I) )
 
 /********************************************************************
  EXTERNALLYACTIVE()
