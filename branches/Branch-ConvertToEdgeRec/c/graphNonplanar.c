@@ -112,7 +112,7 @@ int  N, X, Y, W, Px, Py, Z, DFSChild, RootId;
          RootId = LCGetPrev(theGraph->BicompLists,
                             theGraph->V[W].pertinentBicompList, NIL);
          DFSChild = RootId;
-         if (theGraph->V[DFSChild].Lowpoint < I)
+         if (gp_GetVertexLowpoint(theGraph, DFSChild) < I)
          {
              theGraph->IC.minorType |= MINORTYPE_B;
              return OK;

@@ -115,7 +115,7 @@ int I, L, N, DFSParent, theList;
 
      for (I=0; I < N; I++)
      {
-          L = theGraph->V[I].Lowpoint;
+          L = gp_GetVertexLowpoint(theGraph, I);
           buckets[L] = LCAppend(bin, buckets[L], I);
      }
 
@@ -734,7 +734,7 @@ int  RootID_DFSChild, BicompList;
                             at RootVertex must contain an externally active vertex so the
                             bicomp must be kept on the external face. */
 
-                 if (theGraph->V[RootID_DFSChild].Lowpoint < I)
+                 if (gp_GetVertexLowpoint(theGraph, RootID_DFSChild) < I)
                       BicompList = LCAppend(theGraph->BicompLists, BicompList, RootID_DFSChild);
                  else BicompList = LCPrepend(theGraph->BicompLists, BicompList, RootID_DFSChild);
 

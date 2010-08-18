@@ -159,7 +159,7 @@ isolatorContextP IC = &theGraph->IC;
      int SubtreeRoot = LCGetPrev(theGraph->BicompLists,
                                  theGraph->V[IC->w].pertinentBicompList, NIL);
 
-         IC->uz = theGraph->V[SubtreeRoot].Lowpoint;
+         IC->uz = gp_GetVertexLowpoint(theGraph, SubtreeRoot);
 
          if (_FindUnembeddedEdgeToSubtree(theGraph, IC->v, SubtreeRoot, &IC->dw) != TRUE ||
              _FindUnembeddedEdgeToSubtree(theGraph, IC->uz, SubtreeRoot, &IC->dz) != TRUE)
@@ -437,11 +437,11 @@ isolatorContextP IC = &theGraph->IC;
 int  _GetLeastAncestorConnection(graphP theGraph, int cutVertex)
 {
 int  subtreeRoot = theGraph->V[cutVertex].separatedDFSChildList;
-int  ancestor = theGraph->V[cutVertex].leastAncestor;
+int  ancestor = gp_GetVertexLeastAncestor(theGraph, cutVertex);
 
      if (subtreeRoot != NIL &&
-         ancestor > theGraph->V[subtreeRoot].Lowpoint)
-         ancestor = theGraph->V[subtreeRoot].Lowpoint;
+         ancestor > gp_GetVertexLowpoint(theGraph, subtreeRoot))
+         ancestor = gp_GetVertexLowpoint(theGraph, subtreeRoot);
 
      return ancestor;
 }
@@ -473,7 +473,7 @@ int  _FindUnembeddedEdgeToAncestor(graphP theGraph, int cutVertex,
 {
      *pAncestor = _GetLeastAncestorConnection(theGraph, cutVertex);
 
-     if (*pAncestor == theGraph->V[cutVertex].leastAncestor)
+     if (*pAncestor == gp_GetVertexLeastAncestor(theGraph, cutVertex))
      {
          *pDescendant = cutVertex;
          return TRUE;

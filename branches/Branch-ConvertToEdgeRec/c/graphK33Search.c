@@ -798,7 +798,7 @@ int  listHead, child, descendant;
      listHead = child = theGraph->V[cutVertex].separatedDFSChildList;
      while (child != NIL)
      {
-         if (theGraph->V[child].Lowpoint >= IC->v)
+         if (gp_GetVertexLowpoint(theGraph, child) >= IC->v)
              break;
          sp_Push(theGraph->theStack, child);
          child = LCGetNext(theGraph->DFSChildLists, listHead, child);
@@ -813,7 +813,7 @@ int  listHead, child, descendant;
          /* If the vertex has a lowpoint indicating that it makes no external
             connections, then skip the subtree rooted by the vertex */
 
-         if (theGraph->V[descendant].Lowpoint < IC->v)
+         if (gp_GetVertexLowpoint(theGraph, descendant) < IC->v)
          {
              /* If a prior invocation has precalculated the result, use it. */
 
@@ -843,7 +843,7 @@ int  listHead, child, descendant;
                  child = context->V[descendant].sortedDFSChildList;
                  while (child != NIL)
                  {
-                     if (theGraph->V[child].Lowpoint < IC->v)
+                     if (gp_GetVertexLowpoint(theGraph, child) < IC->v)
                          sp_Push(theGraph->theStack, child);
 
                      child = LCGetNext(context->sortedDFSChildLists,
@@ -905,7 +905,7 @@ int  listHead, child, J;
      listHead = child = theGraph->V[cutVertex].separatedDFSChildList;
      while (child != NIL)
      {
-         if (theGraph->V[child].Lowpoint >= theGraph->IC.v)
+         if (gp_GetVertexLowpoint(theGraph, child) >= theGraph->IC.v)
              break;
 
          if (_FindUnembeddedEdgeToSubtree(theGraph, ancestor, child, pDescendant) == TRUE)
@@ -1331,7 +1331,7 @@ int  p, c, d, excludedChild, e;
      {
          /* If we find a direct edge from p to an ancestor of u_max, the break. */
 
-         if (theGraph->V[p].leastAncestor < u_max)
+         if (gp_GetVertexLeastAncestor(theGraph, p) < u_max)
          {
              d = p;
              break;
@@ -1345,9 +1345,9 @@ int  p, c, d, excludedChild, e;
          if (c == excludedChild)
              c = LCGetNext(theGraph->DFSChildLists, c, c);
 
-         if (c != NIL && theGraph->V[c].Lowpoint < u_max)
+         if (c != NIL && gp_GetVertexLowpoint(theGraph, c) < u_max)
          {
-             _FindUnembeddedEdgeToSubtree(theGraph, theGraph->V[c].Lowpoint, c, &d);
+             _FindUnembeddedEdgeToSubtree(theGraph, gp_GetVertexLowpoint(theGraph, c), c, &d);
              break;
          }
 
@@ -2100,7 +2100,7 @@ int u_min, u_max, d, u_d;
      u_min = MIN3(IC->ux,IC->uy,IC->uz);
      u_max = MAX3(IC->ux,IC->uy,IC->uz);
      d = _TestForStraddlingBridge(theGraph, context, u_max);
-     u_d = theGraph->V[d].leastAncestor;
+     u_d = gp_GetVertexLeastAncestor(theGraph, d);
 
      if (_MarkStraddlingBridgePath(theGraph, u_min, u_max, u_d, d) != OK)
          return NOTOK;
@@ -2148,7 +2148,7 @@ int u_min, u_max, d, u_d;
      u_min = MIN3(IC->ux,IC->uy,IC->uz);
      u_max = MAX3(IC->ux,IC->uy,IC->uz);
      d = _TestForStraddlingBridge(theGraph, context, u_max);
-     u_d = theGraph->V[d].leastAncestor;
+     u_d = gp_GetVertexLeastAncestor(theGraph, d);
 
      if (_MarkStraddlingBridgePath(theGraph, u_min, u_max, u_d, d) != OK)
          return NOTOK;

@@ -500,8 +500,8 @@ int I, J, Gsize;
      {
           fprintf(Outfile, "%d(P=%d,lA=%d,LowPt=%d,v=%d):",
                              I, gp_GetVertexParent(theGraph, I),
-                                theGraph->V[I].leastAncestor,
-                                theGraph->V[I].Lowpoint,
+                                gp_GetVertexLeastAncestor(theGraph, I),
+                                gp_GetVertexLowpoint(theGraph, I),
                                 theGraph->G[I].v);
 
           J = gp_GetFirstArc(theGraph, I);

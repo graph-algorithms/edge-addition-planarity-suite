@@ -352,8 +352,8 @@ platform_GetTime(start);
                       uneighbor = theGraph->G[J].v;
                       if (theGraph->G[J].type == EDGE_DFSCHILD)
                       {
-                          if (L > theGraph->V[uneighbor].Lowpoint)
-                              L = theGraph->V[uneighbor].Lowpoint;
+                          if (L > gp_GetVertexLowpoint(theGraph, uneighbor))
+                              L = gp_GetVertexLowpoint(theGraph, uneighbor);
                       }
                       else if (theGraph->G[J].type == EDGE_BACK)
                       {
@@ -367,8 +367,8 @@ platform_GetTime(start);
                   }
 
                   /* Assign leastAncestor and Lowpoint to the vertex */
-                  theGraph->V[u].leastAncestor = leastAncestor;
-                  theGraph->V[u].Lowpoint = leastAncestor < L ? leastAncestor : L;
+                  gp_SetVertexLeastAncestor(theGraph, u, leastAncestor);
+                  gp_SetVertexLowpoint(theGraph, u, leastAncestor < L ? leastAncestor : L);
               }
          }
      }
@@ -505,8 +505,8 @@ platform_GetTime(start);
 						uneighbor = theGraph->G[J].v;
 						if (theGraph->G[J].type == EDGE_DFSCHILD)
 						{
-							if (L > theGraph->V[uneighbor].Lowpoint)
-								L = theGraph->V[uneighbor].Lowpoint;
+							if (L > gp_GetVertexLowpoint(theGraph, uneighbor))
+								L = gp_GetVertexLowpoint(theGraph, uneighbor);
 						}
 						else if (theGraph->G[J].type == EDGE_BACK)
 						{
@@ -523,8 +523,8 @@ platform_GetTime(start);
 					}
 
 					// Assign leastAncestor and Lowpoint to the vertex
-					theGraph->V[u].leastAncestor = leastAncestor;
-					theGraph->V[u].Lowpoint = leastAncestor < L ? leastAncestor : L;
+					gp_SetVertexLeastAncestor(theGraph, u, leastAncestor);
+					gp_SetVertexLowpoint(theGraph, u, leastAncestor < L ? leastAncestor : L);
 				}
 
 				// Else process the back edge

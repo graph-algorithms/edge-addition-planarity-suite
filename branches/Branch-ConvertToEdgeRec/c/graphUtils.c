@@ -497,8 +497,9 @@ void _InitVertexRec(graphP theGraph, int I)
 {
     gp_SetFirstArc(theGraph, I, gp_AdjacencyListEndMark(I));
     gp_SetLastArc(theGraph, I, gp_AdjacencyListEndMark(I));
-    theGraph->V[I].leastAncestor =
-    theGraph->V[I].Lowpoint = I;
+
+    gp_SetVertexLeastAncestor(theGraph, I, I);
+    gp_SetVertexLowpoint(theGraph, I, I);
     gp_SetVertexParent(theGraph, I, NIL);
     theGraph->V[I].adjacentTo = NIL;
     theGraph->V[I].pertinentBicompList = NIL;
