@@ -499,7 +499,7 @@ int I, J, Gsize;
      for (I=0; I < theGraph->N; I++)
      {
           fprintf(Outfile, "%d(P=%d,lA=%d,LowPt=%d,v=%d):",
-                             I, theGraph->V[I].DFSParent,
+                             I, gp_GetVertexParent(theGraph, I),
                                 theGraph->V[I].leastAncestor,
                                 theGraph->V[I].Lowpoint,
                                 theGraph->G[I].v);

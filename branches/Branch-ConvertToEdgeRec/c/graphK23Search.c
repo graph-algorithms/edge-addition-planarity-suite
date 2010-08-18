@@ -116,8 +116,8 @@ int J, W, C, RetVal=OK;
             bicomp on which the Walkdown failed to embed all back edges */
 
         C = W;
-        while (theGraph->V[C].DFSParent != I)
-            C = theGraph->V[C].DFSParent;
+        while (gp_GetVertexParent(theGraph, C) != I)
+            C = gp_GetVertexParent(theGraph, C);
 
         RetVal = _SearchForK23InBicomp(theGraph, I, C+theGraph->N);
 

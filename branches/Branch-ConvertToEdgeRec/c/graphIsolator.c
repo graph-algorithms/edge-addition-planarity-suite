@@ -559,7 +559,7 @@ int  J, Z, ZNew;
      Z = *pDescendant;
      while (Z != SubtreeRoot)
      {
-         ZNew = theGraph->V[Z].DFSParent;
+         ZNew = gp_GetVertexParent(theGraph, Z);
          if (ZNew == NIL || ZNew == Z)
              return FALSE;
          Z = ZNew;
@@ -630,7 +630,7 @@ int  J, parent, Z, N;
         copy before starting the loop */
 
      if (descendant >= N)
-         descendant = theGraph->V[descendant-N].DFSParent;
+         descendant = gp_GetVertexParent(theGraph, descendant-N);
 
      /* Mark the lowest vertex (i.e. the descendant with the highest number) */
      theGraph->G[descendant].visited = 1;
@@ -642,7 +642,7 @@ int  J, parent, Z, N;
      {
           /* Get the parent vertex */
 
-          parent = theGraph->V[descendant].DFSParent;
+          parent = gp_GetVertexParent(theGraph, descendant);
 
           /* If the descendant was a DFS tree root, then obviously
                 we aren't going to find the ancestor, so something is wrong.*/
@@ -659,7 +659,7 @@ int  J, parent, Z, N;
           {
               Z = theGraph->G[J].v;
               if ((Z < N && Z == parent) ||
-                  (Z >= N && theGraph->V[Z-N].DFSParent == parent))
+                  (Z >= N && gp_GetVertexParent(theGraph, Z-N) == parent))
               {
                   theGraph->G[J].visited = 1;
                   theGraph->G[gp_GetTwinArc(theGraph, J)].visited = 1;

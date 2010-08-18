@@ -94,7 +94,7 @@ platform_GetTime(start);
 
      for (I=0; I < N && DFI < N; I++)
      {
-          if (theGraph->V[I].DFSParent != NIL)
+          if (gp_GetVertexParent(theGraph, I) != NIL)
               continue;
 
           sp_Push2(theStack, NIL, NIL);
@@ -214,8 +214,8 @@ platform_GetTime(start);
 /* Convert DFSParent from v to DFI(v) or vice versa */
 
      for (I=0; I < N; I++)
-          if (theGraph->V[I].DFSParent != NIL)
-              theGraph->V[I].DFSParent = theGraph->G[theGraph->V[I].DFSParent].v;
+          if (gp_GetVertexParent(theGraph, I) != NIL)
+              theGraph->V[I].DFSParent = theGraph->G[gp_GetVertexParent(theGraph, I)].v;
 
 /* Sort by 'v using constant time random access. Move each vertex to its
         destination 'v', and store its source location in 'v'. */
@@ -426,7 +426,7 @@ platform_GetTime(start);
 	// This outer loop causes the connected subgraphs of a disconnected graph to be numbered
 	for (I=DFI=0; I < N && DFI < N; I++)
 	{
-		if (theGraph->V[I].DFSParent != NIL)
+		if (gp_GetVertexParent(theGraph, I) != NIL)
 		  continue;
 
 		// DFS a connected component

@@ -131,7 +131,7 @@ int I, L, N, DFSParent, theList;
           {
               while (L != NIL)
               {
-                  DFSParent = theGraph->V[L].DFSParent;
+                  DFSParent = gp_GetVertexParent(theGraph, L)aph, L);
 
                   if (DFSParent != NIL && DFSParent != L)
                   {
@@ -269,7 +269,7 @@ int N, I, J, Jtwin, R;
 
     for (I=0, R=N; I < N; I++, R++)
     {
-        if (theGraph->V[I].DFSParent == NIL)
+     gp_GetVertexParent(theGraph, I)t(theGraph, I) == NIL)
         {
         	gp_SetFirstArc(theGraph, I, gp_AdjacencyListEndMark(I));
         	gp_SetLastArc(theGraph, I, gp_AdjacencyListEndMark(I));
@@ -323,7 +323,7 @@ int fwdArc, backArc, parentCopy;
 
     /* The forward arc is removed from the fwdArcList of the root's parent copy. */
 
-    parentCopy = theGraph->V[RootVertex - theGraph->N].DFSParent;
+   gp_GetVertexParent(theGraph, RootVertex - theGraph->N)Vertex - theGraph->N);
 
     gp_LogLine(gp_MakeLogStr5("graphEmbed.c/_EmbedBackEdgeToDescendant() V=%d, R=%d, R_out=%d, W=%d, W_in=%d",
     		parentCopy, RootVertex, RootSide, W, WPrevLink));
@@ -717,7 +717,7 @@ int  RootID_DFSChild, BicompList;
             RootID_DFSChild = R - N;
 
             // It is extra unnecessary work to record pertinent bicomps of I
-            if ((ParentCopy = theGraph->V[RootID_DFSChild].DFSParent) != I)
+         gp_GetVertexParent(theGraph, RootID_DFSChild)t(theGraph, RootID_DFSChild)) != I)
             {
                  // Get the BicompList of the parent copy vertex.
                  BicompList = theGraph->V[ParentCopy].pertinentBicompList;
@@ -1471,7 +1471,7 @@ int  R, N, edgeOffset=theGraph->edgeOffset;
 
      for (R=N=theGraph->N; R < edgeOffset; R++)
           if (gp_IsArc(theGraph, gp_GetFirstArc(theGraph, R)))
-              _MergeVertex(theGraph, theGraph->V[R-N].DFSParent, 0, R);
+         gp_GetVertexParent(theGraph, R-N), gp_GetVertexParent(theGraph, R-N), 0, R);
 
      return OK;
 }

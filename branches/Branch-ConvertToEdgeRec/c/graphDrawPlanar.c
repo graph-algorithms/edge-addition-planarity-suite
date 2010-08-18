@@ -120,7 +120,7 @@ int I, index;
     {
         // For each DFS tree root in the embedding, we
         // compute the vertex positions
-        if (theEmbedding->V[I].DFSParent == NIL)
+        if (gp_GetVertexParent(theEmbedding, I) == NIL)
         {
             if (_ComputeVertexPositionsInComponent(context, I, &index) != OK)
                 return NOTOK;
@@ -241,7 +241,7 @@ int W, P, C, V, J;
     {
         sp_Pop(theEmbedding->theStack, W);
 
-        P = theEmbedding->V[W].DFSParent;
+        P = gp_GetVertexParent(theEmbedding, W);
         V = context->V[W].ancestor;
         C = context->V[W].ancestorChild;
 
@@ -419,7 +419,7 @@ int eIndex, JTwin;
         // false generator edge so that it is still "visited" and then
         // all of its edges are generators for its neighbor vertices because
         // they all have greater numbers in the vertex order.
-        if (theEmbedding->V[v].DFSParent == NIL)
+        if (gp_GetVertexParent(theEmbedding, v) == NIL)
         {
             // False generator edge, so the vertex is distinguishable from
             // a vertex with no generator edge when its neighbors are visited
@@ -678,7 +678,7 @@ void _CollectDrawingData(DrawPlanarContext *context, int RootVertex, int W, int 
 {
 graphP theEmbedding = context->theGraph;
 //int ancestorChild = RootVertex - theEmbedding->N;
-//int ancestor = theEmbedding->V[ancestorChild].DFSParent;
+//int ancestor = gp_GetVertexParent(theEmbedding, ancestorChild);
 int K, Parent, BicompRoot, DFSChild, direction, descendant;
 
     gp_LogLine("\ngraphDrawPlanar.c/_CollectDrawingData() start");
@@ -791,7 +791,7 @@ int WPredNextLink = 1^WPrevLink,
             or 'beyond' its parent relative to what. */
 
         context->V[DFSChild].ancestorChild = BicompRoot - theEmbedding->N;
-        context->V[DFSChild].ancestor = theEmbedding->V[BicompRoot - theEmbedding->N].DFSParent;
+        context->V[DFSChild].ancestor = gp_GetVertexParent(theEmbedding, BicompRoot - theEmbedding->N);
 
         gp_LogLine(gp_MakeLogStr4("V[child=%d]=.ancestorChild = %d, V[child=%d]=.ancestor = %d",
 					 DFSChild, context->V[DFSChild].ancestorChild, DFSChild, context->V[DFSChild].ancestor));

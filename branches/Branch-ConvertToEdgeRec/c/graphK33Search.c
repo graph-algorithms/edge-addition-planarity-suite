@@ -1009,7 +1009,7 @@ isolatorContextP IC = &theGraph->IC;
      /* Switch the 'current step' variable I to be equal to the
        non-virtual counterpart of the bicomp root. */
 
-     I = theGraph->V[R - theGraph->N].DFSParent;
+     I = gp_GetVertexParent(theGraph, R - theGraph->N);
 
      /* Eliminate the visitation and pertinence settings for step u_max */
 
@@ -1360,7 +1360,7 @@ int  p, c, d, excludedChild, e;
          /* Go to the next ancestor */
 
          excludedChild = p;
-         p = theGraph->V[p].DFSParent;
+         p = gp_GetVertexParent(theGraph, p);
      }
 
 /* If d is NIL, then no straddling bridge was found, so we do the
@@ -1377,7 +1377,7 @@ int  p, c, d, excludedChild, e;
 
              context->G[e].noStraddle = u_max;
 
-             c = theGraph->V[c].DFSParent;
+             c = gp_GetVertexParent(theGraph, c);
          }
      }
 
@@ -1998,7 +1998,7 @@ int p, J;
          if (p >= theGraph->N)
          {
              theGraph->G[p].visited = 1;
-             p = theGraph->V[p-theGraph->N].DFSParent;
+             p = gp_GetVertexParent(theGraph, p-theGraph->N);
          }
      }
 
@@ -2030,7 +2030,7 @@ int p, J;
 
          if (p >= theGraph->N)
          {
-             p = theGraph->V[p-theGraph->N].DFSParent;
+             p = gp_GetVertexParent(theGraph, p-theGraph->N);
              theGraph->G[p].visited = 0;
          }
      }

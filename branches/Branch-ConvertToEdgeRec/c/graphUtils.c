@@ -1092,11 +1092,11 @@ int N, I, arc, M, root, v, c, p, last, u, J, e;
 
 	     else
 	     {
-		     p = theGraph->V[v].DFSParent;
+		     p = gp_GetVertexParent(theGraph, v);
 		     while (p != NIL && (c = _getUnprocessedChild(theGraph, p)) == NIL)
 		     {
 			     v = p;
-			     p = theGraph->V[v].DFSParent;
+			     p = gp_GetVertexParent(theGraph, v);
 			     if (p != NIL && p != root)
 			     {
 				     if (gp_AddEdge(theGraph, last, 1, p, 1) != OK)
@@ -2171,9 +2171,9 @@ int gp_RestoreVertices(graphP theGraph)
 int  _ComputeArcType(graphP theGraph, int a, int b, int edgeType)
 {
      if (a >= theGraph->N)
-         a = theGraph->V[a - theGraph->N].DFSParent;
+         a = gp_GetVertexParent(theGraph, a - theGraph->N);
      if (b >= theGraph->N)
-         b = theGraph->V[b - theGraph->N].DFSParent;
+         b = gp_GetVertexParent(theGraph, b - theGraph->N);
 
      if (a < b)
          return edgeType == EDGE_DFSPARENT || edgeType == EDGE_DFSCHILD ? EDGE_DFSCHILD : EDGE_FORWARD;
@@ -2196,8 +2196,8 @@ int  e, eTwin, u_orig, v_orig, N;
 
      // If u or v is a virtual vertex (a root copy), then get the non-virtual counterpart.
      N = theGraph->N;
-     u_orig = u < N ? u : (theGraph->V[u - N].DFSParent);
-     v_orig = v < N ? v : (theGraph->V[v - N].DFSParent);
+     u_orig = u < N ? u : (gp_GetVertexParent(theGraph, u - N));
+     v_orig = v < N ? v : (gp_GetVertexParent(theGraph, v - N));
 
      // Get the edge for which we will set the type
 
@@ -2206,8 +2206,8 @@ int  e, eTwin, u_orig, v_orig, N;
 
      // If u_orig is the parent of v_orig, or vice versa, then the edge is a tree edge
 
-     if (theGraph->V[v_orig].DFSParent == u_orig ||
-         theGraph->V[u_orig].DFSParent == v_orig)
+     if (gp_GetVertexParent(theGraph, v_orig) == u_orig ||
+         gp_GetVertexParent(theGraph, u_orig) == v_orig)
      {
          if (u_orig > v_orig)
          {

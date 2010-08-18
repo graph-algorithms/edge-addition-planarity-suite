@@ -744,7 +744,7 @@ int  J, parent, N;
         copy before starting the loop */
 
      if (descendant >= N)
-         descendant = theGraph->V[descendant-N].DFSParent;
+         descendant = gp_GetVertexParent(theGraph, descendant-N);
 
      /* Mark the lowest vertex (the one with the highest number). */
 
@@ -763,7 +763,7 @@ int  J, parent, N;
 
           if (descendant >= N)
           {
-              parent = theGraph->V[descendant-N].DFSParent;
+              parent = gp_GetVertexParent(theGraph, descendant-N);
           }
 
           /* If we are on a regular, non-virtual vertex then get the edge to

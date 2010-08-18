@@ -101,7 +101,7 @@ int  N, X, Y, W;
 
      // If the root copy is not a root copy of the current vertex I,
      // then the Walkdown terminated on a descendant bicomp, which is Minor A.
-     if (theGraph->V[R - N].DFSParent != I)
+     if (gp_GetVertexParent(theGraph, R - N) != I)
      {
          theGraph->IC.minorType |= MINORTYPE_A;
          return OK;

@@ -98,7 +98,7 @@ int  N, X, Y, W, Px, Py, Z, DFSChild, RootId;
         then the Walkdown terminated because it couldn't find
         a viable path along a child bicomp, which is Minor A. */
 
-     if (theGraph->V[R - N].DFSParent != I)
+     if (gp_GetVertexParent(theGraph, R - N) != I)
      {
          theGraph->IC.minorType |= MINORTYPE_A;
          return OK;

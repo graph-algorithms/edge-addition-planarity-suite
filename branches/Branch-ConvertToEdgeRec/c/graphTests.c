@@ -259,7 +259,7 @@ int I, e, J, JTwin, K, L, NumFaces, connectedComponents;
     so we do not subtract one. */
 
      for (I=connectedComponents=0; I < theGraph->N; I++)
-          if (theGraph->V[I].DFSParent == NIL)
+          if (gp_GetVertexParent(theGraph, I) == NIL)
           {
               if (gp_GetVertexDegree(theGraph, I) > 0)
                   NumFaces--;
@@ -300,7 +300,7 @@ int _CheckAllVerticesOnExternalFace(graphP theGraph)
     // mark the vertices as visited
     for (I=0; I < theGraph->N; I++)
     {
-         if (theGraph->V[I].DFSParent == NIL)
+         if (gp_GetVertexParent(theGraph, I) == NIL)
         	 _MarkExternalFaceVertices(theGraph, I);
     }
 
