@@ -428,6 +428,11 @@ stackP newStack;
 int J, Gsize=theGraph->edgeOffset + theGraph->arcCapacity;
 int newGsize = theGraph->edgeOffset + requiredArcCapacity;
 
+	// If the new size is less than or equal to the old size, then
+	// the graph already has the required arc capacity
+	if (newGsize <= Gsize)
+		return OK;
+
     // Expand theStack
     if (sp_GetCapacity(theGraph->theStack) < 2 * requiredArcCapacity)
     {
@@ -497,6 +502,8 @@ void _InitVertexRec(graphP theGraph, int I)
 {
     gp_SetFirstArc(theGraph, I, gp_AdjacencyListEndMark(I));
     gp_SetLastArc(theGraph, I, gp_AdjacencyListEndMark(I));
+    gp_SetVertexIndex(theGraph, I, 0);
+    gp_InitVertexFlags(theGraph, I);
 
     gp_SetVertexLeastAncestor(theGraph, I, I);
     gp_SetVertexLowpoint(theGraph, I, I);

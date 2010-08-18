@@ -116,6 +116,9 @@ typedef edgeRec * edgeRecP;
 #define gp_GetEdgeNeighbor(theGraph, e) (theGraph->E[e].v)
 #define gp_SetEdgeNeighbor(theGraph, e, neighbor) (theGraph->E[e].v = neighbor)
 
+// Initializer for vertex flags
+#define gp_InitEdgeFlags(theGraph, e) (theGraph->E[e].flags = 0)
+
 // Definitions and accessors for edge flags
 #define EDGE_VISITED_MASK		1
 #define gp_GetEdgeVisited(theGraph, e) (theGraph->E[e].flags&EDGE_VISITED_MASK)
@@ -210,6 +213,9 @@ typedef vertexRec * vertexRecP;
 // Accessors for vertex index
 #define gp_GetVertexIndex(theGraph, v) (theGraph->V[v].index)
 #define gp_SetVertexIndex(theGraph, v, theIndex) (theGraph->V[v].index = theIndex)
+
+// Initializer for vertex flags
+#define gp_InitVertexFlags(theGraph, v) (theGraph->V[v].flags = 0)
 
 // Definitions and accessors for vertex flags
 #define VERTEX_VISITED_MASK		1
