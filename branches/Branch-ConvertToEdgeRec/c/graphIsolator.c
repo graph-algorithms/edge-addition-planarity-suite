@@ -157,7 +157,7 @@ isolatorContextP IC = &theGraph->IC;
      if (theGraph->IC.minorType & MINORTYPE_B)
      {
      int SubtreeRoot = LCGetPrev(theGraph->BicompLists,
-                                 theGraph->V[IC->w].pertinentBicompList, NIL);
+                                 gp_GetVertexPertinentBicompList(theGraph, IC->w), NIL);
 
          IC->uz = gp_GetVertexLowpoint(theGraph, SubtreeRoot);
 
@@ -504,7 +504,7 @@ int  RetVal = TRUE, I = theGraph->IC.v;
          *pDescendant = cutVertex;
      else
      {
-     int subtreeRoot = theGraph->V[cutVertex].pertinentBicompList;
+     int subtreeRoot = gp_GetVertexPertinentBicompList(theGraph, cutVertex);
 
          RetVal = _FindUnembeddedEdgeToSubtree(theGraph, I,
                                                subtreeRoot, pDescendant);

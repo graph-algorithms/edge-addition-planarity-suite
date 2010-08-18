@@ -613,9 +613,9 @@ int  extFaceVertex;
             merge R into Z, so we delete R from its pertinent
             bicomp list (Walkdown gets R from the head of the list). */
 
-         theList = theGraph->V[Z].pertinentBicompList;
+         theList = gp_GetVertexPertinentBicompList(theGraph, Z);
          theList = LCDelete(theGraph->BicompLists, theList, RootID_DFSChild);
-         theGraph->V[Z].pertinentBicompList = theList;
+         gp_SetVertexPertinentBicompList(theGraph, Z, theList);
 
          /* As a result of the merge, the DFS child of Z must be removed
             from Z's SeparatedDFSChildList because the child has just
@@ -720,7 +720,7 @@ int  RootID_DFSChild, BicompList;
          gp_GetVertexParent(theGraph, RootID_DFSChild)t(theGraph, RootID_DFSChild)) != I)
             {
                  // Get the BicompList of the parent copy vertex.
-                 BicompList = theGraph->V[ParentCopy].pertinentBicompList;
+                 BicompList = gp_GetVertexPertinentBicompList(theGraph, ParentCopy);
 
                  /* Put the new root vertex in the BicompList.  It is prepended if internally
                     active and appended if externally active so that all internally
@@ -742,7 +742,7 @@ int  RootID_DFSChild, BicompList;
                     we assign the head of the modified list as the vertex's pertinent
                     bicomp list */
 
-                 theGraph->V[ParentCopy].pertinentBicompList = BicompList;
+                 gp_SetVertexPertinentBicompList(theGraph, ParentCopy, BicompList);
             }
 
             Zig = Zag = ParentCopy;
@@ -819,9 +819,9 @@ int  _HandleInactiveVertex(graphP theGraph, int BicompRoot, int *pW, int *pWPrev
  ********************************************************************/
 
 #define _GetPertinentChildBicomp(theGraph, W) \
-        (theGraph->V[W].pertinentBicompList==NIL \
+        (gp_GetVertexPertinentBicompList(theGraph, W)==NIL \
          ? NIL \
-         : theGraph->V[W].pertinentBicompList + theGraph->N)
+         : gp_GetVertexPertinentBicompList(theGraph, W) + theGraph->N)
 
 /********************************************************************
  _WalkDown()
@@ -965,7 +965,7 @@ int  RetVal, W, WPrevLink, R, Rout, X, XPrevLink, Y, YPrevLink, RootSide, RootEd
                 along with information about how we entered the cut vertex and how
                 we exit the root copy to get to the next vertex. */
 
-             if (theGraph->V[W].pertinentBicompList != NIL)
+             if (gp_GetVertexPertinentBicompList(theGraph, W) != NIL)
              {
                  sp_Push2(theGraph->theStack, W, WPrevLink);
                  R = _GetPertinentChildBicomp(theGraph, W);
@@ -1205,7 +1205,7 @@ int RetVal = OK;
           child = theGraph->V[I].separatedDFSChildList;
           while (child != NIL)
           {
-              if (theGraph->V[child].pertinentBicompList != NIL)
+              if (gp_GetVertexPertinentBicompList(theGraph, child) != NIL)
               {
                   // _Walkdown returns OK even if it couldn't embed all
                   // back edges from I to the subtree rooted by child

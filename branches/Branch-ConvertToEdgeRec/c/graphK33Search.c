@@ -400,7 +400,7 @@ int tempResult;
     one-time costs, preserving linear time. */
 
      gp_SetVertexStepAdjacentTo(theGraph, IC->w, NIL);
-     theGraph->V[IC->w].pertinentBicompList = NIL;
+     gp_SetVertexPertinentBicompList(theGraph, IC->w, NIL);
 
      return OK;
 }
@@ -626,7 +626,7 @@ int  Z=theGraph->IC.px, ZPrevLink=1;
                 theGraph->IC.uz = _GetLeastAncestorConnection(theGraph, Z);
                 return OK;
             }
-            else if (theGraph->V[Z].pertinentBicompList != NIL ||
+            else if (gp_GetVertexPertinentBicompList(theGraph, Z) != NIL ||
                      gp_GetVertexStepAdjacentTo(theGraph, Z) == theGraph->IC.v)
             {
                 /* Swap the roles of W and Z */
@@ -1017,7 +1017,7 @@ isolatorContextP IC = &theGraph->IC;
      {
     	 gp_SetVertexStepVisited(theGraph, v, I+1);
          gp_SetVertexStepAdjacentTo(theGraph, v, NIL);
-         theGraph->V[v].pertinentBicompList = NIL;
+         gp_SetVertexPertinentBicompList(theGraph, v, NIL);
      }
 
      /* Restore the pertinence settings of step I by doing the Walkup for each

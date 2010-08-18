@@ -107,10 +107,10 @@ int  N, X, Y, W, Px, Py, Z, DFSChild, RootId;
 /* If W has an externally active pertinent child bicomp, then
      we've found Minor B */
 
-     if (theGraph->V[W].pertinentBicompList != NIL)
+     if (gp_GetVertexPertinentBicompList(theGraph, W) != NIL)
      {
          RootId = LCGetPrev(theGraph->BicompLists,
-                            theGraph->V[W].pertinentBicompList, NIL);
+                            gp_GetVertexPertinentBicompList(theGraph, W), NIL);
          DFSChild = RootId;
          if (gp_GetVertexLowpoint(theGraph, DFSChild) < I)
          {

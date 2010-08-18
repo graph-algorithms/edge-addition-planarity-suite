@@ -179,7 +179,7 @@ int X, Y, XPrevLink, YPrevLink;
          else if (theGraph->IC.minorType & MINORTYPE_B)
          {
          int SubtreeRoot = LCGetPrev(theGraph->BicompLists,
-                                     theGraph->V[IC->w].pertinentBicompList, NIL);
+                                     gp_GetVertexPertinentBicompList(theGraph, IC->w), NIL);
 
              if (_FindUnembeddedEdgeToSubtree(theGraph, IC->v, SubtreeRoot, &IC->dw) != TRUE)
                  return NOTOK;

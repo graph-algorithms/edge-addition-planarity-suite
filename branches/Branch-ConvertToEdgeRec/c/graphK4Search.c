@@ -565,7 +565,7 @@ int  _K4_ChooseTypeOfNonOuterplanarityMinor(graphP theGraph, int I, int R)
     // Notice this is different from planarity, in which minor B is indicated
     // only if the pertinent child bicomp is also externally active under the
     // planarity processing model (i.e. future pertinent).
-	else if (theGraph->V[theGraph->IC.w].pertinentBicompList != NIL)
+	else if (gp_GetVertexPertinentBicompList(theGraph, theGraph->IC.w) != NIL)
 		theGraph->IC.minorType |= MINORTYPE_B;
 
     // The only other result is minor E (we will search for the X-Y path later)

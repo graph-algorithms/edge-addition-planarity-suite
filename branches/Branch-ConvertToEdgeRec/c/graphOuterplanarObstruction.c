@@ -111,7 +111,7 @@ int  N, X, Y, W;
      // Notice this is different from planarity, in which minor B is indicated
      // only if the pertinent child bicomp is also externally active under the
      // planarity processing model (i.e. future pertinent).
-     if (theGraph->V[W].pertinentBicompList != NIL)
+     if (gp_GetVertexPertinentBicompList(theGraph, W) != NIL)
      {
          theGraph->IC.minorType |= MINORTYPE_B;
          return OK;
@@ -148,7 +148,7 @@ int  RetVal;
      {
      isolatorContextP IC = &theGraph->IC;
      int SubtreeRoot = LCGetPrev(theGraph->BicompLists,
-                                 theGraph->V[IC->w].pertinentBicompList, NIL);
+                                 gp_GetVertexPertinentBicompList(theGraph, IC->w), NIL);
 
          if (_FindUnembeddedEdgeToSubtree(theGraph, IC->v, SubtreeRoot, &IC->dw) != TRUE)
              return NOTOK;
