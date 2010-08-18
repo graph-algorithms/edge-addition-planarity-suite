@@ -508,7 +508,7 @@ void _InitVertexRec(graphP theGraph, int I)
     gp_SetVertexLeastAncestor(theGraph, I, I);
     gp_SetVertexLowpoint(theGraph, I, I);
     gp_SetVertexParent(theGraph, I, NIL);
-    theGraph->V[I].adjacentTo = NIL;
+    gp_SetVertexStepAdjacentTo(theGraph, I, NIL);
     theGraph->V[I].pertinentBicompList = NIL;
     theGraph->V[I].separatedDFSChildList = NIL;
     theGraph->V[I].fwdArcList = NIL;

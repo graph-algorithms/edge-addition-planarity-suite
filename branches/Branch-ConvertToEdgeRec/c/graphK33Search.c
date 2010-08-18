@@ -399,7 +399,7 @@ int tempResult;
     Walkup costs that identified the pertinent bicomps we intend to ignore are
     one-time costs, preserving linear time. */
 
-     theGraph->V[IC->w].adjacentTo = NIL;
+     gp_SetVertexStepAdjacentTo(theGraph, IC->w, NIL);
      theGraph->V[IC->w].pertinentBicompList = NIL;
 
      return OK;
@@ -627,7 +627,7 @@ int  Z=theGraph->IC.px, ZPrevLink=1;
                 return OK;
             }
             else if (theGraph->V[Z].pertinentBicompList != NIL ||
-                     theGraph->V[Z].adjacentTo == theGraph->IC.v)
+                     gp_GetVertexStepAdjacentTo(theGraph, Z) == theGraph->IC.v)
             {
                 /* Swap the roles of W and Z */
 
@@ -982,7 +982,7 @@ int  R, Rout, Z, ZPrevLink;
 
 int  _FindK33WithMergeBlocker(graphP theGraph, K33SearchContext *context, int I, int mergeBlocker)
 {
-int  R, RPrevLink, u_max, u, J, W;
+int  R, RPrevLink, u_max, u, J, W, v;
 isolatorContextP IC = &theGraph->IC;
 
 /* First, we orient the vertices so we can successfully restore all of the
@@ -1013,12 +1013,11 @@ isolatorContextP IC = &theGraph->IC;
 
      /* Eliminate the visitation and pertinence settings for step u_max */
 
-     _FillVisitedFlags(theGraph, I+1);
-
-     for (J = 0; J < theGraph->N; J++)
+     for (v = 0; v < theGraph->N; v++)
      {
-         theGraph->V[J].adjacentTo = NIL;
-         theGraph->V[J].pertinentBicompList = NIL;
+    	 gp_SetVertexStepVisited(theGraph, v, I+1);
+         gp_SetVertexStepAdjacentTo(theGraph, v, NIL);
+         theGraph->V[v].pertinentBicompList = NIL;
      }
 
      /* Restore the pertinence settings of step I by doing the Walkup for each
