@@ -109,7 +109,7 @@ platform_GetTime(start);
 
             	  theGraph->G[u].visited = 1;
                   theGraph->G[u].v = DFI++;
-                  theGraph->V[u].DFSParent = uparent;
+                  gp_SetVertexParent(theGraph, u, uparent);
                   if (e != NIL)
                   {
                       theGraph->G[e].type = EDGE_DFSCHILD;
@@ -215,7 +215,7 @@ platform_GetTime(start);
 
      for (I=0; I < N; I++)
           if (gp_GetVertexParent(theGraph, I) != NIL)
-              theGraph->V[I].DFSParent = theGraph->G[gp_GetVertexParent(theGraph, I)].v;
+              gp_SetVertexParent(theGraph, I, theGraph->G[gp_GetVertexParent(theGraph, I)].v);
 
 /* Sort by 'v using constant time random access. Move each vertex to its
         destination 'v', and store its source location in 'v'. */
@@ -450,7 +450,7 @@ platform_GetTime(start);
 
 				theGraph->G[u].visited = 1;
 				theGraph->G[u].v = DFI++;
-				theGraph->V[u].DFSParent = uparent;
+				gp_SetVertexParent(theGraph, u, uparent);
 				if (e != NIL)
 				{
 					theGraph->G[e].type = EDGE_DFSCHILD;

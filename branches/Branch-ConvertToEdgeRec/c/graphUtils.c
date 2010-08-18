@@ -499,7 +499,7 @@ void _InitVertexRec(graphP theGraph, int I)
     gp_SetLastArc(theGraph, I, gp_AdjacencyListEndMark(I));
     theGraph->V[I].leastAncestor =
     theGraph->V[I].Lowpoint = I;
-    theGraph->V[I].DFSParent = NIL;
+    gp_SetVertexParent(theGraph, I, NIL);
     theGraph->V[I].adjacentTo = NIL;
     theGraph->V[I].pertinentBicompList = NIL;
     theGraph->V[I].separatedDFSChildList = NIL;
@@ -998,7 +998,7 @@ int child = theGraph->G[J].v;
     gp_MoveArcToLast(theGraph, child, JTwin);
 
     // Now we set the child's parent and return the child.
-    theGraph->V[child].DFSParent = parent;
+    gp_SetVertexParent(theGraph, child, parent);
 
     return child;
 }
@@ -1161,7 +1161,7 @@ int N, I, arc, M, root, v, c, p, last, u, J, e;
 /* Put all DFSParent indicators back to NIL */
 
     for (I = 0; I < N; I++)
-        theGraph->V[I].DFSParent = NIL;
+        gp_SetVertexParent(theGraph, I, NIL);
 
     return OK;
 
