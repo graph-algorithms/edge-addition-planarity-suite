@@ -622,13 +622,13 @@ int _GetNextExternalFaceVertex(graphP theGraph, int curVertex, int *pPrevLink)
 {
     int nextVertex, nextPrevLink;
 
-    nextVertex = theGraph->extFace[curVertex].vertex[1 ^ *pPrevLink];
+    nextVertex = gp_GetExtFaceVertex(theGraph, curVertex, 1 ^ *pPrevLink);
 
     // If the two links in the new vertex are not equal, then only one points
     // back to the current vertex, and it is the new prev link.
-    if (theGraph->extFace[nextVertex].vertex[0] != theGraph->extFace[nextVertex].vertex[1])
+    if (gp_GetExtFaceVertex(theGraph, nextVertex, 0) != gp_GetExtFaceVertex(theGraph, nextVertex, 1))
     {
-        nextPrevLink = theGraph->extFace[nextVertex].vertex[0]==curVertex ? 0 : 1;
+        nextPrevLink = gp_GetExtFaceVertex(theGraph, nextVertex, 0)==curVertex ? 0 : 1;
     }
     else
     {
@@ -641,8 +641,8 @@ int _GetNextExternalFaceVertex(graphP theGraph, int curVertex, int *pPrevLink)
         // singleton bicomps in the inversionFlag of the non-root vertex.
 
         if (nextVertex < theGraph->N)
-             inverted = theGraph->extFace[nextVertex].inversionFlag;
-        else inverted = theGraph->extFace[curVertex].inversionFlag;
+             inverted = gp_GetExtFaceInversionFlag(theGraph, nextVertex);
+        else inverted = gp_GetExtFaceInversionFlag(theGraph, curVertex);
 
         // If the curVertex and nextVertex are in a singleton and have the same
         // orientation, then the prev link from the current vertex is the prev

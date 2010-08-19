@@ -296,8 +296,10 @@ int N, I, J, Jtwin, R;
         	gp_SetNextArc(theGraph, Jtwin, gp_AdjacencyListEndMark(R));
         	gp_SetPrevArc(theGraph, Jtwin, gp_AdjacencyListEndMark(R));
 
-            theGraph->extFace[R].vertex[0] = theGraph->extFace[R].vertex[1] = I;
-            theGraph->extFace[I].vertex[0] = theGraph->extFace[I].vertex[1] = R;
+            gp_SetExtFaceVertex(theGraph, R, 0, I);
+            gp_SetExtFaceVertex(theGraph, R, 1, I);
+            gp_SetExtFaceVertex(theGraph, I, 0, R);
+            gp_SetExtFaceVertex(theGraph, I, 1, R);
         }
     }
 }
@@ -357,8 +359,8 @@ int fwdArc, backArc, parentCopy;
 
     /* Link the two endpoint vertices together on the external face */
 
-    theGraph->extFace[RootVertex].vertex[RootSide] = W;
-    theGraph->extFace[W].vertex[WPrevLink] = RootVertex;
+    gp_SetExtFaceVertex(theGraph, RootVertex, RootSide, W);
+    gp_SetExtFaceVertex(theGraph, W, WPrevLink, RootVertex);
 }
 
 /********************************************************************
@@ -442,9 +444,9 @@ int J, temp;
      gp_SetLastArc(theGraph, V, temp);
 
      // Swap the first/last external face indicators in the vertex
-     temp = theGraph->extFace[V].vertex[0];
-     theGraph->extFace[V].vertex[0] = theGraph->extFace[V].vertex[1];
-     theGraph->extFace[V].vertex[1] = temp;
+     temp = gp_GetExtFaceVertex(theGraph, V, 0);
+     gp_SetExtFaceVertex(theGraph, V, 0, gp_GetExtFaceVertex(theGraph, V, 1));
+     gp_SetExtFaceVertex(theGraph, V, 1, temp);
 }
 
 /********************************************************************
@@ -560,13 +562,13 @@ int  extFaceVertex;
             corner will be the new external face corner at Z.
             We first want to update the links at Z to reflect this. */
 
-         extFaceVertex = theGraph->extFace[R].vertex[1^Rout];
-         theGraph->extFace[Z].vertex[ZPrevLink] = extFaceVertex;
+         extFaceVertex = gp_GetExtFaceVertex(theGraph, R, 1^Rout);
+         gp_SetExtFaceVertex(theGraph, Z, ZPrevLink, extFaceVertex);
 
-         if (theGraph->extFace[extFaceVertex].vertex[0] == theGraph->extFace[extFaceVertex].vertex[1])
-            theGraph->extFace[extFaceVertex].vertex[Rout ^ theGraph->extFace[extFaceVertex].inversionFlag] = Z;
+         if (gp_GetExtFaceVertex(theGraph, extFaceVertex, 0) == gp_GetExtFaceVertex(theGraph, extFaceVertex, 1))
+            gp_SetExtFaceVertex(theGraph, extFaceVertex, Rout ^ gp_GetExtFaceInversionFlag(theGraph, extFaceVertex), Z);
          else
-            theGraph->extFace[extFaceVertex].vertex[theGraph->extFace[extFaceVertex].vertex[0] == R ? 0 : 1] = Z;
+            gp_SetExtFaceVertex(theGraph, extFaceVertex, gp_GetExtFaceVertex(theGraph, extFaceVertex, 0) == R ? 0 : 1, Z);
 
          /* If the path used to enter Z is opposed to the path
             used to exit R, then we have to flip the bicomp
@@ -755,12 +757,12 @@ int  RootID_DFSChild, BicompList;
 
         else
         {
-            nextVertex = theGraph->extFace[Zig].vertex[1^ZigPrevLink];
-            ZigPrevLink = theGraph->extFace[nextVertex].vertex[0] == Zig ? 0 : 1;
+            nextVertex = gp_GetExtFaceVertex(theGraph, Zig, 1^ZigPrevLink);
+            ZigPrevLink = gp_GetExtFaceVertex(theGraph, nextVertex, 0) == Zig ? 0 : 1;
             Zig = nextVertex;
 
-            nextVertex = theGraph->extFace[Zag].vertex[1^ZagPrevLink];
-            ZagPrevLink = theGraph->extFace[nextVertex].vertex[0] == Zag ? 0 : 1;
+            nextVertex = gp_GetExtFaceVertex(theGraph, Zag, 1^ZagPrevLink);
+            ZagPrevLink = gp_GetExtFaceVertex(theGraph, nextVertex, 0) == Zag ? 0 : 1;
             Zag = nextVertex;
         }
      }
@@ -805,8 +807,8 @@ int  _HandleBlockedDescendantBicomp(graphP theGraph, int I, int RootVertex, int 
 
 int  _HandleInactiveVertex(graphP theGraph, int BicompRoot, int *pW, int *pWPrevLink)
 {
-     int X = theGraph->extFace[*pW].vertex[1^*pWPrevLink];
-     *pWPrevLink = theGraph->extFace[X].vertex[0] == *pW ? 0 : 1;
+     int X = gp_GetExtFaceVertex(theGraph, *pW, 1^*pWPrevLink);
+     *pWPrevLink = gp_GetExtFaceVertex(theGraph, X, 0) == *pW ? 0 : 1;
      *pW = X;
 
      return OK;
@@ -901,12 +903,12 @@ int  RetVal, W, WPrevLink, R, Rout, X, XPrevLink, Y, YPrevLink, RootSide, RootEd
 
      for (RootSide = 0; RootSide < 2; RootSide++)
      {
-         W = theGraph->extFace[RootVertex].vertex[RootSide];
+         W = gp_GetExtFaceVertex(theGraph, RootVertex, RootSide);
 
          // If the main bicomp rooted by RootVertex is a single tree edge,
          // (always the case for core planarity) then the external face links
          // of W will be equal
-         if (theGraph->extFace[W].vertex[0] == theGraph->extFace[W].vertex[1])
+         if (gp_GetExtFaceVertex(theGraph, W, 0) == gp_GetExtFaceVertex(theGraph, W, 1))
          {
         	 // In this case, we treat the bicomp external face as if it were
         	 // a cycle of two edges and as if RootVertex and W had the same
@@ -923,7 +925,7 @@ int  RetVal, W, WPrevLink, R, Rout, X, XPrevLink, Y, YPrevLink, RootSide, RootEd
              // longer be pertinent (until a future vertex step).
              // Thus only the inner loop below accommodates the inversionFlag
              // when it walks down to a *pertinent* child biconnected component
-             //WPrevLink = theGraph->extFace[W].inversionFlag ? RootSide : 1^RootSide;
+             //WPrevLink = gp_GetExtFaceInversionFlag(theGraph, W) ? RootSide : 1^RootSide;
          }
          // Otherwise, Walkdown has been called on a bicomp with two distinct
          // external face paths from RootVertex (a possibility in extension
@@ -931,8 +933,8 @@ int  RetVal, W, WPrevLink, R, Rout, X, XPrevLink, Y, YPrevLink, RootSide, RootEd
          // the RootVertex.
          else
          {
-        	 WPrevLink = theGraph->extFace[W].vertex[0] == RootVertex ? 0 : 1;
-        	 if (theGraph->extFace[W].vertex[WPrevLink] != RootVertex)
+        	 WPrevLink = gp_GetExtFaceVertex(theGraph, W, 0) == RootVertex ? 0 : 1;
+        	 if (gp_GetExtFaceVertex(theGraph, W, WPrevLink) != RootVertex)
         		 return NOTOK;
          }
 
@@ -972,17 +974,17 @@ int  RetVal, W, WPrevLink, R, Rout, X, XPrevLink, Y, YPrevLink, RootSide, RootEd
 
                  /* Get next active vertices X and Y on ext. face paths emanating from R */
 
-                 X = theGraph->extFace[R].vertex[0];
-                 XPrevLink = theGraph->extFace[X].vertex[1]==R ? 1 : 0;
-                 Y = theGraph->extFace[R].vertex[1];
-                 YPrevLink = theGraph->extFace[Y].vertex[0]==R ? 0 : 1;
+                 X = gp_GetExtFaceVertex(theGraph, R, 0);
+                 XPrevLink = gp_GetExtFaceVertex(theGraph, X, 1)==R ? 1 : 0;
+                 Y = gp_GetExtFaceVertex(theGraph, R, 1);
+                 YPrevLink = gp_GetExtFaceVertex(theGraph, Y, 0)==R ? 0 : 1;
 
                  /* If this is a bicomp with only two ext. face vertices, then
                     it could be that the orientation of the non-root vertex
                     doesn't match the orientation of the root due to our relaxed
                     orientation method. */
 
-                 if (X == Y && theGraph->extFace[X].inversionFlag)
+                 if (X == Y && gp_GetExtFaceInversionFlag(theGraph, X))
                  {
                      XPrevLink = 0;
                      YPrevLink = 1;
@@ -1063,8 +1065,8 @@ int  RetVal, W, WPrevLink, R, Rout, X, XPrevLink, Y, YPrevLink, RootSide, RootEd
                     we did not actually merge the bicomps necessary to put
                     W and RootVertex into the same bicomp. */
 
-         theGraph->extFace[RootVertex].vertex[RootSide] = W;
-         theGraph->extFace[W].vertex[WPrevLink] = RootVertex;
+         gp_SetExtFaceVertex(theGraph, RootVertex, RootSide, W);
+         gp_SetExtFaceVertex(theGraph, W, WPrevLink, RootVertex);
 
          /* If the bicomp is reduced to having only two external face vertices
              (the root and W), then we need to record whether the orientation
@@ -1078,10 +1080,10 @@ int  RetVal, W, WPrevLink, R, Rout, X, XPrevLink, Y, YPrevLink, RootSide, RootEd
                  into a larger bicomp that is now again becoming a bicomp with only
                  two ext. face vertices. */
 
-         if (theGraph->extFace[W].vertex[0] == theGraph->extFace[W].vertex[1] &&
+         if (gp_GetExtFaceVertex(theGraph, W, 0) == gp_GetExtFaceVertex(theGraph, W, 1) &&
              WPrevLink == RootSide)
-              theGraph->extFace[W].inversionFlag = 1;
-         else theGraph->extFace[W].inversionFlag = 0;
+              gp_SetExtFaceInversionFlag(theGraph, W);
+         else gp_ClearExtFaceInversionFlag(theGraph, W);
 
          /* If we got back around to the root, then all edges
             are embedded, so we stop. */
@@ -1532,8 +1534,8 @@ int  e_u, e_v, e_ulink, e_vlink;
         // This update of the extFace short-circuit is polite but unnecessary.
         // This orientation only occurs once we know we can isolate a K_{3,3},
         // at which point the extFace data structure is not used.
-        theGraph->extFace[u].vertex[e_ulink] = v;
-        theGraph->extFace[v].vertex[e_vlink] = u;
+        gp_SetExtFaceVertex(theGraph, u, e_ulink, v);
+        gp_SetExtFaceVertex(theGraph, v, e_vlink, u);
 
         u = v;
         e_u = gp_GetArc(theGraph, v, 1^e_vlink);

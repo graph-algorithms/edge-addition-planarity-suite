@@ -1644,8 +1644,8 @@ int  prevLink, v, w, e;
      v = _GetNextVertexOnExternalFace(theGraph, u, &prevLink);
      if (v == x)
      {
-         theGraph->extFace[u].vertex[0] = x;
-         theGraph->extFace[x].vertex[1] = u;
+         gp_SetExtFaceVertex(theGraph, u, 0, x);
+         gp_SetExtFaceVertex(theGraph, x, 1, u);
          return OK;
      }
 
@@ -1701,8 +1701,8 @@ int  prevLink, v, w, e;
 
      /* Set the external face info */
 
-     theGraph->extFace[u].vertex[0] = x;
-     theGraph->extFace[x].vertex[1] = u;
+     gp_SetExtFaceVertex(theGraph, u, 0, x);
+     gp_SetExtFaceVertex(theGraph, x, 1, u);
 
      return OK;
 }

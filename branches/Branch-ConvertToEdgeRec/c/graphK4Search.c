@@ -1314,16 +1314,16 @@ int  _K4_ReducePathToEdge(graphP theGraph, K4SearchContext *context, int edgeTyp
 	 }
 
 	 // Set the external face data structure
-     theGraph->extFace[R].vertex[Rlink] = A;
-     theGraph->extFace[A].vertex[Alink] = R;
+     gp_SetExtFaceVertex(theGraph, R, Rlink, A);
+     gp_SetExtFaceVertex(theGraph, A, Alink, R);
 
      // If the edge represents an entire bicomp, then more external face
      // settings are needed.
      if (gp_GetFirstArc(theGraph, R) == gp_GetLastArc(theGraph, R))
      {
-         theGraph->extFace[R].vertex[1^Rlink] = A;
-         theGraph->extFace[A].vertex[1^Alink] = R;
-         theGraph->extFace[A].inversionFlag = 0;
+         gp_SetExtFaceVertex(theGraph, R, 1^Rlink, A);
+         gp_SetExtFaceVertex(theGraph, A, 1^Alink, R);
+         gp_ClearExtFaceInversionFlag(theGraph, A);
      }
 
 	 return e_R;

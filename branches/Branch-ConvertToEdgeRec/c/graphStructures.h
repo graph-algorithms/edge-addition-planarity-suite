@@ -279,8 +279,9 @@ typedef extFaceLinkRec * extFaceLinkRecP;
 #define gp_SetExtFaceVertex(theGraph, v, link, theVertex) (theGraph->extFace[v].vertex[link] = theVertex)
 
 #define gp_GetExtFaceInversionFlag(theGraph, v) (theGraph->extFace[v].inversionFlag)
-#define gp_SetExtFaceInversionFlag(theGraph, v) (theGraph->extFace[v].inversionFlag = 1)
 #define gp_ClearExtFaceInversionFlag(theGraph, v) (theGraph->extFace[v].inversionFlag = 0)
+#define gp_SetExtFaceInversionFlag(theGraph, v) (theGraph->extFace[v].inversionFlag = 1)
+#define gp_ResetExtFaceInversionFlag(theGraph, v, flag) (theGraph->extFace[v].inversionFlag = flag)
 #define gp_XorExtFaceInversionFlag(theGraph, v) (theGraph->extFace[v].inversionFlag ^= 1)
 
 /********************************************************************

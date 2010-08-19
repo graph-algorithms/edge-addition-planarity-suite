@@ -283,8 +283,9 @@ int I, edgeOffset, arcCapacity, Gsize, Vsize, stackSize;
 
      for (I = 0; I < Vsize; I++)
      {
-         theGraph->extFace[I].vertex[0] = theGraph->extFace[I].vertex[1] = NIL;
-         theGraph->extFace[I].inversionFlag = 0;
+         gp_SetExtFaceVertex(theGraph, I, 0, NIL);
+         gp_SetExtFaceVertex(theGraph, I, 1, NIL);
+         gp_ClearExtFaceInversionFlag(theGraph, I, 0);
      }
 
      _ClearIsolatorContext(theGraph);
@@ -322,8 +323,9 @@ int  Vsize = 2*N, Gsize = edgeOffset + theGraph->arcCapacity;
 
      for (I = 0; I < Vsize; I++)
      {
-         theGraph->extFace[I].vertex[0] = theGraph->extFace[I].vertex[1] = NIL;
-         theGraph->extFace[I].inversionFlag = 0;
+         gp_SetExtFaceVertex(theGraph, I, 0, NIL);
+         gp_SetExtFaceVertex(theGraph, I, 1, NIL);
+         gp_ClearExtFaceInversionFlag(theGraph, I, 0);
      }
 
      _ClearIsolatorContext(theGraph);
@@ -824,9 +826,9 @@ int  Gsize = edgeOffset + srcGraph->arcCapacity;
      // Copy the external face array
      for (I = 0; I < edgeOffset; I++)
      {
-         dstGraph->extFace[I].vertex[0] = srcGraph->extFace[I].vertex[0];
-         dstGraph->extFace[I].vertex[1] = srcGraph->extFace[I].vertex[1];
-         dstGraph->extFace[I].inversionFlag = srcGraph->extFace[I].inversionFlag;
+    	 gp_SetExtFaceVertex(dstGraph, I, 0, gp_GetExtFaceVertex(srcGraph, I, 0));
+    	 gp_SetExtFaceVertex(dstGraph, I, 1, gp_GetExtFaceVertex(srcGraph, I, 1));
+         gp_ResetExtFaceInversionFlag(dstGraph, I, gp_GetExtFaceInversionFlag(srcGraph, I));
      }
 
      // Give the dstGraph the same size and intrinsic properties
