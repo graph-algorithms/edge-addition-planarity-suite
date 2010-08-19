@@ -495,15 +495,15 @@ int _K33Search_CreateFwdArcLists(graphP theGraph)
                 	gp_DetachArc(theGraph, Jcur);
 
                     // Add the forward arc to the end of the fwdArcList.
-                    if (theGraph->V[ancestor].fwdArcList == NIL)
+                    if (gp_GetVertexFwdArcList(theGraph, ancestor) == NIL)
                     {
-                        theGraph->V[ancestor].fwdArcList = Jcur;
+                        gp_SetVertexFwdArcList(theGraph, ancestor, Jcur);
                         gp_SetPrevArc(theGraph, Jcur, Jcur);
                         gp_SetNextArc(theGraph, Jcur, Jcur);
                     }
                     else
                     {
-                    	gp_AttachArc(theGraph, NIL, theGraph->V[ancestor].fwdArcList, 1, Jcur);
+                    	gp_AttachArc(theGraph, NIL, gp_GetVertexFwdArcList(theGraph, ancestor), 1, Jcur);
                     }
                 }
             }

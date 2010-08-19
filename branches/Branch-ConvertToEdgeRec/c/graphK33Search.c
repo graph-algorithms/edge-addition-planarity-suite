@@ -200,7 +200,7 @@ K33SearchContext *context = NULL;
         vertex D such that DFI(C1) < DFI(D) < DFI(C2), then the Walkdown
         failed to embed a back edge from I to a descendant D of C1. */
 
-     e = theGraph->V[I].fwdArcList;
+     e = gp_GetVertexFwdArcList(theGraph, I);
      D = theGraph->G[e].v;
 
      C1 = context->V[I].sortedDFSChildList;
@@ -241,7 +241,7 @@ K33SearchContext *context = NULL;
             while (D < C2 && gp_IsArc(theGraph, e))
             {
                 e = gp_GetNextArc(theGraph, e);
-                if (e == theGraph->V[I].fwdArcList)
+                if (e == gp_GetVertexFwdArcList(theGraph, I))
                      e = NIL;
                 else D = theGraph->G[e].v;
             }
@@ -795,7 +795,7 @@ int  listHead, child, descendant;
         external connections are not being made. */
 
      sp_ClearStack(theGraph->theStack);
-     listHead = child = theGraph->V[cutVertex].separatedDFSChildList;
+     listHead = child = gp_GetVertexSeparatedDFSChildList(theGraph, cutVertex);
      while (child != NIL)
      {
          if (gp_GetVertexLowpoint(theGraph, child) >= IC->v)
@@ -886,7 +886,7 @@ int  listHead, child, J;
      // Check whether the cutVertex is directly adjacent to the ancestor
      // by an unembedded back edge.
 
-     J = theGraph->V[ancestor].fwdArcList;
+     J = gp_GetVertexFwdArcList(theGraph, ancestor);
      while (gp_IsArc(theGraph, J))
      {
          if (theGraph->G[J].v == cutVertex)
@@ -896,13 +896,13 @@ int  listHead, child, J;
          }
 
          J = gp_GetNextArc(theGraph, J);
-         if (J == theGraph->V[ancestor].fwdArcList)
+         if (J == gp_GetVertexFwdArcList(theGraph, ancestor))
              J = NIL;
      }
 
      // Now check the descendants of the cut vertex to see if any make
      // a connection to the ancestor.
-     listHead = child = theGraph->V[cutVertex].separatedDFSChildList;
+     listHead = child = gp_GetVertexSeparatedDFSChildList(theGraph, cutVertex);
      while (child != NIL)
      {
          if (gp_GetVertexLowpoint(theGraph, child) >= theGraph->IC.v)
@@ -1023,14 +1023,14 @@ isolatorContextP IC = &theGraph->IC;
      /* Restore the pertinence settings of step I by doing the Walkup for each
         back edge that was not embedded when step I was originally performed. */
 
-     J = theGraph->V[I].fwdArcList;
+     J = gp_GetVertexFwdArcList(theGraph, I);
      while (gp_IsArc(theGraph, J))
      {
         W = theGraph->G[J].v;
         theGraph->functions.fpWalkUp(theGraph, I, W);
 
         J = gp_GetNextArc(theGraph, J);
-        if (J == theGraph->V[I].fwdArcList)
+        if (J == gp_GetVertexFwdArcList(theGraph, I))
             J = NIL;
      }
 
@@ -1340,7 +1340,7 @@ int  p, c, d, excludedChild, e;
             of p with the least Lowpoint, except the child that is an
             ancestor of X, Y and W. */
 
-         c = theGraph->V[p].separatedDFSChildList;
+         c = gp_GetVertexSeparatedDFSChildList(theGraph, p);
          if (c == excludedChild)
              c = LCGetNext(theGraph->DFSChildLists, c, c);
 

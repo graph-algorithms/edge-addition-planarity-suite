@@ -490,15 +490,15 @@ int _K4Search_CreateFwdArcLists(graphP theGraph)
                 	gp_DetachArc(theGraph, Jcur);
 
                     // Add the forward arc to the end of the fwdArcList.
-                    if (theGraph->V[ancestor].fwdArcList == NIL)
+                    if (gp_GetVertexFwdArcList(theGraph, ancestor) == NIL)
                     {
-                        theGraph->V[ancestor].fwdArcList = Jcur;
+                        gp_SetVertexFwdArcList(theGraph, ancestor, Jcur);
                         gp_SetPrevArc(theGraph, Jcur, Jcur);
                         gp_SetNextArc(theGraph, Jcur, Jcur);
                     }
                     else
                     {
-                    	gp_AttachArc(theGraph, NIL, theGraph->V[ancestor].fwdArcList, 1, Jcur);
+                    	gp_AttachArc(theGraph, NIL, gp_GetVertexFwdArcList(theGraph, ancestor), 1, Jcur);
                     }
                 }
             }
@@ -587,7 +587,7 @@ void _K4Search_CreateDFSTreeEmbedding(graphP theGraph)
             {
             	// For each DFS child of the vertex I, ...
                 C1 = context->V[I].sortedDFSChildList;
-                e = theGraph->V[I].fwdArcList;
+                e = gp_GetVertexFwdArcList(theGraph, I);
                 while (C1 != NIL && gp_IsArc(theGraph, e))
                 {
                 	// Get the next higher numbered child C2
@@ -606,7 +606,7 @@ void _K4Search_CreateDFSTreeEmbedding(graphP theGraph)
 
                     		// Go to the next forward arc
 							e = gp_GetNextArc(theGraph, e);
-							if (e == theGraph->V[I].fwdArcList)
+							if (e == gp_GetVertexFwdArcList(theGraph, I))
 							{
 								e = NIL;
 								break;
@@ -626,7 +626,7 @@ void _K4Search_CreateDFSTreeEmbedding(graphP theGraph)
 
                     		// Go to the next forward arc
 							e = gp_GetNextArc(theGraph, e);
-							if (e == theGraph->V[I].fwdArcList)
+							if (e == gp_GetVertexFwdArcList(theGraph, I))
 								e = NIL;
                     	}
                     }
@@ -825,7 +825,7 @@ int  _K4Search_HandleBlockedEmbedIteration(graphP theGraph, int I)
     	// by _K4Search_HandleBlockedDescendantBicomp(), and we just
     	// return the NONEMBEDDABLE result in order to stop the embedding
     	// iteration loop.
-		if (theGraph->V[I].fwdArcList == NIL)
+		if (gp_GetVertexFwdArcList(theGraph, I) == NIL)
 			return NONEMBEDDABLE;
 
         return _SearchForK4InBicomps(theGraph, I);

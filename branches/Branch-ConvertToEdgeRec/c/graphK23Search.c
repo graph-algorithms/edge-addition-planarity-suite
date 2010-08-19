@@ -100,7 +100,7 @@ int J, W, C, RetVal=OK;
 
 /* Traverse each unembedded back edge to the descendant endpoint... */
 
-    J = theGraph->V[I].fwdArcList;
+    J = gp_GetVertexFwdArcList(theGraph, I);
 
     // Ensure we have at least one bicomp on which Walkdown failed, which
     // should always be the case in an error free implementation
@@ -133,7 +133,7 @@ int J, W, C, RetVal=OK;
         /* Get the next unembedded back edge from I */
 
         J = gp_GetNextArc(theGraph, J);
-        if (J == theGraph->V[I].fwdArcList)
+        if (J == gp_GetVertexFwdArcList(theGraph, I))
             J = NIL;
     }
 

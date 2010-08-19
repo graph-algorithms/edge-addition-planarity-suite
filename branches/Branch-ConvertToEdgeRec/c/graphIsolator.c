@@ -436,7 +436,7 @@ isolatorContextP IC = &theGraph->IC;
 
 int  _GetLeastAncestorConnection(graphP theGraph, int cutVertex)
 {
-int  subtreeRoot = theGraph->V[cutVertex].separatedDFSChildList;
+int  subtreeRoot = gp_GetVertexSeparatedDFSChildList(theGraph, cutVertex);
 int  ancestor = gp_GetVertexLeastAncestor(theGraph, cutVertex);
 
      if (subtreeRoot != NIL &&
@@ -480,7 +480,7 @@ int  _FindUnembeddedEdgeToAncestor(graphP theGraph, int cutVertex,
      }
      else
      {
-     int subtreeRoot = theGraph->V[cutVertex].separatedDFSChildList;
+     int subtreeRoot = gp_GetVertexSeparatedDFSChildList(theGraph, cutVertex);
 
          return _FindUnembeddedEdgeToSubtree(theGraph, *pAncestor,
                                              subtreeRoot, pDescendant);
@@ -537,7 +537,7 @@ int  J, Z, ZNew;
 
 /* Find the least descendant of the cut vertex incident to the ancestor. */
 
-     J = theGraph->V[ancestor].fwdArcList;
+     J = gp_GetVertexFwdArcList(theGraph, ancestor);
      while (gp_IsArc(theGraph, J))
      {
           if (theGraph->G[J].v >= SubtreeRoot)
@@ -547,7 +547,7 @@ int  J, Z, ZNew;
           }
 
           J = gp_GetNextArc(theGraph, J);
-          if (J == theGraph->V[ancestor].fwdArcList)
+          if (J == gp_GetVertexFwdArcList(theGraph, ancestor))
               J = NIL;
      }
 
@@ -759,14 +759,14 @@ int fwdArc, backArc;
 
     /* We get the two edge records of the back edge to embed. */
 
-     fwdArc = theGraph->V[ancestor].fwdArcList;
+     fwdArc = gp_GetVertexFwdArcList(theGraph, ancestor);
      while (gp_IsArc(theGraph, fwdArc))
      {
           if (theGraph->G[fwdArc].v == descendant)
               break;
 
           fwdArc = gp_GetNextArc(theGraph, fwdArc);
-          if (fwdArc == theGraph->V[ancestor].fwdArcList)
+          if (fwdArc == gp_GetVertexFwdArcList(theGraph, ancestor))
               fwdArc = NIL;
      }
 
@@ -776,11 +776,11 @@ int fwdArc, backArc;
     backArc = gp_GetTwinArc(theGraph, fwdArc);
 
     /* The forward arc is removed from the fwdArcList of the ancestor. */
-    if (theGraph->V[ancestor].fwdArcList == fwdArc)
+    if (gp_GetVertexFwdArcList(theGraph, ancestor) == fwdArc)
     {
         if (gp_GetNextArc(theGraph, fwdArc) == fwdArc)
-             theGraph->V[ancestor].fwdArcList = NIL;
-        else theGraph->V[ancestor].fwdArcList = gp_GetNextArc(theGraph, fwdArc);
+             gp_SetVertexFwdArcList(theGraph, ancestor, NIL);
+        else gp_SetVertexFwdArcList(theGraph, ancestor, gp_GetNextArc(theGraph, fwdArc));
     }
 
     gp_SetNextArc(theGraph, gp_GetPrevArc(theGraph, fwdArc), gp_GetNextArc(theGraph, fwdArc));
@@ -818,9 +818,9 @@ int  I, J, fwdArc, descendant;
 
      for (I = 0; I < theGraph->N; I++)
      {
-         while (theGraph->V[I].fwdArcList != NIL)
+         while (gp_GetVertexFwdArcList(theGraph, I) != NIL)
          {
-             fwdArc = theGraph->V[I].fwdArcList;
+             fwdArc = gp_GetVertexFwdArcList(theGraph, I);
              descendant = theGraph->G[fwdArc].v;
              _AddBackEdge(theGraph, I, descendant);
          }

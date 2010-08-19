@@ -334,7 +334,7 @@ int  R, tempChild, fwdArc, W=NIL, C=NIL, I=theGraph->IC.v;
     descendants (edges are removed from the forward arc list as they are
     embedded, so the list will be empty if all edges were embedded). */
 
-    if ((fwdArc = theGraph->V[I].fwdArcList) == NIL)
+    if ((fwdArc = gp_GetVertexFwdArcList(theGraph, I)) == NIL)
         return NIL;
 
     W = theGraph->G[fwdArc].v;
@@ -344,7 +344,7 @@ int  R, tempChild, fwdArc, W=NIL, C=NIL, I=theGraph->IC.v;
     ancestors of I have not been processed by the planarity algorithm,
     the separatedDFSChildList of I contains all the children of I. */
 
-    tempChild = theGraph->V[I].separatedDFSChildList;
+    tempChild = gp_GetVertexSeparatedDFSChildList(theGraph, I);
 
     while (tempChild != NIL)
     {
@@ -352,7 +352,7 @@ int  R, tempChild, fwdArc, W=NIL, C=NIL, I=theGraph->IC.v;
             C = tempChild;
 
         tempChild = LCGetNext(theGraph->DFSChildLists,
-                              theGraph->V[I].separatedDFSChildList, tempChild);
+                              gp_GetVertexSeparatedDFSChildList(theGraph, I), tempChild);
     }
 
     if (C == NIL) return NIL;

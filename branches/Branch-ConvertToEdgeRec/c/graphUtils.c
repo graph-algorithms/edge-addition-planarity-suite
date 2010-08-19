@@ -505,13 +505,15 @@ void _InitVertexRec(graphP theGraph, int I)
     gp_SetVertexIndex(theGraph, I, 0);
     gp_InitVertexFlags(theGraph, I);
 
+    gp_SetVertexParent(theGraph, I, NIL);
     gp_SetVertexLeastAncestor(theGraph, I, I);
     gp_SetVertexLowpoint(theGraph, I, I);
-    gp_SetVertexParent(theGraph, I, NIL);
+
+    gp_SetVertexStepVisited(theGraph, I, theGraph->N);
     gp_SetVertexStepAdjacentTo(theGraph, I, NIL);
     gp_SetVertexPertinentBicompList(theGraph, I, NIL);
-    theGraph->V[I].separatedDFSChildList = NIL;
-    theGraph->V[I].fwdArcList = NIL;
+    gp_SetVertexSeparatedDFSChildList(theGraph, I, NIL);
+    gp_SetVertexFwdArcList(theGraph, I, NIL);
 }
 
 /********************************************************************
@@ -618,14 +620,14 @@ int I, J;
 
     for (I = 0; I < theGraph->N; I++)
     {
-        J = theGraph->V[I].fwdArcList;
+        J = gp_GetVertexFwdArcList(theGraph, I);
         while (gp_IsArc(theGraph, J))
         {
             theGraph->G[J].visited =
             theGraph->G[gp_GetTwinArc(theGraph, J)].visited = FillValue;
 
             J = gp_GetNextArc(theGraph, J);
-            if (J == theGraph->V[I].fwdArcList)
+            if (J == gp_GetVertexFwdArcList(theGraph, I))
                 J = NIL;
         }
     }

@@ -131,13 +131,13 @@ int I, L, N, DFSParent, theList;
           {
               while (L != NIL)
               {
-                  DFSParent = gp_GetVertexParent(theGraph, L)aph, L);
+                  DFSParent = gp_GetVertexParent(theGraph, L);
 
                   if (DFSParent != NIL && DFSParent != L)
                   {
-                      theList = theGraph->V[DFSParent].separatedDFSChildList;
+                      theList = gp_GetVertexSeparatedDFSChildList(theGraph, DFSParent);
                       theList = LCAppend(theGraph->DFSChildLists, theList, L);
-                      theGraph->V[DFSParent].separatedDFSChildList = theList;
+                      gp_SetVertexSeparatedDFSChildList(theGraph, DFSParent, theList);
                   }
 
                   L = LCGetNext(bin, buckets[I], L);
@@ -186,7 +186,7 @@ int I, Jfirst, Jnext, Jlast;
             gp_BindLastArc(theGraph, I, Jnext);
 
             // Make a circular forward edge list
-            theGraph->V[I].fwdArcList = Jfirst;
+            gp_SetVertexFwdArcList(theGraph, I, Jfirst);
             gp_SetNextArc(theGraph, Jfirst, Jlast);
             gp_SetPrevArc(theGraph, Jlast, Jfirst);
         }
@@ -205,7 +205,7 @@ int  TestIntegrity(graphP theGraph)
 
         for (I=0; I < theGraph->N; I++)
         {
-            Jcur = theGraph->V[I].fwdArcList;
+            Jcur = gp_GetVertexFwdArcList(theGraph, I);
             while (Jcur != NIL)
             {
                 if (theGraph->G[Jcur].visited)
@@ -218,11 +218,11 @@ int  TestIntegrity(graphP theGraph)
                 theGraph->G[Jcur].visited = 1;
 
                 Jcur = gp_GetNextArc(theGraph, Jcur);
-                if (Jcur == theGraph->V[I].fwdArcList)
+                if (Jcur == gp_GetVertexFwdArcList(theGraph, I))
                     Jcur = NIL;
             }
 
-            Jcur = theGraph->V[I].fwdArcList;
+            Jcur = gp_GetVertexFwdArcList(theGraph, I);
             while (Jcur != NIL)
             {
                 if (!theGraph->G[Jcur].visited)
@@ -231,7 +231,7 @@ int  TestIntegrity(graphP theGraph)
                 theGraph->G[Jcur].visited = 0;
 
                 Jcur = gp_GetNextArc(theGraph, Jcur);
-                if (Jcur == theGraph->V[I].fwdArcList)
+                if (Jcur == gp_GetVertexFwdArcList(theGraph, I))
                     Jcur = NIL;
             }
         }
@@ -269,7 +269,7 @@ int N, I, J, Jtwin, R;
 
     for (I=0, R=N; I < N; I++, R++)
     {
-     gp_GetVertexParent(theGraph, I)t(theGraph, I) == NIL)
+        if (gp_GetVertexParent(theGraph, I) == NIL)
         {
         	gp_SetFirstArc(theGraph, I, gp_AdjacencyListEndMark(I));
         	gp_SetLastArc(theGraph, I, gp_AdjacencyListEndMark(I));
@@ -323,16 +323,16 @@ int fwdArc, backArc, parentCopy;
 
     /* The forward arc is removed from the fwdArcList of the root's parent copy. */
 
-   gp_GetVertexParent(theGraph, RootVertex - theGraph->N)Vertex - theGraph->N);
+    parentCopy = gp_GetVertexParent(theGraph, RootVertex - theGraph->N);
 
     gp_LogLine(gp_MakeLogStr5("graphEmbed.c/_EmbedBackEdgeToDescendant() V=%d, R=%d, R_out=%d, W=%d, W_in=%d",
     		parentCopy, RootVertex, RootSide, W, WPrevLink));
 
-    if (theGraph->V[parentCopy].fwdArcList == fwdArc)
+    if (gp_GetVertexFwdArcList(theGraph, parentCopy) == fwdArc)
     {
-    	theGraph->V[parentCopy].fwdArcList = gp_GetNextArc(theGraph, fwdArc);
-        if (theGraph->V[parentCopy].fwdArcList == fwdArc)
-            theGraph->V[parentCopy].fwdArcList = NIL;
+    	gp_SetVertexFwdArcList(theGraph, parentCopy, gp_GetNextArc(theGraph, fwdArc));
+        if (gp_GetVertexFwdArcList(theGraph, parentCopy) == fwdArc)
+            gp_SetVertexFwdArcList(theGraph, parentCopy, NIL);
     }
 
     gp_SetNextArc(theGraph, gp_GetPrevArc(theGraph, fwdArc), gp_GetNextArc(theGraph, fwdArc));
@@ -622,9 +622,9 @@ int  extFaceVertex;
             been joined directly to Z, rather than being separated by a
             root copy. */
 
-         theList = theGraph->V[Z].separatedDFSChildList;
+         theList = gp_GetVertexSeparatedDFSChildList(theGraph, Z);
          theList = LCDelete(theGraph->DFSChildLists, theList, RootID_DFSChild);
-         theGraph->V[Z].separatedDFSChildList = theList;
+         gp_SetVertexSeparatedDFSChildList(theGraph, Z, theList);
 
          /* Now we push R into Z, eliminating R */
 
@@ -717,7 +717,7 @@ int  RootID_DFSChild, BicompList;
             RootID_DFSChild = R - N;
 
             // It is extra unnecessary work to record pertinent bicomps of I
-         gp_GetVertexParent(theGraph, RootID_DFSChild)t(theGraph, RootID_DFSChild)) != I)
+            if ((ParentCopy = gp_GetVertexParent(theGraph, RootID_DFSChild)) != I)
             {
                  // Get the BicompList of the parent copy vertex.
                  BicompList = gp_GetVertexPertinentBicompList(theGraph, ParentCopy);
@@ -1185,13 +1185,13 @@ int RetVal = OK;
 
           /* Do the Walkup for each cycle edge from I to a DFS descendant W. */
 
-          J = theGraph->V[I].fwdArcList;
+          J = gp_GetVertexFwdArcList(theGraph, I);
           while (J != NIL)
           {
         	  theGraph->functions.fpWalkUp(theGraph, I, J);
 
               J = gp_GetNextArc(theGraph, J);
-              if (J == theGraph->V[I].fwdArcList)
+              if (J == gp_GetVertexFwdArcList(theGraph, I))
                   J = NIL;
           }
 
@@ -1202,7 +1202,7 @@ int RetVal = OK;
                 containing C. (NOTE: if C has no pertinent child bicomps, then
                 there are no cycle edges from I to descendants of C). */
 
-          child = theGraph->V[I].separatedDFSChildList;
+          child = gp_GetVertexSeparatedDFSChildList(theGraph, I);
           while (child != NIL)
           {
               if (gp_GetVertexPertinentBicompList(theGraph, child) != NIL)
@@ -1224,7 +1224,7 @@ int RetVal = OK;
                   }
               }
               child = LCGetNext(theGraph->DFSChildLists,
-                                theGraph->V[I].separatedDFSChildList, child);
+                                gp_GetVertexSeparatedDFSChildList(theGraph, I), child);
           }
 
           /* If the Walkdown sequence is completed but not all forward edges
@@ -1236,7 +1236,7 @@ int RetVal = OK;
              The default implementation simply returns NONEMBEDDABLE, which stops
              the embedding process. */
 
-          if (theGraph->V[I].fwdArcList != NIL || RetVal == NONEMBEDDABLE)
+          if (gp_GetVertexFwdArcList(theGraph, I) != NIL || RetVal == NONEMBEDDABLE)
           {
               RetVal = theGraph->functions.fpHandleBlockedEmbedIteration(theGraph, I);
               if (RetVal != OK)
@@ -1471,7 +1471,7 @@ int  R, N, edgeOffset=theGraph->edgeOffset;
 
      for (R=N=theGraph->N; R < edgeOffset; R++)
           if (gp_IsArc(theGraph, gp_GetFirstArc(theGraph, R)))
-         gp_GetVertexParent(theGraph, R-N), gp_GetVertexParent(theGraph, R-N), 0, R);
+        	  _MergeVertex(theGraph, gp_GetVertexParent(theGraph, R-N), 0, R);
 
      return OK;
 }
