@@ -51,7 +51,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 extern void _ClearIsolatorContext(graphP theGraph);
 extern void _FillVisitedFlags(graphP, int);
 extern int  _FillVisitedFlagsInBicomp(graphP theGraph, int BicompRoot, int FillValue);
-extern int  _SetVertexTypeInBicomp(graphP theGraph, int BicompRoot, int theType);
+extern int  _ClearVertexTypeInBicomp(graphP theGraph, int BicompRoot);
 extern int  _HideInternalEdges(graphP theGraph, int vertex);
 extern int  _RestoreInternalEdges(graphP theGraph, int stackBottom);
 
@@ -131,8 +131,8 @@ int  N, X, Y, W, Px, Py, Z, DFSChild, RootId;
      or P_y closer to R than Y along external face), then we've
      matched Minor C. */
 
-     if (theGraph->G[Px].type == VERTEX_HIGH_RXW ||
-         theGraph->G[Py].type == VERTEX_HIGH_RYW)
+     if (gp_GetVertexObstructionType(theGraph, Px) == VERTEX_OBSTRUCTIONTYPE_HIGH_RXW ||
+         gp_GetVertexObstructionType(theGraph, Py) == VERTEX_OBSTRUCTIONTYPE_HIGH_RYW)
      {
             theGraph->IC.minorType |= MINORTYPE_C;
             return OK;
@@ -268,28 +268,28 @@ int  _SetVertexTypesForMarkingXYPath(graphP theGraph)
 		return NOTOK;
 
 	// Clear the type member of each vertex in the bicomp
-	if (_SetVertexTypeInBicomp(theGraph, R, TYPE_UNKNOWN) != OK)
+	if (_ClearVertexTypeInBicomp(theGraph, R) != OK)
 		return NOTOK;
 
 	// Traverse from R to W in the X direction
 	ZPrevLink = 1;
 	Z = _GetNextVertexOnExternalFace(theGraph, R, &ZPrevLink);
-	ZType = VERTEX_HIGH_RXW;
+	ZType = VERTEX_OBSTRUCTIONTYPE_HIGH_RXW;
 	while (Z != W)
 	{
-		if (Z == X) ZType = VERTEX_LOW_RXW;
-		theGraph->G[Z].type = ZType;
+		if (Z == X) ZType = VERTEX_OBSTRUCTIONTYPE_LOW_RXW;
+		gp_ResetVertexObstructionType(theGraph, Z, ZType);
 		Z = _GetNextVertexOnExternalFace(theGraph, Z, &ZPrevLink);
 	}
 
 	// Traverse from R to W in the Y direction
 	ZPrevLink = 0;
 	Z = _GetNextVertexOnExternalFace(theGraph, R, &ZPrevLink);
-	ZType = VERTEX_HIGH_RYW;
+	ZType = VERTEX_OBSTRUCTIONTYPE_HIGH_RYW;
 	while (Z != W)
 	{
-		if (Z == Y) ZType = VERTEX_LOW_RYW;
-		theGraph->G[Z].type = ZType;
+		if (Z == Y) ZType = VERTEX_OBSTRUCTIONTYPE_LOW_RYW;
+		gp_ResetVertexObstructionType(theGraph, Z, ZType);
 		Z = _GetNextVertexOnExternalFace(theGraph, Z, &ZPrevLink);
 	}
 
@@ -562,8 +562,8 @@ int stackBottom1, stackBottom2;
      // As loop progresses, J indicates the arc used to enter Z, not the exit arc
      J = gp_GetLastArc(theGraph, R);
 
-     while (theGraph->G[Z].type != VERTEX_HIGH_RYW &&
-            theGraph->G[Z].type != VERTEX_LOW_RYW)
+     while (gp_GetVertexObstructionType(theGraph, Z) != VERTEX_OBSTRUCTIONTYPE_HIGH_RYW &&
+    		gp_GetVertexObstructionType(theGraph, Z) != VERTEX_OBSTRUCTIONTYPE_LOW_RYW)
      {
           /* Advance J and Z along the proper face containing R */
 
@@ -600,8 +600,8 @@ int stackBottom1, stackBottom2;
                  all the vertices we visited so far because they're not part of
                  the obstructing path */
 
-              if (theGraph->G[Z].type == VERTEX_HIGH_RXW ||
-                  theGraph->G[Z].type == VERTEX_LOW_RXW)
+              if (gp_GetVertexObstructionType(theGraph, Z) == VERTEX_OBSTRUCTIONTYPE_HIGH_RXW ||
+                  gp_GetVertexObstructionType(theGraph, Z) == VERTEX_OBSTRUCTIONTYPE_LOW_RXW)
               {
                   theGraph->IC.px = Z;
                   if (_PopAndUnmarkVerticesAndEdges(theGraph, NIL, stackBottom2) != OK)
@@ -628,8 +628,8 @@ int stackBottom1, stackBottom2;
                  identifying the highest X-Y path, so we record the point of
                  attachment and break the loop. */
 
-              if (theGraph->G[Z].type == VERTEX_HIGH_RYW ||
-                  theGraph->G[Z].type == VERTEX_LOW_RYW)
+              if (gp_GetVertexObstructionType(theGraph, Z) == VERTEX_OBSTRUCTIONTYPE_HIGH_RYW ||
+                  gp_GetVertexObstructionType(theGraph, Z) == VERTEX_OBSTRUCTIONTYPE_LOW_RYW)
               {
                  theGraph->IC.py = Z;
                  break;
@@ -733,7 +733,7 @@ int ZPrevArc, ZNextArc, Z, R, Px, Py;
         /* If we ever encounter a non-internal vertex (other than the root R),
                 then corruption has occured, so we return NOTOK */
 
-        if (theGraph->G[Z].type != TYPE_UNKNOWN)
+        if (gp_GetVertexObstructionType(theGraph, Z) != VERTEX_OBSTRUCTIONTYPE_UNKNOWN)
             return NOTOK;
 
         /* Go to the next vertex indicated by ZNextArc */

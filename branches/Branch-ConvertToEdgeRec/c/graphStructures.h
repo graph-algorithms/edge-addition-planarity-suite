@@ -125,25 +125,29 @@ typedef edgeRec * edgeRecP;
 #define gp_ClearEdgeVisited(theGraph, e) (theGraph->E[e].flags &= ~EDGE_VISITED_MASK)
 #define gp_SetEdgeVisited(theGraph, e) (theGraph->E[e].flags |= EDGE_VISITED_MASK)
 
-// The edge DFS type is defined by bits 1-3, 2+4+8=14
-#define EDGE_DFSTYPE_MASK		14
+// The edge type is defined by bits 1-3, 2+4+8=14
+#define EDGE_TYPE_MASK		14
 
-// Call GET_EDGE_DFSTYPE, then compare to one of these four possibilities
-// EDGE_DFSCHILD - edge record is an arc to a DFS child
-// EDGE_FORWARD - edge record is an arc to a DFS descendant, not a DFS child
-// EDGE_DFSPARENT - edge record is an arc to the DFS parent
-// EDGE_BACK - edge record is an arc to a DFS ancestor, not the DFS parent
-#define EDGE_DFSCHILD           14
-#define EDGE_FORWARD            10
-#define EDGE_DFSPARENT          6
-#define EDGE_BACK               2
-#define EDGE_DFSTYPE_UNKNOWN	0
+// Call gp_GetEdgeType(), then compare to one of these four possibilities
+// EDGE_TYPE_CHILD - edge record is an arc to a DFS child
+// EDGE_TYPE_FORWARD - edge record is an arc to a DFS descendant, not a DFS child
+// EDGE_TYPE_PARENT - edge record is an arc to the DFS parent
+// EDGE_TYPE_BACK - edge record is an arc to a DFS ancestor, not the DFS parent
+#define EDGE_TYPE_CHILD     14
+#define EDGE_TYPE_FORWARD   10
+#define EDGE_TYPE_PARENT    6
+#define EDGE_TYPE_BACK      2
 
-#define gp_GetEdgeDFSType(theGraph, e) (theGraph->E[e].flags&EDGE_DFSTYPE_MASK)
-#define gp_ClearEdgeDFSType(theGraph, e) (theGraph->E[e].flags &= ~EDGE_DFSTYPE_MASK)
-#define gp_SetEdgeDFSType(theGraph, e, type) (theGraph->E[e].flags |= type)
-#define gp_ResetEdgeDFSType(theGraph, e, type) \
-	(theGraph->E[e].flags = (theGraph->E[e].flags & ~EDGE_DFSTYPE_MASK) | type)
+// EDGE_TYPE_NOTDEFINED - the edge record type has not been defined
+// EDGE_TYPE_RANDOMTREE - edge record is part of a randomly generated tree
+#define EDGE_TYPE_NOTDEFINED	0
+#define EDGE_TYPE_RANDOMTREE	4
+
+#define gp_GetEdgeType(theGraph, e) (theGraph->E[e].flags&EDGE_TYPE_MASK)
+#define gp_ClearEdgeType(theGraph, e) (theGraph->E[e].flags &= ~EDGE_TYPE_MASK)
+#define gp_SetEdgeType(theGraph, e, type) (theGraph->E[e].flags |= type)
+#define gp_ResetEdgeType(theGraph, e, type) \
+	(theGraph->E[e].flags = (theGraph->E[e].flags & ~EDGE_TYPE_MASK) | type)
 
 #define EDGEFLAG_INVERTED_MASK 16
 #define gp_GetEdgeFlagInverted(theGraph, e) (theGraph->E[e].flags & EDGEFLAG_INVERTED_MASK)
@@ -226,16 +230,16 @@ typedef vertexRec * vertexRecP;
 // The obstruction type is defined by bits 1-3, 2+4+8=14
 #define VERTEX_OBSTRUCTIONTYPE_MASK		14
 
-// Call GET_VERTEX_OBSTRUCTIONTYPE, then compare to one of these four possibilities
-// VERTEX_HIGH_RXW - On the external face path between vertices R and X
-// VERTEX_LOW_RXW  - X or on the external face path between vertices X and W
-// VERTEX_HIGH_RYW - On the external face path between vertices R and Y
-// VERTEX_LOW_RYW  - Y or on the external face path between vertices Y and W
+// Call gp_GetVertexObstructionType, then compare to one of these four possibilities
+// VERTEX_OBSTRUCTIONTYPE_HIGH_RXW - On the external face path between vertices R and X
+// VERTEX_OBSTRUCTIONTYPE_LOW_RXW  - X or on the external face path between vertices X and W
+// VERTEX_OBSTRUCTIONTYPE_HIGH_RYW - On the external face path between vertices R and Y
+// VERTEX_OBSTRUCTIONTYPE_LOW_RYW  - Y or on the external face path between vertices Y and W
 // VERTEX_OBSTRUCTIONTYPE_UNKNOWN (formerly TYPE_UNKNOWN) corresponds to all three bits off
-#define VERTEX_HIGH_RXW         			10
-#define VERTEX_LOW_RXW          			2
-#define VERTEX_HIGH_RYW         			14
-#define VERTEX_LOW_RYW    				    6
+#define VERTEX_OBSTRUCTIONTYPE_HIGH_RXW         			10
+#define VERTEX_OBSTRUCTIONTYPE_LOW_RXW          			2
+#define VERTEX_OBSTRUCTIONTYPE_HIGH_RYW         			14
+#define VERTEX_OBSTRUCTIONTYPE_LOW_RYW    				    6
 #define VERTEX_OBSTRUCTIONTYPE_UNKNOWN		0
 
 #define gp_GetVertexObstructionType(theGraph, v) (theGraph->V[v].flags&VERTEX_OBSTRUCTIONTYPE_MASK)

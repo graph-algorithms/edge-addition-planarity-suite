@@ -173,12 +173,12 @@ int I, Jfirst, Jnext, Jlast;
         // If the vertex has any forward edges at all, then the last edge
     	// will be a forward edge.  So if we have any forward edges, ...
 
-        if (theGraph->G[Jfirst].type == EDGE_FORWARD)
+        if (gp_GetEdgeType(theGraph, Jfirst) == EDGE_TYPE_FORWARD)
         {
             // Find the end of the forward edge list
 
             Jnext = Jfirst;
-            while (theGraph->G[Jnext].type == EDGE_FORWARD)
+            while (gp_GetEdgeType(theGraph, Jnext) == EDGE_TYPE_FORWARD)
                 Jnext = gp_GetPrevArc(theGraph, Jnext);
             Jlast = gp_GetNextArc(theGraph, Jnext);
 
@@ -277,7 +277,7 @@ int N, I, J, Jtwin, R;
         else
         {
             J = gp_GetFirstArc(theGraph, I);
-            while (theGraph->G[J].type != EDGE_DFSPARENT)
+            while (gp_GetEdgeType(theGraph, J) != EDGE_TYPE_PARENT)
                 J = gp_GetNextArc(theGraph, J);
 
         	gp_SetFirstArc(theGraph, I, J);
@@ -586,7 +586,7 @@ int  extFaceVertex;
              J = gp_GetFirstArc(theGraph, R);
              while (gp_IsArc(theGraph, J))
              {
-                 if (theGraph->G[J].type == EDGE_DFSCHILD)
+                 if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_CHILD)
                  {
                 	 // The core planarity algorithm could simply "set" the inverted flag
                 	 // because a bicomp root edge cannot be already inverted in the core
@@ -1442,7 +1442,7 @@ int  stackBottom = sp_GetCurrentSize(theGraph->theStack);
          J = gp_GetFirstArc(theGraph, V);
          while (gp_IsArc(theGraph, J))
          {
-             if (theGraph->G[J].type == EDGE_DFSCHILD)
+             if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_CHILD)
              {
                  sp_Push2(theGraph->theStack, theGraph->G[J].v,
                 		  invertedFlag ^ gp_GetEdgeFlagInverted(theGraph, J));

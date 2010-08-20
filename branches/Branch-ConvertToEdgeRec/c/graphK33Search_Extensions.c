@@ -452,7 +452,7 @@ int _K33Search_CreateFwdArcLists(graphP theGraph)
 
             // Skip the forward edges, which are in succession at the
         	// end of the arc list (last and its predecessors)
-            while (theGraph->G[Jnext].type == EDGE_FORWARD)
+            while (gp_GetEdgeType(theGraph, Jnext) == EDGE_TYPE_FORWARD)
                 Jnext = gp_GetPrevArc(theGraph, Jnext);
 
             // Now we want to put all the back arcs in a backArcList, too.
@@ -463,12 +463,12 @@ int _K33Search_CreateFwdArcLists(graphP theGraph)
             // encountered in the predecessor direction, then there won't be
             // any more back arcs.
             while (gp_IsArc(theGraph, Jnext) &&
-                   theGraph->G[Jnext].type != EDGE_DFSCHILD)
+                   gp_GetEdgeType(theGraph, Jnext) != EDGE_TYPE_CHILD)
             {
                 Jcur = Jnext;
                 Jnext = gp_GetPrevArc(theGraph, Jnext);
 
-                if (theGraph->G[Jcur].type == EDGE_BACK)
+                if (gp_GetEdgeType(theGraph, Jcur) == EDGE_TYPE_BACK)
                 {
                     // Remove the back arc from I's adjacency list
                 	gp_DetachArc(theGraph, Jcur);
@@ -555,7 +555,7 @@ void _K33Search_CreateDFSTreeEmbedding(graphP theGraph)
                 // we traverse them and prepend each to the
                 // ascending order sortedDFSChildList
 
-                while (theGraph->G[J].type == EDGE_DFSCHILD)
+                while (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_CHILD)
                 {
                     context->V[I].sortedDFSChildList =
                         LCPrepend(context->sortedDFSChildLists,
@@ -772,7 +772,7 @@ int  J, parent, N;
               J = gp_GetFirstArc(theGraph, descendant);
               while (gp_IsArc(theGraph, J))
               {
-                  if (theGraph->G[J].type == EDGE_DFSPARENT)
+                  if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_PARENT)
                   {
                       parent = theGraph->G[J].v;
                       break;

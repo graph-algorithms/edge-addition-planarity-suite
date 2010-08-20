@@ -541,10 +541,10 @@ int I, J, Gsize;
          if (theGraph->G[I].v == NIL)
              continue;
 
-         fprintf(Outfile, "V[%3d] v=%3d, type=%c, first arc=%3d, last arc=%3d\n",
+         fprintf(Outfile, "V[%3d] index=%3d, type=%c, first arc=%3d, last arc=%3d\n",
                           I,
-                          theGraph->G[I].v,
-                          theGraph->G[I].type,
+                          gp_GetVertexIndex(theGraph, I),
+                          (I < theGraph->N ? gp_GetVertexObstructionType(theGraph, I) : 0),
                           gp_GetFirstArc(theGraph, I),
                           gp_GetLastArc(theGraph, I));
      }
@@ -558,10 +558,10 @@ int I, J, Gsize;
           if (theGraph->G[J].v == NIL)
               continue;
 
-          fprintf(Outfile, "E[%3d] v=%3d, type=%c, next arc=%3d, prev arc=%3d\n",
+          fprintf(Outfile, "E[%3d] neighbor=%3d, type=%c, next arc=%3d, prev arc=%3d\n",
                            J,
-                           theGraph->G[J].v,
-                           theGraph->G[J].type,
+                           gp_GetEdgeNeighbor(theGraph, J),
+                           gp_GetEdgeType(theGraph, J),
                            gp_GetNextArc(theGraph, J),
                            gp_GetPrevArc(theGraph, J));
      }

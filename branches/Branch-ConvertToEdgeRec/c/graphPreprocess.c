@@ -112,8 +112,8 @@ platform_GetTime(start);
                   gp_SetVertexParent(theGraph, u, uparent);
                   if (e != NIL)
                   {
-                      theGraph->G[e].type = EDGE_DFSCHILD;
-                      theGraph->G[gp_GetTwinArc(theGraph, e)].type = EDGE_DFSPARENT;
+                      gp_SetEdgeType(theGraph, e, EDGE_TYPE_CHILD);
+                      gp_SetEdgeType(theGraph, gp_GetTwinArc(theGraph, e), EDGE_TYPE_PARENT);
 
                       // We want the child arcs to be at the beginning
                       // of the adjacency list.
@@ -135,8 +135,8 @@ platform_GetTime(start);
               {
                   // If the edge leads to a visited vertex, then it is
             	  // the forward arc of a back edge.
-                  theGraph->G[e].type = EDGE_FORWARD;
-                  theGraph->G[gp_GetTwinArc(theGraph, e)].type = EDGE_BACK;
+                  gp_SetEdgeType(theGraph, e, EDGE_TYPE_FORWARD);
+                  gp_SetEdgeType(theGraph, gp_GetTwinArc(theGraph, e), EDGE_TYPE_BACK);
 
                   // We want all of the forward edges to descendants to
                   // be at the end of the adjacency list.
@@ -331,7 +331,7 @@ platform_GetTime(start);
                   J = gp_GetFirstArc(theGraph, u);
                   while (gp_IsArc(theGraph, J))
                   {
-                      if (theGraph->G[J].type == EDGE_DFSCHILD)
+                      if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_CHILD)
                       {
                           sp_Push(theStack, theGraph->G[J].v);
                       }
@@ -350,17 +350,17 @@ platform_GetTime(start);
                   while (gp_IsArc(theGraph, J))
                   {
                       uneighbor = theGraph->G[J].v;
-                      if (theGraph->G[J].type == EDGE_DFSCHILD)
+                      if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_CHILD)
                       {
                           if (L > gp_GetVertexLowpoint(theGraph, uneighbor))
                               L = gp_GetVertexLowpoint(theGraph, uneighbor);
                       }
-                      else if (theGraph->G[J].type == EDGE_BACK)
+                      else if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_BACK)
                       {
                           if (leastAncestor > uneighbor)
                               leastAncestor = uneighbor;
                       }
-                      else if (theGraph->G[J].type == EDGE_FORWARD)
+                      else if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_FORWARD)
                           break;
 
                       J = gp_GetNextArc(theGraph, J);
@@ -453,8 +453,8 @@ platform_GetTime(start);
 				gp_SetVertexParent(theGraph, u, uparent);
 				if (e != NIL)
 				{
-					theGraph->G[e].type = EDGE_DFSCHILD;
-					theGraph->G[gp_GetTwinArc(theGraph, e)].type = EDGE_DFSPARENT;
+					gp_SetEdgeType(theGraph, e, EDGE_TYPE_CHILD);
+					gp_SetEdgeType(theGraph, gp_GetTwinArc(theGraph, e), EDGE_TYPE_PARENT);
 
 					// We want the child arcs to be at the beginning
 					// of the adjacency list.
@@ -476,8 +476,8 @@ platform_GetTime(start);
 					{
 						sp_Push2(theStack, u, J);
 					}
-					else if (theGraph->G[J].type != EDGE_DFSPARENT)
-						theGraph->G[J].type = EDGE_BACK;
+					else if (gp_GetEdgeType(theGraph, J) != EDGE_TYPE_PARENT)
+						gp_SetEdgeType(theGraph, J, EDGE_TYPE_BACK);
 
 					J = gp_GetNextArc(theGraph, J);
 				}
@@ -503,12 +503,12 @@ platform_GetTime(start);
 					while (gp_IsArc(theGraph, J))
 					{
 						uneighbor = theGraph->G[J].v;
-						if (theGraph->G[J].type == EDGE_DFSCHILD)
+						if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_CHILD)
 						{
 							if (L > gp_GetVertexLowpoint(theGraph, uneighbor))
 								L = gp_GetVertexLowpoint(theGraph, uneighbor);
 						}
-						else if (theGraph->G[J].type == EDGE_BACK)
+						else if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_BACK)
 						{
 							// Unlike gp_LowpointAndLeastAncestor(), we refer here to
 							// G[uneighbor].v rather than just uneighbor because the
@@ -516,7 +516,7 @@ platform_GetTime(start);
 							if (leastAncestor > theGraph->G[uneighbor].v)
 								leastAncestor = theGraph->G[uneighbor].v;
 						}
-						else if (theGraph->G[J].type == EDGE_FORWARD)
+						else if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_FORWARD)
 							break;
 
 						J = gp_GetNextArc(theGraph, J);
@@ -532,7 +532,7 @@ platform_GetTime(start);
 				{
 					// If the edge leads to a visited vertex, then it is
 					// the forward arc of a back edge.
-					theGraph->G[e].type = EDGE_FORWARD;
+					gp_SetEdgeType(theGraph, e, EDGE_TYPE_FORWARD);
 
 					// We want all of the forward edges to descendants to
 					// be at the end of the adjacency list.

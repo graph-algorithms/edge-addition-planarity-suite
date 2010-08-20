@@ -84,7 +84,7 @@ void _FillVisitedFlags(graphP theGraph, int FillValue);
 int  _FillVisitedFlagsInBicomp(graphP theGraph, int BicompRoot, int FillValue);
 int  _FillVisitedFlagsInOtherBicomps(graphP theGraph, int BicompRoot, int FillValue);
 void _FillVisitedFlagsInUnembeddedEdges(graphP theGraph, int FillValue);
-int  _SetVertexTypeInBicomp(graphP theGraph, int BicompRoot, int theType);
+int  _ClearVertexTypeInBicomp(graphP theGraph, int BicompRoot);
 
 int  _HideInternalEdges(graphP theGraph, int vertex);
 int  _RestoreInternalEdges(graphP theGraph, int stackBottom);
@@ -491,7 +491,6 @@ void _InitGraphNode(graphP theGraph, int J)
      gp_SetPrevArc(theGraph, J, NIL);
      gp_SetNextArc(theGraph, J, NIL);
      theGraph->G[J].visited = 0;
-     theGraph->G[J].type = TYPE_UNKNOWN;
      theGraph->G[J].flags = 0;
 }
 
@@ -573,7 +572,7 @@ int  stackBottom = sp_GetCurrentSize(theGraph->theStack);
           {
              theGraph->G[J].visited = FillValue;
 
-             if (theGraph->G[J].type == EDGE_DFSCHILD)
+             if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_CHILD)
                  sp_Push(theGraph->theStack, theGraph->G[J].v);
 
              J = gp_GetNextArc(theGraph, J);
@@ -636,9 +635,9 @@ int I, J;
 }
 
 /********************************************************************
- _SetVertexTypeInBicomp()
+ _ClearVertexTypeInBicomp()
 
- Sets the 'type' member to theType for each vertex in the bicomp
+ Clears the 'obstruction type' bits for each vertex in the bicomp
  rooted by BicompRoot.
 
  This method uses the stack but preserves whatever may have been
@@ -648,7 +647,7 @@ int I, J;
  Returns OK on success, NOTOK on implementation failure.
  ********************************************************************/
 
-int  _SetVertexTypeInBicomp(graphP theGraph, int BicompRoot, int theType)
+int  _ClearVertexTypeInBicomp(graphP theGraph, int BicompRoot)
 {
 int  V, J;
 int  stackBottom = sp_GetCurrentSize(theGraph->theStack);
@@ -657,12 +656,12 @@ int  stackBottom = sp_GetCurrentSize(theGraph->theStack);
      while (sp_GetCurrentSize(theGraph->theStack) > stackBottom)
      {
           sp_Pop(theGraph->theStack, V);
-          theGraph->G[V].type = theType;
+          gp_ClearVertexObstructionType(theGraph, V);
 
           J = gp_GetFirstArc(theGraph, V);
           while (gp_IsArc(theGraph, J))
           {
-             if (theGraph->G[J].type == EDGE_DFSCHILD)
+             if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_CHILD)
                  sp_Push(theGraph->theStack, theGraph->G[J].v);
 
              J = gp_GetNextArc(theGraph, J);
@@ -985,21 +984,21 @@ int child = theGraph->G[J].v;
     // so if the immediate next arc (edge record) is not a tree edge
     // then we return NIL because the vertex has no remaining
     // unprocessed children
-    if (theGraph->G[J].type == TYPE_UNKNOWN)
+    if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_NOTDEFINED)
         return NIL;
 
     // If the child has already been processed, then all children
     // have been pushed to the end of the list, and we have just
     // encountered the first child we processed, so there are no
     // remaining unprocessed children */
-    if (theGraph->G[J].visited)
+    if (gp_GetEdgeVisited(theGraph, J))
         return NIL;
 
     // We have found an edge leading to an unprocessed child, so
     // we mark it as processed so that it doesn't get returned
     // again in future iterations.
-    theGraph->G[J].visited = 1;
-    theGraph->G[JTwin].visited = 1;
+    gp_SetEdgeVisited(theGraph, J);
+    gp_SetEdgeVisited(theGraph, JTwin);
 
     // Now we move the edge record in the parent vertex to the end
     // of the adjacency list of that vertex.
@@ -1027,10 +1026,10 @@ int _hasUnprocessedChild(graphP theGraph, int parent)
 {
 int J = gp_GetFirstArc(theGraph, parent);
 
-    if (theGraph->G[J].type == TYPE_UNKNOWN)
+    if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_NOTDEFINED)
         return 0;
 
-    if (theGraph->G[J].visited)
+    if (gp_GetEdgeVisited(theGraph, J))
         return 0;
 
     return 1;
@@ -1050,8 +1049,6 @@ int J = gp_GetFirstArc(theGraph, parent);
 
 int  gp_CreateRandomGraphEx(graphP theGraph, int numEdges)
 {
-#define EDGE_TREE_RANDOMGEN (TYPE_UNKNOWN+1)
-
 int N, I, arc, M, root, v, c, p, last, u, J, e;
 
      N = theGraph->N;
@@ -1070,10 +1067,10 @@ int N, I, arc, M, root, v, c, p, last, u, J, e;
         else
 	    {
             arc = theGraph->edgeOffset + 2*theGraph->M - 2;
-		    theGraph->G[arc].type = EDGE_TREE_RANDOMGEN;
-		    theGraph->G[gp_GetTwinArc(theGraph, arc)].type = EDGE_TREE_RANDOMGEN;
-		    theGraph->G[arc].visited = 0;
-		    theGraph->G[gp_GetTwinArc(theGraph, arc)].visited = 0;
+            gp_SetEdgeDFSType(theGraph, arc, EDGE_TYPE_RANDOMTREE);
+            gp_SetEdgeDFSType(theGraph, gp_GetTwinArc(theGraph, arc), EDGE_TYPE_RANDOMTREE);
+            gp_ClearEdgeVisited(theGraph, arc);
+            gp_ClearEdgeVisited(theGraph, gp_GetTwinArc(theGraph, arc));
 	    }
     }
 
@@ -1164,10 +1161,10 @@ int N, I, arc, M, root, v, c, p, last, u, J, e;
     for (e = 0; e < numEdges; e++)
     {
         J = theGraph->edgeOffset + 2*e;
-        theGraph->G[J].type = TYPE_UNKNOWN;
-        theGraph->G[gp_GetTwinArc(theGraph, J)].type = TYPE_UNKNOWN;
-        theGraph->G[J].visited = 0;
-        theGraph->G[gp_GetTwinArc(theGraph, J)].visited = 0;
+        gp_ClearEdgeDFSType(theGraph, J);
+        gp_ClearEdgeDFSType(theGraph, gp_GetTwinArc(theGraph, J));
+        gp_ClearEdgeVisited(theGraph, J);
+        gp_ClearEdgeVisited(theGraph, gp_GetTwinArc(theGraph, J));
     }
 
 /* Put all DFSParent indicators back to NIL */
@@ -1176,8 +1173,6 @@ int N, I, arc, M, root, v, c, p, last, u, J, e;
         gp_SetVertexParent(theGraph, I, NIL);
 
     return OK;
-
-#undef EDGE_TREE_RANDOMGEN
 }
 
 /********************************************************************
@@ -1194,18 +1189,18 @@ void gp_SetDirection(graphP theGraph, int e, int edgeFlag_Direction)
 
 	if (edgeFlag_Direction == EDGEFLAG_DIRECTION_INONLY)
 	{
-		theGraph->E[e].flags |= EDGEFLAG_DIRECTION_INONLY;
-		theGraph->E[eTwin].flags |= EDGEFLAG_DIRECTION_OUTONLY;
+		theGraph->G[e].flags |= EDGEFLAG_DIRECTION_INONLY;
+		theGraph->G[eTwin].flags |= EDGEFLAG_DIRECTION_OUTONLY;
 	}
 	else if (edgeFlag_Direction == EDGEFLAG_DIRECTION_OUTONLY)
 	{
-		theGraph->E[e].flags |= EDGEFLAG_DIRECTION_OUTONLY;
-		theGraph->E[eTwin].flags |= EDGEFLAG_DIRECTION_INONLY;
+		theGraph->G[e].flags |= EDGEFLAG_DIRECTION_OUTONLY;
+		theGraph->G[eTwin].flags |= EDGEFLAG_DIRECTION_INONLY;
 	}
 	else
 	{
-		theGraph->E[e].flags &= ~(EDGEFLAG_DIRECTION_INONLY|EDGEFLAG_DIRECTION_OUTONLY);
-		theGraph->E[eTwin].flags &= ~(EDGEFLAG_DIRECTION_INONLY|EDGEFLAG_DIRECTION_OUTONLY);
+		theGraph->G[e].flags &= ~(EDGEFLAG_DIRECTION_INONLY|EDGEFLAG_DIRECTION_OUTONLY);
+		theGraph->G[eTwin].flags &= ~(EDGEFLAG_DIRECTION_INONLY|EDGEFLAG_DIRECTION_OUTONLY);
 	}
 }
 
@@ -2170,13 +2165,13 @@ int gp_RestoreVertices(graphP theGraph)
  This is just a little helper function that automates a sequence of decisions
  that has to be made a number of times.
  An edge record is being added to the adjacency list of a; it indicates that
- b is a neighbor.  The edgeType can be either 'tree' (EDGE_DFSPARENT or
- EDGE_DFSCHILD) or 'cycle' (EDGE_BACK or EDGE_FORWARD).
+ b is a neighbor.  The edgeType can be either 'tree' (EDGE_TYPE_PARENT or
+ EDGE_TYPE_CHILD) or 'cycle' (EDGE_TYPE_BACK or EDGE_TYPE_FORWARD).
  If a or b is a root copy, we translate to the non-virtual counterpart,
  then wedetermine which has the lesser DFI.  If a has the lower DFI then the
- edge record is a tree edge to a child (EDGE_DFSCHILD) if edgeType indicates
+ edge record is a tree edge to a child (EDGE_TYPE_CHILD) if edgeType indicates
  a tree edge.  If edgeType indicates a cycle edge, then it is a forward cycle
- edge (EDGE_FORWARD) to a descendant.
+ edge (EDGE_TYPE_FORWARD) to a descendant.
  Symmetric conditions define the types for a > b.
  ****************************************************************************/
 
@@ -2188,9 +2183,9 @@ int  _ComputeArcType(graphP theGraph, int a, int b, int edgeType)
          b = gp_GetVertexParent(theGraph, b - theGraph->N);
 
      if (a < b)
-         return edgeType == EDGE_DFSPARENT || edgeType == EDGE_DFSCHILD ? EDGE_DFSCHILD : EDGE_FORWARD;
+         return edgeType == EDGE_TYPE_PARENT || edgeType == EDGE_TYPE_CHILD ? EDGE_TYPE_CHILD : EDGE_TYPE_FORWARD;
 
-     return edgeType == EDGE_DFSPARENT || edgeType == EDGE_DFSCHILD ? EDGE_DFSPARENT : EDGE_BACK;
+     return edgeType == EDGE_TYPE_PARENT || edgeType == EDGE_TYPE_CHILD ? EDGE_TYPE_PARENT : EDGE_TYPE_BACK;
 }
 
 /****************************************************************************
@@ -2223,13 +2218,13 @@ int  e, eTwin, u_orig, v_orig, N;
      {
          if (u_orig > v_orig)
          {
-             theGraph->G[e].type = EDGE_DFSPARENT;
-             theGraph->G[eTwin].type = EDGE_DFSCHILD;
+             gp_ResetEdgeType(theGraph, e, EDGE_TYPE_PARENT);
+             gp_ResetEdgeType(theGraph, eTwin, EDGE_TYPE_CHILD);
          }
          else
          {
-             theGraph->G[eTwin].type = EDGE_DFSPARENT;
-             theGraph->G[e].type = EDGE_DFSCHILD;
+             gp_ResetEdgeType(theGraph, eTwin, EDGE_TYPE_PARENT);
+             gp_ResetEdgeType(theGraph, e, EDGE_TYPE_CHILD);
          }
      }
 
@@ -2239,13 +2234,13 @@ int  e, eTwin, u_orig, v_orig, N;
      {
          if (u_orig > v_orig)
          {
-             theGraph->G[e].type = EDGE_BACK;
-             theGraph->G[eTwin].type = EDGE_FORWARD;
+             gp_ResetEdgeType(theGraph, e, EDGE_TYPE_BACK);
+             gp_ResetEdgeType(theGraph, eTwin, EDGE_TYPE_FORWARD);
          }
          else
          {
-             theGraph->G[eTwin].type = EDGE_BACK;
-             theGraph->G[e].type = EDGE_FORWARD;
+             gp_ResetEdgeType(theGraph, eTwin, EDGE_TYPE_BACK);
+             gp_ResetEdgeType(theGraph, e, EDGE_TYPE_FORWARD);
          }
      }
 
@@ -2278,7 +2273,7 @@ int  stackBottom = sp_GetCurrentSize(theGraph->theStack);
           J = gp_GetFirstArc(theGraph, V);
           while (gp_IsArc(theGraph, J))
           {
-             if (theGraph->G[J].type == EDGE_DFSCHILD)
+             if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_CHILD)
                  sp_Push(theGraph->theStack, theGraph->G[J].v);
 
              if (!theGraph->G[J].visited)
@@ -2315,7 +2310,7 @@ int  stackBottom = sp_GetCurrentSize(theGraph->theStack);
           J = gp_GetFirstArc(theGraph, V);
           while (gp_IsArc(theGraph, J))
           {
-             if (theGraph->G[J].type == EDGE_DFSCHILD)
+             if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_CHILD)
              {
                  sp_Push(theGraph->theStack, theGraph->G[J].v);
                  CLEAR_EDGEFLAG_INVERTED(theGraph, J);
@@ -2353,7 +2348,7 @@ int  stackBottom = sp_GetCurrentSize(theGraph->theStack);
           J = gp_GetFirstArc(theGraph, V);
           while (gp_IsArc(theGraph, J))
           {
-             if (theGraph->G[J].type == EDGE_DFSCHILD)
+             if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_CHILD)
                  sp_Push(theGraph->theStack, theGraph->G[J].v);
 
              J = gp_GetNextArc(theGraph, J);

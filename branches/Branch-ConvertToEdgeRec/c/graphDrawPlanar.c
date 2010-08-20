@@ -296,7 +296,7 @@ int W, P, C, V, J;
         J = gp_GetFirstArc(theEmbedding, W);
         while (gp_IsArc(theEmbedding, J))
         {
-            if (theEmbedding->G[J].type == EDGE_DFSCHILD)
+            if (gp_GetEdgeType(theEmbedding, J) == EDGE_TYPE_CHILD)
                 sp_Push(theEmbedding->theStack, theEmbedding->G[J].v);
 
             J = gp_GetNextArc(theEmbedding, J);

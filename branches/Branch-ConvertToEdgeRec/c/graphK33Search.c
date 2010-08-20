@@ -640,13 +640,13 @@ int  Z=theGraph->IC.px, ZPrevLink=1;
                     RYW path. Otherwise, the order is (X, new Z, new W, Y), so the
                     new Z (old W with no type) is type changed to be on the RXW path.*/
 
-                if (theGraph->G[Z].type == VERTEX_LOW_RXW)
-                     theGraph->G[theGraph->IC.z].type = VERTEX_LOW_RYW;
-                else theGraph->G[theGraph->IC.z].type = VERTEX_LOW_RXW;
+                if (gp_GetVertexObstructionType(theGraph, Z) == VERTEX_OBSTRUCTIONTYPE_LOW_RXW)
+                     gp_ResetVertexObstructionType(theGraph, theGraph->IC.z, VERTEX_OBSTRUCTIONTYPE_LOW_RYW);
+                else gp_ResetVertexObstructionType(theGraph, theGraph->IC.z, VERTEX_OBSTRUCTIONTYPE_LOW_RXW);
 
                 /* For completeness, we change the new W to type unknown */
 
-                theGraph->G[theGraph->IC.w].type = TYPE_UNKNOWN;
+                gp_ClearVertexObstructionType(theGraph, theGraph->IC.w);
 
                 /* The external activity ancestor connection of the new Z must be obtained */
 
@@ -1237,7 +1237,7 @@ int  v, e, w;
           {
               w = theGraph->G[e].v;
               if (theGraph->G[w].visited != NIL &&
-                  theGraph->G[w].type == TYPE_UNKNOWN)
+                  gp_GetVertexObstructionType(theGraph, w) == VERTEX_OBSTRUCTIONTYPE_UNKNOWN)
               {
                   sp_Push2(theGraph->theStack, v, e);
                   sp_Push2(theGraph->theStack, w, NIL);
@@ -1441,7 +1441,7 @@ int  rxType, xwType, wyType, yrType, xyType;
      needed to complete the reduced bicomp, also identify which
      reduced edges need to be cycle edges.*/
 
-     rxType = xwType = wyType = yrType = xyType = EDGE_DFSPARENT;
+     rxType = xwType = wyType = yrType = xyType = EDGE_TYPE_PARENT;
 
 /* Now we calculate some values that help figure out the shape of the
     DFS subtree whose structure will be retained in the bicomp. */
@@ -1462,7 +1462,7 @@ int  rxType, xwType, wyType, yrType, xyType;
 
          A_edge = gp_GetLastArc(theGraph, IC->r);
          A = theGraph->G[A_edge].v;
-         yrType = EDGE_BACK;
+         yrType = EDGE_TYPE_BACK;
 
          /* If Y is max, then a path parallel to the X-Y path will be a
             second path reduced to a cycle edge.  We find the neighbor B
@@ -1483,7 +1483,7 @@ int  rxType, xwType, wyType, yrType, xyType;
                  return NOTOK;
 
              B = theGraph->G[B_edge].v;
-             xyType = EDGE_BACK;
+             xyType = EDGE_TYPE_BACK;
          }
 
          /* Otherwise, W is max so we find the neighbor B of min=X on the
@@ -1495,7 +1495,7 @@ int  rxType, xwType, wyType, yrType, xyType;
          {
              B_edge = gp_GetFirstArc(theGraph, IC->x);
              B = theGraph->G[B_edge].v;
-             xwType = EDGE_BACK;
+             xwType = EDGE_TYPE_BACK;
          }
 
          else return NOTOK;
@@ -1508,7 +1508,7 @@ int  rxType, xwType, wyType, yrType, xyType;
      {
          A_edge = gp_GetFirstArc(theGraph, IC->r);
          A = theGraph->G[A_edge].v;
-         rxType = EDGE_BACK;
+         rxType = EDGE_TYPE_BACK;
 
          if (max == IC->x)
          {
@@ -1523,14 +1523,14 @@ int  rxType, xwType, wyType, yrType, xyType;
                  return NOTOK;
 
              B = theGraph->G[B_edge].v;
-             xyType = EDGE_BACK;
+             xyType = EDGE_TYPE_BACK;
          }
 
          else if (max == IC->w)
          {
              B_edge = gp_GetLastArc(theGraph, IC->y);
              B = theGraph->G[B_edge].v;
-             wyType = EDGE_BACK;
+             wyType = EDGE_TYPE_BACK;
          }
 
          else return NOTOK;
@@ -1693,11 +1693,11 @@ int  prevLink, v, w, e;
 
      e = gp_GetFirstArc(theGraph, u);
      context->G[e].pathConnector = v;
-     theGraph->G[e].type = _ComputeArcType(theGraph, u, x, edgeType);
+     gp_SetEdgeType(theGraph, e, _ComputeArcType(theGraph, u, x, edgeType));
 
      e = gp_GetLastArc(theGraph, x);
      context->G[e].pathConnector = w;
-     theGraph->G[e].type = _ComputeArcType(theGraph, x, u, edgeType);
+     gp_SetEdgeType(theGraph, e, _ComputeArcType(theGraph, x, u, edgeType));
 
      /* Set the external face info */
 
@@ -1759,12 +1759,12 @@ int  e, v, w;
      e = gp_GetFirstArc(theGraph, u);
      e = gp_GetNextArc(theGraph, e);
      context->G[e].pathConnector = v;
-     theGraph->G[e].type = _ComputeArcType(theGraph, u, x, edgeType);
+     gp_SetEdgeType(theGraph, e, _ComputeArcType(theGraph, u, x, edgeType));
 
      e = gp_GetFirstArc(theGraph, x);
      e = gp_GetNextArc(theGraph, e);
      context->G[e].pathConnector = w;
-     theGraph->G[e].type = _ComputeArcType(theGraph, x, u, edgeType);
+     gp_SetEdgeType(theGraph, e, _ComputeArcType(theGraph, x, u, edgeType));
 
      return OK;
 }
@@ -1982,7 +1982,7 @@ int p, J;
          J = gp_GetFirstArc(theGraph, p);
          while (gp_IsArc(theGraph, J))
          {
-              if (theGraph->G[J].type == EDGE_DFSPARENT)
+              if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_PARENT)
                   break;
 
               J = gp_GetNextArc(theGraph, J);
@@ -2012,7 +2012,7 @@ int p, J;
          J = gp_GetFirstArc(theGraph, p);
          while (gp_IsArc(theGraph, J))
          {
-              if (theGraph->G[J].type == EDGE_DFSPARENT)
+              if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_PARENT)
                   break;
 
               J = gp_GetNextArc(theGraph, J);
