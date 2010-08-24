@@ -354,10 +354,12 @@ void _LogEdgeList(graphP theEmbedding, listCollectionP edgeList, int edgeListHea
   advances through the vertices according to their assigned
   vertical positions.
 
-  For expedience, the 'visited' flag for each vertex shall be used
-  instead to indicate the location in the edge order list of the
-  generator edge for the vertex, i.e. the first edge added to the
-  vertex from a higher vertex (with lower position number).
+  The 'visitedInfo' member of each vertex is used to indicate the
+  location in the edge order list of the generator edge for the vertex.
+  The generator edge is the first edge used to visit the vertex from
+  a higher vertex in the drawing (i.e. a vertex with an earlier, or
+  lower, position number).
+
   All edges added from this vertex to the neighbors below it are
   added immediately after the generator edge for the vertex.
  ********************************************************************/
@@ -399,7 +401,7 @@ int eIndex, JTwin;
     // Each vertex starts out with a NIL generator edge.
 
     for (I=0; I < theEmbedding->N; I++)
-        theEmbedding->G[I].visited = NIL;
+        gp_SetVertexVisitedInfo(theEmbedding, I, NIL);
 
     // Perform the vertical sweep of the combinatorial embedding, using
     // the vertex ordering to guide the sweep.
@@ -421,11 +423,11 @@ int eIndex, JTwin;
         // they all have greater numbers in the vertex order.
         if (gp_GetVertexParent(theEmbedding, v) == NIL)
         {
-            // False generator edge, so the vertex is distinguishable from
+            // Set a false generator edge, so the vertex is distinguishable from
             // a vertex with no generator edge when its neighbors are visited
             // This way, an edge from a neighbor won't get recorded as the
             // generator edge of the DFS tree root.
-            theEmbedding->G[v].visited = 1;
+            gp_SetVertexVisitedInfo(theEmbedding, v, NIL - 1);
 
             // Now we traverse the adjacency list of the DFS tree root and
             // record each edge as the generator edge of the neighbors
@@ -439,7 +441,7 @@ int eIndex, JTwin;
                 		theEmbedding->G[v].v, theEmbedding->G[theEmbedding->G[J].v].v));
 
                 // Set the generator edge for the root's neighbor
-                theEmbedding->G[theEmbedding->G[J].v].visited = J;
+                gp_SetVertexVisitedInfo(theEmbedding, theEmbedding->G[J].v, J);
 
                 // Go to the next node of the root's adj list
                 J = gp_GetNextArc(theEmbedding, J);
@@ -450,7 +452,8 @@ int eIndex, JTwin;
         else
         {
             // Get the generator edge of the vertex
-            if ((JTwin = theEmbedding->G[v].visited) == NIL)
+        	// Note that this never gets the false generator edge of a DFS tree root
+            if ((JTwin = gp_GetVertexVisitedInfo(theEmbedding, v)) == NIL)
                 return NOTOK;
             J = gp_GetTwinArc(theEmbedding, JTwin);
 
@@ -482,9 +485,11 @@ int eIndex, JTwin;
                     edgeListInsertPoint = e;
 
                     // If the vertex does not yet have a generator edge, then set it.
-                    if (theEmbedding->G[theEmbedding->G[Jcur].v].visited == NIL)
+                    // Note that a DFS tree root has a false generator edge, so this if
+                    // test avoids setting a generator edge for a DFS tree root
+                    if (gp_GetVertexVisitedInfo(theEmbedding, theEmbedding->G[Jcur].v) == NIL)
                     {
-                        theEmbedding->G[theEmbedding->G[Jcur].v].visited = Jcur;
+                        gp_SetVertexVisitedInfo(theEmbedding, theEmbedding->G[Jcur].v, Jcur);
                         gp_LogLine(gp_MakeLogStr2("Generator edge (%d, %d)",
                         		theEmbedding->G[theEmbedding->G[gp_GetTwinArc(theEmbedding, J)].v].v,
                         		theEmbedding->G[theEmbedding->G[Jcur].v].v));
@@ -968,7 +973,7 @@ int I, e, J, JTwin, JPos, JIndex;
     if (sp_NonEmpty(context->theGraph->edgeHoles))
         return NOTOK;
 
-    _FillVisitedFlags(theEmbedding, 0);
+    _ClearVisitedFlags(theEmbedding);
 
 /* Test whether the vertex values make sense and
         whether the vertex positions are unique. */
@@ -987,14 +992,14 @@ int I, e, J, JTwin, JPos, JIndex;
 
         // Has the vertex position (context->G[I].pos) been used by a
         // vertex before vertex I?
-        if (theEmbedding->G[context->G[I].pos].visited)
+        if (gp_GetVertexVisited(theEmbedding, context->G[I].pos))
             return NOTOK;
 
         // Mark the vertex position as used by vertex I.
         // Note that this marking is made on some other vertex unrelated to I
         // We're just reusing the vertex visited array as cheap storage for a
         // detector of reusing vertex position integers.
-        theEmbedding->G[context->G[I].pos].visited = 1;
+        gp_SetVertexVisited(theEmbedding, context->G[I].pos);
     }
 
 /* Test whether the edge values make sense and
@@ -1028,10 +1033,11 @@ int I, e, J, JTwin, JPos, JIndex;
         JIndex = theEmbedding->edgeOffset + 2*JPos;
         JTwin = gp_GetTwinArc(theEmbedding, JIndex);
 
-        if (theEmbedding->G[JIndex].visited || theEmbedding->G[JTwin].visited)
+        if (gp_GetEdgeVisited(theEmbedding, JIndex) || gp_GetEdgeVisited(theEmbedding, JTwin))
             return NOTOK;
 
-        theEmbedding->G[JIndex].visited = theEmbedding->G[JTwin].visited = 1;
+        gp_SetEdgeVisited(theEmbedding, JIndex);
+        gp_GetEdgeVisited(theEmbedding, JTwin);
     }
 
 /* Test whether any edge intersects any vertex position
