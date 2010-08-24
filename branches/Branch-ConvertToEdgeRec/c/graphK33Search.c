@@ -68,7 +68,8 @@ extern int  _JoinBicomps(graphP theGraph);
 extern int  _OrientVerticesInBicomp(graphP theGraph, int BicompRoot, int PreserveSigns);
 extern int  _OrientVerticesInEmbedding(graphP theGraph);
 extern void _InvertVertex(graphP theGraph, int V);
-extern int  _SetVisitedOnPath(graphP theGraph, int u, int v, int w, int x, int visited);
+extern int  _ClearVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x);
+extern int  _SetVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x);
 extern int  _OrientExternalFacePath(graphP theGraph, int u, int v, int w, int x);
 
 extern int  _ChooseTypeOfNonplanarityMinor(graphP theGraph, int I, int R);
@@ -1869,7 +1870,7 @@ int  J0, JTwin0, J1, JTwin1;
          J = theGraph->edgeOffset + 2*e;
          if (context->G[J].pathConnector != NIL)
          {
-             visited = theGraph->G[J].visited;
+             visited = gp_GetEdgeVisited(theGraph, J);
 
              JTwin = gp_GetTwinArc(theGraph, J);
              u = theGraph->G[JTwin].v;
@@ -1950,8 +1951,16 @@ int  J0, JTwin0, J1, JTwin1;
                 with a path, then we need to mark the path. Similarly, for an unmarked
                 edge, the replacement path should be unmarked. */
 
-             if (_SetVisitedOnPath(theGraph, u, v, w, x, visited) != OK)
-            	 return NOTOK;
+             if (visited)
+             {
+                 if (_SetVisitedFlagsOnPath(theGraph, u, v, w, x) != OK)
+                	 return NOTOK;
+             }
+             else
+             {
+                 if (_ClearVisitedFlagsOnPath(theGraph, u, v, w, x) != OK)
+                	 return NOTOK;
+             }
          }
          else e++;
      }

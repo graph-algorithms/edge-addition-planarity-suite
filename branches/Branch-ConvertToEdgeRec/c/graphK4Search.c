@@ -67,7 +67,8 @@ extern void _FindActiveVertices(graphP theGraph, int R, int *pX, int *pY);
 extern int  _OrientVerticesInBicomp(graphP theGraph, int BicompRoot, int PreserveSigns);
 extern int  _OrientVerticesInEmbedding(graphP theGraph);
 extern void _InvertVertex(graphP theGraph, int V);
-extern int  _SetVisitedOnPath(graphP theGraph, int u, int v, int w, int x, int visited);
+extern int  _ClearVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x);
+extern int  _SetVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x);
 extern int  _OrientExternalFacePath(graphP theGraph, int u, int v, int w, int x);
 
 extern int  _FindUnembeddedEdgeToAncestor(graphP theGraph, int cutVertex, int *pAncestor, int *pDescendant);
@@ -1455,7 +1456,7 @@ int  e, J, JTwin, u, v, w, x, visited;
          J = theGraph->edgeOffset + 2*e;
          if (context->G[J].pathConnector != NIL)
          {
-             visited = theGraph->G[J].visited;
+             visited = gp_GetEdgeVisited(theGraph, J);
 
              JTwin = gp_GetTwinArc(theGraph, J);
              u = theGraph->G[JTwin].v;
@@ -1480,8 +1481,16 @@ int  e, J, JTwin, u, v, w, x, visited;
     				 return NOTOK;
     		 }
 
-             if (_SetVisitedOnPath(theGraph, u, v, w, x, visited) !=OK)
-            	 return NOTOK;
+             if (visited)
+             {
+        		 if (_SetVisitedFlagsOnPath(theGraph, u, v, w, x) != OK)
+                	 return NOTOK;
+             }
+             else
+             {
+        		 if (_ClearVisitedFlagsOnPath(theGraph, u, v, w, x) != OK)
+                	 return NOTOK;
+             }
          }
          else e++;
      }

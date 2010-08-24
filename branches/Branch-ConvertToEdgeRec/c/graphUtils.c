@@ -634,6 +634,98 @@ int I, J;
     }
 }
 
+/****************************************************************************
+ _ClearVisitedFlagsOnPath()
+ This method clears the visited flags on the vertices and edges on the path
+ (u, v, ..., w, x) in which all vertices except the endpoints u and x
+ are degree 2.  This method avoids performing more than constant work at the
+ path endpoints u and x, so the total work is on the order of the path length.
+
+ Returns OK on success, NOTOK on internal failure
+ ****************************************************************************/
+
+int  _ClearVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x)
+{
+int  e, eTwin, pathLength=0;
+
+     // We want to exit u from e, but we get eTwin first here in order to avoid
+     // work, in case the degree of u is greater than 2.
+     eTwin = gp_GetNeighborEdgeRecord(theGraph, v, u);
+     if (!gp_IsArc(theGraph, eTwin))
+    	 return NOTOK;
+     e = gp_GetTwinArc(theGraph, eTwin);
+
+     v = u;
+
+     do {
+    	 // Mark the vertex and the exiting edge
+         gp_ClearVertexVisited(theGraph, v);
+         gp_ClearEdgeVisited(theGraph, e);
+         gp_ClearEdgeVisited(theGraph, eTwin);
+
+    	 // Get the next vertex
+         v = theGraph->G[e].v;
+         e = gp_GetNextArcCircular(theGraph, eTwin);
+         eTwin = gp_GetTwinArc(theGraph, e);
+
+         // A simple reality check on the preconditions of this method
+         if (++pathLength > theGraph->N)
+        	 return NOTOK;
+
+     } while (v != x);
+
+     // Mark the last vertex with 'visited'
+     gp_ClearVertexVisited(theGraph, x);
+
+     return OK;
+}
+
+/****************************************************************************
+ _SetVisitedFlagsOnPath()
+ This method sets the visited flags on the vertices and edges on the path
+ (u, v, ..., w, x) in which all vertices except the endpoints u and x
+ are degree 2.  This method avoids performing more than constant work at the
+ path endpoints u and x, so the total work is on the order of the path length.
+
+ Returns OK on success, NOTOK on internal failure
+ ****************************************************************************/
+
+int  _SetVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x)
+{
+int  e, eTwin, pathLength=0;
+
+     // We want to exit u from e, but we get eTwin first here in order to avoid
+     // work, in case the degree of u is greater than 2.
+     eTwin = gp_GetNeighborEdgeRecord(theGraph, v, u);
+     if (!gp_IsArc(theGraph, eTwin))
+    	 return NOTOK;
+     e = gp_GetTwinArc(theGraph, eTwin);
+
+     v = u;
+
+     do {
+    	 // Mark the vertex and the exiting edge
+         gp_SetVertexVisited(theGraph, v);
+         gp_SetEdgeVisited(theGraph, e);
+         gp_SetEdgeVisited(theGraph, eTwin);
+
+    	 // Get the next vertex
+         v = theGraph->G[e].v;
+         e = gp_GetNextArcCircular(theGraph, eTwin);
+         eTwin = gp_GetTwinArc(theGraph, e);
+
+         // A simple reality check on the preconditions of this method
+         if (++pathLength > theGraph->N)
+        	 return NOTOK;
+
+     } while (v != x);
+
+     // Mark the last vertex with 'visited'
+     gp_SetVertexVisited(theGraph, x);
+
+     return OK;
+}
+
 /********************************************************************
  _ClearVertexTypeInBicomp()
 
