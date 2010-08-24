@@ -500,7 +500,7 @@ int  _FindUnembeddedEdgeToCurVertex(graphP theGraph, int cutVertex, int *pDescen
 {
 int  RetVal = TRUE, I = theGraph->IC.v;
 
-     if (gp_GetVertexPertinentAdjacentTo(theGraph, cutVertex) != NIL)
+     if (gp_GetVertexPertinentAdjacencyInfo(theGraph, cutVertex) != NIL)
          *pDescendant = cutVertex;
      else
      {

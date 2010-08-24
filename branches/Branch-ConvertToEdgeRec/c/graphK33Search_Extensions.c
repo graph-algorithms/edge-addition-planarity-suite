@@ -593,7 +593,7 @@ void _K33Search_EmbedBackEdgeToDescendant(graphP theGraph, int RootSide, int Roo
         if (theGraph->embedFlags == EMBEDFLAGS_SEARCHFORK33)
         {
         	// Get the fwdArc from the adjacentTo field, and use it to get the backArc
-            int backArc = gp_GetTwinArc(theGraph, gp_GetVertexPertinentAdjacentTo(theGraph, W));
+            int backArc = gp_GetTwinArc(theGraph, gp_GetVertexPertinentAdjacencyInfo(theGraph, W));
 
             // Remove the backArc from the backArcList
             if (context->V[W].backArcList == backArc)

@@ -320,7 +320,7 @@ int fwdArc, backArc, parentCopy;
         The Walkup recorded in W's adjacentTo the index of the forward arc
         from the root's parent copy to the descendant W. */
 
-    fwdArc = gp_GetVertexPertinentAdjacentTo(theGraph, W);
+    fwdArc = gp_GetVertexPertinentAdjacencyInfo(theGraph, W);
     backArc = gp_GetTwinArc(theGraph, fwdArc);
 
     /* The forward arc is removed from the fwdArcList of the root's parent copy. */
@@ -673,7 +673,7 @@ int  N, R, ParentCopy, nextVertex, W;
 int  RootID_DFSChild, BicompList;
 
      W = theGraph->G[J].v;
-     gp_SetVertexPertinentAdjacentTo(theGraph, W, J);
+     gp_SetVertexPertinentAdjacencyInfo(theGraph, W, J);
 
      /* Shorthand for N, due to frequent use */
 
@@ -943,7 +943,7 @@ int  RetVal, W, WPrevLink, R, Rout, X, XPrevLink, Y, YPrevLink, RootSide, RootEd
              /* If the vertex W is the descendant endpoint of an unembedded
                 back edge to I, then ... */
 
-             if (gp_GetVertexPertinentAdjacentTo(theGraph, W) != NIL)
+             if (gp_GetVertexPertinentAdjacencyInfo(theGraph, W) != NIL)
              {
                 /* Merge bicomps at cut vertices on theStack and add the back edge,
                     creating a new proper face. */
@@ -960,7 +960,7 @@ int  RetVal, W, WPrevLink, R, Rout, X, XPrevLink, Y, YPrevLink, RootSide, RootEd
                     generally, so that no more back edges to W are added until
                     a future Walkup sets the flag to non-NIL again). */
 
-                gp_SetVertexPertinentAdjacentTo(theGraph, W, NIL);
+                gp_SetVertexPertinentAdjacencyInfo(theGraph, W, NIL);
              }
 
              /* If there is a pertinent child bicomp, then we need to push it onto the stack

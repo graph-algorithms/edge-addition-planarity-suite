@@ -300,7 +300,7 @@ typedef extFaceLinkRec * extFaceLinkRecP;
 
 	stepVisited: helps detect vertex visitation during methods such as Walkup.
 	             Implicitly resets at each vertex step of the planarity method
-	stepAdjacentTo: Used by the planarity method; during walk-up, each vertex
+	pertinentAdjacencyInfo: Used by the planarity method; during walk-up, each vertex
 	            that is directly adjacent via a back edge to the vertex currently
                 being embedded will have the forward edge's index stored in
                 this field.  During walkdown, each vertex for which this
@@ -334,13 +334,16 @@ typedef struct
 
     int stepVisited;
 
-    int pertinentAdjacentTo,
+    int pertinentAdjacencyInfo,
 		pertinentBicompList,
 		separatedDFSChildList,
 		fwdArcList;
 } vertexInfo;
 
 typedef vertexInfo * vertexInfoP;
+
+#define gp_GetVertexStepVisited(theGraph, v) (theGraph->VI[v].stepVisited)
+#define gp_SetVertexStepVisited(theGraph, v, theStepVisited) (theGraph->VI[v].stepVisited = theStepVisited)
 
 #define gp_GetVertexParent(theGraph, v) (theGraph->VI[v].parent)
 #define gp_SetVertexParent(theGraph, v, theParent) (theGraph->VI[v].parent = theParent)
@@ -351,11 +354,8 @@ typedef vertexInfo * vertexInfoP;
 #define gp_GetVertexLowpoint(theGraph, v) (theGraph->VI[v].lowpoint)
 #define gp_SetVertexLowpoint(theGraph, v, theLowpoint) (theGraph->VI[v].lowpoint = theLowpoint)
 
-#define gp_GetVertexStepVisited(theGraph, v) (theGraph->VI[v].stepVisited)
-#define gp_SetVertexStepVisited(theGraph, v, theStepVisited) (theGraph->VI[v].stepVisited = theStepVisited)
-
-#define gp_GetVertexPertinentAdjacentTo(theGraph, v) (theGraph->VI[v].pertinentAdjacentTo)
-#define gp_SetVertexPertinentAdjacentTo(theGraph, v, thePertinentAdjacentTo) (theGraph->VI[v].pertinentAdjacentTo = thePertinentAdjacentTo)
+#define gp_GetVertexPertinentAdjacencyInfo(theGraph, v) (theGraph->VI[v].pertinentAdjacencyInfo)
+#define gp_SetVertexPertinentAdjacencyInfo(theGraph, v, thePertinentAdjacencyInfo) (theGraph->VI[v].pertinentAdjacencyInfo = thePertinentAdjacencyInfo)
 
 #define gp_GetVertexPertinentBicompList(theGraph, v) (theGraph->VI[v].pertinentBicompList)
 #define gp_SetVertexPertinentBicompList(theGraph, v, thePertinentBicompList) (theGraph->VI[v].pertinentBicompList = thePertinentBicompList)

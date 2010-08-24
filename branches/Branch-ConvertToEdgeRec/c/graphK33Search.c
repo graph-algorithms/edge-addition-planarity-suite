@@ -399,7 +399,7 @@ int tempResult;
     Walkup costs that identified the pertinent bicomps we intend to ignore are
     one-time costs, preserving linear time. */
 
-     gp_SetVertexPertinentAdjacentTo(theGraph, IC->w, NIL);
+     gp_SetVertexPertinentAdjacencyInfo(theGraph, IC->w, NIL);
      gp_SetVertexPertinentBicompList(theGraph, IC->w, NIL);
 
      return OK;
@@ -627,7 +627,7 @@ int  Z=theGraph->IC.px, ZPrevLink=1;
                 return OK;
             }
             else if (gp_GetVertexPertinentBicompList(theGraph, Z) != NIL ||
-                     gp_GetVertexPertinentAdjacentTo(theGraph, Z) == theGraph->IC.v)
+                     gp_GetVertexPertinentAdjacencyInfo(theGraph, Z) == theGraph->IC.v)
             {
                 /* Swap the roles of W and Z */
 
@@ -1016,7 +1016,7 @@ isolatorContextP IC = &theGraph->IC;
      for (v = 0; v < theGraph->N; v++)
      {
     	 gp_SetVertexStepVisited(theGraph, v, I+1);
-         gp_SetVertexPertinentAdjacentTo(theGraph, v, NIL);
+         gp_SetVertexPertinentAdjacencyInfo(theGraph, v, NIL);
          gp_SetVertexPertinentBicompList(theGraph, v, NIL);
      }
 
