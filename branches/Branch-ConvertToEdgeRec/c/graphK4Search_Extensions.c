@@ -670,7 +670,7 @@ void _K4Search_EmbedBackEdgeToDescendant(graphP theGraph, int RootSide, int Root
         // K4 search may have been attached, but not enabled
         if (theGraph->embedFlags == EMBEDFLAGS_SEARCHFORK4)
         {
-        	int fwdArc = gp_GetVertexStepAdjacentTo(theGraph, W);
+        	int fwdArc = gp_GetVertexPertinentAdjacentTo(theGraph, W);
         	context->V[context->G[fwdArc].subtree].p2dFwdArcCount--;
         }
 

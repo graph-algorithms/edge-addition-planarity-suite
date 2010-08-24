@@ -511,7 +511,7 @@ void _InitVertexRec(graphP theGraph, int I)
     gp_SetVertexLowpoint(theGraph, I, I);
 
     gp_SetVertexStepVisited(theGraph, I, theGraph->N);
-    gp_SetVertexStepAdjacentTo(theGraph, I, NIL);
+    gp_SetVertexPertinentAdjacentTo(theGraph, I, NIL);
     gp_SetVertexPertinentBicompList(theGraph, I, NIL);
     gp_SetVertexSeparatedDFSChildList(theGraph, I, NIL);
     gp_SetVertexFwdArcList(theGraph, I, NIL);

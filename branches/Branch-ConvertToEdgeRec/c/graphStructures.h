@@ -235,11 +235,11 @@ typedef vertexRec * vertexRecP;
 // VERTEX_OBSTRUCTIONTYPE_LOW_RXW  - X or on the external face path between vertices X and W
 // VERTEX_OBSTRUCTIONTYPE_HIGH_RYW - On the external face path between vertices R and Y
 // VERTEX_OBSTRUCTIONTYPE_LOW_RYW  - Y or on the external face path between vertices Y and W
-// VERTEX_OBSTRUCTIONTYPE_UNKNOWN (formerly TYPE_UNKNOWN) corresponds to all three bits off
-#define VERTEX_OBSTRUCTIONTYPE_HIGH_RXW         			10
-#define VERTEX_OBSTRUCTIONTYPE_LOW_RXW          			2
-#define VERTEX_OBSTRUCTIONTYPE_HIGH_RYW         			14
-#define VERTEX_OBSTRUCTIONTYPE_LOW_RYW    				    6
+// VERTEX_OBSTRUCTIONTYPE_UNKNOWN  - corresponds to all three bits off
+#define VERTEX_OBSTRUCTIONTYPE_HIGH_RXW    	10
+#define VERTEX_OBSTRUCTIONTYPE_LOW_RXW     	2
+#define VERTEX_OBSTRUCTIONTYPE_HIGH_RYW    	14
+#define VERTEX_OBSTRUCTIONTYPE_LOW_RYW    	6
 #define VERTEX_OBSTRUCTIONTYPE_UNKNOWN		0
 
 #define gp_GetVertexObstructionType(theGraph, v) (theGraph->V[v].flags&VERTEX_OBSTRUCTIONTYPE_MASK)
@@ -332,8 +332,12 @@ typedef struct
 {
 	int parent, leastAncestor, lowpoint;
 
-    int stepVisited, stepAdjacentTo;
-    int pertinentBicompList, separatedDFSChildList, fwdArcList;
+    int stepVisited;
+
+    int pertinentAdjacentTo,
+		pertinentBicompList,
+		separatedDFSChildList,
+		fwdArcList;
 } vertexInfo;
 
 typedef vertexInfo * vertexInfoP;
@@ -350,8 +354,8 @@ typedef vertexInfo * vertexInfoP;
 #define gp_GetVertexStepVisited(theGraph, v) (theGraph->VI[v].stepVisited)
 #define gp_SetVertexStepVisited(theGraph, v, theStepVisited) (theGraph->VI[v].stepVisited = theStepVisited)
 
-#define gp_GetVertexStepAdjacentTo(theGraph, v) (theGraph->VI[v].stepAdjacentTo)
-#define gp_SetVertexStepAdjacentTo(theGraph, v, theStepAdjacentTo) (theGraph->VI[v].stepAdjacentTo = theStepAdjacentTo)
+#define gp_GetVertexPertinentAdjacentTo(theGraph, v) (theGraph->VI[v].pertinentAdjacentTo)
+#define gp_SetVertexPertinentAdjacentTo(theGraph, v, thePertinentAdjacentTo) (theGraph->VI[v].pertinentAdjacentTo = thePertinentAdjacentTo)
 
 #define gp_GetVertexPertinentBicompList(theGraph, v) (theGraph->VI[v].pertinentBicompList)
 #define gp_SetVertexPertinentBicompList(theGraph, v, thePertinentBicompList) (theGraph->VI[v].pertinentBicompList = thePertinentBicompList)
