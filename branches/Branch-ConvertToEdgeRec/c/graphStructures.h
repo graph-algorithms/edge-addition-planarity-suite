@@ -298,8 +298,12 @@ typedef extFaceLinkRec * extFaceLinkRecP;
 	leastAncestor: min(DFI of neighbors connected by backedge)
 	lowpoint: min(leastAncestor, min(lowpoint of DFS Children))
 
-	stepVisited: helps detect vertex visitation during methods such as Walkup.
-	             Implicitly resets at each vertex step of the planarity method
+	visitedInfo: enables algorithms to manage vertex visitation with more than
+				 just a flag.  For example, the planarity test flags visitation
+				 as a step number that implicitly resets on each step, whereas
+				 part of the planar drawing method signifies a first visitation
+				 by storing the index of the first edge used to reach a vertex
+
 	pertinentAdjacencyInfo: Used by the planarity method; during walk-up, each vertex
 	            that is directly adjacent via a back edge to the vertex currently
                 being embedded will have the forward edge's index stored in
@@ -332,7 +336,7 @@ typedef struct
 {
 	int parent, leastAncestor, lowpoint;
 
-    int stepVisited;
+    int visitedInfo;
 
     int pertinentAdjacencyInfo,
 		pertinentBicompList,
@@ -342,8 +346,8 @@ typedef struct
 
 typedef vertexInfo * vertexInfoP;
 
-#define gp_GetVertexStepVisited(theGraph, v) (theGraph->VI[v].stepVisited)
-#define gp_SetVertexStepVisited(theGraph, v, theStepVisited) (theGraph->VI[v].stepVisited = theStepVisited)
+#define gp_GetVertexVisitedInfo(theGraph, v) (theGraph->VI[v].visitedInfo)
+#define gp_SetVertexVisitedInfo(theGraph, v, theVisitedInfo) (theGraph->VI[v].visitedInfo = theVisitedInfo)
 
 #define gp_GetVertexParent(theGraph, v) (theGraph->VI[v].parent)
 #define gp_SetVertexParent(theGraph, v, theParent) (theGraph->VI[v].parent = theParent)

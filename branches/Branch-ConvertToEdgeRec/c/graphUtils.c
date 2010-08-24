@@ -510,7 +510,7 @@ void _InitVertexRec(graphP theGraph, int I)
     gp_SetVertexLeastAncestor(theGraph, I, I);
     gp_SetVertexLowpoint(theGraph, I, I);
 
-    gp_SetVertexStepVisited(theGraph, I, theGraph->N);
+    gp_SetVertexVisitedInfo(theGraph, I, theGraph->N);
     gp_SetVertexPertinentAdjacencyInfo(theGraph, I, NIL);
     gp_SetVertexPertinentBicompList(theGraph, I, NIL);
     gp_SetVertexSeparatedDFSChildList(theGraph, I, NIL);

@@ -1015,7 +1015,7 @@ isolatorContextP IC = &theGraph->IC;
 
      for (v = 0; v < theGraph->N; v++)
      {
-    	 gp_SetVertexStepVisited(theGraph, v, I+1);
+    	 gp_SetVertexVisitedInfo(theGraph, v, I+1);
          gp_SetVertexPertinentAdjacencyInfo(theGraph, v, NIL);
          gp_SetVertexPertinentBicompList(theGraph, v, NIL);
      }
