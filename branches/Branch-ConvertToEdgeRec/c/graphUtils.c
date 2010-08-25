@@ -80,10 +80,13 @@ int  _RestoreVertex(graphP theGraph);
  ********************************************************************/
 
 void _ClearIsolatorContext(graphP theGraph);
-void _FillVisitedFlags(graphP theGraph, int FillValue);
-int  _FillVisitedFlagsInBicomp(graphP theGraph, int BicompRoot, int FillValue);
-int  _FillVisitedFlagsInOtherBicomps(graphP theGraph, int BicompRoot, int FillValue);
-void _FillVisitedFlagsInUnembeddedEdges(graphP theGraph, int FillValue);
+void _ClearVisitedFlags(graphP theGraph);
+void _ClearVertexVisitedFlags(graphP theGraph);
+void _ClearEdgeVisitedFlags(graphP theGraph);
+int  _ClearVisitedFlagsInBicomp(graphP theGraph, int BicompRoot);
+int  _ClearVisitedFlagsInOtherBicomps(graphP theGraph, int BicompRoot);
+void _ClearVisitedFlagsInUnembeddedEdges(graphP theGraph);
+int  _FillVertexVisitedInfoInBicomp(graphP theGraph, int BicompRoot, int FillValue);
 int  _ClearVertexTypeInBicomp(graphP theGraph, int BicompRoot);
 
 int  _HideInternalEdges(graphP theGraph, int vertex);
@@ -490,7 +493,6 @@ void _InitGraphNode(graphP theGraph, int J)
      theGraph->G[J].v = NIL;
      gp_SetPrevArc(theGraph, J, NIL);
      gp_SetNextArc(theGraph, J, NIL);
-     theGraph->G[J].visited = 0;
      theGraph->G[J].flags = 0;
 }
 
@@ -531,23 +533,46 @@ isolatorContextP IC = &theGraph->IC;
 }
 
 /********************************************************************
- _FillVisitedFlags()
+ _ClearVisitedFlags()
  ********************************************************************/
 
-void _FillVisitedFlags(graphP theGraph, int FillValue)
+void _ClearVisitedFlags(graphP theGraph)
 {
-int  i;
-int  GsizeOccupied = theGraph->edgeOffset + 2*(theGraph->M + sp_GetCurrentSize(theGraph->edgeHoles));
-
-     for (i=0; i < GsizeOccupied; i++)
-          theGraph->G[i].visited = FillValue;
+	 _ClearVertexVisitedFlags(theGraph);
+	 _ClearEdgeVisitedFlags(theGraph);
 }
 
 /********************************************************************
- _FillVisitedFlagsInBicomp()
+ _ClearVertexVisitedFlags()
+ ********************************************************************/
 
- Places the FillValue into the 'visited' members of the vertices and
- arcs in the bicomp rooted by BicompRoot.
+void _ClearVertexVisitedFlags(graphP theGraph)
+{
+int  I;
+int  VsizeOccupied = theGraph->N + theGraph->NV;
+
+     for (I=0; I < VsizeOccupied; I++)
+          gp_ClearVertexVisitedFlag(theGraph, I);
+}
+
+/********************************************************************
+ _ClearEdgeVisitedFlags()
+ ********************************************************************/
+
+void _ClearEdgeVisitedFlags(graphP theGraph)
+{
+int  J;
+int  EsizeOccupied = 2*(theGraph->M + sp_GetCurrentSize(theGraph->edgeHoles));
+
+     for (J=0; J < EsizeOccupied; J++)
+    	 gp_ClearEdgeVisitedFlag(theGraph, J);
+}
+
+/********************************************************************
+ _ClearVisitedFlagsInBicomp()
+
+ Clears the visited flag of the vertices and arcs in the bicomp rooted
+ by BicompRoot.
 
  This method uses the stack but preserves whatever may have been
  on it.  In debug mode, it will return NOTOK if the stack overflows.
@@ -556,21 +581,21 @@ int  GsizeOccupied = theGraph->edgeOffset + 2*(theGraph->M + sp_GetCurrentSize(t
  Returns OK on success, NOTOK on implementation failure.
  ********************************************************************/
 
-int  _FillVisitedFlagsInBicomp(graphP theGraph, int BicompRoot, int FillValue)
+int  _ClearVisitedFlagsInBicomp(graphP theGraph, int BicompRoot)
 {
-int  V, J;
+int  I, J;
 int  stackBottom = sp_GetCurrentSize(theGraph->theStack);
 
      sp_Push(theGraph->theStack, BicompRoot);
      while (sp_GetCurrentSize(theGraph->theStack) > stackBottom)
      {
-          sp_Pop(theGraph->theStack, V);
-          theGraph->G[V].visited = FillValue;
+          sp_Pop(theGraph->theStack, I);
+          gp_ClearVertexVisited(theGraph, I);
 
           J = gp_GetFirstArc(theGraph, V);
           while (gp_IsArc(theGraph, J))
           {
-             theGraph->G[J].visited = FillValue;
+             gp_ClearEdgeVisited(theGraph, J);
 
              if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_CHILD)
                  sp_Push(theGraph->theStack, theGraph->G[J].v);
@@ -582,27 +607,28 @@ int  stackBottom = sp_GetCurrentSize(theGraph->theStack);
 }
 
 /********************************************************************
- _FillVisitedFlagsInOtherBicomps()
- Typically, we want to clear or set all visited flags in the graph
- (see _FillVisitedFlags).  However, in some algorithms this would be
- too costly, so it is necessary to clear or set the visited flags only
- in one bicomp (see _FillVisitedFlagsInBicomp), then do some processing
+ _ClearVisitedFlagsInOtherBicomps()
+ Typically, we want to clear all visited flags in the graph
+ (see _ClearVisitedFlags).  However, in some algorithms this would be
+ too costly, so it is necessary to clear the visited flags only
+ in one bicomp (see _ClearVisitedFlagsInBicomp), then do some processing
  that sets some of the flags then performs some tests.  If the tests
- are positive, then we can clear or set all the visited flags in the
+ are positive, then we can clear all the visited flags in the
  other bicomps (the processing may have set the visited flags in the
  one bicomp in a particular way that we want to retain, so we skip
  the given bicomp).
  ********************************************************************/
 
-int  _FillVisitedFlagsInOtherBicomps(graphP theGraph, int BicompRoot, int FillValue)
+int  _ClearVisitedFlagsInOtherBicomps(graphP theGraph, int BicompRoot)
 {
-int  R, edgeOffset = theGraph->edgeOffset;
+int  R;
+int  VsizeOccupied = theGraph->N + theGraph->NV;
 
-     for (R = theGraph->N; R < edgeOffset; R++)
+     for (R = theGraph->N; R < VsizeOccupied; R++)
      {
           if (R != BicompRoot && gp_IsArc(theGraph, gp_GetFirstArc(theGraph, R)) )
           {
-              if (_FillVisitedFlagsInBicomp(theGraph, R, FillValue) != OK)
+              if (_ClearVisitedFlagsInBicomp(theGraph, R) != OK)
             	  return NOTOK;
           }
      }
@@ -610,12 +636,12 @@ int  R, edgeOffset = theGraph->edgeOffset;
 }
 
 /********************************************************************
- _FillVisitedFlagsInUnembeddedEdges()
+ _ClearVisitedFlagsInUnembeddedEdges()
  Unembedded edges aren't part of any bicomp yet, but it may be
- necessary to fill their visited flags, typically with zero.
+ necessary to clear their visited flags.
  ********************************************************************/
 
-void _FillVisitedFlagsInUnembeddedEdges(graphP theGraph, int FillValue)
+void _ClearVisitedFlagsInUnembeddedEdges(graphP theGraph)
 {
 int I, J;
 
@@ -624,8 +650,8 @@ int I, J;
         J = gp_GetVertexFwdArcList(theGraph, I);
         while (gp_IsArc(theGraph, J))
         {
-            theGraph->G[J].visited =
-            theGraph->G[gp_GetTwinArc(theGraph, J)].visited = FillValue;
+            gp_ClearEdgeVisited(theGraph, J);
+            gp_ClearEdgeVisited(theGraph, gp_GetTwinArc(theGraph, J));
 
             J = gp_GetNextArc(theGraph, J);
             if (J == gp_GetVertexFwdArcList(theGraph, I))
@@ -723,6 +749,44 @@ int  e, eTwin, pathLength=0;
      // Mark the last vertex with 'visited'
      gp_SetVertexVisited(theGraph, x);
 
+     return OK;
+}
+
+/********************************************************************
+ _FillVertexVisitedInfoInBicomp()
+
+ Places the FillValue into the visitedInfo of the non-virtual vertices
+ in the bicomp rooted by BicompRoot.
+
+ This method uses the stack but preserves whatever may have been
+ on it.  In debug mode, it will return NOTOK if the stack overflows.
+ This method pushes at most one integer per vertex in the bicomp.
+
+ Returns OK on success, NOTOK on implementation failure.
+ ********************************************************************/
+
+int  _FillVertexVisitedInfoInBicomp(graphP theGraph, int BicompRoot, int FillValue)
+{
+int  I, J;
+int  stackBottom = sp_GetCurrentSize(theGraph->theStack);
+
+     sp_Push(theGraph->theStack, BicompRoot);
+     while (sp_GetCurrentSize(theGraph->theStack) > stackBottom)
+     {
+          sp_Pop(theGraph->theStack, I);
+
+          if (I < theGraph->N)
+        	  gp_SetVertexVisitedInfo(theGraph, I, FillValue);
+
+          J = gp_GetFirstArc(theGraph, V);
+          while (gp_IsArc(theGraph, J))
+          {
+             if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_CHILD)
+                 sp_Push(theGraph->theStack, theGraph->G[J].v);
+
+             J = gp_GetNextArc(theGraph, J);
+          }
+     }
      return OK;
 }
 
@@ -2016,10 +2080,10 @@ int _IdentifyVertices(graphP theGraph, int u, int v, int eBefore)
     J = gp_GetFirstArc(theGraph, u);
     while (gp_IsArc(theGraph, J))
     {
-    	 if (theGraph->G[theGraph->G[J].v].visited != 0)
+    	 if (gp_GetVertexVisited(theGraph, theGraph->G[J].v))
     		 return NOTOK;
 
-         theGraph->G[theGraph->G[J].v].visited = 1;
+         gp_SetVertexVisited(theGraph, theGraph->G[J].v);
          J = gp_GetNextArc(theGraph, J);
     }
 
@@ -2028,7 +2092,7 @@ int _IdentifyVertices(graphP theGraph, int u, int v, int eBefore)
     J = gp_GetFirstArc(theGraph, v);
     while (gp_IsArc(theGraph, J))
     {
-         if (theGraph->G[theGraph->G[J].v].visited)
+         if (gp_GetVertexVisited(theGraph, theGraph->G[J].v))
          {
              sp_Push(theGraph->theStack, J);
              gp_HideEdge(theGraph, J);
@@ -2040,7 +2104,7 @@ int _IdentifyVertices(graphP theGraph, int u, int v, int eBefore)
     J = gp_GetFirstArc(theGraph, u);
     while (gp_IsArc(theGraph, J))
     {
-         theGraph->G[theGraph->G[J].v].visited = 0;
+    	 gp_ClearVertexVisited(theGraph, theGraph->G[J].v);
          J = gp_GetNextArc(theGraph, J);
     }
 
@@ -2368,7 +2432,7 @@ int  stackBottom = sp_GetCurrentSize(theGraph->theStack);
              if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_CHILD)
                  sp_Push(theGraph->theStack, theGraph->G[J].v);
 
-             if (!theGraph->G[J].visited)
+             if (!gp_GetEdgeVisited(theGraph, J))
                   J = gp_DeleteEdge(theGraph, J, 0);
              else J = gp_GetNextArc(theGraph, J);
           }

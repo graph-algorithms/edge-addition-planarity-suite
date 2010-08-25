@@ -49,8 +49,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* Imported functions */
 
 extern void _ClearIsolatorContext(graphP theGraph);
-extern void _FillVisitedFlags(graphP, int);
-extern int  _FillVisitedFlagsInBicomp(graphP theGraph, int BicompRoot, int FillValue);
+extern int  _ClearVisitedFlagsInBicomp(graphP theGraph, int BicompRoot);
 extern int  _ClearVertexTypeInBicomp(graphP theGraph, int BicompRoot);
 extern int  _HideInternalEdges(graphP theGraph, int vertex);
 extern int  _RestoreInternalEdges(graphP theGraph, int stackBottom);
@@ -224,7 +223,7 @@ int  singleBicompMode =  (R == NIL) ? FALSE : TRUE;
      // In singleBicompMode, clear the visited members of all vertex and edge records.
      if (singleBicompMode)
      {
-    	 if (_FillVisitedFlagsInBicomp(theGraph, R, 0) != OK)
+    	 if (_ClearVisitedFlagsInBicomp(theGraph, R) != OK)
         	 return NOTOK;
      }
 

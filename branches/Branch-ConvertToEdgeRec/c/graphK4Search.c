@@ -52,10 +52,10 @@ extern int K4SEARCH_ID;
 /* Imported functions */
 
 extern void _ClearIsolatorContext(graphP theGraph);
-extern void _FillVisitedFlags(graphP, int);
-extern int  _FillVisitedFlagsInBicomp(graphP theGraph, int BicompRoot, int FillValue);
-extern int  _FillVisitedFlagsInOtherBicomps(graphP theGraph, int BicompRoot, int FillValue);
-extern void _FillVisitedFlagsInUnembeddedEdges(graphP theGraph, int FillValue);
+extern void _ClearVisitedFlags(graphP, int);
+extern int  _ClearVisitedFlagsInBicomp(graphP theGraph, int BicompRoot);
+extern int  _ClearVisitedFlagsInOtherBicomps(graphP theGraph, int BicompRoot);
+extern void _ClearVisitedFlagsInUnembeddedEdges(graphP theGraph);
 extern int  _ClearVertexTypeInBicomp(graphP theGraph, int BicompRoot);
 extern int  _DeleteUnmarkedEdgesInBicomp(graphP theGraph, int BicompRoot);
 extern int  _ComputeArcType(graphP theGraph, int a, int b, int edgeType);
@@ -250,7 +250,7 @@ isolatorContextP IC = &theGraph->IC;
                 return NOTOK;
 
             // Set up to isolate K4 homeomorph
-            _FillVisitedFlags(theGraph, 0);
+            _ClearVisitedFlags(theGraph);
 
             if (_FindUnembeddedEdgeToCurVertex(theGraph, IC->w, &IC->dw) != TRUE)
                 return NOTOK;
@@ -283,8 +283,8 @@ isolatorContextP IC = &theGraph->IC;
     	if (_SetVertexTypesForMarkingXYPath(theGraph) != OK)
     		return NOTOK;
 
-    	// Marking the X-Y path relies on the bicomp visited flags being zero
-    	if (_FillVisitedFlagsInBicomp(theGraph, R, 0) != OK)
+    	// Marking the X-Y path relies on the bicomp visited flags being cleared
+    	if (_ClearVisitedFlagsInBicomp(theGraph, R) != OK)
     		return NOTOK;
 
     	// NOTE: This call preserves the stack and does not overflow. There
@@ -305,7 +305,7 @@ isolatorContextP IC = &theGraph->IC;
                 return NOTOK;
 
             // Set up to isolate K4 homeomorph
-            _FillVisitedFlags(theGraph, 0);
+            _ClearVisitedFlags(theGraph);
 
             if (_FindUnembeddedEdgeToCurVertex(theGraph, IC->w, &IC->dw) != TRUE)
                 return NOTOK;
@@ -367,7 +367,7 @@ isolatorContextP IC = &theGraph->IC;
                 return NOTOK;
 
             // Set up to isolate K4 homeomorph
-            _FillVisitedFlags(theGraph, 0);
+            _ClearVisitedFlags(theGraph);
 
             IC->x = a_x;
             IC->y = a_y;
@@ -401,7 +401,7 @@ isolatorContextP IC = &theGraph->IC;
                 return NOTOK;
 
             // Set up to isolate K4 homeomorph
-            _FillVisitedFlags(theGraph, 0);
+            _ClearVisitedFlags(theGraph);
 
             if (PERTINENT(theGraph, IC->w))
             {
@@ -466,7 +466,7 @@ isolatorContextP IC = &theGraph->IC;
             return NOTOK;
 
         // Set up to isolate minor E
-        _FillVisitedFlags(theGraph, 0);
+        _ClearVisitedFlags(theGraph);
 
         if (_FindUnembeddedEdgeToCurVertex(theGraph, IC->w, &IC->dw) != TRUE)
             return NOTOK;
@@ -947,7 +947,7 @@ int  _K4_ReduceBicompToEdge(graphP theGraph, K4SearchContext *context, int R, in
 	int newEdge;
 
 	if (_OrientVerticesInBicomp(theGraph, R, 0) != OK ||
-		_FillVisitedFlagsInBicomp(theGraph, R, 0) != OK)
+		_ClearVisitedFlagsInBicomp(theGraph, R) != OK)
 		return NOTOK;
     if (theGraph->functions.fpMarkDFSPath(theGraph, R, W) != OK)
         return NOTOK;

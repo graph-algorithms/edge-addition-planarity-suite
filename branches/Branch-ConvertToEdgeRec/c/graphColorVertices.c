@@ -53,7 +53,7 @@ extern int COLORVERTICES_ID;
 #include <malloc.h>
 #include <stdio.h>
 
-extern void _FillVisitedFlags(graphP theGraph, int FillValue);
+extern void _ClearVertexVisitedFlags(graphP theGraph);
 extern int  _TestSubgraph(graphP theSubgraph, graphP theGraph);
 
 extern void _ColorVertices_Reinitialize(ColorVerticesContext *context);
@@ -133,8 +133,8 @@ int gp_ColorVertices(graphP theGraph)
     		context->color[v] = 0;
     }
 
-    // Initialize the visited flags so they can be used during reductions
-    _FillVisitedFlags(theGraph, 0);
+    // Initialize the vertex visited flags so they can be used during reductions
+    _ClearVertexVisitedFlags(theGraph);
 
     // Reduce the graph using minimum degree selection
     while (context->numVerticesToReduce > 0)

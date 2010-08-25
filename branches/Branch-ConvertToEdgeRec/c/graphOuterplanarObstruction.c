@@ -46,7 +46,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Imported functions */
 
-extern void _FillVisitedFlags(graphP, int);
+extern void _ClearVisitedFlags(graphP);
 extern void _ClearIsolatorContext(graphP theGraph);
 
 extern int  _GetNextVertexOnExternalFace(graphP theGraph, int curVertex, int *pPrevLink);
@@ -131,10 +131,10 @@ int  _IsolateOuterplanarObstruction(graphP theGraph, int I, int R)
 int  RetVal;
 
 /* A subgraph homeomorphic to K_{2,3} or K_4 will be isolated by using the visited
-   flags, 1=keep edge/vertex and 0=omit. Here we initialize to omit all, then we
-   subsequently set visited to 1 on all edges and vertices in the homeomorph. */
+   flags, set=keep edge/vertex and clear=omit. Here we initialize to omit all, then we
+   subsequently set visited on all edges and vertices in the homeomorph. */
 
-	 _FillVisitedFlags(theGraph, 0);
+	 _ClearVisitedFlags(theGraph);
 
 /* Next we determineg which of the non-outerplanarity Minors was encountered
         and the principal bicomp on which the isolator will focus attention. */

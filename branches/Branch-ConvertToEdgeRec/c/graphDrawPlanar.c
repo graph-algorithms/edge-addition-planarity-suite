@@ -53,7 +53,7 @@ extern int DRAWPLANAR_ID;
 #include <malloc.h>
 #include <stdio.h>
 
-extern void _FillVisitedFlags(graphP theGraph, int FillValue);
+extern void _ClearVisitedFlags(graphP theGraph);
 
 /* Private functions exported to system */
 

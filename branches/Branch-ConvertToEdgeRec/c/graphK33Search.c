@@ -51,10 +51,12 @@ extern int K33SEARCH_ID;
 
 /* Imported functions */
 
-extern void _FillVisitedFlags(graphP, int);
-extern int  _FillVisitedFlagsInBicomp(graphP theGraph, int BicompRoot, int FillValue);
-extern int  _FillVisitedFlagsInOtherBicomps(graphP theGraph, int BicompRoot, int FillValue);
-extern void _FillVisitedFlagsInUnembeddedEdges(graphP theGraph, int FillValue);
+extern void _ClearVisitedFlags(graphP);
+extern int  _ClearVisitedFlagsInBicomp(graphP theGraph, int BicompRoot);
+extern int  _ClearVisitedFlagsInOtherBicomps(graphP theGraph, int BicompRoot);
+extern void _ClearVisitedFlagsInUnembeddedEdges(graphP theGraph);
+extern int  _FillVertexVisitedInfoInBicomp(graphP theGraph, int BicompRoot, int FillValue);
+
 extern int  _GetBicompSize(graphP theGraph, int BicompRoot);
 extern int  _HideInternalEdges(graphP theGraph, int vertex);
 extern int  _RestoreInternalEdges(graphP theGraph, int stackBottom);
@@ -385,10 +387,10 @@ int tempResult;
      if (_ReduceBicomp(theGraph, context, R) != OK)
          return NOTOK;
 
-/* Set visited flags to a high number so planarity algorithm
-    can properly do Walkup procedure in future steps */
+/* Set visitedInfo values in the bicomp to the initialized state so the planarity
+	algorithm can properly do the Walkup procedure in future steps */
 
-     if (_FillVisitedFlagsInBicomp(theGraph, IC->r, theGraph->N) != OK)
+     if (_FillVertexVisitedInfoInBicomp(theGraph, IC->r, theGraph->N) != OK)
     	 return NOTOK;
 
 /* We now intend to ignore the pertinence of W (conceptually eliminating
@@ -692,14 +694,14 @@ isolatorContextP IC = &theGraph->IC;
 /* We assume that the current bicomp has been marked appropriately,
      but we must now clear the visitation flags of all other bicomps. */
 
-     if (_FillVisitedFlagsInOtherBicomps(theGraph, IC->r, 0) != OK)
+     if (_ClearVisitedFlagsInOtherBicomps(theGraph, IC->r) != OK)
     	 return NOTOK;
 
-/* To complete the normal behavior of _FillVisitedFlags() in the
+/* To complete the normal behavior of _ClearVisitedFlags() in the
     normal isolator context initialization, we also have to clear
     the visited flags on all edges that have not yet been embedded */
 
-     _FillVisitedFlagsInUnembeddedEdges(theGraph, 0);
+     _ClearVisitedFlagsInUnembeddedEdges(theGraph);
 
 /* Now we can find the descendant ends of unembedded back edges based on
      the ancestor settings ux, uy and uz. */
@@ -1107,7 +1109,7 @@ int  stackBottom;
 
 /* Clear the previously marked X-Y path */
 
-     if (_FillVisitedFlagsInBicomp(theGraph, IC->r, 0) != OK)
+     if (_ClearVisitedFlagsInBicomp(theGraph, IC->r) != OK)
     	 return NOTOK;
 
 /* Save the size of the stack before hiding any edges, so we will know
@@ -1403,7 +1405,7 @@ int  p, c, d, excludedChild, e;
 
  For example, _FindK33WithMergeBlocker() invokes ChooseTypeOfNonplanarityMinor()
  to help reconstruct the context under which the mergeBlocker was set.
- ChooseTypeOfNonplanarityMinor() calls _FillVisitedFlagsInBicomp(), which
+ ChooseTypeOfNonplanarityMinor() calls _ClearVisitedFlagsInBicomp(), which
  depends on the DFS tree.
 
  NOTE: The following are some general steps taken in this method:
@@ -1542,7 +1544,7 @@ int  rxType, xwType, wyType, yrType, xyType;
     flags so the current X-Y path will not be retained (an X-Y path
     formed mostly or entirely from DFS tree edges is retained). */
 
-     if (_FillVisitedFlagsInBicomp(theGraph, R, 0) != OK)
+     if (_ClearVisitedFlagsInBicomp(theGraph, R) != OK)
     	 return NOTOK;
 
 /* Now we mark the tree path from the maximum numbered vertex up
@@ -1590,7 +1592,7 @@ int  rxType, xwType, wyType, yrType, xyType;
 /* Clear all visited flags in the bicomp.
      This is the important "step 4" mentioned in the NOTE above */
 
-     if (_FillVisitedFlagsInBicomp(theGraph, R, 0) != OK)
+     if (_ClearVisitedFlagsInBicomp(theGraph, R) != OK)
     	 return NOTOK;
 
 /* Clear all orientation signs in the bicomp.
@@ -2090,7 +2092,7 @@ int u_min, u_max, d, u_d;
 
 /* Clear the previously marked x-y path */
 
-     if (_FillVisitedFlagsInBicomp(theGraph, IC->r, 0) != OK)
+     if (_ClearVisitedFlagsInBicomp(theGraph, IC->r) != OK)
     	 return NOTOK;
 
 /* Clear dw to stop the marking of path (v, w) */

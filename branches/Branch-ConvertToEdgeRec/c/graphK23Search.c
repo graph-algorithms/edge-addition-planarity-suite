@@ -46,7 +46,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Imported functions */
 
-extern void _FillVisitedFlags(graphP, int);
+extern void _ClearVisitedFlags(graphP);
 
 extern int  _GetNextVertexOnExternalFace(graphP theGraph, int curVertex, int *pPrevLink);
 extern int  _OrientVerticesInBicomp(graphP theGraph, int BicompRoot, int PreserveSigns);
@@ -166,7 +166,7 @@ int X, Y, XPrevLink, YPrevLink;
 
      if (theGraph->IC.minorType & (MINORTYPE_A|MINORTYPE_B))
      {
-         _FillVisitedFlags(theGraph, 0);
+         _ClearVisitedFlags(theGraph);
 
          if (theGraph->IC.minorType & MINORTYPE_A)
          {
@@ -209,7 +209,7 @@ int X, Y, XPrevLink, YPrevLink;
      if (IC->w != _GetNextVertexOnExternalFace(theGraph, X, &XPrevLink) ||
          IC->w != _GetNextVertexOnExternalFace(theGraph, Y, &YPrevLink))
      {
-         _FillVisitedFlags(theGraph, 0);
+         _ClearVisitedFlags(theGraph);
 
          if (_IsolateOuterplanarityObstructionE1orE2(theGraph) != OK)
              return NOTOK;
@@ -230,7 +230,7 @@ int X, Y, XPrevLink, YPrevLink;
          FUTUREPERTINENT(theGraph, Y, I) ||
          FUTUREPERTINENT(theGraph, IC->w, I))
      {
-         _FillVisitedFlags(theGraph, 0);
+         _ClearVisitedFlags(theGraph);
 
          if (_IsolateOuterplanarityObstructionE3orE4(theGraph) != OK)
              return NOTOK;
