@@ -131,7 +131,7 @@ int N, I, W, ErrorCode, adjList, J;
      // Clear the visited members of the vertices so they can be used
      // during the adjacency list read operation
      for (I=0; I < N; I++)
-          theGraph->G[I].visited = 0;
+          gp_SetVertexVisitedInfo(theGraph, I, NIL);
 
      // Do the adjacency list read operation for each vertex in order
      for (I = 0, ErrorCode = OK; I < N && ErrorCode==OK; I++)
@@ -166,7 +166,7 @@ int N, I, W, ErrorCode, adjList, J;
         	  J = gp_GetFirstArc(theGraph, I);
 			  while (gp_IsArc(theGraph, J))
 			  {
-				  theGraph->G[theGraph->G[J].v].visited = J;
+				  gp_SetVertexVisitedInfo(theGraph, theGraph->G[J].v, J);
 				  J = gp_GetNextArc(theGraph, J);
 			  }
 
@@ -209,12 +209,12 @@ int N, I, W, ErrorCode, adjList, J;
              {
             	 // If the adjacency node (arc) already exists, then we add it
             	 // as the new first arc of the vertex and delete it from adjList
-            	 if (theGraph->G[W].visited)
+            	 if (gp_GetVertexVisitedInfo(theGraph, W) != NIL)
             	 {
-            		 J = theGraph->G[W].visited;
+            		 J = gp_GetVertexVisitedInfo(theGraph, W);
 
             		 // Remove the arc J from the adjList construct
-            		 theGraph->G[W].visited = 0;
+            		 gp_SetVertexVisitedInfo(theGraph, W, NIL);
             		 if (adjList == J)
             		 {
             			 if ((adjList = gp_GetNextArc(theGraph, J)) == J)
@@ -251,7 +251,7 @@ int N, I, W, ErrorCode, adjList, J;
           {
         	  J = adjList;
 
-			  theGraph->G[theGraph->G[J].v].visited = 0;
+        	  gp_SetVertexVisitedInfo(theGraph, theGraph->G[J].v, NIL);
 
  			  if ((adjList = gp_GetNextArc(theGraph, J)) == J)
  				  adjList = NIL;
