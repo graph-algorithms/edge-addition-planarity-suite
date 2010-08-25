@@ -318,7 +318,7 @@ typedef extFaceLinkRec * extFaceLinkRecP;
                 of the list as an easy way to make sure all internally active
                 bicomps are processed first.
 	separatedDFSChildList: contains list DFS children of this vertex in
-                non-descending order by Lowpoint (sorted in linear time).
+                non-descending order by lowpoint (sorted in linear time).
                 When merging bicomp rooted by edge (r, c) into vertex v (i.e.
                 merging root copy r with parent copy v), the vertex c is
                 removed from the separatedDFSChildList of v.

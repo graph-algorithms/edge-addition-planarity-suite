@@ -48,8 +48,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Imported functions */
 
-extern void _FillVisitedFlags(graphP, int);
-
 extern int _IsolateKuratowskiSubgraph(graphP theGraph, int I, int R);
 extern int _IsolateOuterplanarObstruction(graphP theGraph, int I, int R);
 
@@ -604,9 +602,9 @@ int  extFaceVertex;
  set up as a result of the need to embed edge (I, W). It does this by
  recording the pertinent child biconnected components of all cut
  vertices between W and the child of I that is a descendant of W.
- Note that it stops the traversal if it finds a visited flag set to I,
- which indicates that a prior walkup call in step I has already done
- the work.
+ Note that it stops the traversal if it finds a visited info value set
+ to I, which indicates that a prior walkup call in step I has already
+ done the work.
 
  Zig and Zag are so named because one goes around one side of a
  bicomp and the other goes around the other side, yet we have
@@ -643,24 +641,29 @@ int  RootID_DFSChild, BicompList;
 
      while (Zig != I)
      {
-        /* A previous walk-up may have been this way already */
+    	R = NIL;
 
-        if (theGraph->G[Zig].visited == I) break;
-        if (theGraph->G[Zag].visited == I) break;
+    	// If the vertex is not a bicomp root...
+    	if (Zig < N)
+    	{
+    		// If already visited, in this step I, then no need to continue walking up...
+            if (gp_GetVertexVisitedInfo(theGraph, Zig) == I) break;
+            // Otherwise, mark this vertex as visited in step I so future walk ups can avoid work
+            gp_SetVertexVisitedInfo(theGraph, Zig, I);
+    	}
+    	// Otherwise set R for bicomp root processing below
+    	else R = Zig;
 
-        /* Mark the current vertices as visited during the embedding of vertex I. */
+    	// Same processing along the parallel external face path.
+    	if (Zag < N)
+    	{
+            if (gp_GetVertexVisitedInfo(theGraph, Zag) == I) break;
+            gp_SetVertexVisitedInfo(theGraph, Zag, I);
+    	}
+    	else R = Zag;
 
-        theGraph->G[Zig].visited = I;
-        theGraph->G[Zag].visited = I;
-
-        /* Determine whether either Zig or Zag has landed on a bicomp root */
-
-        if (Zig >= N) R = Zig;
-        else if (Zag >= N) R = Zag;
-        else R = NIL;
-
-        // If we have a bicomp root, then we want to hop up to the parent copy and
-        // record a pertinent child bicomp.
+        // If we have a bicomp root, then we want to hop up to the non-virtual parent copy
+        // and record a pertinent child bicomp.
         // Prepends if the bicomp is internally active, appends if externally active.
 
         if (R != NIL)
@@ -1098,21 +1101,16 @@ int gp_Embed(graphP theGraph, int embedFlags)
 int N, I, J, child;
 int RetVal = OK;
 
-    /* Basic parameter checks */
-
+    // Basic parameter checks
     if (theGraph==NULL)
     	return NOTOK;
 
-    /* A little shorthand for the size of the graph */
-
+    // A little shorthand for the order of the graph
     N = theGraph->N;
 
-    /* Preprocessing */
-
+    // Preprocessing
     theGraph->embedFlags = embedFlags;
 
-//    if (gp_CreateDFSTree(theGraph) != OK)
-//        return NOTOK;
     if (gp_PreprocessForEmbedding(theGraph) != OK)
           return NOTOK;
 
@@ -1120,28 +1118,26 @@ int RetVal = OK;
         if (gp_SortVertices(theGraph) != OK)
             return NOTOK;
 
-//    if (gp_LowpointAndLeastAncestor(theGraph) != OK)
-//    	return NOTOK;
-
     _CreateSortedSeparatedDFSChildLists(theGraph);
 
     if (theGraph->functions.fpCreateFwdArcLists(theGraph) != OK)
         return NOTOK;
 
+    // Embed the DFS tree edges
     theGraph->functions.fpCreateDFSTreeEmbedding(theGraph);
 
-    /* In reverse DFI order, process each vertex by embedding its
-         the 'back edges' from the vertex to its DFS descendants. */
-
-    for (I = 0; I < theGraph->edgeOffset; I++)
-        theGraph->G[I].visited = N;
-
+    // In reverse DFI order, embed the back edges from each vertex to its DFS descendants.
     for (I = theGraph->N-1; I >= 0; I--)
     {
           RetVal = OK;
 
-          /* Do the Walkup for each cycle edge from I to a DFS descendant W. */
+          // Each vertex is assigned an initial visited info setting of N.
+          // Only vertex descendants of I need to have an initialized visited info field,
+          // and all possible descendants of I are so initialized by this assignment in
+          // preceding iterations of this loop.
+          gp_SetVertexVisitedInfo(theGraph, I, N);
 
+          // Do the Walkup for each cycle edge from I to a DFS descendant W.
           J = gp_GetVertexFwdArcList(theGraph, I);
           while (J != NIL)
           {
@@ -1152,13 +1148,12 @@ int RetVal = OK;
                   J = NIL;
           }
 
-          /* For each DFS child C of the current vertex with a pertinent
-                child bicomp, do a Walkdown on each side of the bicomp rooted
-                by tree edge (R, C), where R is a root copy of the current
-                vertex stored at C+N and uniquely associated with the bicomp
-                containing C. (NOTE: if C has no pertinent child bicomps, then
-                there are no cycle edges from I to descendants of C). */
-
+          // For each DFS child C of the current vertex with a pertinent child bicomp,
+          //      Do a Walkdown on each side of the bicomp rooted by tree edge (R, C),
+          //      where R is a root copy of the current vertex stored at C+N and
+          //      uniquely associated with the bicomp containing C.
+          //      (NOTE: if C has no pertinent child bicomps, then there are no
+          //             cycle edges from I to descendants of C).
           child = gp_GetVertexSeparatedDFSChildList(theGraph, I);
           while (child != NIL)
           {
@@ -1184,15 +1179,14 @@ int RetVal = OK;
                                 gp_GetVertexSeparatedDFSChildList(theGraph, I), child);
           }
 
-          /* If the Walkdown sequence is completed but not all forward edges
-             are embedded or an explicit NONEMBEDDABLE result was returned,
-             then the graph is not planar/outerplanar.
-             The handler below is invoked because some extension algorithms are
-             able to clear the blockage to planarity/outerplanarity and continue
-             the embedder iteration loop (they return OK below).
-             The default implementation simply returns NONEMBEDDABLE, which stops
-             the embedding process. */
-
+          // If the Walkdown sequence is completed but not all forward edges
+          // are embedded or an explicit NONEMBEDDABLE result was returned,
+          // then the graph is not planar/outerplanar.
+          // The handler below is invoked because some extension algorithms are
+          // able to clear the blockage to planarity/outerplanarity and continue
+          // the embedder iteration loop (they return OK below).
+          // The default implementation simply returns NONEMBEDDABLE, which stops
+          // the embedding process.
           if (gp_GetVertexFwdArcList(theGraph, I) != NIL || RetVal == NONEMBEDDABLE)
           {
               RetVal = theGraph->functions.fpHandleBlockedEmbedIteration(theGraph, I);
@@ -1201,12 +1195,11 @@ int RetVal = OK;
           }
     }
 
-    /* Postprocessing to orient the embedding and merge any remaining separated bicomps,
-       or to isolate an obstruction to planarity/outerplanarity.  Some extension algorithms
-       either do nothing if they have already isolated a subgraph of interest, or they may
-       do so now based on information collected by their implementations of
-       HandleBlockedDescendantBicomp or HandleBlockedEmbedIteration */
-
+    // Postprocessing to orient the embedding and merge any remaining separated bicomps,
+    // or to isolate an obstruction to planarity/outerplanarity.  Some extension algorithms
+    // either do nothing if they have already isolated a subgraph of interest, or they may
+    // do so now based on information collected by their implementations of
+    // HandleBlockedDescendantBicomp or HandleBlockedEmbedIteration
     return theGraph->functions.fpEmbedPostprocess(theGraph, I, RetVal);
 }
 
