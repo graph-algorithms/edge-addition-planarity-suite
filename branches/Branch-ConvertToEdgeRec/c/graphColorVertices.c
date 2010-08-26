@@ -134,7 +134,7 @@ int gp_ColorVertices(graphP theGraph)
     }
 
     // Initialize the vertex visited flags so they can be used during reductions
-    _ClearVertexVisitedFlags(theGraph);
+    _ClearVertexVisitedFlags(theGraph, FALSE);
 
     // Reduce the graph using minimum degree selection
     while (context->numVerticesToReduce > 0)

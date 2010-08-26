@@ -111,7 +111,7 @@ int  _K4_ReducePathToEdge(graphP theGraph, K4SearchContext *context, int edgeTyp
 
 int  _K4_GetCumulativeOrientationOnDFSPath(graphP theGraph, int ancestor, int descendant);
 int  _K4_TestPathComponentForAncestor(graphP theGraph, int R, int prevLink, int A);
-void _K4_SetVisitedInPathComponent(graphP theGraph, int R, int prevLink, int A, int fill);
+void _K4_ClearVisitedInPathComponent(graphP theGraph, int R, int prevLink, int A);
 int  _K4_DeleteUnmarkedEdgesInPathComponent(graphP theGraph, int R, int prevLink, int A);
 
 int  _K4_RestoreReducedPath(graphP theGraph, K4SearchContext *context, int J);
@@ -840,7 +840,7 @@ int  _K4_IsolateMinorA2(graphP theGraph)
 	isolatorContextP IC = &theGraph->IC;
 
 	// We assume the X-Y path was already marked
-	if (!theGraph->G[IC->px].visited || !theGraph->G[IC->py].visited)
+	if (!gp_GetVertexVisited(theGraph, IC->px) || !gp_GetVertexVisited(theGraph, IC->py))
     	return NOTOK;
 
 	return _IsolateOuterplanarityObstructionA(theGraph);
@@ -910,7 +910,7 @@ int  _K4_IsolateMinorB2(graphP theGraph)
     if (PERTINENT(theGraph, IC->w))
     {
     	// We assume the X-Y path was already marked
-    	if (!theGraph->G[IC->px].visited || !theGraph->G[IC->py].visited)
+    	if (!gp_GetVertexVisited(theGraph, IC->px) || !gp_GetVertexVisited(theGraph, IC->py))
         	return NOTOK;
 
     	return _IsolateOuterplanarityObstructionE(theGraph);
@@ -960,9 +960,10 @@ int  _K4_ReduceBicompToEdge(graphP theGraph, K4SearchContext *context, int R, in
     if (!gp_IsArc(theGraph, newEdge))
     	return NOTOK;
 
-    // Finally, put the visited state of R and W to unvisted so that
+    // Finally, set the visited info state of R and W to unvisited so that
     // the core embedder (esp. Walkup) will not have any problems.
-	theGraph->G[R].visited = theGraph->G[W].visited = theGraph->N;
+	gp_SetVertexVisitedInfo(theGraph, R, theGraph->N);
+	gp_SetVertexVisitedInfo(theGraph, W, theGraph->N);
 
 	return OK;
 }
@@ -1033,7 +1034,7 @@ int  _K4_ReducePathComponent(graphP theGraph, K4SearchContext *context, int R, i
 	// Check for Case 1: The DFS tree path from A to R is within the reduction component
 	if (_K4_TestPathComponentForAncestor(theGraph, R, prevLink, A))
 	{
-		_K4_SetVisitedInPathComponent(theGraph, R, prevLink, A, 0);
+		_K4_ClearVisitedInPathComponent(theGraph, R, prevLink, A);
 	    if (theGraph->functions.fpMarkDFSPath(theGraph, R, A) != OK)
 	        return NOTOK;
 	    edgeType = EDGE_TYPE_PARENT;
@@ -1044,10 +1045,10 @@ int  _K4_ReducePathComponent(graphP theGraph, K4SearchContext *context, int R, i
 	// Otherwise Case 2: The DFS tree path from A to R is not within the reduction component
 	else
 	{
-		_K4_SetVisitedInPathComponent(theGraph, R, prevLink, A, 0);
+		_K4_ClearVisitedInPathComponent(theGraph, R, prevLink, A);
 		Z = theGraph->G[e_R].v;
-		theGraph->G[e_R].visited = 1;
-		theGraph->G[gp_GetTwinArc(theGraph, e_R)].visited = 1;
+		gp_SetEdgeVisited(theGraph, e_R);
+		gp_SetEdgeVisited(theGraph, gp_GetTwinArc(theGraph, e_R));
 	    if (theGraph->functions.fpMarkDFSPath(theGraph, A, Z) != OK)
 	        return NOTOK;
 		edgeType = EDGE_TYPE_BACK;
@@ -1060,9 +1061,9 @@ int  _K4_ReducePathComponent(graphP theGraph, K4SearchContext *context, int R, i
 	// Clear all the visited flags for safety, except the vertices R and A
 	// will remain in the embedding, and the core embedder (Walkup) uses a
 	// value greater than the current vertex to indicate an unvisited vertex
-	_K4_SetVisitedInPathComponent(theGraph, R, prevLink, A, 0);
-	theGraph->G[R].visited = theGraph->N;
-	theGraph->G[A].visited = theGraph->N;
+	_K4_ClearVisitedInPathComponent(theGraph, R, prevLink, A);
+	gp_SetVertexVisitedInfo(theGraph, R, theGraph->N);
+	gp_SetVertexVisitedInfo(theGraph, A, theGraph->N);
 
 	// Find the component's remaining edges e_A and e_R incident to A and R
 	ZPrevLink = prevLink;
@@ -1170,21 +1171,21 @@ int _K4_TestPathComponentForAncestor(graphP theGraph, int R, int prevLink, int A
 }
 
 /****************************************************************************
- _K4_SetVisitedInPathComponent()
+ _K4_ClearVisitedInPathComponent()
 
  There is a subcomponent of the bicomp rooted by R that is separable by the
  2-cut (R, A) and contains the edge e_R = theGraph->G[R].link[1^prevLink].
 
  All vertices in this component are along the external face, so we
  traverse along the external face vertices strictly between R and A and
- mark all the edges and their incident vertices with the 'visitedValue'.
+ clear all the visited flags of the edges and their incident vertices.
 
  Note that the vertices along the path (R ... A) only have edges incident
  to each other and to R and A because the component is separable by the
  (R, A)-cut.
  ****************************************************************************/
 
-void _K4_SetVisitedInPathComponent(graphP theGraph, int R, int prevLink, int A, int visitedValue)
+void _K4_ClearVisitedInPathComponent(graphP theGraph, int R, int prevLink, int A)
 {
 	int Z, ZPrevLink, e;
 
@@ -1192,13 +1193,13 @@ void _K4_SetVisitedInPathComponent(graphP theGraph, int R, int prevLink, int A, 
 	Z = _GetNextVertexOnExternalFace(theGraph, R, &ZPrevLink);
 	while (Z != A)
 	{
-		theGraph->G[Z].visited = visitedValue;
+		gp_ClearVertexVisited(theGraph, Z);
 		e = gp_GetFirstArc(theGraph, Z);
 		while (gp_IsArc(theGraph, e))
 		{
-			theGraph->G[e].visited = visitedValue;
-			theGraph->G[gp_GetTwinArc(theGraph, e)].visited = visitedValue;
-			theGraph->G[theGraph->G[e].v].visited = visitedValue;
+			gp_ClearEdgeVisited(theGraph, e);
+			gp_ClearEdgeVisited(theGraph, gp_GetTwinArc(theGraph, e));
+			gp_ClearVertexVisited(theGraph, theGraph->G[e].v);
 
 			e = gp_GetNextArc(theGraph, e);
 		}
@@ -1247,7 +1248,7 @@ int  _K4_DeleteUnmarkedEdgesInPathComponent(graphP theGraph, int R, int prevLink
 			// don't push the edge twice, which is of course only applicable
 			// when processing an edge whose endpoints are both internal to
 			// the path (R ... A)
-			if (!theGraph->G[e].visited &&
+			if (!gp_GetEdgeVisited(theGraph, e) &&
 					(e < gp_GetTwinArc(theGraph, e) ||
 					 theGraph->G[e].v == R || theGraph->G[e].v == A))
 			{

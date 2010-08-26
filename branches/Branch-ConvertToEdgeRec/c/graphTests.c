@@ -217,10 +217,10 @@ int I, e, J, JTwin, K, L, NumFaces, connectedComponents;
               continue;
 
           sp_Push(theStack, J);
-          theGraph->G[J].visited = 0;
+          gp_ClearEdgeVisited(theGraph, J);
           JTwin = gp_GetTwinArc(theGraph, J);
           sp_Push(theStack, JTwin);
-          theGraph->G[JTwin].visited = 0;
+          gp_ClearEdgeVisited(theGraph, JTwin);
      }
 
      // There are M edges, so we better have pushed 2M arcs just now
@@ -237,7 +237,7 @@ int I, e, J, JTwin, K, L, NumFaces, connectedComponents;
             /* Get an arc; if it has already been used by a face, then
                 don't use it to traverse a new face */
             sp_Pop(theStack, J);
-            if (theGraph->G[J].visited) continue;
+            if (gp_GetEdgeVisited(theGraph, J)) continue;
 
             L = NIL;
             JTwin = J;
@@ -245,9 +245,9 @@ int I, e, J, JTwin, K, L, NumFaces, connectedComponents;
             {
                 K = gp_GetTwinArc(theGraph, JTwin);
                 L = gp_GetNextArcCircular(theGraph, K);
-                if (theGraph->G[L].visited)
+                if (gp_GetVertexVisited(theGraph, L))
                     return NOTOK;
-                theGraph->G[L].visited++;
+                gp_SetVertexVisited(theGraph, L);
                 JTwin = L;
             }
             NumFaces++;
@@ -293,8 +293,7 @@ int _CheckAllVerticesOnExternalFace(graphP theGraph)
     int I;
 
     // Mark all vertices unvisited
-    for (I=0; I < theGraph->N; I++)
-        theGraph->G[I].visited = 0;
+    _ClearVertexVisitedFlags(theGraph, FALSE);
 
     // For each connected component, walk its external face and
     // mark the vertices as visited
@@ -307,7 +306,7 @@ int _CheckAllVerticesOnExternalFace(graphP theGraph)
     // If any vertex is unvisited, then the embedding is not an outerplanar
     // embedding, so we return NOTOK
     for (I=0; I < theGraph->N; I++)
-        if (!theGraph->G[I].visited)
+        if (!gp_GetVertexVisited(theGraph, I))
         {
             return NOTOK;
         }
@@ -340,13 +339,13 @@ void _MarkExternalFaceVertices(graphP theGraph, int startVertex)
     // Handle the case of an isolated vertex
     if (!gp_IsArc(theGraph, Jout))
     {
-    	theGraph->G[startVertex].visited = 1;
+    	gp_SetVertexVisited(theGraph, startVertex);
     	return;
     }
 
     // Process a non-trivial connected component
     do {
-        theGraph->G[nextVertex].visited = 1;
+        gp_SetVertexVisited(theGraph, nextVertex);
 
         // The arc out of the vertex just visited points to the next vertex
         nextVertex = theGraph->G[Jout].v;
@@ -509,8 +508,7 @@ int _TestForCompleteGraphObstruction(graphP theGraph, int numVerts,
         return FALSE;
 
     // We clear all the vertex visited flags
-    for (I = 0; I < theGraph->N; I++)
-        theGraph->G[I].visited = 0;
+    _ClearVertexVisitedFlags(theGraph, FALSE);
 
     // For each pair of image vertices, we test that there is a path
     // between the two vertices.  If so, the visited flags of the
@@ -527,7 +525,7 @@ int _TestForCompleteGraphObstruction(graphP theGraph, int numVerts,
     // so for every marked vertex, we subtract one from the count of
     // the degree two vertices.
     for (I = 0; I < theGraph->N; I++)
-        if (theGraph->G[I].visited)
+        if (gp_GetVertexVisited(theGraph, I))
             degrees[2]--;
 
     /* If every degree 2 vertex is used in a path between image
@@ -589,8 +587,7 @@ int  I, imageVertPos, temp, success;
      /* Now test the paths between each of the first three vertices and
             each of the last three vertices */
 
-     for (I = 0; I < theGraph->N; I++)
-          theGraph->G[I].visited = 0;
+     _ClearVertexVisitedFlags(theGraph, FALSE);
 
      for (imageVertPos=0; imageVertPos<3; imageVertPos++)
           for (I=3; I<6; I++)
@@ -599,7 +596,7 @@ int  I, imageVertPos, temp, success;
                    return FALSE;
 
      for (I = 0; I < theGraph->N; I++)
-          if (theGraph->G[I].visited)
+          if (gp_GetVertexVisited(theGraph, I))
               degrees[2]--;
 
      /* If every degree 2 vertex is used in a path between image
@@ -716,19 +713,19 @@ int  I, J, imageVertPos;
           Now test the paths between each of the degree 2 image
           vertices and imageVerts[1]. */
 
-     for (I = 0; I < theGraph->N; I++)
-          theGraph->G[I].visited = 0;
+     _ClearVertexVisitedFlags(theGraph, FALSE);
 
      for (imageVertPos=2; imageVertPos<5; imageVertPos++)
      {
           if (_TestPath(theGraph, imageVerts[imageVertPos],
                                   imageVerts[1]) != TRUE)
-                   return FALSE;
-          theGraph->G[imageVerts[imageVertPos]].visited = 1;
+              return FALSE;
+
+          gp_SetVertexVisited(theGraph, imageVerts[imageVertPos]);
      }
 
      for (I = 0; I < theGraph->N; I++)
-          if (theGraph->G[I].visited)
+          if (gp_GetVertexVisited(theGraph, I))
               degrees[2]--;
 
      /* If every degree 2 vertex is used in a path between the
@@ -871,7 +868,7 @@ int  Jin, nextVertex;
     		gp_IsArc(theGraph, gp_GetLastArc(theGraph, nextVertex)) &&
     		gp_GetNextArc(theGraph, gp_GetFirstArc(theGraph, nextVertex)) == gp_GetLastArc(theGraph, nextVertex))
      {
-         theGraph->G[nextVertex].visited = 1;
+         gp_SetVertexVisited(theGraph, nextVertex);
 
          Jin = gp_GetTwinArc(theGraph, J);
          J = gp_GetFirstArc(theGraph, nextVertex);
@@ -923,8 +920,7 @@ int invokeSortOnSubgraph = FALSE;
 
 /* We clear all visitation flags */
 
-     for (I = 0; I < theGraph->N; I++)
-          theGraph->G[I].visited = 0;
+     _ClearVertexVisitedFlags(theGraph, FALSE);
 
 /* For each vertex... */
 
@@ -941,7 +937,7 @@ int invokeSortOnSubgraph = FALSE;
         		  Result = FALSE;
         		  break;
         	  }
-              theGraph->G[theSubgraph->G[J].v].visited = 1;
+        	  gp_SetVertexVisited(theGraph, theSubgraph->G[J].v);
               J = gp_GetNextArc(theSubgraph, J);
           }
 
@@ -959,7 +955,7 @@ int invokeSortOnSubgraph = FALSE;
         		  Result = FALSE;
         		  break;
         	  }
-              theGraph->G[theGraph->G[J].v].visited = 0;
+        	  gp_ClearVertexVisited(theGraph, theGraph->G[J].v);
               J = gp_GetNextArc(theGraph, J);
           }
 
@@ -972,7 +968,7 @@ int invokeSortOnSubgraph = FALSE;
           J = gp_GetFirstArc(theSubgraph, I);
           while (gp_IsArc(theSubgraph, J))
           {
-              if (theGraph->G[theSubgraph->G[J].v].visited)
+              if (gp_GetVertexVisited(theGraph, theSubgraph->G[J].v))
               {
             	  Result = FALSE;
             	  break;

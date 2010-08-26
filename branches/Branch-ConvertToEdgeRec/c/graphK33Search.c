@@ -554,7 +554,7 @@ int u_max = MAX3(IC->ux, IC->uy, IC->uz), u;
     if (_TestForZtoWPath(theGraph) != OK)
         return NOTOK;
 
-    if (theGraph->G[IC->w].visited)
+    if (gp_GetVertexVisited(theGraph, IC->w))
     {
         if (_FinishIsolatorContextInitialization(theGraph, context) != OK ||
             _IsolateMinorE5(theGraph) != OK)
@@ -1163,58 +1163,80 @@ int  stackBottom;
 /****************************************************************************
  _TestForZtoWPath()
  This function tests whether there is a path inside the bicomp leading from W
- to some internal node of the x-y path.  If there is, the path is marked.
+ to some internal node of the x-y path.  If there is, the path is marked (the
+ visited flags of its vertices and edges are set).
 
- Upon function return, the marking of W distinguishes whether the path was found.
+ Upon function return, the marking (visited flag setting) of W distinguishes
+ whether the path was found.
+
  The function returns NOTOK on internal error, OK otherwise.
 
- All internal vertices are marked as type unknown, as are W and the bicomp
- root.  There is an X-Y path marked visited.  So, we start a depth first
- search from W to find a visited vertex, except we prune the search to
- ignore vertices whose type is not unknown.
+ Preconditions: All internal vertices have an obstruction type setting of
+ unknown, as do W and the bicomp root.  There is an X-Y path marked visited.
+ So, we start a depth first search from W to find a visited vertex, except
+ we prune the search to ignore vertices whose obstruction type is other than
+ unknown.  This ensures the path found, if any, avoids external face vertices,
+ including avoiding X and Y. Furthermore, the path search is completed without
+ traversing to R due to the obstructing X-Y path.
 
- The depth first search has to mark the vertices it has seen as visited,
- but we do not want to conflict with the visited/non-visited settings
- that have so far been used to isolate the X-Y path.  So, each vertex
- visited is marked with a NIL and pushed onto the resetList.  At the end,
- all vertices on the resetList have their visited flags reset to 0.
+ The depth first search has to "mark" the vertices it has seen as visited,
+ but the visited flags are already in use to distinguish the X-Y path.
+ So, we reuse the visitedInfo setting of each vertex. The core planarity
+ algorithm makes settings between 0 and N, so we will regard all of those
+ as indicating 'unvisited' by this method, and use -1 to indicate visited.
+ These markings need not be cleaned up because, if the desired path is found
+ the a K_{3,3} is isolated and if the desired path is not found then the
+ bicomp is reduced and the visitedInfo in the remaining vertices are set
+ appropriately for future Walkup processing of the core planarity algorithm.
 
  For each vertex we visit, if it is an internal vertex on the X-Y path
- (i.e. visited=1 and type unknown), then we want to stop and unroll the
- stack to obtain the desired path (described below). If the vertex is type
- unknown, then we want to visit its unvisited neighbors.
+ (i.e. visited flag set and obstruction type unknown), then we want to stop
+ and unroll the stack to obtain the desired path (described below). If the
+ vertex is internal but not on the X-Y path (i.e. visited flag clear and
+ obstruction type unknown), then we want to visit its neighbors, except
+ those already marked visited by this method (i.e. those with visitedInfo
+ of -1) and those with a known obstruction type.
 
  We want to manage the stack so that it when the desired vertex is found,
- the stack contains the desired path.  So, we do not simply push the
- neighbors of the vertex being visited.  First, we only push 'eligible'
- vertices (i.e. vertices with a type of unknown and visited not equal to
- NIL).  Second, when we decide a vertex v is eligible, we push (v, NIL).
- When we pop (v, NIL), we know that its type is unknown so we test
- whether it is the desired vertex by checking if its visited member is
- equal to 1.  If so, then we can stop the depth first search, process
- the resetList, then use the vertices and edges remaining on the
- stack to mark the desired path.
+ the stack contains the desired path.  So, we do not simply push all the
+ neighbors of the vertex being visited.  First, given that we have popped
+ some vertex-edge pair (v, e), we push *only* the next edge after e in
+ v's adjacency list (starting with the first if e is NIL) that leads to a
+ new 'eligible' vertex.  An eligible vertex is one whose obstruction type
+ is unknown and whose visitedInfo is other than -1 (so, internal and not
+ yet processed by this method). Second, when we decide a new vertex w
+ adjacent to v is eligible, we push not only (v, e) but also (w, NIL).
+ When we later pop the vertex-edge pair containing NIL, we know that
+ the vertex obstruction type is unknown so we test whether its visited
+ flag is set (indicating an internal vertex on the X-Y path).  If so, then
+ we can stop the depth first search, then use the vertices and edges
+ remaining on the stack to mark the desired path from the external face
+ vertex W to an internal vertex Z on the X-Y path.
 
- If we pop (v, NIL) and find that the visited of v equals 0, then we
- set its visited to NIL.  Then we find the first edge record e leading
- to an eligible vertex w (i.e. a vertex with type unknown and visited
- not equal to NIL), and we push both (v, e) and (w, NIL).  Eventually all
- paths leading from w will be explored, and if none find the desired vertex,
- then (v, e) is popped.  Now we search the adjacency list of v starting
- after e to find the edge record that indicates the next eligible vertex
- to visit.  If none are found, then we simply go to the next iteration,
- which pops a 2-tuple containing the vertex u and an edge record e that
- indicates v as the neighbor of u.  Finally, if the stack empties without
- finding the desired vertex, then we simply process the resetStack and return.
+ If we pop (v, NIL) and find that the visited flag of v is clear, then it
+ is not the desired connection endpoint to the X-Y path.  We need to process
+ all paths extending from it, but we don't want any of those paths to cycle
+ back to this vertex, so we mark it as ineligible by putting -1 in its
+ visitedInfo member.  This is also the case in which the _first_ edge record e
+ leading from v to an eligible vertex w is obtained, whereupon we push both
+ (v, e) and (w, NIL).  Eventually all paths leading from w to eligible
+ vertices will be explored, and if none find the desired vertex connection
+ to the X-Y path, then (v, e) is popped.  Now we search the adjacency list of
+ v starting after e to find the _next_ edge record that indicates the an
+ eligible vertex to visit.  None of the vertices processed while visiting paths
+ extending from w will be eligible anymore, so it can be seen that this method
+ is a depth first search. If no remaining edges from v indicate eligible
+ vertices, then nothing is pushed and we simply go to the next iteration,
+ which pops a 2-tuple containing the vertex u and the edge record e that
+ points to v.  Finally, if the stack empties without finding the desired vertex,
+ then the first loop ends, and the second main loop does not mark a path because
+ the stack is empty.
  ****************************************************************************/
 
 int  _TestForZtoWPath(graphP theGraph)
 {
 isolatorContextP IC = &theGraph->IC;
-stackP resetList = sp_New(_GetBicompSize(theGraph, IC->r));
 int  v, e, w;
-
-     if (resetList == NULL) return NOTOK;
 
      sp_ClearStack(theGraph->theStack);
      sp_Push2(theGraph->theStack, IC->w, NIL);
@@ -1225,44 +1247,53 @@ int  v, e, w;
 
           if (e == NIL)
           {
-              if (theGraph->G[v].visited)
+        	  // If the vertex is visited, then it is a member of the X-Y path
+        	  // Because it is being popped, its obstruction type is unknown because
+        	  // that is the only kind of vertex pushed.
+        	  // Hence, we break because we've found the desired path.
+              if (gp_GetVertexVisited(theGraph, v))
                   break;
 
-              theGraph->G[v].visited = NIL;
-              sp_Push(resetList, v);
+              // Mark this vertex as being visited by this method (i.e. ineligible
+              // to have processing started on it again)
+              gp_SetVertexVisitedInfo(theGraph, v, -1);
 
               e = gp_GetFirstArc(theGraph, v);
           }
           else
               e = gp_GetNextArc(theGraph, e);
 
+          // This while loop breaks on the first edge it finds that is eligible to be
+          // pushed.  Once that happens, we break. The successive edges of a vertex are
+          // only pushed (see the else clause above) once all paths extending from v
+          // through e have been explored and found not to contain the desired path
           while (gp_IsArc(theGraph, e))
           {
               w = theGraph->G[e].v;
-              if (theGraph->G[w].visited != NIL &&
+
+              // The test for w < N is just safeguarding the two subsequent calls, but
+              // it can never happen due to the obstructing X-Y path.  Still, a virtual
+              // vertex is not eligible, so no harm in ruling them out.
+              if (w < theGraph->n &&
+            	  gp_GetVertexVisitedInfo(theGraph, w) != -1 &&
                   gp_GetVertexObstructionType(theGraph, w) == VERTEX_OBSTRUCTIONTYPE_UNKNOWN)
               {
                   sp_Push2(theGraph->theStack, v, e);
                   sp_Push2(theGraph->theStack, w, NIL);
+
                   break;
               }
+
               e = gp_GetNextArc(theGraph, e);
           }
      }
 
-     while (!sp_IsEmpty(resetList))
-     {
-         sp_Pop(resetList, v);
-         theGraph->G[v].visited = 0;
-     }
-     sp_Free(&resetList);
-
      while (!sp_IsEmpty(theGraph->theStack))
      {
          sp_Pop2(theGraph->theStack, v, e);
-         theGraph->G[v].visited = 1;
-         theGraph->G[e].visited = 1;
-         theGraph->G[gp_GetTwinArc(theGraph, e)].visited = 1;
+         gp_SetVertexVisited(theGraph, v);
+         gp_SetEdgeVisited(theGraph, e);
+         gp_SetEdgeVisited(theGraph, gp_GetTwinArc(theGraph, e));
      }
 
      return OK;
@@ -1478,11 +1509,11 @@ int  rxType, xwType, wyType, yrType, xyType;
              B_edge = gp_GetLastArc(theGraph, IC->x);
              while (B_edge != gp_GetFirstArc(theGraph, IC->x))
              {
-                 if (theGraph->G[B_edge].visited) break;
+                 if (gp_GetEdgeVisited(theGraph, B_edge)) break;
                  B_edge = gp_GetPrevArc(theGraph, B_edge);
              }
 
-             if (!theGraph->G[B_edge].visited)
+             if (!gp_GetEdgeVisited(theGraph, B_edge))
                  return NOTOK;
 
              B = theGraph->G[B_edge].v;
@@ -1518,11 +1549,11 @@ int  rxType, xwType, wyType, yrType, xyType;
              B_edge = gp_GetFirstArc(theGraph, IC->y);
              while (B_edge != gp_GetLastArc(theGraph, IC->y))
              {
-                 if (theGraph->G[B_edge].visited) break;
+                 if (gp_GetEdgeVisited(theGraph, B_edge)) break;
                  B_edge = gp_GetNextArc(theGraph, B_edge);
              }
 
-             if (!theGraph->G[B_edge].visited)
+             if (!gp_GetEdgeVisited(theGraph, B_edge))
                  return NOTOK;
 
              B = theGraph->G[B_edge].v;
@@ -1566,8 +1597,8 @@ int  rxType, xwType, wyType, yrType, xyType;
      if (theGraph->functions.fpMarkDFSPath(theGraph, min==IC->x ? IC->y : IC->x, A) != OK)
          return NOTOK;
 
-     theGraph->G[A_edge].visited = 1;
-     theGraph->G[gp_GetTwinArc(theGraph, A_edge)].visited = 1;
+     gp_SetEdgeVisited(theGraph, A_edge);
+     gp_SetEdgeVisited(theGraph, gp_GetTwinArc(theGraph, A_edge));
 
 /* Now we use B to mark either an X-Y path or a path of the external face
       corresponding to:
@@ -1579,8 +1610,8 @@ int  rxType, xwType, wyType, yrType, xyType;
      if (theGraph->functions.fpMarkDFSPath(theGraph, max, B) != OK)
          return NOTOK;
 
-     theGraph->G[B_edge].visited = 1;
-     theGraph->G[gp_GetTwinArc(theGraph, B_edge)].visited = 1;
+     gp_SetEdgeVisited(theGraph, B_edge);
+     gp_SetEdgeVisited(theGraph, gp_GetTwinArc(theGraph, B_edge));
 
 /* Delete the unmarked edges in the bicomp. Note that if an unmarked edge
  * represents a reduced path, then only the reduction edge is deleted here.
@@ -1621,14 +1652,14 @@ int  rxType, xwType, wyType, yrType, xyType;
      if (_ReduceXYPathToEdge(theGraph, context, IC->x, IC->y, xyType) != OK)
          return NOTOK;
 
-/* The core planarity method used vertex visited flags in the Walkup, so we have to
-   set the vertex visited flags so the remaining vertices will behave as though they
+/* The core planarity method used vertex visited info in the Walkup, so we have to
+   set the vertex visited info so the remaining vertices will behave as though they
    are unvisited by Walkup when the embedder moves to the next vertex. */
 
-     theGraph->G[R].visited =
-     theGraph->G[IC->x].visited =
-     theGraph->G[IC->y].visited =
-     theGraph->G[IC->w].visited = IC->v;
+     gp_SetVertexVisitedInfo(theGraph, R, theGraph->N);
+     gp_SetVertexVisitedInfo(theGraph, IC->x, theGraph->N);
+     gp_SetVertexVisitedInfo(theGraph, IC->y, theGraph->N);
+     gp_SetVertexVisitedInfo(theGraph, IC->w, theGraph->N);
 
      return OK;
 }
@@ -1986,9 +2017,9 @@ int p, J;
          return NOTOK;
 
      p = d;
-     while (!theGraph->G[p].visited)
+     while (!gp_GetVertexVisited(theGraph, p))
      {
-         theGraph->G[p].visited = 1;
+         gp_SetVertexVisited(theGraph, p);
 
          J = gp_GetFirstArc(theGraph, p);
          while (gp_IsArc(theGraph, J))
@@ -1999,15 +2030,15 @@ int p, J;
               J = gp_GetNextArc(theGraph, J);
          }
 
-         theGraph->G[J].visited = 1;
-         theGraph->G[gp_GetTwinArc(theGraph, J)].visited = 1;
+         gp_SetEdgeVisited(theGraph, J);
+         gp_SetEdgeVisited(theGraph, gp_GetTwinArc(theGraph, J));
 
          p = theGraph->G[J].v;
 
          /* If p is a root copy, mark it visited and skip to the parent copy */
          if (p >= theGraph->N)
          {
-             theGraph->G[p].visited = 1;
+             gp_SetVertexVisited(theGraph, p);
              p = gp_GetVertexParent(theGraph, p-theGraph->N);
          }
      }
@@ -2029,11 +2060,11 @@ int p, J;
               J = gp_GetNextArc(theGraph, J);
          }
 
-         theGraph->G[J].visited = 0;
-         theGraph->G[gp_GetTwinArc(theGraph, J)].visited = 0;
+         gp_ClearEdgeVisited(theGraph, J);
+         gp_ClearEdgeVisited(theGraph, gp_GetTwinArc(theGraph, J));
 
          p = theGraph->G[J].v;
-         theGraph->G[p].visited = 0;
+         gp_ClearVertexVisited(theGraph, p);
 
          /* If p is a root copy, clear its visited flag and skip to the
                 parent copy */
@@ -2041,7 +2072,7 @@ int p, J;
          if (p >= theGraph->N)
          {
              p = gp_GetVertexParent(theGraph, p-theGraph->N);
-             theGraph->G[p].visited = 0;
+             gp_ClearVertexVisited(theGraph, p);
          }
      }
 

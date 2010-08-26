@@ -585,7 +585,7 @@ int  Z, ZPrevLink, ZPrevArc;
 
 /* Mark the start vertex (and if it is a root copy, mark the parent copy too. */
 
-     theGraph->G[startVert].visited = 1;
+     gp_SetVertexVisited(theGraph, startVert);
 
 /* For each vertex visited after the start vertex, mark the vertex and the
         edge used to get there.  Stop after marking the ending vertex. */
@@ -597,9 +597,9 @@ int  Z, ZPrevLink, ZPrevArc;
 
         ZPrevArc = gp_GetArc(theGraph, Z, ZPrevLink);
 
-        theGraph->G[ZPrevArc].visited = 1;
-        theGraph->G[gp_GetTwinArc(theGraph, ZPrevArc)].visited = 1;
-        theGraph->G[Z].visited = 1;
+        gp_SetEdgeVisited(theGraph, ZPrevArc);
+        gp_SetEdgeVisited(theGraph, gp_GetTwinArc(theGraph, ZPrevArc));
+        gp_SetVertexVisited(theGraph, Z);
 
      } while (Z != endVert);
 
@@ -633,7 +633,7 @@ int  J, parent, Z, N;
          descendant = gp_GetVertexParent(theGraph, descendant-N);
 
      /* Mark the lowest vertex (i.e. the descendant with the highest number) */
-     theGraph->G[descendant].visited = 1;
+     gp_SetVertexVisited(theGraph, descendant);
 
      /* Mark all ancestors of the lowest vertex, and the edges used to reach
         them, up to the given ancestor vertex. */
@@ -661,15 +661,15 @@ int  J, parent, Z, N;
               if ((Z < N && Z == parent) ||
                   (Z >= N && gp_GetVertexParent(theGraph, Z-N) == parent))
               {
-                  theGraph->G[J].visited = 1;
-                  theGraph->G[gp_GetTwinArc(theGraph, J)].visited = 1;
+                  gp_SetEdgeVisited(theGraph, J);
+                  gp_SetEdgeVisited(theGraph, gp_GetTwinArc(theGraph, J));
                   break;
               }
               J = gp_GetNextArc(theGraph, J);
           }
 
           /* Mark the parent copy of the DFS parent */
-          theGraph->G[parent].visited = 1;
+          gp_SetVertexVisited(theGraph, parent);
 
           /* Hop to the parent */
           descendant = parent;
@@ -737,10 +737,10 @@ int _AddAndMarkEdge(graphP theGraph, int ancestor, int descendant)
 
     /* Mark the edge so it is not deleted */
 
-    theGraph->G[ancestor].visited = 1;
-    theGraph->G[gp_GetFirstArc(theGraph, ancestor)].visited = 1;
-    theGraph->G[gp_GetFirstArc(theGraph, descendant)].visited = 1;
-    theGraph->G[descendant].visited = 1;
+    gp_SetVertexVisited(theGraph, ancestor);
+    gp_SetEdgeVisited(theGraph, gp_GetFirstArc(theGraph, ancestor));
+    gp_SetEdgeVisited(theGraph, gp_GetFirstArc(theGraph, descendant));
+    gp_SetVertexVisited(theGraph, descendant);
 
     return OK;
 }
@@ -835,7 +835,7 @@ int  I, J, fwdArc, descendant;
           J = gp_GetFirstArc(theGraph, I);
           while (gp_IsArc(theGraph, J))
           {
-                if (theGraph->G[J].visited)
+                if (gp_GetEdgeVisited(theGraph, J))
                      J = gp_GetNextArc(theGraph, J);
                 else J = gp_DeleteEdge(theGraph, J, 0);
           }

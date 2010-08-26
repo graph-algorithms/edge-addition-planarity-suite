@@ -442,9 +442,9 @@ int  V, e;
          sp_Pop(theGraph->theStack, e);
 
          // Now unmark the vertex and edge (i.e. revert to "unvisited")
-         theGraph->G[V].visited = 0;
-         theGraph->G[e].visited = 0;
-         theGraph->G[gp_GetTwinArc(theGraph, e)].visited = 0;
+         gp_ClearVertexVisited(theGraph, V);
+         gp_ClearEdgeVisited(theGraph, e);
+         gp_ClearEdgeVisited(theGraph, gp_GetTwinArc(theGraph, e));
      }
 
      return OK;
@@ -573,7 +573,7 @@ int stackBottom1, stackBottom2;
           /* If Z is already visited, then pop everything since the last time
                 we visited Z because its all part of a separable component. */
 
-          if (theGraph->G[Z].visited)
+          if (gp_GetVertexVisited(theGraph, Z))
           {
               if (_PopAndUnmarkVerticesAndEdges(theGraph, Z, stackBottom2) != OK)
             	  return NOTOK;
@@ -616,11 +616,11 @@ int stackBottom1, stackBottom2;
               /* Mark the vertex Z as visited as well as its edge of entry
                  (except the entry edge for P_x).*/
 
-              theGraph->G[Z].visited = 1;
+              gp_SetVertexVisited(theGraph, Z);
               if (Z != theGraph->IC.px)
               {
-                  theGraph->G[J].visited = 1;
-                  theGraph->G[gp_GetTwinArc(theGraph, J)].visited = 1;
+                  gp_SetEdgeVisited(theGraph, J);
+                  gp_SetEdgeVisited(theGraph, gp_GetTwinArc(theGraph, J));
               }
 
               /* If we found an RYW vertex, then we have successfully finished
@@ -697,17 +697,17 @@ int ZPrevArc, ZNextArc, Z, R, Px, Py;
     ZNextArc = gp_GetLastArc(theGraph, Z);
     while (ZNextArc != gp_GetFirstArc(theGraph, Z))
     {
-       if (theGraph->G[ZNextArc].visited) break;
+       if (gp_GetEdgeVisited(theGraph, ZNextArc)) break;
 
        ZNextArc = gp_GetPrevArc(theGraph, ZNextArc);
     }
 
-    if (!theGraph->G[ZNextArc].visited)
+    if (!gp_GetEdgeVisited(theGraph, ZNextArc))
         return NOTOK;
 
 /* For each internal vertex Z, determine whether it has a path to root. */
 
-    while (theGraph->G[ZNextArc].visited)
+    while (gp_GetEdgeVisited(theGraph, ZNextArc))
     {
         ZPrevArc = gp_GetTwinArc(theGraph, ZNextArc);
         ZNextArc = gp_GetPrevArcCircular(theGraph, ZPrevArc);
@@ -741,9 +741,9 @@ int ZPrevArc, ZNextArc, Z, R, Px, Py;
 
         /* Mark the next vertex and the edge leading to it as visited. */
 
-        theGraph->G[ZNextArc].visited = 1;
-        theGraph->G[ZPrevArc].visited = 1;
-        theGraph->G[Z].visited = 1;
+        gp_SetEdgeVisited(theGraph, ZNextArc);
+        gp_SetEdgeVisited(theGraph, ZPrevArc);
+        gp_SetVertexVisited(theGraph, Z);
 
         /* Go to the next edge in the proper face */
 

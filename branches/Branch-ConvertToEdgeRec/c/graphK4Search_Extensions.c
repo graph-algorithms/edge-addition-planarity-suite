@@ -748,7 +748,7 @@ int  J, parent, N;
 
      /* Mark the lowest vertex (the one with the highest number). */
 
-     theGraph->G[descendant].visited = 1;
+     gp_SetVertexVisited(theGraph, descendant);
 
      /* Mark all ancestors of the lowest vertex, and the edges used to reach
         them, up to the given ancestor vertex. */
@@ -794,13 +794,13 @@ int  J, parent, N;
 
               /* Mark the edge */
 
-              theGraph->G[J].visited = 1;
-              theGraph->G[gp_GetTwinArc(theGraph, J)].visited = 1;
+              gp_SetEdgeVisited(theGraph, J);
+              gp_SetEdgeVisited(theGraph, gp_GetTwinArc(theGraph, J));
           }
 
           /* Mark the parent, then hop to the parent and reiterate */
 
-          theGraph->G[parent].visited = 1;
+          gp_SetVertexVisited(theGraph, parent);
           descendant = parent;
      }
 

@@ -81,7 +81,7 @@ int  _RestoreVertex(graphP theGraph);
 
 void _ClearIsolatorContext(graphP theGraph);
 void _ClearVisitedFlags(graphP theGraph);
-void _ClearVertexVisitedFlags(graphP theGraph);
+void _ClearVertexVisitedFlags(graphP theGraph, int);
 void _ClearEdgeVisitedFlags(graphP theGraph);
 int  _ClearVisitedFlagsInBicomp(graphP theGraph, int BicompRoot);
 int  _ClearVisitedFlagsInOtherBicomps(graphP theGraph, int BicompRoot);
@@ -538,7 +538,7 @@ isolatorContextP IC = &theGraph->IC;
 
 void _ClearVisitedFlags(graphP theGraph)
 {
-	 _ClearVertexVisitedFlags(theGraph);
+	 _ClearVertexVisitedFlags(theGraph, TRUE);
 	 _ClearEdgeVisitedFlags(theGraph);
 }
 
@@ -546,12 +546,12 @@ void _ClearVisitedFlags(graphP theGraph)
  _ClearVertexVisitedFlags()
  ********************************************************************/
 
-void _ClearVertexVisitedFlags(graphP theGraph)
+void _ClearVertexVisitedFlags(graphP theGraph, int includeVirtualVertices)
 {
 int  I;
-int  VsizeOccupied = theGraph->N + theGraph->NV;
+int  N = theGraph->N + (includeVirtualVertices ? theGraph->NV : 0);
 
-     for (I=0; I < VsizeOccupied; I++)
+     for (I=0; I < N; I++)
           gp_ClearVertexVisitedFlag(theGraph, I);
 }
 

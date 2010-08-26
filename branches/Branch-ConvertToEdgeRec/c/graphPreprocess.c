@@ -86,8 +86,7 @@ platform_GetTime(start);
 
      sp_ClearStack(theStack);
 
-     for (I=0; I < N; I++)
-          theGraph->G[I].visited = 0;
+     _ClearVertexVisitedFlags(theGraph, FALSE);
 
 /* This outer loop causes the connected subgraphs of a disconnected
         graph to be numbered */
@@ -103,11 +102,11 @@ platform_GetTime(start);
               sp_Pop2(theStack, uparent, e);
               u = uparent == NIL ? I : theGraph->G[e].v;
 
-              if (!theGraph->G[u].visited)
+              if (!gp_GetVertexVisited(theGraph, u))
               {
             	  gp_LogLine(gp_MakeLogStr3("V=%d, DFI=%d, Parent=%d", u, DFI, uparent));
 
-            	  theGraph->G[u].visited = 1;
+            	  gp_SetVertexVisited(theGraph, u);
                   theGraph->G[u].v = DFI++;
                   gp_SetVertexParent(theGraph, u, uparent);
                   if (e != NIL)
@@ -126,7 +125,7 @@ platform_GetTime(start);
                   J = gp_GetFirstArc(theGraph, u);
                   while (gp_IsArc(theGraph, J))
                   {
-                      if (!theGraph->G[theGraph->G[J].v].visited)
+                      if (!gp_GetVertexVisited(theGraph, theGraph->G[J].v))
                           sp_Push2(theStack, u, J);
                       J = gp_GetNextArc(theGraph, J);
                   }
@@ -225,8 +224,7 @@ platform_GetTime(start);
         location, so we cannot use index==v as a test for whether the
         correct vertex is in location 'index'. */
 
-     for (I=0; I < N; I++)
-          theGraph->G[I].visited = 0;
+     _ClearVertexVisitedFlags(theGraph, FALSE);
 
      /* We visit each vertex location, skipping those marked as visited since
         we've already moved the correct vertex into that location. The
@@ -237,7 +235,7 @@ platform_GetTime(start);
      for (I=0; I < N; I++)
      {
           srcPos = I;
-          while (!theGraph->G[I].visited)
+          while (!gp_GetVertexVisited(theGraph, I))
           {
               dstPos = theGraph->G[I].v;
 
@@ -248,7 +246,7 @@ platform_GetTime(start);
               theGraph->G[I] = tempG;
               theGraph->V[I] = tempV;
 
-              theGraph->G[dstPos].visited = 1;
+              gp_SetVertexVisited(theGraph, dstPos);
               theGraph->G[dstPos].v = srcPos;
 
               srcPos = dstPos;
@@ -305,25 +303,24 @@ platform_GetTime(start);
 
      sp_ClearStack(theStack);
 
-     for (I=0; I < theGraph->N; I++)
-          theGraph->G[I].visited = 0;
+     _ClearVertexVisitedFlags(theGraph, FALSE);
 
 /* This outer loop causes the connected subgraphs of a disconnected
         graph to be processed */
 
      for (I=0; I < theGraph->N && totalVisited < theGraph->N; I++)
      {
-          if (theGraph->G[I].visited)
+          if (gp_GetVertexVisited(theGraph, I))
               continue;
 
           sp_Push(theStack, I);
           while (sp_NonEmpty(theStack))
           {
               sp_Pop(theStack, u);
-              if (!theGraph->G[u].visited)
+              if (!gp_GetVertexVisited(theGraph, u))
               {
                   /* Mark u as visited, then push it back on the stack */
-                  theGraph->G[u].visited = 1;
+                  gp_SetVertexVisited(theGraph, u);
                   totalVisited++;
                   sp_Push(theStack, u);
 
@@ -420,8 +417,7 @@ platform_GetTime(start);
 
 	sp_ClearStack(theStack);
 
-	for (I=0; I < N; I++)
-		 theGraph->G[I].visited = 0;
+	_ClearVertexVisitedFlags(theGraph, FALSE);
 
 	// This outer loop causes the connected subgraphs of a disconnected graph to be numbered
 	for (I=DFI=0; I < N && DFI < N; I++)
@@ -444,11 +440,11 @@ platform_GetTime(start);
 
 			// We popped an edge to an unvisited vertex, so it is either a DFS tree edge
 			// or a false edge to the DFS tree root (u).
-			if (!theGraph->G[u].visited)
+			if (!gp_GetVertexVisited(theGraph, u))
 			{
 				gp_LogLine(gp_MakeLogStr3("V=%d, DFI=%d, Parent=%d", u, DFI, uparent));
 
-				theGraph->G[u].visited = 1;
+				gp_SetVertexVisited(theGraph, u);
 				theGraph->G[u].v = DFI++;
 				gp_SetVertexParent(theGraph, u, uparent);
 				if (e != NIL)
@@ -472,7 +468,7 @@ platform_GetTime(start);
 				J = gp_GetFirstArc(theGraph, u);
 				while (gp_IsArc(theGraph, J))
 				{
-					if (!theGraph->G[theGraph->G[J].v].visited)
+					if (!gp_GetVertexVisited(theGraph, theGraph->G[J].v))
 					{
 						sp_Push2(theStack, u, J);
 					}
