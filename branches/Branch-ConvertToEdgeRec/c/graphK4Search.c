@@ -722,7 +722,7 @@ int _K4_FindSeparatingInternalEdge(graphP theGraph, int R, int prevLink, int A, 
 	    J = gp_GetFirstArc(theGraph, Z);
 	    while (gp_IsArc(theGraph, J))
 	    {
-	        neighbor = theGraph->G[J].v;
+	        neighbor = gp_GetNeighbor(theGraph, J);
 	        if (!gp_GetVertexVisited(theGraph, neighbor))
 	        {
 	        	*pW = A;
@@ -1028,7 +1028,7 @@ int  _K4_ReducePathComponent(graphP theGraph, K4SearchContext *context, int R, i
 
 	// Check whether the external face path (R, ..., A) is just an edge
 	e_R = gp_GetArc(theGraph, R, 1^prevLink);
-	if (theGraph->G[e_R].v == A)
+	if (gp_GetNeighbor(theGraph, e_R) == A)
 	    return OK;
 
 	// Check for Case 1: The DFS tree path from A to R is within the reduction component
@@ -1046,7 +1046,7 @@ int  _K4_ReducePathComponent(graphP theGraph, K4SearchContext *context, int R, i
 	else
 	{
 		_K4_ClearVisitedInPathComponent(theGraph, R, prevLink, A);
-		Z = theGraph->G[e_R].v;
+		Z = gp_GetNeighbor(theGraph, e_R);
 		gp_SetEdgeVisited(theGraph, e_R);
 		gp_SetEdgeVisited(theGraph, gp_GetTwinArc(theGraph, e_R));
 	    if (theGraph->functions.fpMarkDFSPath(theGraph, A, Z) != OK)
@@ -1125,7 +1125,7 @@ int  N = theGraph->N, invertedFlag=0;
               {
                   if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_PARENT)
                   {
-                      parent = theGraph->G[J].v;
+                      parent = gp_GetNeighbor(theGraph, J);
                       break;
                   }
                   J = gp_GetNextArc(theGraph, J);
@@ -1137,7 +1137,7 @@ int  N = theGraph->N, invertedFlag=0;
 
               // Add the inversion flag on the child arc to the cumulative result
               J = gp_GetTwinArc(theGraph, J);
-              if (gp_GetEdgeType(theGraph, J) != EDGE_TYPE_CHILD || theGraph->G[J].v != descendant)
+              if (gp_GetEdgeType(theGraph, J) != EDGE_TYPE_CHILD || gp_GetNeighbor(theGraph, J) != descendant)
             	  return NOTOK;
               invertedFlag ^= gp_GetEdgeFlagInverted(theGraph, J);
           }
@@ -1199,7 +1199,7 @@ void _K4_ClearVisitedInPathComponent(graphP theGraph, int R, int prevLink, int A
 		{
 			gp_ClearEdgeVisited(theGraph, e);
 			gp_ClearEdgeVisited(theGraph, gp_GetTwinArc(theGraph, e));
-			gp_ClearVertexVisited(theGraph, theGraph->G[e].v);
+			gp_ClearVertexVisited(theGraph, gp_GetNeighbor(theGraph, e));
 
 			e = gp_GetNextArc(theGraph, e);
 		}
@@ -1250,7 +1250,7 @@ int  _K4_DeleteUnmarkedEdgesInPathComponent(graphP theGraph, int R, int prevLink
 			// the path (R ... A)
 			if (!gp_GetEdgeVisited(theGraph, e) &&
 					(e < gp_GetTwinArc(theGraph, e) ||
-					 theGraph->G[e].v == R || theGraph->G[e].v == A))
+					 gp_GetNeighbor(theGraph, e) == R || gp_GetNeighbor(theGraph, e) == A))
 			{
 				sp_Push(theGraph->theStack, e);
 			}
@@ -1289,7 +1289,7 @@ int  _K4_ReducePathToEdge(graphP theGraph, K4SearchContext *context, int edgeTyp
 	 // Note that even if the path is a single edge, the external face data structure
 	 // must still be modified since many edges connecting the external face have
 	 // been deleted
-	 if (theGraph->G[e_R].v != A)
+	 if (gp_GetNeighbor(theGraph, e_R) != A)
 	 {
 		 int v_R, v_A;
 
@@ -1312,8 +1312,8 @@ int  _K4_ReducePathToEdge(graphP theGraph, K4SearchContext *context, int edgeTyp
 
 		 // Save the vertex neighbors of R and A indicated by e_R and e_A for
 		 // later use in setting up the path connectors.
-		 v_R = theGraph->G[e_R].v;
-		 v_A = theGraph->G[e_A].v;
+		 v_R = gp_GetNeighbor(theGraph, e_R);
+		 v_A = gp_GetNeighbor(theGraph, e_A);
 
 		 // Now delete the two edges that join the path to the bicomp.
 		 gp_DeleteEdge(theGraph, e_R, 0);
@@ -1380,10 +1380,10 @@ int  J0, J1, JTwin0, JTwin1;
 
      JTwin = gp_GetTwinArc(theGraph, J);
 
-     u = theGraph->G[JTwin].v;
+     u = gp_GetNeighbor(theGraph, JTwin);
      v = context->G[J].pathConnector;
      w = context->G[JTwin].pathConnector;
-     x = theGraph->G[J].v;
+     x = gp_GetNeighbor(theGraph, J);
 
      // Get the locations of the graph nodes between which the new graph nodes
      // must be added in order to reconnect the path parallel to the edge.
@@ -1460,22 +1460,22 @@ int  e, J, JTwin, u, v, w, x, visited;
              visited = gp_GetEdgeVisited(theGraph, J);
 
              JTwin = gp_GetTwinArc(theGraph, J);
-             u = theGraph->G[JTwin].v;
+             u = gp_GetNeighbor(theGraph, JTwin);
              v = context->G[J].pathConnector;
              w = context->G[JTwin].pathConnector;
-             x = theGraph->G[J].v;
+             x = gp_GetNeighbor(theGraph, J);
 
     		 if (_K4_RestoreReducedPath(theGraph, context, J) != OK)
     			 return NOTOK;
 
     		 // If the path is on the external face, orient it
-    		 if (theGraph->G[gp_GetFirstArc(theGraph, u)].v == v ||
-    		     theGraph->G[gp_GetLastArc(theGraph, u)].v == v)
+    		 if (gp_GetNeighbor(theGraph, gp_GetFirstArc(theGraph, u)) == v ||
+    		     gp_GetNeighbor(theGraph, gp_GetLastArc(theGraph, u)) == v)
     		 {
     			 // Reality check: ensure the path is connected to the
     			 // external face at both vertices.
-        		 if (theGraph->G[gp_GetFirstArc(theGraph, x)].v != w &&
-        		     theGraph->G[gp_GetLastArc(theGraph, x)].v != w)
+        		 if (gp_GetNeighbor(theGraph, gp_GetFirstArc(theGraph, x)) != w &&
+        		     gp_GetNeighbor(theGraph, gp_GetLastArc(theGraph, x)) != w)
         			 return NOTOK;
 
     			 if (_OrientExternalFacePath(theGraph, u, v, w, x) != OK)

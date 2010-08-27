@@ -297,7 +297,7 @@ int W, P, C, V, J;
         while (gp_IsArc(theEmbedding, J))
         {
             if (gp_GetEdgeType(theEmbedding, J) == EDGE_TYPE_CHILD)
-                sp_Push(theEmbedding->theStack, theEmbedding->G[J].v);
+                sp_Push(theEmbedding->theStack, gp_GetNeighbor(theEmbedding, J));
 
             J = gp_GetNextArc(theEmbedding, J);
         }
@@ -336,8 +336,8 @@ void _LogEdgeList(graphP theEmbedding, listCollectionP edgeList, int edgeListHea
         JTwin = gp_GetTwinArc(theEmbedding, J);
 
         gp_Log(gp_MakeLogStr2("(%d, %d) ",
-        		theEmbedding->G[theEmbedding->G[J].v].v,
-        		theEmbedding->G[theEmbedding->G[JTwin].v].v));
+        		gp_GetVertexIndex(theEmbedding, gp_GetNeighbor(theEmbedding, J)),
+        		gp_GetVertexIndex(theEmbedding, gp_GetNeighbor(theEmbedding, JTwin))));
 
         e = LCGetNext(edgeList, edgeListHead, e);
     }
@@ -414,7 +414,7 @@ int eIndex, JTwin;
         // Get the vertex associated with the position
         v = vertexOrder[vpos];
         gp_LogLine(gp_MakeLogStr3("Processing vertex %d with DFI=%d at position=%d",
-    				 theEmbedding->G[v].v, v, vpos));
+    				 gp_GetVertexIndex(theEmbedding, v), v, vpos));
 
         // The DFS tree root of a connected component is always the least
         // number vertex in the vertex ordering.  We have to give it a
@@ -438,10 +438,10 @@ int eIndex, JTwin;
 
                 edgeListHead = LCAppend(edgeList, edgeListHead, e);
                 gp_LogLine(gp_MakeLogStr2("Append generator edge (%d, %d) to edgeList",
-                		theEmbedding->G[v].v, theEmbedding->G[theEmbedding->G[J].v].v));
+                		gp_GetVertexIndex(theEmbedding, v), gp_GetVertexIndex(theEmbedding, gp_GetNeighbor(theEmbedding, J))));
 
                 // Set the generator edge for the root's neighbor
-                gp_SetVertexVisitedInfo(theEmbedding, theEmbedding->G[J].v, J);
+                gp_SetVertexVisitedInfo(theEmbedding, gp_GetNeighbor(theEmbedding, J), J);
 
                 // Go to the next node of the root's adj list
                 J = gp_GetNextArc(theEmbedding, J);
@@ -471,28 +471,28 @@ int eIndex, JTwin;
                 // than the current vertex (meaning it is lower in the
                 // diagram), then add that edge to the edge order.
 
-                if (context->G[theEmbedding->G[Jcur].v].pos > vpos)
+                if (context->G[gp_GetNeighbor(theEmbedding, Jcur)].pos > vpos)
                 {
                     e = (Jcur - theEmbedding->edgeOffset) / 2;
                     LCInsertAfter(edgeList, edgeListInsertPoint, e);
 
                     gp_LogLine(gp_MakeLogStr4("Insert (%d, %d) after (%d, %d)",
-                    		theEmbedding->G[v].v,
-                    		theEmbedding->G[theEmbedding->G[Jcur].v].v,
-                    		theEmbedding->G[theEmbedding->G[gp_GetTwinArc(theEmbedding, J)].v].v,
-                    		theEmbedding->G[theEmbedding->G[J].v].v));
+                    		gp_GetVertexIndex(theEmbedding, v),
+                    		gp_GetVertexIndex(theEmbedding, gp_GetNeighbor(theEmbedding, Jcur)),
+                    		gp_GetVertexIndex(theEmbedding, gp_GetNeighbor(theEmbedding, gp_GetTwinArc(theEmbedding, J))),
+                    		gp_GetVertexIndex(theEmbedding, gp_GetNeighbor(theEmbedding, J))));
 
                     edgeListInsertPoint = e;
 
                     // If the vertex does not yet have a generator edge, then set it.
                     // Note that a DFS tree root has a false generator edge, so this if
                     // test avoids setting a generator edge for a DFS tree root
-                    if (gp_GetVertexVisitedInfo(theEmbedding, theEmbedding->G[Jcur].v) == NIL)
+                    if (gp_GetVertexVisitedInfo(theEmbedding, gp_GetNeighbor(theEmbedding, Jcur)) == NIL)
                     {
-                        gp_SetVertexVisitedInfo(theEmbedding, theEmbedding->G[Jcur].v, Jcur);
+                        gp_SetVertexVisitedInfo(theEmbedding, gp_GetNeighbor(theEmbedding, Jcur), Jcur);
                         gp_LogLine(gp_MakeLogStr2("Generator edge (%d, %d)",
-                        		theEmbedding->G[theEmbedding->G[gp_GetTwinArc(theEmbedding, J)].v].v,
-                        		theEmbedding->G[theEmbedding->G[Jcur].v].v));
+                        		gp_GetVertexIndex(theEmbedding, gp_GetNeighbor(theEmbedding, gp_GetTwinArc(theEmbedding, J))),
+                        		gp_GetVertexIndex(theEmbedding, gp_GetNeighbor(theEmbedding, Jcur))));
                     }
                 }
 
@@ -594,8 +594,8 @@ int e, J, JTwin, v1, v2, pos1, pos2;
         J = theEmbedding->edgeOffset + 2*e;
         JTwin = gp_GetTwinArc(theEmbedding, J);
 
-        v1 = theEmbedding->G[J].v;
-        v2 = theEmbedding->G[JTwin].v;
+        v1 = gp_GetNeighbor(theEmbedding, J);
+        v2 = gp_GetNeighbor(theEmbedding, JTwin);
 
         pos1 = context->G[v1].pos;
         pos2 = context->G[v2].pos;
@@ -1052,7 +1052,7 @@ int I, e, J, JTwin, JPos, JIndex;
         {
             /* If the vertex is an endpoint of the edge, then... */
 
-            if (theEmbedding->G[J].v == I || theEmbedding->G[JTwin].v == I)
+            if (gp_GetNeighbor(theEmbedding, J) == I || gp_GetNeighbor(theEmbedding, JTwin) == I)
             {
                 /* The vertical position of the vertex must be
                    at the top or bottom of the edge,  */
@@ -1068,7 +1068,7 @@ int I, e, J, JTwin, JPos, JIndex;
 
             /* If the vertex is not an endpoint of the edge... */
 
-            else // if (theEmbedding->G[J].v != I && theEmbedding->G[JTwin].v != I)
+            else // if (gp_GetNeighbor(theEmbedding, J) != I && gp_GetNeighbor(theEmbedding, JTwin) != I)
             {
                 /* If the vertical position of the vertex is in the
                     vertical range of the edge ... */

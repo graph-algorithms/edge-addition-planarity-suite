@@ -213,7 +213,7 @@ int I, e, J, JTwin, K, L, NumFaces, connectedComponents;
 
      for (e=0, J=theGraph->edgeOffset; e < theGraph->M + sp_GetCurrentSize(theGraph->edgeHoles); e++, J+=2)
      {
-          if (theGraph->G[J].v == NIL)
+          if (gp_GetNeighbor(theGraph, J) == NIL)
               continue;
 
           sp_Push(theStack, J);
@@ -348,7 +348,7 @@ void _MarkExternalFaceVertices(graphP theGraph, int startVertex)
         gp_SetVertexVisited(theGraph, nextVertex);
 
         // The arc out of the vertex just visited points to the next vertex
-        nextVertex = theGraph->G[Jout].v;
+        nextVertex = gp_GetNeighbor(theGraph, Jout);
 
         // Arc used to enter the next vertex is needed so we can get the
         // next edge in rotation order.
@@ -701,7 +701,7 @@ int  I, J, imageVertPos;
      J = gp_GetFirstArc(theGraph, imageVerts[0]);
      while (gp_IsArc(theGraph, J))
      {
-         imageVerts[imageVertPos] = theGraph->G[J].v;
+         imageVerts[imageVertPos] = gp_GetNeighbor(theGraph, J);
          if (imageVerts[imageVertPos] == imageVerts[1])
              return FALSE;
          imageVertPos++;
@@ -832,7 +832,7 @@ int  _TryPath(graphP theGraph, int J, int V)
 {
 int  Jin, nextVertex;
 
-     nextVertex = theGraph->G[J].v;
+     nextVertex = gp_GetNeighbor(theGraph, J);
 
      // while nextVertex is strictly degree 2
      while (gp_IsArc(theGraph, gp_GetFirstArc(theGraph, nextVertex)) &&
@@ -844,7 +844,7 @@ int  Jin, nextVertex;
          if (J == Jin)
              J = gp_GetLastArc(theGraph, nextVertex);
 
-         nextVertex = theGraph->G[J].v;
+         nextVertex = gp_GetNeighbor(theGraph, J);
      }
 
      return nextVertex == V ? TRUE : FALSE;
@@ -862,7 +862,7 @@ void _MarkPath(graphP theGraph, int J)
 {
 int  Jin, nextVertex;
 
-     nextVertex = theGraph->G[J].v;
+     nextVertex = gp_GetNeighbor(theGraph, J);
      // while nextVertex is strictly degree 2
      while (gp_IsArc(theGraph, gp_GetFirstArc(theGraph, nextVertex)) &&
     		gp_IsArc(theGraph, gp_GetLastArc(theGraph, nextVertex)) &&
@@ -875,7 +875,7 @@ int  Jin, nextVertex;
          if (J == Jin)
              J = gp_GetLastArc(theGraph, nextVertex);
 
-         nextVertex = theGraph->G[J].v;
+         nextVertex = gp_GetNeighbor(theGraph, J);
      }
 }
 
@@ -932,12 +932,12 @@ int invokeSortOnSubgraph = FALSE;
           J = gp_GetFirstArc(theSubgraph, I);
           while (gp_IsArc(theSubgraph, J))
           {
-        	  if (theSubgraph->G[J].v == NIL)
+        	  if (gp_GetNeighbor(theSubgraph, J) == NIL)
         	  {
         		  Result = FALSE;
         		  break;
         	  }
-        	  gp_SetVertexVisited(theGraph, theSubgraph->G[J].v);
+        	  gp_SetVertexVisited(theGraph, gp_GetNeighbor(theSubgraph, J));
               J = gp_GetNextArc(theSubgraph, J);
           }
 
@@ -950,12 +950,12 @@ int invokeSortOnSubgraph = FALSE;
           J = gp_GetFirstArc(theGraph, I);
           while (gp_IsArc(theGraph, J))
           {
-        	  if (theGraph->G[J].v == NIL)
+        	  if (gp_GetNeighbor(theGraph, J) == NIL)
         	  {
         		  Result = FALSE;
         		  break;
         	  }
-        	  gp_ClearVertexVisited(theGraph, theGraph->G[J].v);
+        	  gp_ClearVertexVisited(theGraph, gp_GetNeighbor(theGraph, J));
               J = gp_GetNextArc(theGraph, J);
           }
 
@@ -968,7 +968,7 @@ int invokeSortOnSubgraph = FALSE;
           J = gp_GetFirstArc(theSubgraph, I);
           while (gp_IsArc(theSubgraph, J))
           {
-              if (gp_GetVertexVisited(theGraph, theSubgraph->G[J].v))
+              if (gp_GetVertexVisited(theGraph, gp_GetNeighbor(theSubgraph, J)))
               {
             	  Result = FALSE;
             	  break;

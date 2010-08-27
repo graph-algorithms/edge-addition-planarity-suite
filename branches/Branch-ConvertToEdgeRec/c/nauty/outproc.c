@@ -101,7 +101,7 @@ unsigned long PO2;
 
      for (i = 0, ErrorCode = OK; i < n-1 && ErrorCode==OK; i++)
      {
-          theGraph->G[i].v = i;
+          gp_SetVertexIndex(theGraph, i, i);
 
 		  PO2 = 1 << (MAXN - 1);
 		  PO2 >>= i+1;

@@ -113,8 +113,8 @@ typedef edgeRec * edgeRecP;
 #define gp_SetAdjacentArc(theGraph, e, theLink, newArc) (theGraph->E[e].link[theLink] = newArc)
 
 // Accessors for 'v' member
-#define gp_GetEdgeNeighbor(theGraph, e) (theGraph->E[e].v)
-#define gp_SetEdgeNeighbor(theGraph, e, neighbor) (theGraph->E[e].v = neighbor)
+#define gp_GetNeighbor(theGraph, e) (theGraph->E[e].v)
+#define gp_SetNeighbor(theGraph, e, neighbor) (theGraph->E[e].v = neighbor)
 
 // Initializer for vertex flags
 #define gp_InitEdgeFlags(theGraph, e) (theGraph->E[e].flags = 0)

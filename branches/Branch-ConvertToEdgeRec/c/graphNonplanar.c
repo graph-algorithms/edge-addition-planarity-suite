@@ -336,7 +336,7 @@ int  R, tempChild, fwdArc, W=NIL, C=NIL, I=theGraph->IC.v;
     if ((fwdArc = gp_GetVertexFwdArcList(theGraph, I)) == NIL)
         return NIL;
 
-    W = theGraph->G[fwdArc].v;
+    W = gp_GetNeighbor(theGraph, fwdArc);
 
 /* Find the greatest DFS child C of I that is less than W.  This will
     give us the ancestor of W that is a child of I.  Since the
@@ -567,7 +567,7 @@ int stackBottom1, stackBottom2;
           /* Advance J and Z along the proper face containing R */
 
     	  J = gp_GetPrevArcCircular(theGraph, J);
-          Z = theGraph->G[J].v;
+          Z = gp_GetNeighbor(theGraph, J);
           J = gp_GetTwinArc(theGraph, J);
 
           /* If Z is already visited, then pop everything since the last time
@@ -714,7 +714,7 @@ int ZPrevArc, ZNextArc, Z, R, Px, Py;
     }
 
     ZPrevArc = gp_GetTwinArc(theGraph, ZNextArc);
-    Z = theGraph->G[ZPrevArc].v;
+    Z = gp_GetNeighbor(theGraph, ZPrevArc);
 
 /* If there is no Z to R path, return */
 
@@ -737,7 +737,7 @@ int ZPrevArc, ZNextArc, Z, R, Px, Py;
 
         /* Go to the next vertex indicated by ZNextArc */
 
-        Z = theGraph->G[ZNextArc].v;
+        Z = gp_GetNeighbor(theGraph, ZNextArc);
 
         /* Mark the next vertex and the edge leading to it as visited. */
 

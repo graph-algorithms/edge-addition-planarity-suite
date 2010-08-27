@@ -442,8 +442,8 @@ int  _DrawPlanar_SortVertices(graphP theGraph)
             // Relabel the context data members that indicate vertices
             for (I=0; I < theGraph->N; I++)
             {
-                context->V[I].ancestor = theGraph->G[context->V[I].ancestor].v;
-                context->V[I].ancestorChild = theGraph->G[context->V[I].ancestorChild].v;
+                context->V[I].ancestor = gp_GetVertexIndex(theGraph, context->V[I].ancestor);
+                context->V[I].ancestorChild = gp_GetVertexIndex(theGraph, context->V[I].ancestorChild);
             }
 
             // Now we have to sort the first N positions of context G and V arrays
@@ -464,8 +464,8 @@ int  _DrawPlanar_SortVertices(graphP theGraph)
             // Then copy newG into G and newV into V
             for (I=0; I < theGraph->N; I++)
             {
-                newG[theGraph->G[I].v] = context->G[I];
-                newV[theGraph->G[I].v] = context->V[I];
+                newG[gp_GetVertexIndex(theGraph, I)] = context->G[I];
+                newV[gp_GetVertexIndex(theGraph, I)] = context->V[I];
             }
 
             memcpy(context->G, newG, theGraph->N * sizeof(DrawPlanar_GraphNode));

@@ -204,7 +204,7 @@ K33SearchContext *context = NULL;
         failed to embed a back edge from I to a descendant D of C1. */
 
      e = gp_GetVertexFwdArcList(theGraph, I);
-     D = theGraph->G[e].v;
+     D = gp_GetNeighbor(theGraph, e);
 
      C1 = context->V[I].sortedDFSChildList;
 
@@ -246,7 +246,7 @@ K33SearchContext *context = NULL;
                 e = gp_GetNextArc(theGraph, e);
                 if (e == gp_GetVertexFwdArcList(theGraph, I))
                      e = NIL;
-                else D = theGraph->G[e].v;
+                else D = gp_GetNeighbor(theGraph, e);
             }
         }
 
@@ -735,9 +735,9 @@ int J = context->V[theVertex].backArcList;
 
     while (gp_IsArc(theGraph, J))
     {
-        if (theGraph->G[J].v < closerAncestor &&
-            theGraph->G[J].v > fartherAncestor)
-            return theGraph->G[J].v;
+        if (gp_GetNeighbor(theGraph, J) < closerAncestor &&
+            gp_GetNeighbor(theGraph, J) > fartherAncestor)
+            return gp_GetNeighbor(theGraph, J);
 
         J = gp_GetNextArc(theGraph, J);
         if (J == context->V[theVertex].backArcList)
@@ -892,7 +892,7 @@ int  listHead, child, J;
      J = gp_GetVertexFwdArcList(theGraph, ancestor);
      while (gp_IsArc(theGraph, J))
      {
-         if (theGraph->G[J].v == cutVertex)
+         if (gp_GetNeighbor(theGraph, J) == cutVertex)
          {
              *pDescendant = cutVertex;
              return OK;
@@ -1029,7 +1029,7 @@ isolatorContextP IC = &theGraph->IC;
      J = gp_GetVertexFwdArcList(theGraph, I);
      while (gp_IsArc(theGraph, J))
      {
-        W = theGraph->G[J].v;
+        W = gp_GetNeighbor(theGraph, J);
         theGraph->functions.fpWalkUp(theGraph, I, W);
 
         J = gp_GetNextArc(theGraph, J);
@@ -1269,7 +1269,7 @@ int  v, e, w;
           // through e have been explored and found not to contain the desired path
           while (gp_IsArc(theGraph, e))
           {
-              w = theGraph->G[e].v;
+              w = gp_GetNeighbor(theGraph, e);
 
               // The test for w < N is just safeguarding the two subsequent calls, but
               // it can never happen due to the obstructing X-Y path.  Still, a virtual
@@ -1495,7 +1495,7 @@ int  rxType, xwType, wyType, yrType, xyType;
             external face cycle edge (V, max). */
 
          A_edge = gp_GetLastArc(theGraph, IC->r);
-         A = theGraph->G[A_edge].v;
+         A = gp_GetNeighbor(theGraph, A_edge);
          yrType = EDGE_TYPE_BACK;
 
          /* If Y is max, then a path parallel to the X-Y path will be a
@@ -1516,7 +1516,7 @@ int  rxType, xwType, wyType, yrType, xyType;
              if (!gp_GetEdgeVisited(theGraph, B_edge))
                  return NOTOK;
 
-             B = theGraph->G[B_edge].v;
+             B = gp_GetNeighbor(theGraph, B_edge);
              xyType = EDGE_TYPE_BACK;
          }
 
@@ -1528,7 +1528,7 @@ int  rxType, xwType, wyType, yrType, xyType;
          else if (max == IC->w)
          {
              B_edge = gp_GetFirstArc(theGraph, IC->x);
-             B = theGraph->G[B_edge].v;
+             B = gp_GetNeighbor(theGraph, B_edge);
              xwType = EDGE_TYPE_BACK;
          }
 
@@ -1541,7 +1541,7 @@ int  rxType, xwType, wyType, yrType, xyType;
      else
      {
          A_edge = gp_GetFirstArc(theGraph, IC->r);
-         A = theGraph->G[A_edge].v;
+         A = gp_GetNeighbor(theGraph, A_edge);
          rxType = EDGE_TYPE_BACK;
 
          if (max == IC->x)
@@ -1556,14 +1556,14 @@ int  rxType, xwType, wyType, yrType, xyType;
              if (!gp_GetEdgeVisited(theGraph, B_edge))
                  return NOTOK;
 
-             B = theGraph->G[B_edge].v;
+             B = gp_GetNeighbor(theGraph, B_edge);
              xyType = EDGE_TYPE_BACK;
          }
 
          else if (max == IC->w)
          {
              B_edge = gp_GetLastArc(theGraph, IC->y);
-             B = theGraph->G[B_edge].v;
+             B = gp_GetNeighbor(theGraph, B_edge);
              wyType = EDGE_TYPE_BACK;
          }
 
@@ -1704,7 +1704,7 @@ int  prevLink, v, w, e;
          if (_RestoreReducedPath(theGraph, context, e) != OK)
              return NOTOK;
          e = gp_GetFirstArc(theGraph, u);
-         v = theGraph->G[e].v;
+         v = gp_GetNeighbor(theGraph, e);
      }
      gp_DeleteEdge(theGraph, e, 0);
 
@@ -1714,7 +1714,7 @@ int  prevLink, v, w, e;
          if (_RestoreReducedPath(theGraph, context, e) != OK)
              return NOTOK;
          e = gp_GetLastArc(theGraph, x);
-         w = theGraph->G[e].v;
+         w = gp_GetNeighbor(theGraph, e);
      }
      gp_DeleteEdge(theGraph, e, 0);
 
@@ -1751,7 +1751,7 @@ int  e, v, w;
 
      e = gp_GetFirstArc(theGraph, u);
      e = gp_GetNextArc(theGraph, e);
-     v = theGraph->G[e].v;
+     v = gp_GetNeighbor(theGraph, e);
 
      /* If the XY-path is a single edge, then no reduction is needed */
 
@@ -1766,20 +1766,20 @@ int  e, v, w;
              return NOTOK;
          e = gp_GetFirstArc(theGraph, u);
          e = gp_GetNextArc(theGraph, e);
-         v = theGraph->G[e].v;
+         v = gp_GetNeighbor(theGraph, e);
      }
      gp_DeleteEdge(theGraph, e, 0);
 
      e = gp_GetFirstArc(theGraph, x);
      e = gp_GetNextArc(theGraph, e);
-     w = theGraph->G[e].v;
+     w = gp_GetNeighbor(theGraph, e);
      if (context->G[e].pathConnector != NIL)
      {
          if (_RestoreReducedPath(theGraph, context, e) != OK)
              return NOTOK;
          e = gp_GetFirstArc(theGraph, x);
          e = gp_GetNextArc(theGraph, e);
-         w = theGraph->G[e].v;
+         w = gp_GetNeighbor(theGraph, e);
      }
      gp_DeleteEdge(theGraph, e, 0);
 
@@ -1823,10 +1823,10 @@ int  J0, J1, JTwin0, JTwin1;
 
      JTwin = gp_GetTwinArc(theGraph, J);
 
-     u = theGraph->G[JTwin].v;
+     u = gp_GetNeighbor(theGraph, JTwin);
      v = context->G[J].pathConnector;
      w = context->G[JTwin].pathConnector;
-     x = theGraph->G[J].v;
+     x = gp_GetNeighbor(theGraph, J);
 
      /* Get the locations of the graph nodes between which the new
         graph nodes must be added in order to reconnect the path
@@ -1906,10 +1906,10 @@ int  J0, JTwin0, J1, JTwin1;
              visited = gp_GetEdgeVisited(theGraph, J);
 
              JTwin = gp_GetTwinArc(theGraph, J);
-             u = theGraph->G[JTwin].v;
+             u = gp_GetNeighbor(theGraph, JTwin);
              v = context->G[J].pathConnector;
              w = context->G[JTwin].pathConnector;
-             x = theGraph->G[J].v;
+             x = gp_GetNeighbor(theGraph, J);
 
              /* Now we need the predecessor and successor edge records
                 of J and JTwin.  The edge (u, v) will be inserted so
@@ -2033,7 +2033,7 @@ int p, J;
          gp_SetEdgeVisited(theGraph, J);
          gp_SetEdgeVisited(theGraph, gp_GetTwinArc(theGraph, J));
 
-         p = theGraph->G[J].v;
+         p = gp_GetNeighbor(theGraph, J);
 
          /* If p is a root copy, mark it visited and skip to the parent copy */
          if (p >= theGraph->N)
@@ -2063,7 +2063,7 @@ int p, J;
          gp_ClearEdgeVisited(theGraph, J);
          gp_ClearEdgeVisited(theGraph, gp_GetTwinArc(theGraph, J));
 
-         p = theGraph->G[J].v;
+         p = gp_GetNeighbor(theGraph, J);
          gp_ClearVertexVisited(theGraph, p);
 
          /* If p is a root copy, clear its visited flag and skip to the

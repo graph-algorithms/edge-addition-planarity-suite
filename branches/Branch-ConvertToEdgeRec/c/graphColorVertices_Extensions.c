@@ -527,8 +527,8 @@ void _ColorVertices_HideEdge(graphP theGraph, int e)
     	int u, v, udeg, vdeg;
 
     	// Get the endpoint vertices of the edge
-    	u = theGraph->G[e].v;
-    	v = theGraph->G[gp_GetTwinArc(theGraph, e)].v;
+    	u = gp_GetNeighbor(theGraph, e);
+    	v = gp_GetNeighbor(theGraph, gp_GetTwinArc(theGraph, e));
 
     	// Get the degrees of the vertices
     	udeg = _GetVertexDegree(context, u);

@@ -239,7 +239,7 @@ int N, I, J, Jtwin, R;
         	gp_SetNextArc(theGraph, J, gp_AdjacencyListEndMark(I));
         	gp_SetPrevArc(theGraph, J, gp_AdjacencyListEndMark(I));
 
-        	theGraph->G[J].v = R;
+        	gp_SetNeighbor(theGraph, J, R);
 
             Jtwin = gp_GetTwinArc(theGraph, J);
 
@@ -308,7 +308,7 @@ int fwdArc, backArc, parentCopy;
     gp_SetAdjacentArc(theGraph, gp_GetArc(theGraph, W, WPrevLink), 1^WPrevLink, backArc);
     gp_SetArc(theGraph, W, WPrevLink, backArc);
 
-    theGraph->G[backArc].v = RootVertex;
+    gp_SetNeighbor(theGraph, backArc, RootVertex);
 
     /* Link the two endpoint vertices together on the external face */
 
@@ -346,7 +346,7 @@ int  _GetNextVertexOnExternalFace(graphP theGraph, int curVertex, int *pPrevLink
      /* Exit curVertex from whichever link was not previously used to enter it */
 
      int arc = gp_GetArc(theGraph, curVertex, 1^(*pPrevLink));
-     int nextVertex = theGraph->G[arc].v;
+     int nextVertex = gp_GetNeighbor(theGraph, arc);
 
      /* This if stmt assigns the new prev link that tells us which edge
         record was used to enter nextVertex (so that we exit from the
@@ -441,7 +441,7 @@ int  e_w, e_r, e_ext;
      while (gp_IsArc(theGraph, J))
      {
          JTwin = gp_GetTwinArc(theGraph, J);
-         theGraph->G[JTwin].v = W;
+         gp_GetNeighbor(theGraph, JTwin) = W;
 
     	 J = gp_GetNextArc(theGraph, J);
      }
@@ -625,7 +625,7 @@ int  Zig, Zag, ZigPrevLink, ZagPrevLink;
 int  N, R, ParentCopy, nextVertex, W;
 int  RootID_DFSChild, BicompList;
 
-     W = theGraph->G[J].v;
+     W = gp_GetNeighbor(theGraph, J);
      gp_SetVertexPertinentAdjacencyInfo(theGraph, W, J);
 
      /* Shorthand for N, due to frequent use */
@@ -1392,7 +1392,7 @@ int  stackBottom = sp_GetCurrentSize(theGraph->theStack);
          {
              if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_CHILD)
              {
-                 sp_Push2(theGraph->theStack, theGraph->G[J].v,
+                 sp_Push2(theGraph->theStack, gp_GetNeighbor(theGraph, J),
                 		  invertedFlag ^ gp_GetEdgeFlagInverted(theGraph, J));
 
                  if (!PreserveSigns)
@@ -1459,7 +1459,7 @@ int  e_u, e_v, e_ulink, e_vlink;
     		e_ulink = 1;
     	else return NOTOK;
 
-        v = theGraph->G[e_u].v;
+        v = gp_GetNeighbor(theGraph, e_u);
 
         // Now get the external face link in vertex v that indicates the
         // edge e_v which connects back to the prior vertex u.

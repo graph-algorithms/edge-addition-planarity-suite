@@ -100,14 +100,14 @@ platform_GetTime(start);
           while (sp_NonEmpty(theStack))
           {
               sp_Pop2(theStack, uparent, e);
-              u = uparent == NIL ? I : theGraph->G[e].v;
+              u = uparent == NIL ? I : gp_GetNeighbor(theGraph, e);
 
               if (!gp_GetVertexVisited(theGraph, u))
               {
             	  gp_LogLine(gp_MakeLogStr3("V=%d, DFI=%d, Parent=%d", u, DFI, uparent));
 
             	  gp_SetVertexVisited(theGraph, u);
-                  theGraph->G[u].v = DFI++;
+                  gp_SetVertexIndex(theGraph, u, DFI++);
                   gp_SetVertexParent(theGraph, u, uparent);
                   if (e != NIL)
                   {
@@ -125,7 +125,7 @@ platform_GetTime(start);
                   J = gp_GetFirstArc(theGraph, u);
                   while (gp_IsArc(theGraph, J))
                   {
-                      if (!gp_GetVertexVisited(theGraph, theGraph->G[J].v))
+                      if (!gp_GetVertexVisited(theGraph, gp_GetNeighbor(theGraph, J)))
                           sp_Push2(theStack, u, J);
                       J = gp_GetNextArc(theGraph, J);
                   }
@@ -203,10 +203,10 @@ platform_GetTime(start);
 
      for (e=0, J=theGraph->edgeOffset; e < M; e++, J+=2)
      {
-    	 if (theGraph->G[J].v != NIL)
+    	 if (gp_GetNeighbor(theGraph, J) != NIL)
     	 {
-    		 theGraph->G[J].v = theGraph->G[theGraph->G[J].v].v;
-    		 theGraph->G[J+1].v = theGraph->G[theGraph->G[J+1].v].v;
+    		 gp_SetNeighbor(theGraph, J, gp_GetVertexIndex(theGraph, gp_GetNeighbor(theGraph, J)));
+    		 gp_SetNeighbor(theGraph, J+1, gp_GetVertexIndex(theGraph, gp_GetNeighbor(theGraph, J+1)));
     	 }
      }
 
@@ -214,7 +214,7 @@ platform_GetTime(start);
 
      for (I=0; I < N; I++)
           if (gp_GetVertexParent(theGraph, I) != NIL)
-              gp_SetVertexParent(theGraph, I, theGraph->G[gp_GetVertexParent(theGraph, I)].v);
+              gp_SetVertexParent(theGraph, I, gp_GetVertexIndex(theGraph, gp_GetVertexParent(theGraph, I)));
 
 /* Sort by 'v using constant time random access. Move each vertex to its
         destination 'v', and store its source location in 'v'. */
@@ -229,15 +229,16 @@ platform_GetTime(start);
      /* We visit each vertex location, skipping those marked as visited since
         we've already moved the correct vertex into that location. The
         inner loop swaps the vertex at location I into the correct position,
-        G[I].v, marks that location as visited, then sets its 'v' field to
-        be the location from whence we obtained the vertex record. */
+        given by the index of the vertex at location I.  Then it marks that
+        location as visited, then sets its index to be the location from
+        whence we obtained the vertex record. */
 
      for (I=0; I < N; I++)
      {
           srcPos = I;
           while (!gp_GetVertexVisited(theGraph, I))
           {
-              dstPos = theGraph->G[I].v;
+              dstPos = gp_GetVertexIndex(theGraph, I);
 
               tempG = theGraph->G[dstPos];
               tempV = theGraph->V[dstPos];
@@ -247,7 +248,7 @@ platform_GetTime(start);
               theGraph->V[I] = tempV;
 
               gp_SetVertexVisited(theGraph, dstPos);
-              theGraph->G[dstPos].v = srcPos;
+              gp_SetVertexIndex(theGraph, dstPos, srcPos);
 
               srcPos = dstPos;
           }
@@ -274,17 +275,17 @@ printf("SortVertices in %.3lf seconds.\n", platform_GetDuration(start,end));
 
  This implementation requires that the vertices be sorted in DFI order
  (such that the edge records contain DFI values in their v fields).  An
- implementation could be made to run before sorting using the fact that
- the value G[G[e].v].v before sorting is equal to G[e].v after the sort.
+ implementation could be made to run before sorting but a need has not
+ yet arisen.
 
- For computing Lowpoint, we must do a post-order traversal of the DFS tree.
+ For computing lowpoint, we must do a post-order traversal of the DFS tree.
  We push the root of the DFS tree, then we loop while the stack is not empty.
  We pop a vertex; if it is not marked, then we are on our way down the DFS
  tree, so we mark it and push it back on, followed by pushing its
  DFS children.  The next time we pop the node, all of its children
  will have been popped, marked+children pushed, and popped again.  On
- the second pop of the vertex, we can therefore compute the Lowpoint
- values based on the childrens' Lowpoints and the edges in the vertex's
+ the second pop of the vertex, we can therefore compute the lowpoint
+ values based on the childrens' lowpoints and the edges in the vertex's
  adjacency list.
 
  A stack of size N suffices because we push each vertex only once.
@@ -300,6 +301,9 @@ int totalVisited = 0;
 platform_time start, end;
 platform_GetTime(start);
 #endif
+
+     if (!(theGraph->internalFlags & FLAGS_SORTEDBYDFI))
+         return NOTOK;
 
      sp_ClearStack(theStack);
 
@@ -330,7 +334,7 @@ platform_GetTime(start);
                   {
                       if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_CHILD)
                       {
-                          sp_Push(theStack, theGraph->G[J].v);
+                          sp_Push(theStack, gp_GetNeighbor(theGraph, J));
                       }
                       else break;
 
@@ -346,7 +350,7 @@ platform_GetTime(start);
                   J = gp_GetFirstArc(theGraph, u);
                   while (gp_IsArc(theGraph, J))
                   {
-                      uneighbor = theGraph->G[J].v;
+                      uneighbor = gp_GetNeighbor(theGraph, J);
                       if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_CHILD)
                       {
                           if (L > gp_GetVertexLowpoint(theGraph, uneighbor))
@@ -436,7 +440,7 @@ platform_GetTime(start);
 			// false edge to the DFS tree root as pushed above.
 			// If uparent is not NIL but e is NIL, then this is a false edge to u
 			// pushed to mark the end of processing of u's DFS subtrees
-			u = uparent == NIL ? I : (e == NIL ? uparent : theGraph->G[e].v);
+			u = uparent == NIL ? I : (e == NIL ? uparent : gp_GetNeighbor(theGraph, e));
 
 			// We popped an edge to an unvisited vertex, so it is either a DFS tree edge
 			// or a false edge to the DFS tree root (u).
@@ -445,7 +449,7 @@ platform_GetTime(start);
 				gp_LogLine(gp_MakeLogStr3("V=%d, DFI=%d, Parent=%d", u, DFI, uparent));
 
 				gp_SetVertexVisited(theGraph, u);
-				theGraph->G[u].v = DFI++;
+				gp_SetVertexIndex(theGraph, u, DFI++);
 				gp_SetVertexParent(theGraph, u, uparent);
 				if (e != NIL)
 				{
@@ -468,7 +472,7 @@ platform_GetTime(start);
 				J = gp_GetFirstArc(theGraph, u);
 				while (gp_IsArc(theGraph, J))
 				{
-					if (!gp_GetVertexVisited(theGraph, theGraph->G[J].v))
+					if (!gp_GetVertexVisited(theGraph, gp_GetNeighbor(theGraph, J)))
 					{
 						sp_Push2(theStack, u, J);
 					}
@@ -489,16 +493,16 @@ platform_GetTime(start);
 				if (e == NIL)
 				{
 					// Start with high values because we are doing a min function.
-					// Unlike gp_LowpointAndLeastAncestor(), we refer here to G[u].v
-					// rather than just u because the gp_SortVertices() has not
-					// yet occurred.
-					L = leastAncestor = theGraph->G[u].v;
+					// Unlike gp_LowpointAndLeastAncestor(), we refer here to the
+					// index of u rather than just u because the gp_SortVertices()
+					// has not yet occurred.
+					L = leastAncestor = gp_GetVertexIndex(theGraph, u);
 
 					// Compute L and leastAncestor
 					J = gp_GetFirstArc(theGraph, u);
 					while (gp_IsArc(theGraph, J))
 					{
-						uneighbor = theGraph->G[J].v;
+						uneighbor = gp_GetNeighbor(theGraph, J);
 						if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_CHILD)
 						{
 							if (L > gp_GetVertexLowpoint(theGraph, uneighbor))
@@ -506,11 +510,11 @@ platform_GetTime(start);
 						}
 						else if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_BACK)
 						{
-							// Unlike gp_LowpointAndLeastAncestor(), we refer here to
-							// G[uneighbor].v rather than just uneighbor because the
-							// gp_SortVertices() has not yet occurred. */
-							if (leastAncestor > theGraph->G[uneighbor].v)
-								leastAncestor = theGraph->G[uneighbor].v;
+							// Unlike gp_LowpointAndLeastAncestor(), we refer here to the
+							// index of uneighbor rather than just uneighbor because the
+							// gp_SortVertices() has not yet occurred.
+							if (leastAncestor > gp_GetVertexIndex(theGraph, uneighbor))
+								leastAncestor = gp_GetVertexIndex(theGraph, uneighbor);
 						}
 						else if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_FORWARD)
 							break;

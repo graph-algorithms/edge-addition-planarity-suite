@@ -287,8 +287,8 @@ int _GetContractibleNeighbors(ColorVerticesContext *context, int v, int *pu, int
     J = gp_GetFirstArc(theGraph, v);
     while (gp_IsArc(theGraph, J))
     {
-    	if (_GetVertexDegree(context, theGraph->G[J].v) <= 7)
-    		lowDegreeNeighbors[n++] = theGraph->G[J].v;
+    	if (_GetVertexDegree(context, gp_GetNeighbor(theGraph, J)) <= 7)
+    		lowDegreeNeighbors[n++] = gp_GetNeighbor(theGraph, J);
         J = gp_GetNextArc(theGraph, J);
     }
 
@@ -353,7 +353,7 @@ int _AssignColorToVertex(ColorVerticesContext *context, graphP theGraph, int v)
     J = gp_GetFirstArc(theGraph, v);
     while (gp_IsArc(theGraph, J))
     {
-         w = theGraph->G[J].v;
+         w = gp_GetNeighbor(theGraph, J);
          context->colorDetector[context->color[w]] = 1;
 
          J = gp_GetNextArc(theGraph, J);
@@ -379,7 +379,7 @@ int _AssignColorToVertex(ColorVerticesContext *context, graphP theGraph, int v)
     J = gp_GetFirstArc(theGraph, v);
     while (gp_IsArc(theGraph, J))
     {
-         w = theGraph->G[J].v;
+         w = gp_GetNeighbor(theGraph, J);
          context->colorDetector[context->color[w]] = 0;
 
          J = gp_GetNextArc(theGraph, J);
@@ -424,7 +424,7 @@ int gp_ColorVerticesIntegrityCheck(graphP theGraph, graphP origGraph)
         J = gp_GetFirstArc(theGraph, I);
         while (gp_IsArc(theGraph, J))
         {
-             w = theGraph->G[J].v;
+             w = gp_GetNeighbor(theGraph, J);
              if (context->color[I] < 0 || context->color[I] == context->color[w])
             	 return NOTOK;
 

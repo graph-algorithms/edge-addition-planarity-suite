@@ -481,7 +481,7 @@ int _K4Search_CreateFwdArcLists(graphP theGraph)
                     gp_SetNextArc(theGraph, Jcur, NIL);
 
                     // Determine the ancestor of vertex I to which Jcur connects
-                    ancestor = theGraph->G[Jcur].v;
+                    ancestor = gp_GetNeighbor(theGraph, Jcur);
 
                     // Go to the forward arc in the ancestor
                     Jcur = gp_GetTwinArc(theGraph, Jcur);
@@ -575,7 +575,7 @@ void _K4Search_CreateDFSTreeEmbedding(graphP theGraph)
                     context->V[I].sortedDFSChildList =
                         LCPrepend(context->sortedDFSChildLists,
                                     context->V[I].sortedDFSChildList,
-                                    theGraph->G[J].v);
+                                    gp_GetNeighbor(theGraph, J));
 
                     J = gp_GetNextArc(theGraph, J);
                 }
@@ -598,7 +598,7 @@ void _K4Search_CreateDFSTreeEmbedding(graphP theGraph)
                     // to the forward arcs with DFI less than C2
                     if (C2 != NIL)
                     {
-    					D = theGraph->G[e].v;
+    					D = gp_GetNeighbor(theGraph, e);
     					while (D < C2)
     					{
                     		context->V[C1].p2dFwdArcCount++;
@@ -611,7 +611,7 @@ void _K4Search_CreateDFSTreeEmbedding(graphP theGraph)
 								e = NIL;
 								break;
 							}
-							D = theGraph->G[e].v;
+							D = gp_GetNeighbor(theGraph, e);
     					}
                     }
 
@@ -780,7 +780,7 @@ int  J, parent, N;
               {
                   if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_PARENT)
                   {
-                      parent = theGraph->G[J].v;
+                      parent = gp_GetNeighbor(theGraph, J);
                       break;
                   }
                   J = gp_GetNextArc(theGraph, J);

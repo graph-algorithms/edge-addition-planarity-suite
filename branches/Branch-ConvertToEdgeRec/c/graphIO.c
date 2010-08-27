@@ -75,7 +75,7 @@ int N, I, W, Flag, ErrorCode;
 
      for (I = 0, ErrorCode = OK; I < N-1 && ErrorCode==OK; I++)
      {
-          theGraph->G[I].v = I;
+    	 gp_SetVertexIndex(theGraph, I, I);
           for (W = I+1; W < N; W++)
           {
                fscanf(Infile, " %1d", &Flag);
@@ -116,7 +116,7 @@ int N, I, W, Flag, ErrorCode;
 
 int  _ReadAdjList(graphP theGraph, FILE *Infile)
 {
-int N, I, W, ErrorCode, adjList, J;
+int N, I, W, ErrorCode, adjList, J, indexValue;
 
      if (Infile == NULL) return NOTOK;
      fgetc(Infile);                             /* Skip the N= */
@@ -137,10 +137,11 @@ int N, I, W, ErrorCode, adjList, J;
      for (I = 0, ErrorCode = OK; I < N && ErrorCode==OK; I++)
      {
           // Read the vertex number
-          fscanf(Infile, "%d", &theGraph->G[I].v);
+          fscanf(Infile, "%d", &indexValue);
+          gp_SetVertexIndex(theGraph, I, indexValue);
 
           // The vertices are expected to be in numeric ascending order
-          if (theGraph->G[I].v != I)
+          if (gp_GetVertexIndex(theGraph, I) != I)
         	  return NOTOK;
 
           // Skip the colon after the vertex number
@@ -166,7 +167,7 @@ int N, I, W, ErrorCode, adjList, J;
         	  J = gp_GetFirstArc(theGraph, I);
 			  while (gp_IsArc(theGraph, J))
 			  {
-				  gp_SetVertexVisitedInfo(theGraph, theGraph->G[J].v, J);
+				  gp_SetVertexVisitedInfo(theGraph, gp_GetNeighbor(theGraph, J), J);
 				  J = gp_GetNextArc(theGraph, J);
 			  }
 
@@ -251,7 +252,7 @@ int N, I, W, ErrorCode, adjList, J;
           {
         	  J = adjList;
 
-        	  gp_SetVertexVisitedInfo(theGraph, theGraph->G[J].v, NIL);
+        	  gp_SetVertexVisitedInfo(theGraph, gp_GetNeighbor(theGraph, J), NIL);
 
  			  if ((adjList = gp_GetNextArc(theGraph, J)) == J)
  				  adjList = NIL;
@@ -418,7 +419,7 @@ int I, J;
           while (gp_IsArc(theGraph, J))
           {
         	  if (!gp_GetDirection(theGraph, J, EDGEFLAG_DIRECTION_INONLY))
-                  fprintf(Outfile, " %d", theGraph->G[J].v);
+                  fprintf(Outfile, " %d", gp_GetNeighbor(theGraph, J));
 
               J = gp_GetPrevArc(theGraph, J);
           }
@@ -466,8 +467,8 @@ char *Row = NULL;
         	  if (gp_GetDirection(theGraph, J, EDGEFLAG_DIRECTION_INONLY))
         		  return NOTOK;
 
-              if (theGraph->G[J].v > I)
-                  Row[theGraph->G[J].v] = '1';
+              if (gp_GetNeighbor(theGraph, J) > I)
+                  Row[gp_GetNeighbor(theGraph, J)] = '1';
 
               J = gp_GetNextArc(theGraph, J);
           }
@@ -502,12 +503,12 @@ int I, J, Gsize;
                              I, gp_GetVertexParent(theGraph, I),
                                 gp_GetVertexLeastAncestor(theGraph, I),
                                 gp_GetVertexLowpoint(theGraph, I),
-                                theGraph->G[I].v);
+                                gp_GetVertexIndex(theGraph, I));
 
           J = gp_GetFirstArc(theGraph, I);
           while (gp_IsArc(theGraph, J))
           {
-              fprintf(Outfile, " %d(J=%d)", theGraph->G[J].v, J);
+              fprintf(Outfile, " %d(J=%d)", gp_GetNeighbor(theGraph, J), J);
               J = gp_GetNextArc(theGraph, J);
           }
 
@@ -518,16 +519,16 @@ int I, J, Gsize;
 
      for (I = theGraph->N; I < 2*theGraph->N; I++)
      {
-          if (theGraph->G[I].v == NIL)
+          if (gp_GetVertexIndex(theGraph, I) == NIL)
               continue;
 
           fprintf(Outfile, "%d(copy of=%d, DFS child=%d):",
-                           I, theGraph->G[I].v, I-theGraph->N);
+                           I, gp_GetVertexIndex(theGraph, I), I-theGraph->N);
 
           J = gp_GetFirstArc(theGraph, I);
           while (gp_IsArc(theGraph, J))
           {
-              fprintf(Outfile, " %d(J=%d)", theGraph->G[J].v, J);
+              fprintf(Outfile, " %d(J=%d)", gp_GetNeighbor(theGraph, J), J);
               J = gp_GetNextArc(theGraph, J);
           }
 
@@ -538,7 +539,7 @@ int I, J, Gsize;
      fprintf(Outfile, "\nVERTEX INFORMATION\n");
      for (I=0; I < 2*theGraph->N; I++)
      {
-         if (theGraph->G[I].v == NIL)
+         if (gp_GetVertexIndex(theGraph, I) == NIL)
              continue;
 
          fprintf(Outfile, "V[%3d] index=%3d, type=%c, first arc=%3d, last arc=%3d\n",
@@ -555,12 +556,12 @@ int I, J, Gsize;
      Gsize = theGraph->edgeOffset + theGraph->arcCapacity;
      for (J=theGraph->edgeOffset; J < Gsize; J++)
      {
-          if (theGraph->G[J].v == NIL)
+          if (gp_GetNeighbor(theGraph, J) == NIL)
               continue;
 
           fprintf(Outfile, "E[%3d] neighbor=%3d, type=%c, next arc=%3d, prev arc=%3d\n",
                            J,
-                           gp_GetEdgeNeighbor(theGraph, J),
+                           gp_GetNeighbor(theGraph, J),
                            gp_GetEdgeType(theGraph, J),
                            gp_GetNextArc(theGraph, J),
                            gp_GetPrevArc(theGraph, J));

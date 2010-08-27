@@ -540,10 +540,10 @@ int  J, Z, ZNew;
      J = gp_GetVertexFwdArcList(theGraph, ancestor);
      while (gp_IsArc(theGraph, J))
      {
-          if (theGraph->G[J].v >= SubtreeRoot)
+          if (gp_GetNeighbor(theGraph, J) >= SubtreeRoot)
           {
-              if (*pDescendant == NIL || *pDescendant > theGraph->G[J].v)
-                  *pDescendant = theGraph->G[J].v;
+              if (*pDescendant == NIL || *pDescendant > gp_GetNeighbor(theGraph, J))
+                  *pDescendant = gp_GetNeighbor(theGraph, J);
           }
 
           J = gp_GetNextArc(theGraph, J);
@@ -657,7 +657,7 @@ int  J, parent, Z, N;
           J = gp_GetFirstArc(theGraph, descendant);
           while (gp_IsArc(theGraph, J))
           {
-              Z = theGraph->G[J].v;
+              Z = gp_GetNeighbor(theGraph, J);
               if ((Z < N && Z == parent) ||
                   (Z >= N && gp_GetVertexParent(theGraph, Z-N) == parent))
               {
@@ -762,7 +762,7 @@ int fwdArc, backArc;
      fwdArc = gp_GetVertexFwdArcList(theGraph, ancestor);
      while (gp_IsArc(theGraph, fwdArc))
      {
-          if (theGraph->G[fwdArc].v == descendant)
+          if (gp_GetNeighbor(theGraph, fwdArc) == descendant)
               break;
 
           fwdArc = gp_GetNextArc(theGraph, fwdArc);
@@ -798,7 +798,7 @@ int fwdArc, backArc;
     gp_SetPrevArc(theGraph, gp_GetFirstArc(theGraph, descendant), backArc);
     gp_SetFirstArc(theGraph, descendant, backArc);
 
-    theGraph->G[backArc].v = ancestor;
+    gp_SetNeighbor(theGraph, backArc, ancestor);
 }
 
 /****************************************************************************
@@ -821,7 +821,7 @@ int  I, J, fwdArc, descendant;
          while (gp_GetVertexFwdArcList(theGraph, I) != NIL)
          {
              fwdArc = gp_GetVertexFwdArcList(theGraph, I);
-             descendant = theGraph->G[fwdArc].v;
+             descendant = gp_GetNeighbor(theGraph, fwdArc);
              _AddBackEdge(theGraph, I, descendant);
          }
      }

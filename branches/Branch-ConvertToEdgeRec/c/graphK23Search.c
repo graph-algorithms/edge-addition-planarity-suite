@@ -109,7 +109,7 @@ int J, W, C, RetVal=OK;
 
     while (J != NIL)
     {
-        W = theGraph->G[J].v;
+        W = gp_GetNeighbor(theGraph, J);
 
         /* Go from the descendant endpoint to find the ancestor that
             is a child of I, which in turn indicates the root of a

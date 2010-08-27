@@ -151,8 +151,8 @@ void SaveAsciiGraph(graphP theGraph, char *filename)
 
 	for (e = theGraph->edgeOffset; e < GsizeOccupied; e+=2)
 	{
-		if (theGraph->G[e].v != NIL)
-			fprintf(outfile, "%d %d\n", theGraph->G[e].v+1, theGraph->G[e+1].v+1);
+		if (gp_GetNeighbor(theGraph, e) != NIL)
+			fprintf(outfile, "%d %d\n", gp_GetNeighbor(theGraph, e)+1, gp_GetNeighbor(theGraph, e+1)+1);
 	}
 
 	fprintf(outfile, "0 0\n");
