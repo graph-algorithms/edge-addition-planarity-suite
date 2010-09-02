@@ -912,17 +912,17 @@ int  gp_CopyAdjacencyLists(graphP dstGraph, graphP srcGraph)
 	// Copy the links that hook each owning vertex to its adjacency list
 	for (v = 0; v < srcGraph->N; v++)
 	{
-		dstGraph->G[v].link[0] = srcGraph->G[v].link[0];
-		dstGraph->G[v].link[1] = srcGraph->G[v].link[1];
+		gp_SetFirstArc(dstGraph, v, gp_GetFirstArc(srcGraph, v));
+		gp_SetLastArc(dstGraph, v, gp_GetLastArc(srcGraph, v));
 	}
 
 	// Copy the adjacency links and neighbor pointers for each arc
 	GsizeOccupied = srcGraph->edgeOffset + 2*(srcGraph->M + sp_GetCurrentSize(srcGraph->edgeHoles));
 	for (e = srcGraph->edgeOffset; e < GsizeOccupied; e++)
 	{
-		dstGraph->G[e].v = srcGraph->G[e].v;
-		dstGraph->G[e].link[0] = srcGraph->G[e].link[0];
-		dstGraph->G[e].link[1] = srcGraph->G[e].link[1];
+		gp_SetNeighbor(dstGraph, e, gp_GetNeighbor(srcGraph, e));
+		gp_SetNextArc(dstGraph, e, gp_GetNextArc(srcGraph, e));
+		gp_SetPrevArc(dstGraph, e, gp_GetPrevArc(srcGraph, e));)
 	}
 
 	// Tell the dstGraph how many edges it now has and where the edge holes are

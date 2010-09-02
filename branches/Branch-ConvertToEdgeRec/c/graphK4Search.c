@@ -1174,9 +1174,13 @@ int _K4_TestPathComponentForAncestor(graphP theGraph, int R, int prevLink, int A
  _K4_ClearVisitedInPathComponent()
 
  There is a subcomponent of the bicomp rooted by R that is separable by the
- 2-cut (R, A) and contains the edge e_R = theGraph->G[R].link[1^prevLink].
+ 2-cut (R, A). The component contains the external face path from R to A.
+ The 1^prevLink arc of R is contained in that path (i.e. the first arc if
+ prevLink indicates the last, or the last arc if prevLink indicates the first).
+ The prevLink is passed because _GetNextVertexOnExternalFace() uses the
+ opposing link to traverse to the "next" vertex.
 
- All vertices in this component are along the external face, so we
+ All vertices in this desired component are along the external face, so we
  traverse along the external face vertices strictly between R and A and
  clear all the visited flags of the edges and their incident vertices.
 
@@ -1212,11 +1216,14 @@ void _K4_ClearVisitedInPathComponent(graphP theGraph, int R, int prevLink, int A
  _K4_DeleteUnmarkedEdgesInPathComponent()
 
  There is a subcomponent of the bicomp rooted by R that is separable by the
- 2-cut (R, A) and contains the edge e_R = theGraph->G[R].link[1^prevLink].
+ 2-cut (R, A) and contains the external face path from R to A that includes
+ the arc gp_GetArc(theGraph, R, 1^prevLink), which is the first arc traversed
+ by _GetNextVertexOnExternalFace(..., &prevLink).
+
  The edges in the component have been marked unvisited except for a path we
  intend to preserve. This routine deletes the unvisited edges.
 
- NOTE: This reduction has invalidated the short-circuit extFace data structure,
+ NOTE: This reduction invalidates the short-circuit extFace data structure,
        but it will be repaired for use by WalkUp and WalkDown when the path
        component reduction is completed.
 
@@ -1282,8 +1289,8 @@ int  _K4_DeleteUnmarkedEdgesInPathComponent(graphP theGraph, int R, int prevLink
 int  _K4_ReducePathToEdge(graphP theGraph, K4SearchContext *context, int edgeType, int R, int e_R, int A, int e_A)
 {
 	 // Find out the links used in vertex R for edge e_R and in vertex A for edge e_A
-	 int Rlink = theGraph->G[R].link[0] == e_R ? 0 : 1;
-	 int Alink = theGraph->G[A].link[0] == e_A ? 0 : 1;
+	 int Rlink = gp_GetFirstArc(theGraph, R) == e_R ? 0 : 1;
+	 int Alink = gp_GetFirstArc(theGraph, A) == e_A ? 0 : 1;
 
 	 // If the path is more than a single edge, then it must be reduced to an edge.
 	 // Note that even if the path is a single edge, the external face data structure

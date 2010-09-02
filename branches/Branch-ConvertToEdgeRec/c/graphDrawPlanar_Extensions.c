@@ -459,7 +459,7 @@ int  _DrawPlanar_SortVertices(graphP theGraph)
                 return NOTOK;
             }
 
-            // Let X==G[I].v be the location where the I^{th} record goes
+            // Let X == index of I^{th} vertex record be the location where the I^{th} record goes
             // Given newG and newV arrays, we want to move context G[I] to newG[X]
             // Then copy newG into G and newV into V
             for (I=0; I < theGraph->N; I++)
