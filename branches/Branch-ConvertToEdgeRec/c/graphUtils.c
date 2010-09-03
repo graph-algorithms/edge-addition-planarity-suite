@@ -109,8 +109,9 @@ int  _GetRandomNumber(int NMin, int NMax);
 
 /* Private functions for which there are FUNCTION POINTERS */
 
-void _InitGraphNode(graphP theGraph, int I);
 void _InitVertexRec(graphP theGraph, int I);
+void _InitVertexInfo(graphP theGraph, int I);
+void _InitEdgeRec(graphP theGraph, int J);
 
 int  _InitGraph(graphP theGraph, int N);
 void _ReinitializeGraph(graphP theGraph);
@@ -182,8 +183,9 @@ void _InitFunctionTable(graphP theGraph)
      theGraph->functions.fpCheckEmbeddingIntegrity = _CheckEmbeddingIntegrity;
      theGraph->functions.fpCheckObstructionIntegrity = _CheckObstructionIntegrity;
 
-     theGraph->functions.fpInitGraphNode = _InitGraphNode;
      theGraph->functions.fpInitVertexRec = _InitVertexRec;
+     theGraph->functions.fpInitVertexInfo = _InitVertexInfo;
+     theGraph->functions.fpInitEdgeRec = _InitEdgeRec;
 
      theGraph->functions.fpInitGraph = _InitGraph;
      theGraph->functions.fpReinitializeGraph = _ReinitializeGraph;
@@ -207,15 +209,17 @@ void _InitFunctionTable(graphP theGraph)
  The arcCapacity is set to (2 * DEFAULT_EDGE_LIMIT * N) unless it
 	 has already been set by gp_EnsureArcCapacity()
 
- For G, we need N vertex nodes, N more vertex nodes for root copies,
-         and arcCapacity edge records.
+ For V, we need 2N vertex records, N for vertices and N for virtual vertices (root copies).
 
- For V, we need N vertex records.
+ For VI, we need N vertexInfo records.
+
+ For E, we need arcCapacity edge records.
 
  The BicompLists and DFSChildLists are of size N and start out empty.
 
  The stack, initially empty, is made big enough for a pair of integers
-	 per edge record, or 2 * arcCapacity.
+	 per edge record (2 * arcCapacity), or 6N integers if the arcCapacity
+	 was set below the default value.
 
  The edgeHoles stack, initially empty, is set to arcCapacity / 2,
 	 which is big enough to push every edge (to indicate an edge
@@ -244,45 +248,46 @@ int gp_InitGraph(graphP theGraph, int N)
 
 int  _InitGraph(graphP theGraph, int N)
 {
-int I, edgeOffset, arcCapacity, Gsize, Vsize, stackSize;
+int I, J, Vsize, Esize, stackSize;
 
-/* Compute the vertex and edge capacities of the graph */
-
+	 // Compute the vertex and edge capacities of the graph
      Vsize = 2*N;
-     edgeOffset = Vsize;
-     arcCapacity = theGraph->arcCapacity > 0 ? theGraph->arcCapacity : 2*DEFAULT_EDGE_LIMIT*N;
-     Gsize = edgeOffset + arcCapacity;
-     stackSize = 2 * arcCapacity;
+     Esize = theGraph->arcCapacity > 0 ? theGraph->arcCapacity : 2*DEFAULT_EDGE_LIMIT*N;
+
+     // Stack size is 2 integers per arc, or 6 integers per vertex in case of small arcCapacity
+     stackSize = 2 * Esize;
      stackSize = stackSize < 6*N ? 6*N : stackSize;
 
-/* Allocate memory as described above */
-
-     if ((theGraph->G = (graphNodeP) malloc(Gsize*sizeof(graphNode))) == NULL ||
-         (theGraph->V = (vertexRecP) malloc(N*sizeof(vertexRec))) == NULL ||
+     // Allocate memory as described above
+     if ((theGraph->V = (vertexRecP) malloc(Vsize*sizeof(vertexRec))) == NULL ||
+    	 (theGraph->VI = (vertexInfoP) malloc(N*sizeof(vertexInfo))) == NULL ||
+    	 (theGraph->E = (edgeRecP) malloc(Esize*sizeof(edgeRec))) == NULL ||
          (theGraph->BicompLists = LCNew(N)) == NULL ||
          (theGraph->DFSChildLists = LCNew(N)) == NULL ||
          (theGraph->theStack = sp_New(stackSize)) == NULL ||
          (theGraph->buckets = (int *) malloc(N * sizeof(int))) == NULL ||
          (theGraph->bin = LCNew(N)) == NULL ||
          (theGraph->extFace = (extFaceLinkRecP) malloc(Vsize*sizeof(extFaceLinkRec))) == NULL ||
-         (theGraph->edgeHoles = sp_New(arcCapacity / 2)) == NULL ||
+         (theGraph->edgeHoles = sp_New(Esize / 2)) == NULL ||
          0)
      {
          _ClearGraph(theGraph);
          return NOTOK;
      }
 
-/* Initialize memory */
-
+     // Initialize memory
      theGraph->N = N;
-     theGraph->edgeOffset = edgeOffset;
-     theGraph->arcCapacity = Gsize - edgeOffset;
+     theGraph->NV = N;
+     theGraph->arcCapacity = Esize;
 
-     for (I = 0; I < Gsize; I++)
-          theGraph->functions.fpInitGraphNode(theGraph, I);
+     for (I = 0; I < Vsize; I++)
+          theGraph->functions.fpInitVertexRec(theGraph, I);
 
      for (I = 0; I < N; I++)
-          theGraph->functions.fpInitVertexRec(theGraph, I);
+          theGraph->functions.fpInitVertexInfo(theGraph, I);
+
+     for (J = 0; J < Esize; J++)
+          theGraph->functions.fpInitEdgeRec(theGraph, J);
 
      for (I = 0; I < Vsize; I++)
      {
@@ -312,17 +317,19 @@ void gp_ReinitializeGraph(graphP theGraph)
 
 void _ReinitializeGraph(graphP theGraph)
 {
-int  I, N = theGraph->N, edgeOffset = theGraph->edgeOffset;
-int  Vsize = 2*N, Gsize = edgeOffset + theGraph->arcCapacity;
+int  I, J, N = theGraph->N, Vsize = 2*N, Esize = theGraph->arcCapacity;
 
      theGraph->M = 0;
      theGraph->internalFlags = theGraph->embedFlags = 0;
 
-     for (I = 0; I < Gsize; I++)
-          theGraph->functions.fpInitGraphNode(theGraph, I);
+     for (I = 0; I < Vsize; I++)
+          theGraph->functions.fpInitVertexRec(theGraph, I);
 
      for (I = 0; I < N; I++)
-          theGraph->functions.fpInitVertexRec(theGraph, I);
+          theGraph->functions.fpInitVertexInfo(theGraph, I);
+
+     for (J = 0; J < Esize; J++)
+          theGraph->functions.fpInitEdgeRec(theGraph, J);
 
      for (I = 0; I < Vsize; I++)
      {
@@ -430,12 +437,11 @@ int gp_EnsureArcCapacity(graphP theGraph, int requiredArcCapacity)
 int _EnsureArcCapacity(graphP theGraph, int requiredArcCapacity)
 {
 stackP newStack;
-int J, Gsize=theGraph->edgeOffset + theGraph->arcCapacity;
-int newGsize = theGraph->edgeOffset + requiredArcCapacity;
+int J, Esize = theGraph->arcCapacity, newEsize = requiredArcCapacity;
 
 	// If the new size is less than or equal to the old size, then
 	// the graph already has the required arc capacity
-	if (newGsize <= Gsize)
+	if (newEsize <= Esize)
 		return OK;
 
     // Expand theStack
@@ -449,7 +455,8 @@ int newGsize = theGraph->edgeOffset + requiredArcCapacity;
     		//       calculation is not needed here because we already ensured
 			//       we had stack capacity of the greater of 2*arcs and 6*N
     		//       But we do it for clarity and consistency (e.g. so this rule
-    		//       is not forgotten whenever a "SetArcCapacity" method is added)
+    		//       is not forgotten whenever a "SetArcCapacity" method or a
+    		//       "reduceArcCapacity" method is added)
     		stackSize = 6*theGraph->N;
     	}
 
@@ -469,31 +476,18 @@ int newGsize = theGraph->edgeOffset + requiredArcCapacity;
     sp_Free(&theGraph->edgeHoles);
     theGraph->edgeHoles = newStack;
 
-	// Reallocate the GraphNode array to the new size,
-    theGraph->G = (graphNodeP) realloc(theGraph->G, newGsize*sizeof(graphNode));
-    if (theGraph->G == NULL)
+	// Reallocate the edgeRec array to the new size,
+    theGraph->E = (edgeRecP) realloc(theGraph->E, newEsize*sizeof(edgeRec));
+    if (theGraph->E == NULL)
     	return NOTOK;
 
     // Initialize the new edge records
-    for (J = Gsize; J < newGsize; J++)
-         theGraph->functions.fpInitGraphNode(theGraph, J);
+    for (J = Esize; J < newEsize; J++)
+         theGraph->functions.fpInitEdgeRec(theGraph, J);
 
     // The new arcCapacity has been successfully achieved
 	theGraph->arcCapacity = requiredArcCapacity;
 	return OK;
-}
-
-/********************************************************************
- _InitGraphNode()
- Sets the fields in a single graph node structure to initial values
- ********************************************************************/
-
-void _InitGraphNode(graphP theGraph, int J)
-{
-     gp_SetNeighbor(theGraph, J, NIL);
-     gp_SetPrevArc(theGraph, J, NIL);
-     gp_SetNextArc(theGraph, J, NIL);
-     gp_InitEdgeFlags(theGraph, J);
 }
 
 /********************************************************************
@@ -505,9 +499,17 @@ void _InitVertexRec(graphP theGraph, int I)
 {
     gp_SetFirstArc(theGraph, I, gp_AdjacencyListEndMark(I));
     gp_SetLastArc(theGraph, I, gp_AdjacencyListEndMark(I));
-    gp_SetVertexIndex(theGraph, I, 0);
+    gp_SetVertexIndex(theGraph, I, NIL);
     gp_InitVertexFlags(theGraph, I);
+}
 
+/********************************************************************
+ _InitVertexInfo()
+ Sets the fields in a single vertex record to initial values
+ ********************************************************************/
+
+void _InitVertexInfo(graphP theGraph, int I)
+{
     gp_SetVertexParent(theGraph, I, NIL);
     gp_SetVertexLeastAncestor(theGraph, I, I);
     gp_SetVertexLowpoint(theGraph, I, I);
@@ -517,6 +519,19 @@ void _InitVertexRec(graphP theGraph, int I)
     gp_SetVertexPertinentBicompList(theGraph, I, NIL);
     gp_SetVertexSeparatedDFSChildList(theGraph, I, NIL);
     gp_SetVertexFwdArcList(theGraph, I, NIL);
+}
+
+/********************************************************************
+ _InitEdgeRec()
+ Sets the fields in a single edge record structure to initial values
+ ********************************************************************/
+
+void _InitEdgeRec(graphP theGraph, int J)
+{
+     gp_SetNeighbor(theGraph, J, NIL);
+     gp_SetPrevArc(theGraph, J, NIL);
+     gp_SetNextArc(theGraph, J, NIL);
+     gp_InitEdgeFlags(theGraph, J);
 }
 
 /********************************************************************
@@ -834,19 +849,28 @@ int  stackBottom = sp_GetCurrentSize(theGraph->theStack);
 
 void _ClearGraph(graphP theGraph)
 {
-     if (theGraph->G != NULL)
-     {
-          free(theGraph->G);
-          theGraph->G = NULL;
-     }
      if (theGraph->V != NULL)
      {
           free(theGraph->V);
           theGraph->V = NULL;
      }
+     if (theGraph->VI != NULL)
+     {
+          free(theGraph->VI);
+          theGraph->V = NULL;
+     }
+     if (theGraph->G != NULL)
+     {
+          free(theGraph->G);
+          theGraph->G = NULL;
+     }
 
-     theGraph->N = theGraph->M = theGraph->edgeOffset = theGraph->arcCapacity = 0;
-     theGraph->internalFlags = theGraph->embedFlags = 0;
+     theGraph->N = 0;
+     theGraph->NV = 0;
+     theGraph->M = 0;
+     theGraph->arcCapacity = 0;
+     theGraph->internalFlags = 0;
+     theGraph->embedFlags = 0;
 
      _ClearIsolatorContext(theGraph);
 
@@ -894,11 +918,18 @@ void gp_Free(graphP *pGraph)
 /********************************************************************
  gp_CopyAdjacencyLists()
  Copies the adjacency lists from the srcGraph to the dstGraph.
- Returns OK on success, NOTOK on failures, e.g. if the two graphs have different orders N
+ This method intentionally copies only the adjacency lists of the
+ first N vertices, so the adjacency lists of virtual vertices are
+ excluded (unless the caller temporarily resets the value of N to
+ include NV).
+
+ Returns OK on success, NOTOK on failures, e.g. if the two graphs
+ have different orders N or if the arcCapacity of dstGraph cannot
+ be increased to match that of srcGraph.
  ********************************************************************/
 int  gp_CopyAdjacencyLists(graphP dstGraph, graphP srcGraph)
 {
-	int v, e, GsizeOccupied;
+	int v, e, EsizeOccupied;
 
 	if (dstGraph == NULL || srcGraph == NULL)
 		return NOTOK;
@@ -917,12 +948,12 @@ int  gp_CopyAdjacencyLists(graphP dstGraph, graphP srcGraph)
 	}
 
 	// Copy the adjacency links and neighbor pointers for each arc
-	GsizeOccupied = srcGraph->edgeOffset + 2*(srcGraph->M + sp_GetCurrentSize(srcGraph->edgeHoles));
-	for (e = srcGraph->edgeOffset; e < GsizeOccupied; e++)
+	EsizeOccupied = 2*(srcGraph->M + sp_GetCurrentSize(srcGraph->edgeHoles));
+	for (e = 0; e < EsizeOccupied; e++)
 	{
 		gp_SetNeighbor(dstGraph, e, gp_GetNeighbor(srcGraph, e));
 		gp_SetNextArc(dstGraph, e, gp_GetNextArc(srcGraph, e));
-		gp_SetPrevArc(dstGraph, e, gp_GetPrevArc(srcGraph, e));)
+		gp_SetPrevArc(dstGraph, e, gp_GetPrevArc(srcGraph, e));
 	}
 
 	// Tell the dstGraph how many edges it now has and where the edge holes are
@@ -943,8 +974,7 @@ int  gp_CopyAdjacencyLists(graphP dstGraph, graphP srcGraph)
 
 int  gp_CopyGraph(graphP dstGraph, graphP srcGraph)
 {
-int  I, N = srcGraph->N, edgeOffset = srcGraph->edgeOffset;
-int  Gsize = edgeOffset + srcGraph->arcCapacity;
+int  I, J, N = srcGraph->N, Vsize = 2*N, Esize = srcGraph->arcCapacity;
 
      // Parameter checks
      if (dstGraph == NULL || srcGraph == NULL)
@@ -966,17 +996,23 @@ int  Gsize = edgeOffset + srcGraph->arcCapacity;
     	 return NOTOK;
      }
 
-     // Copy the basic GraphNode structures.  Augmentations to
-     // the graph node structure created by extensions are copied
-     // below by gp_CopyExtensions()
-     for (I = 0; I < Gsize; I++)
-          dstGraph->G[I] = srcGraph->G[I];
-
      // Copy the basic VertexRec structures.  Augmentations to
      // the vertex structure created by extensions are copied
      // below by gp_CopyExtensions()
-     for (I = 0; I < N; I++)
+     for (I = 0; I < Vsize; I++)
           dstGraph->V[I] = srcGraph->V[I];
+
+     // Copy the VertexInfo structures.  Augmentations to
+     // the vertex structure created by extensions are copied
+     // below by gp_CopyExtensions()
+     for (I = 0; I < N; I++)
+          dstGraph->VI[I] = srcGraph->VI[I];
+
+     // Copy the basic EdgeRec structures.  Augmentations to the
+     // edgeRec structure created by extensions are copied
+     // below by gp_CopyExtensions()
+     for (J = 0; J < Esize; J++)
+          dstGraph->E[I] = srcGraph->E[I];
 
      // Copy the external face array
      for (I = 0; I < edgeOffset; I++)
@@ -988,8 +1024,8 @@ int  Gsize = edgeOffset + srcGraph->arcCapacity;
 
      // Give the dstGraph the same size and intrinsic properties
      dstGraph->N = srcGraph->N;
+     dstGraph->NV = srcGraph->NV;
      dstGraph->M = srcGraph->M;
-     dstGraph->edgeOffset = srcGraph->edgeOffset;
      dstGraph->internalFlags = srcGraph->internalFlags;
      dstGraph->embedFlags = srcGraph->embedFlags;
 
@@ -1746,8 +1782,8 @@ int  nextArc, JPos, MPos;
 
 /* Clear the edge record contents */
 
-    theGraph->functions.fpInitGraphNode(theGraph, e);
-    theGraph->functions.fpInitGraphNode(theGraph, eTwin);
+    theGraph->functions.fpInitEdgeRec(theGraph, e);
+    theGraph->functions.fpInitEdgeRec(theGraph, eTwin);
 
 /* If records e and eTwin are not the last in the edge record array, then
      we want to record a new hole in the edge array. */
