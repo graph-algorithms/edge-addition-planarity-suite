@@ -317,7 +317,7 @@ void gp_ReinitializeGraph(graphP theGraph)
 
 void _ReinitializeGraph(graphP theGraph)
 {
-int  I, J, N = theGraph->N, Vsize = 2*N, Esize = theGraph->arcCapacity;
+int  I, J, N = theGraph->N, Vsize = N+theGraph->NV, Esize = theGraph->arcCapacity;
 
      theGraph->M = 0;
      theGraph->internalFlags = theGraph->embedFlags = 0;
@@ -929,7 +929,7 @@ void gp_Free(graphP *pGraph)
  ********************************************************************/
 int  gp_CopyAdjacencyLists(graphP dstGraph, graphP srcGraph)
 {
-	int v, e, EsizeOccupied;
+	int I, J, EsizeOccupied;
 
 	if (dstGraph == NULL || srcGraph == NULL)
 		return NOTOK;
@@ -941,19 +941,19 @@ int  gp_CopyAdjacencyLists(graphP dstGraph, graphP srcGraph)
     	return NOTOK;
 
 	// Copy the links that hook each owning vertex to its adjacency list
-	for (v = 0; v < srcGraph->N; v++)
+	for (I = 0; I < srcGraph->N; I++)
 	{
-		gp_SetFirstArc(dstGraph, v, gp_GetFirstArc(srcGraph, v));
-		gp_SetLastArc(dstGraph, v, gp_GetLastArc(srcGraph, v));
+		gp_SetFirstArc(dstGraph, I, gp_GetFirstArc(srcGraph, I));
+		gp_SetLastArc(dstGraph, I, gp_GetLastArc(srcGraph, I));
 	}
 
 	// Copy the adjacency links and neighbor pointers for each arc
 	EsizeOccupied = 2*(srcGraph->M + sp_GetCurrentSize(srcGraph->edgeHoles));
-	for (e = 0; e < EsizeOccupied; e++)
+	for (J = 0; J < EsizeOccupied; J++)
 	{
-		gp_SetNeighbor(dstGraph, e, gp_GetNeighbor(srcGraph, e));
-		gp_SetNextArc(dstGraph, e, gp_GetNextArc(srcGraph, e));
-		gp_SetPrevArc(dstGraph, e, gp_GetPrevArc(srcGraph, e));
+		gp_SetNeighbor(dstGraph, J, gp_GetNeighbor(srcGraph, J));
+		gp_SetNextArc(dstGraph, J, gp_GetNextArc(srcGraph, J));
+		gp_SetPrevArc(dstGraph, J, gp_GetPrevArc(srcGraph, J));
 	}
 
 	// Tell the dstGraph how many edges it now has and where the edge holes are
@@ -974,7 +974,7 @@ int  gp_CopyAdjacencyLists(graphP dstGraph, graphP srcGraph)
 
 int  gp_CopyGraph(graphP dstGraph, graphP srcGraph)
 {
-int  I, J, N = srcGraph->N, Vsize = 2*N, Esize = srcGraph->arcCapacity;
+int  I, J, N = srcGraph->N, Vsize = N+srcGraph->NV, Esize = srcGraph->arcCapacity;
 
      // Parameter checks
      if (dstGraph == NULL || srcGraph == NULL)
@@ -1000,22 +1000,22 @@ int  I, J, N = srcGraph->N, Vsize = 2*N, Esize = srcGraph->arcCapacity;
      // the vertex structure created by extensions are copied
      // below by gp_CopyExtensions()
      for (I = 0; I < Vsize; I++)
-          dstGraph->V[I] = srcGraph->V[I];
+    	 gp_CopyVertexRec(dstGraph, I, srcGraph, I);
 
      // Copy the VertexInfo structures.  Augmentations to
      // the vertex structure created by extensions are copied
      // below by gp_CopyExtensions()
      for (I = 0; I < N; I++)
-          dstGraph->VI[I] = srcGraph->VI[I];
+    	 gp_CopyVertexInfo(dstGraph, I, srcGraph, I);
 
      // Copy the basic EdgeRec structures.  Augmentations to the
      // edgeRec structure created by extensions are copied
      // below by gp_CopyExtensions()
      for (J = 0; J < Esize; J++)
-          dstGraph->E[I] = srcGraph->E[I];
+    	 gp_CopyEdgeRec(dstGraph, J, srcGraph, J);
 
      // Copy the external face array
-     for (I = 0; I < edgeOffset; I++)
+     for (I = 0; I < Vsize; I++)
      {
     	 gp_SetExtFaceVertex(dstGraph, I, 0, gp_GetExtFaceVertex(srcGraph, I, 0));
     	 gp_SetExtFaceVertex(dstGraph, I, 1, gp_GetExtFaceVertex(srcGraph, I, 1));
@@ -1258,7 +1258,7 @@ int N, I, arc, M, root, v, c, p, last, u, J, e;
 
         else
 	    {
-            arc = theGraph->edgeOffset + 2*theGraph->M - 2;
+            arc = 2*theGraph->M - 2;
             gp_SetEdgeDFSType(theGraph, arc, EDGE_TYPE_RANDOMTREE);
             gp_SetEdgeDFSType(theGraph, gp_GetTwinArc(theGraph, arc), EDGE_TYPE_RANDOMTREE);
             gp_ClearEdgeVisited(theGraph, arc);
@@ -1352,7 +1352,7 @@ int N, I, arc, M, root, v, c, p, last, u, J, e;
 
     for (e = 0; e < numEdges; e++)
     {
-        J = theGraph->edgeOffset + 2*e;
+        J = 2*e;
         gp_ClearEdgeDFSType(theGraph, J);
         gp_ClearEdgeDFSType(theGraph, gp_GetTwinArc(theGraph, J));
         gp_ClearEdgeVisited(theGraph, J);
@@ -1690,7 +1690,7 @@ int  upos, vpos;
          sp_Pop(theGraph->edgeHoles, vpos);
      }
      else
-         vpos = theGraph->edgeOffset + 2*theGraph->M;
+         vpos = 2*theGraph->M;
 
      upos = gp_GetTwinArc(theGraph, vpos);
 
@@ -1720,13 +1720,13 @@ int  upos, vpos;
 int  gp_InsertEdge(graphP theGraph, int u, int e_u, int e_ulink,
                                     int v, int e_v, int e_vlink)
 {
-int vertMax = 2*theGraph->N - 1,
-    edgeMax = theGraph->edgeOffset + 2*theGraph->M + 2*sp_GetCurrentSize(theGraph->edgeHoles) - 1,
+int vertMax = theGraph->N + theGraph->NV - 1,
+    edgeMax = 2*theGraph->M + 2*sp_GetCurrentSize(theGraph->edgeHoles) - 1,
     upos, vpos;
 
      if (theGraph==NULL || u<0 || v<0 || u>vertMax || v>vertMax ||
-         e_u>edgeMax || (e_u<theGraph->edgeOffset && e_u != gp_AdjacencyListEndMark(u)) ||
-         e_v>edgeMax || (e_v<theGraph->edgeOffset && e_v != gp_AdjacencyListEndMark(v)) ||
+         e_u>edgeMax || (e_u<0 && e_u != gp_AdjacencyListEndMark(u)) ||
+         e_v>edgeMax || (e_v<0 && e_v != gp_AdjacencyListEndMark(v)) ||
          e_ulink<0 || e_ulink>1 || e_vlink<0 || e_vlink>1)
          return NOTOK;
 
@@ -1738,7 +1738,7 @@ int vertMax = 2*theGraph->N - 1,
          sp_Pop(theGraph->edgeHoles, vpos);
      }
      else
-         vpos = theGraph->edgeOffset + 2*theGraph->M;
+         vpos = 2*theGraph->M;
 
      upos = gp_GetTwinArc(theGraph, vpos);
 
@@ -1789,7 +1789,7 @@ int  nextArc, JPos, MPos;
      we want to record a new hole in the edge array. */
 
      JPos = (e < eTwin ? e : eTwin);
-     MPos = theGraph->edgeOffset + 2*(M-1) + 2*sp_GetCurrentSize(theGraph->edgeHoles);
+     MPos = 2*(M-1) + 2*sp_GetCurrentSize(theGraph->edgeHoles);
 
      if (JPos < MPos)
      {

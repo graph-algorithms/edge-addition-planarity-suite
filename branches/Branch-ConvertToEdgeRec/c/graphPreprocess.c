@@ -178,9 +178,7 @@ int  gp_SortVertices(graphP theGraph)
 
 int  _SortVertices(graphP theGraph)
 {
-int  I, N, M, e, J, srcPos, dstPos;
-vertexRec tempV;
-graphNode tempG;
+int  I, N, EsizeOccupied, J, srcPos, dstPos;
 
 #ifdef PROFILE
 platform_time start, end;
@@ -195,13 +193,13 @@ platform_GetTime(start);
 /* Cache number of vertices and edges into local variables */
 
      N = theGraph->N;
-     M = theGraph->M + sp_GetCurrentSize(theGraph->edgeHoles);
+     EsizeOccupied = 2*(theGraph->M + sp_GetCurrentSize(theGraph->edgeHoles));
 
 /* Change labels of edges from v to DFI(v)-- or vice versa
         Also, if any links go back to locations 0 to n-1, then they
         need to be changed because we are reordering the vertices */
 
-     for (e=0, J=theGraph->edgeOffset; e < M; e++, J+=2)
+     for (J=0; J < EsizeOccupied; J+=2)
      {
     	 if (gp_GetNeighbor(theGraph, J) != NIL)
     	 {
@@ -240,12 +238,8 @@ platform_GetTime(start);
           {
               dstPos = gp_GetVertexIndex(theGraph, I);
 
-              tempG = theGraph->G[dstPos];
-              tempV = theGraph->V[dstPos];
-              theGraph->G[dstPos] = theGraph->G[I];
-              theGraph->V[dstPos] = theGraph->V[I];
-              theGraph->G[I] = tempG;
-              theGraph->V[I] = tempV;
+              gp_SwapVertexRec(theGraph, dstPos, theGraph, I);
+              gp_SwapVertexInfo(theGraph, dstPos, theGraph, I);
 
               gp_SetVertexVisited(theGraph, dstPos);
               gp_SetVertexIndex(theGraph, dstPos, srcPos);

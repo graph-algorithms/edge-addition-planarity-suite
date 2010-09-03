@@ -160,6 +160,8 @@ typedef edgeRec * edgeRecP;
 #define gp_GetDirection(theGraph, e, edgeFlag_Direction) (theGraph->E[e].flags & edgeFlag_Direction)
 void	gp_SetDirection(graphP theGraph, int e, int edgeFlag_Direction);
 
+#define gp_CopyEdgeRec(dstGraph, dstJ, srcGraph, srcJ) (dstGraph->E[dstJ] = srcGraph->E[srcJ])
+
 /********************************************************************
  Vertex Record Definition
 
@@ -247,6 +249,15 @@ typedef vertexRec * vertexRecP;
 #define gp_SetVertexObstructionType(theGraph, v, type) (theGraph->V[v].flags |= type)
 #define gp_ResetVertexObstructionType(theGraph, v, type) \
 	(theGraph->V[v].flags = (theGraph->V[v].flags & ~VERTEX_OBSTRUCTIONTYPE_MASK) | type)
+
+#define gp_CopyVertexRec(dstGraph, dstI, srcGraph, srcI) (dstGraph->V[dstI] = srcGraph->V[srcI])
+
+#define gp_SwapVertexRec(dstGraph, dstPos, srcGraph, srcPos) \
+	{ \
+		vertexRec tempV = dstGraph->V[dstPos]; \
+		dstGraph->V[dstPos] = srcGraph->V[srcPos]; \
+		srcGraph->V[srcPos] = tempV; \
+	}
 
 /********************************************************************
  This structure defines a pair of links used by each vertex and virtual vertex
@@ -369,6 +380,15 @@ typedef vertexInfo * vertexInfoP;
 
 #define gp_GetVertexFwdArcList(theGraph, v) (theGraph->VI[v].fwdArcList)
 #define gp_SetVertexFwdArcList(theGraph, v, theFwdArcList) (theGraph->VI[v].fwdArcList = theFwdArcList)
+
+#define gp_CopyVertexInfo(dstGraph, dstI, srcGraph, srcI) (dstGraph->VI[dstI] = srcGraph->VI[srcI])
+
+#define gp_SwapVertexInfo(dstGraph, dstPos, srcGraph, srcPos) \
+	{ \
+		vertexInfo tempVI = dstGraph->VI[dstPos]; \
+		dstGraph->VI[dstPos] = srcGraph->VI[srcPos]; \
+		srcGraph->VI[srcPos] = tempVI; \
+	}
 
 /********************************************************************
  Variables needed in embedding by Kuratowski subgraph isolator:
