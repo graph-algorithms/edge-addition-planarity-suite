@@ -197,7 +197,7 @@ int _CheckEmbeddingIntegrity(graphP theGraph, graphP origGraph)
 int  _CheckEmbeddingFacialIntegrity(graphP theGraph)
 {
 stackP theStack = theGraph->theStack;
-int I, e, J, JTwin, K, L, NumFaces, connectedComponents;
+int EsizeOccupied, I, J, JTwin, K, L, NumFaces, connectedComponents;
 
      if (theGraph == NULL)
          return NOTOK;
@@ -211,8 +211,10 @@ int I, e, J, JTwin, K, L, NumFaces, connectedComponents;
 
 /* Push all arcs and set them to unvisited */
 
-     for (e=0, J=theGraph->edgeOffset; e < theGraph->M + sp_GetCurrentSize(theGraph->edgeHoles); e++, J+=2)
+     EsizeOccupied = 2*(theGraph->M + sp_GetCurrentSize(theGraph->edgeHoles));
+     for (J=0; J < EsizeOccupied; J+=2)
      {
+    	  // Skip edge holes
           if (gp_GetNeighbor(theGraph, J) == NIL)
               continue;
 

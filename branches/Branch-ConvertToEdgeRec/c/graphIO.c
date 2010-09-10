@@ -490,7 +490,7 @@ char *Row = NULL;
 
 int  _WriteDebugInfo(graphP theGraph, FILE *Outfile)
 {
-int I, J, Gsize;
+int I, J, Vsize, EsizeOccupied;
 
      if (theGraph==NULL || Outfile==NULL) return NOTOK;
 
@@ -517,7 +517,8 @@ int I, J, Gsize;
 
      /* Print any root copy vertices and their adjacency lists */
 
-     for (I = theGraph->N; I < 2*theGraph->N; I++)
+     Vsize = theGraph->N + theGraph->NV;
+     for (I = theGraph->N; I < Vsize; I++)
      {
           if (gp_GetVertexIndex(theGraph, I) == NIL)
               continue;
@@ -537,7 +538,7 @@ int I, J, Gsize;
 
      /* Print information about vertices and root copy (virtual) vertices */
      fprintf(Outfile, "\nVERTEX INFORMATION\n");
-     for (I=0; I < 2*theGraph->N; I++)
+     for (I=0; I < Vsize; I++)
      {
          if (gp_GetVertexIndex(theGraph, I) == NIL)
              continue;
@@ -553,8 +554,8 @@ int I, J, Gsize;
      /* Print information about edges */
 
      fprintf(Outfile, "\nEDGE INFORMATION\n");
-     Gsize = theGraph->edgeOffset + theGraph->arcCapacity;
-     for (J=theGraph->edgeOffset; J < Gsize; J++)
+     EsizeOccupied = 2*(theGraph->M + sp_GetCurrentSize(theGraph->edgeHoles));
+     for (J=0; J < EsizeOccupied; J++)
      {
           if (gp_GetNeighbor(theGraph, J) == NIL)
               continue;

@@ -1319,7 +1319,7 @@ int  RetVal = edgeEmbeddingResult;
 
 int  _OrientVerticesInEmbedding(graphP theGraph)
 {
-int  R=0, edgeOffset = theGraph->edgeOffset;
+int  R, Vsize = theGraph->N + theGraph->NV;
 
      sp_ClearStack(theGraph->theStack);
 
@@ -1327,7 +1327,7 @@ int  R=0, edgeOffset = theGraph->edgeOffset;
         (i.e. has not been merged during embed), we orient the vertices
         in the bicomp for which it is the root vertex. */
 
-     for (R = theGraph->N; R < edgeOffset; R++)
+     for (R = theGraph->N; R < Vsize; R++)
      {
           if (gp_IsArc(theGraph, gp_GetFirstArc(theGraph, R)))
           {
@@ -1417,9 +1417,9 @@ int  stackBottom = sp_GetCurrentSize(theGraph->theStack);
 
 int  _JoinBicomps(graphP theGraph)
 {
-int  R, N, edgeOffset=theGraph->edgeOffset;
+int  R, N, Vsize = theGraph->N + theGraph->NV;
 
-     for (R=N=theGraph->N; R < edgeOffset; R++)
+     for (R=N=theGraph->N; R < Vsize; R++)
           if (gp_IsArc(theGraph, gp_GetFirstArc(theGraph, R)))
         	  _MergeVertex(theGraph, gp_GetVertexParent(theGraph, R-N), 0, R);
 
