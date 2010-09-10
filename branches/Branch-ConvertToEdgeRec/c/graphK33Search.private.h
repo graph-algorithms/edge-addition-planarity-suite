@@ -84,7 +84,7 @@ typedef struct
     K33Search_EdgeRecP E;
 
     // Parallel array for additional vertex info level equipment
-    K33Search_VertexInfoP V;
+    K33Search_VertexInfoP VI;
 
     // Overloaded function pointers
     graphFunctionTable functions;

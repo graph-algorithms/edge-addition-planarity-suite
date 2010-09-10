@@ -171,13 +171,13 @@ K4SearchContext *context = NULL;
      if (context == NULL)
          return NOTOK;
 
-     while ((C = context->V[I].sortedDFSChildList) != NIL)
+     while ((C = context->VI[I].sortedDFSChildList) != NIL)
      {
-    	 if (context->V[C].p2dFwdArcCount == 0)
+    	 if (context->VI[C].p2dFwdArcCount == 0)
     	 {
-    		 context->V[I].sortedDFSChildList = LCDelete(
+    		 context->VI[I].sortedDFSChildList = LCDelete(
     				 context->sortedDFSChildLists,
-    				 context->V[I].sortedDFSChildList, C);
+    				 context->VI[I].sortedDFSChildList, C);
     	 }
     	 else
     	 {
@@ -1302,7 +1302,7 @@ int  _K4_ReducePathToEdge(graphP theGraph, K4SearchContext *context, int edgeTyp
 
 		 // Prepare for removing each of the two edges that join the path to the bicomp by
 		 // restoring it if it is a reduction edge (a constant time operation)
-		 if (context->G[e_R].pathConnector != NIL)
+		 if (context->E[e_R].pathConnector != NIL)
 		 {
 			 if (_K4_RestoreReducedPath(theGraph, context, e_R) != OK)
 				 return NOTOK;
@@ -1310,7 +1310,7 @@ int  _K4_ReducePathToEdge(graphP theGraph, K4SearchContext *context, int edgeTyp
 			 e_R = gp_GetArc(theGraph, R, Rlink);
 		 }
 
-		 if (context->G[e_A].pathConnector != NIL)
+		 if (context->E[e_A].pathConnector != NIL)
 		 {
 			 if (_K4_RestoreReducedPath(theGraph, context, e_A) != OK)
 				 return NOTOK;
@@ -1335,10 +1335,10 @@ int  _K4_ReducePathToEdge(graphP theGraph, K4SearchContext *context, int edgeTyp
 
 		 // Now set up the path connectors so the original path can be recovered if needed.
 		 e_R = gp_GetArc(theGraph, R, Rlink);
-		 context->G[e_R].pathConnector = v_R;
+		 context->E[e_R].pathConnector = v_R;
 
 		 e_A = gp_GetArc(theGraph, A, Alink);
-		 context->G[e_A].pathConnector = v_A;
+		 context->E[e_A].pathConnector = v_A;
 
 		 // Also, set the reduction edge's type to preserve the DFS tree structure
 		 gp_SetEdgeType(theGraph, e_R, _ComputeArcType(theGraph, R, A, edgeType));
@@ -1382,17 +1382,17 @@ int  _K4_RestoreReducedPath(graphP theGraph, K4SearchContext *context, int J)
 int  JTwin, u, v, w, x;
 int  J0, J1, JTwin0, JTwin1;
 
-     if (context->G[J].pathConnector == NIL)
+     if (context->E[J].pathConnector == NIL)
          return OK;
 
      JTwin = gp_GetTwinArc(theGraph, J);
 
      u = gp_GetNeighbor(theGraph, JTwin);
-     v = context->G[J].pathConnector;
-     w = context->G[JTwin].pathConnector;
+     v = context->E[J].pathConnector;
+     w = context->E[JTwin].pathConnector;
      x = gp_GetNeighbor(theGraph, J);
 
-     // Get the locations of the graph nodes between which the new graph nodes
+     // Get the locations of the EdgeRecs between which the new EdgeRecs
      // must be added in order to reconnect the path parallel to the edge.
      J0 = gp_GetNextArc(theGraph, J);
      J1 = gp_GetPrevArc(theGraph, J);
@@ -1457,19 +1457,19 @@ int  J0, J1, JTwin0, JTwin1;
 
 int  _K4_RestoreAndOrientReducedPaths(graphP theGraph, K4SearchContext *context)
 {
-int  e, J, JTwin, u, v, w, x, visited;
+int  Esize, J, JTwin, u, v, w, x, visited;
 
-     for (e = 0; e < theGraph->M + sp_GetCurrentSize(theGraph->edgeHoles);)
+	 Esize = 2*(theGraph->M + sp_GetCurrentSize(theGraph->edgeHoles));
+     for (J = 0; J < Esize;)
      {
-         J = theGraph->edgeOffset + 2*e;
-         if (context->G[J].pathConnector != NIL)
+         if (context->E[J].pathConnector != NIL)
          {
              visited = gp_GetEdgeVisited(theGraph, J);
 
              JTwin = gp_GetTwinArc(theGraph, J);
              u = gp_GetNeighbor(theGraph, JTwin);
-             v = context->G[J].pathConnector;
-             w = context->G[JTwin].pathConnector;
+             v = context->E[J].pathConnector;
+             w = context->E[JTwin].pathConnector;
              x = gp_GetNeighbor(theGraph, J);
 
     		 if (_K4_RestoreReducedPath(theGraph, context, J) != OK)
@@ -1500,7 +1500,7 @@ int  e, J, JTwin, u, v, w, x, visited;
                 	 return NOTOK;
              }
          }
-         else e++;
+         else J+=2;
      }
 
      return OK;

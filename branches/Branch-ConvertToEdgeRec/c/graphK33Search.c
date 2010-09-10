@@ -206,14 +206,14 @@ K33SearchContext *context = NULL;
      e = gp_GetVertexFwdArcList(theGraph, I);
      D = gp_GetNeighbor(theGraph, e);
 
-     C1 = context->V[I].sortedDFSChildList;
+     C1 = context->VI[I].sortedDFSChildList;
 
      FoundOne = FALSE;
 
      while (C1 != NIL && e != NIL)
      {
         C2 = LCGetNext(context->sortedDFSChildLists,
-                       context->V[I].sortedDFSChildList, C1);
+                       context->VI[I].sortedDFSChildList, C1);
 
         // If the edge e leads from I to a descendant D of C1,
         // then D will be less than C2 (as explained above),
@@ -500,7 +500,7 @@ int u_max = MAX3(IC->ux, IC->uy, IC->uz), u;
             See _SearchForDescendantExternalConnection() */
 
     if (IC->ux < u_max)
-        context->V[IC->x].mergeBlocker = u_max;
+        context->VI[IC->x].mergeBlocker = u_max;
     else
     {
         u = _SearchForDescendantExternalConnection(theGraph, context, IC->x, u_max);
@@ -516,7 +516,7 @@ int u_max = MAX3(IC->ux, IC->uy, IC->uz), u;
     }
 
     if (IC->uy < u_max)
-        context->V[IC->y].mergeBlocker = u_max;
+        context->VI[IC->y].mergeBlocker = u_max;
     else
     {
         u = _SearchForDescendantExternalConnection(theGraph, context, IC->y, u_max);
@@ -731,7 +731,7 @@ isolatorContextP IC = &theGraph->IC;
 int _GetAdjacentAncestorInRange(graphP theGraph, K33SearchContext *context, int theVertex,
                                 int closerAncestor, int fartherAncestor)
 {
-int J = context->V[theVertex].backArcList;
+int J = context->VI[theVertex].backArcList;
 
     while (gp_IsArc(theGraph, J))
     {
@@ -740,7 +740,7 @@ int J = context->V[theVertex].backArcList;
             return gp_GetNeighbor(theGraph, J);
 
         J = gp_GetNextArc(theGraph, J);
-        if (J == context->V[theVertex].backArcList)
+        if (J == context->VI[theVertex].backArcList)
             J = NIL;
     }
     return NIL;
@@ -820,14 +820,14 @@ int  listHead, child, descendant;
          {
              /* If a prior invocation has precalculated the result, use it. */
 
-             if (context->V[descendant].externalConnectionAncestor != NIL)
+             if (context->VI[descendant].externalConnectionAncestor != NIL)
              {
                  /* If the result is in the range we need, return it.  Otherwise,
                     skip the subtree rooted by the vertex. */
 
-                 if (context->V[descendant].externalConnectionAncestor < IC->v &&
-                     context->V[descendant].externalConnectionAncestor > u_max)
-                     return context->V[descendant].externalConnectionAncestor;
+                 if (context->VI[descendant].externalConnectionAncestor < IC->v &&
+                     context->VI[descendant].externalConnectionAncestor > u_max)
+                     return context->VI[descendant].externalConnectionAncestor;
              }
 
              /* If the subtree has not been explored, then explore it. */
@@ -843,14 +843,14 @@ int  listHead, child, descendant;
                  /* Push each child as a new subtree root to be considered,
                     except skip those whose lowpoint is too great. */
 
-                 child = context->V[descendant].sortedDFSChildList;
+                 child = context->VI[descendant].sortedDFSChildList;
                  while (child != NIL)
                  {
                      if (gp_GetVertexLowpoint(theGraph, child) < IC->v)
                          sp_Push(theGraph->theStack, child);
 
                      child = LCGetNext(context->sortedDFSChildLists,
-                                       context->V[descendant].sortedDFSChildList, child);
+                                       context->VI[descendant].sortedDFSChildList, child);
                  }
              }
          }
@@ -859,7 +859,7 @@ int  listHead, child, descendant;
 /* The only external connections from the cutVertex lead to u_max,
     so cache the result and return it. */
 
-     context->V[cutVertex].externalConnectionAncestor = u_max;
+     context->VI[cutVertex].externalConnectionAncestor = u_max;
      return u_max;
 }
 
@@ -962,8 +962,8 @@ int  R, Rout, Z, ZPrevLink;
          sp_Pop2(tempStack, R, Rout);
          sp_Pop2(tempStack, Z, ZPrevLink);
 
-         if (context->V[Z].mergeBlocker != NIL &&
-             context->V[Z].mergeBlocker < I)
+         if (context->VI[Z].mergeBlocker != NIL &&
+             context->VI[Z].mergeBlocker < I)
          {
              *pMergeBlocker = Z;
              break;

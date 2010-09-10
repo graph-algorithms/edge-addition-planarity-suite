@@ -201,7 +201,7 @@ void _K33Search_ClearStructures(K33SearchContext *context)
         // Once NULL or allocated, free() or LCFree() can do the job
         context->sortedDFSChildLists = NULL;
         context->E = NULL;
-        context->V = NULL;
+        context->VI = NULL;
 
         context->initialized = 1;
     }
@@ -213,10 +213,10 @@ void _K33Search_ClearStructures(K33SearchContext *context)
             free(context->E);
             context->E = NULL;
         }
-        if (context->V != NULL)
+        if (context->VI != NULL)
         {
-            free(context->V);
-            context->V = NULL;
+            free(context->VI);
+            context->VI = NULL;
         }
     }
 }
@@ -236,7 +236,7 @@ int  _K33Search_CreateStructures(K33SearchContext *context)
 
      if ((context->sortedDFSChildLists = LCNew(N)) == NULL ||
          (context->E = (K33Search_EdgeRecP) malloc(Esize*sizeof(K33Search_EdgeRec))) == NULL ||
-         (context->V = (K33Search_VertexInfoP) malloc(N*sizeof(K33Search_VertexInfo))) == NULL
+         (context->VI = (K33Search_VertexInfoP) malloc(N*sizeof(K33Search_VertexInfo))) == NULL
         )
      {
          return NOTOK;
@@ -387,7 +387,7 @@ void *_K33Search_DupContext(void *pContext, void *theGraph)
 
              LCCopy(newContext->sortedDFSChildLists, context->sortedDFSChildLists);
              memcpy(newContext->E, context->E, Esize*sizeof(K33Search_EdgeRec));
-             memcpy(newContext->V, context->V, N*sizeof(K33Search_VertexInfo));
+             memcpy(newContext->VI, context->VI, N*sizeof(K33Search_VertexInfo));
          }
      }
 
@@ -474,15 +474,15 @@ int _K33Search_CreateFwdArcLists(graphP theGraph)
                 	gp_DetachArc(theGraph, Jcur);
 
                     // Put the back arc in the backArcList
-                    if (context->V[I].backArcList == NIL)
+                    if (context->VI[I].backArcList == NIL)
                     {
-                        context->V[I].backArcList = Jcur;
+                        context->VI[I].backArcList = Jcur;
                         gp_SetPrevArc(theGraph, Jcur, Jcur);
                         gp_SetNextArc(theGraph, Jcur, Jcur);
                     }
                     else
                     {
-                    	gp_AttachArc(theGraph, NIL, context->V[I].backArcList, 1, Jcur);
+                    	gp_AttachArc(theGraph, NIL, context->VI[I].backArcList, 1, Jcur);
                     }
 
                     // Determine the ancestor of vertex I to which Jcur connects
@@ -557,9 +557,9 @@ void _K33Search_CreateDFSTreeEmbedding(graphP theGraph)
 
                 while (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_CHILD)
                 {
-                    context->V[I].sortedDFSChildList =
+                    context->VI[I].sortedDFSChildList =
                         LCPrepend(context->sortedDFSChildLists,
-                                    context->V[I].sortedDFSChildList,
+                                    context->VI[I].sortedDFSChildList,
                                     gp_GetNeighbor(theGraph, J));
 
                     J = gp_GetNextArc(theGraph, J);
@@ -596,11 +596,11 @@ void _K33Search_EmbedBackEdgeToDescendant(graphP theGraph, int RootSide, int Roo
             int backArc = gp_GetTwinArc(theGraph, gp_GetVertexPertinentAdjacencyInfo(theGraph, W));
 
             // Remove the backArc from the backArcList
-            if (context->V[W].backArcList == backArc)
+            if (context->VI[W].backArcList == backArc)
             {
                 if (gp_GetNextArc(theGraph, backArc) == backArc)
-                     context->V[W].backArcList = NIL;
-                else context->V[W].backArcList = gp_GetNextArc(theGraph, backArc);
+                     context->VI[W].backArcList = NIL;
+                else context->VI[W].backArcList = gp_GetNextArc(theGraph, backArc);
             }
 
             gp_SetNextArc(theGraph, gp_GetPrevArc(theGraph, backArc), gp_GetNextArc(theGraph, backArc));
@@ -708,10 +708,10 @@ void _K33Search_InitVertexInfo(graphP theGraph, int I)
 
 void _InitK33SearchVertexInfo(K33SearchContext *context, int I)
 {
-    context->V[I].sortedDFSChildList = NIL;
-    context->V[I].backArcList = NIL;
-    context->V[I].externalConnectionAncestor = NIL;
-    context->V[I].mergeBlocker = NIL;
+    context->VI[I].sortedDFSChildList = NIL;
+    context->VI[I].backArcList = NIL;
+    context->VI[I].externalConnectionAncestor = NIL;
+    context->VI[I].mergeBlocker = NIL;
 }
 
 /********************************************************************

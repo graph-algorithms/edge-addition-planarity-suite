@@ -78,10 +78,10 @@ int  _K4Search_EmbedPostprocess(graphP theGraph, int I, int edgeEmbeddingResult)
 int  _K4Search_CheckEmbeddingIntegrity(graphP theGraph, graphP origGraph);
 int  _K4Search_CheckObstructionIntegrity(graphP theGraph, graphP origGraph);
 
-void _K4Search_InitGraphNode(graphP theGraph, int I);
-void _InitK4SearchGraphNode(K4SearchContext *context, int I);
-void _K4Search_InitVertexRec(graphP theGraph, int I);
-void _InitK4SearchVertexRec(K4SearchContext *context, int I);
+void _K4Search_InitVertexInfo(graphP theGraph, int I);
+void _InitK4SearchVertexInfo(K4SearchContext *context, int I);
+void _K4Search_InitEdgeRec(graphP theGraph, int J);
+void _InitK4SearchEdgeRec(K4SearchContext *context, int J);
 
 int  _K4Search_InitGraph(graphP theGraph, int N);
 void _K4Search_ReinitializeGraph(graphP theGraph);
@@ -147,8 +147,8 @@ int  gp_AttachK4Search(graphP theGraph)
      context->functions.fpCheckEmbeddingIntegrity = _K4Search_CheckEmbeddingIntegrity;
      context->functions.fpCheckObstructionIntegrity = _K4Search_CheckObstructionIntegrity;
 
-     context->functions.fpInitGraphNode = _K4Search_InitGraphNode;
-     context->functions.fpInitVertexRec = _K4Search_InitVertexRec;
+     context->functions.fpInitVertexInfo = _K4Search_InitVertexInfo;
+     context->functions.fpInitEdgeRec = _K4Search_InitEdgeRec;
 
      context->functions.fpInitGraph = _K4Search_InitGraph;
      context->functions.fpReinitializeGraph = _K4Search_ReinitializeGraph;
@@ -205,43 +205,43 @@ void _K4Search_ClearStructures(K4SearchContext *context)
         // Before initialization, the pointers are stray, not NULL
         // Once NULL or allocated, free() or LCFree() can do the job
         context->sortedDFSChildLists = NULL;
-        context->G = NULL;
-        context->V = NULL;
+        context->E = NULL;
+        context->VI = NULL;
 
         context->initialized = 1;
     }
     else
     {
         LCFree(&context->sortedDFSChildLists);
-        if (context->G != NULL)
+        if (context->E != NULL)
         {
-            free(context->G);
-            context->G = NULL;
+            free(context->E);
+            context->E = NULL;
         }
-        if (context->V != NULL)
+        if (context->VI != NULL)
         {
-            free(context->V);
-            context->V = NULL;
+            free(context->VI);
+            context->VI = NULL;
         }
     }
 }
 
 /********************************************************************
  _K4Search_CreateStructures()
- Create uninitialized structures for the vertex and graph node
- levels, and initialized structures for the graph level
+ Create uninitialized structures for the vertex and edge levels, and
+ initialized structures for the graph level
  ********************************************************************/
 int  _K4Search_CreateStructures(K4SearchContext *context)
 {
      int N = context->theGraph->N;
-     int Gsize = context->theGraph->edgeOffset + context->theGraph->arcCapacity;
+     int Esize = context->theGraph->arcCapacity;
 
      if (N <= 0)
          return NOTOK;
 
-     if ((context->sortedDFSChildLists = LCNew(context->theGraph->N)) == NULL ||
-         (context->G = (K4Search_GraphNodeP) malloc(Gsize*sizeof(K4Search_GraphNode))) == NULL ||
-         (context->V = (K4Search_VertexRecP) malloc(N*sizeof(K4Search_VertexRec))) == NULL
+     if ((context->sortedDFSChildLists = LCNew(N)) == NULL ||
+         (context->E = (K4Search_EdgeRecP) malloc(Esize*sizeof(K4Search_EdgeRec))) == NULL ||
+         (context->VI = (K4Search_VertexInfoP) malloc(N*sizeof(K4Search_VertexInfo))) == NULL
         )
      {
          return NOTOK;
@@ -255,17 +255,17 @@ int  _K4Search_CreateStructures(K4SearchContext *context)
  ********************************************************************/
 int  _K4Search_InitStructures(K4SearchContext *context)
 {
-     int I, N = context->theGraph->N;
-     int Gsize = context->theGraph->edgeOffset + context->theGraph->arcCapacity;
+     int I, J;
+     int N = context->theGraph->N, Esize = context->theGraph->arcCapacity;
 
      if (N <= 0)
          return OK;
 
-     for (I = 0; I < Gsize; I++)
-          _InitK4SearchGraphNode(context, I);
-
      for (I = 0; I < N; I++)
-          _InitK4SearchVertexRec(context, I);
+          _InitK4SearchVertexInfo(context, I);
+
+     for (J = 0; J < Esize; J++)
+          _InitK4SearchEdgeRec(context, J);
 
      return OK;
 }
@@ -282,7 +282,7 @@ int  _K4Search_InitGraph(graphP theGraph, int N)
         return NOTOK;
     {
         theGraph->N = N;
-        theGraph->edgeOffset = 2*N;
+        theGraph->NV = N;
         if (theGraph->arcCapacity == 0)
         	theGraph->arcCapacity = 2*DEFAULT_EDGE_LIMIT*N;
 
@@ -290,8 +290,8 @@ int  _K4Search_InitGraph(graphP theGraph, int N)
             return NOTOK;
 
         // This call initializes the base graph structures, but it also
-        // initializes the custom graphnode and vertex level structures
-        // due to the overloads of InitGraphNode and InitVertexRec
+        // initializes the custom dge and vertex level structures due to
+        // overloads of InitEdgeRec, InitVertexRec and/or InitVertexInfo
         context->functions.fpInitGraph(theGraph, N);
     }
 
@@ -309,22 +309,22 @@ void _K4Search_ReinitializeGraph(graphP theGraph)
     if (context != NULL)
     {
         // Reinitialization can go much faster if the underlying
-        // init graph node and vertex rec functions are called,
+        // init functions for edges and vertices are called,
         // rather than the overloads of this module, because it
         // avoids lots of unnecessary gp_FindExtension() calls.
-        if (theGraph->functions.fpInitGraphNode == _K4Search_InitGraphNode &&
-            theGraph->functions.fpInitVertexRec == _K4Search_InitVertexRec)
+        if (theGraph->functions.fpInitEdgeRec == _K4Search_InitEdgeRec &&
+            theGraph->functions.fpInitVertexInfo == _K4Search_InitVertexInfo)
         {
             // Restore the graph function pointers
-            theGraph->functions.fpInitGraphNode = context->functions.fpInitGraphNode;
-            theGraph->functions.fpInitVertexRec = context->functions.fpInitVertexRec;
+            theGraph->functions.fpInitEdgeRec = context->functions.fpInitEdgeRec;
+            theGraph->functions.fpInitVertexInfo = context->functions.fpInitVertexInfo;
 
             // Reinitialize the graph
             context->functions.fpReinitializeGraph(theGraph);
 
             // Restore the function pointers that attach this feature
-            theGraph->functions.fpInitGraphNode = _K4Search_InitGraphNode;
-            theGraph->functions.fpInitVertexRec = _K4Search_InitVertexRec;
+            theGraph->functions.fpInitEdgeRec = _K4Search_InitEdgeRec;
+            theGraph->functions.fpInitVertexInfo = _K4Search_InitVertexInfo;
 
             // Do the reinitialization that is specific to this module
             _K4Search_InitStructures(context);
@@ -339,9 +339,9 @@ void _K4Search_ReinitializeGraph(graphP theGraph)
             LCReset(context->sortedDFSChildLists);
 
             // The underlying function fpReinitializeGraph() implicitly initializes the K33
-            // structures due to the overloads of fpInitGraphNode() and fpInitVertexRec().
-            // It just does so less efficiently because each invocation of InitGraphNode
-            // and InitVertexRec has to look up the extension again.
+            // structures due to the overloads of fpInitEdgeRec() and fpInitVertexInfo().
+            // It just does so less efficiently because each invocation of InitEdgeRec
+            // and InitVertexInfo has to look up the extension again.
             //// _K4Search_InitStructures(context);
             context->functions.fpReinitializeGraph(theGraph);
         }
@@ -374,7 +374,7 @@ void *_K4Search_DupContext(void *pContext, void *theGraph)
      if (newContext != NULL)
      {
          int N = ((graphP) theGraph)->N;
-         int Gsize = ((graphP) theGraph)->edgeOffset + ((graphP) theGraph)->arcCapacity;
+         int Esize = ((graphP) theGraph)->arcCapacity;
 
          *newContext = *context;
 
@@ -391,8 +391,8 @@ void *_K4Search_DupContext(void *pContext, void *theGraph)
              }
 
              LCCopy(newContext->sortedDFSChildLists, context->sortedDFSChildLists);
-             memcpy(newContext->G, context->G, Gsize*sizeof(K4Search_GraphNode));
-             memcpy(newContext->V, context->V, N*sizeof(K4Search_VertexRec));
+             memcpy(newContext->E, context->E, Esize*sizeof(K4Search_EdgeRec));
+             memcpy(newContext->VI, context->VI, N*sizeof(K4Search_VertexInfo));
          }
      }
 
@@ -572,9 +572,9 @@ void _K4Search_CreateDFSTreeEmbedding(graphP theGraph)
                 // ascending order sortedDFSChildList
                 while (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_CHILD)
                 {
-                    context->V[I].sortedDFSChildList =
+                    context->VI[I].sortedDFSChildList =
                         LCPrepend(context->sortedDFSChildLists,
-                                    context->V[I].sortedDFSChildList,
+                                    context->VI[I].sortedDFSChildList,
                                     gp_GetNeighbor(theGraph, J));
 
                     J = gp_GetNextArc(theGraph, J);
@@ -586,13 +586,13 @@ void _K4Search_CreateDFSTreeEmbedding(graphP theGraph)
             for (I=0; I<N; I++)
             {
             	// For each DFS child of the vertex I, ...
-                C1 = context->V[I].sortedDFSChildList;
+                C1 = context->VI[I].sortedDFSChildList;
                 e = gp_GetVertexFwdArcList(theGraph, I);
                 while (C1 != NIL && gp_IsArc(theGraph, e))
                 {
                 	// Get the next higher numbered child C2
                     C2 = LCGetNext(context->sortedDFSChildLists,
-                                   context->V[I].sortedDFSChildList, C1);
+                                   context->VI[I].sortedDFSChildList, C1);
 
                     // If there is a next child C2, then we can restrict attention
                     // to the forward arcs with DFI less than C2
@@ -601,8 +601,8 @@ void _K4Search_CreateDFSTreeEmbedding(graphP theGraph)
     					D = gp_GetNeighbor(theGraph, e);
     					while (D < C2)
     					{
-                    		context->V[C1].p2dFwdArcCount++;
-                    		context->G[e].subtree = C1;
+                    		context->VI[C1].p2dFwdArcCount++;
+                    		context->E[e].subtree = C1;
 
                     		// Go to the next forward arc
 							e = gp_GetNextArc(theGraph, e);
@@ -621,8 +621,8 @@ void _K4Search_CreateDFSTreeEmbedding(graphP theGraph)
                     {
                     	while (gp_IsArc(theGraph, e))
                     	{
-                    		context->V[C1].p2dFwdArcCount++;
-                    		context->G[e].subtree = C1;
+                    		context->VI[C1].p2dFwdArcCount++;
+                    		context->E[e].subtree = C1;
 
                     		// Go to the next forward arc
 							e = gp_GetNextArc(theGraph, e);
@@ -671,7 +671,7 @@ void _K4Search_EmbedBackEdgeToDescendant(graphP theGraph, int RootSide, int Root
         if (theGraph->embedFlags == EMBEDFLAGS_SEARCHFORK4)
         {
         	int fwdArc = gp_GetVertexPertinentAdjacencyInfo(theGraph, W);
-        	context->V[context->G[fwdArc].subtree].p2dFwdArcCount--;
+        	context->VI[context->E[fwdArc].subtree].p2dFwdArcCount--;
         }
 
         // Invoke the superclass version of the function
@@ -682,43 +682,43 @@ void _K4Search_EmbedBackEdgeToDescendant(graphP theGraph, int RootSide, int Root
 /********************************************************************
  ********************************************************************/
 
-void _K4Search_InitGraphNode(graphP theGraph, int I)
+void _K4Search_InitEdgeRec(graphP theGraph, int J)
 {
     K4SearchContext *context = NULL;
     gp_FindExtension(theGraph, K4SEARCH_ID, (void *)&context);
 
     if (context != NULL)
     {
-        context->functions.fpInitGraphNode(theGraph, I);
-        _InitK4SearchGraphNode(context, I);
+        context->functions.fpInitEdgeRec(theGraph, J);
+        _InitK4SearchEdgeRec(context, J);
     }
 }
 
-void _InitK4SearchGraphNode(K4SearchContext *context, int I)
+void _InitK4SearchEdgeRec(K4SearchContext *context, int J)
 {
-    context->G[I].pathConnector = NIL;
-    context->G[I].subtree = NIL;
+    context->E[J].pathConnector = NIL;
+    context->E[J].subtree = NIL;
 }
 
 /********************************************************************
  ********************************************************************/
 
-void _K4Search_InitVertexRec(graphP theGraph, int I)
+void _K4Search_InitVertexInfo(graphP theGraph, int I)
 {
     K4SearchContext *context = NULL;
     gp_FindExtension(theGraph, K4SEARCH_ID, (void *)&context);
 
     if (context != NULL)
     {
-        context->functions.fpInitVertexRec(theGraph, I);
-        _InitK4SearchVertexRec(context, I);
+        context->functions.fpInitVertexInfo(theGraph, I);
+        _InitK4SearchVertexInfo(context, I);
     }
 }
 
-void _InitK4SearchVertexRec(K4SearchContext *context, int I)
+void _InitK4SearchVertexInfo(K4SearchContext *context, int I)
 {
-    context->V[I].p2dFwdArcCount = 0;
-    context->V[I].sortedDFSChildList = NIL;
+    context->VI[I].p2dFwdArcCount = 0;
+    context->VI[I].sortedDFSChildList = NIL;
 }
 
 /********************************************************************
