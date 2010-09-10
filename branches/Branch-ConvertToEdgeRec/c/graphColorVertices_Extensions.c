@@ -238,7 +238,7 @@ void _ColorVertices_ClearStructures(ColorVerticesContext *context)
 
 /********************************************************************
  _ColorVertices_CreateStructures()
- Create uninitialized structures for the vertex and graph node
+ Create uninitialized structures for the vertex and edge
  levels, and initialized structures for the graph level
  ********************************************************************/
 int  _ColorVertices_CreateStructures(ColorVerticesContext *context)
@@ -274,7 +274,7 @@ int  _ColorVertices_CreateStructures(ColorVerticesContext *context)
 /********************************************************************
  _ColorVertices_InitStructures()
  Intended to be called when N>0.
- Initializes vertex and graph node levels only.  Graph level is
+ Initializes vertex and edge levels only.  Graph level is
  initialized by _CreateStructures().
  ********************************************************************/
 int  _ColorVertices_InitStructures(ColorVerticesContext *context)
@@ -357,7 +357,7 @@ int  _ColorVertices_InitGraph(graphP theGraph, int N)
         	theGraph->arcCapacity = 2*DEFAULT_EDGE_LIMIT*N;
 
         // Create custom structures, initialized at graph level,
-        // uninitialized at vertex and graph node levels.
+        // uninitialized at vertex and edge levels.
         if (_ColorVertices_CreateStructures(context) != OK)
         {
             return NOTOK;

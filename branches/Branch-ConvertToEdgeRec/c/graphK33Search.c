@@ -1387,7 +1387,7 @@ int  p, c, d, excludedChild, e;
          /* Check for noStraddle of u_max, break if found */
 
          e = gp_GetFirstArc(theGraph, p);
-         if (context->G[e].noStraddle == u_max)
+         if (context->E[e].noStraddle == u_max)
              break;
 
          /* Go to the next ancestor */
@@ -1405,10 +1405,10 @@ int  p, c, d, excludedChild, e;
          while (c != p)
          {
              e = gp_GetFirstArc(theGraph, c);
-             if (context->G[e].noStraddle != NIL)
+             if (context->E[e].noStraddle != NIL)
                  break;
 
-             context->G[e].noStraddle = u_max;
+             context->E[e].noStraddle = u_max;
 
              c = gp_GetVertexParent(theGraph, c);
          }
@@ -1699,7 +1699,7 @@ int  prevLink, v, w, e;
         not a reduction edge. */
 
      e = gp_GetFirstArc(theGraph, u);
-     if (context->G[e].pathConnector != NIL)
+     if (context->E[e].pathConnector != NIL)
      {
          if (_RestoreReducedPath(theGraph, context, e) != OK)
              return NOTOK;
@@ -1709,7 +1709,7 @@ int  prevLink, v, w, e;
      gp_DeleteEdge(theGraph, e, 0);
 
      e = gp_GetLastArc(theGraph, x);
-     if (context->G[e].pathConnector != NIL)
+     if (context->E[e].pathConnector != NIL)
      {
          if (_RestoreReducedPath(theGraph, context, e) != OK)
              return NOTOK;
@@ -1726,11 +1726,11 @@ int  prevLink, v, w, e;
      gp_AddEdge(theGraph, u, 0, x, 1);
 
      e = gp_GetFirstArc(theGraph, u);
-     context->G[e].pathConnector = v;
+     context->E[e].pathConnector = v;
      gp_SetEdgeType(theGraph, e, _ComputeArcType(theGraph, u, x, edgeType));
 
      e = gp_GetLastArc(theGraph, x);
-     context->G[e].pathConnector = w;
+     context->E[e].pathConnector = w;
      gp_SetEdgeType(theGraph, e, _ComputeArcType(theGraph, x, u, edgeType));
 
      /* Set the external face info */
@@ -1760,7 +1760,7 @@ int  e, v, w;
 
      /* Otherwise, remove the two edges that join the XY-path to the bicomp */
 
-     if (context->G[e].pathConnector != NIL)
+     if (context->E[e].pathConnector != NIL)
      {
          if (_RestoreReducedPath(theGraph, context, e) != OK)
              return NOTOK;
@@ -1773,7 +1773,7 @@ int  e, v, w;
      e = gp_GetFirstArc(theGraph, x);
      e = gp_GetNextArc(theGraph, e);
      w = gp_GetNeighbor(theGraph, e);
-     if (context->G[e].pathConnector != NIL)
+     if (context->E[e].pathConnector != NIL)
      {
          if (_RestoreReducedPath(theGraph, context, e) != OK)
              return NOTOK;
@@ -1792,12 +1792,12 @@ int  e, v, w;
 
      e = gp_GetFirstArc(theGraph, u);
      e = gp_GetNextArc(theGraph, e);
-     context->G[e].pathConnector = v;
+     context->E[e].pathConnector = v;
      gp_SetEdgeType(theGraph, e, _ComputeArcType(theGraph, u, x, edgeType));
 
      e = gp_GetFirstArc(theGraph, x);
      e = gp_GetNextArc(theGraph, e);
-     context->G[e].pathConnector = w;
+     context->E[e].pathConnector = w;
      gp_SetEdgeType(theGraph, e, _ComputeArcType(theGraph, x, u, edgeType));
 
      return OK;
@@ -1818,18 +1818,18 @@ int  _RestoreReducedPath(graphP theGraph, K33SearchContext *context, int J)
 int  JTwin, u, v, w, x;
 int  J0, J1, JTwin0, JTwin1;
 
-     if (context->G[J].pathConnector == NIL)
+     if (context->E[J].pathConnector == NIL)
          return OK;
 
      JTwin = gp_GetTwinArc(theGraph, J);
 
      u = gp_GetNeighbor(theGraph, JTwin);
-     v = context->G[J].pathConnector;
-     w = context->G[JTwin].pathConnector;
+     v = context->E[J].pathConnector;
+     w = context->E[JTwin].pathConnector;
      x = gp_GetNeighbor(theGraph, J);
 
-     /* Get the locations of the graph nodes between which the new
-        graph nodes must be added in order to reconnect the path
+     /* Get the locations of the edge records between which the new
+        edge records must be added in order to reconnect the path
         parallel to the edge. */
 
      J0 = gp_GetNextArc(theGraph, J);
@@ -1895,20 +1895,21 @@ int  J0, J1, JTwin0, JTwin1;
 
 int  _RestoreAndOrientReducedPaths(graphP theGraph, K33SearchContext *context)
 {
-int  e, J, JTwin, u, v, w, x, visited;
+int  EsizeOccupied, J, JTwin, u, v, w, x, visited;
 int  J0, JTwin0, J1, JTwin1;
 
-     for (e = 0; e < theGraph->M + sp_GetCurrentSize(theGraph->edgeHoles);)
+	 EsizeOccupied = 2 * (theGraph->M + sp_GetCurrentSize(theGraph->edgeHoles));
+
+     for (J = 0; J < EsizeOccupied;)
      {
-         J = theGraph->edgeOffset + 2*e;
-         if (context->G[J].pathConnector != NIL)
+         if (context->E[J].pathConnector != NIL)
          {
              visited = gp_GetEdgeVisited(theGraph, J);
 
              JTwin = gp_GetTwinArc(theGraph, J);
              u = gp_GetNeighbor(theGraph, JTwin);
-             v = context->G[J].pathConnector;
-             w = context->G[JTwin].pathConnector;
+             v = context->E[J].pathConnector;
+             w = context->E[JTwin].pathConnector;
              x = gp_GetNeighbor(theGraph, J);
 
              /* Now we need the predecessor and successor edge records
@@ -1995,7 +1996,7 @@ int  J0, JTwin0, J1, JTwin1;
                 	 return NOTOK;
              }
          }
-         else e++;
+         else J+=2;
      }
 
      return OK;

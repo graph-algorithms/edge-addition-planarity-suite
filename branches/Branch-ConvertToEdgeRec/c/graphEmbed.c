@@ -1063,10 +1063,10 @@ int  RetVal, W, WPrevLink, R, Rout, X, XPrevLink, Y, YPrevLink, RootSide, RootEd
   Either a planar embedding is created in theGraph, or a Kuratowski
   subgraph is isolated.  Either way, theGraph remains sorted by DFI
   since that is the most common desired result.  The original vertex
-  numbers are available in the 'v' members of the vertex graph nodes.
+  numbers are available in the 'index' members of the vertex records.
   Moreover, gp_SortVertices() can be invoked to put the vertices in
-  the order of the input graph, at which point the 'v' members of the
-  vertex graph nodes will contain the vertex DFIs.
+  the order of the input graph, at which point the 'index' members of
+  the vertex records will contain the vertex DFIs.
 
  return OK if the embedding was successfully created or no subgraph
             homeomorphic to a topological obstruction was found.

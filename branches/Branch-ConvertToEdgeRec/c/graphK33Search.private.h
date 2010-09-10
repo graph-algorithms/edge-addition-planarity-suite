@@ -51,22 +51,22 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 extern "C" {
 #endif
 
-// Additional equipment for each graph node (edge arc or vertex)
+// Additional equipment for each EdgeRec
 typedef struct
 {
      int  noStraddle, pathConnector;
-} K33Search_GraphNode;
+} K33Search_EdgeRec;
 
-typedef K33Search_GraphNode * K33Search_GraphNodeP;
+typedef K33Search_EdgeRec * K33Search_EdgeRecP;
 
-// Additional equipment for each vertex
+// Additional equipment for each primary vertex
 typedef struct
 {
         int sortedDFSChildList, backArcList;
         int externalConnectionAncestor, mergeBlocker;
-} K33Search_VertexRec;
+} K33Search_VertexInfo;
 
-typedef K33Search_VertexRec * K33Search_VertexRecP;
+typedef K33Search_VertexInfo * K33Search_VertexInfoP;
 
 
 typedef struct
@@ -80,11 +80,11 @@ typedef struct
     // Additional graph-level equipment
     listCollectionP sortedDFSChildLists;
 
-    // Parallel array for additional graph node level equipment
-    K33Search_GraphNodeP G;
+    // Parallel array for additional edge level equipment
+    K33Search_EdgeRecP E;
 
-    // Parallel array for additional vertex level equipment
-    K33Search_VertexRecP V;
+    // Parallel array for additional vertex info level equipment
+    K33Search_VertexInfoP V;
 
     // Overloaded function pointers
     graphFunctionTable functions;

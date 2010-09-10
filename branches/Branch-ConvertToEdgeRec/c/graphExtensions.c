@@ -143,8 +143,8 @@ static int moduleIDGenerator = 0;
      augments the base behavior rather than replacing it.
 
      a) If any kind of data structures needs to be maintained at
-        the graph, vertex or graph node levels, then an overload
-        of fpInitGraph() will be needed.
+        the graph, vertex or edge levels, then an overload of
+        fpInitGraph() will be needed.
 
      b) If any data must be associated with primary and virtual vertices,
         then an overload of fpInitVertexRec() is needed.  If data must be
