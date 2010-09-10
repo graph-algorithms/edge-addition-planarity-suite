@@ -142,30 +142,35 @@ static int moduleIDGenerator = 0;
      if your feature is attached but not active or if your feature
      augments the base behavior rather than replacing it.
 
-     a) If any kind of data structures need to be maintained at
+     a) If any kind of data structures needs to be maintained at
         the graph, vertex or graph node levels, then an overload
         of fpInitGraph() will be needed.
 
-     b) If any vertex-level data is needed, then an overload of
-        fpInitVertexRec() is needed.
-        This overload function should be named _Feature_InitVertexRec().
-        It will invoke the base fpVertexRec() and also invoke
-        a second function named_InitFeatureVertexRec() that
-        initializes the custom VertexRec data members
+     b) If any data must be associated with primary and virtual vertices,
+        then an overload of fpInitVertexRec() is needed.  If data must be
+        associated only with primary vertices (0 to N-1), then one can
+        overload fpInitVertexInfo() instead.
+        The overload function should be named _Feature_InitVertexRec()
+        or _Feature_InitVertexInfo().
+        It will invoke the base fpInitVertexRec() or fpInitVertexInfo()
+        but then also invoke a second function named _InitFeatureVertexRec()
+        or _InitFeatureVertexInfo() thatinitializes the custom VertexRec
+        or VertexInfo data members.
 
-     c) If any graph node level data is needed, then an overload
-        of fpInitGraphNode() is needed.
-        This overload function should be named _Feature_InitGraphNode().
-        It will invoke the base fpInitGraphNode() and also invoke
-        a second function named_InitFeatureGraphNode() that
-        initializes the custom graph node data members
+     c) If any data must be associated with the edges, then an overload
+        of fpInitEdgeRec() is needed.
+        This overload function should be named _Feature_InitEdgeRec().
+        It will invoke the base fpInitEdgeRec() and also invoke
+        a second function named_InitFeatureEdgeRec() that
+        initializes the custom EdgeRec data members
 
      d) If any graph-level data structures are needed, then an
-        overload of fpReinitializeGraph() will be needed.  If only
-        vertex-level or graph node level data members are needed, then
-        the overloads of fpInitGraphNode() and fpInitVertexRec() are
-        invoked by the basic fpReinitializeGraph without needing to
-        overload it as well.
+        overload of fpReinitializeGraph() will also be needed, not just the
+        overload of fpInitGraph().  However, if only vertex-level and/or
+        edge level data members are needed, then the overloads of
+        fpInitVertexRec(), fpInitVertexInfo() and/or fpInitEdgeRec() are
+        invoked by the basic fpReinitializeGraph without needing to overload
+        it as well.
 
      e) If any data must be persisted in the file format, then overloads
         of fpReadPostprocess() and fpWritePostprocess() are needed.
@@ -182,13 +187,13 @@ static int moduleIDGenerator = 0;
         so it is best to keep all this logic in one place.
 
      b) The _Feature_CreateStructures() should just allocate memory for
-        but not initialize any vertex level and graph node level data
-        structures.  Data structures maintained at the graph level, such
-        as a stack or a list collection, should be created and initialized.
+        but not initialize any vertex level and edge level data structures.
+        Data structures maintained at the graph level, such as a stack or a
+        list collection, should be created _and_ initialized.
 
      c) The _Feature_InitStructures() should invoke just the functions
-        needed to initialize the custom VertexRec and GraphNode data
-        members, if any.
+        needed to initialize the custom VertexRec, VertexInfo and EdgeRec
+        data members, if any.
 
   8) Define a function gp_DetachFeature() that invokes gp_RemoveExtension()
      This should be done for consistency, so that users of a feature

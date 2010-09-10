@@ -480,7 +480,7 @@ int  e_w, e_r, e_ext;
      }
 
      // Erase the entries in R, which is a root copy that is no longer needed
-     theGraph->functions.fpInitGraphNode(theGraph, R);
+     theGraph->functions.fpInitVertexRec(theGraph, R);
 }
 
 /********************************************************************
@@ -558,7 +558,7 @@ int  extFaceVertex;
 
          // The endpoints of a bicomp's "root edge" are the bicomp root R and a
          // DFS child of the parent copy of the bicomp root R.
-         // The GraphNode location of the root vertices is in the range N to 2N-1
+         // The locations of bicomp root (virtual) vertices is in the range N to 2N-1
          // at the offset indicated by the associated DFS child.  So, the location
          // of the root vertex R, less N, is the location of the DFS child and also
          // a convenient identifier for the bicomp root.
@@ -670,7 +670,7 @@ int  RootID_DFSChild, BicompList;
         {
             // The endpoints of a bicomp's "root edge" are the bicomp root R and a
             // DFS child of the parent copy of the bicomp root R.
-            // The GraphNode location of the root vertices is in the range N to 2N-1
+            // The locations of bicomp root (virtual) vertices is in the range N to 2N-1
             // at the offset indicated by the associated DFS child.  So, the location
             // of the root vertex R, less N, is the location of the DFS child and also
             // a convenient identifier for the bicomp root.
