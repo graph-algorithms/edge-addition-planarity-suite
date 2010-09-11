@@ -1274,7 +1274,7 @@ int  v, e, w;
               // The test for w < N is just safeguarding the two subsequent calls, but
               // it can never happen due to the obstructing X-Y path.  Still, a virtual
               // vertex is not eligible, so no harm in ruling them out.
-              if (w < theGraph->n &&
+              if (w < theGraph->N &&
             	  gp_GetVertexVisitedInfo(theGraph, w) != -1 &&
                   gp_GetVertexObstructionType(theGraph, w) == VERTEX_OBSTRUCTIONTYPE_UNKNOWN)
               {

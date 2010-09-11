@@ -129,7 +129,7 @@ graphP theGraph = (graphP) malloc(sizeof(baseGraphStructure));
 
      if (theGraph != NULL)
      {
-         theGraph->G = NULL;
+         theGraph->E = NULL;
          theGraph->V = NULL;
 
          theGraph->BicompLists = NULL;
@@ -293,7 +293,7 @@ int I, J, Vsize, Esize, stackSize;
      {
          gp_SetExtFaceVertex(theGraph, I, 0, NIL);
          gp_SetExtFaceVertex(theGraph, I, 1, NIL);
-         gp_ClearExtFaceInversionFlag(theGraph, I, 0);
+         gp_ClearExtFaceInversionFlag(theGraph, I);
      }
 
      _ClearIsolatorContext(theGraph);
@@ -335,7 +335,7 @@ int  I, J, N = theGraph->N, Vsize = N+theGraph->NV, Esize = theGraph->arcCapacit
      {
          gp_SetExtFaceVertex(theGraph, I, 0, NIL);
          gp_SetExtFaceVertex(theGraph, I, 1, NIL);
-         gp_ClearExtFaceInversionFlag(theGraph, I, 0);
+         gp_ClearExtFaceInversionFlag(theGraph, I);
      }
 
      _ClearIsolatorContext(theGraph);
@@ -567,7 +567,7 @@ int  I;
 int  N = theGraph->N + (includeVirtualVertices ? theGraph->NV : 0);
 
      for (I=0; I < N; I++)
-          gp_ClearVertexVisitedFlag(theGraph, I);
+          gp_ClearVertexVisited(theGraph, I);
 }
 
 /********************************************************************
@@ -580,7 +580,7 @@ int  J;
 int  EsizeOccupied = 2*(theGraph->M + sp_GetCurrentSize(theGraph->edgeHoles));
 
      for (J=0; J < EsizeOccupied; J++)
-    	 gp_ClearEdgeVisitedFlag(theGraph, J);
+    	 gp_ClearEdgeVisited(theGraph, J);
 }
 
 /********************************************************************
@@ -607,7 +607,7 @@ int  stackBottom = sp_GetCurrentSize(theGraph->theStack);
           sp_Pop(theGraph->theStack, I);
           gp_ClearVertexVisited(theGraph, I);
 
-          J = gp_GetFirstArc(theGraph, V);
+          J = gp_GetFirstArc(theGraph, I);
           while (gp_IsArc(theGraph, J))
           {
              gp_ClearEdgeVisited(theGraph, J);
@@ -793,7 +793,7 @@ int  stackBottom = sp_GetCurrentSize(theGraph->theStack);
           if (I < theGraph->N)
         	  gp_SetVertexVisitedInfo(theGraph, I, FillValue);
 
-          J = gp_GetFirstArc(theGraph, V);
+          J = gp_GetFirstArc(theGraph, I);
           while (gp_IsArc(theGraph, J))
           {
              if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_CHILD)
@@ -859,10 +859,10 @@ void _ClearGraph(graphP theGraph)
           free(theGraph->VI);
           theGraph->V = NULL;
      }
-     if (theGraph->G != NULL)
+     if (theGraph->E != NULL)
      {
-          free(theGraph->G);
-          theGraph->G = NULL;
+          free(theGraph->E);
+          theGraph->E = NULL;
      }
 
      theGraph->N = 0;
@@ -1259,8 +1259,8 @@ int N, I, arc, M, root, v, c, p, last, u, J, e;
         else
 	    {
             arc = 2*theGraph->M - 2;
-            gp_SetEdgeDFSType(theGraph, arc, EDGE_TYPE_RANDOMTREE);
-            gp_SetEdgeDFSType(theGraph, gp_GetTwinArc(theGraph, arc), EDGE_TYPE_RANDOMTREE);
+            gp_SetEdgeType(theGraph, arc, EDGE_TYPE_RANDOMTREE);
+            gp_SetEdgeType(theGraph, gp_GetTwinArc(theGraph, arc), EDGE_TYPE_RANDOMTREE);
             gp_ClearEdgeVisited(theGraph, arc);
             gp_ClearEdgeVisited(theGraph, gp_GetTwinArc(theGraph, arc));
 	    }
@@ -1352,9 +1352,9 @@ int N, I, arc, M, root, v, c, p, last, u, J, e;
 
     for (e = 0; e < numEdges; e++)
     {
-        J = 2*e;
-        gp_ClearEdgeDFSType(theGraph, J);
-        gp_ClearEdgeDFSType(theGraph, gp_GetTwinArc(theGraph, J));
+        J = (e << 1);
+        gp_ClearEdgeType(theGraph, J);
+        gp_ClearEdgeType(theGraph, gp_GetTwinArc(theGraph, J));
         gp_ClearEdgeVisited(theGraph, J);
         gp_ClearEdgeVisited(theGraph, gp_GetTwinArc(theGraph, J));
     }
@@ -1365,35 +1365,6 @@ int N, I, arc, M, root, v, c, p, last, u, J, e;
         gp_SetVertexParent(theGraph, I, NIL);
 
     return OK;
-}
-
-/********************************************************************
- gp_SetDirection()
- Behavior depends on edgeFlag_Direction (EDGEFLAG_DIRECTION_INONLY,
- EDGEFLAG_DIRECTION_OUTONLY, or 0).
- A direction of 0 clears directedness. Otherwise, edge record e is set
- to edgeFlag_Direction and e's twin arc is set to the opposing setting.
- ********************************************************************/
-
-void gp_SetDirection(graphP theGraph, int e, int edgeFlag_Direction)
-{
-	int eTwin = gp_GetTwinArc(theGraph, e);
-
-	if (edgeFlag_Direction == EDGEFLAG_DIRECTION_INONLY)
-	{
-		theGraph->E[e].flags |= EDGEFLAG_DIRECTION_INONLY;
-		theGraph->E[eTwin].flags |= EDGEFLAG_DIRECTION_OUTONLY;
-	}
-	else if (edgeFlag_Direction == EDGEFLAG_DIRECTION_OUTONLY)
-	{
-		theGraph->E[e].flags |= EDGEFLAG_DIRECTION_OUTONLY;
-		theGraph->E[eTwin].flags |= EDGEFLAG_DIRECTION_INONLY;
-	}
-	else
-	{
-		theGraph->E[e].flags &= ~(EDGEFLAG_DIRECTION_INONLY|EDGEFLAG_DIRECTION_OUTONLY);
-		theGraph->E[eTwin].flags &= ~(EDGEFLAG_DIRECTION_INONLY|EDGEFLAG_DIRECTION_OUTONLY);
-	}
 }
 
 /********************************************************************
@@ -1416,7 +1387,7 @@ int  J;
      {
           if (gp_GetNeighbor(theGraph, J) == v)
           {
-              if (!gp_GetDirection(theGraph, J, EDGEFLAG_DIRECTION_INONLY))
+              if (gp_GetDirection(theGraph, J) != EDGEFLAG_DIRECTION_INONLY)
             	  return TRUE;
           }
           J = gp_GetNextArc(theGraph, J);
@@ -1517,7 +1488,7 @@ int  J, degree;
      J = gp_GetFirstArc(theGraph, v);
      while (gp_IsArc(theGraph, J))
      {
-         if (!gp_GetDirection(theGraph, J, EDGEFLAG_DIRECTION_OUTONLY))
+         if (gp_GetDirection(theGraph, J) != EDGEFLAG_DIRECTION_OUTONLY)
              degree++;
          J = gp_GetNextArc(theGraph, J);
      }
@@ -1550,7 +1521,7 @@ int  J, degree;
      J = gp_GetFirstArc(theGraph, v);
      while (gp_IsArc(theGraph, J))
      {
-         if (!gp_GetDirection(theGraph, J, EDGEFLAG_DIRECTION_INONLY))
+         if (gp_GetDirection(theGraph, J) != EDGEFLAG_DIRECTION_INONLY)
              degree++;
          J = gp_GetNextArc(theGraph, J);
      }
@@ -2502,7 +2473,7 @@ int  stackBottom = sp_GetCurrentSize(theGraph->theStack);
              if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_CHILD)
              {
                  sp_Push(theGraph->theStack, gp_GetNeighbor(theGraph, J));
-                 CLEAR_EDGEFLAG_INVERTED(theGraph, J);
+                 gp_ClearEdgeFlagInverted(theGraph, J);
              }
 
              J = gp_GetNextArc(theGraph, J);

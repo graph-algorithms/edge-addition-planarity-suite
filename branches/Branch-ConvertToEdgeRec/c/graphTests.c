@@ -47,6 +47,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "graph.h"
 #include "stack.h"
 
+extern void _ClearVertexVisitedFlags(graphP theGraph, int);
+
 /* Private function declarations */
 
 int  _TestPath(graphP theGraph, int U, int V);

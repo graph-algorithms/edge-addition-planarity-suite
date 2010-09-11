@@ -242,8 +242,8 @@ int W, P, C, V, J;
         sp_Pop(theEmbedding->theStack, W);
 
         P = gp_GetVertexParent(theEmbedding, W);
-        V = context->V[W].ancestor;
-        C = context->V[W].ancestorChild;
+        V = context->VI[W].ancestor;
+        C = context->VI[W].ancestorChild;
 
         // For the special case that we just popped the DFS tree root,
         // we simply add the root to its own position.
@@ -254,25 +254,25 @@ int W, P, C, V, J;
             // The children of the DFS root have the root as their
             // ancestorChild and 'beyond' as the drawingFlag, so this
             // causes the root's children to be placed below the root
-            context->V[W].drawingFlag = DRAWINGFLAG_BELOW;
+            context->VI[W].drawingFlag = DRAWINGFLAG_BELOW;
         }
 
         // Determine vertex W position relative to P
         else
         {
             // An unresolved tie is an error
-            if (context->V[W].drawingFlag == DRAWINGFLAG_TIE)
+            if (context->VI[W].drawingFlag == DRAWINGFLAG_TIE)
                 return NOTOK;
 
             // If C below V, then P below V, so interpret W between
             // P and V as W above P, and interpret W beyond P relative
             // to V as W below P.
-            if (context->V[C].drawingFlag == DRAWINGFLAG_BELOW)
+            if (context->VI[C].drawingFlag == DRAWINGFLAG_BELOW)
             {
-                if (context->V[W].drawingFlag == DRAWINGFLAG_BETWEEN)
-                    context->V[W].drawingFlag = DRAWINGFLAG_ABOVE;
+                if (context->VI[W].drawingFlag == DRAWINGFLAG_BETWEEN)
+                    context->VI[W].drawingFlag = DRAWINGFLAG_ABOVE;
                 else
-                    context->V[W].drawingFlag = DRAWINGFLAG_BELOW;
+                    context->VI[W].drawingFlag = DRAWINGFLAG_BELOW;
             }
 
             // If C above V, then P above V, so interpret W between
@@ -280,13 +280,13 @@ int W, P, C, V, J;
             // to V as W above P.
             else
             {
-                if (context->V[W].drawingFlag == DRAWINGFLAG_BETWEEN)
-                    context->V[W].drawingFlag = DRAWINGFLAG_BELOW;
+                if (context->VI[W].drawingFlag == DRAWINGFLAG_BETWEEN)
+                    context->VI[W].drawingFlag = DRAWINGFLAG_BELOW;
                 else
-                    context->V[W].drawingFlag = DRAWINGFLAG_ABOVE;
+                    context->VI[W].drawingFlag = DRAWINGFLAG_ABOVE;
             }
 
-            if (context->V[W].drawingFlag == DRAWINGFLAG_BELOW)
+            if (context->VI[W].drawingFlag == DRAWINGFLAG_BELOW)
                 LCInsertAfter(theOrder, P, W);
             else
                 LCInsertBefore(theOrder, P, W);
@@ -716,12 +716,12 @@ int K, Parent, BicompRoot, DFSChild, direction, descendant;
             whose tie flag is to be resolved as soon as one of the
             two is connected to by an edge or child bicomp merge. */
 
-         context->V[DFSChild].drawingFlag = DRAWINGFLAG_TIE;
+         context->VI[DFSChild].drawingFlag = DRAWINGFLAG_TIE;
 
-         context->V[descendant].tie[direction] = DFSChild;
+         context->VI[descendant].tie[direction] = DFSChild;
 
          direction = theEmbedding->theStack->S[K+1];
-         context->V[Parent].tie[direction] = DFSChild;
+         context->VI[Parent].tie[direction] = DFSChild;
 
          gp_LogLine(gp_MakeLogStr5("V[Parent=%d]=.tie[%d] = V[descendant=%d].tie[%d] = (child=%d)",
 					 Parent, direction, descendant, theEmbedding->theStack->S[K+3], DFSChild));
@@ -783,43 +783,43 @@ int WPredNextLink = 1^WPrevLink,
     /* The two vertices are either tied or not; having one tied and the other
         not is an error */
 
-    if (context->V[W].tie[WPrevLink] != context->V[WPred].tie[WPredNextLink])
+    if (context->VI[W].tie[WPrevLink] != context->VI[WPred].tie[WPredNextLink])
         return NOTOK;
 
     /* If there is a tie, it can now be resolved. */
-    if (context->V[W].tie[WPrevLink] != NIL)
+    if (context->VI[W].tie[WPrevLink] != NIL)
     {
-        int DFSChild = context->V[W].tie[WPrevLink];
+        int DFSChild = context->VI[W].tie[WPrevLink];
 
         /* Set the two ancestor variables that contextualize putting W 'between'
             or 'beyond' its parent relative to what. */
 
-        context->V[DFSChild].ancestorChild = BicompRoot - theEmbedding->N;
-        context->V[DFSChild].ancestor = gp_GetVertexParent(theEmbedding, BicompRoot - theEmbedding->N);
+        context->VI[DFSChild].ancestorChild = BicompRoot - theEmbedding->N;
+        context->VI[DFSChild].ancestor = gp_GetVertexParent(theEmbedding, BicompRoot - theEmbedding->N);
 
         gp_LogLine(gp_MakeLogStr4("V[child=%d]=.ancestorChild = %d, V[child=%d]=.ancestor = %d",
-					 DFSChild, context->V[DFSChild].ancestorChild, DFSChild, context->V[DFSChild].ancestor));
+					 DFSChild, context->VI[DFSChild].ancestorChild, DFSChild, context->VI[DFSChild].ancestor));
 
         /* If W is the ancestor of WPred, then the DFSChild subtree contains
             WPred, and so must go between W and some ancestor. */
         if (W < WPred)
         {
-            context->V[DFSChild].drawingFlag = DRAWINGFLAG_BETWEEN;
+            context->VI[DFSChild].drawingFlag = DRAWINGFLAG_BETWEEN;
             gp_LogLine(gp_MakeLogStr3("Child=%d is 'between' ancestorChild=%d and ancestor=%d",
-    					 DFSChild, context->V[DFSChild].ancestorChild, context->V[DFSChild].ancestor));
+    					 DFSChild, context->VI[DFSChild].ancestorChild, context->VI[DFSChild].ancestor));
         }
 
         /* If W is the descendant, so we achieve the effect of putting WPred
            between DFSChild and ancestor by putting the DFSChild 'beyond' WPred. */
         else
         {
-            context->V[DFSChild].drawingFlag = DRAWINGFLAG_BEYOND;
+            context->VI[DFSChild].drawingFlag = DRAWINGFLAG_BEYOND;
             gp_LogLine(gp_MakeLogStr3("Child=%d is 'beyond' ancestorChild=%d relative to ancestor=%d",
-    					 DFSChild, context->V[DFSChild].ancestorChild, context->V[DFSChild].ancestor));
+    					 DFSChild, context->VI[DFSChild].ancestorChild, context->VI[DFSChild].ancestor));
         }
 
         /* The tie is resolved so clear the flags*/
-        context->V[W].tie[WPrevLink] = context->V[WPred].tie[WPredNextLink] = NIL;
+        context->VI[W].tie[WPrevLink] = context->VI[WPred].tie[WPredNextLink] = NIL;
     }
     else
         return NOTOK;
@@ -1033,7 +1033,7 @@ int I, e, J, JTwin, JPos, JIndex;
             return NOTOK;
 
         gp_SetEdgeVisited(theEmbedding, JIndex);
-        gp_GetEdgeVisited(theEmbedding, JTwin);
+        gp_SetEdgeVisited(theEmbedding, JTwin);
     }
 
 /* Test whether any edge intersects any vertex position

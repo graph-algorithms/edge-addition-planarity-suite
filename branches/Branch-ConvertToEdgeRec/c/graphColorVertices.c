@@ -53,7 +53,7 @@ extern int COLORVERTICES_ID;
 #include <malloc.h>
 #include <stdio.h>
 
-extern void _ClearVertexVisitedFlags(graphP theGraph);
+extern void _ClearVertexVisitedFlags(graphP theGraph, int);
 extern int  _TestSubgraph(graphP theSubgraph, graphP theGraph);
 
 extern void _ColorVertices_Reinitialize(ColorVerticesContext *context);

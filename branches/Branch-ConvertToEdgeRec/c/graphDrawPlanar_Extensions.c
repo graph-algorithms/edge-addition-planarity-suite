@@ -701,7 +701,7 @@ int  _DrawPlanar_WritePostprocess(graphP theGraph, void **pExtraData, long *pExt
         else
         {
             char line[64];
-            int maxLineSize = 64, extraDataPos = 0, I;
+            int maxLineSize = 64, extraDataPos = 0, I, J;
             int N = theGraph->N, EsizeOccupied = 2 * (theGraph->M + sp_GetCurrentSize(theGraph->edgeHoles));
             char *extraData = (char *) malloc((N + EsizeOccupied + 2) * maxLineSize * sizeof(char));
 
@@ -735,7 +735,7 @@ int  _DrawPlanar_WritePostprocess(graphP theGraph, void **pExtraData, long *pExt
                 if (gp_GetNeighbor(theGraph, J) == NIL)
                     continue;
 
-                sprintf(line, "%d: %d %d %d\n", I,
+                sprintf(line, "%d: %d %d %d\n", J,
                               context->E[J].pos,
                               context->E[J].start,
                               context->E[J].end);

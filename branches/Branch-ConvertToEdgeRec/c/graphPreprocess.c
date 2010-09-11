@@ -46,6 +46,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "graph.h"
 
+extern void _ClearVertexVisitedFlags(graphP theGraph, int);
+
 /********************************************************************
  gp_CreateDFSTree
  Assigns Depth First Index (DFI) to each vertex.  Also records parent

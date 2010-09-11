@@ -52,7 +52,7 @@ extern int K4SEARCH_ID;
 /* Imported functions */
 
 extern void _ClearIsolatorContext(graphP theGraph);
-extern void _ClearVisitedFlags(graphP, int);
+extern void _ClearVisitedFlags(graphP);
 extern int  _ClearVisitedFlagsInBicomp(graphP theGraph, int BicompRoot);
 extern int  _ClearVisitedFlagsInOtherBicomps(graphP theGraph, int BicompRoot);
 extern void _ClearVisitedFlagsInUnembeddedEdges(graphP theGraph);
@@ -708,7 +708,7 @@ int _K4_FindSeparatingInternalEdge(graphP theGraph, int R, int prevLink, int A, 
 	int Z, ZPrevLink, J, neighbor;
 
 	// Mark the vertex types along the path [R ... A] as visited
-	_K4_SetVisitedExternalFacePath(theGraph, R, prevLink, A);
+	_K4_SetVisitedOnExternalFacePath(theGraph, R, prevLink, A);
 
 	// Search each of the vertices in the range (R ... A)
 	*pX = *pY = NIL;

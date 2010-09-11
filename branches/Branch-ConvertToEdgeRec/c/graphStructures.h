@@ -157,10 +157,33 @@ typedef edgeRec * edgeRecP;
 
 #define EDGEFLAG_DIRECTION_INONLY	32
 #define EDGEFLAG_DIRECTION_OUTONLY	64
-#define gp_GetDirection(theGraph, e, edgeFlag_Direction) (theGraph->E[e].flags & edgeFlag_Direction)
-void	gp_SetDirection(graphP theGraph, int e, int edgeFlag_Direction);
+#define EDGEFLAG_DIRECTION_MASK		96
 
-#define gp_CopyEdgeRec(dstGraph, dstJ, srcGraph, srcJ) (dstGraph->E[dstJ] = srcGraph->E[srcJ])
+// Returns the direction, if any, of the edge record
+#define gp_GetDirection(theGraph, e) (theGraph->E[e].flags & EDGEFLAG_DIRECTION_MASK)
+
+//A direction of 0 clears directedness. Otherwise, edge record e is set
+//to edgeFlag_Direction and e's twin arc is set to the opposing setting.
+#define gp_SetDirection(theGraph, e, edgeFlag_Direction) \
+{ \
+	if (edgeFlag_Direction == EDGEFLAG_DIRECTION_INONLY) \
+	{ \
+		theGraph->E[e].flags |= EDGEFLAG_DIRECTION_INONLY; \
+		theGraph->E[gp_GetTwinArc(theGraph, e)].flags |= EDGEFLAG_DIRECTION_OUTONLY; \
+	} \
+	else if (edgeFlag_Direction == EDGEFLAG_DIRECTION_OUTONLY) \
+	{ \
+		theGraph->E[e].flags |= EDGEFLAG_DIRECTION_OUTONLY; \
+		theGraph->E[gp_GetTwinArc(theGraph, e)].flags |= EDGEFLAG_DIRECTION_INONLY; \
+	} \
+	else \
+	{ \
+		theGraph->E[e].flags &= ~(EDGEFLAG_DIRECTION_INONLY|EDGEFLAG_DIRECTION_OUTONLY); \
+		theGraph->E[gp_GetTwinArc(theGraph, e)].flags &= ~EDGEFLAG_DIRECTION_MASK; \
+	} \
+}
+
+#define gp_CopyEdgeRec(dstGraph, edst, srcGraph, esrc) (dstGraph->E[edst] = srcGraph->E[esrc])
 
 /********************************************************************
  Vertex Record Definition
@@ -210,7 +233,7 @@ typedef vertexRec * vertexRecP;
 // Accessors for vertex adjacency list links
 #define gp_GetFirstArc(theGraph, v) (theGraph->V[v].link[0])
 #define gp_GetLastArc(theGraph, v) (theGraph->V[v].link[1])
-#define gp_GetArc(theGraph, v, theLink) (theGraph->G[v].link[theLink])
+#define gp_GetArc(theGraph, v, theLink) (theGraph->V[v].link[theLink])
 
 #define gp_SetFirstArc(theGraph, v, newFirstArc) (theGraph->V[v].link[0] = newFirstArc)
 #define gp_SetLastArc(theGraph, v, newLastArc) (theGraph->V[v].link[1] = newLastArc)
@@ -250,13 +273,13 @@ typedef vertexRec * vertexRecP;
 #define gp_ResetVertexObstructionType(theGraph, v, type) \
 	(theGraph->V[v].flags = (theGraph->V[v].flags & ~VERTEX_OBSTRUCTIONTYPE_MASK) | type)
 
-#define gp_CopyVertexRec(dstGraph, dstI, srcGraph, srcI) (dstGraph->V[dstI] = srcGraph->V[srcI])
+#define gp_CopyVertexRec(dstGraph, vdst, srcGraph, vsrc) (dstGraph->V[vdst] = srcGraph->V[vsrc])
 
-#define gp_SwapVertexRec(dstGraph, dstPos, srcGraph, srcPos) \
+#define gp_SwapVertexRec(dstGraph, vdst, srcGraph, vsrc) \
 	{ \
-		vertexRec tempV = dstGraph->V[dstPos]; \
-		dstGraph->V[dstPos] = srcGraph->V[srcPos]; \
-		srcGraph->V[srcPos] = tempV; \
+		vertexRec tempV = dstGraph->V[vdst]; \
+		dstGraph->V[vdst] = srcGraph->V[vsrc]; \
+		srcGraph->V[vsrc] = tempV; \
 	}
 
 /********************************************************************
@@ -656,7 +679,7 @@ void 	gp_DetachArc(graphP theGraph, int arc);
  ********************************************************************/
 
 #define PERTINENT(theGraph, theVertex) \
-        (theGraph->VI[theVertex].adjacentTo != NIL || \
+        (theGraph->VI[theVertex].pertinentAdjacencyInfo != NIL || \
          theGraph->VI[theVertex].pertinentBicompList != NIL)
 
 /********************************************************************

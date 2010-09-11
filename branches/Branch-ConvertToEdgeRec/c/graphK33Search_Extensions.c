@@ -318,7 +318,7 @@ void _K33Search_ReinitializeGraph(graphP theGraph)
             context->functions.fpReinitializeGraph(theGraph);
 
             // Restore the function pointers that attach this feature
-            theGraph->functions.fpInitEdgerec = _K33Search_InitEdgeRec;
+            theGraph->functions.fpInitEdgeRec = _K33Search_InitEdgeRec;
             theGraph->functions.fpInitVertexInfo = _K33Search_InitVertexInfo;
 
             // Do the reinitialization that is specific to this module

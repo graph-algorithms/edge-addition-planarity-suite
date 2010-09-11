@@ -418,7 +418,7 @@ int I, J;
           J = gp_GetLastArc(theGraph, I);
           while (gp_IsArc(theGraph, J))
           {
-        	  if (!gp_GetDirection(theGraph, J, EDGEFLAG_DIRECTION_INONLY))
+        	  if (gp_GetDirection(theGraph, J) != EDGEFLAG_DIRECTION_INONLY)
                   fprintf(Outfile, " %d", gp_GetNeighbor(theGraph, J));
 
               J = gp_GetPrevArc(theGraph, J);
@@ -464,7 +464,7 @@ char *Row = NULL;
           J = gp_GetFirstArc(theGraph, I);
           while (gp_IsArc(theGraph, J))
           {
-        	  if (gp_GetDirection(theGraph, J, EDGEFLAG_DIRECTION_INONLY))
+        	  if (gp_GetDirection(theGraph, J) == EDGEFLAG_DIRECTION_INONLY)
         		  return NOTOK;
 
               if (gp_GetNeighbor(theGraph, J) > I)
