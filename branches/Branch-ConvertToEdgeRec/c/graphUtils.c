@@ -1381,18 +1381,18 @@ void gp_SetDirection(graphP theGraph, int e, int edgeFlag_Direction)
 
 	if (edgeFlag_Direction == EDGEFLAG_DIRECTION_INONLY)
 	{
-		theGraph->G[e].flags |= EDGEFLAG_DIRECTION_INONLY;
-		theGraph->G[eTwin].flags |= EDGEFLAG_DIRECTION_OUTONLY;
+		theGraph->E[e].flags |= EDGEFLAG_DIRECTION_INONLY;
+		theGraph->E[eTwin].flags |= EDGEFLAG_DIRECTION_OUTONLY;
 	}
 	else if (edgeFlag_Direction == EDGEFLAG_DIRECTION_OUTONLY)
 	{
-		theGraph->G[e].flags |= EDGEFLAG_DIRECTION_OUTONLY;
-		theGraph->G[eTwin].flags |= EDGEFLAG_DIRECTION_INONLY;
+		theGraph->E[e].flags |= EDGEFLAG_DIRECTION_OUTONLY;
+		theGraph->E[eTwin].flags |= EDGEFLAG_DIRECTION_INONLY;
 	}
 	else
 	{
-		theGraph->G[e].flags &= ~(EDGEFLAG_DIRECTION_INONLY|EDGEFLAG_DIRECTION_OUTONLY);
-		theGraph->G[eTwin].flags &= ~(EDGEFLAG_DIRECTION_INONLY|EDGEFLAG_DIRECTION_OUTONLY);
+		theGraph->E[e].flags &= ~(EDGEFLAG_DIRECTION_INONLY|EDGEFLAG_DIRECTION_OUTONLY);
+		theGraph->E[eTwin].flags &= ~(EDGEFLAG_DIRECTION_INONLY|EDGEFLAG_DIRECTION_OUTONLY);
 	}
 }
 
@@ -1461,10 +1461,7 @@ int  J;
  gp_GetVertexDegree()
 
  Counts the number of edge records in the adjacency list of a given
- vertex V.  The while loop condition is 2N or higher because our
- data structure keeps records at locations 0 to N-1 for vertices
- AND N to 2N-1 for copies of vertices.  So edge records are stored
- at locations 2N and above.
+ vertex V.
 
  Note: For digraphs, this method returns the total degree of the
        vertex, including outward arcs (undirected and OUTONLY)

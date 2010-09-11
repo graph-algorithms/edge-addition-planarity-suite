@@ -332,7 +332,7 @@ void _LogEdgeList(graphP theEmbedding, listCollectionP edgeList, int edgeListHea
 
     while (e != NIL)
     {
-        J = theEmbedding->edgeOffset + 2*e;
+        J = (e << 1);
         JTwin = gp_GetTwinArc(theEmbedding, J);
 
         gp_Log(gp_MakeLogStr2("(%d, %d) ",
@@ -434,7 +434,7 @@ int eIndex, JTwin;
             J = gp_GetFirstArc(theEmbedding, v);
             while (gp_IsArc(theGraph, J))
             {
-                e = (J - theEmbedding->edgeOffset) / 2;
+                e = (J >> 1); // div by 2 since each edge is a pair of arcs
 
                 edgeListHead = LCAppend(edgeList, edgeListHead, e);
                 gp_LogLine(gp_MakeLogStr2("Append generator edge (%d, %d) to edgeList",
@@ -460,7 +460,7 @@ int eIndex, JTwin;
             // Traverse the edges of the vertex, starting
             // from the generator edge and going counterclockwise...
 
-            e = (J - theEmbedding->edgeOffset) / 2;
+            e = (J >> 1);
             edgeListInsertPoint = e;
 
             Jcur = gp_GetNextArcCircular(theEmbedding, J);
@@ -473,7 +473,7 @@ int eIndex, JTwin;
 
                 if (context->VI[gp_GetNeighbor(theEmbedding, Jcur)].pos > vpos)
                 {
-                    e = (Jcur - theEmbedding->edgeOffset) / 2;
+                    e = Jcur >> 1;
                     LCInsertAfter(edgeList, edgeListInsertPoint, e);
 
                     gp_LogLine(gp_MakeLogStr4("Insert (%d, %d) after (%d, %d)",
@@ -511,7 +511,7 @@ int eIndex, JTwin;
     e = edgeListHead;
     while (e != NIL)
     {
-        J = theEmbedding->edgeOffset + 2*e;
+        J = (e<<1);
         JTwin = gp_GetTwinArc(theEmbedding, J);
 
         context->E[J].pos = context->E[JTwin].pos = eIndex;
@@ -589,9 +589,8 @@ int _ComputeEdgeRanges(DrawPlanarContext *context)
 graphP theEmbedding = context->theGraph;
 int e, J, JTwin, v1, v2, pos1, pos2;
 
-    for (e = 0; e < theEmbedding->M; e++)
+    for (e=J=0; e < theEmbedding->M; e++,J+=2)
     {
-        J = theEmbedding->edgeOffset + 2*e;
         JTwin = gp_GetTwinArc(theEmbedding, J);
 
         v1 = gp_GetNeighbor(theEmbedding, J);
@@ -1006,7 +1005,6 @@ int I, e, J, JTwin, JPos, JIndex;
     for (e=J=0; e < theEmbedding->M; e++,J+=2)
     {
         /* Each edge has two index locations in the edge information array */
-        J = theEmbedding->edgeOffset + 2*e;
         JTwin = gp_GetTwinArc(theEmbedding, J);
 
         if (context->E[J].pos != context->E[JTwin].pos ||

@@ -353,8 +353,8 @@ int  _DrawPlanar_InitGraph(graphP theGraph, int N)
         }
 
         // This call initializes the base graph structures, but it also
-        // initializes the custom edge and vertex level structures due
-        // to the overloads of InitGraphNode and InitVertexRec
+        // initializes the custom edge and vertex level structures due to
+        // overloads of InitVertexInfo, InitVertexRec, and InitEdgeRec
         context->functions.fpInitGraph(theGraph, N);
     }
 
@@ -523,7 +523,7 @@ int _DrawPlanar_HandleInactiveVertex(graphP theGraph, int BicompRoot, int *pW, i
 /********************************************************************
  ********************************************************************/
 
-void _DrawPlanar_InitGraphNode(graphP theGraph, int J)
+void _DrawPlanar_InitEdgeRec(graphP theGraph, int J)
 {
     DrawPlanarContext *context = NULL;
     gp_FindExtension(theGraph, DRAWPLANAR_ID, (void *)&context);
