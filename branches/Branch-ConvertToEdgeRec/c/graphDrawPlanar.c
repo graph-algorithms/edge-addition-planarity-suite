@@ -307,7 +307,7 @@ int W, P, C, V, J;
     V = root;
     while (V != NIL)
     {
-        context->G[V].pos = *pIndex;
+        context->VI[V].pos = *pIndex;
         (*pIndex)++;
         V = LCGetNext(theOrder, root, V);
     }
@@ -381,14 +381,14 @@ int eIndex, JTwin;
         return NOTOK;
 
     for (I = 0; I < theEmbedding->N; I++)
-        vertexOrder[context->G[I].pos] = I;
+        vertexOrder[context->VI[I].pos] = I;
 
     // Allocate the edge list of size M.
     //    This is an array of (prev, next) pointers.
     //    An edge at position X corresponds to the edge
     //    at position X in the graph structure, which is
-    //    represented by a pair of adjacent graph nodes
-    //    starting at index 2N + 2X.
+    //    represented by a pair of adjacent edge records
+    //    at index 2X.
 
     if (theEmbedding->M > 0 && (edgeList = LCNew(theEmbedding->M)) == NULL)
     {
@@ -471,7 +471,7 @@ int eIndex, JTwin;
                 // than the current vertex (meaning it is lower in the
                 // diagram), then add that edge to the edge order.
 
-                if (context->G[gp_GetNeighbor(theEmbedding, Jcur)].pos > vpos)
+                if (context->VI[gp_GetNeighbor(theEmbedding, Jcur)].pos > vpos)
                 {
                     e = (Jcur - theEmbedding->edgeOffset) / 2;
                     LCInsertAfter(edgeList, edgeListInsertPoint, e);
@@ -514,7 +514,7 @@ int eIndex, JTwin;
         J = theEmbedding->edgeOffset + 2*e;
         JTwin = gp_GetTwinArc(theEmbedding, J);
 
-        context->G[J].pos = context->G[JTwin].pos = eIndex;
+        context->E[J].pos = context->E[JTwin].pos = eIndex;
 
         eIndex++;
 
@@ -560,18 +560,18 @@ int I, J, min, max;
         {
             while (gp_IsArc(theEmbedding, J))
             {
-                if (min > context->G[J].pos)
-                    min = context->G[J].pos;
+                if (min > context->E[J].pos)
+                    min = context->E[J].pos;
 
-                if (max < context->G[J].pos)
-                    max = context->G[J].pos;
+                if (max < context->E[J].pos)
+                    max = context->E[J].pos;
 
                 J = gp_GetNextArc(theEmbedding, J);
             }
         }
 
-        context->G[I].start = min;
-        context->G[I].end = max;
+        context->VI[I].start = min;
+        context->VI[I].end = max;
     }
 
     return OK;
@@ -597,22 +597,22 @@ int e, J, JTwin, v1, v2, pos1, pos2;
         v1 = gp_GetNeighbor(theEmbedding, J);
         v2 = gp_GetNeighbor(theEmbedding, JTwin);
 
-        pos1 = context->G[v1].pos;
-        pos2 = context->G[v2].pos;
+        pos1 = context->VI[v1].pos;
+        pos2 = context->VI[v2].pos;
 
         if (pos1 < pos2)
         {
-            context->G[J].start = pos1;
-            context->G[J].end = pos2;
+            context->E[J].start = pos1;
+            context->E[J].end = pos2;
         }
         else
         {
-            context->G[J].start = pos2;
-            context->G[J].end = pos1;
+            context->E[J].start = pos2;
+            context->E[J].end = pos1;
         }
 
-        context->G[JTwin].start = context->G[J].start;
-        context->G[JTwin].end = context->G[J].end;
+        context->E[JTwin].start = context->E[J].start;
+        context->E[JTwin].end = context->E[J].end;
     }
 
     return OK;
@@ -848,7 +848,7 @@ char *_RenderToString(graphP theEmbedding)
     {
         int N = theEmbedding->N;
         int M = theEmbedding->M;
-        int I, J, e, Mid, Pos;
+        int I, J, K, e, Mid, Pos;
         char *visRep = (char *) malloc(sizeof(char) * ((M+1) * 2*N + 1));
         char numBuffer[32];
 
@@ -864,7 +864,7 @@ char *_RenderToString(graphP theEmbedding)
         // Clear the space
         for (I = 0; I < N; I++)
         {
-            for (J=0; J < M; J++)
+            for (e=J=0; e < M; e++, J+=2)
             {
                 visRep[(2*I) * (M+1) + J] = ' ';
                 visRep[(2*I+1) * (M+1) + J] = ' ';
@@ -877,14 +877,14 @@ char *_RenderToString(graphP theEmbedding)
         // Draw the vertices
         for (I = 0; I < N; I++)
         {
-            Pos = context->G[I].pos;
-            for (J=context->G[I].start; J<=context->G[I].end; J++)
-                visRep[(2*Pos) * (M+1) + J] = '-';
+            Pos = context->VI[I].pos;
+            for (K=context->VI[I].start; K <= context->VI[I].end; K++)
+                visRep[(2*Pos) * (M+1) + K] = '-';
 
             // Draw vertex label
-            Mid = (context->G[I].start + context->G[I].end)/2;
+            Mid = (context->VI[I].start + context->VI[I].end) / 2;
             sprintf(numBuffer, "%d", I);
-            if ((unsigned)(context->G[I].end - context->G[I].start + 1) >= strlen(numBuffer))
+            if ((unsigned)(context->VI[I].end - context->VI[I].start + 1) >= strlen(numBuffer))
             {
                 strncpy(visRep + (2*Pos) * (M+1) + Mid, numBuffer, strlen(numBuffer));
             }
@@ -901,15 +901,14 @@ char *_RenderToString(graphP theEmbedding)
         }
 
         // Draw the edges
-        for (e=0; e<M; e++)
+        for (e=J=0; e < M; e++,J+=2)
         {
-            J = 2*N + 2*e;
-            Pos = context->G[J].pos;
-            for (I=context->G[J].start; I<context->G[J].end; I++)
+            Pos = context->E[J].pos;
+            for (K=context->E[J].start; K < context->E[J].end; K++)
             {
-                if (I > context->G[J].start)
-                    visRep[(2*I) * (M+1) + Pos] = '|';
-                visRep[(2*I+1) * (M+1) + Pos] = '|';
+                if (K > context->E[J].start)
+                    visRep[(2*K) * (M+1) + Pos] = '|';
+                visRep[(2*K+1) * (M+1) + Pos] = '|';
             }
         }
 
@@ -982,55 +981,54 @@ int I, e, J, JTwin, JPos, JIndex;
     {
     	if (theEmbedding->M > 0)
     	{
-            if (context->G[I].pos < 0 ||
-                context->G[I].pos >= theEmbedding->N ||
-                context->G[I].start < 0 ||
-                context->G[I].start > context->G[I].end ||
-                context->G[I].end >= theEmbedding->M)
+            if (context->VI[I].pos < 0 ||
+                context->VI[I].pos >= theEmbedding->N ||
+                context->VI[I].start < 0 ||
+                context->VI[I].start > context->VI[I].end ||
+                context->VI[I].end >= theEmbedding->M)
                 return NOTOK;
     	}
 
-        // Has the vertex position (context->G[I].pos) been used by a
-        // vertex before vertex I?
-        if (gp_GetVertexVisited(theEmbedding, context->G[I].pos))
+        // Has the vertex position been used by a vertex before vertex I?
+        if (gp_GetVertexVisited(theEmbedding, context->VI[I].pos))
             return NOTOK;
 
         // Mark the vertex position as used by vertex I.
         // Note that this marking is made on some other vertex unrelated to I
         // We're just reusing the vertex visited array as cheap storage for a
         // detector of reusing vertex position integers.
-        gp_SetVertexVisited(theEmbedding, context->G[I].pos);
+        gp_SetVertexVisited(theEmbedding, context->VI[I].pos);
     }
 
 /* Test whether the edge values make sense and
         whether the edge positions are unique */
 
-    for (e = 0; e < theEmbedding->M; e++)
+    for (e=J=0; e < theEmbedding->M; e++,J+=2)
     {
-        /* Each edge has an index location J in the graph structure */
+        /* Each edge has two index locations in the edge information array */
         J = theEmbedding->edgeOffset + 2*e;
         JTwin = gp_GetTwinArc(theEmbedding, J);
 
-        if (context->G[J].pos != context->G[JTwin].pos ||
-            context->G[J].start != context->G[JTwin].start ||
-            context->G[J].end != context->G[JTwin].end ||
-            context->G[J].pos < 0 ||
-            context->G[J].pos >= theEmbedding->M ||
-            context->G[J].start < 0 ||
-            context->G[J].start > context->G[J].end ||
-            context->G[J].end >= theEmbedding->N)
+        if (context->E[J].pos != context->E[JTwin].pos ||
+            context->E[J].start != context->E[JTwin].start ||
+            context->E[J].end != context->E[JTwin].end ||
+            context->E[J].pos < 0 ||
+            context->E[J].pos >= theEmbedding->M ||
+            context->E[J].start < 0 ||
+            context->E[J].start > context->E[J].end ||
+            context->E[J].end >= theEmbedding->N)
             return NOTOK;
 
         /* Get the recorded horizontal position of that edge,
             a number between 0 and M-1 */
 
-        JPos = context->G[J].pos;
+        JPos = context->E[J].pos;
 
         /* Convert that to an index in the graph structure so we
             can use the visited flags in the graph's edges to
             tell us whether the positions are being reused. */
 
-        JIndex = theEmbedding->edgeOffset + 2*JPos;
+        JIndex = 2*JPos;
         JTwin = gp_GetTwinArc(theEmbedding, JIndex);
 
         if (gp_GetEdgeVisited(theEmbedding, JIndex) || gp_GetEdgeVisited(theEmbedding, JTwin))
@@ -1043,9 +1041,8 @@ int I, e, J, JTwin, JPos, JIndex;
 /* Test whether any edge intersects any vertex position
     for a vertex that is not an endpoint of the edge. */
 
-    for (e = 0; e < theEmbedding->M; e++)
+    for (e=J=0; e < theEmbedding->M; e++,J+=2)
     {
-        J = theEmbedding->edgeOffset + 2*e;
         JTwin = gp_GetTwinArc(theEmbedding, J);
 
         for (I = 0; I < theEmbedding->N; I++)
@@ -1056,13 +1053,13 @@ int I, e, J, JTwin, JPos, JIndex;
             {
                 /* The vertical position of the vertex must be
                    at the top or bottom of the edge,  */
-                if (context->G[J].start != context->G[I].pos &&
-                    context->G[J].end != context->G[I].pos)
+                if (context->E[J].start != context->VI[I].pos &&
+                    context->E[J].end != context->VI[I].pos)
                     return NOTOK;
 
                 /* The horizontal edge position must be in the range of the vertex */
-                if (context->G[J].pos < context->G[I].start ||
-                    context->G[J].pos > context->G[I].end)
+                if (context->E[J].pos < context->VI[I].start ||
+                    context->E[J].pos > context->VI[I].end)
                     return NOTOK;
             }
 
@@ -1073,14 +1070,14 @@ int I, e, J, JTwin, JPos, JIndex;
                 /* If the vertical position of the vertex is in the
                     vertical range of the edge ... */
 
-                if (context->G[J].start <= context->G[I].pos &&
-                    context->G[J].end >= context->G[I].pos)
+                if (context->E[J].start <= context->VI[I].pos &&
+                    context->E[J].end >= context->VI[I].pos)
                 {
                     /* And if the horizontal position of the edge is in the
                         horizontal range of the vertex, then return an error. */
 
-                    if (context->G[I].start <= context->G[J].pos &&
-                        context->G[I].end >= context->G[J].pos)
+                    if (context->VI[I].start <= context->E[J].pos &&
+                        context->VI[I].end >= context->E[J].pos)
                         return NOTOK;
                 }
             }

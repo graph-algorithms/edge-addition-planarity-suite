@@ -51,22 +51,24 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 extern "C" {
 #endif
 
-// Additional equipment for each graph node (edge arc or vertex)
+// Additional equipment for each edge
 /*
         pos, start, end: used to store a visibility representation, or
                 horvert diagram of a planar graph.
-                For vertices, vertical position, horizontal range
                 For edges, horizontal position, vertical range
 */
 typedef struct
 {
      int  pos, start, end;
-} DrawPlanar_GraphNode;
+} DrawPlanar_EdgeRec;
 
-typedef DrawPlanar_GraphNode * DrawPlanar_GraphNodeP;
+typedef DrawPlanar_EdgeRec * DrawPlanar_EdgeRecP;
 
 // Additional equipment for each vertex
 /*
+        pos, start, end: used to store a visibility representation, or
+                horvert diagram, of a planar graph.
+                For vertices, vertical position, horizontal range
         drawingFlag, ancestor, ancestorChild: used to collect information needed
                 to help 'draw' a visibility representation.  During planar
                 embedding, a vertex is determined to be between its DFS parent and
@@ -87,11 +89,12 @@ typedef DrawPlanar_GraphNode * DrawPlanar_GraphNodeP;
 */
 typedef struct
 {
-        int drawingFlag, ancestor, ancestorChild;
-        int tie[2];
-} DrawPlanar_VertexRec;
+    int  pos, start, end;
+    int drawingFlag, ancestor, ancestorChild;
+    int tie[2];
+} DrawPlanar_VertexInfo;
 
-typedef DrawPlanar_VertexRec * DrawPlanar_VertexRecP;
+typedef DrawPlanar_VertexInfo * DrawPlanar_VertexInfoP;
 
 #define DRAWINGFLAG_BEYOND     0
 #define DRAWINGFLAG_TIE        1
@@ -107,11 +110,11 @@ typedef struct
     // The graph that this context augments
     graphP theGraph;
 
-    // Parallel array for additional graph node level equipment
-    DrawPlanar_GraphNodeP G;
+    // Parallel array for additional edge level equipment
+    DrawPlanar_EdgeRecP E;
 
     // Parallel array for additional vertex level equipment
-    DrawPlanar_VertexRecP V;
+    DrawPlanar_VertexInfoP VI;
 
     // Overloaded function pointers
     graphFunctionTable functions;

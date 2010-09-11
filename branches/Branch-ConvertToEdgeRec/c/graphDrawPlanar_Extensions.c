@@ -67,10 +67,10 @@ int  _DrawPlanar_EmbedPostprocess(graphP theGraph, int I, int edgeEmbeddingResul
 int  _DrawPlanar_CheckEmbeddingIntegrity(graphP theGraph, graphP origGraph);
 int  _DrawPlanar_CheckObstructionIntegrity(graphP theGraph, graphP origGraph);
 
-void _DrawPlanar_InitGraphNode(graphP theGraph, int I);
-void _DrawPlanar_InitVertexRec(graphP theGraph, int I);
-void _InitDrawGraphNode(DrawPlanarContext *context, int I);
-void _InitDrawVertexRec(DrawPlanarContext *context, int I);
+void _DrawPlanar_InitEdgeRec(graphP theGraph, int J);
+void _DrawPlanar_InitVertexInfo(graphP theGraph, int I);
+void _InitDrawEdgeRec(DrawPlanarContext *context, int I);
+void _InitDrawVertexInfo(DrawPlanarContext *context, int I);
 
 int  _DrawPlanar_InitGraph(graphP theGraph, int N);
 void _DrawPlanar_ReinitializeGraph(graphP theGraph);
@@ -148,8 +148,8 @@ int  gp_AttachDrawPlanar(graphP theGraph)
      context->functions.fpCheckEmbeddingIntegrity = _DrawPlanar_CheckEmbeddingIntegrity;
      context->functions.fpCheckObstructionIntegrity = _DrawPlanar_CheckObstructionIntegrity;
 
-     context->functions.fpInitGraphNode = _DrawPlanar_InitGraphNode;
-     context->functions.fpInitVertexRec = _DrawPlanar_InitVertexRec;
+     context->functions.fpInitEdgeRec = _DrawPlanar_InitEdgeRec;
+     context->functions.fpInitVertexInfo = _DrawPlanar_InitVertexInfo;
 
      context->functions.fpInitGraph = _DrawPlanar_InitGraph;
      context->functions.fpReinitializeGraph = _DrawPlanar_ReinitializeGraph;
@@ -211,41 +211,41 @@ void _DrawPlanar_ClearStructures(DrawPlanarContext *context)
     {
         // Before initialization, the pointers are stray, not NULL
         // Once NULL or allocated, free() or LCFree() can do the job
-        context->G = NULL;
-        context->V = NULL;
+        context->E = NULL;
+        context->VI = NULL;
 
         context->initialized = 1;
     }
     else
     {
-        if (context->G != NULL)
+        if (context->E != NULL)
         {
-            free(context->G);
-            context->G = NULL;
+            free(context->E);
+            context->E = NULL;
         }
-        if (context->V != NULL)
+        if (context->VI != NULL)
         {
-            free(context->V);
-            context->V = NULL;
+            free(context->VI);
+            context->VI = NULL;
         }
     }
 }
 
 /********************************************************************
  _DrawPlanar_CreateStructures()
- Create uninitialized structures for the vertex and graph node
- levels, and initialized structures for the graph level
+ Create uninitialized structures for the vertex and edge levels,
+ and initialized structures for the graph level
  ********************************************************************/
 int  _DrawPlanar_CreateStructures(DrawPlanarContext *context)
 {
      int N = context->theGraph->N;
-     int Gsize = context->theGraph->edgeOffset + context->theGraph->arcCapacity;
+     int Esize = context->theGraph->arcCapacity;
 
      if (N <= 0)
          return NOTOK;
 
-     if ((context->G = (DrawPlanar_GraphNodeP) malloc(Gsize*sizeof(DrawPlanar_GraphNode))) == NULL ||
-         (context->V = (DrawPlanar_VertexRecP) malloc(N*sizeof(DrawPlanar_VertexRec))) == NULL
+     if ((context->E = (DrawPlanar_EdgeRecP) malloc(Esize*sizeof(DrawPlanar_EdgeRec))) == NULL ||
+         (context->VI = (DrawPlanar_VertexInfoP) malloc(N*sizeof(DrawPlanar_VertexInfo))) == NULL
         )
      {
          return NOTOK;
@@ -257,22 +257,22 @@ int  _DrawPlanar_CreateStructures(DrawPlanarContext *context)
 /********************************************************************
  _DrawPlanar_InitStructures()
  Intended to be called when N>0.
- Initializes vertex and graph node levels only. Graph level is
+ Initializes vertex and edge levels only. Graph level is
  already initialized in _CreateStructures()
  ********************************************************************/
 int  _DrawPlanar_InitStructures(DrawPlanarContext *context)
 {
-     int I, N = context->theGraph->N;
-     int Gsize = context->theGraph->edgeOffset + context->theGraph->arcCapacity;
+     int I, J;
+     int N = context->theGraph->N, Esize = context->theGraph->arcCapacity;
 
      if (N <= 0)
          return NOTOK;
 
-     for (I = 0; I < Gsize; I++)
-          _InitDrawGraphNode(context, I);
-
      for (I = 0; I < N; I++)
-          _InitDrawVertexRec(context, I);
+          _InitDrawVertexInfo(context, I);
+
+     for (J = 0; J < Esize; J++)
+          _InitDrawEdgeRec(context, J);
 
      return OK;
 }
@@ -289,7 +289,7 @@ void *_DrawPlanar_DupContext(void *pContext, void *theGraph)
      if (newContext != NULL)
      {
          int N = ((graphP) theGraph)->N;
-         int Gsize = ((graphP) theGraph)->edgeOffset + ((graphP) theGraph)->arcCapacity;
+         int Esize = ((graphP) theGraph)->arcCapacity;
 
          *newContext = *context;
 
@@ -306,8 +306,8 @@ void *_DrawPlanar_DupContext(void *pContext, void *theGraph)
              }
 
              // Initialize custom data structures by copying
-             memcpy(newContext->G, context->G, Gsize*sizeof(DrawPlanar_GraphNode));
-             memcpy(newContext->V, context->V, N*sizeof(DrawPlanar_VertexRec));
+             memcpy(newContext->E, context->E, Esize*sizeof(DrawPlanar_EdgeRec));
+             memcpy(newContext->VI, context->VI, N*sizeof(DrawPlanar_VertexInfo));
          }
      }
 
@@ -341,20 +341,20 @@ int  _DrawPlanar_InitGraph(graphP theGraph, int N)
     else
     {
         theGraph->N = N;
-        theGraph->edgeOffset = 2*N;
+        theGraph->NV = N;
         if (theGraph->arcCapacity == 0)
         	theGraph->arcCapacity = 2*DEFAULT_EDGE_LIMIT*N;
 
         // Create custom structures, initialized at graph level,
-        // uninitialized at vertex and graph node levels.
+        // uninitialized at vertex and edge levels.
         if (_DrawPlanar_CreateStructures(context) != OK)
         {
             return NOTOK;
         }
 
         // This call initializes the base graph structures, but it also
-        // initializes the custom graphnode and vertex level structures
-        // due to the overloads of InitGraphNode and InitVertexRec
+        // initializes the custom edge and vertex level structures due
+        // to the overloads of InitGraphNode and InitVertexRec
         context->functions.fpInitGraph(theGraph, N);
     }
 
@@ -372,25 +372,25 @@ void _DrawPlanar_ReinitializeGraph(graphP theGraph)
     if (context != NULL)
     {
         // Reinitialization can go much faster if the underlying
-        // init graph node and vertex rec functions are called,
+        // init functions for the edge and vertex levels are called,
         // rather than the overloads of this module, because it
         // avoids lots of unnecessary gp_FindExtension() calls.
-        if (theGraph->functions.fpInitGraphNode == _DrawPlanar_InitGraphNode &&
-            theGraph->functions.fpInitVertexRec == _DrawPlanar_InitVertexRec)
+        if (theGraph->functions.fpInitEdgeRec == _DrawPlanar_InitEdgeRec &&
+            theGraph->functions.fpInitVertexInfo == _DrawPlanar_InitVertexInfo)
         {
             // Restore the graph function pointers
-            theGraph->functions.fpInitGraphNode = context->functions.fpInitGraphNode;
-            theGraph->functions.fpInitVertexRec = context->functions.fpInitVertexRec;
+            theGraph->functions.fpInitEdgeRec = context->functions.fpInitEdgeRec;
+            theGraph->functions.fpInitVertexInfo = context->functions.fpInitVertexInfo;
 
             // Reinitialize the graph
             context->functions.fpReinitializeGraph(theGraph);
 
             // Restore the function pointers that attach this feature
-            theGraph->functions.fpInitGraphNode = _DrawPlanar_InitGraphNode;
-            theGraph->functions.fpInitVertexRec = _DrawPlanar_InitVertexRec;
+            theGraph->functions.fpInitEdgeRec = _DrawPlanar_InitEdgeRec;
+            theGraph->functions.fpInitVertexInfo = _DrawPlanar_InitVertexInfo;
 
             // Do the reinitialization that is specific to this module
-            // InitStructures does vertex and graphnode levels
+            // InitStructures does vertex and edge levels
             _DrawPlanar_InitStructures(context);
             // Initialization of any graph level data structures follows here
         }
@@ -401,8 +401,8 @@ void _DrawPlanar_ReinitializeGraph(graphP theGraph)
         else
         {
             // No need to call _InitStructures(context) here because the underlying
-        	// function fpReinitializeGraph() already does the vertex and graph node
-        	// levels due to the overloads of fpInitGraphNode() and fpInitVertexRec().
+        	// function fpReinitializeGraph() already does the vertex and edge levels
+        	// due to the overloads of fpInitEdgeRec() and fpInitVertexInfo().
             context->functions.fpReinitializeGraph(theGraph);
             // Graph level reintializations would follow here
         }
@@ -436,43 +436,32 @@ int  _DrawPlanar_SortVertices(graphP theGraph)
         if (theGraph->embedFlags == EMBEDFLAGS_DRAWPLANAR)
         {
             int I;
-            DrawPlanar_GraphNodeP newG = NULL;
-            DrawPlanar_VertexRecP newV = NULL;
+            DrawPlanar_VertexInfoP newVI = NULL;
 
             // Relabel the context data members that indicate vertices
             for (I=0; I < theGraph->N; I++)
             {
-                context->V[I].ancestor = gp_GetVertexIndex(theGraph, context->V[I].ancestor);
-                context->V[I].ancestorChild = gp_GetVertexIndex(theGraph, context->V[I].ancestorChild);
+                context->VI[I].ancestor = gp_GetVertexIndex(theGraph, context->VI[I].ancestor);
+                context->VI[I].ancestorChild = gp_GetVertexIndex(theGraph, context->VI[I].ancestorChild);
             }
 
-            // Now we have to sort the first N positions of context G and V arrays
-            // For simplicity we do this out-of-place with extra arrays
-            if ((newG = (DrawPlanar_GraphNodeP) malloc(theGraph->N * sizeof(DrawPlanar_GraphNode))) == NULL)
+            // Now we have to sort this extension's vertex info array to match the new order of vertices
+            // For simplicity we do this out-of-place with an extra array
+            if ((newVI = (DrawPlanar_VertexInfoP) malloc(theGraph->N * sizeof(DrawPlanar_VertexInfo))) == NULL)
             {
                 return NOTOK;
             }
 
-            if ((newV = (DrawPlanar_VertexRecP) malloc(theGraph->N * sizeof(DrawPlanar_VertexRec))) == NULL)
-            {
-                free(newG);
-                return NOTOK;
-            }
-
-            // Let X == index of I^{th} vertex record be the location where the I^{th} record goes
-            // Given newG and newV arrays, we want to move context G[I] to newG[X]
-            // Then copy newG into G and newV into V
+            // Let X == I^{th} vertex's index be the location where the I^{th} vertex goes
+            // Given the newVI array, we want to move context VI[I] to newVI[X]
             for (I=0; I < theGraph->N; I++)
             {
-                newG[gp_GetVertexIndex(theGraph, I)] = context->G[I];
-                newV[gp_GetVertexIndex(theGraph, I)] = context->V[I];
+                newVI[gp_GetVertexIndex(theGraph, I)] = context->VI[I];
             }
 
-            memcpy(context->G, newG, theGraph->N * sizeof(DrawPlanar_GraphNode));
-            memcpy(context->V, newV, theGraph->N * sizeof(DrawPlanar_VertexRec));
-
-            free(newG);
-            free(newV);
+            // Replace VI with the newVI
+            memcpy(context->VI, newVI, theGraph->N * sizeof(DrawPlanar_VertexInfo));
+            free(newVI);
         }
 
         if (context->functions.fpSortVertices(theGraph) != OK)
@@ -534,52 +523,56 @@ int _DrawPlanar_HandleInactiveVertex(graphP theGraph, int BicompRoot, int *pW, i
 /********************************************************************
  ********************************************************************/
 
-void _DrawPlanar_InitGraphNode(graphP theGraph, int I)
+void _DrawPlanar_InitGraphNode(graphP theGraph, int J)
 {
     DrawPlanarContext *context = NULL;
     gp_FindExtension(theGraph, DRAWPLANAR_ID, (void *)&context);
 
     if (context != NULL)
     {
-        context->functions.fpInitGraphNode(theGraph, I);
-        _InitDrawGraphNode(context, I);
+        context->functions.fpInitEdgeRec(theGraph, J);
+        _InitDrawEdgeRec(context, J);
     }
 }
 
 /********************************************************************
  ********************************************************************/
 
-void _InitDrawGraphNode(DrawPlanarContext *context, int I)
+void _InitDrawEdgeRec(DrawPlanarContext *context, int J)
 {
-    context->G[I].pos = 0;
-    context->G[I].start = 0;
-    context->G[I].end = 0;
+    context->E[J].pos = 0;
+    context->E[J].start = 0;
+    context->E[J].end = 0;
 }
 
 /********************************************************************
  ********************************************************************/
 
-void _DrawPlanar_InitVertexRec(graphP theGraph, int I)
+void _DrawPlanar_InitVertexInfo(graphP theGraph, int I)
 {
     DrawPlanarContext *context = NULL;
     gp_FindExtension(theGraph, DRAWPLANAR_ID, (void *)&context);
 
     if (context != NULL)
     {
-        context->functions.fpInitVertexRec(theGraph, I);
-        _InitDrawVertexRec(context, I);
+        context->functions.fpInitVertexInfo(theGraph, I);
+        _InitDrawVertexInfo(context, I);
     }
 }
 
 /********************************************************************
  ********************************************************************/
 
-void _InitDrawVertexRec(DrawPlanarContext *context, int I)
+void _InitDrawVertexInfo(DrawPlanarContext *context, int I)
 {
-    context->V[I].drawingFlag = DRAWINGFLAG_BEYOND;
-    context->V[I].ancestorChild = 0;
-    context->V[I].ancestor = 0;
-    context->V[I].tie[0] = context->V[I].tie[1] = NIL;
+    context->VI[I].pos = 0;
+    context->VI[I].start = 0;
+    context->VI[I].end = 0;
+
+    context->VI[I].drawingFlag = DRAWINGFLAG_BEYOND;
+    context->VI[I].ancestorChild = 0;
+    context->VI[I].ancestor = 0;
+    context->VI[I].tie[0] = context->VI[I].tie[1] = NIL;
 }
 
 /********************************************************************
@@ -650,7 +643,7 @@ int  _DrawPlanar_ReadPostprocess(graphP theGraph, void *extraData, long extraDat
 
         else if (extraData != NULL && extraDataSize > 0)
         {
-            int I, tempInt;
+            int I, J, tempInt, EsizeOccupied;
             char line[64], tempChar;
 
             sprintf(line, "<%s>", DRAWPLANAR_NAME);
@@ -667,20 +660,21 @@ int  _DrawPlanar_ReadPostprocess(graphP theGraph, void *extraData, long extraDat
             for (I = 0; I < theGraph->N; I++)
             {
                 sscanf(extraData, " %d%c %d %d %d", &tempInt, &tempChar,
-                              &context->G[I].pos,
-                              &context->G[I].start,
-                              &context->G[I].end);
+                              &context->VI[I].pos,
+                              &context->VI[I].start,
+                              &context->VI[I].end);
 
                 extraData = strchr(extraData, '\n') + 1;
             }
 
             // Read the lines that contain edge information
-            for (I = theGraph->edgeOffset; I < theGraph->edgeOffset+2*theGraph->M; I++)
+            EsizeOccupied = 2 * theGraph->M;
+            for (J = 0; J < EsizeOccupied; J++)
             {
                 sscanf(extraData, " %d%c %d %d %d", &tempInt, &tempChar,
-                              &context->G[I].pos,
-                              &context->G[I].start,
-                              &context->G[I].end);
+                              &context->E[J].pos,
+                              &context->E[J].start,
+                              &context->E[J].end);
 
                 extraData = strchr(extraData, '\n') + 1;
             }
@@ -708,15 +702,15 @@ int  _DrawPlanar_WritePostprocess(graphP theGraph, void **pExtraData, long *pExt
         {
             char line[64];
             int maxLineSize = 64, extraDataPos = 0, I;
-            int Gsize = theGraph->edgeOffset + theGraph->arcCapacity;
-            char *extraData = (char *) malloc((Gsize + 2) * maxLineSize * sizeof(char));
+            int N = theGraph->N, EsizeOccupied = 2 * (theGraph->M + sp_GetCurrentSize(theGraph->edgeHoles));
+            char *extraData = (char *) malloc((N + EsizeOccupied + 2) * maxLineSize * sizeof(char));
 
             if (extraData == NULL)
                 return NOTOK;
 
             // Bit of an unlikely case, but for safety, a bigger maxLineSize
             // and line array size are needed to handle very large graphs
-            if (theGraph->N > 2000000000)
+            if (N > 2000000000)
             {
                 free(extraData);
                 return NOTOK;
@@ -726,22 +720,25 @@ int  _DrawPlanar_WritePostprocess(graphP theGraph, void **pExtraData, long *pExt
             strcpy(extraData+extraDataPos, line);
             extraDataPos += (int) strlen(line);
 
-            for (I = 0; I < theGraph->N; I++)
+            for (I = 0; I < N; I++)
             {
                 sprintf(line, "%d: %d %d %d\n", I,
-                              context->G[I].pos,
-                              context->G[I].start,
-                              context->G[I].end);
+                              context->VI[I].pos,
+                              context->VI[I].start,
+                              context->VI[I].end);
                 strcpy(extraData+extraDataPos, line);
                 extraDataPos += (int) strlen(line);
             }
 
-            for (I = theGraph->edgeOffset; I < theGraph->edgeOffset+2*theGraph->M; I++)
+            for (J = 0; J < EsizeOccupied; J++)
             {
+                if (gp_GetNeighbor(theGraph, J) == NIL)
+                    continue;
+
                 sprintf(line, "%d: %d %d %d\n", I,
-                              context->G[I].pos,
-                              context->G[I].start,
-                              context->G[I].end);
+                              context->E[J].pos,
+                              context->E[J].start,
+                              context->E[J].end);
                 strcpy(extraData+extraDataPos, line);
                 extraDataPos += (int) strlen(line);
             }
