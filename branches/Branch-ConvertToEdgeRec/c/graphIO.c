@@ -482,6 +482,46 @@ char *Row = NULL;
 }
 
 /********************************************************************
+ ********************************************************************/
+
+char _GetEdgeTypeChar(graphP theGraph, int J)
+{
+	char type = 'U';
+
+	if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_CHILD)
+		type = 'C';
+	else if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_FORWARD)
+		type = 'F';
+	else if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_PARENT)
+		type = 'P';
+	else if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_BACK)
+		type = 'B';
+	else if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_RANDOMTREE)
+		type = 'T';
+
+	return type;
+}
+
+/********************************************************************
+ ********************************************************************/
+
+char _GetVertexObstructionTypeChar(graphP theGraph, int I)
+{
+	char type = 'U';
+
+	if (gp_GetVertexObstructionType(theGraph, I) == VERTEX_OBSTRUCTIONTYPE_HIGH_RXW)
+		type = 'X';
+	else if (gp_GetVertexObstructionType(theGraph, I) == VERTEX_OBSTRUCTIONTYPE_LOW_RXW)
+		type = 'x';
+	if (gp_GetVertexObstructionType(theGraph, I) == VERTEX_OBSTRUCTIONTYPE_HIGH_RYW)
+		type = 'Y';
+	else if (gp_GetVertexObstructionType(theGraph, I) == VERTEX_OBSTRUCTIONTYPE_LOW_RYW)
+		type = 'y';
+
+	return type;
+}
+
+/********************************************************************
  _WriteDebugInfo()
  Writes adjacency list, but also includes the type value of each
  edge (e.g. is it DFS child  arc, forward arc or back arc?), and
@@ -546,7 +586,7 @@ int I, J, Vsize, EsizeOccupied;
          fprintf(Outfile, "V[%3d] index=%3d, type=%c, first arc=%3d, last arc=%3d\n",
                           I,
                           gp_GetVertexIndex(theGraph, I),
-                          (I < theGraph->N ? gp_GetVertexObstructionType(theGraph, I) : 0),
+                          (I < theGraph->N ? _GetVertexObstructionTypeChar(theGraph, I) : 0),
                           gp_GetFirstArc(theGraph, I),
                           gp_GetLastArc(theGraph, I));
      }
@@ -563,7 +603,7 @@ int I, J, Vsize, EsizeOccupied;
           fprintf(Outfile, "E[%3d] neighbor=%3d, type=%c, next arc=%3d, prev arc=%3d\n",
                            J,
                            gp_GetNeighbor(theGraph, J),
-                           gp_GetEdgeType(theGraph, J),
+                           _GetEdgeTypeChar(theGraph, J),
                            gp_GetNextArc(theGraph, J),
                            gp_GetPrevArc(theGraph, J));
      }

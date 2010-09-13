@@ -249,9 +249,9 @@ int EsizeOccupied, I, J, JTwin, K, L, NumFaces, connectedComponents;
             {
                 K = gp_GetTwinArc(theGraph, JTwin);
                 L = gp_GetNextArcCircular(theGraph, K);
-                if (gp_GetVertexVisited(theGraph, L))
+                if (gp_GetEdgeVisited(theGraph, L))
                     return NOTOK;
-                gp_SetVertexVisited(theGraph, L);
+                gp_SetEdgeVisited(theGraph, L);
                 JTwin = L;
             }
             NumFaces++;

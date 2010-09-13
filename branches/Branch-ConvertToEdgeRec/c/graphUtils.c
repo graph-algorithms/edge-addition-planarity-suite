@@ -131,6 +131,7 @@ graphP theGraph = (graphP) malloc(sizeof(baseGraphStructure));
      {
          theGraph->E = NULL;
          theGraph->V = NULL;
+         theGraph->VI = NULL;
 
          theGraph->BicompLists = NULL;
          theGraph->DFSChildLists = NULL;

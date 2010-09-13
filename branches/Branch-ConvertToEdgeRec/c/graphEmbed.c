@@ -594,138 +594,149 @@ int  extFaceVertex;
  I is the vertex currently being embedded
  J is the forward arc to the descendant W on which the Walkup begins
 
- The Walkup establishes pertinence for step I.  It marks W as
- 'adjacentTo' I so that the Walkdown will embed an edge to W when
- it is encountered.
+ The Walkup establishes pertinence for step I.  It marks W with J
+ as a way of indicating it is pertinent because it should be made
+ 'adjacent to' I by adding a back edge (I', W), which will occur when
+ the Walkdown encounters W.
 
  The Walkup also determines the pertinent child bicomps that should be
  set up as a result of the need to embed edge (I, W). It does this by
  recording the pertinent child biconnected components of all cut
- vertices between W and the child of I that is a descendant of W.
+ vertices between W and the child of I that is an ancestor of W.
  Note that it stops the traversal if it finds a visited info value set
  to I, which indicates that a prior walkup call in step I has already
- done the work.
+ done the work. This ensures work is not duplicated.
 
- Zig and Zag are so named because one goes around one side of a
- bicomp and the other goes around the other side, yet we have
- as yet no notion of orientation for the bicomp.
- The edge J from vertex I gestures to an adjacent descendant vertex W
- (possibly in some other bicomp).  Zig and Zag start out at W.
- They go around alternate sides of the bicomp until its root is found.
- Recall that the root vertex is just a copy in region N to 2N-1.
- We want to hop from the root copy to the parent copy of the vertex
+ A second technique used to maintain a total linear time bound for the
+ whole planarity method is that of parallel external face traversal.
+ This ensures that the cost of determining pertinence in step I is
+ linearly commensurate with the length of the path that ultimately
+ is removed from the external face.
+
+ Zig and Zag are so named because one goes around one side of a bicomp
+ and the other goes around the other side, yet we have as yet no notion
+ of orientation for the bicomp. The edge record J from vertex I gestures
+ to a descendant vertex W in some other bicomp.  Zig and Zag start out
+ at W. They go around alternate sides of the bicomp until its root is
+ found.  We then hop from the root copy to the parent copy of the vertex
  in order to record which bicomp we just came from and also to continue
- the walk-up to vertex I.
- If the parent copy actually is I, then the walk-up is done.
+ the walk-up at the parent copy as if it were the new W.  We reiterate
+ this process until the parent copy actually is I, at which point the
+ Walkup is done.
  ********************************************************************/
 
 void _WalkUp(graphP theGraph, int I, int J)
 {
-int  Zig, Zag, ZigPrevLink, ZagPrevLink;
-int  N, R, ParentCopy, nextVertex, W;
-int  RootID_DFSChild, BicompList;
+int  N = theGraph->N, W = gp_GetNeighbor(theGraph, J);
+int  Zig=W, Zag=W, ZigPrevLink=1, ZagPrevLink=0;
+// NOTE: nextZag is *not* used uninitialized
+int  nextZig, nextZag, R, ParentCopy, RootID_DFSChild, BicompList;
 
-     W = gp_GetNeighbor(theGraph, J);
+	 // Start by marking W as being pertinent
      gp_SetVertexPertinentAdjacencyInfo(theGraph, W, J);
 
-     /* Shorthand for N, due to frequent use */
-
-     N = theGraph->N;
-
-     /* Start at the vertex W and walk around the both sides of the external face
-        of a bicomp until we get back to vertex I. */
-
-     Zig = Zag = W;
-     ZigPrevLink = 1;
-     ZagPrevLink = 0;
-
+     // Zig and Zag are initialized at W, and we continue looping
+     // around the external faces of bicomps up from W until we
+     // reach vertex I (or until the visited info optimization
+     // breaks the loop)
      while (Zig != I)
      {
-    	R = NIL;
+    	 // If the current vertices on either of the external face paths have been
+    	 // visited in this step I, then the Walkup need not proceed since the
+    	 // containing bicomp root and its ancestor roots are already recorded as pertinent
+    	 if (gp_GetVertexVisitedInfo(theGraph, Zig) == I ||
+  			 gp_GetVertexVisitedInfo(theGraph, Zag) == I)
+    		 break;
 
-    	// If the vertex is not a bicomp root...
-    	if (Zig < N)
-    	{
-    		// If already visited, in this step I, then no need to continue walking up...
-            if (gp_GetVertexVisitedInfo(theGraph, Zig) == I) break;
-            // Otherwise, mark this vertex as visited in step I so future walk ups can avoid work
-            gp_SetVertexVisitedInfo(theGraph, Zig, I);
-    	}
-    	// Otherwise set R for bicomp root processing below
-    	else R = Zig;
+    	 // Obtain the next vertex in a first direction and determine if it is a bicomp root
+         if ((nextZig = gp_GetExtFaceVertex(theGraph, Zig, 1^ZigPrevLink)) >= N)
+         {
+        	 R = nextZig;
 
-    	// Same processing along the parallel external face path.
-    	if (Zag < N)
-    	{
-            if (gp_GetVertexVisitedInfo(theGraph, Zag) == I) break;
-            gp_SetVertexVisitedInfo(theGraph, Zag, I);
-    	}
-    	else R = Zag;
+        	 // Since the bicomp root was the next vertex on the path from Zig, determine the
+        	 // vertex on the opposing path that enters the bicomp root.
+        	 nextZig = gp_GetExtFaceVertex(theGraph, R,
+										   gp_GetExtFaceVertex(theGraph, R, 0)==Zig ? 1 : 0);
 
-        // If we have a bicomp root, then we want to hop up to the non-virtual parent copy
-        // and record a pertinent child bicomp.
-        // Prepends if the bicomp is internally active, appends if externally active.
+        	 // If the opposing vertex was already marked visited in this step, then a prior
+        	 // Walkup already recorded as pertinent the bicomp root and its ancestor roots.
+        	 if (gp_GetVertexVisitedInfo(theGraph, nextZig) == I)
+        		 break;
+         }
 
-        if (R != NIL)
-        {
-            // The endpoints of a bicomp's "root edge" are the bicomp root R and a
-            // DFS child of the parent copy of the bicomp root R.
-            // The locations of bicomp root (virtual) vertices is in the range N to 2N-1
-            // at the offset indicated by the associated DFS child.  So, the location
-            // of the root vertex R, less N, is the location of the DFS child and also
-            // a convenient identifier for the bicomp root.
-            RootID_DFSChild = R - N;
+         // Obtain the next vertex in the parallel direction and perform the analogous logic
+         else if ((nextZag = gp_GetExtFaceVertex(theGraph, Zag, 1^ZagPrevLink)) >= N)
+         {
+        	 R = nextZag;
+        	 nextZag = gp_GetExtFaceVertex(theGraph, R,
+										   gp_GetExtFaceVertex(theGraph, R, 0)==Zag ? 1 : 0);
+        	 if (gp_GetVertexVisitedInfo(theGraph, nextZag) == I)
+        		 break;
+         }
 
-            // It is extra unnecessary work to record pertinent bicomps of I
-            if ((ParentCopy = gp_GetVertexParent(theGraph, RootID_DFSChild)) != I)
-            {
-                 // Get the BicompList of the parent copy vertex.
-                 BicompList = gp_GetVertexPertinentBicompList(theGraph, ParentCopy);
+         // The bicomp root was not found in either direction.
+         else R = NIL;
 
-                 /* Put the new root vertex in the BicompList.  It is prepended if internally
-                    active and appended if externally active so that all internally
-                    active bicomps are processed before any externally active bicomps
-                    by virtue of storage.
+         // This Walkup has now finished with another vertex along each of the parallel
+         // paths, so they are marked visited in step I so that future Walkups in this
+         // step I can break if these vertices are encountered again.
+         gp_SetVertexVisitedInfo(theGraph, Zig, I);
+         gp_SetVertexVisitedInfo(theGraph, Zag, I);
 
-                    NOTE: The activity status of a bicomp is computed using the lowpoint of
-                            the DFS child in the bicomp's root edge because we want to know
-                            whether the DFS child or any of its descendants are joined by a
-                            back edge to ancestors of I. If so, then the bicomp rooted
-                            at RootVertex must contain an externally active vertex so the
-                            bicomp must be kept on the external face. */
+         // If both directions found new non-root vertices, then proceed with parallel external face traversal
+         if (R == NIL)
+         {
+             ZigPrevLink = gp_GetExtFaceVertex(theGraph, nextZig, 0)==Zig ? 0 : 1;
+             Zig = nextZig;
 
-                 if (gp_GetVertexLowpoint(theGraph, RootID_DFSChild) < I)
-                      BicompList = LCAppend(theGraph->BicompLists, BicompList, RootID_DFSChild);
-                 else BicompList = LCPrepend(theGraph->BicompLists, BicompList, RootID_DFSChild);
+             ZagPrevLink = gp_GetExtFaceVertex(theGraph, nextZag, 0)==Zag ? 0 : 1;
+             Zag = nextZag;
+         }
 
-                 /* The head node of the parent copy vertex's bicomp list may have changed, so
-                    we assign the head of the modified list as the vertex's pertinent
-                    bicomp list */
+         // The bicomp root was found and not previously recorded as pertinent,
+         // so walk up to the parent bicomp and continue
+         else
+         {
+             // The endpoints of a bicomp's "root edge" are the bicomp root R and a
+             // DFS child of the parent copy of the bicomp root R.
+             // The locations of bicomp root (virtual) vertices is in the range N to 2N-1
+             // at the offset indicated by the associated DFS child.  So, the location
+             // of the root vertex R, less N, is the location of the DFS child and also
+             // a convenient identifier for the bicomp root.
+             RootID_DFSChild = R - N;
 
-                 gp_SetVertexPertinentBicompList(theGraph, ParentCopy, BicompList);
-            }
+             // It is extra unnecessary work to record pertinent bicomps of I
+             // (and to eliminate them later, since no merge happens)
+             if ((ParentCopy = gp_GetVertexParent(theGraph, RootID_DFSChild)) != I)
+             {
+                  // Get the BicompList of the parent copy vertex.
+                  BicompList = gp_GetVertexPertinentBicompList(theGraph, ParentCopy);
 
-            Zig = Zag = ParentCopy;
-            ZigPrevLink = 1;
-            ZagPrevLink = 0;
-        }
+                  // Put the new root vertex in the BicompList.  It is prepended if internally
+                  // active and appended if externally active so that all internally active
+                  // bicomps are processed before any externally active bicomps by virtue of storage.
 
-        /* If we did not encounter a bicomp root, then we continue traversing the
-            external face in both directions. */
+                  // NOTE: Unlike vertices, the activity status of a bicomp is computed solely
+  				  //       using lowpoint. The lowpoint of the DFS child in the bicomp's root edge
+  				  //	     indicates whether the DFS child or any of its descendants are joined by
+  				  //	     a back edge to ancestors of I. If so, then the bicomp rooted at
+  				  //	     RootVertex must contain an externally active vertex so the bicomp must
+  				  //	     be kept on the external face.
+                  if (gp_GetVertexLowpoint(theGraph, RootID_DFSChild) < I)
+                       BicompList = LCAppend(theGraph->BicompLists, BicompList, RootID_DFSChild);
+                  else BicompList = LCPrepend(theGraph->BicompLists, BicompList, RootID_DFSChild);
 
-        else
-        {
-            nextVertex = gp_GetExtFaceVertex(theGraph, Zig, 1^ZigPrevLink);
-            ZigPrevLink = gp_GetExtFaceVertex(theGraph, nextVertex, 0) == Zig ? 0 : 1;
-            Zig = nextVertex;
+                  // The head node of the parent copy vertex's bicomp list may have changed, so
+                  // we assign the head of the modified list as the vertex's pertinent bicomp list
+                  gp_SetVertexPertinentBicompList(theGraph, ParentCopy, BicompList);
+             }
 
-            nextVertex = gp_GetExtFaceVertex(theGraph, Zag, 1^ZagPrevLink);
-            ZagPrevLink = gp_GetExtFaceVertex(theGraph, nextVertex, 0) == Zag ? 0 : 1;
-            Zag = nextVertex;
-        }
+             Zig = Zag = ParentCopy;
+             ZigPrevLink = 1;
+             ZagPrevLink = 0;
+         }
      }
 }
-
 
 /********************************************************************
  _HandleBlockedDescendantBicomp()
