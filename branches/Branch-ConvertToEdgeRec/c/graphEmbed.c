@@ -629,7 +629,6 @@ void _WalkUp(graphP theGraph, int I, int J)
 {
 int  N = theGraph->N, W = gp_GetNeighbor(theGraph, J);
 int  Zig=W, Zag=W, ZigPrevLink=1, ZagPrevLink=0;
-// NOTE: nextZag is *not* used uninitialized
 int  nextZig, nextZag, R, ParentCopy, RootID_DFSChild, BicompList;
 
 	 // Start by marking W as being pertinent
@@ -641,41 +640,43 @@ int  nextZig, nextZag, R, ParentCopy, RootID_DFSChild, BicompList;
      // breaks the loop)
      while (Zig != I)
      {
-    	 // If the current vertices on either of the external face paths have been
-    	 // visited in this step I, then the Walkup need not proceed since the
-    	 // containing bicomp root and its ancestor roots are already recorded as pertinent
-    	 if (gp_GetVertexVisitedInfo(theGraph, Zig) == I ||
-  			 gp_GetVertexVisitedInfo(theGraph, Zag) == I)
-    		 break;
-
     	 // Obtain the next vertex in a first direction and determine if it is a bicomp root
          if ((nextZig = gp_GetExtFaceVertex(theGraph, Zig, 1^ZigPrevLink)) >= N)
          {
+        	 // If the current vertex along the external face was visited in this step I,
+        	 // then the bicomp root and its ancestor roots have already been added.
+        	 if (gp_GetVertexVisitedInfo(theGraph, Zig) == I) break;
+
+        	 // Store the bicomp root that was found
         	 R = nextZig;
 
         	 // Since the bicomp root was the next vertex on the path from Zig, determine the
         	 // vertex on the opposing path that enters the bicomp root.
-        	 nextZig = gp_GetExtFaceVertex(theGraph, R,
+        	 nextZag = gp_GetExtFaceVertex(theGraph, R,
 										   gp_GetExtFaceVertex(theGraph, R, 0)==Zig ? 1 : 0);
 
         	 // If the opposing vertex was already marked visited in this step, then a prior
         	 // Walkup already recorded as pertinent the bicomp root and its ancestor roots.
-        	 if (gp_GetVertexVisitedInfo(theGraph, nextZig) == I)
-        		 break;
+        	 if (gp_GetVertexVisitedInfo(theGraph, nextZag) == I) break;
          }
 
          // Obtain the next vertex in the parallel direction and perform the analogous logic
          else if ((nextZag = gp_GetExtFaceVertex(theGraph, Zag, 1^ZagPrevLink)) >= N)
          {
+        	 if (gp_GetVertexVisitedInfo(theGraph, Zag) == I) break;
         	 R = nextZag;
-        	 nextZag = gp_GetExtFaceVertex(theGraph, R,
+        	 nextZig = gp_GetExtFaceVertex(theGraph, R,
 										   gp_GetExtFaceVertex(theGraph, R, 0)==Zag ? 1 : 0);
-        	 if (gp_GetVertexVisitedInfo(theGraph, nextZag) == I)
-        		 break;
+        	 if (gp_GetVertexVisitedInfo(theGraph, nextZig) == I) break;
          }
 
          // The bicomp root was not found in either direction.
-         else R = NIL;
+         else
+         {
+        	 if (gp_GetVertexVisitedInfo(theGraph, Zig) == I) break;
+        	 if (gp_GetVertexVisitedInfo(theGraph, Zag) == I) break;
+        	 R = NIL;
+         }
 
          // This Walkup has now finished with another vertex along each of the parallel
          // paths, so they are marked visited in step I so that future Walkups in this
