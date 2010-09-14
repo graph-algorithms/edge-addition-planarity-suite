@@ -863,10 +863,10 @@ char *_RenderToString(graphP theEmbedding)
         // Clear the space
         for (I = 0; I < N; I++)
         {
-            for (e=J=0; e < M; e++, J+=2)
+            for (e=0; e < M; e++)
             {
-                visRep[(2*I) * (M+1) + J] = ' ';
-                visRep[(2*I+1) * (M+1) + J] = ' ';
+                visRep[(2*I) * (M+1) + e] = ' ';
+                visRep[(2*I+1) * (M+1) + e] = ' ';
             }
 
             visRep[(2*I) * (M+1) + M] = '\n';
