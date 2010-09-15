@@ -178,6 +178,8 @@ void outprocTest(FILE *f, graph *g, int n)
 	if (errorFound)
 		return;
 
+	// gp_Write(testFramework->algResults[0].origGraph, "origGraph.txt", WRITE_ADJLIST);
+
 	if (g_command == 'a')
 	{
 		int i, len;

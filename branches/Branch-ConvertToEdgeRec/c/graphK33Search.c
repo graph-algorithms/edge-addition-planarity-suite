@@ -1656,10 +1656,11 @@ int  rxType, xwType, wyType, yrType, xyType;
    set the vertex visited info so the remaining vertices will behave as though they
    are unvisited by Walkup when the embedder moves to the next vertex. */
 
-     gp_SetVertexVisitedInfo(theGraph, R, theGraph->N);
      gp_SetVertexVisitedInfo(theGraph, IC->x, theGraph->N);
      gp_SetVertexVisitedInfo(theGraph, IC->y, theGraph->N);
      gp_SetVertexVisitedInfo(theGraph, IC->w, theGraph->N);
+
+     gp_SetVertexPertinentBicompList(theGraph, IC->w, NIL);
 
      return OK;
 }

@@ -1711,10 +1711,10 @@ int vertMax = theGraph->N + theGraph->NV - 1,
 
      upos = gp_GetTwinArc(theGraph, vpos);
 
-     gp_SetVertexIndex(theGraph, upos, v);
+     gp_SetNeighbor(theGraph, upos, v);
      gp_AttachArc(theGraph, u, e_u, e_ulink, upos);
 
-     gp_SetVertexIndex(theGraph, vpos, u);
+     gp_SetNeighbor(theGraph, vpos, u);
      gp_AttachArc(theGraph, v, e_v, e_vlink, vpos);
 
      theGraph->M++;

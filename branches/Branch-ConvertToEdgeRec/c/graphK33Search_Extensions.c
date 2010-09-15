@@ -555,7 +555,7 @@ void _K33Search_CreateDFSTreeEmbedding(graphP theGraph)
                 // we traverse them and prepend each to the
                 // ascending order sortedDFSChildList
 
-                while (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_CHILD)
+                while (gp_IsArc(theGraph, J) && gp_GetEdgeType(theGraph, J) == EDGE_TYPE_CHILD)
                 {
                     context->VI[I].sortedDFSChildList =
                         LCPrepend(context->sortedDFSChildLists,
