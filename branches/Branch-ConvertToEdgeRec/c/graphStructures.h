@@ -253,6 +253,9 @@ typedef vertexRec * vertexRecP;
 #define gp_SetVertexVisited(theGraph, v) (theGraph->V[v].flags |= VERTEX_VISITED_MASK)
 
 // The obstruction type is defined by bits 1-3, 2+4+8=14
+// Bit 1 - 2 if type set, 0 if not
+// Bit 2 - 4 if Y side, 0 if X side
+// Bit 3 - 8 if high, 0 if low
 #define VERTEX_OBSTRUCTIONTYPE_MASK		14
 
 // Call gp_GetVertexObstructionType, then compare to one of these four possibilities
@@ -266,6 +269,9 @@ typedef vertexRec * vertexRecP;
 #define VERTEX_OBSTRUCTIONTYPE_HIGH_RYW    	14
 #define VERTEX_OBSTRUCTIONTYPE_LOW_RYW    	6
 #define VERTEX_OBSTRUCTIONTYPE_UNKNOWN		0
+
+#define VERTEX_OBSTRUCTIONTYPE_MARKED		2
+#define VERTEX_OBSTRUCTIONTYPE_UNMARKED		0
 
 #define gp_GetVertexObstructionType(theGraph, v) (theGraph->V[v].flags&VERTEX_OBSTRUCTIONTYPE_MASK)
 #define gp_ClearVertexObstructionType(theGraph, v) (theGraph->V[v].flags &= ~VERTEX_OBSTRUCTIONTYPE_MASK)

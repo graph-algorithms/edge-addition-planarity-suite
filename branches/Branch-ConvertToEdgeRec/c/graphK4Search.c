@@ -97,8 +97,8 @@ int  _K4_ChooseTypeOfNonOuterplanarityMinor(graphP theGraph, int I, int R);
 int  _K4_FindSecondActiveVertexOnLowExtFacePath(graphP theGraph);
 int  _K4_FindPlanarityActiveVertex(graphP theGraph, int I, int R, int prevLink, int *pW);
 int  _K4_FindSeparatingInternalEdge(graphP theGraph, int R, int prevLink, int A, int *pW, int *pX, int *pY);
-void _K4_SetVisitedOnExternalFacePath(graphP theGraph, int R, int prevLink, int A);
-void _K4_ClearVisitedOnExternalFacePath(graphP theGraph, int R, int prevLink, int A);
+void _K4_MarkObstructionTypeOnExternalFacePath(graphP theGraph, int R, int prevLink, int A);
+void _K4_UnmarkObstructionTypeOnExternalFacePath(graphP theGraph, int R, int prevLink, int A);
 
 int  _K4_IsolateMinorA1(graphP theGraph);
 int  _K4_IsolateMinorA2(graphP theGraph);
@@ -687,18 +687,23 @@ int  _K4_FindPlanarityActiveVertex(graphP theGraph, int I, int R, int prevLink, 
  to see whether any of the edges connects outside of the path [R ... A],
  including endpoints.
 
- We will count on the pre-initialization that clears the vertex visited flags
- so that we don't have to initialize the whole bicomp. Each vertex along
- the path [R ... A] is marked visited.  Then, for each vertex in the
- range (R ... A), if there is any edge that is also incident to an unvisited
- neighbor vertex, then that edge is the desired separator edge between
- R and W, and we save information about it.
+ In order to avoid adding cost to the core planarity algorithm, we'll just use
+ the fact that the vertex obstruction types are pre-initialized to the unmarked
+ state.  Until we know if there is a separating internal edge, we cannot be sure
+ that we can isolate a K4 homeomorph, so we can't afford to initialize the whole
+ bicomp. The obstruction type of each vertex along the path [R ... A] is marked.
+ Then, for each vertex in the range (R ... A), if there is any edge that is also
+ incident to a vertex whose obstruction type is still unmarked, then that edge
+ is the desired separator edge between R and W (i.e. A), and so we save information
+ about it.
 
  If the separator edge is found, then this method sets the *pW to A, and it
  sets *pX and *pY values with the endpoints of the separator edge.
- No visited flags are set at this time because it is easier to set them later.
+ The visited flags of the separator edge and its endpoint vertices are not set
+ at this time because it is easier to set them later as part of the overall K4
+ homeomorph isolation.
 
- Lastly, we restore the clear vertex visited flags on the path [R ... A].
+ Lastly, we restore the unmarked obstruction type settings on the path [R ... A].
 
  Returns TRUE if separator edge found or FALSE otherwise
  ****************************************************************************/
@@ -707,8 +712,8 @@ int _K4_FindSeparatingInternalEdge(graphP theGraph, int R, int prevLink, int A, 
 {
 	int Z, ZPrevLink, J, neighbor;
 
-	// Mark the vertex types along the path [R ... A] as visited
-	_K4_SetVisitedOnExternalFacePath(theGraph, R, prevLink, A);
+	// Mark the vertex obstruction type settings along the path [R ... A]
+	_K4_MarkObstructionTypeOnExternalFacePath(theGraph, R, prevLink, A);
 
 	// Search each of the vertices in the range (R ... A)
 	*pX = *pY = NIL;
@@ -723,7 +728,7 @@ int _K4_FindSeparatingInternalEdge(graphP theGraph, int R, int prevLink, int A, 
 	    while (gp_IsArc(theGraph, J))
 	    {
 	        neighbor = gp_GetNeighbor(theGraph, J);
-	        if (!gp_GetVertexVisited(theGraph, neighbor))
+	        if (gp_GetVertexObstructionType(theGraph, neighbor) == VERTEX_OBSTRUCTIONTYPE_UNMARKED)
 	        {
 	        	*pW = A;
 	        	*pX = Z;
@@ -741,53 +746,53 @@ int _K4_FindSeparatingInternalEdge(graphP theGraph, int R, int prevLink, int A, 
 		Z = _GetNextVertexOnExternalFace(theGraph, Z, &ZPrevLink);
 	}
 
-	// Restore the clear vertex visited flags along the path [R ... A]
-	_K4_ClearVisitedOnExternalFacePath(theGraph, R, prevLink, A);
+	// Restore the unmarked obstruction type settings on the path [R ... A]
+	_K4_UnmarkObstructionTypeOnExternalFacePath(theGraph, R, prevLink, A);
 
 	return *pX == NIL ? FALSE : TRUE;
 }
 
 /****************************************************************************
- _K4_SetVisitedOnExternalFacePath()
+ _K4_MarkObstructionTypeOnExternalFacePath()
 
  Assumes A is a vertex along the external face of the bicomp rooted by R.
- Sets the visited flag of vertices along the path (R ... A) that begins with
- R's link[1^prevLink] arc.
+ Marks the obstruction type of vertices along the path (R ... A) that begins
+ with R's link[1^prevLink] arc.
  ****************************************************************************/
 
-void _K4_SetVisitedOnExternalFacePath(graphP theGraph, int R, int prevLink, int A)
+void _K4_MarkObstructionTypeOnExternalFacePath(graphP theGraph, int R, int prevLink, int A)
 {
 	int Z, ZPrevLink;
 
-	gp_SetVertexVisited(theGraph, R);
+	gp_SetVertexObstructionType(theGraph, R, VERTEX_OBSTRUCTIONTYPE_MARKED);
 	ZPrevLink = prevLink;
 	Z = R;
 	while (Z != A)
 	{
 		Z = _GetNextVertexOnExternalFace(theGraph, Z, &ZPrevLink);
-		gp_SetVertexVisited(theGraph, Z);
+		gp_SetVertexObstructionType(theGraph, Z, VERTEX_OBSTRUCTIONTYPE_MARKED);
 	}
 }
 
 /****************************************************************************
- _K4_ClearVisitedOnExternalFacePath()
+ _K4_UnmarkObstructionTypeOnExternalFacePath()
 
  Assumes A is a vertex along the external face of the bicomp rooted by R.
- Clears the visited flag of vertices along the path (R ... A) that begins with
- R's link[1^prevLink] arc.
+ Unmarks the obstruction type of vertices along the path (R ... A) that begins
+ with R's link[1^prevLink] arc.
  ****************************************************************************/
 
-void _K4_ClearVisitedOnExternalFacePath(graphP theGraph, int R, int prevLink, int A)
+void _K4_UnmarkObstructionTypeOnExternalFacePath(graphP theGraph, int R, int prevLink, int A)
 {
 	int Z, ZPrevLink;
 
-	gp_ClearVertexVisited(theGraph, R);
+	gp_ClearVertexObstructionType(theGraph, R);
 	ZPrevLink = prevLink;
 	Z = R;
 	while (Z != A)
 	{
 		Z = _GetNextVertexOnExternalFace(theGraph, Z, &ZPrevLink);
-		gp_ClearVertexVisited(theGraph, Z);
+		gp_ClearVertexObstructionType(theGraph, Z);
 	}
 }
 
