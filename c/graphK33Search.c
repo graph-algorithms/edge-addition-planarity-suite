@@ -1010,7 +1010,7 @@ isolatorContextP IC = &theGraph->IC;
      while (gp_IsArc(theGraph, J))
      {
         W = theGraph->G[J].v;
-        theGraph->functions.fpWalkUp(theGraph, I, W);
+        theGraph->functions.fpWalkUp(theGraph, I, J);
 
         J = gp_GetNextArc(theGraph, J);
         if (J == theGraph->V[I].fwdArcList)
