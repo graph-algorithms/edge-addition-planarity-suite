@@ -105,7 +105,10 @@ stackP newStack = sp_New(theStack->capacity);
         return NULL;
 
     if (theStack->size > 0)
+    {
         memcpy(newStack->S, theStack->S, theStack->size*sizeof(int));
+        newStack->size = theStack->size;
+    }
 
     return newStack;
 }
