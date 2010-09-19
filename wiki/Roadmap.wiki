@@ -5,23 +5,23 @@ This page presents the roadmap for future development of this project.
 
 == Version 2.x ==
 
-  * 2.0: Planar Embedding and Kuratowski Subgraph Isolation *(DONE)*
-  * 2.0: Outerplanar Embedding and Obstruction Isolation *(DONE)*
-  * 2.0: Extensible Planarity-Related Algorithm Framework *(DONE)*
-  * 2.0: Planar Graph Drawing by Visibility Representation *(DONE)*
-  * 2.0: K23 subgraph homeomorphism *(DONE)*
-  * 2.0: K33 subgraph homeomorphism *(DONE)*
+  * Planar Embedding and Kuratowski Subgraph Isolation (*DONE* in v2.0)
+  * Outerplanar Embedding and Obstruction Isolation (*DONE* in v2.0)
+  * Extensible Planarity-Related Algorithm Framework (*DONE* in v2.0)
+  * Planar Graph Drawing by Visibility Representation (*DONE* in v2.0)
+  * K23 subgraph homeomorphism (*DONE* in v2.0)
+  * K33 subgraph homeomorphism (*DONE* in v2.0)
 
-  * 2.1: K4 subgraph homeomorphism *(DONE)*
-  * 2.2: Vertex coloring by minimal degree selection, including linear time planar graph 5-coloring with the Matula-Shiloach-Tarjan-Frederickson optimization *(DONE)*
+  * K4 subgraph homeomorphism (*DONE* in v2.1)
+  * Vertex coloring by minimal degree selection, including linear time planar graph 5-coloring with the Matula-Shiloach-Tarjan-Frederickson optimization (*DONE* in v2.2)
 
 == Version 2.x.y ==
 
 Minor adjustments and tweaks that may be desired from time to time. This may include optimizations and service routines such as:
 
-  * Edge contract and uncontract *(DONE)*
-  * Identifying two vertices, i.e. merging two vertices *(DONE)*
-  * Consolidated DFS and Lowpoint Preprocessing Optimization *(DONE)*
+  * Edge contract and uncontract (*DONE* in v2.2.1)
+  * Identifying two vertices, i.e. merging two vertices (*DONE* in v2.2.1)
+  * Consolidated DFS and Lowpoint Preprocessing Optimization (*DONE* in v2.2.1)
 
 == Version 3.0 ==
 
