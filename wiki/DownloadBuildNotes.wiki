@@ -2,15 +2,13 @@
 
 = Linux =
 
-Team Update
-Build release
-Copy planarity.exe and samples directory to ~user/bin
-dos2unix samples directory
-zip -r planarity.vNNN.linuxIntel.zip planarity.exe samples
-Open zip file and remove any svn files
-Unit test with "./planarity.exe -test"
-Deprecate old Linux build
-Upload new version
-Add labels Type-Archive and OpSys-Linux
-
-
+  # Team Update
+  # Build release
+  # Copy planarity.exe and samples directory to ~user/bin
+  # dos2unix samples directory
+  # zip -r planarity.vNNN.linuxIntel.zip planarity.exe samples
+  # Open zip file and remove any svn files
+  # Unit test with "./planarity.exe -test"
+  # Deprecate old Linux build
+  # Upload new version
+  # Add labels Type-Archive and OpSys-Linux
