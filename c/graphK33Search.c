@@ -1028,7 +1028,7 @@ isolatorContextP IC = &theGraph->IC;
      while (gp_IsArc(theGraph, J))
      {
         W = theGraph->G[J].v;
-        theGraph->functions.fpWalkUp(theGraph, I, W);
+        theGraph->functions.fpWalkUp(theGraph, I, J);
 
         J = gp_GetNextArc(theGraph, J);
         if (J == theGraph->V[I].fwdArcList)
@@ -1618,15 +1618,6 @@ int  rxType, xwType, wyType, yrType, xyType;
 
      if (_ReduceXYPathToEdge(theGraph, context, IC->x, IC->y, xyType) != OK)
          return NOTOK;
-
-/* The core planarity method used vertex visited flags in the Walkup, so we have to
-   set the vertex visited flags so the remaining vertices will behave as though they
-   are unvisited by Walkup when the embedder moves to the next vertex. */
-
-     theGraph->G[R].visited =
-     theGraph->G[IC->x].visited =
-     theGraph->G[IC->y].visited =
-     theGraph->G[IC->w].visited = IC->v;
 
      return OK;
 }
