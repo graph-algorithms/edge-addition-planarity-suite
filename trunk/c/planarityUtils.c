@@ -143,16 +143,19 @@ void Prompt(char *message)
 
 void SaveAsciiGraph(graphP theGraph, char *filename)
 {
-	int  e, GsizeOccupied;
+	int  J, EsizeOccupied;
 	FILE *outfile = fopen(filename, "wt");
 	fprintf(outfile, "%s\n", filename);
 
-	GsizeOccupied = theGraph->edgeOffset + 2*(theGraph->M + sp_GetCurrentSize(theGraph->edgeHoles));
+	EsizeOccupied = 2*(theGraph->M + sp_GetCurrentSize(theGraph->edgeHoles));
 
-	for (e = theGraph->edgeOffset; e < GsizeOccupied; e+=2)
+	for (J=0; J < EsizeOccupied; J+=2)
 	{
-		if (theGraph->G[e].v != NIL)
-			fprintf(outfile, "%d %d\n", theGraph->G[e].v+1, theGraph->G[e+1].v+1);
+		// Skip the edge holes
+		if (gp_GetNeighbor(theGraph, J) != NIL)
+		{
+			fprintf(outfile, "%d %d\n", gp_GetNeighbor(theGraph, J)+1, gp_GetNeighbor(theGraph, J+1)+1);
+		}
 	}
 
 	fprintf(outfile, "0 0\n");

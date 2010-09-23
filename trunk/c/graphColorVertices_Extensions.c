@@ -60,10 +60,10 @@ int  _ColorVertices_InitStructures(ColorVerticesContext *context);
 
 /* Forward declarations of overloading functions */
 
-void _ColorVertices_InitGraphNode(graphP theGraph, int I);
-void _ColorVertices_InitVertexRec(graphP theGraph, int I);
-void _InitDrawGraphNode(ColorVerticesContext *context, int I);
-void _InitDrawVertexRec(ColorVerticesContext *context, int I);
+// These aren't overloaded in this extension
+//void _ColorVertices_InitVertexRec(graphP theGraph, int I);
+//void _ColorVertices_InitVertexInfo(graphP theGraph, int I);
+//void _ColorVertices_InitEdgeRec(graphP theGraph, int J);
 
 int  _ColorVertices_InitGraph(graphP theGraph, int N);
 void _ColorVertices_ReinitializeGraph(graphP theGraph);
@@ -238,13 +238,12 @@ void _ColorVertices_ClearStructures(ColorVerticesContext *context)
 
 /********************************************************************
  _ColorVertices_CreateStructures()
- Create uninitialized structures for the vertex and graph node
+ Create uninitialized structures for the vertex and edge
  levels, and initialized structures for the graph level
  ********************************************************************/
 int  _ColorVertices_CreateStructures(ColorVerticesContext *context)
 {
      int I, N = context->theGraph->N;
-     //int Gsize = ((graphP) theGraph)->edgeOffset + ((graphP) theGraph)->arcCapacity;
 
      if (N <= 0)
          return NOTOK;
@@ -275,7 +274,7 @@ int  _ColorVertices_CreateStructures(ColorVerticesContext *context)
 /********************************************************************
  _ColorVertices_InitStructures()
  Intended to be called when N>0.
- Initializes vertex and graph node levels only.  Graph level is
+ Initializes vertex and edge levels only.  Graph level is
  initialized by _CreateStructures().
  ********************************************************************/
 int  _ColorVertices_InitStructures(ColorVerticesContext *context)
@@ -295,7 +294,6 @@ void *_ColorVertices_DupContext(void *pContext, void *theGraph)
      if (newContext != NULL)
      {
          int I, N = ((graphP) theGraph)->N;
-         //int Gsize = ((graphP) theGraph)->edgeOffset + ((graphP) theGraph)->arcCapacity;
 
          *newContext = *context;
 
@@ -355,20 +353,19 @@ int  _ColorVertices_InitGraph(graphP theGraph, int N)
     else
     {
         theGraph->N = N;
-        theGraph->edgeOffset = 2*N;
         if (theGraph->arcCapacity == 0)
         	theGraph->arcCapacity = 2*DEFAULT_EDGE_LIMIT*N;
 
         // Create custom structures, initialized at graph level,
-        // uninitialized at vertex and graph node levels.
+        // uninitialized at vertex and edge levels.
         if (_ColorVertices_CreateStructures(context) != OK)
         {
             return NOTOK;
         }
 
-        // This call initializes the base graph structures, but it also
-        // initializes the custom graphnode and vertex level structures
-        // due to the overloads of InitGraphNode and InitVertexRec
+        // This call initializes the base graph structures, but it can also
+        // initialize custom edge and vertex level structures if there are
+        // overloads of InitVertexRec, InitVertexInfo or InitEdgeRec
         context->functions.fpInitGraph(theGraph, N);
     }
 
@@ -404,7 +401,7 @@ void _ColorVertices_ReinitializeGraph(graphP theGraph)
 
     if (context != NULL)
     {
-		// Some extensions attempt to unhook overloads of fpInitGraphNode() and
+		// Some extensions attempt to unhook overloads of fpInitEdgeRec() and
     	// fpInitVertexRec() before calling this method, when possible, but this
     	// extension doesn't overload those functions so we just reinitialize
 		context->functions.fpReinitializeGraph(theGraph);
@@ -472,8 +469,7 @@ int  _ColorVertices_WritePostprocess(graphP theGraph, void **pExtraData, long *p
         {
             char line[32];
             int maxLineSize = 32, extraDataPos = 0, I;
-            int Gsize = theGraph->edgeOffset + theGraph->arcCapacity;
-            char *extraData = (char *) malloc((Gsize + 2) * maxLineSize * sizeof(char));
+            char *extraData = (char *) malloc((theGraph->N + 2) * maxLineSize * sizeof(char));
 
             if (extraData == NULL)
                 return NOTOK;
@@ -527,8 +523,8 @@ void _ColorVertices_HideEdge(graphP theGraph, int e)
     	int u, v, udeg, vdeg;
 
     	// Get the endpoint vertices of the edge
-    	u = theGraph->G[e].v;
-    	v = theGraph->G[gp_GetTwinArc(theGraph, e)].v;
+    	u = gp_GetNeighbor(theGraph, e);
+    	v = gp_GetNeighbor(theGraph, gp_GetTwinArc(theGraph, e));
 
     	// Get the degrees of the vertices
     	udeg = _GetVertexDegree(context, u);

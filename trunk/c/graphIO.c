@@ -75,7 +75,7 @@ int N, I, W, Flag, ErrorCode;
 
      for (I = 0, ErrorCode = OK; I < N-1 && ErrorCode==OK; I++)
      {
-          theGraph->G[I].v = I;
+    	 gp_SetVertexIndex(theGraph, I, I);
           for (W = I+1; W < N; W++)
           {
                fscanf(Infile, " %1d", &Flag);
@@ -116,7 +116,7 @@ int N, I, W, Flag, ErrorCode;
 
 int  _ReadAdjList(graphP theGraph, FILE *Infile)
 {
-int N, I, W, ErrorCode, adjList, J;
+int N, I, W, ErrorCode, adjList, J, indexValue;
 
      if (Infile == NULL) return NOTOK;
      fgetc(Infile);                             /* Skip the N= */
@@ -131,16 +131,17 @@ int N, I, W, ErrorCode, adjList, J;
      // Clear the visited members of the vertices so they can be used
      // during the adjacency list read operation
      for (I=0; I < N; I++)
-          theGraph->G[I].visited = 0;
+          gp_SetVertexVisitedInfo(theGraph, I, NIL);
 
      // Do the adjacency list read operation for each vertex in order
      for (I = 0, ErrorCode = OK; I < N && ErrorCode==OK; I++)
      {
           // Read the vertex number
-          fscanf(Infile, "%d", &theGraph->G[I].v);
+          fscanf(Infile, "%d", &indexValue);
+          gp_SetVertexIndex(theGraph, I, indexValue);
 
           // The vertices are expected to be in numeric ascending order
-          if (theGraph->G[I].v != I)
+          if (gp_GetVertexIndex(theGraph, I) != I)
         	  return NOTOK;
 
           // Skip the colon after the vertex number
@@ -166,7 +167,7 @@ int N, I, W, ErrorCode, adjList, J;
         	  J = gp_GetFirstArc(theGraph, I);
 			  while (gp_IsArc(theGraph, J))
 			  {
-				  theGraph->G[theGraph->G[J].v].visited = J;
+				  gp_SetVertexVisitedInfo(theGraph, gp_GetNeighbor(theGraph, J), J);
 				  J = gp_GetNextArc(theGraph, J);
 			  }
 
@@ -209,12 +210,12 @@ int N, I, W, ErrorCode, adjList, J;
              {
             	 // If the adjacency node (arc) already exists, then we add it
             	 // as the new first arc of the vertex and delete it from adjList
-            	 if (theGraph->G[W].visited)
+            	 if (gp_GetVertexVisitedInfo(theGraph, W) != NIL)
             	 {
-            		 J = theGraph->G[W].visited;
+            		 J = gp_GetVertexVisitedInfo(theGraph, W);
 
             		 // Remove the arc J from the adjList construct
-            		 theGraph->G[W].visited = 0;
+            		 gp_SetVertexVisitedInfo(theGraph, W, NIL);
             		 if (adjList == J)
             		 {
             			 if ((adjList = gp_GetNextArc(theGraph, J)) == J)
@@ -251,7 +252,7 @@ int N, I, W, ErrorCode, adjList, J;
           {
         	  J = adjList;
 
-			  theGraph->G[theGraph->G[J].v].visited = 0;
+        	  gp_SetVertexVisitedInfo(theGraph, gp_GetNeighbor(theGraph, J), NIL);
 
  			  if ((adjList = gp_GetNextArc(theGraph, J)) == J)
  				  adjList = NIL;
@@ -417,8 +418,8 @@ int I, J;
           J = gp_GetLastArc(theGraph, I);
           while (gp_IsArc(theGraph, J))
           {
-        	  if (!gp_GetDirection(theGraph, J, EDGEFLAG_DIRECTION_INONLY))
-                  fprintf(Outfile, " %d", theGraph->G[J].v);
+        	  if (gp_GetDirection(theGraph, J) != EDGEFLAG_DIRECTION_INONLY)
+                  fprintf(Outfile, " %d", gp_GetNeighbor(theGraph, J));
 
               J = gp_GetPrevArc(theGraph, J);
           }
@@ -463,11 +464,11 @@ char *Row = NULL;
           J = gp_GetFirstArc(theGraph, I);
           while (gp_IsArc(theGraph, J))
           {
-        	  if (gp_GetDirection(theGraph, J, EDGEFLAG_DIRECTION_INONLY))
+        	  if (gp_GetDirection(theGraph, J) == EDGEFLAG_DIRECTION_INONLY)
         		  return NOTOK;
 
-              if (theGraph->G[J].v > I)
-                  Row[theGraph->G[J].v] = '1';
+              if (gp_GetNeighbor(theGraph, J) > I)
+                  Row[gp_GetNeighbor(theGraph, J)] = '1';
 
               J = gp_GetNextArc(theGraph, J);
           }
@@ -481,6 +482,46 @@ char *Row = NULL;
 }
 
 /********************************************************************
+ ********************************************************************/
+
+char _GetEdgeTypeChar(graphP theGraph, int J)
+{
+	char type = 'U';
+
+	if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_CHILD)
+		type = 'C';
+	else if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_FORWARD)
+		type = 'F';
+	else if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_PARENT)
+		type = 'P';
+	else if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_BACK)
+		type = 'B';
+	else if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_RANDOMTREE)
+		type = 'T';
+
+	return type;
+}
+
+/********************************************************************
+ ********************************************************************/
+
+char _GetVertexObstructionTypeChar(graphP theGraph, int I)
+{
+	char type = 'U';
+
+	if (gp_GetVertexObstructionType(theGraph, I) == VERTEX_OBSTRUCTIONTYPE_HIGH_RXW)
+		type = 'X';
+	else if (gp_GetVertexObstructionType(theGraph, I) == VERTEX_OBSTRUCTIONTYPE_LOW_RXW)
+		type = 'x';
+	if (gp_GetVertexObstructionType(theGraph, I) == VERTEX_OBSTRUCTIONTYPE_HIGH_RYW)
+		type = 'Y';
+	else if (gp_GetVertexObstructionType(theGraph, I) == VERTEX_OBSTRUCTIONTYPE_LOW_RYW)
+		type = 'y';
+
+	return type;
+}
+
+/********************************************************************
  _WriteDebugInfo()
  Writes adjacency list, but also includes the type value of each
  edge (e.g. is it DFS child  arc, forward arc or back arc?), and
@@ -489,7 +530,7 @@ char *Row = NULL;
 
 int  _WriteDebugInfo(graphP theGraph, FILE *Outfile)
 {
-int I, J, Gsize;
+int I, J, Vsize, EsizeOccupied;
 
      if (theGraph==NULL || Outfile==NULL) return NOTOK;
 
@@ -499,15 +540,15 @@ int I, J, Gsize;
      for (I=0; I < theGraph->N; I++)
      {
           fprintf(Outfile, "%d(P=%d,lA=%d,LowPt=%d,v=%d):",
-                             I, theGraph->V[I].DFSParent,
-                                theGraph->V[I].leastAncestor,
-                                theGraph->V[I].Lowpoint,
-                                theGraph->G[I].v);
+                             I, gp_GetVertexParent(theGraph, I),
+                                gp_GetVertexLeastAncestor(theGraph, I),
+                                gp_GetVertexLowpoint(theGraph, I),
+                                gp_GetVertexIndex(theGraph, I));
 
           J = gp_GetFirstArc(theGraph, I);
           while (gp_IsArc(theGraph, J))
           {
-              fprintf(Outfile, " %d(J=%d)", theGraph->G[J].v, J);
+              fprintf(Outfile, " %d(J=%d)", gp_GetNeighbor(theGraph, J), J);
               J = gp_GetNextArc(theGraph, J);
           }
 
@@ -516,18 +557,19 @@ int I, J, Gsize;
 
      /* Print any root copy vertices and their adjacency lists */
 
-     for (I = theGraph->N; I < 2*theGraph->N; I++)
+     Vsize = theGraph->N + theGraph->NV;
+     for (I = theGraph->N; I < Vsize; I++)
      {
-          if (theGraph->G[I].v == NIL)
+          if (gp_GetVertexIndex(theGraph, I) == NIL)
               continue;
 
           fprintf(Outfile, "%d(copy of=%d, DFS child=%d):",
-                           I, theGraph->G[I].v, I-theGraph->N);
+                           I, gp_GetVertexIndex(theGraph, I), I-theGraph->N);
 
           J = gp_GetFirstArc(theGraph, I);
           while (gp_IsArc(theGraph, J))
           {
-              fprintf(Outfile, " %d(J=%d)", theGraph->G[J].v, J);
+              fprintf(Outfile, " %d(J=%d)", gp_GetNeighbor(theGraph, J), J);
               J = gp_GetNextArc(theGraph, J);
           }
 
@@ -536,15 +578,15 @@ int I, J, Gsize;
 
      /* Print information about vertices and root copy (virtual) vertices */
      fprintf(Outfile, "\nVERTEX INFORMATION\n");
-     for (I=0; I < 2*theGraph->N; I++)
+     for (I=0; I < Vsize; I++)
      {
-         if (theGraph->G[I].v == NIL)
+         if (gp_GetVertexIndex(theGraph, I) == NIL)
              continue;
 
-         fprintf(Outfile, "V[%3d] v=%3d, type=%c, first arc=%3d, last arc=%3d\n",
+         fprintf(Outfile, "V[%3d] index=%3d, type=%c, first arc=%3d, last arc=%3d\n",
                           I,
-                          theGraph->G[I].v,
-                          theGraph->G[I].type,
+                          gp_GetVertexIndex(theGraph, I),
+                          (I < theGraph->N ? _GetVertexObstructionTypeChar(theGraph, I) : 0),
                           gp_GetFirstArc(theGraph, I),
                           gp_GetLastArc(theGraph, I));
      }
@@ -552,16 +594,16 @@ int I, J, Gsize;
      /* Print information about edges */
 
      fprintf(Outfile, "\nEDGE INFORMATION\n");
-     Gsize = theGraph->edgeOffset + theGraph->arcCapacity;
-     for (J=theGraph->edgeOffset; J < Gsize; J++)
+     EsizeOccupied = 2*(theGraph->M + sp_GetCurrentSize(theGraph->edgeHoles));
+     for (J=0; J < EsizeOccupied; J++)
      {
-          if (theGraph->G[J].v == NIL)
+          if (gp_GetNeighbor(theGraph, J) == NIL)
               continue;
 
-          fprintf(Outfile, "E[%3d] v=%3d, type=%c, next arc=%3d, prev arc=%3d\n",
+          fprintf(Outfile, "E[%3d] neighbor=%3d, type=%c, next arc=%3d, prev arc=%3d\n",
                            J,
-                           theGraph->G[J].v,
-                           theGraph->G[J].type,
+                           gp_GetNeighbor(theGraph, J),
+                           _GetEdgeTypeChar(theGraph, J),
                            gp_GetNextArc(theGraph, J),
                            gp_GetPrevArc(theGraph, J));
      }

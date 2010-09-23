@@ -48,7 +48,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Imported functions */
 
-extern void _FillVisitedFlags(graphP, int);
+extern void _ClearVisitedFlags(graphP);
 
 extern int  _GetNextVertexOnExternalFace(graphP theGraph, int curVertex, int *pPrevLink);
 extern int  _JoinBicomps(graphP theGraph);
@@ -98,10 +98,10 @@ int  _IsolateKuratowskiSubgraph(graphP theGraph, int I, int R)
 int  RetVal;
 
 /* A subgraph homeomorphic to K_{3,3} or K_5 will be isolated by using the visited
-   flags, 1=keep edge/vertex and 0=omit. Here we initialize to omit all, then we
-   subsequently set visited to 1 on all edges and vertices in the homeomorph. */
+   flags, set=keep edge/vertex and clear=omit. Here we initialize to omit all, then we
+   subsequently set visited on all edges and vertices in the homeomorph. */
 
-	 _FillVisitedFlags(theGraph, 0);
+	 _ClearVisitedFlags(theGraph);
 
 /* Next, we determine which of the non-planarity Minors was encountered
         and the principal bicomp on which the isolator will focus attention. */
@@ -157,9 +157,9 @@ isolatorContextP IC = &theGraph->IC;
      if (theGraph->IC.minorType & MINORTYPE_B)
      {
      int SubtreeRoot = LCGetPrev(theGraph->BicompLists,
-                                 theGraph->V[IC->w].pertinentBicompList, NIL);
+                                 gp_GetVertexPertinentBicompList(theGraph, IC->w), NIL);
 
-         IC->uz = theGraph->V[SubtreeRoot].Lowpoint;
+         IC->uz = gp_GetVertexLowpoint(theGraph, SubtreeRoot);
 
          if (_FindUnembeddedEdgeToSubtree(theGraph, IC->v, SubtreeRoot, &IC->dw) != TRUE ||
              _FindUnembeddedEdgeToSubtree(theGraph, IC->uz, SubtreeRoot, &IC->dz) != TRUE)
@@ -226,9 +226,9 @@ int  _IsolateMinorC(graphP theGraph)
 {
 isolatorContextP IC = &theGraph->IC;
 
-     if (theGraph->G[IC->px].type == VERTEX_HIGH_RXW)
+     if (gp_GetVertexObstructionType(theGraph, IC->px) == VERTEX_OBSTRUCTIONTYPE_HIGH_RXW)
      {
-     int highY = theGraph->G[IC->py].type == VERTEX_HIGH_RYW
+     int highY = gp_GetVertexObstructionType(theGraph, IC->py) == VERTEX_OBSTRUCTIONTYPE_HIGH_RYW
                  ? IC->py : IC->y;
          if (_MarkPathAlongBicompExtFace(theGraph, IC->r, highY) != OK)
              return NOTOK;
@@ -317,14 +317,14 @@ int  _IsolateMinorE1(graphP theGraph)
 {
 isolatorContextP IC = &theGraph->IC;
 
-     if (theGraph->G[IC->z].type == VERTEX_LOW_RXW)
+     if (gp_GetVertexObstructionType(theGraph, IC->z) == VERTEX_OBSTRUCTIONTYPE_LOW_RXW)
      {
-         theGraph->G[IC->px].type = VERTEX_HIGH_RXW;
+         gp_ResetVertexObstructionType(theGraph, IC->px, VERTEX_OBSTRUCTIONTYPE_HIGH_RXW);
          IC->x=IC->z; IC->ux=IC->uz; IC->dx=IC->dz;
      }
-     else if (theGraph->G[IC->z].type == VERTEX_LOW_RYW)
+     else if (gp_GetVertexObstructionType(theGraph, IC->z) == VERTEX_OBSTRUCTIONTYPE_LOW_RYW)
      {
-         theGraph->G[IC->py].type = VERTEX_HIGH_RYW;
+         gp_ResetVertexObstructionType(theGraph, IC->py, VERTEX_OBSTRUCTIONTYPE_HIGH_RYW);
          IC->y=IC->z; IC->uy=IC->uz; IC->dy=IC->dz;
      }
      else return NOTOK;
@@ -346,7 +346,7 @@ int  _IsolateMinorE2(graphP theGraph)
 {
 isolatorContextP IC = &theGraph->IC;
 
-     _FillVisitedFlags(theGraph, 0);
+     _ClearVisitedFlags(theGraph);
 
      IC->v = IC->uz;
      IC->dw = IC->dz;
@@ -436,12 +436,12 @@ isolatorContextP IC = &theGraph->IC;
 
 int  _GetLeastAncestorConnection(graphP theGraph, int cutVertex)
 {
-int  subtreeRoot = theGraph->V[cutVertex].separatedDFSChildList;
-int  ancestor = theGraph->V[cutVertex].leastAncestor;
+int  subtreeRoot = gp_GetVertexSeparatedDFSChildList(theGraph, cutVertex);
+int  ancestor = gp_GetVertexLeastAncestor(theGraph, cutVertex);
 
      if (subtreeRoot != NIL &&
-         ancestor > theGraph->V[subtreeRoot].Lowpoint)
-         ancestor = theGraph->V[subtreeRoot].Lowpoint;
+         ancestor > gp_GetVertexLowpoint(theGraph, subtreeRoot))
+         ancestor = gp_GetVertexLowpoint(theGraph, subtreeRoot);
 
      return ancestor;
 }
@@ -473,14 +473,14 @@ int  _FindUnembeddedEdgeToAncestor(graphP theGraph, int cutVertex,
 {
      *pAncestor = _GetLeastAncestorConnection(theGraph, cutVertex);
 
-     if (*pAncestor == theGraph->V[cutVertex].leastAncestor)
+     if (*pAncestor == gp_GetVertexLeastAncestor(theGraph, cutVertex))
      {
          *pDescendant = cutVertex;
          return TRUE;
      }
      else
      {
-     int subtreeRoot = theGraph->V[cutVertex].separatedDFSChildList;
+     int subtreeRoot = gp_GetVertexSeparatedDFSChildList(theGraph, cutVertex);
 
          return _FindUnembeddedEdgeToSubtree(theGraph, *pAncestor,
                                              subtreeRoot, pDescendant);
@@ -500,11 +500,11 @@ int  _FindUnembeddedEdgeToCurVertex(graphP theGraph, int cutVertex, int *pDescen
 {
 int  RetVal = TRUE, I = theGraph->IC.v;
 
-     if (theGraph->V[cutVertex].adjacentTo != NIL)
+     if (gp_GetVertexPertinentAdjacencyInfo(theGraph, cutVertex) != NIL)
          *pDescendant = cutVertex;
      else
      {
-     int subtreeRoot = theGraph->V[cutVertex].pertinentBicompList;
+     int subtreeRoot = gp_GetVertexPertinentBicompList(theGraph, cutVertex);
 
          RetVal = _FindUnembeddedEdgeToSubtree(theGraph, I,
                                                subtreeRoot, pDescendant);
@@ -537,17 +537,17 @@ int  J, Z, ZNew;
 
 /* Find the least descendant of the cut vertex incident to the ancestor. */
 
-     J = theGraph->V[ancestor].fwdArcList;
+     J = gp_GetVertexFwdArcList(theGraph, ancestor);
      while (gp_IsArc(theGraph, J))
      {
-          if (theGraph->G[J].v >= SubtreeRoot)
+          if (gp_GetNeighbor(theGraph, J) >= SubtreeRoot)
           {
-              if (*pDescendant == NIL || *pDescendant > theGraph->G[J].v)
-                  *pDescendant = theGraph->G[J].v;
+              if (*pDescendant == NIL || *pDescendant > gp_GetNeighbor(theGraph, J))
+                  *pDescendant = gp_GetNeighbor(theGraph, J);
           }
 
           J = gp_GetNextArc(theGraph, J);
-          if (J == theGraph->V[ancestor].fwdArcList)
+          if (J == gp_GetVertexFwdArcList(theGraph, ancestor))
               J = NIL;
      }
 
@@ -559,7 +559,7 @@ int  J, Z, ZNew;
      Z = *pDescendant;
      while (Z != SubtreeRoot)
      {
-         ZNew = theGraph->V[Z].DFSParent;
+         ZNew = gp_GetVertexParent(theGraph, Z);
          if (ZNew == NIL || ZNew == Z)
              return FALSE;
          Z = ZNew;
@@ -585,7 +585,7 @@ int  Z, ZPrevLink, ZPrevArc;
 
 /* Mark the start vertex (and if it is a root copy, mark the parent copy too. */
 
-     theGraph->G[startVert].visited = 1;
+     gp_SetVertexVisited(theGraph, startVert);
 
 /* For each vertex visited after the start vertex, mark the vertex and the
         edge used to get there.  Stop after marking the ending vertex. */
@@ -597,9 +597,9 @@ int  Z, ZPrevLink, ZPrevArc;
 
         ZPrevArc = gp_GetArc(theGraph, Z, ZPrevLink);
 
-        theGraph->G[ZPrevArc].visited = 1;
-        theGraph->G[gp_GetTwinArc(theGraph, ZPrevArc)].visited = 1;
-        theGraph->G[Z].visited = 1;
+        gp_SetEdgeVisited(theGraph, ZPrevArc);
+        gp_SetEdgeVisited(theGraph, gp_GetTwinArc(theGraph, ZPrevArc));
+        gp_SetVertexVisited(theGraph, Z);
 
      } while (Z != endVert);
 
@@ -630,10 +630,10 @@ int  J, parent, Z, N;
         copy before starting the loop */
 
      if (descendant >= N)
-         descendant = theGraph->V[descendant-N].DFSParent;
+         descendant = gp_GetVertexParent(theGraph, descendant-N);
 
      /* Mark the lowest vertex (i.e. the descendant with the highest number) */
-     theGraph->G[descendant].visited = 1;
+     gp_SetVertexVisited(theGraph, descendant);
 
      /* Mark all ancestors of the lowest vertex, and the edges used to reach
         them, up to the given ancestor vertex. */
@@ -642,7 +642,7 @@ int  J, parent, Z, N;
      {
           /* Get the parent vertex */
 
-          parent = theGraph->V[descendant].DFSParent;
+          parent = gp_GetVertexParent(theGraph, descendant);
 
           /* If the descendant was a DFS tree root, then obviously
                 we aren't going to find the ancestor, so something is wrong.*/
@@ -657,19 +657,19 @@ int  J, parent, Z, N;
           J = gp_GetFirstArc(theGraph, descendant);
           while (gp_IsArc(theGraph, J))
           {
-              Z = theGraph->G[J].v;
+              Z = gp_GetNeighbor(theGraph, J);
               if ((Z < N && Z == parent) ||
-                  (Z >= N && theGraph->V[Z-N].DFSParent == parent))
+                  (Z >= N && gp_GetVertexParent(theGraph, Z-N) == parent))
               {
-                  theGraph->G[J].visited = 1;
-                  theGraph->G[gp_GetTwinArc(theGraph, J)].visited = 1;
+                  gp_SetEdgeVisited(theGraph, J);
+                  gp_SetEdgeVisited(theGraph, gp_GetTwinArc(theGraph, J));
                   break;
               }
               J = gp_GetNextArc(theGraph, J);
           }
 
           /* Mark the parent copy of the DFS parent */
-          theGraph->G[parent].visited = 1;
+          gp_SetVertexVisited(theGraph, parent);
 
           /* Hop to the parent */
           descendant = parent;
@@ -737,10 +737,10 @@ int _AddAndMarkEdge(graphP theGraph, int ancestor, int descendant)
 
     /* Mark the edge so it is not deleted */
 
-    theGraph->G[ancestor].visited = 1;
-    theGraph->G[gp_GetFirstArc(theGraph, ancestor)].visited = 1;
-    theGraph->G[gp_GetFirstArc(theGraph, descendant)].visited = 1;
-    theGraph->G[descendant].visited = 1;
+    gp_SetVertexVisited(theGraph, ancestor);
+    gp_SetEdgeVisited(theGraph, gp_GetFirstArc(theGraph, ancestor));
+    gp_SetEdgeVisited(theGraph, gp_GetFirstArc(theGraph, descendant));
+    gp_SetVertexVisited(theGraph, descendant);
 
     return OK;
 }
@@ -759,14 +759,14 @@ int fwdArc, backArc;
 
     /* We get the two edge records of the back edge to embed. */
 
-     fwdArc = theGraph->V[ancestor].fwdArcList;
+     fwdArc = gp_GetVertexFwdArcList(theGraph, ancestor);
      while (gp_IsArc(theGraph, fwdArc))
      {
-          if (theGraph->G[fwdArc].v == descendant)
+          if (gp_GetNeighbor(theGraph, fwdArc) == descendant)
               break;
 
           fwdArc = gp_GetNextArc(theGraph, fwdArc);
-          if (fwdArc == theGraph->V[ancestor].fwdArcList)
+          if (fwdArc == gp_GetVertexFwdArcList(theGraph, ancestor))
               fwdArc = NIL;
      }
 
@@ -776,11 +776,11 @@ int fwdArc, backArc;
     backArc = gp_GetTwinArc(theGraph, fwdArc);
 
     /* The forward arc is removed from the fwdArcList of the ancestor. */
-    if (theGraph->V[ancestor].fwdArcList == fwdArc)
+    if (gp_GetVertexFwdArcList(theGraph, ancestor) == fwdArc)
     {
         if (gp_GetNextArc(theGraph, fwdArc) == fwdArc)
-             theGraph->V[ancestor].fwdArcList = NIL;
-        else theGraph->V[ancestor].fwdArcList = gp_GetNextArc(theGraph, fwdArc);
+             gp_SetVertexFwdArcList(theGraph, ancestor, NIL);
+        else gp_SetVertexFwdArcList(theGraph, ancestor, gp_GetNextArc(theGraph, fwdArc));
     }
 
     gp_SetNextArc(theGraph, gp_GetPrevArc(theGraph, fwdArc), gp_GetNextArc(theGraph, fwdArc));
@@ -798,7 +798,7 @@ int fwdArc, backArc;
     gp_SetPrevArc(theGraph, gp_GetFirstArc(theGraph, descendant), backArc);
     gp_SetFirstArc(theGraph, descendant, backArc);
 
-    theGraph->G[backArc].v = ancestor;
+    gp_SetNeighbor(theGraph, backArc, ancestor);
 }
 
 /****************************************************************************
@@ -818,10 +818,10 @@ int  I, J, fwdArc, descendant;
 
      for (I = 0; I < theGraph->N; I++)
      {
-         while (theGraph->V[I].fwdArcList != NIL)
+         while (gp_GetVertexFwdArcList(theGraph, I) != NIL)
          {
-             fwdArc = theGraph->V[I].fwdArcList;
-             descendant = theGraph->G[fwdArc].v;
+             fwdArc = gp_GetVertexFwdArcList(theGraph, I);
+             descendant = gp_GetNeighbor(theGraph, fwdArc);
              _AddBackEdge(theGraph, I, descendant);
          }
      }
@@ -835,7 +835,7 @@ int  I, J, fwdArc, descendant;
           J = gp_GetFirstArc(theGraph, I);
           while (gp_IsArc(theGraph, J))
           {
-                if (theGraph->G[J].visited)
+                if (gp_GetEdgeVisited(theGraph, J))
                      J = gp_GetNextArc(theGraph, J);
                 else J = gp_DeleteEdge(theGraph, J, 0);
           }

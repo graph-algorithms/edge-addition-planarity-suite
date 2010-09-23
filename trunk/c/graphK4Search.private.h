@@ -51,7 +51,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 extern "C" {
 #endif
 
-/* Additional equipment for each graph node (edge arc or vertex)
+/* Additional equipment for each EdgeRec
 
    pathConnector:
       Used in the edge records (arcs) of a reduction edge to indicate the
@@ -78,9 +78,9 @@ extern "C" {
 typedef struct
 {
      int  pathConnector, subtree;
-} K4Search_GraphNode;
+} K4Search_EdgeRec;
 
-typedef K4Search_GraphNode * K4Search_GraphNodeP;
+typedef K4Search_EdgeRec * K4Search_EdgeRecP;
 
 /* Additional equipment for each vertex
 
@@ -106,9 +106,9 @@ typedef K4Search_GraphNode * K4Search_GraphNodeP;
 typedef struct
 {
         int p2dFwdArcCount, sortedDFSChildList;
-} K4Search_VertexRec;
+} K4Search_VertexInfo;
 
-typedef K4Search_VertexRec * K4Search_VertexRecP;
+typedef K4Search_VertexInfo * K4Search_VertexInfoP;
 
 
 typedef struct
@@ -122,11 +122,11 @@ typedef struct
     // Additional graph-level equipment
     listCollectionP sortedDFSChildLists;
 
-    // Parallel array for additional graph node level equipment
-    K4Search_GraphNodeP G;
+    // Parallel array for additional edge level equipment
+    K4Search_EdgeRecP E;
 
-    // Parallel array for additional vertex level equipment
-    K4Search_VertexRecP V;
+    // Parallel array for additional vertex info level equipment
+    K4Search_VertexInfoP VI;
 
     // Overloaded function pointers
     graphFunctionTable functions;

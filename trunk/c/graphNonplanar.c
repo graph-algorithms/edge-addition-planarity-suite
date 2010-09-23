@@ -49,9 +49,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* Imported functions */
 
 extern void _ClearIsolatorContext(graphP theGraph);
-extern void _FillVisitedFlags(graphP, int);
-extern int  _FillVisitedFlagsInBicomp(graphP theGraph, int BicompRoot, int FillValue);
-extern int  _SetVertexTypeInBicomp(graphP theGraph, int BicompRoot, int theType);
+extern int  _ClearVisitedFlagsInBicomp(graphP theGraph, int BicompRoot);
+extern int  _ClearVertexTypeInBicomp(graphP theGraph, int BicompRoot);
 extern int  _HideInternalEdges(graphP theGraph, int vertex);
 extern int  _RestoreInternalEdges(graphP theGraph, int stackBottom);
 
@@ -98,7 +97,7 @@ int  N, X, Y, W, Px, Py, Z, DFSChild, RootId;
         then the Walkdown terminated because it couldn't find
         a viable path along a child bicomp, which is Minor A. */
 
-     if (theGraph->V[R - N].DFSParent != I)
+     if (gp_GetVertexParent(theGraph, R - N) != I)
      {
          theGraph->IC.minorType |= MINORTYPE_A;
          return OK;
@@ -107,12 +106,12 @@ int  N, X, Y, W, Px, Py, Z, DFSChild, RootId;
 /* If W has an externally active pertinent child bicomp, then
      we've found Minor B */
 
-     if (theGraph->V[W].pertinentBicompList != NIL)
+     if (gp_GetVertexPertinentBicompList(theGraph, W) != NIL)
      {
          RootId = LCGetPrev(theGraph->BicompLists,
-                            theGraph->V[W].pertinentBicompList, NIL);
+                            gp_GetVertexPertinentBicompList(theGraph, W), NIL);
          DFSChild = RootId;
-         if (theGraph->V[DFSChild].Lowpoint < I)
+         if (gp_GetVertexLowpoint(theGraph, DFSChild) < I)
          {
              theGraph->IC.minorType |= MINORTYPE_B;
              return OK;
@@ -131,8 +130,8 @@ int  N, X, Y, W, Px, Py, Z, DFSChild, RootId;
      or P_y closer to R than Y along external face), then we've
      matched Minor C. */
 
-     if (theGraph->G[Px].type == VERTEX_HIGH_RXW ||
-         theGraph->G[Py].type == VERTEX_HIGH_RYW)
+     if (gp_GetVertexObstructionType(theGraph, Px) == VERTEX_OBSTRUCTIONTYPE_HIGH_RXW ||
+         gp_GetVertexObstructionType(theGraph, Py) == VERTEX_OBSTRUCTIONTYPE_HIGH_RYW)
      {
             theGraph->IC.minorType |= MINORTYPE_C;
             return OK;
@@ -224,7 +223,7 @@ int  singleBicompMode =  (R == NIL) ? FALSE : TRUE;
      // In singleBicompMode, clear the visited members of all vertex and edge records.
      if (singleBicompMode)
      {
-    	 if (_FillVisitedFlagsInBicomp(theGraph, R, 0) != OK)
+    	 if (_ClearVisitedFlagsInBicomp(theGraph, R) != OK)
         	 return NOTOK;
      }
 
@@ -268,28 +267,28 @@ int  _SetVertexTypesForMarkingXYPath(graphP theGraph)
 		return NOTOK;
 
 	// Clear the type member of each vertex in the bicomp
-	if (_SetVertexTypeInBicomp(theGraph, R, TYPE_UNKNOWN) != OK)
+	if (_ClearVertexTypeInBicomp(theGraph, R) != OK)
 		return NOTOK;
 
 	// Traverse from R to W in the X direction
 	ZPrevLink = 1;
 	Z = _GetNextVertexOnExternalFace(theGraph, R, &ZPrevLink);
-	ZType = VERTEX_HIGH_RXW;
+	ZType = VERTEX_OBSTRUCTIONTYPE_HIGH_RXW;
 	while (Z != W)
 	{
-		if (Z == X) ZType = VERTEX_LOW_RXW;
-		theGraph->G[Z].type = ZType;
+		if (Z == X) ZType = VERTEX_OBSTRUCTIONTYPE_LOW_RXW;
+		gp_ResetVertexObstructionType(theGraph, Z, ZType);
 		Z = _GetNextVertexOnExternalFace(theGraph, Z, &ZPrevLink);
 	}
 
 	// Traverse from R to W in the Y direction
 	ZPrevLink = 0;
 	Z = _GetNextVertexOnExternalFace(theGraph, R, &ZPrevLink);
-	ZType = VERTEX_HIGH_RYW;
+	ZType = VERTEX_OBSTRUCTIONTYPE_HIGH_RYW;
 	while (Z != W)
 	{
-		if (Z == Y) ZType = VERTEX_LOW_RYW;
-		theGraph->G[Z].type = ZType;
+		if (Z == Y) ZType = VERTEX_OBSTRUCTIONTYPE_LOW_RYW;
+		gp_ResetVertexObstructionType(theGraph, Z, ZType);
 		Z = _GetNextVertexOnExternalFace(theGraph, Z, &ZPrevLink);
 	}
 
@@ -334,17 +333,17 @@ int  R, tempChild, fwdArc, W=NIL, C=NIL, I=theGraph->IC.v;
     descendants (edges are removed from the forward arc list as they are
     embedded, so the list will be empty if all edges were embedded). */
 
-    if ((fwdArc = theGraph->V[I].fwdArcList) == NIL)
+    if ((fwdArc = gp_GetVertexFwdArcList(theGraph, I)) == NIL)
         return NIL;
 
-    W = theGraph->G[fwdArc].v;
+    W = gp_GetNeighbor(theGraph, fwdArc);
 
 /* Find the greatest DFS child C of I that is less than W.  This will
     give us the ancestor of W that is a child of I.  Since the
     ancestors of I have not been processed by the planarity algorithm,
     the separatedDFSChildList of I contains all the children of I. */
 
-    tempChild = theGraph->V[I].separatedDFSChildList;
+    tempChild = gp_GetVertexSeparatedDFSChildList(theGraph, I);
 
     while (tempChild != NIL)
     {
@@ -352,7 +351,7 @@ int  R, tempChild, fwdArc, W=NIL, C=NIL, I=theGraph->IC.v;
             C = tempChild;
 
         tempChild = LCGetNext(theGraph->DFSChildLists,
-                              theGraph->V[I].separatedDFSChildList, tempChild);
+                              gp_GetVertexSeparatedDFSChildList(theGraph, I), tempChild);
     }
 
     if (C == NIL) return NIL;
@@ -443,9 +442,9 @@ int  V, e;
          sp_Pop(theGraph->theStack, e);
 
          // Now unmark the vertex and edge (i.e. revert to "unvisited")
-         theGraph->G[V].visited = 0;
-         theGraph->G[e].visited = 0;
-         theGraph->G[gp_GetTwinArc(theGraph, e)].visited = 0;
+         gp_ClearVertexVisited(theGraph, V);
+         gp_ClearEdgeVisited(theGraph, e);
+         gp_ClearEdgeVisited(theGraph, gp_GetTwinArc(theGraph, e));
      }
 
      return OK;
@@ -562,19 +561,19 @@ int stackBottom1, stackBottom2;
      // As loop progresses, J indicates the arc used to enter Z, not the exit arc
      J = gp_GetLastArc(theGraph, R);
 
-     while (theGraph->G[Z].type != VERTEX_HIGH_RYW &&
-            theGraph->G[Z].type != VERTEX_LOW_RYW)
+     while (gp_GetVertexObstructionType(theGraph, Z) != VERTEX_OBSTRUCTIONTYPE_HIGH_RYW &&
+    		gp_GetVertexObstructionType(theGraph, Z) != VERTEX_OBSTRUCTIONTYPE_LOW_RYW)
      {
           /* Advance J and Z along the proper face containing R */
 
     	  J = gp_GetPrevArcCircular(theGraph, J);
-          Z = theGraph->G[J].v;
+          Z = gp_GetNeighbor(theGraph, J);
           J = gp_GetTwinArc(theGraph, J);
 
           /* If Z is already visited, then pop everything since the last time
                 we visited Z because its all part of a separable component. */
 
-          if (theGraph->G[Z].visited)
+          if (gp_GetVertexVisited(theGraph, Z))
           {
               if (_PopAndUnmarkVerticesAndEdges(theGraph, Z, stackBottom2) != OK)
             	  return NOTOK;
@@ -600,8 +599,8 @@ int stackBottom1, stackBottom2;
                  all the vertices we visited so far because they're not part of
                  the obstructing path */
 
-              if (theGraph->G[Z].type == VERTEX_HIGH_RXW ||
-                  theGraph->G[Z].type == VERTEX_LOW_RXW)
+              if (gp_GetVertexObstructionType(theGraph, Z) == VERTEX_OBSTRUCTIONTYPE_HIGH_RXW ||
+                  gp_GetVertexObstructionType(theGraph, Z) == VERTEX_OBSTRUCTIONTYPE_LOW_RXW)
               {
                   theGraph->IC.px = Z;
                   if (_PopAndUnmarkVerticesAndEdges(theGraph, NIL, stackBottom2) != OK)
@@ -617,19 +616,19 @@ int stackBottom1, stackBottom2;
               /* Mark the vertex Z as visited as well as its edge of entry
                  (except the entry edge for P_x).*/
 
-              theGraph->G[Z].visited = 1;
+              gp_SetVertexVisited(theGraph, Z);
               if (Z != theGraph->IC.px)
               {
-                  theGraph->G[J].visited = 1;
-                  theGraph->G[gp_GetTwinArc(theGraph, J)].visited = 1;
+                  gp_SetEdgeVisited(theGraph, J);
+                  gp_SetEdgeVisited(theGraph, gp_GetTwinArc(theGraph, J));
               }
 
               /* If we found an RYW vertex, then we have successfully finished
                  identifying the highest X-Y path, so we record the point of
                  attachment and break the loop. */
 
-              if (theGraph->G[Z].type == VERTEX_HIGH_RYW ||
-                  theGraph->G[Z].type == VERTEX_LOW_RYW)
+              if (gp_GetVertexObstructionType(theGraph, Z) == VERTEX_OBSTRUCTIONTYPE_HIGH_RYW ||
+                  gp_GetVertexObstructionType(theGraph, Z) == VERTEX_OBSTRUCTIONTYPE_LOW_RYW)
               {
                  theGraph->IC.py = Z;
                  break;
@@ -698,24 +697,24 @@ int ZPrevArc, ZNextArc, Z, R, Px, Py;
     ZNextArc = gp_GetLastArc(theGraph, Z);
     while (ZNextArc != gp_GetFirstArc(theGraph, Z))
     {
-       if (theGraph->G[ZNextArc].visited) break;
+       if (gp_GetEdgeVisited(theGraph, ZNextArc)) break;
 
        ZNextArc = gp_GetPrevArc(theGraph, ZNextArc);
     }
 
-    if (!theGraph->G[ZNextArc].visited)
+    if (!gp_GetEdgeVisited(theGraph, ZNextArc))
         return NOTOK;
 
 /* For each internal vertex Z, determine whether it has a path to root. */
 
-    while (theGraph->G[ZNextArc].visited)
+    while (gp_GetEdgeVisited(theGraph, ZNextArc))
     {
         ZPrevArc = gp_GetTwinArc(theGraph, ZNextArc);
         ZNextArc = gp_GetPrevArcCircular(theGraph, ZPrevArc);
     }
 
     ZPrevArc = gp_GetTwinArc(theGraph, ZNextArc);
-    Z = theGraph->G[ZPrevArc].v;
+    Z = gp_GetNeighbor(theGraph, ZPrevArc);
 
 /* If there is no Z to R path, return */
 
@@ -733,18 +732,18 @@ int ZPrevArc, ZNextArc, Z, R, Px, Py;
         /* If we ever encounter a non-internal vertex (other than the root R),
                 then corruption has occured, so we return NOTOK */
 
-        if (theGraph->G[Z].type != TYPE_UNKNOWN)
+        if (gp_GetVertexObstructionType(theGraph, Z) != VERTEX_OBSTRUCTIONTYPE_UNKNOWN)
             return NOTOK;
 
         /* Go to the next vertex indicated by ZNextArc */
 
-        Z = theGraph->G[ZNextArc].v;
+        Z = gp_GetNeighbor(theGraph, ZNextArc);
 
         /* Mark the next vertex and the edge leading to it as visited. */
 
-        theGraph->G[ZNextArc].visited = 1;
-        theGraph->G[ZPrevArc].visited = 1;
-        theGraph->G[Z].visited = 1;
+        gp_SetEdgeVisited(theGraph, ZNextArc);
+        gp_SetEdgeVisited(theGraph, ZPrevArc);
+        gp_SetVertexVisited(theGraph, Z);
 
         /* Go to the next edge in the proper face */
 

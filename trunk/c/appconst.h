@@ -108,4 +108,14 @@ extern int debugNOTOK();
 #define WRITETEXT       "w"
 #endif
 
+/********************************************************************
+ A few simple integer selection macros
+ ********************************************************************/
+
+#define MIN(x, y) ((x) < (y) ? (x) : (y))
+#define MAX(x, y) ((x) > (y) ? (x) : (y))
+
+#define MIN3(x, y, z) MIN(MIN((x), (y)), MIN((y), (z)))
+#define MAX3(x, y, z) MAX(MAX((x), (y)), MAX((y), (z)))
+
 #endif
