@@ -46,7 +46,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Imported functions */
 
-extern void _FillVisitedFlags(graphP, int);
+extern void _ClearVisitedFlags(graphP);
 extern void _ClearIsolatorContext(graphP theGraph);
 
 extern int  _GetNextVertexOnExternalFace(graphP theGraph, int curVertex, int *pPrevLink);
@@ -101,7 +101,7 @@ int  N, X, Y, W;
 
      // If the root copy is not a root copy of the current vertex I,
      // then the Walkdown terminated on a descendant bicomp, which is Minor A.
-     if (theGraph->V[R - N].DFSParent != I)
+     if (gp_GetVertexParent(theGraph, R - N) != I)
      {
          theGraph->IC.minorType |= MINORTYPE_A;
          return OK;
@@ -111,7 +111,7 @@ int  N, X, Y, W;
      // Notice this is different from planarity, in which minor B is indicated
      // only if the pertinent child bicomp is also externally active under the
      // planarity processing model (i.e. future pertinent).
-     if (theGraph->V[W].pertinentBicompList != NIL)
+     if (gp_GetVertexPertinentBicompList(theGraph, W) != NIL)
      {
          theGraph->IC.minorType |= MINORTYPE_B;
          return OK;
@@ -131,10 +131,10 @@ int  _IsolateOuterplanarObstruction(graphP theGraph, int I, int R)
 int  RetVal;
 
 /* A subgraph homeomorphic to K_{2,3} or K_4 will be isolated by using the visited
-   flags, 1=keep edge/vertex and 0=omit. Here we initialize to omit all, then we
-   subsequently set visited to 1 on all edges and vertices in the homeomorph. */
+   flags, set=keep edge/vertex and clear=omit. Here we initialize to omit all, then we
+   subsequently set visited on all edges and vertices in the homeomorph. */
 
-	 _FillVisitedFlags(theGraph, 0);
+	 _ClearVisitedFlags(theGraph);
 
 /* Next we determineg which of the non-outerplanarity Minors was encountered
         and the principal bicomp on which the isolator will focus attention. */
@@ -148,7 +148,7 @@ int  RetVal;
      {
      isolatorContextP IC = &theGraph->IC;
      int SubtreeRoot = LCGetPrev(theGraph->BicompLists,
-                                 theGraph->V[IC->w].pertinentBicompList, NIL);
+                                 gp_GetVertexPertinentBicompList(theGraph, IC->w), NIL);
 
          if (_FindUnembeddedEdgeToSubtree(theGraph, IC->v, SubtreeRoot, &IC->dw) != TRUE)
              return NOTOK;

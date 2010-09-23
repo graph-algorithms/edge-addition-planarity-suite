@@ -101,7 +101,7 @@ unsigned long PO2;
 
      for (i = 0, ErrorCode = OK; i < n-1 && ErrorCode==OK; i++)
      {
-          theGraph->G[i].v = i;
+          gp_SetVertexIndex(theGraph, i, i);
 
 		  PO2 = 1 << (MAXN - 1);
 		  PO2 >>= i+1;
@@ -177,6 +177,8 @@ void outprocTest(FILE *f, graph *g, int n)
 
 	if (errorFound)
 		return;
+
+	// gp_Write(testFramework->algResults[0].origGraph, "origGraph.txt", WRITE_ADJLIST);
 
 	if (g_command == 'a')
 	{

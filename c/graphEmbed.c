@@ -48,8 +48,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Imported functions */
 
-extern void _FillVisitedFlags(graphP, int);
-
 extern int _IsolateKuratowskiSubgraph(graphP theGraph, int I, int R);
 extern int _IsolateOuterplanarObstruction(graphP theGraph, int I, int R);
 
@@ -115,7 +113,7 @@ int I, L, N, DFSParent, theList;
 
      for (I=0; I < N; I++)
      {
-          L = theGraph->V[I].Lowpoint;
+          L = gp_GetVertexLowpoint(theGraph, I);
           buckets[L] = LCAppend(bin, buckets[L], I);
      }
 
@@ -131,13 +129,13 @@ int I, L, N, DFSParent, theList;
           {
               while (L != NIL)
               {
-                  DFSParent = theGraph->V[L].DFSParent;
+                  DFSParent = gp_GetVertexParent(theGraph, L);
 
                   if (DFSParent != NIL && DFSParent != L)
                   {
-                      theList = theGraph->V[DFSParent].separatedDFSChildList;
+                      theList = gp_GetVertexSeparatedDFSChildList(theGraph, DFSParent);
                       theList = LCAppend(theGraph->DFSChildLists, theList, L);
-                      theGraph->V[DFSParent].separatedDFSChildList = theList;
+                      gp_SetVertexSeparatedDFSChildList(theGraph, DFSParent, theList);
                   }
 
                   L = LCGetNext(bin, buckets[I], L);
@@ -173,12 +171,12 @@ int I, Jfirst, Jnext, Jlast;
         // If the vertex has any forward edges at all, then the last edge
     	// will be a forward edge.  So if we have any forward edges, ...
 
-        if (theGraph->G[Jfirst].type == EDGE_FORWARD)
+        if (gp_GetEdgeType(theGraph, Jfirst) == EDGE_TYPE_FORWARD)
         {
             // Find the end of the forward edge list
 
             Jnext = Jfirst;
-            while (theGraph->G[Jnext].type == EDGE_FORWARD)
+            while (gp_GetEdgeType(theGraph, Jnext) == EDGE_TYPE_FORWARD)
                 Jnext = gp_GetPrevArc(theGraph, Jnext);
             Jlast = gp_GetNextArc(theGraph, Jnext);
 
@@ -186,7 +184,7 @@ int I, Jfirst, Jnext, Jlast;
             gp_BindLastArc(theGraph, I, Jnext);
 
             // Make a circular forward edge list
-            theGraph->V[I].fwdArcList = Jfirst;
+            gp_SetVertexFwdArcList(theGraph, I, Jfirst);
             gp_SetNextArc(theGraph, Jfirst, Jlast);
             gp_SetPrevArc(theGraph, Jlast, Jfirst);
         }
@@ -194,51 +192,6 @@ int I, Jfirst, Jnext, Jlast;
 
     return OK;
 }
-
-/********************************************************************
- ********************************************************************/
-
-#ifdef DEBUG
-int  TestIntegrity(graphP theGraph)
-{
-    int I, Jcur, result = 1;
-
-        for (I=0; I < theGraph->N; I++)
-        {
-            Jcur = theGraph->V[I].fwdArcList;
-            while (Jcur != NIL)
-            {
-                if (theGraph->G[Jcur].visited)
-                {
-                    printf("Found problem with fwdArcList of vertex %d.\n", I);
-                    result = 0;
-                    break;
-                }
-
-                theGraph->G[Jcur].visited = 1;
-
-                Jcur = gp_GetNextArc(theGraph, Jcur);
-                if (Jcur == theGraph->V[I].fwdArcList)
-                    Jcur = NIL;
-            }
-
-            Jcur = theGraph->V[I].fwdArcList;
-            while (Jcur != NIL)
-            {
-                if (!theGraph->G[Jcur].visited)
-                    break;
-
-                theGraph->G[Jcur].visited = 0;
-
-                Jcur = gp_GetNextArc(theGraph, Jcur);
-                if (Jcur == theGraph->V[I].fwdArcList)
-                    Jcur = NIL;
-            }
-        }
-
-        return result;
-}
-#endif
 
 /********************************************************************
  _CreateDFSTreeEmbedding()
@@ -269,7 +222,7 @@ int N, I, J, Jtwin, R;
 
     for (I=0, R=N; I < N; I++, R++)
     {
-        if (theGraph->V[I].DFSParent == NIL)
+        if (gp_GetVertexParent(theGraph, I) == NIL)
         {
         	gp_SetFirstArc(theGraph, I, gp_AdjacencyListEndMark(I));
         	gp_SetLastArc(theGraph, I, gp_AdjacencyListEndMark(I));
@@ -277,7 +230,7 @@ int N, I, J, Jtwin, R;
         else
         {
             J = gp_GetFirstArc(theGraph, I);
-            while (theGraph->G[J].type != EDGE_DFSPARENT)
+            while (gp_GetEdgeType(theGraph, J) != EDGE_TYPE_PARENT)
                 J = gp_GetNextArc(theGraph, J);
 
         	gp_SetFirstArc(theGraph, I, J);
@@ -286,7 +239,7 @@ int N, I, J, Jtwin, R;
         	gp_SetNextArc(theGraph, J, gp_AdjacencyListEndMark(I));
         	gp_SetPrevArc(theGraph, J, gp_AdjacencyListEndMark(I));
 
-        	theGraph->G[J].v = R;
+        	gp_SetNeighbor(theGraph, J, R);
 
             Jtwin = gp_GetTwinArc(theGraph, J);
 
@@ -296,8 +249,10 @@ int N, I, J, Jtwin, R;
         	gp_SetNextArc(theGraph, Jtwin, gp_AdjacencyListEndMark(R));
         	gp_SetPrevArc(theGraph, Jtwin, gp_AdjacencyListEndMark(R));
 
-            theGraph->extFace[R].vertex[0] = theGraph->extFace[R].vertex[1] = I;
-            theGraph->extFace[I].vertex[0] = theGraph->extFace[I].vertex[1] = R;
+            gp_SetExtFaceVertex(theGraph, R, 0, I);
+            gp_SetExtFaceVertex(theGraph, R, 1, I);
+            gp_SetExtFaceVertex(theGraph, I, 0, R);
+            gp_SetExtFaceVertex(theGraph, I, 1, R);
         }
     }
 }
@@ -318,21 +273,21 @@ int fwdArc, backArc, parentCopy;
         The Walkup recorded in W's adjacentTo the index of the forward arc
         from the root's parent copy to the descendant W. */
 
-    fwdArc = theGraph->V[W].adjacentTo;
+    fwdArc = gp_GetVertexPertinentAdjacencyInfo(theGraph, W);
     backArc = gp_GetTwinArc(theGraph, fwdArc);
 
     /* The forward arc is removed from the fwdArcList of the root's parent copy. */
 
-    parentCopy = theGraph->V[RootVertex - theGraph->N].DFSParent;
+    parentCopy = gp_GetVertexParent(theGraph, RootVertex - theGraph->N);
 
     gp_LogLine(gp_MakeLogStr5("graphEmbed.c/_EmbedBackEdgeToDescendant() V=%d, R=%d, R_out=%d, W=%d, W_in=%d",
     		parentCopy, RootVertex, RootSide, W, WPrevLink));
 
-    if (theGraph->V[parentCopy].fwdArcList == fwdArc)
+    if (gp_GetVertexFwdArcList(theGraph, parentCopy) == fwdArc)
     {
-    	theGraph->V[parentCopy].fwdArcList = gp_GetNextArc(theGraph, fwdArc);
-        if (theGraph->V[parentCopy].fwdArcList == fwdArc)
-            theGraph->V[parentCopy].fwdArcList = NIL;
+    	gp_SetVertexFwdArcList(theGraph, parentCopy, gp_GetNextArc(theGraph, fwdArc));
+        if (gp_GetVertexFwdArcList(theGraph, parentCopy) == fwdArc)
+            gp_SetVertexFwdArcList(theGraph, parentCopy, NIL);
     }
 
     gp_SetNextArc(theGraph, gp_GetPrevArc(theGraph, fwdArc), gp_GetNextArc(theGraph, fwdArc));
@@ -353,12 +308,12 @@ int fwdArc, backArc, parentCopy;
     gp_SetAdjacentArc(theGraph, gp_GetArc(theGraph, W, WPrevLink), 1^WPrevLink, backArc);
     gp_SetArc(theGraph, W, WPrevLink, backArc);
 
-    theGraph->G[backArc].v = RootVertex;
+    gp_SetNeighbor(theGraph, backArc, RootVertex);
 
     /* Link the two endpoint vertices together on the external face */
 
-    theGraph->extFace[RootVertex].vertex[RootSide] = W;
-    theGraph->extFace[W].vertex[WPrevLink] = RootVertex;
+    gp_SetExtFaceVertex(theGraph, RootVertex, RootSide, W);
+    gp_SetExtFaceVertex(theGraph, W, WPrevLink, RootVertex);
 }
 
 /********************************************************************
@@ -391,7 +346,7 @@ int  _GetNextVertexOnExternalFace(graphP theGraph, int curVertex, int *pPrevLink
      /* Exit curVertex from whichever link was not previously used to enter it */
 
      int arc = gp_GetArc(theGraph, curVertex, 1^(*pPrevLink));
-     int nextVertex = theGraph->G[arc].v;
+     int nextVertex = gp_GetNeighbor(theGraph, arc);
 
      /* This if stmt assigns the new prev link that tells us which edge
         record was used to enter nextVertex (so that we exit from the
@@ -442,9 +397,9 @@ int J, temp;
      gp_SetLastArc(theGraph, V, temp);
 
      // Swap the first/last external face indicators in the vertex
-     temp = theGraph->extFace[V].vertex[0];
-     theGraph->extFace[V].vertex[0] = theGraph->extFace[V].vertex[1];
-     theGraph->extFace[V].vertex[1] = temp;
+     temp = gp_GetExtFaceVertex(theGraph, V, 0);
+     gp_SetExtFaceVertex(theGraph, V, 0, gp_GetExtFaceVertex(theGraph, V, 1));
+     gp_SetExtFaceVertex(theGraph, V, 1, temp);
 }
 
 /********************************************************************
@@ -486,7 +441,7 @@ int  e_w, e_r, e_ext;
      while (gp_IsArc(theGraph, J))
      {
          JTwin = gp_GetTwinArc(theGraph, J);
-         theGraph->G[JTwin].v = W;
+         gp_GetNeighbor(theGraph, JTwin) = W;
 
     	 J = gp_GetNextArc(theGraph, J);
      }
@@ -525,7 +480,7 @@ int  e_w, e_r, e_ext;
      }
 
      // Erase the entries in R, which is a root copy that is no longer needed
-     theGraph->functions.fpInitGraphNode(theGraph, R);
+     theGraph->functions.fpInitVertexRec(theGraph, R);
 }
 
 /********************************************************************
@@ -560,13 +515,13 @@ int  extFaceVertex;
             corner will be the new external face corner at Z.
             We first want to update the links at Z to reflect this. */
 
-         extFaceVertex = theGraph->extFace[R].vertex[1^Rout];
-         theGraph->extFace[Z].vertex[ZPrevLink] = extFaceVertex;
+         extFaceVertex = gp_GetExtFaceVertex(theGraph, R, 1^Rout);
+         gp_SetExtFaceVertex(theGraph, Z, ZPrevLink, extFaceVertex);
 
-         if (theGraph->extFace[extFaceVertex].vertex[0] == theGraph->extFace[extFaceVertex].vertex[1])
-            theGraph->extFace[extFaceVertex].vertex[Rout ^ theGraph->extFace[extFaceVertex].inversionFlag] = Z;
+         if (gp_GetExtFaceVertex(theGraph, extFaceVertex, 0) == gp_GetExtFaceVertex(theGraph, extFaceVertex, 1))
+            gp_SetExtFaceVertex(theGraph, extFaceVertex, Rout ^ gp_GetExtFaceInversionFlag(theGraph, extFaceVertex), Z);
          else
-            theGraph->extFace[extFaceVertex].vertex[theGraph->extFace[extFaceVertex].vertex[0] == R ? 0 : 1] = Z;
+            gp_SetExtFaceVertex(theGraph, extFaceVertex, gp_GetExtFaceVertex(theGraph, extFaceVertex, 0) == R ? 0 : 1, Z);
 
          /* If the path used to enter Z is opposed to the path
             used to exit R, then we have to flip the bicomp
@@ -584,17 +539,16 @@ int  extFaceVertex;
              J = gp_GetFirstArc(theGraph, R);
              while (gp_IsArc(theGraph, J))
              {
-                 if (theGraph->G[J].type == EDGE_DFSCHILD)
+                 if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_CHILD)
                  {
-                	 // A bicomp root edge cannot be inverted in the core planarity algorithm
-                	 // but extensions may perform edge reductions on tree edges, resulting in
-                	 // an inversion sign being promoted to the root edge.  So, now we reverse
-                	 // the inversion flag on the root edge if the bicomp root must be
-                	 // inverted before it is merged.
-                	 if (GET_EDGEFLAG_INVERTED(theGraph, J))
-                		 CLEAR_EDGEFLAG_INVERTED(theGraph, J);
-                	 else
-                		 SET_EDGEFLAG_INVERTED(theGraph, J);
+                	 // The core planarity algorithm could simply "set" the inverted flag
+                	 // because a bicomp root edge cannot be already inverted in the core
+                	 // planarity algorithm at the time of this merge.
+                	 // However, extensions may perform edge reductions on tree edges, resulting
+                	 // in an inversion sign being promoted to the root edge of a bicomp before
+                	 // it gets merged.  So, now we use xor to reverse the inversion flag on the
+                	 // root edge if the bicomp root must be inverted before it is merged.
+                	 gp_XorEdgeFlagInverted(theGraph, J);
                      break;
                  }
 
@@ -604,7 +558,7 @@ int  extFaceVertex;
 
          // The endpoints of a bicomp's "root edge" are the bicomp root R and a
          // DFS child of the parent copy of the bicomp root R.
-         // The GraphNode location of the root vertices is in the range N to 2N-1
+         // The locations of bicomp root (virtual) vertices is in the range N to 2N-1
          // at the offset indicated by the associated DFS child.  So, the location
          // of the root vertex R, less N, is the location of the DFS child and also
          // a convenient identifier for the bicomp root.
@@ -614,18 +568,18 @@ int  extFaceVertex;
             merge R into Z, so we delete R from its pertinent
             bicomp list (Walkdown gets R from the head of the list). */
 
-         theList = theGraph->V[Z].pertinentBicompList;
+         theList = gp_GetVertexPertinentBicompList(theGraph, Z);
          theList = LCDelete(theGraph->BicompLists, theList, RootID_DFSChild);
-         theGraph->V[Z].pertinentBicompList = theList;
+         gp_SetVertexPertinentBicompList(theGraph, Z, theList);
 
          /* As a result of the merge, the DFS child of Z must be removed
             from Z's SeparatedDFSChildList because the child has just
             been joined directly to Z, rather than being separated by a
             root copy. */
 
-         theList = theGraph->V[Z].separatedDFSChildList;
+         theList = gp_GetVertexSeparatedDFSChildList(theGraph, Z);
          theList = LCDelete(theGraph->DFSChildLists, theList, RootID_DFSChild);
-         theGraph->V[Z].separatedDFSChildList = theList;
+         gp_SetVertexSeparatedDFSChildList(theGraph, Z, theList);
 
          /* Now we push R into Z, eliminating R */
 
@@ -640,133 +594,150 @@ int  extFaceVertex;
  I is the vertex currently being embedded
  J is the forward arc to the descendant W on which the Walkup begins
 
- The Walkup establishes pertinence for step I.  It marks W as
- 'adjacentTo' I so that the Walkdown will embed an edge to W when
- it is encountered.
+ The Walkup establishes pertinence for step I.  It marks W with J
+ as a way of indicating it is pertinent because it should be made
+ 'adjacent to' I by adding a back edge (I', W), which will occur when
+ the Walkdown encounters W.
 
  The Walkup also determines the pertinent child bicomps that should be
  set up as a result of the need to embed edge (I, W). It does this by
  recording the pertinent child biconnected components of all cut
- vertices between W and the child of I that is a descendant of W.
- Note that it stops the traversal if it finds a visited flag set to I,
- which indicates that a prior walkup call in step I has already done
- the work.
+ vertices between W and the child of I that is an ancestor of W.
+ Note that it stops the traversal if it finds a visited info value set
+ to I, which indicates that a prior walkup call in step I has already
+ done the work. This ensures work is not duplicated.
 
- Zig and Zag are so named because one goes around one side of a
- bicomp and the other goes around the other side, yet we have
- as yet no notion of orientation for the bicomp.
- The edge J from vertex I gestures to an adjacent descendant vertex W
- (possibly in some other bicomp).  Zig and Zag start out at W.
- They go around alternate sides of the bicomp until its root is found.
- Recall that the root vertex is just a copy in region N to 2N-1.
- We want to hop from the root copy to the parent copy of the vertex
+ A second technique used to maintain a total linear time bound for the
+ whole planarity method is that of parallel external face traversal.
+ This ensures that the cost of determining pertinence in step I is
+ linearly commensurate with the length of the path that ultimately
+ is removed from the external face.
+
+ Zig and Zag are so named because one goes around one side of a bicomp
+ and the other goes around the other side, yet we have as yet no notion
+ of orientation for the bicomp. The edge record J from vertex I gestures
+ to a descendant vertex W in some other bicomp.  Zig and Zag start out
+ at W. They go around alternate sides of the bicomp until its root is
+ found.  We then hop from the root copy to the parent copy of the vertex
  in order to record which bicomp we just came from and also to continue
- the walk-up to vertex I.
- If the parent copy actually is I, then the walk-up is done.
+ the walk-up at the parent copy as if it were the new W.  We reiterate
+ this process until the parent copy actually is I, at which point the
+ Walkup is done.
  ********************************************************************/
 
 void _WalkUp(graphP theGraph, int I, int J)
 {
-int  Zig, Zag, ZigPrevLink, ZagPrevLink;
-int  N, R, ParentCopy, nextVertex, W;
-int  RootID_DFSChild, BicompList;
+int  N = theGraph->N, W = gp_GetNeighbor(theGraph, J);
+int  Zig=W, Zag=W, ZigPrevLink=1, ZagPrevLink=0;
+int  nextZig, nextZag, R, ParentCopy, RootID_DFSChild, BicompList;
 
-     W = theGraph->G[J].v;
-     theGraph->V[W].adjacentTo = J;
+	 // Start by marking W as being pertinent
+     gp_SetVertexPertinentAdjacencyInfo(theGraph, W, J);
 
-     /* Shorthand for N, due to frequent use */
-
-     N = theGraph->N;
-
-     /* Start at the vertex W and walk around the both sides of the external face
-        of a bicomp until we get back to vertex I. */
-
-     Zig = Zag = W;
-     ZigPrevLink = 1;
-     ZagPrevLink = 0;
-
+     // Zig and Zag are initialized at W, and we continue looping
+     // around the external faces of bicomps up from W until we
+     // reach vertex I (or until the visited info optimization
+     // breaks the loop)
      while (Zig != I)
      {
-        /* A previous walk-up may have been this way already */
+    	 // Obtain the next vertex in a first direction and determine if it is a bicomp root
+         if ((nextZig = gp_GetExtFaceVertex(theGraph, Zig, 1^ZigPrevLink)) >= N)
+         {
+        	 // If the current vertex along the external face was visited in this step I,
+        	 // then the bicomp root and its ancestor roots have already been added.
+        	 if (gp_GetVertexVisitedInfo(theGraph, Zig) == I) break;
 
-        if (theGraph->G[Zig].visited == I) break;
-        if (theGraph->G[Zag].visited == I) break;
+        	 // Store the bicomp root that was found
+        	 R = nextZig;
 
-        /* Mark the current vertices as visited during the embedding of vertex I. */
+        	 // Since the bicomp root was the next vertex on the path from Zig, determine the
+        	 // vertex on the opposing path that enters the bicomp root.
+        	 nextZag = gp_GetExtFaceVertex(theGraph, R,
+										   gp_GetExtFaceVertex(theGraph, R, 0)==Zig ? 1 : 0);
 
-        theGraph->G[Zig].visited = I;
-        theGraph->G[Zag].visited = I;
+        	 // If the opposing vertex was already marked visited in this step, then a prior
+        	 // Walkup already recorded as pertinent the bicomp root and its ancestor roots.
+        	 if (gp_GetVertexVisitedInfo(theGraph, nextZag) == I) break;
+         }
 
-        /* Determine whether either Zig or Zag has landed on a bicomp root */
+         // Obtain the next vertex in the parallel direction and perform the analogous logic
+         else if ((nextZag = gp_GetExtFaceVertex(theGraph, Zag, 1^ZagPrevLink)) >= N)
+         {
+        	 if (gp_GetVertexVisitedInfo(theGraph, Zag) == I) break;
+        	 R = nextZag;
+        	 nextZig = gp_GetExtFaceVertex(theGraph, R,
+										   gp_GetExtFaceVertex(theGraph, R, 0)==Zag ? 1 : 0);
+        	 if (gp_GetVertexVisitedInfo(theGraph, nextZig) == I) break;
+         }
 
-        if (Zig >= N) R = Zig;
-        else if (Zag >= N) R = Zag;
-        else R = NIL;
+         // The bicomp root was not found in either direction.
+         else
+         {
+        	 if (gp_GetVertexVisitedInfo(theGraph, Zig) == I) break;
+        	 if (gp_GetVertexVisitedInfo(theGraph, Zag) == I) break;
+        	 R = NIL;
+         }
 
-        // If we have a bicomp root, then we want to hop up to the parent copy and
-        // record a pertinent child bicomp.
-        // Prepends if the bicomp is internally active, appends if externally active.
+         // This Walkup has now finished with another vertex along each of the parallel
+         // paths, so they are marked visited in step I so that future Walkups in this
+         // step I can break if these vertices are encountered again.
+         gp_SetVertexVisitedInfo(theGraph, Zig, I);
+         gp_SetVertexVisitedInfo(theGraph, Zag, I);
 
-        if (R != NIL)
-        {
-            // The endpoints of a bicomp's "root edge" are the bicomp root R and a
-            // DFS child of the parent copy of the bicomp root R.
-            // The GraphNode location of the root vertices is in the range N to 2N-1
-            // at the offset indicated by the associated DFS child.  So, the location
-            // of the root vertex R, less N, is the location of the DFS child and also
-            // a convenient identifier for the bicomp root.
-            RootID_DFSChild = R - N;
+         // If both directions found new non-root vertices, then proceed with parallel external face traversal
+         if (R == NIL)
+         {
+             ZigPrevLink = gp_GetExtFaceVertex(theGraph, nextZig, 0)==Zig ? 0 : 1;
+             Zig = nextZig;
 
-            // It is extra unnecessary work to record pertinent bicomps of I
-            if ((ParentCopy = theGraph->V[RootID_DFSChild].DFSParent) != I)
-            {
-                 // Get the BicompList of the parent copy vertex.
-                 BicompList = theGraph->V[ParentCopy].pertinentBicompList;
+             ZagPrevLink = gp_GetExtFaceVertex(theGraph, nextZag, 0)==Zag ? 0 : 1;
+             Zag = nextZag;
+         }
 
-                 /* Put the new root vertex in the BicompList.  It is prepended if internally
-                    active and appended if externally active so that all internally
-                    active bicomps are processed before any externally active bicomps
-                    by virtue of storage.
+         // The bicomp root was found and not previously recorded as pertinent,
+         // so walk up to the parent bicomp and continue
+         else
+         {
+             // The endpoints of a bicomp's "root edge" are the bicomp root R and a
+             // DFS child of the parent copy of the bicomp root R.
+             // The locations of bicomp root (virtual) vertices is in the range N to 2N-1
+             // at the offset indicated by the associated DFS child.  So, the location
+             // of the root vertex R, less N, is the location of the DFS child and also
+             // a convenient identifier for the bicomp root.
+             RootID_DFSChild = R - N;
 
-                    NOTE: The activity status of a bicomp is computed using the lowpoint of
-                            the DFS child in the bicomp's root edge because we want to know
-                            whether the DFS child or any of its descendants are joined by a
-                            back edge to ancestors of I. If so, then the bicomp rooted
-                            at RootVertex must contain an externally active vertex so the
-                            bicomp must be kept on the external face. */
+             // It is extra unnecessary work to record pertinent bicomps of I
+             // (and to eliminate them later, since no merge happens)
+             if ((ParentCopy = gp_GetVertexParent(theGraph, RootID_DFSChild)) != I)
+             {
+                  // Get the BicompList of the parent copy vertex.
+                  BicompList = gp_GetVertexPertinentBicompList(theGraph, ParentCopy);
 
-                 if (theGraph->V[RootID_DFSChild].Lowpoint < I)
-                      BicompList = LCAppend(theGraph->BicompLists, BicompList, RootID_DFSChild);
-                 else BicompList = LCPrepend(theGraph->BicompLists, BicompList, RootID_DFSChild);
+                  // Put the new root vertex in the BicompList.  It is prepended if internally
+                  // active and appended if externally active so that all internally active
+                  // bicomps are processed before any externally active bicomps by virtue of storage.
 
-                 /* The head node of the parent copy vertex's bicomp list may have changed, so
-                    we assign the head of the modified list as the vertex's pertinent
-                    bicomp list */
+                  // NOTE: Unlike vertices, the activity status of a bicomp is computed solely
+  				  //       using lowpoint. The lowpoint of the DFS child in the bicomp's root edge
+  				  //	     indicates whether the DFS child or any of its descendants are joined by
+  				  //	     a back edge to ancestors of I. If so, then the bicomp rooted at
+  				  //	     RootVertex must contain an externally active vertex so the bicomp must
+  				  //	     be kept on the external face.
+                  if (gp_GetVertexLowpoint(theGraph, RootID_DFSChild) < I)
+                       BicompList = LCAppend(theGraph->BicompLists, BicompList, RootID_DFSChild);
+                  else BicompList = LCPrepend(theGraph->BicompLists, BicompList, RootID_DFSChild);
 
-                 theGraph->V[ParentCopy].pertinentBicompList = BicompList;
-            }
+                  // The head node of the parent copy vertex's bicomp list may have changed, so
+                  // we assign the head of the modified list as the vertex's pertinent bicomp list
+                  gp_SetVertexPertinentBicompList(theGraph, ParentCopy, BicompList);
+             }
 
-            Zig = Zag = ParentCopy;
-            ZigPrevLink = 1;
-            ZagPrevLink = 0;
-        }
-
-        /* If we did not encounter a bicomp root, then we continue traversing the
-            external face in both directions. */
-
-        else
-        {
-            nextVertex = theGraph->extFace[Zig].vertex[1^ZigPrevLink];
-            ZigPrevLink = theGraph->extFace[nextVertex].vertex[0] == Zig ? 0 : 1;
-            Zig = nextVertex;
-
-            nextVertex = theGraph->extFace[Zag].vertex[1^ZagPrevLink];
-            ZagPrevLink = theGraph->extFace[nextVertex].vertex[0] == Zag ? 0 : 1;
-            Zag = nextVertex;
-        }
+             Zig = Zag = ParentCopy;
+             ZigPrevLink = 1;
+             ZagPrevLink = 0;
+         }
      }
 }
-
 
 /********************************************************************
  _HandleBlockedDescendantBicomp()
@@ -806,8 +777,8 @@ int  _HandleBlockedDescendantBicomp(graphP theGraph, int I, int RootVertex, int 
 
 int  _HandleInactiveVertex(graphP theGraph, int BicompRoot, int *pW, int *pWPrevLink)
 {
-     int X = theGraph->extFace[*pW].vertex[1^*pWPrevLink];
-     *pWPrevLink = theGraph->extFace[X].vertex[0] == *pW ? 0 : 1;
+     int X = gp_GetExtFaceVertex(theGraph, *pW, 1^*pWPrevLink);
+     *pWPrevLink = gp_GetExtFaceVertex(theGraph, X, 0) == *pW ? 0 : 1;
      *pW = X;
 
      return OK;
@@ -820,9 +791,9 @@ int  _HandleInactiveVertex(graphP theGraph, int BicompRoot, int *pW, int *pWPrev
  ********************************************************************/
 
 #define _GetPertinentChildBicomp(theGraph, W) \
-        (theGraph->V[W].pertinentBicompList==NIL \
+        (gp_GetVertexPertinentBicompList(theGraph, W)==NIL \
          ? NIL \
-         : theGraph->V[W].pertinentBicompList + theGraph->N)
+         : gp_GetVertexPertinentBicompList(theGraph, W) + theGraph->N)
 
 /********************************************************************
  _WalkDown()
@@ -902,12 +873,12 @@ int  RetVal, W, WPrevLink, R, Rout, X, XPrevLink, Y, YPrevLink, RootSide, RootEd
 
      for (RootSide = 0; RootSide < 2; RootSide++)
      {
-         W = theGraph->extFace[RootVertex].vertex[RootSide];
+         W = gp_GetExtFaceVertex(theGraph, RootVertex, RootSide);
 
          // If the main bicomp rooted by RootVertex is a single tree edge,
          // (always the case for core planarity) then the external face links
          // of W will be equal
-         if (theGraph->extFace[W].vertex[0] == theGraph->extFace[W].vertex[1])
+         if (gp_GetExtFaceVertex(theGraph, W, 0) == gp_GetExtFaceVertex(theGraph, W, 1))
          {
         	 // In this case, we treat the bicomp external face as if it were
         	 // a cycle of two edges and as if RootVertex and W had the same
@@ -924,7 +895,7 @@ int  RetVal, W, WPrevLink, R, Rout, X, XPrevLink, Y, YPrevLink, RootSide, RootEd
              // longer be pertinent (until a future vertex step).
              // Thus only the inner loop below accommodates the inversionFlag
              // when it walks down to a *pertinent* child biconnected component
-             //WPrevLink = theGraph->extFace[W].inversionFlag ? RootSide : 1^RootSide;
+             //WPrevLink = gp_GetExtFaceInversionFlag(theGraph, W) ? RootSide : 1^RootSide;
          }
          // Otherwise, Walkdown has been called on a bicomp with two distinct
          // external face paths from RootVertex (a possibility in extension
@@ -932,8 +903,8 @@ int  RetVal, W, WPrevLink, R, Rout, X, XPrevLink, Y, YPrevLink, RootSide, RootEd
          // the RootVertex.
          else
          {
-        	 WPrevLink = theGraph->extFace[W].vertex[0] == RootVertex ? 0 : 1;
-        	 if (theGraph->extFace[W].vertex[WPrevLink] != RootVertex)
+        	 WPrevLink = gp_GetExtFaceVertex(theGraph, W, 0) == RootVertex ? 0 : 1;
+        	 if (gp_GetExtFaceVertex(theGraph, W, WPrevLink) != RootVertex)
         		 return NOTOK;
          }
 
@@ -942,7 +913,7 @@ int  RetVal, W, WPrevLink, R, Rout, X, XPrevLink, Y, YPrevLink, RootSide, RootEd
              /* If the vertex W is the descendant endpoint of an unembedded
                 back edge to I, then ... */
 
-             if (theGraph->V[W].adjacentTo != NIL)
+             if (gp_GetVertexPertinentAdjacencyInfo(theGraph, W) != NIL)
              {
                 /* Merge bicomps at cut vertices on theStack and add the back edge,
                     creating a new proper face. */
@@ -959,31 +930,31 @@ int  RetVal, W, WPrevLink, R, Rout, X, XPrevLink, Y, YPrevLink, RootSide, RootEd
                     generally, so that no more back edges to W are added until
                     a future Walkup sets the flag to non-NIL again). */
 
-                theGraph->V[W].adjacentTo = NIL;
+                gp_SetVertexPertinentAdjacencyInfo(theGraph, W, NIL);
              }
 
              /* If there is a pertinent child bicomp, then we need to push it onto the stack
                 along with information about how we entered the cut vertex and how
                 we exit the root copy to get to the next vertex. */
 
-             if (theGraph->V[W].pertinentBicompList != NIL)
+             if (gp_GetVertexPertinentBicompList(theGraph, W) != NIL)
              {
                  sp_Push2(theGraph->theStack, W, WPrevLink);
                  R = _GetPertinentChildBicomp(theGraph, W);
 
                  /* Get next active vertices X and Y on ext. face paths emanating from R */
 
-                 X = theGraph->extFace[R].vertex[0];
-                 XPrevLink = theGraph->extFace[X].vertex[1]==R ? 1 : 0;
-                 Y = theGraph->extFace[R].vertex[1];
-                 YPrevLink = theGraph->extFace[Y].vertex[0]==R ? 0 : 1;
+                 X = gp_GetExtFaceVertex(theGraph, R, 0);
+                 XPrevLink = gp_GetExtFaceVertex(theGraph, X, 1)==R ? 1 : 0;
+                 Y = gp_GetExtFaceVertex(theGraph, R, 1);
+                 YPrevLink = gp_GetExtFaceVertex(theGraph, Y, 0)==R ? 0 : 1;
 
                  /* If this is a bicomp with only two ext. face vertices, then
                     it could be that the orientation of the non-root vertex
                     doesn't match the orientation of the root due to our relaxed
                     orientation method. */
 
-                 if (X == Y && theGraph->extFace[X].inversionFlag)
+                 if (X == Y && gp_GetExtFaceInversionFlag(theGraph, X))
                  {
                      XPrevLink = 0;
                      YPrevLink = 1;
@@ -1064,8 +1035,8 @@ int  RetVal, W, WPrevLink, R, Rout, X, XPrevLink, Y, YPrevLink, RootSide, RootEd
                     we did not actually merge the bicomps necessary to put
                     W and RootVertex into the same bicomp. */
 
-         theGraph->extFace[RootVertex].vertex[RootSide] = W;
-         theGraph->extFace[W].vertex[WPrevLink] = RootVertex;
+         gp_SetExtFaceVertex(theGraph, RootVertex, RootSide, W);
+         gp_SetExtFaceVertex(theGraph, W, WPrevLink, RootVertex);
 
          /* If the bicomp is reduced to having only two external face vertices
              (the root and W), then we need to record whether the orientation
@@ -1073,15 +1044,16 @@ int  RetVal, W, WPrevLink, R, Rout, X, XPrevLink, Y, YPrevLink, RootSide, RootEd
              future Walkdown descends to and merges the bicomp containing W.
              Going from the root to W, we only get the correct WPrevLink if
              we know whether or not W is inverted.
-             NOTE: We clear the flag because it may have been set in W if W
-                 previously became part of a bicomp with only two ext. face
-                 vertices, but then was flipped and merged into a larger bicomp
-                 that is now again becoming a bicomp with only two ext. face vertices. */
+             NOTE: In the case where we have to clear the flag here, it is because
+                 it may have been set in W if W previously became part of a bicomp
+                 with only two ext. face vertices, but then was flipped and merged
+                 into a larger bicomp that is now again becoming a bicomp with only
+                 two ext. face vertices. */
 
-         if (theGraph->extFace[W].vertex[0] == theGraph->extFace[W].vertex[1] &&
+         if (gp_GetExtFaceVertex(theGraph, W, 0) == gp_GetExtFaceVertex(theGraph, W, 1) &&
              WPrevLink == RootSide)
-              theGraph->extFace[W].inversionFlag = 1;
-         else theGraph->extFace[W].inversionFlag = 0;
+              gp_SetExtFaceInversionFlag(theGraph, W);
+         else gp_ClearExtFaceInversionFlag(theGraph, W);
 
          /* If we got back around to the root, then all edges
             are embedded, so we stop. */
@@ -1103,10 +1075,10 @@ int  RetVal, W, WPrevLink, R, Rout, X, XPrevLink, Y, YPrevLink, RootSide, RootEd
   Either a planar embedding is created in theGraph, or a Kuratowski
   subgraph is isolated.  Either way, theGraph remains sorted by DFI
   since that is the most common desired result.  The original vertex
-  numbers are available in the 'v' members of the vertex graph nodes.
+  numbers are available in the 'index' members of the vertex records.
   Moreover, gp_SortVertices() can be invoked to put the vertices in
-  the order of the input graph, at which point the 'v' members of the
-  vertex graph nodes will contain the vertex DFIs.
+  the order of the input graph, at which point the 'index' members of
+  the vertex records will contain the vertex DFIs.
 
  return OK if the embedding was successfully created or no subgraph
             homeomorphic to a topological obstruction was found.
@@ -1141,21 +1113,16 @@ int gp_Embed(graphP theGraph, int embedFlags)
 int N, I, J, child;
 int RetVal = OK;
 
-    /* Basic parameter checks */
-
+    // Basic parameter checks
     if (theGraph==NULL)
     	return NOTOK;
 
-    /* A little shorthand for the size of the graph */
-
+    // A little shorthand for the order of the graph
     N = theGraph->N;
 
-    /* Preprocessing */
-
+    // Preprocessing
     theGraph->embedFlags = embedFlags;
 
-//    if (gp_CreateDFSTree(theGraph) != OK)
-//        return NOTOK;
     if (gp_PreprocessForEmbedding(theGraph) != OK)
           return NOTOK;
 
@@ -1163,49 +1130,46 @@ int RetVal = OK;
         if (gp_SortVertices(theGraph) != OK)
             return NOTOK;
 
-//    if (gp_LowpointAndLeastAncestor(theGraph) != OK)
-//    	return NOTOK;
-
     _CreateSortedSeparatedDFSChildLists(theGraph);
 
     if (theGraph->functions.fpCreateFwdArcLists(theGraph) != OK)
         return NOTOK;
 
+    // Embed the DFS tree edges
     theGraph->functions.fpCreateDFSTreeEmbedding(theGraph);
 
-    /* In reverse DFI order, process each vertex by embedding its
-         the 'back edges' from the vertex to its DFS descendants. */
-
-    for (I = 0; I < theGraph->edgeOffset; I++)
-        theGraph->G[I].visited = N;
-
+    // In reverse DFI order, embed the back edges from each vertex to its DFS descendants.
     for (I = theGraph->N-1; I >= 0; I--)
     {
           RetVal = OK;
 
-          /* Do the Walkup for each cycle edge from I to a DFS descendant W. */
+          // Each vertex is assigned an initial visited info setting of N.
+          // Only vertex descendants of I need to have an initialized visited info field,
+          // and all possible descendants of I are so initialized by this assignment in
+          // preceding iterations of this loop.
+          gp_SetVertexVisitedInfo(theGraph, I, N);
 
-          J = theGraph->V[I].fwdArcList;
+          // Do the Walkup for each cycle edge from I to a DFS descendant W.
+          J = gp_GetVertexFwdArcList(theGraph, I);
           while (J != NIL)
           {
         	  theGraph->functions.fpWalkUp(theGraph, I, J);
 
               J = gp_GetNextArc(theGraph, J);
-              if (J == theGraph->V[I].fwdArcList)
+              if (J == gp_GetVertexFwdArcList(theGraph, I))
                   J = NIL;
           }
 
-          /* For each DFS child C of the current vertex with a pertinent
-                child bicomp, do a Walkdown on each side of the bicomp rooted
-                by tree edge (R, C), where R is a root copy of the current
-                vertex stored at C+N and uniquely associated with the bicomp
-                containing C. (NOTE: if C has no pertinent child bicomps, then
-                there are no cycle edges from I to descendants of C). */
-
-          child = theGraph->V[I].separatedDFSChildList;
+          // For each DFS child C of the current vertex with a pertinent child bicomp,
+          //      Do a Walkdown on each side of the bicomp rooted by tree edge (R, C),
+          //      where R is a root copy of the current vertex stored at C+N and
+          //      uniquely associated with the bicomp containing C.
+          //      (NOTE: if C has no pertinent child bicomps, then there are no
+          //             cycle edges from I to descendants of C).
+          child = gp_GetVertexSeparatedDFSChildList(theGraph, I);
           while (child != NIL)
           {
-              if (theGraph->V[child].pertinentBicompList != NIL)
+              if (gp_GetVertexPertinentBicompList(theGraph, child) != NIL)
               {
                   // _Walkdown returns OK even if it couldn't embed all
                   // back edges from I to the subtree rooted by child
@@ -1224,19 +1188,18 @@ int RetVal = OK;
                   }
               }
               child = LCGetNext(theGraph->DFSChildLists,
-                                theGraph->V[I].separatedDFSChildList, child);
+                                gp_GetVertexSeparatedDFSChildList(theGraph, I), child);
           }
 
-          /* If the Walkdown sequence is completed but not all forward edges
-             are embedded or an explicit NONEMBEDDABLE result was returned,
-             then the graph is not planar/outerplanar.
-             The handler below is invoked because some extension algorithms are
-             able to clear the blockage to planarity/outerplanarity and continue
-             the embedder iteration loop (they return OK below).
-             The default implementation simply returns NONEMBEDDABLE, which stops
-             the embedding process. */
-
-          if (theGraph->V[I].fwdArcList != NIL || RetVal == NONEMBEDDABLE)
+          // If the Walkdown sequence is completed but not all forward edges
+          // are embedded or an explicit NONEMBEDDABLE result was returned,
+          // then the graph is not planar/outerplanar.
+          // The handler below is invoked because some extension algorithms are
+          // able to clear the blockage to planarity/outerplanarity and continue
+          // the embedder iteration loop (they return OK below).
+          // The default implementation simply returns NONEMBEDDABLE, which stops
+          // the embedding process.
+          if (gp_GetVertexFwdArcList(theGraph, I) != NIL || RetVal == NONEMBEDDABLE)
           {
               RetVal = theGraph->functions.fpHandleBlockedEmbedIteration(theGraph, I);
               if (RetVal != OK)
@@ -1244,12 +1207,11 @@ int RetVal = OK;
           }
     }
 
-    /* Postprocessing to orient the embedding and merge any remaining separated bicomps,
-       or to isolate an obstruction to planarity/outerplanarity.  Some extension algorithms
-       either do nothing if they have already isolated a subgraph of interest, or they may
-       do so now based on information collected by their implementations of
-       HandleBlockedDescendantBicomp or HandleBlockedEmbedIteration */
-
+    // Postprocessing to orient the embedding and merge any remaining separated bicomps,
+    // or to isolate an obstruction to planarity/outerplanarity.  Some extension algorithms
+    // either do nothing if they have already isolated a subgraph of interest, or they may
+    // do so now based on information collected by their implementations of
+    // HandleBlockedDescendantBicomp or HandleBlockedEmbedIteration
     return theGraph->functions.fpEmbedPostprocess(theGraph, I, RetVal);
 }
 
@@ -1369,7 +1331,7 @@ int  RetVal = edgeEmbeddingResult;
 
 int  _OrientVerticesInEmbedding(graphP theGraph)
 {
-int  R=0, edgeOffset = theGraph->edgeOffset;
+int  R, Vsize = theGraph->N + theGraph->NV;
 
      sp_ClearStack(theGraph->theStack);
 
@@ -1377,7 +1339,7 @@ int  R=0, edgeOffset = theGraph->edgeOffset;
         (i.e. has not been merged during embed), we orient the vertices
         in the bicomp for which it is the root vertex. */
 
-     for (R = theGraph->N; R < edgeOffset; R++)
+     for (R = theGraph->N; R < Vsize; R++)
      {
           if (gp_IsArc(theGraph, gp_GetFirstArc(theGraph, R)))
           {
@@ -1440,13 +1402,13 @@ int  stackBottom = sp_GetCurrentSize(theGraph->theStack);
          J = gp_GetFirstArc(theGraph, V);
          while (gp_IsArc(theGraph, J))
          {
-             if (theGraph->G[J].type == EDGE_DFSCHILD)
+             if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_CHILD)
              {
-                 sp_Push2(theGraph->theStack, theGraph->G[J].v,
-                		  invertedFlag ^ GET_EDGEFLAG_INVERTED(theGraph, J));
+                 sp_Push2(theGraph->theStack, gp_GetNeighbor(theGraph, J),
+                		  invertedFlag ^ gp_GetEdgeFlagInverted(theGraph, J));
 
                  if (!PreserveSigns)
-                	 CLEAR_EDGEFLAG_INVERTED(theGraph, J);
+                	 gp_ClearEdgeFlagInverted(theGraph, J);
              }
 
              J = gp_GetNextArc(theGraph, J);
@@ -1467,11 +1429,11 @@ int  stackBottom = sp_GetCurrentSize(theGraph->theStack);
 
 int  _JoinBicomps(graphP theGraph)
 {
-int  R, N, edgeOffset=theGraph->edgeOffset;
+int  R, N, Vsize = theGraph->N + theGraph->NV;
 
-     for (R=N=theGraph->N; R < edgeOffset; R++)
+     for (R=N=theGraph->N; R < Vsize; R++)
           if (gp_IsArc(theGraph, gp_GetFirstArc(theGraph, R)))
-              _MergeVertex(theGraph, theGraph->V[R-N].DFSParent, 0, R);
+        	  _MergeVertex(theGraph, gp_GetVertexParent(theGraph, R-N), 0, R);
 
      return OK;
 }
@@ -1509,7 +1471,7 @@ int  e_u, e_v, e_ulink, e_vlink;
     		e_ulink = 1;
     	else return NOTOK;
 
-        v = theGraph->G[e_u].v;
+        v = gp_GetNeighbor(theGraph, e_u);
 
         // Now get the external face link in vertex v that indicates the
         // edge e_v which connects back to the prior vertex u.
@@ -1532,8 +1494,8 @@ int  e_u, e_v, e_ulink, e_vlink;
         // This update of the extFace short-circuit is polite but unnecessary.
         // This orientation only occurs once we know we can isolate a K_{3,3},
         // at which point the extFace data structure is not used.
-        theGraph->extFace[u].vertex[e_ulink] = v;
-        theGraph->extFace[v].vertex[e_vlink] = u;
+        gp_SetExtFaceVertex(theGraph, u, e_ulink, v);
+        gp_SetExtFaceVertex(theGraph, v, e_vlink, u);
 
         u = v;
         e_u = gp_GetArc(theGraph, v, 1^e_vlink);
@@ -1542,48 +1504,3 @@ int  e_u, e_v, e_ulink, e_vlink;
     return OK;
 }
 
-/****************************************************************************
- _SetVisitedOnPath()
- This method sets the visited flags to 'visited' on the vertices and edges on
- the path (u, v, ..., w, x) in which all vertices except the endpoints u and x
- are degree 2.  This method avoids performing more than constant work at the
- path endpoints u and x, so the total work is on the order of the path length.
-
- Returns OK on success, NOTOK on internal failure
- ****************************************************************************/
-
-int  _SetVisitedOnPath(graphP theGraph, int u, int v, int w, int x, int visited)
-{
-int  e, eTwin, pathLength=0;
-
-     // We want to exit u from e, but we get eTwin first here in order to avoid
-     // work, in case the degree of u is greater than 2.
-     eTwin = gp_GetNeighborEdgeRecord(theGraph, v, u);
-     if (!gp_IsArc(theGraph, eTwin))
-    	 return NOTOK;
-     e = gp_GetTwinArc(theGraph, eTwin);
-
-     v = u;
-
-     do {
-    	 // Mark the vertex and the exiting edge
-         theGraph->G[v].visited = visited;
-         theGraph->G[e].visited = visited;
-         theGraph->G[eTwin].visited = visited;
-
-    	 // Get the next vertex
-         v = theGraph->G[e].v;
-         e = gp_GetNextArcCircular(theGraph, eTwin);
-         eTwin = gp_GetTwinArc(theGraph, e);
-
-         // A simple reality check on the preconditions of this method
-         if (++pathLength > theGraph->N)
-        	 return NOTOK;
-
-     } while (v != x);
-
-     // Mark the last vertex with 'visited'
-     theGraph->G[x].visited = visited;
-
-     return OK;
-}

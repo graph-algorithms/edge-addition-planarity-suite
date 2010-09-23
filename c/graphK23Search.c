@@ -46,7 +46,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Imported functions */
 
-extern void _FillVisitedFlags(graphP, int);
+extern void _ClearVisitedFlags(graphP);
 
 extern int  _GetNextVertexOnExternalFace(graphP theGraph, int curVertex, int *pPrevLink);
 extern int  _OrientVerticesInBicomp(graphP theGraph, int BicompRoot, int PreserveSigns);
@@ -100,7 +100,7 @@ int J, W, C, RetVal=OK;
 
 /* Traverse each unembedded back edge to the descendant endpoint... */
 
-    J = theGraph->V[I].fwdArcList;
+    J = gp_GetVertexFwdArcList(theGraph, I);
 
     // Ensure we have at least one bicomp on which Walkdown failed, which
     // should always be the case in an error free implementation
@@ -109,15 +109,15 @@ int J, W, C, RetVal=OK;
 
     while (J != NIL)
     {
-        W = theGraph->G[J].v;
+        W = gp_GetNeighbor(theGraph, J);
 
         /* Go from the descendant endpoint to find the ancestor that
             is a child of I, which in turn indicates the root of a
             bicomp on which the Walkdown failed to embed all back edges */
 
         C = W;
-        while (theGraph->V[C].DFSParent != I)
-            C = theGraph->V[C].DFSParent;
+        while (gp_GetVertexParent(theGraph, C) != I)
+            C = gp_GetVertexParent(theGraph, C);
 
         RetVal = _SearchForK23InBicomp(theGraph, I, C+theGraph->N);
 
@@ -133,7 +133,7 @@ int J, W, C, RetVal=OK;
         /* Get the next unembedded back edge from I */
 
         J = gp_GetNextArc(theGraph, J);
-        if (J == theGraph->V[I].fwdArcList)
+        if (J == gp_GetVertexFwdArcList(theGraph, I))
             J = NIL;
     }
 
@@ -166,7 +166,7 @@ int X, Y, XPrevLink, YPrevLink;
 
      if (theGraph->IC.minorType & (MINORTYPE_A|MINORTYPE_B))
      {
-         _FillVisitedFlags(theGraph, 0);
+         _ClearVisitedFlags(theGraph);
 
          if (theGraph->IC.minorType & MINORTYPE_A)
          {
@@ -179,7 +179,7 @@ int X, Y, XPrevLink, YPrevLink;
          else if (theGraph->IC.minorType & MINORTYPE_B)
          {
          int SubtreeRoot = LCGetPrev(theGraph->BicompLists,
-                                     theGraph->V[IC->w].pertinentBicompList, NIL);
+                                     gp_GetVertexPertinentBicompList(theGraph, IC->w), NIL);
 
              if (_FindUnembeddedEdgeToSubtree(theGraph, IC->v, SubtreeRoot, &IC->dw) != TRUE)
                  return NOTOK;
@@ -209,7 +209,7 @@ int X, Y, XPrevLink, YPrevLink;
      if (IC->w != _GetNextVertexOnExternalFace(theGraph, X, &XPrevLink) ||
          IC->w != _GetNextVertexOnExternalFace(theGraph, Y, &YPrevLink))
      {
-         _FillVisitedFlags(theGraph, 0);
+         _ClearVisitedFlags(theGraph);
 
          if (_IsolateOuterplanarityObstructionE1orE2(theGraph) != OK)
              return NOTOK;
@@ -230,7 +230,7 @@ int X, Y, XPrevLink, YPrevLink;
          FUTUREPERTINENT(theGraph, Y, I) ||
          FUTUREPERTINENT(theGraph, IC->w, I))
      {
-         _FillVisitedFlags(theGraph, 0);
+         _ClearVisitedFlags(theGraph);
 
          if (_IsolateOuterplanarityObstructionE3orE4(theGraph) != OK)
              return NOTOK;
