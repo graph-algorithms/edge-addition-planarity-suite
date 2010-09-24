@@ -190,12 +190,3 @@ Once work on a branch is finished,
   # Follow the conflict resolution process above
   # Your work is now not distinguishable from having been done on your trunk local copy the whole time
      # Use your modified trunk as the basis of the Create | Patch ... step of the code review
-
-
-
-
-
-
- 
-
-merge the trunk onto the branch so that the head of the branch can be used to 
