@@ -15,7 +15,7 @@ A non-member is someone who does not have SVN commit access.  By clicking on the
 
 A member is someone who does have SVN commit access granted by the administrator.  Once you are logged in, the Source tab will show the read-write 'https' link for the Trunk.
 
-  # *Obtain a local copy of the project trunk*
+  # *Obtain a local copy of the project trunk (or a branch)*
     # Right-click Package Explorer
     # New | Project
     # SVN | Projects from SVN | Next >>
@@ -30,9 +30,11 @@ A member is someone who does have SVN commit access granted by the administrator
     # Click Save Password and then Click Next
     # Next View is "Select Resource".  Choose the trunk and click Finish 
       * A branch or a changes directory could be selected here instead
-      * You can obtain multiple copies of any part of the project, e.g. multiple copies of the trunk to work on different features or multiple changes directories for code reviews
     # Next View is "Check out as".  Click Finish
       * This accepts "Check out as a project with the name specified", recursive checkout, no ignore
+     
+In a single workspace, the trunk and multiple branches, tags or changes directories can be selected as resources and checked out using the process above. Once an SVN project is checked out, the C project it contains must be imported into the workspace to enable compiling. Unfortunately only one C build project from one of the checked out resources can be in the workspace at a time, so you have to delete the C project of one SVN project resource before importing the C project of another.  Alternately, create multiple eclipse workspaces and check out one SVN project resource into each so that each workspace can import an actively compilable C project as follows:
+
   # *Import the C project*
     # Right-click package explorer and choose "Import..."
     # Choose General | Existing Projects into Workspace
@@ -146,3 +148,54 @@ To download a tag, branch or code review project, the instructions are very simi
 Once this project is obtained, it is necessary to Import the C project in order to be able to compile and debug.  If the workspace already contains a Planarity-C project, then right click and Delete it.  Do not check the checkbox that asks to delete the files on disk.  Then, follow the same instructions as are given above for the trunk to import the C project, perform the first-time build, and perform first-time debug.
 
 When you are done with this Planarity-C project, you can delete it.  Optionally, you can also delete the tag, branch or code review project.  Once done, you can then import the C project from the Planarity-trunk again, then perform the first-time build and first-time debug operations again.
+
+== More about Working with a Branch ==
+
+A branch is expected to allow mutations of the code relative to the baseline trunk code, unlike a tag or a FEATURE-X code review project, so it will likely be more convenient to have a separate workspace so that work on and compiling of the branch can continue in parallel with other branches and the trunk.  To begin a branch, 
+
+  # right-click the trunk SVN project and choose Team | Branch... 
+  # give a name Branch-FEATURE-X.  
+  # create a new workspace in a directory such as Planarity-Branch-FEATURE-X
+  # follow the instructions above to "Obtain a local copy of the trunk (or a branch)" and "Import the C Project".
+
+To ensure that your branch content does not drift to far from current Trunk content, periodically perform a merge of the trunk onto your branch.  
+
+  # right-click the branch SVN project in the branch workspaces, 
+  # choose  Team | Merge ...  
+  # in the "One URL" tab, select the trunk, choose a Start Revision equal to when the branch was started or the revision after the last time you did the merge, and leave the Stop Revision at the Head of the trunk.
+
+This will switch to the Team Synchronizing perspective and show you any changed files and any conflicts.  You can examine all of the merge results, but in particular you have to resolve any conflicts before you can continue.  For each resource showing a red conflict icon, 
+
+  # double-click the file containing a conflict indicator
+  # search the local copy (on the left) for all occurrences of <<<<
+  # fix up the conflicts and remove the conflict markings.
+  # when you are done, save the file
+  # right-click the filename in the Team synchronizing view
+  # choose "Mark as merged".  
+
+When all conflicts are resolved, 
+
+  # switch to the C/C++ perspective 
+  # build and unit test the project
+  # Use Team | Commit... to commit the change to the branch
+  # Add the start and stop revision numbers of the trunk to the comment
+
+Once work on a branch is finished, 
+
+  # Go back to the workspace containing the trunk SVN project
+  # Use Team | Update ...
+  # Use Team | Merge ... to merge Branch-FEATURE-X onto the trunk local copy
+     # In the dialog, use the Reintegrate tab (Eclipse 3.5 and higher)
+     # For older Eclipse versions, you need to use the SVN command-line to reintegrate
+  # Follow the conflict resolution process above
+  # Your work is now not distinguishable from having been done on your trunk local copy the whole time
+     # Use your modified trunk as the basis of the Create | Patch ... step of the code review
+
+
+
+
+
+
+ 
+
+merge the trunk onto the branch so that the head of the branch can be used to 
