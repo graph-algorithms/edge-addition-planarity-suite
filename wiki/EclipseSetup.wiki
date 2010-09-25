@@ -4,7 +4,7 @@
 
 This page tells you how to set up Eclipse to work on this project.  Other environments can be used if desired, in which case analogous setup processes should be used.
 
-These instructions are for Eclipse 3.4 (Ganymede) and the corresponding Subversive plugin for SVN support.  Command-line SVN can be used instead if desired.
+These instructions are for Eclipse 3.6 (Helios) and the corresponding Subversive plugin for SVN support.  Eclipse 3.5 and 3.4 have also been extensively used with this project, except branch reintegration requires the subversive plugin in Eclipse 3.5 or higher. Command-line SVN can be used instead if desired.
 
 = Details =
 
@@ -14,31 +14,25 @@ These instructions are for Eclipse 3.4 (Ganymede) and the corresponding Subversi
     # Ensure the MinGW/bin directory is on the path
     # Obtain the Eclipse IDE for C/C++ developers from http://www.eclipse.org/downloads/
     # Create a directory eclipse/zipfiles and put the download there
-    # Unzip to eclipse/34-cpp-ganymede
-    # Eclipse executable will be in the directory eclipse/34-cpp-ganymede/eclipse
+    # Unzip to eclipse/36-cpp-helios
+    # Eclipse executable will be in the directory eclipse/36-cpp-helios/eclipse
     # Launch eclipse and create workspace in eclipse/workspaces-cpp
-      * You're obviously free to adopt whatever directory structure you want, but this organization is suggested to allow your source code to be independent of installing future versions of eclipse, e.g. you can expand into eclipse/35-cpp-galileo and then load projects from your workspaces-cpp area without having to move them.
-  # *Install Subversive plugin* 
+      * You're obviously free to adopt whatever directory structure you want, but this organization is suggested to allow your source code to be independent of installing  versions of eclipse, e.g. the upgrade from eclipse/35-cpp-galileo did not require moving the workspaces-cpp folder.
+  # *Install Subversive SVN plugins* 
     # Either navigate to http://www.eclipse.org/subversive, click "Downloads" on left panel, click link to install instructions,
     # Or follow instructions below.
     # In Eclipse, choose menu Help | Software Updates
     # Click Available Software tab
     # Must install Subversive plugin
-      * For windows, it's under the Ganymede Update Site, under Collaboration Tools
-      * For linux, it may not be there, in which case you have to click "Add Site..." and add http://download.eclipse.org/technology/subversive/0.7/update-site/
-      * Choose the checkbox for Subversive SVN Team Provider (choose the incubation 0.7.3 release, or the 0.7.7 release can now be used)
-    # Before proceeding to install, must also install Subversive Connectors (incubation) as follows (all three do seem to need to be installed at the same time)
-      * Click "Add Site..."
-      * Add the external update site indicated on the Downloads site 
-        * To find out the update site, click external site link (http://www.polarion.com/products/svn/subversive.php?src=eclipseproject)
-        * Or, just use the following update site (the current one) http://www.polarion.org/projects/subversive/download/eclipse/2.0/update-site/
-        * Click OK to add the site
-      * Back on the Available Software tab, 
-        * Open the Subversive SVN Connectors subtree
-        * Choose the child Subversive SVN Connectors and SVNKit 1.1.7 (the latter is marked optional, but it isn't)
-    # Go back to Ganymede Update Site | Collaboration Tools | Subversive SVN Team Provider and make sure it is still checked
-        * Doing "Add site..." is often unchecking that selection
-    # With all three items checked, click Install...
+      * In update site picker "Work with:", choose Helios - http://download.eclipse.org/releases/helios
+      * Open Collaboration Tools
+      * Choose the checkbox for Subversive SVN Team Provider 
+      * Optionally add the new Revision Graph plugin
+      * Finish
+    # The installation will restart Eclipse.
+    # Once you attempt to use an SVN function, such as downloading the trunk or doing a Team Update, the SVN team provider will launch an installer to get the rest of the SVN plugins
+      * Choose the latest SVN Kit (currently 1.3.2)
+      * For Win32 development, choose latest Native JavaHL (currently 1.6.6)
   # *Environment set up*
     # Window | Preferences
     # Go to General | Editors | Text Editors
