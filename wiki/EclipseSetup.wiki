@@ -4,7 +4,7 @@
 
 This page tells you how to set up Eclipse to work on this project.  Other environments can be used if desired, in which case analogous setup processes should be used.
 
-These instructions are for Eclipse 3.6 (Helios) and the corresponding Subversive plugin for SVN support.  Eclipse 3.5 and 3.4 have also been extensively used with this project, except branch reintegration requires the subversive plugin in Eclipse 3.5 or higher. Command-line SVN can be used instead if desired.
+These instructions are for *Eclipse 3.6 (Helios)* and the corresponding Subversive plugin for SVN support.  Eclipse 3.5 and 3.4 have also been extensively used with this project, except branch reintegration requires the subversive plugin in Eclipse 3.5 or higher. Command-line SVN can be used instead if desired.
 
 = Details =
 
