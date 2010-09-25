@@ -17,7 +17,7 @@ These instructions are for *Eclipse 3.6 (Helios)* and the corresponding Subversi
     # Unzip to eclipse/36-cpp-helios
     # Eclipse executable will be in the directory eclipse/36-cpp-helios/eclipse
     # Launch eclipse and create a 'Planarity' workspace directory within directory eclipse/workspaces-cpp
-      * You're obviously free to adopt whatever directory structure you want, but an organization like this allows your source code to be independent of installing versions of eclipse, e.g. upgrading from eclipse/35-cpp-galileo did not require moving the workspaces-cpp folder.
+      * You're obviously free to adopt any directory structure you want, but an organization like this allows your source code to be independent of eclipse installations, e.g. upgrading from eclipse/35-cpp-galileo did not require moving the workspaces-cpp folder.
   # *Install Subversive SVN plugins* 
     # Either navigate to http://www.eclipse.org/subversive, click "Downloads" on left panel, click link to install instructions,
     # Or follow instructions below.
