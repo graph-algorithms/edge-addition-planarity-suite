@@ -706,31 +706,27 @@ int  nextZig, nextZag, R, ParentCopy, RootID_DFSChild, BicompList;
              // a convenient identifier for the bicomp root.
              RootID_DFSChild = R - N;
 
-             // It is extra unnecessary work to record pertinent bicomps of I
-             // (and to eliminate them later, since no merge happens)
-             if ((ParentCopy = gp_GetVertexParent(theGraph, RootID_DFSChild)) != I)
-             {
-                  // Get the BicompList of the parent copy vertex.
-                  BicompList = gp_GetVertexPertinentBicompList(theGraph, ParentCopy);
+             // Get the BicompList of the parent copy vertex.
+             ParentCopy = gp_GetVertexParent(theGraph, RootID_DFSChild);
+             BicompList = gp_GetVertexPertinentBicompList(theGraph, ParentCopy);
 
-                  // Put the new root vertex in the BicompList.  It is prepended if internally
-                  // active and appended if externally active so that all internally active
-                  // bicomps are processed before any externally active bicomps by virtue of storage.
+			 // Put the new root vertex in the BicompList.  It is prepended if internally
+			 // active and appended if externally active so that all internally active
+			 // bicomps are processed before any externally active bicomps by virtue of storage.
 
-                  // NOTE: Unlike vertices, the activity status of a bicomp is computed solely
-  				  //       using lowpoint. The lowpoint of the DFS child in the bicomp's root edge
-  				  //	     indicates whether the DFS child or any of its descendants are joined by
-  				  //	     a back edge to ancestors of I. If so, then the bicomp rooted at
-  				  //	     RootVertex must contain an externally active vertex so the bicomp must
-  				  //	     be kept on the external face.
-                  if (gp_GetVertexLowpoint(theGraph, RootID_DFSChild) < I)
-                       BicompList = LCAppend(theGraph->BicompLists, BicompList, RootID_DFSChild);
-                  else BicompList = LCPrepend(theGraph->BicompLists, BicompList, RootID_DFSChild);
+			 // NOTE: Unlike vertices, the activity status of a bicomp is computed solely
+			 //       using lowpoint. The lowpoint of the DFS child in the bicomp's root edge
+			 //	     indicates whether the DFS child or any of its descendants are joined by
+			 //	     a back edge to ancestors of I. If so, then the bicomp rooted at
+			 //	     RootVertex must contain an externally active vertex so the bicomp must
+			 //	     be kept on the external face.
+			 if (gp_GetVertexLowpoint(theGraph, RootID_DFSChild) < I)
+			      BicompList = LCAppend(theGraph->BicompLists, BicompList, RootID_DFSChild);
+			 else BicompList = LCPrepend(theGraph->BicompLists, BicompList, RootID_DFSChild);
 
-                  // The head node of the parent copy vertex's bicomp list may have changed, so
-                  // we assign the head of the modified list as the vertex's pertinent bicomp list
-                  gp_SetVertexPertinentBicompList(theGraph, ParentCopy, BicompList);
-             }
+			 // The head node of the parent copy vertex's bicomp list may have changed, so
+			 // we assign the head of the modified list as the vertex's pertinent bicomp list
+			 gp_SetVertexPertinentBicompList(theGraph, ParentCopy, BicompList);
 
              Zig = Zag = ParentCopy;
              ZigPrevLink = 1;
@@ -1166,30 +1162,27 @@ int RetVal = OK;
           //      uniquely associated with the bicomp containing C.
           //      (NOTE: if C has no pertinent child bicomps, then there are no
           //             cycle edges from I to descendants of C).
-          child = gp_GetVertexSeparatedDFSChildList(theGraph, I);
+          child = gp_GetVertexPertinentBicompList(theGraph, I);
           while (child != NIL)
           {
-              if (gp_GetVertexPertinentBicompList(theGraph, child) != NIL)
-              {
-                  // _Walkdown returns OK even if it couldn't embed all
-                  // back edges from I to the subtree rooted by child
-                  // It only returns NONEMBEDDABLE when it was blocked
-            	  // on a descendant bicomp with stopping vertices along
-            	  // both external face paths emanating from the bicomp root
-            	  // Some extension algorithms are able to clear some such
-            	  // blockages with a reduction, and those algorithms only
-            	  // return NONEMBEDDABLE when unable to clear the blockage
-                  if ((RetVal = theGraph->functions.fpWalkDown(theGraph, I, child + N)) != OK)
-                  {
-                      if (RetVal == NONEMBEDDABLE)
-                    	  break;
-                      else
-                    	  return NOTOK;
-                  }
-              }
-              child = LCGetNext(theGraph->DFSChildLists,
-                                gp_GetVertexSeparatedDFSChildList(theGraph, I), child);
+			  // _Walkdown returns OK even if it couldn't embed all
+			  // back edges from I to the subtree rooted by child
+			  // It only returns NONEMBEDDABLE when it was blocked
+			  // on a descendant bicomp with stopping vertices along
+			  // both external face paths emanating from the bicomp root
+			  // Some extension algorithms are able to clear some such
+			  // blockages with a reduction, and those algorithms only
+			  // return NONEMBEDDABLE when unable to clear the blockage
+			  if ((RetVal = theGraph->functions.fpWalkDown(theGraph, I, child + N)) != OK)
+			  {
+				  if (RetVal == NONEMBEDDABLE)
+					  break;
+				  else
+					  return NOTOK;
+			  }
+              child = LCGetNext(theGraph->BicompLists, gp_GetVertexPertinentBicompList(theGraph, I), child);
           }
+          gp_SetVertexPertinentBicompList(theGraph, I, NIL);
 
           // If the Walkdown sequence is completed but not all forward edges
           // are embedded or an explicit NONEMBEDDABLE result was returned,
