@@ -135,6 +135,7 @@ graphP theGraph = (graphP) malloc(sizeof(baseGraphStructure));
 
          theGraph->BicompLists = NULL;
          theGraph->DFSChildLists = NULL;
+         theGraph->sortedDFSChildLists = NULL;
          theGraph->theStack = NULL;
 
          theGraph->buckets = NULL;
@@ -216,7 +217,7 @@ void _InitFunctionTable(graphP theGraph)
 
  For E, we need arcCapacity edge records.
 
- The BicompLists and DFSChildLists are of size N and start out empty.
+ The BicompLists and sortedDFSChildLists are of size N and start out empty.
 
  The stack, initially empty, is made big enough for a pair of integers
 	 per edge record (2 * arcCapacity), or 6N integers if the arcCapacity
@@ -265,6 +266,7 @@ int I, J, Vsize, Esize, stackSize;
     	 (theGraph->E = (edgeRecP) malloc(Esize*sizeof(edgeRec))) == NULL ||
          (theGraph->BicompLists = LCNew(N)) == NULL ||
          (theGraph->DFSChildLists = LCNew(N)) == NULL ||
+         (theGraph->sortedDFSChildLists = LCNew(N)) == NULL ||
          (theGraph->theStack = sp_New(stackSize)) == NULL ||
          (theGraph->buckets = (int *) malloc(N * sizeof(int))) == NULL ||
          (theGraph->bin = LCNew(N)) == NULL ||
@@ -343,6 +345,7 @@ int  I, J, N = theGraph->N, Vsize = N+theGraph->NV, Esize = theGraph->arcCapacit
 
      LCReset(theGraph->BicompLists);
      LCReset(theGraph->DFSChildLists);
+     LCReset(theGraph->sortedDFSChildLists);
      sp_ClearStack(theGraph->theStack);
      LCReset(theGraph->bin);
      sp_ClearStack(theGraph->edgeHoles);
@@ -512,13 +515,14 @@ void _InitVertexRec(graphP theGraph, int I)
 void _InitVertexInfo(graphP theGraph, int I)
 {
     gp_SetVertexParent(theGraph, I, NIL);
-    gp_SetVertexLeastAncestor(theGraph, I, I);
-    gp_SetVertexLowpoint(theGraph, I, I);
+    gp_SetVertexLeastAncestor(theGraph, I, theGraph->N);
+    gp_SetVertexLowpoint(theGraph, I, theGraph->N);
 
     gp_SetVertexVisitedInfo(theGraph, I, theGraph->N);
     gp_SetVertexPertinentAdjacencyInfo(theGraph, I, NIL);
     gp_SetVertexPertinentBicompList(theGraph, I, NIL);
     gp_SetVertexSeparatedDFSChildList(theGraph, I, NIL);
+    gp_SetVertexSortedDFSChildList(theGraph, I, NIL);
     gp_SetVertexFwdArcList(theGraph, I, NIL);
 }
 
@@ -877,6 +881,7 @@ void _ClearGraph(graphP theGraph)
 
      LCFree(&theGraph->BicompLists);
      LCFree(&theGraph->DFSChildLists);
+     LCFree(&theGraph->sortedDFSChildLists);
 
      sp_Free(&theGraph->theStack);
 
@@ -1034,6 +1039,7 @@ int  I, J, N = srcGraph->N, Vsize = N+srcGraph->NV, Esize = srcGraph->arcCapacit
 
      LCCopy(dstGraph->BicompLists, srcGraph->BicompLists);
      LCCopy(dstGraph->DFSChildLists, srcGraph->DFSChildLists);
+     LCCopy(dstGraph->sortedDFSChildLists, srcGraph->sortedDFSChildLists);
      sp_Copy(dstGraph->theStack, srcGraph->theStack);
      sp_Copy(dstGraph->edgeHoles, srcGraph->edgeHoles);
 
