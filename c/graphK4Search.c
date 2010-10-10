@@ -171,13 +171,14 @@ K4SearchContext *context = NULL;
      if (context == NULL)
          return NOTOK;
 
-     while ((C = context->VI[I].sortedDFSChildList) != NIL)
+     while ((C = gp_GetVertexSortedDFSChildList(theGraph, I)) != NIL)
      {
     	 if (context->VI[C].p2dFwdArcCount == 0)
     	 {
-    		 context->VI[I].sortedDFSChildList = LCDelete(
-    				 context->sortedDFSChildLists,
-    				 context->VI[I].sortedDFSChildList, C);
+    		 int newList = LCDelete(theGraph->sortedDFSChildLists,
+    				 	 	 	 	gp_GetVertexSortedDFSChildList(theGraph, I), C);
+
+    		 gp_SetVertexSortedDFSChildList(theGraph, I, newList);
     	 }
     	 else
     	 {

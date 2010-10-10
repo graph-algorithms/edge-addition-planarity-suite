@@ -90,22 +90,10 @@ typedef K4Search_EdgeRec * K4Search_EdgeRecP;
       vertex. As each forward arc is embedded, we decrement this count. When this
       count reaches zero, we remove the vertex from the sortedDFSChildList of its
       parent.
-
-   sortedDFSChildList:
-      During preprocessing, we need a list of the DFS children for each vertex,
-      sorted by their DFS numbers. The core planarity/outerplanarity algorithm
-      calculates a separatedDFSChildList that is sorted by the children's Lowpoints.
-      During processing, a child is removed from the sortedDFSChildList of its
-      parent when the p2dFwdArcCount of the child reaches zero. Thus, this list
-      indicates which subtree children of a vertex still contain unresolved
-      pertinence (unembedded forward arcs). The main search for K4 homeomorphs
-      uses this list to efficiently determine the portion of the graph in which
-      to either find a K4 or to perform reductions than enable more forward arcs
-      to be embedded.
 */
 typedef struct
 {
-        int p2dFwdArcCount, sortedDFSChildList;
+        int p2dFwdArcCount;
 } K4Search_VertexInfo;
 
 typedef K4Search_VertexInfo * K4Search_VertexInfoP;
@@ -118,9 +106,6 @@ typedef struct
 
     // The graph that this context augments
     graphP theGraph;
-
-    // Additional graph-level equipment
-    listCollectionP sortedDFSChildLists;
 
     // Parallel array for additional edge level equipment
     K4Search_EdgeRecP E;

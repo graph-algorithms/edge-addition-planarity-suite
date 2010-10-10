@@ -206,14 +206,14 @@ K33SearchContext *context = NULL;
      e = gp_GetVertexFwdArcList(theGraph, I);
      D = gp_GetNeighbor(theGraph, e);
 
-     C1 = context->VI[I].sortedDFSChildList;
+     C1 = gp_GetVertexSortedDFSChildList(theGraph, I);
 
      FoundOne = FALSE;
 
      while (C1 != NIL && e != NIL)
      {
-        C2 = LCGetNext(context->sortedDFSChildLists,
-                       context->VI[I].sortedDFSChildList, C1);
+        C2 = LCGetNext(theGraph->sortedDFSChildLists,
+        			   gp_GetVertexSortedDFSChildList(theGraph, I), C1);
 
         // If the edge e leads from I to a descendant D of C1,
         // then D will be less than C2 (as explained above),
@@ -843,14 +843,14 @@ int  listHead, child, descendant;
                  /* Push each child as a new subtree root to be considered,
                     except skip those whose lowpoint is too great. */
 
-                 child = context->VI[descendant].sortedDFSChildList;
+                 child = gp_GetVertexSortedDFSChildList(theGraph, descendant);
                  while (child != NIL)
                  {
                      if (gp_GetVertexLowpoint(theGraph, child) < IC->v)
                          sp_Push(theGraph->theStack, child);
 
-                     child = LCGetNext(context->sortedDFSChildLists,
-                                       context->VI[descendant].sortedDFSChildList, child);
+                     child = LCGetNext(theGraph->sortedDFSChildLists,
+                    		 	 	   gp_GetVertexSortedDFSChildList(theGraph, descendant), child);
                  }
              }
          }
@@ -986,6 +986,7 @@ int  R, Rout, Z, ZPrevLink;
 int  _FindK33WithMergeBlocker(graphP theGraph, K33SearchContext *context, int I, int mergeBlocker)
 {
 int  R, RPrevLink, u_max, u, J, W, v;
+int  N = theGraph->N;
 isolatorContextP IC = &theGraph->IC;
 
 /* First, we orient the vertices so we can successfully restore all of the
@@ -1006,19 +1007,19 @@ isolatorContextP IC = &theGraph->IC;
 
      RPrevLink = 1;
      R = mergeBlocker;
-     while (R < theGraph->N)
+     while (R < N)
         R = _GetNextVertexOnExternalFace(theGraph, R, &RPrevLink);
 
      /* Switch the 'current step' variable I to be equal to the
        non-virtual counterpart of the bicomp root. */
 
-     I = gp_GetVertexParent(theGraph, R - theGraph->N);
+     I = gp_GetVertexParent(theGraph, R - N);
 
      /* Eliminate the visitation and pertinence settings for step u_max */
 
-     for (v = 0; v < theGraph->N; v++)
+     for (v = 0; v < N; v++)
      {
-    	 gp_SetVertexVisitedInfo(theGraph, v, I+1);
+    	 gp_SetVertexVisitedInfo(theGraph, v, N);
          gp_SetVertexPertinentAdjacencyInfo(theGraph, v, NIL);
          gp_SetVertexPertinentBicompList(theGraph, v, NIL);
      }
