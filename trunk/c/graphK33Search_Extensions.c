@@ -63,8 +63,7 @@ int  _K33Search_InitStructures(K33SearchContext *context);
 
 /* Forward declarations of overloading functions */
 
-int  _K33Search_CreateFwdArcLists(graphP theGraph);
-void _K33Search_CreateDFSTreeEmbedding(graphP theGraph);
+int  _K33Search_EmbeddingDFSPostprocess(graphP theGraph);
 void _K33Search_EmbedBackEdgeToDescendant(graphP theGraph, int RootSide, int RootVertex, int W, int WPrevLink);
 int  _K33Search_MergeBicomps(graphP theGraph, int I, int RootVertex, int W, int WPrevLink);
 int  _K33Search_MarkDFSPath(graphP theGraph, int ancestor, int descendant);
@@ -132,8 +131,7 @@ int  gp_AttachK33Search(graphP theGraph)
      // return the base function pointers in the context function table
      memset(&context->functions, 0, sizeof(graphFunctionTable));
 
-     context->functions.fpCreateFwdArcLists = _K33Search_CreateFwdArcLists;
-     context->functions.fpCreateDFSTreeEmbedding = _K33Search_CreateDFSTreeEmbedding;
+     context->functions.fpEmbeddingDFSPostprocess = _K33Search_EmbeddingDFSPostprocess;
      context->functions.fpEmbedBackEdgeToDescendant = _K33Search_EmbedBackEdgeToDescendant;
      context->functions.fpMergeBicomps = _K33Search_MergeBicomps;
      context->functions.fpMarkDFSPath = _K33Search_MarkDFSPath;
@@ -199,7 +197,6 @@ void _K33Search_ClearStructures(K33SearchContext *context)
     {
         // Before initialization, the pointers are stray, not NULL
         // Once NULL or allocated, free() or LCFree() can do the job
-        context->sortedDFSChildLists = NULL;
         context->E = NULL;
         context->VI = NULL;
 
@@ -207,7 +204,6 @@ void _K33Search_ClearStructures(K33SearchContext *context)
     }
     else
     {
-        LCFree(&context->sortedDFSChildLists);
         if (context->E != NULL)
         {
             free(context->E);
@@ -234,8 +230,7 @@ int  _K33Search_CreateStructures(K33SearchContext *context)
      if (N <= 0)
          return NOTOK;
 
-     if ((context->sortedDFSChildLists = LCNew(N)) == NULL ||
-         (context->E = (K33Search_EdgeRecP) malloc(Esize*sizeof(K33Search_EdgeRec))) == NULL ||
+     if ((context->E = (K33Search_EdgeRecP) malloc(Esize*sizeof(K33Search_EdgeRec))) == NULL ||
          (context->VI = (K33Search_VertexInfoP) malloc(N*sizeof(K33Search_VertexInfo))) == NULL
         )
      {
@@ -323,7 +318,6 @@ void _K33Search_ReinitializeGraph(graphP theGraph)
 
             // Do the reinitialization that is specific to this module
             _K33Search_InitStructures(context);
-            LCReset(context->sortedDFSChildLists);
         }
 
         // If optimization is not possible, then just stick with what works.
@@ -331,8 +325,6 @@ void _K33Search_ReinitializeGraph(graphP theGraph)
         // reinitialize function.
         else
         {
-            LCReset(context->sortedDFSChildLists);
-
             // The underlying function fpReinitializeGraph() implicitly initializes the K33
             // structures due to the overloads of fpInitEdgeRec() and fpInitVertexInfo().
             // It just does so less efficiently because each invocation of InitEdgeRec
@@ -385,7 +377,6 @@ void *_K33Search_DupContext(void *pContext, void *theGraph)
                  return NULL;
              }
 
-             LCCopy(newContext->sortedDFSChildLists, context->sortedDFSChildLists);
              memcpy(newContext->E, context->E, Esize*sizeof(K33Search_EdgeRec));
              memcpy(newContext->VI, context->VI, N*sizeof(K33Search_VertexInfo));
          }
@@ -407,169 +398,61 @@ void _K33Search_FreeContext(void *pContext)
 }
 
 /********************************************************************
- _K33Search_CreateFwdArcLists()
+ _K33Search_EmbeddingDFSPostprocess()
 
- Puts the forward arcs (back edges from a vertex to its descendants)
- into a circular list indicated by the fwdArcList member, a task
- simplified by the fact that they have already been placed in
- succession at the end of the adjacency list.
-
- For K3,3 search, the forward edges must be sorted.  The sort is linear
- time, but it is a little slower, so we avoid this cost for the other
- planarity-related algorithms.
-
-  Returns OK on success, NOTOK on internal code failure
+ This method is called after the DFS initialization has been performed
+ by the core planarity algorithm.  That initialization includes the
+ assignment of DFIs, DFS parents, and DFS edge types, and then
+ all forward arcs (from a vertex to its descendants) are moved to a
+ forward arc list (sorted by DFI).  For K_{3,3} search, we also need
+ the back arcs (from a vertex to its ancestors) to be moved to a
+ back arc list, though it does not have to be sorted by DFI.
  ********************************************************************/
 
-int _K33Search_CreateFwdArcLists(graphP theGraph)
-{
-    K33SearchContext *context = NULL;
-
-    gp_FindExtension(theGraph, K33SEARCH_ID, (void *)&context);
-    if (context == NULL)
-        return NOTOK;
-
-    // For isolating a K_{3,3} homeomorph, we need the forward edges
-    // of each vertex to be in sorted order by DFI of descendants.
-    // Otherwise we just drop through to the normal processing...
-
-    if (theGraph->embedFlags == EMBEDFLAGS_SEARCHFORK33)
-    {
-    int I, Jcur, Jnext, ancestor;
-
-        // for each vertex v in order, we follow each of its back edges
-        // to the twin forward edge in an ancestor u, then we move
-        // the forward edge to the fwdArcList of u.  Since this loop
-        // processes vertices in order, the fwdArcList of each vertex
-        // will be in order by the neighbor indicated by the forward edges.
-
-        for (I=0; I < theGraph->N; I++)
-        {
-        	// Skip this vertex if it has no edges
-        	Jnext = gp_GetLastArc(theGraph, I);
-        	if (!gp_IsArc(theGraph, Jnext))
-        		continue;
-
-            // Skip the forward edges, which are in succession at the
-        	// end of the arc list (last and its predecessors)
-            while (gp_GetEdgeType(theGraph, Jnext) == EDGE_TYPE_FORWARD)
-                Jnext = gp_GetPrevArc(theGraph, Jnext);
-
-            // Now we want to put all the back arcs in a backArcList, too.
-            // Since we've already skipped past the forward arcs, we continue
-            // with the predecessor arcs until we either run out of arcs or
-            // we find a DFS child arc (the DFS child arcs are in succession
-            // at the beginning of the arc list, so when a child arc is
-            // encountered in the predecessor direction, then there won't be
-            // any more back arcs.
-            while (gp_IsArc(theGraph, Jnext) &&
-                   gp_GetEdgeType(theGraph, Jnext) != EDGE_TYPE_CHILD)
-            {
-                Jcur = Jnext;
-                Jnext = gp_GetPrevArc(theGraph, Jnext);
-
-                if (gp_GetEdgeType(theGraph, Jcur) == EDGE_TYPE_BACK)
-                {
-                    // Remove the back arc from I's adjacency list
-                	gp_DetachArc(theGraph, Jcur);
-
-                    // Put the back arc in the backArcList
-                    if (context->VI[I].backArcList == NIL)
-                    {
-                        context->VI[I].backArcList = Jcur;
-                        gp_SetPrevArc(theGraph, Jcur, Jcur);
-                        gp_SetNextArc(theGraph, Jcur, Jcur);
-                    }
-                    else
-                    {
-                    	gp_AttachArc(theGraph, NIL, context->VI[I].backArcList, 1, Jcur);
-                    }
-
-                    // Determine the ancestor of vertex I to which Jcur connects
-                    ancestor = gp_GetNeighbor(theGraph, Jcur);
-
-                    // Go to the forward arc in the ancestor
-                    Jcur = gp_GetTwinArc(theGraph, Jcur);
-
-                    // Remove the forward arc from the ancestor's adjacency list
-                	gp_DetachArc(theGraph, Jcur);
-
-                    // Add the forward arc to the end of the fwdArcList.
-                    if (gp_GetVertexFwdArcList(theGraph, ancestor) == NIL)
-                    {
-                        gp_SetVertexFwdArcList(theGraph, ancestor, Jcur);
-                        gp_SetPrevArc(theGraph, Jcur, Jcur);
-                        gp_SetNextArc(theGraph, Jcur, Jcur);
-                    }
-                    else
-                    {
-                    	gp_AttachArc(theGraph, NIL, gp_GetVertexFwdArcList(theGraph, ancestor), 1, Jcur);
-                    }
-                }
-            }
-        }
-
-        // Since the fwdArcLists have been created, we do not fall through
-        // to run the superclass implementation
-        return OK;
-    }
-
-    // If we're not actually running a K3,3 search, then we just run the
-    // superclass implementation
-    return context->functions.fpCreateFwdArcLists(theGraph);
-}
-
-/********************************************************************
- _K33Search_CreateDFSTreeEmbedding()
-
- This function overloads the basic planarity version in the manner
- explained by the comments below.  Once the extra behavior is
- performed, the basic planarity version is invoked.
- ********************************************************************/
-
-void _K33Search_CreateDFSTreeEmbedding(graphP theGraph)
+int  _K33Search_EmbeddingDFSPostprocess(graphP theGraph)
 {
     K33SearchContext *context = NULL;
     gp_FindExtension(theGraph, K33SEARCH_ID, (void *)&context);
 
     if (context != NULL)
     {
-        // When searching for K_{3,3} homeomorphs, we need the
-        // list of DFS children for each vertex, which gets lost
-        // during the initial tree embedding (each DFS tree child
-        // arc is moved to the root copy of the vertex)
-
         if (theGraph->embedFlags == EMBEDFLAGS_SEARCHFORK33)
         {
-            int I, J, N;
+        	int I, Jcur, Jnext;
 
-            N = theGraph->N;
-
-            for (I=0; I<N; I++)
+            for (I=0; I < theGraph->N; I++)
             {
-                J = gp_GetFirstArc(theGraph, I);
-
-                // If a vertex has any DFS children, the edges
-                // to them are stored in descending order of
-                // the DFI's along the successor arc pointers, so
-                // we traverse them and prepend each to the
-                // ascending order sortedDFSChildList
-
-                while (gp_IsArc(theGraph, J) && gp_GetEdgeType(theGraph, J) == EDGE_TYPE_CHILD)
+            	Jcur = gp_GetFirstArc(theGraph, I);
+                while (gp_IsArc(theGraph, Jcur))
                 {
-                    context->VI[I].sortedDFSChildList =
-                        LCPrepend(context->sortedDFSChildLists,
-                                    context->VI[I].sortedDFSChildList,
-                                    gp_GetNeighbor(theGraph, J));
+                    Jnext = gp_GetNextArc(theGraph, Jcur);
 
-                    J = gp_GetNextArc(theGraph, J);
+                    if (gp_GetEdgeType(theGraph, Jcur) == EDGE_TYPE_BACK)
+                    {
+                        // Remove the back arc from I's adjacency list
+                    	gp_DetachArc(theGraph, Jcur);
+
+                        // Put the back arc in the backArcList
+                        if (context->VI[I].backArcList == NIL)
+                        {
+                            context->VI[I].backArcList = Jcur;
+                            gp_SetPrevArc(theGraph, Jcur, Jcur);
+                            gp_SetNextArc(theGraph, Jcur, Jcur);
+                        }
+                        else
+                        {
+                        	gp_AttachArc(theGraph, NIL, context->VI[I].backArcList, 1, Jcur);
+                        }
+                    }
+
+                    Jcur = Jnext;
                 }
             }
         }
-
-        // Invoke the superclass version of the function
-        context->functions.fpCreateDFSTreeEmbedding(theGraph);
+        return context->functions.fpEmbeddingDFSPostprocess(theGraph);
     }
+
+    return NOTOK;
 }
 
 /********************************************************************
@@ -708,24 +591,22 @@ void _K33Search_InitVertexInfo(graphP theGraph, int I)
 
 void _InitK33SearchVertexInfo(K33SearchContext *context, int I)
 {
-    context->VI[I].sortedDFSChildList = NIL;
     context->VI[I].backArcList = NIL;
     context->VI[I].externalConnectionAncestor = NIL;
     context->VI[I].mergeBlocker = NIL;
 }
 
 /********************************************************************
-// This function used to be implemented by going to each
-// vertex, asking for its DFS parent, then finding the
-// edge that lead to that DFS parent and marking it.
-// However, the K3,3 search performs a certain bicomp
-// reduction that is required to preserve the essential
-// structure of the DFS tree.  As a result, sometimes a
-// DFSParent has been reduced out of the graph, but the
-// tree edge leads to the nearest ancestor still in the
-// graph.  So, when we want to leave a vertex, we search
-// for the DFS tree edge to the "parent" (nearest ancestor).
-// then we mark the edge and use it to go up to the "parent".
+// This function used to be implemented by going to each vertex,
+// asking for its DFS parent, then finding the edge that lead to
+// that DFS parent and marking it.
+// However, the K3,3 search performs a certain bicomp reduction that
+// is required to preserve the essential structure of the DFS tree.
+// As a result, sometimes a DFSParent has been reduced out of the
+// graph, but the tree edge leads to the nearest ancestor still in
+// the graph.  So, when we want to leave a vertex, we search for the
+// DFS tree edge to the "parent" (nearest ancestor), then we mark the
+// edge and use it to go up to the "parent".
  ********************************************************************/
 
 int  _K33Search_MarkDFSPath(graphP theGraph, int ancestor, int descendant)

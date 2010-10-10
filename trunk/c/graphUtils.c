@@ -49,8 +49,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Imported functions for FUNCTION POINTERS */
 
-extern int  _CreateFwdArcLists(graphP);
-extern void _CreateDFSTreeEmbedding(graphP theGraph);
+extern int  _EmbeddingDFSPostprocess(graphP theGraph);
 extern int  _SortVertices(graphP theGraph);
 extern void _EmbedBackEdgeToDescendant(graphP theGraph, int RootSide, int RootVertex, int W, int WPrevLink);
 extern void _WalkUp(graphP theGraph, int I, int J);
@@ -171,8 +170,7 @@ graphP theGraph = (graphP) malloc(sizeof(baseGraphStructure));
 
 void _InitFunctionTable(graphP theGraph)
 {
-     theGraph->functions.fpCreateFwdArcLists = _CreateFwdArcLists;
-     theGraph->functions.fpCreateDFSTreeEmbedding = _CreateDFSTreeEmbedding;
+     theGraph->functions.fpEmbeddingDFSPostprocess = _EmbeddingDFSPostprocess;
      theGraph->functions.fpEmbedBackEdgeToDescendant = _EmbedBackEdgeToDescendant;
      theGraph->functions.fpWalkUp = _WalkUp;
      theGraph->functions.fpWalkDown = _WalkDown;

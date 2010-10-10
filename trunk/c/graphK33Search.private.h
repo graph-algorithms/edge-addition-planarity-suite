@@ -62,8 +62,7 @@ typedef K33Search_EdgeRec * K33Search_EdgeRecP;
 // Additional equipment for each primary vertex
 typedef struct
 {
-        int sortedDFSChildList, backArcList;
-        int externalConnectionAncestor, mergeBlocker;
+        int backArcList, externalConnectionAncestor, mergeBlocker;
 } K33Search_VertexInfo;
 
 typedef K33Search_VertexInfo * K33Search_VertexInfoP;
@@ -76,9 +75,6 @@ typedef struct
 
     // The graph that this context augments
     graphP theGraph;
-
-    // Additional graph-level equipment
-    listCollectionP sortedDFSChildLists;
 
     // Parallel array for additional edge level equipment
     K33Search_EdgeRecP E;

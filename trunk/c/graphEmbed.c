@@ -56,8 +56,7 @@ extern int _IsolateOuterplanarObstruction(graphP theGraph, int I, int R);
 /* Private functions (some are exported to system only) */
 
 void _CreateSortedSeparatedDFSChildLists(graphP theGraph);
-int  _CreateFwdArcLists(graphP theGraph);
-void _CreateDFSTreeEmbedding(graphP theGraph);
+int  _EmbeddingDFSPostprocess(graphP theGraph);
 
 void _EmbedBackEdgeToDescendant(graphP theGraph, int RootSide, int RootVertex, int W, int WPrevLink);
 
@@ -242,6 +241,10 @@ platform_GetTime(start);
     if (gp_SortVertices(theGraph) != OK)
         return NOTOK;
 
+    // Allow extension algorithms to postprocess the DFS
+    if (theGraph->functions.fpEmbeddingDFSPostprocess(theGraph) != OK)
+    	return NOTOK;
+
     // Calculate the lowpoint values
     // (After the separatedDFSChildList construct is eliminated, this can be deferred to gp_Embed()
     //  where lowpoint calculation is not done until/unless needed)
@@ -309,6 +312,22 @@ printf("Initialize embedding in %.3lf seconds.\n", platform_GetDuration(start,en
 #endif
 
 	return OK;
+}
+
+/********************************************************************
+ _EmbeddingDFSPostprocess()
+
+ By default there is no DFS postprocessing since it is done in
+ _EmbeddingInitialize() without providing extension algorithms the
+ chance to suppress it by not calling this function.
+ So this function just returns OK so that extensions can add behavior
+ before the adjacency list structure is changed to an embedding of
+ the DFS tree.
+ ********************************************************************/
+
+int  _EmbeddingDFSPostprocess(graphP theGraph)
+{
+     return OK;
 }
 
 /********************************************************************

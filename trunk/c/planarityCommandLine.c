@@ -252,8 +252,8 @@ int runSpecificGraphTest(char *command, char *infileName);
 
 int runQuickRegressionTests(int argc, char *argv[])
 {
-//	if (runSpecificGraphTests() < 0)
-//		return -1;
+	if (runSpecificGraphTests() < 0)
+		return -1;
 
 	return runNautyTests(argc, argv);
 }
