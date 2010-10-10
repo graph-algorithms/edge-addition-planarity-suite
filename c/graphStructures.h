@@ -381,6 +381,7 @@ typedef struct
     int pertinentAdjacencyInfo,
 		pertinentBicompList,
 		separatedDFSChildList,
+		sortedDFSChildList,
 		fwdArcList;
 } vertexInfo;
 
@@ -406,6 +407,9 @@ typedef vertexInfo * vertexInfoP;
 
 #define gp_GetVertexSeparatedDFSChildList(theGraph, v) (theGraph->VI[v].separatedDFSChildList)
 #define gp_SetVertexSeparatedDFSChildList(theGraph, v, theSeparatedDFSChildList) (theGraph->VI[v].separatedDFSChildList = theSeparatedDFSChildList)
+
+#define gp_GetVertexSortedDFSChildList(theGraph, v) (theGraph->VI[v].sortedDFSChildList)
+#define gp_SetVertexSortedDFSChildList(theGraph, v, theSortedDFSChildList) (theGraph->VI[v].sortedDFSChildList = theSortedDFSChildList)
 
 #define gp_GetVertexFwdArcList(theGraph, v) (theGraph->VI[v].fwdArcList)
 #define gp_SetVertexFwdArcList(theGraph, v, theFwdArcList) (theGraph->VI[v].fwdArcList = theFwdArcList)
@@ -507,7 +511,7 @@ typedef struct
         int internalFlags, embedFlags;
 
         isolatorContext IC;
-        listCollectionP BicompLists, DFSChildLists;
+        listCollectionP BicompLists, DFSChildLists, sortedDFSChildLists;
         int *buckets;
         listCollectionP bin;
         extFaceLinkRecP extFace;
