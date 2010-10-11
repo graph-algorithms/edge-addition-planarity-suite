@@ -645,7 +645,7 @@ int  VsizeOccupied = theGraph->N + theGraph->NV;
 
      for (R = theGraph->N; R < VsizeOccupied; R++)
      {
-          if (R != BicompRoot && gp_IsArc(theGraph, gp_GetFirstArc(theGraph, R)) )
+          if (R != BicompRoot && gp_VirtualVertexInUse(theGraph, R))
           {
               if (_ClearVisitedFlagsInBicomp(theGraph, R) != OK)
             	  return NOTOK;

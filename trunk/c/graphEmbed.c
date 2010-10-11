@@ -1616,7 +1616,7 @@ int  R, Vsize = theGraph->N + theGraph->NV;
 
      for (R = theGraph->N; R < Vsize; R++)
      {
-          if (gp_IsArc(theGraph, gp_GetFirstArc(theGraph, R)))
+          if (gp_VirtualVertexInUse(theGraph, R))
           {
         	  if (_OrientVerticesInBicomp(theGraph, R, 0) != OK)
         		  return NOTOK;
@@ -1707,7 +1707,7 @@ int  _JoinBicomps(graphP theGraph)
 int  R, N, Vsize = theGraph->N + theGraph->NV;
 
      for (R=N=theGraph->N; R < Vsize; R++)
-          if (gp_IsArc(theGraph, gp_GetFirstArc(theGraph, R)))
+          if (gp_VirtualVertexInUse(theGraph, R))
         	  _MergeVertex(theGraph, gp_GetVertexParent(theGraph, R-N), 0, R);
 
      return OK;
