@@ -378,11 +378,19 @@ int  XPrevLink=1, YPrevLink=0, I=theGraph->IC.v;
      *pX = _GetNextVertexOnExternalFace(theGraph, R, &XPrevLink);
      *pY = _GetNextVertexOnExternalFace(theGraph, R, &YPrevLink);
 
+     gp_UpdateVertexFuturePertinentChild(theGraph, *pX, I);
      while (_VertexActiveStatus(theGraph, *pX, I) == VAS_INACTIVE)
+     {
         *pX = _GetNextVertexOnExternalFace(theGraph, *pX, &XPrevLink);
+        gp_UpdateVertexFuturePertinentChild(theGraph, *pX, I);
+     }
 
+     gp_UpdateVertexFuturePertinentChild(theGraph, *pY, I);
      while (_VertexActiveStatus(theGraph, *pY, I) == VAS_INACTIVE)
+     {
         *pY = _GetNextVertexOnExternalFace(theGraph, *pY, &YPrevLink);
+        gp_UpdateVertexFuturePertinentChild(theGraph, *pY, I);
+     }
 }
 
 /****************************************************************************
@@ -774,6 +782,7 @@ int  Z=theGraph->IC.px, ZPrevLink=1,
 
      while (Z != Py)
      {
+    	 gp_UpdateVertexFuturePertinentChild(theGraph, Z, I);
          if (_VertexActiveStatus(theGraph, Z, I) == VAS_EXTERNAL)
              return Z;
 

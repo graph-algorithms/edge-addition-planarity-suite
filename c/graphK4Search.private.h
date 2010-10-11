@@ -68,12 +68,6 @@ extern "C" {
       DFS subtree contains the DFS descendant endpoint D of the forward arc.
       This helps to efficiently find C when (V, D) is embedded so that the
       p2dFwdArcCount of C can be decremented.
-      In order to efficiently calculate this value in preprocessing, the
-      fwdArcList of each vertex is sorted by descendant endpoint DFS number,
-      and the sortedDFSChildList of each vertex is computed. This enables
-      the subtree settings to be made with a single pass simultaneously
-      through the fwdArcList and sortedDFSChildList. See the implementation
-      of CreateDFSTreeEmbedding for details.
  */
 typedef struct
 {
@@ -87,9 +81,8 @@ typedef K4Search_EdgeRec * K4Search_EdgeRecP;
    p2dFwdArcCount:
       During preprocessing, for each vertex we need to know how many forward arcs
       there are from the DFS parent of the vertex to the DFS descendants of the
-      vertex. As each forward arc is embedded, we decrement this count. When this
-      count reaches zero, we remove the vertex from the sortedDFSChildList of its
-      parent.
+      vertex. As each is embedded, we decrement this count. When this count reaches
+      zero, we remove the vertex from the sortedDFSChildList of its parent.
 */
 typedef struct
 {

@@ -343,7 +343,6 @@ typedef extFaceLinkRec * extFaceLinkRecP;
 				 as a step number that implicitly resets on each step, whereas
 				 part of the planar drawing method signifies a first visitation
 				 by storing the index of the first edge used to reach a vertex
-
 	pertinentAdjacencyInfo: Used by the planarity method; during walk-up, each vertex
 	            that is directly adjacent via a back edge to the vertex currently
                 being embedded will have the forward edge's index stored in
@@ -366,9 +365,23 @@ typedef extFaceLinkRec * extFaceLinkRecP;
                 active-- is determined by the lesser of its leastAncestor and
                 the least lowpoint from among only those DFS children that
                 aren't in the same bicomp with the vertex.
-	fwdArcList: at the start of embedding, the back edges from a vertex
-                to its DFS descendants are separated from the main adjacency
-                list and placed in a circular list until they are embedded.
+    futurePertinentChild: indicates a DFS child with a lowpoint less than the
+    			current vertex I.  This member is initialized to the start of
+    			the sortedDFSChildList and is advanced in a relaxed manner as
+    			needed until one with a lowpoint less than I is found or until
+    			there are no more children.
+    sortedDFSChildList: at the start of embedding, the list of DFS children of
+    			this vertex is calculated in ascending order by DFI (sorted in
+    			linear time). The list is used during Walkdown processing of
+    			a vertex to process all of its children.  It is also used in
+    			future pertinence management when processing the ancestors of
+    			the vertex. When a child C is merged into the same bicomp as
+    			the vertex, it is removed from the list.
+	fwdArcList: at the start of embedding, the "back" edges from a vertex to
+                its DFS *descendants* (i.e. the forward arcs of the back edges)
+                are separated from the main adjacency list and placed in a
+                circular list until they are embedded. The list is sorted in
+                ascending DFI order of the descendants (in linear time).
                 This member indicates a node in that list.
 */
 
@@ -381,6 +394,7 @@ typedef struct
     int pertinentAdjacencyInfo,
 		pertinentBicompList,
 		separatedDFSChildList,
+		futurePertinentChild,
 		sortedDFSChildList,
 		fwdArcList;
 } vertexInfo;
@@ -407,6 +421,24 @@ typedef vertexInfo * vertexInfoP;
 
 #define gp_GetVertexSeparatedDFSChildList(theGraph, v) (theGraph->VI[v].separatedDFSChildList)
 #define gp_SetVertexSeparatedDFSChildList(theGraph, v, theSeparatedDFSChildList) (theGraph->VI[v].separatedDFSChildList = theSeparatedDFSChildList)
+
+#define gp_GetVertexFuturePertinentChild(theGraph, v) (theGraph->VI[v].futurePertinentChild)
+#define gp_SetVertexFuturePertinentChild(theGraph, v, theFuturePertinentChild) (theGraph->VI[v].futurePertinentChild = theFuturePertinentChild)
+
+// Skip children that 1) aren't future pertinent, 2) have been merged into the bicomp with v
+#define gp_UpdateVertexFuturePertinentChild(theGraph, v, I) \
+	while (theGraph->VI[v].futurePertinentChild != NIL) \
+	{ \
+		if (gp_GetVertexLowpoint(theGraph, theGraph->VI[v].futurePertinentChild) >= I || \
+            !gp_IsArc(theGraph, gp_GetFirstArc(theGraph, theGraph->VI[v].futurePertinentChild + theGraph->N))) \
+        { \
+			theGraph->VI[v].futurePertinentChild = \
+					LCGetNext(theGraph->sortedDFSChildLists, \
+							  gp_GetVertexSortedDFSChildList(theGraph, v), \
+							  theGraph->VI[v].futurePertinentChild); \
+        } \
+        else break; \
+	}
 
 #define gp_GetVertexSortedDFSChildList(theGraph, v) (theGraph->VI[v].sortedDFSChildList)
 #define gp_SetVertexSortedDFSChildList(theGraph, v, theSortedDFSChildList) (theGraph->VI[v].sortedDFSChildList = theSortedDFSChildList)
@@ -662,6 +694,9 @@ void 	gp_DetachArc(graphP theGraph, int arc);
  _VertexActiveStatus()
  Tells whether a vertex is externally active, internally active
  or inactive.
+
+ Note that gp_UpdateVertexFuturePertinentChild() must be called before
+ this macro.
  ********************************************************************/
 
 #define _VertexActiveStatus(theGraph, theVertex, I) \
@@ -696,12 +731,12 @@ void 	gp_DetachArc(graphP theGraph, int arc);
  FUTUREPERTINENT()
  A vertex is future-pertinent in a partially processed graph if
  there is an unprocessed back edge between a DFS ancestor A of the
- vertex I whose edges are currently being processed and either the
- vertex or a DFS descendant D of the vertex not in the same bicomp
- as the vertex.
+ vertex I whose edges are currently being processed and either
+ theVertex or a DFS descendant D of theVertex not in the same bicomp
+ as theVertex.
 
- The vertex is either directly adjacent to A by an unembedded back edge
- or there is an unembedded back edge (A, D) and the vertex is a cut
+ Either theVertex is directly adjacent to A by an unembedded back edge
+ or there is an unembedded back edge (A, D) and theVertex is a cut
  vertex in the partially processed graph along the DFS tree path from
  D to A.
 
@@ -712,16 +747,28 @@ void 	gp_DetachArc(graphP theGraph, int arc);
  if the vertex is pertinent due to an unprocessed back edge (I, D1) and
  future pertinent due to an unprocessed back edge (A, D2), then the
  vertex may lose both its pertinence and future pertinence when edge
- (I, D1) is added if D2 is equal to or an ancestor of D1.
+ (I, D1) is added if D2 is in the same subtree as D1.
 
  Generally, pertinence and future pertinence are dynamic properties
  that can change for a vertex after each edge addition.
+
+ Note that gp_UpdateVertexFuturePertinentChild() must be called before
+ this macro. Since it is a statement and not a void expression, the
+ desired commented out version does not compile (except with special
+ compiler extensions not assumed by this code).
  ********************************************************************/
 
 #define FUTUREPERTINENT(theGraph, theVertex, I) \
         (  theGraph->VI[theVertex].leastAncestor < I || \
-           (theGraph->VI[theVertex].separatedDFSChildList != NIL && \
-            theGraph->VI[theGraph->VI[theVertex].separatedDFSChildList].lowpoint < I) )
+           (theGraph->VI[theVertex].futurePertinentChild != NIL && \
+            theGraph->VI[theGraph->VI[theVertex].futurePertinentChild].lowpoint < I) )
+
+// This is the definition that would be preferrable if a while loop could be a void expression
+//#define FUTUREPERTINENT(theGraph, theVertex, I)
+//        (  theGraph->VI[theVertex].leastAncestor < I ||
+//           ((gp_UpdateVertexFuturePertinentChild(theGraph, theVertex, I),
+//        	 theGraph->VI[theVertex].futurePertinentChild != NIL) &&
+//            theGraph->VI[theGraph->VI[theVertex].futurePertinentChild].lowpoint < I) )
 
 /********************************************************************
  EXTERNALLYACTIVE()
@@ -735,11 +782,15 @@ void 	gp_DetachArc(graphP theGraph, int arc);
 
  For outerplanarity-related algorithms, all vertices are always
  externally active, since they must always remain on the external face.
+
+ Note that gp_UpdateVertexFuturePertinentChild() must be called before
+ this macro.
  ********************************************************************/
 
 #define EXTERNALLYACTIVE(theGraph, theVertex, I) \
-        ( ( theGraph->embedFlags & EMBEDFLAGS_OUTERPLANAR) || \
-          FUTUREPERTINENT(theGraph, theVertex, I) )
+        ( FUTUREPERTINENT(theGraph, theVertex, I) || \
+          (theGraph->embedFlags & EMBEDFLAGS_OUTERPLANAR) \
+        )
 
 #ifdef __cplusplus
 }

@@ -819,25 +819,37 @@ int  extFaceVertex;
          // a convenient identifier for the bicomp root.
          RootID_DFSChild = R - theGraph->N;
 
-         /* R is no longer pertinent to Z since we are about to
-            merge R into Z, so we delete R from its pertinent
-            bicomp list (Walkdown gets R from the head of the list). */
-
+         // R is no longer pertinent to Z since we are about to merge R into Z, so we delete R
+         // from Z's pertinent bicomp list (Walkdown gets R from the head of the list).
          theList = gp_GetVertexPertinentBicompList(theGraph, Z);
          theList = LCDelete(theGraph->BicompLists, theList, RootID_DFSChild);
          gp_SetVertexPertinentBicompList(theGraph, Z, theList);
 
-         /* As a result of the merge, the DFS child of Z must be removed
-            from Z's SeparatedDFSChildList because the child has just
-            been joined directly to Z, rather than being separated by a
-            root copy. */
-
+         // As a result of the merge, the DFS child of Z must be removed from Z's
+         // separatedDFSChildList because the child has just been joined directly to Z,
+         // rather than being separated by a root copy.
          theList = gp_GetVertexSeparatedDFSChildList(theGraph, Z);
          theList = LCDelete(theGraph->DFSChildLists, theList, RootID_DFSChild);
          gp_SetVertexSeparatedDFSChildList(theGraph, Z, theList);
 
-         /* Now we push R into Z, eliminating R */
+         // If the merge will place the current future pertinence child into the same bicomp as Z,
+         // then we advance to the next child (or NIL) because future pertinence is
+         if (RootID_DFSChild == gp_GetVertexFuturePertinentChild(theGraph, Z))
+         {
+        	 gp_SetVertexFuturePertinentChild(theGraph, Z,
+        			 LCGetNext(theGraph->sortedDFSChildLists,
+        					   gp_GetVertexSortedDFSChildList(theGraph, Z),
+        					   gp_GetVertexFuturePertinentChild(theGraph, Z)));
+         }
 
+         // As a result of the merge, the DFS child of Z must be removed from Z's
+         // sortedDFSChildList because the child is now in the same bicomp as Z,
+         // rather than a root copy of Z.
+//         theList = gp_GetVertexSortedDFSChildList(theGraph, Z);
+//         theList = LCDelete(theGraph->sortedDFSChildLists, theList, RootID_DFSChild);
+//         gp_SetVertexSortedDFSChildList(theGraph, Z, theList);
+
+         // Now we push R into Z, eliminating R
          _MergeVertex(theGraph, Z, ZPrevLink, R);
      }
 
@@ -1219,6 +1231,9 @@ int  RetVal, W, WPrevLink, R, Rout, X, XPrevLink, Y, YPrevLink, RootSide, RootEd
                     core planarity/outerplanarity decides to stop the WalkDown
                     with the current blocked bicomp at the top of the stack. */
 
+                 gp_UpdateVertexFuturePertinentChild(theGraph, X, I);
+                 gp_UpdateVertexFuturePertinentChild(theGraph, Y, I);
+
                  if (_VertexActiveStatus(theGraph, X, I) == VAS_INTERNAL)
                  {
                       W = X;
@@ -1256,25 +1271,25 @@ int  RetVal, W, WPrevLink, R, Rout, X, XPrevLink, Y, YPrevLink, RootSide, RootEd
 
                  sp_Push2(theGraph->theStack, R, Rout);
              }
-
-             /* Skip inactive vertices, which will be short-circuited
-                later by our fast external face linking method (once
-                upon a time, we added false edges called short-circuit
-                edges to eliminate inactive vertices, but the extFace
-                links can do the same job and also give us the ability
-                to more quickly test planarity without creating an embedding). */
-
-             else if (_VertexActiveStatus(theGraph, W, I) == VAS_INACTIVE)
+             else
              {
-                 if (theGraph->functions.fpHandleInactiveVertex(theGraph, RootVertex, &W, &WPrevLink) != OK)
-                     return NOTOK;
+            	 gp_UpdateVertexFuturePertinentChild(theGraph, W, I);
+
+            	 // Skip inactive vertices, which will be short-circuited later by the fast external face
+            	 // linking method (once upon a time, we added false edges called short-circuit edges to
+            	 // eliminate inactive vertices, but the extFace links can do the same job and also give us
+            	 // the ability to more quickly test planarity without creating an embedding).
+                 if (_VertexActiveStatus(theGraph, W, I) == VAS_INACTIVE)
+                 {
+                     if (theGraph->functions.fpHandleInactiveVertex(theGraph, RootVertex, &W, &WPrevLink) != OK)
+                         return NOTOK;
+                 }
+
+                 // At this point, we know that W is not inactive, but its pertinentAdjacencyInfo is clear,
+                 // and it has no pertinent child bicomps.  Therefore, it is a stopping vertex for the
+                 // Walkdown (future pertinent but not pertinent).
+                 else break;
              }
-
-             /* At this point, we know that W is not inactive, but its adjacentTo flag
-                is clear, and it has no pertinent child bicomps.  Therefore, it
-                is an externally active stopping vertex. */
-
-             else break;
          }
 
          /* We short-circuit the external face of the bicomp by hooking the root
@@ -1418,16 +1433,18 @@ int RetVal = OK;
                   J = NIL;
           }
 
-          // Initialize the lowpoint of I to its least ancestor value.
+          // Walkup recorded which DFS children of I became pertinent, so we clear it
+          // again for future steps
+          gp_SetVertexPertinentBicompList(theGraph, I, NIL);
+
+          // Initializations for future pertinence for future steps
+          gp_SetVertexFuturePertinentChild(theGraph, I, gp_GetVertexSortedDFSChildList(theGraph, I));
 ///          gp_SetVertexLowpoint(theGraph, I, gp_GetVertexLeastAncestor(theGraph, I));
 
           // For each DFS child C of the current vertex,
           //	1) Reduce the lowpoint value of I to lowpoint(C) if it is the lesser
           //	2) If the child C is pertinent, then do a Walkdown to embed the back edges
           child = gp_GetVertexSortedDFSChildList(theGraph, I);
-/*
-          child = gp_GetVertexPertinentBicompList(theGraph, I);
-**/
           while (child != NIL)
           {
 ///        	  if (gp_GetVertexLowpoint(theGraph, I) > gp_GetVertexLowpoint(theGraph, child))
@@ -1450,14 +1467,7 @@ int RetVal = OK;
         	  }
 
 			  child = LCGetNext(theGraph->sortedDFSChildLists, gp_GetVertexSortedDFSChildList(theGraph, I), child);
-/*
-			  child = LCGetNext(theGraph->BicompLists, gp_GetVertexPertinentBicompList(theGraph, I), child);
-**/
           }
-
-          // To reduce condition tests in Walkup, it is allowed to record pertinent roots
-          // of the current vertex I, which we clear here
-          gp_SetVertexPertinentBicompList(theGraph, I, NIL);
 
           // If the Walkdown sequence is completed but not all forward edges are embedded or an
           // explicit NONEMBEDDABLE result was returned, then the graph is not planar/outerplanar.

@@ -520,6 +520,7 @@ void _InitVertexInfo(graphP theGraph, int I)
     gp_SetVertexPertinentAdjacencyInfo(theGraph, I, NIL);
     gp_SetVertexPertinentBicompList(theGraph, I, NIL);
     gp_SetVertexSeparatedDFSChildList(theGraph, I, NIL);
+    gp_SetVertexFuturePertinentChild(theGraph, I, NIL);
     gp_SetVertexSortedDFSChildList(theGraph, I, NIL);
     gp_SetVertexFwdArcList(theGraph, I, NIL);
 }

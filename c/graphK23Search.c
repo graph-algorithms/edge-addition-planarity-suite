@@ -226,6 +226,9 @@ int X, Y, XPrevLink, YPrevLink;
         E3 or E4. Note that this question is query on X, Y and W is
         equivalent to the planarity version of external activity. */
 
+     gp_UpdateVertexFuturePertinentChild(theGraph, X, I);
+     gp_UpdateVertexFuturePertinentChild(theGraph, Y, I);
+     gp_UpdateVertexFuturePertinentChild(theGraph, IC->w, I);
      if (FUTUREPERTINENT(theGraph, X, I) ||
          FUTUREPERTINENT(theGraph, Y, I) ||
          FUTUREPERTINENT(theGraph, IC->w, I))
@@ -315,14 +318,16 @@ int  _IsolateOuterplanarityObstructionE3orE4(graphP theGraph)
 isolatorContextP IC = &theGraph->IC;
 int u, d, XorY;
 
-/* Minor E3 */
-
+	 // Minor E3
+	 gp_UpdateVertexFuturePertinentChild(theGraph, theGraph->IC.x, theGraph->IC.v);
+     gp_UpdateVertexFuturePertinentChild(theGraph, theGraph->IC.y, theGraph->IC.v);
      if (FUTUREPERTINENT(theGraph, theGraph->IC.x, theGraph->IC.v) ||
          FUTUREPERTINENT(theGraph, theGraph->IC.y, theGraph->IC.v))
      {
          if (_MarkHighestXYPath(theGraph) != TRUE)
              return NOTOK;
 
+         gp_UpdateVertexFuturePertinentChild(theGraph, theGraph->IC.x, theGraph->IC.v);
          if (FUTUREPERTINENT(theGraph, theGraph->IC.x, theGraph->IC.v))
               XorY = theGraph->IC.x;
          else XorY = theGraph->IC.y;

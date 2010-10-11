@@ -623,6 +623,7 @@ int  Z=theGraph->IC.px, ZPrevLink=1;
      {
          if (Z != theGraph->IC.w)
          {
+        	gp_UpdateVertexFuturePertinentChild(theGraph, Z, theGraph->IC.v);
             if (_VertexActiveStatus(theGraph, Z, theGraph->IC.v) == VAS_EXTERNAL)
             {
                 theGraph->IC.z = Z;
