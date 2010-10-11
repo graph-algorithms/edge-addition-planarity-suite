@@ -239,6 +239,9 @@ typedef vertexRec * vertexRecP;
 #define gp_SetLastArc(theGraph, v, newLastArc) (theGraph->V[v].link[1] = newLastArc)
 #define gp_SetArc(theGraph, v, theLink, newArc) (theGraph->V[v].link[theLink] = newArc)
 
+#define gp_VirtualVertexInUse(theGraph, virtualVertex) (gp_IsArc(theGraph, gp_GetFirstArc(theGraph, virtualVertex)))
+#define gp_IsSeparatedDFSChild(theGraph, theChild) (gp_VirtualVertexInUse(theGraph, theChild + theGraph->N))
+
 // Accessors for vertex index
 #define gp_GetVertexIndex(theGraph, v) (theGraph->V[v].index)
 #define gp_SetVertexIndex(theGraph, v, theIndex) (theGraph->V[v].index = theIndex)
@@ -425,12 +428,15 @@ typedef vertexInfo * vertexInfoP;
 #define gp_GetVertexFuturePertinentChild(theGraph, v) (theGraph->VI[v].futurePertinentChild)
 #define gp_SetVertexFuturePertinentChild(theGraph, v, theFuturePertinentChild) (theGraph->VI[v].futurePertinentChild = theFuturePertinentChild)
 
-// Skip children that 1) aren't future pertinent, 2) have been merged into the bicomp with v
+// Used to advance futurePertinentChild to the next separated DFS child with a lowpoint less than I
+// Once futurePertinentChild advances past a child, no future planarity operation could make that child
+// relevant to future pertinence
 #define gp_UpdateVertexFuturePertinentChild(theGraph, v, I) \
 	while (theGraph->VI[v].futurePertinentChild != NIL) \
 	{ \
+		/* Skip children that 1) aren't future pertinent, 2) have been merged into the bicomp with v */ \
 		if (gp_GetVertexLowpoint(theGraph, theGraph->VI[v].futurePertinentChild) >= I || \
-            !gp_IsArc(theGraph, gp_GetFirstArc(theGraph, theGraph->VI[v].futurePertinentChild + theGraph->N))) \
+			!gp_IsSeparatedDFSChild(theGraph, theGraph->VI[v].futurePertinentChild)) \
         { \
 			theGraph->VI[v].futurePertinentChild = \
 					LCGetNext(theGraph->sortedDFSChildLists, \

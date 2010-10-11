@@ -512,7 +512,7 @@ int  _K4_ChooseTypeOfNonOuterplanarityMinor(graphP theGraph, int I, int R)
     theGraph->IC.r = R;
 
     // Reality check on data structure integrity
-    if (!gp_IsArc(theGraph, gp_GetFirstArc(theGraph, R)))
+    if (!gp_VirtualVertexInUse(theGraph, R))
     	return NOTOK;
 
     // We are essentially doing a _FindActiveVertices() here, except two things:
