@@ -132,10 +132,9 @@ int _MarkEdge(graphP theGraph, int x, int y);
  DFI of the descendants endpoints.  Also, the sortedDFSChildList of I
  is non-empty, and it is also sorted by DFI of the children.
 
- Any DFS child C of I that has a p2dFwdArcCount of zero is simply
- removed from the sortedDFSChildList of I as it is encountered because
- the zero value means that there are no unembedded forward arcs from I
- to descendants of C.
+ We proceed past a DFS child C of I once its p2dFwdArcCount becomes
+ zero because the zero value means that there are no unembedded forward
+ arcs from I to descendants of C.
 
  As soon as a DFS child C is encountered that has a p2dFwdArcCount
  greater than zero, we simply invoke SearchForK4InBicomp(). The result
@@ -145,10 +144,10 @@ int _MarkEdge(graphP theGraph, int x, int y);
  may or may not resolve all the remaining pertinence in the DFS
  subtree rooted by C.  If it does, then the p2dFwdArcCount of C will
  drop to zero, and the next iteration of the loop in this method will
- remove C from the sortedDFSChildList of I.  If the p2dFwdArcCount of
- C does not drop to zero during the WalkDown, then the bicomp that
- contains C is ready for another search in the next iteration of the
- main loop of this method.
+ move past C to the next child in the sortedDFSChildList of I.  If the
+ p2dFwdArcCount of C does not drop to zero during the WalkDown, then the
+ bicomp that contains C is ready for another K4 search in the next
+ iteration of the main loop of this method.
 
  Overall, the only two legitimate outcomes of this method call are
  1) reductions have enabled further WalkDown calls to resolve all
@@ -171,14 +170,12 @@ K4SearchContext *context = NULL;
      if (context == NULL)
          return NOTOK;
 
-     while ((C = gp_GetVertexSortedDFSChildList(theGraph, I)) != NIL)
+     C = gp_GetVertexSortedDFSChildList(theGraph, I);
+     while (C != NIL)
      {
     	 if (context->VI[C].p2dFwdArcCount == 0)
     	 {
-    		 int newList = LCDelete(theGraph->sortedDFSChildLists,
-    				 	 	 	 	gp_GetVertexSortedDFSChildList(theGraph, I), C);
-
-    		 gp_SetVertexSortedDFSChildList(theGraph, I, newList);
+    		 C = LCGetNext(theGraph->sortedDFSChildLists, gp_GetVertexSortedDFSChildList(theGraph, I), C);
     	 }
     	 else
     	 {
@@ -361,6 +358,8 @@ isolatorContextP IC = &theGraph->IC;
 
     	// Case B1: If both a_x and a_y are future pertinent, then we can stop and
     	// isolate a subgraph homeomorphic to K4.
+    	gp_UpdateVertexFuturePertinentChild(theGraph, a_x, I);
+    	gp_UpdateVertexFuturePertinentChild(theGraph, a_y, I);
     	if (a_x != a_y && FUTUREPERTINENT(theGraph, a_x, I) && FUTUREPERTINENT(theGraph, a_y, I))
     	{
             if (_OrientVerticesInEmbedding(theGraph) != OK ||
@@ -603,6 +602,7 @@ int _K4_FindSecondActiveVertexOnLowExtFacePath(graphP theGraph)
 	// First we test X for future pertinence only (if it were pertinent, then
 	// we wouldn't have been blocked up on this bicomp)
 	Z = _GetNextVertexOnExternalFace(theGraph, Z, &ZPrevLink);
+	gp_UpdateVertexFuturePertinentChild(theGraph, Z, theGraph->IC.v);
     if (FUTUREPERTINENT(theGraph, Z, theGraph->IC.v))
 	{
 		theGraph->IC.z = Z;
@@ -619,6 +619,7 @@ int _K4_FindSecondActiveVertexOnLowExtFacePath(graphP theGraph)
 	{
 		if (Z != theGraph->IC.w)
 		{
+			gp_UpdateVertexFuturePertinentChild(theGraph, Z, theGraph->IC.v);
 		    if (FUTUREPERTINENT(theGraph, Z, theGraph->IC.v))
 			{
 				theGraph->IC.z = Z;
@@ -637,6 +638,7 @@ int _K4_FindSecondActiveVertexOnLowExtFacePath(graphP theGraph)
 	}
 
 	// Now we test Y for future pertinence (same explanation as for X above)
+	gp_UpdateVertexFuturePertinentChild(theGraph, Z, theGraph->IC.v);
     if (FUTUREPERTINENT(theGraph, Z, theGraph->IC.v))
 	{
 		theGraph->IC.z = Z;
@@ -663,11 +665,20 @@ int  _K4_FindPlanarityActiveVertex(graphP theGraph, int I, int R, int prevLink, 
 
 	while (W != R)
 	{
-	    if (PERTINENT(theGraph, W) || FUTUREPERTINENT(theGraph, W, I))
+	    if (PERTINENT(theGraph, W))
 		{
 	    	*pW = W;
 	    	return OK;
 		}
+	    else
+	    {
+	    	gp_UpdateVertexFuturePertinentChild(theGraph, W, I);
+	    	if (FUTUREPERTINENT(theGraph, W, I))
+	    	{
+		    	*pW = W;
+		    	return OK;
+	    	}
+	    }
 
 		W = _GetNextVertexOnExternalFace(theGraph, W, &WPrevLink);
 	}
