@@ -1026,13 +1026,18 @@ isolatorContextP IC = &theGraph->IC;
 
      I = gp_GetVertexParent(theGraph, R - N);
 
-     /* Eliminate the visitation and pertinence settings for step u_max */
+     /* Reinitialize the visitation, pertinence and future pertinence settings from step u_max for step I */
 
      for (v = 0; v < N; v++)
      {
     	 gp_SetVertexVisitedInfo(theGraph, v, N);
          gp_SetVertexPertinentAdjacencyInfo(theGraph, v, NIL);
          gp_SetVertexPertinentBicompList(theGraph, v, NIL);
+
+         // Any calls to actually determine FUTUREPERTINENT status will actually invoke
+         // gp_UpdateVertexFuturePertinentChild(theGraph, v, I) beforehand, so only need
+         // to reinitialize here
+         gp_SetVertexFuturePertinentChild(theGraph, v, gp_GetVertexSortedDFSChildList(theGraph, v));
      }
 
      /* Restore the pertinence settings of step I by doing the Walkup for each
