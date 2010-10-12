@@ -64,8 +64,12 @@ int  _K33Search_InitStructures(K33SearchContext *context);
 /* Forward declarations of overloading functions */
 
 int  _K33Search_EmbeddingDFSPostprocess(graphP theGraph);
+void _CreateBackArcLists(graphP theGraph, K33SearchContext *context);
+void _CalculateLowpoints(graphP theGraph);
+void _CreateSeparatedDFSChildLists(graphP theGraph, K33SearchContext *context);
 void _K33Search_EmbedBackEdgeToDescendant(graphP theGraph, int RootSide, int RootVertex, int W, int WPrevLink);
 int  _K33Search_MergeBicomps(graphP theGraph, int I, int RootVertex, int W, int WPrevLink);
+void _K33Search_MergeVertex(graphP theGraph, int W, int WPrevLink, int R);
 int  _K33Search_MarkDFSPath(graphP theGraph, int ancestor, int descendant);
 int  _K33Search_HandleBlockedEmbedIteration(graphP theGraph, int I);
 int  _K33Search_EmbedPostprocess(graphP theGraph, int I, int edgeEmbeddingResult);
@@ -134,6 +138,7 @@ int  gp_AttachK33Search(graphP theGraph)
      context->functions.fpEmbeddingDFSPostprocess = _K33Search_EmbeddingDFSPostprocess;
      context->functions.fpEmbedBackEdgeToDescendant = _K33Search_EmbedBackEdgeToDescendant;
      context->functions.fpMergeBicomps = _K33Search_MergeBicomps;
+     context->functions.fpMergeVertex = _K33Search_MergeVertex;
      context->functions.fpMarkDFSPath = _K33Search_MarkDFSPath;
      context->functions.fpHandleBlockedEmbedIteration = _K33Search_HandleBlockedEmbedIteration;
      context->functions.fpEmbedPostprocess = _K33Search_EmbedPostprocess;
@@ -200,6 +205,10 @@ void _K33Search_ClearStructures(K33SearchContext *context)
         context->E = NULL;
         context->VI = NULL;
 
+        context->separatedDFSChildLists = NULL;
+        context->buckets = NULL;
+        context->bin = NULL;
+
         context->initialized = 1;
     }
     else
@@ -214,6 +223,14 @@ void _K33Search_ClearStructures(K33SearchContext *context)
             free(context->VI);
             context->VI = NULL;
         }
+
+        LCFree(&context->separatedDFSChildLists);
+		if (context->buckets != NULL)
+		{
+			free(context->buckets);
+			context->buckets = NULL;
+		}
+		LCFree(&context->bin);
     }
 }
 
@@ -231,7 +248,10 @@ int  _K33Search_CreateStructures(K33SearchContext *context)
          return NOTOK;
 
      if ((context->E = (K33Search_EdgeRecP) malloc(Esize*sizeof(K33Search_EdgeRec))) == NULL ||
-         (context->VI = (K33Search_VertexInfoP) malloc(N*sizeof(K33Search_VertexInfo))) == NULL
+         (context->VI = (K33Search_VertexInfoP) malloc(N*sizeof(K33Search_VertexInfo))) == NULL ||
+		 (context->separatedDFSChildLists = LCNew(N)) == NULL ||
+		 (context->buckets = (int *) malloc(N * sizeof(int))) == NULL ||
+		 (context->bin = LCNew(N)) == NULL
         )
      {
          return NOTOK;
@@ -318,6 +338,8 @@ void _K33Search_ReinitializeGraph(graphP theGraph)
 
             // Do the reinitialization that is specific to this module
             _K33Search_InitStructures(context);
+            LCReset(context->separatedDFSChildLists);
+            LCReset(context->bin);
         }
 
         // If optimization is not possible, then just stick with what works.
@@ -325,6 +347,9 @@ void _K33Search_ReinitializeGraph(graphP theGraph)
         // reinitialize function.
         else
         {
+            LCReset(context->separatedDFSChildLists);
+            LCReset(context->bin);
+
             // The underlying function fpReinitializeGraph() implicitly initializes the K33
             // structures due to the overloads of fpInitEdgeRec() and fpInitVertexInfo().
             // It just does so less efficiently because each invocation of InitEdgeRec
@@ -379,6 +404,7 @@ void *_K33Search_DupContext(void *pContext, void *theGraph)
 
              memcpy(newContext->E, context->E, Esize*sizeof(K33Search_EdgeRec));
              memcpy(newContext->VI, context->VI, N*sizeof(K33Search_VertexInfo));
+             LCCopy(newContext->separatedDFSChildLists, context->separatedDFSChildLists);
          }
      }
 
@@ -416,43 +442,151 @@ int  _K33Search_EmbeddingDFSPostprocess(graphP theGraph)
 
     if (context != NULL)
     {
+    	if (context->functions.fpEmbeddingDFSPostprocess(theGraph) != OK)
+    		return NOTOK;
+
         if (theGraph->embedFlags == EMBEDFLAGS_SEARCHFORK33)
         {
-        	int I, Jcur, Jnext;
-
-            for (I=0; I < theGraph->N; I++)
-            {
-            	Jcur = gp_GetFirstArc(theGraph, I);
-                while (gp_IsArc(theGraph, Jcur))
-                {
-                    Jnext = gp_GetNextArc(theGraph, Jcur);
-
-                    if (gp_GetEdgeType(theGraph, Jcur) == EDGE_TYPE_BACK)
-                    {
-                        // Remove the back arc from I's adjacency list
-                    	gp_DetachArc(theGraph, Jcur);
-
-                        // Put the back arc in the backArcList
-                        if (context->VI[I].backArcList == NIL)
-                        {
-                            context->VI[I].backArcList = Jcur;
-                            gp_SetPrevArc(theGraph, Jcur, Jcur);
-                            gp_SetNextArc(theGraph, Jcur, Jcur);
-                        }
-                        else
-                        {
-                        	gp_AttachArc(theGraph, NIL, context->VI[I].backArcList, 1, Jcur);
-                        }
-                    }
-
-                    Jcur = Jnext;
-                }
-            }
+        	_CreateBackArcLists(theGraph, context);
+        	_CalculateLowpoints(theGraph);
+        	_CreateSeparatedDFSChildLists(theGraph, context);
         }
-        return context->functions.fpEmbeddingDFSPostprocess(theGraph);
+
+        return OK;
     }
 
     return NOTOK;
+}
+
+/********************************************************************
+ _CreateBackArcLists()
+ ********************************************************************/
+void _CreateBackArcLists(graphP theGraph, K33SearchContext *context)
+{
+	int I, Jcur, Jnext;
+
+    for (I=0; I < theGraph->N; I++)
+    {
+    	Jcur = gp_GetFirstArc(theGraph, I);
+        while (gp_IsArc(theGraph, Jcur))
+        {
+            Jnext = gp_GetNextArc(theGraph, Jcur);
+
+            if (gp_GetEdgeType(theGraph, Jcur) == EDGE_TYPE_BACK)
+            {
+                // Remove the back arc from I's adjacency list
+            	gp_DetachArc(theGraph, Jcur);
+
+                // Put the back arc in the backArcList
+                if (context->VI[I].backArcList == NIL)
+                {
+                    context->VI[I].backArcList = Jcur;
+                    gp_SetPrevArc(theGraph, Jcur, Jcur);
+                    gp_SetNextArc(theGraph, Jcur, Jcur);
+                }
+                else
+                {
+                	gp_AttachArc(theGraph, NIL, context->VI[I].backArcList, 1, Jcur);
+                }
+            }
+
+            Jcur = Jnext;
+        }
+    }
+}
+
+/********************************************************************
+ _CalculateLowpoints()
+
+ Creating the separatedDFSChildLists depends on all the vertices having
+ lowpoint assignments, whereas the core planarity algorithm can afford
+ to delay lowpoint calculations until the back edges for a vertex to
+ its descendants are embedded.
+
+ Later, K3,3 searching also tests lowpoints of vertices along a path of
+ ancestors of the current vertices anyway.
+ ********************************************************************/
+
+void _CalculateLowpoints(graphP theGraph)
+{
+	int I, N, leastValue, child;
+
+	N = theGraph->N;
+
+	for (I = N-1; I >= 0; I--)
+	{
+		leastValue = I;
+
+	    child = gp_GetVertexSortedDFSChildList(theGraph, I);
+
+	    gp_SetVertexFuturePertinentChild(theGraph, I, child);
+
+	    while (child != NIL)
+	    {
+	    	if (leastValue > gp_GetVertexLowpoint(theGraph, child))
+	    		leastValue = gp_GetVertexLowpoint(theGraph, child);
+
+	        child = LCGetNext(theGraph->sortedDFSChildLists, gp_GetVertexSortedDFSChildList(theGraph, I), child);
+	    }
+
+	    if (leastValue > gp_GetVertexLeastAncestor(theGraph, I))
+			leastValue = gp_GetVertexLeastAncestor(theGraph, I);
+
+		gp_SetVertexLowpoint(theGraph, I, leastValue);
+	}
+}
+
+/********************************************************************
+ _CreateSeparatedDFSChildLists()
+
+ Each vertex gets a list of its DFS children, sorted by lowpoint.
+ ********************************************************************/
+
+void _CreateSeparatedDFSChildLists(graphP theGraph, K33SearchContext *context)
+{
+int *buckets;
+listCollectionP bin;
+int I, L, N, DFSParent, theList;
+
+     N = theGraph->N;
+     buckets = context->buckets;
+     bin = context->bin;
+
+     // Initialize the bin and all the buckets to be empty
+     LCReset(bin);
+     for (I=0; I < N; I++)
+          buckets[I] = NIL;
+
+     // For each vertex, add it to the bucket whose index is equal to the lowpoint of the vertex.
+     for (I=0; I < N; I++)
+     {
+          L = gp_GetVertexLowpoint(theGraph, I);
+          buckets[L] = LCAppend(bin, buckets[L], I);
+     }
+
+     // For each bucket, add each vertex in the bucket to the separatedDFSChildList of its DFSParent.
+     // Since lower numbered buckets are processed before higher numbered buckets, vertices with lower
+     // lowpoint values are added before those with higher lowpoint values, so the separatedDFSChildList
+     // of each vertex is sorted by lowpoint
+     for (I = 0; I < N; I++)
+     {
+          if ((L=buckets[I]) != NIL)
+          {
+              while (L != NIL)
+              {
+                  DFSParent = gp_GetVertexParent(theGraph, L);
+
+                  if (DFSParent != NIL && DFSParent != L)
+                  {
+                      theList = context->VI[DFSParent].separatedDFSChildList;
+                      theList = LCAppend(context->separatedDFSChildLists, theList, L);
+                      context->VI[DFSParent].separatedDFSChildList = theList;
+                  }
+
+                  L = LCGetNext(bin, buckets[I], L);
+              }
+          }
+     }
 }
 
 /********************************************************************
@@ -534,8 +668,7 @@ int  _K33Search_MergeBicomps(graphP theGraph, int I, int RootVertex, int W, int 
             if (mergeBlocker != NIL)
                 return NONEMBEDDABLE;
 
-            // If no merge blocker was found, then remove
-            // W from the stack.
+            // If no merge blocker was found, then remove W from the stack.
             sp_Pop2(theGraph->theStack, W, WPrevLink);
             sp_Pop2(theGraph->theStack, W, WPrevLink);
         }
@@ -551,6 +684,30 @@ int  _K33Search_MergeBicomps(graphP theGraph, int I, int RootVertex, int W, int 
     }
 
     return NOTOK;
+}
+
+/********************************************************************
+ _K33Search_MergeVertex()
+
+ Overload of merge vertex that does basic behavior but also removes
+ the DFS child associated with R from the separatedDFSChildList of W.
+ ********************************************************************/
+void _K33Search_MergeVertex(graphP theGraph, int W, int WPrevLink, int R)
+{
+    K33SearchContext *context = NULL;
+    gp_FindExtension(theGraph, K33SEARCH_ID, (void *)&context);
+
+    if (context != NULL)
+    {
+        if (theGraph->embedFlags == EMBEDFLAGS_SEARCHFORK33)
+        {
+            int theList = context->VI[W].separatedDFSChildList;
+            theList = LCDelete(context->separatedDFSChildLists, theList, R - theGraph->N);
+            context->VI[W].separatedDFSChildList = theList;
+        }
+
+        context->functions.fpMergeVertex(theGraph, W, WPrevLink, R);
+    }
 }
 
 /********************************************************************
@@ -594,6 +751,7 @@ void _InitK33SearchVertexInfo(K33SearchContext *context, int I)
     context->VI[I].backArcList = NIL;
     context->VI[I].externalConnectionAncestor = NIL;
     context->VI[I].mergeBlocker = NIL;
+    context->VI[I].separatedDFSChildList = NIL;
 }
 
 /********************************************************************

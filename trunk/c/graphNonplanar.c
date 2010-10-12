@@ -172,7 +172,7 @@ int  N, X, Y, W, Px, Py, Z, DFSChild, RootId;
  If R is NIL, the routine first determines which bicomp produced non-planarity
  condition.  If the stack is non-empty, then R is on the top of the stack.
  Otherwise, an unembedded fwdArc from the fwdArcList of vertex I is used in
- combination with the separatedDFSChildList of I to determine R.
+ combination with the sortedDFSChildList of I to determine R.
 
  If the parameter R was not NIL, then this method assumes it must operate
  only on the bicomp rooted by R, and it also assumes that the caller has
@@ -339,19 +339,17 @@ int  R, tempChild, fwdArc, W=NIL, C=NIL, I=theGraph->IC.v;
     W = gp_GetNeighbor(theGraph, fwdArc);
 
 /* Find the greatest DFS child C of I that is less than W.  This will
-    give us the ancestor of W that is a child of I.  Since the
-    ancestors of I have not been processed by the planarity algorithm,
-    the separatedDFSChildList of I contains all the children of I. */
+    give us the ancestor of W that is a child of I. */
 
-    tempChild = gp_GetVertexSeparatedDFSChildList(theGraph, I);
+    tempChild = gp_GetVertexSortedDFSChildList(theGraph, I);
 
     while (tempChild != NIL)
     {
         if (tempChild > C && tempChild < W)
             C = tempChild;
 
-        tempChild = LCGetNext(theGraph->DFSChildLists,
-                              gp_GetVertexSeparatedDFSChildList(theGraph, I), tempChild);
+        tempChild = LCGetNext(theGraph->sortedDFSChildLists,
+                              gp_GetVertexSortedDFSChildList(theGraph, I), tempChild);
     }
 
     if (C == NIL) return NIL;
