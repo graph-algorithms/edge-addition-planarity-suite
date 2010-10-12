@@ -55,6 +55,7 @@ extern void _EmbedBackEdgeToDescendant(graphP theGraph, int RootSide, int RootVe
 extern void _WalkUp(graphP theGraph, int I, int J);
 extern int  _WalkDown(graphP theGraph, int I, int RootVertex);
 extern int  _MergeBicomps(graphP theGraph, int I, int RootVertex, int W, int WPrevLink);
+extern void _MergeVertex(graphP theGraph, int W, int WPrevLink, int R);
 extern int  _HandleBlockedDescendantBicomp(graphP theGraph, int I, int RootVertex, int R, int *pRout, int *pW, int *pWPrevLink);
 extern int  _HandleInactiveVertex(graphP theGraph, int BicompRoot, int *pW, int *pWPrevLink);
 extern int  _MarkDFSPath(graphP theGraph, int ancestor, int descendant);
@@ -133,12 +134,12 @@ graphP theGraph = (graphP) malloc(sizeof(baseGraphStructure));
          theGraph->VI = NULL;
 
          theGraph->BicompLists = NULL;
-         theGraph->DFSChildLists = NULL;
          theGraph->sortedDFSChildLists = NULL;
          theGraph->theStack = NULL;
 
-         theGraph->buckets = NULL;
-         theGraph->bin = NULL;
+////         theGraph->DFSChildLists = NULL;
+////         theGraph->buckets = NULL;
+////         theGraph->bin = NULL;
 
          theGraph->extFace = NULL;
 
@@ -175,6 +176,7 @@ void _InitFunctionTable(graphP theGraph)
      theGraph->functions.fpWalkUp = _WalkUp;
      theGraph->functions.fpWalkDown = _WalkDown;
      theGraph->functions.fpMergeBicomps = _MergeBicomps;
+     theGraph->functions.fpMergeVertex = _MergeVertex;
      theGraph->functions.fpHandleBlockedDescendantBicomp = _HandleBlockedDescendantBicomp;
      theGraph->functions.fpHandleInactiveVertex = _HandleInactiveVertex;
      theGraph->functions.fpHandleBlockedEmbedIteration = _HandleBlockedEmbedIteration;
@@ -225,9 +227,6 @@ void _InitFunctionTable(graphP theGraph)
 	 which is big enough to push every edge (to indicate an edge
 	 you only need to indicate one of its two edge records)
 
- buckets and bin are both O(N) in size.  They are used by
-        CreateSortedSeparatedDFSChildLists()
-
   Returns OK on success, NOTOK on all failures.
           On NOTOK, graph extensions are freed so that the graph is
           returned to the post-condition of gp_New().
@@ -263,11 +262,8 @@ int I, J, Vsize, Esize, stackSize;
     	 (theGraph->VI = (vertexInfoP) malloc(N*sizeof(vertexInfo))) == NULL ||
     	 (theGraph->E = (edgeRecP) malloc(Esize*sizeof(edgeRec))) == NULL ||
          (theGraph->BicompLists = LCNew(N)) == NULL ||
-         (theGraph->DFSChildLists = LCNew(N)) == NULL ||
          (theGraph->sortedDFSChildLists = LCNew(N)) == NULL ||
          (theGraph->theStack = sp_New(stackSize)) == NULL ||
-         (theGraph->buckets = (int *) malloc(N * sizeof(int))) == NULL ||
-         (theGraph->bin = LCNew(N)) == NULL ||
          (theGraph->extFace = (extFaceLinkRecP) malloc(Vsize*sizeof(extFaceLinkRec))) == NULL ||
          (theGraph->edgeHoles = sp_New(Esize / 2)) == NULL ||
          0)
@@ -342,10 +338,10 @@ int  I, J, N = theGraph->N, Vsize = N+theGraph->NV, Esize = theGraph->arcCapacit
      _ClearIsolatorContext(theGraph);
 
      LCReset(theGraph->BicompLists);
-     LCReset(theGraph->DFSChildLists);
      LCReset(theGraph->sortedDFSChildLists);
      sp_ClearStack(theGraph->theStack);
-     LCReset(theGraph->bin);
+////     LCReset(theGraph->DFSChildLists);
+////     LCReset(theGraph->bin);
      sp_ClearStack(theGraph->edgeHoles);
 }
 
@@ -519,7 +515,6 @@ void _InitVertexInfo(graphP theGraph, int I)
     gp_SetVertexVisitedInfo(theGraph, I, theGraph->N);
     gp_SetVertexPertinentAdjacencyInfo(theGraph, I, NIL);
     gp_SetVertexPertinentBicompList(theGraph, I, NIL);
-    gp_SetVertexSeparatedDFSChildList(theGraph, I, NIL);
     gp_SetVertexFuturePertinentChild(theGraph, I, NIL);
     gp_SetVertexSortedDFSChildList(theGraph, I, NIL);
     gp_SetVertexFwdArcList(theGraph, I, NIL);
@@ -879,18 +874,17 @@ void _ClearGraph(graphP theGraph)
      _ClearIsolatorContext(theGraph);
 
      LCFree(&theGraph->BicompLists);
-     LCFree(&theGraph->DFSChildLists);
      LCFree(&theGraph->sortedDFSChildLists);
 
      sp_Free(&theGraph->theStack);
 
-     if (theGraph->buckets != NULL)
-     {
-         free(theGraph->buckets);
-         theGraph->buckets = NULL;
-     }
-
-     LCFree(&theGraph->bin);
+////     LCFree(&theGraph->DFSChildLists);
+////     if (theGraph->buckets != NULL)
+////     {
+////         free(theGraph->buckets);
+////         theGraph->buckets = NULL;
+////     }
+////     LCFree(&theGraph->bin);
 
      if (theGraph->extFace != NULL)
      {
@@ -1037,10 +1031,11 @@ int  I, J, N = srcGraph->N, Vsize = N+srcGraph->NV, Esize = srcGraph->arcCapacit
      dstGraph->IC = srcGraph->IC;
 
      LCCopy(dstGraph->BicompLists, srcGraph->BicompLists);
-     LCCopy(dstGraph->DFSChildLists, srcGraph->DFSChildLists);
      LCCopy(dstGraph->sortedDFSChildLists, srcGraph->sortedDFSChildLists);
      sp_Copy(dstGraph->theStack, srcGraph->theStack);
      sp_Copy(dstGraph->edgeHoles, srcGraph->edgeHoles);
+
+////     LCCopy(dstGraph->DFSChildLists, srcGraph->DFSChildLists);
 
      // Copy the set of extensions, which includes copying the
      // extension data as well as the function overload tables

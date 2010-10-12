@@ -166,7 +166,9 @@ isolatorContextP IC = &theGraph->IC;
              return NOTOK;
      }
 
-/* For all other minors, we obtain  */
+/* For all other minors, we obtain an unembedded connecting the current vertex to the
+ 	 pertinent vertex W, and for minor E we collect the additional unembedded ancestor
+ 	 connection for the externally active vertex Z. */
 
      else
      {
@@ -429,21 +431,25 @@ isolatorContextP IC = &theGraph->IC;
  such that either the leastAncestor or the lowpoint of a separated DFS child
  is less than I.  We obtain the minimum possible connection from the cutVertex
  to an ancestor of I.
- NOTE: the separatedDFSChildList is sorted by lowpoint, so the first entry
-       has the lowest lowpoint, i.e. is the "most" externally active.
-       This is why we only need to look at the first entry.
  ****************************************************************************/
 
 int  _GetLeastAncestorConnection(graphP theGraph, int cutVertex)
 {
-int  subtreeRoot = gp_GetVertexSeparatedDFSChildList(theGraph, cutVertex);
-int  ancestor = gp_GetVertexLeastAncestor(theGraph, cutVertex);
+	int listhead, child;
+	int ancestor = gp_GetVertexLeastAncestor(theGraph, cutVertex);
 
-     if (subtreeRoot != NIL &&
-         ancestor > gp_GetVertexLowpoint(theGraph, subtreeRoot))
-         ancestor = gp_GetVertexLowpoint(theGraph, subtreeRoot);
+	listhead = gp_GetVertexSortedDFSChildList(theGraph, cutVertex);
+	child = gp_GetVertexFuturePertinentChild(theGraph, cutVertex);
+	while (child != NIL)
+	{
+		if (gp_IsSeparatedDFSChild(theGraph, child) &&
+			ancestor > gp_GetVertexLowpoint(theGraph, child))
+			ancestor = gp_GetVertexLowpoint(theGraph, child);
 
-     return ancestor;
+		child = LCGetNext(theGraph->sortedDFSChildLists, listhead, child);
+	}
+
+    return ancestor;
 }
 
 /****************************************************************************
@@ -458,33 +464,40 @@ int  ancestor = gp_GetVertexLeastAncestor(theGraph, cutVertex);
  We obtain the minimum possible connection from the cutVertex to an ancestor
  of I, then compute the descendant accordingly.
 
- NOTE: the separatedDFSChildList is sorted by lowpoint, so the first entry
-       has the lowest lowpoint, i.e. is the "most" externally active.
-       This is why we only need to look at the first entry. Even if the
-       cutVertex is externally active but pertinent, any internally active
-       pertinent child bicomps would be later in the separatedDFSChildList
-       because their internal activity suggests a higher lowpoint value.
-
  Returns TRUE if found, FALSE otherwise.
  ****************************************************************************/
 
 int  _FindUnembeddedEdgeToAncestor(graphP theGraph, int cutVertex,
                                    int *pAncestor, int *pDescendant)
 {
-     *pAncestor = _GetLeastAncestorConnection(theGraph, cutVertex);
+ 	int listhead, child, foundChild;
+ 	int ancestor = gp_GetVertexLeastAncestor(theGraph, cutVertex);
 
-     if (*pAncestor == gp_GetVertexLeastAncestor(theGraph, cutVertex))
-     {
-         *pDescendant = cutVertex;
-         return TRUE;
-     }
-     else
-     {
-     int subtreeRoot = gp_GetVertexSeparatedDFSChildList(theGraph, cutVertex);
+ 	listhead = gp_GetVertexSortedDFSChildList(theGraph, cutVertex);
+ 	child = gp_GetVertexFuturePertinentChild(theGraph, cutVertex);
+ 	foundChild = NIL;
+ 	while (child != NIL)
+ 	{
+ 		if (gp_IsSeparatedDFSChild(theGraph, child) &&
+ 			ancestor > gp_GetVertexLowpoint(theGraph, child))
+ 		{
+ 			ancestor = gp_GetVertexLowpoint(theGraph, child);
+ 			foundChild = child;
+ 		}
+ 		child = LCGetNext(theGraph->sortedDFSChildLists, listhead, child);
+ 	}
 
-         return _FindUnembeddedEdgeToSubtree(theGraph, *pAncestor,
-                                             subtreeRoot, pDescendant);
-     }
+ 	*pAncestor = ancestor;
+
+ 	// If the least ancestor connection was direct, then return the cutVertex as the descendant
+ 	if (ancestor == gp_GetVertexLeastAncestor(theGraph, cutVertex))
+ 	{
+        *pDescendant = cutVertex;
+        return TRUE;
+ 	}
+
+ 	// Otherwise find the descendant based on the separated child with least lowpoint
+    return _FindUnembeddedEdgeToSubtree(theGraph, *pAncestor, foundChild, pDescendant);
 }
 
 /****************************************************************************

@@ -64,6 +64,7 @@ typedef struct
         void (*fpWalkUp)();
         int  (*fpWalkDown)();
         int  (*fpMergeBicomps)();
+        void (*fpMergeVertex)();
         int  (*fpHandleInactiveVertex)();
         int  (*fpHandleBlockedDescendantBicomp)();
         int  (*fpHandleBlockedEmbedIteration)();

@@ -79,6 +79,7 @@ extern int  _MarkHighestXYPath(graphP theGraph);
 
 extern int  _IsolateKuratowskiSubgraph(graphP theGraph, int I, int R);
 
+extern int  _GetLeastAncestorConnection(graphP theGraph, int cutVertex);
 extern int  _FindUnembeddedEdgeToCurVertex(graphP theGraph, int cutVertex, int *pDescendant);
 extern int  _FindUnembeddedEdgeToSubtree(graphP theGraph, int ancestor, int SubtreeRoot, int *pDescendant);
 
@@ -93,7 +94,6 @@ extern int  _IsolateMinorE2(graphP theGraph);
 extern int  _IsolateMinorE3(graphP theGraph);
 extern int  _IsolateMinorE4(graphP theGraph);
 
-extern int  _GetLeastAncestorConnection(graphP theGraph, int cutVertex);
 extern int  _MarkDFSPathsToDescendants(graphP theGraph);
 extern int  _AddAndMarkUnembeddedEdges(graphP theGraph);
 
@@ -107,6 +107,7 @@ int  _RunExtraK33Tests(graphP theGraph, K33SearchContext *context);
 int  _SearchForMinorE1(graphP theGraph);
 int  _FinishIsolatorContextInitialization(graphP theGraph, K33SearchContext *context);
 int  _SearchForDescendantExternalConnection(graphP theGraph, K33SearchContext *context, int cutVertex, int u_max);
+int  _Fast_GetLeastAncestorConnection(graphP theGraph, K33SearchContext *context, int cutVertex);
 int  _GetAdjacentAncestorInRange(graphP theGraph, K33SearchContext *context, int vertex,
                                 int closerAncestor, int fartherAncestor);
 int  _FindExternalConnectionDescendantEndpoint(graphP theGraph, int ancestor,
@@ -328,13 +329,13 @@ int tempResult;
         return NONEMBEDDABLE;
      }
 
-/* For minor E (a K5 minor), we run the additional tests to see if
-    minors E1 to E4 apply since these minors isolate a K_{3,3} entangled
-    with the K5. */
+/* For minor E (a K5 minor), we run the additional tests to see if minors E1 to E4 apply
+   since these minors isolate a K_{3,3} entangled with the K5.
+   This is the key location where GetLeastAncestorConnection() must be constant time. */
 
-     IC->ux = _GetLeastAncestorConnection(theGraph, IC->x);
-     IC->uy = _GetLeastAncestorConnection(theGraph, IC->y);
-     IC->uz = _GetLeastAncestorConnection(theGraph, IC->z);
+     IC->ux = _Fast_GetLeastAncestorConnection(theGraph, context, IC->x);
+     IC->uy = _Fast_GetLeastAncestorConnection(theGraph, context, IC->y);
+     IC->uz = _Fast_GetLeastAncestorConnection(theGraph, context, IC->z);
 
      if (IC->z != IC->w ||
          IC->uz > MAX(IC->ux, IC->uy) ||
@@ -722,6 +723,31 @@ isolatorContextP IC = &theGraph->IC;
 }
 
 /****************************************************************************
+ _Fast_GetLeastAncestorConnection()
+
+ This function searches for an ancestor of the current vertex I adjacent by a
+ cycle edge to the given cutVertex or one of its DFS descendants appearing in
+ a separated bicomp. The given cutVertex is assumed to be externally active
+ such that either the leastAncestor or the lowpoint of a separated DFS child
+ is less than I.  We obtain the minimum possible connection from the cutVertex
+ to an ancestor of I.
+
+ This function performs the same operation as _GetLeastAncestorConnection(),
+ except in constant time.
+ ****************************************************************************/
+
+int  _Fast_GetLeastAncestorConnection(graphP theGraph, K33SearchContext *context, int cutVertex)
+{
+	int ancestor = gp_GetVertexLeastAncestor(theGraph, cutVertex);
+	int child = context->VI[cutVertex].separatedDFSChildList;
+
+	if (child != NIL && ancestor > gp_GetVertexLowpoint(theGraph, child))
+		ancestor = gp_GetVertexLowpoint(theGraph, child);
+
+    return ancestor;
+}
+
+/****************************************************************************
  _GetAdjacentAncestorInRange()
  Returns the ancestor of theVertex that is adjacent to theVertex by an
  unembedded back edge and has a DFI strictly between closerAncestor and
@@ -749,17 +775,16 @@ int J = context->VI[theVertex].backArcList;
 
 /****************************************************************************
  _SearchForDescendantExternalConnection()
- Search the cutVertex and each subtree rooted by a vertex in the
- separatedDFSChildList of the cut vertex for an external connection
- to a vertex ancestor to the current vertex V and descendant to u_max.
+ Search the cutVertex and each separated child subtree for an external
+ connection to a vertex ancestor to the current vertex V and descendant to u_max.
 
  The function returns the descendant of u_max found to have an external
  connection to the given cut vertex.
 
  OPTIMIZATION: The subtrees are processed by preorder visitation.  If
  a vertex is visited and has a lowpoint indicating that it and its
- descendants make no external connections, then we prune the subtree,
- eliminating the vertex and its descendants from consideration.
+ descendants make no external connections, then we prune the subtree
+ from the search, eliminating its descendants from consideration.
  Otherwise, if the vertex has an externalConnectionAncestor setting,
  which must have been made by a prior invocation of this function,
  then we use that setting.  If both of these tests fail, then
@@ -794,56 +819,45 @@ int  listHead, child, descendant;
         separated DFS children of the vertex (ignoring those whose
         lowpoint indicates that they make no external connections) */
 
-     /* Begin by pushing the separated DFS children of the cut vertex,
-        except stop when the lowpoint is no longer less than V since
-        external connections are not being made. */
-
+     // Begin by pushing the separated DFS children of the cut vertex with
+     // lowpoints indicating connections to ancestors of the current vertex.
      sp_ClearStack(theGraph->theStack);
-     listHead = child = gp_GetVertexSeparatedDFSChildList(theGraph, cutVertex);
+     listHead = gp_GetVertexSortedDFSChildList(theGraph, cutVertex);
+     child = gp_GetVertexFuturePertinentChild(theGraph, cutVertex);
      while (child != NIL)
      {
-         if (gp_GetVertexLowpoint(theGraph, child) >= IC->v)
-             break;
-         sp_Push(theGraph->theStack, child);
-         child = LCGetNext(theGraph->DFSChildLists, listHead, child);
+         if (gp_GetVertexLowpoint(theGraph, child) < IC->v && gp_IsSeparatedDFSChild(theGraph, child))
+        	 sp_Push(theGraph->theStack, child);
+         child = LCGetNext(theGraph->sortedDFSChildLists, listHead, child);
      }
 
-     /* Now process the stack until it is empty or until we've found the desired connection. */
-
+     // Now process the stack until it is empty or until we've found the desired connection.
      while (!sp_IsEmpty(theGraph->theStack))
      {
          sp_Pop(theGraph->theStack, descendant);
 
-         /* If the vertex has a lowpoint indicating that it makes no external
-            connections, then skip the subtree rooted by the vertex */
-
+         // If the vertex has a lowpoint indicating that it makes no external connections,
+         // then skip the subtree rooted by the vertex
          if (gp_GetVertexLowpoint(theGraph, descendant) < IC->v)
          {
-             /* If a prior invocation has precalculated the result, use it. */
-
+             // If a prior invocation has pre-calculated the result, use it.
              if (context->VI[descendant].externalConnectionAncestor != NIL)
              {
-                 /* If the result is in the range we need, return it.  Otherwise,
-                    skip the subtree rooted by the vertex. */
-
+                 // If the result is in the range we need, return it.  Otherwise, skip the subtree rooted by the vertex.
                  if (context->VI[descendant].externalConnectionAncestor < IC->v &&
                      context->VI[descendant].externalConnectionAncestor > u_max)
                      return context->VI[descendant].externalConnectionAncestor;
              }
 
-             /* If the subtree has not been explored, then explore it. */
-
+             // If the subtree has not been explored, then explore it.
              else
              {
-                 /* Check the subtree root for the desired connection. */
-
+                 // Check the subtree root for the desired connection.
                  u2 = _GetAdjacentAncestorInRange(theGraph, context, descendant, IC->v, u_max);
                  if (u2 != NIL)
                      return u2;
 
-                 /* Push each child as a new subtree root to be considered,
-                    except skip those whose lowpoint is too great. */
-
+                 // Push each child as a new subtree root to be considered, except skip those whose lowpoint is too great.
                  child = gp_GetVertexSortedDFSChildList(theGraph, descendant);
                  while (child != NIL)
                  {
@@ -857,9 +871,7 @@ int  listHead, child, descendant;
          }
      }
 
-/* The only external connections from the cutVertex lead to u_max,
-    so cache the result and return it. */
-
+     // The only external connections from the cutVertex lead to u_max, so cache the result and return it.
      context->VI[cutVertex].externalConnectionAncestor = u_max;
      return u_max;
 }
@@ -906,16 +918,15 @@ int  listHead, child, J;
 
      // Now check the descendants of the cut vertex to see if any make
      // a connection to the ancestor.
-     listHead = child = gp_GetVertexSeparatedDFSChildList(theGraph, cutVertex);
+     listHead = child = gp_GetVertexSortedDFSChildList(theGraph, cutVertex);
      while (child != NIL)
      {
-         if (gp_GetVertexLowpoint(theGraph, child) >= theGraph->IC.v)
-             break;
-
-         if (_FindUnembeddedEdgeToSubtree(theGraph, ancestor, child, pDescendant) == TRUE)
-             return OK;
-
-         child = LCGetNext(theGraph->DFSChildLists, listHead, child);
+         if (gp_GetVertexLowpoint(theGraph, child) < theGraph->IC.v && gp_IsSeparatedDFSChild(theGraph, child))
+         {
+			 if (_FindUnembeddedEdgeToSubtree(theGraph, ancestor, child, pDescendant) == TRUE)
+				 return OK;
+         }
+         child = LCGetNext(theGraph->sortedDFSChildLists, listHead, child);
      }
 
      return NOTOK;
@@ -1309,13 +1320,8 @@ int  v, e, w;
  ancestor of X, Y and W and that has a connection to an ancestor of u_{max}
  (in other words, whether the child C has a lowpoint less than u_{max}).
 
- The separatedDFSChildList of each vertex already contains a list of
- the DFS children sorted by their lowpoint, and the list has not been
- reduced by bicomp merging because the vertices are not descendants of V.
- So, we can process a vertex by examining its leastAncestor and the
- lowpoint of one of the first two elements in its separatedDFSChildList.
- If the first child is an ancestor of X, Y and W, then we look at the
- second child.
+ The sortedDFSChildLIst of the vertex p is scanned for the separated DFS
+ child c of least lowpoint, excluding the ancestor of X, Y and W.
 
  If no bridge straddling u_{max} is found, the function returns NIL.
  If a straddling bridge is found, the function returns a descendant d
@@ -1360,25 +1366,38 @@ int  p, c, d, excludedChild, e;
      excludedChild = IC->r - theGraph->N;
      d = NIL;
 
-/* Starting at V, traverse the ancestor path to u_max looking for a straddling bridge */
-
+     // Starting at V, traverse the ancestor path to u_max looking for a straddling bridge
      while (p > u_max)
      {
-         /* If we find a direct edge from p to an ancestor of u_max, the break. */
-
+         // If we find a direct edge from p to an ancestor of u_max, the break.
          if (gp_GetVertexLeastAncestor(theGraph, p) < u_max)
          {
              d = p;
              break;
          }
 
-         /* Check for a path from p to an ancestor of u_max using the child
-            of p with the least Lowpoint, except the child that is an
-            ancestor of X, Y and W. */
+         // Check for a path from p to an ancestor of u_max using the child of p
+         // with the least Lowpoint, except the child that is an ancestor of X, Y and W.
+         // It is possible to do this just using the sortedDFSChildList, but no point
+         // in not using the separatedDFSChildList
+         /*
+         {
+         int listhead = c = gp_GetVertexSortedDFSChildList(theGraph, p);
+         while (c != NIL)
+         {
+        	 if (c != excludedChild && gp_IsSeparatedDFSChild(theGraph, c))
+        	 {
+        		 if (gp_GetVertexLowpoint(theGraph, c) < u_max)
+        			 break;
+        	 }
 
-         c = gp_GetVertexSeparatedDFSChildList(theGraph, p);
-         if (c == excludedChild)
-             c = LCGetNext(theGraph->DFSChildLists, c, c);
+             c = LCGetNext(theGraph->sortedDFSChildLists, listhead, c);
+         }
+         }
+         */
+      	 c = context->VI[p].separatedDFSChildList;
+      	 if (c == excludedChild)
+      		 c = LCGetNext(context->separatedDFSChildLists, c, c);
 
          if (c != NIL && gp_GetVertexLowpoint(theGraph, c) < u_max)
          {
@@ -1386,21 +1405,17 @@ int  p, c, d, excludedChild, e;
              break;
          }
 
-         /* Check for noStraddle of u_max, break if found */
-
+         // Check for noStraddle of u_max, break if found
          e = gp_GetFirstArc(theGraph, p);
          if (context->E[e].noStraddle == u_max)
              break;
 
-         /* Go to the next ancestor */
-
+         // Go to the next ancestor
          excludedChild = p;
          p = gp_GetVertexParent(theGraph, p);
      }
 
-/* If d is NIL, then no straddling bridge was found, so we do the
-        noStraddle optimization. */
-
+     // If d is NIL, then no straddling bridge was found, so we do the noStraddle optimization.
      if (d == NIL)
      {
          c = IC->v;
@@ -1416,9 +1431,8 @@ int  p, c, d, excludedChild, e;
          }
      }
 
-/* Return either NIL indicating no bridge straddling u_max or the descendant d
-         used to help mark a straddling bridge that was found by this test. */
-
+     // Return either NIL indicating no bridge straddling u_max or the descendant d
+     // used to help mark a straddling bridge that was found by this test.
      return d;
 }
 

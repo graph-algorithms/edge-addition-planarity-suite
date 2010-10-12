@@ -55,7 +55,6 @@ extern int _IsolateOuterplanarObstruction(graphP theGraph, int I, int R);
 
 /* Private functions (some are exported to system only) */
 
-void _CreateSortedSeparatedDFSChildLists(graphP theGraph);
 int  _EmbeddingDFSPostprocess(graphP theGraph);
 
 void _EmbedBackEdgeToDescendant(graphP theGraph, int RootSide, int RootVertex, int W, int WPrevLink);
@@ -97,9 +96,6 @@ int  _EmbeddingInitialize(graphP theGraph)
 {
 	stackP theStack;
 	int N, DFI, I, R, uparent, u, uneighbor, e, J, JTwin, JPrev, JNext;
-	/**/
-	int leastValue, child;
-	/***/
 
 #ifdef PROFILE
 platform_time start, end;
@@ -245,30 +241,6 @@ platform_GetTime(start);
     if (theGraph->functions.fpEmbeddingDFSPostprocess(theGraph) != OK)
     	return NOTOK;
 
-    // Calculate the lowpoint values
-    // (After the separatedDFSChildList construct is eliminated, this can be deferred to gp_Embed()
-    //  where lowpoint calculation is not done until/unless needed)
-/**/
-    for (I = N-1; I >= 0; I--)
-    {
-    	leastValue = I;
-
-        child = gp_GetVertexSortedDFSChildList(theGraph, I);
-        while (child != NIL)
-        {
-        	if (leastValue > gp_GetVertexLowpoint(theGraph, child))
-        		leastValue = gp_GetVertexLowpoint(theGraph, child);
-
-            child = LCGetNext(theGraph->sortedDFSChildLists, gp_GetVertexSortedDFSChildList(theGraph, I), child);
-        }
-
-        if (leastValue > gp_GetVertexLeastAncestor(theGraph, I))
-    		leastValue = gp_GetVertexLeastAncestor(theGraph, I);
-
-    	gp_SetVertexLowpoint(theGraph, I, leastValue);
-    }
-/***/
-
 	// (7) Create the DFS tree embedding using the child edge records stored in the virtual vertices
 	// For each vertex I that is a DFS child, the virtual vertex R that will represent I's parent
 	// in the singleton bicomp with I is at location I + N in the vertex array.
@@ -328,188 +300,6 @@ printf("Initialize embedding in %.3lf seconds.\n", platform_GetDuration(start,en
 int  _EmbeddingDFSPostprocess(graphP theGraph)
 {
      return OK;
-}
-
-/********************************************************************
- _CreateSortedSeparatedDFSChildLists()
- We create a separatedDFSChildList in each vertex to contain references
- to the DFS children vertices sorted in non-descending order by their
- Lowpoint values.
- To accomplish this in linear time for the whole graph, we must not
- sort the DFS children in each vertex, but rather bucket sort the
- Lowpoint values of all vertices, then traverse the buckets sequentially,
- adding each vertex to its parent's separatedDFSChildList.
- Note that this is a specialized bucket sort that achieves O(n)
- worst case rather than O(n) expected time due to the simplicity
- of the sorting problem.  Specifically, we know that the Lowpoint values
- are between 0 and N-1, so we create buckets for each value.
- Collisions occur only when two keys are equal, so there is no
- need to sort the buckets (hence O(n) worst case).
- ********************************************************************/
-
-void  _CreateSortedSeparatedDFSChildLists(graphP theGraph)
-{
-int *buckets;
-listCollectionP bin;
-int I, L, N, DFSParent, theList;
-
-     N = theGraph->N;
-     buckets = theGraph->buckets;
-     bin = theGraph->bin;
-
-     /* Initialize the bin and all the buckets to be empty */
-
-     LCReset(bin);
-     for (I=0; I < N; I++)
-          buckets[I] = NIL;
-
-     /* For each vertex, add it to the bucket whose index is equal to
-        the Lowpoint of the vertex. */
-
-     for (I=0; I < N; I++)
-     {
-          L = gp_GetVertexLowpoint(theGraph, I);
-          buckets[L] = LCAppend(bin, buckets[L], I);
-     }
-
-     /* For each bucket, add each vertex in the bucket to the
-        separatedDFSChildList of its DFSParent.  Since lower numbered buckets
-        are processed before higher numbered buckets, vertices with lower
-        Lowpoint values are added before those with higher Lowpoint values,
-        so the separatedDFSChildList of each vertex is sorted by Lowpoint */
-
-     for (I = 0; I < N; I++)
-     {
-          if ((L=buckets[I]) != NIL)
-          {
-              while (L != NIL)
-              {
-                  DFSParent = gp_GetVertexParent(theGraph, L);
-
-                  if (DFSParent != NIL && DFSParent != L)
-                  {
-                      theList = gp_GetVertexSeparatedDFSChildList(theGraph, DFSParent);
-                      theList = LCAppend(theGraph->DFSChildLists, theList, L);
-                      gp_SetVertexSeparatedDFSChildList(theGraph, DFSParent, theList);
-                  }
-
-                  L = LCGetNext(bin, buckets[I], L);
-              }
-          }
-     }
-}
-
-/********************************************************************
- _CreateFwdArcLists()
-
- Puts the forward arcs (back edges from a vertex to its descendants)
- into a circular list indicated by the fwdArcList member, a task
- simplified by the fact that they have already been placed in
- succession at the end of the adjacency lists by gp_CreateDFSTree().
-
-  Returns OK for success, NOTOK for internal code failure
- ********************************************************************/
-
-int _CreateFwdArcLists(graphP theGraph)
-{
-int I, Jfirst, Jnext, Jlast;
-
-    for (I=0; I < theGraph->N; I++)
-    {
-    	// The forward arcs are already in succession at the end of the adjacency list
-    	// Skip this vertex if it has no edges
-
-    	Jfirst = gp_GetLastArc(theGraph, I);
-    	if (!gp_IsArc(theGraph, Jfirst))
-    		continue;
-
-        // If the vertex has any forward edges at all, then the last edge
-    	// will be a forward edge.  So if we have any forward edges, ...
-
-        if (gp_GetEdgeType(theGraph, Jfirst) == EDGE_TYPE_FORWARD)
-        {
-            // Find the end of the forward edge list
-
-            Jnext = Jfirst;
-            while (gp_GetEdgeType(theGraph, Jnext) == EDGE_TYPE_FORWARD)
-                Jnext = gp_GetPrevArc(theGraph, Jnext);
-            Jlast = gp_GetNextArc(theGraph, Jnext);
-
-            // Remove the forward edges from the adjacency list of I
-            gp_BindLastArc(theGraph, I, Jnext);
-
-            // Make a circular forward edge list
-            gp_SetVertexFwdArcList(theGraph, I, Jfirst);
-            gp_SetNextArc(theGraph, Jfirst, Jlast);
-            gp_SetPrevArc(theGraph, Jlast, Jfirst);
-        }
-    }
-
-    return OK;
-}
-
-/********************************************************************
- _CreateDFSTreeEmbedding()
-
- Each vertex receives only its parent arc in the adjacency list, and
- the corresponding child arc is placed in the adjacency list of a root
- copy of the parent.  Each root copy of a vertex is uniquely associated
- with a child C, so it is simply stored at location C+N.
-
- The forward arcs are not lost because they are already in the
- fwdArcList of each vertex.  Each back arc can be reached as the
- twin arc of a forward arc, and the two are embedded together when
- the forward arc is processed.  Finally, the child arcs are initially
- placed in root copies of vertices, not the vertices themselves, but
- the child arcs are merged into the vertices as the embedder progresses.
- ********************************************************************/
-
-void _CreateDFSTreeEmbedding(graphP theGraph)
-{
-int N, I, J, Jtwin, R;
-
-    N = theGraph->N;
-
-    // Embed all tree edges.  For each DFS tree child, we move
-    // the child arc to a root copy of vertex I that is uniquely
-    // associated with the DFS child, and we remove all edges
-    // from the child except the parent arc
-
-    for (I=0, R=N; I < N; I++, R++)
-    {
-        if (gp_GetVertexParent(theGraph, I) == NIL)
-        {
-        	gp_SetFirstArc(theGraph, I, gp_AdjacencyListEndMark(I));
-        	gp_SetLastArc(theGraph, I, gp_AdjacencyListEndMark(I));
-        }
-        else
-        {
-            J = gp_GetFirstArc(theGraph, I);
-            while (gp_GetEdgeType(theGraph, J) != EDGE_TYPE_PARENT)
-                J = gp_GetNextArc(theGraph, J);
-
-        	gp_SetFirstArc(theGraph, I, J);
-        	gp_SetLastArc(theGraph, I, J);
-
-        	gp_SetNextArc(theGraph, J, gp_AdjacencyListEndMark(I));
-        	gp_SetPrevArc(theGraph, J, gp_AdjacencyListEndMark(I));
-
-        	gp_SetNeighbor(theGraph, J, R);
-
-            Jtwin = gp_GetTwinArc(theGraph, J);
-
-        	gp_SetFirstArc(theGraph, R, Jtwin);
-        	gp_SetLastArc(theGraph, R, Jtwin);
-
-        	gp_SetNextArc(theGraph, Jtwin, gp_AdjacencyListEndMark(R));
-        	gp_SetPrevArc(theGraph, Jtwin, gp_AdjacencyListEndMark(R));
-
-            gp_SetExtFaceVertex(theGraph, R, 0, I);
-            gp_SetExtFaceVertex(theGraph, R, 1, I);
-            gp_SetExtFaceVertex(theGraph, I, 0, R);
-            gp_SetExtFaceVertex(theGraph, I, 1, R);
-        }
-    }
 }
 
 /********************************************************************
@@ -825,13 +615,6 @@ int  extFaceVertex;
          theList = LCDelete(theGraph->BicompLists, theList, RootID_DFSChild);
          gp_SetVertexPertinentBicompList(theGraph, Z, theList);
 
-         // As a result of the merge, the DFS child of Z must be removed from Z's
-         // separatedDFSChildList because the child has just been joined directly to Z,
-         // rather than being separated by a root copy.
-         theList = gp_GetVertexSeparatedDFSChildList(theGraph, Z);
-         theList = LCDelete(theGraph->DFSChildLists, theList, RootID_DFSChild);
-         gp_SetVertexSeparatedDFSChildList(theGraph, Z, theList);
-
          // If the merge will place the current future pertinence child into the same bicomp as Z,
          // then we advance to the next child (or NIL) because future pertinence is
          if (RootID_DFSChild == gp_GetVertexFuturePertinentChild(theGraph, Z))
@@ -842,15 +625,8 @@ int  extFaceVertex;
         					   gp_GetVertexFuturePertinentChild(theGraph, Z)));
          }
 
-         // As a result of the merge, the DFS child of Z must be removed from Z's
-         // sortedDFSChildList because the child is now in the same bicomp as Z,
-         // rather than a root copy of Z.
-//         theList = gp_GetVertexSortedDFSChildList(theGraph, Z);
-//         theList = LCDelete(theGraph->sortedDFSChildLists, theList, RootID_DFSChild);
-//         gp_SetVertexSortedDFSChildList(theGraph, Z, theList);
-
          // Now we push R into Z, eliminating R
-         _MergeVertex(theGraph, Z, ZPrevLink, R);
+         theGraph->functions.fpMergeVertex(theGraph, Z, ZPrevLink, R);
      }
 
      return OK;
@@ -1392,22 +1168,6 @@ int RetVal = OK;
     if (_EmbeddingInitialize(theGraph) != OK)
     	return NOTOK;
 
-/*
-    if (gp_PreprocessForEmbedding(theGraph) != OK)
-          return NOTOK;
-
-    if (!(theGraph->internalFlags & FLAGS_SORTEDBYDFI))
-        if (gp_SortVertices(theGraph) != OK)
-            return NOTOK;
-**/
-    _CreateSortedSeparatedDFSChildLists(theGraph);
-/*
-    if (theGraph->functions.fpCreateFwdArcLists(theGraph) != OK)
-        return NOTOK;
-
-    // Embed the DFS tree edges
-    theGraph->functions.fpCreateDFSTreeEmbedding(theGraph);
-**/
     // In reverse DFI order, embed the back edges from each vertex to its DFS descendants.
     // Vertex and visited info and lowpoint settings are made in step I so they are available
     // to ancestors of I. During processing of I, these values are needed for descendants
@@ -1432,14 +1192,12 @@ int RetVal = OK;
               if (J == gp_GetVertexFwdArcList(theGraph, I))
                   J = NIL;
           }
-
-          // Walkup recorded which DFS children of I became pertinent, so we clear it
-          // again for future steps
           gp_SetVertexPertinentBicompList(theGraph, I, NIL);
 
-          // Initializations for future pertinence for future steps
+          // Initializations for future pertinence for steps after I
           gp_SetVertexFuturePertinentChild(theGraph, I, gp_GetVertexSortedDFSChildList(theGraph, I));
-///          gp_SetVertexLowpoint(theGraph, I, gp_GetVertexLeastAncestor(theGraph, I));
+          if (gp_GetVertexLowpoint(theGraph, I) == N)
+        	  gp_SetVertexLowpoint(theGraph, I, gp_GetVertexLeastAncestor(theGraph, I));
 
           // For each DFS child C of the current vertex,
           //	1) Reduce the lowpoint value of I to lowpoint(C) if it is the lesser
@@ -1447,8 +1205,8 @@ int RetVal = OK;
           child = gp_GetVertexSortedDFSChildList(theGraph, I);
           while (child != NIL)
           {
-///        	  if (gp_GetVertexLowpoint(theGraph, I) > gp_GetVertexLowpoint(theGraph, child))
-///        		  gp_SetVertexLowpoint(theGraph, I, gp_GetVertexLowpoint(theGraph, child));
+        	  if (gp_GetVertexLowpoint(theGraph, I) > gp_GetVertexLowpoint(theGraph, child))
+        		  gp_SetVertexLowpoint(theGraph, I, gp_GetVertexLowpoint(theGraph, child));
 
         	  if (gp_GetVertexPertinentBicompList(theGraph, child) != NIL)
         	  {

@@ -62,7 +62,7 @@ typedef K33Search_EdgeRec * K33Search_EdgeRecP;
 // Additional equipment for each primary vertex
 typedef struct
 {
-        int backArcList, externalConnectionAncestor, mergeBlocker;
+        int separatedDFSChildList, backArcList, externalConnectionAncestor, mergeBlocker;
 } K33Search_VertexInfo;
 
 typedef K33Search_VertexInfo * K33Search_VertexInfoP;
@@ -81,6 +81,12 @@ typedef struct
 
     // Parallel array for additional vertex info level equipment
     K33Search_VertexInfoP VI;
+
+    // Storage for the separatedDFSChildLists, and
+    // to help with linear time sorting of same by lowpoints
+    listCollectionP separatedDFSChildLists;
+    int *buckets;
+    listCollectionP bin;
 
     // Overloaded function pointers
     graphFunctionTable functions;

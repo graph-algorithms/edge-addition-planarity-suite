@@ -359,15 +359,6 @@ typedef extFaceLinkRec * extFaceLinkRecP;
                 externally active pertinent child bicomps are placed at the end
                 of the list as an easy way to make sure all internally active
                 bicomps are processed first.
-	separatedDFSChildList: contains list DFS children of this vertex in
-                non-descending order by lowpoint (sorted in linear time).
-                When merging bicomp rooted by edge (r, c) into vertex v (i.e.
-                merging root copy r with parent copy v), the vertex c is
-                removed from the separatedDFSChildList of v.
-                A vertex's status-- inactive, internally active, externally
-                active-- is determined by the lesser of its leastAncestor and
-                the least lowpoint from among only those DFS children that
-                aren't in the same bicomp with the vertex.
     futurePertinentChild: indicates a DFS child with a lowpoint less than the
     			current vertex I.  This member is initialized to the start of
     			the sortedDFSChildList and is advanced in a relaxed manner as
@@ -396,7 +387,6 @@ typedef struct
 
     int pertinentAdjacencyInfo,
 		pertinentBicompList,
-		separatedDFSChildList,
 		futurePertinentChild,
 		sortedDFSChildList,
 		fwdArcList;
@@ -421,9 +411,6 @@ typedef vertexInfo * vertexInfoP;
 
 #define gp_GetVertexPertinentBicompList(theGraph, v) (theGraph->VI[v].pertinentBicompList)
 #define gp_SetVertexPertinentBicompList(theGraph, v, thePertinentBicompList) (theGraph->VI[v].pertinentBicompList = thePertinentBicompList)
-
-#define gp_GetVertexSeparatedDFSChildList(theGraph, v) (theGraph->VI[v].separatedDFSChildList)
-#define gp_SetVertexSeparatedDFSChildList(theGraph, v, theSeparatedDFSChildList) (theGraph->VI[v].separatedDFSChildList = theSeparatedDFSChildList)
 
 #define gp_GetVertexFuturePertinentChild(theGraph, v) (theGraph->VI[v].futurePertinentChild)
 #define gp_SetVertexFuturePertinentChild(theGraph, v, theFuturePertinentChild) (theGraph->VI[v].futurePertinentChild = theFuturePertinentChild)
@@ -522,12 +509,7 @@ typedef isolatorContext * isolatorContextP;
         IC: contains additional useful variables for Kuratowski subgraph isolation.
         BicompLists: storage space for pertinent bicomp lists that develop
                         during embedding
-        DFSChildLists: storage space for separated DFS child lists that
-                        develop during embedding
-        buckets: Used to help bucket sort the separatedDFSChildList elements
-                    of all vertices (see _CreateSortedSeparatedDFSChildLists())
-        bin: Used to help bucket sort the separatedDFSChildList elements
-                    of all vertices (see _CreateSortedSeparatedDFSChildLists())
+        sortedDFSChildLists: storage for the sorted DFS child lists of each vertex
         extFace: Array of (N + NV) external face short circuit records
 
         extensions: a list of extension data structures
@@ -549,9 +531,7 @@ typedef struct
         int internalFlags, embedFlags;
 
         isolatorContext IC;
-        listCollectionP BicompLists, DFSChildLists, sortedDFSChildLists;
-        int *buckets;
-        listCollectionP bin;
+        listCollectionP BicompLists, sortedDFSChildLists;
         extFaceLinkRecP extFace;
 
         graphExtensionP extensions;
