@@ -822,8 +822,7 @@ int  listHead, child, descendant;
      // Begin by pushing the separated DFS children of the cut vertex with
      // lowpoints indicating connections to ancestors of the current vertex.
      sp_ClearStack(theGraph->theStack);
-     listHead = gp_GetVertexSortedDFSChildList(theGraph, cutVertex);
-     child = gp_GetVertexFuturePertinentChild(theGraph, cutVertex);
+     listHead = child = gp_GetVertexSortedDFSChildList(theGraph, cutVertex);
      while (child != NIL)
      {
          if (gp_GetVertexLowpoint(theGraph, child) < IC->v && gp_IsSeparatedDFSChild(theGraph, child))
