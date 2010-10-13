@@ -62,35 +62,15 @@ extern "C" {
 	  subgraph homeomorphic to K4, if one is indeed found. Thus, we first
 	  delete all edges except for the desired path(s), then we reduce any
 	  retained path to an edge.
-
-   subtree:
-      Used in each forward arc (V, D) to indicate the DFS child C of V whose
-      DFS subtree contains the DFS descendant endpoint D of the forward arc.
-      This helps to efficiently find C when (V, D) is embedded so that the
-      p2dFwdArcCount of C can be decremented.
  */
 typedef struct
 {
-     int  pathConnector, subtree;
+     int pathConnector;
 } K4Search_EdgeRec;
 
 typedef K4Search_EdgeRec * K4Search_EdgeRecP;
 
-/* Additional equipment for each vertex
-
-   p2dFwdArcCount:
-      During preprocessing, for each vertex we need to know how many forward arcs
-      there are from the DFS parent of the vertex to the DFS descendants of the
-      vertex. As each is embedded, we decrement this count. When this count reaches
-      zero, we remove the vertex from the sortedDFSChildList of its parent.
-*/
-typedef struct
-{
-        int p2dFwdArcCount;
-} K4Search_VertexInfo;
-
-typedef K4Search_VertexInfo * K4Search_VertexInfoP;
-
+/* Additional equipment for each vertex: None */
 
 typedef struct
 {
@@ -102,9 +82,6 @@ typedef struct
 
     // Parallel array for additional edge level equipment
     K4Search_EdgeRecP E;
-
-    // Parallel array for additional vertex info level equipment
-    K4Search_VertexInfoP VI;
 
     // Overloaded function pointers
     graphFunctionTable functions;
