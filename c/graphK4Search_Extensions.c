@@ -68,8 +68,6 @@ int  _K4Search_InitStructures(K4SearchContext *context);
 
 /* Forward declarations of overloading functions */
 
-int  _K4Search_EmbeddingDFSPostprocess(graphP theGraph);
-void _K4Search_EmbedBackEdgeToDescendant(graphP theGraph, int RootSide, int RootVertex, int W, int WPrevLink);
 int  _K4Search_MarkDFSPath(graphP theGraph, int ancestor, int descendant);
 int  _K4Search_HandleBlockedEmbedIteration(graphP theGraph, int I);
 int  _K4Search_HandleBlockedDescendantBicomp(graphP theGraph, int I, int RootVertex, int R, int *pRout, int *pW, int *pWPrevLink);
@@ -77,8 +75,6 @@ int  _K4Search_EmbedPostprocess(graphP theGraph, int I, int edgeEmbeddingResult)
 int  _K4Search_CheckEmbeddingIntegrity(graphP theGraph, graphP origGraph);
 int  _K4Search_CheckObstructionIntegrity(graphP theGraph, graphP origGraph);
 
-void _K4Search_InitVertexInfo(graphP theGraph, int I);
-void _InitK4SearchVertexInfo(K4SearchContext *context, int I);
 void _K4Search_InitEdgeRec(graphP theGraph, int J);
 void _InitK4SearchEdgeRec(K4SearchContext *context, int J);
 
@@ -136,8 +132,6 @@ int  gp_AttachK4Search(graphP theGraph)
      // return the base function pointers in the context function table
      memset(&context->functions, 0, sizeof(graphFunctionTable));
 
-     context->functions.fpEmbeddingDFSPostprocess = _K4Search_EmbeddingDFSPostprocess;
-     context->functions.fpEmbedBackEdgeToDescendant = _K4Search_EmbedBackEdgeToDescendant;
      context->functions.fpMarkDFSPath = _K4Search_MarkDFSPath;
      context->functions.fpHandleBlockedEmbedIteration = _K4Search_HandleBlockedEmbedIteration;
      context->functions.fpHandleBlockedDescendantBicomp = _K4Search_HandleBlockedDescendantBicomp;
@@ -145,7 +139,6 @@ int  gp_AttachK4Search(graphP theGraph)
      context->functions.fpCheckEmbeddingIntegrity = _K4Search_CheckEmbeddingIntegrity;
      context->functions.fpCheckObstructionIntegrity = _K4Search_CheckObstructionIntegrity;
 
-     context->functions.fpInitVertexInfo = _K4Search_InitVertexInfo;
      context->functions.fpInitEdgeRec = _K4Search_InitEdgeRec;
 
      context->functions.fpInitGraph = _K4Search_InitGraph;
@@ -203,7 +196,6 @@ void _K4Search_ClearStructures(K4SearchContext *context)
         // Before initialization, the pointers are stray, not NULL
         // Once NULL or allocated, free() or LCFree() can do the job
         context->E = NULL;
-        context->VI = NULL;
 
         context->initialized = 1;
     }
@@ -213,11 +205,6 @@ void _K4Search_ClearStructures(K4SearchContext *context)
         {
             free(context->E);
             context->E = NULL;
-        }
-        if (context->VI != NULL)
-        {
-            free(context->VI);
-            context->VI = NULL;
         }
     }
 }
@@ -236,8 +223,7 @@ int  _K4Search_CreateStructures(K4SearchContext *context)
          return NOTOK;
 
      if ((context->E = (K4Search_EdgeRecP) malloc(Esize*sizeof(K4Search_EdgeRec))) == NULL ||
-         (context->VI = (K4Search_VertexInfoP) malloc(N*sizeof(K4Search_VertexInfo))) == NULL
-        )
+        0)
      {
          return NOTOK;
      }
@@ -250,14 +236,10 @@ int  _K4Search_CreateStructures(K4SearchContext *context)
  ********************************************************************/
 int  _K4Search_InitStructures(K4SearchContext *context)
 {
-     int I, J;
-     int N = context->theGraph->N, Esize = context->theGraph->arcCapacity;
+     int J, Esize = context->theGraph->arcCapacity;
 
-     if (N <= 0)
+     if (context->theGraph->N <= 0)
          return OK;
-
-     for (I = 0; I < N; I++)
-          _InitK4SearchVertexInfo(context, I);
 
      for (J = 0; J < Esize; J++)
           _InitK4SearchEdgeRec(context, J);
@@ -303,23 +285,21 @@ void _K4Search_ReinitializeGraph(graphP theGraph)
 
     if (context != NULL)
     {
-        // Reinitialization can go much faster if the underlying
-        // init functions for edges and vertices are called,
-        // rather than the overloads of this module, because it
-        // avoids lots of unnecessary gp_FindExtension() calls.
+        // Reinitialization can go much faster if the underlying init
+        // functions for edges (and vertices, when applicable) are called,
+        // rather than the overloads of this module, because it avoids
+        // lots of unnecessary gp_FindExtension() calls.
         if (theGraph->functions.fpInitEdgeRec == _K4Search_InitEdgeRec &&
-            theGraph->functions.fpInitVertexInfo == _K4Search_InitVertexInfo)
+            1)
         {
-            // Restore the graph function pointers
+            // Restore selected graph function pointer(s)
             theGraph->functions.fpInitEdgeRec = context->functions.fpInitEdgeRec;
-            theGraph->functions.fpInitVertexInfo = context->functions.fpInitVertexInfo;
 
             // Reinitialize the graph
             context->functions.fpReinitializeGraph(theGraph);
 
-            // Restore the function pointers that attach this feature
+            // Restore the selected function pointer(s) that attach this feature
             theGraph->functions.fpInitEdgeRec = _K4Search_InitEdgeRec;
-            theGraph->functions.fpInitVertexInfo = _K4Search_InitVertexInfo;
 
             // Do the reinitialization that is specific to this module
             _K4Search_InitStructures(context);
@@ -383,7 +363,6 @@ void *_K4Search_DupContext(void *pContext, void *theGraph)
              }
 
              memcpy(newContext->E, context->E, Esize*sizeof(K4Search_EdgeRec));
-             memcpy(newContext->VI, context->VI, N*sizeof(K4Search_VertexInfo));
          }
      }
 
@@ -400,133 +379,6 @@ void _K4Search_FreeContext(void *pContext)
 
      _K4Search_ClearStructures(context);
      free(pContext);
-}
-
-/********************************************************************
- _K4Search_EmbeddingDFSPostprocess()
-
- This method is called after the DFS initialization has been performed
- by the core planarity algorithm.  That initialization includes the
- assignment of DFIs, DFS parents, and DFS edge types, and then
- all forward arcs (from a vertex to its descendants) are moved to a
- forward arc list (sorted by DFI).  For K_4 search, we also calculate
- the p2dFwdArcCount, which is the number of forward arcs between the
- parent of a vertex and the descendants of the vertex.  Also, the vertex
- is stored in the edge as the pertinent subtree of the parent for the edge.
-
- Note that DFS descendants have a higher DFI than ancestors, so given two
- successive children C1 and C2, if a forward arc leads to a vertex D
- such that DFI(C1) < DFI(D) < DFI(C2), then the forward arc contributes
- to the count of C1 and has C1 as subtree.
- ********************************************************************/
-
-int  _K4Search_EmbeddingDFSPostprocess(graphP theGraph)
-{
-    K4SearchContext *context = NULL;
-    gp_FindExtension(theGraph, K4SEARCH_ID, (void *)&context);
-
-    if (context != NULL)
-    {
-        if (theGraph->embedFlags == EMBEDFLAGS_SEARCHFORK4)
-        {
-            int I, C1, C2, D, e;
-            int N = theGraph->N;
-
-            // Next compute the p2dFwdArcCount of each vertex and the
-            // subtree of each forward arc.
-            for (I=0; I<N; I++)
-            {
-            	// For each DFS child of the vertex I, ...
-                C1 = gp_GetVertexSortedDFSChildList(theGraph, I);
-                e = gp_GetVertexFwdArcList(theGraph, I);
-                while (C1 != NIL && gp_IsArc(theGraph, e))
-                {
-                	// Get the next higher numbered child C2
-                    C2 = LCGetNext(theGraph->sortedDFSChildLists,
-                    			   gp_GetVertexSortedDFSChildList(theGraph, I), C1);
-
-                    // If there is a next child C2, then we can restrict attention
-                    // to the forward arcs with DFI less than C2
-                    if (C2 != NIL)
-                    {
-    					D = gp_GetNeighbor(theGraph, e);
-    					while (D < C2)
-    					{
-                    		context->VI[C1].p2dFwdArcCount++;
-                    		context->E[e].subtree = C1;
-
-                    		// Go to the next forward arc
-							e = gp_GetNextArc(theGraph, e);
-							if (e == gp_GetVertexFwdArcList(theGraph, I))
-							{
-								e = NIL;
-								break;
-							}
-							D = gp_GetNeighbor(theGraph, e);
-    					}
-                    }
-
-                    // If C1 is the last DFS child (C2==NIL), then all remaining
-                    // forward edges must connect to descendants of C1.
-                    else
-                    {
-                    	while (gp_IsArc(theGraph, e))
-                    	{
-                    		context->VI[C1].p2dFwdArcCount++;
-                    		context->E[e].subtree = C1;
-
-                    		// Go to the next forward arc
-							e = gp_GetNextArc(theGraph, e);
-							if (e == gp_GetVertexFwdArcList(theGraph, I))
-								e = NIL;
-                    	}
-                    }
-
-					// Move the DFS child context to C2
-					C1 = C2;
-                }
-            }
-        }
-        return context->functions.fpEmbeddingDFSPostprocess(theGraph);
-    }
-
-    return NOTOK;
-}
-
-/********************************************************************
- _K4Search_EmbedBackEdgeToDescendant()
-
- The forward and back arcs of the cycle edge are embedded by the planarity
- version of this function.
- However, for K_4 subgraph homeomorphism, we also maintain a forward
- arc counter in a DFS child C of each vertex V to indicate how many
- forward arcs there are from V to descendants of C.  Each forward arc
- has an indicator, 'subtree', of C.  When we embed the edge, we decrement
- the counter so that when the WalkDown resolves as much pertinence as
- possible along the external face of the bicomp rooted by R=C+N, then
- we can easily determine whether there is more unresolved pertinence
- by testing whether the forward arc count has dropped to zero.
- If not, then we either find a K4 or perform a reduction that enables
- the WalkDown to make more progress when reinvoked.
- ********************************************************************/
-
-void _K4Search_EmbedBackEdgeToDescendant(graphP theGraph, int RootSide, int RootVertex, int W, int WPrevLink)
-{
-    K4SearchContext *context = NULL;
-    gp_FindExtension(theGraph, K4SEARCH_ID, (void *)&context);
-
-    if (context != NULL)
-    {
-        // K4 search may have been attached, but not enabled
-        if (theGraph->embedFlags == EMBEDFLAGS_SEARCHFORK4)
-        {
-        	int fwdArc = gp_GetVertexPertinentAdjacencyInfo(theGraph, W);
-        	context->VI[context->E[fwdArc].subtree].p2dFwdArcCount--;
-        }
-
-        // Invoke the superclass version of the function
-        context->functions.fpEmbedBackEdgeToDescendant(theGraph, RootSide, RootVertex, W, WPrevLink);
-    }
 }
 
 /********************************************************************
@@ -547,27 +399,6 @@ void _K4Search_InitEdgeRec(graphP theGraph, int J)
 void _InitK4SearchEdgeRec(K4SearchContext *context, int J)
 {
     context->E[J].pathConnector = NIL;
-    context->E[J].subtree = NIL;
-}
-
-/********************************************************************
- ********************************************************************/
-
-void _K4Search_InitVertexInfo(graphP theGraph, int I)
-{
-    K4SearchContext *context = NULL;
-    gp_FindExtension(theGraph, K4SEARCH_ID, (void *)&context);
-
-    if (context != NULL)
-    {
-        context->functions.fpInitVertexInfo(theGraph, I);
-        _InitK4SearchVertexInfo(context, I);
-    }
-}
-
-void _InitK4SearchVertexInfo(K4SearchContext *context, int I)
-{
-    context->VI[I].p2dFwdArcCount = 0;
 }
 
 /********************************************************************
@@ -674,7 +505,7 @@ int  _K4Search_HandleBlockedEmbedIteration(graphP theGraph, int I)
     	// by _K4Search_HandleBlockedDescendantBicomp(), and we just
     	// return the NONEMBEDDABLE result in order to stop the embedding
     	// iteration loop.
-		if (gp_GetVertexFwdArcList(theGraph, I) == NIL)
+		if (!gp_IsArc(theGraph, gp_GetVertexFwdArcList(theGraph, I)))
 			return NONEMBEDDABLE;
 
         return _SearchForK4InBicomps(theGraph, I);

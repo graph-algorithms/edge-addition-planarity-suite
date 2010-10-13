@@ -132,22 +132,19 @@ int _MarkEdge(graphP theGraph, int x, int y);
  DFI of the descendants endpoints.  Also, the sortedDFSChildList of I
  is non-empty, and it is also sorted by DFI of the children.
 
- We proceed past a DFS child C of I once its p2dFwdArcCount becomes
- zero because the zero value means that there are no unembedded forward
- arcs from I to descendants of C.
+ We proceed past a DFS child C of I if there is a next DFS child and
+ it its DFI is less than the next descendant endpoint of the next
+ forward arc.  This is appropriate because a vertex has the least numbered
+ DFI of the subtree it roots.
 
- As soon as a DFS child C is encountered that has a p2dFwdArcCount
- greater than zero, we simply invoke SearchForK4InBicomp(). The result
- will either be an isolated K4 homeomorph, or an indication that a
- reduction has occurred. In the latter case, the WalkDown can be
+ A soon as the DFS child C is encountered that is ancestor to the endpoint
+ of the next unembedded forward arc, we simply invoke SearchForK4InBicomp().
+ The result will either be an isolated K4 homeomorph, or an indication that
+ a reduction has occurred. In the latter case, the WalkDown can be
  invoked to resolve more of the pertinence of the bicomp. The WalkDown
- may or may not resolve all the remaining pertinence in the DFS
- subtree rooted by C.  If it does, then the p2dFwdArcCount of C will
- drop to zero, and the next iteration of the loop in this method will
- move past C to the next child in the sortedDFSChildList of I.  If the
- p2dFwdArcCount of C does not drop to zero during the WalkDown, then the
- bicomp that contains C is ready for another K4 search in the next
- iteration of the main loop of this method.
+ may or may not resolve all the remaining pertinence in the DFS subtree
+ rooted by C.  If it does, then either all forward arcs for I will be
+ embedded or it will be time to advance to the next DFS child of I.
 
  Overall, the only two legitimate outcomes of this method call are
  1) reductions have enabled further WalkDown calls to resolve all
@@ -163,29 +160,32 @@ int _MarkEdge(graphP theGraph, int x, int y);
 
 int  _SearchForK4InBicomps(graphP theGraph, int I)
 {
-int  C, R, RetVal=OK;
 K4SearchContext *context = NULL;
+int  C, Cnext, e, D, RetVal=OK;
 
      gp_FindExtension(theGraph, K4SEARCH_ID, (void *)&context);
      if (context == NULL)
          return NOTOK;
 
      C = gp_GetVertexSortedDFSChildList(theGraph, I);
-     while (C != NIL)
+     while (gp_IsArc(theGraph, e=gp_GetVertexFwdArcList(theGraph, I)))
      {
-    	 if (context->VI[C].p2dFwdArcCount == 0)
-    	 {
-    		 C = LCGetNext(theGraph->sortedDFSChildLists, gp_GetVertexSortedDFSChildList(theGraph, I), C);
-    	 }
-    	 else
-    	 {
-    		 R = C + theGraph->N;
-             RetVal = _SearchForK4InBicomp(theGraph, context, I, R);
-    		 if (RetVal != OK)
-    			 break;
-             if ((RetVal = theGraph->functions.fpWalkDown(theGraph, I, R)) != OK)
-            	 return RetVal;
-    	 }
+		 // See whether we need to advance to the next subtree to embed the edge
+    	 Cnext = LCGetNext(theGraph->sortedDFSChildLists, gp_GetVertexSortedDFSChildList(theGraph, I), C);
+		 D = gp_GetNeighbor(theGraph, e);
+		 if (Cnext != NIL && Cnext < D)
+			 C = Cnext;
+
+		 // Otherwise, try to either find a K4 homeomorph or perform a reduction and continue
+		 else
+		 {
+			 int R = C + theGraph->N;
+			 RetVal = _SearchForK4InBicomp(theGraph, context, I, R);
+			 if (RetVal != OK)
+				 break;
+			 if ((RetVal = theGraph->functions.fpWalkDown(theGraph, I, R)) != OK)
+				 return RetVal;
+		 }
      }
 
      return RetVal;
