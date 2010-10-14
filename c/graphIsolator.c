@@ -626,65 +626,69 @@ int  Z, ZPrevLink, ZPrevArc;
  including root copy vertices, and including the step of hopping from
  a root copy to its parent copy.
 
- The DFSParent of a vertex indicates the next vertex to visit, so we
- search the adjacency list looking for the edge leading either to the
- DFSParent or to a root copy of the DFSParent.  We start by marking the
- descendant, then traverse up the DFS tree, stopping after we mark
- the ancestor.
+ At each vertex, the edge record is obtained whose type indicates that it
+ leads to the DFS parent.  An earlier implementation just used the DFS parent
+ member of the vertex, but then had to find the edge to mark anyway.
+ This method is more generalized because some extension algorithms reduce
+ DFS paths to single DFS tree edges, in which case the edge record with type
+ EDGE_TYPE_PARENT may indicate the DFS paent or an ancestor.
  ****************************************************************************/
-
 int  _MarkDFSPath(graphP theGraph, int ancestor, int descendant)
 {
-int  J, parent, Z, N;
+int  J, parent, N;
 
      N = theGraph->N;
 
-     /* If we are marking from a root vertex upward, then go up to the parent
-        copy before starting the loop */
-
+     // If we are marking from a root vertex upward, then go up to the parent
+     // copy before starting the loop
      if (descendant >= N)
          descendant = gp_GetVertexParent(theGraph, descendant-N);
 
-     /* Mark the lowest vertex (i.e. the descendant with the highest number) */
+     // Mark the lowest vertex (the one with the highest number).
      gp_SetVertexVisited(theGraph, descendant);
 
-     /* Mark all ancestors of the lowest vertex, and the edges used to reach
-        them, up to the given ancestor vertex. */
-
+     // Mark all ancestors of the lowest vertex, and the edges used to reach
+     // them, up to the given ancestor vertex.
      while (descendant != ancestor)
      {
-          /* Get the parent vertex */
-
-          parent = gp_GetVertexParent(theGraph, descendant);
-
-          /* If the descendant was a DFS tree root, then obviously
-                we aren't going to find the ancestor, so something is wrong.*/
-
-          if (parent == NIL || parent == descendant)
+          if (descendant == NIL)
               return NOTOK;
 
-          /* Find the edge from descendant that leads either to
-                parent or to a root copy of the parent.
-                When the edge is found, mark it and break the loop */
-
-          J = gp_GetFirstArc(theGraph, descendant);
-          while (gp_IsArc(theGraph, J))
+          // If we are at a bicomp root, then ascend to its parent copy and
+          // mark it as visited.
+          if (descendant >= N)
           {
-              Z = gp_GetNeighbor(theGraph, J);
-              if ((Z < N && Z == parent) ||
-                  (Z >= N && gp_GetVertexParent(theGraph, Z-N) == parent))
-              {
-                  gp_SetEdgeVisited(theGraph, J);
-                  gp_SetEdgeVisited(theGraph, gp_GetTwinArc(theGraph, J));
-                  break;
-              }
-              J = gp_GetNextArc(theGraph, J);
+              parent = gp_GetVertexParent(theGraph, descendant-N);
           }
 
-          /* Mark the parent copy of the DFS parent */
-          gp_SetVertexVisited(theGraph, parent);
+          // If we are on a regular, non-virtual vertex then get the edge to the parent,
+          // mark the edge, then fall through to the code that marks the parent vertex.
+          else
+          {
+              // Scan the edges for the one marked as the DFS parent
+              parent = NIL;
+              J = gp_GetFirstArc(theGraph, descendant);
+              while (gp_IsArc(theGraph, J))
+              {
+                  if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_PARENT)
+                  {
+                      parent = gp_GetNeighbor(theGraph, J);
+                      break;
+                  }
+                  J = gp_GetNextArc(theGraph, J);
+              }
 
-          /* Hop to the parent */
+              // Sanity check on the data structure integrity
+              if (parent == NIL)
+                  return NOTOK;
+
+              // Mark the edge
+              gp_SetEdgeVisited(theGraph, J);
+              gp_SetEdgeVisited(theGraph, gp_GetTwinArc(theGraph, J));
+          }
+
+          // Mark the parent, then hop to the parent and reiterate
+          gp_SetVertexVisited(theGraph, parent);
           descendant = parent;
      }
 
