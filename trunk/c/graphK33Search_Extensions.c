@@ -70,7 +70,6 @@ void _CreateSeparatedDFSChildLists(graphP theGraph, K33SearchContext *context);
 void _K33Search_EmbedBackEdgeToDescendant(graphP theGraph, int RootSide, int RootVertex, int W, int WPrevLink);
 int  _K33Search_MergeBicomps(graphP theGraph, int I, int RootVertex, int W, int WPrevLink);
 void _K33Search_MergeVertex(graphP theGraph, int W, int WPrevLink, int R);
-int  _K33Search_MarkDFSPath(graphP theGraph, int ancestor, int descendant);
 int  _K33Search_HandleBlockedEmbedIteration(graphP theGraph, int I);
 int  _K33Search_EmbedPostprocess(graphP theGraph, int I, int edgeEmbeddingResult);
 int  _K33Search_CheckEmbeddingIntegrity(graphP theGraph, graphP origGraph);
@@ -139,7 +138,6 @@ int  gp_AttachK33Search(graphP theGraph)
      context->functions.fpEmbedBackEdgeToDescendant = _K33Search_EmbedBackEdgeToDescendant;
      context->functions.fpMergeBicomps = _K33Search_MergeBicomps;
      context->functions.fpMergeVertex = _K33Search_MergeVertex;
-     context->functions.fpMarkDFSPath = _K33Search_MarkDFSPath;
      context->functions.fpHandleBlockedEmbedIteration = _K33Search_HandleBlockedEmbedIteration;
      context->functions.fpEmbedPostprocess = _K33Search_EmbedPostprocess;
      context->functions.fpCheckEmbeddingIntegrity = _K33Search_CheckEmbeddingIntegrity;
@@ -752,92 +750,6 @@ void _InitK33SearchVertexInfo(K33SearchContext *context, int I)
     context->VI[I].externalConnectionAncestor = NIL;
     context->VI[I].mergeBlocker = NIL;
     context->VI[I].separatedDFSChildList = NIL;
-}
-
-/********************************************************************
-// This function used to be implemented by going to each vertex,
-// asking for its DFS parent, then finding the edge that lead to
-// that DFS parent and marking it.
-// However, the K3,3 search performs a certain bicomp reduction that
-// is required to preserve the essential structure of the DFS tree.
-// As a result, sometimes a DFSParent has been reduced out of the
-// graph, but the tree edge leads to the nearest ancestor still in
-// the graph.  So, when we want to leave a vertex, we search for the
-// DFS tree edge to the "parent" (nearest ancestor), then we mark the
-// edge and use it to go up to the "parent".
- ********************************************************************/
-
-int  _K33Search_MarkDFSPath(graphP theGraph, int ancestor, int descendant)
-{
-int  J, parent, N;
-
-     N = theGraph->N;
-
-     /* If we are marking from a root vertex upward, then go up to the parent
-        copy before starting the loop */
-
-     if (descendant >= N)
-         descendant = gp_GetVertexParent(theGraph, descendant-N);
-
-     /* Mark the lowest vertex (the one with the highest number). */
-
-     gp_SetVertexVisited(theGraph, descendant);
-
-     /* Mark all ancestors of the lowest vertex, and the edges used to reach
-        them, up to the given ancestor vertex. */
-
-     while (descendant != ancestor)
-     {
-          if (descendant == NIL)
-              return NOTOK;
-
-          /* If we are at a bicomp root, then ascend to its parent copy and
-                mark it as visited. */
-
-          if (descendant >= N)
-          {
-              parent = gp_GetVertexParent(theGraph, descendant-N);
-          }
-
-          /* If we are on a regular, non-virtual vertex then get the edge to
-                the parent, mark the edge, then fall through to the code
-                that marks the parent vertex. */
-          else
-          {
-
-              /* Scan the edges for the one marked as the DFS parent */
-
-              parent = NIL;
-              J = gp_GetFirstArc(theGraph, descendant);
-              while (gp_IsArc(theGraph, J))
-              {
-                  if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_PARENT)
-                  {
-                      parent = gp_GetNeighbor(theGraph, J);
-                      break;
-                  }
-                  J = gp_GetNextArc(theGraph, J);
-              }
-
-              /* If the desired edge was not found, then the data structure is
-                    corrupt, so bail out. */
-
-              if (parent == NIL)
-                  return NOTOK;
-
-              /* Mark the edge */
-
-              gp_SetEdgeVisited(theGraph, J);
-              gp_SetEdgeVisited(theGraph, gp_GetTwinArc(theGraph, J));
-          }
-
-          /* Mark the parent, then hop to the parent and reiterate */
-
-          gp_SetVertexVisited(theGraph, parent);
-          descendant = parent;
-     }
-
-     return OK;
 }
 
 /********************************************************************

@@ -67,8 +67,6 @@ int  _K4Search_CreateStructures(K4SearchContext *context);
 int  _K4Search_InitStructures(K4SearchContext *context);
 
 /* Forward declarations of overloading functions */
-
-int  _K4Search_MarkDFSPath(graphP theGraph, int ancestor, int descendant);
 int  _K4Search_HandleBlockedEmbedIteration(graphP theGraph, int I);
 int  _K4Search_HandleBlockedDescendantBicomp(graphP theGraph, int I, int RootVertex, int R, int *pRout, int *pW, int *pWPrevLink);
 int  _K4Search_EmbedPostprocess(graphP theGraph, int I, int edgeEmbeddingResult);
@@ -131,8 +129,6 @@ int  gp_AttachK4Search(graphP theGraph)
      // gp_AddExtension will overload the graph's functions with these, and
      // return the base function pointers in the context function table
      memset(&context->functions, 0, sizeof(graphFunctionTable));
-
-     context->functions.fpMarkDFSPath = _K4Search_MarkDFSPath;
      context->functions.fpHandleBlockedEmbedIteration = _K4Search_HandleBlockedEmbedIteration;
      context->functions.fpHandleBlockedDescendantBicomp = _K4Search_HandleBlockedDescendantBicomp;
      context->functions.fpEmbedPostprocess = _K4Search_EmbedPostprocess;
@@ -399,92 +395,6 @@ void _K4Search_InitEdgeRec(graphP theGraph, int J)
 void _InitK4SearchEdgeRec(K4SearchContext *context, int J)
 {
     context->E[J].pathConnector = NIL;
-}
-
-/********************************************************************
-// This function used to be implemented by going to each
-// vertex, asking for its DFS parent, then finding the
-// edge that lead to that DFS parent and marking it.
-// However, the K4 search performs certain bicomp reductions
-// that are required to preserve the essential structure of
-// the DFS tree.  As a result, sometimes a DFSParent has been
-// reduced out of the graph, but the tree edge leads to the nearest
-// ancestor still in the graph.  So, when we want to leave a vertex,
-// we search for the DFS tree edge to the "parent" (nearest ancestor),
-// then we mark the edge and use it to go up to the "parent".
- ********************************************************************/
-
-int  _K4Search_MarkDFSPath(graphP theGraph, int ancestor, int descendant)
-{
-int  J, parent, N;
-
-     N = theGraph->N;
-
-     /* If we are marking from a root vertex upward, then go up to the parent
-        copy before starting the loop */
-
-     if (descendant >= N)
-         descendant = gp_GetVertexParent(theGraph, descendant-N);
-
-     /* Mark the lowest vertex (the one with the highest number). */
-
-     gp_SetVertexVisited(theGraph, descendant);
-
-     /* Mark all ancestors of the lowest vertex, and the edges used to reach
-        them, up to the given ancestor vertex. */
-
-     while (descendant != ancestor)
-     {
-          if (descendant == NIL)
-              return NOTOK;
-
-          /* If we are at a bicomp root, then ascend to its parent copy and
-                mark it as visited. */
-
-          if (descendant >= N)
-          {
-              parent = gp_GetVertexParent(theGraph, descendant-N);
-          }
-
-          /* If we are on a regular, non-virtual vertex then get the edge to
-                the parent, mark the edge, then fall through to the code
-                that marks the parent vertex. */
-          else
-          {
-
-              /* Scan the edges for the one marked as the DFS parent */
-
-              parent = NIL;
-              J = gp_GetFirstArc(theGraph, descendant);
-              while (gp_IsArc(theGraph, J))
-              {
-                  if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_PARENT)
-                  {
-                      parent = gp_GetNeighbor(theGraph, J);
-                      break;
-                  }
-                  J = gp_GetNextArc(theGraph, J);
-              }
-
-              /* If the desired edge was not found, then the data structure is
-                    corrupt, so bail out. */
-
-              if (parent == NIL)
-                  return NOTOK;
-
-              /* Mark the edge */
-
-              gp_SetEdgeVisited(theGraph, J);
-              gp_SetEdgeVisited(theGraph, gp_GetTwinArc(theGraph, J));
-          }
-
-          /* Mark the parent, then hop to the parent and reiterate */
-
-          gp_SetVertexVisited(theGraph, parent);
-          descendant = parent;
-     }
-
-     return OK;
 }
 
 /********************************************************************
