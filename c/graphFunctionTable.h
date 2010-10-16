@@ -59,7 +59,7 @@ typedef struct
         // These function pointers allow extension modules to overload some of
         // the behaviors of protected functions.  Only advanced applications
         // will overload these functions
-    	int  (*fpEmbeddingDFSPostprocess)();
+    	int  (*fpEmbeddingInitialize)();
         void (*fpEmbedBackEdgeToDescendant)();
         void (*fpWalkUp)();
         int  (*fpWalkDown)();

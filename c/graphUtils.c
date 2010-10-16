@@ -49,7 +49,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Imported functions for FUNCTION POINTERS */
 
-extern int  _EmbeddingDFSPostprocess(graphP theGraph);
+extern int  _EmbeddingInitialize(graphP theGraph);
 extern int  _SortVertices(graphP theGraph);
 extern void _EmbedBackEdgeToDescendant(graphP theGraph, int RootSide, int RootVertex, int W, int WPrevLink);
 extern void _WalkUp(graphP theGraph, int I, int J);
@@ -137,10 +137,6 @@ graphP theGraph = (graphP) malloc(sizeof(baseGraphStructure));
          theGraph->sortedDFSChildLists = NULL;
          theGraph->theStack = NULL;
 
-////         theGraph->DFSChildLists = NULL;
-////         theGraph->buckets = NULL;
-////         theGraph->bin = NULL;
-
          theGraph->extFace = NULL;
 
          theGraph->edgeHoles = NULL;
@@ -171,7 +167,7 @@ graphP theGraph = (graphP) malloc(sizeof(baseGraphStructure));
 
 void _InitFunctionTable(graphP theGraph)
 {
-     theGraph->functions.fpEmbeddingDFSPostprocess = _EmbeddingDFSPostprocess;
+     theGraph->functions.fpEmbeddingInitialize = _EmbeddingInitialize;
      theGraph->functions.fpEmbedBackEdgeToDescendant = _EmbedBackEdgeToDescendant;
      theGraph->functions.fpWalkUp = _WalkUp;
      theGraph->functions.fpWalkDown = _WalkDown;
@@ -340,8 +336,6 @@ int  I, J, N = theGraph->N, Vsize = N+theGraph->NV, Esize = theGraph->arcCapacit
      LCReset(theGraph->BicompLists);
      LCReset(theGraph->sortedDFSChildLists);
      sp_ClearStack(theGraph->theStack);
-////     LCReset(theGraph->DFSChildLists);
-////     LCReset(theGraph->bin);
      sp_ClearStack(theGraph->edgeHoles);
 }
 
@@ -510,7 +504,7 @@ void _InitVertexInfo(graphP theGraph, int I)
 {
     gp_SetVertexParent(theGraph, I, NIL);
     gp_SetVertexLeastAncestor(theGraph, I, theGraph->N);
-    gp_SetVertexLowpoint(theGraph, I, theGraph->N);
+    gp_SetVertexLowpoint(theGraph, I, I);
 
     gp_SetVertexVisitedInfo(theGraph, I, theGraph->N);
     gp_SetVertexPertinentAdjacencyInfo(theGraph, I, NIL);
@@ -878,14 +872,6 @@ void _ClearGraph(graphP theGraph)
 
      sp_Free(&theGraph->theStack);
 
-////     LCFree(&theGraph->DFSChildLists);
-////     if (theGraph->buckets != NULL)
-////     {
-////         free(theGraph->buckets);
-////         theGraph->buckets = NULL;
-////     }
-////     LCFree(&theGraph->bin);
-
      if (theGraph->extFace != NULL)
      {
          free(theGraph->extFace);
@@ -1034,8 +1020,6 @@ int  I, J, N = srcGraph->N, Vsize = N+srcGraph->NV, Esize = srcGraph->arcCapacit
      LCCopy(dstGraph->sortedDFSChildLists, srcGraph->sortedDFSChildLists);
      sp_Copy(dstGraph->theStack, srcGraph->theStack);
      sp_Copy(dstGraph->edgeHoles, srcGraph->edgeHoles);
-
-////     LCCopy(dstGraph->DFSChildLists, srcGraph->DFSChildLists);
 
      // Copy the set of extensions, which includes copying the
      // extension data as well as the function overload tables
