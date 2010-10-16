@@ -55,7 +55,7 @@ extern int _IsolateOuterplanarObstruction(graphP theGraph, int I, int R);
 
 /* Private functions (some are exported to system only) */
 
-int  _EmbeddingDFSPostprocess(graphP theGraph);
+int  _EmbeddingInitialize(graphP theGraph);
 
 void _EmbedBackEdgeToDescendant(graphP theGraph, int RootSide, int RootVertex, int W, int WPrevLink);
 
@@ -85,7 +85,8 @@ int  _JoinBicomps(graphP theGraph);
  (4) Create a sortedFwdArcList for each vertex, sorted by descendant DFI
  (5) Assign leastAncestor values to vertices
  (6) Sort the vertices by their DFIs
- (7) Embed each tree edge as a singleton biconnected component
+ (7) Initialize for pertinence and future pertinence management
+ (8) Embed each tree edge as a singleton biconnected component
 
  The first five of these are performed in a single-pass DFS of theGraph.
  Afterward, the vertices are sorted by their DFIs, the lowpoint values
@@ -96,6 +97,7 @@ int  _EmbeddingInitialize(graphP theGraph)
 {
 	stackP theStack;
 	int N, DFI, I, R, uparent, u, uneighbor, e, J, JTwin, JPrev, JNext;
+	int leastValue, firstChild, child;
 
 #ifdef PROFILE
 platform_time start, end;
@@ -165,7 +167,7 @@ platform_GetTime(start);
                     				 gp_GetVertexIndex(theGraph, u))
                     );
 
-					// (7) Record e as the first and last arc of the virtual vertex
+					// (8) Record e as the first and last arc of the virtual vertex
 					//     at position DFI(u)+N, which is a root copy of uparent
                     R = gp_GetVertexIndex(theGraph, u) + N;
                 	gp_SetFirstArc(theGraph, R, e);
@@ -237,15 +239,30 @@ platform_GetTime(start);
     if (gp_SortVertices(theGraph) != OK)
         return NOTOK;
 
-    // Allow extension algorithms to postprocess the DFS
-    if (theGraph->functions.fpEmbeddingDFSPostprocess(theGraph) != OK)
-    	return NOTOK;
-
-	// (7) Create the DFS tree embedding using the child edge records stored in the virtual vertices
-	// For each vertex I that is a DFS child, the virtual vertex R that will represent I's parent
-	// in the singleton bicomp with I is at location I + N in the vertex array.
-    for (I = 0, R = N; I < N; I++, R++)
+    // Loop through the vertices and virtual vertices to...
+    for (I = N-1, R = N-1 + theGraph->NV; I >= 0; I--, R--)
     {
+    	// (7) Initialize for pertinence management
+        gp_SetVertexVisitedInfo(theGraph, I, N);
+
+        // (7) Initialize for future pertinence management
+        firstChild = child = gp_GetVertexSortedDFSChildList(theGraph, I);
+        gp_SetVertexFuturePertinentChild(theGraph, I, firstChild);
+		leastValue = gp_GetVertexLeastAncestor(theGraph, I);
+		if (leastValue > I)
+			leastValue = I;
+	    while (child != NIL)
+	    {
+	    	if (leastValue > gp_GetVertexLowpoint(theGraph, child))
+	    		leastValue = gp_GetVertexLowpoint(theGraph, child);
+
+	        child = LCGetNext(theGraph->sortedDFSChildLists, firstChild, child);
+	    }
+		gp_SetVertexLowpoint(theGraph, I, leastValue);
+
+		// (8) Create the DFS tree embedding using the child edge records stored in the virtual vertices
+    	//     For each vertex I that is a DFS child, the virtual vertex R that will represent I's parent
+    	//     in the singleton bicomp with I is at location I + N in the vertex array.
         if (gp_GetVertexParent(theGraph, I) == NIL)
         {
         	gp_SetFirstArc(theGraph, I, gp_AdjacencyListEndMark(I));
@@ -284,22 +301,6 @@ printf("Initialize embedding in %.3lf seconds.\n", platform_GetDuration(start,en
 #endif
 
 	return OK;
-}
-
-/********************************************************************
- _EmbeddingDFSPostprocess()
-
- By default there is no DFS postprocessing since it is done in
- _EmbeddingInitialize() without providing extension algorithms the
- chance to suppress it by not calling this function.
- So this function just returns OK so that extensions can add behavior
- before the adjacency list structure is changed to an embedding of
- the DFS tree.
- ********************************************************************/
-
-int  _EmbeddingDFSPostprocess(graphP theGraph)
-{
-     return OK;
 }
 
 /********************************************************************
@@ -1064,42 +1065,27 @@ int  RetVal, W, WPrevLink, R, Rout, X, XPrevLink, Y, YPrevLink, RootSide, RootEd
                  // At this point, we know that W is not inactive, but its pertinentAdjacencyInfo is clear,
                  // and it has no pertinent child bicomps.  Therefore, it is a stopping vertex for the
                  // Walkdown (future pertinent but not pertinent).
-                 else break;
+                 else
+                 {
+                	 // Create an external face short-circuit between RootVertex and the stopping vertex W
+                	 // so that future steps do not walk down the path of inactive vertices between them
+                     gp_SetExtFaceVertex(theGraph, RootVertex, RootSide, W);
+                     gp_SetExtFaceVertex(theGraph, W, WPrevLink, RootVertex);
+
+                     // If the bicomp is reduced to having only two external face vertices (the root and W),
+                     // then we need to record whether the orientation of W is inverted relative to the root.
+                     if (gp_GetExtFaceVertex(theGraph, W, 0) == gp_GetExtFaceVertex(theGraph, W, 1) &&
+                         WPrevLink == RootSide)
+                          gp_SetExtFaceInversionFlag(theGraph, W);
+                     else gp_ClearExtFaceInversionFlag(theGraph, W);
+
+                     // Terminate the Walkdown traversal since W is a stopping vertex
+                     break;
+                 }
              }
          }
 
-         /* We short-circuit the external face of the bicomp by hooking the root
-            to the terminating externally active vertex so that inactive vertices
-            are not visited in future iterations.  This setting obviates the need
-            for those short-circuit edges mentioned above.
-
-            NOTE: We skip the step if the stack is non-empty since in that case
-                    we did not actually merge the bicomps necessary to put
-                    W and RootVertex into the same bicomp. */
-
-         gp_SetExtFaceVertex(theGraph, RootVertex, RootSide, W);
-         gp_SetExtFaceVertex(theGraph, W, WPrevLink, RootVertex);
-
-         /* If the bicomp is reduced to having only two external face vertices
-             (the root and W), then we need to record whether the orientation
-             of W is inverted relative to the root.  This is used later when a
-             future Walkdown descends to and merges the bicomp containing W.
-             Going from the root to W, we only get the correct WPrevLink if
-             we know whether or not W is inverted.
-             NOTE: In the case where we have to clear the flag here, it is because
-                 it may have been set in W if W previously became part of a bicomp
-                 with only two ext. face vertices, but then was flipped and merged
-                 into a larger bicomp that is now again becoming a bicomp with only
-                 two ext. face vertices. */
-
-         if (gp_GetExtFaceVertex(theGraph, W, 0) == gp_GetExtFaceVertex(theGraph, W, 1) &&
-             WPrevLink == RootSide)
-              gp_SetExtFaceInversionFlag(theGraph, W);
-         else gp_ClearExtFaceInversionFlag(theGraph, W);
-
-         /* If we got back around to the root, then all edges
-            are embedded, so we stop. */
-
+         // If we got back around to the root, then all edges are embedded, so we stop.
          if (W == RootVertex)
              break;
      }
@@ -1152,7 +1138,7 @@ int  RetVal, W, WPrevLink, R, Rout, X, XPrevLink, Y, YPrevLink, RootSide, RootEd
 
 int gp_Embed(graphP theGraph, int embedFlags)
 {
-int N, I, J, child;
+int N, I, J, c, cNext;
 int RetVal = OK;
 
     // Basic parameter checks
@@ -1165,21 +1151,14 @@ int RetVal = OK;
     // Preprocessing
     theGraph->embedFlags = embedFlags;
 
-    if (_EmbeddingInitialize(theGraph) != OK)
+    // Allow extension algorithms to postprocess the DFS
+    if (theGraph->functions.fpEmbeddingInitialize(theGraph) != OK)
     	return NOTOK;
 
     // In reverse DFI order, embed the back edges from each vertex to its DFS descendants.
-    // Vertex and visited info and lowpoint settings are made in step I so they are available
-    // to ancestors of I. During processing of I, these values are needed for descendants
-    // of I, which is guaranteed due to the reverse DFI processing order.
     for (I = N-1; I >= 0; I--)
     {
           RetVal = OK;
-
-          // To help optimize pertinence determination when processing ancestors of I, each vertex
-          // visited info is initially set to N. Any setting greater than I means unvisited in step I,
-          // so all initialized vertices implicitly revert to unvisited in each step.
-          gp_SetVertexVisitedInfo(theGraph, I, N);
 
           // Walkup calls establish Pertinence in Step I
           // Do the Walkup for each cycle edge from I to a DFS descendant W.
@@ -1194,37 +1173,43 @@ int RetVal = OK;
           }
           gp_SetVertexPertinentBicompList(theGraph, I, NIL);
 
-          // Initializations for future pertinence for steps after I
-          gp_SetVertexFuturePertinentChild(theGraph, I, gp_GetVertexSortedDFSChildList(theGraph, I));
-          if (gp_GetVertexLowpoint(theGraph, I) == N)
-        	  gp_SetVertexLowpoint(theGraph, I, gp_GetVertexLeastAncestor(theGraph, I));
-
-          // For each DFS child C of the current vertex,
-          //	1) Reduce the lowpoint value of I to lowpoint(C) if it is the lesser
-          //	2) If the child C is pertinent, then do a Walkdown to embed the back edges
-          child = gp_GetVertexSortedDFSChildList(theGraph, I);
-          while (child != NIL)
+          // Work systematically through the back edges of the forward arc list
+          // in parallel with the DFS children of vertex I, using Walkdown to add
+          // the back edges from I to its descendants in each of the DFS subtrees
+          c = gp_GetVertexSortedDFSChildList(theGraph, I);
+          J = gp_GetVertexFwdArcList(theGraph, I);
+          while (gp_IsArc(theGraph, J))
           {
-        	  if (gp_GetVertexLowpoint(theGraph, I) > gp_GetVertexLowpoint(theGraph, child))
-        		  gp_SetVertexLowpoint(theGraph, I, gp_GetVertexLowpoint(theGraph, child));
-
-        	  if (gp_GetVertexPertinentBicompList(theGraph, child) != NIL)
+        	  cNext = LCGetNext(theGraph->sortedDFSChildLists, gp_GetVertexSortedDFSChildList(theGraph, I), c);
+        	  if (cNext == NIL || cNext > gp_GetNeighbor(theGraph, J))
         	  {
-				  if ((RetVal = theGraph->functions.fpWalkDown(theGraph, I, child + N)) != OK)
+        		  // If Walkdown returns OK, then it is OK to proceed with edge addition.
+        		  // Otherwise, if Walkdown returns NONEMBEDDABLE then we stop edge addition.
+				  if ((RetVal = theGraph->functions.fpWalkDown(theGraph, I, c + N)) != OK)
+					  break;
+
+				  // If there are any back edges left to embed, ...
+				  if (gp_IsArc(theGraph, J = gp_GetVertexFwdArcList(theGraph, I)))
 				  {
-					  // _Walkdown currently returns OK even if it couldn't embed all back edges
-					  // from I to the subtree rooted by child C. It only returns NONEMBEDDABLE
-					  // when it was blocked on a descendant bicomp.
-					  // Some extension algorithms are able to clear some such blockages with a reduction,
-					  // and those algorithms only return NONEMBEDDABLE when unable to clear the blockage
-					  if (RetVal == NONEMBEDDABLE)
-						  break;
-					  else
-						  return NOTOK;
+					  // then test if Walkdown was blocked from embedding all back edges to descendants of c
+					  if (cNext == NIL || cNext > gp_GetNeighbor(theGraph, J))
+					  {
+						  // For now, we'll just advance past the edges and handle the blockage
+						  // at the iteration level as before.
+				          while (J != NIL)
+				          {
+				        	  // Break when the edge J descendant endpoint is in the next subtree
+				        	  if (cNext != NIL && cNext > gp_GetNeighbor(theGraph, J))
+				        		  break;
+							  J = gp_GetNextArc(theGraph, J);
+							  if (J == gp_GetVertexFwdArcList(theGraph, I))
+								  J = NIL;
+				          }
+					  }
 				  }
         	  }
 
-			  child = LCGetNext(theGraph->sortedDFSChildLists, gp_GetVertexSortedDFSChildList(theGraph, I), child);
+       		  c = cNext;
           }
 
           // If the Walkdown sequence is completed but not all forward edges are embedded or an

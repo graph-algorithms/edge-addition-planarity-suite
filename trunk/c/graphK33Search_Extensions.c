@@ -63,9 +63,8 @@ int  _K33Search_InitStructures(K33SearchContext *context);
 
 /* Forward declarations of overloading functions */
 
-int  _K33Search_EmbeddingDFSPostprocess(graphP theGraph);
+int  _K33Search_EmbeddingInitialize(graphP theGraph);
 void _CreateBackArcLists(graphP theGraph, K33SearchContext *context);
-void _CalculateLowpoints(graphP theGraph);
 void _CreateSeparatedDFSChildLists(graphP theGraph, K33SearchContext *context);
 void _K33Search_EmbedBackEdgeToDescendant(graphP theGraph, int RootSide, int RootVertex, int W, int WPrevLink);
 int  _K33Search_MergeBicomps(graphP theGraph, int I, int RootVertex, int W, int WPrevLink);
@@ -134,7 +133,7 @@ int  gp_AttachK33Search(graphP theGraph)
      // return the base function pointers in the context function table
      memset(&context->functions, 0, sizeof(graphFunctionTable));
 
-     context->functions.fpEmbeddingDFSPostprocess = _K33Search_EmbeddingDFSPostprocess;
+     context->functions.fpEmbeddingInitialize = _K33Search_EmbeddingInitialize;
      context->functions.fpEmbedBackEdgeToDescendant = _K33Search_EmbedBackEdgeToDescendant;
      context->functions.fpMergeBicomps = _K33Search_MergeBicomps;
      context->functions.fpMergeVertex = _K33Search_MergeVertex;
@@ -422,31 +421,27 @@ void _K33Search_FreeContext(void *pContext)
 }
 
 /********************************************************************
- _K33Search_EmbeddingDFSPostprocess()
+ _K33Search_EmbeddingInitialize()
 
- This method is called after the DFS initialization has been performed
- by the core planarity algorithm.  That initialization includes the
- assignment of DFIs, DFS parents, and DFS edge types, and then
- all forward arcs (from a vertex to its descendants) are moved to a
- forward arc list (sorted by DFI).  For K_{3,3} search, we also need
- the back arcs (from a vertex to its ancestors) to be moved to a
- back arc list, though it does not have to be sorted by DFI.
+ This method overloads the embedding initialization phase of the
+ core planarity algorithm to provide post-processing that creates
+ the back arcs list and separated DFS child list (sorted by
+ lowpoint) for each vertex.
  ********************************************************************/
 
-int  _K33Search_EmbeddingDFSPostprocess(graphP theGraph)
+int  _K33Search_EmbeddingInitialize(graphP theGraph)
 {
     K33SearchContext *context = NULL;
     gp_FindExtension(theGraph, K33SEARCH_ID, (void *)&context);
 
     if (context != NULL)
     {
-    	if (context->functions.fpEmbeddingDFSPostprocess(theGraph) != OK)
+    	if (context->functions.fpEmbeddingInitialize(theGraph) != OK)
     		return NOTOK;
 
         if (theGraph->embedFlags == EMBEDFLAGS_SEARCHFORK33)
         {
         	_CreateBackArcLists(theGraph, context);
-        	_CalculateLowpoints(theGraph);
         	_CreateSeparatedDFSChildLists(theGraph, context);
         }
 
@@ -461,77 +456,40 @@ int  _K33Search_EmbeddingDFSPostprocess(graphP theGraph)
  ********************************************************************/
 void _CreateBackArcLists(graphP theGraph, K33SearchContext *context)
 {
-	int I, Jcur, Jnext;
+	int I, J, JTwin, ancestor;
 
     for (I=0; I < theGraph->N; I++)
     {
-    	Jcur = gp_GetFirstArc(theGraph, I);
-        while (gp_IsArc(theGraph, Jcur))
+    	J = gp_GetVertexFwdArcList(theGraph, I);
+        while (gp_IsArc(theGraph, J))
         {
-            Jnext = gp_GetNextArc(theGraph, Jcur);
+        	// Get the ancestor endpoint and the associated back arc
+        	ancestor = gp_GetNeighbor(theGraph, J);
+        	JTwin = gp_GetTwinArc(theGraph, J);
 
-            if (gp_GetEdgeType(theGraph, Jcur) == EDGE_TYPE_BACK)
+        	// Put it into the back arc list of the ancestor
+            if (context->VI[ancestor].backArcList == NIL)
             {
-                // Remove the back arc from I's adjacency list
-            	gp_DetachArc(theGraph, Jcur);
-
-                // Put the back arc in the backArcList
-                if (context->VI[I].backArcList == NIL)
-                {
-                    context->VI[I].backArcList = Jcur;
-                    gp_SetPrevArc(theGraph, Jcur, Jcur);
-                    gp_SetNextArc(theGraph, Jcur, Jcur);
-                }
-                else
-                {
-                	gp_AttachArc(theGraph, NIL, context->VI[I].backArcList, 1, Jcur);
-                }
+                context->VI[ancestor].backArcList = JTwin;
+                gp_SetPrevArc(theGraph, JTwin, JTwin);
+                gp_SetNextArc(theGraph, JTwin, JTwin);
+            }
+            else
+            {
+            	int e = context->VI[ancestor].backArcList;
+            	int JPrev = gp_GetPrevArc(theGraph, e);
+        		gp_SetPrevArc(theGraph, JTwin, JPrev);
+        		gp_SetNextArc(theGraph, JTwin, e);
+        		gp_SetPrevArc(theGraph, e, JTwin);
+        		gp_SetNextArc(theGraph, JPrev, JTwin);
             }
 
-            Jcur = Jnext;
+        	// Advance to the next forward edge
+			J = gp_GetNextArc(theGraph, J);
+			if (J == gp_GetVertexFwdArcList(theGraph, I))
+				J = NIL;
         }
     }
-}
-
-/********************************************************************
- _CalculateLowpoints()
-
- Creating the separatedDFSChildLists depends on all the vertices having
- lowpoint assignments, whereas the core planarity algorithm can afford
- to delay lowpoint calculations until the back edges for a vertex to
- its descendants are embedded.
-
- Later, K3,3 searching also tests lowpoints of vertices along a path of
- ancestors of the current vertices anyway.
- ********************************************************************/
-
-void _CalculateLowpoints(graphP theGraph)
-{
-	int I, N, leastValue, child;
-
-	N = theGraph->N;
-
-	for (I = N-1; I >= 0; I--)
-	{
-		leastValue = I;
-
-	    child = gp_GetVertexSortedDFSChildList(theGraph, I);
-
-	    gp_SetVertexFuturePertinentChild(theGraph, I, child);
-
-	    while (child != NIL)
-	    {
-	    	if (leastValue > gp_GetVertexLowpoint(theGraph, child))
-	    		leastValue = gp_GetVertexLowpoint(theGraph, child);
-
-	        child = LCGetNext(theGraph->sortedDFSChildLists, gp_GetVertexSortedDFSChildList(theGraph, I), child);
-	    }
-
-	    if (leastValue > gp_GetVertexLeastAncestor(theGraph, I))
-			leastValue = gp_GetVertexLeastAncestor(theGraph, I);
-
-		gp_SetVertexLowpoint(theGraph, I, leastValue);
-	}
 }
 
 /********************************************************************
