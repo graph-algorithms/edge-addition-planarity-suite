@@ -1423,23 +1423,23 @@ int  J0, J1, JTwin0, JTwin1;
      // Likewise, the new edge record in x is added between JTwin0 and JTwin1.
      if (gp_IsArc(theGraph, J0))
      {
-    	 if (gp_InsertEdge(theGraph, u, J0, 1, v, gp_AdjacencyListEndMark(v), 0) != OK)
+    	 if (gp_InsertEdge(theGraph, u, J0, 1, v, NIL, 0) != OK)
     		 return NOTOK;
      }
      else
      {
-    	 if (gp_InsertEdge(theGraph, u, J1, 0, v, gp_AdjacencyListEndMark(v), 0) != OK)
+    	 if (gp_InsertEdge(theGraph, u, J1, 0, v, NIL, 0) != OK)
     		 return NOTOK;
      }
 
      if (gp_IsArc(theGraph, JTwin0))
      {
-    	 if (gp_InsertEdge(theGraph, x, JTwin0, 1, w, gp_AdjacencyListEndMark(w), 0) != OK)
+    	 if (gp_InsertEdge(theGraph, x, JTwin0, 1, w, NIL, 0) != OK)
     		 return NOTOK;
      }
      else
      {
-    	 if (gp_InsertEdge(theGraph, x, JTwin1, 0, w, gp_AdjacencyListEndMark(w), 0) != OK)
+    	 if (gp_InsertEdge(theGraph, x, JTwin1, 0, w, NIL, 0) != OK)
     		 return NOTOK;
      }
 

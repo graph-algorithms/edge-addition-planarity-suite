@@ -228,8 +228,6 @@ typedef struct
 
 typedef vertexRec * vertexRecP;
 
-#define gp_AdjacencyListEndMark(v) (NIL)
-
 // Accessors for vertex adjacency list links
 #define gp_GetFirstArc(theGraph, v) (theGraph->V[v].link[0])
 #define gp_GetLastArc(theGraph, v) (theGraph->V[v].link[1])
@@ -578,13 +576,13 @@ typedef baseGraphStructure * graphP;
 // e.g. see gp_AttachFirstArc() and gp_AttachLastArc()
 #define gp_BindFirstArc(theGraph, v, arc) \
 	{ \
-		gp_SetPrevArc(theGraph, arc, gp_AdjacencyListEndMark(v)); \
+		gp_SetPrevArc(theGraph, arc, NIL); \
 		gp_SetFirstArc(theGraph, v, arc); \
     }
 
 #define gp_BindLastArc(theGraph, v, arc) \
 	{ \
-    	gp_SetNextArc(theGraph, arc, gp_AdjacencyListEndMark(v)); \
+    	gp_SetNextArc(theGraph, arc, NIL); \
     	gp_SetLastArc(theGraph, v, arc); \
     }
 
@@ -620,7 +618,7 @@ typedef baseGraphStructure * graphP;
 		   then we delete it by adjacency list end management */ \
 		if (arc == gp_GetLastArc(theGraph, v)) \
 		{ \
-		    gp_SetNextArc(theGraph, gp_GetPrevArc(theGraph, arc), gp_AdjacencyListEndMark(v)); \
+		    gp_SetNextArc(theGraph, gp_GetPrevArc(theGraph, arc), NIL); \
 			gp_SetLastArc(theGraph, v, gp_GetPrevArc(theGraph, arc)); \
 		} \
 		/* Otherwise, we delete the arc from the middle of the list */ \
@@ -645,7 +643,7 @@ typedef baseGraphStructure * graphP;
 		    then we delete it by adjacency list end management */ \
 		 if (arc == gp_GetFirstArc(theGraph, v)) \
 		 { \
-			 gp_SetPrevArc(theGraph, gp_GetNextArc(theGraph, arc), gp_AdjacencyListEndMark(v)); \
+			 gp_SetPrevArc(theGraph, gp_GetNextArc(theGraph, arc), NIL); \
 			 gp_SetFirstArc(theGraph, v, gp_GetNextArc(theGraph, arc)); \
 		 } \
 		 /* Otherwise, we delete the arc from the middle of the list */ \
