@@ -68,84 +68,13 @@ extern int  _ChooseTypeOfNonOuterplanarityMinor(graphP theGraph, int I, int R);
 extern int  _IsolateOuterplanarityObstructionA(graphP theGraph);
 extern int  _IsolateOuterplanarityObstructionB(graphP theGraph);
 
-/* Private function declarations for K_{2,3} searching */
+extern int	_AdvanceFwdArcList(graphP theGraph, int R);
 
-int  _SearchForK23(graphP theGraph, int I);
+/* Private function declarations for K_{2,3} searching */
 
 int  _SearchForK23InBicomp(graphP theGraph, int I, int R);
 int  _IsolateOuterplanarityObstructionE1orE2(graphP theGraph);
 int  _IsolateOuterplanarityObstructionE3orE4(graphP theGraph);
-
-/****************************************************************************
- _SearchForK23()
-    We begin by identifying all root copies of I on which the
-    Walkdown failed.  We can do this via straightforward traversal of
-    descendant to ancestor DFS tree paths.  This is an O(n) total cost in the
-    worst case.  If we find a K_{2,3}, then we can afford the time.  However,
-    if we find only a K_4, then the outerplanarity algorithm must continue so
-    we could not afford the worst case performance.  Fortunately, this
-    operation is worst-case constant time if there are no K_{2,3} homeomorphs
-    to be found in step I because a non-outerplanar biconnected graph either
-    contains a K_{2,3} or is \emph{isomorphic} to K_4.
- ****************************************************************************/
-
-int  _SearchForK23(graphP theGraph, int I)
-{
-int J, W, C, RetVal=OK;
-
-/* Traverse the edges of I to find the unembedded forward edges to
-    descendants.  For each such edge (I, W), traverse the DFS tree
-    path up to mark the child of I that is the root of the subtree
-    containing W.  Optimize with visitation flag. */
-
-/* Traverse each unembedded back edge to the descendant endpoint... */
-
-    J = gp_GetVertexFwdArcList(theGraph, I);
-
-    // Ensure we have at least one bicomp on which Walkdown failed, which
-    // should always be the case in an error free implementation
-    if (!gp_IsArc(theGraph, J))
-    	return NOTOK;
-
-    while (J != NIL)
-    {
-        W = gp_GetNeighbor(theGraph, J);
-
-        /* Go from the descendant endpoint to find the ancestor that
-            is a child of I, which in turn indicates the root of a
-            bicomp on which the Walkdown failed to embed all back edges */
-
-        C = W;
-        while (gp_GetVertexParent(theGraph, C) != I)
-            C = gp_GetVertexParent(theGraph, C);
-
-        RetVal = _SearchForK23InBicomp(theGraph, I, C+theGraph->N);
-
-        /* If something went wrong, NOTOK was returned;
-        If a K_{2,3} was found, NONEMBEDDABLE was returned;
-        If OK was returned, then an isolated K_4 was found, so
-        we continue searching any other bicomps on which the
-        Walkdown failed. */
-
-        if (RetVal != OK)
-            break;
-
-        /* Get the next unembedded back edge from I */
-
-        J = gp_GetNextArc(theGraph, J);
-        if (J == gp_GetVertexFwdArcList(theGraph, I))
-            J = NIL;
-    }
-
-/* If we got through the loop with an OK value for each bicomp on
-     which the Walkdown failed, then we return OK to indicate that only
-     isolated K_4's were found.  This allows the embedder to continue.
-     If a K_{2,3} is ever found (or if an error occurred), then RetVal
-     will not be OK, and the loop terminates immediately so we can
-     return the appropriate value. */
-
-     return RetVal;
-}
 
 /****************************************************************************
  _SearchForK23InBicomp()
@@ -248,10 +177,13 @@ int X, Y, XPrevLink, YPrevLink;
     by R is a separable subgraph of the input that is isomorphic
     to K_4.  So, we restore the original vertex orientation of
     the bicomp (because it's polite, not because we really have to).
+    Next, we advance the forward arc list so that all forward arcs to
+    descendants of this bicomp root are ignored.
     Then, we return OK to tell the outerplanarity embedder that it
     can ignore this K_4 and keep processing. */
 
-    if (_OrientVerticesInBicomp(theGraph, R, 1) != OK)
+    if (_AdvanceFwdArcList(theGraph, R) != OK ||
+    	_OrientVerticesInBicomp(theGraph, R, 1) != OK)
     	return NOTOK;
 
     return OK;

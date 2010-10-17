@@ -47,7 +47,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "graphK23Search.private.h"
 #include "graphK23Search.h"
 
-extern int  _SearchForK23(graphP theGraph, int I);
+extern int  _SearchForK23InBicomp(graphP theGraph, int I, int R);
 
 extern int  _TestForK23GraphObstruction(graphP theGraph, int *degrees, int *imageVerts);
 extern int  _getImageVertices(graphP theGraph, int *degrees, int maxDegree,
@@ -56,7 +56,7 @@ extern int  _TestSubgraph(graphP theSubgraph, graphP theGraph);
 
 /* Forward declarations of overloading functions */
 
-int  _K23Search_HandleBlockedEmbedIteration(graphP theGraph, int I);
+int  _K23Search_HandleBlockedBicomp(graphP theGraph, int I, int RootVertex, int R);
 int  _K23Search_EmbedPostprocess(graphP theGraph, int I, int edgeEmbeddingResult);
 int  _K23Search_CheckEmbeddingIntegrity(graphP theGraph, graphP origGraph);
 int  _K23Search_CheckObstructionIntegrity(graphP theGraph, graphP origGraph);
@@ -105,7 +105,7 @@ int  gp_AttachK23Search(graphP theGraph)
      // return the base function pointers in the context function table
      memset(&context->functions, 0, sizeof(graphFunctionTable));
 
-     context->functions.fpHandleBlockedEmbedIteration = _K23Search_HandleBlockedEmbedIteration;
+     context->functions.fpHandleBlockedBicomp = _K23Search_HandleBlockedBicomp;
      context->functions.fpEmbedPostprocess = _K23Search_EmbedPostprocess;
      context->functions.fpCheckEmbeddingIntegrity = _K23Search_CheckEmbeddingIntegrity;
      context->functions.fpCheckObstructionIntegrity = _K23Search_CheckObstructionIntegrity;
@@ -161,10 +161,15 @@ void _K23Search_FreeContext(void *pContext)
 /********************************************************************
  ********************************************************************/
 
-int  _K23Search_HandleBlockedEmbedIteration(graphP theGraph, int I)
+int  _K23Search_HandleBlockedBicomp(graphP theGraph, int I, int RootVertex, int R)
 {
     if (theGraph->embedFlags == EMBEDFLAGS_SEARCHFORK23)
-        return _SearchForK23(theGraph, I);
+    {
+    	if (R != RootVertex)
+    	    sp_Push2(theGraph->theStack, R, 0);
+
+    	return _SearchForK23InBicomp(theGraph, I, R);
+    }
 
     else
     {
