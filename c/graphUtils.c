@@ -56,6 +56,7 @@ extern void _WalkUp(graphP theGraph, int I, int J);
 extern int  _WalkDown(graphP theGraph, int I, int RootVertex);
 extern int  _MergeBicomps(graphP theGraph, int I, int RootVertex, int W, int WPrevLink);
 extern void _MergeVertex(graphP theGraph, int W, int WPrevLink, int R);
+extern int  _HandleBlockedBicomp(graphP theGraph, int I, int RootVertex, int R);
 extern int  _HandleBlockedDescendantBicomp(graphP theGraph, int I, int RootVertex, int R, int *pRout, int *pW, int *pWPrevLink);
 extern int  _HandleInactiveVertex(graphP theGraph, int BicompRoot, int *pW, int *pWPrevLink);
 extern int  _MarkDFSPath(graphP theGraph, int ancestor, int descendant);
@@ -173,6 +174,7 @@ void _InitFunctionTable(graphP theGraph)
      theGraph->functions.fpWalkDown = _WalkDown;
      theGraph->functions.fpMergeBicomps = _MergeBicomps;
      theGraph->functions.fpMergeVertex = _MergeVertex;
+     theGraph->functions.fpHandleBlockedBicomp = _HandleBlockedBicomp;
      theGraph->functions.fpHandleBlockedDescendantBicomp = _HandleBlockedDescendantBicomp;
      theGraph->functions.fpHandleInactiveVertex = _HandleInactiveVertex;
      theGraph->functions.fpHandleBlockedEmbedIteration = _HandleBlockedEmbedIteration;
