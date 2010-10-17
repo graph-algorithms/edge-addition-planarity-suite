@@ -176,8 +176,8 @@ int N, I, W, ErrorCode, adjList, J, indexValue;
 			  gp_SetNextArc(theGraph, gp_GetLastArc(theGraph, I), adjList);
 
         	  // Remove the list from the vertex
-			  gp_SetFirstArc(theGraph, I, gp_AdjacencyListEndMark(I));
-			  gp_SetLastArc(theGraph, I, gp_AdjacencyListEndMark(I));
+			  gp_SetFirstArc(theGraph, I, NIL);
+			  gp_SetLastArc(theGraph, I, NIL);
           }
 
           // Read the adjacency list.

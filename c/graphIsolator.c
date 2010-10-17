@@ -804,13 +804,13 @@ int fwdArc, backArc;
     gp_SetPrevArc(theGraph, gp_GetNextArc(theGraph, fwdArc), gp_GetPrevArc(theGraph, fwdArc));
 
     /* The forward arc is added to the adjacency list of the ancestor. */
-    gp_SetPrevArc(theGraph, fwdArc, gp_AdjacencyListEndMark(ancestor));
+    gp_SetPrevArc(theGraph, fwdArc, NIL);
     gp_SetNextArc(theGraph, fwdArc, gp_GetFirstArc(theGraph, ancestor));
     gp_SetPrevArc(theGraph, gp_GetFirstArc(theGraph, ancestor), fwdArc);
     gp_SetFirstArc(theGraph, ancestor, fwdArc);
 
     /* The back arc is added to the adjacency list of the descendant. */
-    gp_SetPrevArc(theGraph, backArc, gp_AdjacencyListEndMark(descendant));
+    gp_SetPrevArc(theGraph, backArc, NIL);
     gp_SetNextArc(theGraph, backArc, gp_GetFirstArc(theGraph, descendant));
     gp_SetPrevArc(theGraph, gp_GetFirstArc(theGraph, descendant), backArc);
     gp_SetFirstArc(theGraph, descendant, backArc);

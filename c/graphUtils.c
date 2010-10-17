@@ -489,8 +489,8 @@ int J, Esize = theGraph->arcCapacity, newEsize = requiredArcCapacity;
 
 void _InitVertexRec(graphP theGraph, int I)
 {
-    gp_SetFirstArc(theGraph, I, gp_AdjacencyListEndMark(I));
-    gp_SetLastArc(theGraph, I, gp_AdjacencyListEndMark(I));
+    gp_SetFirstArc(theGraph, I, NIL);
+    gp_SetLastArc(theGraph, I, NIL);
     gp_SetVertexIndex(theGraph, I, NIL);
     gp_InitVertexFlags(theGraph, I);
 }
@@ -1557,9 +1557,9 @@ void gp_AttachArc(graphP theGraph, int v, int e, int link, int newArc)
      {
     	 int e2 = gp_GetArc(theGraph, v, link);
 
-    	 // v's link is newArc, and newArc's 1^link is gp_AdjacencyListEndMark(v)
+    	 // v's link is newArc, and newArc's 1^link is NIL
     	 gp_SetArc(theGraph, v, link, newArc);
-    	 gp_SetAdjacentArc(theGraph, newArc, 1^link, gp_AdjacencyListEndMark(v));
+    	 gp_SetAdjacentArc(theGraph, newArc, 1^link, NIL);
 
     	 // newArcs's elink is e2
     	 gp_SetAdjacentArc(theGraph, newArc, link, e2);
@@ -1678,8 +1678,8 @@ int vertMax = theGraph->N + theGraph->NV - 1,
     upos, vpos;
 
      if (theGraph==NULL || u<0 || v<0 || u>vertMax || v>vertMax ||
-         e_u>edgeMax || (e_u<0 && e_u != gp_AdjacencyListEndMark(u)) ||
-         e_v>edgeMax || (e_v<0 && e_v != gp_AdjacencyListEndMark(v)) ||
+         e_u>edgeMax || (e_u<0 && e_u != NIL) ||
+         e_v>edgeMax || (e_v<0 && e_v != NIL) ||
          e_ulink<0 || e_ulink>1 || e_vlink<0 || e_vlink>1)
          return NOTOK;
 

@@ -265,15 +265,15 @@ platform_GetTime(start);
     	//     in the singleton bicomp with I is at location I + N in the vertex array.
         if (gp_GetVertexParent(theGraph, I) == NIL)
         {
-        	gp_SetFirstArc(theGraph, I, gp_AdjacencyListEndMark(I));
-        	gp_SetLastArc(theGraph, I, gp_AdjacencyListEndMark(I));
+        	gp_SetFirstArc(theGraph, I, NIL);
+        	gp_SetLastArc(theGraph, I, NIL);
         }
         else
         {
         	// Make the child edge the only edge in the virtual vertex adjacency list
         	J = gp_GetFirstArc(theGraph, R);
-        	gp_SetPrevArc(theGraph, J, gp_AdjacencyListEndMark(I));
-        	gp_SetNextArc(theGraph, J, gp_AdjacencyListEndMark(I));
+        	gp_SetPrevArc(theGraph, J, NIL);
+        	gp_SetNextArc(theGraph, J, NIL);
 
         	// Reset the twin's neighbor value to point to the virtual vertex
         	JTwin = gp_GetTwinArc(theGraph, J);
@@ -282,8 +282,8 @@ platform_GetTime(start);
         	// Make its twin the only edge in the child's adjacency list
         	gp_SetFirstArc(theGraph, I, JTwin);
         	gp_SetLastArc(theGraph, I, JTwin);
-        	gp_SetPrevArc(theGraph, JTwin, gp_AdjacencyListEndMark(I));
-        	gp_SetNextArc(theGraph, JTwin, gp_AdjacencyListEndMark(I));
+        	gp_SetPrevArc(theGraph, JTwin, NIL);
+        	gp_SetNextArc(theGraph, JTwin, NIL);
 
         	// Set up the external face management data structure to match
             gp_SetExtFaceVertex(theGraph, R, 0, I);
@@ -342,14 +342,14 @@ int fwdArc, backArc, parentCopy;
     // The forward arc is added to the adjacency list of the RootVertex.
     // Note that we're guaranteed that the RootVertex adjacency list is non-empty,
     // so tests for NIL are not needed
-    gp_SetAdjacentArc(theGraph, fwdArc, 1^RootSide, gp_AdjacencyListEndMark(RootVertex));
+    gp_SetAdjacentArc(theGraph, fwdArc, 1^RootSide, NIL);
     gp_SetAdjacentArc(theGraph, fwdArc, RootSide, gp_GetArc(theGraph, RootVertex, RootSide));
     gp_SetAdjacentArc(theGraph, gp_GetArc(theGraph, RootVertex, RootSide), 1^RootSide, fwdArc);
     gp_SetArc(theGraph, RootVertex, RootSide, fwdArc);
 
     // The back arc is added to the adjacency list of W.
     // The adjacency list of W is also guaranteed non-empty
-    gp_SetAdjacentArc(theGraph, backArc, 1^WPrevLink, gp_AdjacencyListEndMark(W));
+    gp_SetAdjacentArc(theGraph, backArc, 1^WPrevLink, NIL);
     gp_SetAdjacentArc(theGraph, backArc, WPrevLink, gp_GetArc(theGraph, W, WPrevLink));
     gp_SetAdjacentArc(theGraph, gp_GetArc(theGraph, W, WPrevLink), 1^WPrevLink, backArc);
     gp_SetArc(theGraph, W, WPrevLink, backArc);
@@ -510,7 +510,7 @@ int  e_w, e_r, e_ext;
 
          // Cross-link W's WPrevLink arc and the 1^WPrevLink arc in e_ext
          gp_SetArc(theGraph, W, WPrevLink, e_ext);
-         gp_SetAdjacentArc(theGraph, e_ext, 1^WPrevLink, gp_AdjacencyListEndMark(W));
+         gp_SetAdjacentArc(theGraph, e_ext, 1^WPrevLink, NIL);
      }
      // Otherwise, W just receives R's list.  This happens, for example, on a
      // DFS tree root vertex during JoinBicomps()
@@ -518,11 +518,11 @@ int  e_w, e_r, e_ext;
      {
          // Cross-link W's 1^WPrevLink arc and the WPrevLink arc in e_r
          gp_SetArc(theGraph, W, 1^WPrevLink, e_r);
-         gp_SetAdjacentArc(theGraph, e_r, WPrevLink, gp_AdjacencyListEndMark(W));
+         gp_SetAdjacentArc(theGraph, e_r, WPrevLink, NIL);
 
          // Cross-link W's WPrevLink arc and the 1^WPrevLink arc in e_ext
          gp_SetArc(theGraph, W, WPrevLink, e_ext);
-         gp_SetAdjacentArc(theGraph, e_ext, 1^WPrevLink, gp_AdjacencyListEndMark(W));
+         gp_SetAdjacentArc(theGraph, e_ext, 1^WPrevLink, NIL);
      }
 
      // Erase the entries in R, which is a root copy that is no longer needed
