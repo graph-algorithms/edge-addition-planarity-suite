@@ -1183,6 +1183,9 @@ int  RetVal, W, WPrevLink, R, X, XPrevLink, Y, YPrevLink, RootSide;
 
  Extension algorithms are able to clear some of the blockages, in
  which case OK is returned to indicate that the WalkDown can proceed.
+ In some cases, a part of clearing the blockage is removing the
+ forward arcs to the bicomp root's descendants, in which case the
+ extension handler invokes _AdvanceFwdArcList().
 
  Returns OK to proceed with WalkDown at W,
          NONEMBEDDABLE to terminate WalkDown of Root Vertex
@@ -1208,6 +1211,42 @@ int  _HandleBlockedBicomp(graphP theGraph, int I, int RootVertex, int R)
     }
 
 	return RetVal;
+}
+
+/********************************************************************
+ _AdvanceFwdArcList()
+
+ A helper function used by some extensions that overload the handler
+ for a blocked bicomp.  This function removes from the forward arc
+ list of a vertex the forward arcs to descendants of the bicomp root R.
+ ********************************************************************/
+
+int	_AdvanceFwdArcList(graphP theGraph, int R)
+{
+	int child = R - theGraph->N;
+	int v = gp_GetVertexParent(theGraph, child);
+	int nextChild = LCGetNext(theGraph->sortedDFSChildLists, gp_GetVertexSortedDFSChildList(theGraph, v), child);
+	int J = gp_GetVertexFwdArcList(theGraph, v);
+	int Jnext;
+
+	while (J != NIL)
+	{
+		// Stop when we find an arc leading to a descendant of the next DFS child of v
+		if (nextChild != NIL && nextChild < gp_GetNeighbor(theGraph, J))
+			break;
+
+		Jnext = gp_GetNextArc(theGraph, J);
+		if (Jnext == gp_GetVertexFwdArcList(theGraph, v))
+			Jnext = NIL;
+
+		gp_SetVertexFwdArcList(theGraph, v, Jnext);
+	    gp_SetNextArc(theGraph, gp_GetPrevArc(theGraph, J), gp_GetNextArc(theGraph, J));
+	    gp_SetPrevArc(theGraph, gp_GetNextArc(theGraph, J), gp_GetPrevArc(theGraph, J));
+
+		J = Jnext;
+	}
+
+	return OK;
 }
 
 /********************************************************************
