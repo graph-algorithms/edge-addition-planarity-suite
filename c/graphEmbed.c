@@ -156,7 +156,7 @@ int RetVal = OK;
           // the back edges from I to its descendants in each of the DFS subtrees
           c = gp_GetVertexSortedDFSChildList(theGraph, I);
           J = gp_GetVertexFwdArcList(theGraph, I);
-          while (gp_IsArc(theGraph, J))
+          while (J != NIL)
           {
         	  cNext = LCGetNext(theGraph->sortedDFSChildLists, gp_GetVertexSortedDFSChildList(theGraph, I), c);
         	  if (cNext == NIL || cNext > gp_GetNeighbor(theGraph, J))
@@ -165,29 +165,9 @@ int RetVal = OK;
         		  // Otherwise, if Walkdown returns NONEMBEDDABLE then we stop edge addition.
 				  if ((RetVal = theGraph->functions.fpWalkDown(theGraph, I, c + N)) != OK)
 					  break;
-
-				  // If there are any back edges left to embed, ...
-				  if (gp_IsArc(theGraph, J = gp_GetVertexFwdArcList(theGraph, I)))
-				  {
-					  // then test if Walkdown was blocked from embedding all back edges to descendants of c
-					  if (cNext == NIL || cNext > gp_GetNeighbor(theGraph, J))
-					  {
-						  // For now, we'll just advance past the edges and handle the blockage
-						  // at the iteration level as before.
-				          while (J != NIL)
-				          {
-				        	  // Break when the edge J descendant endpoint is in the next subtree
-				        	  if (cNext != NIL && cNext > gp_GetNeighbor(theGraph, J))
-				        		  break;
-							  J = gp_GetNextArc(theGraph, J);
-							  if (J == gp_GetVertexFwdArcList(theGraph, I))
-								  J = NIL;
-				          }
-					  }
-				  }
         	  }
-
        		  c = cNext;
+       		  J = gp_GetVertexFwdArcList(theGraph, I);
           }
 
           // If the Walkdown determined that the graph is NONEMBEDDABLE, then
@@ -982,7 +962,7 @@ int  nextZig, nextZag, R, ParentCopy, RootID_DFSChild, BicompList;
 
 int  _WalkDown(graphP theGraph, int I, int RootVertex)
 {
-int  RetVal, W, WPrevLink, R, Rout, X, XPrevLink, Y, YPrevLink, RootSide;
+int  RetVal, W, WPrevLink, R, X, XPrevLink, Y, YPrevLink, RootSide;
 
 #ifdef DEBUG
      // Resolves typical watch expressions
@@ -1095,25 +1075,25 @@ int  RetVal, W, WPrevLink, R, Rout, X, XPrevLink, Y, YPrevLink, RootSide;
                  {
                       W = X;
                       WPrevLink = XPrevLink;
-                      Rout = 0;
+                      sp_Push2(theGraph->theStack, R, 0);
                  }
                  else if (_VertexActiveStatus(theGraph, Y, I) == VAS_INTERNAL)
                  {
                       W = Y;
                       WPrevLink = YPrevLink;
-                      Rout = 1;
+                      sp_Push2(theGraph->theStack, R, 1);
                  }
                  else if (PERTINENT(theGraph, X))
                  {
                       W = X;
                       WPrevLink = XPrevLink;
-                      Rout = 0;
+                      sp_Push2(theGraph->theStack, R, 0);
                  }
                  else if (PERTINENT(theGraph, Y))
                  {
                 	 W = Y;
                      WPrevLink = YPrevLink;
-                     Rout = 1;
+                     sp_Push2(theGraph->theStack, R, 1);
                  }
                  else
                  {
@@ -1124,13 +1104,10 @@ int  RetVal, W, WPrevLink, R, Rout, X, XPrevLink, Y, YPrevLink, RootSide;
                      if ((RetVal = theGraph->functions.fpHandleBlockedBicomp(theGraph, I, RootVertex, R)) != OK)
                          return RetVal;
 
-                     // If an extension algorithm cleared the blockage, then we select a path
-                     // along which to proceed with the Walkdown traversal.
-                     //if ((RetVal = theGraph->functions.fpHandleBlockedDescendantBicomp(theGraph, I, RootVertex, R, &Rout, &W, &WPrevLink)) != OK)
-                     //    return RetVal;
+                     // If an extension algorithm cleared the blockage, then we pop W and WPrevLink
+                     // back off the stack and let the Walkdown traversal try descending again
+                     sp_Pop2(theGraph->theStack, W, WPrevLink);
                  }
-
-                 sp_Push2(theGraph->theStack, R, Rout);
              }
              else
              {
@@ -1176,17 +1153,15 @@ int  RetVal, W, WPrevLink, R, Rout, X, XPrevLink, Y, YPrevLink, RootSide;
 
      // Detect whether the Walkdown was blocked from embedding all the back edges
      // from I to descendants of the root edge child of I
-	 if (gp_IsArc(theGraph,  gp_GetVertexFwdArcList(theGraph, I)))
+	 if (gp_IsArc(theGraph, gp_GetVertexFwdArcList(theGraph, I)))
 	 {
 	     int RootEdgeChild = RootVertex - theGraph->N;
 	     int nextChild = LCGetNext(theGraph->sortedDFSChildLists, gp_GetVertexSortedDFSChildList(theGraph, I), RootEdgeChild);
 
-	     // If there is no nextChild or if its DFI is greater than the descendant endpoint of the next
-	     // forward arc, then that forward arc indicates a descendant in the current RootEdgeChild subtree
-	     // The planarity/outerplanarity handler for this blocked bicomp isolates an obstruction to
-	     // planarity or outerplanarity and returns NONEMBEDDABLE. An extension algorithm that clears
-	     // the blockage would return OK, enabling the embedder to invoke Walkdown on RootVertex again.
-	     if (nextChild == NIL || nextChild >  gp_GetNeighbor(theGraph, gp_GetVertexFwdArcList(theGraph, I)))
+	     // If there is no nextChild or if its DFI is greater than the descendant endpoint of the
+	     // next forward arc, then the Walkdown was blocked and did not embed a forward arc to a
+	     // descendant in the current RootEdgeChild subtree.
+	     if (nextChild == NIL || nextChild > gp_GetNeighbor(theGraph, gp_GetVertexFwdArcList(theGraph, I)))
 	    	 return theGraph->functions.fpHandleBlockedBicomp(theGraph, I, RootVertex, RootVertex);
 	 }
 
