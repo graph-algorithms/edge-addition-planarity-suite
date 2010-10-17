@@ -68,12 +68,139 @@ int  _MergeBicomps(graphP theGraph, int I, int RootVertex, int W, int WPrevLink)
 void _WalkUp(graphP theGraph, int I, int J);
 int  _WalkDown(graphP theGraph, int I, int RootVertex);
 
-int  _HandleBlockedEmbedIteration(graphP theGraph, int I);
+int  _HandleBlockedBicomp(graphP theGraph, int I, int RootVertex, int R);
 int  _EmbedPostprocess(graphP theGraph, int I, int edgeEmbeddingResult);
 
 int  _OrientVerticesInEmbedding(graphP theGraph);
 int  _OrientVerticesInBicomp(graphP theGraph, int BicompRoot, int PreserveSigns);
 int  _JoinBicomps(graphP theGraph);
+
+/********************************************************************
+ gp_Embed()
+
+  Either a planar embedding is created in theGraph, or a Kuratowski
+  subgraph is isolated.  Either way, theGraph remains sorted by DFI
+  since that is the most common desired result.  The original vertex
+  numbers are available in the 'index' members of the vertex records.
+  Moreover, gp_SortVertices() can be invoked to put the vertices in
+  the order of the input graph, at which point the 'index' members of
+  the vertex records will contain the vertex DFIs.
+
+ return OK if the embedding was successfully created or no subgraph
+            homeomorphic to a topological obstruction was found.
+
+        NOTOK on internal failure
+
+        NONEMBEDDABLE if the embedding couldn't be created due to
+                the existence of a subgraph homeomorphic to a
+                topological obstruction.
+
+  For core planarity, OK is returned when theGraph contains a planar
+  embedding of the input graph, and NONEMBEDDABLE is returned when a
+  subgraph homeomorphic to K5 or K3,3 has been isolated in theGraph.
+
+  Extension modules can overload functions used by gp_Embed to achieve
+  alternate algorithms.  In those cases, the return results are
+  similar.  For example, a K3,3 search algorithm would return
+  NONEMBEDDABLE if it finds the K3,3 obstruction, and OK if the graph
+  is planar or only contains K5 homeomorphs.  Similarly, an
+  outerplanarity module can return OK for an outerplanar embedding or
+  NONEMBEDDABLE when a subgraph homeomorphic to K2,3 or K4 has been
+  isolated.
+
+  The algorithm extension for gp_Embed() is encoded in the embedFlags,
+  and the details of the return value can be found in the extension
+  module that defines the embedding flag.
+
+ ********************************************************************/
+
+int gp_Embed(graphP theGraph, int embedFlags)
+{
+int N, I, J, c, cNext;
+int RetVal = OK;
+
+    // Basic parameter checks
+    if (theGraph==NULL)
+    	return NOTOK;
+
+    // A little shorthand for the order of the graph
+    N = theGraph->N;
+
+    // Preprocessing
+    theGraph->embedFlags = embedFlags;
+
+    // Allow extension algorithms to postprocess the DFS
+    if (theGraph->functions.fpEmbeddingInitialize(theGraph) != OK)
+    	return NOTOK;
+
+    // In reverse DFI order, embed the back edges from each vertex to its DFS descendants.
+    for (I = N-1; I >= 0; I--)
+    {
+          RetVal = OK;
+
+          // Walkup calls establish Pertinence in Step I
+          // Do the Walkup for each cycle edge from I to a DFS descendant W.
+          J = gp_GetVertexFwdArcList(theGraph, I);
+          while (J != NIL)
+          {
+        	  theGraph->functions.fpWalkUp(theGraph, I, J);
+
+              J = gp_GetNextArc(theGraph, J);
+              if (J == gp_GetVertexFwdArcList(theGraph, I))
+                  J = NIL;
+          }
+          gp_SetVertexPertinentBicompList(theGraph, I, NIL);
+
+          // Work systematically through the back edges of the forward arc list
+          // in parallel with the DFS children of vertex I, using Walkdown to add
+          // the back edges from I to its descendants in each of the DFS subtrees
+          c = gp_GetVertexSortedDFSChildList(theGraph, I);
+          J = gp_GetVertexFwdArcList(theGraph, I);
+          while (gp_IsArc(theGraph, J))
+          {
+        	  cNext = LCGetNext(theGraph->sortedDFSChildLists, gp_GetVertexSortedDFSChildList(theGraph, I), c);
+        	  if (cNext == NIL || cNext > gp_GetNeighbor(theGraph, J))
+        	  {
+        		  // If Walkdown returns OK, then it is OK to proceed with edge addition.
+        		  // Otherwise, if Walkdown returns NONEMBEDDABLE then we stop edge addition.
+				  if ((RetVal = theGraph->functions.fpWalkDown(theGraph, I, c + N)) != OK)
+					  break;
+
+				  // If there are any back edges left to embed, ...
+				  if (gp_IsArc(theGraph, J = gp_GetVertexFwdArcList(theGraph, I)))
+				  {
+					  // then test if Walkdown was blocked from embedding all back edges to descendants of c
+					  if (cNext == NIL || cNext > gp_GetNeighbor(theGraph, J))
+					  {
+						  // For now, we'll just advance past the edges and handle the blockage
+						  // at the iteration level as before.
+				          while (J != NIL)
+				          {
+				        	  // Break when the edge J descendant endpoint is in the next subtree
+				        	  if (cNext != NIL && cNext > gp_GetNeighbor(theGraph, J))
+				        		  break;
+							  J = gp_GetNextArc(theGraph, J);
+							  if (J == gp_GetVertexFwdArcList(theGraph, I))
+								  J = NIL;
+				          }
+					  }
+				  }
+        	  }
+
+       		  c = cNext;
+          }
+
+          // If the Walkdown determined that the graph is NONEMBEDDABLE, then
+          // the guiding embedder loop can be stopped now.
+          if (RetVal != OK)
+        	  break;
+    }
+
+    // Postprocessing to orient the embedding and merge any remaining separated bicomps.
+    // Some extension algorithms may overload this function, e.g. to do nothing if they
+    // have no need of an embedding.
+    return theGraph->functions.fpEmbedPostprocess(theGraph, I, RetVal);
+}
 
 /********************************************************************
  _EmbeddingInitialize()
@@ -780,51 +907,6 @@ int  nextZig, nextZag, R, ParentCopy, RootID_DFSChild, BicompList;
 }
 
 /********************************************************************
- _HandleBlockedDescendantBicomp()
- The core planarity/outerplanarity algorithm handles the blockage
- by pushing the root of the blocked bicomp onto the top of the stack
- because it is the central focus for obstruction minor A.
- Then NONEMBEDDABLE is returned so that the WalkDown can terminate,
- and the embedder can proceed to isolate the obstruction.
- Some algorithms may be able to clear the blockage, in which case
- a function overload would set Rout, W and WPrevLink, then return OK
- to indicate that the WalkDown may proceed.
-
- NOTE: When returning OK (blockage cleared), the overload implementation
-       should NOT call this base implementation nor otherwise push R
-       onto the stack because the core WalkDown implementation will push
-       the appropriate stack entries based on R, Rout, W and WPrevLink
-       Similarly, when returning NONEMBEDDABLE, it is typically not
-       necessary to call this base implementation because pushing
-       the bicomp root R is not usually necessary, i.e. the overload
-       implementation usually does all embed post-processing before
-       returning NONEMBEDDABLE.
-
- Returns OK to proceed with WalkDown at W,
-         NONEMBEDDABLE to terminate WalkDown of Root Vertex
-         NOTOK for internal error
- ********************************************************************/
-
-int  _HandleBlockedDescendantBicomp(graphP theGraph, int I, int RootVertex, int R, int *pRout, int *pW, int *pWPrevLink)
-{
-    sp_Push2(theGraph->theStack, R, 0);
-	return NONEMBEDDABLE;
-}
-
-/********************************************************************
- _HandleInactiveVertex()
- ********************************************************************/
-
-int  _HandleInactiveVertex(graphP theGraph, int BicompRoot, int *pW, int *pWPrevLink)
-{
-     int X = gp_GetExtFaceVertex(theGraph, *pW, 1^*pWPrevLink);
-     *pWPrevLink = gp_GetExtFaceVertex(theGraph, X, 0) == *pW ? 0 : 1;
-     *pW = X;
-
-     return OK;
-}
-
-/********************************************************************
  _GetPertinentChildBicomp()
  Returns the root of a pertinent child bicomp for the given vertex.
  Note: internally active roots are prepended by _Walkup()
@@ -900,14 +982,12 @@ int  _HandleInactiveVertex(graphP theGraph, int BicompRoot, int *pW, int *pWPrev
 
 int  _WalkDown(graphP theGraph, int I, int RootVertex)
 {
-int  RetVal, W, WPrevLink, R, Rout, X, XPrevLink, Y, YPrevLink, RootSide, RootEdgeChild;
+int  RetVal, W, WPrevLink, R, Rout, X, XPrevLink, Y, YPrevLink, RootSide;
 
 #ifdef DEBUG
      // Resolves typical watch expressions
      R = RootVertex;
 #endif
-
-     RootEdgeChild = RootVertex - theGraph->N;
 
      sp_ClearStack(theGraph->theStack);
 
@@ -1037,13 +1117,17 @@ int  RetVal, W, WPrevLink, R, Rout, X, XPrevLink, Y, YPrevLink, RootSide, RootEd
                  }
                  else
                  {
-                	 // Both the X and Y sides of the bicomp are blocked.
+                	 // Both the X and Y sides of the descendant bicomp are blocked.
                 	 // Let the application decide whether it can unblock the bicomp.
-                	 // The core planarity embedder simply pushes (R, 0) onto the top of
-                	 // the stack and returns NONEMBEDDABLE, which causes a return here
-                	 // and enables isolation of planarity/outerplanary obstruction minor A
-                     if ((RetVal = theGraph->functions.fpHandleBlockedDescendantBicomp(theGraph, I, RootVertex, R, &Rout, &W, &WPrevLink)) != OK)
+                	 // The core planarity/outerplanarity embedder simply isolates a
+                	 // planarity/outerplanary obstruction and returns NONEMBEDDABLE
+                     if ((RetVal = theGraph->functions.fpHandleBlockedBicomp(theGraph, I, RootVertex, R)) != OK)
                          return RetVal;
+
+                     // If an extension algorithm cleared the blockage, then we select a path
+                     // along which to proceed with the Walkdown traversal.
+                     //if ((RetVal = theGraph->functions.fpHandleBlockedDescendantBicomp(theGraph, I, RootVertex, R, &Rout, &W, &WPrevLink)) != OK)
+                     //    return RetVal;
                  }
 
                  sp_Push2(theGraph->theStack, R, Rout);
@@ -1090,147 +1174,110 @@ int  RetVal, W, WPrevLink, R, Rout, X, XPrevLink, Y, YPrevLink, RootSide, RootEd
              break;
      }
 
+     // Detect whether the Walkdown was blocked from embedding all the back edges
+     // from I to descendants of the root edge child of I
+	 if (gp_IsArc(theGraph,  gp_GetVertexFwdArcList(theGraph, I)))
+	 {
+	     int RootEdgeChild = RootVertex - theGraph->N;
+	     int nextChild = LCGetNext(theGraph->sortedDFSChildLists, gp_GetVertexSortedDFSChildList(theGraph, I), RootEdgeChild);
+
+	     // If there is no nextChild or if its DFI is greater than the descendant endpoint of the next
+	     // forward arc, then that forward arc indicates a descendant in the current RootEdgeChild subtree
+	     // The planarity/outerplanarity handler for this blocked bicomp isolates an obstruction to
+	     // planarity or outerplanarity and returns NONEMBEDDABLE. An extension algorithm that clears
+	     // the blockage would return OK, enabling the embedder to invoke Walkdown on RootVertex again.
+	     if (nextChild == NIL || nextChild >  gp_GetNeighbor(theGraph, gp_GetVertexFwdArcList(theGraph, I)))
+	    	 return theGraph->functions.fpHandleBlockedBicomp(theGraph, I, RootVertex, RootVertex);
+	 }
+
      return OK;
 }
 
-
 /********************************************************************
- gp_Embed()
+ _HandleBlockedBicomp()
 
-  First, a DFS tree is created in the graph (if not already done).
-  Then, the graph is sorted by DFI.
+ A biconnected component has blocked the Walkdown from embedding
+ back edges.  Each external face path emanating from the root is
+ blocked by a stopping vertex.
 
-  Either a planar embedding is created in theGraph, or a Kuratowski
-  subgraph is isolated.  Either way, theGraph remains sorted by DFI
-  since that is the most common desired result.  The original vertex
-  numbers are available in the 'index' members of the vertex records.
-  Moreover, gp_SortVertices() can be invoked to put the vertices in
-  the order of the input graph, at which point the 'index' members of
-  the vertex records will contain the vertex DFIs.
+ The core planarity/outerplanarity algorithm handles the blockage
+ by isolating an embedding obstruction (a subgraph homeomorphic to
+ K_{3,3} or K_5 for planarity, or a subgraph homeomorphic to K_{2,3}
+ or K_4 for outerplanarity). Then NONEMBEDDABLE is returned so that
+ the WalkDown can terminate.
 
- return OK if the embedding was successfully created or no subgraph
-            homeomorphic to a topological obstruction was found.
+ Extension algorithms are able to clear some of the blockages, in
+ which case OK is returned to indicate that the WalkDown can proceed.
 
-        NOTOK on internal failure
-
-        NONEMBEDDABLE if the embedding couldn't be created due to
-                the existence of a subgraph homeomorphic to a
-                topological obstruction.
-
-  For core planarity, OK is returned when theGraph contains a planar
-  embedding of the input graph, and NONEMBEDDABLE is returned when a
-  subgraph homeomorphic to K5 or K3,3 has been isolated in theGraph.
-
-  Extension modules can overload functions used by gp_Embed to achieve
-  alternate algorithms.  In those cases, the return results are
-  similar.  For example, a K3,3 search algorithm would return
-  NONEMBEDDABLE if it finds the K3,3 obstruction, and OK if the graph
-  is planar or only contains K5 homeomorphs.  Similarly, an
-  outerplanarity module can return OK for an outerplanar embedding or
-  NONEMBEDDABLE when a subgraph homeomorphic to K2,3 or K4 has been
-  isolated.
-
-  The algorithm extension for gp_Embed() is encoded in the embedFlags,
-  and the details of the return value can be found in the extension
-  module that defines the embedding flag.
-
+ Returns OK to proceed with WalkDown at W,
+         NONEMBEDDABLE to terminate WalkDown of Root Vertex
+         NOTOK for internal error
  ********************************************************************/
 
-int gp_Embed(graphP theGraph, int embedFlags)
+int  _HandleBlockedBicomp(graphP theGraph, int I, int RootVertex, int R)
 {
-int N, I, J, c, cNext;
-int RetVal = OK;
+	int RetVal = NONEMBEDDABLE;
 
-    // Basic parameter checks
-    if (theGraph==NULL)
-    	return NOTOK;
+	if (R != RootVertex)
+	    sp_Push2(theGraph->theStack, R, 0);
 
-    // A little shorthand for the order of the graph
-    N = theGraph->N;
-
-    // Preprocessing
-    theGraph->embedFlags = embedFlags;
-
-    // Allow extension algorithms to postprocess the DFS
-    if (theGraph->functions.fpEmbeddingInitialize(theGraph) != OK)
-    	return NOTOK;
-
-    // In reverse DFI order, embed the back edges from each vertex to its DFS descendants.
-    for (I = N-1; I >= 0; I--)
+    if (theGraph->embedFlags == EMBEDFLAGS_PLANAR)
     {
-          RetVal = OK;
-
-          // Walkup calls establish Pertinence in Step I
-          // Do the Walkup for each cycle edge from I to a DFS descendant W.
-          J = gp_GetVertexFwdArcList(theGraph, I);
-          while (J != NIL)
-          {
-        	  theGraph->functions.fpWalkUp(theGraph, I, J);
-
-              J = gp_GetNextArc(theGraph, J);
-              if (J == gp_GetVertexFwdArcList(theGraph, I))
-                  J = NIL;
-          }
-          gp_SetVertexPertinentBicompList(theGraph, I, NIL);
-
-          // Work systematically through the back edges of the forward arc list
-          // in parallel with the DFS children of vertex I, using Walkdown to add
-          // the back edges from I to its descendants in each of the DFS subtrees
-          c = gp_GetVertexSortedDFSChildList(theGraph, I);
-          J = gp_GetVertexFwdArcList(theGraph, I);
-          while (gp_IsArc(theGraph, J))
-          {
-        	  cNext = LCGetNext(theGraph->sortedDFSChildLists, gp_GetVertexSortedDFSChildList(theGraph, I), c);
-        	  if (cNext == NIL || cNext > gp_GetNeighbor(theGraph, J))
-        	  {
-        		  // If Walkdown returns OK, then it is OK to proceed with edge addition.
-        		  // Otherwise, if Walkdown returns NONEMBEDDABLE then we stop edge addition.
-				  if ((RetVal = theGraph->functions.fpWalkDown(theGraph, I, c + N)) != OK)
-					  break;
-
-				  // If there are any back edges left to embed, ...
-				  if (gp_IsArc(theGraph, J = gp_GetVertexFwdArcList(theGraph, I)))
-				  {
-					  // then test if Walkdown was blocked from embedding all back edges to descendants of c
-					  if (cNext == NIL || cNext > gp_GetNeighbor(theGraph, J))
-					  {
-						  // For now, we'll just advance past the edges and handle the blockage
-						  // at the iteration level as before.
-				          while (J != NIL)
-				          {
-				        	  // Break when the edge J descendant endpoint is in the next subtree
-				        	  if (cNext != NIL && cNext > gp_GetNeighbor(theGraph, J))
-				        		  break;
-							  J = gp_GetNextArc(theGraph, J);
-							  if (J == gp_GetVertexFwdArcList(theGraph, I))
-								  J = NIL;
-				          }
-					  }
-				  }
-        	  }
-
-       		  c = cNext;
-          }
-
-          // If the Walkdown sequence is completed but not all forward edges are embedded or an
-          // explicit NONEMBEDDABLE result was returned, then the graph is not planar/outerplanar.
-          // The handler/ below is invoked because some extension algorithms are able to clear the
-          // embedding blockage and continue the embedder iteration loop (they return OK below).
-          // The default implementation simply returns NONEMBEDDABLE, which stops the embedding process.
-          if (gp_GetVertexFwdArcList(theGraph, I) != NIL || RetVal == NONEMBEDDABLE)
-          {
-              RetVal = theGraph->functions.fpHandleBlockedEmbedIteration(theGraph, I);
-              if (RetVal != OK)
-                  break;
-          }
+        if (_IsolateKuratowskiSubgraph(theGraph, I, RootVertex) != OK)
+            RetVal = NOTOK;
+    }
+    else if (theGraph->embedFlags == EMBEDFLAGS_OUTERPLANAR)
+    {
+        if (_IsolateOuterplanarObstruction(theGraph, I, RootVertex) != OK)
+            RetVal = NOTOK;
     }
 
-    // Postprocessing to orient the embedding and merge any remaining separated bicomps,
-    // or to isolate an obstruction to planarity/outerplanarity.  Some extension algorithms
-    // either do nothing if they have already isolated a subgraph of interest, or they may
-    // do so now based on information collected by their implementations of
-    // HandleBlockedDescendantBicomp or HandleBlockedEmbedIteration
-    return theGraph->functions.fpEmbedPostprocess(theGraph, I, RetVal);
+	return RetVal;
+}
+
+/********************************************************************
+ _HandleBlockedDescendantBicomp()
+ The core planarity/outerplanarity algorithm handles the blockage
+ by pushing the root of the blocked bicomp onto the top of the stack
+ because it is the central focus for obstruction minor A.
+ Then NONEMBEDDABLE is returned so that the WalkDown can terminate,
+ and the embedder can proceed to isolate the obstruction.
+ Some algorithms may be able to clear the blockage, in which case
+ a function overload would set Rout, W and WPrevLink, then return OK
+ to indicate that the WalkDown may proceed.
+
+ NOTE: When returning OK (blockage cleared), the overload implementation
+       should NOT call this base implementation nor otherwise push R
+       onto the stack because the core WalkDown implementation will push
+       the appropriate stack entries based on R, Rout, W and WPrevLink
+       Similarly, when returning NONEMBEDDABLE, it is typically not
+       necessary to call this base implementation because pushing
+       the bicomp root R is not usually necessary, i.e. the overload
+       implementation usually does all embed post-processing before
+       returning NONEMBEDDABLE.
+
+ Returns OK to proceed with WalkDown at W,
+         NONEMBEDDABLE to terminate WalkDown of Root Vertex
+         NOTOK for internal error
+ ********************************************************************/
+
+int  _HandleBlockedDescendantBicomp(graphP theGraph, int I, int RootVertex, int R, int *pRout, int *pW, int *pWPrevLink)
+{
+    sp_Push2(theGraph->theStack, R, 0);
+	return NONEMBEDDABLE;
+}
+
+/********************************************************************
+ _HandleInactiveVertex()
+ ********************************************************************/
+
+int  _HandleInactiveVertex(graphP theGraph, int BicompRoot, int *pW, int *pWPrevLink)
+{
+     int X = gp_GetExtFaceVertex(theGraph, *pW, 1^*pWPrevLink);
+     *pWPrevLink = gp_GetExtFaceVertex(theGraph, X, 0) == *pW ? 0 : 1;
+     *pW = X;
+
+     return OK;
 }
 
 /********************************************************************
@@ -1277,13 +1324,12 @@ int  _HandleBlockedEmbedIteration(graphP theGraph, int I)
 
  After the loop that embeds the cycle edges from each vertex to its
  DFS descendants, this method is invoked to postprocess the graph.
- If the graph is planar, then a consistent orientation is imposed
- on the vertices of the embedding, and any remaining separated
- biconnected components are joined together.
- If the graph is non-planar, then a subgraph homeomorphic to K5
- or K3,3 is isolated.
- Extensions may override this function to provide alternate
- behavior.
+ If the graph is planar or outerplanar, then a consistent orientation
+ is imposed on the vertices of the embedding, and any remaining
+ separated biconnected components are joined together.
+ If the graph is non-planar or non-outerplanar, then an obstruction
+ to planarity or outerplanarity has already been isolated.
+ Extensions may override this function to provide alternate behavior.
 
   @param theGraph - the graph ready for postprocessing
   @param I - the last vertex processed by the edge embedding loop
@@ -1295,19 +1341,15 @@ int  _HandleBlockedEmbedIteration(graphP theGraph, int I)
   @return NOTOK on internal failure
           NONEMBEDDABLE if a subgraph homeomorphic to a topological
               obstruction is isolated in the graph
-          OK otherwise (for example if the graph contains a
-             planar embedding or if a desired topological obstruction
-             was not found)
-
+          OK otherwise (e.g. if the graph contains an embedding)
  *****************************************************************/
 
 int  _EmbedPostprocess(graphP theGraph, int I, int edgeEmbeddingResult)
 {
 int  RetVal = edgeEmbeddingResult;
 
-    /* If an embedding was found, then post-process the embedding structure
-        to eliminate root copies and give a consistent orientation to all vertices. */
-
+    // If an embedding was found, then post-process the embedding structure give
+	// a consistent orientation to all vertices then eliminate virtual vertices
     if (edgeEmbeddingResult == OK)
     {
     	if (_OrientVerticesInEmbedding(theGraph) != OK ||
@@ -1315,24 +1357,7 @@ int  RetVal = edgeEmbeddingResult;
     		RetVal = NOTOK;
     }
 
-    /* If the graph was found to be unembeddable, then we want to isolate an
-        obstruction.  But, if a search flag was set, then we have already
-        found a subgraph with the desired structure, so no further work is done. */
-
-    else if (edgeEmbeddingResult == NONEMBEDDABLE)
-    {
-        if (theGraph->embedFlags == EMBEDFLAGS_PLANAR)
-        {
-            if (_IsolateKuratowskiSubgraph(theGraph, I, NIL) != OK)
-                RetVal = NOTOK;
-        }
-        else if (theGraph->embedFlags == EMBEDFLAGS_OUTERPLANAR)
-        {
-            if (_IsolateOuterplanarObstruction(theGraph, I, NIL) != OK)
-                RetVal = NOTOK;
-        }
-    }
-
+    // If the graph is embedded (OK) or NONEMBEDDABLE, we pass the result back
     return RetVal;
 }
 
