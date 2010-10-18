@@ -294,7 +294,7 @@ int W, P, C, V, J;
 
         // Push DFS children
         J = gp_GetFirstArc(theEmbedding, W);
-        while (gp_IsArc(theEmbedding, J))
+        while (J != NIL)
         {
             if (gp_GetEdgeType(theEmbedding, J) == EDGE_TYPE_CHILD)
                 sp_Push(theEmbedding->theStack, gp_GetNeighbor(theEmbedding, J));
@@ -432,7 +432,7 @@ int eIndex, JTwin;
             // Now we traverse the adjacency list of the DFS tree root and
             // record each edge as the generator edge of the neighbors
             J = gp_GetFirstArc(theEmbedding, v);
-            while (gp_IsArc(theGraph, J))
+            while (J != NIL)
             {
                 e = (J >> 1); // div by 2 since each edge is a pair of arcs
 
@@ -552,13 +552,13 @@ int I, J, min, max;
         // set the min and max to 1 since there no edges controlling where
         // it gets drawn.
         J = gp_GetFirstArc(theEmbedding, I);
-        if (!gp_IsArc(theEmbedding, J))
+        if (J == NIL)
         {
         	min = max = 0;
         }
         else
         {
-            while (gp_IsArc(theEmbedding, J))
+            while (J != NIL)
             {
                 if (min > context->E[J].pos)
                     min = context->E[J].pos;

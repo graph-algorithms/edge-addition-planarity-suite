@@ -168,7 +168,7 @@ int  C, Cnext, e, D, RetVal=OK;
          return NOTOK;
 
      C = gp_GetVertexSortedDFSChildList(theGraph, I);
-     while (gp_IsArc(theGraph, e=gp_GetVertexFwdArcList(theGraph, I)))
+     while ((e=gp_GetVertexFwdArcList(theGraph, I)) != NIL)
      {
 		 // See whether we need to advance to the next subtree to embed the edge
     	 Cnext = LCGetNext(theGraph->sortedDFSChildLists, gp_GetVertexSortedDFSChildList(theGraph, I), C);
@@ -180,11 +180,10 @@ int  C, Cnext, e, D, RetVal=OK;
 		 else
 		 {
 			 int R = C + theGraph->N;
-			 RetVal = _SearchForK4InBicomp(theGraph, context, I, R);
-			 if (RetVal != OK)
+			 if ((RetVal = _SearchForK4InBicomp(theGraph, context, I, R)) != OK)
 				 break;
 			 if ((RetVal = theGraph->functions.fpWalkDown(theGraph, I, R)) != OK)
-				 return RetVal;
+				 break;
 		 }
      }
 
@@ -737,7 +736,7 @@ int _K4_FindSeparatingInternalEdge(graphP theGraph, int R, int prevLink, int A, 
 		// It is OK to not bother skipping the external face edges, since we
 		// know they are marked visited and so are ignored
 	    J = gp_GetFirstArc(theGraph, Z);
-	    while (gp_IsArc(theGraph, J))
+	    while (J != NIL)
 	    {
 	        neighbor = gp_GetNeighbor(theGraph, J);
 	        if (gp_GetVertexObstructionType(theGraph, neighbor) == VERTEX_OBSTRUCTIONTYPE_UNMARKED)
@@ -974,7 +973,7 @@ int  _K4_ReduceBicompToEdge(graphP theGraph, K4SearchContext *context, int R, in
     // Now we have to reduce the path W -> R to the DFS tree edge (R, W)
     newEdge =_K4_ReducePathToEdge(theGraph, context, EDGE_TYPE_PARENT,
 					R, gp_GetFirstArc(theGraph, R), W, gp_GetFirstArc(theGraph, W));
-    if (!gp_IsArc(theGraph, newEdge))
+    if (newEdge == NIL)
     	return NOTOK;
 
     // Finally, set the visited info state of W to unvisited so that
@@ -1092,7 +1091,7 @@ int  _K4_ReducePathComponent(graphP theGraph, K4SearchContext *context, int R, i
 
 	// Reduce the path (R ... A) to an edge
 	e_R = _K4_ReducePathToEdge(theGraph, context, edgeType, R, e_R, A, e_A);
-	if (!gp_IsArc(theGraph, e_R))
+	if (e_R == NIL)
 		return NOTOK;
 
 	// Preserve the net orientation along the DFS path in the case of a tree edge
@@ -1136,7 +1135,7 @@ int  N = theGraph->N, invertedFlag=0;
               // Scan the edges for the one marked as the DFS parent
               parent = NIL;
               J = gp_GetFirstArc(theGraph, descendant);
-              while (gp_IsArc(theGraph, J))
+              while (J != NIL)
               {
                   if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_PARENT)
                   {
@@ -1214,7 +1213,7 @@ void _K4_ClearVisitedInPathComponent(graphP theGraph, int R, int prevLink, int A
 	{
 		gp_ClearVertexVisited(theGraph, Z);
 		e = gp_GetFirstArc(theGraph, Z);
-		while (gp_IsArc(theGraph, e))
+		while (e != NIL)
 		{
 			gp_ClearEdgeVisited(theGraph, e);
 			gp_ClearEdgeVisited(theGraph, gp_GetTwinArc(theGraph, e));
@@ -1264,7 +1263,7 @@ int  _K4_DeleteUnmarkedEdgesInPathComponent(graphP theGraph, int R, int prevLink
 	while (Z != A)
 	{
 		e = gp_GetFirstArc(theGraph, Z);
-		while (gp_IsArc(theGraph, e))
+		while (e != NIL)
 		{
 			// The comparison of e to its twin is a useful way of ensuring we
 			// don't push the edge twice, which is of course only applicable
@@ -1298,7 +1297,7 @@ int  _K4_DeleteUnmarkedEdgesInPathComponent(graphP theGraph, int R, int prevLink
 
  Returns an arc of the edge created on success, a non-arc (NOTOK) on failure
  On success, the arc is in the adjacency list of R. The result can be tested
- for success or failure using gp_IsArc()
+ for success or failure using comparison with NIL (non-NIL being success)
  ****************************************************************************/
 
 int  _K4_ReducePathToEdge(graphP theGraph, K4SearchContext *context, int edgeType, int R, int e_R, int A, int e_A)
@@ -1421,7 +1420,7 @@ int  J0, J1, JTwin0, JTwin1;
      // Now we add the two edges to reconnect the reduced path represented
      // by the edge [J, JTwin].  The edge record in u is added between J0 and J1.
      // Likewise, the new edge record in x is added between JTwin0 and JTwin1.
-     if (gp_IsArc(theGraph, J0))
+     if (J0 != NIL)
      {
     	 if (gp_InsertEdge(theGraph, u, J0, 1, v, NIL, 0) != OK)
     		 return NOTOK;
@@ -1432,7 +1431,7 @@ int  J0, J1, JTwin0, JTwin1;
     		 return NOTOK;
      }
 
-     if (gp_IsArc(theGraph, JTwin0))
+     if (JTwin0 != NIL)
      {
     	 if (gp_InsertEdge(theGraph, x, JTwin0, 1, w, NIL, 0) != OK)
     		 return NOTOK;

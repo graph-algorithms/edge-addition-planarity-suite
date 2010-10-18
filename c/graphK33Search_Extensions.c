@@ -461,7 +461,7 @@ void _CreateBackArcLists(graphP theGraph, K33SearchContext *context)
     for (I=0; I < theGraph->N; I++)
     {
     	J = gp_GetVertexFwdArcList(theGraph, I);
-        while (gp_IsArc(theGraph, J))
+        while (J != NIL)
         {
         	// Get the ancestor endpoint and the associated back arc
         	ancestor = gp_GetNeighbor(theGraph, J);

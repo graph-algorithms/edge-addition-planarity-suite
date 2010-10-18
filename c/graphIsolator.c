@@ -551,7 +551,7 @@ int  J, Z, ZNew;
 /* Find the least descendant of the cut vertex incident to the ancestor. */
 
      J = gp_GetVertexFwdArcList(theGraph, ancestor);
-     while (gp_IsArc(theGraph, J))
+     while (J != NIL)
      {
           if (gp_GetNeighbor(theGraph, J) >= SubtreeRoot)
           {
@@ -668,7 +668,7 @@ int  J, parent, N;
               // Scan the edges for the one marked as the DFS parent
               parent = NIL;
               J = gp_GetFirstArc(theGraph, descendant);
-              while (gp_IsArc(theGraph, J))
+              while (J != NIL)
               {
                   if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_PARENT)
                   {
@@ -777,7 +777,7 @@ int fwdArc, backArc;
     /* We get the two edge records of the back edge to embed. */
 
      fwdArc = gp_GetVertexFwdArcList(theGraph, ancestor);
-     while (gp_IsArc(theGraph, fwdArc))
+     while (fwdArc != NIL)
      {
           if (gp_GetNeighbor(theGraph, fwdArc) == descendant)
               break;
@@ -850,7 +850,7 @@ int  I, J, fwdArc, descendant;
      for (I = 0; I < theGraph->N; I++)
      {
           J = gp_GetFirstArc(theGraph, I);
-          while (gp_IsArc(theGraph, J))
+          while (J != NIL)
           {
                 if (gp_GetEdgeVisited(theGraph, J))
                      J = gp_GetNextArc(theGraph, J);
