@@ -1235,15 +1235,9 @@ int	_AdvanceFwdArcList(graphP theGraph, int R)
 		if (nextChild != NIL && nextChild < gp_GetNeighbor(theGraph, J))
 			break;
 
-		Jnext = gp_GetNextArc(theGraph, J);
-		if (Jnext == gp_GetVertexFwdArcList(theGraph, v))
-			Jnext = NIL;
-
-		gp_SetVertexFwdArcList(theGraph, v, Jnext);
-	    gp_SetNextArc(theGraph, gp_GetPrevArc(theGraph, J), gp_GetNextArc(theGraph, J));
-	    gp_SetPrevArc(theGraph, gp_GetNextArc(theGraph, J), gp_GetPrevArc(theGraph, J));
-
-		J = Jnext;
+		Jnext = gp_DeleteEdge(theGraph, J, 0);
+		J = Jnext == J ? NIL : Jnext;
+		gp_SetVertexFwdArcList(theGraph, v, J);
 	}
 
 	return OK;
