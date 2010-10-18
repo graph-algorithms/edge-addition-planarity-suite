@@ -286,7 +286,7 @@ platform_GetTime(start);
 				// Edges not pushed are marked as back edges here, except the
 				// edge leading back to the immediate DFS parent.
 				J = gp_GetFirstArc(theGraph, u);
-				while (gp_IsArc(theGraph, J))
+				while (J != NIL)
 				{
 					if (!gp_GetVertexVisited(theGraph, gp_GetNeighbor(theGraph, J)))
 					{
@@ -304,15 +304,15 @@ platform_GetTime(start);
 						JPrev = gp_GetPrevArc(theGraph, JTwin);
 						JNext = gp_GetNextArc(theGraph, JTwin);
 
-						if (gp_IsArc(theGraph, JPrev))
+						if (JPrev != NIL)
 							 gp_SetNextArc(theGraph, JPrev, JNext);
 						else gp_SetFirstArc(theGraph, uneighbor, JNext);
-						if (gp_IsArc(theGraph, JNext))
+						if (JNext != NIL)
 							 gp_SetPrevArc(theGraph, JNext, JPrev);
 						else gp_SetLastArc(theGraph, uneighbor, JPrev);
 
 						e = gp_GetVertexFwdArcList(theGraph, uneighbor);
-						if (gp_IsArc(theGraph, e))
+						if (e != NIL)
 						{
 							JPrev = gp_GetPrevArc(theGraph, e);
 							gp_SetPrevArc(theGraph, JTwin, JPrev);
@@ -535,7 +535,7 @@ int J, temp;
 
      // Swap the links in all the arcs of the adjacency list
      J = gp_GetFirstArc(theGraph, V);
-     while (gp_IsArc(theGraph, J))
+     while (J != NIL)
      {
     	 temp = gp_GetNextArc(theGraph, J);
     	 gp_SetNextArc(theGraph, J, gp_GetPrevArc(theGraph, J));
@@ -591,7 +591,7 @@ int  e_w, e_r, e_ext;
      // All arcs leading into R from its neighbors must be changed
      // to say that they are leading into W
      J = gp_GetFirstArc(theGraph, R);
-     while (gp_IsArc(theGraph, J))
+     while (J != NIL)
      {
          JTwin = gp_GetTwinArc(theGraph, J);
          gp_GetNeighbor(theGraph, JTwin) = W;
@@ -605,7 +605,7 @@ int  e_w, e_r, e_ext;
      e_ext = gp_GetArc(theGraph, R, WPrevLink);
 
      // If W has any edges, then join the list with that of R
-     if (gp_IsArc(theGraph, e_w))
+     if (e_w != NIL)
      {
          // The WPrevLink arc of W is e_w, so the 1^WPrevLink arc in e_w leads back to W.
          // Now it must lead to e_r.  Likewise, e_r needs to lead back to e_w with the
@@ -690,7 +690,7 @@ int  extFaceVertex;
                 _InvertVertex(theGraph, R);
 
              J = gp_GetFirstArc(theGraph, R);
-             while (gp_IsArc(theGraph, J))
+             while (J != NIL)
              {
                  if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_CHILD)
                  {
@@ -1153,7 +1153,7 @@ int  RetVal, W, WPrevLink, R, X, XPrevLink, Y, YPrevLink, RootSide;
 
      // Detect whether the Walkdown was blocked from embedding all the back edges
      // from I to descendants of the root edge child of I
-	 if (gp_IsArc(theGraph, gp_GetVertexFwdArcList(theGraph, I)))
+	 if (gp_GetVertexFwdArcList(theGraph, I) != NIL)
 	 {
 	     int RootEdgeChild = RootVertex - theGraph->N;
 	     int nextChild = LCGetNext(theGraph->sortedDFSChildLists, gp_GetVertexSortedDFSChildList(theGraph, I), RootEdgeChild);
@@ -1457,7 +1457,7 @@ int  stackBottom = sp_GetCurrentSize(theGraph->theStack);
 
          /* Push the vertex's DFS children that are in the bicomp */
          J = gp_GetFirstArc(theGraph, V);
-         while (gp_IsArc(theGraph, J))
+         while (J != NIL)
          {
              if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_CHILD)
              {

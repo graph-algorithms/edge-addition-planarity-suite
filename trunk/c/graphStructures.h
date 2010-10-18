@@ -97,8 +97,6 @@ typedef struct
 
 typedef edgeRec * edgeRecP;
 
-#define gp_IsArc(theGraph, e) ((e) != NIL)
-
 // An edge is represented by two consecutive edge records (arcs)
 // in the edge array E.
 #define gp_GetTwinArc(theGraph, Arc) (((Arc) & 1) ? (Arc)-1 : (Arc)+1)
@@ -237,7 +235,7 @@ typedef vertexRec * vertexRecP;
 #define gp_SetLastArc(theGraph, v, newLastArc) (theGraph->V[v].link[1] = newLastArc)
 #define gp_SetArc(theGraph, v, theLink, newArc) (theGraph->V[v].link[theLink] = newArc)
 
-#define gp_VirtualVertexInUse(theGraph, virtualVertex) (gp_IsArc(theGraph, gp_GetFirstArc(theGraph, virtualVertex)))
+#define gp_VirtualVertexInUse(theGraph, virtualVertex) (gp_GetFirstArc(theGraph, virtualVertex) != NIL)
 #define gp_IsSeparatedDFSChild(theGraph, theChild) (gp_VirtualVertexInUse(theGraph, theChild + theGraph->N))
 
 // Accessors for vertex index
@@ -562,12 +560,12 @@ typedef baseGraphStructure * graphP;
 // as if the adjacency list were circular, i.e. that the
 // first arc and last arc were linked
 #define gp_GetNextArcCircular(theGraph, e) \
-	(gp_IsArc(theGraph, theGraph->E[e].link[0]) ? \
+	(theGraph->E[e].link[0] != NIL ? \
 			theGraph->E[e].link[0] : \
 			gp_GetFirstArc(theGraph, theGraph->E[gp_GetTwinArc(theGraph, e)].v))
 
 #define gp_GetPrevArcCircular(theGraph, e) \
-	(gp_IsArc(theGraph, theGraph->E[e].link[1]) ? \
+	(theGraph->E[e].link[1] != NIL ? \
 		theGraph->E[e].link[1] : \
 		gp_GetLastArc(theGraph, theGraph->E[gp_GetTwinArc(theGraph, e)].v))
 
@@ -589,7 +587,7 @@ typedef baseGraphStructure * graphP;
 // Attaches an arc between the current binding between a vertex and its first arc
 #define gp_AttachFirstArc(theGraph, v, arc) \
 	{ \
-		if (gp_IsArc(theGraph, gp_GetFirstArc(theGraph, v))) \
+		if (gp_GetFirstArc(theGraph, v) != NIL) \
 		{ \
 			gp_SetNextArc(theGraph, arc, gp_GetFirstArc(theGraph, v)); \
 			gp_SetPrevArc(theGraph, gp_GetFirstArc(theGraph, v), arc); \
@@ -601,7 +599,7 @@ typedef baseGraphStructure * graphP;
 // Attaches an arc between the current binding betwen a vertex and its last arc
 #define gp_AttachLastArc(theGraph, v, arc) \
 	{ \
-		if (gp_IsArc(theGraph, gp_GetLastArc(theGraph, v))) \
+		if (gp_GetLastArc(theGraph, v) != NIL) \
 		{ \
 			gp_SetPrevArc(theGraph, arc, gp_GetLastArc(theGraph, v)); \
 			gp_SetNextArc(theGraph, gp_GetLastArc(theGraph, v), arc); \

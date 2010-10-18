@@ -581,7 +581,7 @@ int _ColorVertices_IdentifyVertices(graphP theGraph, int u, int v, int eBefore)
 
         // We count the number of edges K transferred from v to u after the
         // common edges were hidden
-		if (gp_IsArc(theGraph, e_v_first))
+		if (e_v_first != NIL)
 		{
 			int J, K, degu;
 

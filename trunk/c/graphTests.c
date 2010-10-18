@@ -341,7 +341,7 @@ void _MarkExternalFaceVertices(graphP theGraph, int startVertex)
     int Jin;
 
     // Handle the case of an isolated vertex
-    if (!gp_IsArc(theGraph, Jout))
+    if (Jout == NIL)
     {
     	gp_SetVertexVisited(theGraph, startVertex);
     	return;
@@ -703,7 +703,7 @@ int  I, J, imageVertPos;
      // and hence must not be adjacent.
 
      J = gp_GetFirstArc(theGraph, imageVerts[0]);
-     while (gp_IsArc(theGraph, J))
+     while (J != NIL)
      {
          imageVerts[imageVertPos] = gp_GetNeighbor(theGraph, J);
          if (imageVerts[imageVertPos] == imageVerts[1])
@@ -807,7 +807,7 @@ int  _TestPath(graphP theGraph, int U, int V)
 int  J;
 
      J = gp_GetFirstArc(theGraph, U);
-     while (gp_IsArc(theGraph, J))
+     while (J != NIL)
      {
          if (_TryPath(theGraph, J, V) == OK)
          {
@@ -839,8 +839,8 @@ int  Jin, nextVertex;
      nextVertex = gp_GetNeighbor(theGraph, J);
 
      // while nextVertex is strictly degree 2
-     while (gp_IsArc(theGraph, gp_GetFirstArc(theGraph, nextVertex)) &&
-    		gp_IsArc(theGraph, gp_GetLastArc(theGraph, nextVertex)) &&
+     while (gp_GetFirstArc(theGraph, nextVertex) != NIL &&
+    		gp_GetLastArc(theGraph, nextVertex) != NIL &&
     		gp_GetNextArc(theGraph, gp_GetFirstArc(theGraph, nextVertex)) == gp_GetLastArc(theGraph, nextVertex))
      {
          Jin = gp_GetTwinArc(theGraph, J);
@@ -868,8 +868,8 @@ int  Jin, nextVertex;
 
      nextVertex = gp_GetNeighbor(theGraph, J);
      // while nextVertex is strictly degree 2
-     while (gp_IsArc(theGraph, gp_GetFirstArc(theGraph, nextVertex)) &&
-    		gp_IsArc(theGraph, gp_GetLastArc(theGraph, nextVertex)) &&
+     while (gp_GetFirstArc(theGraph, nextVertex) != NIL &&
+    		gp_GetLastArc(theGraph, nextVertex) != NIL &&
     		gp_GetNextArc(theGraph, gp_GetFirstArc(theGraph, nextVertex)) == gp_GetLastArc(theGraph, nextVertex))
      {
          gp_SetVertexVisited(theGraph, nextVertex);
@@ -934,7 +934,7 @@ int invokeSortOnSubgraph = FALSE;
                 subgraph, set the visited flag in w in the graph */
 
           J = gp_GetFirstArc(theSubgraph, I);
-          while (gp_IsArc(theSubgraph, J))
+          while (J != NIL)
           {
         	  if (gp_GetNeighbor(theSubgraph, J) == NIL)
         	  {
@@ -952,7 +952,7 @@ int invokeSortOnSubgraph = FALSE;
                 clear the visited flag in w in the graph */
 
           J = gp_GetFirstArc(theGraph, I);
-          while (gp_IsArc(theGraph, J))
+          while (J != NIL)
           {
         	  if (gp_GetNeighbor(theGraph, J) == NIL)
         	  {
@@ -970,7 +970,7 @@ int invokeSortOnSubgraph = FALSE;
                 subgraph, set the visited flag in w in the graph */
 
           J = gp_GetFirstArc(theSubgraph, I);
-          while (gp_IsArc(theSubgraph, J))
+          while (J != NIL)
           {
               if (gp_GetVertexVisited(theGraph, gp_GetNeighbor(theSubgraph, J)))
               {

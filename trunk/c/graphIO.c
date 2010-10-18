@@ -158,14 +158,14 @@ int N, I, W, ErrorCode, adjList, J, indexValue;
           // read operation for a vertex I, any adjacency nodes left in the saved
           // list are converted to directed edges from the preceding vertex to I.
           adjList = gp_GetFirstArc(theGraph, I);
-          if (gp_IsArc(theGraph, adjList))
+          if (adjList != NIL)
           {
         	  // Store the adjacency node location in the visited member of each
         	  // of the preceding vertices to which I is adjacent so that we can
         	  // efficiently detect the adjacency during the read operation and
         	  // efficiently find the adjacency node.
         	  J = gp_GetFirstArc(theGraph, I);
-			  while (gp_IsArc(theGraph, J))
+			  while (J != NIL)
 			  {
 				  gp_SetVertexVisitedInfo(theGraph, gp_GetNeighbor(theGraph, J), J);
 				  J = gp_GetNextArc(theGraph, J);
@@ -248,7 +248,7 @@ int N, I, W, ErrorCode, adjList, J, indexValue;
           // Rather, they represent incoming directed arcs from other vertices
           // into vertex I. They need to be added back into I's adjacency list but
           // marked as "INONLY", while the twin is marked "OUTONLY" (by the same function).
-          while (gp_IsArc(theGraph, adjList))
+          while (adjList != NIL)
           {
         	  J = adjList;
 
@@ -416,7 +416,7 @@ int I, J;
           fprintf(Outfile, "%d:", I);
 
           J = gp_GetLastArc(theGraph, I);
-          while (gp_IsArc(theGraph, J))
+          while (J != NIL)
           {
         	  if (gp_GetDirection(theGraph, J) != EDGEFLAG_DIRECTION_INONLY)
                   fprintf(Outfile, " %d", gp_GetNeighbor(theGraph, J));
@@ -462,7 +462,7 @@ char *Row = NULL;
                Row[K] = '0';
 
           J = gp_GetFirstArc(theGraph, I);
-          while (gp_IsArc(theGraph, J))
+          while (J != NIL)
           {
         	  if (gp_GetDirection(theGraph, J) == EDGEFLAG_DIRECTION_INONLY)
         		  return NOTOK;
@@ -546,7 +546,7 @@ int I, J, Vsize, EsizeOccupied;
                                 gp_GetVertexIndex(theGraph, I));
 
           J = gp_GetFirstArc(theGraph, I);
-          while (gp_IsArc(theGraph, J))
+          while (J != NIL)
           {
               fprintf(Outfile, " %d(J=%d)", gp_GetNeighbor(theGraph, J), J);
               J = gp_GetNextArc(theGraph, J);
@@ -567,7 +567,7 @@ int I, J, Vsize, EsizeOccupied;
                            I, gp_GetVertexIndex(theGraph, I), I-theGraph->N);
 
           J = gp_GetFirstArc(theGraph, I);
-          while (gp_IsArc(theGraph, J))
+          while (J != NIL)
           {
               fprintf(Outfile, " %d(J=%d)", gp_GetNeighbor(theGraph, J), J);
               J = gp_GetNextArc(theGraph, J);

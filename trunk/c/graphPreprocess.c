@@ -125,7 +125,7 @@ platform_GetTime(start);
                         tree edges to children or forward arcs of back edges */
 
                   J = gp_GetFirstArc(theGraph, u);
-                  while (gp_IsArc(theGraph, J))
+                  while (J != NIL)
                   {
                       if (!gp_GetVertexVisited(theGraph, gp_GetNeighbor(theGraph, J)))
                           sp_Push2(theStack, u, J);
@@ -326,7 +326,7 @@ platform_GetTime(start);
 
                   /* Push DFS children */
                   J = gp_GetFirstArc(theGraph, u);
-                  while (gp_IsArc(theGraph, J))
+                  while (J != NIL)
                   {
                       if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_CHILD)
                       {
@@ -344,7 +344,7 @@ platform_GetTime(start);
 
                   /* Compute L and leastAncestor */
                   J = gp_GetFirstArc(theGraph, u);
-                  while (gp_IsArc(theGraph, J))
+                  while (J != NIL)
                   {
                       uneighbor = gp_GetNeighbor(theGraph, J);
                       if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_CHILD)
@@ -466,7 +466,7 @@ platform_GetTime(start);
 				// Edges not pushed are marked as back edges here, except the
 				// edge leading back to the immediate DFS parent.
 				J = gp_GetFirstArc(theGraph, u);
-				while (gp_IsArc(theGraph, J))
+				while (J != NIL)
 				{
 					if (!gp_GetVertexVisited(theGraph, gp_GetNeighbor(theGraph, J)))
 					{
@@ -496,7 +496,7 @@ platform_GetTime(start);
 
 					// Compute L and leastAncestor
 					J = gp_GetFirstArc(theGraph, u);
-					while (gp_IsArc(theGraph, J))
+					while (J != NIL)
 					{
 						uneighbor = gp_GetNeighbor(theGraph, J);
 						if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_CHILD)

@@ -242,7 +242,7 @@ K33SearchContext *context = NULL;
 
         if (C2 != NIL)
         {
-            while (D < C2 && gp_IsArc(theGraph, e))
+            while (D < C2 && e != NIL)
             {
                 e = gp_GetNextArc(theGraph, e);
                 if (e == gp_GetVertexFwdArcList(theGraph, I))
@@ -760,7 +760,7 @@ int _GetAdjacentAncestorInRange(graphP theGraph, K33SearchContext *context, int 
 {
 int J = context->VI[theVertex].backArcList;
 
-    while (gp_IsArc(theGraph, J))
+    while (J != NIL)
     {
         if (gp_GetNeighbor(theGraph, J) < closerAncestor &&
             gp_GetNeighbor(theGraph, J) > fartherAncestor)
@@ -902,7 +902,7 @@ int  listHead, child, J;
      // by an unembedded back edge.
 
      J = gp_GetVertexFwdArcList(theGraph, ancestor);
-     while (gp_IsArc(theGraph, J))
+     while (J != NIL)
      {
          if (gp_GetNeighbor(theGraph, J) == cutVertex)
          {
@@ -1044,7 +1044,7 @@ isolatorContextP IC = &theGraph->IC;
         back edge that was not embedded when step I was originally performed. */
 
      J = gp_GetVertexFwdArcList(theGraph, I);
-     while (gp_IsArc(theGraph, J))
+     while (J != NIL)
      {
         W = gp_GetNeighbor(theGraph, J);
         theGraph->functions.fpWalkUp(theGraph, I, J);
@@ -1284,7 +1284,7 @@ int  v, e, w;
           // pushed.  Once that happens, we break. The successive edges of a vertex are
           // only pushed (see the else clause above) once all paths extending from v
           // through e have been explored and found not to contain the desired path
-          while (gp_IsArc(theGraph, e))
+          while (e != NIL)
           {
               w = gp_GetNeighbor(theGraph, e);
 
@@ -1857,7 +1857,7 @@ int  J0, J1, JTwin0, JTwin1;
         by the edge [J, JTwin].  The edge record in u is added between J0 and J1.
         Likewise, the new edge record in x is added between JTwin0 and JTwin1. */
 
-     if (gp_IsArc(theGraph, J0))
+     if (J0 != NIL)
      {
     	 if (gp_InsertEdge(theGraph, u, J0, 1, v, NIL, 0) != OK)
     		 return NOTOK;
@@ -1868,7 +1868,7 @@ int  J0, J1, JTwin0, JTwin1;
     		 return NOTOK;
      }
 
-     if (gp_IsArc(theGraph, JTwin0))
+     if (JTwin0 != NIL)
      {
     	 if (gp_InsertEdge(theGraph, x, JTwin0, 1, w, NIL, 0) != OK)
     		 return NOTOK;
@@ -1943,7 +1943,7 @@ int  J0, JTwin0, J1, JTwin1;
                 by the edge [J, JTwin].  The edge record in u is added between J0 and J1.
                 Likewise, the new edge record in x is added between JTwin0 and JTwin1. */
 
-             if (gp_IsArc(theGraph, J0))
+             if (J0 != NIL)
              {
             	 if (gp_InsertEdge(theGraph, u, J0, 1, v, NIL, 0) != OK)
             		 return NOTOK;
@@ -1954,7 +1954,7 @@ int  J0, JTwin0, J1, JTwin1;
             		 return NOTOK;
              }
 
-             if (gp_IsArc(theGraph, JTwin0))
+             if (JTwin0 != NIL)
              {
             	 if (gp_InsertEdge(theGraph, x, JTwin0, 1, w, NIL, 0) != OK)
             		 return NOTOK;
@@ -1982,8 +1982,8 @@ int  J0, JTwin0, J1, JTwin1;
                       and last edges of a vertex are the ones that hold it onto
                       the external face, if it is on the external face. */
 
-             if ((!gp_IsArc(theGraph, J0) && !gp_IsArc(theGraph, JTwin1)) ||
-                 (!gp_IsArc(theGraph, J1) && !gp_IsArc(theGraph, JTwin0)))
+             if ((J0 == NIL && JTwin1 == NIL) ||
+                 (J1 == NIL && JTwin0 == NIL))
              {
                  if (_OrientExternalFacePath(theGraph, u, v, w, x) != OK)
                      return NOTOK;
@@ -2034,7 +2034,7 @@ int p, J;
          gp_SetVertexVisited(theGraph, p);
 
          J = gp_GetFirstArc(theGraph, p);
-         while (gp_IsArc(theGraph, J))
+         while (J != NIL)
          {
               if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_PARENT)
                   break;
@@ -2064,7 +2064,7 @@ int p, J;
      while (p != u_max)
      {
          J = gp_GetFirstArc(theGraph, p);
-         while (gp_IsArc(theGraph, J))
+         while (J != NIL)
          {
               if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_PARENT)
                   break;

@@ -415,7 +415,7 @@ int  _K4Search_HandleBlockedEmbedIteration(graphP theGraph, int I)
     	// by _K4Search_HandleBlockedDescendantBicomp(), and we just
     	// return the NONEMBEDDABLE result in order to stop the embedding
     	// iteration loop.
-		if (!gp_IsArc(theGraph, gp_GetVertexFwdArcList(theGraph, I)))
+		if (gp_GetVertexFwdArcList(theGraph, I) == NIL)
 			return NONEMBEDDABLE;
 
         return _SearchForK4InBicomps(theGraph, I);
