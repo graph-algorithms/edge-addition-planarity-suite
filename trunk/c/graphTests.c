@@ -899,7 +899,7 @@ int  Jin, nextVertex;
 
 int  _TestSubgraph(graphP theSubgraph, graphP theGraph)
 {
-int I, J;
+int I, J, degreeCount;
 int Result = TRUE;
 int invokeSortOnGraph = FALSE;
 int invokeSortOnSubgraph = FALSE;
@@ -928,7 +928,7 @@ int invokeSortOnSubgraph = FALSE;
 
 /* For each vertex... */
 
-     for (I = 0; I < theSubgraph->N; I++)
+     for (I = 0, degreeCount = 0; I < theSubgraph->N; I++)
      {
           /* For each neighbor w in the adjacency list of vertex I in the
                 subgraph, set the visited flag in w in the graph */
@@ -941,6 +941,7 @@ int invokeSortOnSubgraph = FALSE;
         		  Result = FALSE;
         		  break;
         	  }
+        	  degreeCount++;
         	  gp_SetVertexVisited(theGraph, gp_GetNeighbor(theSubgraph, J));
               J = gp_GetNextArc(theSubgraph, J);
           }
@@ -989,6 +990,16 @@ int invokeSortOnSubgraph = FALSE;
         gp_SortVertices(theSubgraph);
     if (invokeSortOnGraph)
         gp_SortVertices(theGraph);
+
+    // Assuming theSubgraph is a subgraph, we also do an extra integrity check to ensure
+    // proper edge array utilization
+    if (Result == TRUE)
+    {
+    	// If the edge count is wrong, we fail the subgraph test in a way that invokes
+    	// the name NOTOK so that in debug mode there is more trace on the failure.
+    	if (degreeCount != 2*theSubgraph->M)
+    		Result = NOTOK == FALSE ? NOTOK : FALSE;
+    }
 
      return Result;
 }
