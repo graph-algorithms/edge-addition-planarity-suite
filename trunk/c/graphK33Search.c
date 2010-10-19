@@ -375,9 +375,9 @@ int tempResult;
 
 /* The extra cases for finding a K_{3,3} did not succeed, so the bicomp rooted by R
     is either a K5 homeomorph (with at most a superficially entangled K_{3,3}) or
-    we have made the special setting that allows us to detect the one case that
-    would be too costly to try now.  Either way, we can safely reduce the bicomp
-    to the 4-cycle (R, X, W, Y, R) and proceed with the planarity algorithm.
+    we have made the special setting that allows us to detect the one "merge blocker"
+    case that would be too costly to try now.  Either way, we can safely reduce the
+    bicomp to the 4-cycle (R, X, W, Y, R) and proceed with the planarity algorithm.
     We also restore the mixed orientation of the bicomp (i.e. the proper
     orientation in the context of the edge signs) because this code can work
     when ReduceBicomp doesn't do any actual work. */
@@ -488,7 +488,7 @@ int u_max = MAX3(IC->ux, IC->uy, IC->uz), u;
             external connection to an ancestor of u_{max} = MAX(ux, uy, uz).
             If it is X or Y, then we do not check for the lower connection
             required to find Minor E3 because it might ultimately be too
-            costly.  Instead, we mark the vertex with a 'merge barrier'
+            costly.  Instead, we mark the vertex with a 'merge blocker'
             of u_{max}.  If the planar embedder attempts to merge the vertex
             prior to step u_{max}, then the embedder has found the desired
             connection and a K_{3,3} is isolated at that time.
