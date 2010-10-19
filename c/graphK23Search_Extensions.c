@@ -178,7 +178,7 @@ int  _K23Search_HandleBlockedBicomp(graphP theGraph, int I, int RootVertex, int 
 
         if (context != NULL)
         {
-            return context->functions.fpHandleBlockedEmbedIteration(theGraph, I);
+            return context->functions.fpHandleBlockedBicomp(theGraph, I, RootVertex, R);
         }
     }
 

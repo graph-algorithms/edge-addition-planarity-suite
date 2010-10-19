@@ -48,7 +48,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "graphK33Search.h"
 
 extern int  _SearchForMergeBlocker(graphP theGraph, K33SearchContext *context, int I, int *pMergeBlocker);
-extern int  _SearchForK33(graphP theGraph, int I);
+extern int  _FindK33WithMergeBlocker(graphP theGraph, K33SearchContext *context, int I, int mergeBlocker);
+extern int  _SearchForK33InBicomp(graphP theGraph, K33SearchContext *context, int I, int R);
 
 extern int  _TestForK33GraphObstruction(graphP theGraph, int *degrees, int *imageVerts);
 extern int  _getImageVertices(graphP theGraph, int *degrees, int maxDegree,
@@ -69,7 +70,7 @@ void _CreateSeparatedDFSChildLists(graphP theGraph, K33SearchContext *context);
 void _K33Search_EmbedBackEdgeToDescendant(graphP theGraph, int RootSide, int RootVertex, int W, int WPrevLink);
 int  _K33Search_MergeBicomps(graphP theGraph, int I, int RootVertex, int W, int WPrevLink);
 void _K33Search_MergeVertex(graphP theGraph, int W, int WPrevLink, int R);
-int  _K33Search_HandleBlockedEmbedIteration(graphP theGraph, int I);
+int  _K33Search_HandleBlockedBicomp(graphP theGraph, int I, int RootVertex, int R);
 int  _K33Search_EmbedPostprocess(graphP theGraph, int I, int edgeEmbeddingResult);
 int  _K33Search_CheckEmbeddingIntegrity(graphP theGraph, graphP origGraph);
 int  _K33Search_CheckObstructionIntegrity(graphP theGraph, graphP origGraph);
@@ -137,7 +138,7 @@ int  gp_AttachK33Search(graphP theGraph)
      context->functions.fpEmbedBackEdgeToDescendant = _K33Search_EmbedBackEdgeToDescendant;
      context->functions.fpMergeBicomps = _K33Search_MergeBicomps;
      context->functions.fpMergeVertex = _K33Search_MergeVertex;
-     context->functions.fpHandleBlockedEmbedIteration = _K33Search_HandleBlockedEmbedIteration;
+     context->functions.fpHandleBlockedBicomp = _K33Search_HandleBlockedBicomp;
      context->functions.fpEmbedPostprocess = _K33Search_EmbedPostprocess;
      context->functions.fpCheckEmbeddingIntegrity = _K33Search_CheckEmbeddingIntegrity;
      context->functions.fpCheckObstructionIntegrity = _K33Search_CheckObstructionIntegrity;
@@ -586,14 +587,16 @@ void _K33Search_EmbedBackEdgeToDescendant(graphP theGraph, int RootSide, int Roo
 }
 
 /********************************************************************
-
   This override of _MergeBicomps() detects a special merge block
   that indicates a K3,3 can be found.  The merge blocker is an
   optimization needed for one case for which detecting a K3,3
-  could not be done in linear time.
+  could not be done in linear time by direct searching of a
+  path of ancestors that is naturally explored eventually by
+  the core planarity algorithm.
 
   Returns OK for a successful merge, NOTOK on an internal failure,
-          or NONEMBEDDABLE if the merge is blocked
+          or NONEMBEDDABLE if the merge was blocked, in which case
+          a K_{3,3} homeomorph was isolated.
  ********************************************************************/
 
 int  _K33Search_MergeBicomps(graphP theGraph, int I, int RootVertex, int W, int WPrevLink)
@@ -616,13 +619,16 @@ int  _K33Search_MergeBicomps(graphP theGraph, int I, int RootVertex, int W, int 
             sp_Push2(theGraph->theStack, W, WPrevLink);
             sp_Push2(theGraph->theStack, NIL, NIL);
 
-            _SearchForMergeBlocker(theGraph, context, I, &mergeBlocker);
+			if (_SearchForMergeBlocker(theGraph, context, I, &mergeBlocker) != OK)
+				return NOTOK;
 
-            // If we find a merge blocker, then we return with
-            // the stack intact including W so that the merge
-            // blocked vertex can be easily found.
-            if (mergeBlocker != NIL)
-                return NONEMBEDDABLE;
+			if (mergeBlocker != NIL)
+			{
+				if (_FindK33WithMergeBlocker(theGraph, context, I, mergeBlocker) != OK)
+					return NOTOK;
+
+				return NONEMBEDDABLE;
+			}
 
             // If no merge blocker was found, then remove W from the stack.
             sp_Pop2(theGraph->theStack, W, WPrevLink);
@@ -713,20 +719,24 @@ void _InitK33SearchVertexInfo(K33SearchContext *context, int I)
 /********************************************************************
  ********************************************************************/
 
-int  _K33Search_HandleBlockedEmbedIteration(graphP theGraph, int I)
+int  _K33Search_HandleBlockedBicomp(graphP theGraph, int I, int RootVertex, int R)
 {
-    if (theGraph->embedFlags == EMBEDFLAGS_SEARCHFORK33)
-        return _SearchForK33(theGraph, I);
+	K33SearchContext *context = NULL;
 
+	gp_FindExtension(theGraph, K33SEARCH_ID, (void *)&context);
+	if (context == NULL)
+		return NOTOK;
+
+    if (theGraph->embedFlags == EMBEDFLAGS_SEARCHFORK33)
+    {
+    	if (R != RootVertex)
+    	    sp_Push2(theGraph->theStack, R, 0);
+
+        return _SearchForK33InBicomp(theGraph, context, I, RootVertex);
+    }
     else
     {
-        K33SearchContext *context = NULL;
-        gp_FindExtension(theGraph, K33SEARCH_ID, (void *)&context);
-
-        if (context != NULL)
-        {
-            return context->functions.fpHandleBlockedEmbedIteration(theGraph, I);
-        }
+    	return context->functions.fpHandleBlockedBicomp(theGraph, I, RootVertex, R);
     }
 
     return NOTOK;
