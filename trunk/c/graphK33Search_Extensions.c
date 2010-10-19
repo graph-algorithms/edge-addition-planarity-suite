@@ -710,10 +710,10 @@ void _K33Search_InitVertexInfo(graphP theGraph, int I)
 
 void _InitK33SearchVertexInfo(K33SearchContext *context, int I)
 {
+    context->VI[I].separatedDFSChildList = NIL;
     context->VI[I].backArcList = NIL;
     context->VI[I].externalConnectionAncestor = NIL;
     context->VI[I].mergeBlocker = NIL;
-    context->VI[I].separatedDFSChildList = NIL;
 }
 
 /********************************************************************
