@@ -69,8 +69,9 @@ void _WalkUp(graphP theGraph, int I, int J);
 int  _WalkDown(graphP theGraph, int I, int RootVertex);
 
 int  _HandleBlockedBicomp(graphP theGraph, int I, int RootVertex, int R);
-int  _EmbedPostprocess(graphP theGraph, int I, int edgeEmbeddingResult);
+int	 _AdvanceFwdArcList(graphP theGraph, int I, int R);
 
+int  _EmbedPostprocess(graphP theGraph, int I, int edgeEmbeddingResult);
 int  _OrientVerticesInEmbedding(graphP theGraph);
 int  _OrientVerticesInBicomp(graphP theGraph, int BicompRoot, int PreserveSigns);
 int  _JoinBicomps(graphP theGraph);
@@ -1162,7 +1163,13 @@ int  RetVal, W, WPrevLink, R, X, XPrevLink, Y, YPrevLink, RootSide;
 	     // next forward arc, then the Walkdown was blocked and did not embed a forward arc to a
 	     // descendant in the current RootEdgeChild subtree.
 	     if (nextChild == NIL || nextChild > gp_GetNeighbor(theGraph, gp_GetVertexFwdArcList(theGraph, I)))
-	    	 return theGraph->functions.fpHandleBlockedBicomp(theGraph, I, RootVertex, RootVertex);
+	     {
+	    	 // If the extension indicates it is OK to proceed, then ensure the forward arcs to descendants
+	    	 // of the RootVertex are removed, in case the extension has not already done so.
+	    	 if ((RetVal = theGraph->functions.fpHandleBlockedBicomp(theGraph, I, RootVertex, RootVertex)) == OK)
+	    		 _AdvanceFwdArcList(theGraph, I, RootVertex);
+	    	 return RetVal;
+	     }
 	 }
 
      return OK;
@@ -1183,9 +1190,6 @@ int  RetVal, W, WPrevLink, R, X, XPrevLink, Y, YPrevLink, RootSide;
 
  Extension algorithms are able to clear some of the blockages, in
  which case OK is returned to indicate that the WalkDown can proceed.
- In some cases, a part of clearing the blockage is removing the
- forward arcs to the bicomp root's descendants, in which case the
- extension handler invokes _AdvanceFwdArcList().
 
  Returns OK to proceed with WalkDown at W,
          NONEMBEDDABLE to terminate WalkDown of Root Vertex
@@ -1221,12 +1225,11 @@ int  _HandleBlockedBicomp(graphP theGraph, int I, int RootVertex, int R)
  list of a vertex the forward arcs to descendants of the bicomp root R.
  ********************************************************************/
 
-int	_AdvanceFwdArcList(graphP theGraph, int R)
+int	_AdvanceFwdArcList(graphP theGraph, int I, int R)
 {
 	int child = R - theGraph->N;
-	int v = gp_GetVertexParent(theGraph, child);
-	int nextChild = LCGetNext(theGraph->sortedDFSChildLists, gp_GetVertexSortedDFSChildList(theGraph, v), child);
-	int J = gp_GetVertexFwdArcList(theGraph, v);
+	int nextChild = LCGetNext(theGraph->sortedDFSChildLists, gp_GetVertexSortedDFSChildList(theGraph, I), child);
+	int J = gp_GetVertexFwdArcList(theGraph, I);
 	int Jnext;
 
 	while (J != NIL)
@@ -1237,7 +1240,7 @@ int	_AdvanceFwdArcList(graphP theGraph, int R)
 
 		Jnext = gp_DeleteEdge(theGraph, J, 0);
 		J = Jnext == J ? NIL : Jnext;
-		gp_SetVertexFwdArcList(theGraph, v, J);
+		gp_SetVertexFwdArcList(theGraph, I, J);
 	}
 
 	return OK;

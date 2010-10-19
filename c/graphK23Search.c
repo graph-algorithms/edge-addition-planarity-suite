@@ -68,8 +68,6 @@ extern int  _ChooseTypeOfNonOuterplanarityMinor(graphP theGraph, int I, int R);
 extern int  _IsolateOuterplanarityObstructionA(graphP theGraph);
 extern int  _IsolateOuterplanarityObstructionB(graphP theGraph);
 
-extern int	_AdvanceFwdArcList(graphP theGraph, int R);
-
 /* Private function declarations for K_{2,3} searching */
 
 int  _SearchForK23InBicomp(graphP theGraph, int I, int R);
@@ -177,13 +175,10 @@ int X, Y, XPrevLink, YPrevLink;
     by R is a separable subgraph of the input that is isomorphic
     to K_4.  So, we restore the original vertex orientation of
     the bicomp (because it's polite, not because we really have to).
-    Next, we advance the forward arc list so that all forward arcs to
-    descendants of this bicomp root are ignored.
     Then, we return OK to tell the outerplanarity embedder that it
     can ignore this K_4 and keep processing. */
 
-    if (_AdvanceFwdArcList(theGraph, R) != OK ||
-    	_OrientVerticesInBicomp(theGraph, R, 1) != OK)
+    if (_OrientVerticesInBicomp(theGraph, R, 1) != OK)
     	return NOTOK;
 
     return OK;
