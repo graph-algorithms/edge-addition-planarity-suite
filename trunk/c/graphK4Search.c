@@ -87,7 +87,6 @@ extern int  _IsolateOuterplanarityObstructionE(graphP theGraph);
 
 /* Private functions for K4 searching (exposed to the extension). */
 
-int  _SearchForK4(graphP theGraph, int I);
 int  _SearchForK4InBicomp(graphP theGraph, K4SearchContext *context, int I, int R);
 
 /* Private functions for K4 searching. */
@@ -118,77 +117,6 @@ int  _K4_RestoreReducedPath(graphP theGraph, K4SearchContext *context, int J);
 int  _K4_RestoreAndOrientReducedPaths(graphP theGraph, K4SearchContext *context);
 
 int _MarkEdge(graphP theGraph, int x, int y);
-
-/****************************************************************************
- _SearchForK4InBicomps()
-
- This method is the main handler for a blocked iteration of the core
- planarity/outerplanarity algorithm. At the end of processing for the
- current vertex I, if there is unresolved pertinence for I (i.e. if
- there are unembedded forward arcs from I to its DFS descendants), then
- this method is called.
-
- In this case, the fwdArcList of I is non-empty; it is also sorted by
- DFI of the descendants endpoints.  Also, the sortedDFSChildList of I
- is non-empty, and it is also sorted by DFI of the children.
-
- We proceed past a DFS child C of I if there is a next DFS child and
- it its DFI is less than the next descendant endpoint of the next
- forward arc.  This is appropriate because a vertex has the least numbered
- DFI of the subtree it roots.
-
- A soon as the DFS child C is encountered that is ancestor to the endpoint
- of the next unembedded forward arc, we simply invoke SearchForK4InBicomp().
- The result will either be an isolated K4 homeomorph, or an indication that
- a reduction has occurred. In the latter case, the WalkDown can be
- invoked to resolve more of the pertinence of the bicomp. The WalkDown
- may or may not resolve all the remaining pertinence in the DFS subtree
- rooted by C.  If it does, then either all forward arcs for I will be
- embedded or it will be time to advance to the next DFS child of I.
-
- Overall, the only two legitimate outcomes of this method call are
- 1) reductions have enabled further WalkDown calls to resolve all
-    of the pertinence of I
- 2) a subgraph homeomorphic to K4 has been isolated
-
- Returns
-    OK if the pertinence of I was fully resolved, indicating that the
-       core planarity/outerplanarity algorithm can proceed
-    NONEMBEDDABLE if a subgraph homeomorphic to K4 has been isolated
-    NOTOK on failure
- ****************************************************************************/
-
-int  _SearchForK4InBicomps(graphP theGraph, int I)
-{
-K4SearchContext *context = NULL;
-int  C, Cnext, e, D, RetVal=OK;
-
-     gp_FindExtension(theGraph, K4SEARCH_ID, (void *)&context);
-     if (context == NULL)
-         return NOTOK;
-
-     C = gp_GetVertexSortedDFSChildList(theGraph, I);
-     while ((e=gp_GetVertexFwdArcList(theGraph, I)) != NIL)
-     {
-		 // See whether we need to advance to the next subtree to embed the edge
-    	 Cnext = LCGetNext(theGraph->sortedDFSChildLists, gp_GetVertexSortedDFSChildList(theGraph, I), C);
-		 D = gp_GetNeighbor(theGraph, e);
-		 if (Cnext != NIL && Cnext < D)
-			 C = Cnext;
-
-		 // Otherwise, try to either find a K4 homeomorph or perform a reduction and continue
-		 else
-		 {
-			 int R = C + theGraph->N;
-			 if ((RetVal = _SearchForK4InBicomp(theGraph, context, I, R)) != OK)
-				 break;
-			 if ((RetVal = theGraph->functions.fpWalkDown(theGraph, I, R)) != OK)
-				 break;
-		 }
-     }
-
-     return RetVal;
-}
 
 /****************************************************************************
  _SearchForK4InBicomp()

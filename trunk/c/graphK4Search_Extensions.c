@@ -49,7 +49,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 extern int  _GetNextVertexOnExternalFace(graphP theGraph, int curVertex, int *pPrevLink);
 
-extern int  _SearchForK4InBicomps(graphP theGraph, int I);
 extern int  _SearchForK4InBicomp(graphP theGraph, K4SearchContext *context, int I, int R);
 
 extern int _TestForCompleteGraphObstruction(graphP theGraph, int numVerts,
@@ -67,8 +66,7 @@ int  _K4Search_CreateStructures(K4SearchContext *context);
 int  _K4Search_InitStructures(K4SearchContext *context);
 
 /* Forward declarations of overloading functions */
-int  _K4Search_HandleBlockedEmbedIteration(graphP theGraph, int I);
-int  _K4Search_HandleBlockedDescendantBicomp(graphP theGraph, int I, int RootVertex, int R, int *pRout, int *pW, int *pWPrevLink);
+int  _K4Search_HandleBlockedBicomp(graphP theGraph, int I, int RootVertex, int R);
 int  _K4Search_EmbedPostprocess(graphP theGraph, int I, int edgeEmbeddingResult);
 int  _K4Search_CheckEmbeddingIntegrity(graphP theGraph, graphP origGraph);
 int  _K4Search_CheckObstructionIntegrity(graphP theGraph, graphP origGraph);
@@ -129,8 +127,7 @@ int  gp_AttachK4Search(graphP theGraph)
      // gp_AddExtension will overload the graph's functions with these, and
      // return the base function pointers in the context function table
      memset(&context->functions, 0, sizeof(graphFunctionTable));
-     context->functions.fpHandleBlockedEmbedIteration = _K4Search_HandleBlockedEmbedIteration;
-     context->functions.fpHandleBlockedDescendantBicomp = _K4Search_HandleBlockedDescendantBicomp;
+     context->functions.fpHandleBlockedBicomp = _K4Search_HandleBlockedBicomp;
      context->functions.fpEmbedPostprocess = _K4Search_EmbedPostprocess;
      context->functions.fpCheckEmbeddingIntegrity = _K4Search_CheckEmbeddingIntegrity;
      context->functions.fpCheckObstructionIntegrity = _K4Search_CheckObstructionIntegrity;
@@ -398,100 +395,57 @@ void _InitK4SearchEdgeRec(K4SearchContext *context, int J)
 }
 
 /********************************************************************
- * This function is called if the outerplanarity algorithm fails to
- * embed all back edges for a vertex I.  This means that an obstruction
- * to outerplanarity has occurred, so we determine if it is a subgraph
- * homeomorphic to K4.  If so, then NONEMBEDDABLE is returned.  If not,
- * then a reduction is performed that unobstructs outerplanarity and
- * OK is returned, which allows the outerplanarity algorithm to
- * proceed with iteration I-1 (or to stop if I==0).
+ _K4Search_HandleBlockedBicomp()
+ Returns OK if no K4 homeomorph found and blockage cleared (OK to
+ 	 	 	 proceed with Walkdown embedding)
+ 	 	 NONEMBEDDABLE if K4 homeomorph found, and Walkdown embedding
+ 	 	 	 should be terminated.
+ 	 	 NOTOK on internal error
  ********************************************************************/
 
-int  _K4Search_HandleBlockedEmbedIteration(graphP theGraph, int I)
+int  _K4Search_HandleBlockedBicomp(graphP theGraph, int I, int RootVertex, int R)
 {
+	K4SearchContext *context = NULL;
+
+	gp_FindExtension(theGraph, K4SEARCH_ID, (void *)&context);
+	if (context == NULL)
+		return NOTOK;
+
     if (theGraph->embedFlags == EMBEDFLAGS_SEARCHFORK4)
     {
-    	// If the fwdArcList is empty, then the K4 was already isolated
-    	// by _K4Search_HandleBlockedDescendantBicomp(), and we just
-    	// return the NONEMBEDDABLE result in order to stop the embedding
-    	// iteration loop.
-		if (gp_GetVertexFwdArcList(theGraph, I) == NIL)
-			return NONEMBEDDABLE;
+    	int RetVal = OK;
 
-        return _SearchForK4InBicomps(theGraph, I);
+    	// If invoked on a descendant bicomp, then we push its root then search once
+    	// since not finding a K4 homeomorph will also clear the blockage and allow
+    	// the Walkdown to continue walking down
+    	if (R != RootVertex)
+    	{
+    	    sp_Push2(theGraph->theStack, R, 0);
+            if ((RetVal = _SearchForK4InBicomp(theGraph, context, I, R)) == OK)
+            {
+            	// If the Walkdown will be told it is OK to continue, then we have to take the descendant
+            	// bicomp root back off the stack so the Walkdown can try to descend to it again.
+            	int dummy;
+            	sp_Pop2(theGraph->theStack, R, dummy);
+            }
+    	}
+
+    	// Otherwise, if invoked on a child bicomp rooted by a virtual copy of I,
+    	// then we search for a K4 homeomorph, and if OK is returned, then that indicates
+    	// the blockage has been cleared and it is OK to Walkdown the bicomp.
+    	// But the Walkdown finished, already, so we launch it again.  This is tail
+    	// recursive, which chould be avoided easily enough with a little more work.
+    	else
+    	{
+			if ((RetVal = _SearchForK4InBicomp(theGraph, context, I, RootVertex)) == OK)
+				RetVal = theGraph->functions.fpWalkDown(theGraph, I, RootVertex);
+    	}
+
+    	return RetVal;
     }
     else
     {
-        K4SearchContext *context = NULL;
-        gp_FindExtension(theGraph, K4SEARCH_ID, (void *)&context);
-
-        if (context != NULL)
-        {
-            return context->functions.fpHandleBlockedEmbedIteration(theGraph, I);
-        }
-    }
-
-    return NOTOK;
-}
-
-/********************************************************************
- This function is called when outerplanarity obstruction minor A is
- encountered by the WalkDown.  In the implementation for the core
- planarity/outerplanarity algorithm, this method simply pushes the
- blocked bicomp root onto the stack and returns NONEMBEDDABLE, which
- causes the WalkDown to terminate.  The embed postprocessing would
- then go on to isolate the obstruction.
-
- However, outerplanarity obstruction minor A corresponds to a K_{2,3}
- homeomorph.  This method invokes a search for a K_4 homeomorph that
- may be entangled with the K_{2,3} homeomorph.  If an entangled K_4
- homeomorph is found, then _SearchForK4() returns NONEMBEDDABLE, which
- causes the WalkDown to terminate as above.  This is correct since a
- K_4 homeomorph has been found and isolated, and the K4Search overload
- of EmbedPostprocess() does no additional work.
-
- On the other hand, if minor A is found but there is no entangled K_4
- homeomorph, then the blocked descendant was reduced to a single edge
- so that it no longer obstructs outerplanarity. Then, OK was returned
- to indicate that the WalkDown should proceed.  This function then
- sets the vertex W and directional information that must be returned
- so that WalkDown can proceed.
-
- Returns OK to proceed with WalkDown at W,
-         NONEMBEDDABLE to terminate WalkDown of Root Vertex
-         NOTOK for internal error
- ********************************************************************/
-
-int  _K4Search_HandleBlockedDescendantBicomp(graphP theGraph, int I, int RootVertex, int R, int *pRout, int *pW, int *pWPrevLink)
-{
-    if (theGraph->embedFlags == EMBEDFLAGS_SEARCHFORK4)
-    {
-    	int RetVal = _SearchForK4InBicomp(theGraph, NULL, I, R);
-
-    	// On internal error (NOTOK) or K4 found (NONEMBEDDABLE), we return.
-    	if (RetVal != OK)
-    		return RetVal;
-
-    	// Since the bicomp rooted by R is now a singleton edge, either direction
-    	// out of R and into W can be selected, as long as they are consistent
-    	// We just choose the settings associated with selecting W as the next
-    	// vertex from R on the external face.
-    	*pRout = 0;
-    	*pWPrevLink = 1;
-    	*pW = _GetNextVertexOnExternalFace(theGraph, R, pWPrevLink);
-
-        // Now return OK so the Walkdown can continue at W (i.e. *pW)
-        return OK;
-    }
-    else
-    {
-        K4SearchContext *context = NULL;
-        gp_FindExtension(theGraph, K4SEARCH_ID, (void *)&context);
-
-        if (context != NULL)
-        {
-            return context->functions.fpHandleBlockedDescendantBicomp(theGraph, I, RootVertex, R, pRout, pW, pWPrevLink);
-        }
+    	return context->functions.fpHandleBlockedBicomp(theGraph, I, RootVertex, R);
     }
 
     return NOTOK;
