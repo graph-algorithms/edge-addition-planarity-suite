@@ -69,7 +69,7 @@ void _WalkUp(graphP theGraph, int I, int J);
 int  _WalkDown(graphP theGraph, int I, int RootVertex);
 
 int  _HandleBlockedBicomp(graphP theGraph, int I, int RootVertex, int R);
-int	 _AdvanceFwdArcList(graphP theGraph, int I, int R);
+void _AdvanceFwdArcList(graphP theGraph, int I, int child, int nextChild);
 
 int  _EmbedPostprocess(graphP theGraph, int I, int edgeEmbeddingResult);
 int  _OrientVerticesInEmbedding(graphP theGraph);
@@ -112,7 +112,6 @@ int  _JoinBicomps(graphP theGraph);
   The algorithm extension for gp_Embed() is encoded in the embedFlags,
   and the details of the return value can be found in the extension
   module that defines the embedding flag.
-
  ********************************************************************/
 
 int gp_Embed(graphP theGraph, int embedFlags)
@@ -152,15 +151,14 @@ int RetVal = OK;
           }
           gp_SetVertexPertinentBicompList(theGraph, I, NIL);
 
-          // Work systematically through the back edges of the forward arc list
-          // in parallel with the DFS children of vertex I, using Walkdown to add
-          // the back edges from I to its descendants in each of the DFS subtrees
+          // Work systematically through the DFS children of vertex I, using Walkdown
+          // to add the back edges from I to its descendants in each of the DFS subtrees
           c = gp_GetVertexSortedDFSChildList(theGraph, I);
-          J = gp_GetVertexFwdArcList(theGraph, I);
-          while (J != NIL)
+          while (c != NIL)
           {
         	  cNext = LCGetNext(theGraph->sortedDFSChildLists, gp_GetVertexSortedDFSChildList(theGraph, I), c);
-        	  if (cNext == NIL || cNext > gp_GetNeighbor(theGraph, J))
+        	  //if (cNext == NIL || cNext > gp_GetNeighbor(theGraph, J))
+        	  if (gp_GetVertexPertinentBicompList(theGraph, c) != NIL)
         	  {
         		  // If Walkdown returns OK, then it is OK to proceed with edge addition.
         		  // Otherwise, if Walkdown returns NONEMBEDDABLE then we stop edge addition.
@@ -168,7 +166,6 @@ int RetVal = OK;
 					  break;
         	  }
        		  c = cNext;
-       		  J = gp_GetVertexFwdArcList(theGraph, I);
           }
 
           // If the Walkdown determined that the graph is NONEMBEDDABLE, then
@@ -964,11 +961,7 @@ int  nextZig, nextZag, R, ParentCopy, RootID_DFSChild, BicompList;
 int  _WalkDown(graphP theGraph, int I, int RootVertex)
 {
 int  RetVal, W, WPrevLink, R, X, XPrevLink, Y, YPrevLink, RootSide;
-
-#ifdef DEBUG
-     // Resolves typical watch expressions
-     R = RootVertex;
-#endif
+int  RootEdgeChild = RootVertex - theGraph->N;
 
      sp_ClearStack(theGraph->theStack);
 
@@ -976,34 +969,27 @@ int  RetVal, W, WPrevLink, R, X, XPrevLink, Y, YPrevLink, RootSide;
      {
          W = gp_GetExtFaceVertex(theGraph, RootVertex, RootSide);
 
-         // If the main bicomp rooted by RootVertex is a single tree edge,
-         // (always the case for core planarity) then the external face links
-         // of W will be equal
+         // If the main bicomp rooted by RootVertex is a single tree edge, (always the case
+         // for core planarity) then the external face links of W will be equal
          if (gp_GetExtFaceVertex(theGraph, W, 0) == gp_GetExtFaceVertex(theGraph, W, 1))
          {
-        	 // In this case, we treat the bicomp external face as if it were
-        	 // a cycle of two edges and as if RootVertex and W had the same
-        	 // orientation. Thus, the edge record leading back to RootVertex
-        	 // would be indicated by link[1^RootSide] as this is the reverse of
-        	 // link[RootSide], which was used to exit RootVertex and get to W
+        	 // In which case, we treat the bicomp external face as if it were a cycle of two edges
              WPrevLink = 1^RootSide;
-             // We don't bother with the inversionFlag here because WalkDown is
-             // never called on a singleton bicomp with an inverted orientation
-             // Before the first Walkdown, the bicomp truly is a single edge
-             // with proper orientation, and an extension algorithm does call
-             // Walkdown again in post-processing, it wouldn't do so on this
-             // bicomp because a singleton, whether inverted or not, would no
-             // longer be pertinent (until a future vertex step).
-             // Thus only the inner loop below accommodates the inversionFlag
-             // when it walks down to a *pertinent* child biconnected component
-             //WPrevLink = gp_GetExtFaceInversionFlag(theGraph, W) ? RootSide : 1^RootSide;
+
+             // Because it is slower, we don't bother with the inversionFlag because WalkDown is
+             // never called on a singleton bicomp with an inverted orientation.
+             // Before the first Walkdown, the bicomp truly is a single edge with proper orientation.
+             // An extension algorithm does call Walkdown again in post-processing, but only in the
+             // case where it still contains pertinent vertices.  If a bicomp becomes a singleton,
+             // then its pertinence is resolved because both Walkdown traversals reached the same
+             // vertex.  Thus, only the inner loop below accommodates the inversionFlag when it walks
+             // down to a *pertinent* child biconnected component
+             // WPrevLink = gp_GetExtFaceInversionFlag(theGraph, W) ? RootSide : 1^RootSide;
          }
-         // Otherwise, Walkdown has been called on a bicomp with two distinct
-         // external face paths from RootVertex (a possibility in extension
-         // algorithms), so both external face path links from W do not indicate
-         // the RootVertex.
          else
          {
+             // Otherwise, an extension algorithm has called Walkdown on a bicomp with two distinct
+        	 // external face paths from RootVertex
         	 WPrevLink = gp_GetExtFaceVertex(theGraph, W, 0) == RootVertex ? 0 : 1;
         	 if (gp_GetExtFaceVertex(theGraph, W, WPrevLink) != RootVertex)
         		 return NOTOK;
@@ -1011,14 +997,11 @@ int  RetVal, W, WPrevLink, R, X, XPrevLink, Y, YPrevLink, RootSide;
 
          while (W != RootVertex)
          {
-             /* If the vertex W is the descendant endpoint of an unembedded
-                back edge to I, then ... */
-
+             // Detect unembedded back edge descendant endpoint W
              if (gp_GetVertexPertinentAdjacencyInfo(theGraph, W) != NIL)
              {
-                /* Merge bicomps at cut vertices on theStack and add the back edge,
-                    creating a new proper face. */
-
+                // Merge any bicomps whose cut vertices were traversed to reach W, then add the
+            	// edge to W to form a new proper face in the embedding.
                 if (sp_NonEmpty(theGraph->theStack))
                 {
                     if ((RetVal = theGraph->functions.fpMergeBicomps(theGraph, I, RootVertex, W, WPrevLink)) != OK)
@@ -1026,49 +1009,37 @@ int  RetVal, W, WPrevLink, R, X, XPrevLink, Y, YPrevLink, RootSide;
                 }
                 theGraph->functions.fpEmbedBackEdgeToDescendant(theGraph, RootSide, RootVertex, W, WPrevLink);
 
-                /* Clear W's AdjacentTo flag so we don't add another edge to W if
-                    this invocation of Walkdown visits W again later (and more
-                    generally, so that no more back edges to W are added until
-                    a future Walkup sets the flag to non-NIL again). */
-
+                // Clear W's adjacencyInfo since the forward arc it contained has been embedded
                 gp_SetVertexPertinentAdjacencyInfo(theGraph, W, NIL);
              }
 
-             /* If there is a pertinent child bicomp, then we need to push it onto the stack
-                along with information about how we entered the cut vertex and how
-                we exit the root copy to get to the next vertex. */
-
+             // If W has a pertinent child bicomp, then we descend to it...
              if (gp_GetVertexPertinentBicompList(theGraph, W) != NIL)
              {
+            	 // Push the vertex W and the direction of entry, then descend to a root copy R of W
                  sp_Push2(theGraph->theStack, W, WPrevLink);
                  R = _GetPertinentChildBicomp(theGraph, W);
 
-                 /* Get next active vertices X and Y on ext. face paths emanating from R */
-
+                 // Get the next active vertices X and Y on the external face paths emanating from R
                  X = gp_GetExtFaceVertex(theGraph, R, 0);
                  XPrevLink = gp_GetExtFaceVertex(theGraph, X, 1)==R ? 1 : 0;
                  Y = gp_GetExtFaceVertex(theGraph, R, 1);
                  YPrevLink = gp_GetExtFaceVertex(theGraph, Y, 0)==R ? 0 : 1;
 
-                 /* If this is a bicomp with only two ext. face vertices, then
-                    it could be that the orientation of the non-root vertex
-                    doesn't match the orientation of the root due to our relaxed
-                    orientation method. */
-
+                 // Special case: If this is a bicomp with only two external face vertices, then
+                 // it could be just an edge, or its external face could've been short-circuited.
+                 // In the latter case, we correct for possible inverse orientation between the root
+                 // and the non-root vertex due to the relaxed orientation method.
                  if (X == Y && gp_GetExtFaceInversionFlag(theGraph, X))
                  {
                      XPrevLink = 0;
                      YPrevLink = 1;
                  }
 
-                 /* Now we implement the Walkdown's simple path selection rules!
-                    If either X or Y is internally active (pertinent but not
-                    externally active), then we pick it first.  Otherwise,
-                    we choose a pertinent vertex. If neither are pertinent,
-                    then we let a handler decide.  The default handler for
-                    core planarity/outerplanarity decides to stop the WalkDown
-                    with the current blocked bicomp at the top of the stack. */
-
+                 // Now we implement the Walkdown's simple path selection rules!
+                 // Preferentially select an internally active vertex (only pertinent, not future pertinent)
+                 // If both are future pertinent, then select whichever is also pertinent.
+                 // If neither, then the Walkdown is blocked so a blockage handler is called
                  gp_UpdateVertexFuturePertinentChild(theGraph, X, I);
                  gp_UpdateVertexFuturePertinentChild(theGraph, Y, I);
 
@@ -1146,28 +1117,25 @@ int  RetVal, W, WPrevLink, R, X, XPrevLink, Y, YPrevLink, RootSide;
                  }
              }
          }
-
-         // If we got back around to the root, then all edges are embedded, so we stop.
-         if (W == RootVertex)
-             break;
      }
 
-     // Detect whether the Walkdown was blocked from embedding all the back edges
-     // from I to descendants of the root edge child of I
-	 if (gp_GetVertexFwdArcList(theGraph, I) != NIL)
+     // Detect and handle the case in which Walkdown was blocked from embedding all the back edges from I
+     // to descendants in the subtree of the child of I associated with the bicomp RootVertex.
+	 if (gp_GetVertexFwdArcList(theGraph, I) != NIL &&
+		 RootEdgeChild < gp_GetNeighbor(theGraph, gp_GetVertexFwdArcList(theGraph, I)))
 	 {
-	     int RootEdgeChild = RootVertex - theGraph->N;
 	     int nextChild = LCGetNext(theGraph->sortedDFSChildLists, gp_GetVertexSortedDFSChildList(theGraph, I), RootEdgeChild);
 
-	     // If there is no nextChild or if its DFI is greater than the descendant endpoint of the
-	     // next forward arc, then the Walkdown was blocked and did not embed a forward arc to a
-	     // descendant in the current RootEdgeChild subtree.
+	     // The Walkdown was blocked from embedding all forward arcs into the RootEdgeChild subtree
+	     // if there the next child's DFI is greater than the descendant endpoint of the next forward arc,
+	     // or if there is no next child.
 	     if (nextChild == NIL || nextChild > gp_GetNeighbor(theGraph, gp_GetVertexFwdArcList(theGraph, I)))
 	     {
-	    	 // If the extension indicates it is OK to proceed, then ensure the forward arcs to descendants
-	    	 // of the RootVertex are removed, in case the extension has not already done so.
+	    	 // If an extension indicates it is OK to proceed despite the unembedded forward arcs, then
+	    	 // advance to the forward arcs for the next child, if any
 	    	 if ((RetVal = theGraph->functions.fpHandleBlockedBicomp(theGraph, I, RootVertex, RootVertex)) == OK)
-	    		 _AdvanceFwdArcList(theGraph, I, RootVertex);
+	    		 _AdvanceFwdArcList(theGraph, I, RootEdgeChild, nextChild);
+
 	    	 return RetVal;
 	     }
 	 }
@@ -1220,30 +1188,76 @@ int  _HandleBlockedBicomp(graphP theGraph, int I, int RootVertex, int R)
 /********************************************************************
  _AdvanceFwdArcList()
 
- A helper function used by some extensions that overload the handler
- for a blocked bicomp.  This function removes from the forward arc
- list of a vertex the forward arcs to descendants of the bicomp root R.
+ If an extension determines that it is OK to leave some forward arcs
+ unembedded, then we advance the forward arc list head pointer past
+ the unembedded arcs for the current child so that it points to the
+ first forward arc for the next child, if any.
+
+ There are two meanings of the phrase "if any".  First, there may be
+ no next child, in which case nextChild is NIL, and the forward arc
+ list need not be advanced.
+
+ If there is a next child, then the forward arc list head needs to
+ be advanced to the first arc whose descendant endpoint is greater
+ than the nextChild, if any. However, the tail end of the forward arc
+ list may include unembedded forward arcs to a preceding sibling
+ of the child vertex.  So, we advance a pointer J until one of the
+ following happens:
+
+ 1) J gets all the way around to the forward arc list head
+ 2) J finds an edge whose descendant endpoint is less than the child
+ 3) J finds an edge whose descendant endpoint is greater than the next child
+
+ In case 1, all the forward arcs belong in the subtree of the child, so
+ there is no need to change the forward arc list head.
+
+ In case 2, there are no more forward arcs to any following siblings of
+ the child, so the forward arc list head should be set to J so that it is set
+ to the forward arc with the least numbered descendant endpoint.
+
+ In case 3, the desired forward arc into the subtree of a following sibling
+ of the child has been found, so again the forward arc list head should be
+ set to J to indicate that edge.
+
+ After all Walkdowns of the children of a vertex, the forward arc list will
+ be NIL if all edges were embedded, or it will indicate the unembedded
+ forward arc whose descendant endpoint has the least number.  Cases 1 and 2
+ directly implement this in cases where a Walkdown for the given child
+ fails to embed an edge, and case 3 indirectly finishes the job by making
+ sure the forward arc list head has the right value at the beginning of
+ a Walkdown for a particular child.  If the Walkdown of that child succeeds
+ at embedding all the forward edges into that child's subtree, then each
+ embedding advances the forward arc list head.  So, even if the Walkdown
+ of the last pertinent child embeds all forward arcs, then the Walkdown
+ itself advances the forward arc list head to the first unembedded forward
+ arc, or to NIL.
  ********************************************************************/
 
-int	_AdvanceFwdArcList(graphP theGraph, int I, int R)
+void _AdvanceFwdArcList(graphP theGraph, int I, int child, int nextChild)
 {
-	int child = R - theGraph->N;
-	int nextChild = LCGetNext(theGraph->sortedDFSChildLists, gp_GetVertexSortedDFSChildList(theGraph, I), child);
 	int J = gp_GetVertexFwdArcList(theGraph, I);
-	int Jnext;
 
 	while (J != NIL)
 	{
-		// Stop when we find an arc leading to a descendant of the next DFS child of v
-		if (nextChild != NIL && nextChild < gp_GetNeighbor(theGraph, J))
+		// 2) J finds an edge whose descendant endpoint is less than the child
+		if (child < gp_GetNeighbor(theGraph, J) < child)
+		{
+			gp_SetVertexFwdArcList(theGraph, I, J);
 			break;
+		}
 
-		Jnext = gp_DeleteEdge(theGraph, J, 0);
-		J = Jnext == J ? NIL : Jnext;
-		gp_SetVertexFwdArcList(theGraph, I, J);
+		// 3) J finds an edge whose descendant endpoint is greater than the next child
+		else if (nextChild != NIL && nextChild < gp_GetNeighbor(theGraph, J))
+		{
+			gp_SetVertexFwdArcList(theGraph, I, J);
+			break;
+		}
+
+		J = gp_GetNextArc(theGraph, J);
+		// 1) J gets all the way around to the forward arc list head
+		if (J == gp_GetVertexFwdArcList(theGraph, I))
+			J = NIL;
 	}
-
-	return OK;
 }
 
 /********************************************************************
