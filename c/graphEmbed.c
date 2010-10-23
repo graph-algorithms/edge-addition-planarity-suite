@@ -1261,38 +1261,6 @@ void _AdvanceFwdArcList(graphP theGraph, int I, int child, int nextChild)
 }
 
 /********************************************************************
- _HandleBlockedDescendantBicomp()
- The core planarity/outerplanarity algorithm handles the blockage
- by pushing the root of the blocked bicomp onto the top of the stack
- because it is the central focus for obstruction minor A.
- Then NONEMBEDDABLE is returned so that the WalkDown can terminate,
- and the embedder can proceed to isolate the obstruction.
- Some algorithms may be able to clear the blockage, in which case
- a function overload would set Rout, W and WPrevLink, then return OK
- to indicate that the WalkDown may proceed.
-
- NOTE: When returning OK (blockage cleared), the overload implementation
-       should NOT call this base implementation nor otherwise push R
-       onto the stack because the core WalkDown implementation will push
-       the appropriate stack entries based on R, Rout, W and WPrevLink
-       Similarly, when returning NONEMBEDDABLE, it is typically not
-       necessary to call this base implementation because pushing
-       the bicomp root R is not usually necessary, i.e. the overload
-       implementation usually does all embed post-processing before
-       returning NONEMBEDDABLE.
-
- Returns OK to proceed with WalkDown at W,
-         NONEMBEDDABLE to terminate WalkDown of Root Vertex
-         NOTOK for internal error
- ********************************************************************/
-
-int  _HandleBlockedDescendantBicomp(graphP theGraph, int I, int RootVertex, int R, int *pRout, int *pW, int *pWPrevLink)
-{
-    sp_Push2(theGraph->theStack, R, 0);
-	return NONEMBEDDABLE;
-}
-
-/********************************************************************
  _HandleInactiveVertex()
 
  Although it is possible to short-circuit every inactive vertex from
@@ -1315,45 +1283,6 @@ int  _HandleInactiveVertex(graphP theGraph, int BicompRoot, int *pW, int *pWPrev
      *pW = X;
 
      return OK;
-}
-
-/********************************************************************
- HandleBlockedEmbedIteration()
-
-  At the end of each embedding iteration, this function is invoked
-  if there are any unembedded cycle edges from the current vertex I
-  to its DFS descendants. Specifically, the forward arc list of I is
-  non-empty at the end of the edge addition processing for I.
-
-  We return NONEMBEDDABLE to cause iteration to stop because the
-  graph is non-planar if any edges could not be embedded.
-
-  Extensions may overload this function and decide to proceed with or
-  halt embedding iteration for application-specific reasons.
-  For example, a search for K_{3,3} homeomorphs could reduce an
-  isolated K5 homeomorph to something that can be ignored, and then
-  return OK in order to continue the planarity algorithm in order to
-  search for a K_{3,3} homeomorph elsewhere in the graph.  On the
-  other hand, if such an algorithm found a K_{3,3} homeomorph,
-  perhaps alone or perhaps entangled with the K5 homeomorph, it would
-  return NONEMBEDDABLE since there is no need to continue with
-  embedding iterations once the desired embedding obstruction is found.
-
-  If this function returns OK, then embedding will proceed to the
-  next iteration, or return OK if it finished the last iteration.
-
-  If this function returns NONEMBEDDABLE, then the embedder will
-  stop iteration and return NONEMBEDDABLE.  Note that the function
-  _EmbedPostprocess() is still called in this case, allowing for
-  further processing of the non-embeddable result, e.g. isolation
-  of the desired embedding obstruction.
-
-  This function can return NOTOK to signify an internal error.
- ********************************************************************/
-
-int  _HandleBlockedEmbedIteration(graphP theGraph, int I)
-{
-     return NONEMBEDDABLE;
 }
 
 /********************************************************************

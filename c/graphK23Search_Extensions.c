@@ -165,9 +165,17 @@ int  _K23Search_HandleBlockedBicomp(graphP theGraph, int I, int RootVertex, int 
 {
     if (theGraph->embedFlags == EMBEDFLAGS_SEARCHFORK23)
     {
+		// If R is the root of a descendant bicomp of I, we push it, but then we know the search for K2,3
+    	// will be successful and return NONEMBEDDABLE because this condition corresponds to minor A, which
+    	// is a K2,3.  Thus, an "OK to proceed with Walkdown searching elsewhere" result cannot happen,
+    	// so we don't have to test for it to detect if we have to pop these two back off the stack.
     	if (R != RootVertex)
     	    sp_Push2(theGraph->theStack, R, 0);
 
+    	// The possible results here are NONEMBEDDABLE if a K2,3 homeomorph is found, or OK if only
+    	// a K4 was found and unblocked such that it is OK for the Walkdown to continue searching
+    	// elsewhere.  Note that the OK result can only happen if RootVertex==R since minor E can only
+    	// happen on a child bicomp of vertex I, not a descendant bicomp.
     	return _SearchForK23InBicomp(theGraph, I, R);
     }
 
