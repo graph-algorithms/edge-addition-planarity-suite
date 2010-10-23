@@ -1212,8 +1212,10 @@ int  _HandleBlockedBicomp(graphP theGraph, int I, int RootVertex, int R)
  there is no need to change the forward arc list head.
 
  In case 2, there are no more forward arcs to any following siblings of
- the child, so the forward arc list head should be set to J so that it is set
- to the forward arc with the least numbered descendant endpoint.
+ the child, only left-behind unembedded forward arcs that we advanced
+ past in previous calls to this method from Walkdowns of the preceding
+ children of I.  So the forward arc list head should be set to J so that
+ it is set to the forward arc with the least numbered descendant endpoint.
 
  In case 3, the desired forward arc into the subtree of a following sibling
  of the child has been found, so again the forward arc list head should be
@@ -1240,7 +1242,7 @@ void _AdvanceFwdArcList(graphP theGraph, int I, int child, int nextChild)
 	while (J != NIL)
 	{
 		// 2) J finds an edge whose descendant endpoint is less than the child
-		if (child < gp_GetNeighbor(theGraph, J) < child)
+		if (gp_GetNeighbor(theGraph, J) < child)
 		{
 			gp_SetVertexFwdArcList(theGraph, I, J);
 			break;
