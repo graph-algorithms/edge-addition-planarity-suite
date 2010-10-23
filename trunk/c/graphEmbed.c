@@ -1294,6 +1294,18 @@ int  _HandleBlockedDescendantBicomp(graphP theGraph, int I, int RootVertex, int 
 
 /********************************************************************
  _HandleInactiveVertex()
+
+ Although it is possible to short-circuit every inactive vertex from
+ the external face, for efficiency the Walkdown traversal now just does
+ a single short-circuit between the bicomp root and a stopping vertex.
+ This is because the main thing that short-circuiting needs to optimize
+ is the Walkdown's choice of direction after descending to the root
+ of a pertinent biconnected component.  So, the Walkdown just optimizes
+ the external face of a biconnected component as it finishes processing
+ it so it will be ready in future steps when it becomes pertinent.
+ Hence, when traversing the face of a bicomp during the current step,
+ we only need to skip an inactive vertex and traverse to the next vertex
+ on the external face.
  ********************************************************************/
 
 int  _HandleInactiveVertex(graphP theGraph, int BicompRoot, int *pW, int *pWPrevLink)

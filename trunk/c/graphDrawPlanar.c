@@ -770,8 +770,8 @@ int WPredNextLink = 1^WPrevLink,
     WPred = _GetNextExternalFaceVertex(theEmbedding, W, &WPredNextLink);
 
 	gp_LogLine("\ngraphDrawPlanar.c/::_BreakTie() start");
-    gp_LogLine(gp_MakeLogStr3("_BreakTie(BicompRoot=%d, W=%d, W_in=%d)",
-				 BicompRoot, W, WPrevLink));
+    gp_LogLine(gp_MakeLogStr4("_BreakTie(BicompRoot=%d, W=%d, W_in=%d) WPred=%d",
+				 BicompRoot, W, WPrevLink, WPred));
 
     /* Ties happen only within a bicomp (i.e. between two non-root vertices) */
     if (W > theEmbedding->N || WPred >= theEmbedding->N)
@@ -822,7 +822,22 @@ int WPredNextLink = 1^WPrevLink,
         context->VI[W].tie[WPrevLink] = context->VI[WPred].tie[WPredNextLink] = NIL;
     }
     else
-        return NOTOK;
+    {
+    	int c = BicompRoot - context->theGraph->N;
+    	int I = gp_GetVertexParent(context->theGraph, c);
+    	int L = gp_GetVertexLowpoint(context->theGraph, c);
+        gp_LogLine(gp_MakeLogStr3("Child=%d, I=%d, L=%d", c, I, L));
+
+        // Every inactive vertex should be in tie state, except if this is the
+        // second Walkdown traversal over a pertinent but not future pertinent
+        // biconnected component.  The first traversal breaks all the ties,
+        // and the second traversal, if performed, walks over the inactive
+        // vertices a second time.  This is OK, but if the biconnected component
+        // is future pertinent, then this could not have happened, in which
+        // case we detect/report an error.
+        if (L < I)
+        	return NOTOK;
+    }
 
 	gp_LogLine("graphDrawPlanar.c/_BreakTie() end\n");
     return OK;
