@@ -265,10 +265,16 @@ int tempResult;
  _RunExtraK33Tests()
  ****************************************************************************/
 
+#define USE_MERGEBLOCKER
+
 int  _RunExtraK33Tests(graphP theGraph, K33SearchContext *context)
 {
 isolatorContextP IC = &theGraph->IC;
-int u_max = MAX3(IC->ux, IC->uy, IC->uz), u;
+int u_max = MAX3(IC->ux, IC->uy, IC->uz);
+
+#ifndef USE_MERGEBLOCKER
+int u;
+#endif
 
 /* Case 1: If there is a pertinent or externally active vertex other than W
             on the lower external face path between X and Y (the points of
@@ -291,98 +297,91 @@ int u_max = MAX3(IC->ux, IC->uy, IC->uz), u;
             that is descendant to u_{max}, then a K_{3,3} homeomorph can
             be isolated with Minor E2.
 
-            NOTE: It may seem costly to check the entire subtree, but
-            if it succeeds then we're done, and if the only connection
-            is to u_{max} then we are sure to never make this check
-            again on this subtree (if all the other K_{3,3} tests fail).
+            OPTIMIZATION: We do not need to check for this case.
+            We avoid doing so because in very specially crafted cases
+            it could be too costly if the connection doesn't exist.
+            However, if the highest numbered ancestor H of the current vertex
+            that has an external connection from W is a descendant u_{max}
+            then we will discover a K_{3,3} by Minor A or B in step H
+            (unless some other test succeeds at finding a K_{3,3} first),
+            so we just let the non-planarity detector do its work since
+            Minors A and B both provide a K_{3,3} when found.
 
-            OPTIMIZATION: We do not check for the connection if the
-            least ancestor connection from W/Z leads to an ancestor
-            of u_max.  The reason is that it could ultimately be too
-            costly if the connection doesn't exist, and if the highest
-            numbered ancestor H of the current vertex with an external
-            connection from W is a descendant u_{max} (and if no other
-            tests in this function succeed), then we will discover a
-            K_{3,3} by Minor A or B in step H.
+            This happens because w is pertinent to H and future pertinent
+            to u_max or an ancestor of u_max.
 
-            OPTIMIZATION: When we do test for an external connection to
-            an ancestor of V descendant to u_{max}, the result may be that
-            only a connection to u_{max} exists.  The result is cached
-            so that the subtrees of the vertex need not be traversed again
-            should we need to make the test again.
-            See _SearchForDescendantExternalConnection() */
+            Minor A will happen if, in step H, Walkdown descends to the
+            bicomp containing the current vertex, x, y and w.  Since x
+            and y would still be future pertinent (they connect to u_max
+            or higher, i.e. with lesser DFI, than u_max).
 
-    if (IC->uz == u_max)
-    {
-        u = _SearchForDescendantExternalConnection(theGraph, context, IC->w, u_max);
-        if (u > u_max)
-        {
-            IC->uz = u;
-            if (_FinishIsolatorContextInitialization(theGraph, context) != OK ||
-                _IsolateMinorE2(theGraph) != OK)
-                return NOTOK;
+            Minor B will happen if the bicomp containing the current vertex,
+            x, y and w is a descendant of a bicomp that blocks planarity
+            in step H.  The bicomp would be both pertinent (due to w's
+            connection to H) and future pertinent(due to connections to
+            ancestors of H by w, x and y).
+*/
 
-            return NONEMBEDDABLE;
-        }
-    }
+#ifndef USE_MERGEBLOCKER
+	u = _SearchForDescendantExternalConnection(theGraph, context, IC->w, u_max);
+	if (u > u_max)
+	{
+		IC->uz = u;
+		if (_FinishIsolatorContextInitialization(theGraph, context) != OK ||
+			_IsolateMinorE2(theGraph) != OK)
+			return NOTOK;
+
+		return NONEMBEDDABLE;
+	}
+#endif
 
 /* Case 3: If X or Y can make an external connection to an ancestor of V
             that is descendant to u_{max}, then a K_{3,3} homeomorph
             can be isolated with Minor E3.
 
-            NOTE: It may seem costly to check the entire subtree, but
-            if it succeeds then we're done, and if the only connection
-            is to u_{max} then we are sure to never make this check
-            again on this subtree (if all the other K_{3,3} tests fail).
-
-            OPTIMIZATION:  Due to the prior use of the Kuratowski subgraph
+            NOTE: Due to the prior use of the Kuratowski subgraph
             isolator, we know that at most one of X, Y or W/Z could have an
             external connection to an ancestor of u_{max} = MAX(ux, uy, uz).
-            If it is X or Y, then we do not check for the lower connection
-            required to find Minor E3 because it might ultimately be too
-            costly.  Instead, we mark the vertex with a 'merge blocker'
-            of u_{max}.  If the planar embedder attempts to merge the vertex
-            prior to step u_{max}, then the embedder has found the desired
-            connection and a K_{3,3} is isolated at that time.
 
-            OPTIMIZATION: When we can test for an external connection to
-            an ancestor of V descendant to u_{max}, the result may be that
-            only a connection to u_{max} exists.  The result is cached
-            so that the subtrees of the vertex need not be traversed again
-            should we need to make the test again.
-            See _SearchForDescendantExternalConnection() */
+            OPTIMIZATION:  We do not check for the lower connection required
+            to find Minor E3 because it might ultimately be too costly.
+            Instead, we mark the vertex with a 'merge blocker' of u_{max}.
+            If the planar embedder attempts to merge the vertex prior to step
+            u_{max}, then the embedder has found the desired connection and a
+            K_{3,3} homeomorph is isolated at that time.
+*/
 
-    if (IC->ux < u_max)
-        context->VI[IC->x].mergeBlocker = u_max;
-    else
-    {
-        u = _SearchForDescendantExternalConnection(theGraph, context, IC->x, u_max);
-        if (u > u_max)
-        {
-            IC->ux = u;
-            if (_FinishIsolatorContextInitialization(theGraph, context) != OK ||
-                _IsolateMinorE3(theGraph) != OK)
-                return NOTOK;
+#ifdef USE_MERGEBLOCKER
+	context->VI[IC->x].mergeBlocker = u_max;
+#endif
+#ifndef USE_MERGEBLOCKER
+	u = _SearchForDescendantExternalConnection(theGraph, context, IC->x, u_max);
+	if (u > u_max)
+	{
+		IC->ux = u;
+		if (_FinishIsolatorContextInitialization(theGraph, context) != OK ||
+			_IsolateMinorE3(theGraph) != OK)
+			return NOTOK;
 
-            return NONEMBEDDABLE;
-        }
-    }
+		return NONEMBEDDABLE;
+	}
+#endif
 
-    if (IC->uy < u_max)
-        context->VI[IC->y].mergeBlocker = u_max;
-    else
-    {
-        u = _SearchForDescendantExternalConnection(theGraph, context, IC->y, u_max);
-        if (u > u_max)
-        {
-            IC->uy = u;
-            if (_FinishIsolatorContextInitialization(theGraph, context) != OK ||
-                _IsolateMinorE3(theGraph) != OK)
-                return NOTOK;
+#ifdef USE_MERGEBLOCKER
+	context->VI[IC->y].mergeBlocker = u_max;
+#endif
+#ifndef USE_MERGEBLOCKER
+	u = _SearchForDescendantExternalConnection(theGraph, context, IC->y, u_max);
+	if (u > u_max)
+	{
+		IC->uy = u;
+		if (_FinishIsolatorContextInitialization(theGraph, context) != OK ||
+			_IsolateMinorE3(theGraph) != OK)
+			return NOTOK;
 
-            return NONEMBEDDABLE;
-        }
-    }
+		return NONEMBEDDABLE;
+	}
+#endif
 
 /* Case 4: If there exists any x-y path with points of attachment px and py
             such that px!=x or py!=y, then a K_{3,3} homeomorph can be isolated
@@ -632,26 +631,6 @@ int J = context->VI[theVertex].backArcList;
 
  The function returns the descendant of u_max found to have an external
  connection to the given cut vertex.
-
- OPTIMIZATION: The subtrees are processed by preorder visitation.  If
- a vertex is visited and has a lowpoint indicating that it and its
- descendants make no external connections, then we prune the subtree
- from the search, eliminating its descendants from consideration.
- Otherwise, if the vertex has an externalConnectionAncestor setting,
- which must have been made by a prior invocation of this function,
- then we use that setting.  If both of these tests fail, then
- we examine the vertex and push its children for consideration.
- This ensures that this procedure never explores a subtree more than
- once during the life of the K_{3,3} search algorithm.
-
- Note that if a subtree is explored and the desired external connection
- descendant to u_{max} is found, then a K_{3,3} will be found, so we only
- have to concern ourselves with subtrees that connect only to u_{max}.
- Between steps v and u_{max}, the subtree search is optimized by setting
- 'externalConnectionAncestor', and steps after u_{max} process ancestors
- of u_{max}.  Since this routine is only called if the cutVertex makes
- no external connections to ancestors of u_{max}, the lowpoint test
- prevents this subtree from being searched after step u_{max}.
  ****************************************************************************/
 
 int  _SearchForDescendantExternalConnection(graphP theGraph, K33SearchContext *context, int cutVertex, int u_max)
@@ -660,16 +639,15 @@ isolatorContextP IC = &theGraph->IC;
 int  u2 = _GetAdjacentAncestorInRange(theGraph, context, cutVertex, IC->v, u_max);
 int  listHead, child, descendant;
 
-/* Test cut vertex for external connection to descendant of u_max */
-
+	 // Test cutVertex for an external connection to descendant of u_max via direct back edge
      if (u2 != NIL)
          return u2;
 
-/* If there is no direct back edge connection from the cut vertex
-        to a vertex on the path between V and u_max, then we will
-        look for such a connection in the DFS subtrees rooted by
-        separated DFS children of the vertex (ignoring those whose
-        lowpoint indicates that they make no external connections) */
+     // If there is no direct back edge connection from the cut vertex
+     // to a vertex on the path between V and u_max, then we will
+     // look for such a connection in the DFS subtrees rooted by
+     // separated DFS children of the vertex (ignoring those whose
+     // lowpoint indicates that they make no external connections)
 
      // Begin by pushing the separated DFS children of the cut vertex with
      // lowpoints indicating connections to ancestors of the current vertex.
@@ -691,39 +669,25 @@ int  listHead, child, descendant;
          // then skip the subtree rooted by the vertex
          if (gp_GetVertexLowpoint(theGraph, descendant) < IC->v)
          {
-             // If a prior invocation has pre-calculated the result, use it.
-             if (context->VI[descendant].externalConnectionAncestor != NIL)
-             {
-                 // If the result is in the range we need, return it.  Otherwise, skip the subtree rooted by the vertex.
-                 if (context->VI[descendant].externalConnectionAncestor < IC->v &&
-                     context->VI[descendant].externalConnectionAncestor > u_max)
-                     return context->VI[descendant].externalConnectionAncestor;
-             }
+			 // Check the subtree root for the desired connection.
+			 u2 = _GetAdjacentAncestorInRange(theGraph, context, descendant, IC->v, u_max);
+			 if (u2 != NIL)
+				 return u2;
 
-             // If the subtree has not been explored, then explore it.
-             else
-             {
-                 // Check the subtree root for the desired connection.
-                 u2 = _GetAdjacentAncestorInRange(theGraph, context, descendant, IC->v, u_max);
-                 if (u2 != NIL)
-                     return u2;
+			 // Push each child as a new subtree root to be considered, except skip those whose lowpoint is too great.
+			 child = gp_GetVertexSortedDFSChildList(theGraph, descendant);
+			 while (child != NIL)
+			 {
+				 if (gp_GetVertexLowpoint(theGraph, child) < IC->v)
+					 sp_Push(theGraph->theStack, child);
 
-                 // Push each child as a new subtree root to be considered, except skip those whose lowpoint is too great.
-                 child = gp_GetVertexSortedDFSChildList(theGraph, descendant);
-                 while (child != NIL)
-                 {
-                     if (gp_GetVertexLowpoint(theGraph, child) < IC->v)
-                         sp_Push(theGraph->theStack, child);
-
-                     child = LCGetNext(theGraph->sortedDFSChildLists,
-                    		 	 	   gp_GetVertexSortedDFSChildList(theGraph, descendant), child);
-                 }
-             }
+				 child = LCGetNext(theGraph->sortedDFSChildLists,
+								   gp_GetVertexSortedDFSChildList(theGraph, descendant), child);
+			 }
          }
      }
 
-     // The only external connections from the cutVertex lead to u_max, so cache the result and return it.
-     context->VI[cutVertex].externalConnectionAncestor = u_max;
+     // The only external connections from the cutVertex lead to u_max, so return it.
      return u_max;
 }
 
