@@ -99,8 +99,6 @@ extern int  _AddAndMarkUnembeddedEdges(graphP theGraph);
 
 /* Private functions for K_{3,3} searching. */
 
-int  _SearchForK33(graphP theGraph, int I);
-
 int  _SearchForK33InBicomp(graphP theGraph, K33SearchContext *context, int I, int R);
 
 int  _RunExtraK33Tests(graphP theGraph, K33SearchContext *context);
@@ -127,152 +125,6 @@ int  _RestoreAndOrientReducedPaths(graphP theGraph, K33SearchContext *context);
 int  _IsolateMinorE5(graphP theGraph);
 int  _IsolateMinorE6(graphP theGraph, K33SearchContext *context);
 int  _IsolateMinorE7(graphP theGraph, K33SearchContext *context);
-
-/****************************************************************************
- _SearchForK33()
-
-  The strategy involves one special case in which, to achieve a linear time
-  bound, we must delay the discovery of a K_{3,3} that caused a Walkdown
-  failure prior to step I.  In such cases, vertex I was an ancestor with
-  a connection to the bicomp on which the Walkdown failed, but it would
-  have been too costly to find I at the time.  So, the bicomp was marked
-  as non-mergeable prior to some ancestor of I.  If this function is
-  invoked for step I, then we have found the connection from that bicomp
-  prior to reaching the limiting ancestor of I. The bicomp and I are
-  therefore part of a K_{3,3} that can now be isolated.
-
-  Otherwise, a Walkdown failure in step I with a non-empty merge stack
-  would have already resulted in an identified K_{3,3} by minor A, so
-  we must have an empty merge stack now.
-
-  We must first find all bicomp roots on which the Walkdown has failed
-  in step I.  The fwdArcList of I contains the forward arcs of the
-  back edges for I that we failed to embed.  Each forward arc leads to
-  a descendant of I that is in a DFS subtree rooted by a child of I,
-  where the child of I has the greatest DFI that is less than the DFI
-  of the descendant indicated by the forward arc.  Each bicomp root
-  that represents a vertex is uniquely associated with a DFS child
-  of the vertex, so once we know the child of I whose subtree contains
-  a descendant of I that the Walkdown couldn't reach, we can immediately
-  deduce the root copy of I on which the Walkdown failed.
-
-  For each such root copy of I, we test whether a K_{3,3} homemorph
-  can be isolated based on that bicomp.  If so, then we return it.
-  Otherwise, each bicomp can be reduced to a 4-cycle and the edges
-  that the Walkdown failed to embed can be discarded.
- ****************************************************************************/
-
-int  _SearchForK33(graphP theGraph, int I)
-{
-int  C1, C2, D, e, RetVal=OK, FoundOne;
-K33SearchContext *context = NULL;
-
-    gp_FindExtension(theGraph, K33SEARCH_ID, (void *)&context);
-    if (context == NULL)
-        return NOTOK;
-
-/* Before we begin with the standard array of K_{3,3} tests, we handle
-    one optimization case that may be left over from a prior step
-    of the embedding algorithm.  If the embedding stack is non-empty,
-    then the Walkdown either halted due to non-planarity minor A or
-    because of the merge blocking optimization (see CASE 3 in the
-    function RunExtraK33Tests()).  We test for the latter condition,
-    and if it is found, then we isolate a K_{3,3} and return. */
-
-     if (!sp_IsEmpty(theGraph->theStack))
-     {
-     int mergeBlocker;
-
-         if (_SearchForMergeBlocker(theGraph, context, I, &mergeBlocker) != OK)
-             return NOTOK;
-
-         if (mergeBlocker != NIL)
-         {
-             if (_FindK33WithMergeBlocker(theGraph, context, I, mergeBlocker) != OK)
-                 return NOTOK;
-
-             return NONEMBEDDABLE;
-         }
-     }
-
-     /* Each DFS child is listed in DFI order in V[I].sortedDFSChildList.
-        In V[I].fwdArcList, the forward arcs of all unembedded back edges are
-        in order by DFI of the descendant endpoint of the edge.
-
-        DFS descendants have a higher DFI than ancestors, so given two
-        successive children C1 and C2, if any forward arcs lead to a
-        vertex D such that DFI(C1) < DFI(D) < DFI(C2), then the Walkdown
-        failed to embed a back edge from I to a descendant D of C1. */
-
-     e = gp_GetVertexFwdArcList(theGraph, I);
-     D = gp_GetNeighbor(theGraph, e);
-
-     C1 = gp_GetVertexSortedDFSChildList(theGraph, I);
-
-     FoundOne = FALSE;
-
-     while (C1 != NIL && e != NIL)
-     {
-        C2 = LCGetNext(theGraph->sortedDFSChildLists,
-        			   gp_GetVertexSortedDFSChildList(theGraph, I), C1);
-
-        // If the edge e leads from I to a descendant D of C1,
-        // then D will be less than C2 (as explained above),
-        // so we search for a K_{3,3} in the bicomp rooted
-        // by the root copy of I associated with C1.
-        // (If C2 is NIL, then C1 is the last child)
-
-        if (D < C2 || C2 == NIL)
-        {
-        	FoundOne = TRUE;
-            RetVal = _SearchForK33InBicomp(theGraph, context, I, C1+theGraph->N);
-
-            // If something went wrong, NOTOK was returned;
-            // If a K_{3,3} was found, NONEMBEDDABLE was returned;
-            // If OK was returned, then only a K5 was found, so
-            // we continue searching any other bicomps on which
-            // the Walkdown failed.
-
-            if (RetVal != OK)
-             break;
-        }
-
-        // Skip the edges that lead to descendants of C1 to get to those
-        // edges that lead to descendants of C2.
-
-        if (C2 != NIL)
-        {
-            while (D < C2 && e != NIL)
-            {
-                e = gp_GetNextArc(theGraph, e);
-                if (e == gp_GetVertexFwdArcList(theGraph, I))
-                     e = NIL;
-                else D = gp_GetNeighbor(theGraph, e);
-            }
-        }
-
-        // Move the DFS child context to C2
-        C1 = C2;
-     }
-
-/* If we got through the loop with an OK value for each bicomp on
-     which the Walkdown failed, then we return OK to indicate that only
-     K5's were found (or there is a special case K_{3,3} that may be discovered
-     later based on a setting we made in the data structure).
-     The OK return allows the embedder to continue.
-
-     If a K_{3,3} is ever found (or if an error occured), then RetVal
-     will not be OK, and the loop terminates immediately so we can
-     return the appropriate value.  If a K_{3,3} is found, then we must
-     also handle the fact that some paths of the input graph may have
-     been reduced to single edges by prior _ReduceBicomp() calls.
-
-     NOTE: The variable FoundOne helps ensure we detect at least one
-        bicomp on which the Walkdown failed (this should always be
-        the case in an error-free implementation like this one!). */
-
-     return FoundOne ? RetVal : NOTOK;
-}
 
 /****************************************************************************
  _SearchForK33InBicomp()
@@ -939,9 +791,9 @@ int  listHead, child, J;
  sets a mergeBlocker rather than run _SearchForDescendantExternalConnection()
  in certain cases.  This procedure is called by MergeBicomps to test the
  embedding stack for a merge blocker before merging any biconnected components.
- If a merge blocker is found, then the embedder's Walkdown function is
- terminated and SearchForK33() is subsequently called.  The blocked merge
- point is then used as the basis for isolating a K_{3,3}.
+ If a merge blocker is found, then FindK33WithMergeBlocker() is called and
+ ultimately the embedder's Walkdown function is terminated since a K_{3,3}
+ is isolated.
 
  Returns OK on success (whether or not the search found a merge blocker)
          NOTOK on internal function failure
