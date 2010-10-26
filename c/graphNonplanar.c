@@ -191,27 +191,19 @@ int  N, X, Y, W, Px, Py, Z, DFSChild, RootId;
 
 int  _InitializeNonplanarityContext(graphP theGraph, int I, int R)
 {
-int  singleBicompMode =  (R == NIL) ? FALSE : TRUE;
-
 	 // Blank out the isolator context, then assign the input graph reference
      // and the current vertext I into the context.
      _ClearIsolatorContext(theGraph);
      theGraph->IC.v = I;
 
-     // The Walkdown halted on one or more bicomps without embedding all back
-     // edges to descendants of the root(s) of said bicomp(s).
-     // If the bicomp root has not been provided, we now find the root of one such bicomp.
-     if (!singleBicompMode)
-         R = _FindNonplanarityBicompRoot(theGraph);
-
-     // When in singleBicompMode, the bicomp root provided was the one on which
-     // the WalkDown was performed, but in the case of Minor A, the central bicomp
-     // of the minor is at the top of the stack, so R must be changed to that value.
-     else if (sp_NonEmpty(theGraph->theStack))
-         R = _FindNonplanarityBicompRoot(theGraph);
-
-     if (R == NIL)
-    	 return NOTOK;
+     // The bicomp root provided was the one on which the WalkDown was performed,
+     // but in the case of Minor A, the central bicomp of the minor is at the top
+     // of the stack, so R must be changed to that value.
+	 if (sp_NonEmpty(theGraph->theStack))
+	 {
+		 int dummy;
+		 sp_Pop2(theGraph->theStack, R, dummy);
+	 }
 
      theGraph->IC.r = R;
 
@@ -220,12 +212,8 @@ int  singleBicompMode =  (R == NIL) ? FALSE : TRUE;
      if (_OrientVerticesInBicomp(theGraph, R, 1) != OK)
     	 return NOTOK;
 
-     // In singleBicompMode, clear the visited members of all vertex and edge records.
-     if (singleBicompMode)
-     {
-    	 if (_ClearVisitedFlagsInBicomp(theGraph, R) != OK)
-        	 return NOTOK;
-     }
+	 if (_ClearVisitedFlagsInBicomp(theGraph, R) != OK)
+		 return NOTOK;
 
      // Now we find the active vertices along both external face paths
      // extending from R.
@@ -293,72 +281,6 @@ int  _SetVertexTypesForMarkingXYPath(graphP theGraph)
 	}
 
 	return OK;
-}
-
-/****************************************************************************
- _FindNonplanarityBicompRoot()
-
- This procedure finds the root copy R of the current vertex on which the
- Walkdown failed (whether it failed while traversing the bicomp rooted by
- R or some descendant bicomp is determined later).
-
- We iterate the forward cycle edges of the vertex I looking for a forward
- edge (I, W) that was not embedded.  Once it is found, we figure out which
- bicomp rooted by a root copy of I contains W or contains a DFS ancestor of W.
-
- This turns out to be an easy test.  The desired bicomp is rooted by the DFS
- tree edge (I, C) with the largest value of C that does not exceed W.  C is
- a DFS ancestor of Z.
-
- Return: The desired root copy, or NIL on error.
- ****************************************************************************/
-
-int  _FindNonplanarityBicompRoot(graphP theGraph)
-{
-int  R, tempChild, fwdArc, W=NIL, C=NIL, I=theGraph->IC.v;
-
-/* If the stack is non-empty, then the Walkdown stopped on a descendant
-    bicomp, not one rooted by I.  We need to get that root before the
-    stack is destroyed by other routines. */
-
-     if (sp_NonEmpty(theGraph->theStack))
-     {
-         int e;
-
-         sp_Pop2(theGraph->theStack, R, e);
-         return R;
-     }
-
-/* Obtain the forward arc of an unembedded back edge from I to one of its
-    descendants (edges are removed from the forward arc list as they are
-    embedded, so the list will be empty if all edges were embedded). */
-
-    if ((fwdArc = gp_GetVertexFwdArcList(theGraph, I)) == NIL)
-        return NIL;
-
-    W = gp_GetNeighbor(theGraph, fwdArc);
-
-/* Find the greatest DFS child C of I that is less than W.  This will
-    give us the ancestor of W that is a child of I. */
-
-    tempChild = gp_GetVertexSortedDFSChildList(theGraph, I);
-
-    while (tempChild != NIL)
-    {
-        if (tempChild > C && tempChild < W)
-            C = tempChild;
-
-        tempChild = LCGetNext(theGraph->sortedDFSChildLists,
-                              gp_GetVertexSortedDFSChildList(theGraph, I), tempChild);
-    }
-
-    if (C == NIL) return NIL;
-
-/* The root vertex of a bicomp rooted by edge (I, C) is located at
-        position C+N in our data structures */
-
-     R = C + theGraph->N;
-     return R;
 }
 
 /****************************************************************************
