@@ -606,8 +606,8 @@ int  _K33Search_MergeBicomps(graphP theGraph, int I, int RootVertex, int W, int 
 
     if (context != NULL)
     {
-        /* If the merge is blocked, then the Walkdown is terminated so a
-                K3,3 can be isolated by _SearchForK33() */
+        /* If the merge is blocked, then a K_{3,3} homeomorph is isolated,
+           and NONEMBEDDABLE is returned so that the Walkdown terminates */
 
         if (theGraph->embedFlags == EMBEDFLAGS_SEARCHFORK33)
         {
