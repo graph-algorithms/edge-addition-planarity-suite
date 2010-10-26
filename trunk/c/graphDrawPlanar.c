@@ -624,41 +624,17 @@ int e, J, JTwin, v1, v2, pos1, pos2;
  ********************************************************************/
 int _GetNextExternalFaceVertex(graphP theGraph, int curVertex, int *pPrevLink)
 {
-    int nextVertex, nextPrevLink;
-
-    nextVertex = gp_GetExtFaceVertex(theGraph, curVertex, 1 ^ *pPrevLink);
+    int nextVertex = gp_GetExtFaceVertex(theGraph, curVertex, 1 ^ *pPrevLink);
 
     // If the two links in the new vertex are not equal, then only one points
     // back to the current vertex, and it is the new prev link.
+    // Otherwise, the vertex is in a consistently oriented single-edge bicomp, so
+    // no adjustment of the prev link is needed (due to the consistent orientation).
     if (gp_GetExtFaceVertex(theGraph, nextVertex, 0) != gp_GetExtFaceVertex(theGraph, nextVertex, 1))
     {
-        nextPrevLink = gp_GetExtFaceVertex(theGraph, nextVertex, 0)==curVertex ? 0 : 1;
-    }
-    else
-    {
-        int inverted = 0;
-
-        // One of the two vertices is the root of the bicomp.  The non-root may
-        // not have the same orientation as the root because a consistent orientation
-        // is not imposed until post-processing of the planarity test.  But the
-        // planarity test does special-case tracking of orientation inversions of
-        // singleton bicomps in the inversionFlag of the non-root vertex.
-
-        if (nextVertex < theGraph->N)
-             inverted = gp_GetExtFaceInversionFlag(theGraph, nextVertex);
-        else inverted = gp_GetExtFaceInversionFlag(theGraph, curVertex);
-
-        // If the curVertex and nextVertex are in a singleton and have the same
-        // orientation, then the prev link from the current vertex is the prev
-        // link from the next vertex because you'd just be going around in a
-        // small circle using the same links for prev every time.
-        // If their orientations are inverted, then we just invert the prev link.
-
-        nextPrevLink = inverted ? (1^*pPrevLink) : (*pPrevLink);
+    	*pPrevLink = gp_GetExtFaceVertex(theGraph, nextVertex, 0)==curVertex ? 0 : 1;
     }
 
-    // Return the information
-    *pPrevLink = nextPrevLink;
     return nextVertex;
 }
 
@@ -820,23 +796,6 @@ int WPredNextLink = 1^WPrevLink,
 
         /* The tie is resolved so clear the flags*/
         context->VI[W].tie[WPrevLink] = context->VI[WPred].tie[WPredNextLink] = NIL;
-    }
-    else
-    {
-    	int c = BicompRoot - context->theGraph->N;
-    	int I = gp_GetVertexParent(context->theGraph, c);
-    	int L = gp_GetVertexLowpoint(context->theGraph, c);
-        gp_LogLine(gp_MakeLogStr3("Child=%d, I=%d, L=%d", c, I, L));
-
-        // Every inactive vertex should be in tie state, except if this is the
-        // second Walkdown traversal over a pertinent but not future pertinent
-        // biconnected component.  The first traversal breaks all the ties,
-        // and the second traversal, if performed, walks over the inactive
-        // vertices a second time.  This is OK, but if the biconnected component
-        // is future pertinent, then this could not have happened, in which
-        // case we detect/report an error.
-        if (L < I)
-        	return NOTOK;
     }
 
 	gp_LogLine("graphDrawPlanar.c/_BreakTie() end\n");

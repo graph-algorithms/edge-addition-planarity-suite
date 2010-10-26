@@ -1297,7 +1297,6 @@ int  _K4_ReducePathToEdge(graphP theGraph, K4SearchContext *context, int edgeTyp
      {
          gp_SetExtFaceVertex(theGraph, R, 1^Rlink, A);
          gp_SetExtFaceVertex(theGraph, A, 1^Alink, R);
-         gp_ClearExtFaceInversionFlag(theGraph, A);
      }
 
 	 return e_R;

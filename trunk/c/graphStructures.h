@@ -294,38 +294,21 @@ typedef vertexRec * vertexRecP;
 
  It is also possible to embed the "short circuit" edges, but this approach
  creates a better separation of concerns, imparts greater clarity, and
- removes exceptionalities for handling additional false edges.
+ removes exceptionalities for handling additional fake "short circuit" edges.
 
- vertex[2]: The two adjacent vertices along the external face, ignoring
-            inactive vertices.
- inversionFlag: In the special case where the external face is reduced to
-            two vertices, a virtual vertex bicomp root R plus one non-virtual
-            vertex W, then vertex[0] becomes equal to vertex[1], so this
-            flag is used to indicate whether W has an inverse orientation
-            from R.  This is needed when (R, W) is eventually merged into
-            a larger bicomp.
-            This is distinct from the edge inverted flag, which takes a record
-            of whether a bicomp was flipped when it was merged so that the
-            imparting of a consistent orientation of vertices in a bicomp
-            can be deferred to a post-processing step of the embedding method.
+ vertex[2]: The two adjacent vertices along the external face, possibly
+ 	 	    short-circuiting paths of inactive vertices.
 */
 
 typedef struct
 {
     int vertex[2];
-    int inversionFlag;
 } extFaceLinkRec;
 
 typedef extFaceLinkRec * extFaceLinkRecP;
 
 #define gp_GetExtFaceVertex(theGraph, v, link) (theGraph->extFace[v].vertex[link])
 #define gp_SetExtFaceVertex(theGraph, v, link, theVertex) (theGraph->extFace[v].vertex[link] = theVertex)
-
-#define gp_GetExtFaceInversionFlag(theGraph, v) (theGraph->extFace[v].inversionFlag)
-#define gp_ClearExtFaceInversionFlag(theGraph, v) (theGraph->extFace[v].inversionFlag = 0)
-#define gp_SetExtFaceInversionFlag(theGraph, v) (theGraph->extFace[v].inversionFlag = 1)
-#define gp_ResetExtFaceInversionFlag(theGraph, v, flag) (theGraph->extFace[v].inversionFlag = flag)
-#define gp_XorExtFaceInversionFlag(theGraph, v) (theGraph->extFace[v].inversionFlag ^= 1)
 
 /********************************************************************
  Vertex Info Structure Definition.
