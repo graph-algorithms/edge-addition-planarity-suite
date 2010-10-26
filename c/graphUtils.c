@@ -284,7 +284,6 @@ int I, J, Vsize, Esize, stackSize;
      {
          gp_SetExtFaceVertex(theGraph, I, 0, NIL);
          gp_SetExtFaceVertex(theGraph, I, 1, NIL);
-         gp_ClearExtFaceInversionFlag(theGraph, I);
      }
 
      _ClearIsolatorContext(theGraph);
@@ -326,7 +325,6 @@ int  I, J, N = theGraph->N, Vsize = N+theGraph->NV, Esize = theGraph->arcCapacit
      {
          gp_SetExtFaceVertex(theGraph, I, 0, NIL);
          gp_SetExtFaceVertex(theGraph, I, 1, NIL);
-         gp_ClearExtFaceInversionFlag(theGraph, I);
      }
 
      _ClearIsolatorContext(theGraph);
@@ -1002,7 +1000,6 @@ int  I, J, N = srcGraph->N, Vsize = N+srcGraph->NV, Esize = srcGraph->arcCapacit
      {
     	 gp_SetExtFaceVertex(dstGraph, I, 0, gp_GetExtFaceVertex(srcGraph, I, 0));
     	 gp_SetExtFaceVertex(dstGraph, I, 1, gp_GetExtFaceVertex(srcGraph, I, 1));
-         gp_ResetExtFaceInversionFlag(dstGraph, I, gp_GetExtFaceInversionFlag(srcGraph, I));
      }
 
      // Give the dstGraph the same size and intrinsic properties

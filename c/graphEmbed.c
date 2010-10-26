@@ -670,9 +670,13 @@ int  extFaceVertex;
          gp_SetExtFaceVertex(theGraph, Z, ZPrevLink, extFaceVertex);
 
          if (gp_GetExtFaceVertex(theGraph, extFaceVertex, 0) == gp_GetExtFaceVertex(theGraph, extFaceVertex, 1))
-            gp_SetExtFaceVertex(theGraph, extFaceVertex, Rout ^ gp_GetExtFaceInversionFlag(theGraph, extFaceVertex), Z);
+        	 // When (R, extFaceVertex) form a singleton bicomp, they have the same orientation, so the Rout link in extFaceVertex
+        	 // is the one that has to now point back to Z
+        	 gp_SetExtFaceVertex(theGraph, extFaceVertex, Rout, Z);
          else
-            gp_SetExtFaceVertex(theGraph, extFaceVertex, gp_GetExtFaceVertex(theGraph, extFaceVertex, 0) == R ? 0 : 1, Z);
+        	 // When R and extFaceVertex are not alone in the bicomp, then they may not have the same orientation, so the
+        	 // ext face link that should point to Z is whichever one pointed to R, since R is a root copy of Z.
+             gp_SetExtFaceVertex(theGraph, extFaceVertex, gp_GetExtFaceVertex(theGraph, extFaceVertex, 0) == R ? 0 : 1, Z);
 
          /* If the path used to enter Z is opposed to the path
             used to exit R, then we have to flip the bicomp
@@ -973,18 +977,8 @@ int  RootEdgeChild = RootVertex - theGraph->N;
          // for core planarity) then the external face links of W will be equal
          if (gp_GetExtFaceVertex(theGraph, W, 0) == gp_GetExtFaceVertex(theGraph, W, 1))
          {
-        	 // In which case, we treat the bicomp external face as if it were a cycle of two edges
+        	 // So we handle the bicomp external face as a cycle of two edges
              WPrevLink = 1^RootSide;
-
-             // Because it is slower, we don't bother with the inversionFlag because WalkDown is
-             // never called on a singleton bicomp with an inverted orientation.
-             // Before the first Walkdown, the bicomp truly is a single edge with proper orientation.
-             // An extension algorithm does call Walkdown again in post-processing, but only in the
-             // case where it still contains pertinent vertices.  If a bicomp becomes a singleton,
-             // then its pertinence is resolved because both Walkdown traversals reached the same
-             // vertex.  Thus, only the inner loop below accommodates the inversionFlag when it walks
-             // down to a *pertinent* child biconnected component
-             // WPrevLink = gp_GetExtFaceInversionFlag(theGraph, W) ? RootSide : 1^RootSide;
          }
          else
          {
@@ -1025,16 +1019,6 @@ int  RootEdgeChild = RootVertex - theGraph->N;
                  XPrevLink = gp_GetExtFaceVertex(theGraph, X, 1)==R ? 1 : 0;
                  Y = gp_GetExtFaceVertex(theGraph, R, 1);
                  YPrevLink = gp_GetExtFaceVertex(theGraph, Y, 0)==R ? 0 : 1;
-
-                 // Special case: If this is a bicomp with only two external face vertices, then
-                 // it could be just an edge, or its external face could've been short-circuited.
-                 // In the latter case, we correct for possible inverse orientation between the root
-                 // and the non-root vertex due to the relaxed orientation method.
-                 if (X == Y && gp_GetExtFaceInversionFlag(theGraph, X))
-                 {
-                     XPrevLink = 0;
-                     YPrevLink = 1;
-                 }
 
                  // Now we implement the Walkdown's simple path selection rules!
                  // Preferentially select an internally active vertex (only pertinent, not future pertinent)
@@ -1095,24 +1079,27 @@ int  RootEdgeChild = RootVertex - theGraph->N;
                          return NOTOK;
                  }
 
-                 // At this point, we know that W is not inactive, but its pertinentAdjacencyInfo is clear,
-                 // and it has no pertinent child bicomps.  Therefore, it is a stopping vertex for the
-                 // Walkdown (future pertinent but not pertinent).
+                 // At this point, we know that W is not inactive, but nor is it pertinent, so it is
+                 // only future pertinent and therefore a stopping vertex for the Walkdown traversal.
                  else
                  {
                 	 // Create an external face short-circuit between RootVertex and the stopping vertex W
-                	 // so that future steps do not walk down the path of inactive vertices between them
+                	 // so that future steps do not walk down a long path of inactive vertices between them.
+                	 // As a special case, we ensure that the external face is not reduced to just two
+                	 // vertices, W and RootVertex, because it would then become a challenge to determine
+                	 // whether W has the same orientation as RootVertex.
+                	 // So, if the other side of RootVertex is already attached to W, then we simply push
+                	 // W back one vertex so that the external face will have at least three vertices.
+                	 if (gp_GetExtFaceVertex(theGraph, RootVertex, 1^RootSide) == W)
+                	 {
+                	     X = W;
+                	     W = gp_GetExtFaceVertex(theGraph, W, WPrevLink);
+                	     WPrevLink = gp_GetExtFaceVertex(theGraph, W, 0) == X ? 1 : 0;
+                	 }
                      gp_SetExtFaceVertex(theGraph, RootVertex, RootSide, W);
                      gp_SetExtFaceVertex(theGraph, W, WPrevLink, RootVertex);
 
-                     // If the bicomp is reduced to having only two external face vertices (the root and W),
-                     // then we need to record whether the orientation of W is inverted relative to the root.
-                     if (gp_GetExtFaceVertex(theGraph, W, 0) == gp_GetExtFaceVertex(theGraph, W, 1) &&
-                         WPrevLink == RootSide)
-                          gp_SetExtFaceInversionFlag(theGraph, W);
-                     else gp_ClearExtFaceInversionFlag(theGraph, W);
-
-                     // Terminate the Walkdown traversal since W is a stopping vertex
+                     // Terminate the Walkdown traversal since it encountered the stopping vertex
                      break;
                  }
              }
