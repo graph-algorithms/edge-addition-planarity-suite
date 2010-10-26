@@ -62,7 +62,7 @@ typedef K33Search_EdgeRec * K33Search_EdgeRecP;
 // Additional equipment for each primary vertex
 typedef struct
 {
-        int separatedDFSChildList, backArcList, externalConnectionAncestor, mergeBlocker;
+        int separatedDFSChildList, backArcList, mergeBlocker;
 } K33Search_VertexInfo;
 
 typedef K33Search_VertexInfo * K33Search_VertexInfoP;
