@@ -97,9 +97,9 @@ typedef struct
 
 typedef edgeRec * edgeRecP;
 
-// An edge is represented by two consecutive edge records (arcs)
-// in the edge array E.
-#define gp_GetTwinArc(theGraph, Arc) (((Arc) & 1) ? (Arc)-1 : (Arc)+1)
+// An edge is represented by two consecutive edge records (arcs) in the edge array E.
+// If an even number, xor 1 will add one; if an odd number, xor 1 will subtract 1
+#define gp_GetTwinArc(theGraph, Arc) ((Arc) ^ 1)
 
 // Accessors for link[] array
 #define gp_GetNextArc(theGraph, e) (theGraph->E[e].link[0])
