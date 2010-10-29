@@ -190,6 +190,8 @@ void _K4Search_ClearStructures(K4SearchContext *context)
         // Once NULL or allocated, free() or LCFree() can do the job
         context->E = NULL;
 
+        context->handlingBlockedBicomp = FALSE;
+
         context->initialized = 1;
     }
     else
@@ -199,6 +201,7 @@ void _K4Search_ClearStructures(K4SearchContext *context)
             free(context->E);
             context->E = NULL;
         }
+        context->handlingBlockedBicomp = FALSE;
     }
 }
 
@@ -433,12 +436,41 @@ int  _K4Search_HandleBlockedBicomp(graphP theGraph, int I, int RootVertex, int R
     	// Otherwise, if invoked on a child bicomp rooted by a virtual copy of I,
     	// then we search for a K4 homeomorph, and if OK is returned, then that indicates
     	// the blockage has been cleared and it is OK to Walkdown the bicomp.
-    	// But the Walkdown finished, already, so we launch it again.  This is tail
-    	// recursive, which chould be avoided easily enough with a little more work.
+    	// But the Walkdown finished, already, so we launch it again.
+    	// If the Walkdown returns OK then all forward arcs were embedded.  If NONEMBEDDABLE
+    	// is returned, then the bicomp got blocked again, so we have to reiterate the K4 search
     	else
     	{
-			if ((RetVal = _SearchForK4InBicomp(theGraph, context, I, RootVertex)) == OK)
-				RetVal = theGraph->functions.fpWalkDown(theGraph, I, RootVertex);
+    		// If Walkdown has recursively called this handler on the bicomp rooted by RootVertex,
+    		// then it is still blocked, so we just return NONEMBEDDABLE, which causes Walkdown to
+    		// return to the loop below and signal that the loop should invoke the Walkdown again.
+    		if (context->handlingBlockedBicomp)
+    			return NONEMBEDDABLE;
+
+    		context->handlingBlockedBicomp = TRUE;
+    		do {
+    			// Detect whether bicomp can be used to find a K4 homeomorph.  It it does, then
+    			// it returns NONEMBEDDABLE so we break the search because we found the desired K4
+    			// If OK is returned, then the blockage was cleared and it is OK to Walkdown again.
+    			if ((RetVal = _SearchForK4InBicomp(theGraph, context, I, RootVertex)) != OK)
+    				break;
+
+    			// Walkdown again to embed more edges.  If Walkdown returns OK, then all remaining
+    			// edges to its descendants are embedded, so we'll get out of this loop. If Walkdown
+    			// detects that it still has not embedded all the edges to descendants of the bicomp's
+    			// root edge child, then Walkdown calls this routine again, and the above non-reentrancy
+    			// code returns NONEMBEDDABLE, causing this loop to search again for a K4.
+    			theGraph->IC.minorType = 0;
+    			RetVal = theGraph->functions.fpWalkDown(theGraph, I, RootVertex);
+
+    			// Except if the Walkdown returns NONEMBEDDABLE due to finding a K4 homeomorph entangled
+    			// with a descendant bicomp (the R != RootVertex case above), then it was found
+    			// entangled with Minor A, so we can stop the search if minor A is detected
+    			if (theGraph->IC.minorType & MINORTYPE_A)
+    				break;
+
+    		} while (RetVal == NONEMBEDDABLE);
+			context->handlingBlockedBicomp = FALSE;
     	}
 
     	return RetVal;
