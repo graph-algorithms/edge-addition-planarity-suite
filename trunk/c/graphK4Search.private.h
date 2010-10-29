@@ -86,6 +86,9 @@ typedef struct
     // Overloaded function pointers
     graphFunctionTable functions;
 
+    // Internal variable for converting a tail recursion into a simple loop
+    int handlingBlockedBicomp;
+
 } K4SearchContext;
 
 #ifdef __cplusplus
