@@ -267,8 +267,8 @@ printf("SortVertices in %.3lf seconds.\n", platform_GetDuration(start,end));
 
 /********************************************************************
  gp_LowpointAndLeastAncestor()
-        leastAncestor: min(DFI of neighbors connected by backedge)
-        Lowpoint: min(leastAncestor, Lowpoint of DFSChildren)
+        leastAncestor(v): min(v, ancestor neighbors of v, excluding parent)
+        Lowpoint(v): min(leastAncestor(v), Lowpoint of DFS children of v)
 
  Lowpoint is computed via a post-order traversal of the DFS tree.
  We push the root of the DFS tree, then we loop while the stack is not empty.
