@@ -357,8 +357,6 @@ platform_GetTime(start);
         firstChild = child = gp_GetVertexSortedDFSChildList(theGraph, I);
         gp_SetVertexFuturePertinentChild(theGraph, I, firstChild);
 		leastValue = gp_GetVertexLeastAncestor(theGraph, I);
-		if (leastValue > I)
-			leastValue = I;
 	    while (child != NIL)
 	    {
 	    	if (leastValue > gp_GetVertexLowpoint(theGraph, child))
