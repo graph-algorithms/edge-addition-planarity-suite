@@ -499,10 +499,10 @@ void _InitVertexRec(graphP theGraph, int I)
 void _InitVertexInfo(graphP theGraph, int I)
 {
     gp_SetVertexParent(theGraph, I, NIL);
-    gp_SetVertexLeastAncestor(theGraph, I, theGraph->N);
-    gp_SetVertexLowpoint(theGraph, I, I);
+    gp_SetVertexLeastAncestor(theGraph, I, NIL);
+    gp_SetVertexLowpoint(theGraph, I, NIL);
 
-    gp_SetVertexVisitedInfo(theGraph, I, theGraph->N);
+    gp_SetVertexVisitedInfo(theGraph, I, NIL);
     gp_SetVertexPertinentAdjacencyInfo(theGraph, I, NIL);
     gp_SetVertexPertinentBicompList(theGraph, I, NIL);
     gp_SetVertexFuturePertinentChild(theGraph, I, NIL);

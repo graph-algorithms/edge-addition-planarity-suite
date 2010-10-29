@@ -279,6 +279,9 @@ platform_GetTime(start);
                 	gp_SetLastArc(theGraph, R, e);
 				}
 
+				// (5) Initialize the least ancestor value
+				gp_SetVertexLeastAncestor(theGraph, u, gp_GetVertexIndex(theGraph, u));
+
 				// Push edges to all unvisited neighbors. These will be either
 				// tree edges to children or forward arcs of back edges
 				// Edges not pushed are marked as back edges here, except the
