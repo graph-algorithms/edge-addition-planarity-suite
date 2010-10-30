@@ -167,12 +167,12 @@ void WriteTestFiles(int n, int mod)
 {
 	char filename[64];
 	FILE *outfile;
-	int i, j;
+	int k, e;
 	int maxe=n*(n-1)/2;
 
-	for (i = 0; i < mod; i++)
+	for (k = 0; k < mod; k++)
 	{
-		sprintf(filename, "test_n%02d\\test_n%02d_mod%02d.bat", n, n, i);
+		sprintf(filename, "test_n%02d\\test_n%02d_mod%02d.bat", n, n, k);
 		outfile = fopen(filename, "wt");
 		if (outfile == NULL)
 		{
@@ -180,10 +180,10 @@ void WriteTestFiles(int n, int mod)
 			return;
 		}
 
-		for (j = 0; j <= maxe; j++)
+		for (e = 0; e <= maxe; e++)
 		{
-			sprintf(filename, "results\\result_%02d_%02d_%02d_%02d_%02d.txt", n, j, j, mod, i);
-			fprintf(outfile, "..\\planarity -gen -a %d %d %d %d %d > %s\n", n, j, j, mod, i, filename);
+			sprintf(filename, "results\\result_%02d_%02d_%02d_%02d_%02d.txt", n, e, e, mod, k);
+			fprintf(outfile, "..\\planarity -gen -a %d %d %d %d %d > %s\n", n, e, e, mod, k, filename);
 		}
 		fclose(outfile);
 	}

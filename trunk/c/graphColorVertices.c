@@ -404,7 +404,7 @@ int gp_GetNumColorsUsed(graphP theGraph)
 
 int gp_ColorVerticesIntegrityCheck(graphP theGraph, graphP origGraph)
 {
-	int I, J, w;
+	int v, w, J;
     ColorVerticesContext *context = (ColorVerticesContext *) gp_GetExtension(theGraph, COLORVERTICES_ID);
 
     if (theGraph == NULL || origGraph == NULL || context == NULL)
@@ -419,13 +419,13 @@ int gp_ColorVerticesIntegrityCheck(graphP theGraph, graphP origGraph)
     if (_TestSubgraph(origGraph, theGraph) != TRUE)
         return NOTOK;
 
-    for (I=0; I < theGraph->N; I++)
+    for (v=0; v < theGraph->N; v++)
     {
-        J = gp_GetFirstArc(theGraph, I);
+        J = gp_GetFirstArc(theGraph, v);
         while (J != NIL)
         {
              w = gp_GetNeighbor(theGraph, J);
-             if (context->color[I] < 0 || context->color[I] == context->color[w])
+             if (context->color[v] < 0 || context->color[v] == context->color[w])
             	 return NOTOK;
 
              J = gp_GetNextArc(theGraph, J);

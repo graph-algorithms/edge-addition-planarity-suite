@@ -62,7 +62,7 @@ graphP MakeGraph(int Size, char command);
 int  RandomGraphs(char command, int NumGraphs, int SizeOfGraphs)
 {
 char theFileName[256];
-int  I, countUpdateFreq;
+int  K, countUpdateFreq;
 int Result=OK, MainStatistic=0;
 int  ObstructionMinorFreqs[NUM_MINORS];
 graphP theGraph=NULL, origGraph=NULL;
@@ -82,8 +82,8 @@ int ReuseGraphs = TRUE;
    	 }
 
      // Initialize a secondary statistics array
-     for (I=0; I<NUM_MINORS; I++)
-          ObstructionMinorFreqs[I] = 0;
+     for (K=0; K < NUM_MINORS; K++)
+          ObstructionMinorFreqs[K] = 0;
 
    	 // Seed the random number generator with "now". Do it after any prompting
    	 // to tie randomness to human process of answering the prompt.
@@ -105,13 +105,13 @@ int ReuseGraphs = TRUE;
      platform_GetTime(start);
 
      // Generate and process the number of graphs requested
-     for (I=0; I < NumGraphs; I++)
+     for (K=0; K < NumGraphs; K++)
      {
           if ((Result = gp_CreateRandomGraph(theGraph)) == OK)
           {
               if (tolower(OrigOut)=='y')
               {
-                  sprintf(theFileName, "random\\%d.txt", I%10);
+                  sprintf(theFileName, "random\\%d.txt", K%10);
                   gp_Write(theGraph, theFileName, WRITE_ADJLIST);
               }
 
@@ -130,13 +130,13 @@ int ReuseGraphs = TRUE;
 
                        if (tolower(EmbeddableOut) == 'y')
                        {
-                           sprintf(theFileName, "embedded\\%d.txt", I%10);
+                           sprintf(theFileName, "embedded\\%d.txt", K%10);
                            gp_Write(theGraph, theFileName, WRITE_ADJMATRIX);
                        }
 
                        if (tolower(AdjListsForEmbeddingsOut) == 'y')
                        {
-                           sprintf(theFileName, "adjlist\\%d.txt", I%10);
+                           sprintf(theFileName, "adjlist\\%d.txt", K%10);
                            gp_Write(theGraph, theFileName, WRITE_ADJLIST);
                        }
                   }
@@ -166,7 +166,7 @@ int ReuseGraphs = TRUE;
 
                            if (tolower(ObstructedOut) == 'y')
                            {
-                               sprintf(theFileName, "obstructed\\%d.txt", I%10);
+                               sprintf(theFileName, "obstructed\\%d.txt", K%10);
                                gp_Write(theGraph, theFileName, WRITE_ADJMATRIX);
                            }
                        }
@@ -183,7 +183,7 @@ int ReuseGraphs = TRUE;
               // If there is an error in processing, then write the file for debugging
               if (Result != OK && Result != NONEMBEDDABLE)
               {
-                   sprintf(theFileName, "error\\%d.txt", I%10);
+                   sprintf(theFileName, "error\\%d.txt", K%10);
                    gp_Write(origGraph, theFileName, WRITE_ADJLIST);
               }
           }
@@ -193,9 +193,9 @@ int ReuseGraphs = TRUE;
           ReinitializeGraph(&origGraph, ReuseGraphs, command);
 
           // Show progress, but not so often that it bogs down progress
-          if (quietMode == 'n' && (I+1) % countUpdateFreq == 0)
+          if (quietMode == 'n' && (K+1) % countUpdateFreq == 0)
           {
-              fprintf(stdout, "%d\r", I+1);
+              fprintf(stdout, "%d\r", K+1);
               fflush(stdout);
           }
 
@@ -231,13 +231,13 @@ int ReuseGraphs = TRUE;
          sprintf(Line, "Num Embedded=%d.\n", MainStatistic);
          Message(Line);
 
-         for (I=0; I<5; I++)
+         for (K=0; K<5; K++)
          {
         	  // Outerplanarity does not produces minors C and D
-        	  if (embedFlags == EMBEDFLAGS_OUTERPLANAR && (I==2 || I==3))
+        	  if (embedFlags == EMBEDFLAGS_OUTERPLANAR && (K==2 || K==3))
         		  continue;
 
-              sprintf(Line, "Minor %c = %d\n", I+'A', ObstructionMinorFreqs[I]);
+              sprintf(Line, "Minor %c = %d\n", K+'A', ObstructionMinorFreqs[K]);
               Message(Line);
          }
 
@@ -246,9 +246,9 @@ int ReuseGraphs = TRUE;
              sprintf(Line, "\nNote: E1 are added to C, E2 are added to A, and E=E3+E4+K5 homeomorphs.\n");
              Message(Line);
 
-             for (I=5; I<NUM_MINORS; I++)
+             for (K=5; K<NUM_MINORS; K++)
              {
-                  sprintf(Line, "Minor E%d = %d\n", I-4, ObstructionMinorFreqs[I]);
+                  sprintf(Line, "Minor E%d = %d\n", K-4, ObstructionMinorFreqs[K]);
                   Message(Line);
              }
          }

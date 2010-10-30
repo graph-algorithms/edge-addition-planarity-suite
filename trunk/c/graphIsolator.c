@@ -53,11 +53,11 @@ extern void _ClearVisitedFlags(graphP);
 extern int  _GetNextVertexOnExternalFace(graphP theGraph, int curVertex, int *pPrevLink);
 extern int  _JoinBicomps(graphP theGraph);
 
-extern int _ChooseTypeOfNonplanarityMinor(graphP theGraph, int I, int R);
+extern int _ChooseTypeOfNonplanarityMinor(graphP theGraph, int v, int R);
 
 /* Private function declarations (exported within system) */
 
-int _IsolateKuratowskiSubgraph(graphP theGraph, int I, int R);
+int _IsolateKuratowskiSubgraph(graphP theGraph, int v, int R);
 
 int  _FindUnembeddedEdgeToAncestor(graphP theGraph, int cutVertex,
                                    int *pAncestor, int *pDescendant);
@@ -93,7 +93,7 @@ int  _AddAndMarkUnembeddedEdges(graphP theGraph);
  gp_IsolateKuratowskiSubgraph()
  ****************************************************************************/
 
-int  _IsolateKuratowskiSubgraph(graphP theGraph, int I, int R)
+int  _IsolateKuratowskiSubgraph(graphP theGraph, int v, int R)
 {
 int  RetVal;
 
@@ -106,7 +106,7 @@ int  RetVal;
 /* Next, we determine which of the non-planarity Minors was encountered
         and the principal bicomp on which the isolator will focus attention. */
 
-     if (_ChooseTypeOfNonplanarityMinor(theGraph, I, R) != OK)
+     if (_ChooseTypeOfNonplanarityMinor(theGraph, v, R) != OK)
          return NOTOK;
 
      if (_InitializeIsolatorContext(theGraph) != OK)
@@ -340,7 +340,7 @@ isolatorContextP IC = &theGraph->IC;
 /****************************************************************************
  _IsolateMinorE2()
 
- If uZ (which is the ancestor of I that is adjacent to Z) is a
+ If uZ (which is the ancestor of v that is adjacent to Z) is a
  descendant of both uY and uX, then we reduce to Minor A
  ****************************************************************************/
 
@@ -425,12 +425,12 @@ isolatorContextP IC = &theGraph->IC;
 /****************************************************************************
  _GetLeastAncestorConnection()
 
- This function searches for an ancestor of the current vertex I adjacent by a
+ This function searches for an ancestor of the current vertex v adjacent by a
  cycle edge to the given cutVertex or one of its DFS descendants appearing in
  a separated bicomp. The given cutVertex is assumed to be externally active
  such that either the leastAncestor or the lowpoint of a separated DFS child
- is less than I.  We obtain the minimum possible connection from the cutVertex
- to an ancestor of I.
+ is less than v.  We obtain the minimum possible connection from the cutVertex
+ to an ancestor of v.
  ****************************************************************************/
 
 int  _GetLeastAncestorConnection(graphP theGraph, int cutVertex)
@@ -455,14 +455,14 @@ int  _GetLeastAncestorConnection(graphP theGraph, int cutVertex)
 /****************************************************************************
  _FindUnembeddedEdgeToAncestor()
 
- This function searches for an ancestor of the current vertex I adjacent by a
+ This function searches for an ancestor of the current vertex v adjacent by a
  cycle edge to the given cutVertex or one of its DFS descendants appearing in
  a separated bicomp.
 
  The given cutVertex is assumed to be externally active such that either the
- leastAncestor or the lowpoint of a separated DFS child is less than I.
+ leastAncestor or the lowpoint of a separated DFS child is less than v.
  We obtain the minimum possible connection from the cutVertex to an ancestor
- of I, then compute the descendant accordingly.
+ of v, then compute the descendant accordingly.
 
  Returns TRUE if found, FALSE otherwise.
  ****************************************************************************/
@@ -503,7 +503,7 @@ int  _FindUnembeddedEdgeToAncestor(graphP theGraph, int cutVertex,
 /****************************************************************************
  _FindUnembeddedEdgeToCurVertex()
 
- Given the current vertex I, we search for an edge connecting I to either
+ Given the current vertex v, we search for an edge connecting v to either
  a given pertinent vertex W or one of its DFS descendants in the subtree
  indicated by the the last pertinent child biconnected component.
  Returns TRUE if founds, FALSE otherwise.
@@ -511,19 +511,18 @@ int  _FindUnembeddedEdgeToAncestor(graphP theGraph, int cutVertex,
 
 int  _FindUnembeddedEdgeToCurVertex(graphP theGraph, int cutVertex, int *pDescendant)
 {
-int  RetVal = TRUE, I = theGraph->IC.v;
-
      if (gp_GetVertexPertinentAdjacencyInfo(theGraph, cutVertex) != NIL)
+     {
          *pDescendant = cutVertex;
+         return TRUE;
+     }
      else
      {
-     int subtreeRoot = gp_GetVertexPertinentBicompList(theGraph, cutVertex);
+    	 int subtreeRoot = gp_GetVertexPertinentBicompList(theGraph, cutVertex);
 
-         RetVal = _FindUnembeddedEdgeToSubtree(theGraph, I,
-                                               subtreeRoot, pDescendant);
+         return _FindUnembeddedEdgeToSubtree(theGraph, theGraph->IC.v,
+                                             subtreeRoot, pDescendant);
      }
-
-     return RetVal;
 }
 
 /****************************************************************************
@@ -826,20 +825,20 @@ int fwdArc, backArc;
 
 int  _DeleteUnmarkedVerticesAndEdges(graphP theGraph)
 {
-int  I, J, fwdArc, descendant;
+int  v, e, d;
 
      /* All of the forward and back arcs of all of the edge records
         were removed from the adjacency lists in the planarity algorithm
         preprocessing.  We now put them back into the adjacency lists
         (and we do not mark them), so they can be properly deleted below. */
 
-     for (I = 0; I < theGraph->N; I++)
+     for (v = 0; v < theGraph->N; v++)
      {
-         while (gp_GetVertexFwdArcList(theGraph, I) != NIL)
+         while (gp_GetVertexFwdArcList(theGraph, v) != NIL)
          {
-             fwdArc = gp_GetVertexFwdArcList(theGraph, I);
-             descendant = gp_GetNeighbor(theGraph, fwdArc);
-             _AddBackEdge(theGraph, I, descendant);
+             e = gp_GetVertexFwdArcList(theGraph, v);
+             d = gp_GetNeighbor(theGraph, e);
+             _AddBackEdge(theGraph, v, d);
          }
      }
 
@@ -847,14 +846,14 @@ int  I, J, fwdArc, descendant;
         from the embedding, but the ones we should delete will become
         degree zero. */
 
-     for (I = 0; I < theGraph->N; I++)
+     for (v = 0; v < theGraph->N; v++)
      {
-          J = gp_GetFirstArc(theGraph, I);
-          while (J != NIL)
+          e = gp_GetFirstArc(theGraph, v);
+          while (e != NIL)
           {
-                if (gp_GetEdgeVisited(theGraph, J))
-                     J = gp_GetNextArc(theGraph, J);
-                else J = gp_DeleteEdge(theGraph, J, 0);
+                if (gp_GetEdgeVisited(theGraph, e))
+                     e = gp_GetNextArc(theGraph, e);
+                else e = gp_DeleteEdge(theGraph, e, 0);
           }
      }
 

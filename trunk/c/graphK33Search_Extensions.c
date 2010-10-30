@@ -47,9 +47,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "graphK33Search.private.h"
 #include "graphK33Search.h"
 
-extern int  _SearchForMergeBlocker(graphP theGraph, K33SearchContext *context, int I, int *pMergeBlocker);
-extern int  _FindK33WithMergeBlocker(graphP theGraph, K33SearchContext *context, int I, int mergeBlocker);
-extern int  _SearchForK33InBicomp(graphP theGraph, K33SearchContext *context, int I, int R);
+extern int  _SearchForMergeBlocker(graphP theGraph, K33SearchContext *context, int v, int *pMergeBlocker);
+extern int  _FindK33WithMergeBlocker(graphP theGraph, K33SearchContext *context, int v, int mergeBlocker);
+extern int  _SearchForK33InBicomp(graphP theGraph, K33SearchContext *context, int v, int R);
 
 extern int  _TestForK33GraphObstruction(graphP theGraph, int *degrees, int *imageVerts);
 extern int  _getImageVertices(graphP theGraph, int *degrees, int maxDegree,
@@ -68,17 +68,17 @@ int  _K33Search_EmbeddingInitialize(graphP theGraph);
 void _CreateBackArcLists(graphP theGraph, K33SearchContext *context);
 void _CreateSeparatedDFSChildLists(graphP theGraph, K33SearchContext *context);
 void _K33Search_EmbedBackEdgeToDescendant(graphP theGraph, int RootSide, int RootVertex, int W, int WPrevLink);
-int  _K33Search_MergeBicomps(graphP theGraph, int I, int RootVertex, int W, int WPrevLink);
+int  _K33Search_MergeBicomps(graphP theGraph, int v, int RootVertex, int W, int WPrevLink);
 void _K33Search_MergeVertex(graphP theGraph, int W, int WPrevLink, int R);
-int  _K33Search_HandleBlockedBicomp(graphP theGraph, int I, int RootVertex, int R);
-int  _K33Search_EmbedPostprocess(graphP theGraph, int I, int edgeEmbeddingResult);
+int  _K33Search_HandleBlockedBicomp(graphP theGraph, int v, int RootVertex, int R);
+int  _K33Search_EmbedPostprocess(graphP theGraph, int v, int edgeEmbeddingResult);
 int  _K33Search_CheckEmbeddingIntegrity(graphP theGraph, graphP origGraph);
 int  _K33Search_CheckObstructionIntegrity(graphP theGraph, graphP origGraph);
 
-void _K33Search_InitEdgeRec(graphP theGraph, int J);
-void _InitK33SearchEdgeRec(K33SearchContext *context, int J);
-void _K33Search_InitVertexInfo(graphP theGraph, int I);
-void _InitK33SearchVertexInfo(K33SearchContext *context, int I);
+void _K33Search_InitEdgeRec(graphP theGraph, int e);
+void _InitK33SearchEdgeRec(K33SearchContext *context, int e);
+void _K33Search_InitVertexInfo(graphP theGraph, int v);
+void _InitK33SearchVertexInfo(K33SearchContext *context, int v);
 
 int  _K33Search_InitGraph(graphP theGraph, int N);
 void _K33Search_ReinitializeGraph(graphP theGraph);
@@ -263,17 +263,17 @@ int  _K33Search_CreateStructures(K33SearchContext *context)
  ********************************************************************/
 int  _K33Search_InitStructures(K33SearchContext *context)
 {
-     int I, J, N = context->theGraph->N;
+     int v, e, N = context->theGraph->N;
      int Esize = context->theGraph->arcCapacity;
 
      if (N <= 0)
          return OK;
 
-     for (I = 0; I < N; I++)
-          _InitK33SearchVertexInfo(context, I);
+     for (v = 0; v < N; v++)
+          _InitK33SearchVertexInfo(context, v);
 
-     for (J = 0; J < Esize; J++)
-          _InitK33SearchEdgeRec(context, J);
+     for (e = 0; e < Esize; e++)
+          _InitK33SearchEdgeRec(context, e);
 
      return OK;
 }
@@ -457,38 +457,38 @@ int  _K33Search_EmbeddingInitialize(graphP theGraph)
  ********************************************************************/
 void _CreateBackArcLists(graphP theGraph, K33SearchContext *context)
 {
-	int I, J, JTwin, ancestor;
+	int v, e, eTwin, ancestor;
 
-    for (I=0; I < theGraph->N; I++)
+    for (v=0; v < theGraph->N; v++)
     {
-    	J = gp_GetVertexFwdArcList(theGraph, I);
-        while (J != NIL)
+    	e = gp_GetVertexFwdArcList(theGraph, v);
+        while (e != NIL)
         {
         	// Get the ancestor endpoint and the associated back arc
-        	ancestor = gp_GetNeighbor(theGraph, J);
-        	JTwin = gp_GetTwinArc(theGraph, J);
+        	ancestor = gp_GetNeighbor(theGraph, e);
+        	eTwin = gp_GetTwinArc(theGraph, e);
 
         	// Put it into the back arc list of the ancestor
             if (context->VI[ancestor].backArcList == NIL)
             {
-                context->VI[ancestor].backArcList = JTwin;
-                gp_SetPrevArc(theGraph, JTwin, JTwin);
-                gp_SetNextArc(theGraph, JTwin, JTwin);
+                context->VI[ancestor].backArcList = eTwin;
+                gp_SetPrevArc(theGraph, eTwin, eTwin);
+                gp_SetNextArc(theGraph, eTwin, eTwin);
             }
             else
             {
-            	int e = context->VI[ancestor].backArcList;
-            	int JPrev = gp_GetPrevArc(theGraph, e);
-        		gp_SetPrevArc(theGraph, JTwin, JPrev);
-        		gp_SetNextArc(theGraph, JTwin, e);
-        		gp_SetPrevArc(theGraph, e, JTwin);
-        		gp_SetNextArc(theGraph, JPrev, JTwin);
+            	int eHead = context->VI[ancestor].backArcList;
+            	int eTail = gp_GetPrevArc(theGraph, eHead);
+        		gp_SetPrevArc(theGraph, eTwin, eTail);
+        		gp_SetNextArc(theGraph, eTwin, eHead);
+        		gp_SetPrevArc(theGraph, eHead, eTwin);
+        		gp_SetNextArc(theGraph, eTail, eTwin);
             }
 
         	// Advance to the next forward edge
-			J = gp_GetNextArc(theGraph, J);
-			if (J == gp_GetVertexFwdArcList(theGraph, I))
-				J = NIL;
+			e = gp_GetNextArc(theGraph, e);
+			if (e == gp_GetVertexFwdArcList(theGraph, v))
+				e = NIL;
         }
     }
 }
@@ -503,7 +503,7 @@ void _CreateSeparatedDFSChildLists(graphP theGraph, K33SearchContext *context)
 {
 int *buckets;
 listCollectionP bin;
-int I, L, N, DFSParent, theList;
+int v, L, N, DFSParent, theList;
 
      N = theGraph->N;
      buckets = context->buckets;
@@ -511,36 +511,38 @@ int I, L, N, DFSParent, theList;
 
      // Initialize the bin and all the buckets to be empty
      LCReset(bin);
-     for (I=0; I < N; I++)
-          buckets[I] = NIL;
+     for (L=0; L < N; L++)
+          buckets[L] = NIL;
 
      // For each vertex, add it to the bucket whose index is equal to the lowpoint of the vertex.
-     for (I=0; I < N; I++)
+     for (v=0; v < N; v++)
      {
-          L = gp_GetVertexLowpoint(theGraph, I);
-          buckets[L] = LCAppend(bin, buckets[L], I);
+          L = gp_GetVertexLowpoint(theGraph, v);
+          buckets[L] = LCAppend(bin, buckets[L], v);
      }
 
      // For each bucket, add each vertex in the bucket to the separatedDFSChildList of its DFSParent.
      // Since lower numbered buckets are processed before higher numbered buckets, vertices with lower
      // lowpoint values are added before those with higher lowpoint values, so the separatedDFSChildList
      // of each vertex is sorted by lowpoint
-     for (I = 0; I < N; I++)
+     for (L = 0; L < N; L++)
      {
-          if ((L=buckets[I]) != NIL)
+    	  // For each successive bucket L containing vertices with a lowpoint of L
+          if ((v=buckets[L]) != NIL)
           {
-              while (L != NIL)
+        	  // Loop through all the vertices with lowpoint L, putting each in the list of its parent
+              while (v != NIL)
               {
-                  DFSParent = gp_GetVertexParent(theGraph, L);
+                  DFSParent = gp_GetVertexParent(theGraph, v);
 
-                  if (DFSParent != NIL && DFSParent != L)
+                  if (DFSParent != NIL && DFSParent != v)
                   {
                       theList = context->VI[DFSParent].separatedDFSChildList;
-                      theList = LCAppend(context->separatedDFSChildLists, theList, L);
+                      theList = LCAppend(context->separatedDFSChildLists, theList, v);
                       context->VI[DFSParent].separatedDFSChildList = theList;
                   }
 
-                  L = LCGetNext(bin, buckets[I], L);
+                  v = LCGetNext(bin, buckets[L], v);
               }
           }
      }
@@ -599,7 +601,7 @@ void _K33Search_EmbedBackEdgeToDescendant(graphP theGraph, int RootSide, int Roo
           a K_{3,3} homeomorph was isolated.
  ********************************************************************/
 
-int  _K33Search_MergeBicomps(graphP theGraph, int I, int RootVertex, int W, int WPrevLink)
+int  _K33Search_MergeBicomps(graphP theGraph, int v, int RootVertex, int W, int WPrevLink)
 {
     K33SearchContext *context = NULL;
     gp_FindExtension(theGraph, K33SEARCH_ID, (void *)&context);
@@ -619,12 +621,12 @@ int  _K33Search_MergeBicomps(graphP theGraph, int I, int RootVertex, int W, int 
             sp_Push2(theGraph->theStack, W, WPrevLink);
             sp_Push2(theGraph->theStack, NIL, NIL);
 
-			if (_SearchForMergeBlocker(theGraph, context, I, &mergeBlocker) != OK)
+			if (_SearchForMergeBlocker(theGraph, context, v, &mergeBlocker) != OK)
 				return NOTOK;
 
 			if (mergeBlocker != NIL)
 			{
-				if (_FindK33WithMergeBlocker(theGraph, context, I, mergeBlocker) != OK)
+				if (_FindK33WithMergeBlocker(theGraph, context, v, mergeBlocker) != OK)
 					return NOTOK;
 
 				return NONEMBEDDABLE;
@@ -642,7 +644,7 @@ int  _K33Search_MergeBicomps(graphP theGraph, int I, int RootVertex, int W, int 
         // merges under certain conditions, but those would be based
         // on data maintained by the extension that implements the
         // other algorithm-- if *that* algorithm is the one being run
-        return context->functions.fpMergeBicomps(theGraph, I, RootVertex, W, WPrevLink);
+        return context->functions.fpMergeBicomps(theGraph, v, RootVertex, W, WPrevLink);
     }
 
     return NOTOK;
@@ -675,50 +677,50 @@ void _K33Search_MergeVertex(graphP theGraph, int W, int WPrevLink, int R)
 /********************************************************************
  ********************************************************************/
 
-void _K33Search_InitEdgeRec(graphP theGraph, int J)
+void _K33Search_InitEdgeRec(graphP theGraph, int e)
 {
     K33SearchContext *context = NULL;
     gp_FindExtension(theGraph, K33SEARCH_ID, (void *)&context);
 
     if (context != NULL)
     {
-        context->functions.fpInitEdgeRec(theGraph, J);
-        _InitK33SearchEdgeRec(context, J);
+        context->functions.fpInitEdgeRec(theGraph, e);
+        _InitK33SearchEdgeRec(context, e);
     }
 }
 
-void _InitK33SearchEdgeRec(K33SearchContext *context, int J)
+void _InitK33SearchEdgeRec(K33SearchContext *context, int e)
 {
-    context->E[J].noStraddle = NIL;
-    context->E[J].pathConnector = NIL;
+    context->E[e].noStraddle = NIL;
+    context->E[e].pathConnector = NIL;
 }
 
 /********************************************************************
  ********************************************************************/
 
-void _K33Search_InitVertexInfo(graphP theGraph, int I)
+void _K33Search_InitVertexInfo(graphP theGraph, int v)
 {
     K33SearchContext *context = NULL;
     gp_FindExtension(theGraph, K33SEARCH_ID, (void *)&context);
 
     if (context != NULL)
     {
-        context->functions.fpInitVertexInfo(theGraph, I);
-        _InitK33SearchVertexInfo(context, I);
+        context->functions.fpInitVertexInfo(theGraph, v);
+        _InitK33SearchVertexInfo(context, v);
     }
 }
 
-void _InitK33SearchVertexInfo(K33SearchContext *context, int I)
+void _InitK33SearchVertexInfo(K33SearchContext *context, int v)
 {
-    context->VI[I].separatedDFSChildList = NIL;
-    context->VI[I].backArcList = NIL;
-    context->VI[I].mergeBlocker = NIL;
+    context->VI[v].separatedDFSChildList = NIL;
+    context->VI[v].backArcList = NIL;
+    context->VI[v].mergeBlocker = NIL;
 }
 
 /********************************************************************
  ********************************************************************/
 
-int  _K33Search_HandleBlockedBicomp(graphP theGraph, int I, int RootVertex, int R)
+int  _K33Search_HandleBlockedBicomp(graphP theGraph, int v, int RootVertex, int R)
 {
 	K33SearchContext *context = NULL;
 
@@ -728,7 +730,7 @@ int  _K33Search_HandleBlockedBicomp(graphP theGraph, int I, int RootVertex, int 
 
     if (theGraph->embedFlags == EMBEDFLAGS_SEARCHFORK33)
     {
-		// If R is the root of a descendant bicomp of I, we push it, but then we know the search for K3,3
+		// If R is the root of a descendant bicomp of v, we push it, but then we know the search for K3,3
     	// will be successful and return NONEMBEDDABLE because this condition corresponds to minor A, which
     	// is a K3,3.  Thus, an "OK to proceed with Walkdown searching elsewhere" result cannot happen,
     	// so we don't have to test for it to detect if we have to pop these two back off the stack.
@@ -738,12 +740,12 @@ int  _K33Search_HandleBlockedBicomp(graphP theGraph, int I, int RootVertex, int 
     	// The possible results here are NONEMBEDDABLE if a K3,3 homeomorph is found, or OK if only
     	// a K5 was found and unblocked such that it is OK for the Walkdown to continue searching
     	// elsewhere.  Note that the OK result can only happen if RootVertex==R since minor E can only
-    	// happen on a child bicomp of vertex I, not a descendant bicomp.
-    	return _SearchForK33InBicomp(theGraph, context, I, RootVertex);
+    	// happen on a child bicomp of vertex v, not a descendant bicomp.
+    	return _SearchForK33InBicomp(theGraph, context, v, RootVertex);
     }
     else
     {
-    	return context->functions.fpHandleBlockedBicomp(theGraph, I, RootVertex, R);
+    	return context->functions.fpHandleBlockedBicomp(theGraph, v, RootVertex, R);
     }
 
     return NOTOK;
@@ -752,7 +754,7 @@ int  _K33Search_HandleBlockedBicomp(graphP theGraph, int I, int RootVertex, int 
 /********************************************************************
  ********************************************************************/
 
-int  _K33Search_EmbedPostprocess(graphP theGraph, int I, int edgeEmbeddingResult)
+int  _K33Search_EmbedPostprocess(graphP theGraph, int v, int edgeEmbeddingResult)
 {
      // For K3,3 search, we just return the edge embedding result because the
      // search result has been obtained already.
@@ -769,7 +771,7 @@ int  _K33Search_EmbedPostprocess(graphP theGraph, int I, int edgeEmbeddingResult
 
         if (context != NULL)
         {
-            return context->functions.fpEmbedPostprocess(theGraph, I, edgeEmbeddingResult);
+            return context->functions.fpEmbedPostprocess(theGraph, v, edgeEmbeddingResult);
         }
      }
 

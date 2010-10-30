@@ -52,8 +52,8 @@ extern void _ClearVertexVisitedFlags(graphP theGraph, int);
 /* Private function declarations */
 
 int  _TestPath(graphP theGraph, int U, int V);
-int  _TryPath(graphP theGraph, int J, int V);
-void _MarkPath(graphP theGraph, int J);
+int  _TryPath(graphP theGraph, int e, int V);
+void _MarkPath(graphP theGraph, int e);
 int  _TestSubgraph(graphP theSubgraph, graphP theGraph);
 
 int  _CheckEmbeddingIntegrity(graphP theGraph, graphP origGraph);
@@ -178,15 +178,15 @@ int _CheckEmbeddingIntegrity(graphP theGraph, graphP origGraph)
  begins by placing all of the graph's arcs onto a stack and marking
  all of them as unvisited.  For each arc popped, if it is visited,
  it is immediately discarded and the next arc is popped.  Popping an
- unvisited arc J begins a face traversal.  We move to the true twin
- arc K of J, and obtain its successor arc L.  This amounts to
- always going clockwise or counterclockwise (depending on how the
- graph is drawn on the plane, or alternately whether one is above
- or below the plane).  This traversal continues until we make it
- back to J.  Each arc along the way is marked as visited.  Further,
- if L has been visited, then there is an error since an arc can only
- appear in one face (the twin arc appears in a separate face, which
- is traversed in the opposing direction).
+ unvisited arc e begins a face traversal.  We move to the true twin
+ arc of e, and obtain its successor arc.  This amounts to always
+ going clockwise or counterclockwise (depending on how the graph is
+ drawn on the plane, or alternately whether one is above or below
+ the plane).  This traversal continues until we make it back to the
+ original arc e. Each arc along the way is marked as visited.  Further,
+ if the successor arc has been visited, then there is an error since
+ an arc can only appear in one face (the twin arc appears in a separate
+ face, which is traversed in the opposing direction).
  If this algorithm succeeds without double visiting any arcs, and it
  produces the correct face count according to Euler's formula, then
  the embedding has all vertices oriented the same way.
@@ -199,7 +199,7 @@ int _CheckEmbeddingIntegrity(graphP theGraph, graphP origGraph)
 int  _CheckEmbeddingFacialIntegrity(graphP theGraph)
 {
 stackP theStack = theGraph->theStack;
-int EsizeOccupied, I, J, JTwin, K, L, NumFaces, connectedComponents;
+int EsizeOccupied, v, e, eTwin, eStart, eNext, NumFaces, connectedComponents;
 
      if (theGraph == NULL)
          return NOTOK;
@@ -214,17 +214,17 @@ int EsizeOccupied, I, J, JTwin, K, L, NumFaces, connectedComponents;
 /* Push all arcs and set them to unvisited */
 
      EsizeOccupied = 2*(theGraph->M + sp_GetCurrentSize(theGraph->edgeHoles));
-     for (J=0; J < EsizeOccupied; J+=2)
+     for (e=0; e < EsizeOccupied; e+=2)
      {
     	  // Skip edge holes
-          if (gp_GetNeighbor(theGraph, J) == NIL)
+          if (gp_GetNeighbor(theGraph, e) == NIL)
               continue;
 
-          sp_Push(theStack, J);
-          gp_ClearEdgeVisited(theGraph, J);
-          JTwin = gp_GetTwinArc(theGraph, J);
-          sp_Push(theStack, JTwin);
-          gp_ClearEdgeVisited(theGraph, JTwin);
+          sp_Push(theStack, e);
+          gp_ClearEdgeVisited(theGraph, e);
+          eTwin = gp_GetTwinArc(theGraph, e);
+          sp_Push(theStack, eTwin);
+          gp_ClearEdgeVisited(theGraph, eTwin);
      }
 
      // There are M edges, so we better have pushed 2M arcs just now
@@ -240,20 +240,17 @@ int EsizeOccupied, I, J, JTwin, K, L, NumFaces, connectedComponents;
      {
             /* Get an arc; if it has already been used by a face, then
                 don't use it to traverse a new face */
-            sp_Pop(theStack, J);
-            if (gp_GetEdgeVisited(theGraph, J)) continue;
+            sp_Pop(theStack, eStart);
+            if (gp_GetEdgeVisited(theGraph, eStart)) continue;
 
-            L = NIL;
-            JTwin = J;
-            while (L != J)
-            {
-                K = gp_GetTwinArc(theGraph, JTwin);
-                L = gp_GetNextArcCircular(theGraph, K);
-                if (gp_GetEdgeVisited(theGraph, L))
+            e = eStart;
+            do {
+                eNext = gp_GetNextArcCircular(theGraph, gp_GetTwinArc(theGraph, e));
+                if (gp_GetEdgeVisited(theGraph, eNext))
                     return NOTOK;
-                gp_SetEdgeVisited(theGraph, L);
-                JTwin = L;
-            }
+                gp_SetEdgeVisited(theGraph, eNext);
+                e = eNext;
+            } while (e != eStart);
             NumFaces++;
      }
 
@@ -262,10 +259,10 @@ int EsizeOccupied, I, J, JTwin, K, L, NumFaces, connectedComponents;
     DFS parent, except in the case of isolated vertices, no face was counted
     so we do not subtract one. */
 
-     for (I=connectedComponents=0; I < theGraph->N; I++)
-          if (gp_GetVertexParent(theGraph, I) == NIL)
+     for (v=connectedComponents=0; v < theGraph->N; v++)
+          if (gp_GetVertexParent(theGraph, v) == NIL)
           {
-              if (gp_GetVertexDegree(theGraph, I) > 0)
+              if (gp_GetVertexDegree(theGraph, v) > 0)
                   NumFaces--;
               connectedComponents++;
           }
@@ -294,23 +291,23 @@ int EsizeOccupied, I, J, JTwin, K, L, NumFaces, connectedComponents;
 
 int _CheckAllVerticesOnExternalFace(graphP theGraph)
 {
-    int I;
+    int v;
 
     // Mark all vertices unvisited
     _ClearVertexVisitedFlags(theGraph, FALSE);
 
     // For each connected component, walk its external face and
     // mark the vertices as visited
-    for (I=0; I < theGraph->N; I++)
+    for (v=0; v < theGraph->N; v++)
     {
-         if (gp_GetVertexParent(theGraph, I) == NIL)
-        	 _MarkExternalFaceVertices(theGraph, I);
+         if (gp_GetVertexParent(theGraph, v) == NIL)
+        	 _MarkExternalFaceVertices(theGraph, v);
     }
 
     // If any vertex is unvisited, then the embedding is not an outerplanar
     // embedding, so we return NOTOK
-    for (I=0; I < theGraph->N; I++)
-        if (!gp_GetVertexVisited(theGraph, I))
+    for (v=0; v < theGraph->N; v++)
+        if (!gp_GetVertexVisited(theGraph, v))
         {
             return NOTOK;
         }
@@ -337,11 +334,11 @@ int _CheckAllVerticesOnExternalFace(graphP theGraph)
 void _MarkExternalFaceVertices(graphP theGraph, int startVertex)
 {
     int nextVertex = startVertex;
-    int Jout = gp_GetFirstArc(theGraph, nextVertex);
-    int Jin;
+    int e = gp_GetFirstArc(theGraph, nextVertex);
+    int eTwin;
 
     // Handle the case of an isolated vertex
-    if (Jout == NIL)
+    if (e == NIL)
     {
     	gp_SetVertexVisited(theGraph, startVertex);
     	return;
@@ -352,7 +349,7 @@ void _MarkExternalFaceVertices(graphP theGraph, int startVertex)
         gp_SetVertexVisited(theGraph, nextVertex);
 
         // The arc out of the vertex just visited points to the next vertex
-        nextVertex = gp_GetNeighbor(theGraph, Jout);
+        nextVertex = gp_GetNeighbor(theGraph, e);
 
         // Arc used to enter the next vertex is needed so we can get the
         // next edge in rotation order.
@@ -361,7 +358,7 @@ void _MarkExternalFaceVertices(graphP theGraph, int startVertex)
         //       But _JoinBicomps() has already occurred, so cut vertices
         //       will have external face edges other than the first and last arcs
         //       Hence we need this more sophisticated traversal method
-        Jin = gp_GetTwinArc(theGraph, Jout);
+        eTwin = gp_GetTwinArc(theGraph, e);
 
         // Now we get the next arc in rotation order as the new arc out to the
         // vertex after nextVertex.  This sets us up for the next iteration.
@@ -374,7 +371,7 @@ void _MarkExternalFaceVertices(graphP theGraph, int startVertex)
         //       and last arcs.  We will visit those vertices multiple times,
         //       which is OK (just that we have to explain why we're calculating
         //       jout in this way).
-        Jout = gp_GetNextArcCircular(theGraph, Jin);
+        e = gp_GetNextArcCircular(theGraph, eTwin);
 
         // Now things get really interesting.  The DFS root (startVertex) may
         // itself be a cut vertex to which multiple bicomps have been joined.
@@ -387,7 +384,7 @@ void _MarkExternalFaceVertices(graphP theGraph, int startVertex)
         // of startVertex, we need to proceed until we reenter startVertex
         // using its last arc.
 
-    } while (Jin != gp_GetLastArc(theGraph, startVertex));
+    } while (eTwin != gp_GetLastArc(theGraph, startVertex));
 }
 
 
@@ -445,19 +442,19 @@ int _CheckObstructionIntegrity(graphP theGraph, graphP origGraph)
 int  _getImageVertices(graphP theGraph, int *degrees, int maxDegree,
                        int *imageVerts, int maxNumImageVerts)
 {
-int I, imageVertPos, degree;
+int K, v, imageVertPos, degree;
 
-     for (I = 0; I <= maxDegree; I++)
-          degrees[I] = 0;
+     for (degree = 0; degree <= maxDegree; degree++)
+          degrees[degree] = 0;
 
-     for (I = 0; I < maxNumImageVerts; I++)
-          imageVerts[I] = NIL;
+     for (K = 0; K < maxNumImageVerts; K++)
+          imageVerts[K] = NIL;
 
      imageVertPos = 0;
 
-     for (I = 0; I < theGraph->N; I++)
+     for (v = 0; v < theGraph->N; v++)
      {
-          degree = gp_GetVertexDegree(theGraph, I);
+          degree = gp_GetVertexDegree(theGraph, v);
           if (degree == 1)
               return NOTOK;
           if (degree > maxDegree)
@@ -466,7 +463,7 @@ int I, imageVertPos, degree;
           degrees[degree]++;
 
           if (imageVertPos < maxNumImageVerts && degree > 2)
-              imageVerts[imageVertPos++] = I;
+              imageVerts[imageVertPos++] = v;
           else if (degree > 2)
               return NOTOK;
      }
@@ -499,7 +496,7 @@ int I, imageVertPos, degree;
 int _TestForCompleteGraphObstruction(graphP theGraph, int numVerts,
                                      int *degrees, int *imageVerts)
 {
-    int I, J;
+    int v, w;
 
     // We need to make sure we have numVerts vertices of degree numVerts-1
     // For example, if numVerts==5, then we're looking for a K5, so we
@@ -518,18 +515,18 @@ int _TestForCompleteGraphObstruction(graphP theGraph, int numVerts,
     // between the two vertices.  If so, the visited flags of the
     // internal vertices along the path are marked
     //
-    for (I = 0; I < numVerts; I++)
-        for (J = 0; J < numVerts; J++)
-           if (I != J)
-               if (_TestPath(theGraph, imageVerts[I],
-                                       imageVerts[J]) != TRUE)
+    for (v = 0; v < numVerts; v++)
+        for (w = 0; w < numVerts; w++)
+           if (v != w)
+               if (_TestPath(theGraph, imageVerts[v],
+                                       imageVerts[w]) != TRUE)
                    return FALSE;
 
     // The visited flags should have marked only degree two vertices,
     // so for every marked vertex, we subtract one from the count of
     // the degree two vertices.
-    for (I = 0; I < theGraph->N; I++)
-        if (gp_GetVertexVisited(theGraph, I))
+    for (v = 0; v < theGraph->N; v++)
+        if (gp_GetVertexVisited(theGraph, v))
             degrees[2]--;
 
     /* If every degree 2 vertex is used in a path between image
@@ -557,7 +554,7 @@ int _TestForCompleteGraphObstruction(graphP theGraph, int numVerts,
 
 int _TestForK33GraphObstruction(graphP theGraph, int *degrees, int *imageVerts)
 {
-int  I, imageVertPos, temp, success;
+int  v, K, imageVertPos, temp, success;
 
 	if (degrees[4] != 0)
 		return FALSE;
@@ -570,7 +567,8 @@ int  I, imageVertPos, temp, success;
 
      for (imageVertPos = 3; imageVertPos < 6; imageVertPos++)
      {
-          I = success = 0;
+          K = 0;
+          success = FALSE;
           do {
              if (_TestPath(theGraph, imageVerts[imageVertPos], imageVerts[0]) == TRUE)
              {
@@ -578,11 +576,11 @@ int  I, imageVertPos, temp, success;
                  break;
              }
 
-             I++;
-             temp = imageVerts[I];
-             imageVerts[I] = imageVerts[imageVertPos];
+             K++;
+             temp = imageVerts[K];
+             imageVerts[K] = imageVerts[imageVertPos];
              imageVerts[imageVertPos] = temp;
-          }  while (I < 3);
+          }  while (K < 3);
 
           if (!success)
               return FALSE;
@@ -594,13 +592,13 @@ int  I, imageVertPos, temp, success;
      _ClearVertexVisitedFlags(theGraph, FALSE);
 
      for (imageVertPos=0; imageVertPos<3; imageVertPos++)
-          for (I=3; I<6; I++)
+          for (K=3; K<6; K++)
                if (_TestPath(theGraph, imageVerts[imageVertPos],
-                                       imageVerts[I]) != TRUE)
+                                       imageVerts[K]) != TRUE)
                    return FALSE;
 
-     for (I = 0; I < theGraph->N; I++)
-          if (gp_GetVertexVisited(theGraph, I))
+     for (v = 0; v < theGraph->N; v++)
+          if (gp_GetVertexVisited(theGraph, v))
               degrees[2]--;
 
      /* If every degree 2 vertex is used in a path between image
@@ -679,7 +677,7 @@ int  degrees[5], imageVerts[6];
 
 int _TestForK23GraphObstruction(graphP theGraph, int *degrees, int *imageVerts)
 {
-int  I, J, imageVertPos;
+int  v, e, imageVertPos;
 
      // This function operates over the imageVerts results produced by
      // getImageVertices, which only finds vertices of degree 3 or higher.
@@ -702,14 +700,14 @@ int  I, J, imageVertPos;
      // the two degree 3 image vertices are in the same partition
      // and hence must not be adjacent.
 
-     J = gp_GetFirstArc(theGraph, imageVerts[0]);
-     while (J != NIL)
+     e = gp_GetFirstArc(theGraph, imageVerts[0]);
+     while (e != NIL)
      {
-         imageVerts[imageVertPos] = gp_GetNeighbor(theGraph, J);
+         imageVerts[imageVertPos] = gp_GetNeighbor(theGraph, e);
          if (imageVerts[imageVertPos] == imageVerts[1])
              return FALSE;
          imageVertPos++;
-         J = gp_GetNextArc(theGraph, J);
+         e = gp_GetNextArc(theGraph, e);
      }
 
      /* The paths from imageVerts[0] to each of the new degree 2
@@ -728,8 +726,8 @@ int  I, J, imageVertPos;
           gp_SetVertexVisited(theGraph, imageVerts[imageVertPos]);
      }
 
-     for (I = 0; I < theGraph->N; I++)
-          if (gp_GetVertexVisited(theGraph, I))
+     for (v = 0; v < theGraph->N; v++)
+          if (gp_GetVertexVisited(theGraph, v))
               degrees[2]--;
 
      /* If every degree 2 vertex is used in a path between the
@@ -804,18 +802,17 @@ int  degrees[4], imageVerts[5];
 
 int  _TestPath(graphP theGraph, int U, int V)
 {
-int  J;
+	 int  e = gp_GetFirstArc(theGraph, U);
 
-     J = gp_GetFirstArc(theGraph, U);
-     while (J != NIL)
+     while (e != NIL)
      {
-         if (_TryPath(theGraph, J, V) == OK)
+         if (_TryPath(theGraph, e, V) == OK)
          {
-             _MarkPath(theGraph, J);
+             _MarkPath(theGraph, e);
              return TRUE;
          }
 
-         J = gp_GetNextArc(theGraph, J);
+         e = gp_GetNextArc(theGraph, e);
      }
 
      return FALSE;
@@ -832,23 +829,23 @@ int  J;
  boolean false otherwise.
  ********************************************************************/
 
-int  _TryPath(graphP theGraph, int J, int V)
+int  _TryPath(graphP theGraph, int e, int V)
 {
-int  Jin, nextVertex;
+int  eTwin, nextVertex;
 
-     nextVertex = gp_GetNeighbor(theGraph, J);
+     nextVertex = gp_GetNeighbor(theGraph, e);
 
      // while nextVertex is strictly degree 2
      while (gp_GetFirstArc(theGraph, nextVertex) != NIL &&
     		gp_GetLastArc(theGraph, nextVertex) != NIL &&
     		gp_GetNextArc(theGraph, gp_GetFirstArc(theGraph, nextVertex)) == gp_GetLastArc(theGraph, nextVertex))
      {
-         Jin = gp_GetTwinArc(theGraph, J);
-         J = gp_GetFirstArc(theGraph, nextVertex);
-         if (J == Jin)
-             J = gp_GetLastArc(theGraph, nextVertex);
+    	 eTwin = gp_GetTwinArc(theGraph, e);
+         e = gp_GetFirstArc(theGraph, nextVertex);
+         if (e == eTwin)
+             e = gp_GetLastArc(theGraph, nextVertex);
 
-         nextVertex = gp_GetNeighbor(theGraph, J);
+         nextVertex = gp_GetNeighbor(theGraph, e);
      }
 
      return nextVertex == V ? TRUE : FALSE;
@@ -862,11 +859,11 @@ int  Jin, nextVertex;
  a starting vertex U.
  ********************************************************************/
 
-void _MarkPath(graphP theGraph, int J)
+void _MarkPath(graphP theGraph, int e)
 {
-int  Jin, nextVertex;
+int  eTwin, nextVertex;
 
-     nextVertex = gp_GetNeighbor(theGraph, J);
+     nextVertex = gp_GetNeighbor(theGraph, e);
      // while nextVertex is strictly degree 2
      while (gp_GetFirstArc(theGraph, nextVertex) != NIL &&
     		gp_GetLastArc(theGraph, nextVertex) != NIL &&
@@ -874,12 +871,12 @@ int  Jin, nextVertex;
      {
          gp_SetVertexVisited(theGraph, nextVertex);
 
-         Jin = gp_GetTwinArc(theGraph, J);
-         J = gp_GetFirstArc(theGraph, nextVertex);
-         if (J == Jin)
-             J = gp_GetLastArc(theGraph, nextVertex);
+         eTwin = gp_GetTwinArc(theGraph, e);
+         e = gp_GetFirstArc(theGraph, nextVertex);
+         if (e == eTwin)
+             e = gp_GetLastArc(theGraph, nextVertex);
 
-         nextVertex = gp_GetNeighbor(theGraph, J);
+         nextVertex = gp_GetNeighbor(theGraph, e);
      }
 }
 
@@ -899,7 +896,7 @@ int  Jin, nextVertex;
 
 int  _TestSubgraph(graphP theSubgraph, graphP theGraph)
 {
-int I, J, degreeCount;
+int v, e, degreeCount;
 int Result = TRUE;
 int invokeSortOnGraph = FALSE;
 int invokeSortOnSubgraph = FALSE;
@@ -928,57 +925,57 @@ int invokeSortOnSubgraph = FALSE;
 
 /* For each vertex... */
 
-     for (I = 0, degreeCount = 0; I < theSubgraph->N; I++)
+     for (v = 0, degreeCount = 0; v < theSubgraph->N; v++)
      {
-          /* For each neighbor w in the adjacency list of vertex I in the
+          /* For each neighbor w in the adjacency list of vertex v in the
                 subgraph, set the visited flag in w in the graph */
 
-          J = gp_GetFirstArc(theSubgraph, I);
-          while (J != NIL)
+          e = gp_GetFirstArc(theSubgraph, v);
+          while (e != NIL)
           {
-        	  if (gp_GetNeighbor(theSubgraph, J) == NIL)
+        	  if (gp_GetNeighbor(theSubgraph, e) == NIL)
         	  {
         		  Result = FALSE;
         		  break;
         	  }
         	  degreeCount++;
-        	  gp_SetVertexVisited(theGraph, gp_GetNeighbor(theSubgraph, J));
-              J = gp_GetNextArc(theSubgraph, J);
+        	  gp_SetVertexVisited(theGraph, gp_GetNeighbor(theSubgraph, e));
+              e = gp_GetNextArc(theSubgraph, e);
           }
 
           if (Result != TRUE)
         	  break;
 
-          /* For each neighbor w in the adjacency list of vertex I in the graph,
+          /* For each neighbor w in the adjacency list of vertex v in the graph,
                 clear the visited flag in w in the graph */
 
-          J = gp_GetFirstArc(theGraph, I);
-          while (J != NIL)
+          e = gp_GetFirstArc(theGraph, v);
+          while (e != NIL)
           {
-        	  if (gp_GetNeighbor(theGraph, J) == NIL)
+        	  if (gp_GetNeighbor(theGraph, e) == NIL)
         	  {
         		  Result = FALSE;
         		  break;
         	  }
-        	  gp_ClearVertexVisited(theGraph, gp_GetNeighbor(theGraph, J));
-              J = gp_GetNextArc(theGraph, J);
+        	  gp_ClearVertexVisited(theGraph, gp_GetNeighbor(theGraph, e));
+              e = gp_GetNextArc(theGraph, e);
           }
 
           if (Result != TRUE)
         	  break;
 
-          /* For each neighbor w in the adjacency list of vertex I in the
+          /* For each neighbor w in the adjacency list of vertex v in the
                 subgraph, set the visited flag in w in the graph */
 
-          J = gp_GetFirstArc(theSubgraph, I);
-          while (J != NIL)
+          e = gp_GetFirstArc(theSubgraph, v);
+          while (e != NIL)
           {
-              if (gp_GetVertexVisited(theGraph, gp_GetNeighbor(theSubgraph, J)))
+              if (gp_GetVertexVisited(theGraph, gp_GetNeighbor(theSubgraph, e)))
               {
             	  Result = FALSE;
             	  break;
               }
-              J = gp_GetNextArc(theSubgraph, J);
+              e = gp_GetNextArc(theSubgraph, e);
           }
 
           if (Result != TRUE)

@@ -114,15 +114,15 @@ int _ComputeVisibilityRepresentation(DrawPlanarContext *context)
 int _ComputeVertexPositions(DrawPlanarContext *context)
 {
 graphP theEmbedding = context->theGraph;
-int I, index;
+int v, index;
 
-    for (I = index = 0; I < theEmbedding->N; I++)
+    for (v = index = 0; v < theEmbedding->N; v++)
     {
         // For each DFS tree root in the embedding, we
         // compute the vertex positions
-        if (gp_GetVertexParent(theEmbedding, I) == NIL)
+        if (gp_GetVertexParent(theEmbedding, v) == NIL)
         {
-            if (_ComputeVertexPositionsInComponent(context, I, &index) != OK)
+            if (_ComputeVertexPositionsInComponent(context, v, &index) != OK)
                 return NOTOK;
         }
     }
@@ -370,8 +370,7 @@ graphP theEmbedding = context->theGraph;
 int *vertexOrder = NULL;
 listCollectionP edgeList = NULL;
 int edgeListHead, edgeListInsertPoint;
-int I, J, Jcur, e, v, vpos;
-int eIndex, JTwin;
+int e, eTwin, eCur, v, vpos, epos, eIndex;
 
 	gp_LogLine("\ngraphDrawPlanar.c/_ComputeEdgePositions() start");
 
@@ -380,8 +379,8 @@ int eIndex, JTwin;
     if ((vertexOrder = (int *) malloc(theEmbedding->N * sizeof(int))) == NULL)
         return NOTOK;
 
-    for (I = 0; I < theEmbedding->N; I++)
-        vertexOrder[context->VI[I].pos] = I;
+    for (v = 0; v < theEmbedding->N; v++)
+        vertexOrder[context->VI[v].pos] = v;
 
     // Allocate the edge list of size M.
     //    This is an array of (prev, next) pointers.
@@ -400,8 +399,8 @@ int eIndex, JTwin;
 
     // Each vertex starts out with a NIL generator edge.
 
-    for (I=0; I < theEmbedding->N; I++)
-        gp_SetVertexVisitedInfo(theEmbedding, I, NIL);
+    for (v=0; v < theEmbedding->N; v++)
+        gp_SetVertexVisitedInfo(theEmbedding, v, NIL);
 
     // Perform the vertical sweep of the combinatorial embedding, using
     // the vertex ordering to guide the sweep.
@@ -431,20 +430,20 @@ int eIndex, JTwin;
 
             // Now we traverse the adjacency list of the DFS tree root and
             // record each edge as the generator edge of the neighbors
-            J = gp_GetFirstArc(theEmbedding, v);
-            while (J != NIL)
+            e = gp_GetFirstArc(theEmbedding, v);
+            while (e != NIL)
             {
-                e = (J >> 1); // div by 2 since each edge is a pair of arcs
+                eIndex = (e >> 1); // div by 2 since each edge is a pair of arcs
 
-                edgeListHead = LCAppend(edgeList, edgeListHead, e);
+                edgeListHead = LCAppend(edgeList, edgeListHead, eIndex);
                 gp_LogLine(gp_MakeLogStr2("Append generator edge (%d, %d) to edgeList",
-                		gp_GetVertexIndex(theEmbedding, v), gp_GetVertexIndex(theEmbedding, gp_GetNeighbor(theEmbedding, J))));
+                		gp_GetVertexIndex(theEmbedding, v), gp_GetVertexIndex(theEmbedding, gp_GetNeighbor(theEmbedding, e))));
 
                 // Set the generator edge for the root's neighbor
-                gp_SetVertexVisitedInfo(theEmbedding, gp_GetNeighbor(theEmbedding, J), J);
+                gp_SetVertexVisitedInfo(theEmbedding, gp_GetNeighbor(theEmbedding, e), e);
 
                 // Go to the next node of the root's adj list
-                J = gp_GetNextArc(theEmbedding, J);
+                e = gp_GetNextArc(theEmbedding, e);
             }
         }
 
@@ -453,51 +452,50 @@ int eIndex, JTwin;
         {
             // Get the generator edge of the vertex
         	// Note that this never gets the false generator edge of a DFS tree root
-            if ((JTwin = gp_GetVertexVisitedInfo(theEmbedding, v)) == NIL)
+            if ((eTwin = gp_GetVertexVisitedInfo(theEmbedding, v)) == NIL)
                 return NOTOK;
-            J = gp_GetTwinArc(theEmbedding, JTwin);
+            e = gp_GetTwinArc(theEmbedding, eTwin);
 
             // Traverse the edges of the vertex, starting
             // from the generator edge and going counterclockwise...
 
-            e = (J >> 1);
-            edgeListInsertPoint = e;
+            eIndex = (e >> 1);
+            edgeListInsertPoint = eIndex;
 
-            Jcur = gp_GetNextArcCircular(theEmbedding, J);
-
-            while (Jcur != J)
+            eCur = gp_GetNextArcCircular(theEmbedding, e);
+            while (eCur != e)
             {
                 // If the neighboring vertex's position is greater
                 // than the current vertex (meaning it is lower in the
                 // diagram), then add that edge to the edge order.
 
-                if (context->VI[gp_GetNeighbor(theEmbedding, Jcur)].pos > vpos)
+                if (context->VI[gp_GetNeighbor(theEmbedding, eCur)].pos > vpos)
                 {
-                    e = Jcur >> 1;
-                    LCInsertAfter(edgeList, edgeListInsertPoint, e);
+                    eIndex = eCur >> 1;
+                    LCInsertAfter(edgeList, edgeListInsertPoint, eIndex);
 
                     gp_LogLine(gp_MakeLogStr4("Insert (%d, %d) after (%d, %d)",
                     		gp_GetVertexIndex(theEmbedding, v),
-                    		gp_GetVertexIndex(theEmbedding, gp_GetNeighbor(theEmbedding, Jcur)),
-                    		gp_GetVertexIndex(theEmbedding, gp_GetNeighbor(theEmbedding, gp_GetTwinArc(theEmbedding, J))),
-                    		gp_GetVertexIndex(theEmbedding, gp_GetNeighbor(theEmbedding, J))));
+                    		gp_GetVertexIndex(theEmbedding, gp_GetNeighbor(theEmbedding, eCur)),
+                    		gp_GetVertexIndex(theEmbedding, gp_GetNeighbor(theEmbedding, gp_GetTwinArc(theEmbedding, e))),
+                    		gp_GetVertexIndex(theEmbedding, gp_GetNeighbor(theEmbedding, e))));
 
-                    edgeListInsertPoint = e;
+                    edgeListInsertPoint = eIndex;
 
                     // If the vertex does not yet have a generator edge, then set it.
                     // Note that a DFS tree root has a false generator edge, so this if
                     // test avoids setting a generator edge for a DFS tree root
-                    if (gp_GetVertexVisitedInfo(theEmbedding, gp_GetNeighbor(theEmbedding, Jcur)) == NIL)
+                    if (gp_GetVertexVisitedInfo(theEmbedding, gp_GetNeighbor(theEmbedding, eCur)) == NIL)
                     {
-                        gp_SetVertexVisitedInfo(theEmbedding, gp_GetNeighbor(theEmbedding, Jcur), Jcur);
+                        gp_SetVertexVisitedInfo(theEmbedding, gp_GetNeighbor(theEmbedding, eCur), eCur);
                         gp_LogLine(gp_MakeLogStr2("Generator edge (%d, %d)",
-                        		gp_GetVertexIndex(theEmbedding, gp_GetNeighbor(theEmbedding, gp_GetTwinArc(theEmbedding, J))),
-                        		gp_GetVertexIndex(theEmbedding, gp_GetNeighbor(theEmbedding, Jcur))));
+                        		gp_GetVertexIndex(theEmbedding, gp_GetNeighbor(theEmbedding, gp_GetTwinArc(theEmbedding, e))),
+                        		gp_GetVertexIndex(theEmbedding, gp_GetNeighbor(theEmbedding, eCur))));
                     }
                 }
 
                 // Go to the next node in v's adjacency list
-                Jcur = gp_GetNextArcCircular(theEmbedding, Jcur);
+                eCur = gp_GetNextArcCircular(theEmbedding, eCur);
             }
         }
 
@@ -507,18 +505,18 @@ int eIndex, JTwin;
     }
 
     // Now iterate through the edgeList and assign positions to the edges.
-    eIndex = 0;
-    e = edgeListHead;
-    while (e != NIL)
+    epos = 0;
+    eIndex = edgeListHead;
+    while (eIndex != NIL)
     {
-        J = (e<<1);
-        JTwin = gp_GetTwinArc(theEmbedding, J);
+        e = (eIndex << 1);
+        eTwin = gp_GetTwinArc(theEmbedding, e);
 
-        context->E[J].pos = context->E[JTwin].pos = eIndex;
+        context->E[e].pos = context->E[eTwin].pos = epos;
 
-        eIndex++;
+        epos++;
 
-        e = LCGetNext(edgeList, edgeListHead, e);
+        eIndex = LCGetNext(edgeList, edgeListHead, eIndex);
     }
 
     // Clean up and return
@@ -541,9 +539,9 @@ int eIndex, JTwin;
 int _ComputeVertexRanges(DrawPlanarContext *context)
 {
 graphP theEmbedding = context->theGraph;
-int I, J, min, max;
+int v, e, min, max;
 
-    for (I = 0; I < theEmbedding->N; I++)
+    for (v = 0; v < theEmbedding->N; v++)
     {
         min = theEmbedding->M + 1;
         max = -1;
@@ -551,27 +549,27 @@ int I, J, min, max;
         // Iterate the edges, except in the isolated vertex case we just
         // set the min and max to 1 since there no edges controlling where
         // it gets drawn.
-        J = gp_GetFirstArc(theEmbedding, I);
-        if (J == NIL)
+        e = gp_GetFirstArc(theEmbedding, v);
+        if (e == NIL)
         {
         	min = max = 0;
         }
         else
         {
-            while (J != NIL)
+            while (e != NIL)
             {
-                if (min > context->E[J].pos)
-                    min = context->E[J].pos;
+                if (min > context->E[e].pos)
+                    min = context->E[e].pos;
 
-                if (max < context->E[J].pos)
-                    max = context->E[J].pos;
+                if (max < context->E[e].pos)
+                    max = context->E[e].pos;
 
-                J = gp_GetNextArc(theEmbedding, J);
+                e = gp_GetNextArc(theEmbedding, e);
             }
         }
 
-        context->VI[I].start = min;
-        context->VI[I].end = max;
+        context->VI[v].start = min;
+        context->VI[v].end = max;
     }
 
     return OK;
@@ -587,31 +585,31 @@ int I, J, min, max;
 int _ComputeEdgeRanges(DrawPlanarContext *context)
 {
 graphP theEmbedding = context->theGraph;
-int e, J, JTwin, v1, v2, pos1, pos2;
+int eIndex, e, eTwin, v1, v2, pos1, pos2;
 
-    for (e=J=0; e < theEmbedding->M; e++,J+=2)
+    for (eIndex=e=0; eIndex < theEmbedding->M; eIndex++,e+=2)
     {
-        JTwin = gp_GetTwinArc(theEmbedding, J);
+        eTwin = gp_GetTwinArc(theEmbedding, e);
 
-        v1 = gp_GetNeighbor(theEmbedding, J);
-        v2 = gp_GetNeighbor(theEmbedding, JTwin);
+        v1 = gp_GetNeighbor(theEmbedding, e);
+        v2 = gp_GetNeighbor(theEmbedding, eTwin);
 
         pos1 = context->VI[v1].pos;
         pos2 = context->VI[v2].pos;
 
         if (pos1 < pos2)
         {
-            context->E[J].start = pos1;
-            context->E[J].end = pos2;
+            context->E[e].start = pos1;
+            context->E[e].end = pos2;
         }
         else
         {
-            context->E[J].start = pos2;
-            context->E[J].end = pos1;
+            context->E[e].start = pos2;
+            context->E[e].end = pos1;
         }
 
-        context->E[JTwin].start = context->E[J].start;
-        context->E[JTwin].end = context->E[J].end;
+        context->E[eTwin].start = context->E[e].start;
+        context->E[eTwin].end = context->E[e].end;
     }
 
     return OK;
@@ -648,7 +646,7 @@ int _GetNextExternalFaceVertex(graphP theGraph, int curVertex, int *pPrevLink)
  of the vertex, which is on the child end of the 'root edge'.
 
  Here we decide whether the DFS child is to be embedded between or
- beyond its parent relative to vertex I, the one currently being
+ beyond its parent relative to vertex v, the one currently being
  processed (and the ancestor endpoint of a back edge being embedded,
  where the descendant endpoint is also an endpoint of the bicomp
  root being merged).
@@ -821,7 +819,7 @@ char *_RenderToString(graphP theEmbedding)
     {
         int N = theEmbedding->N;
         int M = theEmbedding->M;
-        int I, J, K, e, Mid, Pos;
+        int v, vRange, e, eIndex, eRange, Mid, Pos;
         char *visRep = (char *) malloc(sizeof(char) * ((M+1) * 2*N + 1));
         char numBuffer[32];
 
@@ -835,29 +833,29 @@ char *_RenderToString(graphP theEmbedding)
         }
 
         // Clear the space
-        for (I = 0; I < N; I++)
+        for (v = 0; v < N; v++)
         {
-            for (e=0; e < M; e++)
+            for (eIndex=0; eIndex < M; eIndex++)
             {
-                visRep[(2*I) * (M+1) + e] = ' ';
-                visRep[(2*I+1) * (M+1) + e] = ' ';
+                visRep[(2*v) * (M+1) + eIndex] = ' ';
+                visRep[(2*v+1) * (M+1) + eIndex] = ' ';
             }
 
-            visRep[(2*I) * (M+1) + M] = '\n';
-            visRep[(2*I+1) * (M+1) + M] = '\n';
+            visRep[(2*v) * (M+1) + M] = '\n';
+            visRep[(2*v+1) * (M+1) + M] = '\n';
         }
 
         // Draw the vertices
-        for (I = 0; I < N; I++)
+        for (v = 0; v < N; v++)
         {
-            Pos = context->VI[I].pos;
-            for (K=context->VI[I].start; K <= context->VI[I].end; K++)
-                visRep[(2*Pos) * (M+1) + K] = '-';
+            Pos = context->VI[v].pos;
+            for (vRange=context->VI[v].start; vRange <= context->VI[v].end; vRange++)
+                visRep[(2*Pos) * (M+1) + vRange] = '-';
 
             // Draw vertex label
-            Mid = (context->VI[I].start + context->VI[I].end) / 2;
-            sprintf(numBuffer, "%d", I);
-            if ((unsigned)(context->VI[I].end - context->VI[I].start + 1) >= strlen(numBuffer))
+            Mid = (context->VI[v].start + context->VI[v].end) / 2;
+            sprintf(numBuffer, "%d", v);
+            if ((unsigned)(context->VI[v].end - context->VI[v].start + 1) >= strlen(numBuffer))
             {
                 strncpy(visRep + (2*Pos) * (M+1) + Mid, numBuffer, strlen(numBuffer));
             }
@@ -874,14 +872,14 @@ char *_RenderToString(graphP theEmbedding)
         }
 
         // Draw the edges
-        for (e=J=0; e < M; e++,J+=2)
+        for (eIndex=e=0; eIndex < M; eIndex++,e+=2)
         {
-            Pos = context->E[J].pos;
-            for (K=context->E[J].start; K < context->E[J].end; K++)
+            Pos = context->E[e].pos;
+            for (eRange=context->E[e].start; eRange < context->E[e].end; eRange++)
             {
-                if (K > context->E[J].start)
-                    visRep[(2*K) * (M+1) + Pos] = '|';
-                visRep[(2*K+1) * (M+1) + Pos] = '|';
+                if (eRange > context->E[e].start)
+                    visRep[(2*eRange) * (M+1) + Pos] = '|';
+                visRep[(2*eRange+1) * (M+1) + Pos] = '|';
             }
         }
 
@@ -940,7 +938,7 @@ int gp_DrawPlanar_RenderToFile(graphP theEmbedding, char *theFileName)
 int _CheckVisibilityRepresentationIntegrity(DrawPlanarContext *context)
 {
 graphP theEmbedding = context->theGraph;
-int I, e, J, JTwin, JPos, JIndex;
+int v, eIndex, e, eTwin, epos, eposIndex;
 
     if (sp_NonEmpty(context->theGraph->edgeHoles))
         return NOTOK;
@@ -950,106 +948,106 @@ int I, e, J, JTwin, JPos, JIndex;
 /* Test whether the vertex values make sense and
         whether the vertex positions are unique. */
 
-    for (I = 0; I < theEmbedding->N; I++)
+    for (v = 0; v < theEmbedding->N; v++)
     {
     	if (theEmbedding->M > 0)
     	{
-            if (context->VI[I].pos < 0 ||
-                context->VI[I].pos >= theEmbedding->N ||
-                context->VI[I].start < 0 ||
-                context->VI[I].start > context->VI[I].end ||
-                context->VI[I].end >= theEmbedding->M)
+            if (context->VI[v].pos < 0 ||
+                context->VI[v].pos >= theEmbedding->N ||
+                context->VI[v].start < 0 ||
+                context->VI[v].start > context->VI[v].end ||
+                context->VI[v].end >= theEmbedding->M)
                 return NOTOK;
     	}
 
-        // Has the vertex position been used by a vertex before vertex I?
-        if (gp_GetVertexVisited(theEmbedding, context->VI[I].pos))
+        // Has the vertex position been used by a vertex before vertex v?
+        if (gp_GetVertexVisited(theEmbedding, context->VI[v].pos))
             return NOTOK;
 
-        // Mark the vertex position as used by vertex I.
-        // Note that this marking is made on some other vertex unrelated to I
+        // Mark the vertex position as used by vertex v.
+        // Note that this marking is made on some other vertex unrelated to v
         // We're just reusing the vertex visited array as cheap storage for a
         // detector of reusing vertex position integers.
-        gp_SetVertexVisited(theEmbedding, context->VI[I].pos);
+        gp_SetVertexVisited(theEmbedding, context->VI[v].pos);
     }
 
 /* Test whether the edge values make sense and
         whether the edge positions are unique */
 
-    for (e=J=0; e < theEmbedding->M; e++,J+=2)
+    for (eIndex=e=0; eIndex < theEmbedding->M; eIndex++,e+=2)
     {
         /* Each edge has two index locations in the edge information array */
-        JTwin = gp_GetTwinArc(theEmbedding, J);
+        eTwin = gp_GetTwinArc(theEmbedding, e);
 
-        if (context->E[J].pos != context->E[JTwin].pos ||
-            context->E[J].start != context->E[JTwin].start ||
-            context->E[J].end != context->E[JTwin].end ||
-            context->E[J].pos < 0 ||
-            context->E[J].pos >= theEmbedding->M ||
-            context->E[J].start < 0 ||
-            context->E[J].start > context->E[J].end ||
-            context->E[J].end >= theEmbedding->N)
+        if (context->E[e].pos != context->E[eTwin].pos ||
+            context->E[e].start != context->E[eTwin].start ||
+            context->E[e].end != context->E[eTwin].end ||
+            context->E[e].pos < 0 ||
+            context->E[e].pos >= theEmbedding->M ||
+            context->E[e].start < 0 ||
+            context->E[e].start > context->E[e].end ||
+            context->E[e].end >= theEmbedding->N)
             return NOTOK;
 
         /* Get the recorded horizontal position of that edge,
             a number between 0 and M-1 */
 
-        JPos = context->E[J].pos;
+        epos = context->E[e].pos;
 
         /* Convert that to an index in the graph structure so we
             can use the visited flags in the graph's edges to
             tell us whether the positions are being reused. */
 
-        JIndex = 2*JPos;
-        JTwin = gp_GetTwinArc(theEmbedding, JIndex);
+        eposIndex = 2*epos;
+        eTwin = gp_GetTwinArc(theEmbedding, eposIndex);
 
-        if (gp_GetEdgeVisited(theEmbedding, JIndex) || gp_GetEdgeVisited(theEmbedding, JTwin))
+        if (gp_GetEdgeVisited(theEmbedding, eposIndex) || gp_GetEdgeVisited(theEmbedding, eTwin))
             return NOTOK;
 
-        gp_SetEdgeVisited(theEmbedding, JIndex);
-        gp_SetEdgeVisited(theEmbedding, JTwin);
+        gp_SetEdgeVisited(theEmbedding, eposIndex);
+        gp_SetEdgeVisited(theEmbedding, eTwin);
     }
 
 /* Test whether any edge intersects any vertex position
     for a vertex that is not an endpoint of the edge. */
 
-    for (e=J=0; e < theEmbedding->M; e++,J+=2)
+    for (eIndex=e=0; eIndex < theEmbedding->M; eIndex++,e+=2)
     {
-        JTwin = gp_GetTwinArc(theEmbedding, J);
+        eTwin = gp_GetTwinArc(theEmbedding, e);
 
-        for (I = 0; I < theEmbedding->N; I++)
+        for (v = 0; v < theEmbedding->N; v++)
         {
             /* If the vertex is an endpoint of the edge, then... */
 
-            if (gp_GetNeighbor(theEmbedding, J) == I || gp_GetNeighbor(theEmbedding, JTwin) == I)
+            if (gp_GetNeighbor(theEmbedding, e) == v || gp_GetNeighbor(theEmbedding, eTwin) == v)
             {
                 /* The vertical position of the vertex must be
                    at the top or bottom of the edge,  */
-                if (context->E[J].start != context->VI[I].pos &&
-                    context->E[J].end != context->VI[I].pos)
+                if (context->E[e].start != context->VI[v].pos &&
+                    context->E[e].end != context->VI[v].pos)
                     return NOTOK;
 
                 /* The horizontal edge position must be in the range of the vertex */
-                if (context->E[J].pos < context->VI[I].start ||
-                    context->E[J].pos > context->VI[I].end)
+                if (context->E[e].pos < context->VI[v].start ||
+                    context->E[e].pos > context->VI[v].end)
                     return NOTOK;
             }
 
             /* If the vertex is not an endpoint of the edge... */
 
-            else // if (gp_GetNeighbor(theEmbedding, J) != I && gp_GetNeighbor(theEmbedding, JTwin) != I)
+            else // if (gp_GetNeighbor(theEmbedding, e) != v && gp_GetNeighbor(theEmbedding, eTwin) != v)
             {
                 /* If the vertical position of the vertex is in the
                     vertical range of the edge ... */
 
-                if (context->E[J].start <= context->VI[I].pos &&
-                    context->E[J].end >= context->VI[I].pos)
+                if (context->E[e].start <= context->VI[v].pos &&
+                    context->E[e].end >= context->VI[v].pos)
                 {
                     /* And if the horizontal position of the edge is in the
                         horizontal range of the vertex, then return an error. */
 
-                    if (context->VI[I].start <= context->E[J].pos &&
-                        context->VI[I].end >= context->E[J].pos)
+                    if (context->VI[v].start <= context->E[e].pos &&
+                        context->VI[v].end >= context->E[e].pos)
                         return NOTOK;
                 }
             }
