@@ -179,10 +179,10 @@ void LCInsertBefore(listCollectionP listColl, int theAnchor, int theNewNode)
 
 void LCReset(listCollectionP listColl)
 {
-int  I;
+int  K;
 
-     for (I=0; I < listColl->N; I++)
-          listColl->List[I].prev = listColl->List[I].next = NIL;
+     for (K=0; K < listColl->N; K++)
+          listColl->List[K].prev = listColl->List[K].next = NIL;
 }
 
 /*****************************************************************************
@@ -191,12 +191,12 @@ int  I;
 
 void LCCopy(listCollectionP dst, listCollectionP src)
 {
-int  I;
+int  K;
 
      if (dst==NULL || src==NULL || dst->N != src->N) return;
 
-     for (I=0; I<dst->N; I++)
-          dst->List[I] = src->List[I];
+     for (K=0; K < dst->N; K++)
+          dst->List[K] = src->List[K];
 
 }
 

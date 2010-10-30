@@ -67,7 +67,7 @@ extern void _ClearVertexVisitedFlags(graphP theGraph, int);
 int  gp_CreateDFSTree(graphP theGraph)
 {
 stackP theStack;
-int N, DFI = 0, I, uparent, u, e, J;
+int N, DFI, v, uparent, u, e;
 
 #ifdef PROFILE
 platform_time start, end;
@@ -97,16 +97,16 @@ platform_GetTime(start);
 /* This outer loop causes the connected subgraphs of a disconnected
         graph to be numbered */
 
-     for (I=0; I < N && DFI < N; I++)
+     for (v=DFI=0; DFI < N; v++)
      {
-          if (gp_GetVertexParent(theGraph, I) != NIL)
+          if (gp_GetVertexParent(theGraph, v) != NIL)
               continue;
 
           sp_Push2(theStack, NIL, NIL);
           while (sp_NonEmpty(theStack))
           {
               sp_Pop2(theStack, uparent, e);
-              u = uparent == NIL ? I : gp_GetNeighbor(theGraph, e);
+              u = uparent == NIL ? v : gp_GetNeighbor(theGraph, e);
 
               if (!gp_GetVertexVisited(theGraph, u))
               {
@@ -124,12 +124,12 @@ platform_GetTime(start);
                   /* Push edges to all unvisited neighbors. These will be either
                         tree edges to children or forward arcs of back edges */
 
-                  J = gp_GetFirstArc(theGraph, u);
-                  while (J != NIL)
+                  e = gp_GetFirstArc(theGraph, u);
+                  while (e != NIL)
                   {
-                      if (!gp_GetVertexVisited(theGraph, gp_GetNeighbor(theGraph, J)))
-                          sp_Push2(theStack, u, J);
-                      J = gp_GetNextArc(theGraph, J);
+                      if (!gp_GetVertexVisited(theGraph, gp_GetNeighbor(theGraph, e)))
+                          sp_Push2(theStack, u, e);
+                      e = gp_GetNextArc(theGraph, e);
                   }
               }
               else
@@ -177,7 +177,7 @@ int  gp_SortVertices(graphP theGraph)
 
 int  _SortVertices(graphP theGraph)
 {
-int  I, N, EsizeOccupied, J, srcPos, dstPos;
+int  v, N, EsizeOccupied, e, srcPos, dstPos;
 
 #ifdef PROFILE
 platform_time start, end;
@@ -200,20 +200,20 @@ platform_GetTime(start);
         Also, if any links go back to locations 0 to n-1, then they
         need to be changed because we are reordering the vertices */
 
-     for (J=0; J < EsizeOccupied; J+=2)
+     for (e=0; e < EsizeOccupied; e+=2)
      {
-    	 if (gp_GetNeighbor(theGraph, J) != NIL)
+    	 if (gp_GetNeighbor(theGraph, e) != NIL)
     	 {
-    		 gp_SetNeighbor(theGraph, J, gp_GetVertexIndex(theGraph, gp_GetNeighbor(theGraph, J)));
-    		 gp_SetNeighbor(theGraph, J+1, gp_GetVertexIndex(theGraph, gp_GetNeighbor(theGraph, J+1)));
+    		 gp_SetNeighbor(theGraph, e, gp_GetVertexIndex(theGraph, gp_GetNeighbor(theGraph, e)));
+    		 gp_SetNeighbor(theGraph, e+1, gp_GetVertexIndex(theGraph, gp_GetNeighbor(theGraph, e+1)));
     	 }
      }
 
 /* Convert DFSParent from v to DFI(v) or vice versa */
 
-     for (I=0; I < N; I++)
-          if (gp_GetVertexParent(theGraph, I) != NIL)
-              gp_SetVertexParent(theGraph, I, gp_GetVertexIndex(theGraph, gp_GetVertexParent(theGraph, I)));
+     for (v=0; v < N; v++)
+          if (gp_GetVertexParent(theGraph, v) != NIL)
+              gp_SetVertexParent(theGraph, v, gp_GetVertexIndex(theGraph, gp_GetVertexParent(theGraph, v)));
 
 /* Sort by 'v using constant time random access. Move each vertex to its
         destination 'v', and store its source location in 'v'. */
@@ -227,20 +227,20 @@ platform_GetTime(start);
 
      /* We visit each vertex location, skipping those marked as visited since
         we've already moved the correct vertex into that location. The
-        inner loop swaps the vertex at location I into the correct position,
-        given by the index of the vertex at location I.  Then it marks that
+        inner loop swaps the vertex at location v into the correct position,
+        given by the index of the vertex at location v.  Then it marks that
         location as visited, then sets its index to be the location from
         whence we obtained the vertex record. */
 
-     for (I=0; I < N; I++)
+     for (v=0; v < N; v++)
      {
-          srcPos = I;
-          while (!gp_GetVertexVisited(theGraph, I))
+          srcPos = v;
+          while (!gp_GetVertexVisited(theGraph, v))
           {
-              dstPos = gp_GetVertexIndex(theGraph, I);
+              dstPos = gp_GetVertexIndex(theGraph, v);
 
-              gp_SwapVertexRec(theGraph, dstPos, theGraph, I);
-              gp_SwapVertexInfo(theGraph, dstPos, theGraph, I);
+              gp_SwapVertexRec(theGraph, dstPos, theGraph, v);
+              gp_SwapVertexInfo(theGraph, dstPos, theGraph, v);
 
               gp_SetVertexVisited(theGraph, dstPos);
               gp_SetVertexIndex(theGraph, dstPos, srcPos);
@@ -251,9 +251,7 @@ platform_GetTime(start);
 
 /* Invert the bit that records the sort order of the graph */
 
-     if (theGraph->internalFlags & FLAGS_SORTEDBYDFI)
-          theGraph->internalFlags &= ~FLAGS_SORTEDBYDFI;
-     else theGraph->internalFlags |= FLAGS_SORTEDBYDFI;
+     theGraph->internalFlags ^= FLAGS_SORTEDBYDFI;
 
 	 gp_LogLine("graphDFSUtils.c/_SortVertices() end\n");
 
@@ -294,7 +292,7 @@ int  gp_LowpointAndLeastAncestor(graphP theGraph)
 {
 stackP theStack = theGraph->theStack;
 int N = theGraph->N;
-int I, u, uneighbor, J, L, leastAncestor;
+int v, u, uneighbor, e, L, leastAncestor;
 
 	 if (theGraph == NULL) return NOTOK;
 
@@ -323,15 +321,15 @@ platform_GetTime(start);
      _ClearVertexVisitedFlags(theGraph, FALSE);
 
      // This outer loop causes the connected subgraphs of a disconnected graph to be processed
-     for (I=0; I < N;)
+     for (v=0; v < N;)
      {
-          if (gp_GetVertexVisited(theGraph, I))
+          if (gp_GetVertexVisited(theGraph, v))
           {
-        	  ++I;
+        	  ++v;
               continue;
           }
 
-          sp_Push(theStack, I);
+          sp_Push(theStack, v);
           while (sp_NonEmpty(theStack))
           {
               sp_Pop(theStack, u);
@@ -341,19 +339,19 @@ platform_GetTime(start);
               {
                   // Mark u as visited, then push it back on the stack
                   gp_SetVertexVisited(theGraph, u);
-                  ++I;
+                  ++v;
                   sp_Push(theStack, u);
 
                   // Push the DFS children of u
-                  J = gp_GetFirstArc(theGraph, u);
-                  while (J != NIL)
+                  e = gp_GetFirstArc(theGraph, u);
+                  while (e != NIL)
                   {
-                      if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_CHILD)
+                      if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_CHILD)
                       {
-                          sp_Push(theStack, gp_GetNeighbor(theGraph, J));
+                          sp_Push(theStack, gp_GetNeighbor(theGraph, e));
                       }
 
-                      J = gp_GetNextArc(theGraph, J);
+                      e = gp_GetNextArc(theGraph, e);
                   }
               }
 
@@ -364,22 +362,22 @@ platform_GetTime(start);
                   leastAncestor = L = u;
 
                   // Compute leastAncestor and L, the least lowpoint from the DFS children
-                  J = gp_GetFirstArc(theGraph, u);
-                  while (J != NIL)
+                  e = gp_GetFirstArc(theGraph, u);
+                  while (e != NIL)
                   {
-                      uneighbor = gp_GetNeighbor(theGraph, J);
-                      if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_CHILD)
+                      uneighbor = gp_GetNeighbor(theGraph, e);
+                      if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_CHILD)
                       {
                           if (L > gp_GetVertexLowpoint(theGraph, uneighbor))
                               L = gp_GetVertexLowpoint(theGraph, uneighbor);
                       }
-                      else if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_BACK)
+                      else if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_BACK)
                       {
                           if (leastAncestor > uneighbor)
                               leastAncestor = uneighbor;
                       }
 
-                      J = gp_GetNextArc(theGraph, J);
+                      e = gp_GetNextArc(theGraph, e);
                   }
 
                   /* Assign leastAncestor and Lowpoint to the vertex */
@@ -422,7 +420,7 @@ int  gp_LeastAncestor(graphP theGraph)
 {
 stackP theStack = theGraph->theStack;
 int N = theGraph->N;
-int I, u, uneighbor, J, leastAncestor;
+int v, u, uneighbor, e, leastAncestor;
 
 	 if (theGraph == NULL) return NOTOK;
 
@@ -448,15 +446,15 @@ platform_GetTime(start);
 	 sp_ClearStack(theStack);
 
 	 // This outer loop causes the connected subgraphs of a disconnected graph to be processed
-	 for (I=0; I < N;)
+	 for (v=0; v < N;)
 	 {
-		  if (gp_GetVertexVisited(theGraph, I))
+		  if (gp_GetVertexVisited(theGraph, v))
 		  {
-			  ++I;
+			  ++v;
 			  continue;
 		  }
 
-		  sp_Push(theStack, I);
+		  sp_Push(theStack, v);
 		  while (sp_NonEmpty(theStack))
 		  {
 			  sp_Pop(theStack, u);
@@ -464,23 +462,24 @@ platform_GetTime(start);
 			  if (!gp_GetVertexVisited(theGraph, u))
 			  {
 				  gp_SetVertexVisited(theGraph, u);
-				  ++I;
+				  ++v;
 				  leastAncestor = u;
-				  J = gp_GetFirstArc(theGraph, u);
-				  while (J != NIL)
+
+				  e = gp_GetFirstArc(theGraph, u);
+				  while (e != NIL)
 				  {
-                      uneighbor = gp_GetNeighbor(theGraph, J);
-					  if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_CHILD)
+                      uneighbor = gp_GetNeighbor(theGraph, e);
+					  if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_CHILD)
 					  {
 						  sp_Push(theStack, uneighbor);
 					  }
-					  else if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_BACK)
+					  else if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_BACK)
 					  {
 						  if (leastAncestor > uneighbor)
 							  leastAncestor = uneighbor;
 					  }
 
-					  J = gp_GetNextArc(theGraph, J);
+					  e = gp_GetNextArc(theGraph, e);
 				  }
 				  gp_SetVertexLeastAncestor(theGraph, u, leastAncestor);
 			  }

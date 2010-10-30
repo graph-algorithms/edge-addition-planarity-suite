@@ -91,7 +91,7 @@ extern "C" {
 typedef struct
 {
 	int  link[2];
-	int  v;
+	int  neighbor;
 	unsigned flags;
 } edgeRec;
 
@@ -111,8 +111,8 @@ typedef edgeRec * edgeRecP;
 #define gp_SetAdjacentArc(theGraph, e, theLink, newArc) (theGraph->E[e].link[theLink] = newArc)
 
 // Accessors for 'v' member
-#define gp_GetNeighbor(theGraph, e) (theGraph->E[e].v)
-#define gp_SetNeighbor(theGraph, e, neighbor) (theGraph->E[e].v = neighbor)
+#define gp_GetNeighbor(theGraph, e) (theGraph->E[e].neighbor)
+#define gp_SetNeighbor(theGraph, e, v) (theGraph->E[e].neighbor = v)
 
 // Initializer for vertex flags
 #define gp_InitEdgeFlags(theGraph, e) (theGraph->E[e].flags = 0)
@@ -545,12 +545,12 @@ typedef baseGraphStructure * graphP;
 #define gp_GetNextArcCircular(theGraph, e) \
 	(theGraph->E[e].link[0] != NIL ? \
 			theGraph->E[e].link[0] : \
-			gp_GetFirstArc(theGraph, theGraph->E[gp_GetTwinArc(theGraph, e)].v))
+			gp_GetFirstArc(theGraph, theGraph->E[gp_GetTwinArc(theGraph, e)].neighbor))
 
 #define gp_GetPrevArcCircular(theGraph, e) \
 	(theGraph->E[e].link[1] != NIL ? \
 		theGraph->E[e].link[1] : \
-		gp_GetLastArc(theGraph, theGraph->E[gp_GetTwinArc(theGraph, e)].v))
+		gp_GetLastArc(theGraph, theGraph->E[gp_GetTwinArc(theGraph, e)].neighbor))
 
 // Definitions that make the cross-link binding between a vertex and an arc
 // The old first or last arc should be bound to this arc by separate calls,

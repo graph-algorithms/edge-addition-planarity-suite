@@ -61,16 +61,16 @@ int  _DrawPlanar_InitStructures(DrawPlanarContext *context);
 
 /* Forward declarations of overloading functions */
 
-int  _DrawPlanar_MergeBicomps(graphP theGraph, int I, int RootVertex, int W, int WPrevLink);
+int  _DrawPlanar_MergeBicomps(graphP theGraph, int v, int RootVertex, int W, int WPrevLink);
 int  _DrawPlanar_HandleInactiveVertex(graphP theGraph, int BicompRoot, int *pW, int *pWPrevLink);
-int  _DrawPlanar_EmbedPostprocess(graphP theGraph, int I, int edgeEmbeddingResult);
+int  _DrawPlanar_EmbedPostprocess(graphP theGraph, int v, int edgeEmbeddingResult);
 int  _DrawPlanar_CheckEmbeddingIntegrity(graphP theGraph, graphP origGraph);
 int  _DrawPlanar_CheckObstructionIntegrity(graphP theGraph, graphP origGraph);
 
-void _DrawPlanar_InitEdgeRec(graphP theGraph, int J);
-void _DrawPlanar_InitVertexInfo(graphP theGraph, int I);
-void _InitDrawEdgeRec(DrawPlanarContext *context, int I);
-void _InitDrawVertexInfo(DrawPlanarContext *context, int I);
+void _DrawPlanar_InitEdgeRec(graphP theGraph, int e);
+void _DrawPlanar_InitVertexInfo(graphP theGraph, int v);
+void _InitDrawEdgeRec(DrawPlanarContext *context, int v);
+void _InitDrawVertexInfo(DrawPlanarContext *context, int v);
 
 int  _DrawPlanar_InitGraph(graphP theGraph, int N);
 void _DrawPlanar_ReinitializeGraph(graphP theGraph);
@@ -262,17 +262,17 @@ int  _DrawPlanar_CreateStructures(DrawPlanarContext *context)
  ********************************************************************/
 int  _DrawPlanar_InitStructures(DrawPlanarContext *context)
 {
-     int I, J;
+     int v, e;
      int N = context->theGraph->N, Esize = context->theGraph->arcCapacity;
 
      if (N <= 0)
          return NOTOK;
 
-     for (I = 0; I < N; I++)
-          _InitDrawVertexInfo(context, I);
+     for (v = 0; v < N; v++)
+          _InitDrawVertexInfo(context, v);
 
-     for (J = 0; J < Esize; J++)
-          _InitDrawEdgeRec(context, J);
+     for (e = 0; e < Esize; e++)
+          _InitDrawEdgeRec(context, e);
 
      return OK;
 }
@@ -435,14 +435,14 @@ int  _DrawPlanar_SortVertices(graphP theGraph)
     {
         if (theGraph->embedFlags == EMBEDFLAGS_DRAWPLANAR)
         {
-            int I;
+            int v;
             DrawPlanar_VertexInfoP newVI = NULL;
 
             // Relabel the context data members that indicate vertices
-            for (I=0; I < theGraph->N; I++)
+            for (v=0; v < theGraph->N; v++)
             {
-                context->VI[I].ancestor = gp_GetVertexIndex(theGraph, context->VI[I].ancestor);
-                context->VI[I].ancestorChild = gp_GetVertexIndex(theGraph, context->VI[I].ancestorChild);
+                context->VI[v].ancestor = gp_GetVertexIndex(theGraph, context->VI[v].ancestor);
+                context->VI[v].ancestorChild = gp_GetVertexIndex(theGraph, context->VI[v].ancestorChild);
             }
 
             // Now we have to sort this extension's vertex info array to match the new order of vertices
@@ -452,11 +452,11 @@ int  _DrawPlanar_SortVertices(graphP theGraph)
                 return NOTOK;
             }
 
-            // Let X == I^{th} vertex's index be the location where the I^{th} vertex goes
-            // Given the newVI array, we want to move context VI[I] to newVI[X]
-            for (I=0; I < theGraph->N; I++)
+            // Let X == v^{th} vertex's index be the location where the v^{th} vertex goes
+            // Given the newVI array, we want to move context VI[v] to newVI[X]
+            for (v=0; v < theGraph->N; v++)
             {
-                newVI[gp_GetVertexIndex(theGraph, I)] = context->VI[I];
+                newVI[gp_GetVertexIndex(theGraph, v)] = context->VI[v];
             }
 
             // Replace VI with the newVI
@@ -478,7 +478,7 @@ int  _DrawPlanar_SortVertices(graphP theGraph)
           or NONEMBEDDABLE if the merge is blocked
  ********************************************************************/
 
-int  _DrawPlanar_MergeBicomps(graphP theGraph, int I, int RootVertex, int W, int WPrevLink)
+int  _DrawPlanar_MergeBicomps(graphP theGraph, int v, int RootVertex, int W, int WPrevLink)
 {
     DrawPlanarContext *context = NULL;
     gp_FindExtension(theGraph, DRAWPLANAR_ID, (void *)&context);
@@ -490,7 +490,7 @@ int  _DrawPlanar_MergeBicomps(graphP theGraph, int I, int RootVertex, int W, int
             _CollectDrawingData(context, RootVertex, W, WPrevLink);
         }
 
-        return context->functions.fpMergeBicomps(theGraph, I, RootVertex, W, WPrevLink);
+        return context->functions.fpMergeBicomps(theGraph, v, RootVertex, W, WPrevLink);
     }
 
     return NOTOK;
@@ -523,69 +523,70 @@ int _DrawPlanar_HandleInactiveVertex(graphP theGraph, int BicompRoot, int *pW, i
 /********************************************************************
  ********************************************************************/
 
-void _DrawPlanar_InitEdgeRec(graphP theGraph, int J)
+void _DrawPlanar_InitEdgeRec(graphP theGraph, int e)
 {
     DrawPlanarContext *context = NULL;
     gp_FindExtension(theGraph, DRAWPLANAR_ID, (void *)&context);
 
     if (context != NULL)
     {
-        context->functions.fpInitEdgeRec(theGraph, J);
-        _InitDrawEdgeRec(context, J);
+        context->functions.fpInitEdgeRec(theGraph, e);
+        _InitDrawEdgeRec(context, e);
     }
 }
 
 /********************************************************************
  ********************************************************************/
 
-void _InitDrawEdgeRec(DrawPlanarContext *context, int J)
+void _InitDrawEdgeRec(DrawPlanarContext *context, int e)
 {
-    context->E[J].pos = 0;
-    context->E[J].start = 0;
-    context->E[J].end = 0;
+    context->E[e].pos = 0;
+    context->E[e].start = 0;
+    context->E[e].end = 0;
 }
 
 /********************************************************************
  ********************************************************************/
 
-void _DrawPlanar_InitVertexInfo(graphP theGraph, int I)
+void _DrawPlanar_InitVertexInfo(graphP theGraph, int v)
 {
     DrawPlanarContext *context = NULL;
     gp_FindExtension(theGraph, DRAWPLANAR_ID, (void *)&context);
 
     if (context != NULL)
     {
-        context->functions.fpInitVertexInfo(theGraph, I);
-        _InitDrawVertexInfo(context, I);
+        context->functions.fpInitVertexInfo(theGraph, v);
+        _InitDrawVertexInfo(context, v);
     }
 }
 
 /********************************************************************
  ********************************************************************/
 
-void _InitDrawVertexInfo(DrawPlanarContext *context, int I)
+void _InitDrawVertexInfo(DrawPlanarContext *context, int v)
 {
-    context->VI[I].pos = 0;
-    context->VI[I].start = 0;
-    context->VI[I].end = 0;
+    context->VI[v].pos = 0;
+    context->VI[v].start = 0;
+    context->VI[v].end = 0;
 
-    context->VI[I].drawingFlag = DRAWINGFLAG_BEYOND;
-    context->VI[I].ancestorChild = 0;
-    context->VI[I].ancestor = 0;
-    context->VI[I].tie[0] = context->VI[I].tie[1] = NIL;
+    context->VI[v].drawingFlag = DRAWINGFLAG_BEYOND;
+    context->VI[v].ancestorChild = 0;
+    context->VI[v].ancestor = 0;
+    context->VI[v].tie[0] = NIL;
+    context->VI[v].tie[1] = NIL;
 }
 
 /********************************************************************
  ********************************************************************/
 
-int _DrawPlanar_EmbedPostprocess(graphP theGraph, int I, int edgeEmbeddingResult)
+int _DrawPlanar_EmbedPostprocess(graphP theGraph, int v, int edgeEmbeddingResult)
 {
     DrawPlanarContext *context = NULL;
     gp_FindExtension(theGraph, DRAWPLANAR_ID, (void *)&context);
 
     if (context != NULL)
     {
-        int RetVal = context->functions.fpEmbedPostprocess(theGraph, I, edgeEmbeddingResult);
+        int RetVal = context->functions.fpEmbedPostprocess(theGraph, v, edgeEmbeddingResult);
 
         if (theGraph->embedFlags == EMBEDFLAGS_DRAWPLANAR)
         {
@@ -643,7 +644,7 @@ int  _DrawPlanar_ReadPostprocess(graphP theGraph, void *extraData, long extraDat
 
         else if (extraData != NULL && extraDataSize > 0)
         {
-            int I, J, tempInt, EsizeOccupied;
+            int v, e, tempInt, EsizeOccupied;
             char line[64], tempChar;
 
             sprintf(line, "<%s>", DRAWPLANAR_NAME);
@@ -657,24 +658,24 @@ int  _DrawPlanar_ReadPostprocess(graphP theGraph, void *extraData, long extraDat
             extraData = (void *) ((char *) extraData + strlen(line)+1);
 
             // Read the N lines of vertex information
-            for (I = 0; I < theGraph->N; I++)
+            for (v = 0; v < theGraph->N; v++)
             {
                 sscanf(extraData, " %d%c %d %d %d", &tempInt, &tempChar,
-                              &context->VI[I].pos,
-                              &context->VI[I].start,
-                              &context->VI[I].end);
+                              &context->VI[v].pos,
+                              &context->VI[v].start,
+                              &context->VI[v].end);
 
                 extraData = strchr(extraData, '\n') + 1;
             }
 
             // Read the lines that contain edge information
             EsizeOccupied = 2 * theGraph->M;
-            for (J = 0; J < EsizeOccupied; J++)
+            for (e = 0; e < EsizeOccupied; e++)
             {
                 sscanf(extraData, " %d%c %d %d %d", &tempInt, &tempChar,
-                              &context->E[J].pos,
-                              &context->E[J].start,
-                              &context->E[J].end);
+                              &context->E[e].pos,
+                              &context->E[e].start,
+                              &context->E[e].end);
 
                 extraData = strchr(extraData, '\n') + 1;
             }
@@ -701,7 +702,7 @@ int  _DrawPlanar_WritePostprocess(graphP theGraph, void **pExtraData, long *pExt
         else
         {
             char line[64];
-            int maxLineSize = 64, extraDataPos = 0, I, J;
+            int maxLineSize = 64, extraDataPos = 0, v, e;
             int N = theGraph->N, EsizeOccupied = 2 * (theGraph->M + sp_GetCurrentSize(theGraph->edgeHoles));
             char *extraData = (char *) malloc((N + EsizeOccupied + 2) * maxLineSize * sizeof(char));
 
@@ -720,25 +721,25 @@ int  _DrawPlanar_WritePostprocess(graphP theGraph, void **pExtraData, long *pExt
             strcpy(extraData+extraDataPos, line);
             extraDataPos += (int) strlen(line);
 
-            for (I = 0; I < N; I++)
+            for (v = 0; v < N; v++)
             {
-                sprintf(line, "%d: %d %d %d\n", I,
-                              context->VI[I].pos,
-                              context->VI[I].start,
-                              context->VI[I].end);
+                sprintf(line, "%d: %d %d %d\n", v,
+                              context->VI[v].pos,
+                              context->VI[v].start,
+                              context->VI[v].end);
                 strcpy(extraData+extraDataPos, line);
                 extraDataPos += (int) strlen(line);
             }
 
-            for (J = 0; J < EsizeOccupied; J++)
+            for (e = 0; e < EsizeOccupied; e++)
             {
-                if (gp_GetNeighbor(theGraph, J) == NIL)
+                if (gp_GetNeighbor(theGraph, e) == NIL)
                     continue;
 
-                sprintf(line, "%d: %d %d %d\n", J,
-                              context->E[J].pos,
-                              context->E[J].start,
-                              context->E[J].end);
+                sprintf(line, "%d: %d %d %d\n", e,
+                              context->E[e].pos,
+                              context->E[e].start,
+                              context->E[e].end);
                 strcpy(extraData+extraDataPos, line);
                 extraDataPos += (int) strlen(line);
             }
