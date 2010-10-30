@@ -59,8 +59,6 @@ int  _EmbeddingInitialize(graphP theGraph);
 
 void _EmbedBackEdgeToDescendant(graphP theGraph, int RootSide, int RootVertex, int W, int WPrevLink);
 
-int  _GetNextVertexOnExternalFace(graphP theGraph, int curVertex, int *pPrevLink);
-
 void _InvertVertex(graphP theGraph, int V);
 void _MergeVertex(graphP theGraph, int W, int WPrevLink, int R);
 int  _MergeBicomps(graphP theGraph, int v, int RootVertex, int W, int WPrevLink);
@@ -463,57 +461,6 @@ int fwdArc, backArc, parentCopy;
 
     gp_SetExtFaceVertex(theGraph, RootVertex, RootSide, W);
     gp_SetExtFaceVertex(theGraph, W, WPrevLink, RootVertex);
-}
-
-/********************************************************************
- _GetNextVertexOnExternalFace()
- Each vertex contains two 'link' index pointers that indicate the
- first and last adjacency list arc.  If the vertex is on the external face,
- then these two arcs are also on the external face.  We want to take one of
- those edges to get to the next vertex on the external face.
- On input *pPrevLink indicates which link we followed to arrive at
- curVertex.  On output *pPrevLink will be set to the link we follow to
- get into the next vertex.
- To get to the next vertex, we use the opposite link from the one used
- to get into curVertex.  This takes us to an edge node.  The twinArc
- of that edge node, carries us to an edge node in the next vertex.
- At least one of the two links in that edge node will lead to a vertex
- node in G, which is the next vertex.  Once we arrive at the next
- vertex, at least one of its links will lead back to the edge node, and
- that link becomes the output value of *pPrevLink.
-
- NOTE: This method intentionally ignores the extFace optimization
-       links. It is invoked when the "real" external face must be
-       traversed and hence when the constant time guarantee is not
-       needed from the extFace short-circuit that connects the
-       bicomp root to the first active vertices along each external
-       face path emanating from the bicomp root.
- ********************************************************************/
-
-int  _GetNextVertexOnExternalFace(graphP theGraph, int curVertex, int *pPrevLink)
-{
-     /* Exit curVertex from whichever link was not previously used to enter it */
-
-     int arc = gp_GetArc(theGraph, curVertex, 1^(*pPrevLink));
-     int nextVertex = gp_GetNeighbor(theGraph, arc);
-
-     /* This if stmt assigns the new prev link that tells us which edge
-        record was used to enter nextVertex (so that we exit from the
-        opposing edge record).
-
-        However, if we are in a singleton bicomp, then both links in nextVertex
-        lead back to curVertex.  We want the two arcs of a singleton bicomp to
-        act like a cycle, so we just don't change the prev link in this case.
-
-        But when nextVertex has more than one edge, we need to figure out
-        whether the first edge or last edge (which are the two on the external
-        face) was used to enter nextVertex so we can exit from the other one
-        as traversal of the external face continues later. */
-
-     if (gp_GetFirstArc(theGraph, nextVertex) != gp_GetLastArc(theGraph, nextVertex))
-         *pPrevLink = gp_GetTwinArc(theGraph, arc) == gp_GetFirstArc(theGraph, nextVertex) ? 0 : 1;
-
-     return nextVertex;
 }
 
 /********************************************************************

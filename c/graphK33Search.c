@@ -65,7 +65,7 @@ extern int  _ClearInvertedFlagsInBicomp(graphP theGraph, int BicompRoot);
 extern int  _ComputeArcType(graphP theGraph, int a, int b, int edgeType);
 extern int  _SetEdgeType(graphP theGraph, int u, int v);
 
-extern int  _GetNextVertexOnExternalFace(graphP theGraph, int curVertex, int *pPrevLink);
+extern int  _GetNeighborOnExtFace(graphP theGraph, int curVertex, int *pPrevLink);
 extern int  _JoinBicomps(graphP theGraph);
 extern int  _OrientVerticesInBicomp(graphP theGraph, int BicompRoot, int PreserveSigns);
 extern int  _OrientVerticesInEmbedding(graphP theGraph);
@@ -469,7 +469,7 @@ int _SearchForMinorE1(graphP theGraph)
 {
 int  Z=theGraph->IC.px, ZPrevLink=1;
 
-     Z = _GetNextVertexOnExternalFace(theGraph, Z, &ZPrevLink);
+     Z = _GetNeighborOnExtFace(theGraph, Z, &ZPrevLink);
 
      while (Z != theGraph->IC.py)
      {
@@ -512,7 +512,7 @@ int  Z=theGraph->IC.px, ZPrevLink=1;
             }
          }
 
-         Z = _GetNextVertexOnExternalFace(theGraph, Z, &ZPrevLink);
+         Z = _GetNeighborOnExtFace(theGraph, Z, &ZPrevLink);
      }
 
      return OK;
@@ -835,7 +835,7 @@ isolatorContextP IC = &theGraph->IC;
      RPrevLink = 1;
      R = mergeBlocker;
      while (R < N)
-        R = _GetNextVertexOnExternalFace(theGraph, R, &RPrevLink);
+        R = _GetNeighborOnExtFace(theGraph, R, &RPrevLink);
 
      /* Switch the 'current step' variable v to be equal to the
        non-virtual counterpart of the bicomp root. */
@@ -1501,7 +1501,7 @@ int  prevLink, v, w, e;
      /* If the path is a single edge, then no need for a reduction */
 
      prevLink = 1;
-     v = _GetNextVertexOnExternalFace(theGraph, u, &prevLink);
+     v = _GetNeighborOnExtFace(theGraph, u, &prevLink);
      if (v == x)
      {
          gp_SetExtFaceVertex(theGraph, u, 0, x);
@@ -1514,7 +1514,7 @@ int  prevLink, v, w, e;
         compute the vertex internal to the path and a neighbor of x. */
 
      prevLink = 0;
-     w = _GetNextVertexOnExternalFace(theGraph, x, &prevLink);
+     w = _GetNeighborOnExtFace(theGraph, x, &prevLink);
 
      /* Delete the two edges that connect the path to the bicomp.
         If either edge is a reduction edge, then we have to restore
