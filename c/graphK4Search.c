@@ -51,7 +51,7 @@ extern int K4SEARCH_ID;
 
 /* Imported functions */
 
-extern void _ClearIsolatorContext(graphP theGraph);
+extern void _InitIsolatorContext(graphP theGraph);
 extern void _ClearVisitedFlags(graphP);
 extern int  _ClearVisitedFlagsInBicomp(graphP theGraph, int BicompRoot);
 extern int  _ClearVisitedFlagsInOtherBicomps(graphP theGraph, int BicompRoot);
@@ -433,7 +433,7 @@ int  _K4_ChooseTypeOfNonOuterplanarityMinor(graphP theGraph, int v, int R)
     int  XPrevLink=1, YPrevLink=0;
     int  Wx, WxPrevLink, Wy, WyPrevLink;
 
-    _ClearIsolatorContext(theGraph);
+    _InitIsolatorContext(theGraph);
 
     theGraph->IC.v = v;
     theGraph->IC.r = R;
