@@ -50,7 +50,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 extern void _ClearVisitedFlags(graphP);
 
-extern int  _GetNextVertexOnExternalFace(graphP theGraph, int curVertex, int *pPrevLink);
+extern int  _GetNeighborOnExtFace(graphP theGraph, int curVertex, int *pPrevLink);
 extern int  _JoinBicomps(graphP theGraph);
 
 extern int _ChooseTypeOfNonplanarityMinor(graphP theGraph, int v, int R);
@@ -605,7 +605,7 @@ int  Z, ZPrevLink, ZPrevArc;
      Z = startVert;
      ZPrevLink = 1;
      do {
-        Z = _GetNextVertexOnExternalFace(theGraph, Z, &ZPrevLink);
+        Z = _GetNeighborOnExtFace(theGraph, Z, &ZPrevLink);
 
         ZPrevArc = gp_GetArc(theGraph, Z, ZPrevLink);
 

@@ -61,7 +61,7 @@ extern int  _DeleteUnmarkedEdgesInBicomp(graphP theGraph, int BicompRoot);
 extern int  _ComputeArcType(graphP theGraph, int a, int b, int edgeType);
 extern int  _SetEdgeType(graphP theGraph, int u, int v);
 
-extern int  _GetNextVertexOnExternalFace(graphP theGraph, int curVertex, int *pPrevLink);
+extern int  _GetNeighborOnExtFace(graphP theGraph, int curVertex, int *pPrevLink);
 extern int  _JoinBicomps(graphP theGraph);
 extern void _FindActiveVertices(graphP theGraph, int R, int *pX, int *pY);
 extern int  _OrientVerticesInBicomp(graphP theGraph, int BicompRoot, int PreserveSigns);
@@ -447,8 +447,8 @@ int  _K4_ChooseTypeOfNonOuterplanarityMinor(graphP theGraph, int v, int R)
     //    are the desired vertices because all vertices are "externally active"
     // 2) We have purposely not oriented the bicomp, so the XPrevLink result is
     //    needed to help find the pertinent vertex W
-    theGraph->IC.x = _GetNextVertexOnExternalFace(theGraph, R, &XPrevLink);
-    theGraph->IC.y = _GetNextVertexOnExternalFace(theGraph, R, &YPrevLink);
+    theGraph->IC.x = _GetNeighborOnExtFace(theGraph, R, &XPrevLink);
+    theGraph->IC.y = _GetNeighborOnExtFace(theGraph, R, &YPrevLink);
 
     // We are essentially doing a _FindPertinentVertex() here, except two things:
     // 1) It is not known whether the reduction of the path through X or the path
@@ -468,13 +468,13 @@ int  _K4_ChooseTypeOfNonOuterplanarityMinor(graphP theGraph, int v, int R)
 
     while (Wx != theGraph->IC.y)
     {
-        Wx = _GetNextVertexOnExternalFace(theGraph, Wx, &WxPrevLink);
+        Wx = _GetNeighborOnExtFace(theGraph, Wx, &WxPrevLink);
         if (PERTINENT(theGraph, Wx))
         {
         	theGraph->IC.w = Wx;
         	break;
         }
-        Wy = _GetNextVertexOnExternalFace(theGraph, Wy, &WyPrevLink);
+        Wy = _GetNeighborOnExtFace(theGraph, Wy, &WyPrevLink);
         if (PERTINENT(theGraph, Wy))
         {
         	theGraph->IC.w = Wy;
@@ -528,7 +528,7 @@ int _K4_FindSecondActiveVertexOnLowExtFacePath(graphP theGraph)
 
 	// First we test X for future pertinence only (if it were pertinent, then
 	// we wouldn't have been blocked up on this bicomp)
-	Z = _GetNextVertexOnExternalFace(theGraph, Z, &ZPrevLink);
+	Z = _GetNeighborOnExtFace(theGraph, Z, &ZPrevLink);
 	gp_UpdateVertexFuturePertinentChild(theGraph, Z, theGraph->IC.v);
     if (FUTUREPERTINENT(theGraph, Z, theGraph->IC.v))
 	{
@@ -540,7 +540,7 @@ int _K4_FindSecondActiveVertexOnLowExtFacePath(graphP theGraph)
 	// Now we move on to test all the vertices strictly between X and Y on
 	// the lower external face path, except W, for either pertinence or
 	// future pertinence.
-	Z = _GetNextVertexOnExternalFace(theGraph, Z, &ZPrevLink);
+	Z = _GetNeighborOnExtFace(theGraph, Z, &ZPrevLink);
 
 	while (Z != theGraph->IC.y)
 	{
@@ -561,7 +561,7 @@ int _K4_FindSecondActiveVertexOnLowExtFacePath(graphP theGraph)
 			}
 		}
 
-		Z = _GetNextVertexOnExternalFace(theGraph, Z, &ZPrevLink);
+		Z = _GetNeighborOnExtFace(theGraph, Z, &ZPrevLink);
 	}
 
 	// Now we test Y for future pertinence (same explanation as for X above)
@@ -588,7 +588,7 @@ int  _K4_FindPlanarityActiveVertex(graphP theGraph, int v, int R, int prevLink, 
 {
 	int W = R, WPrevLink = prevLink;
 
-	W = _GetNextVertexOnExternalFace(theGraph, R, &WPrevLink);
+	W = _GetNeighborOnExtFace(theGraph, R, &WPrevLink);
 
 	while (W != R)
 	{
@@ -607,7 +607,7 @@ int  _K4_FindPlanarityActiveVertex(graphP theGraph, int v, int R, int prevLink, 
 	    	}
 	    }
 
-		W = _GetNextVertexOnExternalFace(theGraph, W, &WPrevLink);
+		W = _GetNeighborOnExtFace(theGraph, W, &WPrevLink);
 	}
 
 	return NOTOK;
@@ -657,7 +657,7 @@ int _K4_FindSeparatingInternalEdge(graphP theGraph, int R, int prevLink, int A, 
 	// Search each of the vertices in the range (R ... A)
 	*pX = *pY = NIL;
 	ZPrevLink = prevLink;
-	Z = _GetNextVertexOnExternalFace(theGraph, R, &ZPrevLink);
+	Z = _GetNeighborOnExtFace(theGraph, R, &ZPrevLink);
 	while (Z != A)
 	{
 		// Search for a separator among the edges of Z
@@ -682,7 +682,7 @@ int _K4_FindSeparatingInternalEdge(graphP theGraph, int R, int prevLink, int A, 
 	    	break;
 
 		// Go to the next vertex
-		Z = _GetNextVertexOnExternalFace(theGraph, Z, &ZPrevLink);
+		Z = _GetNeighborOnExtFace(theGraph, Z, &ZPrevLink);
 	}
 
 	// Restore the unmarked obstruction type settings on the path [R ... A]
@@ -708,7 +708,7 @@ void _K4_MarkObstructionTypeOnExternalFacePath(graphP theGraph, int R, int prevL
 	Z = R;
 	while (Z != A)
 	{
-		Z = _GetNextVertexOnExternalFace(theGraph, Z, &ZPrevLink);
+		Z = _GetNeighborOnExtFace(theGraph, Z, &ZPrevLink);
 		gp_SetVertexObstructionType(theGraph, Z, VERTEX_OBSTRUCTIONTYPE_MARKED);
 	}
 }
@@ -730,7 +730,7 @@ void _K4_UnmarkObstructionTypeOnExternalFacePath(graphP theGraph, int R, int pre
 	Z = R;
 	while (Z != A)
 	{
-		Z = _GetNextVertexOnExternalFace(theGraph, Z, &ZPrevLink);
+		Z = _GetNeighborOnExtFace(theGraph, Z, &ZPrevLink);
 		gp_ClearVertexObstructionType(theGraph, Z);
 	}
 }
@@ -1012,7 +1012,7 @@ int  _K4_ReducePathComponent(graphP theGraph, K4SearchContext *context, int R, i
 	Z = R;
 	while (Z != A)
 	{
-		Z = _GetNextVertexOnExternalFace(theGraph, Z, &ZPrevLink);
+		Z = _GetNeighborOnExtFace(theGraph, Z, &ZPrevLink);
 	}
 	e_A = gp_GetArc(theGraph, A, ZPrevLink);
 	e_R = gp_GetArc(theGraph, R, 1^prevLink);
@@ -1105,7 +1105,7 @@ int _K4_TestPathComponentForAncestor(graphP theGraph, int R, int prevLink, int A
 	Z = R;
 	while (Z != A)
 	{
-		Z = _GetNextVertexOnExternalFace(theGraph, Z, &ZPrevLink);
+		Z = _GetNeighborOnExtFace(theGraph, Z, &ZPrevLink);
 		if (Z < A)
 			return TRUE;
 	}
@@ -1119,7 +1119,7 @@ int _K4_TestPathComponentForAncestor(graphP theGraph, int R, int prevLink, int A
  2-cut (R, A). The component contains the external face path from R to A.
  The 1^prevLink arc of R is contained in that path (i.e. the first arc if
  prevLink indicates the last, or the last arc if prevLink indicates the first).
- The prevLink is passed because _GetNextVertexOnExternalFace() uses the
+ The prevLink is passed because _GetNeighborOnExtFace() uses the
  opposing link to traverse to the "next" vertex.
 
  All vertices in this desired component are along the external face, so we
@@ -1136,7 +1136,7 @@ void _K4_ClearVisitedInPathComponent(graphP theGraph, int R, int prevLink, int A
 	int Z, ZPrevLink, e;
 
 	ZPrevLink = prevLink;
-	Z = _GetNextVertexOnExternalFace(theGraph, R, &ZPrevLink);
+	Z = _GetNeighborOnExtFace(theGraph, R, &ZPrevLink);
 	while (Z != A)
 	{
 		gp_ClearVertexVisited(theGraph, Z);
@@ -1150,7 +1150,7 @@ void _K4_ClearVisitedInPathComponent(graphP theGraph, int R, int prevLink, int A
 			e = gp_GetNextArc(theGraph, e);
 		}
 
-		Z = _GetNextVertexOnExternalFace(theGraph, Z, &ZPrevLink);
+		Z = _GetNeighborOnExtFace(theGraph, Z, &ZPrevLink);
 	}
 }
 
@@ -1160,7 +1160,7 @@ void _K4_ClearVisitedInPathComponent(graphP theGraph, int R, int prevLink, int A
  There is a subcomponent of the bicomp rooted by R that is separable by the
  2-cut (R, A) and contains the external face path from R to A that includes
  the arc gp_GetArc(theGraph, R, 1^prevLink), which is the first arc traversed
- by _GetNextVertexOnExternalFace(..., &prevLink).
+ by _GetNeighborOnExtFace(..., &prevLink).
 
  The edges in the component have been marked unvisited except for a path we
  intend to preserve. This routine deletes the unvisited edges.
@@ -1187,7 +1187,7 @@ int  _K4_DeleteUnmarkedEdgesInPathComponent(graphP theGraph, int R, int prevLink
 	// Traverse all vertices internal to the path (R ... A) and push
 	// all non-visited edges
 	ZPrevLink = prevLink;
-	Z = _GetNextVertexOnExternalFace(theGraph, R, &ZPrevLink);
+	Z = _GetNeighborOnExtFace(theGraph, R, &ZPrevLink);
 	while (Z != A)
 	{
 		e = gp_GetFirstArc(theGraph, Z);
@@ -1207,7 +1207,7 @@ int  _K4_DeleteUnmarkedEdgesInPathComponent(graphP theGraph, int R, int prevLink
 			e = gp_GetNextArc(theGraph, e);
 		}
 
-		Z = _GetNextVertexOnExternalFace(theGraph, Z, &ZPrevLink);
+		Z = _GetNeighborOnExtFace(theGraph, Z, &ZPrevLink);
 	}
 
 	// Delete all the non-visited edges

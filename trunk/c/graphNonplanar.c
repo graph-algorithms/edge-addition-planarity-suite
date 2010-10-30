@@ -54,7 +54,6 @@ extern int  _ClearVertexTypeInBicomp(graphP theGraph, int BicompRoot);
 extern int  _HideInternalEdges(graphP theGraph, int vertex);
 extern int  _RestoreInternalEdges(graphP theGraph, int stackBottom);
 
-extern int  _GetNextVertexOnExternalFace(graphP theGraph, int curVertex, int *pPrevLink);
 extern int  _OrientVerticesInEmbedding(graphP theGraph);
 extern int  _OrientVerticesInBicomp(graphP theGraph, int BicompRoot, int PreserveSigns);
 
@@ -63,7 +62,7 @@ extern int  _OrientVerticesInBicomp(graphP theGraph, int BicompRoot, int Preserv
 int  _ChooseTypeOfNonplanarityMinor(graphP theGraph, int v, int R);
 int  _InitializeNonplanarityContext(graphP theGraph, int v, int R);
 
-int  _FindNonplanarityBicompRoot(graphP theGraph);
+int  _GetNeighborOnExtFace(graphP theGraph, int curVertex, int *pPrevLink);
 void _FindActiveVertices(graphP theGraph, int R, int *pX, int *pY);
 int  _FindPertinentVertex(graphP theGraph);
 int  _SetVertexTypesForMarkingXYPath(graphP theGraph);
@@ -232,6 +231,114 @@ int  _InitializeNonplanarityContext(graphP theGraph, int v, int R)
      return OK;
 }
 
+/********************************************************************
+ _GetNeighborOnExtFace()
+
+ Each vertex contains two 'link' index pointers that indicate the
+ first and last adjacency list arc.  If the vertex is on the external face,
+ then these two arcs are also on the external face.  We want to take one of
+ those edges to get to the next vertex on the external face.
+ On input *pPrevLink indicates which link we followed to arrive at
+ curVertex.  On output *pPrevLink will be set to the link we follow to
+ get into the next vertex.
+ To get to the next vertex, we use the opposite link from the one used
+ to get into curVertex.  This takes us to an edge node.  The twinArc
+ of that edge node, carries us to an edge node in the next vertex.
+ At least one of the two links in that edge node will lead to a vertex
+ node in G, which is the next vertex.  Once we arrive at the next
+ vertex, at least one of its links will lead back to the edge node, and
+ that link becomes the output value of *pPrevLink.
+
+ NOTE: This method intentionally ignores the extFace optimization
+       links. It is invoked when the "real" external face must be
+       traversed and hence when the constant time guarantee is not
+       needed from the extFace short-circuit that connects the
+       bicomp root to the first active vertices along each external
+       face path emanating from the bicomp root.
+ ********************************************************************/
+
+int  _GetNeighborOnExtFace(graphP theGraph, int curVertex, int *pPrevLink)
+{
+     /* Exit curVertex from whichever link was not previously used to enter it */
+
+     int arc = gp_GetArc(theGraph, curVertex, 1^(*pPrevLink));
+     int nextVertex = gp_GetNeighbor(theGraph, arc);
+
+     /* This if stmt assigns the new prev link that tells us which edge
+        record was used to enter nextVertex (so that we exit from the
+        opposing edge record).
+
+        However, if we are in a singleton bicomp, then both links in nextVertex
+        lead back to curVertex.  We want the two arcs of a singleton bicomp to
+        act like a cycle, so we just don't change the prev link in this case.
+
+        But when nextVertex has more than one edge, we need to figure out
+        whether the first edge or last edge (which are the two on the external
+        face) was used to enter nextVertex so we can exit from the other one
+        as traversal of the external face continues later. */
+
+     if (gp_GetFirstArc(theGraph, nextVertex) != gp_GetLastArc(theGraph, nextVertex))
+         *pPrevLink = gp_GetTwinArc(theGraph, arc) == gp_GetFirstArc(theGraph, nextVertex) ? 0 : 1;
+
+     return nextVertex;
+}
+
+/****************************************************************************
+ _FindActiveVertices()
+
+ Descends from the root of a bicomp R along both external face paths (which
+ are indicated by the first and last arcs in R's adjacency list), returning
+ the first active vertex appearing in each direction.
+ ****************************************************************************/
+
+void _FindActiveVertices(graphP theGraph, int R, int *pX, int *pY)
+{
+int  XPrevLink=1, YPrevLink=0, v=theGraph->IC.v;
+
+     *pX = _GetNeighborOnExtFace(theGraph, R, &XPrevLink);
+     *pY = _GetNeighborOnExtFace(theGraph, R, &YPrevLink);
+
+     gp_UpdateVertexFuturePertinentChild(theGraph, *pX, v);
+     while (_VertexActiveStatus(theGraph, *pX, v) == VAS_INACTIVE)
+     {
+        *pX = _GetNeighborOnExtFace(theGraph, *pX, &XPrevLink);
+        gp_UpdateVertexFuturePertinentChild(theGraph, *pX, v);
+     }
+
+     gp_UpdateVertexFuturePertinentChild(theGraph, *pY, v);
+     while (_VertexActiveStatus(theGraph, *pY, v) == VAS_INACTIVE)
+     {
+        *pY = _GetNeighborOnExtFace(theGraph, *pY, &YPrevLink);
+        gp_UpdateVertexFuturePertinentChild(theGraph, *pY, v);
+     }
+}
+
+/****************************************************************************
+ _FindPertinentVertex()
+
+ Get the first vertex after x. Since x was obtained using a prevlink of 1 on r,
+ we use the same prevlink so we don't go back to R.
+ Then, we proceed around the lower path until we find a vertex W that either
+ has pertinent child bicomps or is directly adjacent to the current vertex v.
+ ****************************************************************************/
+
+int  _FindPertinentVertex(graphP theGraph)
+{
+int  W=theGraph->IC.x, WPrevLink=1;
+
+     W = _GetNeighborOnExtFace(theGraph, W, &WPrevLink);
+
+     while (W != theGraph->IC.y)
+     {
+         if (PERTINENT(theGraph, W))
+             return W;
+
+         W = _GetNeighborOnExtFace(theGraph, W, &WPrevLink);
+     }
+
+     return NIL;
+}
+
 /****************************************************************************
  _SetVertexTypesForMarkingXYPath()
 
@@ -260,83 +367,27 @@ int  _SetVertexTypesForMarkingXYPath(graphP theGraph)
 
 	// Traverse from R to W in the X direction
 	ZPrevLink = 1;
-	Z = _GetNextVertexOnExternalFace(theGraph, R, &ZPrevLink);
+	Z = _GetNeighborOnExtFace(theGraph, R, &ZPrevLink);
 	ZType = VERTEX_OBSTRUCTIONTYPE_HIGH_RXW;
 	while (Z != W)
 	{
 		if (Z == X) ZType = VERTEX_OBSTRUCTIONTYPE_LOW_RXW;
 		gp_ResetVertexObstructionType(theGraph, Z, ZType);
-		Z = _GetNextVertexOnExternalFace(theGraph, Z, &ZPrevLink);
+		Z = _GetNeighborOnExtFace(theGraph, Z, &ZPrevLink);
 	}
 
 	// Traverse from R to W in the Y direction
 	ZPrevLink = 0;
-	Z = _GetNextVertexOnExternalFace(theGraph, R, &ZPrevLink);
+	Z = _GetNeighborOnExtFace(theGraph, R, &ZPrevLink);
 	ZType = VERTEX_OBSTRUCTIONTYPE_HIGH_RYW;
 	while (Z != W)
 	{
 		if (Z == Y) ZType = VERTEX_OBSTRUCTIONTYPE_LOW_RYW;
 		gp_ResetVertexObstructionType(theGraph, Z, ZType);
-		Z = _GetNextVertexOnExternalFace(theGraph, Z, &ZPrevLink);
+		Z = _GetNeighborOnExtFace(theGraph, Z, &ZPrevLink);
 	}
 
 	return OK;
-}
-
-/****************************************************************************
- _FindActiveVertices()
-
- Descends from the root of a bicomp R along both external face paths (which
- are indicated by the first and last arcs in R's adjacency list), returning
- the first active vertex appearing in each direction.
- ****************************************************************************/
-
-void _FindActiveVertices(graphP theGraph, int R, int *pX, int *pY)
-{
-int  XPrevLink=1, YPrevLink=0, v=theGraph->IC.v;
-
-     *pX = _GetNextVertexOnExternalFace(theGraph, R, &XPrevLink);
-     *pY = _GetNextVertexOnExternalFace(theGraph, R, &YPrevLink);
-
-     gp_UpdateVertexFuturePertinentChild(theGraph, *pX, v);
-     while (_VertexActiveStatus(theGraph, *pX, v) == VAS_INACTIVE)
-     {
-        *pX = _GetNextVertexOnExternalFace(theGraph, *pX, &XPrevLink);
-        gp_UpdateVertexFuturePertinentChild(theGraph, *pX, v);
-     }
-
-     gp_UpdateVertexFuturePertinentChild(theGraph, *pY, v);
-     while (_VertexActiveStatus(theGraph, *pY, v) == VAS_INACTIVE)
-     {
-        *pY = _GetNextVertexOnExternalFace(theGraph, *pY, &YPrevLink);
-        gp_UpdateVertexFuturePertinentChild(theGraph, *pY, v);
-     }
-}
-
-/****************************************************************************
- _FindPertinentVertex()
-
- Get the first vertex after x. Since x was obtained using a prevlink of 1 on r,
- we use the same prevlink so we don't go back to R.
- Then, we proceed around the lower path until we find a vertex W that either
- has pertinent child bicomps or is directly adjacent to the current vertex v.
- ****************************************************************************/
-
-int  _FindPertinentVertex(graphP theGraph)
-{
-int  W=theGraph->IC.x, WPrevLink=1;
-
-     W = _GetNextVertexOnExternalFace(theGraph, W, &WPrevLink);
-
-     while (W != theGraph->IC.y)
-     {
-         if (PERTINENT(theGraph, W))
-             return W;
-
-         W = _GetNextVertexOnExternalFace(theGraph, W, &WPrevLink);
-     }
-
-     return NIL;
 }
 
 /****************************************************************************
@@ -698,7 +749,7 @@ int  _FindExtActivityBelowXYPath(graphP theGraph)
 int  Z=theGraph->IC.px, ZPrevLink=1,
      Py=theGraph->IC.py, v=theGraph->IC.v;
 
-     Z = _GetNextVertexOnExternalFace(theGraph, Z, &ZPrevLink);
+     Z = _GetNeighborOnExtFace(theGraph, Z, &ZPrevLink);
 
      while (Z != Py)
      {
@@ -706,7 +757,7 @@ int  Z=theGraph->IC.px, ZPrevLink=1,
          if (_VertexActiveStatus(theGraph, Z, v) == VAS_EXTERNAL)
              return Z;
 
-         Z = _GetNextVertexOnExternalFace(theGraph, Z, &ZPrevLink);
+         Z = _GetNeighborOnExtFace(theGraph, Z, &ZPrevLink);
      }
 
      return NIL;

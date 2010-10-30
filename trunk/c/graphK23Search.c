@@ -48,7 +48,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 extern void _ClearVisitedFlags(graphP);
 
-extern int  _GetNextVertexOnExternalFace(graphP theGraph, int curVertex, int *pPrevLink);
+extern int  _GetNeighborOnExtFace(graphP theGraph, int curVertex, int *pPrevLink);
 extern int  _OrientVerticesInBicomp(graphP theGraph, int BicompRoot, int PreserveSigns);
 extern int  _JoinBicomps(graphP theGraph);
 
@@ -133,8 +133,8 @@ int X, Y, XPrevLink, YPrevLink;
      Y = IC->y;
      XPrevLink = 1;
      YPrevLink = 0;
-     if (IC->w != _GetNextVertexOnExternalFace(theGraph, X, &XPrevLink) ||
-         IC->w != _GetNextVertexOnExternalFace(theGraph, Y, &YPrevLink))
+     if (IC->w != _GetNeighborOnExtFace(theGraph, X, &XPrevLink) ||
+         IC->w != _GetNeighborOnExtFace(theGraph, Y, &YPrevLink))
      {
          _ClearVisitedFlags(theGraph);
 
@@ -213,7 +213,7 @@ int XPrevLink = 1;
 
 /* Isolate E2 */
 
-     else if (IC->w != _GetNextVertexOnExternalFace(theGraph, IC->x, &XPrevLink))
+     else if (IC->w != _GetNeighborOnExtFace(theGraph, IC->x, &XPrevLink))
      {
          if (_MarkPathAlongBicompExtFace(theGraph, IC->r, IC->y) != OK)
              return NOTOK;
