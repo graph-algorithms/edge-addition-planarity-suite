@@ -47,7 +47,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* Imported functions */
 
 extern void _ClearVisitedFlags(graphP);
-extern void _ClearIsolatorContext(graphP theGraph);
 
 extern int  _GetNextVertexOnExternalFace(graphP theGraph, int curVertex, int *pPrevLink);
 extern int  _JoinBicomps(graphP theGraph);

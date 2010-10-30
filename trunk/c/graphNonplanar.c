@@ -48,7 +48,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Imported functions */
 
-extern void _ClearIsolatorContext(graphP theGraph);
+extern void _InitIsolatorContext(graphP theGraph);
 extern int  _ClearVisitedFlagsInBicomp(graphP theGraph, int BicompRoot);
 extern int  _ClearVertexTypeInBicomp(graphP theGraph, int BicompRoot);
 extern int  _HideInternalEdges(graphP theGraph, int vertex);
@@ -193,7 +193,7 @@ int  _InitializeNonplanarityContext(graphP theGraph, int v, int R)
 {
 	 // Blank out the isolator context, then assign the input graph reference
      // and the current vertext v into the context.
-     _ClearIsolatorContext(theGraph);
+     _InitIsolatorContext(theGraph);
      theGraph->IC.v = v;
 
      // The bicomp root provided was the one on which the WalkDown was performed,

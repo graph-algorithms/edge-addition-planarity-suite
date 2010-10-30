@@ -78,7 +78,7 @@ int  _RestoreVertex(graphP theGraph);
  Private functions, except exported within library
  ********************************************************************/
 
-void _ClearIsolatorContext(graphP theGraph);
+void _InitIsolatorContext(graphP theGraph);
 void _ClearVisitedFlags(graphP theGraph);
 void _ClearVertexVisitedFlags(graphP theGraph, int);
 void _ClearEdgeVisitedFlags(graphP theGraph);
@@ -276,7 +276,7 @@ int  Vsize, Esize, stackSize;
 
      _InitVertices(theGraph);
      _InitEdges(theGraph);
-     _ClearIsolatorContext(theGraph);
+     _InitIsolatorContext(theGraph);
 
      return OK;
 }
@@ -338,7 +338,7 @@ void _ReinitializeGraph(graphP theGraph)
 
      _InitVertices(theGraph);
      _InitEdges(theGraph);
-     _ClearIsolatorContext(theGraph);
+     _InitIsolatorContext(theGraph);
 
      LCReset(theGraph->BicompLists);
      LCReset(theGraph->sortedDFSChildLists);
@@ -535,10 +535,10 @@ void _InitEdgeRec(graphP theGraph, int e)
 }
 
 /********************************************************************
- _ClearIsolatorContext()
+ _InitIsolatorContext()
  ********************************************************************/
 
-void _ClearIsolatorContext(graphP theGraph)
+void _InitIsolatorContext(graphP theGraph)
 {
 isolatorContextP IC = &theGraph->IC;
 
@@ -872,7 +872,7 @@ void _ClearGraph(graphP theGraph)
      theGraph->internalFlags = 0;
      theGraph->embedFlags = 0;
 
-     _ClearIsolatorContext(theGraph);
+     _InitIsolatorContext(theGraph);
 
      LCFree(&theGraph->BicompLists);
      LCFree(&theGraph->sortedDFSChildLists);
