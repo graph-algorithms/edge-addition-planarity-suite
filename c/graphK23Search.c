@@ -64,13 +64,13 @@ extern int  _AddAndMarkEdge(graphP theGraph, int ancestor, int descendant);
 
 extern int  _DeleteUnmarkedVerticesAndEdges(graphP theGraph);
 
-extern int  _ChooseTypeOfNonOuterplanarityMinor(graphP theGraph, int I, int R);
+extern int  _ChooseTypeOfNonOuterplanarityMinor(graphP theGraph, int v, int R);
 extern int  _IsolateOuterplanarityObstructionA(graphP theGraph);
 extern int  _IsolateOuterplanarityObstructionB(graphP theGraph);
 
 /* Private function declarations for K_{2,3} searching */
 
-int  _SearchForK23InBicomp(graphP theGraph, int I, int R);
+int  _SearchForK23InBicomp(graphP theGraph, int v, int R);
 int  _IsolateOuterplanarityObstructionE1orE2(graphP theGraph);
 int  _IsolateOuterplanarityObstructionE3orE4(graphP theGraph);
 
@@ -78,14 +78,14 @@ int  _IsolateOuterplanarityObstructionE3orE4(graphP theGraph);
  _SearchForK23InBicomp()
  ****************************************************************************/
 
-int  _SearchForK23InBicomp(graphP theGraph, int I, int R)
+int  _SearchForK23InBicomp(graphP theGraph, int v, int R)
 {
 isolatorContextP IC = &theGraph->IC;
 int X, Y, XPrevLink, YPrevLink;
 
 /* Begin by determining whether minor A, B or E is detected */
 
-     if (_ChooseTypeOfNonOuterplanarityMinor(theGraph, I, R) != OK)
+     if (_ChooseTypeOfNonOuterplanarityMinor(theGraph, v, R) != OK)
          return NOTOK;
 
 /* Minors A and B result in the desired K_{2,3} homeomorph,
@@ -149,16 +149,16 @@ int X, Y, XPrevLink, YPrevLink;
 
  /* If X, Y or W make either a direct back edge connection or a
         connection through a separated child bicomp to an ancestor of
-        the current vertex I, then we can obtain a K_{2,3} by minor
+        the current vertex v, then we can obtain a K_{2,3} by minor
         E3 or E4. Note that this question is query on X, Y and W is
         equivalent to the planarity version of external activity. */
 
-     gp_UpdateVertexFuturePertinentChild(theGraph, X, I);
-     gp_UpdateVertexFuturePertinentChild(theGraph, Y, I);
-     gp_UpdateVertexFuturePertinentChild(theGraph, IC->w, I);
-     if (FUTUREPERTINENT(theGraph, X, I) ||
-         FUTUREPERTINENT(theGraph, Y, I) ||
-         FUTUREPERTINENT(theGraph, IC->w, I))
+     gp_UpdateVertexFuturePertinentChild(theGraph, X, v);
+     gp_UpdateVertexFuturePertinentChild(theGraph, Y, v);
+     gp_UpdateVertexFuturePertinentChild(theGraph, IC->w, v);
+     if (FUTUREPERTINENT(theGraph, X, v) ||
+         FUTUREPERTINENT(theGraph, Y, v) ||
+         FUTUREPERTINENT(theGraph, IC->w, v))
      {
          _ClearVisitedFlags(theGraph);
 

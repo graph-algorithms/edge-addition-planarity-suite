@@ -569,7 +569,7 @@ int v, e, Vsize, EsizeOccupied;
           e = gp_GetFirstArc(theGraph, v);
           while (e != NIL)
           {
-              fprintf(Outfile, " %d(J=%d)", gp_GetNeighbor(theGraph, e), e);
+              fprintf(Outfile, " %d(e=%d)", gp_GetNeighbor(theGraph, e), e);
               e = gp_GetNextArc(theGraph, e);
           }
 

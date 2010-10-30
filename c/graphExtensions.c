@@ -304,15 +304,15 @@ void _OverloadFunctions(graphP theGraph, graphFunctionTableP functions)
 void **graphFunctionTable = (void **) &theGraph->functions;
 void **newFunctionTable = (void **) functions;
 int  numFunctions = sizeof(theGraph->functions) / sizeof(void *);
-int  I;
+int  K;
 
-    for (I = 0; I < numFunctions; I++)
+    for (K = 0; K < numFunctions; K++)
     {
-        if (newFunctionTable[I] != NULL)
+        if (newFunctionTable[K] != NULL)
         {
-            void *fp = graphFunctionTable[I];
-            graphFunctionTable[I] = newFunctionTable[I];
-            newFunctionTable[I] = fp;
+            void *fp = graphFunctionTable[K];
+            graphFunctionTable[K] = newFunctionTable[K];
+            newFunctionTable[K] = fp;
         }
     }
 }
@@ -462,19 +462,19 @@ void _FixupFunctionTables(graphP theGraph, graphExtensionP curr)
 {
     void **currFunctionTable = (void **) (curr->functions);
     int  numFunctions = sizeof(*(curr->functions)) / sizeof(void *);
-    int  I;
+    int  K;
 
-    for (I = 0; I < numFunctions; I++)
+    for (K = 0; K < numFunctions; K++)
     {
-        if (currFunctionTable[I] != NULL)
+        if (currFunctionTable[K] != NULL)
         {
             void **nearestOverloadFunctionTable = (void **) &theGraph->functions;
-            graphExtensionP pred = _FindNearestOverload(theGraph, curr, I);
+            graphExtensionP pred = _FindNearestOverload(theGraph, curr, K);
 
             if (pred != NULL)
                 nearestOverloadFunctionTable = (void **) pred->functions;
 
-            nearestOverloadFunctionTable[I] = currFunctionTable[I];
+            nearestOverloadFunctionTable[K] = currFunctionTable[K];
         }
     }
 }

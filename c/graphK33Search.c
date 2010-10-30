@@ -74,10 +74,10 @@ extern int  _ClearVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x
 extern int  _SetVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x);
 extern int  _OrientExternalFacePath(graphP theGraph, int u, int v, int w, int x);
 
-extern int  _ChooseTypeOfNonplanarityMinor(graphP theGraph, int I, int R);
+extern int  _ChooseTypeOfNonplanarityMinor(graphP theGraph, int v, int R);
 extern int  _MarkHighestXYPath(graphP theGraph);
 
-extern int  _IsolateKuratowskiSubgraph(graphP theGraph, int I, int R);
+extern int  _IsolateKuratowskiSubgraph(graphP theGraph, int v, int R);
 
 extern int  _GetLeastAncestorConnection(graphP theGraph, int cutVertex);
 extern int  _FindUnembeddedEdgeToCurVertex(graphP theGraph, int cutVertex, int *pDescendant);
@@ -99,7 +99,7 @@ extern int  _AddAndMarkUnembeddedEdges(graphP theGraph);
 
 /* Private functions for K_{3,3} searching. */
 
-int  _SearchForK33InBicomp(graphP theGraph, K33SearchContext *context, int I, int R);
+int  _SearchForK33InBicomp(graphP theGraph, K33SearchContext *context, int v, int R);
 
 int  _RunExtraK33Tests(graphP theGraph, K33SearchContext *context);
 int  _SearchForMinorE1(graphP theGraph);
@@ -110,8 +110,8 @@ int  _GetAdjacentAncestorInRange(graphP theGraph, K33SearchContext *context, int
                                 int closerAncestor, int fartherAncestor);
 int  _FindExternalConnectionDescendantEndpoint(graphP theGraph, int ancestor,
                                                int cutVertex, int *pDescendant);
-int  _SearchForMergeBlocker(graphP theGraph, K33SearchContext *context, int I, int *pMergeBlocker);
-int  _FindK33WithMergeBlocker(graphP theGraph, K33SearchContext *context, int I, int mergeBlocker);
+int  _SearchForMergeBlocker(graphP theGraph, K33SearchContext *context, int v, int *pMergeBlocker);
+int  _FindK33WithMergeBlocker(graphP theGraph, K33SearchContext *context, int v, int mergeBlocker);
 
 int  _TestForLowXYPath(graphP theGraph);
 int  _TestForZtoWPath(graphP theGraph);
@@ -119,7 +119,7 @@ int  _TestForStraddlingBridge(graphP theGraph, K33SearchContext *context, int u_
 int  _ReduceBicomp(graphP theGraph, K33SearchContext *context, int R);
 int  _ReduceExternalFacePathToEdge(graphP theGraph, K33SearchContext *context, int u, int x, int edgeType);
 int  _ReduceXYPathToEdge(graphP theGraph, K33SearchContext *context, int u, int x, int edgeType);
-int  _RestoreReducedPath(graphP theGraph, K33SearchContext *context, int J);
+int  _RestoreReducedPath(graphP theGraph, K33SearchContext *context, int e);
 int  _RestoreAndOrientReducedPaths(graphP theGraph, K33SearchContext *context);
 
 int  _IsolateMinorE5(graphP theGraph);
@@ -130,14 +130,14 @@ int  _IsolateMinorE7(graphP theGraph, K33SearchContext *context);
  _SearchForK33InBicomp()
  ****************************************************************************/
 
-int  _SearchForK33InBicomp(graphP theGraph, K33SearchContext *context, int I, int R)
+int  _SearchForK33InBicomp(graphP theGraph, K33SearchContext *context, int v, int R)
 {
 isolatorContextP IC = &theGraph->IC;
 int tempResult;
 
 /* Begin by determining which non-planarity minor is detected */
 
-     if (_ChooseTypeOfNonplanarityMinor(theGraph, I, R) != OK)
+     if (_ChooseTypeOfNonplanarityMinor(theGraph, v, R) != OK)
          return NOTOK;
 
 /* If minor A is selected, then the root of the oriented bicomp has been changed */
@@ -175,7 +175,7 @@ int tempResult;
             sp_Push2(theGraph->theStack, R, NIL);
         }
 
-        if (_IsolateKuratowskiSubgraph(theGraph, I, R) != OK)
+        if (_IsolateKuratowskiSubgraph(theGraph, v, R) != OK)
             return NOTOK;
 
         return NONEMBEDDABLE;
@@ -201,7 +201,7 @@ int tempResult;
         	_RestoreAndOrientReducedPaths(theGraph, context) != OK)
             return NOTOK;
 
-        if (_IsolateKuratowskiSubgraph(theGraph, I, R) != OK)
+        if (_IsolateKuratowskiSubgraph(theGraph, v, R) != OK)
             return NOTOK;
 
         return NONEMBEDDABLE;
@@ -576,12 +576,12 @@ isolatorContextP IC = &theGraph->IC;
 /****************************************************************************
  _Fast_GetLeastAncestorConnection()
 
- This function searches for an ancestor of the current vertex I adjacent by a
+ This function searches for an ancestor of the current vertex v adjacent by a
  cycle edge to the given cutVertex or one of its DFS descendants appearing in
  a separated bicomp. The given cutVertex is assumed to be externally active
  such that either the leastAncestor or the lowpoint of a separated DFS child
- is less than I.  We obtain the minimum possible connection from the cutVertex
- to an ancestor of I.
+ is less than v.  We obtain the minimum possible connection from the cutVertex
+ to an ancestor of v.
 
  This function performs the same operation as _GetLeastAncestorConnection(),
  except in constant time.
@@ -609,17 +609,17 @@ int  _Fast_GetLeastAncestorConnection(graphP theGraph, K33SearchContext *context
 int _GetAdjacentAncestorInRange(graphP theGraph, K33SearchContext *context, int theVertex,
                                 int closerAncestor, int fartherAncestor)
 {
-int J = context->VI[theVertex].backArcList;
+int e = context->VI[theVertex].backArcList;
 
-    while (J != NIL)
+    while (e != NIL)
     {
-        if (gp_GetNeighbor(theGraph, J) < closerAncestor &&
-            gp_GetNeighbor(theGraph, J) > fartherAncestor)
-            return gp_GetNeighbor(theGraph, J);
+        if (gp_GetNeighbor(theGraph, e) < closerAncestor &&
+            gp_GetNeighbor(theGraph, e) > fartherAncestor)
+            return gp_GetNeighbor(theGraph, e);
 
-        J = gp_GetNextArc(theGraph, J);
-        if (J == context->VI[theVertex].backArcList)
-            J = NIL;
+        e = gp_GetNextArc(theGraph, e);
+        if (e == context->VI[theVertex].backArcList)
+            e = NIL;
     }
     return NIL;
 }
@@ -712,23 +712,23 @@ int  listHead, child, descendant;
 int  _FindExternalConnectionDescendantEndpoint(graphP theGraph, int ancestor,
                                                int cutVertex, int *pDescendant)
 {
-int  listHead, child, J;
+int  listHead, child, e;
 
      // Check whether the cutVertex is directly adjacent to the ancestor
      // by an unembedded back edge.
 
-     J = gp_GetVertexFwdArcList(theGraph, ancestor);
-     while (J != NIL)
+     e = gp_GetVertexFwdArcList(theGraph, ancestor);
+     while (e != NIL)
      {
-         if (gp_GetNeighbor(theGraph, J) == cutVertex)
+         if (gp_GetNeighbor(theGraph, e) == cutVertex)
          {
              *pDescendant = cutVertex;
              return OK;
          }
 
-         J = gp_GetNextArc(theGraph, J);
-         if (J == gp_GetVertexFwdArcList(theGraph, ancestor))
-             J = NIL;
+         e = gp_GetNextArc(theGraph, e);
+         if (e == gp_GetVertexFwdArcList(theGraph, ancestor))
+             e = NIL;
      }
 
      // Now check the descendants of the cut vertex to see if any make
@@ -764,7 +764,7 @@ int  listHead, child, J;
          pMergeBlocker is set to NIL unless a merge blocker is found.
  ****************************************************************************/
 
-int  _SearchForMergeBlocker(graphP theGraph, K33SearchContext *context, int I, int *pMergeBlocker)
+int  _SearchForMergeBlocker(graphP theGraph, K33SearchContext *context, int v, int *pMergeBlocker)
 {
 stackP tempStack;
 int  R, Rout, Z, ZPrevLink;
@@ -790,7 +790,7 @@ int  R, Rout, Z, ZPrevLink;
          sp_Pop2(tempStack, Z, ZPrevLink);
 
          if (context->VI[Z].mergeBlocker != NIL &&
-             context->VI[Z].mergeBlocker < I)
+             context->VI[Z].mergeBlocker < v)
          {
              *pMergeBlocker = Z;
              break;
@@ -810,16 +810,16 @@ int  R, Rout, Z, ZPrevLink;
  Returns OK on success, NOTOK on internal function failure
  ****************************************************************************/
 
-int  _FindK33WithMergeBlocker(graphP theGraph, K33SearchContext *context, int I, int mergeBlocker)
+int  _FindK33WithMergeBlocker(graphP theGraph, K33SearchContext *context, int v, int mergeBlocker)
 {
-int  R, RPrevLink, u_max, u, J, W, v;
+int  R, RPrevLink, u_max, u, e, W;
 int  N = theGraph->N;
 isolatorContextP IC = &theGraph->IC;
 
 /* First, we orient the vertices so we can successfully restore all of the
     reduced paths.  This needs to be done before reconstructing the context
     for CASE 3 of RunExtraK33Tests() because the reconstruction involves
-    using the Walkup to I from a descendant of I, which will not work if
+    using the Walkup to v from a descendant of v, which will not work if
     the descendant is in one of the reduced paths. */
 
      if (_OrientVerticesInEmbedding(theGraph) != OK ||
@@ -837,12 +837,12 @@ isolatorContextP IC = &theGraph->IC;
      while (R < N)
         R = _GetNextVertexOnExternalFace(theGraph, R, &RPrevLink);
 
-     /* Switch the 'current step' variable I to be equal to the
+     /* Switch the 'current step' variable v to be equal to the
        non-virtual counterpart of the bicomp root. */
 
-     I = gp_GetVertexParent(theGraph, R - N);
+     IC->v = gp_GetVertexParent(theGraph, R - N);
 
-     /* Reinitialize the visitation, pertinence and future pertinence settings from step u_max for step I */
+     /* Reinitialize the visitation, pertinence and future pertinence settings from step u_max for step v */
 
      for (v = 0; v < N; v++)
      {
@@ -850,24 +850,23 @@ isolatorContextP IC = &theGraph->IC;
          gp_SetVertexPertinentAdjacencyInfo(theGraph, v, NIL);
          gp_SetVertexPertinentBicompList(theGraph, v, NIL);
 
-         // Any calls to actually determine FUTUREPERTINENT status will actually invoke
-         // gp_UpdateVertexFuturePertinentChild(theGraph, v, I) beforehand, so only need
-         // to reinitialize here
+         // Any calls to actually determine FUTUREPERTINENT status for a vertex w will actually invoke
+         // gp_UpdateVertexFuturePertinentChild(theGraph, w, v) beforehand, so only need to reinitialize here
          gp_SetVertexFuturePertinentChild(theGraph, v, gp_GetVertexSortedDFSChildList(theGraph, v));
      }
 
-     /* Restore the pertinence settings of step I by doing the Walkup for each
-        back edge that was not embedded when step I was originally performed. */
+     /* Restore the pertinence settings of step v by doing the Walkup for each
+        back edge that was not embedded when step v was originally performed. */
 
-     J = gp_GetVertexFwdArcList(theGraph, I);
-     while (J != NIL)
+     e = gp_GetVertexFwdArcList(theGraph, IC->v);
+     while (e != NIL)
      {
-        W = gp_GetNeighbor(theGraph, J);
-        theGraph->functions.fpWalkUp(theGraph, I, J);
+        W = gp_GetNeighbor(theGraph, e);
+        theGraph->functions.fpWalkUp(theGraph, IC->v, e);
 
-        J = gp_GetNextArc(theGraph, J);
-        if (J == gp_GetVertexFwdArcList(theGraph, I))
-            J = NIL;
+        e = gp_GetNextArc(theGraph, e);
+        if (e == gp_GetVertexFwdArcList(theGraph, IC->v))
+            e = NIL;
      }
 
 /* Next, we make the standard initialization calls for when we have found
@@ -875,7 +874,7 @@ isolatorContextP IC = &theGraph->IC;
 
      sp_ClearStack(theGraph->theStack);
 
-     if (_ChooseTypeOfNonplanarityMinor(theGraph, I, R) != OK)
+     if (_ChooseTypeOfNonplanarityMinor(theGraph, IC->v, R) != OK)
          return NOTOK;
 
      IC->ux = _GetLeastAncestorConnection(theGraph, IC->x);
@@ -1640,58 +1639,58 @@ int  e, v, w;
  return OK on success, NOTOK on failure
  ****************************************************************************/
 
-int  _RestoreReducedPath(graphP theGraph, K33SearchContext *context, int J)
+int  _RestoreReducedPath(graphP theGraph, K33SearchContext *context, int e)
 {
-int  JTwin, u, v, w, x;
-int  J0, J1, JTwin0, JTwin1;
+int  eTwin, u, v, w, x;
+int  e0, e1, eTwin0, eTwin1;
 
-     if (context->E[J].pathConnector == NIL)
+     if (context->E[e].pathConnector == NIL)
          return OK;
 
-     JTwin = gp_GetTwinArc(theGraph, J);
+     eTwin = gp_GetTwinArc(theGraph, e);
 
-     u = gp_GetNeighbor(theGraph, JTwin);
-     v = context->E[J].pathConnector;
-     w = context->E[JTwin].pathConnector;
-     x = gp_GetNeighbor(theGraph, J);
+     u = gp_GetNeighbor(theGraph, eTwin);
+     v = context->E[e].pathConnector;
+     w = context->E[eTwin].pathConnector;
+     x = gp_GetNeighbor(theGraph, e);
 
      /* Get the locations of the edge records between which the new
         edge records must be added in order to reconnect the path
         parallel to the edge. */
 
-     J0 = gp_GetNextArc(theGraph, J);
-     J1 = gp_GetPrevArc(theGraph, J);
-     JTwin0 = gp_GetNextArc(theGraph, JTwin);
-     JTwin1 = gp_GetPrevArc(theGraph, JTwin);
+     e0 = gp_GetNextArc(theGraph, e);
+     e1 = gp_GetPrevArc(theGraph, e);
+     eTwin0 = gp_GetNextArc(theGraph, eTwin);
+     eTwin1 = gp_GetPrevArc(theGraph, eTwin);
 
-     /* We first delete the edge represented by J and JTwin. We do so before
+     /* We first delete the edge represented by e and eTwin. We do so before
         restoring the path to ensure we do not exceed the maximum arc capacity. */
 
-     gp_DeleteEdge(theGraph, J, 0);
+     gp_DeleteEdge(theGraph, e, 0);
 
      /* Now we add the two edges to reconnect the reduced path represented
-        by the edge [J, JTwin].  The edge record in u is added between J0 and J1.
-        Likewise, the new edge record in x is added between JTwin0 and JTwin1. */
+        by the edge [e, eTwin].  The edge record in u is added between e0 and e1.
+        Likewise, the new edge record in x is added between eTwin0 and eTwin1. */
 
-     if (J0 != NIL)
+     if (e0 != NIL)
      {
-    	 if (gp_InsertEdge(theGraph, u, J0, 1, v, NIL, 0) != OK)
+    	 if (gp_InsertEdge(theGraph, u, e0, 1, v, NIL, 0) != OK)
     		 return NOTOK;
      }
      else
      {
-    	 if (gp_InsertEdge(theGraph, u, J1, 0, v, NIL, 0) != OK)
+    	 if (gp_InsertEdge(theGraph, u, e1, 0, v, NIL, 0) != OK)
     		 return NOTOK;
      }
 
-     if (JTwin0 != NIL)
+     if (eTwin0 != NIL)
      {
-    	 if (gp_InsertEdge(theGraph, x, JTwin0, 1, w, NIL, 0) != OK)
+    	 if (gp_InsertEdge(theGraph, x, eTwin0, 1, w, NIL, 0) != OK)
     		 return NOTOK;
      }
      else
      {
-    	 if (gp_InsertEdge(theGraph, x, JTwin1, 0, w, NIL, 0) != OK)
+    	 if (gp_InsertEdge(theGraph, x, eTwin1, 0, w, NIL, 0) != OK)
     		 return NOTOK;
      }
 
@@ -1722,62 +1721,62 @@ int  J0, J1, JTwin0, JTwin1;
 
 int  _RestoreAndOrientReducedPaths(graphP theGraph, K33SearchContext *context)
 {
-int  EsizeOccupied, J, JTwin, u, v, w, x, visited;
-int  J0, JTwin0, J1, JTwin1;
+int  EsizeOccupied, e, eTwin, u, v, w, x, visited;
+int  e0, eTwin0, e1, eTwin1;
 
 	 EsizeOccupied = 2 * (theGraph->M + sp_GetCurrentSize(theGraph->edgeHoles));
 
-     for (J = 0; J < EsizeOccupied;)
+     for (e = 0; e < EsizeOccupied;)
      {
-         if (context->E[J].pathConnector != NIL)
+         if (context->E[e].pathConnector != NIL)
          {
-             visited = gp_GetEdgeVisited(theGraph, J);
+             visited = gp_GetEdgeVisited(theGraph, e);
 
-             JTwin = gp_GetTwinArc(theGraph, J);
-             u = gp_GetNeighbor(theGraph, JTwin);
-             v = context->E[J].pathConnector;
-             w = context->E[JTwin].pathConnector;
-             x = gp_GetNeighbor(theGraph, J);
+             eTwin = gp_GetTwinArc(theGraph, e);
+             u = gp_GetNeighbor(theGraph, eTwin);
+             v = context->E[e].pathConnector;
+             w = context->E[eTwin].pathConnector;
+             x = gp_GetNeighbor(theGraph, e);
 
              /* Now we need the predecessor and successor edge records
-                of J and JTwin.  The edge (u, v) will be inserted so
+                of e and eTwin.  The edge (u, v) will be inserted so
                 that the record in u's adjacency list that indicates v
-                will be between J0 and J1.  Likewise, the edge record
-                (x -> w) will be placed between JTwin0 and JTwin1. */
+                will be between e0 and e1.  Likewise, the edge record
+                (x -> w) will be placed between eTwin0 and eTwin1. */
 
-             J0 = gp_GetNextArc(theGraph, J);
-             J1 = gp_GetPrevArc(theGraph, J);
-             JTwin0 = gp_GetNextArc(theGraph, JTwin);
-             JTwin1 = gp_GetPrevArc(theGraph, JTwin);
+             e0 = gp_GetNextArc(theGraph, e);
+             e1 = gp_GetPrevArc(theGraph, e);
+             eTwin0 = gp_GetNextArc(theGraph, eTwin);
+             eTwin1 = gp_GetPrevArc(theGraph, eTwin);
 
-             /* We first delete the edge represented by J and JTwin. We do so before
+             /* We first delete the edge represented by e and eTwin. We do so before
                 restoring the path to ensure we do not exceed the maximum arc capacity. */
 
-             gp_DeleteEdge(theGraph, J, 0);
+             gp_DeleteEdge(theGraph, e, 0);
 
              /* Now we add the two edges to reconnect the reduced path represented
-                by the edge [J, JTwin].  The edge record in u is added between J0 and J1.
-                Likewise, the new edge record in x is added between JTwin0 and JTwin1. */
+                by the edge [e, eTwin].  The edge record in u is added between e0 and e1.
+                Likewise, the new edge record in x is added between eTwin0 and eTwin1. */
 
-             if (J0 != NIL)
+             if (e0 != NIL)
              {
-            	 if (gp_InsertEdge(theGraph, u, J0, 1, v, NIL, 0) != OK)
+            	 if (gp_InsertEdge(theGraph, u, e0, 1, v, NIL, 0) != OK)
             		 return NOTOK;
              }
              else
              {
-            	 if (gp_InsertEdge(theGraph, u, J1, 0, v, NIL, 0) != OK)
+            	 if (gp_InsertEdge(theGraph, u, e1, 0, v, NIL, 0) != OK)
             		 return NOTOK;
              }
 
-             if (JTwin0 != NIL)
+             if (eTwin0 != NIL)
              {
-            	 if (gp_InsertEdge(theGraph, x, JTwin0, 1, w, NIL, 0) != OK)
+            	 if (gp_InsertEdge(theGraph, x, eTwin0, 1, w, NIL, 0) != OK)
             		 return NOTOK;
              }
              else
              {
-            	 if (gp_InsertEdge(theGraph, x, JTwin1, 0, w, NIL, 0) != OK)
+            	 if (gp_InsertEdge(theGraph, x, eTwin1, 0, w, NIL, 0) != OK)
             		 return NOTOK;
              }
 
@@ -1791,15 +1790,15 @@ int  J0, JTwin0, J1, JTwin1;
                 in which case we will need to ensure that the vertices on the path
                 being restored are consistently oriented.  This will accommodate
                 future invocations of MarkPathAlongBicompExtFace().
-                Note: If J0, J1, JTwin0 or JTwin1 is not an edge, then it is
+                Note: If e0, e1, eTwin0 or eTwin1 is not an edge, then it is
                       because we've walked off the end of the edge record list,
-                      which happens when J and JTwin are either the first or
+                      which happens when e and eTwin are either the first or
                       last edge of the containing vertex.  In turn, the first
                       and last edges of a vertex are the ones that hold it onto
                       the external face, if it is on the external face. */
 
-             if ((J0 == NIL && JTwin1 == NIL) ||
-                 (J1 == NIL && JTwin0 == NIL))
+             if ((e0 == NIL && eTwin1 == NIL) ||
+                 (e1 == NIL && eTwin0 == NIL))
              {
                  if (_OrientExternalFacePath(theGraph, u, v, w, x) != OK)
                      return NOTOK;
@@ -1823,7 +1822,7 @@ int  J0, JTwin0, J1, JTwin1;
                 	 return NOTOK;
              }
          }
-         else J+=2;
+         else e+=2;
      }
 
      return OK;
@@ -1836,7 +1835,7 @@ int  J0, JTwin0, J1, JTwin1;
 int  _MarkStraddlingBridgePath(graphP theGraph, int u_min, int u_max, int u_d, int d)
 {
 isolatorContextP IC = &theGraph->IC;
-int p, J;
+int p, e;
 
 /* Find the point of intersection p between the path (v ... u_max)
        and the path (d ... u_max). */
@@ -1849,19 +1848,19 @@ int p, J;
      {
          gp_SetVertexVisited(theGraph, p);
 
-         J = gp_GetFirstArc(theGraph, p);
-         while (J != NIL)
+         e = gp_GetFirstArc(theGraph, p);
+         while (e != NIL)
          {
-              if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_PARENT)
+              if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_PARENT)
                   break;
 
-              J = gp_GetNextArc(theGraph, J);
+              e = gp_GetNextArc(theGraph, e);
          }
 
-         gp_SetEdgeVisited(theGraph, J);
-         gp_SetEdgeVisited(theGraph, gp_GetTwinArc(theGraph, J));
+         gp_SetEdgeVisited(theGraph, e);
+         gp_SetEdgeVisited(theGraph, gp_GetTwinArc(theGraph, e));
 
-         p = gp_GetNeighbor(theGraph, J);
+         p = gp_GetNeighbor(theGraph, e);
 
          /* If p is a root copy, mark it visited and skip to the parent copy */
          if (p >= theGraph->N)
@@ -1879,19 +1878,19 @@ int p, J;
 
      while (p != u_max)
      {
-         J = gp_GetFirstArc(theGraph, p);
-         while (J != NIL)
+         e = gp_GetFirstArc(theGraph, p);
+         while (e != NIL)
          {
-              if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_PARENT)
+              if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_PARENT)
                   break;
 
-              J = gp_GetNextArc(theGraph, J);
+              e = gp_GetNextArc(theGraph, e);
          }
 
-         gp_ClearEdgeVisited(theGraph, J);
-         gp_ClearEdgeVisited(theGraph, gp_GetTwinArc(theGraph, J));
+         gp_ClearEdgeVisited(theGraph, e);
+         gp_ClearEdgeVisited(theGraph, gp_GetTwinArc(theGraph, e));
 
-         p = gp_GetNeighbor(theGraph, J);
+         p = gp_GetNeighbor(theGraph, e);
          gp_ClearVertexVisited(theGraph, p);
 
          /* If p is a root copy, clear its visited flag and skip to the

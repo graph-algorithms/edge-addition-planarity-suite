@@ -87,14 +87,14 @@ extern int  _IsolateOuterplanarityObstructionE(graphP theGraph);
 
 /* Private functions for K4 searching (exposed to the extension). */
 
-int  _SearchForK4InBicomp(graphP theGraph, K4SearchContext *context, int I, int R);
+int  _SearchForK4InBicomp(graphP theGraph, K4SearchContext *context, int v, int R);
 
 /* Private functions for K4 searching. */
 
-int  _K4_ChooseTypeOfNonOuterplanarityMinor(graphP theGraph, int I, int R);
+int  _K4_ChooseTypeOfNonOuterplanarityMinor(graphP theGraph, int v, int R);
 
 int  _K4_FindSecondActiveVertexOnLowExtFacePath(graphP theGraph);
-int  _K4_FindPlanarityActiveVertex(graphP theGraph, int I, int R, int prevLink, int *pW);
+int  _K4_FindPlanarityActiveVertex(graphP theGraph, int v, int R, int prevLink, int *pW);
 int  _K4_FindSeparatingInternalEdge(graphP theGraph, int R, int prevLink, int A, int *pW, int *pX, int *pY);
 void _K4_MarkObstructionTypeOnExternalFacePath(graphP theGraph, int R, int prevLink, int A);
 void _K4_UnmarkObstructionTypeOnExternalFacePath(graphP theGraph, int R, int prevLink, int A);
@@ -113,7 +113,7 @@ int  _K4_TestPathComponentForAncestor(graphP theGraph, int R, int prevLink, int 
 void _K4_ClearVisitedInPathComponent(graphP theGraph, int R, int prevLink, int A);
 int  _K4_DeleteUnmarkedEdgesInPathComponent(graphP theGraph, int R, int prevLink, int A);
 
-int  _K4_RestoreReducedPath(graphP theGraph, K4SearchContext *context, int J);
+int  _K4_RestoreReducedPath(graphP theGraph, K4SearchContext *context, int e);
 int  _K4_RestoreAndOrientReducedPaths(graphP theGraph, K4SearchContext *context);
 
 int _MarkEdge(graphP theGraph, int x, int y);
@@ -122,7 +122,7 @@ int _MarkEdge(graphP theGraph, int x, int y);
  _SearchForK4InBicomp()
  ****************************************************************************/
 
-int  _SearchForK4InBicomp(graphP theGraph, K4SearchContext *context, int I, int R)
+int  _SearchForK4InBicomp(graphP theGraph, K4SearchContext *context, int v, int R)
 {
 isolatorContextP IC = &theGraph->IC;
 
@@ -134,7 +134,7 @@ isolatorContextP IC = &theGraph->IC;
 	}
 
 	// Begin by determining whether minor A, B or E is detected
-	if (_K4_ChooseTypeOfNonOuterplanarityMinor(theGraph, I, R) != OK)
+	if (_K4_ChooseTypeOfNonOuterplanarityMinor(theGraph, v, R) != OK)
 		return NOTOK;
 
     // Minor A indicates the existence of K_{2,3} homeomorphs, but
@@ -261,7 +261,7 @@ isolatorContextP IC = &theGraph->IC;
     	if (_K4_ReduceBicompToEdge(theGraph, context, R, IC->w) != OK)
     		return NOTOK;
 
-        // Return OK so that the WalkDown can continue resolving the pertinence of I.
+        // Return OK so that the WalkDown can continue resolving the pertinence of v.
     	return OK;
     }
 
@@ -279,15 +279,15 @@ isolatorContextP IC = &theGraph->IC;
 
     	// Find the vertices a_x and a_y that are active (pertinent or future pertinent)
     	// and also first along the external face paths emanating from the bicomp root
-    	if (_K4_FindPlanarityActiveVertex(theGraph, I, R, 1, &a_x) != OK ||
-    		_K4_FindPlanarityActiveVertex(theGraph, I, R, 0, &a_y) != OK)
+    	if (_K4_FindPlanarityActiveVertex(theGraph, v, R, 1, &a_x) != OK ||
+    		_K4_FindPlanarityActiveVertex(theGraph, v, R, 0, &a_y) != OK)
     		return NOTOK;
 
     	// Case B1: If both a_x and a_y are future pertinent, then we can stop and
     	// isolate a subgraph homeomorphic to K4.
-    	gp_UpdateVertexFuturePertinentChild(theGraph, a_x, I);
-    	gp_UpdateVertexFuturePertinentChild(theGraph, a_y, I);
-    	if (a_x != a_y && FUTUREPERTINENT(theGraph, a_x, I) && FUTUREPERTINENT(theGraph, a_y, I))
+    	gp_UpdateVertexFuturePertinentChild(theGraph, a_x, v);
+    	gp_UpdateVertexFuturePertinentChild(theGraph, a_y, v);
+    	if (a_x != a_y && FUTUREPERTINENT(theGraph, a_x, v) && FUTUREPERTINENT(theGraph, a_y, v))
     	{
             if (_OrientVerticesInEmbedding(theGraph) != OK ||
                 _K4_RestoreAndOrientReducedPaths(theGraph, context) != OK)
@@ -428,14 +428,14 @@ isolatorContextP IC = &theGraph->IC;
  of the bicomp that won't be reduced, except by a constant amount of course.
  ****************************************************************************/
 
-int  _K4_ChooseTypeOfNonOuterplanarityMinor(graphP theGraph, int I, int R)
+int  _K4_ChooseTypeOfNonOuterplanarityMinor(graphP theGraph, int v, int R)
 {
     int  XPrevLink=1, YPrevLink=0;
     int  Wx, WxPrevLink, Wy, WyPrevLink;
 
     _ClearIsolatorContext(theGraph);
 
-    theGraph->IC.v = I;
+    theGraph->IC.v = v;
     theGraph->IC.r = R;
 
     // Reality check on data structure integrity
@@ -485,9 +485,9 @@ int  _K4_ChooseTypeOfNonOuterplanarityMinor(graphP theGraph, int I, int R)
     if (theGraph->IC.w == NIL)
     	return NOTOK;
 
-    // If the root copy is not a root copy of the current vertex I,
+    // If the root copy is not a root copy of the current vertex v,
     // then the Walkdown terminated on a descendant bicomp, which is Minor A.
-	if (gp_GetVertexParent(theGraph, R - theGraph->N) != I)
+	if (gp_GetVertexParent(theGraph, R - theGraph->N) != v)
 		theGraph->IC.minorType |= MINORTYPE_A;
 
     // If W has a pertinent child bicomp, then we've found Minor B.
@@ -512,7 +512,7 @@ int  _K4_ChooseTypeOfNonOuterplanarityMinor(graphP theGraph, int I, int R)
 
  This method determines whether there is an active vertex Z other than W on
  the path [X, ..., W, ..., Y].  By active, we mean a vertex that connects
- by an unembedded edge to either I or an ancestor of I.  That is, a vertext
+ by an unembedded edge to either v or an ancestor of v.  That is, a vertext
  that is pertinent or future pertinent (would be pertinent in a future step
  of the embedder).
 
@@ -584,7 +584,7 @@ int _K4_FindSecondActiveVertexOnLowExtFacePath(graphP theGraph)
  that is pertinent or future pertinent.
  ****************************************************************************/
 
-int  _K4_FindPlanarityActiveVertex(graphP theGraph, int I, int R, int prevLink, int *pW)
+int  _K4_FindPlanarityActiveVertex(graphP theGraph, int v, int R, int prevLink, int *pW)
 {
 	int W = R, WPrevLink = prevLink;
 
@@ -599,8 +599,8 @@ int  _K4_FindPlanarityActiveVertex(graphP theGraph, int I, int R, int prevLink, 
 		}
 	    else
 	    {
-	    	gp_UpdateVertexFuturePertinentChild(theGraph, W, I);
-	    	if (FUTUREPERTINENT(theGraph, W, I))
+	    	gp_UpdateVertexFuturePertinentChild(theGraph, W, v);
+	    	if (FUTUREPERTINENT(theGraph, W, v))
 	    	{
 		    	*pW = W;
 		    	return OK;
@@ -649,7 +649,7 @@ int  _K4_FindPlanarityActiveVertex(graphP theGraph, int I, int R, int prevLink, 
 
 int _K4_FindSeparatingInternalEdge(graphP theGraph, int R, int prevLink, int A, int *pW, int *pX, int *pY)
 {
-	int Z, ZPrevLink, J, neighbor;
+	int Z, ZPrevLink, e, neighbor;
 
 	// Mark the vertex obstruction type settings along the path [R ... A]
 	_K4_MarkObstructionTypeOnExternalFacePath(theGraph, R, prevLink, A);
@@ -663,10 +663,10 @@ int _K4_FindSeparatingInternalEdge(graphP theGraph, int R, int prevLink, int A, 
 		// Search for a separator among the edges of Z
 		// It is OK to not bother skipping the external face edges, since we
 		// know they are marked visited and so are ignored
-	    J = gp_GetFirstArc(theGraph, Z);
-	    while (J != NIL)
+	    e = gp_GetFirstArc(theGraph, Z);
+	    while (e != NIL)
 	    {
-	        neighbor = gp_GetNeighbor(theGraph, J);
+	        neighbor = gp_GetNeighbor(theGraph, e);
 	        if (gp_GetVertexObstructionType(theGraph, neighbor) == VERTEX_OBSTRUCTIONTYPE_UNMARKED)
 	        {
 	        	*pW = A;
@@ -674,7 +674,7 @@ int _K4_FindSeparatingInternalEdge(graphP theGraph, int R, int prevLink, int A, 
 	        	*pY = neighbor;
 	        	break;
 	        }
-	        J = gp_GetNextArc(theGraph, J);
+	        e = gp_GetNextArc(theGraph, e);
 	    }
 
 	    // If we found the separator edge, then we don't need to go on
@@ -1037,7 +1037,7 @@ int  _K4_ReducePathComponent(graphP theGraph, K4SearchContext *context, int R, i
  ****************************************************************************/
 int  _K4_GetCumulativeOrientationOnDFSPath(graphP theGraph, int ancestor, int descendant)
 {
-int  J, parent;
+int  e, parent;
 int  N = theGraph->N, invertedFlag=0;
 
      /* If we are marking from a root vertex upward, then go up to the parent
@@ -1062,15 +1062,15 @@ int  N = theGraph->N, invertedFlag=0;
           {
               // Scan the edges for the one marked as the DFS parent
               parent = NIL;
-              J = gp_GetFirstArc(theGraph, descendant);
-              while (J != NIL)
+              e = gp_GetFirstArc(theGraph, descendant);
+              while (e != NIL)
               {
-                  if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_PARENT)
+                  if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_PARENT)
                   {
-                      parent = gp_GetNeighbor(theGraph, J);
+                      parent = gp_GetNeighbor(theGraph, e);
                       break;
                   }
-                  J = gp_GetNextArc(theGraph, J);
+                  e = gp_GetNextArc(theGraph, e);
               }
 
               // If the parent edge was not found, then the data structure is corrupt
@@ -1078,10 +1078,10 @@ int  N = theGraph->N, invertedFlag=0;
                   return NOTOK;
 
               // Add the inversion flag on the child arc to the cumulative result
-              J = gp_GetTwinArc(theGraph, J);
-              if (gp_GetEdgeType(theGraph, J) != EDGE_TYPE_CHILD || gp_GetNeighbor(theGraph, J) != descendant)
+              e = gp_GetTwinArc(theGraph, e);
+              if (gp_GetEdgeType(theGraph, e) != EDGE_TYPE_CHILD || gp_GetNeighbor(theGraph, e) != descendant)
             	  return NOTOK;
-              invertedFlag ^= gp_GetEdgeFlagInverted(theGraph, J);
+              invertedFlag ^= gp_GetEdgeFlagInverted(theGraph, e);
           }
 
           // Hop to the parent and reiterate
@@ -1318,54 +1318,54 @@ int  _K4_ReducePathToEdge(graphP theGraph, K4SearchContext *context, int edgeTyp
  Return OK on success, NOTOK on failure
  ****************************************************************************/
 
-int  _K4_RestoreReducedPath(graphP theGraph, K4SearchContext *context, int J)
+int  _K4_RestoreReducedPath(graphP theGraph, K4SearchContext *context, int e)
 {
-int  JTwin, u, v, w, x;
-int  J0, J1, JTwin0, JTwin1;
+int  eTwin, u, v, w, x;
+int  e0, e1, eTwin0, eTwin1;
 
-     if (context->E[J].pathConnector == NIL)
+     if (context->E[e].pathConnector == NIL)
          return OK;
 
-     JTwin = gp_GetTwinArc(theGraph, J);
+     eTwin = gp_GetTwinArc(theGraph, e);
 
-     u = gp_GetNeighbor(theGraph, JTwin);
-     v = context->E[J].pathConnector;
-     w = context->E[JTwin].pathConnector;
-     x = gp_GetNeighbor(theGraph, J);
+     u = gp_GetNeighbor(theGraph, eTwin);
+     v = context->E[e].pathConnector;
+     w = context->E[eTwin].pathConnector;
+     x = gp_GetNeighbor(theGraph, e);
 
      // Get the locations of the EdgeRecs between which the new EdgeRecs
      // must be added in order to reconnect the path parallel to the edge.
-     J0 = gp_GetNextArc(theGraph, J);
-     J1 = gp_GetPrevArc(theGraph, J);
-     JTwin0 = gp_GetNextArc(theGraph, JTwin);
-     JTwin1 = gp_GetPrevArc(theGraph, JTwin);
+     e0 = gp_GetNextArc(theGraph, e);
+     e1 = gp_GetPrevArc(theGraph, e);
+     eTwin0 = gp_GetNextArc(theGraph, eTwin);
+     eTwin1 = gp_GetPrevArc(theGraph, eTwin);
 
-     // We first delete the edge represented by J and JTwin. We do so before
+     // We first delete the edge represented by e and eTwin. We do so before
      // restoring the path to ensure we do not exceed the maximum arc capacity.
-     gp_DeleteEdge(theGraph, J, 0);
+     gp_DeleteEdge(theGraph, e, 0);
 
      // Now we add the two edges to reconnect the reduced path represented
-     // by the edge [J, JTwin].  The edge record in u is added between J0 and J1.
-     // Likewise, the new edge record in x is added between JTwin0 and JTwin1.
-     if (J0 != NIL)
+     // by the edge [e, eTwin].  The edge record in u is added between e0 and e1.
+     // Likewise, the new edge record in x is added between eTwin0 and eTwin1.
+     if (e0 != NIL)
      {
-    	 if (gp_InsertEdge(theGraph, u, J0, 1, v, NIL, 0) != OK)
+    	 if (gp_InsertEdge(theGraph, u, e0, 1, v, NIL, 0) != OK)
     		 return NOTOK;
      }
      else
      {
-    	 if (gp_InsertEdge(theGraph, u, J1, 0, v, NIL, 0) != OK)
+    	 if (gp_InsertEdge(theGraph, u, e1, 0, v, NIL, 0) != OK)
     		 return NOTOK;
      }
 
-     if (JTwin0 != NIL)
+     if (eTwin0 != NIL)
      {
-    	 if (gp_InsertEdge(theGraph, x, JTwin0, 1, w, NIL, 0) != OK)
+    	 if (gp_InsertEdge(theGraph, x, eTwin0, 1, w, NIL, 0) != OK)
     		 return NOTOK;
      }
      else
      {
-    	 if (gp_InsertEdge(theGraph, x, JTwin1, 0, w, NIL, 0) != OK)
+    	 if (gp_InsertEdge(theGraph, x, eTwin1, 0, w, NIL, 0) != OK)
     		 return NOTOK;
      }
 
@@ -1398,22 +1398,22 @@ int  J0, J1, JTwin0, JTwin1;
 
 int  _K4_RestoreAndOrientReducedPaths(graphP theGraph, K4SearchContext *context)
 {
-int  Esize, J, JTwin, u, v, w, x, visited;
+int  Esize, e, eTwin, u, v, w, x, visited;
 
 	 Esize = 2*(theGraph->M + sp_GetCurrentSize(theGraph->edgeHoles));
-     for (J = 0; J < Esize;)
+     for (e = 0; e < Esize;)
      {
-         if (context->E[J].pathConnector != NIL)
+         if (context->E[e].pathConnector != NIL)
          {
-             visited = gp_GetEdgeVisited(theGraph, J);
+             visited = gp_GetEdgeVisited(theGraph, e);
 
-             JTwin = gp_GetTwinArc(theGraph, J);
-             u = gp_GetNeighbor(theGraph, JTwin);
-             v = context->E[J].pathConnector;
-             w = context->E[JTwin].pathConnector;
-             x = gp_GetNeighbor(theGraph, J);
+             eTwin = gp_GetTwinArc(theGraph, e);
+             u = gp_GetNeighbor(theGraph, eTwin);
+             v = context->E[e].pathConnector;
+             w = context->E[eTwin].pathConnector;
+             x = gp_GetNeighbor(theGraph, e);
 
-    		 if (_K4_RestoreReducedPath(theGraph, context, J) != OK)
+    		 if (_K4_RestoreReducedPath(theGraph, context, e) != OK)
     			 return NOTOK;
 
     		 // If the path is on the external face, orient it
@@ -1441,7 +1441,7 @@ int  Esize, J, JTwin, u, v, w, x, visited;
                 	 return NOTOK;
              }
          }
-         else J+=2;
+         else e+=2;
      }
 
      return OK;

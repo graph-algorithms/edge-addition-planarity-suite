@@ -276,7 +276,7 @@ int _IsConstantTimeContractible(ColorVerticesContext *context, int v)
 
 int _GetContractibleNeighbors(ColorVerticesContext *context, int v, int *pu, int *pw)
 {
-	int lowDegreeNeighbors[5], i, j, n=0, J;
+	int lowDegreeNeighbors[5], i, j, n=0, e;
 	graphP theGraph = context->theGraph;
 
 	// This method is only applicable to degree 5 vertices
@@ -284,12 +284,12 @@ int _GetContractibleNeighbors(ColorVerticesContext *context, int v, int *pu, int
 		return FALSE;
 
 	// Get all neighbors of degree at most 7
-    J = gp_GetFirstArc(theGraph, v);
-    while (J != NIL)
+    e = gp_GetFirstArc(theGraph, v);
+    while (e != NIL)
     {
-    	if (_GetVertexDegree(context, gp_GetNeighbor(theGraph, J)) <= 7)
-    		lowDegreeNeighbors[n++] = gp_GetNeighbor(theGraph, J);
-        J = gp_GetNextArc(theGraph, J);
+    	if (_GetVertexDegree(context, gp_GetNeighbor(theGraph, e)) <= 7)
+    		lowDegreeNeighbors[n++] = gp_GetNeighbor(theGraph, e);
+        e = gp_GetNextArc(theGraph, e);
     }
 
     // Seek the pair of *non-adjacent* low degree neighbors
@@ -347,16 +347,16 @@ int _GetVertexToReduce(ColorVerticesContext *context, graphP theGraph)
 
 int _AssignColorToVertex(ColorVerticesContext *context, graphP theGraph, int v)
 {
-	int J, w, color;
+	int e, w, color;
 
 	// Run the neighbor list of v and flag all the colors in use
-    J = gp_GetFirstArc(theGraph, v);
-    while (J != NIL)
+    e = gp_GetFirstArc(theGraph, v);
+    while (e != NIL)
     {
-         w = gp_GetNeighbor(theGraph, J);
+         w = gp_GetNeighbor(theGraph, e);
          context->colorDetector[context->color[w]] = 1;
 
-         J = gp_GetNextArc(theGraph, J);
+         e = gp_GetNextArc(theGraph, e);
     }
 
     // Find the least numbered unused color and assign it to v
@@ -376,13 +376,13 @@ int _AssignColorToVertex(ColorVerticesContext *context, graphP theGraph, int v)
     	return NOTOK;
 
     // Run the neighbor list of v and unflag all the colors in use
-    J = gp_GetFirstArc(theGraph, v);
-    while (J != NIL)
+    e = gp_GetFirstArc(theGraph, v);
+    while (e != NIL)
     {
-         w = gp_GetNeighbor(theGraph, J);
+         w = gp_GetNeighbor(theGraph, e);
          context->colorDetector[context->color[w]] = 0;
 
-         J = gp_GetNextArc(theGraph, J);
+         e = gp_GetNextArc(theGraph, e);
     }
 
 	return OK;
@@ -404,7 +404,7 @@ int gp_GetNumColorsUsed(graphP theGraph)
 
 int gp_ColorVerticesIntegrityCheck(graphP theGraph, graphP origGraph)
 {
-	int v, w, J;
+	int v, w, e;
     ColorVerticesContext *context = (ColorVerticesContext *) gp_GetExtension(theGraph, COLORVERTICES_ID);
 
     if (theGraph == NULL || origGraph == NULL || context == NULL)
@@ -421,14 +421,14 @@ int gp_ColorVerticesIntegrityCheck(graphP theGraph, graphP origGraph)
 
     for (v=0; v < theGraph->N; v++)
     {
-        J = gp_GetFirstArc(theGraph, v);
-        while (J != NIL)
+        e = gp_GetFirstArc(theGraph, v);
+        while (e != NIL)
         {
-             w = gp_GetNeighbor(theGraph, J);
+             w = gp_GetNeighbor(theGraph, e);
              if (context->color[v] < 0 || context->color[v] == context->color[w])
             	 return NOTOK;
 
-             J = gp_GetNextArc(theGraph, J);
+             e = gp_GetNextArc(theGraph, e);
         }
     }
 

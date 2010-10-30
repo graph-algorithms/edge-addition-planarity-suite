@@ -339,9 +339,9 @@ typedef extFaceLinkRec * extFaceLinkRecP;
                 of the list as an easy way to make sure all internally active
                 bicomps are processed first.
     futurePertinentChild: indicates a DFS child with a lowpoint less than the
-    			current vertex I.  This member is initialized to the start of
+    			current vertex v.  This member is initialized to the start of
     			the sortedDFSChildList and is advanced in a relaxed manner as
-    			needed until one with a lowpoint less than I is found or until
+    			needed until one with a lowpoint less than v is found or until
     			there are no more children.
     sortedDFSChildList: at the start of embedding, the list of DFS children of
     			this vertex is calculated in ascending order by DFI (sorted in
@@ -394,20 +394,20 @@ typedef vertexInfo * vertexInfoP;
 #define gp_GetVertexFuturePertinentChild(theGraph, v) (theGraph->VI[v].futurePertinentChild)
 #define gp_SetVertexFuturePertinentChild(theGraph, v, theFuturePertinentChild) (theGraph->VI[v].futurePertinentChild = theFuturePertinentChild)
 
-// Used to advance futurePertinentChild to the next separated DFS child with a lowpoint less than I
+// Used to advance futurePertinentChild of w to the next separated DFS child with a lowpoint less than v
 // Once futurePertinentChild advances past a child, no future planarity operation could make that child
 // relevant to future pertinence
-#define gp_UpdateVertexFuturePertinentChild(theGraph, v, I) \
-	while (theGraph->VI[v].futurePertinentChild != NIL) \
+#define gp_UpdateVertexFuturePertinentChild(theGraph, w, v) \
+	while (theGraph->VI[w].futurePertinentChild != NIL) \
 	{ \
-		/* Skip children that 1) aren't future pertinent, 2) have been merged into the bicomp with v */ \
-		if (gp_GetVertexLowpoint(theGraph, theGraph->VI[v].futurePertinentChild) >= I || \
-			!gp_IsSeparatedDFSChild(theGraph, theGraph->VI[v].futurePertinentChild)) \
+		/* Skip children that 1) aren't future pertinent, 2) have been merged into the bicomp with w */ \
+		if (gp_GetVertexLowpoint(theGraph, theGraph->VI[w].futurePertinentChild) >= v || \
+			!gp_IsSeparatedDFSChild(theGraph, theGraph->VI[w].futurePertinentChild)) \
         { \
-			theGraph->VI[v].futurePertinentChild = \
+			theGraph->VI[w].futurePertinentChild = \
 					LCGetNext(theGraph->sortedDFSChildLists, \
-							  gp_GetVertexSortedDFSChildList(theGraph, v), \
-							  theGraph->VI[v].futurePertinentChild); \
+							  gp_GetVertexSortedDFSChildList(theGraph, w), \
+							  theGraph->VI[w].futurePertinentChild); \
         } \
         else break; \
 	}
@@ -430,7 +430,7 @@ typedef vertexInfo * vertexInfoP;
 /********************************************************************
  Variables needed in embedding by Kuratowski subgraph isolator:
         minorType: the type of planarity obstruction found.
-        v: the current vertex I
+        v: the current vertex being processed
         r: the root of the bicomp on which the Walkdown failed
         x,y: stopping vertices on bicomp rooted by r
         w: pertinent vertex on ext. face path below x and y
@@ -664,8 +664,8 @@ void 	gp_DetachArc(graphP theGraph, int arc);
  this macro.
  ********************************************************************/
 
-#define _VertexActiveStatus(theGraph, theVertex, I) \
-        (EXTERNALLYACTIVE(theGraph, theVertex, I) \
+#define _VertexActiveStatus(theGraph, theVertex, v) \
+        (EXTERNALLYACTIVE(theGraph, theVertex, v) \
          ? VAS_EXTERNAL \
          : PERTINENT(theGraph, theVertex) \
            ? VAS_INTERNAL \
@@ -674,18 +674,18 @@ void 	gp_DetachArc(graphP theGraph, int arc);
 /********************************************************************
  PERTINENT()
  A vertex is pertinent in a partially processed graph if there is an
- unprocessed back edge between the vertex I whose edges are currently
+ unprocessed back edge between the vertex v whose edges are currently
  being processed and either the vertex or a DFS descendant D of the
  vertex not in the same bicomp as the vertex.
 
- The vertex is either directly adjacent to I by an unembedded back edge
- or there is an unembedded back edge (I, D) and the vertex is a cut
+ The vertex is either directly adjacent to v by an unembedded back edge
+ or there is an unembedded back edge (v, D) and the vertex is a cut
  vertex in the partially processed graph along the DFS tree path from
- D to I.
+ D to v.
 
  Pertinence is a dynamic property that can change for a vertex after
  each edge addition.  In other words, a vertex can become non-pertinent
- during step I as more back edges to I are embedded.
+ during step v as more back edges to v are embedded.
  ********************************************************************/
 
 #define PERTINENT(theGraph, theVertex) \
@@ -696,7 +696,7 @@ void 	gp_DetachArc(graphP theGraph, int arc);
  FUTUREPERTINENT()
  A vertex is future-pertinent in a partially processed graph if
  there is an unprocessed back edge between a DFS ancestor A of the
- vertex I whose edges are currently being processed and either
+ vertex v whose edges are currently being processed and either
  theVertex or a DFS descendant D of theVertex not in the same bicomp
  as theVertex.
 
@@ -709,10 +709,10 @@ void 	gp_DetachArc(graphP theGraph, int arc);
  processing the edges of A, then the vertex would be pertinent.
  The addition of edges to the partially processed graph can alter
  both the pertinence and future pertinence of a vertex.  For example,
- if the vertex is pertinent due to an unprocessed back edge (I, D1) and
+ if the vertex is pertinent due to an unprocessed back edge (v, D1) and
  future pertinent due to an unprocessed back edge (A, D2), then the
  vertex may lose both its pertinence and future pertinence when edge
- (I, D1) is added if D2 is in the same subtree as D1.
+ (v, D1) is added if D2 is in the same subtree as D1.
 
  Generally, pertinence and future pertinence are dynamic properties
  that can change for a vertex after each edge addition.
@@ -723,22 +723,22 @@ void 	gp_DetachArc(graphP theGraph, int arc);
  compiler extensions not assumed by this code).
  ********************************************************************/
 
-#define FUTUREPERTINENT(theGraph, theVertex, I) \
-        (  theGraph->VI[theVertex].leastAncestor < I || \
+#define FUTUREPERTINENT(theGraph, theVertex, v) \
+        (  theGraph->VI[theVertex].leastAncestor < v || \
            (theGraph->VI[theVertex].futurePertinentChild != NIL && \
-            theGraph->VI[theGraph->VI[theVertex].futurePertinentChild].lowpoint < I) )
+            theGraph->VI[theGraph->VI[theVertex].futurePertinentChild].lowpoint < v) )
 
 // This is the definition that would be preferrable if a while loop could be a void expression
-//#define FUTUREPERTINENT(theGraph, theVertex, I)
-//        (  theGraph->VI[theVertex].leastAncestor < I ||
-//           ((gp_UpdateVertexFuturePertinentChild(theGraph, theVertex, I),
+//#define FUTUREPERTINENT(theGraph, theVertex, v)
+//        (  theGraph->VI[theVertex].leastAncestor < v ||
+//           ((gp_UpdateVertexFuturePertinentChild(theGraph, theVertex, v),
 //        	 theGraph->VI[theVertex].futurePertinentChild != NIL) &&
-//            theGraph->VI[theGraph->VI[theVertex].futurePertinentChild].lowpoint < I) )
+//            theGraph->VI[theGraph->VI[theVertex].futurePertinentChild].lowpoint < v) )
 
 /********************************************************************
  EXTERNALLYACTIVE()
- Tells whether a vertex is still externally active in step I.
- A vertex can become inactive during step I as edges are embedded.
+ Tells whether a vertex is still externally active in step v.
+ A vertex can become inactive during step v as edges are embedded.
 
  In planarity-related algorithms, external activity is the same as
  future pertinence.  A vertex must be kept on the external face of
@@ -752,8 +752,8 @@ void 	gp_DetachArc(graphP theGraph, int arc);
  this macro.
  ********************************************************************/
 
-#define EXTERNALLYACTIVE(theGraph, theVertex, I) \
-        ( FUTUREPERTINENT(theGraph, theVertex, I) || \
+#define EXTERNALLYACTIVE(theGraph, theVertex, v) \
+        ( FUTUREPERTINENT(theGraph, theVertex, v) || \
           (theGraph->embedFlags & EMBEDFLAGS_OUTERPLANAR) \
         )
 

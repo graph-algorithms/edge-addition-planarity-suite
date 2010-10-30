@@ -52,7 +52,7 @@ extern void _ClearIsolatorContext(graphP theGraph);
 extern int  _GetNextVertexOnExternalFace(graphP theGraph, int curVertex, int *pPrevLink);
 extern int  _JoinBicomps(graphP theGraph);
 
-extern int  _InitializeNonplanarityContext(graphP theGraph, int I, int R);
+extern int  _InitializeNonplanarityContext(graphP theGraph, int v, int R);
 extern int  _MarkHighestXYPath(graphP theGraph);
 
 extern int  _FindUnembeddedEdgeToAncestor(graphP theGraph, int cutVertex, int *pAncestor, int *pDescendant);
@@ -67,9 +67,9 @@ extern int  _DeleteUnmarkedVerticesAndEdges(graphP theGraph);
 
 /* Private function declarations (exported to system) */
 
-int  _IsolateOuterplanarObstruction(graphP theGraph, int I, int R);
+int  _IsolateOuterplanarObstruction(graphP theGraph, int v, int R);
 
-int  _ChooseTypeOfNonOuterplanarityMinor(graphP theGraph, int I, int R);
+int  _ChooseTypeOfNonOuterplanarityMinor(graphP theGraph, int v, int R);
 
 int  _IsolateOuterplanarityObstructionA(graphP theGraph);
 int  _IsolateOuterplanarityObstructionB(graphP theGraph);
@@ -85,12 +85,12 @@ int  _IsolateOuterplanarityObstructionE(graphP theGraph);
  the bicomp.
  ****************************************************************************/
 
-int  _ChooseTypeOfNonOuterplanarityMinor(graphP theGraph, int I, int R)
+int  _ChooseTypeOfNonOuterplanarityMinor(graphP theGraph, int v, int R)
 {
 int  N, X, Y, W;
 
 	 // Create the initial non-outerplanarity obstruction isolator state.
-     if (_InitializeNonplanarityContext(theGraph, I, R) != OK)
+     if (_InitializeNonplanarityContext(theGraph, v, R) != OK)
          return NOTOK;
 
      N = theGraph->N;
@@ -99,9 +99,9 @@ int  N, X, Y, W;
      Y = theGraph->IC.y;
      W = theGraph->IC.w;
 
-     // If the root copy is not a root copy of the current vertex I,
+     // If the root copy is not a root copy of the current vertex v,
      // then the Walkdown terminated on a descendant bicomp, which is Minor A.
-     if (gp_GetVertexParent(theGraph, R - N) != I)
+     if (gp_GetVertexParent(theGraph, R - N) != v)
      {
          theGraph->IC.minorType |= MINORTYPE_A;
          return OK;
@@ -126,7 +126,7 @@ int  N, X, Y, W;
  _IsolateOuterplanarObstruction()
  ****************************************************************************/
 
-int  _IsolateOuterplanarObstruction(graphP theGraph, int I, int R)
+int  _IsolateOuterplanarObstruction(graphP theGraph, int v, int R)
 {
 int  RetVal;
 
@@ -139,7 +139,7 @@ int  RetVal;
 /* Next we determineg which of the non-outerplanarity Minors was encountered
         and the principal bicomp on which the isolator will focus attention. */
 
-     if (_ChooseTypeOfNonOuterplanarityMinor(theGraph, I, R) != OK)
+     if (_ChooseTypeOfNonOuterplanarityMinor(theGraph, v, R) != OK)
          return NOTOK;
 
 /* Find the path connecting the pertinent vertex w with the current vertex v */

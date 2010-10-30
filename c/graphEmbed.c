@@ -298,7 +298,7 @@ platform_GetTime(start);
 						eTwin = gp_GetTwinArc(theGraph, e);
 						gp_SetEdgeType(theGraph, eTwin, EDGE_TYPE_FORWARD);
 
-						// (4) Move the JTwin of back edge record J to the sortedFwdArcList of the ancestor
+						// (4) Move the twin of back edge record e to the sortedFwdArcList of the ancestor
 						uneighbor = gp_GetNeighbor(theGraph, e);
 						ePrev = gp_GetPrevArc(theGraph, eTwin);
 						eNext = gp_GetNextArc(theGraph, eTwin);
