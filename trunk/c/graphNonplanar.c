@@ -60,8 +60,8 @@ extern int  _OrientVerticesInBicomp(graphP theGraph, int BicompRoot, int Preserv
 
 /* Private functions (exported to system) */
 
-int  _ChooseTypeOfNonplanarityMinor(graphP theGraph, int I, int R);
-int  _InitializeNonplanarityContext(graphP theGraph, int I, int R);
+int  _ChooseTypeOfNonplanarityMinor(graphP theGraph, int v, int R);
+int  _InitializeNonplanarityContext(graphP theGraph, int v, int R);
 
 int  _FindNonplanarityBicompRoot(graphP theGraph);
 void _FindActiveVertices(graphP theGraph, int R, int *pX, int *pY);
@@ -78,13 +78,13 @@ int  _FindExtActivityBelowXYPath(graphP theGraph);
  _ChooseTypeOfNonplanarityMinor()
  ****************************************************************************/
 
-int  _ChooseTypeOfNonplanarityMinor(graphP theGraph, int I, int R)
+int  _ChooseTypeOfNonplanarityMinor(graphP theGraph, int v, int R)
 {
 int  N, X, Y, W, Px, Py, Z, DFSChild, RootId;
 
 /* Create the initial non-planarity minor state in the isolator context */
 
-     if (_InitializeNonplanarityContext(theGraph, I, R) != OK)
+     if (_InitializeNonplanarityContext(theGraph, v, R) != OK)
          return NOTOK;
 
      N = theGraph->N;
@@ -93,11 +93,11 @@ int  N, X, Y, W, Px, Py, Z, DFSChild, RootId;
      Y = theGraph->IC.y;
      W = theGraph->IC.w;
 
-/* If the root copy is not a root copy of the current vertex I,
+/* If the root copy is not a root copy of the current vertex v,
         then the Walkdown terminated because it couldn't find
         a viable path along a child bicomp, which is Minor A. */
 
-     if (gp_GetVertexParent(theGraph, R - N) != I)
+     if (gp_GetVertexParent(theGraph, R - N) != v)
      {
          theGraph->IC.minorType |= MINORTYPE_A;
          return OK;
@@ -111,7 +111,7 @@ int  N, X, Y, W, Px, Py, Z, DFSChild, RootId;
          RootId = LCGetPrev(theGraph->BicompLists,
                             gp_GetVertexPertinentBicompList(theGraph, W), NIL);
          DFSChild = RootId;
-         if (gp_GetVertexLowpoint(theGraph, DFSChild) < I)
+         if (gp_GetVertexLowpoint(theGraph, DFSChild) < v)
          {
              theGraph->IC.minorType |= MINORTYPE_B;
              return OK;
@@ -171,8 +171,8 @@ int  N, X, Y, W, Px, Py, Z, DFSChild, RootId;
 
  If R is NIL, the routine first determines which bicomp produced non-planarity
  condition.  If the stack is non-empty, then R is on the top of the stack.
- Otherwise, an unembedded fwdArc from the fwdArcList of vertex I is used in
- combination with the sortedDFSChildList of I to determine R.
+ Otherwise, an unembedded fwdArc from the fwdArcList of vertex v is used in
+ combination with the sortedDFSChildList of v to determine R.
 
  If the parameter R was not NIL, then this method assumes it must operate
  only on the bicomp rooted by R, and it also assumes that the caller has
@@ -189,12 +189,12 @@ int  N, X, Y, W, Px, Py, Z, DFSChild, RootId;
  the root R than X and Y along the external face paths (R X W) and (R Y W).
  ****************************************************************************/
 
-int  _InitializeNonplanarityContext(graphP theGraph, int I, int R)
+int  _InitializeNonplanarityContext(graphP theGraph, int v, int R)
 {
 	 // Blank out the isolator context, then assign the input graph reference
-     // and the current vertext I into the context.
+     // and the current vertext v into the context.
      _ClearIsolatorContext(theGraph);
-     theGraph->IC.v = I;
+     theGraph->IC.v = v;
 
      // The bicomp root provided was the one on which the WalkDown was performed,
      // but in the case of Minor A, the central bicomp of the minor is at the top
@@ -241,10 +241,10 @@ int  _InitializeNonplanarityContext(graphP theGraph, int I, int R)
 
 int  _SetVertexTypesForMarkingXYPath(graphP theGraph)
 {
-	int  I, R, X, Y, W, Z, ZPrevLink, ZType;
+	int  v, R, X, Y, W, Z, ZPrevLink, ZType;
 
 	// Unpack the context for efficiency of loops
-	I = theGraph->IC.v;
+	v = theGraph->IC.v;
 	R = theGraph->IC.r;
 	X = theGraph->IC.x;
 	Y = theGraph->IC.y;
@@ -293,23 +293,23 @@ int  _SetVertexTypesForMarkingXYPath(graphP theGraph)
 
 void _FindActiveVertices(graphP theGraph, int R, int *pX, int *pY)
 {
-int  XPrevLink=1, YPrevLink=0, I=theGraph->IC.v;
+int  XPrevLink=1, YPrevLink=0, v=theGraph->IC.v;
 
      *pX = _GetNextVertexOnExternalFace(theGraph, R, &XPrevLink);
      *pY = _GetNextVertexOnExternalFace(theGraph, R, &YPrevLink);
 
-     gp_UpdateVertexFuturePertinentChild(theGraph, *pX, I);
-     while (_VertexActiveStatus(theGraph, *pX, I) == VAS_INACTIVE)
+     gp_UpdateVertexFuturePertinentChild(theGraph, *pX, v);
+     while (_VertexActiveStatus(theGraph, *pX, v) == VAS_INACTIVE)
      {
         *pX = _GetNextVertexOnExternalFace(theGraph, *pX, &XPrevLink);
-        gp_UpdateVertexFuturePertinentChild(theGraph, *pX, I);
+        gp_UpdateVertexFuturePertinentChild(theGraph, *pX, v);
      }
 
-     gp_UpdateVertexFuturePertinentChild(theGraph, *pY, I);
-     while (_VertexActiveStatus(theGraph, *pY, I) == VAS_INACTIVE)
+     gp_UpdateVertexFuturePertinentChild(theGraph, *pY, v);
+     while (_VertexActiveStatus(theGraph, *pY, v) == VAS_INACTIVE)
      {
         *pY = _GetNextVertexOnExternalFace(theGraph, *pY, &YPrevLink);
-        gp_UpdateVertexFuturePertinentChild(theGraph, *pY, I);
+        gp_UpdateVertexFuturePertinentChild(theGraph, *pY, v);
      }
 }
 
@@ -319,7 +319,7 @@ int  XPrevLink=1, YPrevLink=0, I=theGraph->IC.v;
  Get the first vertex after x. Since x was obtained using a prevlink of 1 on r,
  we use the same prevlink so we don't go back to R.
  Then, we proceed around the lower path until we find a vertex W that either
- has pertinent child bicomps or is directly adjacent to the current vertex I.
+ has pertinent child bicomps or is directly adjacent to the current vertex v.
  ****************************************************************************/
 
 int  _FindPertinentVertex(graphP theGraph)
@@ -383,10 +383,10 @@ int  V, e;
 
  An X-Y path in the bicomp rooted by R is a path attached to the external
  face at points Px and Py that separates W from R such that a back edge (R, W)
- cannot be embedded within the bicomp. Recall that R is a root copy of I, so
- (R, W) is the representative of (I, W).  Also, note that W is pertinent if
+ cannot be embedded within the bicomp. Recall that R is a root copy of v, so
+ (R, W) is the representative of (v, W).  Also, note that W is pertinent if
  either W *or* one of its descendants in a separate bicomp has, in the input
- graph, a back edge to I.
+ graph, a back edge to v.
 
  If no X-Y path separating W from R is found, then NOTOK is returned because
  the proof of correctness guarantees that one exists (although this routine
@@ -451,7 +451,7 @@ int  V, e;
 
 int  _MarkHighestXYPath(graphP theGraph)
 {
-int J, Z;
+int e, Z;
 int R, X, Y, W;
 int stackBottom1, stackBottom2;
 
@@ -485,18 +485,18 @@ int stackBottom1, stackBottom2;
         intervening X-Y path, so we would return FALSE in that case. */
 
      Z = R;
-     // This setting of J is the arc equivalent of prevLink=1
-     // As loop progresses, J indicates the arc used to enter Z, not the exit arc
-     J = gp_GetLastArc(theGraph, R);
+     // This setting of e is the arc equivalent of prevLink=1
+     // As loop progresses, e indicates the arc used to enter Z, not the exit arc
+     e = gp_GetLastArc(theGraph, R);
 
      while (gp_GetVertexObstructionType(theGraph, Z) != VERTEX_OBSTRUCTIONTYPE_HIGH_RYW &&
     		gp_GetVertexObstructionType(theGraph, Z) != VERTEX_OBSTRUCTIONTYPE_LOW_RYW)
      {
-          /* Advance J and Z along the proper face containing R */
+          /* Advance e and Z along the proper face containing R */
 
-    	  J = gp_GetPrevArcCircular(theGraph, J);
-          Z = gp_GetNeighbor(theGraph, J);
-          J = gp_GetTwinArc(theGraph, J);
+    	  e = gp_GetPrevArcCircular(theGraph, e);
+          Z = gp_GetNeighbor(theGraph, e);
+          e = gp_GetTwinArc(theGraph, e);
 
           /* If Z is already visited, then pop everything since the last time
                 we visited Z because its all part of a separable component. */
@@ -538,7 +538,7 @@ int stackBottom1, stackBottom2;
               /* Push the current vertex onto the stack of vertices visited
                  since the last RXW vertex was encountered */
 
-              sp_Push(theGraph->theStack, J);
+              sp_Push(theGraph->theStack, e);
               sp_Push(theGraph->theStack, Z);
 
               /* Mark the vertex Z as visited as well as its edge of entry
@@ -547,8 +547,8 @@ int stackBottom1, stackBottom2;
               gp_SetVertexVisited(theGraph, Z);
               if (Z != theGraph->IC.px)
               {
-                  gp_SetEdgeVisited(theGraph, J);
-                  gp_SetEdgeVisited(theGraph, gp_GetTwinArc(theGraph, J));
+                  gp_SetEdgeVisited(theGraph, e);
+                  gp_SetEdgeVisited(theGraph, gp_GetTwinArc(theGraph, e));
               }
 
               /* If we found an RYW vertex, then we have successfully finished
@@ -696,14 +696,14 @@ int ZPrevArc, ZNextArc, Z, R, Px, Py;
 int  _FindExtActivityBelowXYPath(graphP theGraph)
 {
 int  Z=theGraph->IC.px, ZPrevLink=1,
-     Py=theGraph->IC.py, I=theGraph->IC.v;
+     Py=theGraph->IC.py, v=theGraph->IC.v;
 
      Z = _GetNextVertexOnExternalFace(theGraph, Z, &ZPrevLink);
 
      while (Z != Py)
      {
-    	 gp_UpdateVertexFuturePertinentChild(theGraph, Z, I);
-         if (_VertexActiveStatus(theGraph, Z, I) == VAS_EXTERNAL)
+    	 gp_UpdateVertexFuturePertinentChild(theGraph, Z, v);
+         if (_VertexActiveStatus(theGraph, Z, v) == VAS_EXTERNAL)
              return Z;
 
          Z = _GetNextVertexOnExternalFace(theGraph, Z, &ZPrevLink);

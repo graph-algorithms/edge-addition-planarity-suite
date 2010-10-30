@@ -227,7 +227,7 @@ int _ComputeVertexPositionsInComponent(DrawPlanarContext *context, int root, int
 {
 graphP theEmbedding = context->theGraph;
 listCollectionP theOrder = LCNew(theEmbedding->N);
-int W, P, C, V, J;
+int W, P, C, V, e;
 
     if (theOrder == NULL)
         return NOTOK;
@@ -293,13 +293,13 @@ int W, P, C, V, J;
         }
 
         // Push DFS children
-        J = gp_GetFirstArc(theEmbedding, W);
-        while (J != NIL)
+        e = gp_GetFirstArc(theEmbedding, W);
+        while (e != NIL)
         {
-            if (gp_GetEdgeType(theEmbedding, J) == EDGE_TYPE_CHILD)
-                sp_Push(theEmbedding->theStack, gp_GetNeighbor(theEmbedding, J));
+            if (gp_GetEdgeType(theEmbedding, e) == EDGE_TYPE_CHILD)
+                sp_Push(theEmbedding->theStack, gp_GetNeighbor(theEmbedding, e));
 
-            J = gp_GetNextArc(theEmbedding, J);
+            e = gp_GetNextArc(theEmbedding, e);
         }
     }
 
@@ -326,20 +326,20 @@ int W, P, C, V, J;
  ********************************************************************/
 void _LogEdgeList(graphP theEmbedding, listCollectionP edgeList, int edgeListHead)
 {
-    int e = edgeListHead, J, JTwin;
+    int eIndex = edgeListHead, e, eTwin;
 
     gp_Log("EdgeList: [ ");
 
-    while (e != NIL)
+    while (eIndex != NIL)
     {
-        J = (e << 1);
-        JTwin = gp_GetTwinArc(theEmbedding, J);
+        e = (eIndex << 1);
+        eTwin = gp_GetTwinArc(theEmbedding, e);
 
         gp_Log(gp_MakeLogStr2("(%d, %d) ",
-        		gp_GetVertexIndex(theEmbedding, gp_GetNeighbor(theEmbedding, J)),
-        		gp_GetVertexIndex(theEmbedding, gp_GetNeighbor(theEmbedding, JTwin))));
+        		gp_GetVertexIndex(theEmbedding, gp_GetNeighbor(theEmbedding, e)),
+        		gp_GetVertexIndex(theEmbedding, gp_GetNeighbor(theEmbedding, eTwin))));
 
-        e = LCGetNext(edgeList, edgeListHead, e);
+        eIndex = LCGetNext(edgeList, edgeListHead, eIndex);
     }
 
     gp_LogLine("]");

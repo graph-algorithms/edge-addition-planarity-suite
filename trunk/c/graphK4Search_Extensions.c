@@ -49,7 +49,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 extern int  _GetNextVertexOnExternalFace(graphP theGraph, int curVertex, int *pPrevLink);
 
-extern int  _SearchForK4InBicomp(graphP theGraph, K4SearchContext *context, int I, int R);
+extern int  _SearchForK4InBicomp(graphP theGraph, K4SearchContext *context, int v, int R);
 
 extern int _TestForCompleteGraphObstruction(graphP theGraph, int numVerts,
                                             int *degrees, int *imageVerts);
@@ -66,13 +66,13 @@ int  _K4Search_CreateStructures(K4SearchContext *context);
 int  _K4Search_InitStructures(K4SearchContext *context);
 
 /* Forward declarations of overloading functions */
-int  _K4Search_HandleBlockedBicomp(graphP theGraph, int I, int RootVertex, int R);
-int  _K4Search_EmbedPostprocess(graphP theGraph, int I, int edgeEmbeddingResult);
+int  _K4Search_HandleBlockedBicomp(graphP theGraph, int v, int RootVertex, int R);
+int  _K4Search_EmbedPostprocess(graphP theGraph, int v, int edgeEmbeddingResult);
 int  _K4Search_CheckEmbeddingIntegrity(graphP theGraph, graphP origGraph);
 int  _K4Search_CheckObstructionIntegrity(graphP theGraph, graphP origGraph);
 
-void _K4Search_InitEdgeRec(graphP theGraph, int J);
-void _InitK4SearchEdgeRec(K4SearchContext *context, int J);
+void _K4Search_InitEdgeRec(graphP theGraph, int e);
+void _InitK4SearchEdgeRec(K4SearchContext *context, int e);
 
 int  _K4Search_InitGraph(graphP theGraph, int N);
 void _K4Search_ReinitializeGraph(graphP theGraph);
@@ -232,13 +232,13 @@ int  _K4Search_CreateStructures(K4SearchContext *context)
  ********************************************************************/
 int  _K4Search_InitStructures(K4SearchContext *context)
 {
-     int J, Esize = context->theGraph->arcCapacity;
+     int e, Esize = context->theGraph->arcCapacity;
 
      if (context->theGraph->N <= 0)
          return OK;
 
-     for (J = 0; J < Esize; J++)
-          _InitK4SearchEdgeRec(context, J);
+     for (e = 0; e < Esize; e++)
+          _InitK4SearchEdgeRec(context, e);
 
      return OK;
 }
@@ -380,21 +380,21 @@ void _K4Search_FreeContext(void *pContext)
 /********************************************************************
  ********************************************************************/
 
-void _K4Search_InitEdgeRec(graphP theGraph, int J)
+void _K4Search_InitEdgeRec(graphP theGraph, int e)
 {
     K4SearchContext *context = NULL;
     gp_FindExtension(theGraph, K4SEARCH_ID, (void *)&context);
 
     if (context != NULL)
     {
-        context->functions.fpInitEdgeRec(theGraph, J);
-        _InitK4SearchEdgeRec(context, J);
+        context->functions.fpInitEdgeRec(theGraph, e);
+        _InitK4SearchEdgeRec(context, e);
     }
 }
 
-void _InitK4SearchEdgeRec(K4SearchContext *context, int J)
+void _InitK4SearchEdgeRec(K4SearchContext *context, int e)
 {
-    context->E[J].pathConnector = NIL;
+    context->E[e].pathConnector = NIL;
 }
 
 /********************************************************************
@@ -406,7 +406,7 @@ void _InitK4SearchEdgeRec(K4SearchContext *context, int J)
  	 	 NOTOK on internal error
  ********************************************************************/
 
-int  _K4Search_HandleBlockedBicomp(graphP theGraph, int I, int RootVertex, int R)
+int  _K4Search_HandleBlockedBicomp(graphP theGraph, int v, int RootVertex, int R)
 {
 	K4SearchContext *context = NULL;
 
@@ -424,7 +424,7 @@ int  _K4Search_HandleBlockedBicomp(graphP theGraph, int I, int RootVertex, int R
     	if (R != RootVertex)
     	{
     	    sp_Push2(theGraph->theStack, R, 0);
-            if ((RetVal = _SearchForK4InBicomp(theGraph, context, I, R)) == OK)
+            if ((RetVal = _SearchForK4InBicomp(theGraph, context, v, R)) == OK)
             {
             	// If the Walkdown will be told it is OK to continue, then we have to take the descendant
             	// bicomp root back off the stack so the Walkdown can try to descend to it again.
@@ -433,7 +433,7 @@ int  _K4Search_HandleBlockedBicomp(graphP theGraph, int I, int RootVertex, int R
             }
     	}
 
-    	// Otherwise, if invoked on a child bicomp rooted by a virtual copy of I,
+    	// Otherwise, if invoked on a child bicomp rooted by a virtual copy of v,
     	// then we search for a K4 homeomorph, and if OK is returned, then that indicates
     	// the blockage has been cleared and it is OK to Walkdown the bicomp.
     	// But the Walkdown finished, already, so we launch it again.
@@ -452,7 +452,7 @@ int  _K4Search_HandleBlockedBicomp(graphP theGraph, int I, int RootVertex, int R
     			// Detect whether bicomp can be used to find a K4 homeomorph.  It it does, then
     			// it returns NONEMBEDDABLE so we break the search because we found the desired K4
     			// If OK is returned, then the blockage was cleared and it is OK to Walkdown again.
-    			if ((RetVal = _SearchForK4InBicomp(theGraph, context, I, RootVertex)) != OK)
+    			if ((RetVal = _SearchForK4InBicomp(theGraph, context, v, RootVertex)) != OK)
     				break;
 
     			// Walkdown again to embed more edges.  If Walkdown returns OK, then all remaining
@@ -461,7 +461,7 @@ int  _K4Search_HandleBlockedBicomp(graphP theGraph, int I, int RootVertex, int R
     			// root edge child, then Walkdown calls this routine again, and the above non-reentrancy
     			// code returns NONEMBEDDABLE, causing this loop to search again for a K4.
     			theGraph->IC.minorType = 0;
-    			RetVal = theGraph->functions.fpWalkDown(theGraph, I, RootVertex);
+    			RetVal = theGraph->functions.fpWalkDown(theGraph, v, RootVertex);
 
     			// Except if the Walkdown returns NONEMBEDDABLE due to finding a K4 homeomorph entangled
     			// with a descendant bicomp (the R != RootVertex case above), then it was found
@@ -477,7 +477,7 @@ int  _K4Search_HandleBlockedBicomp(graphP theGraph, int I, int RootVertex, int R
     }
     else
     {
-    	return context->functions.fpHandleBlockedBicomp(theGraph, I, RootVertex, R);
+    	return context->functions.fpHandleBlockedBicomp(theGraph, v, RootVertex, R);
     }
 
     return NOTOK;
@@ -486,7 +486,7 @@ int  _K4Search_HandleBlockedBicomp(graphP theGraph, int I, int RootVertex, int R
 /********************************************************************
  ********************************************************************/
 
-int  _K4Search_EmbedPostprocess(graphP theGraph, int I, int edgeEmbeddingResult)
+int  _K4Search_EmbedPostprocess(graphP theGraph, int v, int edgeEmbeddingResult)
 {
      // For K4 search, we just return the edge embedding result because the
      // search result has been obtained already.
@@ -503,7 +503,7 @@ int  _K4Search_EmbedPostprocess(graphP theGraph, int I, int edgeEmbeddingResult)
 
         if (context != NULL)
         {
-            return context->functions.fpEmbedPostprocess(theGraph, I, edgeEmbeddingResult);
+            return context->functions.fpEmbedPostprocess(theGraph, v, edgeEmbeddingResult);
         }
      }
 

@@ -537,7 +537,7 @@ int  _FindUnembeddedEdgeToCurVertex(graphP theGraph, int cutVertex, int *pDescen
 int  _FindUnembeddedEdgeToSubtree(graphP theGraph, int ancestor,
                                   int SubtreeRoot, int *pDescendant)
 {
-int  J, Z, ZNew;
+int  e, Z, ZNew;
 
      *pDescendant = NIL;
 
@@ -549,18 +549,18 @@ int  J, Z, ZNew;
 
 /* Find the least descendant of the cut vertex incident to the ancestor. */
 
-     J = gp_GetVertexFwdArcList(theGraph, ancestor);
-     while (J != NIL)
+     e = gp_GetVertexFwdArcList(theGraph, ancestor);
+     while (e != NIL)
      {
-          if (gp_GetNeighbor(theGraph, J) >= SubtreeRoot)
+          if (gp_GetNeighbor(theGraph, e) >= SubtreeRoot)
           {
-              if (*pDescendant == NIL || *pDescendant > gp_GetNeighbor(theGraph, J))
-                  *pDescendant = gp_GetNeighbor(theGraph, J);
+              if (*pDescendant == NIL || *pDescendant > gp_GetNeighbor(theGraph, e))
+                  *pDescendant = gp_GetNeighbor(theGraph, e);
           }
 
-          J = gp_GetNextArc(theGraph, J);
-          if (J == gp_GetVertexFwdArcList(theGraph, ancestor))
-              J = NIL;
+          e = gp_GetNextArc(theGraph, e);
+          if (e == gp_GetVertexFwdArcList(theGraph, ancestor))
+              e = NIL;
      }
 
      if (*pDescendant == NIL)
@@ -634,7 +634,7 @@ int  Z, ZPrevLink, ZPrevArc;
  ****************************************************************************/
 int  _MarkDFSPath(graphP theGraph, int ancestor, int descendant)
 {
-int  J, parent, N;
+int  e, parent, N;
 
      N = theGraph->N;
 
@@ -666,15 +666,15 @@ int  J, parent, N;
           {
               // Scan the edges for the one marked as the DFS parent
               parent = NIL;
-              J = gp_GetFirstArc(theGraph, descendant);
-              while (J != NIL)
+              e = gp_GetFirstArc(theGraph, descendant);
+              while (e != NIL)
               {
-                  if (gp_GetEdgeType(theGraph, J) == EDGE_TYPE_PARENT)
+                  if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_PARENT)
                   {
-                      parent = gp_GetNeighbor(theGraph, J);
+                      parent = gp_GetNeighbor(theGraph, e);
                       break;
                   }
-                  J = gp_GetNextArc(theGraph, J);
+                  e = gp_GetNextArc(theGraph, e);
               }
 
               // Sanity check on the data structure integrity
@@ -682,8 +682,8 @@ int  J, parent, N;
                   return NOTOK;
 
               // Mark the edge
-              gp_SetEdgeVisited(theGraph, J);
-              gp_SetEdgeVisited(theGraph, gp_GetTwinArc(theGraph, J));
+              gp_SetEdgeVisited(theGraph, e);
+              gp_SetEdgeVisited(theGraph, gp_GetTwinArc(theGraph, e));
           }
 
           // Mark the parent, then hop to the parent and reiterate

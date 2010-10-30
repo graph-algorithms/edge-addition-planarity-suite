@@ -47,7 +47,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "graphK23Search.private.h"
 #include "graphK23Search.h"
 
-extern int  _SearchForK23InBicomp(graphP theGraph, int I, int R);
+extern int  _SearchForK23InBicomp(graphP theGraph, int v, int R);
 
 extern int  _TestForK23GraphObstruction(graphP theGraph, int *degrees, int *imageVerts);
 extern int  _getImageVertices(graphP theGraph, int *degrees, int maxDegree,
@@ -56,8 +56,8 @@ extern int  _TestSubgraph(graphP theSubgraph, graphP theGraph);
 
 /* Forward declarations of overloading functions */
 
-int  _K23Search_HandleBlockedBicomp(graphP theGraph, int I, int RootVertex, int R);
-int  _K23Search_EmbedPostprocess(graphP theGraph, int I, int edgeEmbeddingResult);
+int  _K23Search_HandleBlockedBicomp(graphP theGraph, int v, int RootVertex, int R);
+int  _K23Search_EmbedPostprocess(graphP theGraph, int v, int edgeEmbeddingResult);
 int  _K23Search_CheckEmbeddingIntegrity(graphP theGraph, graphP origGraph);
 int  _K23Search_CheckObstructionIntegrity(graphP theGraph, graphP origGraph);
 
@@ -161,11 +161,11 @@ void _K23Search_FreeContext(void *pContext)
 /********************************************************************
  ********************************************************************/
 
-int  _K23Search_HandleBlockedBicomp(graphP theGraph, int I, int RootVertex, int R)
+int  _K23Search_HandleBlockedBicomp(graphP theGraph, int v, int RootVertex, int R)
 {
     if (theGraph->embedFlags == EMBEDFLAGS_SEARCHFORK23)
     {
-		// If R is the root of a descendant bicomp of I, we push it, but then we know the search for K2,3
+		// If R is the root of a descendant bicomp of v, we push it, but then we know the search for K2,3
     	// will be successful and return NONEMBEDDABLE because this condition corresponds to minor A, which
     	// is a K2,3.  Thus, an "OK to proceed with Walkdown searching elsewhere" result cannot happen,
     	// so we don't have to test for it to detect if we have to pop these two back off the stack.
@@ -175,8 +175,8 @@ int  _K23Search_HandleBlockedBicomp(graphP theGraph, int I, int RootVertex, int 
     	// The possible results here are NONEMBEDDABLE if a K2,3 homeomorph is found, or OK if only
     	// a K4 was found and unblocked such that it is OK for the Walkdown to continue searching
     	// elsewhere.  Note that the OK result can only happen if RootVertex==R since minor E can only
-    	// happen on a child bicomp of vertex I, not a descendant bicomp.
-    	return _SearchForK23InBicomp(theGraph, I, R);
+    	// happen on a child bicomp of vertex v, not a descendant bicomp.
+    	return _SearchForK23InBicomp(theGraph, v, R);
     }
 
     else
@@ -186,7 +186,7 @@ int  _K23Search_HandleBlockedBicomp(graphP theGraph, int I, int RootVertex, int 
 
         if (context != NULL)
         {
-            return context->functions.fpHandleBlockedBicomp(theGraph, I, RootVertex, R);
+            return context->functions.fpHandleBlockedBicomp(theGraph, v, RootVertex, R);
         }
     }
 
@@ -196,7 +196,7 @@ int  _K23Search_HandleBlockedBicomp(graphP theGraph, int I, int RootVertex, int 
 /********************************************************************
  ********************************************************************/
 
-int  _K23Search_EmbedPostprocess(graphP theGraph, int I, int edgeEmbeddingResult)
+int  _K23Search_EmbedPostprocess(graphP theGraph, int v, int edgeEmbeddingResult)
 {
      // For K2,3 search, we just return the edge embedding result because the
      // search result has been obtained already.
@@ -213,7 +213,7 @@ int  _K23Search_EmbedPostprocess(graphP theGraph, int I, int edgeEmbeddingResult
 
         if (context != NULL)
         {
-            return context->functions.fpEmbedPostprocess(theGraph, I, edgeEmbeddingResult);
+            return context->functions.fpEmbedPostprocess(theGraph, v, edgeEmbeddingResult);
         }
      }
 
