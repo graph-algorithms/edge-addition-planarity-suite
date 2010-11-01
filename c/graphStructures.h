@@ -659,7 +659,8 @@ void 	gp_DetachArc(graphP theGraph, int arc);
 /********************************************************************
  Vertex activity categories
  ********************************************************************/
-
+//#define OLDWAY
+#ifdef OLDWAY
 #define VAS_INACTIVE    0
 #define VAS_INTERNAL    1
 #define VAS_EXTERNAL    2
@@ -675,10 +676,11 @@ void 	gp_DetachArc(graphP theGraph, int arc);
 
 #define _VertexActiveStatus(theGraph, theVertex, v) \
         (EXTERNALLYACTIVE(theGraph, theVertex, v) \
-         ? VAS_EXTERNAL \
+        ? VAS_EXTERNAL \
          : PERTINENT(theGraph, theVertex) \
            ? VAS_INTERNAL \
            : VAS_INACTIVE)
+#endif
 
 /********************************************************************
  PERTINENT()
@@ -700,6 +702,10 @@ void 	gp_DetachArc(graphP theGraph, int arc);
 #define PERTINENT(theGraph, theVertex) \
 		(gp_IsArc(gp_GetVertexPertinentAdjacencyInfo(theGraph, theVertex)) || \
 		 gp_IsVertex(gp_GetVertexPertinentBicompList(theGraph, theVertex)))
+
+#define NOTPERTINENT(theGraph, theVertex) \
+		(gp_IsNotArc(gp_GetVertexPertinentAdjacencyInfo(theGraph, theVertex)) && \
+		 gp_IsNotVertex(gp_GetVertexPertinentBicompList(theGraph, theVertex)))
 
 /********************************************************************
  FUTUREPERTINENT()
@@ -734,8 +740,13 @@ void 	gp_DetachArc(graphP theGraph, int arc);
 
 #define FUTUREPERTINENT(theGraph, theVertex, v) \
         (  theGraph->VI[theVertex].leastAncestor < v || \
-           (gp_IsArc(theGraph->VI[theVertex].futurePertinentChild) && \
+           (gp_IsVertex(theGraph->VI[theVertex].futurePertinentChild) && \
             theGraph->VI[theGraph->VI[theVertex].futurePertinentChild].lowpoint < v) )
+
+#define NOTFUTUREPERTINENT(theGraph, theVertex, v) \
+        (  theGraph->VI[theVertex].leastAncestor >= v && \
+           (gp_IsNotVertex(theGraph->VI[theVertex].futurePertinentChild) || \
+            theGraph->VI[theGraph->VI[theVertex].futurePertinentChild].lowpoint >= v) )
 
 // This is the definition that would be preferrable if a while loop could be a void expression
 //#define FUTUREPERTINENT(theGraph, theVertex, v)
@@ -760,11 +771,16 @@ void 	gp_DetachArc(graphP theGraph, int arc);
  Note that gp_UpdateVertexFuturePertinentChild() must be called before
  this macro.
  ********************************************************************/
-
+#ifdef OLDWAY
 #define EXTERNALLYACTIVE(theGraph, theVertex, v) \
         ( FUTUREPERTINENT(theGraph, theVertex, v) || \
           (theGraph->embedFlags & EMBEDFLAGS_OUTERPLANAR) \
         )
+#endif
+
+#define INACTIVE(theGraph, theVertex, v) \
+        (  NOTPERTINENT(theGraph, theVertex) && \
+           NOTFUTUREPERTINENT(theGraph, theVertex, v))
 
 #ifdef __cplusplus
 }

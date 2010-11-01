@@ -512,14 +512,9 @@ int  _K4_ChooseTypeOfNonOuterplanarityMinor(graphP theGraph, int v, int R)
 
  This method determines whether there is an active vertex Z other than W on
  the path [X, ..., W, ..., Y].  By active, we mean a vertex that connects
- by an unembedded edge to either v or an ancestor of v.  That is, a vertext
+ by an unembedded edge to either v or an ancestor of v.  That is, a vertex
  that is pertinent or future pertinent (would be pertinent in a future step
  of the embedder).
-
- Unlike the core planarity embedder, in outerplanarity-related algorithms,
- future pertinence is different from external activity, and we need to know
- about *actual connections* from each vertex to ancestors of IC.v, so we
- use PERTINENT() and FUTUREPERTINENT() rather than _VertexActiveStatus().
  ****************************************************************************/
 
 int _K4_FindSecondActiveVertexOnLowExtFacePath(graphP theGraph)
