@@ -216,15 +216,15 @@ int EsizeOccupied, v, e, eTwin, eStart, eNext, NumFaces, connectedComponents;
      EsizeOccupied = 2*(theGraph->M + sp_GetCurrentSize(theGraph->edgeHoles));
      for (e=0; e < EsizeOccupied; e+=2)
      {
-    	  // Skip edge holes
-          if (gp_GetNeighbor(theGraph, e) == NIL)
-              continue;
-
-          sp_Push(theStack, e);
-          gp_ClearEdgeVisited(theGraph, e);
-          eTwin = gp_GetTwinArc(theGraph, e);
-          sp_Push(theStack, eTwin);
-          gp_ClearEdgeVisited(theGraph, eTwin);
+    	  // Except skip edge holes
+          if (gp_EdgeInUse(theGraph, e))
+          {
+			  sp_Push(theStack, e);
+			  gp_ClearEdgeVisited(theGraph, e);
+			  eTwin = gp_GetTwinArc(theGraph, e);
+			  sp_Push(theStack, eTwin);
+			  gp_ClearEdgeVisited(theGraph, eTwin);
+          }
      }
 
      // There are M edges, so we better have pushed 2M arcs just now
@@ -260,7 +260,7 @@ int EsizeOccupied, v, e, eTwin, eStart, eNext, NumFaces, connectedComponents;
     so we do not subtract one. */
 
      for (v=connectedComponents=0; v < theGraph->N; v++)
-          if (gp_GetVertexParent(theGraph, v) == NIL)
+          if (gp_IsNotVertex(gp_GetVertexParent(theGraph, v)))
           {
               if (gp_GetVertexDegree(theGraph, v) > 0)
                   NumFaces--;
@@ -300,7 +300,7 @@ int _CheckAllVerticesOnExternalFace(graphP theGraph)
     // mark the vertices as visited
     for (v=0; v < theGraph->N; v++)
     {
-         if (gp_GetVertexParent(theGraph, v) == NIL)
+         if (gp_IsNotVertex(gp_GetVertexParent(theGraph, v)))
         	 _MarkExternalFaceVertices(theGraph, v);
     }
 
@@ -338,7 +338,7 @@ void _MarkExternalFaceVertices(graphP theGraph, int startVertex)
     int eTwin;
 
     // Handle the case of an isolated vertex
-    if (e == NIL)
+    if (gp_IsNotArc(e))
     {
     	gp_SetVertexVisited(theGraph, startVertex);
     	return;
@@ -701,7 +701,7 @@ int  v, e, imageVertPos;
      // and hence must not be adjacent.
 
      e = gp_GetFirstArc(theGraph, imageVerts[0]);
-     while (e != NIL)
+     while (gp_IsArc(e))
      {
          imageVerts[imageVertPos] = gp_GetNeighbor(theGraph, e);
          if (imageVerts[imageVertPos] == imageVerts[1])
@@ -804,7 +804,7 @@ int  _TestPath(graphP theGraph, int U, int V)
 {
 	 int  e = gp_GetFirstArc(theGraph, U);
 
-     while (e != NIL)
+     while (gp_IsArc(e))
      {
          if (_TryPath(theGraph, e, V) == OK)
          {
@@ -836,8 +836,8 @@ int  eTwin, nextVertex;
      nextVertex = gp_GetNeighbor(theGraph, e);
 
      // while nextVertex is strictly degree 2
-     while (gp_GetFirstArc(theGraph, nextVertex) != NIL &&
-    		gp_GetLastArc(theGraph, nextVertex) != NIL &&
+     while (gp_IsArc(gp_GetFirstArc(theGraph, nextVertex)) &&
+    		gp_IsArc(gp_GetLastArc(theGraph, nextVertex)) &&
     		gp_GetNextArc(theGraph, gp_GetFirstArc(theGraph, nextVertex)) == gp_GetLastArc(theGraph, nextVertex))
      {
     	 eTwin = gp_GetTwinArc(theGraph, e);
@@ -865,8 +865,8 @@ int  eTwin, nextVertex;
 
      nextVertex = gp_GetNeighbor(theGraph, e);
      // while nextVertex is strictly degree 2
-     while (gp_GetFirstArc(theGraph, nextVertex) != NIL &&
-    		gp_GetLastArc(theGraph, nextVertex) != NIL &&
+     while (gp_IsArc(gp_GetFirstArc(theGraph, nextVertex)) &&
+    		gp_IsArc(gp_GetLastArc(theGraph, nextVertex)) &&
     		gp_GetNextArc(theGraph, gp_GetFirstArc(theGraph, nextVertex)) == gp_GetLastArc(theGraph, nextVertex))
      {
          gp_SetVertexVisited(theGraph, nextVertex);
@@ -931,9 +931,9 @@ int invokeSortOnSubgraph = FALSE;
                 subgraph, set the visited flag in w in the graph */
 
           e = gp_GetFirstArc(theSubgraph, v);
-          while (e != NIL)
+          while (gp_IsArc(e))
           {
-        	  if (gp_GetNeighbor(theSubgraph, e) == NIL)
+        	  if (gp_IsNotVertex(gp_GetNeighbor(theSubgraph, e)))
         	  {
         		  Result = FALSE;
         		  break;
@@ -950,9 +950,9 @@ int invokeSortOnSubgraph = FALSE;
                 clear the visited flag in w in the graph */
 
           e = gp_GetFirstArc(theGraph, v);
-          while (e != NIL)
+          while (gp_IsArc(e))
           {
-        	  if (gp_GetNeighbor(theGraph, e) == NIL)
+        	  if (gp_IsNotVertex(gp_GetNeighbor(theGraph, e)))
         	  {
         		  Result = FALSE;
         		  break;
@@ -968,7 +968,7 @@ int invokeSortOnSubgraph = FALSE;
                 subgraph, set the visited flag in w in the graph */
 
           e = gp_GetFirstArc(theSubgraph, v);
-          while (e != NIL)
+          while (gp_IsArc(e))
           {
               if (gp_GetVertexVisited(theGraph, gp_GetNeighbor(theSubgraph, e)))
               {

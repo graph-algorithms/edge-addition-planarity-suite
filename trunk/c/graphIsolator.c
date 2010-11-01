@@ -440,7 +440,7 @@ int  _GetLeastAncestorConnection(graphP theGraph, int cutVertex)
 
 	listhead = gp_GetVertexSortedDFSChildList(theGraph, cutVertex);
 	child = gp_GetVertexFuturePertinentChild(theGraph, cutVertex);
-	while (child != NIL)
+	while (gp_IsVertex(child))
 	{
 		if (gp_IsSeparatedDFSChild(theGraph, child) &&
 			ancestor > gp_GetVertexLowpoint(theGraph, child))
@@ -476,7 +476,7 @@ int  _FindUnembeddedEdgeToAncestor(graphP theGraph, int cutVertex,
  	listhead = gp_GetVertexSortedDFSChildList(theGraph, cutVertex);
  	child = gp_GetVertexFuturePertinentChild(theGraph, cutVertex);
  	foundChild = NIL;
- 	while (child != NIL)
+ 	while (gp_IsVertex(child))
  	{
  		if (gp_IsSeparatedDFSChild(theGraph, child) &&
  			ancestor > gp_GetVertexLowpoint(theGraph, child))
@@ -511,7 +511,7 @@ int  _FindUnembeddedEdgeToAncestor(graphP theGraph, int cutVertex,
 
 int  _FindUnembeddedEdgeToCurVertex(graphP theGraph, int cutVertex, int *pDescendant)
 {
-     if (gp_GetVertexPertinentAdjacencyInfo(theGraph, cutVertex) != NIL)
+     if (gp_IsArc(gp_GetVertexPertinentAdjacencyInfo(theGraph, cutVertex)))
      {
          *pDescendant = cutVertex;
          return TRUE;
@@ -550,11 +550,11 @@ int  e, Z, ZNew;
 /* Find the least descendant of the cut vertex incident to the ancestor. */
 
      e = gp_GetVertexFwdArcList(theGraph, ancestor);
-     while (e != NIL)
+     while (gp_IsArc(e))
      {
           if (gp_GetNeighbor(theGraph, e) >= SubtreeRoot)
           {
-              if (*pDescendant == NIL || *pDescendant > gp_GetNeighbor(theGraph, e))
+              if (gp_IsNotVertex(*pDescendant) || *pDescendant > gp_GetNeighbor(theGraph, e))
                   *pDescendant = gp_GetNeighbor(theGraph, e);
           }
 
@@ -563,7 +563,7 @@ int  e, Z, ZNew;
               e = NIL;
      }
 
-     if (*pDescendant == NIL)
+     if (gp_IsNotVertex(*pDescendant))
     	 return FALSE;
 
 /* Make sure the identified descendant actually descends from the cut vertex */
@@ -572,7 +572,7 @@ int  e, Z, ZNew;
      while (Z != SubtreeRoot)
      {
          ZNew = gp_GetVertexParent(theGraph, Z);
-         if (ZNew == NIL || ZNew == Z)
+         if (gp_IsNotVertex(ZNew) || ZNew == Z)
              return FALSE;
          Z = ZNew;
      }
@@ -650,7 +650,7 @@ int  e, parent, N;
      // them, up to the given ancestor vertex.
      while (descendant != ancestor)
      {
-          if (descendant == NIL)
+          if (gp_IsNotVertex(descendant))
               return NOTOK;
 
           // If we are at a bicomp root, then ascend to its parent copy and
@@ -667,7 +667,7 @@ int  e, parent, N;
               // Scan the edges for the one marked as the DFS parent
               parent = NIL;
               e = gp_GetFirstArc(theGraph, descendant);
-              while (e != NIL)
+              while (gp_IsArc(e))
               {
                   if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_PARENT)
                   {
@@ -678,7 +678,7 @@ int  e, parent, N;
               }
 
               // Sanity check on the data structure integrity
-              if (parent == NIL)
+              if (gp_IsNotVertex(parent))
                   return NOTOK;
 
               // Mark the edge
@@ -706,11 +706,11 @@ isolatorContextP IC = &theGraph->IC;
          theGraph->functions.fpMarkDFSPath(theGraph, IC->y, IC->dy) != OK)
          return NOTOK;
 
-     if (IC->dw != NIL)
+     if (gp_IsVertex(IC->dw))
          if (theGraph->functions.fpMarkDFSPath(theGraph, IC->w, IC->dw) != OK)
              return NOTOK;
 
-     if (IC->dz != NIL)
+     if (gp_IsVertex(IC->dz))
          if (theGraph->functions.fpMarkDFSPath(theGraph, IC->w, IC->dz) != OK)
              return NOTOK;
 
@@ -729,11 +729,11 @@ isolatorContextP IC = &theGraph->IC;
          _AddAndMarkEdge(theGraph, IC->uy, IC->dy) != OK)
          return NOTOK;
 
-     if (IC->dw != NIL)
+     if (gp_IsVertex(IC->dw))
          if (_AddAndMarkEdge(theGraph, IC->v, IC->dw) != OK)
              return NOTOK;
 
-     if (IC->dz != NIL)
+     if (gp_IsVertex(IC->dz))
          if (_AddAndMarkEdge(theGraph, IC->uz, IC->dz) != OK)
              return NOTOK;
 
@@ -776,7 +776,7 @@ int fwdArc, backArc;
     /* We get the two edge records of the back edge to embed. */
 
      fwdArc = gp_GetVertexFwdArcList(theGraph, ancestor);
-     while (fwdArc != NIL)
+     while (gp_IsArc(fwdArc))
      {
           if (gp_GetNeighbor(theGraph, fwdArc) == descendant)
               break;
@@ -786,7 +786,7 @@ int fwdArc, backArc;
               fwdArc = NIL;
      }
 
-     if (fwdArc == NIL)
+     if (gp_IsNotArc(fwdArc))
          return;
 
     backArc = gp_GetTwinArc(theGraph, fwdArc);
@@ -825,7 +825,7 @@ int fwdArc, backArc;
 
 int  _DeleteUnmarkedVerticesAndEdges(graphP theGraph)
 {
-int  v, e, d;
+int  v, e;
 
      /* All of the forward and back arcs of all of the edge records
         were removed from the adjacency lists in the planarity algorithm
@@ -834,22 +834,17 @@ int  v, e, d;
 
      for (v = 0; v < theGraph->N; v++)
      {
-         while (gp_GetVertexFwdArcList(theGraph, v) != NIL)
-         {
-             e = gp_GetVertexFwdArcList(theGraph, v);
-             d = gp_GetNeighbor(theGraph, e);
-             _AddBackEdge(theGraph, v, d);
-         }
+         while (gp_IsArc(e = gp_GetVertexFwdArcList(theGraph, v)))
+             _AddBackEdge(theGraph, v, gp_GetNeighbor(theGraph, e));
      }
 
-     /* Now we delete all unmarked edges.  We don't delete vertices
-        from the embedding, but the ones we should delete will become
-        degree zero. */
+     /* Now we delete all unmarked edges.  We don't delete vertices from the
+        embedding, but the ones we should delete will become degree zero. */
 
      for (v = 0; v < theGraph->N; v++)
      {
-          e = gp_GetFirstArc(theGraph, v);
-          while (e != NIL)
+    	  e = gp_GetFirstArc(theGraph, v);
+          while (gp_IsArc(e))
           {
                 if (gp_GetEdgeVisited(theGraph, e))
                      e = gp_GetNextArc(theGraph, e);

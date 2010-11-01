@@ -120,7 +120,7 @@ int v, index;
     {
         // For each DFS tree root in the embedding, we
         // compute the vertex positions
-        if (gp_GetVertexParent(theEmbedding, v) == NIL)
+        if (gp_IsNotVertex(gp_GetVertexParent(theEmbedding, v)))
         {
             if (_ComputeVertexPositionsInComponent(context, v, &index) != OK)
                 return NOTOK;
@@ -247,7 +247,7 @@ int W, P, C, V, e;
 
         // For the special case that we just popped the DFS tree root,
         // we simply add the root to its own position.
-        if (P == NIL)
+        if (gp_IsNotVertex(P))
         {
             // Put the DFS root in the list by itself
             LCAppend(theOrder, NIL, W);
@@ -294,7 +294,7 @@ int W, P, C, V, e;
 
         // Push DFS children
         e = gp_GetFirstArc(theEmbedding, W);
-        while (e != NIL)
+        while (gp_IsArc(e))
         {
             if (gp_GetEdgeType(theEmbedding, e) == EDGE_TYPE_CHILD)
                 sp_Push(theEmbedding->theStack, gp_GetNeighbor(theEmbedding, e));
@@ -305,7 +305,7 @@ int W, P, C, V, e;
 
     // Use the order to assign vertical positions
     V = root;
-    while (V != NIL)
+    while (gp_IsVertex(V))
     {
         context->VI[V].pos = *pIndex;
         (*pIndex)++;
@@ -330,7 +330,7 @@ void _LogEdgeList(graphP theEmbedding, listCollectionP edgeList, int edgeListHea
 
     gp_Log("EdgeList: [ ");
 
-    while (eIndex != NIL)
+    while (gp_IsArc(eIndex))
     {
         e = (eIndex << 1);
         eTwin = gp_GetTwinArc(theEmbedding, e);
@@ -420,7 +420,7 @@ int e, eTwin, eCur, v, vpos, epos, eIndex;
         // false generator edge so that it is still "visited" and then
         // all of its edges are generators for its neighbor vertices because
         // they all have greater numbers in the vertex order.
-        if (gp_GetVertexParent(theEmbedding, v) == NIL)
+        if (gp_IsNotVertex(gp_GetVertexParent(theEmbedding, v)))
         {
             // Set a false generator edge, so the vertex is distinguishable from
             // a vertex with no generator edge when its neighbors are visited
@@ -431,7 +431,7 @@ int e, eTwin, eCur, v, vpos, epos, eIndex;
             // Now we traverse the adjacency list of the DFS tree root and
             // record each edge as the generator edge of the neighbors
             e = gp_GetFirstArc(theEmbedding, v);
-            while (e != NIL)
+            while (gp_IsArc(e))
             {
                 eIndex = (e >> 1); // div by 2 since each edge is a pair of arcs
 
@@ -452,7 +452,8 @@ int e, eTwin, eCur, v, vpos, epos, eIndex;
         {
             // Get the generator edge of the vertex
         	// Note that this never gets the false generator edge of a DFS tree root
-            if ((eTwin = gp_GetVertexVisitedInfo(theEmbedding, v)) == NIL)
+        	eTwin = gp_GetVertexVisitedInfo(theEmbedding, v);
+            if (gp_IsNotArc(eTwin))
                 return NOTOK;
             e = gp_GetTwinArc(theEmbedding, eTwin);
 
@@ -485,7 +486,7 @@ int e, eTwin, eCur, v, vpos, epos, eIndex;
                     // If the vertex does not yet have a generator edge, then set it.
                     // Note that a DFS tree root has a false generator edge, so this if
                     // test avoids setting a generator edge for a DFS tree root
-                    if (gp_GetVertexVisitedInfo(theEmbedding, gp_GetNeighbor(theEmbedding, eCur)) == NIL)
+                    if (gp_IsNotArc(gp_GetVertexVisitedInfo(theEmbedding, gp_GetNeighbor(theEmbedding, eCur))))
                     {
                         gp_SetVertexVisitedInfo(theEmbedding, gp_GetNeighbor(theEmbedding, eCur), eCur);
                         gp_LogLine(gp_MakeLogStr2("Generator edge (%d, %d)",
@@ -507,7 +508,7 @@ int e, eTwin, eCur, v, vpos, epos, eIndex;
     // Now iterate through the edgeList and assign positions to the edges.
     epos = 0;
     eIndex = edgeListHead;
-    while (eIndex != NIL)
+    while (gp_IsArc(eIndex))
     {
         e = (eIndex << 1);
         eTwin = gp_GetTwinArc(theEmbedding, e);
@@ -550,13 +551,13 @@ int v, e, min, max;
         // set the min and max to 1 since there no edges controlling where
         // it gets drawn.
         e = gp_GetFirstArc(theEmbedding, v);
-        if (e == NIL)
+        if (gp_IsNotArc(e))
         {
         	min = max = 0;
         }
         else
         {
-            while (e != NIL)
+            while (gp_IsArc(e))
             {
                 if (min > context->E[e].pos)
                     min = context->E[e].pos;
@@ -761,7 +762,7 @@ int WPredNextLink = 1^WPrevLink,
         return NOTOK;
 
     /* If there is a tie, it can now be resolved. */
-    if (context->VI[W].tie[WPrevLink] != NIL)
+    if (gp_IsVertex(context->VI[W].tie[WPrevLink]))
     {
         int DFSChild = context->VI[W].tie[WPrevLink];
 
@@ -793,7 +794,8 @@ int WPredNextLink = 1^WPrevLink,
         }
 
         /* The tie is resolved so clear the flags*/
-        context->VI[W].tie[WPrevLink] = context->VI[WPred].tie[WPredNextLink] = NIL;
+        context->VI[W].tie[WPrevLink] = NIL;
+        context->VI[WPred].tie[WPredNextLink] = NIL;
     }
 
 	gp_LogLine("graphDrawPlanar.c/_BreakTie() end\n");

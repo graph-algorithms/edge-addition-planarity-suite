@@ -99,14 +99,14 @@ platform_GetTime(start);
 
      for (v=DFI=0; DFI < N; v++)
      {
-          if (gp_GetVertexParent(theGraph, v) != NIL)
+          if (gp_IsVertex(gp_GetVertexParent(theGraph, v)))
               continue;
 
           sp_Push2(theStack, NIL, NIL);
           while (sp_NonEmpty(theStack))
           {
               sp_Pop2(theStack, uparent, e);
-              u = uparent == NIL ? v : gp_GetNeighbor(theGraph, e);
+              u = gp_IsNotVertex(uparent) ? v : gp_GetNeighbor(theGraph, e);
 
               if (!gp_GetVertexVisited(theGraph, u))
               {
@@ -115,7 +115,7 @@ platform_GetTime(start);
             	  gp_SetVertexVisited(theGraph, u);
                   gp_SetVertexIndex(theGraph, u, DFI++);
                   gp_SetVertexParent(theGraph, u, uparent);
-                  if (e != NIL)
+                  if (gp_IsArc(e))
                   {
                       gp_SetEdgeType(theGraph, e, EDGE_TYPE_CHILD);
                       gp_SetEdgeType(theGraph, gp_GetTwinArc(theGraph, e), EDGE_TYPE_PARENT);
@@ -125,7 +125,7 @@ platform_GetTime(start);
                         tree edges to children or forward arcs of back edges */
 
                   e = gp_GetFirstArc(theGraph, u);
-                  while (e != NIL)
+                  while (gp_IsArc(e))
                   {
                       if (!gp_GetVertexVisited(theGraph, gp_GetNeighbor(theGraph, e)))
                           sp_Push2(theStack, u, e);
@@ -202,7 +202,7 @@ platform_GetTime(start);
 
      for (e=0; e < EsizeOccupied; e+=2)
      {
-    	 if (gp_GetNeighbor(theGraph, e) != NIL)
+    	 if (gp_EdgeInUse(theGraph, e))
     	 {
     		 gp_SetNeighbor(theGraph, e, gp_GetVertexIndex(theGraph, gp_GetNeighbor(theGraph, e)));
     		 gp_SetNeighbor(theGraph, e+1, gp_GetVertexIndex(theGraph, gp_GetNeighbor(theGraph, e+1)));
@@ -212,7 +212,7 @@ platform_GetTime(start);
 /* Convert DFSParent from v to DFI(v) or vice versa */
 
      for (v=0; v < N; v++)
-          if (gp_GetVertexParent(theGraph, v) != NIL)
+          if (gp_IsVertex(gp_GetVertexParent(theGraph, v)))
               gp_SetVertexParent(theGraph, v, gp_GetVertexIndex(theGraph, gp_GetVertexParent(theGraph, v)));
 
 /* Sort by 'v using constant time random access. Move each vertex to its
@@ -344,7 +344,7 @@ platform_GetTime(start);
 
                   // Push the DFS children of u
                   e = gp_GetFirstArc(theGraph, u);
-                  while (e != NIL)
+                  while (gp_IsArc(e))
                   {
                       if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_CHILD)
                       {
@@ -363,7 +363,7 @@ platform_GetTime(start);
 
                   // Compute leastAncestor and L, the least lowpoint from the DFS children
                   e = gp_GetFirstArc(theGraph, u);
-                  while (e != NIL)
+                  while (gp_IsArc(e))
                   {
                       uneighbor = gp_GetNeighbor(theGraph, e);
                       if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_CHILD)
@@ -466,7 +466,7 @@ platform_GetTime(start);
 				  leastAncestor = u;
 
 				  e = gp_GetFirstArc(theGraph, u);
-				  while (e != NIL)
+				  while (gp_IsArc(e))
 				  {
                       uneighbor = gp_GetNeighbor(theGraph, e);
 					  if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_CHILD)

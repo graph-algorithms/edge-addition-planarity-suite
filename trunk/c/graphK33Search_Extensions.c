@@ -462,14 +462,14 @@ void _CreateBackArcLists(graphP theGraph, K33SearchContext *context)
     for (v=0; v < theGraph->N; v++)
     {
     	e = gp_GetVertexFwdArcList(theGraph, v);
-        while (e != NIL)
+        while (gp_IsArc(e))
         {
         	// Get the ancestor endpoint and the associated back arc
         	ancestor = gp_GetNeighbor(theGraph, e);
         	eTwin = gp_GetTwinArc(theGraph, e);
 
         	// Put it into the back arc list of the ancestor
-            if (context->VI[ancestor].backArcList == NIL)
+            if (gp_IsNotArc(context->VI[ancestor].backArcList))
             {
                 context->VI[ancestor].backArcList = eTwin;
                 gp_SetPrevArc(theGraph, eTwin, eTwin);
@@ -528,14 +528,14 @@ int v, L, N, DFSParent, theList;
      for (L = 0; L < N; L++)
      {
     	  // For each successive bucket L containing vertices with a lowpoint of L
-          if ((v=buckets[L]) != NIL)
+          if (gp_IsVertex(v=buckets[L]))
           {
         	  // Loop through all the vertices with lowpoint L, putting each in the list of its parent
-              while (v != NIL)
+              while (gp_IsVertex(v))
               {
                   DFSParent = gp_GetVertexParent(theGraph, v);
 
-                  if (DFSParent != NIL && DFSParent != v)
+                  if (gp_IsVertex(DFSParent) && DFSParent != v)
                   {
                       theList = context->VI[DFSParent].separatedDFSChildList;
                       theList = LCAppend(context->separatedDFSChildLists, theList, v);
@@ -624,7 +624,7 @@ int  _K33Search_MergeBicomps(graphP theGraph, int v, int RootVertex, int W, int 
 			if (_SearchForMergeBlocker(theGraph, context, v, &mergeBlocker) != OK)
 				return NOTOK;
 
-			if (mergeBlocker != NIL)
+			if (gp_IsVertex(mergeBlocker))
 			{
 				if (_FindK33WithMergeBlocker(theGraph, context, v, mergeBlocker) != OK)
 					return NOTOK;

@@ -158,14 +158,14 @@ int N, v, W, ErrorCode, adjList, e, indexValue;
           // read operation for a vertex v, any adjacency nodes left in the saved
           // list are converted to directed edges from the preceding vertex to v.
           adjList = gp_GetFirstArc(theGraph, v);
-          if (adjList != NIL)
+          if (gp_IsArc(adjList))
           {
         	  // Store the adjacency node location in the visited member of each
         	  // of the preceding vertices to which v is adjacent so that we can
         	  // efficiently detect the adjacency during the read operation and
         	  // efficiently find the adjacency node.
         	  e = gp_GetFirstArc(theGraph, v);
-			  while (e != NIL)
+			  while (gp_IsArc(e))
 			  {
 				  gp_SetVertexVisitedInfo(theGraph, gp_GetNeighbor(theGraph, e), e);
 				  e = gp_GetNextArc(theGraph, e);
@@ -210,7 +210,7 @@ int N, v, W, ErrorCode, adjList, e, indexValue;
              {
             	 // If the adjacency node (arc) already exists, then we add it
             	 // as the new first arc of the vertex and delete it from adjList
-            	 if (gp_GetVertexVisitedInfo(theGraph, W) != NIL)
+            	 if (gp_IsArc(gp_GetVertexVisitedInfo(theGraph, W)))
             	 {
             		 e = gp_GetVertexVisitedInfo(theGraph, W);
 
@@ -248,7 +248,7 @@ int N, v, W, ErrorCode, adjList, e, indexValue;
           // Rather, they represent incoming directed arcs from other vertices
           // into vertex v. They need to be added back into v's adjacency list but
           // marked as "INONLY", while the twin is marked "OUTONLY" (by the same function).
-          while (adjList != NIL)
+          while (gp_IsArc(adjList))
           {
         	  e = adjList;
 
@@ -416,7 +416,7 @@ int v, e;
           fprintf(Outfile, "%d:", v);
 
           e = gp_GetLastArc(theGraph, v);
-          while (e != NIL)
+          while (gp_IsArc(e))
           {
         	  if (gp_GetDirection(theGraph, e) != EDGEFLAG_DIRECTION_INONLY)
                   fprintf(Outfile, " %d", gp_GetNeighbor(theGraph, e));
@@ -462,7 +462,7 @@ char *Row = NULL;
                Row[K] = '0';
 
           e = gp_GetFirstArc(theGraph, v);
-          while (e != NIL)
+          while (gp_IsArc(e))
           {
         	  if (gp_GetDirection(theGraph, e) == EDGEFLAG_DIRECTION_INONLY)
         		  return NOTOK;
@@ -546,7 +546,7 @@ int v, e, Vsize, EsizeOccupied;
                                 gp_GetVertexIndex(theGraph, v));
 
           e = gp_GetFirstArc(theGraph, v);
-          while (e != NIL)
+          while (gp_IsArc(e))
           {
               fprintf(Outfile, " %d(e=%d)", gp_GetNeighbor(theGraph, e), e);
               e = gp_GetNextArc(theGraph, e);
@@ -560,14 +560,14 @@ int v, e, Vsize, EsizeOccupied;
      Vsize = theGraph->N + theGraph->NV;
      for (v = theGraph->N; v < Vsize; v++)
      {
-          if (gp_GetVertexIndex(theGraph, v) == NIL)
+          if (!gp_VirtualVertexInUse(theGraph, v))
               continue;
 
           fprintf(Outfile, "%d(copy of=%d, DFS child=%d):",
                            v, gp_GetVertexIndex(theGraph, v), v-theGraph->N);
 
           e = gp_GetFirstArc(theGraph, v);
-          while (e != NIL)
+          while (gp_IsArc(e))
           {
               fprintf(Outfile, " %d(e=%d)", gp_GetNeighbor(theGraph, e), e);
               e = gp_GetNextArc(theGraph, e);
@@ -580,7 +580,7 @@ int v, e, Vsize, EsizeOccupied;
      fprintf(Outfile, "\nVERTEX INFORMATION\n");
      for (v=0; v < Vsize; v++)
      {
-         if (gp_GetVertexIndex(theGraph, v) == NIL)
+         if (v >= theGraph->N && !gp_VirtualVertexInUse(theGraph, v))
              continue;
 
          fprintf(Outfile, "V[%3d] index=%3d, type=%c, first arc=%3d, last arc=%3d\n",
@@ -597,15 +597,15 @@ int v, e, Vsize, EsizeOccupied;
      EsizeOccupied = 2*(theGraph->M + sp_GetCurrentSize(theGraph->edgeHoles));
      for (e=0; e < EsizeOccupied; e++)
      {
-          if (gp_GetNeighbor(theGraph, e) == NIL)
-              continue;
-
-          fprintf(Outfile, "E[%3d] neighbor=%3d, type=%c, next arc=%3d, prev arc=%3d\n",
-                           e,
-                           gp_GetNeighbor(theGraph, e),
-                           _GetEdgeTypeChar(theGraph, e),
-                           gp_GetNextArc(theGraph, e),
-                           gp_GetPrevArc(theGraph, e));
+          if (gp_EdgeInUse(theGraph, e))
+          {
+              fprintf(Outfile, "E[%3d] neighbor=%3d, type=%c, next arc=%3d, prev arc=%3d\n",
+                               e,
+                               gp_GetNeighbor(theGraph, e),
+                               _GetEdgeTypeChar(theGraph, e),
+                               gp_GetNextArc(theGraph, e),
+                               gp_GetPrevArc(theGraph, e));
+          }
      }
 
      return OK;

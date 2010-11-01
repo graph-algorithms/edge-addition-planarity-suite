@@ -482,7 +482,7 @@ int  _K4_ChooseTypeOfNonOuterplanarityMinor(graphP theGraph, int v, int R)
         }
     }
 
-    if (theGraph->IC.w == NIL)
+    if (gp_IsNotVertex(theGraph->IC.w))
     	return NOTOK;
 
     // If the root copy is not a root copy of the current vertex v,
@@ -494,7 +494,7 @@ int  _K4_ChooseTypeOfNonOuterplanarityMinor(graphP theGraph, int v, int R)
     // Notice this is different from planarity, in which minor B is indicated
     // only if the pertinent child bicomp is also externally active under the
     // planarity processing model (i.e. future pertinent).
-	else if (gp_GetVertexPertinentBicompList(theGraph, theGraph->IC.w) != NIL)
+	else if (gp_IsVertex(gp_GetVertexPertinentBicompList(theGraph, theGraph->IC.w)))
 		theGraph->IC.minorType |= MINORTYPE_B;
 
     // The only other result is minor E (we will search for the X-Y path later)
@@ -664,7 +664,7 @@ int _K4_FindSeparatingInternalEdge(graphP theGraph, int R, int prevLink, int A, 
 		// It is OK to not bother skipping the external face edges, since we
 		// know they are marked visited and so are ignored
 	    e = gp_GetFirstArc(theGraph, Z);
-	    while (e != NIL)
+	    while (gp_IsArc(e))
 	    {
 	        neighbor = gp_GetNeighbor(theGraph, e);
 	        if (gp_GetVertexObstructionType(theGraph, neighbor) == VERTEX_OBSTRUCTIONTYPE_UNMARKED)
@@ -678,7 +678,7 @@ int _K4_FindSeparatingInternalEdge(graphP theGraph, int R, int prevLink, int A, 
 	    }
 
 	    // If we found the separator edge, then we don't need to go on
-	    if (*pX != NIL)
+	    if (gp_IsVertex(*pX))
 	    	break;
 
 		// Go to the next vertex
@@ -688,7 +688,7 @@ int _K4_FindSeparatingInternalEdge(graphP theGraph, int R, int prevLink, int A, 
 	// Restore the unmarked obstruction type settings on the path [R ... A]
 	_K4_UnmarkObstructionTypeOnExternalFacePath(theGraph, R, prevLink, A);
 
-	return *pX == NIL ? FALSE : TRUE;
+	return gp_IsVertex(*pX) ? TRUE : FALSE;
 }
 
 /****************************************************************************
@@ -901,7 +901,7 @@ int  _K4_ReduceBicompToEdge(graphP theGraph, K4SearchContext *context, int R, in
     // Now we have to reduce the path W -> R to the DFS tree edge (R, W)
     newEdge =_K4_ReducePathToEdge(theGraph, context, EDGE_TYPE_PARENT,
 					R, gp_GetFirstArc(theGraph, R), W, gp_GetFirstArc(theGraph, W));
-    if (newEdge == NIL)
+    if (gp_IsNotArc(newEdge))
     	return NOTOK;
 
     // Finally, set the visited info state of W to unvisited so that
@@ -1019,7 +1019,7 @@ int  _K4_ReducePathComponent(graphP theGraph, K4SearchContext *context, int R, i
 
 	// Reduce the path (R ... A) to an edge
 	e_R = _K4_ReducePathToEdge(theGraph, context, edgeType, R, e_R, A, e_A);
-	if (e_R == NIL)
+	if (gp_IsNotArc(e_R))
 		return NOTOK;
 
 	// Preserve the net orientation along the DFS path in the case of a tree edge
@@ -1048,7 +1048,7 @@ int  N = theGraph->N, invertedFlag=0;
 
      while (descendant != ancestor)
      {
-          if (descendant == NIL)
+          if (gp_IsNotVertex(descendant))
               return NOTOK;
 
           // If we are at a bicomp root, then ascend to its parent copy
@@ -1063,7 +1063,7 @@ int  N = theGraph->N, invertedFlag=0;
               // Scan the edges for the one marked as the DFS parent
               parent = NIL;
               e = gp_GetFirstArc(theGraph, descendant);
-              while (e != NIL)
+              while (gp_IsArc(e))
               {
                   if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_PARENT)
                   {
@@ -1073,8 +1073,8 @@ int  N = theGraph->N, invertedFlag=0;
                   e = gp_GetNextArc(theGraph, e);
               }
 
-              // If the parent edge was not found, then the data structure is corrupt
-              if (parent == NIL)
+              // If the edge to the parent vertex was not found, then the data structure is corrupt
+              if (gp_IsNotVertex(parent))
                   return NOTOK;
 
               // Add the inversion flag on the child arc to the cumulative result
@@ -1141,7 +1141,7 @@ void _K4_ClearVisitedInPathComponent(graphP theGraph, int R, int prevLink, int A
 	{
 		gp_ClearVertexVisited(theGraph, Z);
 		e = gp_GetFirstArc(theGraph, Z);
-		while (e != NIL)
+		while (gp_IsArc(e))
 		{
 			gp_ClearEdgeVisited(theGraph, e);
 			gp_ClearEdgeVisited(theGraph, gp_GetTwinArc(theGraph, e));
@@ -1191,7 +1191,7 @@ int  _K4_DeleteUnmarkedEdgesInPathComponent(graphP theGraph, int R, int prevLink
 	while (Z != A)
 	{
 		e = gp_GetFirstArc(theGraph, Z);
-		while (e != NIL)
+		while (gp_IsArc(e))
 		{
 			// The comparison of e to its twin is a useful way of ensuring we
 			// don't push the edge twice, which is of course only applicable
@@ -1244,7 +1244,7 @@ int  _K4_ReducePathToEdge(graphP theGraph, K4SearchContext *context, int edgeTyp
 
 		 // Prepare for removing each of the two edges that join the path to the bicomp by
 		 // restoring it if it is a reduction edge (a constant time operation)
-		 if (context->E[e_R].pathConnector != NIL)
+		 if (gp_IsVertex(context->E[e_R].pathConnector))
 		 {
 			 if (_K4_RestoreReducedPath(theGraph, context, e_R) != OK)
 				 return NOTOK;
@@ -1252,7 +1252,7 @@ int  _K4_ReducePathToEdge(graphP theGraph, K4SearchContext *context, int edgeTyp
 			 e_R = gp_GetArc(theGraph, R, Rlink);
 		 }
 
-		 if (context->E[e_A].pathConnector != NIL)
+		 if (gp_IsVertex(context->E[e_A].pathConnector))
 		 {
 			 if (_K4_RestoreReducedPath(theGraph, context, e_A) != OK)
 				 return NOTOK;
@@ -1323,7 +1323,7 @@ int  _K4_RestoreReducedPath(graphP theGraph, K4SearchContext *context, int e)
 int  eTwin, u, v, w, x;
 int  e0, e1, eTwin0, eTwin1;
 
-     if (context->E[e].pathConnector == NIL)
+     if (gp_IsNotVertex(context->E[e].pathConnector))
          return OK;
 
      eTwin = gp_GetTwinArc(theGraph, e);
@@ -1347,7 +1347,7 @@ int  e0, e1, eTwin0, eTwin1;
      // Now we add the two edges to reconnect the reduced path represented
      // by the edge [e, eTwin].  The edge record in u is added between e0 and e1.
      // Likewise, the new edge record in x is added between eTwin0 and eTwin1.
-     if (e0 != NIL)
+     if (gp_IsArc(e0))
      {
     	 if (gp_InsertEdge(theGraph, u, e0, 1, v, NIL, 0) != OK)
     		 return NOTOK;
@@ -1358,7 +1358,7 @@ int  e0, e1, eTwin0, eTwin1;
     		 return NOTOK;
      }
 
-     if (eTwin0 != NIL)
+     if (gp_IsArc(eTwin0))
      {
     	 if (gp_InsertEdge(theGraph, x, eTwin0, 1, w, NIL, 0) != OK)
     		 return NOTOK;
@@ -1403,7 +1403,7 @@ int  Esize, e, eTwin, u, v, w, x, visited;
 	 Esize = 2*(theGraph->M + sp_GetCurrentSize(theGraph->edgeHoles));
      for (e = 0; e < Esize;)
      {
-         if (context->E[e].pathConnector != NIL)
+         if (gp_IsVertex(context->E[e].pathConnector))
          {
              visited = gp_GetEdgeVisited(theGraph, e);
 

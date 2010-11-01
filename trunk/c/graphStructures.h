@@ -97,6 +97,11 @@ typedef struct
 
 typedef edgeRec * edgeRecP;
 
+#define gp_IsArc(e) ((e) != NIL)
+#define gp_IsNotArc(e) ((e) == NIL)
+#define gp_EdgeInUse(theGraph, e) (gp_IsVertex(gp_GetNeighbor(theGraph, e)))
+#define gp_EdgeNotInUse(theGraph, e) (gp_IsNotVertex(gp_GetNeighbor(theGraph, e)))
+
 // An edge is represented by two consecutive edge records (arcs) in the edge array E.
 // If an even number, xor 1 will add one; if an odd number, xor 1 will subtract 1
 #define gp_GetTwinArc(theGraph, Arc) ((Arc) ^ 1)
@@ -235,8 +240,12 @@ typedef vertexRec * vertexRecP;
 #define gp_SetLastArc(theGraph, v, newLastArc) (theGraph->V[v].link[1] = newLastArc)
 #define gp_SetArc(theGraph, v, theLink, newArc) (theGraph->V[v].link[theLink] = newArc)
 
-#define gp_VirtualVertexInUse(theGraph, virtualVertex) (gp_GetFirstArc(theGraph, virtualVertex) != NIL)
-#define gp_IsSeparatedDFSChild(theGraph, theChild) (gp_VirtualVertexInUse(theGraph, theChild + theGraph->N))
+#define gp_IsVertex(v) ((v) != NIL)
+#define gp_IsNotVertex(v) ((v) == NIL)
+#define gp_VirtualVertexInUse(theGraph, virtualVertex) (gp_IsArc(gp_GetFirstArc(theGraph, virtualVertex)))
+#define gp_VirtualVertexNotInUse(theGraph, virtualVertex) (gp_IsNotArc(gp_GetFirstArc(theGraph, virtualVertex)))
+#define gp_IsSeparatedDFSChild(theGraph, theChild) (gp_VirtualVertexInUse(theGraph, (theChild) + theGraph->N))
+#define gp_IsNotSeparatedDFSChild(theGraph, theChild) (gp_VirtualVertexNotInUse(theGraph, (theChild) + theGraph->N))
 
 // Accessors for vertex index
 #define gp_GetVertexIndex(theGraph, v) (theGraph->V[v].index)
@@ -398,11 +407,11 @@ typedef vertexInfo * vertexInfoP;
 // Once futurePertinentChild advances past a child, no future planarity operation could make that child
 // relevant to future pertinence
 #define gp_UpdateVertexFuturePertinentChild(theGraph, w, v) \
-	while (theGraph->VI[w].futurePertinentChild != NIL) \
+	while (gp_IsVertex(theGraph->VI[w].futurePertinentChild)) \
 	{ \
 		/* Skip children that 1) aren't future pertinent, 2) have been merged into the bicomp with w */ \
 		if (gp_GetVertexLowpoint(theGraph, theGraph->VI[w].futurePertinentChild) >= v || \
-			!gp_IsSeparatedDFSChild(theGraph, theGraph->VI[w].futurePertinentChild)) \
+			gp_IsNotSeparatedDFSChild(theGraph, theGraph->VI[w].futurePertinentChild)) \
         { \
 			theGraph->VI[w].futurePertinentChild = \
 					LCGetNext(theGraph->sortedDFSChildLists, \
@@ -543,13 +552,13 @@ typedef baseGraphStructure * graphP;
 // as if the adjacency list were circular, i.e. that the
 // first arc and last arc were linked
 #define gp_GetNextArcCircular(theGraph, e) \
-	(theGraph->E[e].link[0] != NIL ? \
-			theGraph->E[e].link[0] : \
+	(gp_IsArc(gp_GetNextArc(theGraph, e)) ? \
+			gp_GetNextArc(theGraph, e) : \
 			gp_GetFirstArc(theGraph, theGraph->E[gp_GetTwinArc(theGraph, e)].neighbor))
 
 #define gp_GetPrevArcCircular(theGraph, e) \
-	(theGraph->E[e].link[1] != NIL ? \
-		theGraph->E[e].link[1] : \
+	(gp_IsArc(gp_GetPrevArc(theGraph, e)) ? \
+		gp_GetPrevArc(theGraph, e) : \
 		gp_GetLastArc(theGraph, theGraph->E[gp_GetTwinArc(theGraph, e)].neighbor))
 
 // Definitions that make the cross-link binding between a vertex and an arc
@@ -570,7 +579,7 @@ typedef baseGraphStructure * graphP;
 // Attaches an arc between the current binding between a vertex and its first arc
 #define gp_AttachFirstArc(theGraph, v, arc) \
 	{ \
-		if (gp_GetFirstArc(theGraph, v) != NIL) \
+		if (gp_IsArc(gp_GetFirstArc(theGraph, v))) \
 		{ \
 			gp_SetNextArc(theGraph, arc, gp_GetFirstArc(theGraph, v)); \
 			gp_SetPrevArc(theGraph, gp_GetFirstArc(theGraph, v), arc); \
@@ -582,7 +591,7 @@ typedef baseGraphStructure * graphP;
 // Attaches an arc between the current binding betwen a vertex and its last arc
 #define gp_AttachLastArc(theGraph, v, arc) \
 	{ \
-		if (gp_GetLastArc(theGraph, v) != NIL) \
+		if (gp_IsArc(gp_GetLastArc(theGraph, v))) \
 		{ \
 			gp_SetPrevArc(theGraph, arc, gp_GetLastArc(theGraph, v)); \
 			gp_SetNextArc(theGraph, gp_GetLastArc(theGraph, v), arc); \
@@ -689,8 +698,8 @@ void 	gp_DetachArc(graphP theGraph, int arc);
  ********************************************************************/
 
 #define PERTINENT(theGraph, theVertex) \
-        (theGraph->VI[theVertex].pertinentAdjacencyInfo != NIL || \
-         theGraph->VI[theVertex].pertinentBicompList != NIL)
+		(gp_IsArc(gp_GetVertexPertinentAdjacencyInfo(theGraph, theVertex)) || \
+		 gp_IsVertex(gp_GetVertexPertinentBicompList(theGraph, theVertex)))
 
 /********************************************************************
  FUTUREPERTINENT()
@@ -725,15 +734,15 @@ void 	gp_DetachArc(graphP theGraph, int arc);
 
 #define FUTUREPERTINENT(theGraph, theVertex, v) \
         (  theGraph->VI[theVertex].leastAncestor < v || \
-           (theGraph->VI[theVertex].futurePertinentChild != NIL && \
+           (gp_IsArc(theGraph->VI[theVertex].futurePertinentChild) && \
             theGraph->VI[theGraph->VI[theVertex].futurePertinentChild].lowpoint < v) )
 
 // This is the definition that would be preferrable if a while loop could be a void expression
 //#define FUTUREPERTINENT(theGraph, theVertex, v)
 //        (  theGraph->VI[theVertex].leastAncestor < v ||
 //           ((gp_UpdateVertexFuturePertinentChild(theGraph, theVertex, v),
-//        	 theGraph->VI[theVertex].futurePertinentChild != NIL) &&
-//            theGraph->VI[theGraph->VI[theVertex].futurePertinentChild].lowpoint < v) )
+//        	   gp_IsArc(theGraph->VI[theVertex].futurePertinentChild)) &&
+//             theGraph->VI[theGraph->VI[theVertex].futurePertinentChild].lowpoint < v) )
 
 /********************************************************************
  EXTERNALLYACTIVE()
