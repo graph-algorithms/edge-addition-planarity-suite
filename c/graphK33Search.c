@@ -424,7 +424,7 @@ int u;
 
     if (IC->uz < u_max)
     {
-        if (_TestForStraddlingBridge(theGraph, context, u_max) != NIL)
+        if (gp_IsVertex(_TestForStraddlingBridge(theGraph, context, u_max)))
         {
             if (_FinishIsolatorContextInitialization(theGraph, context) != OK ||
                 _IsolateMinorE6(theGraph, context) != OK)
@@ -443,7 +443,7 @@ int u;
 
     if (IC->ux < u_max || IC->uy < u_max)
     {
-        if (_TestForStraddlingBridge(theGraph, context, u_max) != NIL)
+        if (gp_IsVertex(_TestForStraddlingBridge(theGraph, context, u_max)))
         {
             if (_FinishIsolatorContextInitialization(theGraph, context) != OK ||
                 _IsolateMinorE7(theGraph, context) != OK)
@@ -482,8 +482,7 @@ int  Z=theGraph->IC.px, ZPrevLink=1;
                 theGraph->IC.uz = _GetLeastAncestorConnection(theGraph, Z);
                 return OK;
             }
-            else if (gp_GetVertexPertinentBicompList(theGraph, Z) != NIL ||
-                     gp_GetVertexPertinentAdjacencyInfo(theGraph, Z) == theGraph->IC.v)
+            else if (PERTINENT(theGraph, Z))
             {
                 /* Swap the roles of W and Z */
 
@@ -592,7 +591,7 @@ int  _Fast_GetLeastAncestorConnection(graphP theGraph, K33SearchContext *context
 	int ancestor = gp_GetVertexLeastAncestor(theGraph, cutVertex);
 	int child = context->VI[cutVertex].separatedDFSChildList;
 
-	if (child != NIL && ancestor > gp_GetVertexLowpoint(theGraph, child))
+	if (gp_IsVertex(child) && ancestor > gp_GetVertexLowpoint(theGraph, child))
 		ancestor = gp_GetVertexLowpoint(theGraph, child);
 
     return ancestor;
@@ -611,7 +610,7 @@ int _GetAdjacentAncestorInRange(graphP theGraph, K33SearchContext *context, int 
 {
 int e = context->VI[theVertex].backArcList;
 
-    while (e != NIL)
+    while (gp_IsArc(e))
     {
         if (gp_GetNeighbor(theGraph, e) < closerAncestor &&
             gp_GetNeighbor(theGraph, e) > fartherAncestor)
@@ -640,7 +639,7 @@ int  u2 = _GetAdjacentAncestorInRange(theGraph, context, cutVertex, IC->v, u_max
 int  listHead, child, descendant;
 
 	 // Test cutVertex for an external connection to descendant of u_max via direct back edge
-     if (u2 != NIL)
+     if (gp_IsVertex(u2))
          return u2;
 
      // If there is no direct back edge connection from the cut vertex
@@ -653,7 +652,7 @@ int  listHead, child, descendant;
      // lowpoints indicating connections to ancestors of the current vertex.
      sp_ClearStack(theGraph->theStack);
      listHead = child = gp_GetVertexSortedDFSChildList(theGraph, cutVertex);
-     while (child != NIL)
+     while (gp_IsVertex(child))
      {
          if (gp_GetVertexLowpoint(theGraph, child) < IC->v && gp_IsSeparatedDFSChild(theGraph, child))
         	 sp_Push(theGraph->theStack, child);
@@ -671,12 +670,12 @@ int  listHead, child, descendant;
          {
 			 // Check the subtree root for the desired connection.
 			 u2 = _GetAdjacentAncestorInRange(theGraph, context, descendant, IC->v, u_max);
-			 if (u2 != NIL)
+			 if (gp_IsVertex(u2))
 				 return u2;
 
 			 // Push each child as a new subtree root to be considered, except skip those whose lowpoint is too great.
 			 child = gp_GetVertexSortedDFSChildList(theGraph, descendant);
-			 while (child != NIL)
+			 while (gp_IsVertex(child))
 			 {
 				 if (gp_GetVertexLowpoint(theGraph, child) < IC->v)
 					 sp_Push(theGraph->theStack, child);
@@ -718,7 +717,7 @@ int  listHead, child, e;
      // by an unembedded back edge.
 
      e = gp_GetVertexFwdArcList(theGraph, ancestor);
-     while (e != NIL)
+     while (gp_IsArc(e))
      {
          if (gp_GetNeighbor(theGraph, e) == cutVertex)
          {
@@ -734,7 +733,7 @@ int  listHead, child, e;
      // Now check the descendants of the cut vertex to see if any make
      // a connection to the ancestor.
      listHead = child = gp_GetVertexSortedDFSChildList(theGraph, cutVertex);
-     while (child != NIL)
+     while (gp_IsVertex(child))
      {
          if (gp_GetVertexLowpoint(theGraph, child) < theGraph->IC.v && gp_IsSeparatedDFSChild(theGraph, child))
          {
@@ -789,7 +788,7 @@ int  R, Rout, Z, ZPrevLink;
          sp_Pop2(tempStack, R, Rout);
          sp_Pop2(tempStack, Z, ZPrevLink);
 
-         if (context->VI[Z].mergeBlocker != NIL &&
+         if (gp_IsVertex(context->VI[Z].mergeBlocker) &&
              context->VI[Z].mergeBlocker < v)
          {
              *pMergeBlocker = Z;
@@ -859,7 +858,7 @@ isolatorContextP IC = &theGraph->IC;
         back edge that was not embedded when step v was originally performed. */
 
      e = gp_GetVertexFwdArcList(theGraph, IC->v);
-     while (e != NIL)
+     while (gp_IsArc(e))
      {
         W = gp_GetNeighbor(theGraph, e);
         theGraph->functions.fpWalkUp(theGraph, IC->v, e);
@@ -1077,7 +1076,7 @@ int  v, e, w;
      {
           sp_Pop2(theGraph->theStack, v, e);
 
-          if (e == NIL)
+          if (gp_IsNotArc(e))
           {
         	  // If the vertex is visited, then it is a member of the X-Y path
         	  // Because it is being popped, its obstruction type is unknown because
@@ -1099,7 +1098,7 @@ int  v, e, w;
           // pushed.  Once that happens, we break. The successive edges of a vertex are
           // only pushed (see the else clause above) once all paths extending from v
           // through e have been explored and found not to contain the desired path
-          while (e != NIL)
+          while (gp_IsArc(e))
           {
               w = gp_GetNeighbor(theGraph, e);
 
@@ -1154,8 +1153,8 @@ int  v, e, w;
         the path [V...u_{max}) we set the member noStraddle equal to u_{max}.
         Then, we modify the above stated routine so that if it is testing
         for a straddling bridge of u_{max} along this path, it will stop
-        if it encounters an edge with noStraddle equal to u_{max} then it
-        will stop.  Also, the optimization will only set noStraddle equal to
+        if it encounters an edge with noStraddle equal to u_{max}.
+        Also, the optimization will only set noStraddle equal to
         u_{max} on the portion of the path that is traversed.  Finally, if
         noStraddle is set to a value other than NIL, the setting will be
         ignored and it will not be changed.
@@ -1202,7 +1201,7 @@ int  p, c, d, excludedChild, e;
          /*
          {
          int listhead = c = gp_GetVertexSortedDFSChildList(theGraph, p);
-         while (c != NIL)
+         while (gp_IsVertex(c))
          {
         	 if (c != excludedChild && gp_IsSeparatedDFSChild(theGraph, c))
         	 {
@@ -1218,7 +1217,7 @@ int  p, c, d, excludedChild, e;
       	 if (c == excludedChild)
       		 c = LCGetNext(context->separatedDFSChildLists, c, c);
 
-         if (c != NIL && gp_GetVertexLowpoint(theGraph, c) < u_max)
+         if (gp_IsVertex(c) && gp_GetVertexLowpoint(theGraph, c) < u_max)
          {
              _FindUnembeddedEdgeToSubtree(theGraph, gp_GetVertexLowpoint(theGraph, c), c, &d);
              break;
@@ -1235,13 +1234,13 @@ int  p, c, d, excludedChild, e;
      }
 
      // If d is NIL, then no straddling bridge was found, so we do the noStraddle optimization.
-     if (d == NIL)
+     if (gp_IsNotVertex(d))
      {
          c = IC->v;
          while (c != p)
          {
              e = gp_GetFirstArc(theGraph, c);
-             if (context->E[e].noStraddle != NIL)
+             if (gp_IsVertex(context->E[e].noStraddle))
                  break;
 
              context->E[e].noStraddle = u_max;
@@ -1525,7 +1524,7 @@ int  prevLink, v, w, e;
         not a reduction edge. */
 
      e = gp_GetFirstArc(theGraph, u);
-     if (context->E[e].pathConnector != NIL)
+     if (gp_IsVertex(context->E[e].pathConnector))
      {
          if (_RestoreReducedPath(theGraph, context, e) != OK)
              return NOTOK;
@@ -1535,7 +1534,7 @@ int  prevLink, v, w, e;
      gp_DeleteEdge(theGraph, e, 0);
 
      e = gp_GetLastArc(theGraph, x);
-     if (context->E[e].pathConnector != NIL)
+     if (gp_IsVertex(context->E[e].pathConnector))
      {
          if (_RestoreReducedPath(theGraph, context, e) != OK)
              return NOTOK;
@@ -1586,7 +1585,7 @@ int  e, v, w;
 
      /* Otherwise, remove the two edges that join the XY-path to the bicomp */
 
-     if (context->E[e].pathConnector != NIL)
+     if (gp_IsVertex(context->E[e].pathConnector))
      {
          if (_RestoreReducedPath(theGraph, context, e) != OK)
              return NOTOK;
@@ -1599,7 +1598,7 @@ int  e, v, w;
      e = gp_GetFirstArc(theGraph, x);
      e = gp_GetNextArc(theGraph, e);
      w = gp_GetNeighbor(theGraph, e);
-     if (context->E[e].pathConnector != NIL)
+     if (gp_IsVertex(context->E[e].pathConnector))
      {
          if (_RestoreReducedPath(theGraph, context, e) != OK)
              return NOTOK;
@@ -1644,7 +1643,7 @@ int  _RestoreReducedPath(graphP theGraph, K33SearchContext *context, int e)
 int  eTwin, u, v, w, x;
 int  e0, e1, eTwin0, eTwin1;
 
-     if (context->E[e].pathConnector == NIL)
+     if (gp_IsNotVertex(context->E[e].pathConnector))
          return OK;
 
      eTwin = gp_GetTwinArc(theGraph, e);
@@ -1672,7 +1671,7 @@ int  e0, e1, eTwin0, eTwin1;
         by the edge [e, eTwin].  The edge record in u is added between e0 and e1.
         Likewise, the new edge record in x is added between eTwin0 and eTwin1. */
 
-     if (e0 != NIL)
+     if (gp_IsArc(e0))
      {
     	 if (gp_InsertEdge(theGraph, u, e0, 1, v, NIL, 0) != OK)
     		 return NOTOK;
@@ -1683,7 +1682,7 @@ int  e0, e1, eTwin0, eTwin1;
     		 return NOTOK;
      }
 
-     if (eTwin0 != NIL)
+     if (gp_IsArc(eTwin0))
      {
     	 if (gp_InsertEdge(theGraph, x, eTwin0, 1, w, NIL, 0) != OK)
     		 return NOTOK;
@@ -1728,7 +1727,7 @@ int  e0, eTwin0, e1, eTwin1;
 
      for (e = 0; e < EsizeOccupied;)
      {
-         if (context->E[e].pathConnector != NIL)
+         if (gp_IsVertex(context->E[e].pathConnector))
          {
              visited = gp_GetEdgeVisited(theGraph, e);
 
@@ -1758,7 +1757,7 @@ int  e0, eTwin0, e1, eTwin1;
                 by the edge [e, eTwin].  The edge record in u is added between e0 and e1.
                 Likewise, the new edge record in x is added between eTwin0 and eTwin1. */
 
-             if (e0 != NIL)
+             if (gp_IsArc(e0))
              {
             	 if (gp_InsertEdge(theGraph, u, e0, 1, v, NIL, 0) != OK)
             		 return NOTOK;
@@ -1769,7 +1768,7 @@ int  e0, eTwin0, e1, eTwin1;
             		 return NOTOK;
              }
 
-             if (eTwin0 != NIL)
+             if (gp_IsArc(eTwin0))
              {
             	 if (gp_InsertEdge(theGraph, x, eTwin0, 1, w, NIL, 0) != OK)
             		 return NOTOK;
@@ -1797,8 +1796,7 @@ int  e0, eTwin0, e1, eTwin1;
                       and last edges of a vertex are the ones that hold it onto
                       the external face, if it is on the external face. */
 
-             if ((e0 == NIL && eTwin1 == NIL) ||
-                 (e1 == NIL && eTwin0 == NIL))
+             if ((gp_IsNotArc(e0) && gp_IsNotArc(eTwin1)) || (gp_IsNotArc(e1) && gp_IsNotArc(eTwin0)))
              {
                  if (_OrientExternalFacePath(theGraph, u, v, w, x) != OK)
                      return NOTOK;
@@ -1849,7 +1847,7 @@ int p, e;
          gp_SetVertexVisited(theGraph, p);
 
          e = gp_GetFirstArc(theGraph, p);
-         while (e != NIL)
+         while (gp_IsArc(e))
          {
               if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_PARENT)
                   break;
@@ -1879,7 +1877,7 @@ int p, e;
      while (p != u_max)
      {
          e = gp_GetFirstArc(theGraph, p);
-         while (e != NIL)
+         while (gp_IsArc(e))
          {
               if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_PARENT)
                   break;

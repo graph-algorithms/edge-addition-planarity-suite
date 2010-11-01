@@ -733,15 +733,15 @@ int  _DrawPlanar_WritePostprocess(graphP theGraph, void **pExtraData, long *pExt
 
             for (e = 0; e < EsizeOccupied; e++)
             {
-                if (gp_GetNeighbor(theGraph, e) == NIL)
-                    continue;
-
-                sprintf(line, "%d: %d %d %d\n", e,
-                              context->E[e].pos,
-                              context->E[e].start,
-                              context->E[e].end);
-                strcpy(extraData+extraDataPos, line);
-                extraDataPos += (int) strlen(line);
+                if (gp_EdgeInUse(theGraph, e))
+                {
+                    sprintf(line, "%d: %d %d %d\n", e,
+                                  context->E[e].pos,
+                                  context->E[e].start,
+                                  context->E[e].end);
+                    strcpy(extraData+extraDataPos, line);
+                    extraDataPos += (int) strlen(line);
+                }
             }
 
             sprintf(line, "</%s>\n", DRAWPLANAR_NAME);

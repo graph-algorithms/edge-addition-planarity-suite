@@ -152,7 +152,7 @@ void SaveAsciiGraph(graphP theGraph, char *filename)
 	for (e=0; e < EsizeOccupied; e+=2)
 	{
 		// Skip the edge holes
-		if (gp_GetNeighbor(theGraph, e) != NIL)
+		if (gp_EdgeInUse(theGraph, e))
 		{
 			fprintf(outfile, "%d %d\n", gp_GetNeighbor(theGraph, e)+1, gp_GetNeighbor(theGraph, e+1)+1);
 		}

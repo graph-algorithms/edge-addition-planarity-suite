@@ -105,7 +105,7 @@ int  N, X, Y, W, Px, Py, Z, DFSChild, RootId;
 /* If W has an externally active pertinent child bicomp, then
      we've found Minor B */
 
-     if (gp_GetVertexPertinentBicompList(theGraph, W) != NIL)
+     if (gp_IsVertex(gp_GetVertexPertinentBicompList(theGraph, W)))
      {
          RootId = LCGetPrev(theGraph->BicompLists,
                             gp_GetVertexPertinentBicompList(theGraph, W), NIL);
@@ -142,7 +142,7 @@ int  N, X, Y, W, Px, Py, Z, DFSChild, RootId;
      if (_MarkZtoRPath(theGraph) != OK)
          return NOTOK;
 
-     if (theGraph->IC.z != NIL)
+     if (gp_IsVertex(theGraph->IC.z))
      {
          theGraph->IC.minorType |= MINORTYPE_D;
          return OK;
@@ -152,7 +152,7 @@ int  N, X, Y, W, Px, Py, Z, DFSChild, RootId;
      below the points of attachment of the X-Y path */
 
      Z = _FindExtActivityBelowXYPath(theGraph);
-     if (Z != NIL)
+     if (gp_IsVertex(Z))
      {
          theGraph->IC.z = Z;
          theGraph->IC.minorType |= MINORTYPE_E;
@@ -358,7 +358,7 @@ int  _SetVertexTypesForMarkingXYPath(graphP theGraph)
 	W = theGraph->IC.w;
 
 	// Ensure basic preconditions of this routine are met
-	if (R==NIL || X==NIL || Y==NIL || W==NIL)
+	if (gp_IsNotVertex(R) || gp_IsNotVertex(X) || gp_IsNotVertex(Y) || gp_IsNotVertex(W))
 		return NOTOK;
 
 	// Clear the type member of each vertex in the bicomp
@@ -625,7 +625,7 @@ int stackBottom1, stackBottom2;
 
 /* Return the result */
 
-     return theGraph->IC.py==NIL ? FALSE : TRUE;
+     return gp_IsVertex(theGraph->IC.py) ? TRUE : FALSE;
 }
 
 /****************************************************************************

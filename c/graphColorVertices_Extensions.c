@@ -581,7 +581,7 @@ int _ColorVertices_IdentifyVertices(graphP theGraph, int u, int v, int eBefore)
 
         // We count the number of edges K transferred from v to u after the
         // common edges were hidden
-		if (e_v_first != NIL)
+		if (gp_IsArc(e_v_first))
 		{
 			int e, K, degu;
 
@@ -628,8 +628,8 @@ int _ColorVertices_RestoreVertex(graphP theGraph)
             return NOTOK;
 
         // If the restored vertex v was hidden, then give it a color distinct from its neighbors
-        // Note that u is NIL in this case
-        if (u == NIL)
+        // Note that u is not a vertex in this case
+        if (gp_IsNotVertex(u))
         {
         	if (_AssignColorToVertex(context, theGraph, v) != OK)
         		return NOTOK;

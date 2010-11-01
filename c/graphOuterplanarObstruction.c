@@ -109,7 +109,7 @@ int  N, X, Y, W;
      // Notice this is different from planarity, in which minor B is indicated
      // only if the pertinent child bicomp is also externally active under the
      // planarity processing model (i.e. future pertinent).
-     if (gp_GetVertexPertinentBicompList(theGraph, W) != NIL)
+     if (gp_IsVertex(gp_GetVertexPertinentBicompList(theGraph, W)))
      {
          theGraph->IC.minorType |= MINORTYPE_B;
          return OK;
