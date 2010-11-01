@@ -295,6 +295,7 @@ void _FindActiveVertices(graphP theGraph, int R, int *pX, int *pY)
 {
 int  XPrevLink=1, YPrevLink=0, v=theGraph->IC.v;
 
+#ifdef OLDWAY
      *pX = _GetNeighborOnExtFace(theGraph, R, &XPrevLink);
      *pY = _GetNeighborOnExtFace(theGraph, R, &YPrevLink);
 
@@ -311,6 +312,33 @@ int  XPrevLink=1, YPrevLink=0, v=theGraph->IC.v;
         *pY = _GetNeighborOnExtFace(theGraph, *pY, &YPrevLink);
         gp_UpdateVertexFuturePertinentChild(theGraph, *pY, v);
      }
+#else
+     *pX = _GetNeighborOnExtFace(theGraph, R, &XPrevLink);
+     *pY = _GetNeighborOnExtFace(theGraph, R, &YPrevLink);
+
+     // For outerplanarity algorithms, ignore the notion of inactive vertices
+     // since all vertices must remain on the external face.
+     if (theGraph->embedFlags & EMBEDFLAGS_OUTERPLANAR)
+    	 ;
+
+     // For planarity algorithms, advance past inactive vertices
+     else
+     {
+         gp_UpdateVertexFuturePertinentChild(theGraph, *pX, v);
+         while (INACTIVE(theGraph, *pX, v))
+         {
+            *pX = _GetNeighborOnExtFace(theGraph, *pX, &XPrevLink);
+            gp_UpdateVertexFuturePertinentChild(theGraph, *pX, v);
+         }
+
+         gp_UpdateVertexFuturePertinentChild(theGraph, *pY, v);
+         while (INACTIVE(theGraph, *pY, v))
+         {
+            *pY = _GetNeighborOnExtFace(theGraph, *pY, &YPrevLink);
+            gp_UpdateVertexFuturePertinentChild(theGraph, *pY, v);
+         }
+     }
+#endif
 }
 
 /****************************************************************************
@@ -754,8 +782,13 @@ int  Z=theGraph->IC.px, ZPrevLink=1,
      while (Z != Py)
      {
     	 gp_UpdateVertexFuturePertinentChild(theGraph, Z, v);
+#ifdef OLDWAY
          if (_VertexActiveStatus(theGraph, Z, v) == VAS_EXTERNAL)
              return Z;
+#else
+         if (FUTUREPERTINENT(theGraph, Z, v))
+             return Z;
+#endif
 
          Z = _GetNeighborOnExtFace(theGraph, Z, &ZPrevLink);
      }

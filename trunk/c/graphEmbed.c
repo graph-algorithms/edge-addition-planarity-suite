@@ -975,7 +975,7 @@ int  RootEdgeChild = RootVertex - theGraph->N;
                  // If neither, then the Walkdown is blocked so a blockage handler is called
                  gp_UpdateVertexFuturePertinentChild(theGraph, X, v);
                  gp_UpdateVertexFuturePertinentChild(theGraph, Y, v);
-
+#ifdef OLDWAY
                  if (_VertexActiveStatus(theGraph, X, v) == VAS_INTERNAL)
                  {
                       W = X;
@@ -1000,6 +1000,34 @@ int  RootEdgeChild = RootVertex - theGraph->N;
                      WPrevLink = YPrevLink;
                      sp_Push2(theGraph->theStack, R, 1);
                  }
+#else
+                 // Select a direction from the root to a pertinent vertex,
+                 // preferentially toward a vertex that is not future pertinent
+                 if (PERTINENT(theGraph, X) && NOTFUTUREPERTINENT(theGraph, X, v))
+				 {
+					 W = X;
+					 WPrevLink = XPrevLink;
+					 sp_Push2(theGraph->theStack, R, 0);
+				 }
+                 else if (PERTINENT(theGraph, Y) && NOTFUTUREPERTINENT(theGraph, Y, v))
+            	 {
+                     W = Y;
+                     WPrevLink = YPrevLink;
+                     sp_Push2(theGraph->theStack, R, 1);
+            	 }
+                 else if (PERTINENT(theGraph, X))
+				 {
+					 W = X;
+					 WPrevLink = XPrevLink;
+					 sp_Push2(theGraph->theStack, R, 0);
+				 }
+                 else if (PERTINENT(theGraph, Y))
+            	 {
+                     W = Y;
+                     WPrevLink = YPrevLink;
+                     sp_Push2(theGraph->theStack, R, 1);
+            	 }
+#endif
                  else
                  {
                 	 // Both the X and Y sides of the descendant bicomp are blocked.
@@ -1018,16 +1046,17 @@ int  RootEdgeChild = RootVertex - theGraph->N;
              {
             	 gp_UpdateVertexFuturePertinentChild(theGraph, W, v);
 
+#ifdef OLDWAY
             	 // Skip inactive vertices, which will be short-circuited later by the fast external face
-            	 // linking method (once upon a time, we added false edges called short-circuit edges to
+            	 // linking method (once upon a time, false edges called short-circuit edges were added to
             	 // eliminate inactive vertices, but the extFace links can do the same job and also give us
             	 // the ability to more quickly test planarity without creating an embedding).
+            	 // NOTE: For outerplanarity, this function never returns VAS_INACTIVE
                  if (_VertexActiveStatus(theGraph, W, v) == VAS_INACTIVE)
                  {
                      if (theGraph->functions.fpHandleInactiveVertex(theGraph, RootVertex, &W, &WPrevLink) != OK)
                          return NOTOK;
                  }
-
                  // At this point, we know that W is not inactive, but nor is it pertinent, so it is
                  // only future pertinent and therefore a stopping vertex for the Walkdown traversal.
                  else
@@ -1051,6 +1080,43 @@ int  RootEdgeChild = RootVertex - theGraph->N;
                      // Terminate the Walkdown traversal since it encountered the stopping vertex
                      break;
                  }
+#else
+                 // The vertex W is known to be non-pertinent, so if it is future pertinent
+                 // (or if the algorithm is based on outerplanarity), then the vertex is
+                 // a stopping vertex for the Walkdown traversal.
+                 if (FUTUREPERTINENT(theGraph, W, v) || (theGraph->embedFlags & EMBEDFLAGS_OUTERPLANAR))
+                 {
+                	 // Create an external face short-circuit between RootVertex and the stopping vertex W
+                	 // so that future steps do not walk down a long path of inactive vertices between them.
+                	 // As a special case, we ensure that the external face is not reduced to just two
+                	 // vertices, W and RootVertex, because it would then become a challenge to determine
+                	 // whether W has the same orientation as RootVertex.
+                	 // So, if the other side of RootVertex is already attached to W, then we simply push
+                	 // W back one vertex so that the external face will have at least three vertices.
+                	 if (gp_GetExtFaceVertex(theGraph, RootVertex, 1^RootSide) == W)
+                	 {
+                	     X = W;
+                	     W = gp_GetExtFaceVertex(theGraph, W, WPrevLink);
+                	     WPrevLink = gp_GetExtFaceVertex(theGraph, W, 0) == X ? 1 : 0;
+                	 }
+                     gp_SetExtFaceVertex(theGraph, RootVertex, RootSide, W);
+                     gp_SetExtFaceVertex(theGraph, W, WPrevLink, RootVertex);
+
+                     // Terminate the Walkdown traversal since it encountered the stopping vertex
+                     break;
+                 }
+
+                 // If the vertex is neither pertinent nor future pertinent, then it is inactive.
+            	 // The default handler planarity handler simply skips inactive vertices by traversing
+                 // to the next vertex on the external face.
+                 // Once upon a time, false edges called short-circuit edges were added to eliminate
+                 // inactive vertices, but the extFace links above achieve the same result with less work.
+                 else
+                 {
+                     if (theGraph->functions.fpHandleInactiveVertex(theGraph, RootVertex, &W, &WPrevLink) != OK)
+                         return NOTOK;
+                 }
+#endif
              }
          }
      }
