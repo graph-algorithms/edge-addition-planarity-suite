@@ -71,7 +71,7 @@ int  _PopAndUnmarkVerticesAndEdges(graphP theGraph, int Z, int stackBottom);
 
 int  _MarkHighestXYPath(graphP theGraph);
 int  _MarkZtoRPath(graphP theGraph);
-int  _FindExtActivityBelowXYPath(graphP theGraph);
+int  _FindFuturePertinenceBelowXYPath(graphP theGraph);
 
 /****************************************************************************
  _ChooseTypeOfNonplanarityMinor()
@@ -151,7 +151,7 @@ int  N, X, Y, W, Px, Py, Z, DFSChild, RootId;
 /* For Minor E, we search for an externally active vertex Z
      below the points of attachment of the X-Y path */
 
-     Z = _FindExtActivityBelowXYPath(theGraph);
+     Z = _FindFuturePertinenceBelowXYPath(theGraph);
      if (gp_IsVertex(Z))
      {
          theGraph->IC.z = Z;
@@ -295,24 +295,6 @@ void _FindActiveVertices(graphP theGraph, int R, int *pX, int *pY)
 {
 int  XPrevLink=1, YPrevLink=0, v=theGraph->IC.v;
 
-#ifdef OLDWAY
-     *pX = _GetNeighborOnExtFace(theGraph, R, &XPrevLink);
-     *pY = _GetNeighborOnExtFace(theGraph, R, &YPrevLink);
-
-     gp_UpdateVertexFuturePertinentChild(theGraph, *pX, v);
-     while (_VertexActiveStatus(theGraph, *pX, v) == VAS_INACTIVE)
-     {
-        *pX = _GetNeighborOnExtFace(theGraph, *pX, &XPrevLink);
-        gp_UpdateVertexFuturePertinentChild(theGraph, *pX, v);
-     }
-
-     gp_UpdateVertexFuturePertinentChild(theGraph, *pY, v);
-     while (_VertexActiveStatus(theGraph, *pY, v) == VAS_INACTIVE)
-     {
-        *pY = _GetNeighborOnExtFace(theGraph, *pY, &YPrevLink);
-        gp_UpdateVertexFuturePertinentChild(theGraph, *pY, v);
-     }
-#else
      *pX = _GetNeighborOnExtFace(theGraph, R, &XPrevLink);
      *pY = _GetNeighborOnExtFace(theGraph, R, &YPrevLink);
 
@@ -338,7 +320,6 @@ int  XPrevLink=1, YPrevLink=0, v=theGraph->IC.v;
             gp_UpdateVertexFuturePertinentChild(theGraph, *pY, v);
          }
      }
-#endif
 }
 
 /****************************************************************************
@@ -764,15 +745,15 @@ int ZPrevArc, ZNextArc, Z, R, Px, Py;
 }
 
 /****************************************************************************
- _FindExtActivityBelowXYPath()
+ _FindFuturePertinenceBelowXYPath()
 
- Get an externally active vertex along the lower external face path between
+ Get a future pertinent vertex along the lower external face path between
  the points of attachment P_x and P_y of a 'low' X-Y Path.
  NOTE: By the time this function is called, Px and Py have already been found
         to be at or below X and Y.
  ****************************************************************************/
 
-int  _FindExtActivityBelowXYPath(graphP theGraph)
+int  _FindFuturePertinenceBelowXYPath(graphP theGraph)
 {
 int  Z=theGraph->IC.px, ZPrevLink=1,
      Py=theGraph->IC.py, v=theGraph->IC.v;
@@ -782,13 +763,8 @@ int  Z=theGraph->IC.px, ZPrevLink=1,
      while (Z != Py)
      {
     	 gp_UpdateVertexFuturePertinentChild(theGraph, Z, v);
-#ifdef OLDWAY
-         if (_VertexActiveStatus(theGraph, Z, v) == VAS_EXTERNAL)
-             return Z;
-#else
          if (FUTUREPERTINENT(theGraph, Z, v))
              return Z;
-#endif
 
          Z = _GetNeighborOnExtFace(theGraph, Z, &ZPrevLink);
      }
