@@ -657,32 +657,6 @@ void	gp_AttachArc(graphP theGraph, int v, int e, int link, int newArc);
 void 	gp_DetachArc(graphP theGraph, int arc);
 
 /********************************************************************
- Vertex activity categories
- ********************************************************************/
-//#define OLDWAY
-#ifdef OLDWAY
-#define VAS_INACTIVE    0
-#define VAS_INTERNAL    1
-#define VAS_EXTERNAL    2
-
-/********************************************************************
- _VertexActiveStatus()
- Tells whether a vertex is externally active, internally active
- or inactive.
-
- Note that gp_UpdateVertexFuturePertinentChild() must be called before
- this macro.
- ********************************************************************/
-
-#define _VertexActiveStatus(theGraph, theVertex, v) \
-        (EXTERNALLYACTIVE(theGraph, theVertex, v) \
-        ? VAS_EXTERNAL \
-         : PERTINENT(theGraph, theVertex) \
-           ? VAS_INTERNAL \
-           : VAS_INACTIVE)
-#endif
-
-/********************************************************************
  PERTINENT()
  A vertex is pertinent in a partially processed graph if there is an
  unprocessed back edge between the vertex v whose edges are currently
@@ -756,27 +730,10 @@ void 	gp_DetachArc(graphP theGraph, int arc);
 //             theGraph->VI[theGraph->VI[theVertex].futurePertinentChild].lowpoint < v) )
 
 /********************************************************************
- EXTERNALLYACTIVE()
- Tells whether a vertex is still externally active in step v.
- A vertex can become inactive during step v as edges are embedded.
-
- In planarity-related algorithms, external activity is the same as
- future pertinence.  A vertex must be kept on the external face of
- the partial embedding until its pertinence and future pertinence
- are resolved through edge additions.
-
- For outerplanarity-related algorithms, all vertices are always
- externally active, since they must always remain on the external face.
-
- Note that gp_UpdateVertexFuturePertinentChild() must be called before
- this macro.
+ INACTIVE()
+ For planarity algorithms, a vertex is inactive if it is neither pertinent
+ nor future pertinent.
  ********************************************************************/
-#ifdef OLDWAY
-#define EXTERNALLYACTIVE(theGraph, theVertex, v) \
-        ( FUTUREPERTINENT(theGraph, theVertex, v) || \
-          (theGraph->embedFlags & EMBEDFLAGS_OUTERPLANAR) \
-        )
-#endif
 
 #define INACTIVE(theGraph, theVertex, v) \
         (  NOTPERTINENT(theGraph, theVertex) && \

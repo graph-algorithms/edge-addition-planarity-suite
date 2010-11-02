@@ -476,11 +476,7 @@ int  Z=theGraph->IC.px, ZPrevLink=1;
          if (Z != theGraph->IC.w)
          {
         	gp_UpdateVertexFuturePertinentChild(theGraph, Z, theGraph->IC.v);
-#ifdef OLDWAY
-            if (_VertexActiveStatus(theGraph, Z, theGraph->IC.v) == VAS_EXTERNAL)
-#else
             if (FUTUREPERTINENT(theGraph, Z, theGraph->IC.v))
-#endif
             {
                 theGraph->IC.z = Z;
                 theGraph->IC.uz = _GetLeastAncestorConnection(theGraph, Z);
