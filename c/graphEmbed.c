@@ -161,7 +161,7 @@ int RetVal = OK;
 				  if ((RetVal = theGraph->functions.fpWalkDown(theGraph, v, c + N)) != OK)
 					  break;
         	  }
-        	  c = LCGetNext(theGraph->sortedDFSChildLists, gp_GetVertexSortedDFSChildList(theGraph, v), c);
+        	  c = gp_GetVertexNextDFSChild(theGraph, v, c);
           }
 
           // If the Walkdown determined that the graph is NONEMBEDDABLE,
@@ -198,7 +198,7 @@ int  _EmbeddingInitialize(graphP theGraph)
 {
 	stackP theStack;
 	int N, DFI, v, R, uparent, u, uneighbor, e, f, eTwin, ePrev, eNext;
-	int leastValue, firstChild, child;
+	int leastValue, child;
 
 #ifdef PROFILE
 platform_time start, end;
@@ -263,10 +263,7 @@ platform_GetTime(start);
 
 					// (3) Record u in the sortedDFSChildList of uparent
                     gp_SetVertexSortedDFSChildList(theGraph, uparent,
-                    		LCAppend(theGraph->sortedDFSChildLists,
-                    				 gp_GetVertexSortedDFSChildList(theGraph, uparent),
-                    				 gp_GetVertexIndex(theGraph, u))
-                    );
+                    		gp_AppendDFSChild(theGraph, uparent, gp_GetVertexIndex(theGraph, u)));
 
 					// (8) Record e as the first and last arc of the virtual vertex
 					//     at position DFI(u)+N, which is a root copy of uparent
@@ -349,15 +346,15 @@ platform_GetTime(start);
         gp_SetVertexVisitedInfo(theGraph, v, N);
 
         // (7) Initialize for future pertinence management
-        firstChild = child = gp_GetVertexSortedDFSChildList(theGraph, v);
-        gp_SetVertexFuturePertinentChild(theGraph, v, firstChild);
+        child = gp_GetVertexSortedDFSChildList(theGraph, v);
+        gp_SetVertexFuturePertinentChild(theGraph, v, child);
 		leastValue = gp_GetVertexLeastAncestor(theGraph, v);
 	    while (gp_IsVertex(child))
 	    {
 	    	if (leastValue > gp_GetVertexLowpoint(theGraph, child))
 	    		leastValue = gp_GetVertexLowpoint(theGraph, child);
 
-	        child = LCGetNext(theGraph->sortedDFSChildLists, firstChild, child);
+	    	child = gp_GetVertexNextDFSChild(theGraph, v, child);
 	    }
 		gp_SetVertexLowpoint(theGraph, v, leastValue);
 
@@ -662,9 +659,7 @@ int  R, Rout, Z, ZPrevLink, e, extFaceVertex;
          if (gp_GetDFSChildFromRoot(theGraph, R) == gp_GetVertexFuturePertinentChild(theGraph, Z))
          {
         	 gp_SetVertexFuturePertinentChild(theGraph, Z,
-        			 LCGetNext(theGraph->sortedDFSChildLists,
-        					   gp_GetVertexSortedDFSChildList(theGraph, Z),
-        					   gp_GetVertexFuturePertinentChild(theGraph, Z)));
+        			 gp_GetVertexNextDFSChild(theGraph, Z, gp_GetVertexFuturePertinentChild(theGraph, Z)));
          }
 
          // Now we push R into Z, eliminating R
@@ -1022,7 +1017,7 @@ int  RootEdgeChild = RootVertex - theGraph->N;
      // to descendants in the subtree of the child of v associated with the bicomp RootVertex.
 	 if (gp_IsArc(e = gp_GetVertexFwdArcList(theGraph, v)) && RootEdgeChild < gp_GetNeighbor(theGraph, e))
 	 {
-	     int nextChild = LCGetNext(theGraph->sortedDFSChildLists, gp_GetVertexSortedDFSChildList(theGraph, v), RootEdgeChild);
+	     int nextChild = gp_GetVertexNextDFSChild(theGraph, v, RootEdgeChild);
 
 	     // The Walkdown was blocked from embedding all forward arcs into the RootEdgeChild subtree
 	     // if there the next child's DFI is greater than the descendant endpoint of the next forward arc,

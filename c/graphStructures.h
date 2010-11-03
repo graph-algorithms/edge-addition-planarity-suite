@@ -432,15 +432,18 @@ typedef vertexInfo * vertexInfoP;
 			gp_IsNotSeparatedDFSChild(theGraph, theGraph->VI[w].futurePertinentChild)) \
         { \
 			theGraph->VI[w].futurePertinentChild = \
-					LCGetNext(theGraph->sortedDFSChildLists, \
-							  gp_GetVertexSortedDFSChildList(theGraph, w), \
-							  theGraph->VI[w].futurePertinentChild); \
+					gp_GetVertexNextDFSChild(theGraph, w, gp_GetVertexFuturePertinentChild(theGraph, w)); \
         } \
         else break; \
 	}
 
 #define gp_GetVertexSortedDFSChildList(theGraph, v) (theGraph->VI[v].sortedDFSChildList)
 #define gp_SetVertexSortedDFSChildList(theGraph, v, theSortedDFSChildList) (theGraph->VI[v].sortedDFSChildList = theSortedDFSChildList)
+
+#define gp_GetVertexNextDFSChild(theGraph, v, c) LCGetNext(theGraph->sortedDFSChildLists, gp_GetVertexSortedDFSChildList(theGraph, v), c)
+
+#define gp_AppendDFSChild(theGraph, v, c) \
+		LCAppend(theGraph->sortedDFSChildLists, gp_GetVertexSortedDFSChildList(theGraph, v), c)
 
 #define gp_GetVertexFwdArcList(theGraph, v) (theGraph->VI[v].fwdArcList)
 #define gp_SetVertexFwdArcList(theGraph, v, theFwdArcList) (theGraph->VI[v].fwdArcList = theFwdArcList)
