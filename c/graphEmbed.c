@@ -425,7 +425,7 @@ int fwdArc, backArc, parentCopy;
 
     /* The forward arc is removed from the fwdArcList of the root's parent copy. */
 
-    parentCopy = gp_GetVertexParent(theGraph, gp_GetDFSChildFromRoot(theGraph, RootVertex));
+    parentCopy = gp_GetPrimaryVertexFromRoot(theGraph, RootVertex);
 
     gp_LogLine(gp_MakeLogStr5("graphEmbed.c/_EmbedBackEdgeToDescendant() V=%d, R=%d, R_out=%d, W=%d, W_in=%d",
     		parentCopy, RootVertex, RootSide, W, WPrevLink));
@@ -782,7 +782,7 @@ int  nextZig, nextZag, R, Parent;
          {
              // The endpoints of a bicomp's "root edge" are the bicomp root R and a
              // DFS child of the parent copy of the bicomp root R.
-             Parent = gp_GetVertexParent(theGraph, gp_GetDFSChildFromRoot(theGraph, R));
+             Parent = gp_GetPrimaryVertexFromRoot(theGraph, R);
 
 			 // Add the new root vertex to the list of pertinent bicomp roots of the parent vertex.
              // The new root vertex is appended if future pertinent and prepended if only pertinent
@@ -1336,11 +1336,18 @@ int  stackBottom = sp_GetCurrentSize(theGraph->theStack);
 
 int  _JoinBicomps(graphP theGraph)
 {
-int  R, N, Vsize = theGraph->N + theGraph->NV;
+int  v, R;
 
-     for (R=N=theGraph->N; R < Vsize; R++)
+     for (v = 0; v < theGraph->N; v++)
+     {
+    	  R = gp_GetRootFromDFSChild(theGraph, v);
+
+    	  // If in use, the virtual vertex associated with a vertex is
+    	  // a copy of the DFS parent of the vertex that is being used
+    	  // as the root of a bicomp
           if (gp_VirtualVertexInUse(theGraph, R))
-        	  _MergeVertex(theGraph, gp_GetVertexParent(theGraph, gp_GetDFSChildFromRoot(theGraph, R)), 0, R);
+        	  _MergeVertex(theGraph, gp_GetPrimaryVertexFromRoot(theGraph, R), 0, R);
+     }
 
      return OK;
 }

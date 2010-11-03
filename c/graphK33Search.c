@@ -838,7 +838,7 @@ isolatorContextP IC = &theGraph->IC;
      /* Switch the 'current step' variable v to be equal to the
        non-virtual counterpart of the bicomp root. */
 
-     IC->v = gp_GetVertexParent(theGraph, gp_GetDFSChildFromRoot(theGraph, R));
+     IC->v = gp_GetPrimaryVertexFromRoot(theGraph, R);
 
      /* Reinitialize the visitation, pertinence and future pertinence settings from step u_max for step v */
 
@@ -1863,7 +1863,7 @@ int p, e;
          if (p >= theGraph->N)
          {
              gp_SetVertexVisited(theGraph, p);
-             p = gp_GetVertexParent(theGraph, gp_GetDFSChildFromRoot(theGraph, p));
+             p = gp_GetPrimaryVertexFromRoot(theGraph, p);
          }
      }
 
@@ -1895,7 +1895,7 @@ int p, e;
 
          if (p >= theGraph->N)
          {
-             p = gp_GetVertexParent(theGraph, gp_GetDFSChildFromRoot(theGraph, p));
+             p = gp_GetPrimaryVertexFromRoot(theGraph, p);
              gp_ClearVertexVisited(theGraph, p);
          }
      }

@@ -240,12 +240,17 @@ typedef vertexRec * vertexRecP;
 #define gp_SetLastArc(theGraph, v, newLastArc) (theGraph->V[v].link[1] = newLastArc)
 #define gp_SetArc(theGraph, v, theLink, newArc) (theGraph->V[v].link[theLink] = newArc)
 
+// Vertex conversions
 #define gp_IsVertex(v) ((v) != NIL)
 #define gp_IsNotVertex(v) ((v) == NIL)
+
 #define gp_VirtualVertexInUse(theGraph, virtualVertex) (gp_IsArc(gp_GetFirstArc(theGraph, virtualVertex)))
 #define gp_VirtualVertexNotInUse(theGraph, virtualVertex) (gp_IsNotArc(gp_GetFirstArc(theGraph, virtualVertex)))
-#define gp_GetRootFromDFSChild(theGraph, theChild) ((theChild) + theGraph->N)
-#define gp_GetDFSChildFromRoot(theGraph, theRoot) ((theRoot) - theGraph->N)
+
+#define gp_GetRootFromDFSChild(theGraph, c) ((c) + theGraph->N)
+#define gp_GetDFSChildFromRoot(theGraph, R) ((R) - theGraph->N)
+#define gp_GetPrimaryVertexFromRoot(theGraph, R) gp_GetVertexParent(theGraph, gp_GetDFSChildFromRoot(theGraph, R))
+
 #define gp_IsSeparatedDFSChild(theGraph, theChild) (gp_VirtualVertexInUse(theGraph, gp_GetRootFromDFSChild(theGraph, theChild)))
 #define gp_IsNotSeparatedDFSChild(theGraph, theChild) (gp_VirtualVertexNotInUse(theGraph, gp_GetRootFromDFSChild(theGraph, theChild)))
 
