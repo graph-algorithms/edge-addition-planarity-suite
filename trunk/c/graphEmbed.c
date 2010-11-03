@@ -147,14 +147,14 @@ int RetVal = OK;
               if (e == gp_GetVertexFwdArcList(theGraph, v))
                   e = NIL;
           }
-          gp_SetVertexPertinentBicompList(theGraph, v, NIL);
+          gp_SetVertexPertinentRootsList(theGraph, v, NIL);
 
           // Work systematically through the DFS children of vertex v, using Walkdown
           // to add the back edges from v to its descendants in each of the DFS subtrees
           c = gp_GetVertexSortedDFSChildList(theGraph, v);
           while (gp_IsVertex(c))
           {
-        	  if (gp_IsVertex(gp_GetVertexPertinentBicompList(theGraph, c)))
+        	  if (gp_IsVertex(gp_GetVertexPertinentRootsList(theGraph, c)))
         	  {
         		  // If Walkdown returns OK, then it is OK to proceed with edge addition.
         		  // Otherwise, if Walkdown returns NONEMBEDDABLE then we stop edge addition.
@@ -420,7 +420,7 @@ int fwdArc, backArc, parentCopy;
         The Walkup recorded in W's adjacentTo the index of the forward arc
         from the root's parent copy to the descendant W. */
 
-    fwdArc = gp_GetVertexPertinentAdjacencyInfo(theGraph, W);
+    fwdArc = gp_GetVertexPertinentEdge(theGraph, W);
     backArc = gp_GetTwinArc(theGraph, fwdArc);
 
     /* The forward arc is removed from the fwdArcList of the root's parent copy. */
@@ -595,9 +595,7 @@ int  e, eTwin, e_w, e_r, e_ext;
 
 int  _MergeBicomps(graphP theGraph, int v, int RootVertex, int W, int WPrevLink)
 {
-int  R, Rout, Z, ZPrevLink, e;
-int  theList, RootID_DFSChild;
-int  extFaceVertex;
+int  R, Rout, Z, ZPrevLink, e, extFaceVertex;
 
      while (sp_NonEmpty(theGraph->theStack))
      {
@@ -655,23 +653,13 @@ int  extFaceVertex;
              }
          }
 
-         // The endpoints of a bicomp's "root edge" are the bicomp root R and a
-         // DFS child of the parent copy of the bicomp root R.
-         // The locations of bicomp root (virtual) vertices is in the range N to 2N-1
-         // at the offset indicated by the associated DFS child.  So, the location
-         // of the root vertex R, less N, is the location of the DFS child and also
-         // a convenient identifier for the bicomp root.
-         RootID_DFSChild = R - theGraph->N;
-
          // R is no longer pertinent to Z since we are about to merge R into Z, so we delete R
          // from Z's pertinent bicomp list (Walkdown gets R from the head of the list).
-         theList = gp_GetVertexPertinentBicompList(theGraph, Z);
-         theList = LCDelete(theGraph->BicompLists, theList, RootID_DFSChild);
-         gp_SetVertexPertinentBicompList(theGraph, Z, theList);
+         gp_DeleteVertexPertinentRoot(theGraph, Z, R);
 
          // If the merge will place the current future pertinence child into the same bicomp as Z,
          // then we advance to the next child (or NIL) because future pertinence is
-         if (RootID_DFSChild == gp_GetVertexFuturePertinentChild(theGraph, Z))
+         if (gp_GetDFSChildFromRoot(theGraph, R) == gp_GetVertexFuturePertinentChild(theGraph, Z))
          {
         	 gp_SetVertexFuturePertinentChild(theGraph, Z,
         			 LCGetNext(theGraph->sortedDFSChildLists,
@@ -726,10 +714,10 @@ void _WalkUp(graphP theGraph, int v, int e)
 {
 int  N = theGraph->N, W = gp_GetNeighbor(theGraph, e);
 int  Zig=W, Zag=W, ZigPrevLink=1, ZagPrevLink=0;
-int  nextZig, nextZag, R, ParentCopy, RootID_DFSChild, BicompList;
+int  nextZig, nextZag, R, Parent;
 
-	 // Start by marking W as being pertinent
-     gp_SetVertexPertinentAdjacencyInfo(theGraph, W, e);
+	 // Start by marking W as being directly pertinent
+     gp_SetVertexPertinentEdge(theGraph, W, e);
 
      // Zig and Zag are initialized at W, and we continue looping around
      // the external faces of bicomps up from W until we reach vertex v
@@ -796,35 +784,23 @@ int  nextZig, nextZag, R, ParentCopy, RootID_DFSChild, BicompList;
          {
              // The endpoints of a bicomp's "root edge" are the bicomp root R and a
              // DFS child of the parent copy of the bicomp root R.
-             // The locations of bicomp root (virtual) vertices is in the range N to 2N-1
-             // at the offset indicated by the associated DFS child.  So, the location
-             // of the root vertex R, less N, is the location of the DFS child and also
-             // a convenient identifier for the bicomp root.
-             RootID_DFSChild = R - N;
+             Parent = gp_GetVertexParent(theGraph, gp_GetDFSChildFromRoot(theGraph, R));
 
-             // Get the BicompList of the parent copy vertex.
-             ParentCopy = gp_GetVertexParent(theGraph, RootID_DFSChild);
-             BicompList = gp_GetVertexPertinentBicompList(theGraph, ParentCopy);
+			 // Add the new root vertex to the list of pertinent bicomp roots of the parent vertex.
+             // The new root vertex is appended if future pertinent and prepended if only pertinent
+             // so that, by virtue of storage, the Walkdown will process all pertinent bicomps that
+             // are not future pertinent before any future pertinent bicomps.
 
-			 // Put the new root vertex in the BicompList.  It is appended if future pertinent
-             // and prepended if only pertinent so that all pertinent bicompsthat are not future
-             // pertinent are processed before any future pertinent bicomps by virtue of storage.
+			 // NOTE: Unlike vertices, the activity status of a bicomp is computed solely using
+			 //       the lowpoint of the DFS child in the bicomp's root edge, which indicates
+             //       whether the DFS child or any of its descendants connect by a back edge to
+             //       ancestors of v. If so, then the bicomp rooted at RootVertex must contain a
+             //       future pertinent vertex that must be kept on the external face.
+			 if (gp_GetVertexLowpoint(theGraph, gp_GetDFSChildFromRoot(theGraph, R)) < v)
+				  gp_AppendVertexPertinentRoot(theGraph, Parent, R);
+			 else gp_PrependVertexPertinentRoot(theGraph, Parent, R);
 
-			 // NOTE: Unlike vertices, the activity status of a bicomp is computed solely
-			 //       using lowpoint. The lowpoint of the DFS child in the bicomp's root edge
-			 //	      indicates whether the DFS child or any of its descendants are joined by
-			 //	      a back edge to ancestors of v. If so, then the bicomp rooted at
-			 //	      RootVertex must contain an externally active vertex so the bicomp must
-			 //	      be kept on the external face.
-			 if (gp_GetVertexLowpoint(theGraph, RootID_DFSChild) < v)
-			      BicompList = LCAppend(theGraph->BicompLists, BicompList, RootID_DFSChild);
-			 else BicompList = LCPrepend(theGraph->BicompLists, BicompList, RootID_DFSChild);
-
-			 // The head node of the parent copy vertex's bicomp list may have changed, so
-			 // we assign the head of the modified list as the vertex's pertinent bicomp list
-			 gp_SetVertexPertinentBicompList(theGraph, ParentCopy, BicompList);
-
-             Zig = Zag = ParentCopy;
+             Zig = Zag = Parent;
              ZigPrevLink = 1;
              ZagPrevLink = 0;
          }
@@ -832,30 +808,18 @@ int  nextZig, nextZag, R, ParentCopy, RootID_DFSChild, BicompList;
 }
 
 /********************************************************************
- _GetPertinentChildBicomp()
- Returns the root of a pertinent child bicomp for the given vertex.
- Note: internally active roots are prepended by _Walkup()
- ********************************************************************/
-
-#define _GetPertinentChildBicomp(theGraph, W) \
-        (gp_IsNotVertex(gp_GetVertexPertinentBicompList(theGraph, W)) \
-         ? NIL \
-         : gp_GetVertexPertinentBicompList(theGraph, W) + theGraph->N)
-
-/********************************************************************
  _WalkDown()
  Consider a circular shape with small circles and squares along its perimeter.
- The small circle at the top the root vertex of the bicomp.  The other small
- circles represent internally active vertices, and the squares represent
- externally active vertices.  The root vertex is a root copy of v, the
- vertex currently being processed.
+ The small circle at the top is the root vertex of the bicomp.  The other small
+ circles represent active vertices, and the squares represent future pertinent
+ vertices.  The root vertex is a root copy of v, the vertex currently being processed.
 
  The Walkup previously marked all vertices adjacent to v by setting their
- adjacencyInfo with the forward arcs of the back edges to embed.
+ pertinentEdge members with the forward arcs of the back edges to embed.
  Two Walkdown traversals are performed to visit all reachable vertices
  along each of the external face paths emanating from RootVertex (a root
  copy of vertex v) to embed back edges to descendants of vertex v that
- have their adjacencyInfo marked.
+ have their pertinentEdge members marked.
 
  During each Walkdown traversal, it is sometimes necessary to hop from a
  vertex to one of its child biconnected components in order to reach the
@@ -871,7 +835,7 @@ int  nextZig, nextZag, R, ParentCopy, RootID_DFSChild, BicompList;
  For the inner loop, each iteration visits a vertex W.  If W is marked as
  requiring a back edge, then MergeBicomps is called to merge the biconnected
  components whose cut vertices have been collecting in merge stack.  Then,
- the back edge (RootVertex, W) is added, and the adjacencyInfo of W is cleared.
+ the back edge (RootVertex, W) is added, and the pertinentEdge of W is cleared.
 
  Next, we check whether W has a pertinent child bicomp.  If so, then we figure
  out which path down from the root of the child bicomp leads to the next vertex
@@ -884,7 +848,7 @@ int  nextZig, nextZag, R, ParentCopy, RootID_DFSChild, BicompList;
  adjacentTo flag is clear so both criteria for internal activity also fail.
  Therefore, W must be a stopping vertex.
 
- A stopping vertex X is an externally active vertex that has no pertinent
+ A stopping vertex X is a future pertinent vertex that has no pertinent
  child bicomps and no unembedded back edge to the current vertex v.
  The inner loop of Walkdown stops walking when it reaches a stopping vertex X
  because if it were to proceed beyond X and embed a back edge, then X would be
@@ -941,7 +905,7 @@ int  RootEdgeChild = RootVertex - theGraph->N;
          while (W != RootVertex)
          {
              // Detect unembedded back edge descendant endpoint W
-             if (gp_IsArc(gp_GetVertexPertinentAdjacencyInfo(theGraph, W)))
+             if (gp_IsArc(gp_GetVertexPertinentEdge(theGraph, W)))
              {
                 // Merge any bicomps whose cut vertices were traversed to reach W, then add the
             	// edge to W to form a new proper face in the embedding.
@@ -952,16 +916,16 @@ int  RootEdgeChild = RootVertex - theGraph->N;
                 }
                 theGraph->functions.fpEmbedBackEdgeToDescendant(theGraph, RootSide, RootVertex, W, WPrevLink);
 
-                // Clear W's adjacencyInfo since the forward arc it contained has been embedded
-                gp_SetVertexPertinentAdjacencyInfo(theGraph, W, NIL);
+                // Clear W's pertinentEdge since the forward arc it contained has been embedded
+                gp_SetVertexPertinentEdge(theGraph, W, NIL);
              }
 
-             // If W has a pertinent child bicomp, then we descend to it...
-             if (gp_IsVertex(gp_GetVertexPertinentBicompList(theGraph, W)))
+             // If W has a pertinent child bicomp, then we descend to the first one...
+             if (gp_IsVertex(gp_GetVertexPertinentRootsList(theGraph, W)))
              {
             	 // Push the vertex W and the direction of entry, then descend to a root copy R of W
                  sp_Push2(theGraph->theStack, W, WPrevLink);
-                 R = _GetPertinentChildBicomp(theGraph, W);
+                 R = gp_GetVertexFirstPertinentRoot(theGraph, W);
 
                  // Get the next active vertices X and Y on the external face paths emanating from R
                  X = gp_GetExtFaceVertex(theGraph, R, 0);

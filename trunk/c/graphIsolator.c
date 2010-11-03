@@ -150,14 +150,13 @@ isolatorContextP IC = &theGraph->IC;
          return NOTOK;
 
 /* For Minor B, we seek the last pertinent child biconnected component, which
-     is externally active, and obtain the DFS child in its root edge.
+     is also future pertinent, and obtain the DFS child in its root edge.
      This child is the subtree root containing vertices with connections to
      both the current vertex and an ancestor of the current vertex. */
 
      if (theGraph->IC.minorType & MINORTYPE_B)
      {
-     int SubtreeRoot = LCGetPrev(theGraph->BicompLists,
-                                 gp_GetVertexPertinentBicompList(theGraph, IC->w), NIL);
+    	 int SubtreeRoot = gp_GetVertexLastPertinentRootChild(theGraph, IC->w);
 
          IC->uz = gp_GetVertexLowpoint(theGraph, SubtreeRoot);
 
@@ -168,7 +167,7 @@ isolatorContextP IC = &theGraph->IC;
 
 /* For all other minors, we obtain an unembedded connecting the current vertex to the
  	 pertinent vertex W, and for minor E we collect the additional unembedded ancestor
- 	 connection for the externally active vertex Z. */
+ 	 connection for the future pertinent vertex Z. */
 
      else
      {
@@ -427,7 +426,7 @@ isolatorContextP IC = &theGraph->IC;
 
  This function searches for an ancestor of the current vertex v adjacent by a
  cycle edge to the given cutVertex or one of its DFS descendants appearing in
- a separated bicomp. The given cutVertex is assumed to be externally active
+ a separated bicomp. The given cutVertex is assumed to be future pertinent
  such that either the leastAncestor or the lowpoint of a separated DFS child
  is less than v.  We obtain the minimum possible connection from the cutVertex
  to an ancestor of v.
@@ -459,7 +458,7 @@ int  _GetLeastAncestorConnection(graphP theGraph, int cutVertex)
  cycle edge to the given cutVertex or one of its DFS descendants appearing in
  a separated bicomp.
 
- The given cutVertex is assumed to be externally active such that either the
+ The given cutVertex is assumed to be future pertinent such that either the
  leastAncestor or the lowpoint of a separated DFS child is less than v.
  We obtain the minimum possible connection from the cutVertex to an ancestor
  of v, then compute the descendant accordingly.
@@ -511,14 +510,14 @@ int  _FindUnembeddedEdgeToAncestor(graphP theGraph, int cutVertex,
 
 int  _FindUnembeddedEdgeToCurVertex(graphP theGraph, int cutVertex, int *pDescendant)
 {
-     if (gp_IsArc(gp_GetVertexPertinentAdjacencyInfo(theGraph, cutVertex)))
+     if (gp_IsArc(gp_GetVertexPertinentEdge(theGraph, cutVertex)))
      {
          *pDescendant = cutVertex;
          return TRUE;
      }
      else
      {
-    	 int subtreeRoot = gp_GetVertexPertinentBicompList(theGraph, cutVertex);
+    	 int subtreeRoot = gp_GetVertexFirstPertinentRootChild(theGraph, cutVertex);
 
          return _FindUnembeddedEdgeToSubtree(theGraph, theGraph->IC.v,
                                              subtreeRoot, pDescendant);

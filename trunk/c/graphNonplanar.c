@@ -79,7 +79,7 @@ int  _FindFuturePertinenceBelowXYPath(graphP theGraph);
 
 int  _ChooseTypeOfNonplanarityMinor(graphP theGraph, int v, int R)
 {
-int  N, X, Y, W, Px, Py, Z, DFSChild, RootId;
+int  N, X, Y, W, Px, Py, Z;
 
 /* Create the initial non-planarity minor state in the isolator context */
 
@@ -102,15 +102,11 @@ int  N, X, Y, W, Px, Py, Z, DFSChild, RootId;
          return OK;
      }
 
-/* If W has an externally active pertinent child bicomp, then
-     we've found Minor B */
+/* If W has a pertinent and future pertinent child bicomp, then we've found Minor B */
 
-     if (gp_IsVertex(gp_GetVertexPertinentBicompList(theGraph, W)))
+     if (gp_IsVertex(gp_GetVertexPertinentRootsList(theGraph, W)))
      {
-         RootId = LCGetPrev(theGraph->BicompLists,
-                            gp_GetVertexPertinentBicompList(theGraph, W), NIL);
-         DFSChild = RootId;
-         if (gp_GetVertexLowpoint(theGraph, DFSChild) < v)
+         if (gp_GetVertexLowpoint(theGraph, gp_GetVertexLastPertinentRootChild(theGraph, W)) < v)
          {
              theGraph->IC.minorType |= MINORTYPE_B;
              return OK;
@@ -148,7 +144,7 @@ int  N, X, Y, W, Px, Py, Z, DFSChild, RootId;
          return OK;
      }
 
-/* For Minor E, we search for an externally active vertex Z
+/* For Minor E, we search for an future pertinent vertex Z
      below the points of attachment of the X-Y path */
 
      Z = _FindFuturePertinenceBelowXYPath(theGraph);

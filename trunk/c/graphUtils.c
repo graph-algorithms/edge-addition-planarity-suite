@@ -135,7 +135,7 @@ graphP theGraph = (graphP) malloc(sizeof(baseGraphStructure));
          theGraph->V = NULL;
          theGraph->VI = NULL;
 
-         theGraph->BicompLists = NULL;
+         theGraph->BicompRootLists = NULL;
          theGraph->sortedDFSChildLists = NULL;
          theGraph->theStack = NULL;
 
@@ -214,7 +214,7 @@ void _InitFunctionTable(graphP theGraph)
 
  For E, we need arcCapacity edge records.
 
- The BicompLists and sortedDFSChildLists are of size N and start out empty.
+ The BicompRootLists and sortedDFSChildLists are of size N and start out empty.
 
  The stack, initially empty, is made big enough for a pair of integers
 	 per edge record (2 * arcCapacity), or 6N integers if the arcCapacity
@@ -258,7 +258,7 @@ int  Vsize, Esize, stackSize;
      if ((theGraph->V = (vertexRecP) malloc(Vsize*sizeof(vertexRec))) == NULL ||
     	 (theGraph->VI = (vertexInfoP) malloc(N*sizeof(vertexInfo))) == NULL ||
     	 (theGraph->E = (edgeRecP) malloc(Esize*sizeof(edgeRec))) == NULL ||
-         (theGraph->BicompLists = LCNew(N)) == NULL ||
+         (theGraph->BicompRootLists = LCNew(N)) == NULL ||
          (theGraph->sortedDFSChildLists = LCNew(N)) == NULL ||
          (theGraph->theStack = sp_New(stackSize)) == NULL ||
          (theGraph->extFace = (extFaceLinkRecP) malloc(Vsize*sizeof(extFaceLinkRec))) == NULL ||
@@ -340,7 +340,7 @@ void _ReinitializeGraph(graphP theGraph)
      _InitEdges(theGraph);
      _InitIsolatorContext(theGraph);
 
-     LCReset(theGraph->BicompLists);
+     LCReset(theGraph->BicompRootLists);
      LCReset(theGraph->sortedDFSChildLists);
      sp_ClearStack(theGraph->theStack);
      sp_ClearStack(theGraph->edgeHoles);
@@ -514,8 +514,8 @@ void _InitVertexInfo(graphP theGraph, int v)
     gp_SetVertexLowpoint(theGraph, v, NIL);
 
     gp_SetVertexVisitedInfo(theGraph, v, NIL);
-    gp_SetVertexPertinentAdjacencyInfo(theGraph, v, NIL);
-    gp_SetVertexPertinentBicompList(theGraph, v, NIL);
+    gp_SetVertexPertinentEdge(theGraph, v, NIL);
+    gp_SetVertexPertinentRootsList(theGraph, v, NIL);
     gp_SetVertexFuturePertinentChild(theGraph, v, NIL);
     gp_SetVertexSortedDFSChildList(theGraph, v, NIL);
     gp_SetVertexFwdArcList(theGraph, v, NIL);
@@ -874,7 +874,7 @@ void _ClearGraph(graphP theGraph)
 
      _InitIsolatorContext(theGraph);
 
-     LCFree(&theGraph->BicompLists);
+     LCFree(&theGraph->BicompRootLists);
      LCFree(&theGraph->sortedDFSChildLists);
 
      sp_Free(&theGraph->theStack);
@@ -1021,7 +1021,7 @@ int  v, e, N = srcGraph->N, Vsize = N+srcGraph->NV, Esize = srcGraph->arcCapacit
 
      dstGraph->IC = srcGraph->IC;
 
-     LCCopy(dstGraph->BicompLists, srcGraph->BicompLists);
+     LCCopy(dstGraph->BicompRootLists, srcGraph->BicompRootLists);
      LCCopy(dstGraph->sortedDFSChildLists, srcGraph->sortedDFSChildLists);
      sp_Copy(dstGraph->theStack, srcGraph->theStack);
      sp_Copy(dstGraph->edgeHoles, srcGraph->edgeHoles);

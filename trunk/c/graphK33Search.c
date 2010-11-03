@@ -248,15 +248,15 @@ int tempResult;
 
 /* We now intend to ignore the pertinence of W (conceptually eliminating
     the connection from W to the current vertex).  Note that none of the
-    bicomps listed in the pertinentBicompList (nor their respective subtrees)
+    bicomp roots in the pertinentRootsList (nor their respective subtrees)
     will be visited again by the planarity algorithm because they must've
-    been internally active.  If they were externally active and pertinent,
+    been only pertinent.  If they were future pertinent and pertinent,
     then we would've found a K_{3,3} by non-planarity minor B. Thus, the original
     Walkup costs that identified the pertinent bicomps we intend to ignore are
     one-time costs, preserving linear time. */
 
-     gp_SetVertexPertinentAdjacencyInfo(theGraph, IC->w, NIL);
-     gp_SetVertexPertinentBicompList(theGraph, IC->w, NIL);
+     gp_SetVertexPertinentEdge(theGraph, IC->w, NIL);
+     gp_SetVertexPertinentRootsList(theGraph, IC->w, NIL);
 
      return OK;
 }
@@ -276,7 +276,7 @@ int u_max = MAX3(IC->ux, IC->uy, IC->uz);
 int u;
 #endif
 
-/* Case 1: If there is a pertinent or externally active vertex other than W
+/* Case 1: If there is a pertinent or future pertinent vertex other than W
             on the lower external face path between X and Y (the points of
             attachment of the x-y path), then we can isolate a K_{3,3} homeomorph
             by Minor E1. */
@@ -462,7 +462,7 @@ int u;
 /****************************************************************************
  _SearchForMinorE1()
  Search along the external face below the x-y path for a vertex Z other
- than W that is externally active or pertinent.
+ than W that is future pertinent or pertinent.
  ****************************************************************************/
 
 int _SearchForMinorE1(graphP theGraph)
@@ -577,7 +577,7 @@ isolatorContextP IC = &theGraph->IC;
 
  This function searches for an ancestor of the current vertex v adjacent by a
  cycle edge to the given cutVertex or one of its DFS descendants appearing in
- a separated bicomp. The given cutVertex is assumed to be externally active
+ a separated bicomp. The given cutVertex is assumed to be future pertinent
  such that either the leastAncestor or the lowpoint of a separated DFS child
  is less than v.  We obtain the minimum possible connection from the cutVertex
  to an ancestor of v.
@@ -846,8 +846,8 @@ isolatorContextP IC = &theGraph->IC;
      for (v = 0; v < N; v++)
      {
     	 gp_SetVertexVisitedInfo(theGraph, v, N);
-         gp_SetVertexPertinentAdjacencyInfo(theGraph, v, NIL);
-         gp_SetVertexPertinentBicompList(theGraph, v, NIL);
+         gp_SetVertexPertinentEdge(theGraph, v, NIL);
+         gp_SetVertexPertinentRootsList(theGraph, v, NIL);
 
          // Any calls to actually determine FUTUREPERTINENT status for a vertex w will actually invoke
          // gp_UpdateVertexFuturePertinentChild(theGraph, w, v) beforehand, so only need to reinitialize here

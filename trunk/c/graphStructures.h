@@ -244,8 +244,10 @@ typedef vertexRec * vertexRecP;
 #define gp_IsNotVertex(v) ((v) == NIL)
 #define gp_VirtualVertexInUse(theGraph, virtualVertex) (gp_IsArc(gp_GetFirstArc(theGraph, virtualVertex)))
 #define gp_VirtualVertexNotInUse(theGraph, virtualVertex) (gp_IsNotArc(gp_GetFirstArc(theGraph, virtualVertex)))
-#define gp_IsSeparatedDFSChild(theGraph, theChild) (gp_VirtualVertexInUse(theGraph, (theChild) + theGraph->N))
-#define gp_IsNotSeparatedDFSChild(theGraph, theChild) (gp_VirtualVertexNotInUse(theGraph, (theChild) + theGraph->N))
+#define gp_GetRootFromDFSChild(theGraph, theChild) ((theChild) + theGraph->N)
+#define gp_GetDFSChildFromRoot(theGraph, theRoot) ((theRoot) - theGraph->N)
+#define gp_IsSeparatedDFSChild(theGraph, theChild) (gp_VirtualVertexInUse(theGraph, gp_GetRootFromDFSChild(theGraph, theChild)))
+#define gp_IsNotSeparatedDFSChild(theGraph, theChild) (gp_VirtualVertexNotInUse(theGraph, gp_GetRootFromDFSChild(theGraph, theChild)))
 
 // Accessors for vertex index
 #define gp_GetVertexIndex(theGraph, v) (theGraph->V[v].index)
@@ -334,19 +336,18 @@ typedef extFaceLinkRec * extFaceLinkRecP;
 				 as a step number that implicitly resets on each step, whereas
 				 part of the planar drawing method signifies a first visitation
 				 by storing the index of the first edge used to reach a vertex
-	pertinentAdjacencyInfo: Used by the planarity method; during walk-up, each vertex
-	            that is directly adjacent via a back edge to the vertex currently
-                being embedded will have the forward edge's index stored in
-                this field.  During walkdown, each vertex for which this
-                field is set will cause a back edge to be embedded.
+	pertinentEdge: Used by the planarity method; during Walkup, each vertex
+	            that is directly adjacent via a back edge to the vertex v
+	            currently being embedded will have the forward edge's index
+	            stored in this field.  During Walkdown, each vertex for which
+	            this field is set will cause a back edge to be embedded.
                 Implicitly resets at each vertex step of the planarity method
-	pertinentBicompList: used by Walkup to store a list of child bicomps of
+	pertinentRootsList: used by Walkup to store a list of child bicomp roots of
                 a vertex descendant of the current vertex that are pertinent
                 and must be merged by the Walkdown in order to embed the cycle
-                edges of the current vertex.  In this implementation,
-                externally active pertinent child bicomps are placed at the end
-                of the list as an easy way to make sure all internally active
-                bicomps are processed first.
+                edges of the current vertex.  Future pertinent child bicomp roots
+                are placed at the end of the list to ensure bicomps that are
+                only pertinent are processed first.
     futurePertinentChild: indicates a DFS child with a lowpoint less than the
     			current vertex v.  This member is initialized to the start of
     			the sortedDFSChildList and is advanced in a relaxed manner as
@@ -373,8 +374,8 @@ typedef struct
 
     int visitedInfo;
 
-    int pertinentAdjacencyInfo,
-		pertinentBicompList,
+    int pertinentEdge,
+		pertinentRoots,
 		futurePertinentChild,
 		sortedDFSChildList,
 		fwdArcList;
@@ -394,11 +395,28 @@ typedef vertexInfo * vertexInfoP;
 #define gp_GetVertexLowpoint(theGraph, v) (theGraph->VI[v].lowpoint)
 #define gp_SetVertexLowpoint(theGraph, v, theLowpoint) (theGraph->VI[v].lowpoint = theLowpoint)
 
-#define gp_GetVertexPertinentAdjacencyInfo(theGraph, v) (theGraph->VI[v].pertinentAdjacencyInfo)
-#define gp_SetVertexPertinentAdjacencyInfo(theGraph, v, thePertinentAdjacencyInfo) (theGraph->VI[v].pertinentAdjacencyInfo = thePertinentAdjacencyInfo)
+#define gp_GetVertexPertinentEdge(theGraph, v) (theGraph->VI[v].pertinentEdge)
+#define gp_SetVertexPertinentEdge(theGraph, v, e) (theGraph->VI[v].pertinentEdge = e)
 
-#define gp_GetVertexPertinentBicompList(theGraph, v) (theGraph->VI[v].pertinentBicompList)
-#define gp_SetVertexPertinentBicompList(theGraph, v, thePertinentBicompList) (theGraph->VI[v].pertinentBicompList = thePertinentBicompList)
+#define gp_GetVertexPertinentRootsList(theGraph, v) (theGraph->VI[v].pertinentRoots)
+#define gp_SetVertexPertinentRootsList(theGraph, v, pertinentRootsHead) (theGraph->VI[v].pertinentRoots = pertinentRootsHead)
+
+#define gp_GetVertexFirstPertinentRoot(theGraph, v) gp_GetRootFromDFSChild(theGraph, theGraph->VI[v].pertinentRoots)
+#define gp_GetVertexFirstPertinentRootChild(theGraph, v) (theGraph->VI[v].pertinentRoots)
+#define gp_GetVertexLastPertinentRoot(theGraph, v)  gp_GetRootFromDFSChild(theGraph, LCGetPrev(theGraph->BicompRootLists, theGraph->VI[v].pertinentRoots, NIL))
+#define gp_GetVertexLastPertinentRootChild(theGraph, v)  LCGetPrev(theGraph->BicompRootLists, theGraph->VI[v].pertinentRoots, NIL)
+
+#define gp_DeleteVertexPertinentRoot(theGraph, v, R) \
+			gp_SetVertexPertinentRootsList(theGraph, v, \
+				LCDelete(theGraph->BicompRootLists, gp_GetVertexPertinentRootsList(theGraph, v), gp_GetDFSChildFromRoot(theGraph, R)))
+
+#define gp_PrependVertexPertinentRoot(theGraph, v, R) \
+			gp_SetVertexPertinentRootsList(theGraph, v, \
+				LCPrepend(theGraph->BicompRootLists, gp_GetVertexPertinentRootsList(theGraph, v), gp_GetDFSChildFromRoot(theGraph, R)))
+
+#define gp_AppendVertexPertinentRoot(theGraph, v, R) \
+			gp_SetVertexPertinentRootsList(theGraph, v, \
+				LCAppend(theGraph->BicompRootLists, gp_GetVertexPertinentRootsList(theGraph, v), gp_GetDFSChildFromRoot(theGraph, R)))
 
 #define gp_GetVertexFuturePertinentChild(theGraph, v) (theGraph->VI[v].futurePertinentChild)
 #define gp_SetVertexFuturePertinentChild(theGraph, v, theFuturePertinentChild) (theGraph->VI[v].futurePertinentChild = theFuturePertinentChild)
@@ -495,7 +513,7 @@ typedef isolatorContext * isolatorContextP;
         embedFlags: controls type of embedding (e.g. planar)
 
         IC: contains additional useful variables for Kuratowski subgraph isolation.
-        BicompLists: storage space for pertinent bicomp lists that develop
+        BicompRootLists: storage space for pertinent bicomp root lists that develop
                         during embedding
         sortedDFSChildLists: storage for the sorted DFS child lists of each vertex
         extFace: Array of (N + NV) external face short circuit records
@@ -519,7 +537,7 @@ typedef struct
         int internalFlags, embedFlags;
 
         isolatorContext IC;
-        listCollectionP BicompLists, sortedDFSChildLists;
+        listCollectionP BicompRootLists, sortedDFSChildLists;
         extFaceLinkRecP extFace;
 
         graphExtensionP extensions;
@@ -674,12 +692,12 @@ void 	gp_DetachArc(graphP theGraph, int arc);
  ********************************************************************/
 
 #define PERTINENT(theGraph, theVertex) \
-		(gp_IsArc(gp_GetVertexPertinentAdjacencyInfo(theGraph, theVertex)) || \
-		 gp_IsVertex(gp_GetVertexPertinentBicompList(theGraph, theVertex)))
+		(gp_IsArc(gp_GetVertexPertinentEdge(theGraph, theVertex)) || \
+		 gp_IsVertex(gp_GetVertexPertinentRootsList(theGraph, theVertex)))
 
 #define NOTPERTINENT(theGraph, theVertex) \
-		(gp_IsNotArc(gp_GetVertexPertinentAdjacencyInfo(theGraph, theVertex)) && \
-		 gp_IsNotVertex(gp_GetVertexPertinentBicompList(theGraph, theVertex)))
+		(gp_IsNotArc(gp_GetVertexPertinentEdge(theGraph, theVertex)) && \
+		 gp_IsNotVertex(gp_GetVertexPertinentRootsList(theGraph, theVertex)))
 
 /********************************************************************
  FUTUREPERTINENT()
