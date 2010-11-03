@@ -434,10 +434,9 @@ isolatorContextP IC = &theGraph->IC;
 
 int  _GetLeastAncestorConnection(graphP theGraph, int cutVertex)
 {
-	int listhead, child;
+	int child;
 	int ancestor = gp_GetVertexLeastAncestor(theGraph, cutVertex);
 
-	listhead = gp_GetVertexSortedDFSChildList(theGraph, cutVertex);
 	child = gp_GetVertexFuturePertinentChild(theGraph, cutVertex);
 	while (gp_IsVertex(child))
 	{
@@ -445,7 +444,7 @@ int  _GetLeastAncestorConnection(graphP theGraph, int cutVertex)
 			ancestor > gp_GetVertexLowpoint(theGraph, child))
 			ancestor = gp_GetVertexLowpoint(theGraph, child);
 
-		child = LCGetNext(theGraph->sortedDFSChildLists, listhead, child);
+		child = gp_GetVertexNextDFSChild(theGraph, cutVertex, child);
 	}
 
     return ancestor;
@@ -469,10 +468,9 @@ int  _GetLeastAncestorConnection(graphP theGraph, int cutVertex)
 int  _FindUnembeddedEdgeToAncestor(graphP theGraph, int cutVertex,
                                    int *pAncestor, int *pDescendant)
 {
- 	int listhead, child, foundChild;
+ 	int child, foundChild;
  	int ancestor = gp_GetVertexLeastAncestor(theGraph, cutVertex);
 
- 	listhead = gp_GetVertexSortedDFSChildList(theGraph, cutVertex);
  	child = gp_GetVertexFuturePertinentChild(theGraph, cutVertex);
  	foundChild = NIL;
  	while (gp_IsVertex(child))
@@ -483,7 +481,7 @@ int  _FindUnembeddedEdgeToAncestor(graphP theGraph, int cutVertex,
  			ancestor = gp_GetVertexLowpoint(theGraph, child);
  			foundChild = child;
  		}
- 		child = LCGetNext(theGraph->sortedDFSChildLists, listhead, child);
+ 		child = gp_GetVertexNextDFSChild(theGraph, cutVertex, child);
  	}
 
  	*pAncestor = ancestor;

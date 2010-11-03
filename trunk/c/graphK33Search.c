@@ -636,7 +636,7 @@ int  _SearchForDescendantExternalConnection(graphP theGraph, K33SearchContext *c
 {
 isolatorContextP IC = &theGraph->IC;
 int  u2 = _GetAdjacentAncestorInRange(theGraph, context, cutVertex, IC->v, u_max);
-int  listHead, child, descendant;
+int  child, descendant;
 
 	 // Test cutVertex for an external connection to descendant of u_max via direct back edge
      if (gp_IsVertex(u2))
@@ -651,12 +651,12 @@ int  listHead, child, descendant;
      // Begin by pushing the separated DFS children of the cut vertex with
      // lowpoints indicating connections to ancestors of the current vertex.
      sp_ClearStack(theGraph->theStack);
-     listHead = child = gp_GetVertexSortedDFSChildList(theGraph, cutVertex);
+     child = gp_GetVertexSortedDFSChildList(theGraph, cutVertex);
      while (gp_IsVertex(child))
      {
          if (gp_GetVertexLowpoint(theGraph, child) < IC->v && gp_IsSeparatedDFSChild(theGraph, child))
         	 sp_Push(theGraph->theStack, child);
-         child = LCGetNext(theGraph->sortedDFSChildLists, listHead, child);
+         child = gp_GetVertexNextDFSChild(theGraph, cutVertex, child);
      }
 
      // Now process the stack until it is empty or until we've found the desired connection.
@@ -680,8 +680,7 @@ int  listHead, child, descendant;
 				 if (gp_GetVertexLowpoint(theGraph, child) < IC->v)
 					 sp_Push(theGraph->theStack, child);
 
-				 child = LCGetNext(theGraph->sortedDFSChildLists,
-								   gp_GetVertexSortedDFSChildList(theGraph, descendant), child);
+				 child = gp_GetVertexNextDFSChild(theGraph, descendant, child);
 			 }
          }
      }
@@ -711,7 +710,7 @@ int  listHead, child, descendant;
 int  _FindExternalConnectionDescendantEndpoint(graphP theGraph, int ancestor,
                                                int cutVertex, int *pDescendant)
 {
-int  listHead, child, e;
+int  child, e;
 
      // Check whether the cutVertex is directly adjacent to the ancestor
      // by an unembedded back edge.
@@ -732,7 +731,7 @@ int  listHead, child, e;
 
      // Now check the descendants of the cut vertex to see if any make
      // a connection to the ancestor.
-     listHead = child = gp_GetVertexSortedDFSChildList(theGraph, cutVertex);
+     child = gp_GetVertexSortedDFSChildList(theGraph, cutVertex);
      while (gp_IsVertex(child))
      {
          if (gp_GetVertexLowpoint(theGraph, child) < theGraph->IC.v && gp_IsSeparatedDFSChild(theGraph, child))
@@ -740,7 +739,7 @@ int  listHead, child, e;
 			 if (_FindUnembeddedEdgeToSubtree(theGraph, ancestor, child, pDescendant) == TRUE)
 				 return OK;
          }
-         child = LCGetNext(theGraph->sortedDFSChildLists, listHead, child);
+         child = gp_GetVertexNextDFSChild(theGraph, cutVertex, child);
      }
 
      return NOTOK;
@@ -1200,7 +1199,7 @@ int  p, c, d, excludedChild, e;
          // in not using the separatedDFSChildList
          /*
          {
-         int listhead = c = gp_GetVertexSortedDFSChildList(theGraph, p);
+         int c = gp_GetVertexSortedDFSChildList(theGraph, p);
          while (gp_IsVertex(c))
          {
         	 if (c != excludedChild && gp_IsSeparatedDFSChild(theGraph, c))
@@ -1209,7 +1208,7 @@ int  p, c, d, excludedChild, e;
         			 break;
         	 }
 
-             c = LCGetNext(theGraph->sortedDFSChildLists, listhead, c);
+             c = gp_GetVertexNextDFSChild(theGraph, p, c);
          }
          }
          */
