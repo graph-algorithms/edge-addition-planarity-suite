@@ -768,7 +768,7 @@ int WPredNextLink = 1^WPrevLink,
             or 'beyond' its parent relative to what. */
 
         context->VI[DFSChild].ancestorChild = gp_GetDFSChildFromRoot(theEmbedding, BicompRoot);
-        context->VI[DFSChild].ancestor = gp_GetVertexParent(theEmbedding, gp_GetDFSChildFromRoot(theEmbedding, BicompRoot));
+        context->VI[DFSChild].ancestor = gp_GetPrimaryVertexFromRoot(theEmbedding, BicompRoot);
 
         gp_LogLine(gp_MakeLogStr4("V[child=%d]=.ancestorChild = %d, V[child=%d]=.ancestor = %d",
 					 DFSChild, context->VI[DFSChild].ancestorChild, DFSChild, context->VI[DFSChild].ancestor));
