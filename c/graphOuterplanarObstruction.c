@@ -85,13 +85,12 @@ int  _IsolateOuterplanarityObstructionE(graphP theGraph);
 
 int  _ChooseTypeOfNonOuterplanarityMinor(graphP theGraph, int v, int R)
 {
-int  N, X, Y, W;
+int  X, Y, W;
 
 	 // Create the initial non-outerplanarity obstruction isolator state.
      if (_InitializeNonplanarityContext(theGraph, v, R) != OK)
          return NOTOK;
 
-     N = theGraph->N;
      R = theGraph->IC.r;
      X = theGraph->IC.x;
      Y = theGraph->IC.y;
@@ -99,7 +98,7 @@ int  N, X, Y, W;
 
      // If the root copy is not a root copy of the current vertex v,
      // then the Walkdown terminated on a descendant bicomp, which is Minor A.
-     if (gp_GetVertexParent(theGraph, R - N) != v)
+     if (gp_GetVertexParent(theGraph, gp_GetDFSChildFromRoot(theGraph, R)) != v)
      {
          theGraph->IC.minorType |= MINORTYPE_A;
          return OK;

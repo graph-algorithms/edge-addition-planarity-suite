@@ -487,7 +487,7 @@ int  _K4_ChooseTypeOfNonOuterplanarityMinor(graphP theGraph, int v, int R)
 
     // If the root copy is not a root copy of the current vertex v,
     // then the Walkdown terminated on a descendant bicomp, which is Minor A.
-	if (gp_GetVertexParent(theGraph, R - theGraph->N) != v)
+	if (gp_GetVertexParent(theGraph, gp_GetDFSChildFromRoot(theGraph, R)) != v)
 		theGraph->IC.minorType |= MINORTYPE_A;
 
     // If W has a pertinent child bicomp, then we've found Minor B.
@@ -1038,7 +1038,7 @@ int  N = theGraph->N, invertedFlag=0;
         copy before starting the loop */
 
      if (descendant >= N)
-         descendant = gp_GetVertexParent(theGraph, descendant-N);
+         descendant = gp_GetVertexParent(theGraph, gp_GetDFSChildFromRoot(theGraph, descendant));
 
      while (descendant != ancestor)
      {
@@ -1048,7 +1048,7 @@ int  N = theGraph->N, invertedFlag=0;
           // If we are at a bicomp root, then ascend to its parent copy
           if (descendant >= N)
           {
-              parent = gp_GetVertexParent(theGraph, descendant-N);
+              parent = gp_GetVertexParent(theGraph, gp_GetDFSChildFromRoot(theGraph, descendant));
           }
 
           // If we are on a regular, non-virtual vertex then get the edge to the parent

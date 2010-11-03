@@ -666,7 +666,7 @@ void _K33Search_MergeVertex(graphP theGraph, int W, int WPrevLink, int R)
         if (theGraph->embedFlags == EMBEDFLAGS_SEARCHFORK33)
         {
             int theList = context->VI[W].separatedDFSChildList;
-            theList = LCDelete(context->separatedDFSChildLists, theList, R - theGraph->N);
+            theList = LCDelete(context->separatedDFSChildLists, theList, gp_GetDFSChildFromRoot(theGraph, R));
             context->VI[W].separatedDFSChildList = theList;
         }
 

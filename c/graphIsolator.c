@@ -638,7 +638,7 @@ int  e, parent, N;
      // If we are marking from a root vertex upward, then go up to the parent
      // copy before starting the loop
      if (descendant >= N)
-         descendant = gp_GetVertexParent(theGraph, descendant-N);
+         descendant = gp_GetVertexParent(theGraph, gp_GetDFSChildFromRoot(theGraph, descendant));
 
      // Mark the lowest vertex (the one with the highest number).
      gp_SetVertexVisited(theGraph, descendant);
@@ -654,7 +654,7 @@ int  e, parent, N;
           // mark it as visited.
           if (descendant >= N)
           {
-              parent = gp_GetVertexParent(theGraph, descendant-N);
+              parent = gp_GetVertexParent(theGraph, gp_GetDFSChildFromRoot(theGraph, descendant));
           }
 
           // If we are on a regular, non-virtual vertex then get the edge to the parent,
