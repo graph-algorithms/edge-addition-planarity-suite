@@ -444,7 +444,7 @@ int  _K4_ChooseTypeOfNonOuterplanarityMinor(graphP theGraph, int v, int R)
 
     // We are essentially doing a _FindActiveVertices() here, except two things:
     // 1) for outerplanarity we know the first vertices along the paths from R
-    //    are the desired vertices because all vertices are "externally active"
+    //    are the desired vertices because no vertices are "inactive"
     // 2) We have purposely not oriented the bicomp, so the XPrevLink result is
     //    needed to help find the pertinent vertex W
     theGraph->IC.x = _GetNeighborOnExtFace(theGraph, R, &XPrevLink);
@@ -492,9 +492,8 @@ int  _K4_ChooseTypeOfNonOuterplanarityMinor(graphP theGraph, int v, int R)
 
     // If W has a pertinent child bicomp, then we've found Minor B.
     // Notice this is different from planarity, in which minor B is indicated
-    // only if the pertinent child bicomp is also externally active under the
-    // planarity processing model (i.e. future pertinent).
-	else if (gp_IsVertex(gp_GetVertexPertinentBicompList(theGraph, theGraph->IC.w)))
+    // only if the pertinent child bicomp is also future pertinent.
+	else if (gp_IsVertex(gp_GetVertexPertinentRootsList(theGraph, theGraph->IC.w)))
 		theGraph->IC.minorType |= MINORTYPE_B;
 
     // The only other result is minor E (we will search for the X-Y path later)

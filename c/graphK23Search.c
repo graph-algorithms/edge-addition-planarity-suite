@@ -105,8 +105,7 @@ int X, Y, XPrevLink, YPrevLink;
          }
          else if (theGraph->IC.minorType & MINORTYPE_B)
          {
-         int SubtreeRoot = LCGetPrev(theGraph->BicompLists,
-                                     gp_GetVertexPertinentBicompList(theGraph, IC->w), NIL);
+        	 int SubtreeRoot = gp_GetVertexLastPertinentRootChild(theGraph, IC->w);
 
              if (_FindUnembeddedEdgeToSubtree(theGraph, IC->v, SubtreeRoot, &IC->dw) != TRUE)
                  return NOTOK;
@@ -259,7 +258,7 @@ int u, d, XorY;
               XorY = theGraph->IC.x;
          else XorY = theGraph->IC.y;
 
-         /* The cases of X externally active and Y externally active
+         /* The cases of X future pertinent and Y future pertinent
                 are the same except for the bicomp external face marking
                 (because parameter order is important) */
 
