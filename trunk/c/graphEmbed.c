@@ -422,7 +422,7 @@ int fwdArc, backArc, parentCopy;
 
     /* The forward arc is removed from the fwdArcList of the root's parent copy. */
 
-    parentCopy = gp_GetVertexParent(theGraph, RootVertex - theGraph->N);
+    parentCopy = gp_GetVertexParent(theGraph, gp_GetDFSChildFromRoot(theGraph, RootVertex));
 
     gp_LogLine(gp_MakeLogStr5("graphEmbed.c/_EmbedBackEdgeToDescendant() V=%d, R=%d, R_out=%d, W=%d, W_in=%d",
     		parentCopy, RootVertex, RootSide, W, WPrevLink));
@@ -873,7 +873,7 @@ int  nextZig, nextZag, R, Parent;
 int  _WalkDown(graphP theGraph, int v, int RootVertex)
 {
 int  RetVal, W, WPrevLink, R, X, XPrevLink, Y, YPrevLink, RootSide, e;
-int  RootEdgeChild = RootVertex - theGraph->N;
+int  RootEdgeChild = gp_GetDFSChildFromRoot(theGraph, RootVertex);
 
      sp_ClearStack(theGraph->theStack);
 
@@ -1337,7 +1337,7 @@ int  R, N, Vsize = theGraph->N + theGraph->NV;
 
      for (R=N=theGraph->N; R < Vsize; R++)
           if (gp_VirtualVertexInUse(theGraph, R))
-        	  _MergeVertex(theGraph, gp_GetVertexParent(theGraph, R-N), 0, R);
+        	  _MergeVertex(theGraph, gp_GetVertexParent(theGraph, gp_GetDFSChildFromRoot(theGraph, R)), 0, R);
 
      return OK;
 }

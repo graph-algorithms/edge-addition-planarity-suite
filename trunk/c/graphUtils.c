@@ -2323,9 +2323,9 @@ int gp_RestoreVertices(graphP theGraph)
 int  _ComputeArcType(graphP theGraph, int a, int b, int edgeType)
 {
      if (a >= theGraph->N)
-         a = gp_GetVertexParent(theGraph, a - theGraph->N);
+         a = gp_GetVertexParent(theGraph, gp_GetDFSChildFromRoot(theGraph, a));
      if (b >= theGraph->N)
-         b = gp_GetVertexParent(theGraph, b - theGraph->N);
+         b = gp_GetVertexParent(theGraph, gp_GetDFSChildFromRoot(theGraph, b));
 
      if (a < b)
          return edgeType == EDGE_TYPE_PARENT || edgeType == EDGE_TYPE_CHILD ? EDGE_TYPE_CHILD : EDGE_TYPE_FORWARD;
@@ -2344,12 +2344,11 @@ int  _ComputeArcType(graphP theGraph, int a, int b, int edgeType)
 
 int  _SetEdgeType(graphP theGraph, int u, int v)
 {
-int  e, eTwin, u_orig, v_orig, N;
+int  e, eTwin, u_orig, v_orig;
 
      // If u or v is a virtual vertex (a root copy), then get the non-virtual counterpart.
-     N = theGraph->N;
-     u_orig = u < N ? u : (gp_GetVertexParent(theGraph, u - N));
-     v_orig = v < N ? v : (gp_GetVertexParent(theGraph, v - N));
+     u_orig = u < theGraph->N ? u : (gp_GetVertexParent(theGraph, gp_GetDFSChildFromRoot(theGraph, u)));
+     v_orig = v < theGraph->N ? v : (gp_GetVertexParent(theGraph, gp_GetDFSChildFromRoot(theGraph, v)));
 
      // Get the edge for which we will set the type
 

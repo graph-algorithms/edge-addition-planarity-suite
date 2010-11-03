@@ -564,7 +564,8 @@ int v, e, Vsize, EsizeOccupied;
               continue;
 
           fprintf(Outfile, "%d(copy of=%d, DFS child=%d):",
-                           v, gp_GetVertexIndex(theGraph, v), v-theGraph->N);
+                           v, gp_GetVertexIndex(theGraph, v),
+                           gp_GetDFSChildFromRoot(theGraph, v));
 
           e = gp_GetFirstArc(theGraph, v);
           while (gp_IsArc(e))

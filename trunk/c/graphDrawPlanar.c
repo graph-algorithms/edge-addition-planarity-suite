@@ -656,8 +656,6 @@ int _GetNextExternalFaceVertex(graphP theGraph, int curVertex, int *pPrevLink)
 void _CollectDrawingData(DrawPlanarContext *context, int RootVertex, int W, int WPrevLink)
 {
 graphP theEmbedding = context->theGraph;
-//int ancestorChild = RootVertex - theEmbedding->N;
-//int ancestor = gp_GetVertexParent(theEmbedding, ancestorChild);
 int K, Parent, BicompRoot, DFSChild, direction, descendant;
 
     gp_LogLine("\ngraphDrawPlanar.c/_CollectDrawingData() start");
@@ -672,7 +670,7 @@ int K, Parent, BicompRoot, DFSChild, direction, descendant;
             the 4-tuple in the merge stack */
          Parent = theEmbedding->theStack->S[K];
          BicompRoot = theEmbedding->theStack->S[K+2];
-         DFSChild = BicompRoot - theEmbedding->N;
+         DFSChild = gp_GetDFSChildFromRoot(theEmbedding, BicompRoot);
 
          /* We get the active descendant vertex in the child bicomp that
             will be adjacent to the parent along the external face.
@@ -769,8 +767,8 @@ int WPredNextLink = 1^WPrevLink,
         /* Set the two ancestor variables that contextualize putting W 'between'
             or 'beyond' its parent relative to what. */
 
-        context->VI[DFSChild].ancestorChild = BicompRoot - theEmbedding->N;
-        context->VI[DFSChild].ancestor = gp_GetVertexParent(theEmbedding, BicompRoot - theEmbedding->N);
+        context->VI[DFSChild].ancestorChild = gp_GetDFSChildFromRoot(theEmbedding, BicompRoot);
+        context->VI[DFSChild].ancestor = gp_GetVertexParent(theEmbedding, context->VI[DFSChild].ancestorChild);
 
         gp_LogLine(gp_MakeLogStr4("V[child=%d]=.ancestorChild = %d, V[child=%d]=.ancestor = %d",
 					 DFSChild, context->VI[DFSChild].ancestorChild, DFSChild, context->VI[DFSChild].ancestor));

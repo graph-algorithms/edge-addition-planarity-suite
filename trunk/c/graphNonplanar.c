@@ -79,14 +79,13 @@ int  _FindFuturePertinenceBelowXYPath(graphP theGraph);
 
 int  _ChooseTypeOfNonplanarityMinor(graphP theGraph, int v, int R)
 {
-int  N, X, Y, W, Px, Py, Z;
+int  X, Y, W, Px, Py, Z;
 
 /* Create the initial non-planarity minor state in the isolator context */
 
      if (_InitializeNonplanarityContext(theGraph, v, R) != OK)
          return NOTOK;
 
-     N = theGraph->N;
      R = theGraph->IC.r;
      X = theGraph->IC.x;
      Y = theGraph->IC.y;
@@ -96,7 +95,7 @@ int  N, X, Y, W, Px, Py, Z;
         then the Walkdown terminated because it couldn't find
         a viable path along a child bicomp, which is Minor A. */
 
-     if (gp_GetVertexParent(theGraph, R - N) != v)
+     if (gp_GetVertexParent(theGraph, gp_GetDFSChildFromRoot(theGraph, R)) != v)
      {
          theGraph->IC.minorType |= MINORTYPE_A;
          return OK;
