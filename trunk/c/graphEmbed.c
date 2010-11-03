@@ -156,9 +156,10 @@ int RetVal = OK;
           {
         	  if (gp_IsVertex(gp_GetVertexPertinentRootsList(theGraph, c)))
         	  {
+        		  RetVal = theGraph->functions.fpWalkDown(theGraph, v, gp_GetRootFromDFSChild(theGraph, c));
         		  // If Walkdown returns OK, then it is OK to proceed with edge addition.
         		  // Otherwise, if Walkdown returns NONEMBEDDABLE then we stop edge addition.
-				  if ((RetVal = theGraph->functions.fpWalkDown(theGraph, v, c + N)) != OK)
+				  if (RetVal != OK)
 					  break;
         	  }
         	  c = gp_GetVertexNextDFSChild(theGraph, v, c);
@@ -265,9 +266,9 @@ platform_GetTime(start);
                     gp_SetVertexSortedDFSChildList(theGraph, uparent,
                     		gp_AppendDFSChild(theGraph, uparent, gp_GetVertexIndex(theGraph, u)));
 
-					// (8) Record e as the first and last arc of the virtual vertex
-					//     at position DFI(u)+N, which is a root copy of uparent
-                    R = gp_GetVertexIndex(theGraph, u) + N;
+					// (8) Record e as the first and last arc of the virtual vertex R,
+					//     a root copy of uparent uniquely associated with child u
+                    R = gp_GetRootFromDFSChild(theGraph, gp_GetVertexIndex(theGraph, u));
                 	gp_SetFirstArc(theGraph, R, e);
                 	gp_SetLastArc(theGraph, R, e);
 				}
@@ -340,7 +341,7 @@ platform_GetTime(start);
         return NOTOK;
 
     // Loop through the vertices and virtual vertices to...
-    for (v = N-1, R = N-1 + theGraph->NV; v >= 0; v--, R--)
+    for (v = N-1; v >= 0; v--)
     {
     	// (7) Initialize for pertinence management
         gp_SetVertexVisitedInfo(theGraph, v, N);
@@ -368,6 +369,8 @@ platform_GetTime(start);
         }
         else
         {
+        	R = gp_GetRootFromDFSChild(theGraph, v);
+
         	// Make the child edge the only edge in the virtual vertex adjacency list
         	e = gp_GetFirstArc(theGraph, R);
         	gp_SetPrevArc(theGraph, e, NIL);
