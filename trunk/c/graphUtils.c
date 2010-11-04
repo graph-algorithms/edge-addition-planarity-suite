@@ -790,7 +790,7 @@ int  stackBottom = sp_GetCurrentSize(theGraph->theStack);
      {
           sp_Pop(theGraph->theStack, v);
 
-          if (v < theGraph->N)
+          if (gp_IsNotVirtualVertex(theGraph, v))
         	  gp_SetVertexVisitedInfo(theGraph, v, FillValue);
 
           e = gp_GetFirstArc(theGraph, v);
@@ -2347,8 +2347,8 @@ int  _SetEdgeType(graphP theGraph, int u, int v)
 int  e, eTwin, u_orig, v_orig;
 
      // If u or v is a virtual vertex (a root copy), then get the non-virtual counterpart.
-     u_orig = u < theGraph->N ? u : (gp_GetPrimaryVertexFromRoot(theGraph, u));
-     v_orig = v < theGraph->N ? v : (gp_GetPrimaryVertexFromRoot(theGraph, v));
+     u_orig = gp_IsVirtualVertex(theGraph, u) ? (gp_GetPrimaryVertexFromRoot(theGraph, u)) : u;
+     v_orig = gp_IsVirtualVertex(theGraph, v) ? (gp_GetPrimaryVertexFromRoot(theGraph, v)) : v;
 
      // Get the edge for which we will set the type
 

@@ -1032,12 +1032,12 @@ int  _K4_ReducePathComponent(graphP theGraph, K4SearchContext *context, int R, i
 int  _K4_GetCumulativeOrientationOnDFSPath(graphP theGraph, int ancestor, int descendant)
 {
 int  e, parent;
-int  N = theGraph->N, invertedFlag=0;
+int  invertedFlag=0;
 
      /* If we are marking from a root vertex upward, then go up to the parent
         copy before starting the loop */
 
-     if (descendant >= N)
+     if (gp_IsVirtualVertex(theGraph, descendant))
          descendant = gp_GetPrimaryVertexFromRoot(theGraph, descendant);
 
      while (descendant != ancestor)
@@ -1046,7 +1046,7 @@ int  N = theGraph->N, invertedFlag=0;
               return NOTOK;
 
           // If we are at a bicomp root, then ascend to its parent copy
-          if (descendant >= N)
+          if (gp_IsVirtualVertex(theGraph, descendant))
           {
               parent = gp_GetPrimaryVertexFromRoot(theGraph, descendant);
           }

@@ -587,7 +587,7 @@ int v, e, Vsize, EsizeOccupied;
          fprintf(Outfile, "V[%3d] index=%3d, type=%c, first arc=%3d, last arc=%3d\n",
                           v,
                           gp_GetVertexIndex(theGraph, v),
-                          (v < theGraph->N ? _GetVertexObstructionTypeChar(theGraph, v) : 0),
+                          (gp_IsVirtualVertex(theGraph, v) ? 'X' : _GetVertexObstructionTypeChar(theGraph, v)),
                           gp_GetFirstArc(theGraph, v),
                           gp_GetLastArc(theGraph, v));
      }

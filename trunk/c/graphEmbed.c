@@ -710,9 +710,9 @@ int  R, Rout, Z, ZPrevLink, e, extFaceVertex;
 
 void _WalkUp(graphP theGraph, int v, int e)
 {
-int  N = theGraph->N, W = gp_GetNeighbor(theGraph, e);
+int  W = gp_GetNeighbor(theGraph, e);
 int  Zig=W, Zag=W, ZigPrevLink=1, ZagPrevLink=0;
-int  nextZig, nextZag, R, Parent;
+int  nextZig, nextZag, R;
 
 	 // Start by marking W as being directly pertinent
      gp_SetVertexPertinentEdge(theGraph, W, e);
@@ -723,7 +723,7 @@ int  nextZig, nextZag, R, Parent;
      while (Zig != v)
      {
     	 // Obtain the next vertex in a first direction and determine if it is a bicomp root
-         if ((nextZig = gp_GetExtFaceVertex(theGraph, Zig, 1^ZigPrevLink)) >= N)
+         if (gp_IsVirtualVertex(theGraph, (nextZig = gp_GetExtFaceVertex(theGraph, Zig, 1^ZigPrevLink))))
          {
         	 // If the current vertex along the external face was visited in this step v,
         	 // then the bicomp root and its ancestor roots have already been added.
@@ -743,7 +743,7 @@ int  nextZig, nextZag, R, Parent;
          }
 
          // Obtain the next vertex in the parallel direction and perform the analogous logic
-         else if ((nextZag = gp_GetExtFaceVertex(theGraph, Zag, 1^ZagPrevLink)) >= N)
+         else if (gp_IsVirtualVertex(theGraph, (nextZag = gp_GetExtFaceVertex(theGraph, Zag, 1^ZagPrevLink))))
          {
         	 if (gp_GetVertexVisitedInfo(theGraph, Zag) == v) break;
         	 R = nextZag;
@@ -780,11 +780,12 @@ int  nextZig, nextZag, R, Parent;
          // so walk up to the parent bicomp and continue
          else
          {
-             // The endpoints of a bicomp's "root edge" are the bicomp root R and a
-             // DFS child of the parent copy of the bicomp root R.
-             Parent = gp_GetPrimaryVertexFromRoot(theGraph, R);
+        	 // Step up from the root (virtual) vertex to the primary (non-virtual) vertex
+             Zig = Zag = gp_GetPrimaryVertexFromRoot(theGraph, R);
+             ZigPrevLink = 1;
+             ZagPrevLink = 0;
 
-			 // Add the new root vertex to the list of pertinent bicomp roots of the parent vertex.
+			 // Add the new root vertex to the list of pertinent bicomp roots of the primary vertex.
              // The new root vertex is appended if future pertinent and prepended if only pertinent
              // so that, by virtue of storage, the Walkdown will process all pertinent bicomps that
              // are not future pertinent before any future pertinent bicomps.
@@ -795,12 +796,8 @@ int  nextZig, nextZag, R, Parent;
              //       ancestors of v. If so, then the bicomp rooted at RootVertex must contain a
              //       future pertinent vertex that must be kept on the external face.
 			 if (gp_GetVertexLowpoint(theGraph, gp_GetDFSChildFromRoot(theGraph, R)) < v)
-				  gp_AppendVertexPertinentRoot(theGraph, Parent, R);
-			 else gp_PrependVertexPertinentRoot(theGraph, Parent, R);
-
-             Zig = Zag = Parent;
-             ZigPrevLink = 1;
-             ZagPrevLink = 0;
+				  gp_AppendVertexPertinentRoot(theGraph, Zig, R);
+			 else gp_PrependVertexPertinentRoot(theGraph, Zag, R);
          }
      }
 }

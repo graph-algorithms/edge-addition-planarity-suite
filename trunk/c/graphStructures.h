@@ -244,6 +244,9 @@ typedef vertexRec * vertexRecP;
 #define gp_IsVertex(v) ((v) != NIL)
 #define gp_IsNotVertex(v) ((v) == NIL)
 
+#define gp_IsVirtualVertex(theGraph, v) ((v) >= theGraph->N)
+#define gp_IsNotVirtualVertex(theGraph, v) ((v) < theGraph->N)
+
 #define gp_VirtualVertexInUse(theGraph, virtualVertex) (gp_IsArc(gp_GetFirstArc(theGraph, virtualVertex)))
 #define gp_VirtualVertexNotInUse(theGraph, virtualVertex) (gp_IsNotArc(gp_GetFirstArc(theGraph, virtualVertex)))
 
