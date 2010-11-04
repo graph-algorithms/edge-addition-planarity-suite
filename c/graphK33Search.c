@@ -1101,10 +1101,9 @@ int  v, e, w;
           {
               w = gp_GetNeighbor(theGraph, e);
 
-              // The test for w < N is just safeguarding the two subsequent calls, but
-              // it can never happen due to the obstructing X-Y path.  Still, a virtual
-              // vertex is not eligible, so no harm in ruling them out.
-              if (w < theGraph->N &&
+              // The test for w being a virtual vertex is just safeguarding the two subsequent calls,
+              // but it can never happen due to the obstructing X-Y path.
+              if (gp_IsNotVirtualVertex(theGraph, w) &&
             	  gp_GetVertexVisitedInfo(theGraph, w) != -1 &&
                   gp_GetVertexObstructionType(theGraph, w) == VERTEX_OBSTRUCTIONTYPE_UNKNOWN)
               {

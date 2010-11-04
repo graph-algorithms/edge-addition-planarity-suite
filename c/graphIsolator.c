@@ -631,13 +631,11 @@ int  Z, ZPrevLink, ZPrevArc;
  ****************************************************************************/
 int  _MarkDFSPath(graphP theGraph, int ancestor, int descendant)
 {
-int  e, parent, N;
+int  e, parent;
 
-     N = theGraph->N;
-
-     // If we are marking from a root vertex upward, then go up to the parent
+     // If we are marking from a root (virtual) vertex upward, then go up to the parent
      // copy before starting the loop
-     if (descendant >= N)
+     if (gp_IsVirtualVertex(theGraph, descendant))
          descendant = gp_GetPrimaryVertexFromRoot(theGraph, descendant);
 
      // Mark the lowest vertex (the one with the highest number).
@@ -652,7 +650,7 @@ int  e, parent, N;
 
           // If we are at a bicomp root, then ascend to its parent copy and
           // mark it as visited.
-          if (descendant >= N)
+          if (gp_IsVirtualVertex(theGraph, descendant))
           {
               parent = gp_GetPrimaryVertexFromRoot(theGraph, descendant);
           }
