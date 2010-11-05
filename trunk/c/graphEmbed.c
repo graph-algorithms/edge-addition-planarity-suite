@@ -114,15 +114,12 @@ int  _JoinBicomps(graphP theGraph);
 
 int gp_Embed(graphP theGraph, int embedFlags)
 {
-int N, v, e, c;
+int v, e, c;
 int RetVal = OK;
 
     // Basic parameter checks
     if (theGraph==NULL)
     	return NOTOK;
-
-    // A little shorthand for the order of the graph
-    N = theGraph->N;
 
     // Preprocessing
     theGraph->embedFlags = embedFlags;
@@ -132,7 +129,7 @@ int RetVal = OK;
     	return NOTOK;
 
     // In reverse DFI order, embed the back edges from each vertex to its DFS descendants.
-    for (v = N-1; v >= 0; v--)
+    for (v = gp_GetLastVertex(theGraph); gp_VertexInRangeDescending(theGraph, v); v--)
     {
           RetVal = OK;
 
@@ -198,7 +195,7 @@ int RetVal = OK;
 int  _EmbeddingInitialize(graphP theGraph)
 {
 	stackP theStack;
-	int N, DFI, v, R, uparent, u, uneighbor, e, f, eTwin, ePrev, eNext;
+	int DFI, v, R, uparent, u, uneighbor, e, f, eTwin, ePrev, eNext;
 	int leastValue, child;
 
 #ifdef PROFILE
@@ -208,7 +205,6 @@ platform_GetTime(start);
 
 	gp_LogLine("graphEmbed.c/_EmbeddingInitialize() start\n");
 
-	N = theGraph->N;
 	theStack  = theGraph->theStack;
 
 	// At most we push 2 integers per edge from a vertex to each *unvisited* neighbor
@@ -227,7 +223,7 @@ platform_GetTime(start);
 	// This outer loop processes each connected component of a disconnected graph
 	// No need to compare v < N since DFI will reach N when inner loop processes the
 	// last connected component in the graph
-	for (v=DFI=0; DFI < N; v++)
+	for (DFI = v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, DFI); v++)
 	{
 		// Skip numbered vertices to cause the outerloop to find the
 		// next DFS tree root in a disconnected graph
@@ -341,10 +337,10 @@ platform_GetTime(start);
         return NOTOK;
 
     // Loop through the vertices and virtual vertices to...
-    for (v = N-1; v >= 0; v--)
+    for (v = gp_GetLastVertex(theGraph); gp_VertexInRangeDescending(theGraph, v); v--)
     {
     	// (7) Initialize for pertinence management
-        gp_SetVertexVisitedInfo(theGraph, v, N);
+        gp_SetVertexVisitedInfo(theGraph, v, theGraph->N);
 
         // (7) Initialize for future pertinence management
         child = gp_GetVertexSortedDFSChildList(theGraph, v);
@@ -362,7 +358,7 @@ platform_GetTime(start);
 		// (8) Create the DFS tree embedding using the child edge records stored in the virtual vertices
     	//     For each vertex v that is a DFS child, the virtual vertex R that will represent v's parent
     	//     in the singleton bicomp with v is at location v + N in the vertex array.
-        if (gp_IsNotVertex(gp_GetVertexParent(theGraph, v)))
+        if (gp_IsDFSTreeRoot(theGraph, v))
         {
         	gp_SetFirstArc(theGraph, v, NIL);
         	gp_SetLastArc(theGraph, v, NIL);
@@ -1235,15 +1231,13 @@ int  RetVal = edgeEmbeddingResult;
 
 int  _OrientVerticesInEmbedding(graphP theGraph)
 {
-int  R, Vsize = theGraph->N + theGraph->NV;
+int  R;
 
      sp_ClearStack(theGraph->theStack);
 
-/* Run the array of root copy vertices.  For each that is not defunct
-        (i.e. has not been merged during embed), we orient the vertices
-        in the bicomp for which it is the root vertex. */
-
-     for (R = theGraph->N; R < Vsize; R++)
+     // For each vertex, obtain the associated bicomp root location and,
+     // if it is still in use as a bicomp root, orient the vertices in the bicomp
+	 for (R = gp_GetFirstVirtualVertex(theGraph); gp_VirtualVertexInRange(theGraph, R); R++)
      {
           if (gp_VirtualVertexInUse(theGraph, R))
           {
@@ -1326,22 +1320,18 @@ int  stackBottom = sp_GetCurrentSize(theGraph->theStack);
  The embedding algorithm works by only joining bicomps once the result
  forms a larger bicomp.  However, if the original graph was separable
  or disconnected, then the result of the embed function will be a
- graph that contains each bicomp as a distinct entity.  The root of
- each bicomp will be in the region N to 2N-1.  This function merges
- the bicomps into one connected graph.
+ graph that contains each bicomp as a distinct entity.  This function
+ merges the bicomps into one connected graph.
  ********************************************************************/
 
 int  _JoinBicomps(graphP theGraph)
 {
-int  v, R;
+	 int  R;
 
-     for (v = 0; v < theGraph->N; v++)
+	 for (R = gp_GetFirstVirtualVertex(theGraph); gp_VirtualVertexInRange(theGraph, R); R++)
      {
-    	  R = gp_GetRootFromDFSChild(theGraph, v);
-
-    	  // If in use, the virtual vertex associated with a vertex is
-    	  // a copy of the DFS parent of the vertex that is being used
-    	  // as the root of a bicomp
+    	  // If the root is still active (i.e. an in-use virtual vertex)
+		  // then merge it with its primary (non-virtual) counterpart
           if (gp_VirtualVertexInUse(theGraph, R))
         	  _MergeVertex(theGraph, gp_GetPrimaryVertexFromRoot(theGraph, R), 0, R);
      }

@@ -286,10 +286,10 @@ int  Vsize, Esize, stackSize;
  ********************************************************************/
 void _InitVertices(graphP theGraph)
 {
-	int v, N = theGraph->N, Vsize = N + theGraph->NV;
+	int v;
 
     // Initialize primary vertices
-    for (v = 0; v < N; v++)
+	for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
     {
          theGraph->functions.fpInitVertexRec(theGraph, v);
          theGraph->functions.fpInitVertexInfo(theGraph, v);
@@ -298,7 +298,7 @@ void _InitVertices(graphP theGraph)
     }
 
     // Initialize virtual vertices
-    for (v = N; v < Vsize; v++)
+	for (v = gp_GetFirstVirtualVertex(theGraph); gp_VirtualVertexInRange(theGraph, v); v++)
     {
          theGraph->functions.fpInitVertexRec(theGraph, v);
          gp_SetExtFaceVertex(theGraph, v, 0, NIL);
@@ -563,11 +563,14 @@ void _ClearVisitedFlags(graphP theGraph)
 
 void _ClearVertexVisitedFlags(graphP theGraph, int includeVirtualVertices)
 {
-int  N = theGraph->N + (includeVirtualVertices ? theGraph->NV : 0);
-int  v;
+	int  v;
 
-     for (v=0; v < N; v++)
-          gp_ClearVertexVisited(theGraph, v);
+	for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
+        gp_ClearVertexVisited(theGraph, v);
+
+	if (includeVirtualVertices)
+		for (v = gp_GetFirstVirtualVertex(theGraph); gp_VirtualVertexInRange(theGraph, v); v++)
+	        gp_ClearVertexVisited(theGraph, v);
 }
 
 /********************************************************************
@@ -636,10 +639,9 @@ int  v, e;
 
 int  _ClearVisitedFlagsInOtherBicomps(graphP theGraph, int BicompRoot)
 {
-int  VsizeOccupied = theGraph->N + theGraph->NV;
-int  R;
+	 int  R;
 
-     for (R = theGraph->N; R < VsizeOccupied; R++)
+	 for (R = gp_GetFirstVirtualVertex(theGraph); gp_VirtualVertexInRange(theGraph, R); R++)
      {
           if (R != BicompRoot && gp_VirtualVertexInUse(theGraph, R))
           {
@@ -658,9 +660,9 @@ int  R;
 
 void _ClearVisitedFlagsInUnembeddedEdges(graphP theGraph)
 {
-int v, e;
+	int v, e;
 
-    for (v = 0; v < theGraph->N; v++)
+	for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
     {
         e = gp_GetVertexFwdArcList(theGraph, v);
         while (gp_IsArc(e))
@@ -687,7 +689,7 @@ int v, e;
 
 int  _ClearVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x)
 {
-int  e, eTwin, pathLength=0;
+	 int  e, eTwin;
 
      // We want to exit u from e, but we get eTwin first here in order to avoid
      // work, in case the degree of u is greater than 2.
@@ -708,11 +710,6 @@ int  e, eTwin, pathLength=0;
          v = gp_GetNeighbor(theGraph, e);
          e = gp_GetNextArcCircular(theGraph, eTwin);
          eTwin = gp_GetTwinArc(theGraph, e);
-
-         // A simple reality check on the preconditions of this method
-         if (++pathLength > theGraph->N)
-        	 return NOTOK;
-
      } while (v != x);
 
      // Mark the last vertex with 'visited'
@@ -733,7 +730,7 @@ int  e, eTwin, pathLength=0;
 
 int  _SetVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x)
 {
-int  e, eTwin, pathLength=0;
+	 int  e, eTwin;
 
      // We want to exit u from e, but we get eTwin first here in order to avoid
      // work, in case the degree of u is greater than 2.
@@ -754,11 +751,6 @@ int  e, eTwin, pathLength=0;
          v = gp_GetNeighbor(theGraph, e);
          e = gp_GetNextArcCircular(theGraph, eTwin);
          eTwin = gp_GetTwinArc(theGraph, e);
-
-         // A simple reality check on the preconditions of this method
-         if (++pathLength > theGraph->N)
-        	 return NOTOK;
-
      } while (v != x);
 
      // Mark the last vertex with 'visited'
@@ -933,7 +925,7 @@ int  gp_CopyAdjacencyLists(graphP dstGraph, graphP srcGraph)
     	return NOTOK;
 
 	// Copy the links that hook each owning vertex to its adjacency list
-	for (v = 0; v < srcGraph->N; v++)
+    for (v = gp_GetFirstVertex(srcGraph); gp_VertexInRange(srcGraph, v); v++)
 	{
 		gp_SetFirstArc(dstGraph, v, gp_GetFirstArc(srcGraph, v));
 		gp_SetLastArc(dstGraph, v, gp_GetLastArc(srcGraph, v));
@@ -966,7 +958,7 @@ int  gp_CopyAdjacencyLists(graphP dstGraph, graphP srcGraph)
 
 int  gp_CopyGraph(graphP dstGraph, graphP srcGraph)
 {
-int  v, e, N = srcGraph->N, Vsize = N+srcGraph->NV, Esize = srcGraph->arcCapacity;
+int  v, e, Esize;
 
      // Parameter checks
      if (dstGraph == NULL || srcGraph == NULL)
@@ -990,7 +982,7 @@ int  v, e, N = srcGraph->N, Vsize = N+srcGraph->NV, Esize = srcGraph->arcCapacit
 
      // Copy the primary vertices.  Augmentations to vertices created
      // by extensions are copied below by gp_CopyExtensions()
-     for (v = 0; v < N; v++)
+     for (v = gp_GetFirstVertex(srcGraph); gp_VertexInRange(srcGraph, v); v++)
      {
     	 gp_CopyVertexRec(dstGraph, v, srcGraph, v);
     	 gp_CopyVertexInfo(dstGraph, v, srcGraph, v);
@@ -1000,7 +992,7 @@ int  v, e, N = srcGraph->N, Vsize = N+srcGraph->NV, Esize = srcGraph->arcCapacit
 
      // Copy the virtual vertices.  Augmentations to virtual vertices created
      // by extensions are copied below by gp_CopyExtensions()
-     for (v = N; v < Vsize; v++)
+     for (v = gp_GetFirstVirtualVertex(srcGraph); gp_VirtualVertexInRange(srcGraph, v); v++)
      {
     	 gp_CopyVertexRec(dstGraph, v, srcGraph, v);
     	 gp_SetExtFaceVertex(dstGraph, v, 0, gp_GetExtFaceVertex(srcGraph, v, 0));
@@ -1009,6 +1001,7 @@ int  v, e, N = srcGraph->N, Vsize = N+srcGraph->NV, Esize = srcGraph->arcCapacit
 
      // Copy the basic EdgeRec structures.  Augmentations to the edgeRec structure
      // created by extensions are copied below by gp_CopyExtensions()
+     Esize = srcGraph->arcCapacity;
      for (e = 0; e < Esize; e++)
     	 gp_CopyEdgeRec(dstGraph, e, srcGraph, e);
 
@@ -1092,9 +1085,12 @@ int N, M, u, v, eIndex;
         Also, we are not generating the DFS tree but rather a tree
         that simply ensures the resulting random graph is connected. */
 
-     for (v=1; v < N; v++)
-          if (gp_AddEdge(theGraph, _GetRandomNumber(0, v-1), 0, v, 0) != OK)
-              return NOTOK;
+ 	for (v = gp_GetFirstVertex(theGraph)+1; gp_VertexInRange(theGraph, v); v++)
+ 	{
+ 		 u = _GetRandomNumber(gp_GetFirstVertex(theGraph), v-1);
+         if (gp_AddEdge(theGraph, u, 0, v, 0) != OK)
+             return NOTOK;
+ 	}
 
 /* Generate a random number of additional edges
         (actually, leave open a small chance that no
@@ -1107,8 +1103,8 @@ int N, M, u, v, eIndex;
 
      for (eIndex = N-1; eIndex < M; eIndex++)
      {
-          u = _GetRandomNumber(0, N-2);
-          v = _GetRandomNumber(u+1, N-1);
+          u = _GetRandomNumber(gp_GetFirstVertex(theGraph), gp_GetLastVertex(theGraph)-1);
+          v = _GetRandomNumber(u+1, gp_GetLastVertex(theGraph));
 
           // If the edge (u,v) exists, decrement eIndex to try again
           if (gp_IsNeighbor(theGraph, u, v))
@@ -1242,9 +1238,9 @@ int N, arc, M, root, v, c, p, last, u, eIndex, e;
 
 /* Generate a random tree. */
 
-    for (v=1; v < N; v++)
+ 	for (v = gp_GetFirstVertex(theGraph)+1; gp_VertexInRange(theGraph, v); v++)
     {
-        u = _GetRandomNumber(0, v-1);
+        u = _GetRandomNumber(gp_GetFirstVertex(theGraph), v-1);
         if (gp_AddEdge(theGraph, u, 0, v, 0) != OK)
             return NOTOK;
 
@@ -1332,8 +1328,8 @@ int N, arc, M, root, v, c, p, last, u, eIndex, e;
 
     while (theGraph->M < numEdges)
     {
-        u = _GetRandomNumber(0, N-1);
-        v = _GetRandomNumber(0, N-1);
+        u = _GetRandomNumber(gp_GetFirstVertex(theGraph), gp_GetLastVertex(theGraph));
+        v = _GetRandomNumber(gp_GetFirstVertex(theGraph), gp_GetLastVertex(theGraph));
 
         if (u != v && !gp_IsNeighbor(theGraph, u, v))
             if (gp_AddEdge(theGraph, u, 0, v, 0) != OK)
@@ -1353,7 +1349,7 @@ int N, arc, M, root, v, c, p, last, u, eIndex, e;
 
 /* Put all DFSParent indicators back to NIL */
 
-    for (v = 0; v < N; v++)
+    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
         gp_SetVertexParent(theGraph, v, NIL);
 
     return OK;
@@ -2322,10 +2318,8 @@ int gp_RestoreVertices(graphP theGraph)
 
 int  _ComputeArcType(graphP theGraph, int a, int b, int edgeType)
 {
-     if (a >= theGraph->N)
-         a = gp_GetPrimaryVertexFromRoot(theGraph, a);
-     if (b >= theGraph->N)
-         b = gp_GetPrimaryVertexFromRoot(theGraph, b);
+     a = gp_IsVirtualVertex(theGraph, a) ? gp_GetPrimaryVertexFromRoot(theGraph, a) : a;
+     b = gp_IsVirtualVertex(theGraph, b) ? gp_GetPrimaryVertexFromRoot(theGraph, b) : b;
 
      if (a < b)
          return edgeType == EDGE_TYPE_PARENT || edgeType == EDGE_TYPE_CHILD ? EDGE_TYPE_CHILD : EDGE_TYPE_FORWARD;

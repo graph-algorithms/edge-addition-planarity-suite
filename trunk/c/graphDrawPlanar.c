@@ -116,11 +116,11 @@ int _ComputeVertexPositions(DrawPlanarContext *context)
 graphP theEmbedding = context->theGraph;
 int v, index;
 
-    for (v = index = 0; v < theEmbedding->N; v++)
+	for (v = index = gp_GetFirstVertex(theEmbedding); gp_VertexInRange(theEmbedding, v); v++)
     {
         // For each DFS tree root in the embedding, we
         // compute the vertex positions
-        if (gp_IsNotVertex(gp_GetVertexParent(theEmbedding, v)))
+        if (gp_IsDFSTreeRoot(theEmbedding, v))
         {
             if (_ComputeVertexPositionsInComponent(context, v, &index) != OK)
                 return NOTOK;
@@ -379,7 +379,7 @@ int e, eTwin, eCur, v, vpos, epos, eIndex;
     if ((vertexOrder = (int *) malloc(theEmbedding->N * sizeof(int))) == NULL)
         return NOTOK;
 
-    for (v = 0; v < theEmbedding->N; v++)
+	for (v = gp_GetFirstVertex(theEmbedding); gp_VertexInRange(theEmbedding, v); v++)
         vertexOrder[context->VI[v].pos] = v;
 
     // Allocate the edge list of size M.
@@ -399,7 +399,7 @@ int e, eTwin, eCur, v, vpos, epos, eIndex;
 
     // Each vertex starts out with a NIL generator edge.
 
-    for (v=0; v < theEmbedding->N; v++)
+	for (v = gp_GetFirstVertex(theEmbedding); gp_VertexInRange(theEmbedding, v); v++)
         gp_SetVertexVisitedInfo(theEmbedding, v, NIL);
 
     // Perform the vertical sweep of the combinatorial embedding, using
@@ -408,7 +408,7 @@ int e, eTwin, eCur, v, vpos, epos, eIndex;
     // the vertex order is recorded as the "generator edge", or the edge of
     // first discovery of that higher numbered vertex, unless the vertex already has
     // a recorded generator edge
-    for (vpos=0; vpos < theEmbedding->N; vpos++)
+	for (vpos = 0; vpos < theEmbedding->N; vpos++)
     {
         // Get the vertex associated with the position
         v = vertexOrder[vpos];
@@ -420,7 +420,7 @@ int e, eTwin, eCur, v, vpos, epos, eIndex;
         // false generator edge so that it is still "visited" and then
         // all of its edges are generators for its neighbor vertices because
         // they all have greater numbers in the vertex order.
-        if (gp_IsNotVertex(gp_GetVertexParent(theEmbedding, v)))
+        if (gp_IsDFSTreeRoot(theEmbedding, v))
         {
             // Set a false generator edge, so the vertex is distinguishable from
             // a vertex with no generator edge when its neighbors are visited
@@ -539,10 +539,10 @@ int e, eTwin, eCur, v, vpos, epos, eIndex;
 
 int _ComputeVertexRanges(DrawPlanarContext *context)
 {
-graphP theEmbedding = context->theGraph;
-int v, e, min, max;
+	graphP theEmbedding = context->theGraph;
+	int v, e, min, max;
 
-    for (v = 0; v < theEmbedding->N; v++)
+	for (v = gp_GetFirstVertex(theEmbedding); gp_VertexInRange(theEmbedding, v); v++)
     {
         min = theEmbedding->M + 1;
         max = -1;
@@ -833,7 +833,7 @@ char *_RenderToString(graphP theEmbedding)
         }
 
         // Clear the space
-        for (v = 0; v < N; v++)
+    	for (v = gp_GetFirstVertex(theEmbedding); gp_VertexInRange(theEmbedding, v); v++)
         {
             for (eIndex=0; eIndex < M; eIndex++)
             {
@@ -846,7 +846,7 @@ char *_RenderToString(graphP theEmbedding)
         }
 
         // Draw the vertices
-        for (v = 0; v < N; v++)
+    	for (v = gp_GetFirstVertex(theEmbedding); gp_VertexInRange(theEmbedding, v); v++)
         {
             Pos = context->VI[v].pos;
             for (vRange=context->VI[v].start; vRange <= context->VI[v].end; vRange++)
@@ -948,7 +948,7 @@ int v, eIndex, e, eTwin, epos, eposIndex;
 /* Test whether the vertex values make sense and
         whether the vertex positions are unique. */
 
-    for (v = 0; v < theEmbedding->N; v++)
+	for (v = gp_GetFirstVertex(theEmbedding); gp_VertexInRange(theEmbedding, v); v++)
     {
     	if (theEmbedding->M > 0)
     	{
@@ -1015,7 +1015,7 @@ int v, eIndex, e, eTwin, epos, eposIndex;
     {
         eTwin = gp_GetTwinArc(theEmbedding, e);
 
-        for (v = 0; v < theEmbedding->N; v++)
+    	for (v = gp_GetFirstVertex(theEmbedding); gp_VertexInRange(theEmbedding, v); v++)
         {
             /* If the vertex is an endpoint of the edge, then... */
 

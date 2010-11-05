@@ -259,13 +259,16 @@ int EsizeOccupied, v, e, eTwin, eStart, eNext, NumFaces, connectedComponents;
     DFS parent, except in the case of isolated vertices, no face was counted
     so we do not subtract one. */
 
-     for (v=connectedComponents=0; v < theGraph->N; v++)
-          if (gp_IsNotVertex(gp_GetVertexParent(theGraph, v)))
+     connectedComponents = 0;
+     for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
+     {
+          if (gp_IsDFSTreeRoot(theGraph, v))
           {
               if (gp_GetVertexDegree(theGraph, v) > 0)
                   NumFaces--;
               connectedComponents++;
           }
+     }
 
      NumFaces++;
 
@@ -298,19 +301,17 @@ int _CheckAllVerticesOnExternalFace(graphP theGraph)
 
     // For each connected component, walk its external face and
     // mark the vertices as visited
-    for (v=0; v < theGraph->N; v++)
+    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
     {
-         if (gp_IsNotVertex(gp_GetVertexParent(theGraph, v)))
+         if (gp_IsDFSTreeRoot(theGraph, v))
         	 _MarkExternalFaceVertices(theGraph, v);
     }
 
     // If any vertex is unvisited, then the embedding is not an outerplanar
     // embedding, so we return NOTOK
-    for (v=0; v < theGraph->N; v++)
+    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
         if (!gp_GetVertexVisited(theGraph, v))
-        {
             return NOTOK;
-        }
 
     // All vertices were found on external faces of the connected components
     // so the embedding is an outerplanar embedding and we return OK
@@ -452,7 +453,7 @@ int K, v, imageVertPos, degree;
 
      imageVertPos = 0;
 
-     for (v = 0; v < theGraph->N; v++)
+     for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
      {
           degree = gp_GetVertexDegree(theGraph, v);
           if (degree == 1)
@@ -525,7 +526,7 @@ int _TestForCompleteGraphObstruction(graphP theGraph, int numVerts,
     // The visited flags should have marked only degree two vertices,
     // so for every marked vertex, we subtract one from the count of
     // the degree two vertices.
-    for (v = 0; v < theGraph->N; v++)
+    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
         if (gp_GetVertexVisited(theGraph, v))
             degrees[2]--;
 
@@ -597,7 +598,7 @@ int  v, K, imageVertPos, temp, success;
                                        imageVerts[K]) != TRUE)
                    return FALSE;
 
-     for (v = 0; v < theGraph->N; v++)
+     for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
           if (gp_GetVertexVisited(theGraph, v))
               degrees[2]--;
 
@@ -726,7 +727,7 @@ int  v, e, imageVertPos;
           gp_SetVertexVisited(theGraph, imageVerts[imageVertPos]);
      }
 
-     for (v = 0; v < theGraph->N; v++)
+     for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
           if (gp_GetVertexVisited(theGraph, v))
               degrees[2]--;
 
@@ -924,8 +925,7 @@ int invokeSortOnSubgraph = FALSE;
      _ClearVertexVisitedFlags(theGraph, FALSE);
 
 /* For each vertex... */
-
-     for (v = 0, degreeCount = 0; v < theSubgraph->N; v++)
+     for (v = gp_GetFirstVertex(theSubgraph), degreeCount = 0; gp_VertexInRange(theSubgraph, v); v++)
      {
           /* For each neighbor w in the adjacency list of vertex v in the
                 subgraph, set the visited flag in w in the graph */

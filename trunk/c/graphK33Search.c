@@ -811,7 +811,6 @@ int  R, Rout, Z, ZPrevLink;
 int  _FindK33WithMergeBlocker(graphP theGraph, K33SearchContext *context, int v, int mergeBlocker)
 {
 int  R, RPrevLink, u_max, u, e, W;
-int  N = theGraph->N;
 isolatorContextP IC = &theGraph->IC;
 
 /* First, we orient the vertices so we can successfully restore all of the
@@ -832,7 +831,7 @@ isolatorContextP IC = &theGraph->IC;
 
      RPrevLink = 1;
      R = mergeBlocker;
-     while (R < N)
+     while (gp_IsNotVirtualVertex(theGraph, R))
         R = _GetNeighborOnExtFace(theGraph, R, &RPrevLink);
 
      /* Switch the 'current step' variable v to be equal to the
@@ -842,9 +841,9 @@ isolatorContextP IC = &theGraph->IC;
 
      /* Reinitialize the visitation, pertinence and future pertinence settings from step u_max for step v */
 
-     for (v = 0; v < N; v++)
+     for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
      {
-    	 gp_SetVertexVisitedInfo(theGraph, v, N);
+    	 gp_SetVertexVisitedInfo(theGraph, v, theGraph->N);
          gp_SetVertexPertinentEdge(theGraph, v, NIL);
          gp_SetVertexPertinentRootsList(theGraph, v, NIL);
 
@@ -1859,7 +1858,7 @@ int p, e;
          p = gp_GetNeighbor(theGraph, e);
 
          /* If p is a root copy, mark it visited and skip to the parent copy */
-         if (p >= theGraph->N)
+         if (gp_IsVirtualVertex(theGraph, p))
          {
              gp_SetVertexVisited(theGraph, p);
              p = gp_GetPrimaryVertexFromRoot(theGraph, p);
@@ -1892,7 +1891,7 @@ int p, e;
          /* If p is a root copy, clear its visited flag and skip to the
                 parent copy */
 
-         if (p >= theGraph->N)
+         if (gp_IsVirtualVertex(theGraph, p))
          {
              p = gp_GetPrimaryVertexFromRoot(theGraph, p);
              gp_ClearVertexVisited(theGraph, p);

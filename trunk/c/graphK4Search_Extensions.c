@@ -210,10 +210,9 @@ void _K4Search_ClearStructures(K4SearchContext *context)
  ********************************************************************/
 int  _K4Search_CreateStructures(K4SearchContext *context)
 {
-     int N = context->theGraph->N;
      int Esize = context->theGraph->arcCapacity;
 
-     if (N <= 0)
+     if (context->theGraph->N <= 0)
          return NOTOK;
 
      if ((context->E = (K4Search_EdgeRecP) malloc(Esize*sizeof(K4Search_EdgeRec))) == NULL ||

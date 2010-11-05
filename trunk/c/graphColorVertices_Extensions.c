@@ -243,6 +243,7 @@ void _ColorVertices_ClearStructures(ColorVerticesContext *context)
  ********************************************************************/
 int  _ColorVertices_CreateStructures(ColorVerticesContext *context)
 {
+	 graphP theGraph = context->theGraph;
      int v, N = context->theGraph->N;
 
      if (N <= 0)
@@ -257,7 +258,7 @@ int  _ColorVertices_CreateStructures(ColorVerticesContext *context)
          return NOTOK;
      }
 
-     for (v=0; v<N; v++)
+     for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
      {
     	 context->degListHeads[v] = NIL;
     	 context->degree[v] = 0;
@@ -286,23 +287,23 @@ int  _ColorVertices_InitStructures(ColorVerticesContext *context)
  _ColorVertices_DupContext()
  ********************************************************************/
 
-void *_ColorVertices_DupContext(void *pContext, void *theGraph)
+void *_ColorVertices_DupContext(void *pContext, void *pGraph)
 {
      ColorVerticesContext *context = (ColorVerticesContext *) pContext;
      ColorVerticesContext *newContext = (ColorVerticesContext *) malloc(sizeof(ColorVerticesContext));
+     graphP theGraph = (graphP) pGraph;
 
      if (newContext != NULL)
      {
-         int v, N = ((graphP) theGraph)->N;
-
          *newContext = *context;
-
-         newContext->theGraph = (graphP) theGraph;
+         newContext->theGraph = theGraph;
 
          newContext->initialized = 0;
          _ColorVertices_ClearStructures(newContext);
-         if (N > 0)
+         if (theGraph->N > 0)
          {
+        	 int v;
+
              if (_ColorVertices_CreateStructures(newContext) != OK)
              {
                  _ColorVertices_FreeContext(newContext);
@@ -311,7 +312,7 @@ void *_ColorVertices_DupContext(void *pContext, void *theGraph)
 
              // Initialize custom data structures by copying
              LCCopy(newContext->degLists, context->degLists);
-             for (v=0; v<N; v++)
+             for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
              {
             	 newContext->degListHeads[v] = context->degListHeads[v];
             	 newContext->degree[v] = context->degree[v];
@@ -377,11 +378,11 @@ int  _ColorVertices_InitGraph(graphP theGraph, int N)
 
 void _ColorVertices_Reinitialize(ColorVerticesContext *context)
 {
-	int v, N;
+	graphP theGraph = context->theGraph;
+	int v;
 
     LCReset(context->degLists);
-    N = context->theGraph->N;
-    for (v=0; v<N; v++)
+    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
     {
       	 context->degListHeads[v] = NIL;
       	 context->degree[v] = 0;
@@ -439,7 +440,7 @@ int  _ColorVertices_ReadPostprocess(graphP theGraph, void *extraData, long extra
             extraData = (void *) ((char *) extraData + strlen(line)+1);
 
             // Read the N lines of vertex information
-            for (v = 0; v < theGraph->N; v++)
+            for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
             {
                 sprintf(line, "%d: %d\n", v, context->color[v]);
                 sscanf(extraData, " %d%c %d", &tempInt, &tempChar, &context->color[v]);
@@ -486,7 +487,7 @@ int  _ColorVertices_WritePostprocess(graphP theGraph, void **pExtraData, long *p
             strcpy(extraData+extraDataPos, line);
             extraDataPos += (int) strlen(line);
 
-            for (v = 0; v < theGraph->N; v++)
+            for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
             {
                 sprintf(line, "%d: %d\n", v, context->color[v]);
                 strcpy(extraData+extraDataPos, line);

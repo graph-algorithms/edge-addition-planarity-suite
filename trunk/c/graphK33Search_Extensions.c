@@ -263,13 +263,14 @@ int  _K33Search_CreateStructures(K33SearchContext *context)
  ********************************************************************/
 int  _K33Search_InitStructures(K33SearchContext *context)
 {
-     int v, e, N = context->theGraph->N;
-     int Esize = context->theGraph->arcCapacity;
+	 graphP theGraph = context->theGraph;
+     int v, e;
+     int Esize = theGraph->arcCapacity;
 
-     if (N <= 0)
+     if (theGraph->N <= 0)
          return OK;
 
-     for (v = 0; v < N; v++)
+     for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
           _InitK33SearchVertexInfo(context, v);
 
      for (e = 0; e < Esize; e++)
@@ -459,7 +460,7 @@ void _CreateBackArcLists(graphP theGraph, K33SearchContext *context)
 {
 	int v, e, eTwin, ancestor;
 
-    for (v=0; v < theGraph->N; v++)
+	for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
     {
     	e = gp_GetVertexFwdArcList(theGraph, v);
         while (gp_IsArc(e))
@@ -503,19 +504,19 @@ void _CreateSeparatedDFSChildLists(graphP theGraph, K33SearchContext *context)
 {
 int *buckets;
 listCollectionP bin;
-int v, L, N, DFSParent, theList;
+int v, L, DFSParent, theList;
 
-     N = theGraph->N;
      buckets = context->buckets;
      bin = context->bin;
 
      // Initialize the bin and all the buckets to be empty
      LCReset(bin);
-     for (L=0; L < N; L++)
+     for (L = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, L); L++)
           buckets[L] = NIL;
 
      // For each vertex, add it to the bucket whose index is equal to the lowpoint of the vertex.
-     for (v=0; v < N; v++)
+
+     for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
      {
           L = gp_GetVertexLowpoint(theGraph, v);
           buckets[L] = LCAppend(bin, buckets[L], v);
@@ -525,26 +526,24 @@ int v, L, N, DFSParent, theList;
      // Since lower numbered buckets are processed before higher numbered buckets, vertices with lower
      // lowpoint values are added before those with higher lowpoint values, so the separatedDFSChildList
      // of each vertex is sorted by lowpoint
-     for (L = 0; L < N; L++)
+     for (L = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, L); L++)
      {
-    	  // For each successive bucket L containing vertices with a lowpoint of L
-          if (gp_IsVertex(v=buckets[L]))
-          {
-        	  // Loop through all the vertices with lowpoint L, putting each in the list of its parent
-              while (gp_IsVertex(v))
-              {
-                  DFSParent = gp_GetVertexParent(theGraph, v);
+    	  v = buckets[L];
 
-                  if (gp_IsVertex(DFSParent) && DFSParent != v)
-                  {
-                      theList = context->VI[DFSParent].separatedDFSChildList;
-                      theList = LCAppend(context->separatedDFSChildLists, theList, v);
-                      context->VI[DFSParent].separatedDFSChildList = theList;
-                  }
+    	  // Loop through all the vertices with lowpoint L, putting each in the list of its parent
+		  while (gp_IsVertex(v))
+		  {
+			  DFSParent = gp_GetVertexParent(theGraph, v);
 
-                  v = LCGetNext(bin, buckets[L], v);
-              }
-          }
+			  if (gp_IsVertex(DFSParent) && DFSParent != v)
+			  {
+				  theList = context->VI[DFSParent].separatedDFSChildList;
+				  theList = LCAppend(context->separatedDFSChildLists, theList, v);
+				  context->VI[DFSParent].separatedDFSChildList = theList;
+			  }
+
+			  v = LCGetNext(bin, buckets[L], v);
+		  }
      }
 }
 

@@ -124,7 +124,7 @@ int gp_ColorVertices(graphP theGraph)
     	_ColorVertices_Reinitialize(context);
 
     // Initialize the degree lists, and provide a color for any trivial vertices
-    for (v = 0; v < theGraph->N; v++)
+    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
     {
     	deg = gp_GetVertexDegree(theGraph, v);
     	_AddVertexToDegList(context, theGraph, v, deg);
@@ -419,7 +419,7 @@ int gp_ColorVerticesIntegrityCheck(graphP theGraph, graphP origGraph)
     if (_TestSubgraph(origGraph, theGraph) != TRUE)
         return NOTOK;
 
-    for (v=0; v < theGraph->N; v++)
+    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
     {
         e = gp_GetFirstArc(theGraph, v);
         while (gp_IsArc(e))
