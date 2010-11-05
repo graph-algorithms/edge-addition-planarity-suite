@@ -66,28 +66,28 @@ int  _WriteDebugInfo(graphP theGraph, FILE *Outfile);
 
 int _ReadAdjMatrix(graphP theGraph, FILE *Infile)
 {
-int N, v, w, Flag, ErrorCode;
+	int N, v, w, Flag;
 
-     if (Infile == NULL) return NOTOK;
-     fscanf(Infile, " %d ", &N);
-     if (gp_InitGraph(theGraph, N) != OK)
-          return NOTOK;
+    if (Infile == NULL) return NOTOK;
+    fscanf(Infile, " %d ", &N);
+    if (gp_InitGraph(theGraph, N) != OK)
+        return NOTOK;
 
-     for (v = 0, ErrorCode = OK; v < N-1 && ErrorCode==OK; v++)
-     {
-    	 gp_SetVertexIndex(theGraph, v, v);
-          for (w = v+1; w < N; w++)
-          {
-               fscanf(Infile, " %1d", &Flag);
-               if (Flag)
-               {
-                   ErrorCode = gp_AddEdge(theGraph, v, 0, w, 0);
-                   if (ErrorCode != OK) break;
-               }
-          }
-     }
+    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
+    {
+         gp_SetVertexIndex(theGraph, v, v);
+         for (w = v+1; gp_VertexInRange(theGraph, w); w++)
+         {
+              fscanf(Infile, " %1d", &Flag);
+              if (Flag)
+              {
+                  if (gp_AddEdge(theGraph, v, 0, w, 0) != OK)
+               	      return NOTOK;
+              }
+         }
+    }
 
-     return ErrorCode;
+    return OK;
 }
 
 /********************************************************************
@@ -111,12 +111,13 @@ int N, v, w, Flag, ErrorCode;
         This makes it easy to used edge directedness when appropriate
         but also seamlessly process the corresponding undirected graph.
 
- Returns: OK, NOTOK on internal error, NONEMBEDDABLE if too many edges
+ Returns: OK on success, NONEMBEDDABLE if success except too many edges
+ 	 	  NOTOK on file content error (or internal error)
  ********************************************************************/
 
 int  _ReadAdjList(graphP theGraph, FILE *Infile)
 {
-int N, v, W, ErrorCode, adjList, e, indexValue;
+     int N, v, W, adjList, e, indexValue, ErrorCode;
 
      if (Infile == NULL) return NOTOK;
      fgetc(Infile);                             /* Skip the N= */
@@ -130,11 +131,11 @@ int N, v, W, ErrorCode, adjList, e, indexValue;
 
      // Clear the visited members of the vertices so they can be used
      // during the adjacency list read operation
-     for (v=0; v < N; v++)
+     for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
           gp_SetVertexVisitedInfo(theGraph, v, NIL);
 
      // Do the adjacency list read operation for each vertex in order
-     for (v = 0, ErrorCode = OK; v < N && ErrorCode==OK; v++)
+     for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
      {
           // Read the vertex number
           fscanf(Infile, "%d", &indexValue);
@@ -183,24 +184,27 @@ int N, v, W, ErrorCode, adjList, e, indexValue;
           // Read the adjacency list.
           while (1)
           {
-        	 // Read the next adjacent vertex, with NIL indicating the list end
+        	 // Read the value indicating the next adjacent vertex (or the list end)
              fscanf(Infile, " %d ", &W);
-             if (W < 0) break;
 
-             // Vertex numbers must be less than N
-             if (W >= N)
-                  ErrorCode = NOTOK;
+             // A value below the valid range indicates the adjacency list end
+             if (W < gp_GetFirstVertex(theGraph))
+            	 break;
 
-             // Loop edges are not supported, but no reason to throw an error if they occur
-             // If a loop occurs, we just do like the ostrich and ignore it
+             // A value above the valid range is an error
+             if (W > gp_GetLastVertex(theGraph))
+            	 return NOTOK;
+
+             // Loop edges are not supported
              else if (W == v)
-            	 ErrorCode = OK;
+            	 return NOTOK;
 
              // If the adjacency is to a succeeding, higher numbered vertex,
              // then we'll add an undirected edge for now
              else if (v < W)
              {
-             	 ErrorCode = gp_AddEdge(theGraph, v, 0, W, 0);
+             	 if ((ErrorCode = gp_AddEdge(theGraph, v, 0, W, 0)) != OK)
+             		 return ErrorCode;
              }
 
              // If the adjacency is to a preceding, lower numbered vertex, then
@@ -233,14 +237,13 @@ int N, v, W, ErrorCode, adjList, e, indexValue;
             	 else
             	 {
             		 // It is added as the new first arc in both vertices
-                	 ErrorCode = gp_AddEdge(theGraph, v, 0, W, 0);
-                	 if (ErrorCode == OK)
-                		 // Note that this call also sets OUTONLY on the twin arc
-                		 gp_SetDirection(theGraph, gp_GetFirstArc(theGraph, W), EDGEFLAG_DIRECTION_INONLY);
+                	 if ((ErrorCode = gp_AddEdge(theGraph, v, 0, W, 0)) != OK)
+                		 return ErrorCode;
+
+					 // Note that this call also sets OUTONLY on the twin arc
+					 gp_SetDirection(theGraph, gp_GetFirstArc(theGraph, W), EDGEFLAG_DIRECTION_INONLY);
             	 }
              }
-
-             if (ErrorCode != OK) break;
           }
 
           // If there are still adjList entries after the read operation
@@ -265,18 +268,20 @@ int N, v, W, ErrorCode, adjList, e, indexValue;
           }
      }
 
-     return ErrorCode;
+     return OK;
 }
 
 /********************************************************************
  _ReadLEDAGraph()
  Reads the edge list from a LEDA file containing a simple undirected graph.
+ Returns: OK on success, NONEMBEDDABLE if success except too many edges
+ 	 	  NOTOK on file content error (or internal error)
  ********************************************************************/
 
 int  _ReadLEDAGraph(graphP theGraph, FILE *Infile)
 {
-char Line[256];
-int N, M, eIndex, u, v;
+	char Line[256];
+	int N, M, eIndex, u, v, ErrorCode;
 
     /* Skip the lines that say LEDA.GRAPH and give the node and edge types */
     fgets(Line, 255, Infile);
@@ -286,7 +291,7 @@ int N, M, eIndex, u, v;
     /* Read the number of vertices, then skip that many more lines. */
     fgets(Line, 255, Infile);
     sscanf(Line, " %d", &N);
-    for (v = 0; v < N; v++)
+    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
         fgets(Line, 255, Infile);
 
     /* Initialize the graph */
@@ -304,8 +309,8 @@ int N, M, eIndex, u, v;
         sscanf(Line, " %d %d", &u, &v);
         if (u != v && !gp_IsNeighbor(theGraph, u-1, v-1))
         {
-             if (gp_AddEdge(theGraph, u-1, 0, v-1, 0) != OK)
-                 return NOTOK;
+             if ((ErrorCode = gp_AddEdge(theGraph, u-1, 0, v-1, 0)) != OK)
+                 return ErrorCode;
         }
     }
 
@@ -411,7 +416,7 @@ int v, e;
      if (theGraph==NULL || Outfile==NULL) return NOTOK;
 
      fprintf(Outfile, "N=%d\n", theGraph->N);
-     for (v=0; v < theGraph->N; v++)
+     for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
      {
           fprintf(Outfile, "%d:", v);
 
@@ -454,12 +459,12 @@ char *Row = NULL;
      }
 
      fprintf(Outfile, "%d\n", theGraph->N);
-     for (v = 0; v < theGraph->N; v++)
+     for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
      {
-          for (K = 0; K <= v; K++)
-               Row[K] = ' ';
-          for (K = v+1; K < theGraph->N; K++)
-               Row[K] = '0';
+          for (K = gp_GetFirstVertex(theGraph); K <= v; K++)
+               Row[K - gp_GetFirstVertex(theGraph)] = ' ';
+          for (K = v+1; gp_VertexInRange(theGraph, v); K++)
+               Row[K - gp_GetFirstVertex(theGraph)] = '0';
 
           e = gp_GetFirstArc(theGraph, v);
           while (gp_IsArc(e))
@@ -468,7 +473,7 @@ char *Row = NULL;
         		  return NOTOK;
 
               if (gp_GetNeighbor(theGraph, e) > v)
-                  Row[gp_GetNeighbor(theGraph, e)] = '1';
+                  Row[gp_GetNeighbor(theGraph, e) - gp_GetFirstVertex(theGraph)] = '1';
 
               e = gp_GetNextArc(theGraph, e);
           }
@@ -530,14 +535,14 @@ char _GetVertexObstructionTypeChar(graphP theGraph, int v)
 
 int  _WriteDebugInfo(graphP theGraph, FILE *Outfile)
 {
-int v, e, Vsize, EsizeOccupied;
+int v, e, EsizeOccupied;
 
      if (theGraph==NULL || Outfile==NULL) return NOTOK;
 
      /* Print parent copy vertices and their adjacency lists */
 
      fprintf(Outfile, "DEBUG N=%d M=%d\n", theGraph->N, theGraph->M);
-     for (v=0; v < theGraph->N; v++)
+     for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
      {
           fprintf(Outfile, "%d(P=%d,lA=%d,LowPt=%d,v=%d):",
                              v, gp_GetVertexParent(theGraph, v),
@@ -557,8 +562,7 @@ int v, e, Vsize, EsizeOccupied;
 
      /* Print any root copy vertices and their adjacency lists */
 
-     Vsize = theGraph->N + theGraph->NV;
-     for (v = theGraph->N; v < Vsize; v++)
+     for (v = gp_GetFirstVirtualVertex(theGraph); gp_VirtualVertexInRange(theGraph, v); v++)
      {
           if (!gp_VirtualVertexInUse(theGraph, v))
               continue;
@@ -579,9 +583,18 @@ int v, e, Vsize, EsizeOccupied;
 
      /* Print information about vertices and root copy (virtual) vertices */
      fprintf(Outfile, "\nVERTEX INFORMATION\n");
-     for (v=0; v < Vsize; v++)
+     for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
      {
-         if (v >= theGraph->N && !gp_VirtualVertexInUse(theGraph, v))
+         fprintf(Outfile, "V[%3d] index=%3d, type=%c, first arc=%3d, last arc=%3d\n",
+                          v,
+                          gp_GetVertexIndex(theGraph, v),
+                          (gp_IsVirtualVertex(theGraph, v) ? 'X' : _GetVertexObstructionTypeChar(theGraph, v)),
+                          gp_GetFirstArc(theGraph, v),
+                          gp_GetLastArc(theGraph, v));
+     }
+     for (v = gp_GetFirstVirtualVertex(theGraph); gp_VirtualVertexInRange(theGraph, v); v++)
+     {
+         if (gp_VirtualVertexNotInUse(theGraph, v))
              continue;
 
          fprintf(Outfile, "V[%3d] index=%3d, type=%c, first arc=%3d, last arc=%3d\n",

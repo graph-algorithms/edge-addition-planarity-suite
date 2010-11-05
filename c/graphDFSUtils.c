@@ -97,9 +97,9 @@ platform_GetTime(start);
 /* This outer loop causes the connected subgraphs of a disconnected
         graph to be numbered */
 
-     for (v=DFI=0; DFI < N; v++)
+     for (DFI = v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, DFI); v++)
      {
-          if (gp_IsVertex(gp_GetVertexParent(theGraph, v)))
+          if (gp_IsNotDFSTreeRoot(theGraph, v))
               continue;
 
           sp_Push2(theStack, NIL, NIL);
@@ -177,7 +177,7 @@ int  gp_SortVertices(graphP theGraph)
 
 int  _SortVertices(graphP theGraph)
 {
-int  v, N, EsizeOccupied, e, srcPos, dstPos;
+int  v, EsizeOccupied, e, srcPos, dstPos;
 
 #ifdef PROFILE
 platform_time start, end;
@@ -193,7 +193,6 @@ platform_GetTime(start);
 
 /* Cache number of vertices and edges into local variables */
 
-     N = theGraph->N;
      EsizeOccupied = 2*(theGraph->M + sp_GetCurrentSize(theGraph->edgeHoles));
 
 /* Change labels of edges from v to DFI(v)-- or vice versa
@@ -211,8 +210,8 @@ platform_GetTime(start);
 
 /* Convert DFSParent from v to DFI(v) or vice versa */
 
-     for (v=0; v < N; v++)
-          if (gp_IsVertex(gp_GetVertexParent(theGraph, v)))
+     for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
+          if (gp_IsNotDFSTreeRoot(theGraph, v))
               gp_SetVertexParent(theGraph, v, gp_GetVertexIndex(theGraph, gp_GetVertexParent(theGraph, v)));
 
 /* Sort by 'v using constant time random access. Move each vertex to its
@@ -232,7 +231,7 @@ platform_GetTime(start);
         location as visited, then sets its index to be the location from
         whence we obtained the vertex record. */
 
-     for (v=0; v < N; v++)
+     for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
      {
           srcPos = v;
           while (!gp_GetVertexVisited(theGraph, v))
@@ -291,7 +290,6 @@ printf("SortVertices in %.3lf seconds.\n", platform_GetDuration(start,end));
 int  gp_LowpointAndLeastAncestor(graphP theGraph)
 {
 stackP theStack = theGraph->theStack;
-int N = theGraph->N;
 int v, u, uneighbor, e, L, leastAncestor;
 
 	 if (theGraph == NULL) return NOTOK;
@@ -321,7 +319,7 @@ platform_GetTime(start);
      _ClearVertexVisitedFlags(theGraph, FALSE);
 
      // This outer loop causes the connected subgraphs of a disconnected graph to be processed
-     for (v=0; v < N;)
+     for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v);)
      {
           if (gp_GetVertexVisited(theGraph, v))
           {
@@ -419,7 +417,6 @@ printf("Lowpoint in %.3lf seconds.\n", platform_GetDuration(start,end));
 int  gp_LeastAncestor(graphP theGraph)
 {
 stackP theStack = theGraph->theStack;
-int N = theGraph->N;
 int v, u, uneighbor, e, leastAncestor;
 
 	 if (theGraph == NULL) return NOTOK;
@@ -446,7 +443,7 @@ platform_GetTime(start);
 	 sp_ClearStack(theStack);
 
 	 // This outer loop causes the connected subgraphs of a disconnected graph to be processed
-	 for (v=0; v < N;)
+	 for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v);)
 	 {
 		  if (gp_GetVertexVisited(theGraph, v))
 		  {

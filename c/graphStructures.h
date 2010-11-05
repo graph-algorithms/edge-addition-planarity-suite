@@ -243,12 +243,18 @@ typedef vertexRec * vertexRecP;
 // Vertex conversions
 #define gp_IsVertex(v) ((v) != NIL)
 #define gp_IsNotVertex(v) ((v) == NIL)
+#define gp_GetFirstVertex(theGraph) (0)
+#define gp_GetLastVertex(theGraph) (theGraph->N - 1)
+#define gp_VertexInRange(theGraph, v) ((v) < theGraph->N)
+#define gp_VertexInRangeDescending(theGraph, v) ((v) >= 0)
 
 #define gp_IsVirtualVertex(theGraph, v) ((v) >= theGraph->N)
 #define gp_IsNotVirtualVertex(theGraph, v) ((v) < theGraph->N)
-
 #define gp_VirtualVertexInUse(theGraph, virtualVertex) (gp_IsArc(gp_GetFirstArc(theGraph, virtualVertex)))
 #define gp_VirtualVertexNotInUse(theGraph, virtualVertex) (gp_IsNotArc(gp_GetFirstArc(theGraph, virtualVertex)))
+#define gp_GetFirstVirtualVertex(theGraph) (theGraph->N)
+#define gp_GetLastVirtualVertex(theGraph) (theGraph->N + theGraph->NV - 1)
+#define gp_VirtualVertexInRange(theGraph, v) ((v) < theGraph->N + theGraph->NV)
 
 #define gp_GetRootFromDFSChild(theGraph, c) ((c) + theGraph->N)
 #define gp_GetDFSChildFromRoot(theGraph, R) ((R) - theGraph->N)
@@ -256,6 +262,9 @@ typedef vertexRec * vertexRecP;
 
 #define gp_IsSeparatedDFSChild(theGraph, theChild) (gp_VirtualVertexInUse(theGraph, gp_GetRootFromDFSChild(theGraph, theChild)))
 #define gp_IsNotSeparatedDFSChild(theGraph, theChild) (gp_VirtualVertexNotInUse(theGraph, gp_GetRootFromDFSChild(theGraph, theChild)))
+
+#define gp_IsDFSTreeRoot(theGraph, v) gp_IsNotVertex(gp_GetVertexParent(theGraph, v))
+#define gp_IsNotDFSTreeRoot(theGraph, v) gp_IsVertex(gp_GetVertexParent(theGraph, v))
 
 // Accessors for vertex index
 #define gp_GetVertexIndex(theGraph, v) (theGraph->V[v].index)

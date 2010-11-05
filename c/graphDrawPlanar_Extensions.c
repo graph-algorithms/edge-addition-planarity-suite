@@ -263,12 +263,13 @@ int  _DrawPlanar_CreateStructures(DrawPlanarContext *context)
 int  _DrawPlanar_InitStructures(DrawPlanarContext *context)
 {
      int v, e;
-     int N = context->theGraph->N, Esize = context->theGraph->arcCapacity;
+     graphP theGraph = context->theGraph;
+     int N = theGraph->N, Esize = theGraph->arcCapacity;
 
      if (N <= 0)
          return NOTOK;
 
-     for (v = 0; v < N; v++)
+     for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
           _InitDrawVertexInfo(context, v);
 
      for (e = 0; e < Esize; e++)
@@ -439,7 +440,7 @@ int  _DrawPlanar_SortVertices(graphP theGraph)
             DrawPlanar_VertexInfoP newVI = NULL;
 
             // Relabel the context data members that indicate vertices
-            for (v=0; v < theGraph->N; v++)
+            for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
             {
                 context->VI[v].ancestor = gp_GetVertexIndex(theGraph, context->VI[v].ancestor);
                 context->VI[v].ancestorChild = gp_GetVertexIndex(theGraph, context->VI[v].ancestorChild);
@@ -454,7 +455,7 @@ int  _DrawPlanar_SortVertices(graphP theGraph)
 
             // Let X == v^{th} vertex's index be the location where the v^{th} vertex goes
             // Given the newVI array, we want to move context VI[v] to newVI[X]
-            for (v=0; v < theGraph->N; v++)
+            for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
             {
                 newVI[gp_GetVertexIndex(theGraph, v)] = context->VI[v];
             }
@@ -658,7 +659,7 @@ int  _DrawPlanar_ReadPostprocess(graphP theGraph, void *extraData, long extraDat
             extraData = (void *) ((char *) extraData + strlen(line)+1);
 
             // Read the N lines of vertex information
-            for (v = 0; v < theGraph->N; v++)
+            for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
             {
                 sscanf(extraData, " %d%c %d %d %d", &tempInt, &tempChar,
                               &context->VI[v].pos,
@@ -721,7 +722,7 @@ int  _DrawPlanar_WritePostprocess(graphP theGraph, void **pExtraData, long *pExt
             strcpy(extraData+extraDataPos, line);
             extraDataPos += (int) strlen(line);
 
-            for (v = 0; v < N; v++)
+            for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
             {
                 sprintf(line, "%d: %d %d %d\n", v,
                               context->VI[v].pos,

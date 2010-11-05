@@ -94,8 +94,8 @@ void WriteMatrixGraph(char *filename, graph *g, int n)
 
 int  TransferGraph(graphP theGraph, graph *g, int n)
 {
-int  i, j, ErrorCode;
-unsigned long PO2;
+	 int  i, j, ErrorCode;
+	 unsigned long PO2;
 
 	 gp_ReinitializeGraph(theGraph);
 
@@ -110,7 +110,8 @@ unsigned long PO2;
           {
              if (g[i] & PO2)
              {
-                 ErrorCode = gp_AddEdge(theGraph, i, 0, j, 0);
+                 ErrorCode = gp_AddEdge(theGraph, i+gp_GetFirstVertex(theGraph), 0,
+                		                          j+gp_GetFirstVertex(theGraph), 0);
                  if (ErrorCode != OK)
                  {
                      // If we only stopped because the graph contains too

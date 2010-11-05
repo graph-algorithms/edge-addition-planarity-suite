@@ -541,8 +541,9 @@ int  e, Z, ZNew;
 /* If SubtreeRoot is a root copy, then we change to the DFS child in the
         DFS tree root edge of the bicomp rooted by SubtreeRoot. */
 
-     if (SubtreeRoot >= theGraph->N)
-         SubtreeRoot -= theGraph->N;
+     SubtreeRoot = gp_IsVirtualVertex(theGraph, SubtreeRoot)
+    					? gp_GetDFSChildFromRoot(theGraph, SubtreeRoot)
+    					: SubtreeRoot;
 
 /* Find the least descendant of the cut vertex incident to the ancestor. */
 
@@ -820,14 +821,14 @@ int fwdArc, backArc;
 
 int  _DeleteUnmarkedVerticesAndEdges(graphP theGraph)
 {
-int  v, e;
+	 int  v, e;
 
      /* All of the forward and back arcs of all of the edge records
         were removed from the adjacency lists in the planarity algorithm
         preprocessing.  We now put them back into the adjacency lists
         (and we do not mark them), so they can be properly deleted below. */
 
-     for (v = 0; v < theGraph->N; v++)
+	 for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
      {
          while (gp_IsArc(e = gp_GetVertexFwdArcList(theGraph, v)))
              _AddBackEdge(theGraph, v, gp_GetNeighbor(theGraph, e));
@@ -836,7 +837,7 @@ int  v, e;
      /* Now we delete all unmarked edges.  We don't delete vertices from the
         embedding, but the ones we should delete will become degree zero. */
 
-     for (v = 0; v < theGraph->N; v++)
+	 for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
      {
     	  e = gp_GetFirstArc(theGraph, v);
           while (gp_IsArc(e))
