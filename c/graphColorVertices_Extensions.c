@@ -442,7 +442,6 @@ int  _ColorVertices_ReadPostprocess(graphP theGraph, void *extraData, long extra
             // Read the N lines of vertex information
             for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
             {
-                sprintf(line, "%d: %d\n", v, context->color[v]);
                 sscanf(extraData, " %d%c %d", &tempInt, &tempChar, &context->color[v]);
 
                 extraData = strchr(extraData, '\n') + 1;
@@ -471,6 +470,7 @@ int  _ColorVertices_WritePostprocess(graphP theGraph, void **pExtraData, long *p
             char line[32];
             int maxLineSize = 32, extraDataPos = 0, v;
             char *extraData = (char *) malloc((theGraph->N + 2) * maxLineSize * sizeof(char));
+            int zeroBasedOffset = (theGraph->internalFlags & FLAGS_ZEROBASEDIO) ? gp_GetFirstVertex(theGraph) : 0;
 
             if (extraData == NULL)
                 return NOTOK;
@@ -489,7 +489,7 @@ int  _ColorVertices_WritePostprocess(graphP theGraph, void **pExtraData, long *p
 
             for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
             {
-                sprintf(line, "%d: %d\n", v, context->color[v]);
+                sprintf(line, "%d: %d\n", v-zeroBasedOffset, context->color[v]);
                 strcpy(extraData+extraDataPos, line);
                 extraDataPos += (int) strlen(line);
             }
