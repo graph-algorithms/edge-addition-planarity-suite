@@ -706,6 +706,8 @@ int  _DrawPlanar_WritePostprocess(graphP theGraph, void **pExtraData, long *pExt
             int maxLineSize = 64, extraDataPos = 0, v, e;
             int N = theGraph->N, EsizeOccupied = 2 * (theGraph->M + sp_GetCurrentSize(theGraph->edgeHoles));
             char *extraData = (char *) malloc((N + EsizeOccupied + 2) * maxLineSize * sizeof(char));
+            int zeroBasedVertexOffset = (theGraph->internalFlags & FLAGS_ZEROBASEDIO) ? gp_GetFirstVertex(theGraph) : 0;
+            int zeroBasedEdgeOffset = (theGraph->internalFlags & FLAGS_ZEROBASEDIO) ? gp_GetFirstEdge(theGraph) : 0;
 
             if (extraData == NULL)
                 return NOTOK;
@@ -724,7 +726,7 @@ int  _DrawPlanar_WritePostprocess(graphP theGraph, void **pExtraData, long *pExt
 
             for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
             {
-                sprintf(line, "%d: %d %d %d\n", v,
+                sprintf(line, "%d: %d %d %d\n", v-zeroBasedVertexOffset,
                               context->VI[v].pos,
                               context->VI[v].start,
                               context->VI[v].end);
@@ -736,7 +738,7 @@ int  _DrawPlanar_WritePostprocess(graphP theGraph, void **pExtraData, long *pExt
             {
                 if (gp_EdgeInUse(theGraph, e))
                 {
-                    sprintf(line, "%d: %d %d %d\n", e,
+                    sprintf(line, "%d: %d %d %d\n", e-zeroBasedEdgeOffset,
                                   context->E[e].pos,
                                   context->E[e].start,
                                   context->E[e].end);

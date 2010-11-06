@@ -102,6 +102,10 @@ typedef edgeRec * edgeRecP;
 #define gp_EdgeInUse(theGraph, e) (gp_IsVertex(gp_GetNeighbor(theGraph, e)))
 #define gp_EdgeNotInUse(theGraph, e) (gp_IsNotVertex(gp_GetNeighbor(theGraph, e)))
 
+// Edge storage iteration
+#define gp_GetFirstEdge(theGraph) (0)
+#define gp_GetLastEdge(theGraph) (theGraph->arcCapacity)
+
 // An edge is represented by two consecutive edge records (arcs) in the edge array E.
 // If an even number, xor 1 will add one; if an odd number, xor 1 will subtract 1
 #define gp_GetTwinArc(theGraph, Arc) ((Arc) ^ 1)
@@ -576,11 +580,14 @@ typedef baseGraphStructure * graphP;
                 was isolated in the graph returned.  It is cleared by gp_Embed()
                 if an obstruction was not found.  The flag is used by
                 gp_TestEmbedResultIntegrity() to decide what integrity tests to run.
+        FLAGS_ZEROBASEDIO is typically set by gp_Read() to indicate that the
+        		adjacency list representation began with index 0.
 */
 
 #define FLAGS_DFSNUMBERED       1
 #define FLAGS_SORTEDBYDFI       2
 #define FLAGS_OBSTRUCTIONFOUND  4
+#define FLAGS_ZEROBASEDIO		8
 
 /********************************************************************
  More link structure accessors/manipulators

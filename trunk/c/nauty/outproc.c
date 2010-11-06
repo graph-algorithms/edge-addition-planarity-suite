@@ -101,7 +101,7 @@ int  TransferGraph(graphP theGraph, graph *g, int n)
 
      for (i = 0, ErrorCode = OK; i < n-1 && ErrorCode==OK; i++)
      {
-          gp_SetVertexIndex(theGraph, i, i);
+          gp_SetVertexIndex(theGraph, i+gp_GetFirstVertex(theGraph), i+gp_GetFirstVertex(theGraph));
 
 		  PO2 = 1 << (MAXN - 1);
 		  PO2 >>= i+1;

@@ -118,6 +118,7 @@ int _ReadAdjMatrix(graphP theGraph, FILE *Infile)
 int  _ReadAdjList(graphP theGraph, FILE *Infile)
 {
      int N, v, W, adjList, e, indexValue, ErrorCode;
+     int zeroBased = FALSE;
 
      if (Infile == NULL) return NOTOK;
      fgetc(Infile);                             /* Skip the N= */
@@ -139,6 +140,11 @@ int  _ReadAdjList(graphP theGraph, FILE *Infile)
      {
           // Read the vertex number
           fscanf(Infile, "%d", &indexValue);
+
+          if (indexValue == 0 && v == gp_GetFirstVertex(theGraph))
+        	  zeroBased = TRUE;
+          indexValue += zeroBased ? gp_GetFirstVertex(theGraph) : 0;
+
           gp_SetVertexIndex(theGraph, v, indexValue);
 
           // The vertices are expected to be in numeric ascending order
@@ -186,6 +192,7 @@ int  _ReadAdjList(graphP theGraph, FILE *Infile)
           {
         	 // Read the value indicating the next adjacent vertex (or the list end)
              fscanf(Infile, " %d ", &W);
+             W += zeroBased ? gp_GetFirstVertex(theGraph) : 0;
 
              // A value below the valid range indicates the adjacency list end
              if (W < gp_GetFirstVertex(theGraph))
@@ -268,12 +275,18 @@ int  _ReadAdjList(graphP theGraph, FILE *Infile)
           }
      }
 
+     if (zeroBased)
+    	 theGraph->internalFlags |= FLAGS_ZEROBASEDIO;
+
      return OK;
 }
 
 /********************************************************************
  _ReadLEDAGraph()
  Reads the edge list from a LEDA file containing a simple undirected graph.
+ LEDA files use a one-based numbering system, which is converted to
+ zero-based numbers if the graph reports starting at zero as the first vertex.
+
  Returns: OK on success, NONEMBEDDABLE if success except too many edges
  	 	  NOTOK on file content error (or internal error)
  ********************************************************************/
@@ -282,6 +295,7 @@ int  _ReadLEDAGraph(graphP theGraph, FILE *Infile)
 {
 	char Line[256];
 	int N, M, eIndex, u, v, ErrorCode;
+	int zeroBasedOffset = gp_GetFirstVertex(theGraph)==0 ? 1 : 0;
 
     /* Skip the lines that say LEDA.GRAPH and give the node and edge types */
     fgets(Line, 255, Infile);
@@ -302,17 +316,20 @@ int  _ReadLEDAGraph(graphP theGraph, FILE *Infile)
     fgets(Line, 255, Infile);
     sscanf(Line, " %d", &M);
 
-    /* Read and add each edge, omitting duplicates */
+    /* Read and add each edge, omitting loops and parallel edges */
     for (eIndex = 0; eIndex < M; eIndex++)
     {
         fgets(Line, 255, Infile);
         sscanf(Line, " %d %d", &u, &v);
-        if (u != v && !gp_IsNeighbor(theGraph, u-1, v-1))
+        if (u != v && !gp_IsNeighbor(theGraph, u-zeroBasedOffset, v-zeroBasedOffset))
         {
-             if ((ErrorCode = gp_AddEdge(theGraph, u-1, 0, v-1, 0)) != OK)
+             if ((ErrorCode = gp_AddEdge(theGraph, u-zeroBasedOffset, 0, v-zeroBasedOffset, 0)) != OK)
                  return ErrorCode;
         }
     }
+
+    if (zeroBasedOffset)
+    	theGraph->internalFlags |= FLAGS_ZEROBASEDIO;
 
     return OK;
 }
@@ -411,20 +428,21 @@ int  _ReadPostprocess(graphP theGraph, void *extraData, long extraDataSize)
 
 int  _WriteAdjList(graphP theGraph, FILE *Outfile)
 {
-int v, e;
+	 int v, e;
+	 int zeroBasedOffset = (theGraph->internalFlags & FLAGS_ZEROBASEDIO) ? gp_GetFirstVertex(theGraph) : 0;
 
      if (theGraph==NULL || Outfile==NULL) return NOTOK;
 
      fprintf(Outfile, "N=%d\n", theGraph->N);
      for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
      {
-          fprintf(Outfile, "%d:", v);
+          fprintf(Outfile, "%d:", v - zeroBasedOffset);
 
           e = gp_GetLastArc(theGraph, v);
           while (gp_IsArc(e))
           {
         	  if (gp_GetDirection(theGraph, e) != EDGEFLAG_DIRECTION_INONLY)
-                  fprintf(Outfile, " %d", gp_GetNeighbor(theGraph, e));
+                  fprintf(Outfile, " %d", gp_GetNeighbor(theGraph, e) - zeroBasedOffset);
 
               e = gp_GetPrevArc(theGraph, e);
           }
