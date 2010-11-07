@@ -191,15 +191,12 @@ platform_GetTime(start);
 
      gp_LogLine("\ngraphDFSUtils.c/_SortVertices() start");
 
-/* Cache number of vertices and edges into local variables */
-
-     EsizeOccupied = 2*(theGraph->M + sp_GetCurrentSize(theGraph->edgeHoles));
-
-/* Change labels of edges from v to DFI(v)-- or vice versa
+     /* Change labels of edges from v to DFI(v)-- or vice versa
         Also, if any links go back to locations 0 to n-1, then they
         need to be changed because we are reordering the vertices */
 
-     for (e=0; e < EsizeOccupied; e+=2)
+     EsizeOccupied = gp_EdgeInUseIndexBound(theGraph);
+     for (e = gp_GetFirstEdge(theGraph); e < EsizeOccupied; e+=2)
      {
     	 if (gp_EdgeInUse(theGraph, e))
     	 {
@@ -208,13 +205,13 @@ platform_GetTime(start);
     	 }
      }
 
-/* Convert DFSParent from v to DFI(v) or vice versa */
+     /* Convert DFSParent from v to DFI(v) or vice versa */
 
      for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
           if (gp_IsNotDFSTreeRoot(theGraph, v))
               gp_SetVertexParent(theGraph, v, gp_GetVertexIndex(theGraph, gp_GetVertexParent(theGraph, v)));
 
-/* Sort by 'v using constant time random access. Move each vertex to its
+     /* Sort by 'v using constant time random access. Move each vertex to its
         destination 'v', and store its source location in 'v'. */
 
      /* First we clear the visitation flags.  We need these to help mark
@@ -248,7 +245,7 @@ platform_GetTime(start);
           }
      }
 
-/* Invert the bit that records the sort order of the graph */
+     /* Invert the bit that records the sort order of the graph */
 
      theGraph->internalFlags ^= FLAGS_SORTEDBYDFI;
 

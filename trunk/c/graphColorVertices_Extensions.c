@@ -244,15 +244,16 @@ void _ColorVertices_ClearStructures(ColorVerticesContext *context)
 int  _ColorVertices_CreateStructures(ColorVerticesContext *context)
 {
 	 graphP theGraph = context->theGraph;
-     int v, N = context->theGraph->N;
+     int VIsize = gp_PrimaryVertexIndexBound(theGraph);
+     int v;
 
-     if (N <= 0)
+     if (theGraph->N <= 0)
          return NOTOK;
 
-     if ((context->degLists = LCNew(N)) == NULL ||
-    	 (context->degListHeads = (int *) malloc(N*sizeof(int))) == NULL ||
-    	 (context->degree = (int *) malloc(N*sizeof(int))) == NULL ||
-         (context->color = (int *) malloc(N*sizeof(int))) == NULL
+     if ((context->degLists = LCNew(VIsize)) == NULL ||
+    	 (context->degListHeads = (int *) malloc(VIsize*sizeof(int))) == NULL ||
+    	 (context->degree = (int *) malloc(VIsize*sizeof(int))) == NULL ||
+         (context->color = (int *) malloc(VIsize*sizeof(int))) == NULL
         )
      {
          return NOTOK;

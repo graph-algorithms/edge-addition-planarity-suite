@@ -238,14 +238,15 @@ void _DrawPlanar_ClearStructures(DrawPlanarContext *context)
  ********************************************************************/
 int  _DrawPlanar_CreateStructures(DrawPlanarContext *context)
 {
-     int N = context->theGraph->N;
-     int Esize = context->theGraph->arcCapacity;
+	 graphP theGraph = context->theGraph;
+     int VIsize = gp_PrimaryVertexIndexBound(theGraph);
+     int Esize = gp_EdgeIndexBound(theGraph);
 
-     if (N <= 0)
+     if (theGraph->N <= 0)
          return NOTOK;
 
      if ((context->E = (DrawPlanar_EdgeRecP) malloc(Esize*sizeof(DrawPlanar_EdgeRec))) == NULL ||
-         (context->VI = (DrawPlanar_VertexInfoP) malloc(N*sizeof(DrawPlanar_VertexInfo))) == NULL
+         (context->VI = (DrawPlanar_VertexInfoP) malloc(VIsize*sizeof(DrawPlanar_VertexInfo))) == NULL
         )
      {
          return NOTOK;
@@ -262,17 +263,17 @@ int  _DrawPlanar_CreateStructures(DrawPlanarContext *context)
  ********************************************************************/
 int  _DrawPlanar_InitStructures(DrawPlanarContext *context)
 {
-     int v, e;
+     int v, e, Esize;
      graphP theGraph = context->theGraph;
-     int N = theGraph->N, Esize = theGraph->arcCapacity;
 
-     if (N <= 0)
+     if (theGraph->N <= 0)
          return NOTOK;
 
      for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
           _InitDrawVertexInfo(context, v);
 
-     for (e = 0; e < Esize; e++)
+     Esize = gp_EdgeIndexBound(theGraph);
+     for (e = gp_GetFirstEdge(theGraph); e < Esize; e++)
           _InitDrawEdgeRec(context, e);
 
      return OK;
@@ -289,8 +290,8 @@ void *_DrawPlanar_DupContext(void *pContext, void *theGraph)
 
      if (newContext != NULL)
      {
-         int N = ((graphP) theGraph)->N;
-         int Esize = ((graphP) theGraph)->arcCapacity;
+         int VIsize = gp_PrimaryVertexIndexBound((graphP) theGraph);
+         int Esize = gp_EdgeIndexBound((graphP) theGraph);
 
          *newContext = *context;
 
@@ -298,7 +299,7 @@ void *_DrawPlanar_DupContext(void *pContext, void *theGraph)
 
          newContext->initialized = 0;
          _DrawPlanar_ClearStructures(newContext);
-         if (N > 0)
+         if (((graphP) theGraph)->N > 0)
          {
              if (_DrawPlanar_CreateStructures(newContext) != OK)
              {
@@ -308,7 +309,7 @@ void *_DrawPlanar_DupContext(void *pContext, void *theGraph)
 
              // Initialize custom data structures by copying
              memcpy(newContext->E, context->E, Esize*sizeof(DrawPlanar_EdgeRec));
-             memcpy(newContext->VI, context->VI, N*sizeof(DrawPlanar_VertexInfo));
+             memcpy(newContext->VI, context->VI, VIsize*sizeof(DrawPlanar_VertexInfo));
          }
      }
 
@@ -670,8 +671,8 @@ int  _DrawPlanar_ReadPostprocess(graphP theGraph, void *extraData, long extraDat
             }
 
             // Read the lines that contain edge information
-            EsizeOccupied = 2 * theGraph->M;
-            for (e = 0; e < EsizeOccupied; e++)
+            EsizeOccupied = gp_EdgeInUseIndexBound(theGraph);
+            for (e = gp_GetFirstEdge(theGraph); e < EsizeOccupied; e++)
             {
                 sscanf(extraData, " %d%c %d %d %d", &tempInt, &tempChar,
                               &context->E[e].pos,
@@ -702,10 +703,10 @@ int  _DrawPlanar_WritePostprocess(graphP theGraph, void **pExtraData, long *pExt
             return NOTOK;
         else
         {
+            int v, e, EsizeOccupied;
             char line[64];
-            int maxLineSize = 64, extraDataPos = 0, v, e;
-            int N = theGraph->N, EsizeOccupied = 2 * (theGraph->M + sp_GetCurrentSize(theGraph->edgeHoles));
-            char *extraData = (char *) malloc((N + EsizeOccupied + 2) * maxLineSize * sizeof(char));
+            int maxLineSize = 64, extraDataPos = 0;
+            char *extraData = (char *) malloc((theGraph->N + gp_EdgeInUseIndexBound(theGraph) + 2) * maxLineSize * sizeof(char));
             int zeroBasedVertexOffset = (theGraph->internalFlags & FLAGS_ZEROBASEDIO) ? gp_GetFirstVertex(theGraph) : 0;
             int zeroBasedEdgeOffset = (theGraph->internalFlags & FLAGS_ZEROBASEDIO) ? gp_GetFirstEdge(theGraph) : 0;
 
@@ -714,7 +715,7 @@ int  _DrawPlanar_WritePostprocess(graphP theGraph, void **pExtraData, long *pExt
 
             // Bit of an unlikely case, but for safety, a bigger maxLineSize
             // and line array size are needed to handle very large graphs
-            if (N > 2000000000)
+            if (theGraph->N > 2000000000)
             {
                 free(extraData);
                 return NOTOK;
@@ -734,7 +735,8 @@ int  _DrawPlanar_WritePostprocess(graphP theGraph, void **pExtraData, long *pExt
                 extraDataPos += (int) strlen(line);
             }
 
-            for (e = 0; e < EsizeOccupied; e++)
+            EsizeOccupied = gp_EdgeInUseIndexBound(theGraph);
+            for (e = gp_GetFirstEdge(theGraph); e < EsizeOccupied; e++)
             {
                 if (gp_EdgeInUse(theGraph, e))
                 {

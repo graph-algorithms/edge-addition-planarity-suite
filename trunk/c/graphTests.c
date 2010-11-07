@@ -213,8 +213,8 @@ int EsizeOccupied, v, e, eTwin, eStart, eNext, NumFaces, connectedComponents;
 
 /* Push all arcs and set them to unvisited */
 
-     EsizeOccupied = 2*(theGraph->M + sp_GetCurrentSize(theGraph->edgeHoles));
-     for (e=0; e < EsizeOccupied; e+=2)
+	 EsizeOccupied = gp_EdgeInUseIndexBound(theGraph);
+     for (e = gp_GetFirstEdge(theGraph); e < EsizeOccupied; e+=2)
      {
     	  // Except skip edge holes
           if (gp_EdgeInUse(theGraph, e))

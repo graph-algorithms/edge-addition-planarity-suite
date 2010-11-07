@@ -147,9 +147,8 @@ void SaveAsciiGraph(graphP theGraph, char *filename)
 	FILE *outfile = fopen(filename, "wt");
 	fprintf(outfile, "%s\n", filename);
 
-	EsizeOccupied = 2*(theGraph->M + sp_GetCurrentSize(theGraph->edgeHoles));
-
-	for (e=0; e < EsizeOccupied; e+=2)
+	EsizeOccupied = gp_EdgeInUseIndexBound(theGraph);
+	for (e = gp_GetFirstEdge(theGraph); e < EsizeOccupied; e+=2)
 	{
 		// Skip the edge holes
 		if (gp_EdgeInUse(theGraph, e))

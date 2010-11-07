@@ -239,17 +239,17 @@ void _K33Search_ClearStructures(K33SearchContext *context)
  ********************************************************************/
 int  _K33Search_CreateStructures(K33SearchContext *context)
 {
-     int N = context->theGraph->N;
-     int Esize = context->theGraph->arcCapacity;
+     int VIsize = gp_PrimaryVertexIndexBound(context->theGraph);
+     int Esize = gp_EdgeIndexBound(context->theGraph);
 
-     if (N <= 0)
+     if (context->theGraph->N <= 0)
          return NOTOK;
 
      if ((context->E = (K33Search_EdgeRecP) malloc(Esize*sizeof(K33Search_EdgeRec))) == NULL ||
-         (context->VI = (K33Search_VertexInfoP) malloc(N*sizeof(K33Search_VertexInfo))) == NULL ||
-		 (context->separatedDFSChildLists = LCNew(N)) == NULL ||
-		 (context->buckets = (int *) malloc(N * sizeof(int))) == NULL ||
-		 (context->bin = LCNew(N)) == NULL
+         (context->VI = (K33Search_VertexInfoP) malloc(VIsize*sizeof(K33Search_VertexInfo))) == NULL ||
+		 (context->separatedDFSChildLists = LCNew(VIsize)) == NULL ||
+		 (context->buckets = (int *) malloc(VIsize * sizeof(int))) == NULL ||
+		 (context->bin = LCNew(VIsize)) == NULL
         )
      {
          return NOTOK;
@@ -264,8 +264,7 @@ int  _K33Search_CreateStructures(K33SearchContext *context)
 int  _K33Search_InitStructures(K33SearchContext *context)
 {
 	 graphP theGraph = context->theGraph;
-     int v, e;
-     int Esize = theGraph->arcCapacity;
+     int v, e, Esize;
 
      if (theGraph->N <= 0)
          return OK;
@@ -273,7 +272,8 @@ int  _K33Search_InitStructures(K33SearchContext *context)
      for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
           _InitK33SearchVertexInfo(context, v);
 
-     for (e = 0; e < Esize; e++)
+     Esize = gp_EdgeIndexBound(theGraph);
+     for (e = gp_GetFirstEdge(theGraph); e < Esize; e++)
           _InitK33SearchEdgeRec(context, e);
 
      return OK;
@@ -384,8 +384,8 @@ void *_K33Search_DupContext(void *pContext, void *theGraph)
 
      if (newContext != NULL)
      {
-         int N = ((graphP) theGraph)->N;
-         int Esize = ((graphP) theGraph)->arcCapacity;
+         int VIsize = gp_PrimaryVertexIndexBound((graphP) theGraph);
+         int Esize = gp_EdgeIndexBound((graphP) theGraph);
 
          *newContext = *context;
 
@@ -393,7 +393,7 @@ void *_K33Search_DupContext(void *pContext, void *theGraph)
 
          newContext->initialized = 0;
          _K33Search_ClearStructures(newContext);
-         if (N > 0)
+         if (((graphP) theGraph)->N > 0)
          {
              if (_K33Search_CreateStructures(newContext) != OK)
              {
@@ -402,7 +402,7 @@ void *_K33Search_DupContext(void *pContext, void *theGraph)
              }
 
              memcpy(newContext->E, context->E, Esize*sizeof(K33Search_EdgeRec));
-             memcpy(newContext->VI, context->VI, N*sizeof(K33Search_VertexInfo));
+             memcpy(newContext->VI, context->VI, VIsize*sizeof(K33Search_VertexInfo));
              LCCopy(newContext->separatedDFSChildLists, context->separatedDFSChildLists);
          }
      }
