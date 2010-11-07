@@ -210,7 +210,7 @@ void _K4Search_ClearStructures(K4SearchContext *context)
  ********************************************************************/
 int  _K4Search_CreateStructures(K4SearchContext *context)
 {
-     int Esize = context->theGraph->arcCapacity;
+     int Esize = gp_EdgeIndexBound(context->theGraph);
 
      if (context->theGraph->N <= 0)
          return NOTOK;
@@ -229,12 +229,13 @@ int  _K4Search_CreateStructures(K4SearchContext *context)
  ********************************************************************/
 int  _K4Search_InitStructures(K4SearchContext *context)
 {
-     int e, Esize = context->theGraph->arcCapacity;
+     int e, Esize;
 
      if (context->theGraph->N <= 0)
          return OK;
 
-     for (e = 0; e < Esize; e++)
+     Esize = gp_EdgeIndexBound(context->theGraph);
+     for (e = gp_GetFirstEdge(context->theGraph); e < Esize; e++)
           _InitK4SearchEdgeRec(context, e);
 
      return OK;
@@ -338,8 +339,7 @@ void *_K4Search_DupContext(void *pContext, void *theGraph)
 
      if (newContext != NULL)
      {
-         int N = ((graphP) theGraph)->N;
-         int Esize = ((graphP) theGraph)->arcCapacity;
+         int Esize = gp_EdgeIndexBound((graphP) theGraph);
 
          *newContext = *context;
 
@@ -347,7 +347,7 @@ void *_K4Search_DupContext(void *pContext, void *theGraph)
 
          newContext->initialized = 0;
          _K4Search_ClearStructures(newContext);
-         if (N > 0)
+         if (((graphP) theGraph)->N > 0)
          {
              if (_K4Search_CreateStructures(newContext) != OK)
              {

@@ -1717,12 +1717,11 @@ int  e0, e1, eTwin0, eTwin1;
 
 int  _RestoreAndOrientReducedPaths(graphP theGraph, K33SearchContext *context)
 {
-int  EsizeOccupied, e, eTwin, u, v, w, x, visited;
-int  e0, eTwin0, e1, eTwin1;
+	 int  EsizeOccupied, e, eTwin, u, v, w, x, visited;
+	 int  e0, eTwin0, e1, eTwin1;
 
-	 EsizeOccupied = 2 * (theGraph->M + sp_GetCurrentSize(theGraph->edgeHoles));
-
-     for (e = 0; e < EsizeOccupied;)
+	 EsizeOccupied = gp_EdgeInUseIndexBound(theGraph);
+     for (e = gp_GetFirstEdge(theGraph); e < EsizeOccupied;)
      {
          if (gp_IsVertex(context->E[e].pathConnector))
          {

@@ -236,7 +236,7 @@ int gp_InitGraph(graphP theGraph, int N)
         return NOTOK;
 
 	// Should not call init a second time; use reinit
-	if (theGraph->N > 0)
+	if (theGraph->N)
 		return NOTOK;
 
     return theGraph->functions.fpInitGraph(theGraph, N);
@@ -244,11 +244,15 @@ int gp_InitGraph(graphP theGraph, int N)
 
 int  _InitGraph(graphP theGraph, int N)
 {
-int  Vsize, Esize, stackSize;
+	 int  Vsize, VIsize, Esize, stackSize;
 
 	 // Compute the vertex and edge capacities of the graph
-     Vsize = 2*N;
-     Esize = theGraph->arcCapacity > 0 ? theGraph->arcCapacity : 2*DEFAULT_EDGE_LIMIT*N;
+     theGraph->N = N;
+     theGraph->NV = N;
+     theGraph->arcCapacity = theGraph->arcCapacity > 0 ? theGraph->arcCapacity : 2*DEFAULT_EDGE_LIMIT*N;
+	 VIsize = gp_PrimaryVertexIndexBound(theGraph);
+     Vsize = gp_VertexIndexBound(theGraph);
+     Esize = gp_EdgeIndexBound(theGraph);
 
      // Stack size is 2 integers per arc, or 6 integers per vertex in case of small arcCapacity
      stackSize = 2 * Esize;
@@ -256,10 +260,10 @@ int  Vsize, Esize, stackSize;
 
      // Allocate memory as described above
      if ((theGraph->V = (vertexRecP) malloc(Vsize*sizeof(vertexRec))) == NULL ||
-    	 (theGraph->VI = (vertexInfoP) malloc(N*sizeof(vertexInfo))) == NULL ||
+    	 (theGraph->VI = (vertexInfoP) malloc(VIsize*sizeof(vertexInfo))) == NULL ||
     	 (theGraph->E = (edgeRecP) malloc(Esize*sizeof(edgeRec))) == NULL ||
-         (theGraph->BicompRootLists = LCNew(N)) == NULL ||
-         (theGraph->sortedDFSChildLists = LCNew(N)) == NULL ||
+         (theGraph->BicompRootLists = LCNew(VIsize)) == NULL ||
+         (theGraph->sortedDFSChildLists = LCNew(VIsize)) == NULL ||
          (theGraph->theStack = sp_New(stackSize)) == NULL ||
          (theGraph->extFace = (extFaceLinkRecP) malloc(Vsize*sizeof(extFaceLinkRec))) == NULL ||
          (theGraph->edgeHoles = sp_New(Esize / 2)) == NULL ||
@@ -270,10 +274,6 @@ int  Vsize, Esize, stackSize;
      }
 
      // Initialize memory
-     theGraph->N = N;
-     theGraph->NV = N;
-     theGraph->arcCapacity = Esize;
-
      _InitVertices(theGraph);
      _InitEdges(theGraph);
      _InitIsolatorContext(theGraph);
@@ -311,9 +311,10 @@ void _InitVertices(graphP theGraph)
  ********************************************************************/
 void _InitEdges(graphP theGraph)
 {
-	int e, Esize = theGraph->arcCapacity;
+	int e, Esize;
 
-    for (e = 0; e < Esize; e++)
+	Esize = gp_EdgeIndexBound(theGraph);
+    for (e = gp_GetFirstEdge(theGraph); e < Esize; e++)
          theGraph->functions.fpInitEdgeRec(theGraph, e);
 }
 
@@ -353,7 +354,7 @@ void _ReinitializeGraph(graphP theGraph)
  ********************************************************************/
 int gp_GetArcCapacity(graphP theGraph)
 {
-	return theGraph->arcCapacity;
+	return theGraph->arcCapacity - gp_GetFirstEdge(theGraph);
 }
 
 /********************************************************************
@@ -436,7 +437,8 @@ int gp_EnsureArcCapacity(graphP theGraph, int requiredArcCapacity)
 int _EnsureArcCapacity(graphP theGraph, int requiredArcCapacity)
 {
 stackP newStack;
-int e, Esize = theGraph->arcCapacity, newEsize = requiredArcCapacity;
+int e, Esize = gp_EdgeIndexBound(theGraph),
+	newEsize = gp_GetFirstEdge(theGraph) + requiredArcCapacity;
 
 	// If the new size is less than or equal to the old size, then
 	// the graph already has the required arc capacity
@@ -579,10 +581,10 @@ void _ClearVertexVisitedFlags(graphP theGraph, int includeVirtualVertices)
 
 void _ClearEdgeVisitedFlags(graphP theGraph)
 {
-int  EsizeOccupied = 2*(theGraph->M + sp_GetCurrentSize(theGraph->edgeHoles));
-int  e;
+	 int  e, EsizeOccupied;
 
-     for (e=0; e < EsizeOccupied; e++)
+	 EsizeOccupied = gp_EdgeInUseIndexBound(theGraph);
+     for (e = gp_GetFirstEdge(theGraph); e < EsizeOccupied; e++)
     	 gp_ClearEdgeVisited(theGraph, e);
 }
 
@@ -932,8 +934,8 @@ int  gp_CopyAdjacencyLists(graphP dstGraph, graphP srcGraph)
 	}
 
 	// Copy the adjacency links and neighbor pointers for each arc
-	EsizeOccupied = 2*(srcGraph->M + sp_GetCurrentSize(srcGraph->edgeHoles));
-	for (e = 0; e < EsizeOccupied; e++)
+	EsizeOccupied = gp_EdgeInUseIndexBound(srcGraph);
+	for (e = gp_GetFirstEdge(theGraph); e < EsizeOccupied; e++)
 	{
 		gp_SetNeighbor(dstGraph, e, gp_GetNeighbor(srcGraph, e));
 		gp_SetNextArc(dstGraph, e, gp_GetNextArc(srcGraph, e));
@@ -1001,8 +1003,8 @@ int  v, e, Esize;
 
      // Copy the basic EdgeRec structures.  Augmentations to the edgeRec structure
      // created by extensions are copied below by gp_CopyExtensions()
-     Esize = srcGraph->arcCapacity;
-     for (e = 0; e < Esize; e++)
+     Esize = gp_EdgeIndexBound(srcGraph);
+     for (e = gp_GetFirstEdge(theGraph); e < Esize; e++)
     	 gp_CopyEdgeRec(dstGraph, e, srcGraph, e);
 
      // Give the dstGraph the same size and intrinsic properties
@@ -1076,7 +1078,7 @@ graphP result;
 
 int  gp_CreateRandomGraph(graphP theGraph)
 {
-int N, M, u, v, eIndex;
+int N, M, u, v, m;
 
      N = theGraph->N;
 
@@ -1101,14 +1103,14 @@ int N, M, u, v, eIndex;
      if (M > N*(N-1)/2)
     	 M = N*(N-1)/2;
 
-     for (eIndex = N-1; eIndex < M; eIndex++)
+     for (m = N-1; m < M; m++)
      {
           u = _GetRandomNumber(gp_GetFirstVertex(theGraph), gp_GetLastVertex(theGraph)-1);
           v = _GetRandomNumber(u+1, gp_GetLastVertex(theGraph));
 
           // If the edge (u,v) exists, decrement eIndex to try again
           if (gp_IsNeighbor(theGraph, u, v))
-        	  eIndex--;
+        	  m--;
 
           // If the edge (u,v) doesn't exist, add it
           else
@@ -1229,7 +1231,7 @@ int e = gp_GetFirstArc(theGraph, parent);
 
 int  gp_CreateRandomGraphEx(graphP theGraph, int numEdges)
 {
-int N, arc, M, root, v, c, p, last, u, eIndex, e;
+int N, arc, M, root, v, c, p, last, u, e, EsizeOccupied;
 
      N = theGraph->N;
 
@@ -1338,13 +1340,11 @@ int N, arc, M, root, v, c, p, last, u, eIndex, e;
 
 /* Clear the edge types back to 'unknown' */
 
-    for (eIndex = 0; eIndex < numEdges; eIndex++)
+    EsizeOccupied = gp_EdgeInUseIndexBound(theGraph);
+    for (e = 0; e < EsizeOccupied; e++)
     {
-        e = (eIndex << 1);
         gp_ClearEdgeType(theGraph, e);
-        gp_ClearEdgeType(theGraph, gp_GetTwinArc(theGraph, e));
         gp_ClearEdgeVisited(theGraph, e);
-        gp_ClearEdgeVisited(theGraph, gp_GetTwinArc(theGraph, e));
     }
 
 /* Put all DFSParent indicators back to NIL */

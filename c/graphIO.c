@@ -294,7 +294,7 @@ int  _ReadAdjList(graphP theGraph, FILE *Infile)
 int  _ReadLEDAGraph(graphP theGraph, FILE *Infile)
 {
 	char Line[256];
-	int N, M, eIndex, u, v, ErrorCode;
+	int N, M, m, u, v, ErrorCode;
 	int zeroBasedOffset = gp_GetFirstVertex(theGraph)==0 ? 1 : 0;
 
     /* Skip the lines that say LEDA.GRAPH and give the node and edge types */
@@ -317,7 +317,7 @@ int  _ReadLEDAGraph(graphP theGraph, FILE *Infile)
     sscanf(Line, " %d", &M);
 
     /* Read and add each edge, omitting loops and parallel edges */
-    for (eIndex = 0; eIndex < M; eIndex++)
+    for (m = 0; m < M; m++)
     {
         fgets(Line, 255, Infile);
         sscanf(Line, " %d %d", &u, &v);
@@ -626,8 +626,8 @@ int v, e, EsizeOccupied;
      /* Print information about edges */
 
      fprintf(Outfile, "\nEDGE INFORMATION\n");
-     EsizeOccupied = 2*(theGraph->M + sp_GetCurrentSize(theGraph->edgeHoles));
-     for (e=0; e < EsizeOccupied; e++)
+     EsizeOccupied = gp_EdgeInUseIndexBound(theGraph);
+     for (e = gp_GetFirstEdge(theGraph); e < EsizeOccupied; e++)
      {
           if (gp_EdgeInUse(theGraph, e))
           {

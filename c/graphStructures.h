@@ -104,7 +104,8 @@ typedef edgeRec * edgeRecP;
 
 // Edge storage iteration
 #define gp_GetFirstEdge(theGraph) (0)
-#define gp_GetLastEdge(theGraph) (theGraph->arcCapacity)
+#define gp_EdgeIndexBound(theGraph) (gp_GetFirstEdge(theGraph) + (theGraph)->arcCapacity)
+#define gp_EdgeInUseIndexBound(theGraph) (gp_GetFirstEdge(theGraph) + (((theGraph)->M + sp_GetCurrentSize((theGraph)->edgeHoles)) << 1))
 
 // An edge is represented by two consecutive edge records (arcs) in the edge array E.
 // If an even number, xor 1 will add one; if an odd number, xor 1 will subtract 1
@@ -244,13 +245,16 @@ typedef vertexRec * vertexRecP;
 #define gp_SetLastArc(theGraph, v, newLastArc) (theGraph->V[v].link[1] = newLastArc)
 #define gp_SetArc(theGraph, v, theLink, newArc) (theGraph->V[v].link[theLink] = newArc)
 
-// Vertex conversions
+// Vertex conversions and iteration
 #define gp_IsVertex(v) ((v) != NIL)
 #define gp_IsNotVertex(v) ((v) == NIL)
 #define gp_GetFirstVertex(theGraph) (0)
-#define gp_GetLastVertex(theGraph) (theGraph->N - 1)
-#define gp_VertexInRange(theGraph, v) ((v) < theGraph->N)
+#define gp_GetLastVertex(theGraph) ((theGraph)->N - 1)
+#define gp_VertexInRange(theGraph, v) ((v) < (theGraph)->N)
 #define gp_VertexInRangeDescending(theGraph, v) ((v) >= 0)
+
+#define gp_PrimaryVertexIndexBound(theGraph) (gp_GetFirstVertex(theGraph) + (theGraph)->N)
+#define gp_VertexIndexBound(theGraph) (gp_PrimaryVertexIndexBound(theGraph) + (theGraph)->N)
 
 #define gp_IsVirtualVertex(theGraph, v) ((v) >= theGraph->N)
 #define gp_IsNotVirtualVertex(theGraph, v) ((v) < theGraph->N)
