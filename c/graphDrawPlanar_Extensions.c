@@ -47,6 +47,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "graphDrawPlanar.private.h"
 #include "graphDrawPlanar.h"
 
+extern void _ClearVertexVisitedFlags(graphP theGraph, int);
+
 extern void _CollectDrawingData(DrawPlanarContext *context, int RootVertex, int W, int WPrevLink);
 extern int  _BreakTie(DrawPlanarContext *context, int BicompRoot, int W, int WPrevLink);
 
@@ -437,8 +439,8 @@ int  _DrawPlanar_SortVertices(graphP theGraph)
     {
         if (theGraph->embedFlags == EMBEDFLAGS_DRAWPLANAR)
         {
-            int v;
-            DrawPlanar_VertexInfoP newVI = NULL;
+        	int v, vIndex;
+        	DrawPlanar_VertexInfo temp;
 
             // Relabel the context data members that indicate vertices
             for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
@@ -447,23 +449,39 @@ int  _DrawPlanar_SortVertices(graphP theGraph)
                 context->VI[v].ancestorChild = gp_GetVertexIndex(theGraph, context->VI[v].ancestorChild);
             }
 
-            // Now we have to sort this extension's vertex info array to match the new order of vertices
-            // For simplicity we do this out-of-place with an extra array
-            if ((newVI = (DrawPlanar_VertexInfoP) malloc(theGraph->N * sizeof(DrawPlanar_VertexInfo))) == NULL)
-            {
-                return NOTOK;
-            }
-
-            // Let X == v^{th} vertex's index be the location where the v^{th} vertex goes
-            // Given the newVI array, we want to move context VI[v] to newVI[X]
+            // "Sort" the extra vertex info associated with each vertex so that it is rearranged according
+            // to the index values of the vertices.  This could be done very easily with an extra array in
+            // which, for each v, newVI[index of v] = VI[v].  However, this loop avoids memory allocation
+            // by performing the operation (almost) in-place, except for the pre-existing visitation flags.
+            _ClearVertexVisitedFlags(theGraph, FALSE);
             for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
             {
-                newVI[gp_GetVertexIndex(theGraph, v)] = context->VI[v];
-            }
+            	// If the correct data has already been placed into position v
+            	// by prior steps, then skip to the next vertex
+            	if (gp_GetVertexVisited(theGraph, v))
+            		continue;
 
-            // Replace VI with the newVI
-            memcpy(context->VI, newVI, theGraph->N * sizeof(DrawPlanar_VertexInfo));
-            free(newVI);
+            	// At the beginning of processing position v, the data in position v
+            	// corresponds to data that belongs at the index of v.
+            	vIndex = gp_GetVertexIndex(theGraph, v);
+
+            	// Iterate on position v until it receives the correct data
+            	while (!gp_GetVertexVisited(theGraph, v))
+                {
+            		// Place the data at position v into its proper location at position
+            		// vIndex, and move vIndex's data into position v.
+            		temp = context->VI[v];
+            		context->VI[v] = context->VI[vIndex];
+            		context->VI[vIndex] = temp;
+
+                    // The data at position vIndex is now marked as being correct.
+                    gp_SetVertexVisited(theGraph, vIndex);
+
+                    // The data now in position v is the data from position vIndex,
+                    // whose index we now take as the new vIndex
+                    vIndex = gp_GetVertexIndex(theGraph, vIndex);
+                }
+            }
         }
 
         if (context->functions.fpSortVertices(theGraph) != OK)
