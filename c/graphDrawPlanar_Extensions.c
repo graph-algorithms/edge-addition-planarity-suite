@@ -724,7 +724,7 @@ int  _DrawPlanar_WritePostprocess(graphP theGraph, void **pExtraData, long *pExt
             int v, e, EsizeOccupied;
             char line[64];
             int maxLineSize = 64, extraDataPos = 0;
-            char *extraData = (char *) malloc((theGraph->N + gp_EdgeInUseIndexBound(theGraph) + 2) * maxLineSize * sizeof(char));
+            char *extraData = (char *) malloc((1 + theGraph->N + 2*theGraph->M + 1) * maxLineSize * sizeof(char));
             int zeroBasedVertexOffset = (theGraph->internalFlags & FLAGS_ZEROBASEDIO) ? gp_GetFirstVertex(theGraph) : 0;
             int zeroBasedEdgeOffset = (theGraph->internalFlags & FLAGS_ZEROBASEDIO) ? gp_GetFirstEdge(theGraph) : 0;
 

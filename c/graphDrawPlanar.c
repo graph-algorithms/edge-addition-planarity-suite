@@ -226,7 +226,7 @@ int v, index;
 int _ComputeVertexPositionsInComponent(DrawPlanarContext *context, int root, int *pIndex)
 {
 graphP theEmbedding = context->theGraph;
-listCollectionP theOrder = LCNew(theEmbedding->N);
+listCollectionP theOrder = LCNew(gp_PrimaryVertexIndexBound(theEmbedding));
 int W, P, C, V, e;
 
     if (theOrder == NULL)
@@ -389,7 +389,7 @@ int e, eTwin, eCur, v, vpos, epos, eIndex;
     //    represented by a pair of adjacent edge records
     //    at index 2X.
 
-    if (theEmbedding->M > 0 && (edgeList = LCNew(theEmbedding->M)) == NULL)
+    if (theEmbedding->M > 0 && (edgeList = LCNew(gp_GetFirstEdge(theEmbedding)/2+theEmbedding->M)) == NULL)
     {
         free(vertexOrder);
         return NOTOK;
