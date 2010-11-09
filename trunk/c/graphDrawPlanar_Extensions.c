@@ -437,6 +437,8 @@ int  _DrawPlanar_SortVertices(graphP theGraph)
 
     if (context != NULL)
     {
+    	// If this is a planarity-based algorithm to which graph drawing has been attached,
+    	// and if the embedding process has already been completed
         if (theGraph->embedFlags == EMBEDFLAGS_DRAWPLANAR)
         {
         	int v, vIndex;
@@ -445,8 +447,11 @@ int  _DrawPlanar_SortVertices(graphP theGraph)
             // Relabel the context data members that indicate vertices
             for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
             {
-                context->VI[v].ancestor = gp_GetVertexIndex(theGraph, context->VI[v].ancestor);
-                context->VI[v].ancestorChild = gp_GetVertexIndex(theGraph, context->VI[v].ancestorChild);
+            	if (gp_IsVertex(context->VI[v].ancestor))
+            	{
+                    context->VI[v].ancestor = gp_GetVertexIndex(theGraph, context->VI[v].ancestor);
+                    context->VI[v].ancestorChild = gp_GetVertexIndex(theGraph, context->VI[v].ancestorChild);
+            	}
             }
 
             // "Sort" the extra vertex info associated with each vertex so that it is rearranged according
@@ -590,8 +595,13 @@ void _InitDrawVertexInfo(DrawPlanarContext *context, int v)
     context->VI[v].end = 0;
 
     context->VI[v].drawingFlag = DRAWINGFLAG_BEYOND;
+#ifdef OLDWAY
     context->VI[v].ancestorChild = 0;
     context->VI[v].ancestor = 0;
+#else
+    context->VI[v].ancestorChild = NIL;
+    context->VI[v].ancestor = NIL;
+#endif
     context->VI[v].tie[0] = NIL;
     context->VI[v].tie[1] = NIL;
 }
