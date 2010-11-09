@@ -264,10 +264,15 @@ int W, P, C, V, e;
             if (context->VI[W].drawingFlag == DRAWINGFLAG_TIE)
                 return NOTOK;
 
-            // If C below V, then P below V, so interpret W between
-            // P and V as W above P, and interpret W beyond P relative
-            // to V as W below P.
-            if (context->VI[C].drawingFlag == DRAWINGFLAG_BELOW)
+            // If W is the child of a DFS root, then there is no vertex C
+            // between it and some ancestor V.  Both V and C are not a vertex,
+            // and W will simply take the default of being below its parent.
+            // If C is a vertex, then it has already been absolutely positioned
+            // and can be used to help position W relative to its parent P,
+            // which is equal to or descendant to C. If C below V, then P below V,
+            // so interpret 'W between P and V' as 'W above P', and interpret
+            // 'W beyond P relative to V' as 'W below P'.
+            if (gp_IsNotVertex(C) || context->VI[C].drawingFlag == DRAWINGFLAG_BELOW)
             {
                 if (context->VI[W].drawingFlag == DRAWINGFLAG_BETWEEN)
                     context->VI[W].drawingFlag = DRAWINGFLAG_ABOVE;
