@@ -446,7 +446,9 @@ int  _WriteAdjList(graphP theGraph, FILE *Outfile)
 
               e = gp_GetPrevArc(theGraph, e);
           }
-          fprintf(Outfile, " %d\n", NIL);
+
+          // Write NIL at the end of the adjacency list (in zero-based I/O, NIL was -1)
+          fprintf(Outfile, " %d\n", (theGraph->internalFlags & FLAGS_ZEROBASEDIO) ? -1 : NIL);
      }
      return OK;
 }
