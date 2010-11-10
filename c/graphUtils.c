@@ -1631,8 +1631,8 @@ int  gp_AddEdge(graphP theGraph, int u, int ulink, int v, int vlink)
 {
 int  upos, vpos;
 
-     if (theGraph==NULL || u<0 || v<0 ||
-         u>=2*theGraph->N || v>=2*theGraph->N)
+     if (theGraph==NULL || u < gp_GetFirstVertex(theGraph) || v < gp_GetFirstVertex(theGraph) ||
+    		 !gp_VirtualVertexInRange(theGraph, u) || !gp_VirtualVertexInRange(theGraph, v))
          return NOTOK;
 
      /* We enforce the edge limit */
@@ -1645,7 +1645,7 @@ int  upos, vpos;
          sp_Pop(theGraph->edgeHoles, vpos);
      }
      else
-         vpos = 2*theGraph->M;
+         vpos = gp_EdgeInUseIndexBound(theGraph);
 
      upos = gp_GetTwinArc(theGraph, vpos);
 
@@ -1675,14 +1675,15 @@ int  upos, vpos;
 int  gp_InsertEdge(graphP theGraph, int u, int e_u, int e_ulink,
                                     int v, int e_v, int e_vlink)
 {
-int vertMax = theGraph->N + theGraph->NV - 1,
-    edgeMax = 2*theGraph->M + 2*sp_GetCurrentSize(theGraph->edgeHoles) - 1,
+int vertMax = gp_GetLastVirtualVertex(theGraph),
+    edgeMax = gp_EdgeInUseIndexBound(theGraph) - 1,
     upos, vpos;
 
-     if (theGraph==NULL || u<0 || v<0 || u>vertMax || v>vertMax ||
-         e_u>edgeMax || (e_u<0 && gp_IsArc(e_u)) ||
-         e_v>edgeMax || (e_v<0 && gp_IsArc(e_v)) ||
-         e_ulink<0 || e_ulink>1 || e_vlink<0 || e_vlink>1)
+     if (theGraph==NULL || u < gp_GetFirstVertex(theGraph) || v < gp_GetFirstVertex(theGraph) ||
+    	 u > vertMax || v > vertMax ||
+         e_u > edgeMax || (e_u < gp_GetFirstEdge(theGraph) && gp_IsArc(e_u)) ||
+         e_v > edgeMax || (e_v < gp_GetFirstEdge(theGraph) && gp_IsArc(e_v)) ||
+         e_ulink < 0 || e_ulink > 1 || e_vlink < 0 || e_vlink > 1)
          return NOTOK;
 
      if (theGraph->M >= theGraph->arcCapacity/2)
@@ -1693,7 +1694,7 @@ int vertMax = theGraph->N + theGraph->NV - 1,
          sp_Pop(theGraph->edgeHoles, vpos);
      }
      else
-         vpos = 2*theGraph->M;
+         vpos = gp_EdgeInUseIndexBound(theGraph);
 
      upos = gp_GetTwinArc(theGraph, vpos);
 
@@ -1721,37 +1722,27 @@ int vertMax = theGraph->N + theGraph->NV - 1,
 
 int  gp_DeleteEdge(graphP theGraph, int e, int nextLink)
 {
-int  eTwin = gp_GetTwinArc(theGraph, e);
-int  M = theGraph->M;
-int  nextArc, MPos;
+	 // Calculate the nextArc after e so that, when e is deleted, the return result
+	 // informs a calling loop of the next edge to be processed.
+	 int  nextArc = gp_GetAdjacentArc(theGraph, e, nextLink);
 
-/* Calculate the nextArc after e so that, when e is deleted, the return result
-        informs a calling loop of the next edge to be processed. */
-
-     nextArc = gp_GetAdjacentArc(theGraph, e, nextLink);
-
-/* Delete the edge records e and eTwin from their adjacency lists. */
-
+	 // Delete the edge records e and eTwin from their adjacency lists.
      gp_DetachArc(theGraph, e);
-     gp_DetachArc(theGraph, eTwin);
+     gp_DetachArc(theGraph, gp_GetTwinArc(theGraph, e));
 
-/* Clear the edge record contents */
+     // Clear the edge record contents
+     theGraph->functions.fpInitEdgeRec(theGraph, e);
+     theGraph->functions.fpInitEdgeRec(theGraph, gp_GetTwinArc(theGraph, e));
 
-    theGraph->functions.fpInitEdgeRec(theGraph, e);
-    theGraph->functions.fpInitEdgeRec(theGraph, eTwin);
-
-/* If records e and eTwin are not the last in the edge record array, then
-     we want to record a new hole in the edge array. */
-
-     MPos = 2*(M-1) + 2*sp_GetCurrentSize(theGraph->edgeHoles);
-     if ((e = (e < eTwin ? e : eTwin)) < MPos)
+     // If records e and eTwin are not the last in the edge record array, then
+     // we want to record a new hole in the edge array. */
+     if (e < gp_EdgeInUseIndexBound(theGraph) - 2)
      {
          sp_Push(theGraph->edgeHoles, e);
      }
 
-/* Now we reduce the number of edges in the data structure, and then
-        return the previously calculated successor of e. */
-
+     // Now we reduce the number of edges in the data structure, and then
+     // return the previously calculated successor of e.
      theGraph->M--;
      return nextArc;
 }
