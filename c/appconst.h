@@ -79,8 +79,6 @@ extern int debugNOTOK();
 #define NOTOK           (printf("NOTOK on Line %d of %s\n", __LINE__, __FILE__), debugNOTOK())
 #endif
 
-#define NONEMBEDDABLE   -3
-
 #ifndef TRUE
 #define TRUE            1
 #endif
@@ -93,10 +91,15 @@ extern int debugNOTOK();
 #define NULL			0L
 #endif
 
-/* Array indices are used as pointers, and this means bad pointer */
+/* Array indices are used as pointers, and NIL means bad pointer */
 
-#define NIL		-1
-#define NIL_CHAR	0xFF
+// This definition is used with 1-based array indexing
+#define NIL			0
+#define NIL_CHAR	0x00
+
+// This definition is used in combination with 0-based array indexing,
+//#define NIL		-1
+//#define NIL_CHAR	0xFF
 
 /* Defines fopen strings for reading and writing text files on PC and UNIX */
 
