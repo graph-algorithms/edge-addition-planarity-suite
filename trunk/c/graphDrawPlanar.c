@@ -113,16 +113,17 @@ int _ComputeVisibilityRepresentation(DrawPlanarContext *context)
 
 int _ComputeVertexPositions(DrawPlanarContext *context)
 {
-graphP theEmbedding = context->theGraph;
-int v, index;
+	graphP theEmbedding = context->theGraph;
+	int v, vertpos;
 
-	for (v = index = gp_GetFirstVertex(theEmbedding); gp_VertexInRange(theEmbedding, v); v++)
+	vertpos = 0;
+	for (v = gp_GetFirstVertex(theEmbedding); gp_VertexInRange(theEmbedding, v); v++)
     {
         // For each DFS tree root in the embedding, we
         // compute the vertex positions
         if (gp_IsDFSTreeRoot(theEmbedding, v))
         {
-            if (_ComputeVertexPositionsInComponent(context, v, &index) != OK)
+            if (_ComputeVertexPositionsInComponent(context, v, &vertpos) != OK)
                 return NOTOK;
         }
     }
@@ -223,7 +224,7 @@ int v, index;
   based on the between/beyond indicator stored in W during embedding.
  ********************************************************************/
 
-int _ComputeVertexPositionsInComponent(DrawPlanarContext *context, int root, int *pIndex)
+int _ComputeVertexPositionsInComponent(DrawPlanarContext *context, int root, int *pVertpos)
 {
 graphP theEmbedding = context->theGraph;
 listCollectionP theOrder = LCNew(gp_PrimaryVertexIndexBound(theEmbedding));
@@ -312,8 +313,8 @@ int W, P, C, V, e;
     V = root;
     while (gp_IsVertex(V))
     {
-        context->VI[V].pos = *pIndex;
-        (*pIndex)++;
+        context->VI[V].pos = *pVertpos;
+        (*pVertpos)++;
         V = LCGetNext(theOrder, root, V);
     }
 
@@ -758,7 +759,7 @@ int WPredNextLink = 1^WPrevLink,
 				 BicompRoot, W, WPrevLink, WPred));
 
     /* Ties happen only within a bicomp (i.e. between two non-root vertices) */
-    if (W > theEmbedding->N || WPred >= theEmbedding->N)
+    if (gp_IsVirtualVertex(theEmbedding, W) || gp_IsVirtualVertex(theEmbedding, WPred))
     {
     	gp_LogLine("graphDrawPlanar.c/_BreakTie() end\n");
         return OK;
@@ -830,7 +831,8 @@ char *_RenderToString(graphP theEmbedding)
     {
         int N = theEmbedding->N;
         int M = theEmbedding->M;
-        int m, EsizeOccupied, v, vRange, e, eRange, Mid, Pos;
+        int zeroBasedVertexOffset = (theEmbedding->internalFlags & FLAGS_ZEROBASEDIO) ? gp_GetFirstVertex(theEmbedding) : 0;
+        int n, m, EsizeOccupied, v, vRange, e, eRange, Mid, Pos;
         char *visRep = (char *) malloc(sizeof(char) * ((M+1) * 2*N + 1));
         char numBuffer[32];
 
@@ -844,16 +846,16 @@ char *_RenderToString(graphP theEmbedding)
         }
 
         // Clear the space
-    	for (v = gp_GetFirstVertex(theEmbedding); gp_VertexInRange(theEmbedding, v); v++)
+    	for (n = 0; n < N; n++)
         {
             for (m=0; m < M; m++)
             {
-                visRep[(2*v) * (M+1) + m] = ' ';
-                visRep[(2*v+1) * (M+1) + m] = ' ';
+                visRep[(2*n) * (M+1) + m] = ' ';
+                visRep[(2*n+1) * (M+1) + m] = ' ';
             }
 
-            visRep[(2*v) * (M+1) + M] = '\n';
-            visRep[(2*v+1) * (M+1) + M] = '\n';
+            visRep[(2*n) * (M+1) + M] = '\n';
+            visRep[(2*n+1) * (M+1) + M] = '\n';
         }
 
         // Draw the vertices
@@ -865,7 +867,7 @@ char *_RenderToString(graphP theEmbedding)
 
             // Draw vertex label
             Mid = (context->VI[v].start + context->VI[v].end) / 2;
-            sprintf(numBuffer, "%d", v);
+            sprintf(numBuffer, "%d", v - zeroBasedVertexOffset);
             if ((unsigned)(context->VI[v].end - context->VI[v].start + 1) >= strlen(numBuffer))
             {
                 strncpy(visRep + (2*Pos) * (M+1) + Mid, numBuffer, strlen(numBuffer));
@@ -973,14 +975,14 @@ int v, e, eTwin, EsizeOccupied, epos, eposIndex;
     	}
 
         // Has the vertex position been used by a vertex before vertex v?
-        if (gp_GetVertexVisited(theEmbedding, context->VI[v].pos))
+        if (gp_GetVertexVisited(theEmbedding, context->VI[v].pos + gp_GetFirstVertex(theEmbedding)))
             return NOTOK;
 
         // Mark the vertex position as used by vertex v.
         // Note that this marking is made on some other vertex unrelated to v
         // We're just reusing the vertex visited array as cheap storage for a
         // detector of reusing vertex position integers.
-        gp_SetVertexVisited(theEmbedding, context->VI[v].pos);
+        gp_SetVertexVisited(theEmbedding, context->VI[v].pos + gp_GetFirstVertex(theEmbedding));
     }
 
 /* Test whether the edge values make sense and

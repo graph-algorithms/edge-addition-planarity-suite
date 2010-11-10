@@ -595,13 +595,8 @@ void _InitDrawVertexInfo(DrawPlanarContext *context, int v)
     context->VI[v].end = 0;
 
     context->VI[v].drawingFlag = DRAWINGFLAG_BEYOND;
-#ifdef OLDWAY
-    context->VI[v].ancestorChild = 0;
-    context->VI[v].ancestor = 0;
-#else
     context->VI[v].ancestorChild = NIL;
     context->VI[v].ancestor = NIL;
-#endif
     context->VI[v].tie[0] = NIL;
     context->VI[v].tie[1] = NIL;
 }
