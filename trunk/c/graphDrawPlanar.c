@@ -1013,7 +1013,7 @@ int v, e, eTwin, EsizeOccupied, epos, eposIndex;
             can use the visited flags in the graph's edges to
             tell us whether the positions are being reused. */
 
-        eposIndex = (epos<<1);
+        eposIndex = (epos<<1) + gp_GetFirstEdge(theEmbedding);
         eTwin = gp_GetTwinArc(theEmbedding, eposIndex);
 
         if (gp_GetEdgeVisited(theEmbedding, eposIndex) || gp_GetEdgeVisited(theEmbedding, eTwin))
