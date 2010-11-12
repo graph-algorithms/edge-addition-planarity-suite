@@ -97,7 +97,7 @@ extern int debugNOTOK();
 #define NIL			0
 #define NIL_CHAR	0x00
 
-// This definition is used in combination with 0-based array indexing,
+// This definition is used in combination with 0-based array indexing
 //#define NIL		-1
 //#define NIL_CHAR	0xFF
 

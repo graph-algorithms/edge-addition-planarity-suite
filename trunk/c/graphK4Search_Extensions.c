@@ -63,18 +63,18 @@ void _K4Search_ClearStructures(K4SearchContext *context);
 int  _K4Search_CreateStructures(K4SearchContext *context);
 int  _K4Search_InitStructures(K4SearchContext *context);
 
+void _K4Search_InitEdgeRec(K4SearchContext *context, int e);
+
 /* Forward declarations of overloading functions */
 int  _K4Search_HandleBlockedBicomp(graphP theGraph, int v, int RootVertex, int R);
 int  _K4Search_EmbedPostprocess(graphP theGraph, int v, int edgeEmbeddingResult);
 int  _K4Search_CheckEmbeddingIntegrity(graphP theGraph, graphP origGraph);
 int  _K4Search_CheckObstructionIntegrity(graphP theGraph, graphP origGraph);
 
-void _K4Search_InitEdgeRec(graphP theGraph, int e);
-void _InitK4SearchEdgeRec(K4SearchContext *context, int e);
-
 int  _K4Search_InitGraph(graphP theGraph, int N);
 void _K4Search_ReinitializeGraph(graphP theGraph);
 int  _K4Search_EnsureArcCapacity(graphP theGraph, int requiredArcCapacity);
+int  _K4Search_DeleteEdge(graphP theGraph, int e, int nextLink);
 
 /* Forward declarations of functions used by the extension system */
 
@@ -130,11 +130,10 @@ int  gp_AttachK4Search(graphP theGraph)
      context->functions.fpCheckEmbeddingIntegrity = _K4Search_CheckEmbeddingIntegrity;
      context->functions.fpCheckObstructionIntegrity = _K4Search_CheckObstructionIntegrity;
 
-     context->functions.fpInitEdgeRec = _K4Search_InitEdgeRec;
-
      context->functions.fpInitGraph = _K4Search_InitGraph;
      context->functions.fpReinitializeGraph = _K4Search_ReinitializeGraph;
      context->functions.fpEnsureArcCapacity = _K4Search_EnsureArcCapacity;
+     context->functions.fpDeleteEdge = _K4Search_DeleteEdge;
 
      _K4Search_ClearStructures(context);
 
@@ -229,14 +228,15 @@ int  _K4Search_CreateStructures(K4SearchContext *context)
  ********************************************************************/
 int  _K4Search_InitStructures(K4SearchContext *context)
 {
-     int e, Esize;
-
-     if (context->theGraph->N <= 0)
-         return OK;
+#if NIL == 0 || NIL == -1
+	memset(context->E, NIL_CHAR, gp_EdgeIndexBound(context->theGraph) * sizeof(K4Search_EdgeRec));
+#else
+    int e, Esize;
 
      Esize = gp_EdgeIndexBound(context->theGraph);
      for (e = gp_GetFirstEdge(context->theGraph); e < Esize; e++)
-          _InitK4SearchEdgeRec(context, e);
+          _K4Search_InitEdgeRec(context, e);
+#endif
 
      return OK;
 }
@@ -251,20 +251,17 @@ int  _K4Search_InitGraph(graphP theGraph, int N)
 
     if (context == NULL)
         return NOTOK;
-    {
-        theGraph->N = N;
-        theGraph->NV = N;
-        if (theGraph->arcCapacity == 0)
-        	theGraph->arcCapacity = 2*DEFAULT_EDGE_LIMIT*N;
 
-        if (_K4Search_CreateStructures(context) != OK)
-            return NOTOK;
+    theGraph->N = N;
+	theGraph->NV = N;
+	if (theGraph->arcCapacity == 0)
+		theGraph->arcCapacity = 2*DEFAULT_EDGE_LIMIT*N;
 
-        // This call initializes the base graph structures, but it also
-        // initializes the custom dge and vertex level structures due to
-        // overloads of InitEdgeRec, InitVertexRec and/or InitVertexInfo
-        context->functions.fpInitGraph(theGraph, N);
-    }
+	if (_K4Search_CreateStructures(context) != OK ||
+		_K4Search_InitStructures(context) != OK)
+		return NOTOK;
+
+	context->functions.fpInitGraph(theGraph, N);
 
     return OK;
 }
@@ -279,38 +276,11 @@ void _K4Search_ReinitializeGraph(graphP theGraph)
 
     if (context != NULL)
     {
-        // Reinitialization can go much faster if the underlying init
-        // functions for edges (and vertices, when applicable) are called,
-        // rather than the overloads of this module, because it avoids
-        // lots of unnecessary gp_FindExtension() calls.
-        if (theGraph->functions.fpInitEdgeRec == _K4Search_InitEdgeRec &&
-            1)
-        {
-            // Restore selected graph function pointer(s)
-            theGraph->functions.fpInitEdgeRec = context->functions.fpInitEdgeRec;
+		// Reinitialize the graph
+		context->functions.fpReinitializeGraph(theGraph);
 
-            // Reinitialize the graph
-            context->functions.fpReinitializeGraph(theGraph);
-
-            // Restore the selected function pointer(s) that attach this feature
-            theGraph->functions.fpInitEdgeRec = _K4Search_InitEdgeRec;
-
-            // Do the reinitialization that is specific to this module
-            _K4Search_InitStructures(context);
-        }
-
-        // If optimization is not possible, then just stick with what works.
-        // Reinitialize the graph-level structure and then invoke the
-        // reinitialize function.
-        else
-        {
-            // The underlying function fpReinitializeGraph() implicitly initializes the K33
-            // structures due to the overloads of fpInitEdgeRec() and fpInitVertexInfo().
-            // It just does so less efficiently because each invocation of InitEdgeRec
-            // and InitVertexInfo has to look up the extension again.
-            //// _K4Search_InitStructures(context);
-            context->functions.fpReinitializeGraph(theGraph);
-        }
+		// Do the reinitialization that is specific to this module
+		_K4Search_InitStructures(context);
     }
 }
 
@@ -326,6 +296,24 @@ void _K4Search_ReinitializeGraph(graphP theGraph)
 int  _K4Search_EnsureArcCapacity(graphP theGraph, int requiredArcCapacity)
 {
 	return NOTOK;
+}
+
+/********************************************************************
+ ********************************************************************/
+int  _K4Search_DeleteEdge(graphP theGraph, int e, int nextLink)
+{
+    K4SearchContext *context = NULL;
+    gp_FindExtension(theGraph, K4SEARCH_ID, (void *)&context);
+
+    if (context != NULL)
+    {
+    	_K4Search_InitEdgeRec(context, e);
+    	_K4Search_InitEdgeRec(context, gp_GetTwinArc(theGraph, e));
+
+		return context->functions.fpDeleteEdge(theGraph, e, nextLink);
+    }
+
+    return NIL + NOTOK - NOTOK;
 }
 
 /********************************************************************
@@ -377,19 +365,7 @@ void _K4Search_FreeContext(void *pContext)
 /********************************************************************
  ********************************************************************/
 
-void _K4Search_InitEdgeRec(graphP theGraph, int e)
-{
-    K4SearchContext *context = NULL;
-    gp_FindExtension(theGraph, K4SEARCH_ID, (void *)&context);
-
-    if (context != NULL)
-    {
-        context->functions.fpInitEdgeRec(theGraph, e);
-        _InitK4SearchEdgeRec(context, e);
-    }
-}
-
-void _InitK4SearchEdgeRec(K4SearchContext *context, int e)
+void _K4Search_InitEdgeRec(K4SearchContext *context, int e)
 {
     context->E[e].pathConnector = NIL;
 }

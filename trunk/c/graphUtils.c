@@ -67,6 +67,7 @@ extern int  _WritePostprocess(graphP theGraph, void **pExtraData, long *pExtraDa
 
 /* Internal util functions for FUNCTION POINTERS */
 
+int  _DeleteEdge(graphP theGraph, int e, int nextLink);
 int  _HideVertex(graphP theGraph, int vertex);
 void _HideEdge(graphP theGraph, int arcPos);
 void _RestoreEdge(graphP theGraph, int arcPos);
@@ -182,10 +183,6 @@ void _InitFunctionTable(graphP theGraph)
      theGraph->functions.fpCheckEmbeddingIntegrity = _CheckEmbeddingIntegrity;
      theGraph->functions.fpCheckObstructionIntegrity = _CheckObstructionIntegrity;
 
-     theGraph->functions.fpInitVertexRec = _InitVertexRec;
-     theGraph->functions.fpInitVertexInfo = _InitVertexInfo;
-     theGraph->functions.fpInitEdgeRec = _InitEdgeRec;
-
      theGraph->functions.fpInitGraph = _InitGraph;
      theGraph->functions.fpReinitializeGraph = _ReinitializeGraph;
      theGraph->functions.fpEnsureArcCapacity = _EnsureArcCapacity;
@@ -194,12 +191,13 @@ void _InitFunctionTable(graphP theGraph)
      theGraph->functions.fpReadPostprocess = _ReadPostprocess;
      theGraph->functions.fpWritePostprocess = _WritePostprocess;
 
-     theGraph->functions.fpHideVertex = _HideVertex;
+     theGraph->functions.fpDeleteEdge = _DeleteEdge;
      theGraph->functions.fpHideEdge = _HideEdge;
      theGraph->functions.fpRestoreEdge = _RestoreEdge;
+     theGraph->functions.fpHideVertex = _HideVertex;
+     theGraph->functions.fpRestoreVertex = _RestoreVertex;
      theGraph->functions.fpContractEdge = _ContractEdge;
      theGraph->functions.fpIdentifyVertices = _IdentifyVertices;
-     theGraph->functions.fpRestoreVertex = _RestoreVertex;
 }
 
 /********************************************************************
@@ -259,13 +257,13 @@ int  _InitGraph(graphP theGraph, int N)
      stackSize = stackSize < 6*N ? 6*N : stackSize;
 
      // Allocate memory as described above
-     if ((theGraph->V = (vertexRecP) malloc(Vsize*sizeof(vertexRec))) == NULL ||
-    	 (theGraph->VI = (vertexInfoP) malloc(VIsize*sizeof(vertexInfo))) == NULL ||
-    	 (theGraph->E = (edgeRecP) malloc(Esize*sizeof(edgeRec))) == NULL ||
+     if ((theGraph->V = (vertexRecP) calloc(Vsize, sizeof(vertexRec))) == NULL ||
+    	 (theGraph->VI = (vertexInfoP) calloc(VIsize, sizeof(vertexInfo))) == NULL ||
+    	 (theGraph->E = (edgeRecP) calloc(Esize, sizeof(edgeRec))) == NULL ||
          (theGraph->BicompRootLists = LCNew(VIsize)) == NULL ||
          (theGraph->sortedDFSChildLists = LCNew(VIsize)) == NULL ||
          (theGraph->theStack = sp_New(stackSize)) == NULL ||
-         (theGraph->extFace = (extFaceLinkRecP) malloc(Vsize*sizeof(extFaceLinkRec))) == NULL ||
+         (theGraph->extFace = (extFaceLinkRecP) calloc(Vsize, sizeof(extFaceLinkRec))) == NULL ||
          (theGraph->edgeHoles = sp_New(Esize / 2)) == NULL ||
          0)
      {
@@ -286,13 +284,18 @@ int  _InitGraph(graphP theGraph, int N)
  ********************************************************************/
 void _InitVertices(graphP theGraph)
 {
+#if NIL == 0 || NIL == -1
+	memset(theGraph->V, NIL_CHAR, gp_VertexIndexBound(theGraph) * sizeof(vertexRec));
+	memset(theGraph->VI, NIL_CHAR, gp_PrimaryVertexIndexBound(theGraph) * sizeof(vertexInfo));
+	memset(theGraph->extFace, NIL_CHAR, gp_VertexIndexBound(theGraph) * sizeof(extFaceLinkRec));
+#else
 	int v;
 
     // Initialize primary vertices
 	for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
     {
-         theGraph->functions.fpInitVertexRec(theGraph, v);
-         theGraph->functions.fpInitVertexInfo(theGraph, v);
+         _InitVertexRec(theGraph, v);
+         _InitVertexInfo(theGraph, v);
          gp_SetExtFaceVertex(theGraph, v, 0, NIL);
          gp_SetExtFaceVertex(theGraph, v, 1, NIL);
     }
@@ -300,10 +303,11 @@ void _InitVertices(graphP theGraph)
     // Initialize virtual vertices
 	for (v = gp_GetFirstVirtualVertex(theGraph); gp_VirtualVertexInRange(theGraph, v); v++)
     {
-         theGraph->functions.fpInitVertexRec(theGraph, v);
+         _InitVertexRec(theGraph, v);
          gp_SetExtFaceVertex(theGraph, v, 0, NIL);
          gp_SetExtFaceVertex(theGraph, v, 1, NIL);
     }
+#endif
 }
 
 /********************************************************************
@@ -311,11 +315,15 @@ void _InitVertices(graphP theGraph)
  ********************************************************************/
 void _InitEdges(graphP theGraph)
 {
+#if NIL == 0 || NIL == -1
+	memset(theGraph->E, NIL_CHAR, gp_EdgeIndexBound(theGraph) * sizeof(edgeRec));
+#else
 	int e, Esize;
 
 	Esize = gp_EdgeIndexBound(theGraph);
     for (e = gp_GetFirstEdge(theGraph); e < Esize; e++)
-         theGraph->functions.fpInitEdgeRec(theGraph, e);
+         _InitEdgeRec(theGraph, e);
+#endif
 }
 
 /********************************************************************
@@ -484,7 +492,7 @@ int e, Esize = gp_EdgeIndexBound(theGraph),
 
     // Initialize the new edge records
     for (e = Esize; e < newEsize; e++)
-         theGraph->functions.fpInitEdgeRec(theGraph, e);
+         _InitEdgeRec(theGraph, e);
 
     // The new arcCapacity has been successfully achieved
 	theGraph->arcCapacity = requiredArcCapacity;
@@ -1722,6 +1730,11 @@ int vertMax = gp_GetLastVirtualVertex(theGraph),
 
 int  gp_DeleteEdge(graphP theGraph, int e, int nextLink)
 {
+	 return theGraph->functions.fpDeleteEdge(theGraph, e, nextLink);
+}
+
+int  _DeleteEdge(graphP theGraph, int e, int nextLink)
+{
 	 // Calculate the nextArc after e so that, when e is deleted, the return result
 	 // informs a calling loop of the next edge to be processed.
 	 int  nextArc = gp_GetAdjacentArc(theGraph, e, nextLink);
@@ -1730,9 +1743,14 @@ int  gp_DeleteEdge(graphP theGraph, int e, int nextLink)
      gp_DetachArc(theGraph, e);
      gp_DetachArc(theGraph, gp_GetTwinArc(theGraph, e));
 
-     // Clear the edge record contents
-     theGraph->functions.fpInitEdgeRec(theGraph, e);
-     theGraph->functions.fpInitEdgeRec(theGraph, gp_GetTwinArc(theGraph, e));
+     // Clear the two edge records
+     // (the bit twiddle (e & ~1) chooses the lesser of e and its twin arc)
+#if NIL == 0 || NIL == -1
+     memset(theGraph->E + (e & ~1), NIL_CHAR, sizeof(edgeRec) << 1);
+#else
+     _InitEdgeRec(theGraph, e);
+     _InitEdgeRec(theGraph, gp_GetTwinArc(theGraph, e));
+#endif
 
      // If records e and eTwin are not the last in the edge record array, then
      // we want to record a new hole in the edge array. */

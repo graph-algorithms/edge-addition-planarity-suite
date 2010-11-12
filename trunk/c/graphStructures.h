@@ -57,16 +57,15 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 extern "C" {
 #endif
 
-// A return value to indicate success prior to completely processing a graph,
-// whereas OK signifies EMBEDDABLE (no unreducible obstructions) and NOTOK signifies an exception.
+// A return value to indicate success prior to completely processing a graph, whereas
+// OK signifies EMBEDDABLE (no unreducible obstructions) and NOTOK signifies an exception.
 #define NONEMBEDDABLE   -1
 
-/* The DEFAULT_EDGE_LIMIT expresses the initial setting for the arcCapacity
- * as a constant factor of N, the number of vertices. By default, E is
- * allocated enough space to contain 3N edges, which is 6N arcs (half edges),
- * but this setting can be overridden using gp_EnsureArcCapacity().
- */
-
+// The initial setting for the edge storage capacity expressed as a constant factor of N,
+// which is the number of vertices in the graph. By default, array E is allocated enough
+// space to contain 3N edges, which is 6N arcs (half edges), but this initial setting
+// can be overridden using gp_EnsureArcCapacity(), which is especially efficient if done
+// before calling gp_InitGraph() or gp_Read().
 #define DEFAULT_EDGE_LIMIT      3
 
 /********************************************************************
