@@ -60,11 +60,6 @@ int  _ColorVertices_InitStructures(ColorVerticesContext *context);
 
 /* Forward declarations of overloading functions */
 
-// These aren't overloaded in this extension
-//void _ColorVertices_InitVertexRec(graphP theGraph, int v);
-//void _ColorVertices_InitVertexInfo(graphP theGraph, int v);
-//void _ColorVertices_InitEdgeRec(graphP theGraph, int e);
-
 int  _ColorVertices_InitGraph(graphP theGraph, int N);
 void _ColorVertices_ReinitializeGraph(graphP theGraph);
 
@@ -349,27 +344,17 @@ int  _ColorVertices_InitGraph(graphP theGraph, int N)
     gp_FindExtension(theGraph, COLORVERTICES_ID, (void *)&context);
 
     if (context == NULL)
-    {
         return NOTOK;
-    }
-    else
-    {
-        theGraph->N = N;
-        if (theGraph->arcCapacity == 0)
-        	theGraph->arcCapacity = 2*DEFAULT_EDGE_LIMIT*N;
 
-        // Create custom structures, initialized at graph level,
-        // uninitialized at vertex and edge levels.
-        if (_ColorVertices_CreateStructures(context) != OK)
-        {
-            return NOTOK;
-        }
+	theGraph->N = N;
+	if (theGraph->arcCapacity == 0)
+		theGraph->arcCapacity = 2*DEFAULT_EDGE_LIMIT*N;
 
-        // This call initializes the base graph structures, but it can also
-        // initialize custom edge and vertex level structures if there are
-        // overloads of InitVertexRec, InitVertexInfo or InitEdgeRec
-        context->functions.fpInitGraph(theGraph, N);
-    }
+	if (_ColorVertices_CreateStructures(context) != OK ||
+        _ColorVertices_InitStructures(context) != OK)
+		return NOTOK;
+
+	context->functions.fpInitGraph(theGraph, N);
 
     return OK;
 }
@@ -403,12 +388,10 @@ void _ColorVertices_ReinitializeGraph(graphP theGraph)
 
     if (context != NULL)
     {
-		// Some extensions attempt to unhook overloads of fpInitEdgeRec() and
-    	// fpInitVertexRec() before calling this method, when possible, but this
-    	// extension doesn't overload those functions so we just reinitialize
+    	// Reinitialize the graph
 		context->functions.fpReinitializeGraph(theGraph);
 
-        // Graph level reinitialization
+        // Reinitialize graph-level data extensions
 		_ColorVertices_Reinitialize(context);
     }
 }

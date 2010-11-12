@@ -61,6 +61,9 @@ void _DrawPlanar_ClearStructures(DrawPlanarContext *context);
 int  _DrawPlanar_CreateStructures(DrawPlanarContext *context);
 int  _DrawPlanar_InitStructures(DrawPlanarContext *context);
 
+void _DrawPlanar_InitEdgeRec(DrawPlanarContext *context, int v);
+void _DrawPlanar_InitVertexInfo(DrawPlanarContext *context, int v);
+
 /* Forward declarations of overloading functions */
 
 int  _DrawPlanar_MergeBicomps(graphP theGraph, int v, int RootVertex, int W, int WPrevLink);
@@ -68,11 +71,6 @@ int  _DrawPlanar_HandleInactiveVertex(graphP theGraph, int BicompRoot, int *pW, 
 int  _DrawPlanar_EmbedPostprocess(graphP theGraph, int v, int edgeEmbeddingResult);
 int  _DrawPlanar_CheckEmbeddingIntegrity(graphP theGraph, graphP origGraph);
 int  _DrawPlanar_CheckObstructionIntegrity(graphP theGraph, graphP origGraph);
-
-void _DrawPlanar_InitEdgeRec(graphP theGraph, int e);
-void _DrawPlanar_InitVertexInfo(graphP theGraph, int v);
-void _InitDrawEdgeRec(DrawPlanarContext *context, int v);
-void _InitDrawVertexInfo(DrawPlanarContext *context, int v);
 
 int  _DrawPlanar_InitGraph(graphP theGraph, int N);
 void _DrawPlanar_ReinitializeGraph(graphP theGraph);
@@ -149,9 +147,6 @@ int  gp_AttachDrawPlanar(graphP theGraph)
      context->functions.fpEmbedPostprocess = _DrawPlanar_EmbedPostprocess;
      context->functions.fpCheckEmbeddingIntegrity = _DrawPlanar_CheckEmbeddingIntegrity;
      context->functions.fpCheckObstructionIntegrity = _DrawPlanar_CheckObstructionIntegrity;
-
-     context->functions.fpInitEdgeRec = _DrawPlanar_InitEdgeRec;
-     context->functions.fpInitVertexInfo = _DrawPlanar_InitVertexInfo;
 
      context->functions.fpInitGraph = _DrawPlanar_InitGraph;
      context->functions.fpReinitializeGraph = _DrawPlanar_ReinitializeGraph;
@@ -265,6 +260,10 @@ int  _DrawPlanar_CreateStructures(DrawPlanarContext *context)
  ********************************************************************/
 int  _DrawPlanar_InitStructures(DrawPlanarContext *context)
 {
+#if NIL == 0
+	memset(context->VI, NIL_CHAR, gp_PrimaryVertexIndexBound(context->theGraph) * sizeof(DrawPlanar_VertexInfo));
+	memset(context->E, NIL_CHAR, gp_EdgeIndexBound(context->theGraph) * sizeof(DrawPlanar_EdgeRec));
+#else
      int v, e, Esize;
      graphP theGraph = context->theGraph;
 
@@ -272,11 +271,12 @@ int  _DrawPlanar_InitStructures(DrawPlanarContext *context)
          return NOTOK;
 
      for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
-          _InitDrawVertexInfo(context, v);
+          _DrawPlanar_InitVertexInfo(context, v);
 
      Esize = gp_EdgeIndexBound(theGraph);
      for (e = gp_GetFirstEdge(theGraph); e < Esize; e++)
-          _InitDrawEdgeRec(context, e);
+          _DrawPlanar_InitEdgeRec(context, e);
+#endif
 
      return OK;
 }
@@ -339,28 +339,18 @@ int  _DrawPlanar_InitGraph(graphP theGraph, int N)
     gp_FindExtension(theGraph, DRAWPLANAR_ID, (void *)&context);
 
     if (context == NULL)
-    {
         return NOTOK;
-    }
-    else
-    {
-        theGraph->N = N;
-        theGraph->NV = N;
-        if (theGraph->arcCapacity == 0)
-        	theGraph->arcCapacity = 2*DEFAULT_EDGE_LIMIT*N;
 
-        // Create custom structures, initialized at graph level,
-        // uninitialized at vertex and edge levels.
-        if (_DrawPlanar_CreateStructures(context) != OK)
-        {
-            return NOTOK;
-        }
+	theGraph->N = N;
+	theGraph->NV = N;
+	if (theGraph->arcCapacity == 0)
+		theGraph->arcCapacity = 2*DEFAULT_EDGE_LIMIT*N;
 
-        // This call initializes the base graph structures, but it also
-        // initializes the custom edge and vertex level structures due to
-        // overloads of InitVertexInfo, InitVertexRec, and InitEdgeRec
-        context->functions.fpInitGraph(theGraph, N);
-    }
+	if (_DrawPlanar_CreateStructures(context) != OK ||
+		_DrawPlanar_InitStructures(context) != OK)
+		return NOTOK;
+
+	context->functions.fpInitGraph(theGraph, N);
 
     return OK;
 }
@@ -375,41 +365,11 @@ void _DrawPlanar_ReinitializeGraph(graphP theGraph)
 
     if (context != NULL)
     {
-        // Reinitialization can go much faster if the underlying
-        // init functions for the edge and vertex levels are called,
-        // rather than the overloads of this module, because it
-        // avoids lots of unnecessary gp_FindExtension() calls.
-        if (theGraph->functions.fpInitEdgeRec == _DrawPlanar_InitEdgeRec &&
-            theGraph->functions.fpInitVertexInfo == _DrawPlanar_InitVertexInfo)
-        {
-            // Restore the graph function pointers
-            theGraph->functions.fpInitEdgeRec = context->functions.fpInitEdgeRec;
-            theGraph->functions.fpInitVertexInfo = context->functions.fpInitVertexInfo;
+		// Reinitialize the graph
+		context->functions.fpReinitializeGraph(theGraph);
 
-            // Reinitialize the graph
-            context->functions.fpReinitializeGraph(theGraph);
-
-            // Restore the function pointers that attach this feature
-            theGraph->functions.fpInitEdgeRec = _DrawPlanar_InitEdgeRec;
-            theGraph->functions.fpInitVertexInfo = _DrawPlanar_InitVertexInfo;
-
-            // Do the reinitialization that is specific to this module
-            // InitStructures does vertex and edge levels
-            _DrawPlanar_InitStructures(context);
-            // Initialization of any graph level data structures follows here
-        }
-
-        // If optimization is not possible, then just stick with what works.
-        // Reinitialize the graph-level structure (of which there are none)
-        // and then invoke the reinitialize function.
-        else
-        {
-            // No need to call _InitStructures(context) here because the underlying
-        	// function fpReinitializeGraph() already does the vertex and edge levels
-        	// due to the overloads of fpInitEdgeRec() and fpInitVertexInfo().
-            context->functions.fpReinitializeGraph(theGraph);
-            // Graph level reintializations would follow here
-        }
+		// Do the reinitialization that is specific to this module
+		_DrawPlanar_InitStructures(context);
     }
 }
 
@@ -548,22 +508,7 @@ int _DrawPlanar_HandleInactiveVertex(graphP theGraph, int BicompRoot, int *pW, i
 /********************************************************************
  ********************************************************************/
 
-void _DrawPlanar_InitEdgeRec(graphP theGraph, int e)
-{
-    DrawPlanarContext *context = NULL;
-    gp_FindExtension(theGraph, DRAWPLANAR_ID, (void *)&context);
-
-    if (context != NULL)
-    {
-        context->functions.fpInitEdgeRec(theGraph, e);
-        _InitDrawEdgeRec(context, e);
-    }
-}
-
-/********************************************************************
- ********************************************************************/
-
-void _InitDrawEdgeRec(DrawPlanarContext *context, int e)
+void _DrawPlanar_InitEdgeRec(DrawPlanarContext *context, int e)
 {
     context->E[e].pos = 0;
     context->E[e].start = 0;
@@ -573,22 +518,7 @@ void _InitDrawEdgeRec(DrawPlanarContext *context, int e)
 /********************************************************************
  ********************************************************************/
 
-void _DrawPlanar_InitVertexInfo(graphP theGraph, int v)
-{
-    DrawPlanarContext *context = NULL;
-    gp_FindExtension(theGraph, DRAWPLANAR_ID, (void *)&context);
-
-    if (context != NULL)
-    {
-        context->functions.fpInitVertexInfo(theGraph, v);
-        _InitDrawVertexInfo(context, v);
-    }
-}
-
-/********************************************************************
- ********************************************************************/
-
-void _InitDrawVertexInfo(DrawPlanarContext *context, int v)
+void _DrawPlanar_InitVertexInfo(DrawPlanarContext *context, int v)
 {
     context->VI[v].pos = 0;
     context->VI[v].start = 0;

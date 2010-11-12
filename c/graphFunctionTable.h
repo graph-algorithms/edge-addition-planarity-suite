@@ -73,14 +73,6 @@ typedef struct
         int  (*fpCheckEmbeddingIntegrity)();
         int  (*fpCheckObstructionIntegrity)();
 
-        // These function pointers allow extension modules to overload VertexRec,
-        // VertexInfo and EdgeRec initialization. These are not part of the public API
-        // for graph library users, but many extensions are expected to overload them
-        // if they equip vertices or edges with additional parameters
-        void (*fpInitVertexRec)();
-        void (*fpInitVertexInfo)();
-        void (*fpInitEdgeRec)();
-
         // These function pointers allow extension modules to overload some
         // of the behaviors of gp_* function in the public API
         int  (*fpInitGraph)();
@@ -91,12 +83,13 @@ typedef struct
         int  (*fpReadPostprocess)();
         int  (*fpWritePostprocess)();
 
-        int  (*fpHideVertex)();
+        int  (*fpDeleteEdge)();
         void (*fpHideEdge)();
         void (*fpRestoreEdge)();
+        int  (*fpHideVertex)();
+        int  (*fpRestoreVertex)();
         int  (*fpContractEdge)();
         int  (*fpIdentifyVertices)();
-        int  (*fpRestoreVertex)();
 
 } graphFunctionTable;
 

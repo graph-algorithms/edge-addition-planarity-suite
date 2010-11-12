@@ -53,6 +53,8 @@ extern void _ClearVertexVisitedFlags(graphP theGraph, int);
 extern int _IsolateKuratowskiSubgraph(graphP theGraph, int v, int R);
 extern int _IsolateOuterplanarObstruction(graphP theGraph, int v, int R);
 
+extern void _InitVertexRec(graphP theGraph, int v);
+
 /* Private functions (some are exported to system only) */
 
 int  _EmbeddingInitialize(graphP theGraph);
@@ -571,7 +573,7 @@ int  e, eTwin, e_w, e_r, e_ext;
      }
 
      // Erase the entries in R, which is a root copy that is no longer needed
-     theGraph->functions.fpInitVertexRec(theGraph, R);
+     _InitVertexRec(theGraph, R);
 }
 
 /********************************************************************

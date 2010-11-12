@@ -62,6 +62,9 @@ void _K33Search_ClearStructures(K33SearchContext *context);
 int  _K33Search_CreateStructures(K33SearchContext *context);
 int  _K33Search_InitStructures(K33SearchContext *context);
 
+void _K33Search_InitEdgeRec(K33SearchContext *context, int e);
+void _K33Search_InitVertexInfo(K33SearchContext *context, int v);
+
 /* Forward declarations of overloading functions */
 
 int  _K33Search_EmbeddingInitialize(graphP theGraph);
@@ -75,14 +78,10 @@ int  _K33Search_EmbedPostprocess(graphP theGraph, int v, int edgeEmbeddingResult
 int  _K33Search_CheckEmbeddingIntegrity(graphP theGraph, graphP origGraph);
 int  _K33Search_CheckObstructionIntegrity(graphP theGraph, graphP origGraph);
 
-void _K33Search_InitEdgeRec(graphP theGraph, int e);
-void _InitK33SearchEdgeRec(K33SearchContext *context, int e);
-void _K33Search_InitVertexInfo(graphP theGraph, int v);
-void _InitK33SearchVertexInfo(K33SearchContext *context, int v);
-
 int  _K33Search_InitGraph(graphP theGraph, int N);
 void _K33Search_ReinitializeGraph(graphP theGraph);
 int  _K33Search_EnsureArcCapacity(graphP theGraph, int requiredArcCapacity);
+int  _K33Search_DeleteEdge(graphP theGraph, int e, int nextLink);
 
 /* Forward declarations of functions used by the extension system */
 
@@ -143,12 +142,10 @@ int  gp_AttachK33Search(graphP theGraph)
      context->functions.fpCheckEmbeddingIntegrity = _K33Search_CheckEmbeddingIntegrity;
      context->functions.fpCheckObstructionIntegrity = _K33Search_CheckObstructionIntegrity;
 
-     context->functions.fpInitVertexInfo = _K33Search_InitVertexInfo;
-     context->functions.fpInitEdgeRec = _K33Search_InitEdgeRec;
-
      context->functions.fpInitGraph = _K33Search_InitGraph;
      context->functions.fpReinitializeGraph = _K33Search_ReinitializeGraph;
      context->functions.fpEnsureArcCapacity = _K33Search_EnsureArcCapacity;
+     context->functions.fpDeleteEdge = _K33Search_DeleteEdge;
 
      _K33Search_ClearStructures(context);
 
@@ -263,6 +260,10 @@ int  _K33Search_CreateStructures(K33SearchContext *context)
  ********************************************************************/
 int  _K33Search_InitStructures(K33SearchContext *context)
 {
+#if NIL == 0 || NIL == -1
+	memset(context->VI, NIL_CHAR, gp_PrimaryVertexIndexBound(context->theGraph) * sizeof(K33Search_VertexInfo));
+	memset(context->E, NIL_CHAR, gp_EdgeIndexBound(context->theGraph) * sizeof(K33Search_EdgeRec));
+#else
 	 graphP theGraph = context->theGraph;
      int v, e, Esize;
 
@@ -270,11 +271,12 @@ int  _K33Search_InitStructures(K33SearchContext *context)
          return OK;
 
      for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
-          _InitK33SearchVertexInfo(context, v);
+          _K33Search_InitVertexInfo(context, v);
 
      Esize = gp_EdgeIndexBound(theGraph);
      for (e = gp_GetFirstEdge(theGraph); e < Esize; e++)
-          _InitK33SearchEdgeRec(context, e);
+          _K33Search_InitEdgeRec(context, e);
+#endif
 
      return OK;
 }
@@ -289,20 +291,17 @@ int  _K33Search_InitGraph(graphP theGraph, int N)
 
     if (context == NULL)
         return NOTOK;
-    {
-        theGraph->N = N;
-        theGraph->NV = N;
-        if (theGraph->arcCapacity == 0)
-        	theGraph->arcCapacity = 2*DEFAULT_EDGE_LIMIT*N;
 
-        if (_K33Search_CreateStructures(context) != OK)
-            return NOTOK;
+	theGraph->N = N;
+	theGraph->NV = N;
+	if (theGraph->arcCapacity == 0)
+		theGraph->arcCapacity = 2*DEFAULT_EDGE_LIMIT*N;
 
-        // This call initializes the base graph structures, but it also
-        // initializes the custom edge and vertex level structures
-        // due to the overloads of InitEdgeRec and InitVertexInfo
-        context->functions.fpInitGraph(theGraph, N);
-    }
+	if (_K33Search_CreateStructures(context) != OK ||
+		_K33Search_InitStructures(context) != OK)
+		return NOTOK;
+
+	context->functions.fpInitGraph(theGraph, N);
 
     return OK;
 }
@@ -317,45 +316,13 @@ void _K33Search_ReinitializeGraph(graphP theGraph)
 
     if (context != NULL)
     {
-        // Reinitialization can go much faster if the underlying
-        // init functions for edges and vertices are called,
-        // rather than the overloads of this module, because it
-        // avoids lots of unnecessary gp_FindExtension() calls.
-        if (theGraph->functions.fpInitEdgeRec == _K33Search_InitEdgeRec &&
-            theGraph->functions.fpInitVertexInfo == _K33Search_InitVertexInfo)
-        {
-            // Restore the graph function pointers
-            theGraph->functions.fpInitEdgeRec = context->functions.fpInitEdgeRec;
-            theGraph->functions.fpInitVertexInfo = context->functions.fpInitVertexInfo;
+		// Reinitialize the graph
+		context->functions.fpReinitializeGraph(theGraph);
 
-            // Reinitialize the graph
-            context->functions.fpReinitializeGraph(theGraph);
-
-            // Restore the function pointers that attach this feature
-            theGraph->functions.fpInitEdgeRec = _K33Search_InitEdgeRec;
-            theGraph->functions.fpInitVertexInfo = _K33Search_InitVertexInfo;
-
-            // Do the reinitialization that is specific to this module
-            _K33Search_InitStructures(context);
-            LCReset(context->separatedDFSChildLists);
-            LCReset(context->bin);
-        }
-
-        // If optimization is not possible, then just stick with what works.
-        // Reinitialize the graph-level structure and then invoke the
-        // reinitialize function.
-        else
-        {
-            LCReset(context->separatedDFSChildLists);
-            LCReset(context->bin);
-
-            // The underlying function fpReinitializeGraph() implicitly initializes the K33
-            // structures due to the overloads of fpInitEdgeRec() and fpInitVertexInfo().
-            // It just does so less efficiently because each invocation of InitEdgeRec
-            // and InitVertexInfo has to look up the extension again.
-            //// _K33Search_InitStructures(context);
-            context->functions.fpReinitializeGraph(theGraph);
-        }
+		// Do the reinitialization that is specific to this module
+		_K33Search_InitStructures(context);
+		LCReset(context->separatedDFSChildLists);
+		LCReset(context->bin);
     }
 }
 
@@ -371,6 +338,24 @@ void _K33Search_ReinitializeGraph(graphP theGraph)
 int  _K33Search_EnsureArcCapacity(graphP theGraph, int requiredArcCapacity)
 {
 	return NOTOK;
+}
+
+/********************************************************************
+ ********************************************************************/
+int  _K33Search_DeleteEdge(graphP theGraph, int e, int nextLink)
+{
+    K33SearchContext *context = NULL;
+    gp_FindExtension(theGraph, K33SEARCH_ID, (void *)&context);
+
+    if (context != NULL)
+    {
+    	_K33Search_InitEdgeRec(context, e);
+    	_K33Search_InitEdgeRec(context, gp_GetTwinArc(theGraph, e));
+
+		return context->functions.fpDeleteEdge(theGraph, e, nextLink);
+    }
+
+    return NIL + NOTOK - NOTOK;
 }
 
 /********************************************************************
@@ -676,19 +661,7 @@ void _K33Search_MergeVertex(graphP theGraph, int W, int WPrevLink, int R)
 /********************************************************************
  ********************************************************************/
 
-void _K33Search_InitEdgeRec(graphP theGraph, int e)
-{
-    K33SearchContext *context = NULL;
-    gp_FindExtension(theGraph, K33SEARCH_ID, (void *)&context);
-
-    if (context != NULL)
-    {
-        context->functions.fpInitEdgeRec(theGraph, e);
-        _InitK33SearchEdgeRec(context, e);
-    }
-}
-
-void _InitK33SearchEdgeRec(K33SearchContext *context, int e)
+void _K33Search_InitEdgeRec(K33SearchContext *context, int e)
 {
     context->E[e].noStraddle = NIL;
     context->E[e].pathConnector = NIL;
@@ -697,19 +670,7 @@ void _InitK33SearchEdgeRec(K33SearchContext *context, int e)
 /********************************************************************
  ********************************************************************/
 
-void _K33Search_InitVertexInfo(graphP theGraph, int v)
-{
-    K33SearchContext *context = NULL;
-    gp_FindExtension(theGraph, K33SEARCH_ID, (void *)&context);
-
-    if (context != NULL)
-    {
-        context->functions.fpInitVertexInfo(theGraph, v);
-        _InitK33SearchVertexInfo(context, v);
-    }
-}
-
-void _InitK33SearchVertexInfo(K33SearchContext *context, int v)
+void _K33Search_InitVertexInfo(K33SearchContext *context, int v)
 {
     context->VI[v].separatedDFSChildList = NIL;
     context->VI[v].backArcList = NIL;
