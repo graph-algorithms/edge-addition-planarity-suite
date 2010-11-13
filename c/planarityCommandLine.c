@@ -285,6 +285,9 @@ int runSpecificGraphTests()
 	if (runSpecificGraphTest("-d", "drawExample.txt") < 0)
 		retVal = -1;
 
+	if (runSpecificGraphTest("-d", "drawExample.0-based.txt") < 0)
+		retVal = -1;
+
 	if (runSpecificGraphTest("-p", "Petersen.txt") < 0)
 		retVal = -1;
 
