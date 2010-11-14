@@ -276,6 +276,7 @@ int runSpecificGraphTests()
 		}
 	}
 
+#if NIL == 0
 	if (runSpecificGraphTest("-p", "maxPlanar5.txt") < 0)
 		retVal = -1;
 
@@ -311,6 +312,40 @@ int runSpecificGraphTests()
 
 	if (runSpecificGraphTest("-c", "drawExample.txt") < 0)
 		retVal = -1;
+#else
+	if (runSpecificGraphTest("-p", "maxPlanar5.0-based.txt") < 0)
+		retVal = -1;
+
+	if (runSpecificGraphTest("-d", "maxPlanar5.0-based.txt") < 0)
+		retVal = -1;
+
+	if (runSpecificGraphTest("-d", "drawExample.0-based.txt") < 0)
+		retVal = -1;
+
+	if (runSpecificGraphTest("-p", "Petersen.0-based.txt") < 0)
+		retVal = -1;
+
+	if (runSpecificGraphTest("-o", "Petersen.0-based.txt") < 0)
+		retVal = -1;
+
+	if (runSpecificGraphTest("-2", "Petersen.0-based.txt") < 0)
+		retVal = -1;
+
+	if (runSpecificGraphTest("-3", "Petersen.0-based.txt") < 0)
+		retVal = -1;
+
+	if (runSpecificGraphTest("-4", "Petersen.0-based.txt") < 0)
+		retVal = -1;
+
+	if (runSpecificGraphTest("-c", "maxPlanar5.0-based.txt") < 0)
+		retVal = -1;
+
+	if (runSpecificGraphTest("-c", "Petersen.0-based.txt") < 0)
+		retVal = -1;
+
+	if (runSpecificGraphTest("-c", "drawExample.0-based.txt") < 0)
+		retVal = -1;
+#endif
 
 	if (retVal == 0)
 		printf("Tests of all specific graphs succeeded\n");
