@@ -282,10 +282,20 @@ int  _InitGraph(graphP theGraph, int N)
  ********************************************************************/
 void _InitVertices(graphP theGraph)
 {
-#if NIL == 0 || NIL == -1
+#if NIL == 0
 	memset(theGraph->V, NIL_CHAR, gp_VertexIndexBound(theGraph) * sizeof(vertexRec));
 	memset(theGraph->VI, NIL_CHAR, gp_PrimaryVertexIndexBound(theGraph) * sizeof(vertexInfo));
 	memset(theGraph->extFace, NIL_CHAR, gp_VertexIndexBound(theGraph) * sizeof(extFaceLinkRec));
+#elif NIL == -1
+	int v;
+
+	memset(theGraph->V, NIL_CHAR, gp_VertexIndexBound(theGraph) * sizeof(vertexRec));
+	memset(theGraph->VI, NIL_CHAR, gp_PrimaryVertexIndexBound(theGraph) * sizeof(vertexInfo));
+	memset(theGraph->extFace, NIL_CHAR, gp_VertexIndexBound(theGraph) * sizeof(extFaceLinkRec));
+
+	for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
+	    gp_InitVertexFlags(theGraph, v);
+
 #else
 	int v;
 
@@ -313,8 +323,17 @@ void _InitVertices(graphP theGraph)
  ********************************************************************/
 void _InitEdges(graphP theGraph)
 {
-#if NIL == 0 || NIL == -1
+#if NIL == 0
 	memset(theGraph->E, NIL_CHAR, gp_EdgeIndexBound(theGraph) * sizeof(edgeRec));
+#elif NIL == -1
+	int e, Esize;
+
+	memset(theGraph->E, NIL_CHAR, gp_EdgeIndexBound(theGraph) * sizeof(edgeRec));
+
+	Esize = gp_EdgeIndexBound(theGraph);
+    for (e = gp_GetFirstEdge(theGraph); e < Esize; e++)
+        gp_InitEdgeFlags(theGraph, e);
+
 #else
 	int e, Esize;
 

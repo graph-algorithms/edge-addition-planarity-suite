@@ -94,12 +94,12 @@ extern int debugNOTOK();
 /* Array indices are used as pointers, and NIL means bad pointer */
 
 // This definition is used with 1-based array indexing
-#define NIL			0
-#define NIL_CHAR	0x00
+//#define NIL			0
+//#define NIL_CHAR	0x00
 
 // This definition is used in combination with 0-based array indexing
-//#define NIL		-1
-//#define NIL_CHAR	0xFF
+#define NIL		-1
+#define NIL_CHAR	0xFF
 
 /* Defines fopen strings for reading and writing text files on PC and UNIX */
 
