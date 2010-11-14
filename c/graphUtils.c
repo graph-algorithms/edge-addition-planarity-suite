@@ -67,7 +67,6 @@ extern int  _WritePostprocess(graphP theGraph, void **pExtraData, long *pExtraDa
 
 /* Internal util functions for FUNCTION POINTERS */
 
-int  _DeleteEdge(graphP theGraph, int e, int nextLink);
 int  _HideVertex(graphP theGraph, int vertex);
 void _HideEdge(graphP theGraph, int arcPos);
 void _RestoreEdge(graphP theGraph, int arcPos);
@@ -191,7 +190,6 @@ void _InitFunctionTable(graphP theGraph)
      theGraph->functions.fpReadPostprocess = _ReadPostprocess;
      theGraph->functions.fpWritePostprocess = _WritePostprocess;
 
-     theGraph->functions.fpDeleteEdge = _DeleteEdge;
      theGraph->functions.fpHideEdge = _HideEdge;
      theGraph->functions.fpRestoreEdge = _RestoreEdge;
      theGraph->functions.fpHideVertex = _HideVertex;
@@ -1729,11 +1727,6 @@ int vertMax = gp_GetLastVirtualVertex(theGraph),
  ****************************************************************************/
 
 int  gp_DeleteEdge(graphP theGraph, int e, int nextLink)
-{
-	 return theGraph->functions.fpDeleteEdge(theGraph, e, nextLink);
-}
-
-int  _DeleteEdge(graphP theGraph, int e, int nextLink)
 {
 	 // Calculate the nextArc after e so that, when e is deleted, the return result
 	 // informs a calling loop of the next edge to be processed.

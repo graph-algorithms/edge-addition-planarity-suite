@@ -81,7 +81,6 @@ int  _K33Search_CheckObstructionIntegrity(graphP theGraph, graphP origGraph);
 int  _K33Search_InitGraph(graphP theGraph, int N);
 void _K33Search_ReinitializeGraph(graphP theGraph);
 int  _K33Search_EnsureArcCapacity(graphP theGraph, int requiredArcCapacity);
-int  _K33Search_DeleteEdge(graphP theGraph, int e, int nextLink);
 
 /* Forward declarations of functions used by the extension system */
 
@@ -145,7 +144,6 @@ int  gp_AttachK33Search(graphP theGraph)
      context->functions.fpInitGraph = _K33Search_InitGraph;
      context->functions.fpReinitializeGraph = _K33Search_ReinitializeGraph;
      context->functions.fpEnsureArcCapacity = _K33Search_EnsureArcCapacity;
-     context->functions.fpDeleteEdge = _K33Search_DeleteEdge;
 
      _K33Search_ClearStructures(context);
 
@@ -338,24 +336,6 @@ void _K33Search_ReinitializeGraph(graphP theGraph)
 int  _K33Search_EnsureArcCapacity(graphP theGraph, int requiredArcCapacity)
 {
 	return NOTOK;
-}
-
-/********************************************************************
- ********************************************************************/
-int  _K33Search_DeleteEdge(graphP theGraph, int e, int nextLink)
-{
-    K33SearchContext *context = NULL;
-    gp_FindExtension(theGraph, K33SEARCH_ID, (void *)&context);
-
-    if (context != NULL)
-    {
-    	_K33Search_InitEdgeRec(context, e);
-    	_K33Search_InitEdgeRec(context, gp_GetTwinArc(theGraph, e));
-
-		return context->functions.fpDeleteEdge(theGraph, e, nextLink);
-    }
-
-    return NIL + NOTOK - NOTOK;
 }
 
 /********************************************************************

@@ -83,7 +83,6 @@ typedef struct
         int  (*fpReadPostprocess)();
         int  (*fpWritePostprocess)();
 
-        int  (*fpDeleteEdge)();
         void (*fpHideEdge)();
         void (*fpRestoreEdge)();
         int  (*fpHideVertex)();
