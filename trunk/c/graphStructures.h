@@ -121,7 +121,7 @@ typedef edgeRec * edgeRecP;
 // If an even number, xor 1 will add one; if an odd number, xor 1 will subtract 1
 #define gp_GetTwinArc(theGraph, Arc) ((Arc) ^ 1)
 
-// Accessors for link[] array
+// Access to adjacency list pointers
 #define gp_GetNextArc(theGraph, e) (theGraph->E[e].link[0])
 #define gp_GetPrevArc(theGraph, e) (theGraph->E[e].link[1])
 #define gp_GetAdjacentArc(theGraph, e, theLink) (theGraph->E[e].link[theLink])
@@ -130,14 +130,14 @@ typedef edgeRec * edgeRecP;
 #define gp_SetPrevArc(theGraph, e, newPrevArc) (theGraph->E[e].link[1] = newPrevArc)
 #define gp_SetAdjacentArc(theGraph, e, theLink, newArc) (theGraph->E[e].link[theLink] = newArc)
 
-// Accessors for 'v' member
+// Access to vertex 'neighbor' member indicated by arc
 #define gp_GetNeighbor(theGraph, e) (theGraph->E[e].neighbor)
 #define gp_SetNeighbor(theGraph, e, v) (theGraph->E[e].neighbor = v)
 
-// Initializer for vertex flags
+// Initializer for edge flags
 #define gp_InitEdgeFlags(theGraph, e) (theGraph->E[e].flags = 0)
 
-// Definitions and accessors for edge flags
+// Definitions of and access to edge flags
 #define EDGE_VISITED_MASK		1
 #define gp_GetEdgeVisited(theGraph, e) (theGraph->E[e].flags&EDGE_VISITED_MASK)
 #define gp_ClearEdgeVisited(theGraph, e) (theGraph->E[e].flags &= ~EDGE_VISITED_MASK)

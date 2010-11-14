@@ -383,6 +383,9 @@ int  _K4Search_HandleBlockedBicomp(graphP theGraph, int v, int RootVertex, int R
             	// bicomp root back off the stack so the Walkdown can try to descend to it again.
             	int dummy;
             	sp_Pop2(theGraph->theStack, R, dummy);
+
+            	// And we have to clear the indicator of the minor A that was reduced, since it was eliminated.
+            	theGraph->IC.minorType = 0;
             }
     	}
 

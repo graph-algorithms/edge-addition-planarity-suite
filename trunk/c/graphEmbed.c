@@ -888,7 +888,7 @@ int  RootEdgeChild = gp_GetDFSChildFromRoot(theGraph, RootVertex);
          }
          else
          {
-             // Otherwise, an extension algorithm has called Walkdown on a bicomp with two distinct
+             // Otherwise, the Walkdown traversal is proceeding on a bicomp with two distinct
         	 // external face paths from RootVertex
         	 WPrevLink = gp_GetExtFaceVertex(theGraph, W, 0) == RootVertex ? 0 : 1;
         	 if (gp_GetExtFaceVertex(theGraph, W, WPrevLink) != RootVertex)
