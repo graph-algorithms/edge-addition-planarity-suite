@@ -74,7 +74,6 @@ int  _K4Search_CheckObstructionIntegrity(graphP theGraph, graphP origGraph);
 int  _K4Search_InitGraph(graphP theGraph, int N);
 void _K4Search_ReinitializeGraph(graphP theGraph);
 int  _K4Search_EnsureArcCapacity(graphP theGraph, int requiredArcCapacity);
-int  _K4Search_DeleteEdge(graphP theGraph, int e, int nextLink);
 
 /* Forward declarations of functions used by the extension system */
 
@@ -133,11 +132,10 @@ int  gp_AttachK4Search(graphP theGraph)
      context->functions.fpInitGraph = _K4Search_InitGraph;
      context->functions.fpReinitializeGraph = _K4Search_ReinitializeGraph;
      context->functions.fpEnsureArcCapacity = _K4Search_EnsureArcCapacity;
-     context->functions.fpDeleteEdge = _K4Search_DeleteEdge;
 
      _K4Search_ClearStructures(context);
 
-     // Store the K33 search context, including the data structure and the
+     // Store the K4 search context, including the data structure and the
      // function pointers, as an extension of the graph
      if (gp_AddExtension(theGraph, &K4SEARCH_ID, (void *) context,
                          _K4Search_DupContext, _K4Search_FreeContext,
@@ -147,7 +145,7 @@ int  gp_AttachK4Search(graphP theGraph)
          return NOTOK;
      }
 
-     // Create the K33-specific structures if the size of the graph is known
+     // Create the K4-specific structures if the size of the graph is known
      // Attach functions are always invoked after gp_New(), but if a graph
      // extension must be attached before gp_Read(), then the attachment
      // also happens before gp_InitGraph(), which means N==0.
@@ -296,24 +294,6 @@ void _K4Search_ReinitializeGraph(graphP theGraph)
 int  _K4Search_EnsureArcCapacity(graphP theGraph, int requiredArcCapacity)
 {
 	return NOTOK;
-}
-
-/********************************************************************
- ********************************************************************/
-int  _K4Search_DeleteEdge(graphP theGraph, int e, int nextLink)
-{
-    K4SearchContext *context = NULL;
-    gp_FindExtension(theGraph, K4SEARCH_ID, (void *)&context);
-
-    if (context != NULL)
-    {
-    	_K4Search_InitEdgeRec(context, e);
-    	_K4Search_InitEdgeRec(context, gp_GetTwinArc(theGraph, e));
-
-		return context->functions.fpDeleteEdge(theGraph, e, nextLink);
-    }
-
-    return NIL + NOTOK - NOTOK;
 }
 
 /********************************************************************
