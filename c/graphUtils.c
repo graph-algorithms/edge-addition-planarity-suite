@@ -1757,7 +1757,7 @@ int  gp_DeleteEdge(graphP theGraph, int e, int nextLink)
 
      // Clear the two edge records
      // (the bit twiddle (e & ~1) chooses the lesser of e and its twin arc)
-#if NIL == 0 || NIL == -1
+#if NIL == 0
      memset(theGraph->E + (e & ~1), NIL_CHAR, sizeof(edgeRec) << 1);
 #else
      _InitEdgeRec(theGraph, e);
