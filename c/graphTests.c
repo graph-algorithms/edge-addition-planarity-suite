@@ -964,8 +964,9 @@ int invokeSortOnSubgraph = FALSE;
           if (Result != TRUE)
         	  break;
 
-          /* For each neighbor w in the adjacency list of vertex v in the
-                subgraph, set the visited flag in w in the graph */
+          /* For each neighbor w in the adjacency list of vertex v in the subgraph,
+             ensure that the visited flag in w was cleared (otherwise, the "subgraph"
+             would incorrectly contain an adjacency not contained in the ("super") graph) */
 
           e = gp_GetFirstArc(theSubgraph, v);
           while (gp_IsArc(e))
