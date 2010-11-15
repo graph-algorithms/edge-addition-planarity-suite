@@ -99,10 +99,10 @@ int Result;
     		int embedFlags = GetEmbedFlags(command);
 	        platform_GetTime(start);
 
-	        gp_CreateDFSTree(theGraph);
-	        gp_SortVertices(theGraph);
-			gp_Write(theGraph, "error.debug.before.txt", WRITE_DEBUGINFO);
-	        gp_SortVertices(theGraph);
+//	        gp_CreateDFSTree(theGraph);
+//	        gp_SortVertices(theGraph);
+//			gp_Write(theGraph, "debug.before.txt", WRITE_DEBUGINFO);
+//	        gp_SortVertices(theGraph);
 
 			Result = gp_Embed(theGraph, embedFlags);
 	        platform_GetTime(end);
@@ -133,7 +133,7 @@ int Result;
 	{
 		ErrorMessage("AN ERROR HAS BEEN DETECTED\n");
 		Result = NOTOK;
-		gp_Write(theGraph, "error.debug.after.txt", WRITE_DEBUGINFO);
+//		gp_Write(theGraph, "debug.after.txt", WRITE_DEBUGINFO);
 	}
 
 	// Provide the output file(s)

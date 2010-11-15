@@ -60,7 +60,6 @@ extern int  _FillVertexVisitedInfoInBicomp(graphP theGraph, int BicompRoot, int 
 extern int  _GetBicompSize(graphP theGraph, int BicompRoot);
 extern int  _HideInternalEdges(graphP theGraph, int vertex);
 extern int  _RestoreInternalEdges(graphP theGraph, int stackBottom);
-extern int  _DeleteUnmarkedEdgesInBicomp(graphP theGraph, int BicompRoot);
 extern int  _ClearInvertedFlagsInBicomp(graphP theGraph, int BicompRoot);
 extern int  _ComputeArcType(graphP theGraph, int a, int b, int edgeType);
 extern int  _SetEdgeType(graphP theGraph, int u, int v);
@@ -118,6 +117,8 @@ int  _FindK33WithMergeBlocker(graphP theGraph, K33SearchContext *context, int v,
 int  _TestForLowXYPath(graphP theGraph);
 int  _TestForZtoWPath(graphP theGraph);
 int  _TestForStraddlingBridge(graphP theGraph, K33SearchContext *context, int u_max);
+int  _K33Search_DeleteUnmarkedEdgesInBicomp(graphP theGraph, K33SearchContext *context, int BicompRoot);
+int  _K33Search_DeleteEdge(graphP theGraph, K33SearchContext *context, int e, int nextLink);
 int  _ReduceBicomp(graphP theGraph, K33SearchContext *context, int R);
 int  _ReduceExternalFacePathToEdge(graphP theGraph, K33SearchContext *context, int u, int x, int edgeType);
 int  _ReduceXYPathToEdge(graphP theGraph, K33SearchContext *context, int u, int x, int edgeType);
@@ -1450,7 +1451,7 @@ int  rxType, xwType, wyType, yrType, xyType;
  * represents a reduced path, then only the reduction edge is deleted here.
  * The path it represents is only deleted later (see NOTE above) */
 
-     if (_DeleteUnmarkedEdgesInBicomp(theGraph, R) != OK)
+     if (_K33Search_DeleteUnmarkedEdgesInBicomp(theGraph, context, R) != OK)
     	 return NOTOK;
 
 /* Clear all visited flags in the bicomp.
@@ -1502,6 +1503,46 @@ int  _K33Search_DeleteEdge(graphP theGraph, K33SearchContext *context, int e, in
 	_K33Search_InitEdgeRec(context, gp_GetTwinArc(theGraph, e));
 
 	return gp_DeleteEdge(theGraph, e, nextLink);
+}
+
+/********************************************************************
+ _K33Search_DeleteUnmarkedEdgesInBicomp()
+
+ This function deletes from a given biconnected component all edges
+ whose visited member is zero.
+
+ The stack is used but preserved. In debug mode, NOTOK can result if
+ there is a stack overflow. This method pushes at most one integer
+ per vertex in the bicomp.
+
+ This is the same as _DeleteUnmarkedEdgesInBicomp(), except it calls
+ the overloaded _K33_DeleteEdge() rather than gp_DeleteEdge()
+
+ Returns OK on success, NOTOK on implementation failure
+ ********************************************************************/
+
+int  _K33Search_DeleteUnmarkedEdgesInBicomp(graphP theGraph, K33SearchContext *context, int BicompRoot)
+{
+int  V, e;
+int  stackBottom = sp_GetCurrentSize(theGraph->theStack);
+
+     sp_Push(theGraph->theStack, BicompRoot);
+     while (sp_GetCurrentSize(theGraph->theStack) > stackBottom)
+     {
+          sp_Pop(theGraph->theStack, V);
+
+          e = gp_GetFirstArc(theGraph, V);
+          while (gp_IsArc(e))
+          {
+             if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_CHILD)
+                 sp_Push(theGraph->theStack, gp_GetNeighbor(theGraph, e));
+
+             e = gp_GetEdgeVisited(theGraph, e)
+            		 ? gp_GetNextArc(theGraph, e)
+            		 : _K33Search_DeleteEdge(theGraph, context, e, 0);
+          }
+     }
+     return OK;
 }
 
 /****************************************************************************
