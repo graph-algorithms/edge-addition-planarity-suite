@@ -879,21 +879,12 @@ int  RootEdgeChild = gp_GetDFSChildFromRoot(theGraph, RootVertex);
      {
          W = gp_GetExtFaceVertex(theGraph, RootVertex, RootSide);
 
-         // If the main bicomp rooted by RootVertex is a single tree edge, (always the case
-         // for core planarity) then the external face links of W will be equal
-         if (gp_GetExtFaceVertex(theGraph, W, 0) == gp_GetExtFaceVertex(theGraph, W, 1))
-         {
-        	 // So we handle the bicomp external face as a cycle of two edges
-             WPrevLink = 1^RootSide;
-         }
-         else
-         {
-             // Otherwise, the Walkdown traversal is proceeding on a bicomp with two distinct
-        	 // external face paths from RootVertex
-        	 WPrevLink = gp_GetExtFaceVertex(theGraph, W, 0) == RootVertex ? 0 : 1;
-        	 if (gp_GetExtFaceVertex(theGraph, W, WPrevLink) != RootVertex)
-        		 return NOTOK;
-         }
+         // Determine the link used to enter W based on which side points back to RootVertex
+         // Implicitly handled special case: In core planarity, the first Walkdown traversal
+         // Will be on a singleton edge.  In this case, RootVertex and W are *consistently*
+         // oriented, and the RootSide is 0, so WPrevLink should be 1. This calculation is
+         // written to implicitly produce that result.
+         WPrevLink = gp_GetExtFaceVertex(theGraph, W, 1) == RootVertex ? 1 : 0;
 
          while (W != RootVertex)
          {

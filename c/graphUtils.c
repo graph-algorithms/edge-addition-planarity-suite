@@ -1764,16 +1764,17 @@ int  gp_DeleteEdge(graphP theGraph, int e, int nextLink)
      _InitEdgeRec(theGraph, gp_GetTwinArc(theGraph, e));
 #endif
 
-     // If records e and eTwin are not the last in the edge record array, then
-     // we want to record a new hole in the edge array. */
-     if (e < gp_EdgeInUseIndexBound(theGraph) - 2)
+     // Now we reduce the number of edges in the data structure
+     theGraph->M--;
+
+     // If records e and eTwin were not the last in the edge record array,
+     // then record a new hole in the edge array. */
+     if (e < gp_EdgeInUseIndexBound(theGraph))
      {
          sp_Push(theGraph->edgeHoles, e);
      }
 
-     // Now we reduce the number of edges in the data structure, and then
-     // return the previously calculated successor of e.
-     theGraph->M--;
+     // Return the previously calculated successor of e.
      return nextArc;
 }
 
