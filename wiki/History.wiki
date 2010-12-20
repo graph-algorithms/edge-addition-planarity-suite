@@ -1,6 +1,5 @@
-#summary History of the Planarity Project up to Version 2.2.1
+#summary History of the Planarity Project up to Version 3.0.0
 #labels Featured
-
 by John M. Boyer
 
 = Origin =
