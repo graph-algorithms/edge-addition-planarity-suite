@@ -37,6 +37,8 @@ Well, at least this is how it started out.  As the data structure modifications 
   * Changed all vertex and edge iteration code to consistent, more readable naming conventions
   * Lots of refinements, such as improved twin arc operation, removal of inversion flag from external face optimization, and improved use of the K33 mergeBlocker optimization
 
+These improvements to the data structures and APIs are now *DONE*.
+
 == Version 3.x ==
 
 Other algorithms that may be formulated in the future could be supported as extensions, such as:
