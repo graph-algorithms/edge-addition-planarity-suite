@@ -302,15 +302,15 @@ int  _ReadLEDAGraph(graphP theGraph, FILE *Infile)
     fgets(Line, 255, Infile);
     fgets(Line, 255, Infile);
 
-    /* Read the number of vertices, then skip that many more lines. */
+    /* Read the number of vertices N, initialize the graph, then skip N. */
     fgets(Line, 255, Infile);
     sscanf(Line, " %d", &N);
+
+    if (gp_InitGraph(theGraph, N) != OK)
+         return NOTOK;
+
     for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
         fgets(Line, 255, Infile);
-
-    /* Initialize the graph */
-     if (gp_InitGraph(theGraph, N) != OK)
-          return NOTOK;
 
     /* Read the number of edges */
     fgets(Line, 255, Infile);
