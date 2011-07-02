@@ -240,6 +240,7 @@ isolatorContextP IC = &theGraph->IC;
              return NOTOK;
      }
 
+     // Note: The x-y path is already marked, due to identifying the type of non-planarity minor
      if (_MarkDFSPathsToDescendants(theGraph) != OK ||
          theGraph->functions.fpMarkDFSPath(theGraph, MIN(IC->ux, IC->uy), IC->r) != OK ||
          _JoinBicomps(theGraph) != OK ||
@@ -257,6 +258,7 @@ int  _IsolateMinorD(graphP theGraph)
 {
 isolatorContextP IC = &theGraph->IC;
 
+	 // Note: The x-y and v-z paths are already marked, due to identifying the type of non-planarity minor
      if (_MarkPathAlongBicompExtFace(theGraph, IC->x, IC->y) != OK ||
          theGraph->functions.fpMarkDFSPath(theGraph, MIN(IC->ux, IC->uy), IC->r) != OK ||
          _MarkDFSPathsToDescendants(theGraph) != OK ||
@@ -297,6 +299,7 @@ isolatorContextP IC = &theGraph->IC;
 
 /* Minor E: Isolate a K5 homeomorph */
 
+     // Note: The x-y path is already marked, due to identifying the type of non-planarity minor
      if (_MarkPathAlongBicompExtFace(theGraph, IC->r, IC->r) != OK ||
          theGraph->functions.fpMarkDFSPath(theGraph, MIN3(IC->ux, IC->uy, IC->uz), IC->r) != OK ||
          _MarkDFSPathsToDescendants(theGraph) != OK ||
@@ -330,6 +333,9 @@ isolatorContextP IC = &theGraph->IC;
      }
      else return NOTOK;
 
+     // Note: The x-y path is already marked, due to identifying E as the type of non-planarity minor,
+     // but the x-y path is also included in minor C, so we let it stay marked since the minor C
+     // isolator also assumes the x-y path has been marked by non-planarity minor type identification
      IC->z = IC->uz = IC->dz = NIL;
      theGraph->IC.minorType ^= MINORTYPE_E;
      theGraph->IC.minorType |= (MINORTYPE_C|MINORTYPE_E1);
@@ -347,6 +353,9 @@ int  _IsolateMinorE2(graphP theGraph)
 {
 isolatorContextP IC = &theGraph->IC;
 
+     // Note: The x-y path was already marked, due to identifying E as the type of non-planarity minor,
+     // but we're reducing to Minor A, which does not include the x-y path, so the visited flags are
+     // cleared as a convenient, if somewhat wasteful, way to clear the marking on the x-y path
      _ClearVisitedFlags(theGraph);
 
      IC->v = IC->uz;
@@ -379,6 +388,7 @@ isolatorContextP IC = &theGraph->IC;
              return NOTOK;
      }
 
+     // Note: The x-y path is already marked, due to identifying E as the type of non-planarity minor
      if (theGraph->functions.fpMarkDFSPath(theGraph, MIN3(IC->ux, IC->uy, IC->uz), IC->r) != OK ||
          _MarkDFSPathsToDescendants(theGraph) != OK ||
          _JoinBicomps(theGraph) != OK ||
@@ -410,6 +420,7 @@ isolatorContextP IC = &theGraph->IC;
              return NOTOK;
      }
 
+     // Note: The x-y path is already marked, due to identifying E as the type of non-planarity minor
      if (theGraph->functions.fpMarkDFSPath(theGraph, MIN3(IC->ux, IC->uy, IC->uz),
                                     MAX3(IC->ux, IC->uy, IC->uz)) != OK ||
          _MarkDFSPathsToDescendants(theGraph) != OK ||
