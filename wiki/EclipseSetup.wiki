@@ -33,7 +33,7 @@ These instructions are for *Eclipse 4.2 (Juno)* and the corresponding Subversive
     # The installation will restart Eclipse.
     # On restart, the SVN team provider will launch an installer to get an SVN Kit
       * Choose the latest SVN Kit (currently 1.7.4/1.7.5)
-    # *Environment set up*
+  # *Environment set up*
     # Window | Preferences
     # Go to General | Editors | Text Editors
       * Set "Displayed Tab width: 4" and check "Insert spaces for tabs"
