@@ -154,11 +154,15 @@ int Result;
         // For some algorithms, the primary output file is not always written
         if ((strchr("pdo", command) && Result == NONEMBEDDABLE) ||
         	(strchr("234", command) && Result == OK))
-        	;
+        {
+        	// Do not write the file
+        }
 
         // Write the primary output file, if appropriate to do so
         else
+        {
 			gp_Write(theGraph, outfileName, WRITE_ADJLIST);
+        }
 
         // NOW WE WANT TO WRITE THE SECONDARY OUTPUT FILE
 

@@ -298,13 +298,10 @@ int  XPrevLink=1, YPrevLink=0, v=theGraph->IC.v;
      *pX = _GetNeighborOnExtFace(theGraph, R, &XPrevLink);
      *pY = _GetNeighborOnExtFace(theGraph, R, &YPrevLink);
 
+     // For planarity algorithms, advance past inactive vertices
      // For outerplanarity algorithms, ignore the notion of inactive vertices
      // since all vertices must remain on the external face.
-     if (theGraph->embedFlags & EMBEDFLAGS_OUTERPLANAR)
-    	 ;
-
-     // For planarity algorithms, advance past inactive vertices
-     else
+     if (!(theGraph->embedFlags & EMBEDFLAGS_OUTERPLANAR))
      {
          gp_UpdateVertexFuturePertinentChild(theGraph, *pX, v);
          while (INACTIVE(theGraph, *pX, v))
