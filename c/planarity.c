@@ -52,8 +52,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 void ProjectTitle()
 {
     Message("\n=================================================="
-            "\nPlanarity version 3.0.0"
-            "\nCopyright (c) 2010 by John M. Boyer"
+            "\nPlanarity version 3.0.0.1"
+            "\nCopyright (c) 2012 by John M. Boyer"
     		"\nContact info: jboyer at acm.org"
             "\n=================================================="
             "\n");
@@ -109,6 +109,7 @@ int helpMessage(char *param)
             "'planarity (-h|-help)': this message\n"
             "'planarity (-h|-help) -gen': more help with graph generator command line\n"
             "'planarity (-h|-help) -menu': more help with menu-based command line\n"
+	        "'planarity (-i|-info): copyright and license information\n"
     	    "'planarity -test [-q] [C]': runs tests (optional quiet mode, single test)\n"
 	    	"'planarity -gen [-q] C [...] n [...]': run command C on n-vertex graphs\n"
 	    	"\n"
@@ -126,6 +127,58 @@ int helpMessage(char *param)
             "If graph in infile.txt is planar, then put embedding in embedding.out \n"
             "and (optionally) an ASCII art drawing in drawing.out\n"
             "Process returns 0=planar, 1=nonplanar, -1=error\n"
+	    );
+	}
+
+	else if (strcmp(param, "-i") == 0 || strcmp(param, "-info") == 0)
+	{
+	    Message(
+		    "Planarity-Related Graph Algorithms Project\n"
+	    	"Copyright (c) 1997-2012, John M. Boyer\n"
+		    "All rights reserved. Includes a reference implementation of the following:\n"
+            "\n"
+	    	"* John M. Boyer. \"Subgraph Homeomorphism via the Edge Addition Planarity \n"
+	    	"  Algorithm\".  Journal of Graph Algorithms and Applications, Vol. 16, \n"
+	    	"  no. 2, pp. 381-410, 2012. http://www.jgaa.info/16/268.html\n"
+            "\n"
+		    "* John M. Boyer. \"A New Method for Efficiently Generating Planar Graph\n"
+		    "  Visibility Representations\". In P. Eades and P. Healy, editors,\n"
+		    "  Proceedings of the 13th International Conference on Graph Drawing 2005,\n"
+		    "  Lecture Notes Comput. Sci., Volume 3843, pp. 508-511, Springer-Verlag, 2006.\n"
+            "\n"
+		    "* John M. Boyer and Wendy J. Myrvold. \"On the Cutting Edge: Simplified O(n)\n"
+		    "  Planarity by Edge Addition\". Journal of Graph Algorithms and Applications,\n"
+		    "  Vol. 8, No. 3, pp. 241-273, 2004.\n"
+		    "  http://www.jgaa.info/08/91.html\n"
+            "\n"
+		    "* John M. Boyer. \"Simplified O(n) Algorithms for Planar Graph Embedding,\n"
+		    "  Kuratowski Subgraph Isolation, and Related Problems\". Ph.D. Dissertation,\n"
+		    "  University of Victoria, 2001.\n"
+            "\n"
+		    "Redistribution and use in source and binary forms, with or without \n"
+		    "modification, are permitted provided that the following conditions are met:\n"
+            "\n"
+		    "* Redistributions of source code must retain the above copyright notice, this\n"
+		    "  list of conditions and the following disclaimer.\n"
+            "\n"
+		    "* Redistributions in binary form must reproduce the above copyright notice, \n"
+		    "  this list of conditions and the following disclaimer in the documentation \n"
+		    "  and/or other materials provided with the distribution.\n"
+            "\n"
+		    "* Neither the name of the Planarity-Related Graph Algorithms Project nor the \n"
+		    "  names of its contributors may be used to endorse or promote products derived \n"
+		    "  from this software without specific prior written permission.\n"
+            "\n"
+		    "THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS \"AS IS\"\n"
+		    "AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE\n"
+		    "IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE\n"
+		    "DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR\n"
+		    "ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES\n"
+		    "(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;\n"
+		    "LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON\n"
+		    "ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT\n"
+		    "(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS\n"
+		    "SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.\n"
 	    );
 	}
 

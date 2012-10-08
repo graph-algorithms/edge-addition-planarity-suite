@@ -74,6 +74,11 @@ int commandLine(int argc, char *argv[])
 		Result = helpMessage(argc >= 3 ? argv[2] : NULL);
 	}
 
+	else if (strcmp(argv[1], "-i") == 0 || strcmp(argv[1], "-info") == 0)
+	{
+		Result = helpMessage(argv[1]);
+	}
+
 	else if (strcmp(argv[1], "-gen") == 0 || strcmp(argv[1], "-gens") == 0)
 		Result = callNauty(argc, argv);
 
