@@ -50,19 +50,19 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "graphK33Search.h"
 #include "graphK33Search.private.h"
 
-extern int K33SEARCH_ID;
+//extern int K33SEARCH_ID;
 
 #include "graph.h"
 
 /* Imported functions */
 
-extern void _ClearVisitedFlags(graphP);
+//extern void _ClearVisitedFlags(graphP);
 extern int  _ClearVisitedFlagsInBicomp(graphP theGraph, int BicompRoot);
 extern int  _ClearVisitedFlagsInOtherBicomps(graphP theGraph, int BicompRoot);
 extern void _ClearVisitedFlagsInUnembeddedEdges(graphP theGraph);
 extern int  _FillVertexVisitedInfoInBicomp(graphP theGraph, int BicompRoot, int FillValue);
 
-extern int  _GetBicompSize(graphP theGraph, int BicompRoot);
+//extern int  _GetBicompSize(graphP theGraph, int BicompRoot);
 extern int  _HideInternalEdges(graphP theGraph, int vertex);
 extern int  _RestoreInternalEdges(graphP theGraph, int stackBottom);
 extern int  _ClearInvertedFlagsInBicomp(graphP theGraph, int BicompRoot);
@@ -73,7 +73,7 @@ extern int  _GetNeighborOnExtFace(graphP theGraph, int curVertex, int *pPrevLink
 extern int  _JoinBicomps(graphP theGraph);
 extern int  _OrientVerticesInBicomp(graphP theGraph, int BicompRoot, int PreserveSigns);
 extern int  _OrientVerticesInEmbedding(graphP theGraph);
-extern void _InvertVertex(graphP theGraph, int V);
+//extern void _InvertVertex(graphP theGraph, int V);
 extern int  _ClearVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x);
 extern int  _SetVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x);
 extern int  _OrientExternalFacePath(graphP theGraph, int u, int v, int w, int x);
@@ -94,7 +94,7 @@ extern int  _AddAndMarkEdge(graphP theGraph, int ancestor, int descendant);
 extern int  _DeleteUnmarkedVerticesAndEdges(graphP theGraph);
 
 extern int  _IsolateMinorE1(graphP theGraph);
-extern int  _IsolateMinorE2(graphP theGraph);
+//extern int  _IsolateMinorE2(graphP theGraph);
 extern int  _IsolateMinorE3(graphP theGraph);
 extern int  _IsolateMinorE4(graphP theGraph);
 
