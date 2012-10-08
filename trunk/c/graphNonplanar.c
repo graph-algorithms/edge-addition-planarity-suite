@@ -59,7 +59,7 @@ extern int  _ClearVertexTypeInBicomp(graphP theGraph, int BicompRoot);
 extern int  _HideInternalEdges(graphP theGraph, int vertex);
 extern int  _RestoreInternalEdges(graphP theGraph, int stackBottom);
 
-extern int  _OrientVerticesInEmbedding(graphP theGraph);
+//extern int  _OrientVerticesInEmbedding(graphP theGraph);
 extern int  _OrientVerticesInBicomp(graphP theGraph, int BicompRoot, int PreserveSigns);
 
 /* Private functions (exported to system) */

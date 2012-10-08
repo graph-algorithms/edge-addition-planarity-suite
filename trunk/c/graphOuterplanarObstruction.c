@@ -58,7 +58,7 @@ extern int  _JoinBicomps(graphP theGraph);
 extern int  _InitializeNonplanarityContext(graphP theGraph, int v, int R);
 extern int  _MarkHighestXYPath(graphP theGraph);
 
-extern int  _FindUnembeddedEdgeToAncestor(graphP theGraph, int cutVertex, int *pAncestor, int *pDescendant);
+//extern int  _FindUnembeddedEdgeToAncestor(graphP theGraph, int cutVertex, int *pAncestor, int *pDescendant);
 extern int  _FindUnembeddedEdgeToCurVertex(graphP theGraph, int cutVertex, int *pDescendant);
 extern int  _FindUnembeddedEdgeToSubtree(graphP theGraph, int ancestor, int SubtreeRoot, int *pDescendant);
 

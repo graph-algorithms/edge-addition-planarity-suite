@@ -204,9 +204,10 @@ void WriteTestFiles(int n, int mod)
 // from McKay's Nauty package
 // makeg [-c -t -b] [-d<max>] n [mine [maxe [mod res]]]
 
-extern unsigned long numGraphs;
-extern unsigned long numErrors;
-extern unsigned long numOKs;
+//// These externs can be obtained for debugging
+////extern unsigned long numGraphs;
+////extern unsigned long numErrors;
+////extern unsigned long numOKs;
 
 int callNauty(int argc, char *argv[])
 {
@@ -442,8 +443,8 @@ int runSpecificGraphTest(char *command, char *infileName)
 
 #include "nauty/testFramework.h"
 extern int unittestMode;
-extern testResultFrameworkP testFramework;
 extern int errorFound;
+//extern testResultFrameworkP testFramework;
 
 int runNautyTests(int argc, char *argv[])
 {
