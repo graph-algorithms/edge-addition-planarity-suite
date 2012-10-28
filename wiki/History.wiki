@@ -1,4 +1,4 @@
-#summary History of the Planarity Project up to Version 3.0.0
+#summary History of the Planarity Project up to Version 3.0.0.1
 #labels Featured
 by John M. Boyer
 
@@ -57,5 +57,7 @@ One approach to creating an extensible framework was to port to C++.  The origin
 [http://code.google.com/p/planarity/source/browse/#svn/tags/Version%202.2.1 Version 2.2.1] consists of consolidating DFS and lowpoint calculations for a sizable performance improvement, and significant upgrades to the test framework to allow all algorithms to be tested at once and to enable edge-by-edge results to be obtained while doing so.  
 
 In [http://code.google.com/p/planarity/source/browse/#svn/tags/Version%203.0.0 Version 3.0.0], the internal data structures were revisited in order to separate the "graph node" into separate definitions for half edges (arcs), vertices, and virtual vertices. This is a more natural representation of graphs than in the prior versions.  This makes it clearer how to port the implementation to any other graph library.  Due to being a major version upgrade, the APIs were also significantly refactored.
+
+In [http://code.google.com/p/planarity/source/browse/#svn%2Ftags%2FVersion%203.0.0.1 Version 3.0.0.1], the -i and -info command-line parameters were added to enable the executable version to provide the copyright information, and the copyright information was updated to reflect the publication of the [http://jgaa.info/16/268.html subgraph homeomorphism search algorithms].
 
 For future work, see the [http://code.google.com/p/planarity/wiki/Roadmap Roadmap].
