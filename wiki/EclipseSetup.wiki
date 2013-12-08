@@ -37,8 +37,8 @@ These instructions are for *Eclipse 4.2 (Juno)* and the corresponding Subversive
     # Window | Preferences
     # Go to General | Editors | Text Editors
       * Set "Displayed Tab width: 4" and check "Insert spaces for tabs"
-    # Go to Team | SVN | Properties Configuration
     # Go to Team | Ignore Resources, click Add Pattern... and add ".metadata" to the svn:ignore patterns
+    # Go to Team | SVN | Properties Configuration
     # On the Automatic Properties tab, click Add button to add each of the following
 {{{
 	    Filename template   Properties
