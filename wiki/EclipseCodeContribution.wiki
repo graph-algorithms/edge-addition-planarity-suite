@@ -28,10 +28,10 @@ A member is someone who does have SVN commit access granted by the administrator
       * Under the source tab, there is a link to get your Google code password
       * If readonly access, then this won't be needed
     # Click Save Password and then Click Next
-    # Next View is "Select Resource".  Choose the trunk and click Finish 
+    # Next View is "Select Resource".  Use Browse... to choose the URL trunk, then click Finish 
       * A branch or a changes directory could be selected here instead
     # Next View is "Check out as".  Click Finish
-      * This accepts "Check out as a project with the name specified", recursive checkout, no ignore
+      * This accepts "Check out as a project with the name specified" of Planarity-trunk, recursive checkout, no ignore
      
 In a single workspace, the trunk and multiple branches, tags or changes directories can be selected as resources and checked out using the process above. Once an SVN project is checked out, the C project it contains must be imported into the workspace to enable compiling. Unfortunately only one C build project from one of the checked out resources can be in the workspace at a time, so you have to delete the C project of one SVN project resource before importing the C project of another.  Alternately, create multiple eclipse workspaces and check out one SVN project resource into each so that each workspace can import an actively compilable C project as follows:
 
@@ -55,7 +55,7 @@ In a single workspace, the trunk and multiple branches, tags or changes director
       # Name: planarity.exe
       # Project: Use "Browse..." to pick Planarity-c
       # C/C++ App: Use "Search Projects..." to pick Debug\planarity.exe
-    # On the Debugger tab:
+    # On the Debugger tab (Windows-only):
       # Debugger: Choose "MinGW gdb Debugger"
       # Optionallly, uncheck the "Stop on startup at main" option
       # Debugger options: Use "Browse..." to select full path and name of gdb.exe
