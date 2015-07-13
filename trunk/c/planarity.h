@@ -22,7 +22,6 @@ extern "C" {
 #include "graphK33Search.h"
 #include "graphK4Search.h"
 #include "graphDrawPlanar.h"
-#include "graphColorVertices.h"
 
 void ProjectTitle();
 int helpMessage(char *param);

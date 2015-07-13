@@ -14,7 +14,6 @@ char *commands = "pdo234c";
 #include "../graphK33Search.h"
 #include "../graphK4Search.h"
 #include "../graphDrawPlanar.h"
-#include "../graphColorVertices.h"
 
 /* Forward Declarations of Private functions */
 graphP createGraph(char command, int n, int maxe);
@@ -194,7 +193,6 @@ int attachAlgorithmExtension(char command, graphP aGraph)
 		case '2' : gp_AttachK23Search(aGraph); break;
 		case '3' : gp_AttachK33Search(aGraph); break;
 		case '4' : gp_AttachK4Search(aGraph); break;
-		case 'c' : gp_AttachColorVertices(aGraph); break;
 		default  : return NOTOK;
     }
 

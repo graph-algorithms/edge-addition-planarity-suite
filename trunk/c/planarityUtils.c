@@ -210,7 +210,6 @@ char *GetAlgorithmName(char command)
 		case '2' : algorithmName = K23SEARCH_NAME; break;
 		case '3' : algorithmName = K33SEARCH_NAME; break;
 		case '4' : algorithmName = K4SEARCH_NAME; break;
-		case 'c' : algorithmName = COLORVERTICES_NAME; break;
 	}
 
 	return algorithmName;
@@ -227,7 +226,6 @@ void AttachAlgorithm(graphP theGraph, char command)
 		case '2' : gp_AttachK23Search(theGraph); break;
 		case '3' : gp_AttachK33Search(theGraph); break;
 		case '4' : gp_AttachK4Search(theGraph); break;
-		case 'c' : gp_AttachColorVertices(theGraph); break;
 	}
 }
 

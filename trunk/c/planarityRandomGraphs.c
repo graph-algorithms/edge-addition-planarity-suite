@@ -134,13 +134,6 @@ int ReuseGraphs = TRUE;
                        }
                   }
               }
-              else if (command == 'c')
-              {
-      			if ((Result = gp_ColorVertices(theGraph)) == OK)
-      				 Result = gp_ColorVerticesIntegrityCheck(theGraph, origGraph);
-				if (Result == OK && gp_GetNumColorsUsed(theGraph) <= 5)
-					MainStatistic++;
-              }
 
               // If there is an error in processing, then write the file for debugging
               if (Result != OK && Result != NONEMBEDDABLE)
@@ -240,12 +233,6 @@ int ReuseGraphs = TRUE;
          Message(Line);
      }
 
-     // Report statistics for vertex coloring
-     else if (command == 'c')
-     {
-         sprintf(Line, "Num Graphs colored with 5 or fewer colors=%d.\n", MainStatistic);
-         Message(Line);
-     }
 
      FlushConsole(stdout);
 
@@ -307,7 +294,6 @@ graphP MakeGraph(int Size, char command)
 		case '2' : gp_AttachK23Search(theGraph); break;
 		case '3' : gp_AttachK33Search(theGraph); break;
 		case '4' : gp_AttachK4Search(theGraph); break;
-		case 'c' : gp_AttachColorVertices(theGraph); break;
 	}
 
 	return theGraph;
@@ -384,12 +370,6 @@ char saveEdgeListFormat;
 
          if (gp_TestEmbedResultIntegrity(theGraph, origGraph, Result) != Result)
              Result = NOTOK;
-     }
-     else if (command == 'c')
-     {
-         platform_GetTime(start);
-    	 Result = gp_ColorVertices(theGraph);
-         platform_GetTime(end);
      }
      else
     	 Result = NOTOK;
