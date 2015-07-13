@@ -22,7 +22,6 @@ extern char quietMode;
 
 #include "outproc.h"
 #include "testFramework.h"
-#include "../graphColorVertices.h"
 
 int runTest(FILE *, char);
 
@@ -231,25 +230,7 @@ int runTest(FILE *outfile, char command)
 	}
 
 	// Run the command on theGraph and check the integrity of the result
-	if (command == 'c')
-	{
-		if ((Result = gp_ColorVertices(theGraph)) != OK)
-			Result = NOTOK;
-		else
-		{
-			if (gp_ColorVerticesIntegrityCheck(theGraph, origGraph) != OK)
-			{
-				fprintf(g_msgfile, "\nIntegrity check failed on graph #%lu.\n", testResult->result.numGraphs);
-				Result = NOTOK;
-			}
-			if (Result == OK)
-			{
-				if (gp_GetNumColorsUsed(theGraph) >= 6)
-					Result = NONEMBEDDABLE;
-			}
-		}
-	}
-	else if (strchr(commands, command))
+	if (strchr(commands, command))
 	{
 		int embedFlags = EMBEDFLAGS_PLANAR;
 
@@ -286,8 +267,8 @@ int runTest(FILE *outfile, char command)
 		testResult->result.numOKs++;
 		testResult->edgeResults[origGraph->M].numOKs++;
 	}
-	else if (Result == NONEMBEDDABLE)
-		;
+	else if (Result == NONEMBEDDABLE) {
+	}
 	else
 	{
 		errorFound++;
@@ -332,7 +313,6 @@ void getMessages(char command, char **pMsgAlg, char **pMsgOK, char **pMsgNoEmbed
 		case '2' : *pMsgAlg="K2,3 Search"; *pMsgOK="no K2,3"; *pMsgNoEmbed="with K2,3"; break;
 		case '3' : *pMsgAlg="K3,3 Search"; *pMsgOK="no K3,3"; *pMsgNoEmbed="with K3,3"; break;
 		case '4' : *pMsgAlg="K4 Search"; *pMsgOK="no K4"; *pMsgNoEmbed="with K4"; break;
-		case 'c' : *pMsgAlg="Vertex Coloring"; *pMsgOK="<=5 colors"; *pMsgNoEmbed=">5 colors"; break;
 		default  : *pMsgAlg = *pMsgOK = *pMsgNoEmbed = NULL; break;
 	}
 }

@@ -269,14 +269,6 @@ int runSpecificGraphTests()
 	if (runSpecificGraphTest("-4", "Petersen.txt") < 0)
 		retVal = -1;
 
-	if (runSpecificGraphTest("-c", "maxPlanar5.txt") < 0)
-		retVal = -1;
-
-	if (runSpecificGraphTest("-c", "Petersen.txt") < 0)
-		retVal = -1;
-
-	if (runSpecificGraphTest("-c", "drawExample.txt") < 0)
-		retVal = -1;
 #endif
 
 	if (runSpecificGraphTest("-p", "maxPlanar5.0-based.txt") < 0)
@@ -301,15 +293,6 @@ int runSpecificGraphTests()
 		retVal = -1;
 
 	if (runSpecificGraphTest("-4", "Petersen.0-based.txt") < 0)
-		retVal = -1;
-
-	if (runSpecificGraphTest("-c", "maxPlanar5.0-based.txt") < 0)
-		retVal = -1;
-
-	if (runSpecificGraphTest("-c", "Petersen.0-based.txt") < 0)
-		retVal = -1;
-
-	if (runSpecificGraphTest("-c", "drawExample.0-based.txt") < 0)
 		retVal = -1;
 
 	if (retVal == 0)

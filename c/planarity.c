@@ -9,7 +9,7 @@ See the LICENSE.TXT file for licensing information.
 void ProjectTitle()
 {
     Message("\n=================================================="
-            "\nThe Edge Addition Planarity Suite version 3.0.0.2"
+            "\nThe Edge Addition Planarity Suite version 3.0.0.3"
             "\nCopyright (c) 1997-2015 by John M. Boyer"
     		"\nContact info: jboyer at acm.org"
             "\n=================================================="
@@ -53,7 +53,6 @@ int helpMessage(char *param)
         "    -2 = Search for subgraph homeomorphic to K_{2,3}\n"
         "    -3 = Search for subgraph homeomorphic to K_{3,3}\n"
         "    -4 = Search for subgraph homeomorphic to K_4\n"
-		"    -c = Color the vertices of the graph\n"
 		"    -a = All of the above\n"
     	"\n";
 
@@ -209,7 +208,6 @@ char Choice;
                 "2. Search for subgraph homeomorphic to K_{2,3}\n"
                 "3. Search for subgraph homeomorphic to K_{3,3}\n"
                 "4. Search for subgraph homeomorphic to K_4\n"
-        		"C. Color the vertices of the graph\n"
         		"H. Help message for command line version\n"
                 "R. Reconfigure options\n"
                 "X. Exit\n"

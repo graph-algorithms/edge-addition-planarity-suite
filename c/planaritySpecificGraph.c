@@ -29,7 +29,6 @@ int Result;
 		case '2' : gp_AttachK23Search(theGraph); break;
 		case '3' : gp_AttachK33Search(theGraph); break;
 		case '4' : gp_AttachK4Search(theGraph); break;
-		case 'c' : gp_AttachColorVertices(theGraph); break;
 	}
 
     // Read the graph into memory
@@ -73,13 +72,7 @@ int Result;
         else
         {
 	        platform_GetTime(start);
-        	if (command == 'c')
-        	{
-    			if ((Result = gp_ColorVertices(theGraph)) == OK)
-    				 Result = gp_ColorVerticesIntegrityCheck(theGraph, origGraph);
-        	}
-        	else
-    			Result = NOTOK;
+   			Result = NOTOK;
    	        platform_GetTime(end);
         }
 
@@ -173,8 +166,7 @@ void WriteAlgorithmResults(graphP theGraph, int Result, char command, platform_t
 		case '2' : sprintf(Line, "has %s subgraph homeomorphic to K_{2,3}.\n", Result==OK ? "no" : "a"); break;
 		case '3' : sprintf(Line, "has %s subgraph homeomorphic to K_{3,3}.\n", Result==OK ? "no" : "a"); break;
 		case '4' : sprintf(Line, "has %s subgraph homeomorphic to K_4.\n", Result==OK ? "no" : "a"); break;
-		case 'c' : sprintf(Line, "has been %d-colored.\n", gp_GetNumColorsUsed(theGraph)); break;
-		default  : sprintf(Line, "nas not been processed due to unrecognized command.\n"); break;
+		default  : sprintf(Line, "has not been processed due to unrecognized command.\n"); break;
 	}
 	Message(Line);
 
