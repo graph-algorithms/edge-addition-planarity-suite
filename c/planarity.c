@@ -9,7 +9,7 @@ See the LICENSE.TXT file for licensing information.
 void ProjectTitle()
 {
     Message("\n=================================================="
-            "\nThe Edge Addition Planarity Suite version 3.0.0.3"
+            "\nThe Edge Addition Planarity Suite version 3.0.0.4"
             "\nCopyright (c) 1997-2015 by John M. Boyer"
     		"\nContact info: jboyer at acm.org"
             "\n=================================================="

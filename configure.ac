@@ -1,4 +1,4 @@
-AC_INIT(planarity, 3.0.0.3, jboyer@acm.org)
+AC_INIT(planarity, 3.0.0.4, jboyer@acm.org)
 AM_INIT_AUTOMAKE([subdir-objects] [foreign])
 AC_CONFIG_SRCDIR([c/])
 
