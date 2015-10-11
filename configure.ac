@@ -26,6 +26,4 @@ AC_PROG_INSTALL
 
 AC_CHECK_HEADERS([ctype.h stdio.h stdlib.h string.h time.h unistd.h])
 
-CFLAGS="-Wall -O3"
-
 AC_OUTPUT(Makefile)
