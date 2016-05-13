@@ -2,6 +2,6 @@
 
 aclocal &&
 autoconf &&
-libtoolize &&
-automake --add-missing
-
+libtoolize --copy &&
+automake --add-missing --copy &&
+rm -rf autom4te.cache
