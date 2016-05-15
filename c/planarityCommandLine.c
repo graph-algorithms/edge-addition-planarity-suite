@@ -283,7 +283,7 @@ int runSpecificGraphTest(char *command, char *infileName)
 
 	if (Result == 0)
 	{
-		if (FilesEqual(testfileName, outfileName) == TRUE)
+		if (TextFilesEqual(testfileName, outfileName) == TRUE)
 		{
 			Message("Test succeeded (result equal to exemplar).\n");
 			unlink(outfileName);
@@ -309,7 +309,7 @@ int runSpecificGraphTest(char *command, char *infileName)
 
 		if (Result == 0)
 		{
-			if (FilesEqual(testfileName, outfileName) == TRUE)
+			if (TextFilesEqual(testfileName, outfileName) == TRUE)
 			{
 				Message("Test succeeded (secondary result equal to exemplar).\n");
 				unlink(outfileName);

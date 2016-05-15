@@ -127,7 +127,69 @@ void SaveAsciiGraph(graphP theGraph, char *filename)
 /****************************************************************************
  ****************************************************************************/
 
-int  FilesEqual(char *file1Name, char *file2Name)
+int  TextFilesEqual(char *file1Name, char *file2Name)
+{
+	FILE *infile1 = NULL, *infile2 = NULL;
+	int Result = TRUE;
+
+	infile1 = fopen(file1Name, "r");
+	infile2 = fopen(file2Name, "r");
+
+	if (infile1 == NULL || infile2 == NULL)
+		Result = FALSE;
+	else
+	{
+		int c1=0, c2=0;
+
+		// Read the first file to the end
+		while ((c1 = fgetc(infile1)) != EOF)
+		{
+			// Want to suppress distinction between lines ending with CRLF versus LF
+			if (c1 == '\r')
+				continue;
+
+			// Get a char from the second file, except suppress CR again
+			while ((c2 = fgetc(infile2)) == '\r')
+				;
+
+			// If we got a char from the first file, but not from the second
+			// then the second file is shorter, so files are not equal
+			if (c2 == EOF)
+			{
+				Result = FALSE;
+				break;
+			}
+
+			// If we got a char from second file, but not equal to char from
+			// first file, then files are not equal
+			if (c1 != c2)
+			{
+				Result = FALSE;
+				break;
+			}
+		}
+
+		// If we got to the end of the first file without breaking the loop...
+		if (c1 == EOF)
+		{
+			// Then, once again, suppress CRs first, and then...
+			while ((c2 = fgetc(infile2)) == '\r')
+				;
+			// Test whether or not the second file also ends, same as the first.
+			if (fgetc(infile2) != EOF)
+				Result = FALSE;
+		}
+	}
+
+	if (infile1 != NULL) fclose(infile1);
+	if (infile2 != NULL) fclose(infile2);
+	return Result;
+}
+
+/****************************************************************************
+ ****************************************************************************/
+
+int  BinaryFilesEqual(char *file1Name, char *file2Name)
 {
 	FILE *infile1 = NULL, *infile2 = NULL;
 	int Result = TRUE;

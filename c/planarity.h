@@ -58,7 +58,7 @@ void Prompt(char *message);
 
 void SaveAsciiGraph(graphP theGraph, char *filename);
 
-int  FilesEqual(char *file1Name, char *file2Name);
+int  TextFilesEqual(char *file1Name, char *file2Name);
 
 int GetEmbedFlags(char command);
 char *GetAlgorithmName(char command);

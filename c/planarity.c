@@ -8,9 +8,20 @@ See the LICENSE.TXT file for licensing information.
 
 void ProjectTitle()
 {
+	// This message is the main location of the version number.
+	// The format is major.minor.maintenance.tweak
+	// Major is for an overhaul (e.g. many features, data structure change)
+	// Minor is for feature addition, e.g. a new algorithm implementation added
+	// Maintenance is for functional revision, e.g. bug fix to algorithm implementation
+	// Tweak is for a non-functional revision, e.g. change of build scripts or testing code
+
+	// If the version here is increased, also increase it in configure.ac
+	// Furthermore, a change of Major, Minor or Maintenance here should cause a change
+	// of Current, Revision and/or Age as documented in configure.ac
+
     Message("\n=================================================="
-            "\nThe Edge Addition Planarity Suite version 3.0.0.4"
-            "\nCopyright (c) 1997-2015 by John M. Boyer"
+            "\nThe Edge Addition Planarity Suite version 3.0.0.5"
+            "\nCopyright (c) 1997-2016 by John M. Boyer"
     		"\nContact info: jboyer at acm.org"
             "\n=================================================="
             "\n");
