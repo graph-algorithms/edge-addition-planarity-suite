@@ -105,20 +105,30 @@ void Prompt(char *message)
 
 void SaveAsciiGraph(graphP theGraph, char *filename)
 {
-	int  e, EsizeOccupied;
+	int  e, EsizeOccupied, vertexLabelFix;
 	FILE *outfile = fopen(filename, "wt");
 	fprintf(outfile, "%s\n", filename);
 
+	// This edge list file format uses 1-based vertex numbering, and the current code
+	// internally uses 1-based indexing by default, so this vertex label 'fix' adds zero
+	// But earlier code used 0-based indexing and added one on output, so we replicate
+	// that behavior in case the current code has been compiled with zero-based indexing.
+	vertexLabelFix = 1 - gp_GetFirstVertex(theGraph);
+
+	// Iterate over the edges of the graph
 	EsizeOccupied = gp_EdgeInUseIndexBound(theGraph);
 	for (e = gp_GetFirstEdge(theGraph); e < EsizeOccupied; e+=2)
 	{
-		// Skip the edge holes
+		// Only output edges that haven't been deleted (i.e. skip the edge holes)
 		if (gp_EdgeInUse(theGraph, e))
 		{
-			fprintf(outfile, "%d %d\n", gp_GetNeighbor(theGraph, e)+1, gp_GetNeighbor(theGraph, e+1)+1);
+			fprintf(outfile, "%d %d\n",
+					gp_GetNeighbor(theGraph, e) + vertexLabelFix,
+					gp_GetNeighbor(theGraph, e+1) + vertexLabelFix);
 		}
 	}
 
+	// Since vertex numbers are at least 1, this indicates the end of the edge list
 	fprintf(outfile, "0 0\n");
 
 	fclose(outfile);
