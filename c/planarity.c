@@ -74,7 +74,6 @@ int helpMessage(char *param)
 	    Message(
             "'planarity': if no command-line, then menu-driven\n"
             "'planarity (-h|-help)': this message\n"
-            "'planarity (-h|-help) -gen': more help with graph generator command line\n"
             "'planarity (-h|-help) -menu': more help with menu-based command line\n"
 	        "'planarity (-i|-info): copyright and license information\n"
     	    "'planarity -test [-q] [C]': runs tests (optional quiet mode, single test)\n"

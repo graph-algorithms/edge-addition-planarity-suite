@@ -109,52 +109,6 @@ int Result;
 }
 
 /****************************************************************************
- WriteTestFiles()
- A one-time-run piece of code that generates batch files which perform the
- incremental tests of all 12 vertex graphs.
-
- The format of the command line is:
- planarity -gen -q -a n j j 12 i > TestResult_n_j_j_12_i.txt
-
- The n is for the number of vertices.
- The j j is the number of edges, between 0 and n(n-1)/2.
- The mod divides the problem into partitions that can be run on separate threads.
- The i is a partition number between 0 and mod-1. Each test batch file receives
- a number i, and within it are all the command lines for that partition to test
- each number of edges.
- The numbers of edges are tested separately because the implementation makes
- a smaller data structure for graphs that are of a guaranteed maximum size.
- ****************************************************************************/
-
-void WriteTestFiles(int n, int mod)
-{
-	char filename[64];
-	FILE *outfile;
-	int k, e;
-	int maxe=n*(n-1)/2;
-
-	for (k = 0; k < mod; k++)
-	{
-		sprintf(filename, "test_n%02d\\test_n%02d_mod%02d.bat", n, n, k);
-		outfile = fopen(filename, "wt");
-		if (outfile == NULL)
-		{
-			printf("Error creating test file %s\nRemember to create directory Test_n%02d\n", filename, n);
-			return;
-		}
-
-		for (e = 0; e <= maxe; e++)
-		{
-			sprintf(filename, "results\\result_%02d_%02d_%02d_%02d_%02d.txt", n, e, e, mod, k);
-			fprintf(outfile, "..\\planarity -gen -a %d %d %d %d %d > %s\n", n, e, e, mod, k, filename);
-		}
-		fclose(outfile);
-	}
-
-	printf("Created test files. Remember to create 'results' in test subdirectory\n");
-}
-
-/****************************************************************************
  Quick regression test
  ****************************************************************************/
 
