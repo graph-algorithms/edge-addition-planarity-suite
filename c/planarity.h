@@ -38,7 +38,7 @@ int commandLine(int argc, char *argv[]);
 int legacyCommandLine(int argc, char *argv[]);
 int menu();
 
-char Mode,
+extern char Mode,
      OrigOut,
      EmbeddableOut,
      ObstructedOut,
@@ -49,7 +49,7 @@ void Reconfigure();
 
 /* Low-level Utilities */
 #define MAXLINE 1024
-char Line[MAXLINE];
+extern char Line[MAXLINE];
 
 void Message(char *message);
 void ErrorMessage(char *message);
