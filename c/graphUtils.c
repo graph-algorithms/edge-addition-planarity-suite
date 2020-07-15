@@ -457,8 +457,9 @@ int e, Esize = gp_EdgeIndexBound(theGraph),
     }
 
 	// Expand edgeHoles
-    if ((newStack = sp_New(requiredArcCapacity / 2)) == NULL)
+    if ((newStack = sp_New(requiredArcCapacity / 2)) == NULL) {
     	return NOTOK;
+    }
 
 	sp_CopyContent(newStack, theGraph->edgeHoles);
     sp_Free(&theGraph->edgeHoles);

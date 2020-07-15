@@ -165,8 +165,9 @@ int  _InitializeNonplanarityContext(graphP theGraph, int v, int R)
 
      // A number of subroutines require the main bicomp of the minor to be
      // consistently oriented and its visited flags clear.
-     if (_OrientVerticesInBicomp(theGraph, R, 1) != OK)
+     if (_OrientVerticesInBicomp(theGraph, R, 1) != OK) {
     	 return NOTOK;
+     }
 
 	 if (_ClearVisitedFlagsInBicomp(theGraph, R) != OK)
 		 return NOTOK;

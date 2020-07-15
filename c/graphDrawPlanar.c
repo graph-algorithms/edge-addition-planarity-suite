@@ -344,8 +344,9 @@ int e, eTwin, eCur, v, vpos, epos, eIndex;
 
     // Sort the vertices by vertical position (in linear time)
 
-    if ((vertexOrder = (int *) malloc(theEmbedding->N * sizeof(int))) == NULL)
-        return NOTOK;
+    if ((vertexOrder = (int *) malloc(theEmbedding->N * sizeof(int))) == NULL) {
+    	return NOTOK;
+    }
 
 	for (v = gp_GetFirstVertex(theEmbedding); gp_VertexInRange(theEmbedding, v); v++)
         vertexOrder[context->VI[v].pos] = v;
