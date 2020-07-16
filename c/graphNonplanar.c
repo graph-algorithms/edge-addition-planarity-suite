@@ -41,7 +41,7 @@ int  _FindFuturePertinenceBelowXYPath(graphP theGraph);
 
 int  _ChooseTypeOfNonplanarityMinor(graphP theGraph, int v, int R)
 {
-int  X, Y, W, Px, Py, Z;
+int  W, Px, Py, Z;
 
 /* Create the initial non-planarity minor state in the isolator context */
 
@@ -49,8 +49,6 @@ int  X, Y, W, Px, Py, Z;
          return NOTOK;
 
      R = theGraph->IC.r;
-     X = theGraph->IC.x;
-     Y = theGraph->IC.y;
      W = theGraph->IC.w;
 
 /* If the root copy is not a root copy of the current vertex v,
@@ -312,10 +310,9 @@ int  W=theGraph->IC.x, WPrevLink=1;
 
 int  _SetVertexTypesForMarkingXYPath(graphP theGraph)
 {
-	int  v, R, X, Y, W, Z, ZPrevLink, ZType;
+	int  R, X, Y, W, Z, ZPrevLink, ZType;
 
 	// Unpack the context for efficiency of loops
-	v = theGraph->IC.v;
 	R = theGraph->IC.r;
 	X = theGraph->IC.x;
 	Y = theGraph->IC.y;
@@ -467,14 +464,12 @@ int  V, e;
 int  _MarkHighestXYPath(graphP theGraph)
 {
 int e, Z;
-int R, X, Y, W;
+int R, W;
 int stackBottom1, stackBottom2;
 
 /* Initialization */
 
      R = theGraph->IC.r;
-     X = theGraph->IC.x;
-     Y = theGraph->IC.y;
      W = theGraph->IC.w;
      theGraph->IC.px = theGraph->IC.py = NIL;
 
