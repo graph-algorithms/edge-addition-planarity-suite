@@ -730,7 +730,7 @@ int  child, e;
 int  _SearchForMergeBlocker(graphP theGraph, K33SearchContext *context, int v, int *pMergeBlocker)
 {
 stackP tempStack;
-int  R, Rout, Z, ZPrevLink;
+int  Z;
 
 /* Set return result to 'not found' then return if there is no stack to inspect */
 
@@ -749,8 +749,8 @@ int  R, Rout, Z, ZPrevLink;
 
      while (!sp_IsEmpty(tempStack))
      {
-         sp_Pop2(tempStack, R, Rout);
-         sp_Pop2(tempStack, Z, ZPrevLink);
+         sp_Pop2_Discard(tempStack); /* Move (R, Rout) out of the way */
+         sp_Pop2_Discard1(tempStack, Z); /* Get Z, discard ZPrevLink */
 
          if (gp_IsVertex(context->VI[Z].mergeBlocker) &&
              context->VI[Z].mergeBlocker < v)

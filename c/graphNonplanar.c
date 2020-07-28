@@ -155,8 +155,9 @@ int  _InitializeNonplanarityContext(graphP theGraph, int v, int R)
      // of the stack, so R must be changed to that value.
 	 if (sp_NonEmpty(theGraph->theStack))
 	 {
-		 int dummy;
-		 sp_Pop2(theGraph->theStack, R, dummy);
+		 // The top of stack has the pair R and 0/1 direction Walkdown traversal proceeds from R
+		 // Need only R, so pop and discard the direction, then pop R
+		 sp_Pop2_Discard1(theGraph->theStack, R);
 	 }
 
      theGraph->IC.r = R;
