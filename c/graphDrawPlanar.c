@@ -833,7 +833,7 @@ char *_RenderToString(graphP theEmbedding)
             sprintf(numBuffer, "%d", v - zeroBasedVertexOffset);
             if ((unsigned)(context->VI[v].end - context->VI[v].start + 1) >= strlen(numBuffer))
             {
-                strncpy(visRep + (2*Pos) * (M+1) + Mid, numBuffer, strlen(numBuffer));
+                memcpy((char *) visRep + (2*Pos) * (M+1) + Mid, (char *) numBuffer, strlen(numBuffer));
             }
             // If the vertex width is less than the label width, then fail gracefully
             else
