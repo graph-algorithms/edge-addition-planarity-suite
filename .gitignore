@@ -3,6 +3,21 @@
 /c/Debug/
 /c/.settings/
 
+/c/random/
+/c/embedded/
+/c/adjlist/
+/c/obstructed/
+
+/c/Release/random/
+/c/Release/embedded/
+/c/Release/adjlist/
+/c/Release/obstructed/
+
+/c/Debug/random/
+/c/Debug/embedded/
+/c/Debug/adjlist/
+/c/Debug/obstructed/
+
 # Object files
 *.o
 *.ko

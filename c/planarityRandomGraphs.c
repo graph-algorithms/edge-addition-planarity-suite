@@ -31,6 +31,8 @@ graphP theGraph=NULL, origGraph=NULL;
 platform_time start, end;
 int embedFlags = GetEmbedFlags(command);
 int ReuseGraphs = TRUE;
+int writeResult;
+int writeErrorReported_Random=FALSE, writeErrorReported_Embedded=FALSE, writeErrorReported_AdjList=FALSE, writeErrorReported_Obstructed=FALSE;
 
      GetNumberIfZero(&NumGraphs, "Enter number of graphs to generate:", 1, 1000000000);
      GetNumberIfZero(&SizeOfGraphs, "Enter size of graphs:", 1, 10000);
@@ -74,7 +76,14 @@ int ReuseGraphs = TRUE;
               if (tolower(OrigOut)=='y')
               {
                   sprintf(theFileName, "random\\%d.txt", K%10);
-                  gp_Write(theGraph, theFileName, WRITE_ADJLIST);
+                  // gp_Write(theGraph, theFileName, WRITE_ADJLIST);
+                  writeResult = gp_Write(theGraph, theFileName, WRITE_ADJLIST);
+                  if (writeResult != OK && !writeErrorReported_Random)
+                  {
+                	  sprintf(Line, "Failed to write graph %s\nMake the directory if not present\n", theFileName);
+                	  ErrorMessage(Line);
+                	  writeErrorReported_Random = TRUE;
+                  }
               }
 
               gp_CopyGraph(origGraph, theGraph);
@@ -93,13 +102,27 @@ int ReuseGraphs = TRUE;
                        if (tolower(EmbeddableOut) == 'y')
                        {
                            sprintf(theFileName, "embedded\\%d.txt", K%10);
-                           gp_Write(theGraph, theFileName, WRITE_ADJMATRIX);
+                           //gp_Write(theGraph, theFileName, WRITE_ADJMATRIX);
+                           writeResult = gp_Write(theGraph, theFileName, WRITE_ADJMATRIX);
+                           if (writeResult != OK && !writeErrorReported_Embedded)
+                           {
+                        	   sprintf(Line, "Failed to write graph %s\nMake the directory if not present\n", theFileName);
+                        	   ErrorMessage(Line);
+                        	   writeErrorReported_Embedded = TRUE;
+                           }
                        }
 
                        if (tolower(AdjListsForEmbeddingsOut) == 'y')
                        {
                            sprintf(theFileName, "adjlist\\%d.txt", K%10);
-                           gp_Write(theGraph, theFileName, WRITE_ADJLIST);
+                           //gp_Write(theGraph, theFileName, WRITE_ADJLIST);
+                           writeResult = gp_Write(theGraph, theFileName, WRITE_ADJLIST);
+                           if (writeResult != OK && !writeErrorReported_AdjList)
+                           {
+                        	   sprintf(Line, "Failed to write graph %s\nMake the directory if not present\n", theFileName);
+                        	   ErrorMessage(Line);
+                        	   writeErrorReported_AdjList = TRUE;
+                           }
                        }
                   }
                   else if (Result == NONEMBEDDABLE)
@@ -129,7 +152,14 @@ int ReuseGraphs = TRUE;
                            if (tolower(ObstructedOut) == 'y')
                            {
                                sprintf(theFileName, "obstructed\\%d.txt", K%10);
-                               gp_Write(theGraph, theFileName, WRITE_ADJMATRIX);
+                               //gp_Write(theGraph, theFileName, WRITE_ADJMATRIX);
+                               writeResult = gp_Write(theGraph, theFileName, WRITE_ADJMATRIX);
+                               if (writeResult != OK && !writeErrorReported_Obstructed)
+                               {
+                            	   sprintf(Line, "Failed to write graph %s\nMake the directory if not present\n", theFileName);
+                            	   ErrorMessage(Line);
+                            	   writeErrorReported_Obstructed = TRUE;
+                               }
                            }
                        }
                   }

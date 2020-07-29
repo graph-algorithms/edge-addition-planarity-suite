@@ -445,7 +445,7 @@ char *Row = NULL;
      {
           for (K = gp_GetFirstVertex(theGraph); K <= v; K++)
                Row[K - gp_GetFirstVertex(theGraph)] = ' ';
-          for (K = v+1; gp_VertexInRange(theGraph, v); K++)
+          for (K = v+1; gp_VertexInRange(theGraph, K); K++)
                Row[K - gp_GetFirstVertex(theGraph)] = '0';
 
           e = gp_GetFirstArc(theGraph, v);
