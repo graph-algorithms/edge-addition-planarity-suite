@@ -206,15 +206,19 @@ char Choice;
         else if (Choice != 'x')
         {
         	char *secondOutfile = NULL;
-        	if (Choice == 'p'  || Choice == 'o' || Choice == 'd')
+        	if (Choice == 'p'  || Choice == 'd' || Choice == 'o')
         		secondOutfile ="";
 
-            switch (tolower(Mode))
-            {
-                case 's' : SpecificGraph(Choice, NULL, NULL, secondOutfile); break;
-                case 'r' : RandomGraphs(Choice, 0, 0); break;
-                case 'm' : RandomGraph(Choice, 0, 0, NULL, NULL); break;
-                case 'n' : RandomGraph(Choice, 1, 0, NULL, NULL); break;
+            if (!strchr("pdo234", Choice)) {
+            	Message("Invalid menu choice, please try again.");
+            } else {
+            	switch (tolower(Mode))
+                {
+                    case 's' : SpecificGraph(Choice, NULL, NULL, secondOutfile); break;
+                    case 'r' : RandomGraphs(Choice, 0, 0); break;
+                    case 'm' : RandomGraph(Choice, 0, 0, NULL, NULL); break;
+                    case 'n' : RandomGraph(Choice, 1, 0, NULL, NULL); break;
+                }
             }
         }
 
