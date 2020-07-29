@@ -64,11 +64,7 @@ void Message(char *message)
 	if (quietMode == 'n')
 	{
 	    fprintf(stdout, "%s", message);
-
-#ifdef DEBUG
-//	    fprintf(stdout, "\n");
 	    fflush(stdout);
-#endif
 	}
 }
 
@@ -77,20 +73,12 @@ void ErrorMessage(char *message)
 	if (quietMode == 'n')
 	{
 		fprintf(stderr, "%s", message);
-
-#ifdef DEBUG
-		fprintf(stderr, "\n");
 		fflush(stderr);
-#endif
 	}
 }
 
 void FlushConsole(FILE *f)
 {
-#ifdef DEBUG
-	    // Certain debuggers only flush completed lines of output to the console
-	    fprintf(f, "\n");
-#endif
 	    fflush(f);
 }
 
