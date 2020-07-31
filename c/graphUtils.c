@@ -1236,7 +1236,7 @@ int N, arc, M, root, v, c, p, last, u, e, EsizeOccupied;
 
         else
 	    {
-            arc = 2*theGraph->M - 2;
+            arc = gp_GetNeighborEdgeRecord(theGraph, u, v);
             gp_SetEdgeType(theGraph, arc, EDGE_TYPE_RANDOMTREE);
             gp_SetEdgeType(theGraph, gp_GetTwinArc(theGraph, arc), EDGE_TYPE_RANDOMTREE);
             gp_ClearEdgeVisited(theGraph, arc);
@@ -1248,7 +1248,7 @@ int N, arc, M, root, v, c, p, last, u, e, EsizeOccupied;
 
     M = numEdges <= 3*N - 6 ? numEdges : 3*N - 6;
 
-    root = 0;
+    root = gp_GetFirstVertex(theGraph);
     v = last = _getUnprocessedChild(theGraph, root);
 
     while (v != root && theGraph->M < M)
