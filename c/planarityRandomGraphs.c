@@ -32,7 +32,9 @@ platform_time start, end;
 int embedFlags = GetEmbedFlags(command);
 int ReuseGraphs = TRUE;
 int writeResult;
-int writeErrorReported_Random=FALSE, writeErrorReported_Embedded=FALSE, writeErrorReported_AdjList=FALSE, writeErrorReported_Obstructed=FALSE;
+int writeErrorReported_Random=FALSE, writeErrorReported_Embedded=FALSE,
+	writeErrorReported_AdjList=FALSE, writeErrorReported_Obstructed=FALSE,
+	writeErrorReported_Error=FALSE;
 
      GetNumberIfZero(&NumGraphs, "Enter number of graphs to generate:", 1, 1000000000);
      GetNumberIfZero(&SizeOfGraphs, "Enter size of graphs:", 1, 10000);
@@ -75,8 +77,7 @@ int writeErrorReported_Random=FALSE, writeErrorReported_Embedded=FALSE, writeErr
           {
               if (tolower(OrigOut)=='y')
               {
-                  sprintf(theFileName, "random\\%d.txt", K%10);
-                  // gp_Write(theGraph, theFileName, WRITE_ADJLIST);
+                  sprintf(theFileName, "random%c%d.txt", FILE_DELIMITER, K%10);
                   writeResult = gp_Write(theGraph, theFileName, WRITE_ADJLIST);
                   if (writeResult != OK && !writeErrorReported_Random)
                   {
@@ -101,8 +102,7 @@ int writeErrorReported_Random=FALSE, writeErrorReported_Embedded=FALSE, writeErr
 
                        if (tolower(EmbeddableOut) == 'y')
                        {
-                           sprintf(theFileName, "embedded\\%d.txt", K%10);
-                           //gp_Write(theGraph, theFileName, WRITE_ADJMATRIX);
+                           sprintf(theFileName, "embedded%c%d.txt", FILE_DELIMITER, K%10);
                            writeResult = gp_Write(theGraph, theFileName, WRITE_ADJMATRIX);
                            if (writeResult != OK && !writeErrorReported_Embedded)
                            {
@@ -114,8 +114,7 @@ int writeErrorReported_Random=FALSE, writeErrorReported_Embedded=FALSE, writeErr
 
                        if (tolower(AdjListsForEmbeddingsOut) == 'y')
                        {
-                           sprintf(theFileName, "adjlist\\%d.txt", K%10);
-                           //gp_Write(theGraph, theFileName, WRITE_ADJLIST);
+                           sprintf(theFileName, "adjlist%c%d.txt", FILE_DELIMITER, K%10);
                            writeResult = gp_Write(theGraph, theFileName, WRITE_ADJLIST);
                            if (writeResult != OK && !writeErrorReported_AdjList)
                            {
@@ -151,8 +150,7 @@ int writeErrorReported_Random=FALSE, writeErrorReported_Embedded=FALSE, writeErr
 
                            if (tolower(ObstructedOut) == 'y')
                            {
-                               sprintf(theFileName, "obstructed\\%d.txt", K%10);
-                               //gp_Write(theGraph, theFileName, WRITE_ADJMATRIX);
+                               sprintf(theFileName, "obstructed%c%d.txt", FILE_DELIMITER, K%10);
                                writeResult = gp_Write(theGraph, theFileName, WRITE_ADJMATRIX);
                                if (writeResult != OK && !writeErrorReported_Obstructed)
                                {
@@ -168,8 +166,14 @@ int writeErrorReported_Random=FALSE, writeErrorReported_Embedded=FALSE, writeErr
               // If there is an error in processing, then write the file for debugging
               if (Result != OK && Result != NONEMBEDDABLE)
               {
-                   sprintf(theFileName, "error\\%d.txt", K%10);
-                   gp_Write(origGraph, theFileName, WRITE_ADJLIST);
+                   sprintf(theFileName, "error%c%d.txt", FILE_DELIMITER, K%10);
+                   writeResult = gp_Write(origGraph, theFileName, WRITE_ADJLIST);
+                   if (writeResult != OK && !writeErrorReported_Error)
+                   {
+                	   sprintf(Line, "Failed to write graph %s\nMake the directory if not present\n", theFileName);
+                	   ErrorMessage(Line);
+                	   writeErrorReported_Error = TRUE;
+                   }
               }
           }
 
@@ -419,13 +423,17 @@ char saveEdgeListFormat;
          scanf(" %c", &saveEdgeListFormat);
          if (tolower(saveEdgeListFormat) == 'y')
          {
-        	 char *fileName = "maxPlanarEdgeList.txt";
-             if (extraEdges > 0)
-            	 fileName = "nonPlanarEdgeList.txt";
+        	 char theFileName[256];
 
-             SaveAsciiGraph(theGraph, fileName);
-             sprintf(Line, "Edge list format saved to '%s'\n", fileName);
+             if (extraEdges > 0)
+            	 sprintf(theFileName, "random%cnonPlanarEdgeList.txt", FILE_DELIMITER);
+             else
+            	 sprintf(theFileName, "random%cmaxPlanarEdgeList.txt", FILE_DELIMITER);
+
+             sprintf(Line, "Saving edge list format to '%s'\n", theFileName);
         	 Message(Line);
+
+             SaveAsciiGraph(theGraph, theFileName);
          }
      }
      else ErrorMessage("Failure occurred");

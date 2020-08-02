@@ -2,6 +2,7 @@
 /c/Release/
 /c/Debug/
 /c/.settings/
+/c/error/
 
 /c/random/
 /c/embedded/
@@ -12,11 +13,13 @@
 /c/Release/embedded/
 /c/Release/adjlist/
 /c/Release/obstructed/
+/c/Release/error/
 
 /c/Debug/random/
 /c/Debug/embedded/
 /c/Debug/adjlist/
 /c/Debug/obstructed/
+/c/Debug/error/
 
 # Object files
 *.o

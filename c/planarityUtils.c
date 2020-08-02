@@ -94,7 +94,20 @@ void Prompt(char *message)
 void SaveAsciiGraph(graphP theGraph, char *filename)
 {
 	int  e, EsizeOccupied, vertexLabelFix;
-	FILE *outfile = fopen(filename, "wt");
+	FILE *outfile = fopen(filename, WRITETEXT);
+
+	// The filename may specify a directory that doesn't exist
+	if (outfile == NULL)
+	{
+		sprintf(Line, "Failed to write to %s\nMake the directory if not present\n", filename);
+		ErrorMessage(Line);
+		return;
+	}
+
+	// If filename includes path elements, remove them before writing the file's name to the file
+	if (strrchr(filename, FILE_DELIMITER))
+		filename = strrchr(filename, FILE_DELIMITER)+1;
+
 	fprintf(outfile, "%s\n", filename);
 
 	// This edge list file format uses 1-based vertex numbering, and the current code
