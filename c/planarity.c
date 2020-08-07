@@ -1,5 +1,5 @@
 /*
-Copyright (c) 1997-2015, John M. Boyer
+Copyright (c) 1997-2020, John M. Boyer
 All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
@@ -10,18 +10,18 @@ void ProjectTitle()
 {
 	// This message is the main location of the version number.
 	// The format is major.minor.maintenance.tweak
-	// Major is for an overhaul (e.g. many features, data structure change)
-	// Minor is for feature addition, e.g. a new algorithm implementation added
-	// Maintenance is for functional revision, e.g. bug fix to algorithm implementation
-	// Tweak is for a non-functional revision, e.g. change of build scripts or testing code
+	// Major is for an overhaul (e.g. many features, data structure change, change of backward compatibility)
+	// Minor is for a feature addition, e.g. a new algorithm implementation added, new interface
+	// Maintenance is for functional revision, e.g. bug fix to existing algorithm implementation
+	// Tweak is for a non-functional revision, e.g. change of build scripts or testing code, user-facing string changes
 
 	// If the version here is increased, also increase it in configure.ac
 	// Furthermore, a change of Major, Minor or Maintenance here should cause a change
 	// of Current, Revision and/or Age as documented in configure.ac
 
     Message("\n=================================================="
-            "\nThe Edge Addition Planarity Suite version 3.0.0.5"
-            "\nCopyright (c) 1997-2016 by John M. Boyer"
+            "\nThe Edge Addition Planarity Suite version 3.0.1.0"
+            "\nCopyright (c) 1997-2020 by John M. Boyer"
     		"\nContact info: jboyer at acm.org"
             "\n=================================================="
             "\n");
@@ -98,8 +98,8 @@ int helpMessage(char *param)
 	else if (strcmp(param, "-i") == 0 || strcmp(param, "-info") == 0)
 	{
 	    Message(
-		    "The Edge Addition Planarity Suite\n"
-	    	"Copyright (c) 1997-2015, John M. Boyer\n"
+		    "The Edge Addition Planarity Suite version 3.0.1.0\n"
+	    	"Copyright (c) 1997-2020, John M. Boyer\n"
 		    "All rights reserved. \n"
 	    	"See the LICENSE.TXT file for licensing information. \n"
             "\n"
@@ -107,21 +107,22 @@ int helpMessage(char *param)
             "\n"
 	    	"* John M. Boyer. \"Subgraph Homeomorphism via the Edge Addition Planarity \n"
 	    	"  Algorithm\".  Journal of Graph Algorithms and Applications, Vol. 16, \n"
-	    	"  no. 2, pp. 381-410, 2012. http://www.jgaa.info/16/268.html\n"
+	    	"  no. 2, pp. 381-410, 2012. http://dx.doi.org/10.7155/jgaa.00268\n"
             "\n"
 		    "* John M. Boyer. \"A New Method for Efficiently Generating Planar Graph\n"
 		    "  Visibility Representations\". In P. Eades and P. Healy, editors,\n"
 		    "  Proceedings of the 13th International Conference on Graph Drawing 2005,\n"
 		    "  Lecture Notes Comput. Sci., Volume 3843, pp. 508-511, Springer-Verlag, 2006.\n"
+	    	"  http://dx.doi.org/10.1007/11618058_47\n"
             "\n"
 		    "* John M. Boyer and Wendy J. Myrvold. \"On the Cutting Edge: Simplified O(n)\n"
 		    "  Planarity by Edge Addition\". Journal of Graph Algorithms and Applications,\n"
 		    "  Vol. 8, No. 3, pp. 241-273, 2004.\n"
-		    "  http://www.jgaa.info/08/91.html\n"
+		    "  http://dx.doi.org/10.7155/jgaa.00091\n"
             "\n"
 		    "* John M. Boyer. \"Simplified O(n) Algorithms for Planar Graph Embedding,\n"
 		    "  Kuratowski Subgraph Isolation, and Related Problems\". Ph.D. Dissertation,\n"
-		    "  University of Victoria, 2001.\n"
+		    "  University of Victoria, 2001. https://dspace.library.uvic.ca/handle/1828/9918\n"
             "\n"
 	    );
 	}
