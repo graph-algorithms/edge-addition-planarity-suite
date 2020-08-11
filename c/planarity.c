@@ -11,9 +11,9 @@ void ProjectTitle()
 	// This message is the main location of the version number.
 	// The format is major.minor.maintenance.tweak
 	// Major is for an overhaul (e.g. many features, data structure change, change of backward compatibility)
-	// Minor is for a feature addition, e.g. a new algorithm implementation added, new interface
-	// Maintenance is for functional revision, e.g. bug fix to existing algorithm implementation
-	// Tweak is for a non-functional revision, e.g. change of build scripts or testing code, user-facing string changes
+	// Minor is for a feature addition (e.g. a new algorithm implementation added, new interface)
+	// Maintenance is for functional revision (e.g. bug fix to existing algorithm implementation)
+	// Tweak is for a non-functional revision (e.g. change of build scripts or testing code, user-facing string changes)
 
 	// If the version here is increased, also increase it in configure.ac
 	// Furthermore, a change of Major, Minor or Maintenance here should cause a change
@@ -117,8 +117,7 @@ int helpMessage(char *param)
             "\n"
 		    "* John M. Boyer and Wendy J. Myrvold. \"On the Cutting Edge: Simplified O(n)\n"
 		    "  Planarity by Edge Addition\". Journal of Graph Algorithms and Applications,\n"
-		    "  Vol. 8, No. 3, pp. 241-273, 2004.\n"
-		    "  http://dx.doi.org/10.7155/jgaa.00091\n"
+		    "  Vol. 8, No. 3, pp. 241-273, 2004. http://dx.doi.org/10.7155/jgaa.00091\n"
             "\n"
 		    "* John M. Boyer. \"Simplified O(n) Algorithms for Planar Graph Embedding,\n"
 		    "  Kuratowski Subgraph Isolation, and Related Problems\". Ph.D. Dissertation,\n"
