@@ -45,7 +45,7 @@ In this repository, the "Code" button provides the [HTTPS clone](https://github.
 
 1. In Eclipse, use the Open Perspectives button (or Window | Perspective | Open Perspective | Git)
 2. In the web browser, go to the "Code" button, HTTPS clone, and get the URL into the copy/paste clipboard.
-3. Go to the Eclipse Git Repositories panel, and clic "Clone a Git repository"
+3. Go to the Eclipse Git Repositories panel, and click "Clone a Git repository"
 4. The URI, Host, and Repository are pre-filled correctly from the copy/paste clipboard.
 5. Leave the User/Password blank, and hit Next
 6. The master branch is selected by default, so just hit Next again
@@ -64,6 +64,20 @@ Once you have the code, you will be able to import the project, build the _plana
 8. Right-click Planarity-C project, Build Configurations, Build All
 9. Right-click Planarity-C project, Build Configurations, Set Active, Release
 10. Right-click Planarity-C project, Run As, Local Application, planarity.exe (release)
+
+### Making the Distribution
+
+Once one has set up the development environment and is able to work with the code in the development environment, it is possible to make the distribution with the following additional steps:
+
+1. Ensure that the autotools, configure, and make are available on the command-line (e.g. add C:\MinGW\msys\1.0\bin to the system PATH before Windows Program Files to ensure that the MSYS rather than the Windows _find_ program is used). 
+2. Navigate to .../edge-addition-planarity-suite (the directory containing _configure.ac_ and the _c_ subdirectory)
+3. On the command-line, type _bash_ and enter the following commands:
+    1. autogen.sh
+    2. configure
+    3. make dist
+    4. make distcheck 
+
+The result is a validated _planarity-N.N.N.N.tar.gz_ distribution, where _N.N.N.N_ is the version number expressed in the _configure.ac_ file. This distribution can be used to make and install the planarity software using the following command-line: _./configure && make && make install_
 
 ## Contributing
 
