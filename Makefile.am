@@ -1,3 +1,5 @@
+SUBDIRS = c/samples
+
 lib_LTLIBRARIES = libplanarity.la
 
 libplanarity_la_SOURCES = \
