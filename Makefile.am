@@ -53,3 +53,5 @@ planarity_SOURCES = c/planarity.c c/planarityCommandLine.c
 
 man1_MANS = planarity.1
 EXTRA_DIST=$(man1_MANS)
+
+TESTS = test-samples.sh

@@ -1,0 +1,19 @@
+#!/bin/sh
+#
+# Run "planarity -test" using planarity from the build tree and the
+# samples from the source tree. This is complicated by the fact that
+# the source tree may be read-only (as it is during "make distcheck"),
+# meaning that we have to "relocate" the samples into a writable
+# directory within the build tree rather than try to put the
+# just-built planarity executable into the source tree while the test
+# suite runs.
+#
+
+samplesdir="@abs_top_srcdir@/c/samples"
+planaritydir="@abs_top_builddir@"
+
+cd "${planaritydir}"                || exit 1
+mkdir samples                       || exit 2
+cp "${samplesdir}"/*.txt ./samples/ || exit 3
+./planarity -test                   || exit 4
+rm -rf ./samples                    || exit 5

@@ -30,5 +30,7 @@ AC_CONFIG_FILES([
   Makefile
   c/samples/Makefile
 ])
+AC_CONFIG_FILES([test-samples.sh], [chmod +x test-samples.sh])
+
 
 AC_OUTPUT
