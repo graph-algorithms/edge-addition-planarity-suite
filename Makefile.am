@@ -55,3 +55,7 @@ man1_MANS = planarity.1
 EXTRA_DIST=$(man1_MANS)
 
 TESTS = test-samples.sh
+
+# The @docdir@ variable will be replaced by the ./configure script.
+docdir = @docdir@
+dist_doc_DATA = README.md LICENSE.TXT
