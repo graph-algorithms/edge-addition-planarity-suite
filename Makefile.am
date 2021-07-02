@@ -1,3 +1,5 @@
+SUBDIRS = c/samples
+
 lib_LTLIBRARIES = libplanarity.la
 
 libplanarity_la_SOURCES = \
@@ -25,8 +27,7 @@ libplanarity_la_SOURCES = \
 	c/stack.c
 libplanarity_la_LDFLAGS = -no-undefined $(AM_LDFLAGS) -version-info @LT_CURRENT@:@LT_REVISION@:@LT_AGE@
 
-headersdir = $(includedir)/planarity/
-headers_HEADERS = \
+pkginclude_HEADERS = \
 	c/appconst.h \
 	c/graph.h \
 	c/graphDrawPlanar.h \
@@ -52,3 +53,5 @@ planarity_SOURCES = c/planarity.c c/planarityCommandLine.c
 
 man1_MANS = planarity.1
 EXTRA_DIST=$(man1_MANS)
+
+TESTS = test-samples.sh

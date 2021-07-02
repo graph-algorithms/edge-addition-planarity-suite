@@ -118,9 +118,9 @@ int runSpecificGraphTest(char *command, char *infileName);
 int runQuickRegressionTests(int argc, char *argv[])
 {
 	if (runSpecificGraphTests() < 0)
-		return -1;
+		return NOTOK;
 
-	return 0;
+	return OK;
 }
 
 int runSpecificGraphTests()

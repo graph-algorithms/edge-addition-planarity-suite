@@ -26,4 +26,11 @@ AC_PROG_INSTALL
 
 AC_CHECK_HEADERS([ctype.h stdio.h stdlib.h string.h time.h unistd.h])
 
-AC_OUTPUT(Makefile)
+AC_CONFIG_FILES([
+  Makefile
+  c/samples/Makefile
+])
+AC_CONFIG_FILES([test-samples.sh], [chmod +x test-samples.sh])
+
+
+AC_OUTPUT
