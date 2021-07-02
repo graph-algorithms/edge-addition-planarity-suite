@@ -69,6 +69,7 @@
 /c/.deps/
 /autom4te.cache/
 libtool
+test-samples.sh
 Makefile
 config.status
 config.guess
