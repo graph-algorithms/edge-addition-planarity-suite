@@ -165,7 +165,7 @@ int helpMessage(char *param)
 	}
 
     FlushConsole(stdout);
-    return 0;
+    return OK;
 }
 
 /****************************************************************************
