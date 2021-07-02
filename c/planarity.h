@@ -2,7 +2,7 @@
 #define PLANARITY_H
 
 /*
-Copyright (c) 1997-2020, John M. Boyer
+Copyright (c) 1997-2021, John M. Boyer
 All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
