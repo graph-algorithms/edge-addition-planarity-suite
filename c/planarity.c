@@ -1,5 +1,5 @@
 /*
-Copyright (c) 1997-2021, John M. Boyer
+Copyright (c) 1997-2022, John M. Boyer
 All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
@@ -21,7 +21,7 @@ void ProjectTitle()
 
     Message("\n=================================================="
             "\nThe Edge Addition Planarity Suite version 3.0.2.0"
-            "\nCopyright (c) 1997-2021 by John M. Boyer"
+            "\nCopyright (c) 1997-2022 by John M. Boyer"
     		"\nContact info: jboyer at acm.org"
             "\n=================================================="
             "\n");
@@ -99,7 +99,7 @@ int helpMessage(char *param)
 	{
 	    Message(
 		    "The Edge Addition Planarity Suite version 3.0.2.0\n"
-	    	"Copyright (c) 1997-2021, John M. Boyer\n"
+	    	"Copyright (c) 1997-2022, John M. Boyer\n"
 		    "All rights reserved. \n"
 	    	"See the LICENSE.TXT file for licensing information. \n"
             "\n"
