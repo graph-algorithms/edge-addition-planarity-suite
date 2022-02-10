@@ -136,6 +136,106 @@ void SaveAsciiGraph(graphP theGraph, char *filename)
 }
 
 /****************************************************************************
+ ReadTextFileIntoString()
+ Reads the file content indicated by infileName using a single fread(), and
+ returns the result in an allocated string. The caller needs to free() the
+ returned string when done with it.
+ Returns NULL on error, or an allocated string containing the file content.
+ ****************************************************************************/
+
+char *ReadTextFileIntoString(char *infileName)
+{
+	FILE *infile = NULL;
+	char *inputString = NULL;
+
+	if ((infile = fopen(infileName, "r")) == NULL)
+		ErrorMessage("fopen() failed.\n");
+	else
+	{
+        long filePos = ftell(infile);
+        long fileSize;
+
+        fseek(infile, 0, SEEK_END);
+        fileSize = ftell(infile);
+        fseek(infile, filePos, SEEK_SET);
+
+        if ((inputString = (char *) malloc((fileSize + 1) * sizeof(char))) != NULL)
+        {
+        	long bytesRead = fread((void *) inputString, 1, fileSize, infile);
+        	inputString[bytesRead] = '\0';
+        }
+
+		fclose(infile);
+	}
+
+	return inputString;
+}
+
+/****************************************************************************
+ * TextFileMatchesString()
+ *
+ * Compares the text file content from the file named 'theFilename' with
+ * the content of 'theString'.
+ *
+ * Textual equality is measured as content equality except for suppressing
+ * differences between CRLF and LF-only line delimiters.
+ *
+ * Returns TRUE if the contents are textually equal, FALSE otherwise
+ ****************************************************************************/
+
+int  TextFileMatchesString(char *theFilename, char *theString)
+{
+	FILE *infile = NULL;
+	int Result = TRUE;
+
+	if (theFilename != NULL)
+		infile = fopen(theFilename, "r");
+
+	if (infile == NULL)
+		Result = FALSE;
+	else
+	{
+		int c1=0, c2=0, stringIndex=0;
+
+		// Read the input file to the end
+		while ((c1 = fgetc(infile)) != EOF)
+		{
+			// Want to suppress distinction between lines ending with CRLF versus LF
+			// by looking at only LF characters in the file
+			if (c1 == '\r')
+				continue;
+
+			// Since c1 now has a non-CR, non-EOF from the input file,  we now also
+			// get a character from the string, except ignoring CRs again
+			while ((c2 = (int) theString[stringIndex++]) == '\r')
+				;
+
+			// If c1 doesn't equal c2 (whether c2 is a null terminator or a different character)
+			// then the file content doesn't match the string
+			if (c1 != c2)
+			{
+				Result = FALSE;
+				break;
+			}
+		}
+
+		// If the outer while loop got to the end of the file
+		if (c1 == EOF)
+		{
+			// Then get another character from the string, once again suppressing CRs, and then...
+			while ((c2 = (int) theString[stringIndex++]) == '\r')
+				;
+			// Test whether or not the second file also ends, same as the first.
+			if (c2 != '\0')
+				Result = FALSE;
+		}
+	}
+
+	if (infile != NULL) fclose(infile);
+	return Result;
+}
+
+/****************************************************************************
  ****************************************************************************/
 
 int  TextFilesEqual(char *file1Name, char *file2Name)
@@ -349,7 +449,7 @@ char *ConstructInputFilename(char *infileName)
 /****************************************************************************
  ConstructPrimaryOutputFilename()
  Returns a string not owned by the caller (do not free string).
- Reuses the same memory space as ConstructinputFilename().
+ Reuses the same memory space as ConstructInputFilename().
  If outfileName is non-NULL, then the result string contains its content.
  If outfileName is NULL, then the infileName and the command's algorithm name
  are used to construct a string.

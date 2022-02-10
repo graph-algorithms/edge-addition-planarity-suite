@@ -27,11 +27,13 @@ void ProjectTitle();
 int helpMessage(char *param);
 
 /* Functions that call the Graph Library */
-int SpecificGraph(char command, char *infileName, char *outfileName, char *outfile2Name);
+int SpecificGraph(
+		char command,
+		char *infileName, char *outfileName, char *outfile2Name,
+		char *inputStr, char **pOutputStr, char **pOutput2Str
+);
 int RandomGraph(char command, int extraEdges, int numVertices, char *outfileName, char *outfile2Name);
 int RandomGraphs(char command, int, int);
-
-int makeg_main(char command, int argc, char *argv[]);
 
 /* Command line, Menu, and Configuration */
 int commandLine(int argc, char *argv[]);
@@ -58,7 +60,10 @@ void Prompt(char *message);
 
 void SaveAsciiGraph(graphP theGraph, char *filename);
 
+char *ReadTextFileIntoString(char *infileName);
+int  TextFileMatchesString(char *theFilename, char *theString);
 int  TextFilesEqual(char *file1Name, char *file2Name);
+int  BinaryFilesEqual(char *file1Name, char *file2Name);
 
 int GetEmbedFlags(char command);
 char *GetAlgorithmName(char command);

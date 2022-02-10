@@ -1,10 +1,6 @@
-# The @docdir@ variable will be replaced by the ./configure script.
-# This is "necessary" (that is, I don't know a better way to do it)
-# to install these samples in a "samples" subdirectory of the usual
-# documentation directory.
-docdir = @docdir@/samples
+samplesdir = @docdir@/samples
 
-dist_doc_DATA = \
+dist_samples_DATA = \
   Petersen.0-based.txt \
   Petersen.0-based.txt.ColorVertices.out.txt \
   Petersen.0-based.txt.K23Search.out.txt \

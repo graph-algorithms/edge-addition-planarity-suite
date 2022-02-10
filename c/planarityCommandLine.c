@@ -112,18 +112,29 @@ int Result;
  Quick regression test
  ****************************************************************************/
 
-int runSpecificGraphTests();
-int runSpecificGraphTest(char *command, char *infileName);
+int runSpecificGraphTests(char *);
+int runSpecificGraphTest(char *command, char *infileName, int inputInMemFlag);
 
 int runQuickRegressionTests(int argc, char *argv[])
 {
-	if (runSpecificGraphTests() < 0)
+	char *samplesDir = "samples";
+	int samplesDirArgLocation = 2;
+
+	// Skip optional -q quiet mode command-line paramater, if present
+	if (argc > samplesDirArgLocation && strcmp(argv[samplesDirArgLocation], "-q") == 0)
+		samplesDirArgLocation++;
+
+	// Accept overriding sample directory command-line parameter, if present
+	if (argc > samplesDirArgLocation)
+		samplesDir = argv[samplesDirArgLocation];
+
+	if (runSpecificGraphTests(samplesDir) < 0)
 		return NOTOK;
 
 	return OK;
 }
 
-int runSpecificGraphTests()
+int runSpecificGraphTests(char *samplesDir)
 {
 	char origDir[2049];
 	int retVal = 0;
@@ -131,102 +142,158 @@ int runSpecificGraphTests()
 	if (!getcwd(origDir, 2048))
 		return -1;
 
-	if (chdir("samples") != 0)
+	// Preserve original behavior before the samplesDir command-line parameter was available
+	if (strcmp(samplesDir, "samples") == 0)
 	{
-		if (chdir("..") != 0 || chdir("samples") != 0)
+		if (chdir(samplesDir) != 0)
 		{
-			// Warn but give success result
-			printf("WARNING: Unable to change to samples directory to run tests on samples.\n");
+			if (chdir("..") != 0 || chdir(samplesDir) != 0)
+			{
+				// Give success result, but Warn if no samples (except no warning if in quiet mode)
+				Message("WARNING: Unable to change to samples directory to run tests on samples.\n");
+				return 0;
+			}
+		}
+	}
+	else
+	{
+		// New behavior if samplesDir command-line parameter was specified
+		if (chdir(samplesDir) != 0)
+		{
+			Message("WARNING: Unable to change to samples directory to run tests on samples.\n");
 			return 0;
 		}
 	}
 
 #if NIL == 0
-	if (runSpecificGraphTest("-p", "maxPlanar5.txt") < 0)
-		retVal = -1;
+	Message("Starting NIL == 0 Tests\n");
 
-	if (runSpecificGraphTest("-d", "maxPlanar5.txt") < 0)
+	if (runSpecificGraphTest("-p", "maxPlanar5.txt", TRUE) < 0) {
 		retVal = -1;
+		Message("Planarity test on maxPlanar5.txt failed.\n");
+	}
 
-	if (runSpecificGraphTest("-d", "drawExample.txt") < 0)
+	if (runSpecificGraphTest("-d", "maxPlanar5.txt", FALSE) < 0) {
 		retVal = -1;
+		Message("Graph drawing test maxPlanar5.txt failed.\n");
+	}
 
-	if (runSpecificGraphTest("-p", "Petersen.txt") < 0)
+	if (runSpecificGraphTest("-d", "drawExample.txt", TRUE) < 0) {
 		retVal = -1;
+		Message("Graph drawing on drawExample.txt failed.\n");
+	}
 
-	if (runSpecificGraphTest("-o", "Petersen.txt") < 0)
+	if (runSpecificGraphTest("-p", "Petersen.txt", FALSE) < 0) {
 		retVal = -1;
+		Message("Planarity test on Petersen.txt failed.\n");
+	}
 
-	if (runSpecificGraphTest("-2", "Petersen.txt") < 0)
+	if (runSpecificGraphTest("-o", "Petersen.txt", TRUE) < 0) {
 		retVal = -1;
+		Message("Outerplanarity test on Petersen.txt failed.\n");
+	}
 
-	if (runSpecificGraphTest("-3", "Petersen.txt") < 0)
+	if (runSpecificGraphTest("-2", "Petersen.txt", FALSE) < 0) {
 		retVal = -1;
+		Message("K_{2,3} search on Petersen.txt failed.\n");
+	}
 
-	if (runSpecificGraphTest("-4", "Petersen.txt") < 0)
+	if (runSpecificGraphTest("-3", "Petersen.txt", TRUE) < 0) {
 		retVal = -1;
+		Message("K_{3,3} search on Petersen.txt failed.\n");
+	}
 
+	if (runSpecificGraphTest("-4", "Petersen.txt", FALSE) < 0) {
+		retVal = -1;
+		Message("K_4 search on Petersen.txt failed.\n");
+	}
+
+	Message("Finished NIL == 0 Tests.\n\n");
 #endif
 
-	if (runSpecificGraphTest("-p", "maxPlanar5.0-based.txt") < 0)
+	if (runSpecificGraphTest("-p", "maxPlanar5.0-based.txt", FALSE) < 0) {
 		retVal = -1;
+		Message("Planarity test on maxPlanar5.0-based.txt failed.\n");
+	}
 
-	if (runSpecificGraphTest("-d", "maxPlanar5.0-based.txt") < 0)
+	if (runSpecificGraphTest("-d", "maxPlanar5.0-based.txt", TRUE) < 0) {
 		retVal = -1;
+		Message("Graph drawing test maxPlanar5.0-based.txt failed.\n");
+	}
 
-	if (runSpecificGraphTest("-d", "drawExample.0-based.txt") < 0)
+	if (runSpecificGraphTest("-d", "drawExample.0-based.txt", FALSE) < 0) {
 		retVal = -1;
+		Message("Graph drawing on drawExample.0-based.txt failed.\n");
+	}
 
-	if (runSpecificGraphTest("-p", "Petersen.0-based.txt") < 0)
+	if (runSpecificGraphTest("-p", "Petersen.0-based.txt", TRUE) < 0) {
 		retVal = -1;
+		Message("Planarity test on Petersen.0-based.txt failed.\n");
+	}
 
-	if (runSpecificGraphTest("-o", "Petersen.0-based.txt") < 0)
+	if (runSpecificGraphTest("-o", "Petersen.0-based.txt", FALSE) < 0) {
 		retVal = -1;
+		Message("Outerplanarity test on Petersen.0-based.txt failed.\n");
+	}
 
-	if (runSpecificGraphTest("-2", "Petersen.0-based.txt") < 0)
+	if (runSpecificGraphTest("-2", "Petersen.0-based.txt", TRUE) < 0) {
 		retVal = -1;
+		Message("K_{2,3} search on Petersen.0-based.txt failed.\n");
+	}
 
-	if (runSpecificGraphTest("-3", "Petersen.0-based.txt") < 0)
+	if (runSpecificGraphTest("-3", "Petersen.0-based.txt", FALSE) < 0) {
 		retVal = -1;
+		Message("K_{3,3} search on Petersen.0-based.txt failed.\n");
+	}
 
-	if (runSpecificGraphTest("-4", "Petersen.0-based.txt") < 0)
+	if (runSpecificGraphTest("-4", "Petersen.0-based.txt", TRUE) < 0) {
 		retVal = -1;
+		Message("K_4 search on Petersen.0-based.txt failed.\n");
+	}
 
 	if (retVal == 0)
-		printf("Tests of all specific graphs succeeded\n");
+		Message("Tests of all specific graphs succeeded.\n");
+	else
+		Message("One or more specific graph tests FAILED.\n");
 
 	chdir(origDir);
     FlushConsole(stdout);
 	return retVal;
 }
 
-int runSpecificGraphTest(char *command, char *infileName)
+int runSpecificGraphTest(char *command, char *infileName, int inputInMemFlag)
 {
-	char *commandLine[] = {
-			"planarity", "-s", "C", "infile", "outfile", "outfile2"
-	};
-	char *outfileName = ConstructPrimaryOutputFilename(infileName, NULL, command[1]);
-	char *outfile2Name = "";
-	char *testfileName = strdup(outfileName);
-	int Result = 0;
+	int Result = OK;
+	char algorithmCode = command[1];
 
-	if (testfileName == NULL)
-		return -1;
+	// The algorithm, indicated by algorithmCode, operating on 'infilename' is expected to produce
+	// an output that is stored in the file named 'expectedResultFileName' (return string not owned)
+	char *expectedPrimaryResultFileName = ConstructPrimaryOutputFilename(infileName, NULL, command[1]);
 
-	outfileName = strdup(strcat(outfileName, ".test.txt"));
-	if (outfileName == NULL)
+	char *inputString = NULL;
+	char *actualOutput = NULL;
+	char *actualOutput2 = NULL;
+
+	// SpecificGraph() can invoke gp_Read() if the graph is to be read from a file, or it can invoke
+	// gp_ReadFromString() if the inputInMemFlag is set.
+	if (inputInMemFlag)
 	{
-		free(testfileName);
-		return -1;
+		inputString = ReadTextFileIntoString(infileName);
+		if (inputString == NULL) {
+			ErrorMessage("Failed to read input file into string.\n");
+			Result = NOTOK;
+		}
 	}
 
-	// 'planarity -s [-q] C I O [O2]': Specific graph
-	commandLine[2] = command;
-	commandLine[3] = infileName;
-	commandLine[4] = outfileName;
-	commandLine[5] = outfile2Name;
+	if  (Result == OK)
+	{
+		// Perform the indicated algorithm on the graph in the input file or string.
+		Result = SpecificGraph(algorithmCode,
+				               infileName, NULL, NULL,
+							   inputString, &actualOutput, &actualOutput2);
+	}
 
-	Result = callSpecificGraph(6, commandLine);
+	// Change from internal OK/NONEMBEDDABLE/NOTOK result to a command-line style 0/-1 result
 	if (Result == OK || Result == NONEMBEDDABLE)
 		Result = 0;
 	else
@@ -235,13 +302,11 @@ int runSpecificGraphTest(char *command, char *infileName)
 		Result = -1;
 	}
 
+	// Test that the primary actual output matches the primary expected output
 	if (Result == 0)
 	{
-		if (TextFilesEqual(testfileName, outfileName) == TRUE)
-		{
+		if (TextFileMatchesString(expectedPrimaryResultFileName, actualOutput) == TRUE)
 			Message("Test succeeded (result equal to exemplar).\n");
-			unlink(outfileName);
-		}
 		else
 		{
 			ErrorMessage("Test failed (result not equal to exemplar).\n");
@@ -249,37 +314,41 @@ int runSpecificGraphTest(char *command, char *infileName)
 		}
 	}
 
-	// For graph drawing, secondary file is outfileName + ".render.txt"
-
-	if (command[1] == 'd' && Result == 0)
+	// Test that the secondary actual output matches the secondary expected output
+	if (algorithmCode == 'd' && Result == 0)
 	{
-		outfile2Name = ConstructPrimaryOutputFilename(NULL, outfileName, command[1]);
-		free(outfileName);
-		outfileName = strdup(strcat(outfile2Name, ".render.txt"));
+		char *expectedSecondaryResultFileName = (char *) malloc(strlen(expectedPrimaryResultFileName) + strlen(".render.txt") + 1);
 
-		free(testfileName);
-		testfileName = ConstructPrimaryOutputFilename(infileName, NULL, command[1]);
-		testfileName = strdup(strcat(testfileName, ".render.txt"));
-
-		if (Result == 0)
+		if (expectedSecondaryResultFileName != NULL)
 		{
-			if (TextFilesEqual(testfileName, outfileName) == TRUE)
-			{
+			sprintf(expectedSecondaryResultFileName, "%s%s", expectedPrimaryResultFileName, ".render.txt");
+
+			if (TextFileMatchesString(expectedSecondaryResultFileName, actualOutput2) == TRUE)
 				Message("Test succeeded (secondary result equal to exemplar).\n");
-				unlink(outfileName);
-			}
 			else
 			{
 				ErrorMessage("Test failed (secondary result not equal to exemplar).\n");
 				Result = -1;
 			}
+
+			free(expectedSecondaryResultFileName);
+		}
+		else
+		{
+			Result = -1;
 		}
 	}
 
+	// Cleanup and then return the command-line style result code
 	Message("\n");
 
-	free(outfileName);
-	free(testfileName);
+	if (inputString != NULL)
+		free(inputString);
+	if (actualOutput != NULL)
+		free(actualOutput);
+	if (actualOutput2 != NULL)
+		free(actualOutput2);
+
 	return Result;
 }
 
@@ -336,7 +405,7 @@ int callSpecificGraph(int argc, char *argv[])
 	if (argc == 6+offset)
 	    outfile2Name = argv[5+offset];
 
-	return SpecificGraph(Choice, infileName, outfileName, outfile2Name);
+	return SpecificGraph(Choice, infileName, outfileName, outfile2Name, NULL, NULL, NULL);
 }
 
 /****************************************************************************

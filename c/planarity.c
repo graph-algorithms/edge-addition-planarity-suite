@@ -11,7 +11,7 @@ void ProjectTitle()
 	// This message is the main location of the version number.
 	// The format is major.minor.maintenance.tweak
 	// Major is for an overhaul (e.g. many features, data structure change, change of backward compatibility)
-	// Minor is for a feature addition (e.g. a new algorithm implementation added, new interface)
+	// Minor is for feature addition (e.g. a new algorithm implementation added, new interface)
 	// Maintenance is for functional revision (e.g. bug fix to existing algorithm implementation)
 	// Tweak is for a non-functional revision (e.g. change of build scripts or testing code, user-facing string changes)
 
@@ -20,7 +20,7 @@ void ProjectTitle()
 	// of Current, Revision and/or Age as documented in configure.ac
 
     Message("\n=================================================="
-            "\nThe Edge Addition Planarity Suite version 3.0.1.1"
+            "\nThe Edge Addition Planarity Suite version 3.0.2.0"
             "\nCopyright (c) 1997-2021 by John M. Boyer"
     		"\nContact info: jboyer at acm.org"
             "\n=================================================="
@@ -76,7 +76,7 @@ int helpMessage(char *param)
             "'planarity (-h|-help)': this message\n"
             "'planarity (-h|-help) -menu': more help with menu-based command line\n"
 	        "'planarity (-i|-info): copyright and license information\n"
-    	    "'planarity -test [-q] [C]': runs tests (optional quiet mode, single test)\n"
+    	    "'planarity -test [-q] [samples dir]': runs tests (optional quiet mode)\n"
 	    	"\n"
 	    );
 
@@ -98,7 +98,7 @@ int helpMessage(char *param)
 	else if (strcmp(param, "-i") == 0 || strcmp(param, "-info") == 0)
 	{
 	    Message(
-		    "The Edge Addition Planarity Suite version 3.0.1.1\n"
+		    "The Edge Addition Planarity Suite version 3.0.2.0\n"
 	    	"Copyright (c) 1997-2021, John M. Boyer\n"
 		    "All rights reserved. \n"
 	    	"See the LICENSE.TXT file for licensing information. \n"
@@ -131,8 +131,8 @@ int helpMessage(char *param)
 	    Message(
 	    	"'planarity -r [-q] C K N': Random graphs\n"
 	    	"'planarity -s [-q] C I O [O2]': Specific graph\n"
-	        "'planarity -rm [-q] N O [O2]': Maximal planar random graph\n"
-	        "'planarity -rn [-q] N O [O2]': Nonplanar random graph (maximal planar + edge)\n"
+	        "'planarity -rm [-q] N O [O2]': Random maximal planar graph\n"
+	        "'planarity -rn [-q] N O [O2]': Random nonplanar graph (maximal planar + edge)\n"
 	        "'planarity I O [-n O2]': Legacy command-line (default -s -p)\n"
 	    	"\n"
 	    );
@@ -214,7 +214,7 @@ char Choice;
             } else {
             	switch (tolower(Mode))
                 {
-                    case 's' : SpecificGraph(Choice, NULL, NULL, secondOutfile); break;
+                    case 's' : SpecificGraph(Choice, NULL, NULL, secondOutfile, NULL, NULL, NULL); break;
                     case 'r' : RandomGraphs(Choice, 0, 0); break;
                     case 'm' : RandomGraph(Choice, 0, 0, NULL, NULL); break;
                     case 'n' : RandomGraph(Choice, 1, 0, NULL, NULL); break;

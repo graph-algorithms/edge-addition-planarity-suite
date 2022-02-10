@@ -11,6 +11,7 @@ See the LICENSE.TXT file for licensing information.
 #include "appconst.h"
 #include "listcoll.h"
 #include "stack.h"
+#include "strbuf.h"
 
 #include "graphFunctionTable.h"
 #include "graphExtensions.private.h"

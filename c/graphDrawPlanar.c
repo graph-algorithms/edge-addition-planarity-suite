@@ -869,13 +869,38 @@ char *_RenderToString(graphP theEmbedding)
 }
 
 /********************************************************************
+ gp_DrawPlanar_RenderToString()
+
+ Creates a rendition of the planar graph visibility representation
+ as a string, and return it via the pRenditionString parameter.
+ The caller can use free() to get rid of the returned string after use.
+
+ Returns NOTOK for any error, OK otherwise.
+ ********************************************************************/
+
+int  gp_DrawPlanar_RenderToString(graphP theEmbedding, char **pRenditionString)
+{
+    if (theEmbedding != NULL && sp_IsEmpty(theEmbedding->edgeHoles) && pRenditionString != NULL)
+    {
+    	*pRenditionString = _RenderToString(theEmbedding);
+    	return *pRenditionString != NULL ? OK : NOTOK;
+    }
+
+    return NOTOK;
+}
+
+/********************************************************************
  gp_DrawPlanar_RenderToFile()
+
  Creates a rendition of the planar graph visibility representation
  as a string, then dumps the string to the file.
+ theFileName - can be "stdout", "stderr" or a file system filename
+
+ Returns NOTOK for any error, OK otherwise.
  ********************************************************************/
 int gp_DrawPlanar_RenderToFile(graphP theEmbedding, char *theFileName)
 {
-    if (sp_IsEmpty(theEmbedding->edgeHoles))
+    if (theEmbedding != NULL && sp_IsEmpty(theEmbedding->edgeHoles))
     {
         FILE *outfile;
         char *theRendition;

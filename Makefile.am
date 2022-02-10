@@ -24,7 +24,9 @@ libplanarity_la_SOURCES = \
 	c/planarityRandomGraphs.c \
 	c/planaritySpecificGraph.c \
 	c/planarityUtils.c \
-	c/stack.c
+	c/stack.c \
+	c/strbuf.c
+	
 libplanarity_la_LDFLAGS = -no-undefined $(AM_LDFLAGS) -version-info @LT_CURRENT@:@LT_REVISION@:@LT_AGE@
 
 pkginclude_HEADERS = \
@@ -45,7 +47,8 @@ pkginclude_HEADERS = \
 	c/listcoll.h \
 	c/planarity.h \
 	c/platformTime.h \
-	c/stack.h
+	c/stack.h \
+	c/strbuf.h
 
 bin_PROGRAMS = planarity
 planarity_LDADD  = libplanarity.la

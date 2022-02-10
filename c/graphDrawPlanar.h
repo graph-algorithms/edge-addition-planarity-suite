@@ -19,6 +19,7 @@ int gp_AttachDrawPlanar(graphP theGraph);
 int gp_DetachDrawPlanar(graphP theGraph);
 
 int  gp_DrawPlanar_RenderToFile(graphP theEmbedding, char *theFileName);
+int  gp_DrawPlanar_RenderToString(graphP theEmbedding, char **pRenditionString);
 
 #ifdef __cplusplus
 }
