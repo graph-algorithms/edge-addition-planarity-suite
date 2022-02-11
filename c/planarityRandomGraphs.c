@@ -418,21 +418,31 @@ char saveEdgeListFormat;
     	 if (outfileName != NULL)
     		 gp_Write(theGraph, outfileName, WRITE_ADJLIST);
 
-         Prompt("Do you want to save the generated graph in edge list format (y/n)? ");
-         fflush(stdin);
-         scanf(" %c", &saveEdgeListFormat);
+    	 if (quietMode == 'n')
+    	 {
+             Prompt("Do you want to save the generated graph in edge list format (y/n)? ");
+             fflush(stdin);
+             scanf(" %c", &saveEdgeListFormat);
+    	 }
+    	 else
+    		 saveEdgeListFormat = 'n';
+
          if (tolower(saveEdgeListFormat) == 'y')
          {
         	 char theFileName[256];
 
              if (extraEdges > 0)
-            	 sprintf(theFileName, "random%cnonPlanarEdgeList.txt", FILE_DELIMITER);
+            	 strcpy(theFileName, "nonPlanarEdgeList.txt");
              else
-            	 sprintf(theFileName, "random%cmaxPlanarEdgeList.txt", FILE_DELIMITER);
+            	 strcpy(theFileName, "maxPlanarEdgeList.txt");
 
-             sprintf(Line, "Saving edge list format to '%s'\n", theFileName);
+             sprintf(Line, "Saving edge list format of original graph to '%s'\n", theFileName);
         	 Message(Line);
+             SaveAsciiGraph(origGraph, theFileName);
 
+             strcat(theFileName, ".out.txt");
+             sprintf(Line, "Saving edge list format of result to '%s'\n", theFileName);
+        	 Message(Line);
              SaveAsciiGraph(theGraph, theFileName);
          }
      }
