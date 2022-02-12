@@ -151,7 +151,7 @@ int helpMessage(char *param)
 	        "O2= Secondary output file\n"
 	    	"    For -s, if C=-p or -o, then O2 receives the embedding obstruction\n"
 	       	"    For -s, if C=-d, then O2 receives a drawing of the planar graph\n"
-	    	"    For -m and -n, O2 contains the original randomly generated graph\n"
+	    	"    For -rm and -rn, O2 contains the original randomly generated graph\n"
 	    	"\n"
 	    );
 
