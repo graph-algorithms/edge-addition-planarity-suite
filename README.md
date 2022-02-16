@@ -49,7 +49,7 @@ In this repository, the "Code" button provides the [HTTPS clone](https://github.
 4. The URI, Host, and Repository are pre-filled correctly from the copy/paste clipboard.
 5. Leave the User/Password blank, and hit Next
 6. The master branch is selected by default, so just hit Next again
-7. Change the destination directory to a subdirectory where you want to store the project code (e.g. c:\Users\_you_\Documents\eclipse\workspaces-cpp\graph-algorithms\edge-addition-planarity-suite)
+7. Change the destination directory to a subdirectory where you want to store the project code (e.g. c:\Users\\_you_\Documents\eclipse\workspaces-cpp\graph-algorithms\edge-addition-planarity-suite)
 8. Hit Finish
 
 Once you have the code, you will be able to import the project, build the _planarity.exe_ application and use the run and debug features of Eclipse.
