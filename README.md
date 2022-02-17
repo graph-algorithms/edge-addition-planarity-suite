@@ -41,29 +41,27 @@ A development environment for the C reference implementations can be set up base
     
 ### Working with the Code in the Development Environment
 
-In this repository, the "Code" button provides the [HTTPS clone](https://github.com/graph-algorithms/edge-addition-planarity-suite.git) link to use to get the code. 
+1. Copy the HTTPS clone URL into the copy/paste buffer
+     1. In this repository, the "Code" button provides the [HTTPS clone](https://github.com/graph-algorithms/edge-addition-planarity-suite.git) link to use to get the code.
+2. Start by making a new eclipse workspace for 'graph-algorithms'
+     1. You may need to select 'Prompt for Workspace on startup' in Window | Preferences | General | Startup and Shutdown | Workspaces, then close and reopen eclipse
+     2. In the initial workspace dialogue, one can specify a new folder that gets created, e.g. c:\Users\\_you_\Documents\eclipse\workspaces-cpp\graph-algorithms
+3. Click 'Checkout projects from Git' in the new workspace Welcome page 
+4. Pick 'Clone URI' and hit Next
+5. The URI, Host, and Repository are pre-filled correctly from the copy/paste clipboard.
+6. Leave the User/Password blank (unless you have read/write access to the project), and hit Next
+7. The master branch is selected by default, so just hit Next again
+8. Change the destination directory to a subdirectory where you want to store the project code (e.g. c:\Users\\_you_\Documents\eclipse\workspaces-cpp\graph-algorithms\edge-addition-planarity-suite)
+9. Hit Next (which downloads the projecct), Nit Next again (to Import existing Eclipse projects), Hit Finish
 
-1. In Eclipse, use the Open Perspectives button (or Window | Perspective | Open Perspective | Git)
-2. In the web browser, go to the "Code" button, HTTPS clone, and get the URL into the copy/paste clipboard.
-3. Go to the Eclipse Git Repositories panel, and click "Clone a Git repository"
-4. The URI, Host, and Repository are pre-filled correctly from the copy/paste clipboard.
-5. Leave the User/Password blank, and hit Next
-6. The master branch is selected by default, so just hit Next again
-7. Change the destination directory to a subdirectory where you want to store the project code (e.g. c:\Users\_you_\Documents\eclipse\workspaces-cpp\graph-algorithms\edge-addition-planarity-suite)
-8. Hit Finish
+Now you can build and run the code:
 
-Once you have the code, you will be able to import the project, build the _planarity.exe_ application and use the run and debug features of Eclipse.
-
-1. Use the Open Perspectives button (or Windows | Perspective | Open Perspective | Other…)
-2. Select C/C++
-3. In the Project Explorer window, click Import projects...
-4. Choose General | Existing Projects into Workspace and hit Next >
-5. For "Select root directory:" choose "Browse..."
-6. Navigate to .../edge-addition-planarity-suite/c (This autofills and selects Planarity-C in Projects list)
-7. Hit Finish (do not select "Copy projects into workspace")
-8. Right-click Planarity-C project, Build Configurations, Build All
-9. Right-click Planarity-C project, Build Configurations, Set Active, Release
-10. Right-click Planarity-C project, Run As, Local Application, planarity.exe (release)
+1. Open the C/C++ Perspective
+     1. Use the Open Perspectives button (or use Windows | Perspective | Open Perspective | Other...)
+     2. Select C/C++
+2. Right-click Planarity-C project, Build Configurations, Build All
+3. Right-click Planarity-C project, Build Configurations, Set Active, Release
+4. Right-click Planarity-C project, Run As, Local Application, planarity.exe (release)
 
 ### Making the Distribution
 
