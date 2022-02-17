@@ -18,11 +18,9 @@ These instructions will get you a copy of the project up and running on your loc
 
 ### Pre-compiled Executable Releases for Non-Developers
 
-This repository includes releases of already compiled versions of an application for non-developers to use the algorithm implementations. Download and decompress planarity._Platform_.zip. If you execute the _planarity.exe_ program with a "-test" parameter, the algorithms will be performed on the graphs in the files in the _samples_ directory, and a success result will be reported. 
+On several distributions of Linux, you may be able to get the planarity executable with _sudo apt-get planarity_, or you may already have it you have Matlab. For non-developer Windows users, there is also a pre-compiled executable version of the algorithm implementations. Download and decompress the _planarity-N.N.N.N.WindowsExe.zip_ file. 
 
-The application includes a menu driven mode that lets a user manually select algorithms to run and, where appropriate, files containing graphs on which to run the algorithms. To access the menu mode, execute _planarity.exe_ without any command line parameters.
-
-The application also supports an extensive list of command-line parameters that make it possible to automate the execution of any of the algorithms included in the application. Execute _planarity.exe_ with the "-h" command-line parameter to get more information about the command line options, and use "-h -menu" for more extensive information about command-line mode.
+If you run the _planarity_ executable program, it will offer a menu-drive mode that lets a user manually select algorithms to run and, where appropriate, files containing graphs on which to run the algorithms. The _planarity_ executable program also supports an extensive list of command-line parameters that make it possible to automate the execution of any of the algorithms included in the application. Run _planarity_ with the "-h" command-line parameter to get more information about the command line options, and use "-h -menu" for more extensive information about command-line mode.
 
 ### Setting up a Development Environment
 
@@ -63,7 +61,7 @@ Now you can build and run the code:
 3. Right-click Planarity-C project, Build Configurations, Set Active, Release
 4. Right-click Planarity-C project, Run As, Local Application, planarity.exe (release)
 
-### Making the Distribution
+### Making the Distribution for Linux
 
 Once one has set up the development environment and is able to work with the code in the development environment, it is possible to make the distribution with the following additional steps:
 
@@ -75,7 +73,9 @@ Once one has set up the development environment and is able to work with the cod
     3. make dist
     4. make distcheck 
 
-The result is a validated _planarity-N.N.N.N.tar.gz_ distribution, where _N.N.N.N_ is the version number expressed in the _configure.ac_ file. This distribution can be used to make and install the planarity software using the following command-line: _./configure && make && make install_
+The result is a validated _planarity-N.N.N.N.tar.gz_ distribution for Linux, where _N.N.N.N_ is the version number expressed in the _configure.ac_ file. 
+
+You don't typically need to make and install the planarity software on Linux because it is often possible to get this software with _sudo apt-get planarity_ or with Matlab. However, if you do want to install the distribution, then use _./configure && make && sudo make install_ on the command-line. Note that the _libplanarity_ shared object will be installed to _/usr/local/lib_ so it will be necessary to set LD_LIBRARY_PATH accordingly (e.g. _export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib_ ). 
 
 ## Contributing
 
