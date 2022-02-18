@@ -50,7 +50,9 @@ A development environment for the C reference implementations can be set up base
 6. Leave the User/Password blank (unless you have read/write access to the project), and hit Next
 7. The master branch is selected by default, so just hit Next again
 8. Change the destination directory to a subdirectory where you want to store the project code (e.g. c:\Users\\_you_\Documents\eclipse\workspaces-cpp\graph-algorithms\edge-addition-planarity-suite)
-9. Hit Next (which downloads the projecct), Nit Next again (to Import existing Eclipse projects), Hit Finish
+9. Hit Next (which downloads the projecct), Hit Next again (to Import existing Eclipse projects), Hit Finish
+
+Now that the project is available, the code can be built and executed:
 
 1. Open the C/C++ Perspective
      1. Use the Open Perspectives button (or use Windows | Perspective | Open Perspective | Other...)
