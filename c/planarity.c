@@ -64,7 +64,6 @@ int helpMessage(char *param)
         "    -2 = Search for subgraph homeomorphic to K_{2,3}\n"
         "    -3 = Search for subgraph homeomorphic to K_{3,3}\n"
         "    -4 = Search for subgraph homeomorphic to K_4\n"
-		"    -a = All of the above\n"
     	"\n";
 
 	ProjectTitle();
