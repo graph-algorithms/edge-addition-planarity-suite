@@ -20,9 +20,9 @@ These instructions will get you a copy of the project up and running on your loc
 
 On several distributions of Linux, you may be able to get the planarity executable with _sudo apt-get planarity_ , or you may already have it you have Matlab. For non-developer Windows users, there is also a pre-compiled executable version of the algorithm implementations. Download and decompress the _planarity-N.N.N.N.WindowsExe.zip_ file. 
 
-If you run the _planarity_ executable program, it will offer a menu-drive mode that lets a user manually select algorithms to run and, where appropriate, files containing graphs on which to run the algorithms. 
+If you run the _planarity_ executable program, it will offer an interactive, menu-driven mode that lets a user manually select algorithms to run and, where appropriate, files containing graphs on which to run the algorithms. 
 
-The _planarity_ executable program also supports an extensive list of command-line parameters that make it possible to automate the execution of any of the algorithms included in the application. Run _planarity_ with the "-h" command-line parameter to get more information about the command line options, and use "-h -menu" for more extensive information about command-line mode.
+The _planarity_ executable program also supports an extensive list of command-line parameters that make it possible to automate the execution of any of the algorithms included in the application. Run _planarity_ with the "-h" command-line parameter to get more information about the command line options, and use "-h -menu" for more extensive information about command-line mode. Essentially, all functionality available in the interactive, menu-driven mode is also available via the command-line parameters.
 
 ### Setting up a Development Environment
 
