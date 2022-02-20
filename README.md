@@ -18,9 +18,11 @@ These instructions will get you a copy of the project up and running on your loc
 
 ### Pre-compiled Executable Releases for Non-Developers
 
-On several distributions of Linux, you may be able to get the planarity executable with _sudo apt-get planarity_, or you may already have it you have Matlab. For non-developer Windows users, there is also a pre-compiled executable version of the algorithm implementations. Download and decompress the _planarity-N.N.N.N.WindowsExe.zip_ file. 
+On several distributions of Linux, you may be able to get the planarity executable with _sudo apt-get planarity_ , or you may already have it you have Matlab. For non-developer Windows users, there is also a pre-compiled executable version of the algorithm implementations. Download and decompress the _planarity-N.N.N.N.WindowsExe.zip_ file. 
 
-If you run the _planarity_ executable program, it will offer a menu-drive mode that lets a user manually select algorithms to run and, where appropriate, files containing graphs on which to run the algorithms. The _planarity_ executable program also supports an extensive list of command-line parameters that make it possible to automate the execution of any of the algorithms included in the application. Run _planarity_ with the "-h" command-line parameter to get more information about the command line options, and use "-h -menu" for more extensive information about command-line mode.
+If you run the _planarity_ executable program, it will offer a menu-drive mode that lets a user manually select algorithms to run and, where appropriate, files containing graphs on which to run the algorithms. 
+
+The _planarity_ executable program also supports an extensive list of command-line parameters that make it possible to automate the execution of any of the algorithms included in the application. Run _planarity_ with the "-h" command-line parameter to get more information about the command line options, and use "-h -menu" for more extensive information about command-line mode.
 
 ### Setting up a Development Environment
 
@@ -65,7 +67,7 @@ Now that the project is available, the code can be built and executed:
 
 Once one has set up the development environment and is able to work with the code in the development environment, it is possible to make the distribution with the following additional steps:
 
-1. Ensure that the autotools, configure, and make are available on the command-line (e.g. add C:\MinGW\msys\1.0\bin to the system PATH before Windows Program Files to ensure that the _find_ program is the one from MSYS rather than the one from Windows). 
+1. Ensure that the autotools, configure, and make are available on the command-line (e.g. add C:\MinGW\msys\1.0\bin to the system PATH before Windows Program Files to ensure that the _find_ program is the one from MSYS rather than the one from Windows (e.g., adjust the PATH variable as needed)). 
 2. Navigate to .../edge-addition-planarity-suite (the directory containing _configure.ac_ and the _c_ subdirectory)
 3. Get into _bash_ (e.g., type _bash_ in the Windows command-line), then enter the following commands:
     1. autogen.sh
@@ -85,7 +87,9 @@ However, you may have only downloaded the distribution (i.e., _planarity-N.N.N.N
 1. configure
 2. make
 
-At this point, the planarity executable can be run from the distribution directory. On Linux, the planarity program can be installed by entering _sudo make install_ on the command-line. Note that the _libplanarity_ shared object and symlinks will be installed to _/usr/local/lib_ so it will be necessary to set LD_LIBRARY_PATH accordingly. For one session, this can be done with _export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib_ . To make it more permanent, you could use:
+At this point, the planarity executable can be run from within the distribution directory. For example, on Windows, go to the ".libs" subdirectory containing the planarity executuable and the libplanarity DLL and run _planarity -test ../c/samples_ on the command-line. 
+
+On Linux, the planarity program can also be installed by entering _sudo make install_ on the command-line. Note that the _libplanarity_ shared object and symlinks will be installed to _/usr/local/lib_ so it will be necessary to set LD_LIBRARY_PATH accordingly. For one session, this can be done with _export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib_ . To make it more permanent, you could use:
 1. Create a new file " _/etc/ld.so.conf.d/planarity.conf_ " containing " _/usr/local/lib_ " (without the quotes)
 2. sudo ldconfig 
 
