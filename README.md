@@ -50,7 +50,7 @@ A development environment for the C reference implementations can be set up base
 6. Leave the User/Password blank (unless you have read/write access to the project), and hit Next
 7. The master branch is selected by default, so just hit Next again
 8. Change the destination directory to a subdirectory where you want to store the project code (e.g. c:\Users\\_you_\Documents\eclipse\workspaces-cpp\graph-algorithms\edge-addition-planarity-suite)
-9. Hit Next (which downloads the projecct), Hit Next again (to Import existing Eclipse projects), Hit Finish
+9. Hit Next (which downloads the project), Hit Next again (to Import existing Eclipse projects), Hit Finish
 
 Now that the project is available, the code can be built and executed:
 
@@ -61,21 +61,33 @@ Now that the project is available, the code can be built and executed:
 3. Right-click Planarity-C project, Build Configurations, Set Active, Release
 4. Right-click Planarity-C project, Run As, Local Application, planarity.exe (release)
 
-### Making the Distribution for Linux
+### Making the Distribution
 
 Once one has set up the development environment and is able to work with the code in the development environment, it is possible to make the distribution with the following additional steps:
 
-1. Ensure that the autotools, configure, and make are available on the command-line (e.g. add C:\MinGW\msys\1.0\bin to the system PATH before Windows Program Files to ensure that the MSYS rather than the Windows _find_ program is used). 
+1. Ensure that the autotools, configure, and make are available on the command-line (e.g. add C:\MinGW\msys\1.0\bin to the system PATH before Windows Program Files to ensure that the _find_ program is the one from MSYS rather than the one from Windows). 
 2. Navigate to .../edge-addition-planarity-suite (the directory containing _configure.ac_ and the _c_ subdirectory)
-3. On the command-line, type _bash_ and enter the following commands:
+3. Get into _bash_ (e.g., type _bash_ in the Windows command-line), then enter the following commands:
     1. autogen.sh
     2. configure
     3. make dist
     4. make distcheck 
 
-The result is a validated _planarity-N.N.N.N.tar.gz_ distribution for Linux, where _N.N.N.N_ is the version number expressed in the _configure.ac_ file. 
+The result is a validated _planarity-N.N.N.N.tar.gz_ distribution, where _N.N.N.N_ is the version number expressed in the _configure.ac_ file. 
 
-You don't typically need to make and install the planarity software on Linux because it is often possible to get this software with _sudo apt-get planarity_ or with Matlab. However, if you do want to install the distribution, then use _./configure && make && sudo make install_ on the command-line. Note that the _libplanarity_ shared object will be installed to _/usr/local/lib_ so it will be necessary to set LD_LIBRARY_PATH accordingly (e.g. _export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib_ ). 
+### Making and Running the Software from the Distribution
+
+If you have done the steps to set up the development environment and work with the code, then you can make and run the software using the development environment, so you don't necessarily need to make or run the software using the process below.
+
+You also don't necessarily need to make and install the planarity software on Linux if you are able to get it using _sudo apt-get planarity_ . 
+
+However, you may have only downloaded the distribution (i.e., _planarity-N.N.N.N.tar.gz_ ) from a Release tag of this project. Once you have decompressed the distribution into a directory, you can make it by getting into _bash_ (e.g., type _bash_ in the Windows command-line) and then entering the following commands: 
+1. configure
+2. make
+
+At this point, the planarity executable can be run from the distribution directory. On Linux, the planarity program can be installed by entering _sudo make install_ on the command-line. Note that the _libplanarity_ shared object and symlinks will be installed to _/usr/local/lib_ so it will be necessary to set LD_LIBRARY_PATH accordingly. For one session, this can be done with _export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib_ . To make it more permanent, you could use:
+1. Create a new file " _/etc/ld.so.conf.d/planarity.conf_ " containing " _/usr/local/lib_ " (without the quotes)
+2. sudo ldconfig 
 
 ## Contributing
 
