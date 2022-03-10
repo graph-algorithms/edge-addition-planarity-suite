@@ -18,7 +18,7 @@ These instructions will get you a copy of the project up and running on your loc
 
 ### Pre-compiled Executable Releases for Non-Developers
 
-On several distributions of Linux, you may be able to get the planarity executable with _sudo apt-get planarity_ , or you may already have it you have Matlab. For non-developer Windows users, there is also a pre-compiled executable version of the algorithm implementations. Download and decompress the _planarity-N.N.N.N.WindowsExe.zip_ file. 
+On several distributions of Linux, you may be able to get the planarity executable with _sudo apt-get install planarity_ , or you may already have it you have Matlab. For non-developer Windows users, there is also a pre-compiled executable version of the algorithm implementations. Download and decompress the _planarity-N.N.N.N.WindowsExe.zip_ file. 
 
 If you run the _planarity_ executable program, it will offer an interactive, menu-driven mode that lets a user manually select algorithms to run and, where appropriate, files containing graphs on which to run the algorithms. 
 
