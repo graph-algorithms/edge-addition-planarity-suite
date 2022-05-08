@@ -34,6 +34,8 @@ int SpecificGraph(
 );
 int RandomGraph(char command, int extraEdges, int numVertices, char *outfileName, char *outfile2Name);
 int RandomGraphs(char command, int, int);
+int ProcessG6Graphs(char command, char *infileName, char *outfileName);
+int ProcessG6Graph(char command, graphP *pGraph, char *g6Repr);
 
 /* Command line, Menu, and Configuration */
 int commandLine(int argc, char *argv[]);

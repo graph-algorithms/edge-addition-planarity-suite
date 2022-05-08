@@ -13,6 +13,7 @@ int callRandomGraphs(int argc, char *argv[]);
 int callSpecificGraph(int argc, char *argv[]);
 int callRandomMaxPlanarGraph(int argc, char *argv[]);
 int callRandomNonplanarGraph(int argc, char *argv[]);
+int callProcessG6Graphs(int argc, char *argv[]);
 
 /****************************************************************************
  Command Line Processor
@@ -49,6 +50,9 @@ int commandLine(int argc, char *argv[])
 
 	else if (strcmp(argv[1], "-rn") == 0)
 		Result = callRandomNonplanarGraph(argc, argv);
+
+	else if (strcmp(argv[1], "-g6") == 0)
+		Result = callProcessG6Graphs(argc, argv);
 
 	else
 	{
@@ -463,3 +467,31 @@ int callRandomNonplanarGraph(int argc, char *argv[])
 
 	return RandomGraph('p', 1, numVertices, outfileName, outfile2Name);
 }
+
+/****************************************************************************
+ callProcessG6Graphs()
+ ****************************************************************************/
+
+// 'planarity -g6 [-q] C I O': Read graph(s) from .g6 input file
+int callProcessG6Graphs(int argc, char *argv[])
+{
+	char Choice=0, *infileName=NULL, *outfileName=NULL;
+	int offset = 0;
+
+	if (argc < 5)
+		return -1;
+
+	if (argv[2][0] == '-' && (Choice = argv[2][1]) == 'q')
+	{
+		Choice = argv[3][1];
+		if (argc < 6)
+			return -1;
+		offset = 1;
+	}
+
+	infileName = argv[3+offset];
+	outfileName = argv[4+offset];
+
+    return ProcessG6Graphs(Choice, infileName, outfileName);
+}
+
