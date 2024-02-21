@@ -132,7 +132,6 @@ int helpMessage(char *param)
 	    	"'planarity -s [-q] C I O [O2]': Specific graph\n"
 	        "'planarity -rm [-q] N O [O2]': Random maximal planar graph\n"
 	        "'planarity -rn [-q] N O [O2]': Random nonplanar graph (maximal planar + edge)\n"
-	    	"'planarity -g6 [-q] C I O': Read graphs from .g6 input file\n"
 	        "'planarity I O [-n O2]': Legacy command-line (default -s -p)\n"
 	    	"\n"
 	    );
