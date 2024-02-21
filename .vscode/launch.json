@@ -38,6 +38,19 @@
             "console": "integratedTerminal",
             "externalConsole": false,
             "preLaunchTask": "C/C++: cl.exe build active file"
+        },
+        {
+            "name": "C/C++: clang build and debug active file",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/c/planarity",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": true,
+            "MIMode": "lldb",
+            "preLaunchTask": "C/C++: clang build active file"
         }
     ],
     "version": "2.0.0"
