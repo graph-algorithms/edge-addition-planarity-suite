@@ -36,7 +36,7 @@
             "cwd": "${workspaceFolder}",
             "environment": [],
             "console": "integratedTerminal",
-            "externalConsole": false,
+            // "externalConsole": false, // externalConsole deprecated for MSVC
             "preLaunchTask": "C/C++: cl.exe build active file"
         },
         {
