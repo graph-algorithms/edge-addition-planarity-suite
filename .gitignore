@@ -51,8 +51,16 @@
 *.x86_64
 *.hex
 
+# Linker output
+*.ilk
+*.map
+*.exp
+
 # Debug files
 *.dSYM/
+*.su
+*.idb
+*.pdb
 
 # Java
 *.class
@@ -82,3 +90,12 @@ ltmain.sh
 configure
 aclocal.m4
 compile
+
+# Ignoring configuration for VSCode
+**/.vscode/
+
+## MacOS excludes
+.DS_Store
+
+# Ignore binary produced by compiling on MacOS
+planarity
