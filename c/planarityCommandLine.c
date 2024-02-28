@@ -17,6 +17,7 @@ int callRandomGraphs(int argc, char *argv[]);
 int callSpecificGraph(int argc, char *argv[]);
 int callRandomMaxPlanarGraph(int argc, char *argv[]);
 int callRandomNonplanarGraph(int argc, char *argv[]);
+int callTestGraphFunctionality(int argc, char *argv[]);
 
 /****************************************************************************
  Command Line Processor
@@ -53,6 +54,9 @@ int commandLine(int argc, char *argv[])
 
 	else if (strcmp(argv[1], "-rn") == 0)
 		Result = callRandomNonplanarGraph(argc, argv);
+
+	else if (strcmp(argv[1], "-t") == 0)
+		Result = callTestGraphFunctionality(argc, argv);
 
 	else
 	{
@@ -466,4 +470,44 @@ int callRandomNonplanarGraph(int argc, char *argv[])
 	    outfile2Name = argv[4+offset];
 
 	return RandomGraph('p', 1, numVertices, outfileName, outfile2Name);
+}
+
+/****************************************************************************
+ callTestGraphFunctionality()
+ ****************************************************************************/
+
+// 'planarity -t [-q] -ta I O': Convert from all supported input formats to
+// adjacency list format
+
+// TODO: Command will eventually be 'planarity -t [-q] C|-t(gam) I O'.
+//     * If -t(gam) is given rather than an algorithm command C, then the input
+// file I is transformed from its given format to the format given by the g (g6),
+// a (adjacency list) or m (matrix), and written to output file O.
+//     * Otherwise, if the command line argument after -t [-q] is a recognized
+// algorithm command C, then the input file I must be in ".g6" format
+// (report an error otherwise), and the algorithm(s) indicated by C are executed
+// on the graph(s) in the input file, with the results of the execution stored
+// in output file O.
+int callTestGraphFunctionality(int argc, char *argv[])
+{
+	int offset = 0;
+	char *commandString = NULL;
+	char *infileName = NULL, *outfileName = NULL;
+
+	if (argc < 5)
+		return -1;
+
+	if (argv[2][0] == '-' && argv[2][1] == 'q')
+	{
+		if (argc < 6)
+			return -1;
+		offset = 1;
+	}
+
+	commandString = argv[2+offset];
+
+	infileName = argv[3+offset];
+	outfileName = argv[4+offset];
+
+	return TestGraphFunctionality(commandString, infileName, outfileName);
 }

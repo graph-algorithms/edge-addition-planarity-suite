@@ -33,7 +33,8 @@ int SpecificGraph(
 		char *inputStr, char **pOutputStr, char **pOutput2Str
 );
 int RandomGraph(char command, int extraEdges, int numVertices, char *outfileName, char *outfile2Name);
-int RandomGraphs(char command, int, int);
+int RandomGraphs(char command, int NumGraphs, int SizeOfGraphs);
+int TestGraphFunctionality(char *commandString, char *infileName, char *outfileName);
 
 /* Command line, Menu, and Configuration */
 int commandLine(int argc, char *argv[]);

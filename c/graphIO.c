@@ -8,6 +8,7 @@ See the LICENSE.TXT file for licensing information.
 #include <string.h>
 
 #include "graph.h"
+#include "g6-read-iterator.h"
 
 /* Private functions (exported to system) */
 
@@ -28,7 +29,8 @@ int  _WriteDebugInfo(graphP theGraph, FILE *Outfile);
 
 int _ReadAdjMatrix(graphP theGraph, FILE *Infile, strBufP inBuf)
 {
-	int N, v, w, Flag;
+	int N = -1;
+    int v, w, Flag;
 
     if (Infile == NULL  && inBuf == NULL)
     	return NOTOK;
@@ -104,7 +106,8 @@ int _ReadAdjMatrix(graphP theGraph, FILE *Infile, strBufP inBuf)
 
 int  _ReadAdjList(graphP theGraph, FILE *Infile, strBufP inBuf)
 {
-     int N, v, W, adjList, e, indexValue, ErrorCode;
+     int N = -1;
+     int v, W, adjList, e, indexValue, ErrorCode;
      int zeroBased = FALSE;
 
      if (Infile == NULL && inBuf == NULL)
@@ -312,11 +315,17 @@ int  _ReadAdjList(graphP theGraph, FILE *Infile, strBufP inBuf)
 int  _ReadLEDAGraph(graphP theGraph, FILE *Infile)
 {
 	char Line[256];
-	int N, M, m, u, v, ErrorCode;
+	int N = -1;
+    int M, m, u, v, ErrorCode;
 	int zeroBasedOffset = gp_GetFirstVertex(theGraph)==0 ? 1 : 0;
 
     /* Skip the lines that say LEDA.GRAPH and give the node and edge types */
     fgets(Line, 255, Infile);
+
+    if (strncmp(Line, "LEDA.GRAPH", strlen("LEDA.GRAPH")) != 0) {
+        return NOTOK;
+    }
+
     fgets(Line, 255, Infile);
     fgets(Line, 255, Infile);
 
@@ -389,6 +398,11 @@ int RetVal;
           RetVal = _ReadLEDAGraph(theGraph, Infile);
      else RetVal = _ReadAdjMatrix(theGraph, Infile, NULL);
 
+    if (RetVal != OK) {
+        fseek(Infile, 0, SEEK_END);
+        RetVal = readGraphFromG6File(theGraph, FileName);
+    }
+
      if (RetVal == OK)
      {
          void *extraData = NULL;
@@ -458,7 +472,10 @@ int	 gp_ReadFromString(graphP theGraph, char *inputStr)
 		 sb_Free(&inBuf);
 		 return NOTOK;
      }
+     // TODO: Change to else if
      else RetVal = _ReadAdjMatrix(theGraph, NULL, inBuf);
+
+    // TODO: Add read .g6 format?
 
      if (RetVal == OK)
      {
@@ -801,6 +818,10 @@ int RetVal;
          case WRITE_DEBUGINFO :
         	 RetVal = _WriteDebugInfo(theGraph, Outfile);
              break;
+        // TODO: Issue 18
+        // case WRITE_G6 :
+        // 	 RetVal = _WriteG6(theGraph, Outfile);
+        //      break;
          default :
         	 RetVal = NOTOK;
         	 break;
