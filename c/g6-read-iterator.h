@@ -16,6 +16,7 @@ See the LICENSE.TXT file for licensing information.
 
 typedef struct {
     FILE *g6Infile;
+    bool doIOwnFilePointer;
     int numGraphsRead;
 
     int graphOrder;
@@ -35,6 +36,7 @@ int getOrderOfGraphToRead(G6ReadIterator *, int *);
 int getPointerToGraphReadIn(G6ReadIterator *, graphP *);
 
 int beginG6ReadIteration(G6ReadIterator *, char *);
+int beginG6ReadIterationFromFilePointer(G6ReadIterator *, FILE *);
 int _processAndCheckHeader(FILE *);
 bool _firstCharIsValid(char, const int);
 int _getGraphOrder(FILE *, int *);
@@ -48,6 +50,7 @@ int endG6ReadIteration(G6ReadIterator *);
 
 int freeG6ReadIterator(G6ReadIterator **);
 
-int readGraphFromG6File(graphP, char *);
+int _ReadGraphFromG6File(graphP, char *);
+int _ReadGraphFromG6FilePointer(graphP pGraphToRead, FILE *g6Infile);
 
 #endif /* G6_READ_ITERATOR */

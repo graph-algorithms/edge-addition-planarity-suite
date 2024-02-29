@@ -22,8 +22,8 @@ int allocateG6ReadIterator(G6ReadIterator **ppG6ReadIterator, graphP pGraph)
         return NOTOK;
     }
 
-    // numGraphsRead, graphOrder, numCharsForGraphOrder, numCharsForGraphEncoding,
-    // and currGraphBuffSize all set to 0
+    // doIOwnFilePointer, numGraphsRead, graphOrder, numCharsForGraphOrder,
+    // numCharsForGraphEncoding, and currGraphBuffSize all set to 0
     (*ppG6ReadIterator) = (G6ReadIterator *) calloc(1, sizeof(G6ReadIterator));
 
     if ((*ppG6ReadIterator) == NULL)
@@ -138,6 +138,25 @@ int beginG6ReadIteration(G6ReadIterator *pG6ReadIterator, char *g6FilePath)
         return NOTOK;
     }
 
+    pG6ReadIterator->doIOwnFilePointer = true;
+    exitCode = beginG6ReadIterationFromFilePointer(pG6ReadIterator, g6Infile);
+
+    return exitCode;
+}
+
+int beginG6ReadIterationFromFilePointer(G6ReadIterator *pG6ReadIterator, FILE *g6Infile)
+{
+    int exitCode = OK;
+
+    if (g6Infile == NULL)
+    {
+        printf("[ERROR] .g6 file pointer is NULL.\n");
+        fflush(stdout);
+        return NOTOK;
+    }
+
+    pG6ReadIterator->g6Infile = g6Infile;
+
     int firstChar = getc(g6Infile);
     if (firstChar == EOF)
     {
@@ -173,7 +192,7 @@ int beginG6ReadIteration(G6ReadIterator *pG6ReadIterator, char *g6FilePath)
 
     if (exitCode != OK)
     {
-        printf("[ERROR] Invalid graph order in file \"%s\" from graph on line %d.\n", g6FilePath, lineNum);
+        printf("[ERROR] Invalid graph order on line %d of .g6 file.\n", lineNum);
         fflush(stdout);
         return exitCode;
     }
@@ -184,7 +203,7 @@ int beginG6ReadIteration(G6ReadIterator *pG6ReadIterator, char *g6FilePath)
 
         if (exitCode != OK)
         {
-            printf("[ERROR] Unable to initialize graph datastructure with order %d for graph on line %d of \"%s\".\n", graphOrder, lineNum, g6FilePath);
+            printf("[ERROR] Unable to initialize graph datastructure with order %d for graph on line %d of the .g6 file.\n", graphOrder, lineNum);
             fflush(stdout);
             return exitCode;
         }
@@ -196,7 +215,7 @@ int beginG6ReadIteration(G6ReadIterator *pG6ReadIterator, char *g6FilePath)
         if (pG6ReadIterator->currGraph->N != graphOrder)
         {
             printf("[ERROR] Graph datastructure passed to G6ReadIterator already initialized with graph order %d,\n", pG6ReadIterator->currGraph->N);
-            printf("\twhich doesn't match the graph order %d specified in the file \"%s\"\n", graphOrder, g6FilePath);
+            printf("\twhich doesn't match the graph order %d specified in the file.\n", graphOrder);
             fflush(stdout);
             return NOTOK;
         }
@@ -206,6 +225,10 @@ int beginG6ReadIteration(G6ReadIterator *pG6ReadIterator, char *g6FilePath)
             pG6ReadIterator->graphOrder = graphOrder;
         }
     }
+
+    // TODO: Is this the right place to do this? I want to make sure the flags are correctly set
+    // regardless of whether the graph was initialized or re-initialized.
+    pG6ReadIterator->currGraph->internalFlags |= FLAGS_ZEROBASEDIO;
 
     pG6ReadIterator->numCharsForGraphOrder = _getNumCharsForGraphOrder(graphOrder);
     pG6ReadIterator->numCharsForGraphEncoding = _getNumCharsForGraphEncoding(graphOrder);
@@ -219,8 +242,6 @@ int beginG6ReadIteration(G6ReadIterator *pG6ReadIterator, char *g6FilePath)
         fflush(stdout);
         exitCode = NOTOK;
     }
-
-    pG6ReadIterator->g6Infile = g6Infile;
 
     return exitCode;
 }
@@ -425,7 +446,11 @@ int readGraphUsingG6ReadIterator(G6ReadIterator *pG6ReadIterator)
         }
 
         if (numGraphsRead > 1)
+        {
             gp_ReinitializeGraph(currGraph);
+            // TODO: Double-checking that we want to re-set these flags on re-initalize as per convo Feb. 29, 2024
+            currGraph->internalFlags |= FLAGS_ZEROBASEDIO;
+        }
 
         exitCode = _decodeGraph(graphEncodingChars, graphOrder, numCharsForGraphEncoding, currGraph);
 
@@ -584,12 +609,12 @@ int _decodeGraph(char *graphBuff, const int graphOrder, const int numChars, grap
             bitValue = ((currByte >> j) & 1u) ? 1 : 0;
             if (bitValue == 1)
             {
+                // Add gp_GetFirstVertex(pGraph), which is 1 if NIL == 0 (i.e. 1-based labelling) and 0 if NIL == -1 (0-based)
+                exitCode = gp_AddEdge(pGraph, row+gp_GetFirstVertex(pGraph), 0, col+gp_GetFirstVertex(pGraph), 0);
                 // TODO: verify if breaking out entirely from decode is acceptable on gp_AddEdge returning NOTOK
-                exitCode = gp_AddEdge(pGraph, row+1, 0, col+1, 0);
                 if (exitCode == NOTOK)
                     return exitCode;
             }
-                
 
             row++;
         }    
@@ -606,7 +631,7 @@ int endG6ReadIteration(G6ReadIterator *pG6ReadIterator)
 
     if (pG6ReadIterator != NULL)
     {
-        if (pG6ReadIterator->g6Infile != NULL)
+        if (pG6ReadIterator->g6Infile != NULL && pG6ReadIterator->doIOwnFilePointer)
         {
             int fcloseCode = fclose(pG6ReadIterator->g6Infile);
 
@@ -616,9 +641,9 @@ int endG6ReadIteration(G6ReadIterator *pG6ReadIterator)
                 fflush(stdout);
                 exitCode = NOTOK;
             }
-
-            pG6ReadIterator->g6Infile = NULL;
         }
+
+        pG6ReadIterator->g6Infile = NULL;
 
         if (pG6ReadIterator->currGraphBuff != NULL)
         {
@@ -636,7 +661,7 @@ int freeG6ReadIterator(G6ReadIterator **ppG6ReadIterator)
 
     if (ppG6ReadIterator != NULL && (*ppG6ReadIterator) != NULL)
     {
-        if ((*ppG6ReadIterator)->g6Infile != NULL)
+        if ((*ppG6ReadIterator)->g6Infile != NULL && (*ppG6ReadIterator)->doIOwnFilePointer)
         {
             int fcloseCode = fclose((*ppG6ReadIterator)->g6Infile);
 
@@ -646,9 +671,9 @@ int freeG6ReadIterator(G6ReadIterator **ppG6ReadIterator)
                 fflush(stdout);
                 exitCode = NOTOK;
             }
-
-            (*ppG6ReadIterator)->g6Infile = NULL;
         }
+
+        (*ppG6ReadIterator)->g6Infile = NULL;
 
         (*ppG6ReadIterator)->numGraphsRead = 0;
         (*ppG6ReadIterator)->graphOrder = 0;
@@ -668,7 +693,7 @@ int freeG6ReadIterator(G6ReadIterator **ppG6ReadIterator)
     return exitCode;
 }
 
-int readGraphFromG6File(graphP pGraphToRead, char *pathToG6File)
+int _ReadGraphFromG6File(graphP pGraphToRead, char *pathToG6File)
 {
     int exitCode = OK;
 
@@ -683,6 +708,63 @@ int readGraphFromG6File(graphP pGraphToRead, char *pathToG6File)
     }
 
     exitCode = beginG6ReadIteration(pG6ReadIterator, pathToG6File);
+
+    if (exitCode != OK)
+    {
+        printf("[ERROR] Unable to begin .g6 read iteration.\n");
+        fflush(stdout);
+
+        exitCode = freeG6ReadIterator(&pG6ReadIterator);
+
+        if (exitCode != OK)
+        {
+            printf("[ERROR] Unable to free G6ReadIterator.\n");
+            fflush(stdout);
+        }
+
+        return exitCode;
+    }
+
+    exitCode = readGraphUsingG6ReadIterator(pG6ReadIterator);
+    if (exitCode != OK)
+    {
+        printf("[ERROR] Unable to read graph from .g6 read iterator.\n");
+        fflush(stdout);
+    }
+
+    exitCode = endG6ReadIteration(pG6ReadIterator);
+    if (exitCode != OK)
+    {
+        printf("[ERROR] Unable to end G6ReadIterator.\n");
+        fflush(stdout);
+    }
+    
+    exitCode = freeG6ReadIterator(&pG6ReadIterator);
+
+    if (exitCode != OK)
+    {
+        printf("[ERROR] Unable to free G6ReadIterator.\n");
+        fflush(stdout);
+    }
+
+    return exitCode;
+}
+
+int _ReadGraphFromG6FilePointer(graphP pGraphToRead, FILE *g6Infile)
+{
+    int exitCode = OK;
+
+    G6ReadIterator *pG6ReadIterator = NULL;
+    exitCode = allocateG6ReadIterator(&pG6ReadIterator, pGraphToRead);
+
+    if (exitCode != OK)
+    {
+        printf("[ERROR] Unable to allocate G6ReadIterator.\n");
+        fflush(stdout);
+        return exitCode;
+    }
+
+    exitCode = beginG6ReadIterationFromFilePointer(pG6ReadIterator, g6Infile);
 
     if (exitCode != OK)
     {

@@ -296,6 +296,7 @@ int  _ReadAdjList(graphP theGraph, FILE *Infile, strBufP inBuf)
           }
      }
 
+    // FIXME: this doesn't get set if we early-out from gp_AddEdge (i.e. either NOTOK or NONEMBEDDABLE)
      if (zeroBased)
     	 theGraph->internalFlags |= FLAGS_ZEROBASEDIO;
 
@@ -398,9 +399,12 @@ int RetVal;
           RetVal = _ReadLEDAGraph(theGraph, Infile);
      else RetVal = _ReadAdjMatrix(theGraph, Infile, NULL);
 
-    if (RetVal != OK) {
-        fseek(Infile, 0, SEEK_END);
-        RetVal = readGraphFromG6File(theGraph, FileName);
+    // Added second conjunct because we only want to try to read as .g6
+    // if trying to read as another format failed; NONEMBEDDABLE happens
+    // when we exceed the arc capacity, but that doesn't mean the graph
+    // read failed.
+    if (RetVal != OK && RetVal != NONEMBEDDABLE) {
+        RetVal = _ReadGraphFromG6FilePointer(theGraph, Infile);
     }
 
      if (RetVal == OK)
