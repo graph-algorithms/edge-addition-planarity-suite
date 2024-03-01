@@ -50,6 +50,7 @@ int endG6ReadIteration(G6ReadIterator *);
 
 int freeG6ReadIterator(G6ReadIterator **);
 
+int _ReadGraphFromG6String(graphP, char *);
 int _ReadGraphFromG6File(graphP, char *);
 int _ReadGraphFromG6FilePointer(graphP pGraphToRead, FILE *g6Infile);
 

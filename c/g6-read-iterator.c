@@ -693,6 +693,48 @@ int freeG6ReadIterator(G6ReadIterator **ppG6ReadIterator)
     return exitCode;
 }
 
+int _ReadGraphFromG6String(graphP pGraphToRead, char *g6EncodedString)
+{
+    int exitCode = OK;
+
+    if (g6EncodedString == NULL || strlen(g6EncodedString) == 0)
+    {
+        printf("[ERROR] Input string is empty.\n");
+        fflush(stdout);
+        return NOTOK;
+    }
+
+    FILE *tmpG6Infile = tmpfile();
+
+    if (tmpG6Infile == NULL)
+    {
+        printf("[ERROR] Unable to create temporary file to contain .g6 string contents.\n");
+        fflush(stdout);
+        return NOTOK;
+    }
+
+    int fputsCode = fputs(g6EncodedString, tmpG6Infile);
+    if (fputsCode == EOF)
+    {
+        printf("[ERROR] Unable to write .g6 encoded string to temporary file.\n");
+        fflush(stdout);
+        exitCode = NOTOK; 
+    }
+    else
+    {
+        fseek(tmpG6Infile, 0, SEEK_SET);
+        exitCode = _ReadGraphFromG6FilePointer(pGraphToRead, tmpG6Infile);
+    }
+
+    fclose(tmpG6Infile);
+    tmpG6Infile = NULL;
+
+    return exitCode;
+}
+
+// Although _ReadGraphFromG6File is almost identical to _ReadGraphFromG6FilePointer,
+// these two helper functions are meant for demonstrative purposes and are unlikely
+// to change. If you do modify this function, be sure to modify _ReadGraphFromG6FilePointer.
 int _ReadGraphFromG6File(graphP pGraphToRead, char *pathToG6File)
 {
     int exitCode = OK;
@@ -750,6 +792,9 @@ int _ReadGraphFromG6File(graphP pGraphToRead, char *pathToG6File)
     return exitCode;
 }
 
+// Although _ReadGraphFromG6FilePointer is almost identical to _ReadGraphFromG6File,
+// these two helper functions are meant for demonstrative purposes and are unlikely
+// to change. If you do change this function, be sure to modify _ReadGraphFromG6File.
 int _ReadGraphFromG6FilePointer(graphP pGraphToRead, FILE *g6Infile)
 {
     int exitCode = OK;

@@ -55,7 +55,7 @@ int commandLine(int argc, char *argv[])
 	else if (strcmp(argv[1], "-rn") == 0)
 		Result = callRandomNonplanarGraph(argc, argv);
 
-	else if (strcmp(argv[1], "-t") == 0)
+	else if (strncmp(argv[1], "-t", 2) == 0)
 		Result = callTestGraphFunctionality(argc, argv);
 
 	else
@@ -122,6 +122,7 @@ int Result;
 
 int runSpecificGraphTests(char *);
 int runSpecificGraphTest(char *command, char *infileName, int inputInMemFlag);
+int runGraphTransformationTest(char *command, char *infileName, int inputInMemFlag);
 
 int runQuickRegressionTests(int argc, char *argv[])
 {
@@ -214,6 +215,20 @@ int runSpecificGraphTests(char *samplesDir)
 	if (runSpecificGraphTest("-4", "Petersen.txt", FALSE) < 0) {
 		retVal = -1;
 		Message("K_4 search on Petersen.txt failed.\n");
+	}
+
+	// runGraphTransformationTest by reading file contents into string
+	if (runGraphTransformationTest("-ta", "nauty_example.g6", TRUE) < 0)
+	{
+		retVal = -1;
+		Message("Transforming nauty_example.g6 file contents as string to adjacency list failed.\n");
+	}
+
+	// runGraphTransformationTest by reading from file
+	if (runGraphTransformationTest("-ta", "nauty_example.g6", FALSE) < 0)
+	{
+		retVal = -1;
+		Message("Transforming nauty_example.g6 using file pointer to adjacency list failed.\n");
 	}
 
 	Message("Finished NIL == 0 Tests.\n\n");
@@ -357,6 +372,100 @@ int runSpecificGraphTest(char *command, char *infileName, int inputInMemFlag)
 	if (actualOutput2 != NULL)
 		free(actualOutput2);
 
+	return Result;
+}
+
+int runGraphTransformationTest(char *command, char *infileName, int inputInMemFlag)
+{
+	int Result = OK;
+	
+	char transformationCode = '\0';
+	// runGraphTransformationTest will not test performing an algorithm on a given
+	// input graph; it will only support "-t(gam)"
+	if (command == NULL || strlen(command) < 3)
+	{
+		// TODO: Update with Issue 18 and 20 to add g and m respectively
+		// printf("[ERROR] runGraphTransformationTest only supports -t(gam).\n");
+		ErrorMessage("runGraphTransformationTest only supports -ta.\n");
+		return NOTOK;
+	}
+	else if (strlen(command) == 3)
+		transformationCode = command[2];
+	
+	// final arg is actualOrExpectedFlag, meaning we want this outfileName to be the actual output
+	char *actualOutfileName = NULL;
+	Result = ConstructTransformationOutputFilename(infileName, &actualOutfileName, transformationCode, 0);
+
+	if (Result != OK)
+	{
+		ErrorMessage("Unable to construct output filename for actual transformation output.\n");
+		return NOTOK;
+	}
+	
+	char *expectedOutfileName = NULL;
+	Result = ConstructTransformationOutputFilename(infileName, &expectedOutfileName, transformationCode, 1);
+
+	if (Result != OK)
+	{
+		ErrorMessage("Unable to construct output filename for expected transformation output.\n");
+		
+		if (actualOutfileName != NULL)
+		{
+			free(actualOutfileName);
+			actualOutfileName = NULL;
+		}
+
+		return NOTOK;
+	}
+
+	// SpecificGraph() can invoke gp_Read() if the graph is to be read from a file, or it can invoke
+	// gp_ReadFromString() if the inputInMemFlag is set.
+	char *inputString = NULL;
+	if (inputInMemFlag)
+	{
+		inputString = ReadTextFileIntoString(infileName);
+		if (inputString == NULL) {
+			ErrorMessage("Failed to read input file into string.\n");
+			Result = NOTOK;
+		}
+	}
+
+	if (Result == OK)
+	{
+		Result = TestGraphFunctionality(command, infileName, inputString, actualOutfileName);
+		
+		Result = TextFilesEqual(actualOutfileName, expectedOutfileName);
+
+		if (Result == TRUE)
+		{
+			// FIXME: Need Message to indicate start of test and this result
+			Message("Actual output file matched expected output file.\n");
+			Result = OK;
+		}
+		else
+		{
+			ErrorMessage("Actual output file did not match expected output file.\n");
+			Result = NOTOK;
+		}
+	}
+	
+	int deleteActualOutfileCode = remove(actualOutfileName);
+
+	// TODO: Do I need to do any other handling before run of next test?
+	if (deleteActualOutfileCode != 0)
+		ErrorMessage("Unable to delete actual output file on test cleanup.\n");
+	
+	if (actualOutfileName != NULL)
+	{
+		free(actualOutfileName);
+		actualOutfileName = NULL;
+	}
+
+	if (expectedOutfileName != NULL)
+	{
+		free(expectedOutfileName);
+		expectedOutfileName = NULL;
+	}
 	return Result;
 }
 
@@ -509,5 +618,5 @@ int callTestGraphFunctionality(int argc, char *argv[])
 	infileName = argv[3+offset];
 	outfileName = argv[4+offset];
 
-	return TestGraphFunctionality(commandString, infileName, outfileName);
+	return TestGraphFunctionality(commandString, infileName, NULL, outfileName);
 }

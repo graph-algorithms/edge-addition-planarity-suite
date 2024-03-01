@@ -476,10 +476,12 @@ int	 gp_ReadFromString(graphP theGraph, char *inputStr)
 		 sb_Free(&inBuf);
 		 return NOTOK;
      }
-     // TODO: Change to else if
      else RetVal = _ReadAdjMatrix(theGraph, NULL, inBuf);
 
-    // TODO: Add read .g6 format?
+    if (RetVal != OK && RetVal != NONEMBEDDABLE)
+    {
+        RetVal = _ReadGraphFromG6String(theGraph, inputStr);
+    }
 
      if (RetVal == OK)
      {

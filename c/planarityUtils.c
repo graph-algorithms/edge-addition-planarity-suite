@@ -391,6 +391,24 @@ char *GetAlgorithmName(char command)
 /****************************************************************************
  ****************************************************************************/
 
+char *GetTransformationName(char command)
+{
+	// FIXME: Isn't this a pointer to memory owned by the stack?
+	char *transformationName = "UnsupportedTransformation";
+
+	switch (command)
+	{
+		case 'a' : transformationName = "AdjList"; 	break;
+		// case 'm' : transformationName = "AdjMat";	break;
+		// case 'g' : transformationName = "G6"; 		break;
+	}
+
+	return transformationName;
+}
+
+/****************************************************************************
+ ****************************************************************************/
+
 void AttachAlgorithm(graphP theGraph, char command)
 {
 	switch (command)
@@ -504,3 +522,57 @@ char *ConstructPrimaryOutputFilename(char *infileName, char *outfileName, char c
 
 	return theFileName;
 }
+
+/****************************************************************************
+ ConstructTransformationOutputFilename()
+ Returns a string whose ownership will be transferred to the caller (must free string).
+ If outfileName is non-NULL, then the result string contains its content.
+ If outfileName is NULL, then the infileName, the command's algorithm name, and
+ whether or not this output file correspond to the actual (0) or expected (1)
+ output file from testing are used to construct a string.
+ Returns non-NULL string
+ ****************************************************************************/
+
+int ConstructTransformationOutputFilename(char *infileName, char **outfileName, char command, int actualOrExpectedFlag)
+{
+	int Result = OK;
+
+	char *transformationName = GetTransformationName(command);
+	int infileNameLen = -1, transformationNameLen = -1;
+
+	if (infileName == NULL || (infileNameLen = strlen(infileName)) < 1)
+	{
+		ErrorMessage("Cannot construct transformation output filename for empty infileName.\n");
+		return NOTOK;
+	}
+
+	if ((*outfileName) == NULL)
+	{
+		// If the primary output filename has not been given, then we use
+		// the input filename + the algorithm name + a simple suffix
+		// TODO: should I #define TRANSFORMATIONNAMEMAXLENGTH?
+		if ((transformationNameLen = strlen(transformationName)) <= ALGORITHMNAMEMAXLENGTH)
+		{
+			if (actualOrExpectedFlag)
+				(*outfileName) = (char *) calloc(infileNameLen + 1 + transformationNameLen + strlen(".expected.out.txt"), sizeof(char));
+			else
+				(*outfileName) = (char *) calloc(infileNameLen + 1 + transformationNameLen + strlen(".actual.out.txt"), sizeof(char));
+
+			strcpy((*outfileName), infileName);
+			strcat((*outfileName), ".");
+			strcat((*outfileName), transformationName);
+		}
+		else
+			ErrorMessage("Algorithm Name is too long, so it will not be used in output filename.");
+
+		strcat((*outfileName), actualOrExpectedFlag == 0 ? ".actual" : ".expected");
+	    strcat((*outfileName), ".out.txt");
+	}
+	else
+	{
+		ErrorMessage("outfileName already allocated.\n");
+	}
+
+	return Result;
+}
+

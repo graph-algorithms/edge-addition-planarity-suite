@@ -34,7 +34,7 @@ int SpecificGraph(
 );
 int RandomGraph(char command, int extraEdges, int numVertices, char *outfileName, char *outfile2Name);
 int RandomGraphs(char command, int NumGraphs, int SizeOfGraphs);
-int TestGraphFunctionality(char *commandString, char *infileName, char *outfileName);
+int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr, char *outfileName);
 
 /* Command line, Menu, and Configuration */
 int commandLine(int argc, char *argv[]);
@@ -68,10 +68,12 @@ int  BinaryFilesEqual(char *file1Name, char *file2Name);
 
 int GetEmbedFlags(char command);
 char *GetAlgorithmName(char command);
+char *GetTransformationName(char command);
 void AttachAlgorithm(graphP theGraph, char command);
 
 char *ConstructInputFilename(char *infileName);
 char *ConstructPrimaryOutputFilename(char *infileName, char *outfileName, char command);
+int ConstructTransformationOutputFilename(char *infileName, char **outfileName, char command, int actualOrExpectedFlag);
 void WriteAlgorithmResults(graphP theGraph, int Result, char command, platform_time start, platform_time end, char *infileName);
 
 #ifdef __cplusplus
