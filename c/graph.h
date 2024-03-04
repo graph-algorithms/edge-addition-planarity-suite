@@ -22,7 +22,7 @@ extern "C" {
 graphP	gp_New(void);
 
 int		gp_InitGraph(graphP theGraph, int N);
-void		gp_ReinitializeGraph(graphP theGraph);
+void	gp_ReinitializeGraph(graphP theGraph);
 int		gp_CopyAdjacencyLists(graphP dstGraph, graphP srcGraph);
 int		gp_CopyGraph(graphP dstGraph, graphP srcGraph);
 graphP	gp_DupGraph(graphP theGraph);
@@ -30,7 +30,7 @@ graphP	gp_DupGraph(graphP theGraph);
 int		gp_CreateRandomGraph(graphP theGraph);
 int		gp_CreateRandomGraphEx(graphP theGraph, int numEdges);
 
-void		gp_Free(graphP *pGraph);
+void	gp_Free(graphP *pGraph);
 
 int		gp_Read(graphP theGraph, char *FileName);
 int		gp_ReadFromString(graphP theGraph, char *inputStr);
@@ -38,10 +38,8 @@ int		gp_ReadFromString(graphP theGraph, char *inputStr);
 #define WRITE_ADJLIST   1
 #define WRITE_ADJMATRIX 2
 #define WRITE_DEBUGINFO 3
-#define WRITE_G6        4
-
 int		gp_Write(graphP theGraph, char *FileName, int Mode);
-int		gp_WriteToString(graphP theGraph, char **pOutputStr, int Mode);
+int     gp_WriteToString(graphP theGraph, char **pOutputStr, int Mode);
 
 int		gp_IsNeighbor(graphP theGraph, int u, int v);
 int		gp_GetNeighborEdgeRecord(graphP theGraph, int u, int v);
@@ -53,11 +51,11 @@ int		gp_GetArcCapacity(graphP theGraph);
 int		gp_EnsureArcCapacity(graphP theGraph, int requiredArcCapacity);
 
 int		gp_AddEdge(graphP theGraph, int u, int ulink, int v, int vlink);
-int		gp_InsertEdge(graphP theGraph, int u, int e_u, int e_ulink,
-													 int v, int e_v, int e_vlink);
+int     gp_InsertEdge(graphP theGraph, int u, int e_u, int e_ulink,
+                                       int v, int e_v, int e_vlink);
 
-void		gp_HideEdge(graphP theGraph, int e);
-void		gp_RestoreEdge(graphP theGraph, int e);
+void	gp_HideEdge(graphP theGraph, int e);
+void	gp_RestoreEdge(graphP theGraph, int e);
 int		gp_HideVertex(graphP theGraph, int vertex);
 int		gp_DeleteEdge(graphP theGraph, int e, int nextLink);
 
@@ -67,7 +65,7 @@ int		gp_RestoreVertices(graphP theGraph);
 
 int		gp_CreateDFSTree(graphP theGraph);
 int		gp_SortVertices(graphP theGraph);
-int		gp_LowpointAndLeastAncestor(graphP theGraph);
+int 	gp_LowpointAndLeastAncestor(graphP theGraph);
 int		gp_PreprocessForEmbedding(graphP theGraph);
 
 int		gp_Embed(graphP theGraph, int embedFlags);
