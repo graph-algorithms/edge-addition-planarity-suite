@@ -385,7 +385,7 @@ int runGraphTransformationTest(char *command, char *infileName, int inputInMemFl
 	if (command == NULL || strlen(command) < 3)
 	{
 		// TODO: Update with Issue 18 and 20 to add g and m respectively
-		// printf("[ERROR] runGraphTransformationTest only supports -t(gam).\n");
+		// ErrorMessage("runGraphTransformationTest only supports -t(gam).\n");
 		ErrorMessage("runGraphTransformationTest only supports -ta.\n");
 		return NOTOK;
 	}
