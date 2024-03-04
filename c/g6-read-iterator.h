@@ -11,8 +11,6 @@ See the LICENSE.TXT file for licensing information.
 #include <stdbool.h>
 
 #include "graph.h"
-// TODO: Wanted to include so I could use ErrorMessage, but that function doesn't support formatted strings with format specifiers
-// #include "planarity.h"
 
 typedef struct {
     FILE *g6Infile;
