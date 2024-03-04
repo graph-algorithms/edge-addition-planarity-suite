@@ -392,29 +392,13 @@ int runGraphTransformationTest(char *command, char *infileName, int inputInMemFl
 	else if (strlen(command) == 3)
 		transformationCode = command[2];
 	
-	// final arg is actualOrExpectedFlag, meaning we want this outfileName to be the actual output
-	char *actualOutfileName = NULL;
-	Result = ConstructTransformationOutputFilename(infileName, &actualOutfileName, transformationCode, 0);
-
-	if (Result != OK)
-	{
-		ErrorMessage("Unable to construct output filename for actual transformation output.\n");
-		return NOTOK;
-	}
-	
+	// final arg is actualOrExpectedFlag, meaning we want this outfileName to be the actual output	
 	char *expectedOutfileName = NULL;
 	Result = ConstructTransformationOutputFilename(infileName, &expectedOutfileName, transformationCode, 1);
 
-	if (Result != OK)
+	if (Result != OK || expectedOutfileName == NULL)
 	{
 		ErrorMessage("Unable to construct output filename for expected transformation output.\n");
-		
-		if (actualOutfileName != NULL)
-		{
-			free(actualOutfileName);
-			actualOutfileName = NULL;
-		}
-
 		return NOTOK;
 	}
 
@@ -432,34 +416,30 @@ int runGraphTransformationTest(char *command, char *infileName, int inputInMemFl
 
 	if (Result == OK)
 	{
-		Result = TestGraphFunctionality(command, infileName, inputString, actualOutfileName);
+		char *actualOutput = NULL;
+		Result = TestGraphFunctionality(command, infileName, inputString, NULL, &actualOutput);
 		
-		Result = TextFilesEqual(actualOutfileName, expectedOutfileName);
-
-		if (Result == TRUE)
+		if (Result != OK || actualOutput == NULL)
 		{
-			sprintf(Line, "For the transformation %s on file %s, actual output file matched expected output file.\n", command, infileName);
-			Message(Line);
-			Result = OK;
+			ErrorMessage("Failed to perform transformation to produce .g6 output.\n");
 		}
 		else
 		{
-			sprintf(Line, "For the transformation %s on file %s, actual output file did not match expected output file.\n", command, infileName);
-			ErrorMessage(Line);
-			Result = NOTOK;
-		}
-	}
-	
-	int deleteActualOutfileCode = remove(actualOutfileName);
+			Result = TextFileMatchesString(expectedOutfileName, actualOutput);
 
-	// TODO: Do I need to do any other handling before run of next test?
-	if (deleteActualOutfileCode != 0)
-		ErrorMessage("Unable to delete actual output file on test cleanup.\n");
-	
-	if (actualOutfileName != NULL)
-	{
-		free(actualOutfileName);
-		actualOutfileName = NULL;
+			if (Result == TRUE)
+			{
+				sprintf(Line, "For the transformation %s on file %s, actual output file matched expected output file.\n", command, infileName);
+				Message(Line);
+				Result = OK;
+			}
+			else
+			{
+				sprintf(Line, "For the transformation %s on file %s, actual output file did not match expected output file.\n", command, infileName);
+				ErrorMessage(Line);
+				Result = NOTOK;
+			}
+		}
 	}
 
 	if (expectedOutfileName != NULL)
@@ -622,5 +602,5 @@ int callTestGraphFunctionality(int argc, char *argv[])
 	infileName = argv[3+offset];
 	outfileName = argv[4+offset];
 
-	return TestGraphFunctionality(commandString, infileName, NULL, outfileName);
+	return TestGraphFunctionality(commandString, infileName, NULL, outfileName, NULL);
 }
