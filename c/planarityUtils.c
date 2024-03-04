@@ -554,9 +554,9 @@ int ConstructTransformationOutputFilename(char *infileName, char **outfileName, 
 		if ((transformationNameLen = strlen(transformationName)) <= ALGORITHMNAMEMAXLENGTH)
 		{
 			if (actualOrExpectedFlag)
-				(*outfileName) = (char *) calloc(infileNameLen + 1 + transformationNameLen + strlen(".expected.out.txt"), sizeof(char));
+				(*outfileName) = (char *) calloc(infileNameLen + 1 + transformationNameLen + strlen(".expected.out.txt") + 1, sizeof(char));
 			else
-				(*outfileName) = (char *) calloc(infileNameLen + 1 + transformationNameLen + strlen(".actual.out.txt"), sizeof(char));
+				(*outfileName) = (char *) calloc(infileNameLen + 1 + transformationNameLen + strlen(".actual.out.txt") + 1, sizeof(char));
 
 			strcpy((*outfileName), infileName);
 			strcat((*outfileName), ".");
