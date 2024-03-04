@@ -407,43 +407,46 @@ int RetVal;
         RetVal = _ReadGraphFromG6FilePointer(theGraph, Infile);
     }
 
-     if (RetVal == OK)
-     {
-         void *extraData = NULL;
-         long filePos = ftell(Infile);
-         long fileSize;
+    // The possibility of "extra data" is not allowed for .g6 format. Also,
+    // .g6 files can contain multiple graphs, which are not valid input
+    // for the extra data readers (i.e. fpReadPostProcess)
+    else if (RetVal == OK)
+    {
+        void *extraData = NULL;
+        long filePos = ftell(Infile);
+        long fileSize;
 
-         fseek(Infile, 0, SEEK_END);
-         fileSize = ftell(Infile);
-         fseek(Infile, filePos, SEEK_SET);
+        fseek(Infile, 0, SEEK_END);
+        fileSize = ftell(Infile);
+        fseek(Infile, filePos, SEEK_SET);
 
-         if (filePos < fileSize)
-         {
-            extraData = malloc(fileSize - filePos + 1);
-            fread(extraData, fileSize - filePos, 1, Infile);
-         }
+        if (filePos < fileSize)
+        {
+        extraData = malloc(fileSize - filePos + 1);
+        fread(extraData, fileSize - filePos, 1, Infile);
+        }
 /*// Useful for quick debugging of IO extensibility
-         if (extraData == NULL)
-             printf("extraData == NULL\n");
-         else
-         {
-             char *extraDataString = (char *) extraData;
-             extraDataString[fileSize - filePos] = '\0';
-             printf("extraData = '%s'\n", extraDataString);
-         }
+        if (extraData == NULL)
+            printf("extraData == NULL\n");
+        else
+        {
+            char *extraDataString = (char *) extraData;
+            extraDataString[fileSize - filePos] = '\0';
+            printf("extraData = '%s'\n", extraDataString);
+        }
 */
 
-         if (extraData != NULL)
-         {
-             RetVal = theGraph->functions.fpReadPostprocess(theGraph, extraData, fileSize - filePos);
-             free((void *) extraData);
-         }
-     }
+        if (extraData != NULL)
+        {
+            RetVal = theGraph->functions.fpReadPostprocess(theGraph, extraData, fileSize - filePos);
+            free((void *) extraData);
+        }
+    }
 
-     if (strcmp(FileName, "stdin") != 0)
-         fclose(Infile);
+    if (strcmp(FileName, "stdin") != 0)
+        fclose(Infile);
 
-     return RetVal;
+    return RetVal;
 }
 
 /********************************************************************

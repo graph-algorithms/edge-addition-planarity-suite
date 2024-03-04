@@ -217,20 +217,6 @@ int runSpecificGraphTests(char *samplesDir)
 		Message("K_4 search on Petersen.txt failed.\n");
 	}
 
-	// runGraphTransformationTest by reading file contents into string
-	if (runGraphTransformationTest("-ta", "nauty_example.g6", TRUE) < 0)
-	{
-		retVal = -1;
-		Message("Transforming nauty_example.g6 file contents as string to adjacency list failed.\n");
-	}
-
-	// runGraphTransformationTest by reading from file
-	if (runGraphTransformationTest("-ta", "nauty_example.g6", FALSE) < 0)
-	{
-		retVal = -1;
-		Message("Transforming nauty_example.g6 using file pointer to adjacency list failed.\n");
-	}
-
 	Message("Finished NIL == 0 Tests.\n\n");
 #endif
 
@@ -272,6 +258,20 @@ int runSpecificGraphTests(char *samplesDir)
 	if (runSpecificGraphTest("-4", "Petersen.0-based.txt", TRUE) < 0) {
 		retVal = -1;
 		Message("K_4 search on Petersen.0-based.txt failed.\n");
+	}
+
+	// runGraphTransformationTest by reading file contents into string
+	if (runGraphTransformationTest("-ta", "nauty_example.g6", TRUE) < 0)
+	{
+		retVal = -1;
+		Message("Transforming nauty_example.g6 file contents as string to adjacency list failed.\n");
+	}
+
+	// runGraphTransformationTest by reading from file
+	if (runGraphTransformationTest("-ta", "nauty_example.g6", FALSE) < 0)
+	{
+		retVal = -1;
+		Message("Transforming nauty_example.g6 using file pointer to adjacency list failed.\n");
 	}
 
 	if (retVal == 0)
@@ -438,13 +438,14 @@ int runGraphTransformationTest(char *command, char *infileName, int inputInMemFl
 
 		if (Result == TRUE)
 		{
-			// FIXME: Need Message to indicate start of test and this result
-			Message("Actual output file matched expected output file.\n");
+			sprintf(Line, "For the transformation %s on file %s, actual output file matched expected output file.\n", command, infileName);
+			Message(Line);
 			Result = OK;
 		}
 		else
 		{
-			ErrorMessage("Actual output file did not match expected output file.\n");
+			sprintf(Line, "For the transformation %s on file %s, actual output file did not match expected output file.\n", command, infileName);
+			ErrorMessage(Line);
 			Result = NOTOK;
 		}
 	}
@@ -466,6 +467,9 @@ int runGraphTransformationTest(char *command, char *infileName, int inputInMemFl
 		free(expectedOutfileName);
 		expectedOutfileName = NULL;
 	}
+
+	Message("\n");
+
 	return Result;
 }
 
