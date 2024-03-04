@@ -486,7 +486,10 @@ int	 gp_ReadFromString(graphP theGraph, char *inputStr)
         RetVal = _ReadGraphFromG6String(theGraph, inputStr);
     }
 
-     if (RetVal == OK)
+    // The possibility of "extra data" is not allowed for .g6 format. Also,
+    // .g6 files can contain multiple graphs, which are not valid input
+    // for the extra data readers (i.e. fpReadPostProcess)
+    else if (RetVal == OK)
      {
     	 char *extraData = sb_GetReadString(inBuf);
     	 int extraDataLen = extraData == NULL ? 0 : strlen(extraData);
