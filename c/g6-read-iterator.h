@@ -13,17 +13,17 @@ See the LICENSE.TXT file for licensing information.
 #include "graph.h"
 
 typedef struct {
-    FILE *g6Infile;
-    bool doIOwnFilePointer;
-    int numGraphsRead;
+	FILE *g6Infile;
+	bool doIOwnFilePointer;
+	int numGraphsRead;
 
-    int graphOrder;
-    int numCharsForGraphOrder;
-    int numCharsForGraphEncoding;
-    int currGraphBuffSize;
-    char *currGraphBuff;
+	int graphOrder;
+	int numCharsForGraphOrder;
+	int numCharsForGraphEncoding;
+	int currGraphBuffSize;
+	char *currGraphBuff;
 
-    graphP currGraph;
+	graphP currGraph;
 } G6ReadIterator;
 
 int allocateG6ReadIterator(G6ReadIterator **, graphP);

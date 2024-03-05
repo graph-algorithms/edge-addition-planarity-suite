@@ -22,15 +22,15 @@ int transformString(graphP theGraph, char *inputStr);
 
 int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr, char *outfileName, char **outputStr)
 {
-    int Result = OK;
-    graphP theGraph;
+	int Result = OK;
+	graphP theGraph;
 
-    // Create the graph and, if needed, attach the correct algorithm to it
-    theGraph = gp_New();
+	// Create the graph and, if needed, attach the correct algorithm to it
+	theGraph = gp_New();
 
-    int outputFormat = -1;
+	int outputFormat = -1;
 
-    if (commandString[0] == '-')
+	if (commandString[0] == '-')
 	{
 		if (commandString[1] == 't')
 		{
@@ -48,22 +48,22 @@ int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr
 			if (inputStr)
 				Result = transformString(theGraph, inputStr);
 			else
-            	Result = transformFile(theGraph, infileName);
+				Result = transformFile(theGraph, infileName);
 
-            if (Result == NOTOK) {
-                ErrorMessage("Unable to transform file.\n");
-            }
-            else
-            {
-                if (outputStr != NULL)
-                    Result = gp_WriteToString(theGraph, outputStr, outputFormat);
-                else
-                    Result = gp_Write(theGraph, outfileName, outputFormat);
-                
-                if (Result == NOTOK)
-                    ErrorMessage("Unable to write graph.\n");
-            }
-    
+			if (Result == NOTOK) {
+				ErrorMessage("Unable to transform file.\n");
+			}
+			else
+			{
+				if (outputStr != NULL)
+					Result = gp_WriteToString(theGraph, outputStr, outputFormat);
+				else
+					Result = gp_Write(theGraph, outfileName, outputFormat);
+				
+				if (Result == NOTOK)
+					ErrorMessage("Unable to write graph.\n");
+			}
+	
 		}
 		// TODO: add elif for algorithm command handling
 		else
@@ -73,35 +73,35 @@ int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr
 			return -1;
 		}
 	}
-    else
-    {
-        ErrorMessage("Invalid argument; must start with '-'.\n");
-        return -1;
-    }
+	else
+	{
+		ErrorMessage("Invalid argument; must start with '-'.\n");
+		return -1;
+	}
 
-    gp_Free(&theGraph);
+	gp_Free(&theGraph);
 
-    return Result;
+	return Result;
 }
 
 int transformFile(graphP theGraph, char *infileName)
 {
-    if (infileName == NULL)
-    {
-        if ((infileName = ConstructInputFilename(infileName)) == NULL)
-	        return NOTOK;
-    }
+	if (infileName == NULL)
+	{
+		if ((infileName = ConstructInputFilename(infileName)) == NULL)
+			return NOTOK;
+	}
 
-    return gp_Read(theGraph, infileName);
+	return gp_Read(theGraph, infileName);
 }
 
 int transformString(graphP theGraph, char *inputStr)
 {
-    if (inputStr == NULL || strlen(inputStr) == 0)
-    {
+	if (inputStr == NULL || strlen(inputStr) == 0)
+	{
 		ErrorMessage("Input string is null or empty.\n");
-	    return NOTOK;
-    }
-    
-    return gp_ReadFromString(theGraph, inputStr);
+		return NOTOK;
+	}
+	
+	return gp_ReadFromString(theGraph, inputStr);
 }
