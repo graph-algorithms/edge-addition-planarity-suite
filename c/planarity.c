@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
 	// with the DDEBUG flag, this means that in appconst.h we #define DEBUG. That way,
 	// this prompt will appear only for debug builds, and will ensure the console
 	// window stays open until the user proceeds.
-	printf("Press return key to exit...\n");
+	printf("\n\tPress return key to exit...\n");
 	fflush(stdout);
 	fflush(stdin);
 	getc(stdin);
@@ -146,6 +146,9 @@ int helpMessage(char *param)
 	    	"'planarity -s [-q] C I O [O2]': Specific graph\n"
 	        "'planarity -rm [-q] N O [O2]': Random maximal planar graph\n"
 	        "'planarity -rn [-q] N O [O2]': Random nonplanar graph (maximal planar + edge)\n"
+			// TODO: Update with Issues 18, 20, 10
+			// "'planarity -t [-q] C|-t(gam) I O': Apply command to OR transform input file\n"
+			"'planarity -t [-q] -ta I O': Transform graph to adjacency list\n"
 	        "'planarity I O [-n O2]': Legacy command-line (default -s -p)\n"
 	    	"\n"
 	    );
