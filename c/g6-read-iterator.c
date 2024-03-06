@@ -215,8 +215,7 @@ int beginG6ReadIterationFromFilePointer(G6ReadIterator *pG6ReadIterator, FILE *g
 		}
 	}
 
-	// TODO: Is this the right place to do this? I want to make sure the flags are correctly set
-	// regardless of whether the graph was initialized or re-initialized.
+	// Ensures zero-based flag is set regardless of whether the graph was initialized or reinitialized.
 	pG6ReadIterator->currGraph->internalFlags |= FLAGS_ZEROBASEDIO;
 
 	pG6ReadIterator->numCharsForGraphOrder = _getNumCharsForGraphOrder(graphOrder);
@@ -427,7 +426,7 @@ int readGraphUsingG6ReadIterator(G6ReadIterator *pG6ReadIterator)
 		if (numGraphsRead > 1)
 		{
 			gp_ReinitializeGraph(currGraph);
-			// TODO: Double-checking that we want to re-set these flags on re-initalize as per convo Feb. 29, 2024
+			// Ensures zero-based flag is set after reinitializing graph.
 			currGraph->internalFlags |= FLAGS_ZEROBASEDIO;
 		}
 
@@ -586,16 +585,13 @@ int _decodeGraph(char *graphBuff, const int graphOrder, const int numChars, grap
 			{
 				// Add gp_GetFirstVertex(pGraph), which is 1 if NIL == 0 (i.e. 1-based labelling) and 0 if NIL == -1 (0-based)
 				exitCode = gp_AddEdge(pGraph, row+gp_GetFirstVertex(pGraph), 0, col+gp_GetFirstVertex(pGraph), 0);
-				// TODO: verify if breaking out entirely from decode is acceptable on gp_AddEdge returning NOTOK
-				if (exitCode == NOTOK)
+				if (exitCode != OK)
 					return exitCode;
 			}
 
 			row++;
-		}    
+		}
 	}
-
-	pGraph->N = graphOrder;
 
 	return exitCode;
 }
