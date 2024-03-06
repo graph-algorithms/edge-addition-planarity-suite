@@ -8,6 +8,7 @@
                 "/Zi",
                 "/EHsc",
                 "/nologo",
+                "/DDEBUG", // Added so that _DEBUG is defined; see appconst.h
                 "/Fe${workspaceFolder}\\planarity.exe",
                 "${workspaceFolder}\\c\\**.c"
             ],
@@ -28,6 +29,7 @@
             "command": "C:\\MinGW\\bin\\gcc.exe",
             "args": [
                 "-fdiagnostics-color=always",
+                "-DDEBUG", // Added so that _DEBUG is defined; see appconst.h
                 "-g",
                 "${workspaceFolder}\\c\\**.c",
                 "-o",
@@ -49,6 +51,7 @@
             "args": [
                 "-fcolor-diagnostics",
                 "-fansi-escape-codes",
+                "-DDEBUG", // Added so that _DEBUG is defined; see appconst.h
                 "-g",
                 "${workspaceFolder}/c/**.c",
                 "-o",
