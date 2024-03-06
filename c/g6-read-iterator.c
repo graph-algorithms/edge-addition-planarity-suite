@@ -22,7 +22,7 @@ int allocateG6ReadIterator(G6ReadIterator **ppG6ReadIterator, graphP pGraph)
 		return NOTOK;
 	}
 
-	// doIOwnFilePointer, numGraphsRead, graphOrder, numCharsForGraphOrder,
+	// fileOwnerFlag, numGraphsRead, graphOrder, numCharsForGraphOrder,
 	// numCharsForGraphEncoding, and currGraphBuffSize all set to 0
 	(*ppG6ReadIterator) = (G6ReadIterator *) calloc(1, sizeof(G6ReadIterator));
 
@@ -129,7 +129,7 @@ int beginG6ReadIteration(G6ReadIterator *pG6ReadIterator, char *g6FilePath)
 		return NOTOK;
 	}
 
-	pG6ReadIterator->doIOwnFilePointer = true;
+	pG6ReadIterator->fileOwnerFlag = true;
 	exitCode = beginG6ReadIterationFromFilePointer(pG6ReadIterator, g6Infile);
 
 	return exitCode;
@@ -602,7 +602,7 @@ int endG6ReadIteration(G6ReadIterator *pG6ReadIterator)
 
 	if (pG6ReadIterator != NULL)
 	{
-		if (pG6ReadIterator->g6Infile != NULL && pG6ReadIterator->doIOwnFilePointer)
+		if (pG6ReadIterator->g6Infile != NULL && pG6ReadIterator->fileOwnerFlag)
 		{
 			int fcloseCode = fclose(pG6ReadIterator->g6Infile);
 
@@ -631,7 +631,7 @@ int freeG6ReadIterator(G6ReadIterator **ppG6ReadIterator)
 
 	if (ppG6ReadIterator != NULL && (*ppG6ReadIterator) != NULL)
 	{
-		if ((*ppG6ReadIterator)->g6Infile != NULL && (*ppG6ReadIterator)->doIOwnFilePointer)
+		if ((*ppG6ReadIterator)->g6Infile != NULL && (*ppG6ReadIterator)->fileOwnerFlag)
 		{
 			int fcloseCode = fclose((*ppG6ReadIterator)->g6Infile);
 

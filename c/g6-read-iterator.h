@@ -14,7 +14,7 @@ See the LICENSE.TXT file for licensing information.
 
 typedef struct {
 	FILE *g6Infile;
-	bool doIOwnFilePointer;
+	bool fileOwnerFlag;
 	int numGraphsRead;
 
 	int graphOrder;
