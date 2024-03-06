@@ -393,7 +393,6 @@ char *GetAlgorithmName(char command)
 
 char *GetTransformationName(char command)
 {
-	// FIXME: Isn't this a pointer to memory owned by the stack?
 	char *transformationName = "UnsupportedTransformation";
 
 	switch (command)

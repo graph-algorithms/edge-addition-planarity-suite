@@ -50,7 +50,7 @@ int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr
 			else
 				Result = transformFile(theGraph, infileName);
 
-			if (Result == NOTOK) {
+			if (Result != OK) {
 				ErrorMessage("Unable to transform file.\n");
 			}
 			else
@@ -60,7 +60,7 @@ int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr
 				else
 					Result = gp_Write(theGraph, outfileName, outputFormat);
 				
-				if (Result == NOTOK)
+				if (Result != OK)
 					ErrorMessage("Unable to write graph.\n");
 			}
 	

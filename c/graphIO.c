@@ -296,9 +296,8 @@ int  _ReadAdjList(graphP theGraph, FILE *Infile, strBufP inBuf)
           }
      }
 
-    // FIXME: this doesn't get set if we early-out from gp_AddEdge (i.e. either NOTOK or NONEMBEDDABLE)
      if (zeroBased)
-    	 theGraph->internalFlags |= FLAGS_ZEROBASEDIO;
+    	theGraph->internalFlags |= FLAGS_ZEROBASEDIO;
 
      return OK;
 }
