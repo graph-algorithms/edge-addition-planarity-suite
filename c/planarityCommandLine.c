@@ -65,6 +65,19 @@ int commandLine(int argc, char *argv[])
 		Result = NOTOK;
 	}
 
+#ifdef DEBUG
+	// When one builds and runs the executable in an external console from an IDE
+	// such as VSCode, the external console window will close immediately upon
+	// exit 0 being returned. This means that one may miss Messages and
+	// ErrorMessages that are crucial to the debugging process. Hence, if we compile
+	// with the DDEBUG flag, this means that in appconst.h we #define DEBUG. That way,
+	// this prompt will appear only for debug builds, and will ensure the console
+	// window stays open until the user proceeds.
+	printf("\n\tPress return key to exit...\n");
+	fflush(stdout);
+	fflush(stdin);
+	getc(stdin);
+#endif
 	return Result == OK ? 0 : (Result == NONEMBEDDABLE ? 1 : -1);
 }
 
