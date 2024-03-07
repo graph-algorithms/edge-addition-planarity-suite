@@ -124,7 +124,7 @@ int beginG6ReadIteration(G6ReadIterator *pG6ReadIterator, char *g6FilePath)
 
 	if (g6Infile == NULL)
 	{
-		sprintf(Line, "Unable to open .g6 file with path \"%s\"\n", g6FilePath);
+		sprintf(Line, "Unable to open .g6 file with path \"%.*s\"\n", FILENAME_MAX, g6FilePath);
 		ErrorMessage(Line);
 		return NOTOK;
 	}

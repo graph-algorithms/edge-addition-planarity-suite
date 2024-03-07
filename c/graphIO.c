@@ -6,6 +6,7 @@ See the LICENSE.TXT file for licensing information.
 
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 #include "graph.h"
 #include "g6-read-iterator.h"
@@ -322,10 +323,6 @@ int  _ReadLEDAGraph(graphP theGraph, FILE *Infile)
     /* Skip the lines that say LEDA.GRAPH and give the node and edge types */
     fgets(Line, 255, Infile);
 
-    if (strncmp(Line, "LEDA.GRAPH", strlen("LEDA.GRAPH")) != 0) {
-        return NOTOK;
-    }
-
     fgets(Line, 255, Infile);
     fgets(Line, 255, Infile);
 
@@ -382,34 +379,39 @@ int  _ReadLEDAGraph(graphP theGraph, FILE *Infile)
 int gp_Read(graphP theGraph, char *FileName)
 {
 FILE *Infile;
-char Ch;
+bool extraDataAllowed = false;
+char lineBuff[255];
 int RetVal;
 
-     if (strcmp(FileName, "stdin") == 0)
-          Infile = stdin;
-     else if ((Infile = fopen(FileName, READTEXT)) == NULL)
-          return NOTOK;
+    if (strcmp(FileName, "stdin") == 0)
+        Infile = stdin;
+    else if ((Infile = fopen(FileName, READTEXT)) == NULL)
+        return NOTOK;
 
-     Ch = (char) fgetc(Infile);
-     ungetc(Ch, Infile);
-     if (Ch == 'N')
-          RetVal = _ReadAdjList(theGraph, Infile, NULL);
-     else if (Ch == 'L')
-          RetVal = _ReadLEDAGraph(theGraph, Infile);
-     else RetVal = _ReadAdjMatrix(theGraph, Infile, NULL);
-
-    // Added second conjunct because we only want to try to read as .g6
-    // if trying to read as another format failed; NONEMBEDDABLE happens
-    // when we exceed the arc capacity, but that doesn't mean the graph
-    // read failed.
-    if (RetVal != OK && RetVal != NONEMBEDDABLE) {
-        RetVal = _ReadGraphFromG6FilePointer(theGraph, Infile);
+    fgets(lineBuff, 255, Infile);
+    // Reset file pointer to beginning of file
+    fseek(Infile, 0, SEEK_SET);
+    if (strncmp(lineBuff, "LEDA.GRAPH", strlen("LEDA.GRAPH")) == 0)
+        RetVal = _ReadLEDAGraph(theGraph, Infile);
+    else if (strncmp(lineBuff, "N=", strlen("N=")) == 0)
+    {
+        RetVal = _ReadAdjList(theGraph, Infile, NULL);
+        if (RetVal == OK)
+            extraDataAllowed = true;
     }
+    else if (isdigit(lineBuff[0]))
+    {
+        RetVal = _ReadAdjMatrix(theGraph, Infile, NULL);
+        if (RetVal == OK)
+            extraDataAllowed = true;
+    }
+    else
+        RetVal = _ReadGraphFromG6FilePointer(theGraph, Infile);
 
     // The possibility of "extra data" is not allowed for .g6 format. Also,
     // .g6 files can contain multiple graphs, which are not valid input
     // for the extra data readers (i.e. fpReadPostProcess)
-    else if (RetVal == OK)
+    if (extraDataAllowed)
     {
         void *extraData = NULL;
         long filePos = ftell(Infile);
@@ -424,7 +426,8 @@ int RetVal;
         extraData = malloc(fileSize - filePos + 1);
         fread(extraData, fileSize - filePos, 1, Infile);
         }
-/*// Useful for quick debugging of IO extensibility
+/*
+        // Useful for quick debugging of IO extensibility
         if (extraData == NULL)
             printf("extraData == NULL\n");
         else
@@ -457,48 +460,52 @@ int RetVal;
 
 int	 gp_ReadFromString(graphP theGraph, char *inputStr)
 {
-	 int RetVal;
-	 char Ch;
-	 strBufP inBuf = sb_New(0);
+    int RetVal;
+    char Ch;
+    bool extraDataAllowed = false;
 
-	 if (inBuf == NULL)
-		 return NOTOK;
+    strBufP inBuf = sb_New(0);
+    if (inBuf == NULL)
+        return NOTOK;
 
-	 if (sb_ConcatString(inBuf, inputStr) != OK)
-	 {
-		 sb_Free(&inBuf);
-		 return NOTOK;
-	 }
-
-     Ch = sb_GetReadString(inBuf)[0];
-     if (Ch == 'N')
-         RetVal = _ReadAdjList(theGraph, NULL, inBuf);
-     else if (Ch == 'L')
-     {
-		 sb_Free(&inBuf);
-		 return NOTOK;
-     }
-     else RetVal = _ReadAdjMatrix(theGraph, NULL, inBuf);
-
-    if (RetVal != OK && RetVal != NONEMBEDDABLE)
+    if (sb_ConcatString(inBuf, inputStr) != OK)
     {
-        RetVal = _ReadGraphFromG6String(theGraph, inputStr);
+        sb_Free(&inBuf);
+        return NOTOK;
     }
+
+    if (strncmp(inputStr, "LEDA.GRAPH", strlen("LEDA.GRAPH")) == 0)
+        return NOTOK;
+    else if (strncmp(inputStr, "N=", strlen("N=")) == 0)
+    {
+        RetVal = _ReadAdjList(theGraph, NULL, inBuf);
+        if (RetVal == OK)
+            extraDataAllowed = true;
+    }
+    else if (isdigit(inputStr[0]))
+    {
+        RetVal = _ReadAdjMatrix(theGraph, NULL, inBuf);
+        if (RetVal == OK)
+            extraDataAllowed = true;
+    }
+    else
+        // TODO: Do I want to refactor this to accept strBufP?
+        RetVal = _ReadGraphFromG6String(theGraph, inputStr);
 
     // The possibility of "extra data" is not allowed for .g6 format. Also,
     // .g6 files can contain multiple graphs, which are not valid input
     // for the extra data readers (i.e. fpReadPostProcess)
-    else if (RetVal == OK)
+    if (extraDataAllowed)
      {
-    	 char *extraData = sb_GetReadString(inBuf);
-    	 int extraDataLen = extraData == NULL ? 0 : strlen(extraData);
+        char *extraData = sb_GetReadString(inBuf);
+        int extraDataLen = extraData == NULL ? 0 : strlen(extraData);
 
-    	 if (extraDataLen > 0)
-    		 RetVal = theGraph->functions.fpReadPostprocess(theGraph, extraData, extraDataLen);
+        if (extraDataLen > 0)
+            RetVal = theGraph->functions.fpReadPostprocess(theGraph, extraData, extraDataLen);
      }
 
-	 sb_Free(&inBuf);
-	 return RetVal;
+    sb_Free(&inBuf);
+    return RetVal;
 }
 
 int  _ReadPostprocess(graphP theGraph, void *extraData, long extraDataSize)
