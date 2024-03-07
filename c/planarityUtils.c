@@ -575,6 +575,7 @@ int ConstructTransformationExpectedResultFilename(char *infileName, char **outfi
 	else
 	{
 		ErrorMessage("outfileName already allocated.\n");
+		Result = NOTOK;
 	}
 
 	return Result;
