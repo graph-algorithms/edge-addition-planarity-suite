@@ -408,9 +408,12 @@ int RetVal;
     else
         RetVal = _ReadGraphFromG6FilePointer(theGraph, Infile);
 
-    // The possibility of "extra data" is not allowed for .g6 format. Also,
-    // .g6 files can contain multiple graphs, which are not valid input
-    // for the extra data readers (i.e. fpReadPostProcess)
+    // The possibility of "extra data" is not allowed for .g6 format:
+    // .g6 files may contain multiple graphs, which are not valid input
+    // for the extra data readers (i.e. fpReadPostProcess) Additionally,
+    // we don't want to add extra data if the graph is nonembeddable, as
+    // the FILE pointer isn't necessarily advanced past the graph
+    // encoding unless OK is returned.
     if (extraDataAllowed)
     {
         void *extraData = NULL;
@@ -492,9 +495,12 @@ int	 gp_ReadFromString(graphP theGraph, char *inputStr)
         // TODO: Do I want to refactor this to accept strBufP?
         RetVal = _ReadGraphFromG6String(theGraph, inputStr);
 
-    // The possibility of "extra data" is not allowed for .g6 format. Also,
-    // .g6 files can contain multiple graphs, which are not valid input
-    // for the extra data readers (i.e. fpReadPostProcess)
+    // The possibility of "extra data" is not allowed for .g6 format:
+    // .g6 files may contain multiple graphs, which are not valid input
+    // for the extra data readers (i.e. fpReadPostProcess) Additionally,
+    // we don't want to add extra data if the graph is nonembeddable, as
+    // the FILE pointer isn't necessarily advanced past the graph
+    // encoding unless OK is returned.
     if (extraDataAllowed)
      {
         char *extraData = sb_GetReadString(inBuf);
