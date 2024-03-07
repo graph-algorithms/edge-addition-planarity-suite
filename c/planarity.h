@@ -69,11 +69,12 @@ int  BinaryFilesEqual(char *file1Name, char *file2Name);
 int GetEmbedFlags(char command);
 char *GetAlgorithmName(char command);
 char *GetTransformationName(char command);
+char *GetBaseName(int baseFlag);
 void AttachAlgorithm(graphP theGraph, char command);
 
 char *ConstructInputFilename(char *infileName);
 char *ConstructPrimaryOutputFilename(char *infileName, char *outfileName, char command);
-int ConstructTransformationOutputFilename(char *infileName, char **outfileName, char command, int actualOrExpectedFlag);
+int ConstructTransformationExpectedResultFilename(char *infileName, char **outfileName, char command, int actualOrExpectedFlag);
 void WriteAlgorithmResults(graphP theGraph, int Result, char command, platform_time start, platform_time end, char *infileName);
 
 #ifdef __cplusplus

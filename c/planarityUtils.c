@@ -408,6 +408,16 @@ char *GetTransformationName(char command)
 /****************************************************************************
  ****************************************************************************/
 
+char *GetBaseName(int baseFlag)
+{
+	char *transformationName = baseFlag ? "1-based" : "0-based";
+
+	return transformationName;
+}
+
+/****************************************************************************
+ ****************************************************************************/
+
 void AttachAlgorithm(graphP theGraph, char command)
 {
 	switch (command)
@@ -523,7 +533,7 @@ char *ConstructPrimaryOutputFilename(char *infileName, char *outfileName, char c
 }
 
 /****************************************************************************
- ConstructTransformationOutputFilename()
+ ConstructTransformationExpectedResultFilename()
  Returns a string whose ownership will be transferred to the caller (must free string).
  If outfileName is non-NULL, then the result string contains its content.
  If outfileName is NULL, then the infileName, the command's algorithm name, and
@@ -532,12 +542,12 @@ char *ConstructPrimaryOutputFilename(char *infileName, char *outfileName, char c
  Returns non-NULL string
  ****************************************************************************/
 
-int ConstructTransformationOutputFilename(char *infileName, char **outfileName, char command, int actualOrExpectedFlag)
+int ConstructTransformationExpectedResultFilename(char *infileName, char **outfileName, char command, int baseFlag)
 {
 	int Result = OK;
-
+	char *baseName = GetBaseName(baseFlag);
 	char *transformationName = GetTransformationName(command);
-	int infileNameLen = -1, transformationNameLen = -1;
+	int infileNameLen = -1;
 
 	if (infileName == NULL || (infileNameLen = strlen(infileName)) < 1)
 	{
@@ -547,25 +557,20 @@ int ConstructTransformationOutputFilename(char *infileName, char **outfileName, 
 
 	if ((*outfileName) == NULL)
 	{
-		// If the primary output filename has not been given, then we use
-		// the input filename + the algorithm name + a simple suffix
-		// TODO: should I #define TRANSFORMATIONNAMEMAXLENGTH?
-		if ((transformationNameLen = strlen(transformationName)) <= ALGORITHMNAMEMAXLENGTH)
+		(*outfileName) = (char *) calloc(infileNameLen + 1 + strlen(baseName) + 1 + strlen(transformationName) + ((command == 'g') ? strlen(".g6") : strlen(".out.txt")) + 1, sizeof(char));
+		
+		if ((*outfileName) == NULL)
 		{
-			if (actualOrExpectedFlag)
-				(*outfileName) = (char *) calloc(infileNameLen + 1 + transformationNameLen + strlen(".expected.out.txt") + 1, sizeof(char));
-			else
-				(*outfileName) = (char *) calloc(infileNameLen + 1 + transformationNameLen + strlen(".actual.out.txt") + 1, sizeof(char));
-
-			strcpy((*outfileName), infileName);
-			strcat((*outfileName), ".");
-			strcat((*outfileName), transformationName);
+			ErrorMessage("Unable to allocate memory for output filename.\n");
+			return NOTOK;
 		}
-		else
-			ErrorMessage("Algorithm Name is too long, so it will not be used in output filename.");
 
-		strcat((*outfileName), actualOrExpectedFlag == 0 ? ".actual" : ".expected");
-	    strcat((*outfileName), ".out.txt");
+		strcpy((*outfileName), infileName);
+		strcat((*outfileName), ".");
+		strcat((*outfileName), baseName);
+		strcat((*outfileName), ".");
+		strcat((*outfileName), transformationName);
+		strcat((*outfileName), command == 'g' ? ".g6" : ".out.txt");
 	}
 	else
 	{

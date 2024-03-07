@@ -35,10 +35,10 @@ int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr
 		if (commandString[1] == 't')
 		{
 			if (commandString[2] == 'a')
-			{
 				outputFormat = WRITE_ADJLIST;
-			}
 			// TODO: handle .g6 and adjacency matrix output formats
+			// else if (commandString[2] == 'm')
+			// 	outputFormat = WRITE_ADJMATRIX;
 			else
 			{
 				ErrorMessage("Invalid argument; currently, only -ta is allowed.\n");

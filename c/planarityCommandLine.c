@@ -404,16 +404,6 @@ int runGraphTransformationTest(char *command, char *infileName, int inputInMemFl
 	}
 	else if (strlen(command) == 3)
 		transformationCode = command[2];
-	
-	// final arg is actualOrExpectedFlag, meaning we want this outfileName to be the actual output	
-	char *expectedOutfileName = NULL;
-	Result = ConstructTransformationOutputFilename(infileName, &expectedOutfileName, transformationCode, 1);
-
-	if (Result != OK || expectedOutfileName == NULL)
-	{
-		ErrorMessage("Unable to construct output filename for expected transformation output.\n");
-		return NOTOK;
-	}
 
 	// SpecificGraph() can invoke gp_Read() if the graph is to be read from a file, or it can invoke
 	// gp_ReadFromString() if the inputInMemFlag is set.
@@ -438,6 +428,18 @@ int runGraphTransformationTest(char *command, char *infileName, int inputInMemFl
 		}
 		else
 		{
+			// Final arg is baseFlag, which is dependent on whether the FLAGS_ZEROBASEDIO is set in a graphP's internalFlags
+			// Since these tests are only being used to test conversion of .g6 to other formats, and since we force FLAGS_ZEROBASEDIO,
+			// we'll currently only send 0. Otherwise, we'll have to figure out some other way to report the base of the output.
+			char *expectedOutfileName = NULL;
+			Result = ConstructTransformationExpectedResultFilename(infileName, &expectedOutfileName, transformationCode, 0);
+
+			if (Result != OK || expectedOutfileName == NULL)
+			{
+				ErrorMessage("Unable to construct output filename for expected transformation output.\n");
+				return NOTOK;
+			}
+
 			Result = TextFileMatchesString(expectedOutfileName, actualOutput);
 
 			if (Result == TRUE)
@@ -452,13 +454,13 @@ int runGraphTransformationTest(char *command, char *infileName, int inputInMemFl
 				ErrorMessage(Line);
 				Result = NOTOK;
 			}
-		}
-	}
 
-	if (expectedOutfileName != NULL)
-	{
-		free(expectedOutfileName);
-		expectedOutfileName = NULL;
+			if (expectedOutfileName != NULL)
+			{
+				free(expectedOutfileName);
+				expectedOutfileName = NULL;
+			}
+		}
 	}
 
 	Message("\n");
