@@ -15,12 +15,12 @@ int transformString(graphP theGraph, char *inputStr);
  commandString - command to run, e.g. `-ta` to transform graph to adjacency list format
  infileName - name of file to read, or NULL to cause the program to prompt the user for a filename
  inputStr - string containing input graph, or NULL to cause the program to fall back on reading from file
+ outputBase - pointer to the flag set for whether output is 0- or 1-based
  outputFormat - output format; currently only supports WRITE_ADJLIST
  outfileName - name of primary output file, or NULL to construct an output filename based on the input
  outputStr - pointer to string which we wish to use to store the transformation output
  ****************************************************************************/
-
-int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr, char *outfileName, char **outputStr)
+int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr, int *outputBase, char *outfileName, char **outputStr)
 {
 	int Result = OK;
 	graphP theGraph;
@@ -55,6 +55,11 @@ int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr
 			}
 			else
 			{
+				// Want to know whether the output is 0- or 1-based; will always be 
+				// 0-based for transformations of .g6 input
+				if (outputBase != NULL)
+					(*outputBase) = theGraph->internalFlags & FLAGS_ZEROBASEDIO;
+
 				if (outputStr != NULL)
 					Result = gp_WriteToString(theGraph, outputStr, outputFormat);
 				else

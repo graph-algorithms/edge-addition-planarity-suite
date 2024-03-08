@@ -583,8 +583,8 @@ int _decodeGraph(char *graphBuff, const int graphOrder, const int numChars, grap
 			bitValue = ((currByte >> j) & 1u) ? 1 : 0;
 			if (bitValue == 1)
 			{
-				// Add gp_GetFirstVertex(pGraph), which is 1 if NIL == 0 (i.e. 1-based labelling) and 0 if NIL == -1 (0-based)
-				exitCode = gp_AddEdge(pGraph, row+gp_GetFirstVertex(pGraph), 0, col+gp_GetFirstVertex(pGraph), 0);
+				// Add gp_GetFirstVertex(pGraph), which is 1 if NIL == 0 (i.e. internal 1-based labelling) and 0 if NIL == -1 (internally 0-based)
+				exitCode = gp_DynamicAddEdge(pGraph, row+gp_GetFirstVertex(pGraph), 0, col+gp_GetFirstVertex(pGraph), 0);
 				if (exitCode != OK)
 					return exitCode;
 			}

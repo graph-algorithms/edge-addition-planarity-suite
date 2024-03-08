@@ -1646,6 +1646,32 @@ int  upos, vpos;
      return OK;
 }
 
+int  gp_DynamicAddEdge(graphP theGraph, int u, int ulink, int v, int vlink)
+{
+int Result = OK;
+
+    if (theGraph==NULL || u < gp_GetFirstVertex(theGraph) || v < gp_GetFirstVertex(theGraph) ||
+            !gp_VirtualVertexInRange(theGraph, u) || !gp_VirtualVertexInRange(theGraph, v))
+        return NOTOK;
+
+    Result = gp_AddEdge(theGraph, u, ulink, v, vlink);
+
+    if (Result == NONEMBEDDABLE)
+    {
+        int candidateArcCapacity = gp_GetArcCapacity(theGraph) * 2;
+        int N = theGraph->N;
+        int newArcCapacity = (candidateArcCapacity > (N * (N-1))) ? (N * (N-1)) : candidateArcCapacity;
+        Result = gp_EnsureArcCapacity(theGraph, newArcCapacity);
+
+        if (Result != OK)
+            return Result;
+
+        Result = gp_AddEdge(theGraph, u, ulink, v, vlink);
+    }
+
+    return Result;
+}
+
 /********************************************************************
  gp_InsertEdge()
 

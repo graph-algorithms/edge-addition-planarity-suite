@@ -287,6 +287,20 @@ int runSpecificGraphTests(char *samplesDir)
 		Message("Transforming nauty_example.g6 using file pointer to adjacency list failed.\n");
 	}
 
+	// runGraphTransformationTest by reading file contents corresponding to dense graph into string
+	if (runGraphTransformationTest("-ta", "K10.g6", TRUE) < 0)
+	{
+		retVal = -1;
+		Message("Transforming K10.g6 file contents as string to adjacency list failed.\n");
+	}
+
+	// runGraphTransformationTest by reading dense graph from file
+	if (runGraphTransformationTest("-ta", "K10.g6", FALSE) < 0)
+	{
+		retVal = -1;
+		Message("Transforming K10.g6 using file pointer to adjacency list failed.\n");
+	}
+
 	if (retVal == 0)
 		Message("Tests of all specific graphs succeeded.\n");
 	else
@@ -419,8 +433,13 @@ int runGraphTransformationTest(char *command, char *infileName, int inputInMemFl
 
 	if (Result == OK)
 	{
+		// We need to capture whether output is 0- or 1-based to construct the name of the file to compare actualOutput with
+		int zeroBasedOutputFlag = 0;
 		char *actualOutput = NULL;
-		Result = TestGraphFunctionality(command, infileName, inputString, NULL, &actualOutput);
+		// We want to handle the test being run when we read from an input file or read from a string,
+		//	so pass both infileName and inputString.
+		// We want to output to string, so we pass in the address of the actualOutput string.
+		Result = TestGraphFunctionality(command, infileName, inputString, &zeroBasedOutputFlag, NULL, &actualOutput);
 		
 		if (Result != OK || actualOutput == NULL)
 		{
@@ -432,7 +451,7 @@ int runGraphTransformationTest(char *command, char *infileName, int inputInMemFl
 			// Since these tests are only being used to test conversion of .g6 to other formats, and since we force FLAGS_ZEROBASEDIO,
 			// we'll currently only send 0. Otherwise, we'll have to figure out some other way to report the base of the output.
 			char *expectedOutfileName = NULL;
-			Result = ConstructTransformationExpectedResultFilename(infileName, &expectedOutfileName, transformationCode, 0);
+			Result = ConstructTransformationExpectedResultFilename(infileName, &expectedOutfileName, transformationCode, zeroBasedOutputFlag ? 0 : 1);
 
 			if (Result != OK || expectedOutfileName == NULL)
 			{
@@ -617,5 +636,7 @@ int callTestGraphFunctionality(int argc, char *argv[])
 	infileName = argv[3+offset];
 	outfileName = argv[4+offset];
 
-	return TestGraphFunctionality(commandString, infileName, NULL, outfileName, NULL);
+	// We don't want to read from string nor output to string, so inputStr and outputStr are NULL
+	// We don't need to capture whether output is 0- or 1-based, so zeroBasedOutputFlag arg is NULL
+	return TestGraphFunctionality(commandString, infileName, NULL, NULL, outfileName, NULL);
 }
