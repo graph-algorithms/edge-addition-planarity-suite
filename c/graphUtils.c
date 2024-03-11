@@ -1646,6 +1646,14 @@ int  upos, vpos;
      return OK;
 }
 
+/********************************************************************
+ gp_DynamicAddEdge()
+ Refer to documentation for gp_AddEdge for parameter description.
+
+ Tries to call gp_AddEdge; if NONEMBEDDABLE, doubles the arc
+ capacity (up to a max of (N * (N-1))) using gp_EnsureArcCapacity,
+ then retries gp_AddEdge.
+ ********************************************************************/
 int  gp_DynamicAddEdge(graphP theGraph, int u, int ulink, int v, int vlink)
 {
 int Result = OK;

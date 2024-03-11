@@ -7,13 +7,17 @@ See the LICENSE.TXT file for licensing information.
 #ifndef G6_READ_ITERATOR
 #define G6_READ_ITERATOR
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdio.h>
 #include <stdbool.h>
 
 #include "graph.h"
 
 typedef struct {
-	FILE *g6Infile;
+		FILE *g6Infile;
 	bool fileOwnerFlag;
 	int numGraphsRead;
 
@@ -51,5 +55,9 @@ int freeG6ReadIterator(G6ReadIterator **);
 int _ReadGraphFromG6String(graphP, char *);
 int _ReadGraphFromG6File(graphP, char *);
 int _ReadGraphFromG6FilePointer(graphP pGraphToRead, FILE *g6Infile);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* G6_READ_ITERATOR */

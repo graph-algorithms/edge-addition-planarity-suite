@@ -492,7 +492,6 @@ int	 gp_ReadFromString(graphP theGraph, char *inputStr)
             extraDataAllowed = true;
     }
     else
-        // TODO: Do I want to refactor this to accept strBufP?
         RetVal = _ReadGraphFromG6String(theGraph, inputStr);
 
     // The possibility of "extra data" is not allowed for .g6 format:
