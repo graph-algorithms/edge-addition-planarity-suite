@@ -32,7 +32,7 @@ int allocateG6ReadIterator(G6ReadIterator **ppG6ReadIterator, graphP pGraph)
 		return NOTOK;
 	}
 
-	(*ppG6ReadIterator)->g6Infile = NULL;
+	(*ppG6ReadIterator)->g6Input = NULL;
 
 	if (pGraph == NULL)
 	{
@@ -145,9 +145,29 @@ int beginG6ReadIterationFromFilePointer(G6ReadIterator *pG6ReadIterator, FILE *g
 		return NOTOK;
 	}
 
-	pG6ReadIterator->g6Infile = g6Infile;
+	strOrFileP g6Input = sf_New(g6Infile, NULL);
 
-	int firstChar = getc(g6Infile);
+	if (g6Input == NULL)
+	{
+		ErrorMessage("Unable to allocate string-or-file container.\n");
+		return NOTOK;
+	}
+
+	pG6ReadIterator->g6Input = g6Input;
+
+	exitCode = _beginG6ReadIteration(pG6ReadIterator);
+
+	return exitCode;
+}
+
+int _beginG6ReadIteration(G6ReadIterator *pG6ReadIterator)
+{
+	int exitCode = OK;
+	int charConfirmation = -1;
+
+	strOrFileP g6Input = pG6ReadIterator->g6Input;
+
+	int firstChar = sf_getc(g6Input);
 	if (firstChar == EOF)
 	{
 		ErrorMessage(".g6 infile is empty.\n");
@@ -155,28 +175,42 @@ int beginG6ReadIterationFromFilePointer(G6ReadIterator *pG6ReadIterator, FILE *g
 	}
 	else
 	{
-		ungetc(firstChar, g6Infile);
+		charConfirmation = sf_ungetc(firstChar, g6Input);
+
+		if (charConfirmation != firstChar)
+		{
+			ErrorMessage("Unable to ungetc first character.\n");
+			return NOTOK;
+		}
+
 		if (firstChar == '>')
 		{
-			exitCode = _processAndCheckHeader(g6Infile);
+			exitCode = _processAndCheckHeader(g6Input);
 			if (exitCode != OK)
 			{
-				ErrorMessage("Unable to process .g6 infile.\n");
+				ErrorMessage("Unable to process and check .g6 infile header.\n");
 				return exitCode;
 			}
 		}
 	}
 
 	int lineNum = 1;
-	firstChar = getc(g6Infile);
-	ungetc(firstChar, g6Infile);
+	firstChar = sf_getc(g6Input);
+	charConfirmation = sf_ungetc(firstChar, g6Input);
+
+	if (charConfirmation != firstChar)
+	{
+		ErrorMessage("Unable to ungetc first character.\n");
+		return NOTOK;
+	}
+
 	if (!_firstCharIsValid(firstChar, lineNum))
 		return NOTOK;
 
 	// Despite the general specification indicating that n \in [0, 68,719,476,735],
 	// in practice n will be limited such that an integer will suffice in storing it.
 	int graphOrder = -1;
-	exitCode = _getGraphOrder(g6Infile, &graphOrder);
+	exitCode = _getGraphOrder(g6Input, &graphOrder);
 
 	if (exitCode != OK)
 	{
@@ -233,13 +267,13 @@ int beginG6ReadIterationFromFilePointer(G6ReadIterator *pG6ReadIterator, FILE *g
 	return exitCode;
 }
 
-int _processAndCheckHeader(FILE *g6File)
+int _processAndCheckHeader(strOrFileP g6Input)
 {
 	int exitCode = OK;
 
-	if (g6File == NULL)
+	if (g6Input == NULL)
 	{
-		ErrorMessage("Invalid file pointer; please check .g6 file.\n");
+		ErrorMessage("Invalid .g6 string-or-file container; please check .g6 file.\n");
 		return NOTOK;
 	}
 
@@ -252,13 +286,13 @@ int _processAndCheckHeader(FILE *g6File)
 
 	for (int i = 0; i < 10; i++)
 	{
-		headerCandidateChars[i] = getc(g6File);
+		headerCandidateChars[i] = sf_getc(g6Input);
 	}
 
 	headerCandidateChars[10] = '\0';
 
 	if (strcmp(correctG6Header, headerCandidateChars) != 0)
-	{        
+	{
 		if (strcmp(sparse6Header, headerCandidateChars) == 0)
 			ErrorMessage("Graph file is sparse6 format, which is not supported.\n");
 		else if (strcmp(digraph6Header, headerCandidateChars) == 0)
@@ -287,13 +321,13 @@ bool _firstCharIsValid(char c, const int lineNum)
 	return isValidFirstChar;
 }
 
-int _getGraphOrder(FILE *g6Infile, int *graphOrder)
+int _getGraphOrder(strOrFileP g6Input, int *graphOrder)
 {
 	int exitCode = OK;
 
-	if (g6Infile == NULL)
+	if (g6Input == NULL)
 	{
-		ErrorMessage("Invalid file pointer; please check input file.\n");
+		ErrorMessage("Invalid string-or-file container for .g6 input.\n");
 		return NOTOK;
 	}
 
@@ -301,20 +335,20 @@ int _getGraphOrder(FILE *g6Infile, int *graphOrder)
 	// processing of random graphs may only handle up to n = 100,000, we will only check
 	// if 1 or 4 bytes are necessary
 	int n = 0;
-	int graphChar = getc(g6Infile);
+	int graphChar = sf_getc(g6Input);
 	if (graphChar == 126)
 	{
-		if ((graphChar = getc(g6Infile)) == 126)
+		if ((graphChar = sf_getc(g6Input)) == 126)
 		{
 			ErrorMessage("Graph order is too large; format suggests that 258048 <= n <= 68719476735, but we only support n <= 100000.\n");
 			return NOTOK;
 		}
 
-		ungetc(graphChar, g6Infile);
+		sf_ungetc(graphChar, g6Input);
 
 		for (int i = 2; i >= 0; i--)
 		{
-			graphChar = getc(g6Infile) - 63;
+			graphChar = sf_getc(g6Input) - 63;
 			n |= graphChar << (6 * i);
 		}
 
@@ -347,11 +381,11 @@ int readGraphUsingG6ReadIterator(G6ReadIterator *pG6ReadIterator)
 		return NOTOK;
 	}
 
-	FILE *g6Infile = pG6ReadIterator->g6Infile;
+	strOrFileP g6Input = pG6ReadIterator->g6Input;
 
-	if (g6Infile == NULL)
+	if (g6Input == NULL)
 	{
-		ErrorMessage("g6Infile pointer is null.\n");
+		ErrorMessage("Pointer to .g6 string-or-file container is NULL.\n");
 		return NOTOK;
 	}
 
@@ -374,7 +408,7 @@ int readGraphUsingG6ReadIterator(G6ReadIterator *pG6ReadIterator)
 
 	char firstChar = '\0';
 	char *graphEncodingChars = NULL;
-	if (fgets(currGraphBuff, currGraphBuffSize, g6Infile) != NULL)
+	if (sf_fgets(currGraphBuff, currGraphBuffSize, g6Input) != NULL)
 	{
 		numGraphsRead++;
 		firstChar = currGraphBuff[0];
@@ -391,6 +425,7 @@ int readGraphUsingG6ReadIterator(G6ReadIterator *pG6ReadIterator)
 		// longer than the line should have been, i.e. orderOffset + numCharsForGraphRepr
 		if (strlen(currGraphBuff) != (((numGraphsRead == 1) ? 0 : numCharsForGraphOrder) + numCharsForGraphEncoding))
 		{
+			// TODO: This is where we fail - strlen(currGraphBuff) is 3 but I guess this assumes the first char should be ignored
 			sprintf(Line, "Invalid line length read on line %d\n", numGraphsRead);
 			ErrorMessage(Line);
 			return NOTOK;
@@ -602,18 +637,17 @@ int endG6ReadIteration(G6ReadIterator *pG6ReadIterator)
 
 	if (pG6ReadIterator != NULL)
 	{
-		if (pG6ReadIterator->g6Infile != NULL && pG6ReadIterator->fileOwnerFlag)
+		if (pG6ReadIterator->g6Input != NULL)
 		{
-			int fcloseCode = fclose(pG6ReadIterator->g6Infile);
-
-			if (fcloseCode != 0)
+			if (pG6ReadIterator->g6Input->inputFile != NULL && pG6ReadIterator->fileOwnerFlag)
 			{
-				ErrorMessage("Unable to close G6ReadIterator's g6Infile.\n");
-				exitCode = NOTOK;
+				exitCode = fclose(pG6ReadIterator->g6Input->inputFile);
+				if (exitCode != 0)
+					ErrorMessage("Unable to close g6Input file pointer.\n");
 			}
-		}
 
-		pG6ReadIterator->g6Infile = NULL;
+			sf_Free(&(pG6ReadIterator->g6Input));
+		}
 
 		if (pG6ReadIterator->currGraphBuff != NULL)
 		{
@@ -631,18 +665,17 @@ int freeG6ReadIterator(G6ReadIterator **ppG6ReadIterator)
 
 	if (ppG6ReadIterator != NULL && (*ppG6ReadIterator) != NULL)
 	{
-		if ((*ppG6ReadIterator)->g6Infile != NULL && (*ppG6ReadIterator)->fileOwnerFlag)
+		if ((*ppG6ReadIterator)->g6Input != NULL)
 		{
-			int fcloseCode = fclose((*ppG6ReadIterator)->g6Infile);
-
-			if (fcloseCode != 0)
+			if ((*ppG6ReadIterator)->g6Input->inputFile != NULL && (*ppG6ReadIterator)->fileOwnerFlag)
 			{
-				ErrorMessage("Unable to close G6ReadIterator's g6Infile.\n");
-				exitCode = NOTOK;
+				exitCode = fclose((*ppG6ReadIterator)->g6Input->inputFile);
+				if (exitCode != 0)
+					ErrorMessage("Unable to close g6Input file pointer.\n");
 			}
-		}
 
-		(*ppG6ReadIterator)->g6Infile = NULL;
+			sf_Free(&((*ppG6ReadIterator)->g6Input));
+		}
 
 		(*ppG6ReadIterator)->numGraphsRead = 0;
 		(*ppG6ReadIterator)->graphOrder = 0;
@@ -672,28 +705,51 @@ int _ReadGraphFromG6String(graphP pGraphToRead, char *g6EncodedString)
 		return NOTOK;
 	}
 
-	FILE *tmpG6Infile = tmpfile();
+	G6ReadIterator *pG6ReadIterator = NULL;
+	exitCode = allocateG6ReadIterator(&pG6ReadIterator, pGraphToRead);
 
-	if (tmpG6Infile == NULL)
+	if (exitCode != OK)
 	{
-		ErrorMessage("Unable to create temporary file to contain .g6 string contents.\n");
+		ErrorMessage("Unable to allocate G6ReadIterator.\n");
+		return exitCode;
+	}
+
+	strOrFileP g6Input = sf_New(NULL, g6EncodedString);
+
+	if (g6Input == NULL)
+	{
+		ErrorMessage("Unable to allocate string-or-file container.\n");
 		return NOTOK;
 	}
 
-	int fputsCode = fputs(g6EncodedString, tmpG6Infile);
-	if (fputsCode == EOF)
+	pG6ReadIterator->g6Input = g6Input;
+
+	exitCode = _beginG6ReadIteration(pG6ReadIterator);
+
+	if (exitCode != OK)
 	{
-		ErrorMessage("Unable to write .g6 encoded string to temporary file.\n");
-		exitCode = NOTOK; 
-	}
-	else
-	{
-		fseek(tmpG6Infile, 0, SEEK_SET);
-		exitCode = _ReadGraphFromG6FilePointer(pGraphToRead, tmpG6Infile);
+		ErrorMessage("Unable to begin .g6 read iteration.\n");
+
+		exitCode = freeG6ReadIterator(&pG6ReadIterator);
+
+		if (exitCode != OK)
+			ErrorMessage("Unable to free G6ReadIterator.\n");
+
+		return exitCode;
 	}
 
-	fclose(tmpG6Infile);
-	tmpG6Infile = NULL;
+	exitCode = readGraphUsingG6ReadIterator(pG6ReadIterator);
+	if (exitCode != OK)
+		ErrorMessage("Unable to read graph from .g6 read iterator.\n");
+
+	exitCode = endG6ReadIteration(pG6ReadIterator);
+	if (exitCode != OK)
+		ErrorMessage("Unable to end G6ReadIterator.\n");
+	
+	exitCode = freeG6ReadIterator(&pG6ReadIterator);
+
+	if (exitCode != OK)
+		ErrorMessage("Unable to free G6ReadIterator.\n");
 
 	return exitCode;
 }

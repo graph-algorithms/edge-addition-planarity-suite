@@ -15,9 +15,11 @@ extern "C" {
 #include <stdbool.h>
 
 #include "graph.h"
+#include "strOrFile.h"
 
 typedef struct {
-		FILE *g6Infile;
+	// FILE *g6Infile;
+	strOrFileP g6Input;
 	bool fileOwnerFlag;
 	int numGraphsRead;
 
@@ -39,9 +41,10 @@ int getPointerToGraphReadIn(G6ReadIterator *, graphP *);
 
 int beginG6ReadIteration(G6ReadIterator *, char *);
 int beginG6ReadIterationFromFilePointer(G6ReadIterator *, FILE *);
-int _processAndCheckHeader(FILE *);
+int _beginG6ReadIteration(G6ReadIterator *pG6ReadIterator);
+int _processAndCheckHeader(strOrFileP g6Input);
 bool _firstCharIsValid(char, const int);
-int _getGraphOrder(FILE *, int *);
+int _getGraphOrder(strOrFileP g6Input, int *);
 
 int readGraphUsingG6ReadIterator(G6ReadIterator *);
 int _checkGraphOrder(char *, int);
