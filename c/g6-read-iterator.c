@@ -418,7 +418,7 @@ int readGraphUsingG6ReadIterator(G6ReadIterator *pG6ReadIterator)
 
 		// From https://stackoverflow.com/a/28462221, strcspn finds the index of the first
 		// char in charset; this way, I replace the char at that index with the null-terminator
-		currGraphBuff[strcspn(currGraphBuff, "\r\n")] = '\0'; // works for LF, CR, CRLF, LFCR, ...
+		currGraphBuff[strcspn(currGraphBuff, "\n\r")] = '\0'; // works for LF, CR, CRLF, LFCR, ...
 
 		// If the line was too long, then we would have placed the null terminator at the final
 		// index (where it already was; see strcpn docs), and the length of the string will be 

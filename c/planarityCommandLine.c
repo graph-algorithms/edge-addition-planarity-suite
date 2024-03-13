@@ -287,6 +287,20 @@ int runSpecificGraphTests(char *samplesDir)
 		Message("Transforming nauty_example.g6 using file pointer to adjacency list failed.\n");
 	}
 
+	// runGraphTransformationTest by reading first graph from file into string
+	if (runGraphTransformationTest("-ta", "N5-all.g6", TRUE) < 0)
+	{
+		retVal = -1;
+		Message("Transforming first graph in N5-all.g6 (read as string) to adjacency list failed.\n");
+	}
+
+	// runGraphTransformationTest by reading first graph from file pointer
+	if (runGraphTransformationTest("-ta", "N5-all.g6", FALSE) < 0)
+	{
+		retVal = -1;
+		Message("Transforming first graph in N5-all.g6 (read from file pointer) to adjacency list failed.\n");
+	}
+
 	// runGraphTransformationTest by reading file contents corresponding to dense graph into string
 	if (runGraphTransformationTest("-ta", "K10.g6", TRUE) < 0)
 	{

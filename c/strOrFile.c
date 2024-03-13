@@ -119,18 +119,26 @@ int numCharsRead = -1;
 	
 	if (theStrOrFile->inputFile != NULL)
 	{
-		return fgets(str, count, theStrOrFile->inputFile);
+		fgets(str, count, theStrOrFile->inputFile);
+		return str;
 	}
 	else if (theStrOrFile->inputStr != NULL)
 	{
-		int snprintfCode = snprintf(str, count, "%s", theStrOrFile->inputStr + theStrOrFile->inputStrPos);
+		strncpy(str, theStrOrFile->inputStr + theStrOrFile->inputStrPos, count);
+		str[count - 1] = '\0';
+		// Handles \n and \r\n
+		char *findDelim = strchr(str, '\n');
+		if (findDelim != NULL)
+			findDelim[1] = '\0';
+		// Handles \r
+		else
+		{
+			findDelim = strchr(str, '\r');
+			if (findDelim != NULL)
+				findDelim[1] = '\0';
+		}
 
-		if (snprintfCode < 0 || snprintfCode > count)
-			return NULL;
-		
-		str[strcspn(str, "\n\r")] = '\0';
-		// TODO: Is this semantic correct? "here's how many chars I actually read for the line, so the actual pos for the start of the next line is the index after"
-		theStrOrFile->inputStrPos += strlen(str) + 1;
+		theStrOrFile->inputStrPos += strlen(str);
 
 		return str;
 	}
