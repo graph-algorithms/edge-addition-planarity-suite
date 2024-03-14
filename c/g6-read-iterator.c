@@ -451,7 +451,6 @@ int readGraphUsingG6ReadIterator(G6ReadIterator *pG6ReadIterator)
 		// longer than the line should have been, i.e. orderOffset + numCharsForGraphRepr
 		if (strlen(currGraphBuff) != (((numGraphsRead == 1) ? 0 : numCharsForGraphOrder) + numCharsForGraphEncoding))
 		{
-			// TODO: This is where we fail - strlen(currGraphBuff) is 3 but I guess this assumes the first char should be ignored
 			sprintf(Line, "Invalid line length read on line %d\n", numGraphsRead);
 			ErrorMessage(Line);
 			return NOTOK;

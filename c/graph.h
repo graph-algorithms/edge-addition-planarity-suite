@@ -2,7 +2,7 @@
 #define GRAPH_H
 
 /*
-Copyright (c) 1997-2022, John M. Boyer
+Copyright (c) 1997-2024, John M. Boyer
 All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
@@ -22,7 +22,7 @@ extern "C" {
 graphP	gp_New(void);
 
 int		gp_InitGraph(graphP theGraph, int N);
-void	gp_ReinitializeGraph(graphP theGraph);
+void		gp_ReinitializeGraph(graphP theGraph);
 int		gp_CopyAdjacencyLists(graphP dstGraph, graphP srcGraph);
 int		gp_CopyGraph(graphP dstGraph, graphP srcGraph);
 graphP	gp_DupGraph(graphP theGraph);
@@ -30,16 +30,18 @@ graphP	gp_DupGraph(graphP theGraph);
 int		gp_CreateRandomGraph(graphP theGraph);
 int		gp_CreateRandomGraphEx(graphP theGraph, int numEdges);
 
-void	gp_Free(graphP *pGraph);
+void		gp_Free(graphP *pGraph);
 
 int		gp_Read(graphP theGraph, char *FileName);
 int		gp_ReadFromString(graphP theGraph, char *inputStr);
 
-#define WRITE_ADJLIST   1
-#define WRITE_ADJMATRIX 2
-#define WRITE_DEBUGINFO 3
+#define WRITE_ADJLIST	1
+#define WRITE_ADJMATRIX	2
+#define WRITE_DEBUGINFO	3
+#define WRITE_G6			4
+
 int		gp_Write(graphP theGraph, char *FileName, int Mode);
-int     gp_WriteToString(graphP theGraph, char **pOutputStr, int Mode);
+int		gp_WriteToString(graphP theGraph, char **pOutputStr, int Mode);
 
 int		gp_IsNeighbor(graphP theGraph, int u, int v);
 int		gp_GetNeighborEdgeRecord(graphP theGraph, int u, int v);
@@ -52,11 +54,11 @@ int		gp_EnsureArcCapacity(graphP theGraph, int requiredArcCapacity);
 
 int		gp_AddEdge(graphP theGraph, int u, int ulink, int v, int vlink);
 int		gp_DynamicAddEdge(graphP theGraph, int u, int ulink, int v, int vlink);
-int     gp_InsertEdge(graphP theGraph, int u, int e_u, int e_ulink,
-                                       int v, int e_v, int e_vlink);
+int		gp_InsertEdge(graphP theGraph, int u, int e_u, int e_ulink,
+													int v, int e_v, int e_vlink);
 
-void	gp_HideEdge(graphP theGraph, int e);
-void	gp_RestoreEdge(graphP theGraph, int e);
+void		gp_HideEdge(graphP theGraph, int e);
+void		gp_RestoreEdge(graphP theGraph, int e);
 int		gp_HideVertex(graphP theGraph, int vertex);
 int		gp_DeleteEdge(graphP theGraph, int e, int nextLink);
 
@@ -66,34 +68,34 @@ int		gp_RestoreVertices(graphP theGraph);
 
 int		gp_CreateDFSTree(graphP theGraph);
 int		gp_SortVertices(graphP theGraph);
-int 	gp_LowpointAndLeastAncestor(graphP theGraph);
+int 		gp_LowpointAndLeastAncestor(graphP theGraph);
 int		gp_PreprocessForEmbedding(graphP theGraph);
 
 int		gp_Embed(graphP theGraph, int embedFlags);
 int		gp_TestEmbedResultIntegrity(graphP theGraph, graphP origGraph, int embedResult);
 
 /* Possible Flags for gp_Embed.  The planar and outerplanar settings are supported
-   natively.  The rest require extension modules. */
+	natively.  The rest require extension modules. */
 
-#define EMBEDFLAGS_PLANAR       1
-#define EMBEDFLAGS_OUTERPLANAR  2
+#define EMBEDFLAGS_PLANAR			1
+#define EMBEDFLAGS_OUTERPLANAR	2
 
-#define EMBEDFLAGS_DRAWPLANAR   (4|EMBEDFLAGS_PLANAR)
+#define EMBEDFLAGS_DRAWPLANAR		(4|EMBEDFLAGS_PLANAR)
 
-#define EMBEDFLAGS_SEARCHFORK23 (16|EMBEDFLAGS_OUTERPLANAR)
-#define EMBEDFLAGS_SEARCHFORK4  (32|EMBEDFLAGS_OUTERPLANAR)
-#define EMBEDFLAGS_SEARCHFORK33 (64|EMBEDFLAGS_PLANAR)
+#define EMBEDFLAGS_SEARCHFORK23	(16|EMBEDFLAGS_OUTERPLANAR)
+#define EMBEDFLAGS_SEARCHFORK4	(32|EMBEDFLAGS_OUTERPLANAR)
+#define EMBEDFLAGS_SEARCHFORK33	(64|EMBEDFLAGS_PLANAR)
 
-#define EMBEDFLAGS_SEARCHFORK5  (128|EMBEDFLAGS_PLANAR)
+#define EMBEDFLAGS_SEARCHFORK5	(128|EMBEDFLAGS_PLANAR)
 
-#define EMBEDFLAGS_MAXIMALPLANARSUBGRAPH    256
-#define EMBEDFLAGS_PROJECTIVEPLANAR         512
-#define EMBEDFLAGS_TOROIDAL                 1024
+#define EMBEDFLAGS_MAXIMALPLANARSUBGRAPH	256
+#define EMBEDFLAGS_PROJECTIVEPLANAR			512
+#define EMBEDFLAGS_TOROIDAL					1024
 
 /* If LOGGING is defined, then write to the log, otherwise no-op
-   By default, neither release nor DEBUG builds including LOGGING.
-   Logging is useful for seeing details of how various algorithms
-   handle a particular graph. */
+	By default, neither release nor DEBUG builds including LOGGING.
+	Logging is useful for seeing details of how various algorithms
+	handle a particular graph. */
 
 //#define LOGGING
 #ifdef LOGGING

@@ -13,11 +13,11 @@ See the LICENSE.TXT file for licensing information.
 
 /* Private functions (exported to system) */
 
-int  _ReadAdjMatrix(graphP theGraph, FILE *Infile, strBufP inBuf);
-int  _ReadAdjList(graphP theGraph, FILE *Infile, strBufP inBuf);
-int  _WriteAdjList(graphP theGraph, FILE *Outfile, strBufP outBuf);
-int  _WriteAdjMatrix(graphP theGraph, FILE *Outfile, strBufP outBuf);
-int  _WriteDebugInfo(graphP theGraph, FILE *Outfile);
+int _ReadAdjMatrix(graphP theGraph, FILE *Infile, strBufP inBuf);
+int _ReadAdjList(graphP theGraph, FILE *Infile, strBufP inBuf);
+int _WriteAdjList(graphP theGraph, FILE *Outfile, strBufP outBuf);
+int _WriteAdjMatrix(graphP theGraph, FILE *Outfile, strBufP outBuf);
+int _WriteDebugInfo(graphP theGraph, FILE *Outfile);
 
 /********************************************************************
  _ReadAdjMatrix()
@@ -71,6 +71,7 @@ int _ReadAdjMatrix(graphP theGraph, FILE *Infile, strBufP inBuf)
               // Add the edge (v, w) if the flag is raised
               if (Flag)
               {
+                  // TODO: Is this where we want to use gp_DynamicAddEdge to handle dense graphs in AdjMat format?
                   if (gp_AddEdge(theGraph, v, 0, w, 0) != OK)
                	      return NOTOK;
               }
@@ -232,6 +233,7 @@ int  _ReadAdjList(graphP theGraph, FILE *Infile, strBufP inBuf)
              // then we'll add an undirected edge for now
              else if (v < W)
              {
+                // TODO: Is this the first place we want to use gp_DynamicAddEdge to handle dense graphs in AdjList format?
              	 if ((ErrorCode = gp_AddEdge(theGraph, v, 0, W, 0)) != OK)
              		 return ErrorCode;
              }
@@ -265,6 +267,7 @@ int  _ReadAdjList(graphP theGraph, FILE *Infile, strBufP inBuf)
             	 // vertex v to W.
             	 else
             	 {
+                    // TODO: Is this the other place we want to use gp_DynamicAddEdge to handle dense graphs in Adj List format?
             		 // It is added as the new first arc in both vertices
                 	 if ((ErrorCode = gp_AddEdge(theGraph, v, 0, W, 0)) != OK)
                 		 return ErrorCode;
@@ -347,6 +350,7 @@ int  _ReadLEDAGraph(graphP theGraph, FILE *Infile)
         sscanf(Line, " %d %d", &u, &v);
         if (u != v && !gp_IsNeighbor(theGraph, u-zeroBasedOffset, v-zeroBasedOffset))
         {
+            // TODO: Is this where we want to use gp_DynamicAddEdge to handle dense graphs in LEDA format?
              if ((ErrorCode = gp_AddEdge(theGraph, u-zeroBasedOffset, 0, v-zeroBasedOffset, 0)) != OK)
                  return ErrorCode;
         }
@@ -805,7 +809,7 @@ int v, e, EsizeOccupied;
  gp_Write()
  Writes theGraph into the file.
  Pass "stdout" or "stderr" to FileName to write to the corresponding stream
- Pass WRITE_ADJLIST, WRITE_ADJMATRIX or WRITE_DEBUGINFO for the Mode
+ Pass WRITE_G6, WRITE_ADJLIST, WRITE_ADJMATRIX, or WRITE_DEBUGINFO for the Mode
 
  NOTE: For digraphs, it is an error to use a mode other than WRITE_ADJLIST
 
@@ -832,22 +836,23 @@ int RetVal;
 
      switch (Mode)
      {
-         case WRITE_ADJLIST   :
-        	 RetVal = _WriteAdjList(theGraph, Outfile, NULL);
-             break;
-         case WRITE_ADJMATRIX :
-        	 RetVal = _WriteAdjMatrix(theGraph, Outfile, NULL);
-             break;
-         case WRITE_DEBUGINFO :
-        	 RetVal = _WriteDebugInfo(theGraph, Outfile);
-             break;
-        // TODO: Issue 18
-        // case WRITE_G6 :
-        // 	 RetVal = _WriteG6(theGraph, Outfile);
-        //      break;
-         default :
-        	 RetVal = NOTOK;
-        	 break;
+        case WRITE_G6        :
+            printf("[ERROR] G6WriterIterator code to write to .g6 encoded graph to file not yet introduced.\n");
+            fflush(stdout);
+            RetVal = NOTOK;
+            break;
+        case WRITE_ADJLIST   :
+            RetVal = _WriteAdjList(theGraph, Outfile, NULL);
+            break;
+        case WRITE_ADJMATRIX :
+            RetVal = _WriteAdjMatrix(theGraph, Outfile, NULL);
+            break;
+        case WRITE_DEBUGINFO :
+            RetVal = _WriteDebugInfo(theGraph, Outfile);
+            break;
+        default :
+            RetVal = NOTOK;
+            break;
      }
 
      if (RetVal == OK)
@@ -882,7 +887,7 @@ int RetVal;
  * The string is owned by the caller and should be released with
  * free() when the caller doesn't need the string anymore.
  * The format of the content written into the returned string is based
- * on the Mode parameter: WRITE_ADJLIST or WRITE_ADJMATRIX
+ * on the Mode parameter: WRITE_G6, WRITE_ADJLIST, or WRITE_ADJMATRIX
  * (the WRITE_DEBUGINFO Mode is not supported at this time)
 
  NOTE: For digraphs, it is an error to use a mode other than WRITE_ADJLIST
@@ -903,15 +908,20 @@ int  gp_WriteToString(graphP theGraph, char **pOutputStr, int Mode)
 
 	 switch (Mode)
 	 {
-	     case WRITE_ADJLIST   :
-	    	  RetVal = _WriteAdjList(theGraph, NULL, outBuf);
-	          break;
-	     case WRITE_ADJMATRIX :
-	          RetVal = _WriteAdjMatrix(theGraph, NULL, outBuf);
-	          break;
-	     default :
-	          RetVal = NOTOK;
-	          break;
+        case WRITE_G6 :
+            printf("[ERROR] G6WriterIterator code to write .g6 encoded graph to string not yet introduced.\n");
+            fflush(stdout);
+            RetVal = NOTOK;
+            break;
+        case WRITE_ADJLIST   :
+            RetVal = _WriteAdjList(theGraph, NULL, outBuf);
+            break;
+        case WRITE_ADJMATRIX :
+            RetVal = _WriteAdjMatrix(theGraph, NULL, outBuf);
+            break;
+        default :
+            RetVal = NOTOK;
+            break;
 	 }
 
 	 if (RetVal == OK)
