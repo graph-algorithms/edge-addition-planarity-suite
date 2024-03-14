@@ -164,4 +164,3 @@ void sf_Free(strOrFileP *pStrOrFile)
 		(*pStrOrFile) = NULL;
 	}
 }
-

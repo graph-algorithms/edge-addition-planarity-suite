@@ -398,7 +398,8 @@ char *GetTransformationName(char command)
 	switch (command)
 	{
 		case 'a' : transformationName = "AdjList"; 	break;
-		// case 'm' : transformationName = "AdjMat";	break;
+		case 'm' : transformationName = "AdjMat";	break;
+		// TODO: Issue 18 - add G6 transformationName
 		// case 'g' : transformationName = "G6"; 		break;
 	}
 
