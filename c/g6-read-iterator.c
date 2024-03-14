@@ -102,7 +102,7 @@ int getPointerToGraphReadIn(G6ReadIterator *pG6ReadIterator, graphP *ppGraph)
 	return OK;
 }
 
-int beginG6ReadIteration(G6ReadIterator *pG6ReadIterator, char *g6FilePath)
+int beginG6ReadIterationFromG6FilePath(G6ReadIterator *pG6ReadIterator, char *g6FilePath)
 {
 	int exitCode = OK;
 
@@ -124,18 +124,19 @@ int beginG6ReadIteration(G6ReadIterator *pG6ReadIterator, char *g6FilePath)
 
 	if (g6Infile == NULL)
 	{
-		sprintf(Line, "Unable to open .g6 file with path \"%.*s\"\n", FILENAME_MAX, g6FilePath);
+		char * formatStr = "Unable to open .g6 file with path \"%.*s\"\n";
+		sprintf(Line, formatStr, (int) (MAXLINE - strlen(formatStr)), g6FilePath);
 		ErrorMessage(Line);
 		return NOTOK;
 	}
 
 	pG6ReadIterator->fileOwnerFlag = true;
-	exitCode = beginG6ReadIterationFromFilePointer(pG6ReadIterator, g6Infile);
+	exitCode = beginG6ReadIterationFromG6FilePointer(pG6ReadIterator, g6Infile);
 
 	return exitCode;
 }
 
-int beginG6ReadIterationFromFilePointer(G6ReadIterator *pG6ReadIterator, FILE *g6Infile)
+int beginG6ReadIterationFromG6FilePointer(G6ReadIterator *pG6ReadIterator, FILE *g6Infile)
 {
 	int exitCode = OK;
 
@@ -146,6 +147,31 @@ int beginG6ReadIterationFromFilePointer(G6ReadIterator *pG6ReadIterator, FILE *g
 	}
 
 	strOrFileP g6Input = sf_New(g6Infile, NULL);
+
+	if (g6Input == NULL)
+	{
+		ErrorMessage("Unable to allocate string-or-file container.\n");
+		return NOTOK;
+	}
+
+	pG6ReadIterator->g6Input = g6Input;
+
+	exitCode = _beginG6ReadIteration(pG6ReadIterator);
+
+	return exitCode;
+}
+
+int beginG6ReadIterationFromG6String(G6ReadIterator *pG6ReadIterator, char *g6InputStr)
+{
+	int exitCode = OK;
+
+	if (g6InputStr == NULL || strlen(g6InputStr) <= 0)
+	{
+		ErrorMessage("g6InputStr must not be null or empty string.\n");
+		return NOTOK;
+	}
+
+	strOrFileP g6Input = sf_New(NULL, g6InputStr);
 
 	if (g6Input == NULL)
 	{
@@ -273,7 +299,7 @@ int _processAndCheckHeader(strOrFileP g6Input)
 
 	if (g6Input == NULL)
 	{
-		ErrorMessage("Invalid .g6 string-or-file container; please check .g6 file.\n");
+		ErrorMessage("Invalid .g6 string-or-file container.\n");
 		return NOTOK;
 	}
 
@@ -695,6 +721,98 @@ int freeG6ReadIterator(G6ReadIterator **ppG6ReadIterator)
 	return exitCode;
 }
 
+// Although _ReadGraphFromG6FilePath is almost identical to _ReadGraphFromG6FilePointer,
+// these two helper functions are meant for demonstrative purposes and are unlikely
+// to change. If you do modify this function, be sure to modify _ReadGraphFromG6FilePointer.
+int _ReadGraphFromG6FilePath(graphP pGraphToRead, char *pathToG6File)
+{
+	int exitCode = OK;
+
+	G6ReadIterator *pG6ReadIterator = NULL;
+	exitCode = allocateG6ReadIterator(&pG6ReadIterator, pGraphToRead);
+
+	if (exitCode != OK)
+	{
+		ErrorMessage("Unable to allocate G6ReadIterator.\n");
+		return exitCode;
+	}
+
+	exitCode = beginG6ReadIterationFromG6FilePath(pG6ReadIterator, pathToG6File);
+
+	if (exitCode != OK)
+	{
+		ErrorMessage("Unable to begin .g6 read iteration.\n");
+
+		exitCode = freeG6ReadIterator(&pG6ReadIterator);
+
+		if (exitCode != OK)
+			ErrorMessage("Unable to free G6ReadIterator.\n");
+
+		return exitCode;
+	}
+
+	exitCode = readGraphUsingG6ReadIterator(pG6ReadIterator);
+	if (exitCode != OK)
+		ErrorMessage("Unable to read graph from .g6 read iterator.\n");
+
+	exitCode = endG6ReadIteration(pG6ReadIterator);
+	if (exitCode != OK)
+		ErrorMessage("Unable to end G6ReadIterator.\n");
+	
+	exitCode = freeG6ReadIterator(&pG6ReadIterator);
+
+	if (exitCode != OK)
+		ErrorMessage("Unable to free G6ReadIterator.\n");
+
+	return exitCode;
+}
+
+// Although _ReadGraphFromG6FilePointer is almost identical to _ReadGraphFromG6FilePath,
+// these two helper functions are meant for demonstrative purposes and are unlikely
+// to change. If you do change this function, be sure to modify _ReadGraphFromG6FilePath.
+int _ReadGraphFromG6FilePointer(graphP pGraphToRead, FILE *g6Infile)
+{
+	int exitCode = OK;
+
+	G6ReadIterator *pG6ReadIterator = NULL;
+	exitCode = allocateG6ReadIterator(&pG6ReadIterator, pGraphToRead);
+
+	if (exitCode != OK)
+	{
+		ErrorMessage("Unable to allocate G6ReadIterator.\n");
+		return exitCode;
+	}
+
+	exitCode = beginG6ReadIterationFromG6FilePointer(pG6ReadIterator, g6Infile);
+
+	if (exitCode != OK)
+	{
+		ErrorMessage("Unable to begin .g6 read iteration.\n");
+
+		exitCode = freeG6ReadIterator(&pG6ReadIterator);
+
+		if (exitCode != OK)
+			ErrorMessage("Unable to free G6ReadIterator.\n");
+
+		return exitCode;
+	}
+
+	exitCode = readGraphUsingG6ReadIterator(pG6ReadIterator);
+	if (exitCode != OK)
+		ErrorMessage("Unable to read graph from .g6 read iterator.\n");
+
+	exitCode = endG6ReadIteration(pG6ReadIterator);
+	if (exitCode != OK)
+		ErrorMessage("Unable to end G6ReadIterator.\n");
+	
+	exitCode = freeG6ReadIterator(&pG6ReadIterator);
+
+	if (exitCode != OK)
+		ErrorMessage("Unable to free G6ReadIterator.\n");
+
+	return exitCode;
+}
+
 int _ReadGraphFromG6String(graphP pGraphToRead, char *g6EncodedString)
 {
 	int exitCode = OK;
@@ -714,109 +832,7 @@ int _ReadGraphFromG6String(graphP pGraphToRead, char *g6EncodedString)
 		return exitCode;
 	}
 
-	strOrFileP g6Input = sf_New(NULL, g6EncodedString);
-
-	if (g6Input == NULL)
-	{
-		ErrorMessage("Unable to allocate string-or-file container.\n");
-		return NOTOK;
-	}
-
-	pG6ReadIterator->g6Input = g6Input;
-
-	exitCode = _beginG6ReadIteration(pG6ReadIterator);
-
-	if (exitCode != OK)
-	{
-		ErrorMessage("Unable to begin .g6 read iteration.\n");
-
-		exitCode = freeG6ReadIterator(&pG6ReadIterator);
-
-		if (exitCode != OK)
-			ErrorMessage("Unable to free G6ReadIterator.\n");
-
-		return exitCode;
-	}
-
-	exitCode = readGraphUsingG6ReadIterator(pG6ReadIterator);
-	if (exitCode != OK)
-		ErrorMessage("Unable to read graph from .g6 read iterator.\n");
-
-	exitCode = endG6ReadIteration(pG6ReadIterator);
-	if (exitCode != OK)
-		ErrorMessage("Unable to end G6ReadIterator.\n");
-	
-	exitCode = freeG6ReadIterator(&pG6ReadIterator);
-
-	if (exitCode != OK)
-		ErrorMessage("Unable to free G6ReadIterator.\n");
-
-	return exitCode;
-}
-
-// Although _ReadGraphFromG6File is almost identical to _ReadGraphFromG6FilePointer,
-// these two helper functions are meant for demonstrative purposes and are unlikely
-// to change. If you do modify this function, be sure to modify _ReadGraphFromG6FilePointer.
-int _ReadGraphFromG6File(graphP pGraphToRead, char *pathToG6File)
-{
-	int exitCode = OK;
-
-	G6ReadIterator *pG6ReadIterator = NULL;
-	exitCode = allocateG6ReadIterator(&pG6ReadIterator, pGraphToRead);
-
-	if (exitCode != OK)
-	{
-		ErrorMessage("Unable to allocate G6ReadIterator.\n");
-		return exitCode;
-	}
-
-	exitCode = beginG6ReadIteration(pG6ReadIterator, pathToG6File);
-
-	if (exitCode != OK)
-	{
-		ErrorMessage("Unable to begin .g6 read iteration.\n");
-
-		exitCode = freeG6ReadIterator(&pG6ReadIterator);
-
-		if (exitCode != OK)
-			ErrorMessage("Unable to free G6ReadIterator.\n");
-
-		return exitCode;
-	}
-
-	exitCode = readGraphUsingG6ReadIterator(pG6ReadIterator);
-	if (exitCode != OK)
-		ErrorMessage("Unable to read graph from .g6 read iterator.\n");
-
-	exitCode = endG6ReadIteration(pG6ReadIterator);
-	if (exitCode != OK)
-		ErrorMessage("Unable to end G6ReadIterator.\n");
-	
-	exitCode = freeG6ReadIterator(&pG6ReadIterator);
-
-	if (exitCode != OK)
-		ErrorMessage("Unable to free G6ReadIterator.\n");
-
-	return exitCode;
-}
-
-// Although _ReadGraphFromG6FilePointer is almost identical to _ReadGraphFromG6File,
-// these two helper functions are meant for demonstrative purposes and are unlikely
-// to change. If you do change this function, be sure to modify _ReadGraphFromG6File.
-int _ReadGraphFromG6FilePointer(graphP pGraphToRead, FILE *g6Infile)
-{
-	int exitCode = OK;
-
-	G6ReadIterator *pG6ReadIterator = NULL;
-	exitCode = allocateG6ReadIterator(&pG6ReadIterator, pGraphToRead);
-
-	if (exitCode != OK)
-	{
-		ErrorMessage("Unable to allocate G6ReadIterator.\n");
-		return exitCode;
-	}
-
-	exitCode = beginG6ReadIterationFromFilePointer(pG6ReadIterator, g6Infile);
+	exitCode = beginG6ReadIterationFromG6String(pG6ReadIterator, g6EncodedString);
 
 	if (exitCode != OK)
 	{

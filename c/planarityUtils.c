@@ -557,7 +557,7 @@ int ConstructTransformationExpectedResultFilename(char *infileName, char **outfi
 
 	if ((*outfileName) == NULL)
 	{
-		(*outfileName) = (char *) calloc(infileNameLen + 1 + strlen(baseName) + 1 + strlen(transformationName) + ((command == 'g') ? strlen(".g6") : strlen(".out.txt")) + 1, sizeof(char));
+		(*outfileName) = (char *) calloc(infileNameLen + 1 + strlen(baseName) + 1 + strlen(transformationName) + ((command == 'g') ? strlen(".out.g6") : strlen(".out.txt")) + 1, sizeof(char));
 		
 		if ((*outfileName) == NULL)
 		{
@@ -570,7 +570,7 @@ int ConstructTransformationExpectedResultFilename(char *infileName, char **outfi
 		strcat((*outfileName), baseName);
 		strcat((*outfileName), ".");
 		strcat((*outfileName), transformationName);
-		strcat((*outfileName), command == 'g' ? ".g6" : ".out.txt");
+		strcat((*outfileName), command == 'g' ? ".out.g6" : ".out.txt");
 	}
 	else
 	{

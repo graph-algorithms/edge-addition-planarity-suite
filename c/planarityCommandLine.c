@@ -462,8 +462,6 @@ int runGraphTransformationTest(char *command, char *infileName, int inputInMemFl
 		else
 		{
 			// Final arg is baseFlag, which is dependent on whether the FLAGS_ZEROBASEDIO is set in a graphP's internalFlags
-			// Since these tests are only being used to test conversion of .g6 to other formats, and since we force FLAGS_ZEROBASEDIO,
-			// we'll currently only send 0. Otherwise, we'll have to figure out some other way to report the base of the output.
 			char *expectedOutfileName = NULL;
 			Result = ConstructTransformationExpectedResultFilename(infileName, &expectedOutfileName, transformationCode, zeroBasedOutputFlag ? 0 : 1);
 

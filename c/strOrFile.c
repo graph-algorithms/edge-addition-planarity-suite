@@ -119,10 +119,9 @@ int numCharsRead = -1;
 	
 	if (theStrOrFile->inputFile != NULL)
 	{
-		fgets(str, count, theStrOrFile->inputFile);
-		return str;
+		return fgets(str, count, theStrOrFile->inputFile);
 	}
-	else if (theStrOrFile->inputStr != NULL)
+	else if (theStrOrFile->inputStr != NULL && theStrOrFile->inputStr[theStrOrFile->inputStrPos] != '\0')
 	{
 		strncpy(str, theStrOrFile->inputStr + theStrOrFile->inputStrPos, count);
 		str[count - 1] = '\0';

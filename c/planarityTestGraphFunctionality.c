@@ -58,7 +58,7 @@ int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr
 				// Want to know whether the output is 0- or 1-based; will always be 
 				// 0-based for transformations of .g6 input
 				if (outputBase != NULL)
-					(*outputBase) = theGraph->internalFlags & FLAGS_ZEROBASEDIO;
+					(*outputBase) = (theGraph->internalFlags & FLAGS_ZEROBASEDIO) ? 1 : 0;
 
 				if (outputStr != NULL)
 					Result = gp_WriteToString(theGraph, outputStr, outputFormat);
