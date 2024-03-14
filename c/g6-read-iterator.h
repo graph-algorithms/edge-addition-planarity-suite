@@ -41,6 +41,7 @@ int getPointerToGraphReadIn(G6ReadIterator *, graphP *);
 
 int beginG6ReadIterationFromG6FilePath(G6ReadIterator *, char *);
 int beginG6ReadIterationFromG6FilePointer(G6ReadIterator *, FILE *);
+int beginG6ReadIterationFromG6String(G6ReadIterator *pG6ReadIterator, char *g6InputStr);
 int _beginG6ReadIteration(G6ReadIterator *pG6ReadIterator);
 int _processAndCheckHeader(strOrFileP g6Input);
 bool _firstCharIsValid(char, const int);
@@ -55,9 +56,9 @@ int endG6ReadIteration(G6ReadIterator *);
 
 int freeG6ReadIterator(G6ReadIterator **);
 
-int _ReadGraphFromG6String(graphP, char *);
 int _ReadGraphFromG6FilePath(graphP, char *);
 int _ReadGraphFromG6FilePointer(graphP pGraphToRead, FILE *g6Infile);
+int _ReadGraphFromG6String(graphP, char *);
 
 #ifdef __cplusplus
 }
