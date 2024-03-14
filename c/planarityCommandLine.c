@@ -315,6 +315,48 @@ int runSpecificGraphTests(char *samplesDir)
 		Message("Transforming K10.g6 using file pointer to adjacency list failed.\n");
 	}
 
+	// runGraphTransformationTest by reading file contents into string
+	if (runGraphTransformationTest("-tm", "nauty_example.g6", TRUE) < 0)
+	{
+		retVal = -1;
+		Message("Transforming nauty_example.g6 file contents as string to adjacency matrix failed.\n");
+	}
+
+	// runGraphTransformationTest by reading from file
+	if (runGraphTransformationTest("-tm", "nauty_example.g6", FALSE) < 0)
+	{
+		retVal = -1;
+		Message("Transforming nauty_example.g6 using file pointer to adjacency matrix failed.\n");
+	}
+
+	// runGraphTransformationTest by reading first graph from file into string
+	if (runGraphTransformationTest("-tm", "N5-all.g6", TRUE) < 0)
+	{
+		retVal = -1;
+		Message("Transforming first graph in N5-all.g6 (read as string) to adjacency matrix failed.\n");
+	}
+
+	// runGraphTransformationTest by reading first graph from file pointer
+	if (runGraphTransformationTest("-tm", "N5-all.g6", FALSE) < 0)
+	{
+		retVal = -1;
+		Message("Transforming first graph in N5-all.g6 (read from file pointer) to adjacency matrix failed.\n");
+	}
+
+	// runGraphTransformationTest by reading file contents corresponding to dense graph into string
+	if (runGraphTransformationTest("-tm", "K10.g6", TRUE) < 0)
+	{
+		retVal = -1;
+		Message("Transforming K10.g6 file contents as string to adjacency matrix failed.\n");
+	}
+
+	// runGraphTransformationTest by reading dense graph from file
+	if (runGraphTransformationTest("-tm", "K10.g6", FALSE) < 0)
+	{
+		retVal = -1;
+		Message("Transforming K10.g6 using file pointer to adjacency matrix failed.\n");
+	}
+
 	if (retVal == 0)
 		Message("Tests of all specific graphs succeeded.\n");
 	else
@@ -425,9 +467,9 @@ int runGraphTransformationTest(char *command, char *infileName, int inputInMemFl
 	// input graph; it will only support "-t(gam)"
 	if (command == NULL || strlen(command) < 3)
 	{
-		// TODO: Update with Issue 18 and 20 to add g and m respectively
+		// TODO: Update with Issue 18 to add g option
 		// ErrorMessage("runGraphTransformationTest only supports -t(gam).\n");
-		ErrorMessage("runGraphTransformationTest only supports -ta.\n");
+		ErrorMessage("runGraphTransformationTest only supports -t(am).\n");
 		return NOTOK;
 	}
 	else if (strlen(command) == 3)
@@ -457,7 +499,7 @@ int runGraphTransformationTest(char *command, char *infileName, int inputInMemFl
 		
 		if (Result != OK || actualOutput == NULL)
 		{
-			ErrorMessage("Failed to perform transformation to produce .g6 output.\n");
+			ErrorMessage("Failed to perform transformation.\n");
 		}
 		else
 		{
@@ -615,7 +657,7 @@ int callRandomNonplanarGraph(int argc, char *argv[])
  callTestGraphFunctionality()
  ****************************************************************************/
 
-// 'planarity -t [-q] -ta I O': Convert from all supported input formats to
+// 'planarity -t [-q] -t(am) I O': Convert from all supported input formats to
 // adjacency list format
 
 // TODO: Command will eventually be 'planarity -t [-q] C|-t(gam) I O'.

@@ -36,12 +36,11 @@ int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr
 		{
 			if (commandString[2] == 'a')
 				outputFormat = WRITE_ADJLIST;
-			// TODO: handle .g6 and adjacency matrix output formats
-			// else if (commandString[2] == 'm')
-			// 	outputFormat = WRITE_ADJMATRIX;
+			else if (commandString[2] == 'm')
+				outputFormat = WRITE_ADJMATRIX;
 			else
 			{
-				ErrorMessage("Invalid argument; currently, only -ta is allowed.\n");
+				ErrorMessage("Invalid argument; currently, only -t(am) is allowed.\n");
 				return -1;
 			}
 
@@ -73,8 +72,8 @@ int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr
 		// TODO: add elif for algorithm command handling
 		else
 		{
-			// TODO: update error message to capture C|-t(gam)
-			ErrorMessage("Invalid argument; currently, only -ta is allowed.\n");
+			// TODO: update with Issue 18: error message to capture C|-t(gam)
+			ErrorMessage("Invalid argument; currently, only -t(am) is allowed.\n");
 			return -1;
 		}
 	}
