@@ -499,7 +499,7 @@ int runGraphTransformationTest(char *command, char *infileName, int inputInMemFl
 		
 		if (Result != OK || actualOutput == NULL)
 		{
-			ErrorMessage("Failed to perform transformation to produce .g6 output.\n");
+			ErrorMessage("Failed to perform transformation.\n");
 		}
 		else
 		{
