@@ -6,8 +6,10 @@ See the LICENSE.TXT file for licensing information.
 
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 #include "graph.h"
+#include "g6-read-iterator.h"
 
 /* Private functions (exported to system) */
 
@@ -28,7 +30,8 @@ int  _WriteDebugInfo(graphP theGraph, FILE *Outfile);
 
 int _ReadAdjMatrix(graphP theGraph, FILE *Infile, strBufP inBuf)
 {
-	int N, v, w, Flag;
+	int N = -1;
+    int v, w, Flag;
 
     if (Infile == NULL  && inBuf == NULL)
     	return NOTOK;
@@ -104,7 +107,8 @@ int _ReadAdjMatrix(graphP theGraph, FILE *Infile, strBufP inBuf)
 
 int  _ReadAdjList(graphP theGraph, FILE *Infile, strBufP inBuf)
 {
-     int N, v, W, adjList, e, indexValue, ErrorCode;
+     int N = -1;
+     int v, W, adjList, e, indexValue, ErrorCode;
      int zeroBased = FALSE;
 
      if (Infile == NULL && inBuf == NULL)
@@ -294,7 +298,7 @@ int  _ReadAdjList(graphP theGraph, FILE *Infile, strBufP inBuf)
      }
 
      if (zeroBased)
-    	 theGraph->internalFlags |= FLAGS_ZEROBASEDIO;
+    	theGraph->internalFlags |= FLAGS_ZEROBASEDIO;
 
      return OK;
 }
@@ -312,11 +316,13 @@ int  _ReadAdjList(graphP theGraph, FILE *Infile, strBufP inBuf)
 int  _ReadLEDAGraph(graphP theGraph, FILE *Infile)
 {
 	char Line[256];
-	int N, M, m, u, v, ErrorCode;
+	int N = -1;
+    int M, m, u, v, ErrorCode;
 	int zeroBasedOffset = gp_GetFirstVertex(theGraph)==0 ? 1 : 0;
 
     /* Skip the lines that say LEDA.GRAPH and give the node and edge types */
     fgets(Line, 255, Infile);
+
     fgets(Line, 255, Infile);
     fgets(Line, 255, Infile);
 
@@ -373,59 +379,79 @@ int  _ReadLEDAGraph(graphP theGraph, FILE *Infile)
 int gp_Read(graphP theGraph, char *FileName)
 {
 FILE *Infile;
-char Ch;
+bool extraDataAllowed = false;
+char lineBuff[255];
 int RetVal;
 
-     if (strcmp(FileName, "stdin") == 0)
-          Infile = stdin;
-     else if ((Infile = fopen(FileName, READTEXT)) == NULL)
-          return NOTOK;
+    if (strcmp(FileName, "stdin") == 0)
+        Infile = stdin;
+    else if ((Infile = fopen(FileName, READTEXT)) == NULL)
+        return NOTOK;
 
-     Ch = (char) fgetc(Infile);
-     ungetc(Ch, Infile);
-     if (Ch == 'N')
-          RetVal = _ReadAdjList(theGraph, Infile, NULL);
-     else if (Ch == 'L')
-          RetVal = _ReadLEDAGraph(theGraph, Infile);
-     else RetVal = _ReadAdjMatrix(theGraph, Infile, NULL);
+    fgets(lineBuff, 255, Infile);
+    // Reset file pointer to beginning of file
+    fseek(Infile, 0, SEEK_SET);
+    if (strncmp(lineBuff, "LEDA.GRAPH", strlen("LEDA.GRAPH")) == 0)
+        RetVal = _ReadLEDAGraph(theGraph, Infile);
+    else if (strncmp(lineBuff, "N=", strlen("N=")) == 0)
+    {
+        RetVal = _ReadAdjList(theGraph, Infile, NULL);
+        if (RetVal == OK)
+            extraDataAllowed = true;
+    }
+    else if (isdigit(lineBuff[0]))
+    {
+        RetVal = _ReadAdjMatrix(theGraph, Infile, NULL);
+        if (RetVal == OK)
+            extraDataAllowed = true;
+    }
+    else
+        RetVal = _ReadGraphFromG6FilePointer(theGraph, Infile);
 
-     if (RetVal == OK)
-     {
-         void *extraData = NULL;
-         long filePos = ftell(Infile);
-         long fileSize;
+    // The possibility of "extra data" is not allowed for .g6 format:
+    // .g6 files may contain multiple graphs, which are not valid input
+    // for the extra data readers (i.e. fpReadPostProcess) Additionally,
+    // we don't want to add extra data if the graph is nonembeddable, as
+    // the FILE pointer isn't necessarily advanced past the graph
+    // encoding unless OK is returned.
+    if (extraDataAllowed)
+    {
+        void *extraData = NULL;
+        long filePos = ftell(Infile);
+        long fileSize;
 
-         fseek(Infile, 0, SEEK_END);
-         fileSize = ftell(Infile);
-         fseek(Infile, filePos, SEEK_SET);
+        fseek(Infile, 0, SEEK_END);
+        fileSize = ftell(Infile);
+        fseek(Infile, filePos, SEEK_SET);
 
-         if (filePos < fileSize)
-         {
-            extraData = malloc(fileSize - filePos + 1);
-            fread(extraData, fileSize - filePos, 1, Infile);
-         }
-/*// Useful for quick debugging of IO extensibility
-         if (extraData == NULL)
-             printf("extraData == NULL\n");
-         else
-         {
-             char *extraDataString = (char *) extraData;
-             extraDataString[fileSize - filePos] = '\0';
-             printf("extraData = '%s'\n", extraDataString);
-         }
+        if (filePos < fileSize)
+        {
+        extraData = malloc(fileSize - filePos + 1);
+        fread(extraData, fileSize - filePos, 1, Infile);
+        }
+/*
+        // Useful for quick debugging of IO extensibility
+        if (extraData == NULL)
+            printf("extraData == NULL\n");
+        else
+        {
+            char *extraDataString = (char *) extraData;
+            extraDataString[fileSize - filePos] = '\0';
+            printf("extraData = '%s'\n", extraDataString);
+        }
 */
 
-         if (extraData != NULL)
-         {
-             RetVal = theGraph->functions.fpReadPostprocess(theGraph, extraData, fileSize - filePos);
-             free((void *) extraData);
-         }
-     }
+        if (extraData != NULL)
+        {
+            RetVal = theGraph->functions.fpReadPostprocess(theGraph, extraData, fileSize - filePos);
+            free((void *) extraData);
+        }
+    }
 
-     if (strcmp(FileName, "stdin") != 0)
-         fclose(Infile);
+    if (strcmp(FileName, "stdin") != 0)
+        fclose(Infile);
 
-     return RetVal;
+    return RetVal;
 }
 
 /********************************************************************
@@ -437,40 +463,54 @@ int RetVal;
 
 int	 gp_ReadFromString(graphP theGraph, char *inputStr)
 {
-	 int RetVal;
-	 char Ch;
-	 strBufP inBuf = sb_New(0);
+    int RetVal;
+    char Ch;
+    bool extraDataAllowed = false;
 
-	 if (inBuf == NULL)
-		 return NOTOK;
+    strBufP inBuf = sb_New(0);
+    if (inBuf == NULL)
+        return NOTOK;
 
-	 if (sb_ConcatString(inBuf, inputStr) != OK)
-	 {
-		 sb_Free(&inBuf);
-		 return NOTOK;
-	 }
+    if (sb_ConcatString(inBuf, inputStr) != OK)
+    {
+        sb_Free(&inBuf);
+        return NOTOK;
+    }
 
-     Ch = sb_GetReadString(inBuf)[0];
-     if (Ch == 'N')
-         RetVal = _ReadAdjList(theGraph, NULL, inBuf);
-     else if (Ch == 'L')
+    if (strncmp(inputStr, "LEDA.GRAPH", strlen("LEDA.GRAPH")) == 0)
+        return NOTOK;
+    else if (strncmp(inputStr, "N=", strlen("N=")) == 0)
+    {
+        RetVal = _ReadAdjList(theGraph, NULL, inBuf);
+        if (RetVal == OK)
+            extraDataAllowed = true;
+    }
+    else if (isdigit(inputStr[0]))
+    {
+        RetVal = _ReadAdjMatrix(theGraph, NULL, inBuf);
+        if (RetVal == OK)
+            extraDataAllowed = true;
+    }
+    else
+        RetVal = _ReadGraphFromG6String(theGraph, inputStr);
+
+    // The possibility of "extra data" is not allowed for .g6 format:
+    // .g6 files may contain multiple graphs, which are not valid input
+    // for the extra data readers (i.e. fpReadPostProcess) Additionally,
+    // we don't want to add extra data if the graph is nonembeddable, as
+    // the FILE pointer isn't necessarily advanced past the graph
+    // encoding unless OK is returned.
+    if (extraDataAllowed)
      {
-		 sb_Free(&inBuf);
-		 return NOTOK;
-     }
-     else RetVal = _ReadAdjMatrix(theGraph, NULL, inBuf);
+        char *extraData = sb_GetReadString(inBuf);
+        int extraDataLen = extraData == NULL ? 0 : strlen(extraData);
 
-     if (RetVal == OK)
-     {
-    	 char *extraData = sb_GetReadString(inBuf);
-    	 int extraDataLen = extraData == NULL ? 0 : strlen(extraData);
-
-    	 if (extraDataLen > 0)
-    		 RetVal = theGraph->functions.fpReadPostprocess(theGraph, extraData, extraDataLen);
+        if (extraDataLen > 0)
+            RetVal = theGraph->functions.fpReadPostprocess(theGraph, extraData, extraDataLen);
      }
 
-	 sb_Free(&inBuf);
-	 return RetVal;
+    sb_Free(&inBuf);
+    return RetVal;
 }
 
 int  _ReadPostprocess(graphP theGraph, void *extraData, long extraDataSize)
@@ -801,6 +841,10 @@ int RetVal;
          case WRITE_DEBUGINFO :
         	 RetVal = _WriteDebugInfo(theGraph, Outfile);
              break;
+        // TODO: Issue 18
+        // case WRITE_G6 :
+        // 	 RetVal = _WriteG6(theGraph, Outfile);
+        //      break;
          default :
         	 RetVal = NOTOK;
         	 break;

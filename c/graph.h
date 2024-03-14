@@ -51,6 +51,7 @@ int		gp_GetArcCapacity(graphP theGraph);
 int		gp_EnsureArcCapacity(graphP theGraph, int requiredArcCapacity);
 
 int		gp_AddEdge(graphP theGraph, int u, int ulink, int v, int vlink);
+int		gp_DynamicAddEdge(graphP theGraph, int u, int ulink, int v, int vlink);
 int     gp_InsertEdge(graphP theGraph, int u, int e_u, int e_ulink,
                                        int v, int e_v, int e_vlink);
 

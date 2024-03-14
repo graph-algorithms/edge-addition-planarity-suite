@@ -17,6 +17,7 @@ int callRandomGraphs(int argc, char *argv[]);
 int callSpecificGraph(int argc, char *argv[]);
 int callRandomMaxPlanarGraph(int argc, char *argv[]);
 int callRandomNonplanarGraph(int argc, char *argv[]);
+int callTestGraphFunctionality(int argc, char *argv[]);
 
 /****************************************************************************
  Command Line Processor
@@ -54,6 +55,9 @@ int commandLine(int argc, char *argv[])
 	else if (strcmp(argv[1], "-rn") == 0)
 		Result = callRandomNonplanarGraph(argc, argv);
 
+	else if (strncmp(argv[1], "-t", 2) == 0)
+		Result = callTestGraphFunctionality(argc, argv);
+
 	else
 	{
 		ErrorMessage("Unsupported command line.  Here is the help for this program.\n");
@@ -61,6 +65,19 @@ int commandLine(int argc, char *argv[])
 		Result = NOTOK;
 	}
 
+#ifdef DEBUG
+	// When one builds and runs the executable in an external console from an IDE
+	// such as VSCode, the external console window will close immediately upon
+	// exit 0 being returned. This means that one may miss Messages and
+	// ErrorMessages that are crucial to the debugging process. Hence, if we compile
+	// with the DDEBUG flag, this means that in appconst.h we #define DEBUG. That way,
+	// this prompt will appear only for debug builds, and will ensure the console
+	// window stays open until the user proceeds.
+	printf("\n\tPress return key to exit...\n");
+	fflush(stdout);
+	fflush(stdin);
+	getc(stdin);
+#endif
 	return Result == OK ? 0 : (Result == NONEMBEDDABLE ? 1 : -1);
 }
 
@@ -118,6 +135,7 @@ int Result;
 
 int runSpecificGraphTests(char *);
 int runSpecificGraphTest(char *command, char *infileName, int inputInMemFlag);
+int runGraphTransformationTest(char *command, char *infileName, int inputInMemFlag);
 
 int runQuickRegressionTests(int argc, char *argv[])
 {
@@ -255,6 +273,48 @@ int runSpecificGraphTests(char *samplesDir)
 		Message("K_4 search on Petersen.0-based.txt failed.\n");
 	}
 
+	// runGraphTransformationTest by reading file contents into string
+	if (runGraphTransformationTest("-ta", "nauty_example.g6", TRUE) < 0)
+	{
+		retVal = -1;
+		Message("Transforming nauty_example.g6 file contents as string to adjacency list failed.\n");
+	}
+
+	// runGraphTransformationTest by reading from file
+	if (runGraphTransformationTest("-ta", "nauty_example.g6", FALSE) < 0)
+	{
+		retVal = -1;
+		Message("Transforming nauty_example.g6 using file pointer to adjacency list failed.\n");
+	}
+
+	// runGraphTransformationTest by reading first graph from file into string
+	if (runGraphTransformationTest("-ta", "N5-all.g6", TRUE) < 0)
+	{
+		retVal = -1;
+		Message("Transforming first graph in N5-all.g6 (read as string) to adjacency list failed.\n");
+	}
+
+	// runGraphTransformationTest by reading first graph from file pointer
+	if (runGraphTransformationTest("-ta", "N5-all.g6", FALSE) < 0)
+	{
+		retVal = -1;
+		Message("Transforming first graph in N5-all.g6 (read from file pointer) to adjacency list failed.\n");
+	}
+
+	// runGraphTransformationTest by reading file contents corresponding to dense graph into string
+	if (runGraphTransformationTest("-ta", "K10.g6", TRUE) < 0)
+	{
+		retVal = -1;
+		Message("Transforming K10.g6 file contents as string to adjacency list failed.\n");
+	}
+
+	// runGraphTransformationTest by reading dense graph from file
+	if (runGraphTransformationTest("-ta", "K10.g6", FALSE) < 0)
+	{
+		retVal = -1;
+		Message("Transforming K10.g6 using file pointer to adjacency list failed.\n");
+	}
+
 	if (retVal == 0)
 		Message("Tests of all specific graphs succeeded.\n");
 	else
@@ -352,6 +412,89 @@ int runSpecificGraphTest(char *command, char *infileName, int inputInMemFlag)
 		free(actualOutput);
 	if (actualOutput2 != NULL)
 		free(actualOutput2);
+
+	return Result;
+}
+
+int runGraphTransformationTest(char *command, char *infileName, int inputInMemFlag)
+{
+	int Result = OK;
+	
+	char transformationCode = '\0';
+	// runGraphTransformationTest will not test performing an algorithm on a given
+	// input graph; it will only support "-t(gam)"
+	if (command == NULL || strlen(command) < 3)
+	{
+		// TODO: Update with Issue 18 and 20 to add g and m respectively
+		// ErrorMessage("runGraphTransformationTest only supports -t(gam).\n");
+		ErrorMessage("runGraphTransformationTest only supports -ta.\n");
+		return NOTOK;
+	}
+	else if (strlen(command) == 3)
+		transformationCode = command[2];
+
+	// SpecificGraph() can invoke gp_Read() if the graph is to be read from a file, or it can invoke
+	// gp_ReadFromString() if the inputInMemFlag is set.
+	char *inputString = NULL;
+	if (inputInMemFlag)
+	{
+		inputString = ReadTextFileIntoString(infileName);
+		if (inputString == NULL) {
+			ErrorMessage("Failed to read input file into string.\n");
+			Result = NOTOK;
+		}
+	}
+
+	if (Result == OK)
+	{
+		// We need to capture whether output is 0- or 1-based to construct the name of the file to compare actualOutput with
+		int zeroBasedOutputFlag = 0;
+		char *actualOutput = NULL;
+		// We want to handle the test being run when we read from an input file or read from a string,
+		//	so pass both infileName and inputString.
+		// We want to output to string, so we pass in the address of the actualOutput string.
+		Result = TestGraphFunctionality(command, infileName, inputString, &zeroBasedOutputFlag, NULL, &actualOutput);
+		
+		if (Result != OK || actualOutput == NULL)
+		{
+			ErrorMessage("Failed to perform transformation to produce .g6 output.\n");
+		}
+		else
+		{
+			// Final arg is baseFlag, which is dependent on whether the FLAGS_ZEROBASEDIO is set in a graphP's internalFlags
+			char *expectedOutfileName = NULL;
+			Result = ConstructTransformationExpectedResultFilename(infileName, &expectedOutfileName, transformationCode, zeroBasedOutputFlag ? 0 : 1);
+
+			if (Result != OK || expectedOutfileName == NULL)
+			{
+				ErrorMessage("Unable to construct output filename for expected transformation output.\n");
+				return NOTOK;
+			}
+
+			Result = TextFileMatchesString(expectedOutfileName, actualOutput);
+
+			if (Result == TRUE)
+			{
+				sprintf(Line, "For the transformation %s on file %s, actual output file matched expected output file.\n", command, infileName);
+				Message(Line);
+				Result = OK;
+			}
+			else
+			{
+				sprintf(Line, "For the transformation %s on file %s, actual output file did not match expected output file.\n", command, infileName);
+				ErrorMessage(Line);
+				Result = NOTOK;
+			}
+
+			if (expectedOutfileName != NULL)
+			{
+				free(expectedOutfileName);
+				expectedOutfileName = NULL;
+			}
+		}
+	}
+
+	Message("\n");
 
 	return Result;
 }
@@ -466,4 +609,46 @@ int callRandomNonplanarGraph(int argc, char *argv[])
 	    outfile2Name = argv[4+offset];
 
 	return RandomGraph('p', 1, numVertices, outfileName, outfile2Name);
+}
+
+/****************************************************************************
+ callTestGraphFunctionality()
+ ****************************************************************************/
+
+// 'planarity -t [-q] -ta I O': Convert from all supported input formats to
+// adjacency list format
+
+// TODO: Command will eventually be 'planarity -t [-q] C|-t(gam) I O'.
+//     * If -t(gam) is given rather than an algorithm command C, then the input
+// file I is transformed from its given format to the format given by the g (g6),
+// a (adjacency list) or m (matrix), and written to output file O.
+//     * Otherwise, if the command line argument after -t [-q] is a recognized
+// algorithm command C, then the input file I must be in ".g6" format
+// (report an error otherwise), and the algorithm(s) indicated by C are executed
+// on the graph(s) in the input file, with the results of the execution stored
+// in output file O.
+int callTestGraphFunctionality(int argc, char *argv[])
+{
+	int offset = 0;
+	char *commandString = NULL;
+	char *infileName = NULL, *outfileName = NULL;
+
+	if (argc < 5)
+		return -1;
+
+	if (argv[2][0] == '-' && argv[2][1] == 'q')
+	{
+		if (argc < 6)
+			return -1;
+		offset = 1;
+	}
+
+	commandString = argv[2+offset];
+
+	infileName = argv[3+offset];
+	outfileName = argv[4+offset];
+
+	// We don't want to read from string nor output to string, so inputStr and outputStr are NULL
+	// We don't need to capture whether output is 0- or 1-based, so zeroBasedOutputFlag arg is NULL
+	return TestGraphFunctionality(commandString, infileName, NULL, NULL, outfileName, NULL);
 }

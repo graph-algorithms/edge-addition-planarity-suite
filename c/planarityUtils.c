@@ -391,6 +391,33 @@ char *GetAlgorithmName(char command)
 /****************************************************************************
  ****************************************************************************/
 
+char *GetTransformationName(char command)
+{
+	char *transformationName = "UnsupportedTransformation";
+
+	switch (command)
+	{
+		case 'a' : transformationName = "AdjList"; 	break;
+		// case 'm' : transformationName = "AdjMat";	break;
+		// case 'g' : transformationName = "G6"; 		break;
+	}
+
+	return transformationName;
+}
+
+/****************************************************************************
+ ****************************************************************************/
+
+char *GetBaseName(int baseFlag)
+{
+	char *transformationName = baseFlag ? "1-based" : "0-based";
+
+	return transformationName;
+}
+
+/****************************************************************************
+ ****************************************************************************/
+
 void AttachAlgorithm(graphP theGraph, char command)
 {
 	switch (command)
@@ -504,3 +531,53 @@ char *ConstructPrimaryOutputFilename(char *infileName, char *outfileName, char c
 
 	return theFileName;
 }
+
+/****************************************************************************
+ ConstructTransformationExpectedResultFilename()
+ Returns a string whose ownership will be transferred to the caller (must free string).
+ If outfileName is non-NULL, then the result string contains its content.
+ If outfileName is NULL, then the infileName, the command's algorithm name, and
+ whether or not this output file correspond to the actual (0) or expected (1)
+ output file from testing are used to construct a string.
+ Returns non-NULL string
+ ****************************************************************************/
+
+int ConstructTransformationExpectedResultFilename(char *infileName, char **outfileName, char command, int baseFlag)
+{
+	int Result = OK;
+	char *baseName = GetBaseName(baseFlag);
+	char *transformationName = GetTransformationName(command);
+	int infileNameLen = -1;
+
+	if (infileName == NULL || (infileNameLen = strlen(infileName)) < 1)
+	{
+		ErrorMessage("Cannot construct transformation output filename for empty infileName.\n");
+		return NOTOK;
+	}
+
+	if ((*outfileName) == NULL)
+	{
+		(*outfileName) = (char *) calloc(infileNameLen + 1 + strlen(baseName) + 1 + strlen(transformationName) + ((command == 'g') ? strlen(".out.g6") : strlen(".out.txt")) + 1, sizeof(char));
+		
+		if ((*outfileName) == NULL)
+		{
+			ErrorMessage("Unable to allocate memory for output filename.\n");
+			return NOTOK;
+		}
+
+		strcpy((*outfileName), infileName);
+		strcat((*outfileName), ".");
+		strcat((*outfileName), baseName);
+		strcat((*outfileName), ".");
+		strcat((*outfileName), transformationName);
+		strcat((*outfileName), command == 'g' ? ".out.g6" : ".out.txt");
+	}
+	else
+	{
+		ErrorMessage("outfileName already allocated.\n");
+		Result = NOTOK;
+	}
+
+	return Result;
+}
+
