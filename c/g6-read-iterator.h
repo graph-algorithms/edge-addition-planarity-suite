@@ -18,7 +18,6 @@ extern "C" {
 #include "strOrFile.h"
 
 typedef struct {
-	// FILE *g6Infile;
 	strOrFileP g6Input;
 	bool fileOwnerFlag;
 	int numGraphsRead;

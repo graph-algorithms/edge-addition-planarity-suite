@@ -6,6 +6,7 @@ See the LICENSE.TXT file for licensing information.
 
 #include <string.h>
 #include <stdlib.h>
+#include <stdarg.h>
 
 #include "strOrFile.h"
 
@@ -15,22 +16,22 @@ See the LICENSE.TXT file for licensing information.
 
  Returns the allocated string-or-file container, or NULL on error.
  ********************************************************************/
-strOrFileP sf_New(FILE * inputFile, char *inputStr)
+strOrFileP sf_New(FILE * pFile, char *theStr)
 {
 strOrFileP theStrOrFile;
-	if (((inputFile == NULL) && ((inputStr == NULL) || (strlen(inputStr) == 0)))
-		|| ((inputFile != NULL) && ((inputStr != NULL) && (strlen(inputStr) > 0))))
+	if (((pFile == NULL) && ((theStr == NULL) || (strlen(theStr) == 0)))
+		|| ((pFile != NULL) && ((theStr != NULL) && (strlen(theStr) > 0))))
 		return NULL;
 
 	theStrOrFile =  (strOrFileP) calloc(sizeof(strOrFile), 1);
 	if (theStrOrFile != NULL)
 	{
-		if (inputFile != NULL)
-			theStrOrFile->inputFile = inputFile;
-		else if ((inputStr != NULL) && (strlen(inputStr) > 0))
+		if (pFile != NULL)
+			theStrOrFile->pFile = pFile;
+		else if ((theStr != NULL) && (strlen(theStr) > 0))
 		{
-			theStrOrFile->inputStr = inputStr;
-			theStrOrFile->inputStrPos = 0;
+			theStrOrFile->theStr = theStr;
+			theStrOrFile->theStrPos = 0;
 		}
 	}
 	
@@ -40,8 +41,8 @@ strOrFileP theStrOrFile;
 /********************************************************************
  sf_getc()
  If strOrFileP has FILE pointer to input file, calls getc().
- If strOrFileP has input string, returns character at inputStrPos and
- increments inputStrPos.
+ If strOrFileP has input string, returns character at theStrPos and
+ increments theStrPos.
  ********************************************************************/
 char sf_getc(strOrFileP theStrOrFile)
 {
@@ -49,14 +50,14 @@ char sf_getc(strOrFileP theStrOrFile)
 
 	if (theStrOrFile != NULL)
 	{
-		if (theStrOrFile->inputFile != NULL)
-			theChar = getc(theStrOrFile->inputFile);
-		else if (theStrOrFile->inputStr != NULL)
+		if (theStrOrFile->pFile != NULL)
+			theChar = getc(theStrOrFile->pFile);
+		else if (theStrOrFile->theStr != NULL)
 		{
-			if ((theStrOrFile->inputStr + theStrOrFile->inputStrPos)[0] == '\0')
+			if ((theStrOrFile->theStr + theStrOrFile->theStrPos)[0] == '\0')
 				return EOF;
 
-			theChar = theStrOrFile->inputStr[theStrOrFile->inputStrPos++];
+			theChar = theStrOrFile->theStr[theStrOrFile->theStrPos++];
 		} 
 	}
 	
@@ -68,8 +69,8 @@ char sf_getc(strOrFileP theStrOrFile)
  Order of parameters matches stdio ungetc().
 
  If strOrFileP has FILE pointer to input file, calls ungetc().
- If strOrFileP has input string, decrements inputStrPos and returns
- character at inputStrPos.
+ If strOrFileP has input string, decrements theStrPos and returns
+ character at theStrPos.
 
  Like ungetc() in stdio, on success theChar is returned. On failure, EOF
  is returned. 
@@ -80,16 +81,16 @@ char sf_ungetc(char theChar, strOrFileP theStrOrFile)
 
 	if (theStrOrFile != NULL)
 	{
-		if (theStrOrFile->inputFile != NULL)
-			charToReturn = ungetc(theChar, theStrOrFile->inputFile);
-		// Don't want to ungetc to an index before theStrOrFile->inputStr start
-		else if (theStrOrFile->inputStr != NULL)
+		if (theStrOrFile->pFile != NULL)
+			charToReturn = ungetc(theChar, theStrOrFile->pFile);
+		// Don't want to ungetc to an index before theStrOrFile->theStr start
+		else if (theStrOrFile->theStr != NULL)
 		{
-			if (theStrOrFile->inputStrPos <= 0)
+			if (theStrOrFile->theStrPos <= 0)
 				return EOF;
 
-			// Decrement inputStrPos, then replace the character in inputStr at that position with theChar
-			charToReturn = theStrOrFile->inputStr[--(theStrOrFile->inputStrPos)] = theChar;
+			// Decrement theStrPos, then replace the character in theStr at that position with theChar
+			charToReturn = theStrOrFile->theStr[--(theStrOrFile->theStrPos)] = theChar;
 		}
 	}
 
@@ -117,13 +118,13 @@ int numCharsRead = -1;
 	if (str == NULL || count < 0 || theStrOrFile == NULL)
 		return NULL;
 	
-	if (theStrOrFile->inputFile != NULL)
+	if (theStrOrFile->pFile != NULL)
 	{
-		return fgets(str, count, theStrOrFile->inputFile);
+		return fgets(str, count, theStrOrFile->pFile);
 	}
-	else if (theStrOrFile->inputStr != NULL && theStrOrFile->inputStr[theStrOrFile->inputStrPos] != '\0')
+	else if (theStrOrFile->theStr != NULL && theStrOrFile->theStr[theStrOrFile->theStrPos] != '\0')
 	{
-		strncpy(str, theStrOrFile->inputStr + theStrOrFile->inputStrPos, count);
+		strncpy(str, theStrOrFile->theStr + theStrOrFile->theStrPos, count);
 		str[count - 1] = '\0';
 		// Handles \n and \r\n
 		char *findDelim = strchr(str, '\n');
@@ -137,18 +138,49 @@ int numCharsRead = -1;
 				findDelim[1] = '\0';
 		}
 
-		theStrOrFile->inputStrPos += strlen(str);
+		theStrOrFile->theStrPos += strlen(str);
 
 		return str;
 	}
 
 	return NULL;
-} 
+}
+
+/********************************************************************
+ sf_fputs()
+ Order of parameters matches stdio fputs().
+
+ First param is the string to append, and the second param is the
+ string-or-file container to which we wish to append.
+
+ On success, returns the number of characters written.
+ On failure, returns EOF. TODO: should we set error code?
+ ********************************************************************/
+int sf_fputs(char *strToWrite, strOrFileP theStrOrFile)
+{
+	int outputLen = EOF;
+
+	if (strToWrite == NULL || theStrOrFile == NULL)
+		return outputLen;
+
+	int lenOfStringToPuts = strlen(strToWrite);
+	if (theStrOrFile->pFile != NULL)
+		outputLen = fputs(strToWrite, theStrOrFile->pFile);
+	else if (theStrOrFile->theStr != NULL)
+	{
+		strcat(theStrOrFile->theStr, strToWrite);
+		theStrOrFile->theStrPos += lenOfStringToPuts;
+		outputLen = lenOfStringToPuts;
+	}
+
+	return outputLen;
+}
+
 
 /********************************************************************
  sf_Free()
  Receives a pointer-pointer to a string-or-file container.
- Sets the pointers to inputStr and inputFile to NULL, then uses the 
+ Sets the pointers to theStr and pFile to NULL, then uses the 
  indirection operator to free the string-or-file container and set the
  pointer to NULL.
  ********************************************************************/
@@ -156,9 +188,9 @@ void sf_Free(strOrFileP *pStrOrFile)
 {
 	if (pStrOrFile != NULL && (*pStrOrFile) != NULL)
 	{
-		(*pStrOrFile)->inputStr = NULL;
-		(*pStrOrFile)->inputFile = NULL;
-		(*pStrOrFile)->inputStrPos = 0;
+		(*pStrOrFile)->theStr = NULL;
+		(*pStrOrFile)->pFile = NULL;
+		(*pStrOrFile)->theStrPos = 0;
 
 		free(*pStrOrFile);
 		(*pStrOrFile) = NULL;

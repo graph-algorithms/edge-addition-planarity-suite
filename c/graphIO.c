@@ -10,6 +10,7 @@ See the LICENSE.TXT file for licensing information.
 
 #include "graph.h"
 #include "g6-read-iterator.h"
+#include "g6-write-iterator.h"
 
 /* Private functions (exported to system) */
 
@@ -71,8 +72,7 @@ int _ReadAdjMatrix(graphP theGraph, FILE *Infile, strBufP inBuf)
               // Add the edge (v, w) if the flag is raised
               if (Flag)
               {
-                  // TODO: Is this where we want to use gp_DynamicAddEdge to handle dense graphs in AdjMat format?
-                  if (gp_AddEdge(theGraph, v, 0, w, 0) != OK)
+                  if (gp_DynamicAddEdge(theGraph, v, 0, w, 0) != OK)
                	      return NOTOK;
               }
          }
@@ -233,8 +233,7 @@ int  _ReadAdjList(graphP theGraph, FILE *Infile, strBufP inBuf)
              // then we'll add an undirected edge for now
              else if (v < W)
              {
-                // TODO: Is this the first place we want to use gp_DynamicAddEdge to handle dense graphs in AdjList format?
-             	 if ((ErrorCode = gp_AddEdge(theGraph, v, 0, W, 0)) != OK)
+             	 if ((ErrorCode = gp_DynamicAddEdge(theGraph, v, 0, W, 0)) != OK)
              		 return ErrorCode;
              }
 
@@ -267,9 +266,8 @@ int  _ReadAdjList(graphP theGraph, FILE *Infile, strBufP inBuf)
             	 // vertex v to W.
             	 else
             	 {
-                    // TODO: Is this the other place we want to use gp_DynamicAddEdge to handle dense graphs in Adj List format?
             		 // It is added as the new first arc in both vertices
-                	 if ((ErrorCode = gp_AddEdge(theGraph, v, 0, W, 0)) != OK)
+                	 if ((ErrorCode = gp_DynamicAddEdge(theGraph, v, 0, W, 0)) != OK)
                 		 return ErrorCode;
 
 					 // Note that this call also sets OUTONLY on the twin arc
@@ -350,8 +348,7 @@ int  _ReadLEDAGraph(graphP theGraph, FILE *Infile)
         sscanf(Line, " %d %d", &u, &v);
         if (u != v && !gp_IsNeighbor(theGraph, u-zeroBasedOffset, v-zeroBasedOffset))
         {
-            // TODO: Is this where we want to use gp_DynamicAddEdge to handle dense graphs in LEDA format?
-             if ((ErrorCode = gp_AddEdge(theGraph, u-zeroBasedOffset, 0, v-zeroBasedOffset, 0)) != OK)
+             if ((ErrorCode = gp_DynamicAddEdge(theGraph, u-zeroBasedOffset, 0, v-zeroBasedOffset, 0)) != OK)
                  return ErrorCode;
         }
     }
@@ -837,9 +834,7 @@ int RetVal;
      switch (Mode)
      {
         case WRITE_G6        :
-            printf("[ERROR] G6WriterIterator code to write to .g6 encoded graph to file not yet introduced.\n");
-            fflush(stdout);
-            RetVal = NOTOK;
+            RetVal = _WriteGraphToG6FilePointer(theGraph, Outfile);
             break;
         case WRITE_ADJLIST   :
             RetVal = _WriteAdjList(theGraph, Outfile, NULL);
@@ -909,9 +904,7 @@ int  gp_WriteToString(graphP theGraph, char **pOutputStr, int Mode)
 	 switch (Mode)
 	 {
         case WRITE_G6 :
-            printf("[ERROR] G6WriterIterator code to write .g6 encoded graph to string not yet introduced.\n");
-            fflush(stdout);
-            RetVal = NOTOK;
+            RetVal = _WriteGraphToG6String(theGraph, outBuf->buf);
             break;
         case WRITE_ADJLIST   :
             RetVal = _WriteAdjList(theGraph, NULL, outBuf);

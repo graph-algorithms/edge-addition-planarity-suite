@@ -36,7 +36,10 @@ int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr
 		if (commandString[1] == 't')
 		{
 			if (commandString[2] == 'g')
+			{
+				// theGraph->internalFlags |= FLAGS_ZEROBASEDIO;
 				outputFormat = WRITE_G6;
+			}
 			else if (commandString[2] == 'a')
 				outputFormat = WRITE_ADJLIST;
 			else if (commandString[2] == 'm')
