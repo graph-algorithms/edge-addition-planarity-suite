@@ -6,7 +6,6 @@ See the LICENSE.TXT file for licensing information.
 
 #include <string.h>
 #include <stdlib.h>
-#include <stdarg.h>
 
 #include "strOrFile.h"
 
@@ -19,8 +18,8 @@ See the LICENSE.TXT file for licensing information.
 strOrFileP sf_New(FILE * pFile, char *theStr)
 {
 strOrFileP theStrOrFile;
-	if (((pFile == NULL) && ((theStr == NULL) || (strlen(theStr) == 0)))
-		|| ((pFile != NULL) && ((theStr != NULL) && (strlen(theStr) > 0))))
+	if (((pFile == NULL) && (theStr == NULL))
+		|| ((pFile != NULL) && ((theStr != NULL) && (strlen(theStr) >= 0))))
 		return NULL;
 
 	theStrOrFile =  (strOrFileP) calloc(sizeof(strOrFile), 1);
@@ -28,10 +27,10 @@ strOrFileP theStrOrFile;
 	{
 		if (pFile != NULL)
 			theStrOrFile->pFile = pFile;
-		else if ((theStr != NULL) && (strlen(theStr) > 0))
+		else if ((theStr != NULL) && (strlen(theStr) >= 0))
 		{
 			theStrOrFile->theStr = theStr;
-			theStrOrFile->theStrPos = 0;
+			theStrOrFile->theStrPos = strlen(theStr);
 		}
 	}
 	
@@ -168,6 +167,10 @@ int sf_fputs(char *strToWrite, strOrFileP theStrOrFile)
 		outputLen = fputs(strToWrite, theStrOrFile->pFile);
 	else if (theStrOrFile->theStr != NULL)
 	{
+		// Want to be able to contain the original theStr contents, the strToWrite, and a null terminator (added by strcat)
+		theStrOrFile->theStr = realloc(theStrOrFile->theStr, (strlen(theStrOrFile->theStr) + lenOfStringToPuts + 1) * sizeof(char));
+		if (theStrOrFile->theStr == NULL)
+			return outputLen;
 		strcat(theStrOrFile->theStr, strToWrite);
 		theStrOrFile->theStrPos += lenOfStringToPuts;
 		outputLen = lenOfStringToPuts;
@@ -176,6 +179,16 @@ int sf_fputs(char *strToWrite, strOrFileP theStrOrFile)
 	return outputLen;
 }
 
+/********************************************************************
+ sf_getTheStr()
+ Returns the char * stored int he string-or-file container, if any
+ (i.e. will be NULL if the string-or-file container is meant to contain
+ a FILE *).
+ ********************************************************************/
+char * sf_getTheStr(strOrFileP theStrOrFile)
+{
+	return theStrOrFile->theStr;
+}
 
 /********************************************************************
  sf_Free()

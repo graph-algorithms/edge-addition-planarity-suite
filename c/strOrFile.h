@@ -27,6 +27,7 @@ char sf_getc(strOrFileP theStrOrFile);
 char sf_ungetc(char theChar, strOrFileP theStrOrFile);
 char * sf_fgets(char *str, int count, strOrFileP theStrOrFile);
 int sf_fputs(char *strToWrite, strOrFileP theStrOrFile);
+char * sf_getTheStr(strOrFileP theStrOrFile);
 
 void sf_Free(strOrFileP *pStrOrFile);
 

@@ -42,7 +42,7 @@ int getPointerToGraphToWrite(G6WriteIterator *, graphP *);
 
 int beginG6WriteIterationToG6FilePath(G6WriteIterator *pG6WriteIterator, char *g6FilePath);
 int beginG6WriteIterationToG6FilePointer(G6WriteIterator *pG6WriteIterator, FILE *g6Outfile);
-int beginG6WriteIterationToG6String(G6WriteIterator *pG6WriteIterator, char *g6OutputStr);
+int beginG6WriteIterationToG6String(G6WriteIterator *pG6WriteIterator, char **g6OutputStr);
 int _beginG6WriteIteration(G6WriteIterator *pG6WriteIterator);
 void _precomputeColumnOffsets(int *, int);
 
@@ -61,7 +61,7 @@ int freeG6WriteIterator(G6WriteIterator **);
 
 int _WriteGraphToG6FilePath(graphP pGraph, char *g6OutputFilename);
 int _WriteGraphToG6FilePointer(graphP pGraph, FILE *g6Outfile);
-int _WriteGraphToG6String(graphP pGraph, char *g6OutputStr);
+int _WriteGraphToG6String(graphP pGraph, char **g6OutputStr);
 
 #ifdef __cplusplus
 }

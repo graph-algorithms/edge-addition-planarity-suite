@@ -892,8 +892,8 @@ int RetVal;
  ********************************************************************/
 int  gp_WriteToString(graphP theGraph, char **pOutputStr, int Mode)
 {
-	 int RetVal;
-	 strBufP outBuf = sb_New(0);
+	int RetVal;
+	strBufP outBuf = sb_New(0);
 
 	 if (theGraph == NULL || pOutputStr == NULL || outBuf == NULL)
 	 {
@@ -904,7 +904,8 @@ int  gp_WriteToString(graphP theGraph, char **pOutputStr, int Mode)
 	 switch (Mode)
 	 {
         case WRITE_G6 :
-            RetVal = _WriteGraphToG6String(theGraph, outBuf->buf);
+            RetVal = _WriteGraphToG6String(theGraph, pOutputStr);
+            sb_Free(&outBuf);
             break;
         case WRITE_ADJLIST   :
             RetVal = _WriteAdjList(theGraph, NULL, outBuf);
@@ -932,8 +933,9 @@ int  gp_WriteToString(graphP theGraph, char **pOutputStr, int Mode)
 	     }
 	 }
 
-	 *pOutputStr = sb_TakeString(outBuf);
-	 sb_Free(&outBuf);
+    if (outBuf != NULL)
+	    *pOutputStr = sb_TakeString(outBuf);
+	sb_Free(&outBuf);
 
      return RetVal;
 }

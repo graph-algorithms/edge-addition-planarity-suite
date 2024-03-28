@@ -278,7 +278,7 @@ int runSpecificGraphTests(char *samplesDir)
 	GRAPH TRANSFORMATION TESTS
 */
 	//	TRANSFORM TO ADJACENCY LIST
-/*
+
 	// runGraphTransformationTest by reading file contents into string
 	if (runGraphTransformationTest("-ta", "nauty_example.g6", TRUE) < 0)
 	{
@@ -320,10 +320,10 @@ int runSpecificGraphTests(char *samplesDir)
 		retVal = -1;
 		Message("Transforming K10.g6 using file pointer to adjacency list failed.\n");
 	}
-*/
+
 
 	//	TRANSFORM TO ADJACENCY MATRIX
-/*
+
 	// runGraphTransformationTest by reading file contents into string
 	if (runGraphTransformationTest("-tm", "nauty_example.g6", TRUE) < 0)
 	{
@@ -365,53 +365,23 @@ int runSpecificGraphTests(char *samplesDir)
 		retVal = -1;
 		Message("Transforming K10.g6 using file pointer to adjacency matrix failed.\n");
 	}
-*/
+
 	//	TRANSFORM TO .G6
 
-///*
-/*
-	// runGraphTransformationTest by reading file contents into string
-	if (runGraphTransformationTest("-tg", "nauty_example.g6.0-based.AdjList.out.txt", TRUE) < 0)
-	{
-		retVal = -1;
-		Message("Transforming nauty_example.g6.0-based.AdjList.out.txt file contents as string to .g6 failed.\n");
-	}
-
 	// runGraphTransformationTest by reading from file
-	if (runGraphTransformationTest("-tg", "nauty_example.g6.0-based.AdjList.out.txt", FALSE) < 0)
+	if (runGraphTransformationTest("-tg", "nauty_example.g6.0-based.AdjList.out.txt", TRUE) < 0)
 	{
 		retVal = -1;
 		Message("Transforming nauty_example.g6.0-based.AdjList.out.txt using file pointer to .g6 failed.\n");
 	}
 
-	// runGraphTransformationTest by reading first graph from file into string
-	if (runGraphTransformationTest("-tg", "N5-all.g6.0-based.AdjList.out.txt", TRUE) < 0)
-	{
-		retVal = -1;
-		Message("Transforming first graph in N5-all.g6.0-based.AdjList.out.txt (read as string) to .g6 failed.\n");
-	}
-
-	// runGraphTransformationTest by reading first graph from file pointer
-	if (runGraphTransformationTest("-tg", "N5-all.g6.0-based.AdjList.out.txt", FALSE) < 0)
-	{
-		retVal = -1;
-		Message("Transforming first graph in N5-all.g6.0-based.AdjList.out.txt (read from file pointer) to .g6 failed.\n");
-	}
-*/
-	// runGraphTransformationTest by reading file contents corresponding to dense graph into string
+	// runGraphTransformationTest by reading from file
 	if (runGraphTransformationTest("-tg", "K10.g6.0-based.AdjList.out.txt", TRUE) < 0)
-	{
-		retVal = -1;
-		Message("Transforming K10.g6.0-based.AdjList.out.txt file contents as string to .g6 failed.\n");
-	}
-
-	// runGraphTransformationTest by reading dense graph from file
-	if (runGraphTransformationTest("-tg", "K10.g6.0-based.AdjList.out.txt", FALSE) < 0)
 	{
 		retVal = -1;
 		Message("Transforming K10.g6.0-based.AdjList.out.txt using file pointer to .g6 failed.\n");
 	}
-//*/
+
 
 	if (retVal == 0)
 		Message("Tests of all specific graphs succeeded.\n");
@@ -592,7 +562,13 @@ int runGraphTransformationTest(char *command, char *infileName, int inputInMemFl
 
 	Message("\n");
 
-	return Result;
+	if (inputString != NULL)
+	{
+		free(inputString);
+		inputString = NULL;
+	}
+
+	return (Result == OK) ? 0 : -1;
 }
 
 /****************************************************************************

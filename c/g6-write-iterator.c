@@ -173,18 +173,23 @@ int beginG6WriteIterationToG6FilePointer(G6WriteIterator *pG6WriteIterator, FILE
 	return exitCode;
 }
 
-int beginG6WriteIterationToG6String(G6WriteIterator *pG6WriteIterator, char *g6OutputStr)
+int beginG6WriteIterationToG6String(G6WriteIterator *pG6WriteIterator, char **g6OutputStr)
 {
-	int exitCode = NOTOK;
+	int exitCode = OK;
 
-	// FIXME: This is totally busted when calling from gp_WriteToString sending down the pointer to unallocated string
 	if (g6OutputStr == NULL)
 	{
-		ErrorMessage(".g6 output string isn't allocated.\n");
+		ErrorMessage("No .g6 output string pointer provided.\n");
 		return NOTOK;
 	}
 
-	pG6WriteIterator->g6Output = sf_New(NULL, g6OutputStr);
+	if ((*g6OutputStr) == NULL)
+	{
+		(*g6OutputStr) = (char *) malloc(1 * sizeof(char));
+		(*g6OutputStr)[0] = '\0';
+	}
+
+	pG6WriteIterator->g6Output = sf_New(NULL, (*g6OutputStr));
 
 	exitCode = _beginG6WriteIteration(pG6WriteIterator);
 
@@ -626,7 +631,7 @@ int _WriteGraphToG6FilePointer(graphP pGraph, FILE *g6Outfile)
 	return exitCode;
 }
 
-int _WriteGraphToG6String(graphP pGraph, char *g6OutputStr)
+int _WriteGraphToG6String(graphP pGraph, char **g6OutputStr)
 {
 	int exitCode = OK;
 
@@ -655,6 +660,9 @@ int _WriteGraphToG6String(graphP pGraph, char *g6OutputStr)
 		ErrorMessage("Unable to write graph using G6WriteIterator.\n");
 		return exitCode;
 	}
+
+	// Take ownership of strOrFile->theStr, which may have a new address due to having been realloc'ed
+	(*g6OutputStr) = sf_getTheStr(pG6WriteIterator->g6Output);
 
 	exitCode = endG6WriteIteration(pG6WriteIterator);
 
