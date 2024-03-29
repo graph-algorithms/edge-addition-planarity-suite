@@ -30,7 +30,7 @@ strOrFileP theStrOrFile;
 		else if ((theStr != NULL) && (strlen(theStr) >= 0))
 		{
 			theStrOrFile->theStr = theStr;
-			theStrOrFile->theStrPos = strlen(theStr);
+			theStrOrFile->theStrPos = 0;
 		}
 	}
 	
