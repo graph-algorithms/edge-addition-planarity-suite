@@ -186,7 +186,7 @@ int runSpecificGraphTests(char *samplesDir)
 			return 0;
 		}
 	}
-/*
+
 #if NIL == 0
 	Message("Starting NIL == 0 Tests\n");
 
@@ -272,7 +272,7 @@ int runSpecificGraphTests(char *samplesDir)
 		retVal = -1;
 		Message("K_4 search on Petersen.0-based.txt failed.\n");
 	}
-*/
+
 
 /*
 	GRAPH TRANSFORMATION TESTS
