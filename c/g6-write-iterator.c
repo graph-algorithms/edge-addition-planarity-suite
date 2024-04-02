@@ -142,7 +142,6 @@ int beginG6WriteIterationToG6FilePath(G6WriteIterator *pG6WriteIterator, char *g
 		return NOTOK;
 	}
 
-	// TODO: Double-checking that since this function opens the file pointer, this workflow owns it
 	pG6WriteIterator->fileOwnerFlag = true;
 
 	exitCode = beginG6WriteIterationToG6FilePointer(pG6WriteIterator, g6Outfile);
@@ -329,7 +328,6 @@ int _encodeAdjMatAsG6(G6WriteIterator *pG6WriteIterator) {
 	}
 
 	int u = NIL, v = NIL, e = NIL;
-	// FIXME: This was declared/defined in intro-programs-c's graph.h/.c; need equivalent for graphP
 	exitCode = _getFirstEdge(pGraph, &e, &u, &v);
 
 	if (exitCode != OK)
