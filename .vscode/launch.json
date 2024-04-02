@@ -1,7 +1,7 @@
 {
     "configurations": [
         {
-            "name": "C/C++: gcc.exe build and debug active file",
+            "name": "C/C++: gcc.exe build and debug active file (Windows)",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}\\c\\planarity.exe",
@@ -34,7 +34,43 @@
                     "ignoreFailures": true
                 }
             ],
-            "preLaunchTask": "C/C++: gcc.exe build active file"
+            "preLaunchTask": "C/C++: gcc.exe build active file (Windows)"
+        },
+        {
+            "name": "C/C++: gcc build and debug active file (Linux)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/c/planarity",
+            "args": [
+                // Command: `planarity -t [-q] -ta I O`
+                // "-t",
+                // "-ta",
+                // "${workspaceFolder}/c/samples/nauty_example.g6",
+                // "${workspaceFolder}/c/samples/nauty_example.g6.AdjList.expected.out.txt"
+                
+                // Command: `planarity -test <samplesDir>`
+                // "-test",
+                // "${workspaceFolder}/c/samples"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": true,
+            "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "C/C++: gcc build active file (Linux)"
         },
         {
             "name": "C/C++: cl.exe build and debug active file",
