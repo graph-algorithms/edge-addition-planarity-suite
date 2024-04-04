@@ -6,14 +6,19 @@ See the LICENSE.TXT file for licensing information.
 
 #include "planarity.h"
 #include "graph.h"
+#include "g6-read-iterator.h"
+#include "strOrFile.h"
+
 
 int transformFile(graphP theGraph, char *infileName);
 int transformString(graphP theGraph, char *inputStr);
-
+int testAllGraphs(graphP theGraph, char command, char *inputStr, strOrFileP testOutput);
+int _getNumCharsToReprInt(int theNum);
 /****************************************************************************
  TestGraphFunctionality()
- commandString - command to run, e.g. `-t(gam)`, to transform graph to .g6, adjacency list, or
- adjacency matrix format
+ commandString - command to run; e.g. `-t(gam)` to transform graph to .g6, adjacency list, or
+ adjacency matrix format, or `-(pdo234)` to perform the corresponding algorithm on each graph in
+ a .g6 file
  infileName - name of file to read, or NULL to cause the program to prompt the user for a filename
  inputStr - string containing input graph, or NULL to cause the program to fall back on reading from file
  outputBase - pointer to the flag set for whether output is 0- or 1-based
@@ -24,6 +29,8 @@ int transformString(graphP theGraph, char *inputStr);
 int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr, int *outputBase, char *outfileName, char **outputStr)
 {
 	int Result = OK;
+	char * errorStr = NULL;
+
 	graphP theGraph;
 
 	// Create the graph and, if needed, attach the correct algorithm to it
@@ -72,10 +79,87 @@ int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr
 			}
 	
 		}
-		// TODO: add elif for algorithm command handling
+		else if (strchr("pdo234", commandString[1]))
+		{
+			if (inputStr != NULL)
+			{
+				ErrorMessage("TestGraphFunctionality only supports applying chosen algorithm to graphs read from file at this time.\n");
+				Result = NOTOK;
+			}
+			else
+			{
+				if (infileName == NULL)
+				{
+					ErrorMessage("No input file provided.\n");
+					Result = NOTOK;
+				}
+				else
+				{
+					inputStr = ReadTextFileIntoString(infileName);
+
+					strOrFileP testOutput = NULL;
+
+					if (outfileName != NULL)
+					{
+						FILE *outputFileP = fopen(outfileName, "w");
+						if (outputFileP == NULL)
+						{
+							errorStr = "Unable to open file \"%s\" for output.\n";
+							sprintf(Line, errorStr, outfileName);
+							ErrorMessage(Line);
+							free(inputStr);
+							inputStr = NULL;
+							gp_Free(&theGraph);
+						}
+						
+						testOutput = sf_New(outputFileP, NULL);
+					}
+					else
+					{
+						if ((*outputStr) == NULL)
+							(*outputStr) = (char *) malloc(1 * sizeof(char));
+						
+						testOutput = sf_New(NULL, (*outputStr));
+					}
+
+					if (testOutput == NULL)
+					{
+						ErrorMessage("Unable to set up string-or-file container for test output.\n");
+						free(inputStr);
+						inputStr = NULL;
+						gp_Free(&theGraph);
+						sf_Free(&testOutput);
+						return NOTOK;
+					}
+
+					char *headerStr = (char *) malloc((strlen(infileName) + 2) * sizeof(char));
+					sprintf(headerStr, "%s\n", infileName);
+					sf_fputs(headerStr, testOutput);
+					free(headerStr);
+					headerStr = NULL;
+
+					Result = testAllGraphs(theGraph, commandString[1], inputStr, testOutput);
+
+					if (Result != OK)
+					{
+						errorStr = "Unable to perform algorithm corresponding to command '%c' to graph(s).\n";
+						sprintf(Line, errorStr, commandString[1]);
+						ErrorMessage(Line);
+					}
+
+					if (inputStr != NULL)
+					{
+						free(inputStr);
+						inputStr = NULL;
+					}
+
+					sf_Free(&testOutput);
+				}
+			}
+		}
 		else
 		{
-			ErrorMessage("Invalid argument; only -t(gam) is allowed.\n");
+			ErrorMessage("Invalid argument; only -(pdo234)|-t(gam) is allowed.\n");
 			return -1;
 		}
 	}
@@ -89,6 +173,10 @@ int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr
 
 	return Result;
 }
+
+/*
+	TRANSFORM GRAPH
+*/
 
 int transformFile(graphP theGraph, char *infileName)
 {
@@ -110,4 +198,115 @@ int transformString(graphP theGraph, char *inputStr)
 	}
 	
 	return gp_ReadFromString(theGraph, inputStr);
+}
+
+/*
+	TEST ALL GRAPHS IN .G6
+*/
+
+int testAllGraphs(graphP theGraph, char command, char *inputStr, strOrFileP testOutput)
+{
+	int exitCode = OK;
+
+	graphP copyOfOrigGraph = NULL;
+	int embedFlags = GetEmbedFlags(command);
+	int numGraphsRead = 0, numOK = 0, numNONEMBEDDABLE = 0;
+
+	G6ReadIterator *pG6ReadIterator = NULL;
+	exitCode = allocateG6ReadIterator(&pG6ReadIterator, theGraph);
+
+	if (exitCode != OK)
+	{
+		ErrorMessage("Unable to allocate G6ReadIterator.\n");
+		return exitCode;
+	}
+
+	exitCode = beginG6ReadIterationFromG6String(pG6ReadIterator, inputStr);
+
+	if (exitCode != OK)
+	{
+		ErrorMessage("Unable to begin .g6 read iteration.\n");
+
+		exitCode = freeG6ReadIterator(&pG6ReadIterator);
+
+		if (exitCode != OK)
+			ErrorMessage("Unable to free G6ReadIterator.\n");
+
+		return exitCode;
+	}
+
+	AttachAlgorithm(pG6ReadIterator->currGraph, command);
+
+	copyOfOrigGraph = gp_New();
+	if (copyOfOrigGraph == NULL)
+	{
+		ErrorMessage("Unable to allocate graph to store copy of original graph before embedding.\n");
+		return NOTOK;
+	}
+
+	exitCode = gp_InitGraph(copyOfOrigGraph, pG6ReadIterator->graphOrder);
+	if (exitCode != OK)
+	{
+		ErrorMessage("Unable to initialize graph datastructure to store copy of original graph before embedding.\n");
+		gp_Free(&copyOfOrigGraph);
+		freeG6ReadIterator(&pG6ReadIterator);
+	}
+
+	AttachAlgorithm(copyOfOrigGraph, command);
+
+	while (true)
+	{
+		exitCode = readGraphUsingG6ReadIterator(pG6ReadIterator);
+		if (exitCode != OK)
+		{
+			ErrorMessage("Unable to read graph from .g6 read iterator.\n");
+			break;
+		}
+
+		if (pG6ReadIterator->currGraph == NULL)
+			break;
+		
+		gp_CopyGraph(pG6ReadIterator->currGraph, copyOfOrigGraph);
+
+		exitCode = gp_Embed(pG6ReadIterator->currGraph, embedFlags);
+
+		if (gp_TestEmbedResultIntegrity(pG6ReadIterator->currGraph, copyOfOrigGraph, exitCode) != exitCode)
+			exitCode = NOTOK;
+		
+		if (exitCode == OK)
+			numOK++;
+		else if (exitCode == NONEMBEDDABLE)
+			numNONEMBEDDABLE++;
+	}
+
+	if (exitCode == OK || exitCode == NONEMBEDDABLE)
+	{
+		// pG6ReadIterator->numGraphsRead is only incremented after successfully decoding
+		numGraphsRead = pG6ReadIterator->numGraphsRead;
+		char *resultsStr = (char *) malloc((3 + _getNumCharsToReprInt(numGraphsRead) + 1 + _getNumCharsToReprInt(numOK) + 1 + _getNumCharsToReprInt(numNONEMBEDDABLE) + 2) * sizeof(char));
+		sprintf(resultsStr, "-%c %d %d %d\n", command, numGraphsRead, numOK, numNONEMBEDDABLE);
+		sf_fputs(resultsStr, testOutput);
+		free(resultsStr);
+		resultsStr = NULL;
+	}
+
+	exitCode = endG6ReadIteration(pG6ReadIterator);
+	if (exitCode != OK)
+		ErrorMessage("Unable to end G6ReadIterator.\n");
+	
+	exitCode = freeG6ReadIterator(&pG6ReadIterator);
+
+	if (exitCode != OK)
+		ErrorMessage("Unable to free G6ReadIterator.\n");
+
+	return exitCode;
+}
+
+int _getNumCharsToReprInt(int theNum) {
+	int numCharsRequired = 0;
+
+	while(theNum /= 10)
+		numCharsRequired++;
+
+	return numCharsRequired;
 }
