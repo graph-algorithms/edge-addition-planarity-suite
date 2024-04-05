@@ -144,7 +144,7 @@ int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr
 					}
 
 					infileBasename = finalSlash + 1;
-					
+
 					char *headerStr = (char *) malloc((strlen(infileBasename) + 2) * sizeof(char));
 					sprintf(headerStr, "%s\n", infileBasename);
 					sf_fputs(headerStr, testOutput);
@@ -272,6 +272,7 @@ int testAllGraphs(graphP theGraph, char command, char *inputStr, strOrFileP test
 	while (true)
 	{
 		exitCode = readGraphUsingG6ReadIterator(pG6ReadIterator);
+
 		if (exitCode != OK)
 		{
 			errorStr = "Unable to read graph on line %d from .g6 read iterator.\n";
@@ -283,7 +284,7 @@ int testAllGraphs(graphP theGraph, char command, char *inputStr, strOrFileP test
 		if (pG6ReadIterator->currGraph == NULL)
 			break;
 		
-		gp_CopyGraph(pG6ReadIterator->currGraph, copyOfOrigGraph);
+		gp_CopyGraph(copyOfOrigGraph, pG6ReadIterator->currGraph);
 
 		exitCode = gp_Embed(pG6ReadIterator->currGraph, embedFlags);
 
