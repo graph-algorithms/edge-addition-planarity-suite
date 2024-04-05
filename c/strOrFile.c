@@ -153,7 +153,7 @@ int numCharsRead = -1;
  string-or-file container to which we wish to append.
 
  On success, returns the number of characters written.
- On failure, returns EOF. TODO: should we set error code?
+ On failure, returns EOF.
  ********************************************************************/
 int sf_fputs(char *strToWrite, strOrFileP theStrOrFile)
 {

@@ -2,13 +2,13 @@
     "tasks": [
         {
             "type": "cppbuild",
-            "label": "C/C++: cl.exe build active file",
+            "label": "C/C++: cl.exe build planarity project",
             "command": "cl.exe",
             "args": [
                 "/Zi",
                 "/EHsc",
                 "/nologo",
-                "/DDEBUG",
+                "/DDEBUG", // Added so that _DEBUG is defined; see appconst.h
                 "/Fe${workspaceFolder}\\planarity.exe",
                 "${workspaceFolder}\\c\\**.c"
             ],
@@ -25,11 +25,11 @@
         },
         {
             "type": "cppbuild",
-            "label": "C/C++: gcc.exe build active file (Windows)",
+            "label": "C/C++: gcc.exe build planarity project (Windows)",
             "command": "C:\\MinGW\\bin\\gcc.exe",
             "args": [
                 "-fdiagnostics-color=always",
-                "-DDEBUG",
+                "-DDEBUG", // Added so that _DEBUG is defined; see appconst.h
                 "-g",
                 "${workspaceFolder}\\c\\**.c",
                 "-o",
@@ -46,12 +46,12 @@
         },
         {
             "type": "cppbuild",
-            "label": "C/C++: clang build active file",
+            "label": "C/C++: clang build planarity project",
             "command": "clang",
             "args": [
                 "-fcolor-diagnostics",
                 "-fansi-escape-codes",
-                "-DDEBUG",
+                "-DDEBUG", // Added so that _DEBUG is defined; see appconst.h
                 "-g",
                 "${workspaceFolder}/c/**.c",
                 "-o",
@@ -68,11 +68,11 @@
         },
         {
             "type": "cppbuild",
-            "label": "C/C++: gcc build active file (Linux)",
+            "label": "C/C++: gcc build planarity project (Linux)",
             "command": "/usr/bin/gcc",
             "args": [
                 "-fdiagnostics-color=always",
-                "-DDEBUG",
+                "-DDEBUG", // Added so that _DEBUG is defined; see appconst.h
                 "-g",
                 "${workspaceFolder}/c/**.c",
                 "-o",
