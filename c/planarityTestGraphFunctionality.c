@@ -12,7 +12,8 @@ int transformString(graphP theGraph, char *inputStr);
 
 /****************************************************************************
  TestGraphFunctionality()
- commandString - command to run, e.g. `-ta` to transform graph to adjacency list format
+ commandString - command to run, e.g. `-t(gam)`, to transform graph to .g6, adjacency list, or
+ adjacency matrix format
  infileName - name of file to read, or NULL to cause the program to prompt the user for a filename
  inputStr - string containing input graph, or NULL to cause the program to fall back on reading from file
  outputBase - pointer to the flag set for whether output is 0- or 1-based
@@ -34,13 +35,15 @@ int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr
 	{
 		if (commandString[1] == 't')
 		{
-			if (commandString[2] == 'a')
+			if (commandString[2] == 'g')
+				outputFormat = WRITE_G6;
+			else if (commandString[2] == 'a')
 				outputFormat = WRITE_ADJLIST;
 			else if (commandString[2] == 'm')
 				outputFormat = WRITE_ADJMATRIX;
 			else
 			{
-				ErrorMessage("Invalid argument; currently, only -t(am) is allowed.\n");
+				ErrorMessage("Invalid argument; currently, only -t(gam) is allowed.\n");
 				return -1;
 			}
 
@@ -50,7 +53,7 @@ int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr
 				Result = transformFile(theGraph, infileName);
 
 			if (Result != OK) {
-				ErrorMessage("Unable to transform file.\n");
+				ErrorMessage("Unable to transform input graph.\n");
 			}
 			else
 			{
@@ -72,8 +75,7 @@ int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr
 		// TODO: add elif for algorithm command handling
 		else
 		{
-			// TODO: update with Issue 18: error message to capture C|-t(gam)
-			ErrorMessage("Invalid argument; currently, only -t(am) is allowed.\n");
+			ErrorMessage("Invalid argument; only -t(gam) is allowed.\n");
 			return -1;
 		}
 	}

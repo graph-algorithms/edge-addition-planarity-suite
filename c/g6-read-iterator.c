@@ -451,7 +451,6 @@ int readGraphUsingG6ReadIterator(G6ReadIterator *pG6ReadIterator)
 		// longer than the line should have been, i.e. orderOffset + numCharsForGraphRepr
 		if (strlen(currGraphBuff) != (((numGraphsRead == 1) ? 0 : numCharsForGraphOrder) + numCharsForGraphEncoding))
 		{
-			// TODO: This is where we fail - strlen(currGraphBuff) is 3 but I guess this assumes the first char should be ignored
 			sprintf(Line, "Invalid line length read on line %d\n", numGraphsRead);
 			ErrorMessage(Line);
 			return NOTOK;
@@ -665,9 +664,9 @@ int endG6ReadIteration(G6ReadIterator *pG6ReadIterator)
 	{
 		if (pG6ReadIterator->g6Input != NULL)
 		{
-			if (pG6ReadIterator->g6Input->inputFile != NULL && pG6ReadIterator->fileOwnerFlag)
+			if (pG6ReadIterator->g6Input->pFile != NULL && pG6ReadIterator->fileOwnerFlag)
 			{
-				exitCode = fclose(pG6ReadIterator->g6Input->inputFile);
+				exitCode = fclose(pG6ReadIterator->g6Input->pFile);
 				if (exitCode != 0)
 					ErrorMessage("Unable to close g6Input file pointer.\n");
 			}
@@ -693,9 +692,9 @@ int freeG6ReadIterator(G6ReadIterator **ppG6ReadIterator)
 	{
 		if ((*ppG6ReadIterator)->g6Input != NULL)
 		{
-			if ((*ppG6ReadIterator)->g6Input->inputFile != NULL && (*ppG6ReadIterator)->fileOwnerFlag)
+			if ((*ppG6ReadIterator)->g6Input->pFile != NULL && (*ppG6ReadIterator)->fileOwnerFlag)
 			{
-				exitCode = fclose((*ppG6ReadIterator)->g6Input->inputFile);
+				exitCode = fclose((*ppG6ReadIterator)->g6Input->pFile);
 				if (exitCode != 0)
 					ErrorMessage("Unable to close g6Input file pointer.\n");
 			}

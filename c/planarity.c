@@ -132,9 +132,9 @@ int helpMessage(char *param)
 	    	"'planarity -s [-q] C I O [O2]': Specific graph\n"
 	        "'planarity -rm [-q] N O [O2]': Random maximal planar graph\n"
 	        "'planarity -rn [-q] N O [O2]': Random nonplanar graph (maximal planar + edge)\n"
-			// TODO: Update with Issues 18, 10
+			// TODO: Update to include algorithm command (Issues 10)
 			// "'planarity -t [-q] C|-t(gam) I O': Apply command to OR transform input file\n"
-			"'planarity -t [-q] -t(am) I O': Transform graph to adjacency list or adjacency matrix\n"
+			"'planarity -t [-q] -t(gam) I O': Transform graph to .g6, adjacency list, or adjacency matrix\n"
 	        "'planarity I O [-n O2]': Legacy command-line (default -s -p)\n"
 	    	"\n"
 	    );
