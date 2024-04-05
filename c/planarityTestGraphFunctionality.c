@@ -132,8 +132,21 @@ int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr
 						return NOTOK;
 					}
 
-					char *headerStr = (char *) malloc((strlen(infileName) + 2) * sizeof(char));
-					sprintf(headerStr, "%s\n", infileName);
+					char *infileBasename = NULL;
+					char *finalSlash = strrchr(infileName, '/');
+					if (finalSlash == NULL)
+					{
+						finalSlash = strrchr(infileName, '\\');
+						if (finalSlash == NULL)
+						{
+							finalSlash = infileName;
+						}
+					}
+
+					infileBasename = finalSlash + 1;
+					
+					char *headerStr = (char *) malloc((strlen(infileBasename) + 2) * sizeof(char));
+					sprintf(headerStr, "%s\n", infileBasename);
 					sf_fputs(headerStr, testOutput);
 					free(headerStr);
 					headerStr = NULL;
@@ -208,6 +221,8 @@ int testAllGraphs(graphP theGraph, char command, char *inputStr, strOrFileP test
 {
 	int exitCode = OK;
 
+	char *errorStr = NULL;
+
 	graphP copyOfOrigGraph = NULL;
 	int embedFlags = GetEmbedFlags(command);
 	int numGraphsRead = 0, numOK = 0, numNONEMBEDDABLE = 0;
@@ -259,7 +274,9 @@ int testAllGraphs(graphP theGraph, char command, char *inputStr, strOrFileP test
 		exitCode = readGraphUsingG6ReadIterator(pG6ReadIterator);
 		if (exitCode != OK)
 		{
-			ErrorMessage("Unable to read graph from .g6 read iterator.\n");
+			errorStr = "Unable to read graph on line %d from .g6 read iterator.\n";
+			sprintf(Line, errorStr, pG6ReadIterator->numGraphsRead + 1);
+			ErrorMessage(Line);
 			break;
 		}
 
@@ -277,6 +294,15 @@ int testAllGraphs(graphP theGraph, char command, char *inputStr, strOrFileP test
 			numOK++;
 		else if (exitCode == NONEMBEDDABLE)
 			numNONEMBEDDABLE++;
+		else
+		{
+			errorStr = "Error applying algorithm '%c' to graph on line %d.\n";
+			sprintf(Line, errorStr, command, pG6ReadIterator->numGraphsRead + 1);
+			ErrorMessage(Line);
+			break;
+		}
+
+		gp_ReinitializeGraph(copyOfOrigGraph);
 	}
 
 	if (exitCode == OK || exitCode == NONEMBEDDABLE)
