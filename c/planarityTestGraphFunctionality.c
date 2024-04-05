@@ -29,7 +29,7 @@ int _getNumCharsToReprInt(int theNum);
 int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr, int *outputBase, char *outfileName, char **outputStr)
 {
 	int Result = OK;
-	char * errorStr = NULL;
+	char *errorStr = NULL;
 
 	graphP theGraph;
 
