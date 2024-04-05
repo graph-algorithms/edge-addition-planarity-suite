@@ -1,7 +1,7 @@
 {
     "configurations": [
         {
-            "name": "C/C++: gcc.exe build and debug active file (Windows)",
+            "name": "C/C++: gcc.exe build and debug planarity project (Windows)",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}\\c\\planarity.exe",
@@ -17,7 +17,7 @@
                 // "${workspaceFolder}\\c\\samples"
             ],
             "stopAtEntry": false,
-            "cwd": "${fileDirname}",
+            "cwd": "${workspaceFolder}",
             "environment": [],
             "externalConsole": true,
             "MIMode": "gdb",
@@ -34,10 +34,10 @@
                     "ignoreFailures": true
                 }
             ],
-            "preLaunchTask": "C/C++: gcc.exe build active file (Windows)"
+            "preLaunchTask": "C/C++: gcc.exe build planarity project (Windows)"
         },
         {
-            "name": "C/C++: gcc build and debug active file (Linux)",
+            "name": "C/C++: gcc build and debug planarity project (Linux)",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/c/planarity",
@@ -70,10 +70,10 @@
                     "ignoreFailures": true
                 }
             ],
-            "preLaunchTask": "C/C++: gcc build active file (Linux)"
+            "preLaunchTask": "C/C++: gcc build planarity project (Linux)"
         },
         {
-            "name": "C/C++: cl.exe build and debug active file",
+            "name": "C/C++: cl.exe build and debug planarity project",
             "type": "cppvsdbg",
             "request": "launch",
             "program": "${workspaceFolder}\\c\\planarity.exe",
@@ -93,10 +93,10 @@
             "environment": [],
             "console": "integratedTerminal",
             // "externalConsole": false, // externalConsole deprecated for MSVC
-            "preLaunchTask": "C/C++: cl.exe build active file"
+            "preLaunchTask": "C/C++: cl.exe build planarity project"
         },
         {
-            "name": "C/C++: clang build and debug active file",
+            "name": "C/C++: clang build and debug planarity project",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/c/planarity",
@@ -116,7 +116,7 @@
             "environment": [],
             "externalConsole": true,
             "MIMode": "lldb",
-            "preLaunchTask": "C/C++: clang build active file"
+            "preLaunchTask": "C/C++: clang build planarity project"
         }
     ],
     "version": "2.0.0"
