@@ -8,7 +8,7 @@
                 "/Zi",
                 "/EHsc",
                 "/nologo",
-                "/DDEBUG",  // Added so that _DEBUG is defined; see appconst.h
+                "/DDEBUG", // Added so that _DEBUG is defined; see appconst.h
                 "/Fe${workspaceFolder}\\planarity.exe",
                 "${workspaceFolder}\\c\\**.c"
             ],
