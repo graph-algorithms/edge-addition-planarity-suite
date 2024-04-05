@@ -92,7 +92,7 @@ aclocal.m4
 compile
 
 # Ignoring configuration for VSCode
-# **/.vscode/
+**/.vscode/
 
 ## MacOS excludes
 .DS_Store
