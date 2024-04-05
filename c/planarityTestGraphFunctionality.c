@@ -310,7 +310,9 @@ int testAllGraphs(graphP theGraph, char command, char *inputStr, strOrFileP test
 	{
 		// pG6ReadIterator->numGraphsRead is only incremented after successfully decoding
 		numGraphsRead = pG6ReadIterator->numGraphsRead;
-		char *resultsStr = (char *) malloc((3 + _getNumCharsToReprInt(numGraphsRead) + 1 + _getNumCharsToReprInt(numOK) + 1 + _getNumCharsToReprInt(numNONEMBEDDABLE) + 2) * sizeof(char));
+		char *resultsStr = (char *) malloc((3 +_getNumCharsToReprInt(numGraphsRead) +
+											1 + _getNumCharsToReprInt(numOK) +
+											1 + _getNumCharsToReprInt(numNONEMBEDDABLE) + 3) * sizeof(char));
 		sprintf(resultsStr, "-%c %d %d %d\n", command, numGraphsRead, numOK, numNONEMBEDDABLE);
 		sf_fputs(resultsStr, testOutput);
 		free(resultsStr);
@@ -330,7 +332,7 @@ int testAllGraphs(graphP theGraph, char command, char *inputStr, strOrFileP test
 }
 
 int _getNumCharsToReprInt(int theNum) {
-	int numCharsRequired = 0;
+	int numCharsRequired = 1;
 
 	while(theNum /= 10)
 		numCharsRequired++;
