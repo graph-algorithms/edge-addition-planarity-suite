@@ -687,10 +687,7 @@ int callRandomNonplanarGraph(int argc, char *argv[])
  callTestGraphFunctionality()
  ****************************************************************************/
 
-// 'planarity -t [-q] -t(gam) I O': Convert from all supported input formats to
-// .g6, adjacency list, or adjacency matrix format
-
-// TODO: Command will eventually be 'planarity -t [-q] C|-t(gam) I O'.
+// 'planarity -t [-q] C|-t(gam) I O':
 //     * If -t(gam) is given rather than an algorithm command C, then the input
 // file I is transformed from its given format to the format given by the g (g6),
 // a (adjacency list) or m (matrix), and written to output file O.
