@@ -14,9 +14,9 @@ AC_CONFIG_MACRO_DIRS([m4])
 # revision to zero and increment age.
 # 3. If interfaces were removed (breaks backward compatibility): increment
 # current, and set both revision and age to zero.
-LT_CURRENT=1
+LT_CURRENT=2
 LT_REVISION=0
-LT_AGE=1
+LT_AGE=2
 AC_SUBST(LT_CURRENT)
 AC_SUBST(LT_REVISION)
 AC_SUBST(LT_AGE)

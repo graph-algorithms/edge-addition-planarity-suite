@@ -105,3 +105,4 @@ planarity
 test-driver
 configure.ac~
 configure~
+**/planarity-*/
