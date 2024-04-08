@@ -99,3 +99,9 @@ compile
 
 # Ignore binary produced by compiling on MacOS
 planarity
+
+# Ignore make output
+**/m4/
+test-driver
+configure.ac~
+configure~
