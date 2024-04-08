@@ -132,20 +132,20 @@ int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr
 						return NOTOK;
 					}
 
-					char *infileBasename = NULL;
-					char *finalSlash = strrchr(infileName, '/');
-					if (finalSlash == NULL)
+					char *finalSlash = strrchr(infileName, FILE_DELIMITER);
+					char *infileBasename = finalSlash ? (finalSlash + 1) : infileName;
+
+					char *headerStr = (char *) malloc((strlen(infileBasename) + 3) * sizeof(char));
+					if (headerStr == NULL)
 					{
-						finalSlash = strrchr(infileName, '\\');
-						if (finalSlash == NULL)
-						{
-							finalSlash = infileName;
-						}
+						ErrorMessage("Unable allocate memory for output file header.\n");
+						free(inputStr);
+						inputStr = NULL;
+						gp_Free(&theGraph);
+						sf_Free(&testOutput);
+						return NOTOK;
 					}
 
-					infileBasename = finalSlash + 1;
-
-					char *headerStr = (char *) malloc((strlen(infileBasename) + 2) * sizeof(char));
 					sprintf(headerStr, "%s\n", infileBasename);
 					sf_fputs(headerStr, testOutput);
 					free(headerStr);
@@ -241,12 +241,7 @@ int testAllGraphs(graphP theGraph, char command, char *inputStr, strOrFileP test
 	if (exitCode != OK)
 	{
 		ErrorMessage("Unable to begin .g6 read iteration.\n");
-
-		exitCode = freeG6ReadIterator(&pG6ReadIterator);
-
-		if (exitCode != OK)
-			ErrorMessage("Unable to free G6ReadIterator.\n");
-
+		freeG6ReadIterator(&pG6ReadIterator);
 		return exitCode;
 	}
 
@@ -265,6 +260,7 @@ int testAllGraphs(graphP theGraph, char command, char *inputStr, strOrFileP test
 		ErrorMessage("Unable to initialize graph datastructure to store copy of original graph before embedding.\n");
 		gp_Free(&copyOfOrigGraph);
 		freeG6ReadIterator(&pG6ReadIterator);
+		return exitCode;
 	}
 
 	AttachAlgorithm(copyOfOrigGraph, command);
@@ -308,7 +304,6 @@ int testAllGraphs(graphP theGraph, char command, char *inputStr, strOrFileP test
 
 	if (exitCode == OK || exitCode == NONEMBEDDABLE)
 	{
-		// pG6ReadIterator->numGraphsRead is only incremented after successfully decoding
 		numGraphsRead = pG6ReadIterator->numGraphsRead;
 		char *resultsStr = (char *) malloc((3 +_getNumCharsToReprInt(numGraphsRead) +
 											1 + _getNumCharsToReprInt(numOK) +
@@ -319,13 +314,10 @@ int testAllGraphs(graphP theGraph, char command, char *inputStr, strOrFileP test
 		resultsStr = NULL;
 	}
 
-	exitCode = endG6ReadIteration(pG6ReadIterator);
-	if (exitCode != OK)
+	if (endG6ReadIteration(pG6ReadIterator) != OK)
 		ErrorMessage("Unable to end G6ReadIterator.\n");
-	
-	exitCode = freeG6ReadIterator(&pG6ReadIterator);
 
-	if (exitCode != OK)
+	if (freeG6ReadIterator(&pG6ReadIterator) != OK)
 		ErrorMessage("Unable to free G6ReadIterator.\n");
 
 	return exitCode;
