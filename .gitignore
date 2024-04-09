@@ -90,6 +90,7 @@ ltmain.sh
 configure
 aclocal.m4
 compile
+test-driver
 
 # Ignoring configuration for VSCode
 **/.vscode/

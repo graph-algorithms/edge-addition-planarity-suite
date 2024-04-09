@@ -3,6 +3,9 @@ SUBDIRS = c/samples
 lib_LTLIBRARIES = libplanarity.la
 
 libplanarity_la_SOURCES = \
+	c/g6-api-utilities.c \
+	c/g6-read-iterator.c \
+	c/g6-write-iterator.c \
 	c/graphDFSUtils.c \
 	c/graphDrawPlanar.c \
 	c/graphDrawPlanar_Extensions.c \
@@ -23,14 +26,19 @@ libplanarity_la_SOURCES = \
 	c/listcoll.c \
 	c/planarityRandomGraphs.c \
 	c/planaritySpecificGraph.c \
+	c/planarityTestGraphFunctionality.c \
 	c/planarityUtils.c \
 	c/stack.c \
-	c/strbuf.c
+	c/strbuf.c \
+	c/strOrFile.c
 	
 libplanarity_la_LDFLAGS = -no-undefined $(AM_LDFLAGS) -version-info @LT_CURRENT@:@LT_REVISION@:@LT_AGE@
 
 pkginclude_HEADERS = \
 	c/appconst.h \
+	c/g6-api-utilities.h \
+	c/g6-read-iterator.h \
+	c/g6-write-iterator.h \
 	c/graph.h \
 	c/graphDrawPlanar.h \
 	c/graphDrawPlanar.private.h \
@@ -48,7 +56,8 @@ pkginclude_HEADERS = \
 	c/planarity.h \
 	c/platformTime.h \
 	c/stack.h \
-	c/strbuf.h
+	c/strbuf.h \
+	c/strOrFile.h
 
 bin_PROGRAMS = planarity
 planarity_LDADD  = libplanarity.la
