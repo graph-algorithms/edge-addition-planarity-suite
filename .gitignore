@@ -90,6 +90,7 @@ ltmain.sh
 configure
 aclocal.m4
 compile
+test-driver
 
 # Ignoring configuration for VSCode
 **/.vscode/
@@ -99,10 +100,3 @@ compile
 
 # Ignore binary produced by compiling on MacOS
 planarity
-
-# Ignore make output
-**/m4/
-test-driver
-configure.ac~
-configure~
-**/planarity-*/
