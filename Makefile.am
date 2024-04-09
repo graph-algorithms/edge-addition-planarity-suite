@@ -1,5 +1,4 @@
 SUBDIRS = c/samples
-ACLOCAL_AMFLAGS = -I m4
 
 lib_LTLIBRARIES = libplanarity.la
 
