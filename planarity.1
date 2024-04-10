@@ -23,7 +23,7 @@ planarity - The Edge Addition Planarity Suite
 
 .B planarity -rn [-q] \fIN\fR \fIOUTPUT\fR [\fICOMPLEMENT\fR]
 
-.B planarity -t [-q] \fICOMMAND\fR|\fB-t(gam)\fR \fIN\fR \fIOUTPUT\fR
+.B planarity -t [-q] \fICOMMAND\fR|\fB-t(gam)\fR \fIINPUT\fR \fIOUTPUT\fR
 
 .SH DESCRIPTION
 Invokes the Edge Addition Planarity Suite command-line tool, either in
@@ -81,8 +81,9 @@ the \fICOMPLEMENT\fR file.
 .B [-q] \fICOMMAND\fR|\fB-t(gam)\fR \fIINPUT\fR \fIOUTPUT\fR
 Run the \fICOMMAND\fR (see below) on graphs in .g6 encoded \fIINPUT\fR,
 file then output summary statistics to \fIOUTPUT\fR file or transform
-single graph in \fIINPUT\fR file to .g6 (\fBg\fR), adjacency list (\fBa\fR), or
-adjacency matrix (\fBm\fR) format and output to \fIOUTPUT\fR file.
+single graph in \fIINPUT\fR file (any supported format) to .g6 (\fBg\fR),
+adjacency list (\fBa\fR), or adjacency matrix (\fBm\fR) format and output
+to \fIOUTPUT\fR file.
 
 .SH COMMANDS
 Determine which algorithm implementation to run:
