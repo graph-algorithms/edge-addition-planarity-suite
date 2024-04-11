@@ -7,6 +7,8 @@ All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
 
+#include "apiutils.h"
+
 #ifdef WIN32
 #define WINDOWS
 #endif

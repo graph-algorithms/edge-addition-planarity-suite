@@ -11,75 +11,49 @@ See the LICENSE.TXT file for licensing information.
  ****************************************************************************/
 
 char Mode='r',
-     OrigOut='n',
-     EmbeddableOut='n',
-     ObstructedOut='n',
-     AdjListsForEmbeddingsOut='n',
-     quietMode='n';
+	 OrigOut='n',
+	 EmbeddableOut='n',
+	 ObstructedOut='n',
+	 AdjListsForEmbeddingsOut='n';
 
 void Reconfigure()
 {
-     fflush(stdin);
+	 fflush(stdin);
 
-     Prompt("\nDo you want to \n"
-    		"  Randomly generate graphs (r),\n"
-    		"  Specify a graph (s),\n"
-    		"  Randomly generate a maximal planar graph (m), or\n"
-    		"  Randomly generate a non-planar graph (n)?");
-     scanf(" %c", &Mode);
+	 Prompt("\nDo you want to \n"
+			"  Randomly generate graphs (r),\n"
+			"  Specify a graph (s),\n"
+			"  Randomly generate a maximal planar graph (m), or\n"
+			"  Randomly generate a non-planar graph (n)?");
+	 scanf(" %c", &Mode);
 
-     Mode = tolower(Mode);
-     if (!strchr("rsmn", Mode))
-    	 Mode = 's';
+	 Mode = tolower(Mode);
+	 if (!strchr("rsmn", Mode))
+		 Mode = 's';
 
-     if (Mode == 'r')
-     {
-        Message("\nNOTE: The directories for the graphs you want must exist.\n\n");
+	 if (Mode == 'r')
+	 {
+		Message("\nNOTE: The directories for the graphs you want must exist.\n\n");
 
-        Prompt("Do you want original graphs in directory 'random' (last 10 max)?");
-        scanf(" %c", &OrigOut);
+		Prompt("Do you want original graphs in directory 'random' (last 10 max)?");
+		scanf(" %c", &OrigOut);
 
-        Prompt("Do you want adj. matrix of embeddable graphs in directory 'embedded' (last 10 max))?");
-        scanf(" %c", &EmbeddableOut);
+		Prompt("Do you want adj. matrix of embeddable graphs in directory 'embedded' (last 10 max))?");
+		scanf(" %c", &EmbeddableOut);
 
-        Prompt("Do you want adj. matrix of obstructed graphs in directory 'obstructed' (last 10 max)?");
-        scanf(" %c", &ObstructedOut);
+		Prompt("Do you want adj. matrix of obstructed graphs in directory 'obstructed' (last 10 max)?");
+		scanf(" %c", &ObstructedOut);
 
-        Prompt("Do you want adjacency list format of embeddings in directory 'adjlist' (last 10 max)?");
-        scanf(" %c", &AdjListsForEmbeddingsOut);
-     }
+		Prompt("Do you want adjacency list format of embeddings in directory 'adjlist' (last 10 max)?");
+		scanf(" %c", &AdjListsForEmbeddingsOut);
+	 }
 
-     FlushConsole(stdout);
-}
-
-/****************************************************************************
- MESSAGE - prints a string, but when debugging adds \n and flushes stdout
- ****************************************************************************/
-
-#define MAXLINE 1024
-char Line[MAXLINE];
-
-void Message(char *message)
-{
-	if (quietMode == 'n')
-	{
-	    fprintf(stdout, "%s", message);
-	    fflush(stdout);
-	}
-}
-
-void ErrorMessage(char *message)
-{
-	if (quietMode == 'n')
-	{
-		fprintf(stderr, "%s", message);
-		fflush(stderr);
-	}
+	 FlushConsole(stdout);
 }
 
 void FlushConsole(FILE *f)
 {
-	    fflush(f);
+	fflush(f);
 }
 
 void Prompt(char *message)
@@ -99,8 +73,11 @@ void SaveAsciiGraph(graphP theGraph, char *filename)
 	// The filename may specify a directory that doesn't exist
 	if (outfile == NULL)
 	{
-		sprintf(Line, "Failed to write to %s\nMake the directory if not present\n", filename);
-		ErrorMessage(Line);
+		char *messageFormat = "Failed to write to \"%.*s\"\nMake the directory if not present\n";
+		char messageContents[MAXLINE + 1];
+		int charsAvailForStrToInclude = (int) (MAXLINE - strlen(messageFormat));
+		sprintf(messageContents, messageFormat, charsAvailForStrToInclude, outfile);
+		ErrorMessage(messageContents);
 		return;
 	}
 
@@ -152,18 +129,18 @@ char *ReadTextFileIntoString(char *infileName)
 		ErrorMessage("fopen() failed.\n");
 	else
 	{
-        long filePos = ftell(infile);
-        long fileSize;
+		long filePos = ftell(infile);
+		long fileSize;
 
-        fseek(infile, 0, SEEK_END);
-        fileSize = ftell(infile);
-        fseek(infile, filePos, SEEK_SET);
+		fseek(infile, 0, SEEK_END);
+		fileSize = ftell(infile);
+		fseek(infile, filePos, SEEK_SET);
 
-        if ((inputString = (char *) malloc((fileSize + 1) * sizeof(char))) != NULL)
-        {
-        	long bytesRead = fread((void *) inputString, 1, fileSize, infile);
-        	inputString[bytesRead] = '\0';
-        }
+		if ((inputString = (char *) malloc((fileSize + 1) * sizeof(char))) != NULL)
+		{
+			long bytesRead = fread((void *) inputString, 1, fileSize, infile);
+			inputString[bytesRead] = '\0';
+		}
 
 		fclose(infile);
 	}
@@ -491,7 +468,7 @@ char *ConstructPrimaryOutputFilename(char *infileName, char *outfileName, char c
 	{
 		// The output filename is based on the input filename
 		if (theFileName != infileName)
-		    strcpy(theFileName, infileName);
+			strcpy(theFileName, infileName);
 
 		// If the primary output filename has not been given, then we use
 		// the input filename + the algorithm name + a simple suffix
@@ -503,7 +480,7 @@ char *ConstructPrimaryOutputFilename(char *infileName, char *outfileName, char c
 		else
 			ErrorMessage("Algorithm Name is too long, so it will not be used in output filename.");
 
-	    strcat(theFileName, ".out.txt");
+		strcat(theFileName, ".out.txt");
 	}
 	else
 	{
@@ -511,21 +488,24 @@ char *ConstructPrimaryOutputFilename(char *infileName, char *outfileName, char c
 		{
 			// The output filename is based on the input filename
 			if (theFileName != infileName)
-			    strcpy(theFileName, infileName);
+				strcpy(theFileName, infileName);
 
-	    	if (strlen(algorithmName) <= ALGORITHMNAMEMAXLENGTH)
-	    	{
-	    		strcat(theFileName, ".");
-	    		strcat(theFileName, algorithmName);
-	    	}
-	        strcat(theFileName, ".out.txt");
-			sprintf(Line, "Outfile filename is too long. Result placed in %s", theFileName);
-			ErrorMessage(Line);
+			if (strlen(algorithmName) <= ALGORITHMNAMEMAXLENGTH)
+			{
+				strcat(theFileName, ".");
+				strcat(theFileName, algorithmName);
+			}
+			strcat(theFileName, ".out.txt");
+			char *messageFormat = "Outfile filename is too long. Result placed in \"%.*s\"";
+			char messageContents[MAXLINE + 1];
+			int charsAvailForStrToInclude = (int) (MAXLINE - strlen(messageFormat));
+			sprintf(messageContents, messageFormat, charsAvailForStrToInclude, theFileName);
+			ErrorMessage(messageContents);
 		}
 		else
 		{
 			if (theFileName != outfileName)
-			    strcpy(theFileName, outfileName);
+				strcpy(theFileName, outfileName);
 		}
 	}
 
@@ -580,4 +560,3 @@ int ConstructTransformationExpectedResultFilename(char *infileName, char **outfi
 
 	return Result;
 }
-

@@ -29,7 +29,10 @@ int _getNumCharsToReprInt(int theNum);
 int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr, int *outputBase, char *outfileName, char **outputStr)
 {
 	int Result = OK;
-	char *errorStr = NULL;
+
+	int charsAvailForFilename = 0;
+	char *errorMessageFormatStr = NULL;
+	char messageContents[MAXLINE + 1];
 
 	graphP theGraph;
 
@@ -37,6 +40,7 @@ int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr
 	theGraph = gp_New();
 
 	int outputFormat = -1;
+
 
 	if (commandString[0] == '-')
 	{
@@ -104,9 +108,10 @@ int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr
 						FILE *outputFileP = fopen(outfileName, "w");
 						if (outputFileP == NULL)
 						{
-							errorStr = "Unable to open file \"%s\" for output.\n";
-							sprintf(Line, errorStr, outfileName);
-							ErrorMessage(Line);
+							charsAvailForFilename = (int) (MAXLINE - strlen(outfileName));
+							errorMessageFormatStr = "Unable to open file \"%.*s\" for output.\n";
+							sprintf(messageContents, errorMessageFormatStr, charsAvailForFilename, outfileName);
+							ErrorMessage(messageContents);
 							free(inputStr);
 							inputStr = NULL;
 							gp_Free(&theGraph);
@@ -155,9 +160,9 @@ int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr
 
 					if (Result != OK)
 					{
-						errorStr = "Unable to perform algorithm corresponding to command '%c' to graph(s).\n";
-						sprintf(Line, errorStr, commandString[1]);
-						ErrorMessage(Line);
+						errorMessageFormatStr = "Unable to perform algorithm corresponding to command '%c' to graph(s).\n";
+						sprintf(messageContents, errorMessageFormatStr, commandString[1]);
+						ErrorMessage(messageContents);
 					}
 
 					if (inputStr != NULL)
@@ -183,7 +188,6 @@ int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr
 	}
 
 	gp_Free(&theGraph);
-
 	return Result;
 }
 
@@ -221,7 +225,8 @@ int testAllGraphs(graphP theGraph, char command, char *inputStr, strOrFileP test
 {
 	int exitCode = OK;
 
-	char *errorStr = NULL;
+	char *errorMessageFormatStr = NULL;
+	char messageContents[MAXLINE + 1];
 
 	graphP copyOfOrigGraph = NULL;
 	int embedFlags = GetEmbedFlags(command);
@@ -271,9 +276,9 @@ int testAllGraphs(graphP theGraph, char command, char *inputStr, strOrFileP test
 
 		if (exitCode != OK)
 		{
-			errorStr = "Unable to read graph on line %d from .g6 read iterator.\n";
-			sprintf(Line, errorStr, pG6ReadIterator->numGraphsRead + 1);
-			ErrorMessage(Line);
+			errorMessageFormatStr = "Unable to read graph on line %d from .g6 read iterator.\n";
+			sprintf(messageContents, errorMessageFormatStr, pG6ReadIterator->numGraphsRead + 1);
+			ErrorMessage(messageContents);
 			break;
 		}
 
@@ -293,9 +298,9 @@ int testAllGraphs(graphP theGraph, char command, char *inputStr, strOrFileP test
 			numNONEMBEDDABLE++;
 		else
 		{
-			errorStr = "Error applying algorithm '%c' to graph on line %d.\n";
-			sprintf(Line, errorStr, command, pG6ReadIterator->numGraphsRead + 1);
-			ErrorMessage(Line);
+			errorMessageFormatStr = "Error applying algorithm '%c' to graph on line %d.\n";
+			sprintf(messageContents, errorMessageFormatStr, command, pG6ReadIterator->numGraphsRead + 1);
+			ErrorMessage(messageContents);
 			break;
 		}
 
@@ -319,7 +324,7 @@ int testAllGraphs(graphP theGraph, char command, char *inputStr, strOrFileP test
 
 	if (freeG6ReadIterator(&pG6ReadIterator) != OK)
 		ErrorMessage("Unable to free G6ReadIterator.\n");
-
+	
 	return exitCode;
 }
 

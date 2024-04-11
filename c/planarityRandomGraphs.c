@@ -36,241 +36,247 @@ int writeErrorReported_Random=FALSE, writeErrorReported_Embedded=FALSE,
 	writeErrorReported_AdjList=FALSE, writeErrorReported_Obstructed=FALSE,
 	writeErrorReported_Error=FALSE;
 
-     GetNumberIfZero(&NumGraphs, "Enter number of graphs to generate:", 1, 1000000000);
-     GetNumberIfZero(&SizeOfGraphs, "Enter size of graphs:", 1, 10000);
+	char *messageFormat = NULL;
+	char messageContents[MAXLINE + 1];
+	int charsAvailForStr = 0;
 
-   	 theGraph = MakeGraph(SizeOfGraphs, command);
-   	 origGraph = MakeGraph(SizeOfGraphs, command);
-   	 if (theGraph == NULL || origGraph == NULL)
-   	 {
-   		 gp_Free(&theGraph);
-   		 return NOTOK;
-   	 }
+	GetNumberIfZero(&NumGraphs, "Enter number of graphs to generate:", 1, 1000000000);
+	GetNumberIfZero(&SizeOfGraphs, "Enter size of graphs:", 1, 10000);
 
-     // Initialize a secondary statistics array
-     for (K=0; K < NUM_MINORS; K++)
-          ObstructionMinorFreqs[K] = 0;
+	theGraph = MakeGraph(SizeOfGraphs, command);
+	origGraph = MakeGraph(SizeOfGraphs, command);
+	if (theGraph == NULL || origGraph == NULL)
+	{
+		gp_Free(&theGraph);
+		return NOTOK;
+	}
 
-   	 // Seed the random number generator with "now". Do it after any prompting
-   	 // to tie randomness to human process of answering the prompt.
-   	 srand(time(NULL));
+	// Initialize a secondary statistics array
+	for (K=0; K < NUM_MINORS; K++)
+		ObstructionMinorFreqs[K] = 0;
 
-   	 // Select a counter update frequency that updates more frequently with larger graphs
-   	 // and which is relatively prime with 10 so that all digits of the count will change
-   	 // even though we aren't showing the count value on every iteration
-   	 countUpdateFreq = 3579 / SizeOfGraphs;
-   	 countUpdateFreq = countUpdateFreq < 1 ? 1 : countUpdateFreq;
-   	 countUpdateFreq = countUpdateFreq % 2 == 0 ? countUpdateFreq+1 : countUpdateFreq;
-   	 countUpdateFreq = countUpdateFreq % 5 == 0 ? countUpdateFreq+2 : countUpdateFreq;
+	// Seed the random number generator with "now". Do it after any prompting
+	// to tie randomness to human process of answering the prompt.
+	srand(time(NULL));
 
-   	 // Start the count
-     fprintf(stdout, "0\r");
-     fflush(stdout);
+	// Select a counter update frequency that updates more frequently with larger graphs
+	// and which is relatively prime with 10 so that all digits of the count will change
+	// even though we aren't showing the count value on every iteration
+	countUpdateFreq = 3579 / SizeOfGraphs;
+	countUpdateFreq = countUpdateFreq < 1 ? 1 : countUpdateFreq;
+	countUpdateFreq = countUpdateFreq % 2 == 0 ? countUpdateFreq+1 : countUpdateFreq;
+	countUpdateFreq = countUpdateFreq % 5 == 0 ? countUpdateFreq+2 : countUpdateFreq;
 
-     // Start the timer
-     platform_GetTime(start);
+	// Start the count
+	fprintf(stdout, "0\r");
+	fflush(stdout);
 
-     // Generate and process the number of graphs requested
-     for (K=0; K < NumGraphs; K++)
-     {
-          if ((Result = gp_CreateRandomGraph(theGraph)) == OK)
-          {
-              if (tolower(OrigOut)=='y')
-              {
-                  sprintf(theFileName, "random%c%d.txt", FILE_DELIMITER, K%10);
-                  writeResult = gp_Write(theGraph, theFileName, WRITE_ADJLIST);
-                  if (writeResult != OK && !writeErrorReported_Random)
-                  {
-                	  sprintf(Line, "Failed to write graph %s\nMake the directory if not present\n", theFileName);
-                	  ErrorMessage(Line);
-                	  writeErrorReported_Random = TRUE;
-                  }
-              }
+	// Start the timer
+	platform_GetTime(start);
 
-              gp_CopyGraph(origGraph, theGraph);
+	messageFormat = "Failed to write graph \"%.*s\"\nMake the directory if not present\n";
+	charsAvailForStr = (int) (MAXLINE - strlen(messageFormat));
+	// Generate and process the number of graphs requested
+	for (K=0; K < NumGraphs; K++)
+	{
+		if ((Result = gp_CreateRandomGraph(theGraph)) == OK)
+		{
+			if (tolower(OrigOut)=='y')
+			{
+				sprintf(theFileName, "random%c%d.txt", FILE_DELIMITER, K%10);
+				writeResult = gp_Write(theGraph, theFileName, WRITE_ADJLIST);
+				if (writeResult != OK && !writeErrorReported_Random)
+				{
+					sprintf(messageContents, messageFormat, charsAvailForStr, theFileName);
+					ErrorMessage(messageContents);
+					writeErrorReported_Random = TRUE;
+				}
+			}
 
-              if (strchr("pdo234", command))
-              {
-                  Result = gp_Embed(theGraph, embedFlags);
+			gp_CopyGraph(origGraph, theGraph);
 
-                  if (gp_TestEmbedResultIntegrity(theGraph, origGraph, Result) != Result)
-                      Result = NOTOK;
+			if (strchr("pdo234", command))
+			{
+				Result = gp_Embed(theGraph, embedFlags);
 
-                  if (Result == OK)
-                  {
-                       MainStatistic++;
+				if (gp_TestEmbedResultIntegrity(theGraph, origGraph, Result) != Result)
+					Result = NOTOK;
 
-                       if (tolower(EmbeddableOut) == 'y')
-                       {
-                           sprintf(theFileName, "embedded%c%d.txt", FILE_DELIMITER, K%10);
-                           writeResult = gp_Write(theGraph, theFileName, WRITE_ADJMATRIX);
-                           if (writeResult != OK && !writeErrorReported_Embedded)
-                           {
-                        	   sprintf(Line, "Failed to write graph %s\nMake the directory if not present\n", theFileName);
-                        	   ErrorMessage(Line);
-                        	   writeErrorReported_Embedded = TRUE;
-                           }
-                       }
+				if (Result == OK)
+				{
+					MainStatistic++;
 
-                       if (tolower(AdjListsForEmbeddingsOut) == 'y')
-                       {
-                           sprintf(theFileName, "adjlist%c%d.txt", FILE_DELIMITER, K%10);
-                           writeResult = gp_Write(theGraph, theFileName, WRITE_ADJLIST);
-                           if (writeResult != OK && !writeErrorReported_AdjList)
-                           {
-                        	   sprintf(Line, "Failed to write graph %s\nMake the directory if not present\n", theFileName);
-                        	   ErrorMessage(Line);
-                        	   writeErrorReported_AdjList = TRUE;
-                           }
-                       }
-                  }
-                  else if (Result == NONEMBEDDABLE)
-                  {
-                       if (embedFlags == EMBEDFLAGS_PLANAR || embedFlags == EMBEDFLAGS_OUTERPLANAR)
-                       {
-                           if (theGraph->IC.minorType & MINORTYPE_A)
-                                ObstructionMinorFreqs[0] ++;
-                           else if (theGraph->IC.minorType & MINORTYPE_B)
-                                ObstructionMinorFreqs[1] ++;
-                           else if (theGraph->IC.minorType & MINORTYPE_C)
-                                ObstructionMinorFreqs[2] ++;
-                           else if (theGraph->IC.minorType & MINORTYPE_D)
-                                ObstructionMinorFreqs[3] ++;
-                           else if (theGraph->IC.minorType & MINORTYPE_E)
-                                ObstructionMinorFreqs[4] ++;
+					if (tolower(EmbeddableOut) == 'y')
+					{
+						sprintf(theFileName, "embedded%c%d.txt", FILE_DELIMITER, K%10);
+						writeResult = gp_Write(theGraph, theFileName, WRITE_ADJMATRIX);
+						if (writeResult != OK && !writeErrorReported_Embedded)
+						{
+							sprintf(messageContents, messageFormat, charsAvailForStr, theFileName);
+							ErrorMessage(messageContents);
+							writeErrorReported_Embedded = TRUE;
+						}
+					}
 
-                           if (theGraph->IC.minorType & MINORTYPE_E1)
-                                ObstructionMinorFreqs[5] ++;
-                           else if (theGraph->IC.minorType & MINORTYPE_E2)
-                                ObstructionMinorFreqs[6] ++;
-                           else if (theGraph->IC.minorType & MINORTYPE_E3)
-                                ObstructionMinorFreqs[7] ++;
-                           else if (theGraph->IC.minorType & MINORTYPE_E4)
-                                ObstructionMinorFreqs[8] ++;
+					if (tolower(AdjListsForEmbeddingsOut) == 'y')
+					{
+						sprintf(theFileName, "adjlist%c%d.txt", FILE_DELIMITER, K%10);
+						writeResult = gp_Write(theGraph, theFileName, WRITE_ADJLIST);
+						if (writeResult != OK && !writeErrorReported_AdjList)
+						{
+							sprintf(messageContents, messageFormat, charsAvailForStr, theFileName);
+							ErrorMessage(messageContents);
+							writeErrorReported_AdjList = TRUE;
+						}
+					}
+				}
+				else if (Result == NONEMBEDDABLE)
+				{
+					if (embedFlags == EMBEDFLAGS_PLANAR || embedFlags == EMBEDFLAGS_OUTERPLANAR)
+					{
+						if (theGraph->IC.minorType & MINORTYPE_A)
+							ObstructionMinorFreqs[0] ++;
+						else if (theGraph->IC.minorType & MINORTYPE_B)
+							ObstructionMinorFreqs[1] ++;
+						else if (theGraph->IC.minorType & MINORTYPE_C)
+							ObstructionMinorFreqs[2] ++;
+						else if (theGraph->IC.minorType & MINORTYPE_D)
+							ObstructionMinorFreqs[3] ++;
+						else if (theGraph->IC.minorType & MINORTYPE_E)
+							ObstructionMinorFreqs[4] ++;
 
-                           if (tolower(ObstructedOut) == 'y')
-                           {
-                               sprintf(theFileName, "obstructed%c%d.txt", FILE_DELIMITER, K%10);
-                               writeResult = gp_Write(theGraph, theFileName, WRITE_ADJMATRIX);
-                               if (writeResult != OK && !writeErrorReported_Obstructed)
-                               {
-                            	   sprintf(Line, "Failed to write graph %s\nMake the directory if not present\n", theFileName);
-                            	   ErrorMessage(Line);
-                            	   writeErrorReported_Obstructed = TRUE;
-                               }
-                           }
-                       }
-                  }
-              }
+						if (theGraph->IC.minorType & MINORTYPE_E1)
+							ObstructionMinorFreqs[5] ++;
+						else if (theGraph->IC.minorType & MINORTYPE_E2)
+							ObstructionMinorFreqs[6] ++;
+						else if (theGraph->IC.minorType & MINORTYPE_E3)
+							ObstructionMinorFreqs[7] ++;
+						else if (theGraph->IC.minorType & MINORTYPE_E4)
+							ObstructionMinorFreqs[8] ++;
 
-              // If there is an error in processing, then write the file for debugging
-              if (Result != OK && Result != NONEMBEDDABLE)
-              {
-                   sprintf(theFileName, "error%c%d.txt", FILE_DELIMITER, K%10);
-                   writeResult = gp_Write(origGraph, theFileName, WRITE_ADJLIST);
-                   if (writeResult != OK && !writeErrorReported_Error)
-                   {
-                	   sprintf(Line, "Failed to write graph %s\nMake the directory if not present\n", theFileName);
-                	   ErrorMessage(Line);
-                	   writeErrorReported_Error = TRUE;
-                   }
-              }
-          }
+						if (tolower(ObstructedOut) == 'y')
+						{
+							sprintf(theFileName, "obstructed%c%d.txt", FILE_DELIMITER, K%10);
+							writeResult = gp_Write(theGraph, theFileName, WRITE_ADJMATRIX);
+							if (writeResult != OK && !writeErrorReported_Obstructed)
+							{
+								sprintf(messageContents, messageFormat, charsAvailForStr, theFileName);
+								ErrorMessage(messageContents);
+								writeErrorReported_Obstructed = TRUE;
+							}
+						}
+					}
+				}
+			}
 
-          // Reinitialize or recreate graphs for next iteration
-          ReinitializeGraph(&theGraph, ReuseGraphs, command);
-          ReinitializeGraph(&origGraph, ReuseGraphs, command);
+			// If there is an error in processing, then write the file for debugging
+			if (Result != OK && Result != NONEMBEDDABLE)
+			{
+				sprintf(theFileName, "error%c%d.txt", FILE_DELIMITER, K%10);
+				writeResult = gp_Write(origGraph, theFileName, WRITE_ADJLIST);
+				if (writeResult != OK && !writeErrorReported_Error)
+				{
+					sprintf(messageContents, messageFormat, charsAvailForStr, theFileName);
+					ErrorMessage(messageContents);
+					writeErrorReported_Error = TRUE;
+				}
+			}
+		}
 
-          // Show progress, but not so often that it bogs down progress
-          if (quietMode == 'n' && (K+1) % countUpdateFreq == 0)
-          {
-              fprintf(stdout, "%d\r", K+1);
-              fflush(stdout);
-          }
+		// Reinitialize or recreate graphs for next iteration
+		ReinitializeGraph(&theGraph, ReuseGraphs, command);
+		ReinitializeGraph(&origGraph, ReuseGraphs, command);
 
-          // Terminate loop on error
-          if (Result != OK && Result != NONEMBEDDABLE)
-          {
-        	  ErrorMessage("\nError found\n");
-              Result = NOTOK;
-              break;
-          }
-     }
+		// Show progress, but not so often that it bogs down progress
+		if (!getQuietModeSetting() && (K+1) % countUpdateFreq == 0)
+		{
+			fprintf(stdout, "%d\r", K+1);
+			fflush(stdout);
+		}
 
-     // Stop the timer
-     platform_GetTime(end);
+		// Terminate loop on error
+		if (Result != OK && Result != NONEMBEDDABLE)
+		{
+			ErrorMessage("\nError found\n");
+			Result = NOTOK;
+			break;
+		}
+	}
 
-     // Finish the count
-     fprintf(stdout, "%d\n", NumGraphs);
-     fflush(stdout);
+	// Stop the timer
+	platform_GetTime(end);
 
-     // Free the graph structures created before the loop
-     gp_Free(&theGraph);
-     gp_Free(&origGraph);
+	// Finish the count
+	fprintf(stdout, "%d\n", NumGraphs);
+	fflush(stdout);
 
-     // Print some demographic results
-     if (Result == OK || Result == NONEMBEDDABLE)
-         Message("\nNo Errors Found.");
-     sprintf(Line, "\nDone (%.3lf seconds).\n", platform_GetDuration(start,end));
-     Message(Line);
+	// Free the graph structures created before the loop
+	gp_Free(&theGraph);
+	gp_Free(&origGraph);
 
-     // Report statistics for planar or outerplanar embedding
-     if (embedFlags == EMBEDFLAGS_PLANAR || embedFlags == EMBEDFLAGS_OUTERPLANAR)
-     {
-         sprintf(Line, "Num Embedded=%d.\n", MainStatistic);
-         Message(Line);
+	// Print some demographic results
+	if (Result == OK || Result == NONEMBEDDABLE)
+		Message("\nNo Errors Found.");
 
-         for (K=0; K<5; K++)
-         {
-        	  // Outerplanarity does not produces minors C and D
-        	  if (embedFlags == EMBEDFLAGS_OUTERPLANAR && (K==2 || K==3))
-        		  continue;
+	sprintf(messageContents, "\nDone (%.3lf seconds).\n", platform_GetDuration(start,end));
+	Message(messageContents);
 
-              sprintf(Line, "Minor %c = %d\n", K+'A', ObstructionMinorFreqs[K]);
-              Message(Line);
-         }
+	// Report statistics for planar or outerplanar embedding
+	if (embedFlags == EMBEDFLAGS_PLANAR || embedFlags == EMBEDFLAGS_OUTERPLANAR)
+	{
+		sprintf(messageContents, "Num Embedded=%d.\n", MainStatistic);
+		Message(messageContents);
 
-         if (!(embedFlags & ~EMBEDFLAGS_PLANAR))
-         {
-             sprintf(Line, "\nNote: E1 are added to C, E2 are added to A, and E=E3+E4+K5 homeomorphs.\n");
-             Message(Line);
+		for (K=0; K<5; K++)
+		{
+			// Outerplanarity does not produces minors C and D
+			if (embedFlags == EMBEDFLAGS_OUTERPLANAR && (K==2 || K==3))
+				continue;
 
-             for (K=5; K<NUM_MINORS; K++)
-             {
-                  sprintf(Line, "Minor E%d = %d\n", K-4, ObstructionMinorFreqs[K]);
-                  Message(Line);
-             }
-         }
-     }
+			sprintf(messageContents, "Minor %c = %d\n", K+'A', ObstructionMinorFreqs[K]);
+			Message(messageContents);
+		}
 
-     // Report statistics for graph drawing
-     else if (embedFlags == EMBEDFLAGS_DRAWPLANAR)
-     {
-         sprintf(Line, "Num Graphs Embedded and Drawn=%d.\n", MainStatistic);
-         Message(Line);
-     }
+		if (!(embedFlags & ~EMBEDFLAGS_PLANAR))
+		{
+			sprintf(messageContents, "\nNote: E1 are added to C, E2 are added to A, and E=E3+E4+K5 homeomorphs.\n");
+			Message(messageContents);
 
-     // Report statistics for subgraph homeomorphism algorithms
-     else if (embedFlags == EMBEDFLAGS_SEARCHFORK23)
-     {
-         sprintf(Line, "Of the generated graphs, %d did not contain a K_{2,3} homeomorph as a subgraph.\n", MainStatistic);
-         Message(Line);
-     }
-     else if (embedFlags == EMBEDFLAGS_SEARCHFORK33)
-     {
-         sprintf(Line, "Of the generated graphs, %d did not contain a K_{3,3} homeomorph as a subgraph.\n", MainStatistic);
-         Message(Line);
-     }
-     else if (embedFlags == EMBEDFLAGS_SEARCHFORK4)
-     {
-         sprintf(Line, "Of the generated graphs, %d did not contain a K_4 homeomorph as a subgraph.\n", MainStatistic);
-         Message(Line);
-     }
+			for (K=5; K<NUM_MINORS; K++)
+			{
+				sprintf(messageContents, "Minor E%d = %d\n", K-4, ObstructionMinorFreqs[K]);
+				Message(messageContents);
+			}
+		}
+	}
 
+	// Report statistics for graph drawing
+	else if (embedFlags == EMBEDFLAGS_DRAWPLANAR)
+	{
+		sprintf(messageContents, "Num Graphs Embedded and Drawn=%d.\n", MainStatistic);
+		Message(messageContents);
+	}
 
-     FlushConsole(stdout);
+	// Report statistics for subgraph homeomorphism algorithms
+	else if (embedFlags == EMBEDFLAGS_SEARCHFORK23)
+	{
+		sprintf(messageContents, "Of the generated graphs, %d did not contain a K_{2,3} homeomorph as a subgraph.\n", MainStatistic);
+		Message(messageContents);
+	}
+	else if (embedFlags == EMBEDFLAGS_SEARCHFORK33)
+	{
+		sprintf(messageContents, "Of the generated graphs, %d did not contain a K_{3,3} homeomorph as a subgraph.\n", MainStatistic);
+		Message(messageContents);
+	}
+	else if (embedFlags == EMBEDFLAGS_SEARCHFORK4)
+	{
+		sprintf(messageContents, "Of the generated graphs, %d did not contain a K_4 homeomorph as a subgraph.\n", MainStatistic);
+		Message(messageContents);
+	}
 
-     return Result==OK || Result==NONEMBEDDABLE ? OK : NOTOK;
+	FlushConsole(stdout);
+
+	return Result==OK || Result==NONEMBEDDABLE ? OK : NOTOK;
 }
 
 /****************************************************************************
@@ -286,8 +292,8 @@ void GetNumberIfZero(int *pNum, char *prompt, int min, int max)
 {
 	if (*pNum == 0)
 	{
-	    Prompt(prompt);
-	    scanf(" %d", pNum);
+		Prompt(prompt);
+		scanf(" %d", pNum);
 	}
 
 	if (min < 1) min = 1;
@@ -296,8 +302,9 @@ void GetNumberIfZero(int *pNum, char *prompt, int min, int max)
 	if (*pNum < min || *pNum > max)
 	{
 		*pNum = (max + min) / 2;
-        sprintf(Line, "Number out of range [%d, %d]; changed to %d\n", min, max, *pNum);
-        ErrorMessage(Line);
+		char messageContents[MAXLINE + 1];
+		sprintf(messageContents, "Number out of range [%d, %d]; changed to %d\n", min, max, *pNum);
+		ErrorMessage(messageContents);
 	}
 }
 
@@ -310,12 +317,12 @@ void GetNumberIfZero(int *pNum, char *prompt, int min, int max)
 graphP MakeGraph(int Size, char command)
 {
 	graphP theGraph;
-    if ((theGraph = gp_New()) == NULL || gp_InitGraph(theGraph, Size) != OK)
-    {
-    	ErrorMessage("Error creating space for a graph of the given size.\n");
-    	gp_Free(&theGraph);
-    	return NULL;
-    }
+	if ((theGraph = gp_New()) == NULL || gp_InitGraph(theGraph, Size) != OK)
+	{
+		ErrorMessage("Error creating space for a graph of the given size.\n");
+		gp_Free(&theGraph);
+		return NULL;
+	}
 
 // Enable the appropriate feature. Although the same code appears in SpecificGraph,
 // it is deliberately not separated to a common utility because SpecificGraph is
@@ -363,94 +370,102 @@ graphP theGraph=NULL, origGraph;
 int embedFlags = GetEmbedFlags(command);
 char saveEdgeListFormat;
 
-     GetNumberIfZero(&numVertices, "Enter number of vertices:", 1, 1000000);
-     if ((theGraph = MakeGraph(numVertices, command)) == NULL)
-    	 return NOTOK;
+	char *messageFormat = NULL;
+	char messageContents[MAXLINE + 1];
+	int charsAvailForStr = 0;
 
-     srand(time(NULL));
+	GetNumberIfZero(&numVertices, "Enter number of vertices:", 1, 1000000);
+	if ((theGraph = MakeGraph(numVertices, command)) == NULL)
+		return NOTOK;
 
-     Message("Creating the random graph...\n");
-     platform_GetTime(start);
-     if (gp_CreateRandomGraphEx(theGraph, 3*numVertices-6+extraEdges) != OK)
-     {
-         ErrorMessage("gp_CreateRandomGraphEx() failed\n");
-         return NOTOK;
-     }
-     platform_GetTime(end);
+	 srand(time(NULL));
 
-     sprintf(Line, "Created random graph with %d edges in %.3lf seconds. ", theGraph->M, platform_GetDuration(start,end));
-     Message(Line);
-     FlushConsole(stdout);
+	Message("Creating the random graph...\n");
+	platform_GetTime(start);
+	if (gp_CreateRandomGraphEx(theGraph, 3*numVertices-6+extraEdges) != OK)
+	{
+		ErrorMessage("gp_CreateRandomGraphEx() failed\n");
+		return NOTOK;
+	}
+	platform_GetTime(end);
 
-     // The user may have requested a copy of the random graph before processing
-     if (outfile2Name != NULL)
-     {
-         gp_Write(theGraph, outfile2Name, WRITE_ADJLIST);
-     }
+	sprintf(messageContents, "Created random graph with %d edges in %.3lf seconds. ", theGraph->M, platform_GetDuration(start,end));
+	Message(messageContents);
+	FlushConsole(stdout);
 
-     origGraph = gp_DupGraph(theGraph);
+	// The user may have requested a copy of the random graph before processing
+	if (outfile2Name != NULL)
+	{
+		gp_Write(theGraph, outfile2Name, WRITE_ADJLIST);
+	}
 
-     // Do the requested algorithm on the randomly generated graph
-     Message("Now processing\n");
-     FlushConsole(stdout);
+	origGraph = gp_DupGraph(theGraph);
 
-     if (strchr("pdo234", command))
-     {
-         platform_GetTime(start);
-         Result = gp_Embed(theGraph, embedFlags);
-         platform_GetTime(end);
+	// Do the requested algorithm on the randomly generated graph
+	Message("Now processing\n");
+	FlushConsole(stdout);
 
-    	 gp_SortVertices(theGraph);
+	if (strchr("pdo234", command))
+	{
+		platform_GetTime(start);
+		Result = gp_Embed(theGraph, embedFlags);
+		platform_GetTime(end);
 
-         if (gp_TestEmbedResultIntegrity(theGraph, origGraph, Result) != Result)
-             Result = NOTOK;
-     }
-     else
-    	 Result = NOTOK;
+		gp_SortVertices(theGraph);
 
-     // Write what the algorithm determined and how long it took
-     WriteAlgorithmResults(theGraph, Result, command, start, end, NULL);
+		if (gp_TestEmbedResultIntegrity(theGraph, origGraph, Result) != Result)
+			Result = NOTOK;
+	}
+	else
+		Result = NOTOK;
 
-     // On successful algorithm result, write the output file and see if the
-     // user wants the edge list formatted file.
-     if (Result == OK || Result == NONEMBEDDABLE)
-     {
-    	 if (outfileName != NULL)
-    		 gp_Write(theGraph, outfileName, WRITE_ADJLIST);
+	// Write what the algorithm determined and how long it took
+	WriteAlgorithmResults(theGraph, Result, command, start, end, NULL);
 
-    	 if (quietMode == 'n')
-    	 {
-             Prompt("Do you want to save the generated graph in edge list format (y/n)? ");
-             fflush(stdin);
-             scanf(" %c", &saveEdgeListFormat);
-    	 }
-    	 else
-    		 saveEdgeListFormat = 'n';
+	// On successful algorithm result, write the output file and see if the
+	// user wants the edge list formatted file.
+	if (Result == OK || Result == NONEMBEDDABLE)
+	{
+		if (outfileName != NULL)
+			gp_Write(theGraph, outfileName, WRITE_ADJLIST);
 
-         if (tolower(saveEdgeListFormat) == 'y')
-         {
-        	 char theFileName[256];
+		if (!getQuietModeSetting())
+		{
+			Prompt("Do you want to save the generated graph in edge list format (y/n)? ");
+			fflush(stdin);
+			scanf(" %c", &saveEdgeListFormat);
+		}
+		else
+			saveEdgeListFormat = 'n';
 
-             if (extraEdges > 0)
-            	 strcpy(theFileName, "nonPlanarEdgeList.txt");
-             else
-            	 strcpy(theFileName, "maxPlanarEdgeList.txt");
+		if (tolower(saveEdgeListFormat) == 'y')
+		{
+			char theFileName[256];
 
-             sprintf(Line, "Saving edge list format of original graph to '%s'\n", theFileName);
-        	 Message(Line);
-             SaveAsciiGraph(origGraph, theFileName);
+			if (extraEdges > 0)
+				strcpy(theFileName, "nonPlanarEdgeList.txt");
+			else
+				strcpy(theFileName, "maxPlanarEdgeList.txt");
 
-             strcat(theFileName, ".out.txt");
-             sprintf(Line, "Saving edge list format of result to '%s'\n", theFileName);
-        	 Message(Line);
-             SaveAsciiGraph(theGraph, theFileName);
-         }
-     }
-     else ErrorMessage("Failure occurred");
+			messageFormat = "Saving edge list format of original graph to \"%.*s\"\n";
+			charsAvailForStr = (int) (MAXLINE - strlen(messageFormat));
+			sprintf(messageContents, messageFormat, charsAvailForStr, theFileName);
+			Message(messageContents);
+			SaveAsciiGraph(origGraph, theFileName);
 
-     gp_Free(&theGraph);
-     gp_Free(&origGraph);
+			strcat(theFileName, ".out.txt");
+			messageFormat =  "Saving edge list format of result to \"%.*s\"\n";
+			charsAvailForStr = (int) (MAXLINE - strlen(messageFormat));
+			sprintf(messageContents, messageFormat, charsAvailForStr, theFileName);
+			Message(messageContents);
+			SaveAsciiGraph(theGraph, theFileName);
+		}
+	}
+	else ErrorMessage("Failure occurred");
 
-     FlushConsole(stdout);
-     return Result;
+	gp_Free(&theGraph);
+	gp_Free(&origGraph);
+
+	FlushConsole(stdout);
+	return Result;
 }

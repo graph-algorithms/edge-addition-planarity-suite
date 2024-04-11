@@ -28,7 +28,7 @@ int commandLine(int argc, char *argv[])
 	int Result = OK;
 
 	if (argc >= 3 && strcmp(argv[2], "-q") == 0)
-		quietMode = 'y';
+		setQuietModeSetting(TRUE);
 
 	if (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "-help") == 0)
 	{
@@ -95,11 +95,11 @@ int Result;
 	{
 		if (Result != NONEMBEDDABLE)
 		{
-			if (strlen(argv[1]) > MAXLINE - 100)
-				sprintf(Line, "Failed to read graph\n");
-			else
-				sprintf(Line, "Failed to read graph %s\n", argv[1]);
-			ErrorMessage(Line);
+			char *messageFormat = "Failed to read graph \"%.*s\"";
+			char messageContents[MAXLINE + 1];
+			int charsAvailForFilename = (int) (MAXLINE - strlen(messageFormat));
+			sprintf(messageContents, messageFormat, charsAvailForFilename, argv[1]);
+			ErrorMessage(messageContents);
 			return -2;
 		}
 	}
@@ -539,16 +539,23 @@ int runGraphTransformationTest(char *command, char *infileName, int inputInMemFl
 
 			Result = TextFileMatchesString(expectedOutfileName, actualOutput);
 
+			char *messageFormat = NULL;
+			char messageContents[MAXLINE + 1];
+			int charsAvailForFilename = 0;
 			if (Result == TRUE)
 			{
-				sprintf(Line, "For the transformation %s on file %s, actual output file matched expected output file.\n", command, infileName);
-				Message(Line);
+				messageFormat = "For the transformation %s on file \"%.*s\", actual output file matched expected output file.\n";
+				charsAvailForFilename = (int) (MAXLINE - strlen(messageFormat));
+				sprintf(messageContents, messageFormat, command, charsAvailForFilename, infileName);
+				Message(messageContents);
 				Result = OK;
 			}
 			else
 			{
-				sprintf(Line, "For the transformation %s on file %s, actual output file did not match expected output file.\n", command, infileName);
-				ErrorMessage(Line);
+				messageFormat = "For the transformation %s on file \"%.*s\", actual output file did not match expected output file.\n";
+				charsAvailForFilename = (int) (MAXLINE - strlen(messageFormat));
+				sprintf(messageContents, messageFormat, command, charsAvailForFilename, infileName);
+				ErrorMessage(messageContents);
 				Result = NOTOK;
 			}
 
