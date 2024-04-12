@@ -7,7 +7,6 @@ See the LICENSE.TXT file for licensing information.
 #include <stdlib.h>
 #include <string.h>
 
-#include "planarity.h"
 #include "g6-write-iterator.h"
 #include "g6-api-utilities.h"
 
@@ -136,9 +135,11 @@ int beginG6WriteIterationToG6FilePath(G6WriteIterator *pG6WriteIterator, char *g
 
 	if (g6Outfile == NULL)
 	{
-		char * formatStr = "Unable to open \"%s\" for writing.\n";
-		sprintf(Line, formatStr, g6FilePath);
-		ErrorMessage(Line);
+		char *messageFormat = "Unable to open \"%.*s\" for writing.\n";
+		char messageContents[MAXLINE + 1];
+		int charsAvailForStr = (int) (MAXLINE - strlen(messageFormat));
+		sprintf(messageContents, messageFormat, charsAvailForStr, g6FilePath);
+		ErrorMessage(messageContents);
 		return NOTOK;
 	}
 
