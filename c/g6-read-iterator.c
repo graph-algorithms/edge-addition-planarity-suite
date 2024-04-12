@@ -125,7 +125,8 @@ int beginG6ReadIterationFromG6FilePath(G6ReadIterator *pG6ReadIterator, char *g6
 	{
 		char * messageFormat = "Unable to open .g6 file with path \"%.*s\"\n";
 		char messageContents[MAXLINE + 1];
-		sprintf(messageContents, messageFormat, (int) (MAXLINE - strlen(messageFormat)), g6FilePath);
+		int charsAvailForFilename = (int) (MAXLINE - strlen(messageFormat));
+		sprintf(messageContents, messageFormat, charsAvailForFilename, g6FilePath);
 		ErrorMessage(messageContents);
 		return NOTOK;
 	}
