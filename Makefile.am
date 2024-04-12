@@ -3,6 +3,7 @@ SUBDIRS = c/samples
 lib_LTLIBRARIES = libplanarity.la
 
 libplanarity_la_SOURCES = \
+	c/apiutils.c \
 	c/g6-api-utilities.c \
 	c/g6-read-iterator.c \
 	c/g6-write-iterator.c \
@@ -35,6 +36,7 @@ libplanarity_la_SOURCES = \
 libplanarity_la_LDFLAGS = -no-undefined $(AM_LDFLAGS) -version-info @LT_CURRENT@:@LT_REVISION@:@LT_AGE@
 
 pkginclude_HEADERS = \
+	c/apiutils.h \
 	c/appconst.h \
 	c/g6-api-utilities.h \
 	c/g6-read-iterator.h \
