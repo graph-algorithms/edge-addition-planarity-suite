@@ -166,9 +166,9 @@ int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr
 						inputStr = NULL;
 					}
 					
-					// Take ownership of strOrFile->theStr, which may have a new address due to having been realloc'ed
 					if (outputStr != NULL)
 						(*outputStr) = sf_getTheStr(testOutput);
+					
 					sf_Free(&testOutput);
 				}
 			}

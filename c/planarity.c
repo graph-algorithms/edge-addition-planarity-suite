@@ -19,12 +19,13 @@ char * GetProjectTitle()
 	// Furthermore, a change of Major, Minor or Maintenance here should cause a change
 	// of Current, Revision and/or Age as documented in configure.ac
 
-	return "\n=================================================="
+	return  "\n=================================================="
 			"\nThe Edge Addition Planarity Suite version 3.0.2.0"
 			"\nCopyright (c) 1997-2024 by John M. Boyer"
+			"\nAll rights reserved."
+			"\nSee the LICENSE.TXT file for licensing information."
 			"\nContact info: jboyer at acm.org"
-			"\n=================================================="
-			"\n";
+			"\n==================================================\n";
 }
 
 /****************************************************************************
@@ -100,11 +101,6 @@ int helpMessage(char *param)
 	else if (strcmp(param, "-i") == 0 || strcmp(param, "-info") == 0)
 	{
 		Message(
-			"The Edge Addition Planarity Suite version 3.0.2.0\n"
-			"Copyright (c) 1997-2022, John M. Boyer\n"
-			"All rights reserved. \n"
-			"See the LICENSE.TXT file for licensing information. \n"
-			"\n"
 			"Includes a reference implementation of the following:\n"
 			"\n"
 			"* John M. Boyer. \"Subgraph Homeomorphism via the Edge Addition Planarity \n"
@@ -208,8 +204,6 @@ char Choice;
 	 do {
 		Message(GetProjectTitle());
 
-		Message("\n");
-
 		Message(GetAlgorithmSpecifiers());
 
 		Message(
@@ -278,31 +272,22 @@ void TransformOrTestMenu()
 	char *messageFormat;
 	char messageContents[MAXLINE + 1];
 
-	do
+	Message("\n");
+	Message("T. Transform single graph in supported file to .g6, adjacency list, or adjacency matrix\n");
+	Message("A. Perform an algorithm test on all graphs in .g6 input file\n");
+	Message("\nPress any other key to return to the main menu.\n");
+	Message("\n");
+
+	Prompt("Enter Choice: ");
+	fflush(stdin);
+	scanf(" %c", &Choice);
+	Choice = tolower(Choice);
+
+	switch(Choice)
 	{
-		Message("\n");
-		Message("T. Transform single graph in supported file to .g6, adjacency list, or adjacency matrix\n");
-		Message("A. Perform an algorithm test on all graphs in .g6 input file\n");
-		Message("B. Back out to main menu\n");
-		Message("\n");
-
-		Prompt("Enter Choice: ");
-		fflush(stdin);
-		scanf(" %c", &Choice);
-		Choice = tolower(Choice);
-
-		switch(Choice)
-		{
-			case 't':TransformMenu(); return;
-			case 'a': TestMenu(); return;
-			case 'b': Message("Returning to main menu.\n"); break;
-			default: {
-				messageFormat = "Unrecognized choice: \"%c\"";
-				sprintf(messageContents, messageFormat, Choice);
-				ErrorMessage(messageContents);
-			}
-		}
-	} while (Choice != 'b');
+		case 't':TransformMenu(); return;
+		case 'a': TestMenu(); return;
+	}
 }
 
 void TransformMenu()
