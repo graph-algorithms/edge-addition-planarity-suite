@@ -89,7 +89,7 @@ int writeErrorReported_Random=FALSE, writeErrorReported_Embedded=FALSE,
 
               gp_CopyGraph(origGraph, theGraph);
 
-              if (strchr("pdo234", command))
+              if (strchr(GetAlgorithmChoices(), command))
               {
                   Result = gp_Embed(theGraph, embedFlags);
 
@@ -394,7 +394,7 @@ char saveEdgeListFormat;
      Message("Now processing\n");
      FlushConsole(stdout);
 
-     if (strchr("pdo234", command))
+     if (strchr(GetAlgorithmChoices(), command))
      {
          platform_GetTime(start);
          Result = gp_Embed(theGraph, embedFlags);

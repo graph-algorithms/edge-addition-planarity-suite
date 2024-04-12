@@ -79,7 +79,7 @@ int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr
 			}
 	
 		}
-		else if (strchr("pdo234", commandString[1]))
+		else if (strchr(GetAlgorithmChoices(), commandString[1]))
 		{
 			if (inputStr != NULL)
 			{
@@ -165,7 +165,10 @@ int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr
 						free(inputStr);
 						inputStr = NULL;
 					}
-
+					
+					// Take ownership of strOrFile->theStr, which may have a new address due to having been realloc'ed
+					if (outputStr != NULL)
+						(*outputStr) = sf_getTheStr(testOutput);
 					sf_Free(&testOutput);
 				}
 			}
