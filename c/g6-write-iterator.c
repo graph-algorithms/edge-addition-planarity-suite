@@ -660,7 +660,6 @@ int _WriteGraphToG6String(graphP pGraph, char **g6OutputStr)
 		return exitCode;
 	}
 
-	// Take ownership of strOrFile->theStr, which may have a new address due to having been realloc'ed
 	(*g6OutputStr) = sf_getTheStr(pG6WriteIterator->g6Output);
 
 	exitCode = endG6WriteIteration(pG6WriteIterator);

@@ -23,7 +23,12 @@ extern "C" {
 #include "graphK4Search.h"
 #include "graphDrawPlanar.h"
 
-void ProjectTitle();
+char * GetProjectTitle(void);
+char * GetAlgorithmFlags(void);
+char * GetAlgorithmSpecifiers(void);
+char * GetAlgorithmChoices(void);
+char * GetSupportedOutputFormats(void);
+
 int helpMessage(char *param);
 
 /* Functions that call the Graph Library */
@@ -37,9 +42,9 @@ int RandomGraphs(char command, int NumGraphs, int SizeOfGraphs);
 int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr, int *outputBase, char *outfileName, char **outputStr);
 
 /* Command line, Menu, and Configuration */
+int menu();
 int commandLine(int argc, char *argv[]);
 int legacyCommandLine(int argc, char *argv[]);
-int menu();
 
 extern char Mode,
      OrigOut,

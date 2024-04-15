@@ -72,7 +72,7 @@ int Result = OK;
 	{
 		Message("The graph contains too many edges.\n");
 		// Some of the algorithms will still run correctly with some edges removed.
-		if (strchr("pdo234", command))
+		if (strchr(GetAlgorithmChoices(), command))
 		{
 			Message("Some edges were removed, but the algorithm will still run correctly.\n");
 			Result = OK;
@@ -91,7 +91,7 @@ int Result = OK;
         origGraph = gp_DupGraph(theGraph);
 
         // Run the algorithm
-        if (strchr("pdo234", command))
+        if (strchr(GetAlgorithmChoices(), command))
         {
     		int embedFlags = GetEmbedFlags(command);
 	        platform_GetTime(start);
@@ -131,7 +131,7 @@ int Result = OK;
 	else
 	{
         // Restore the vertex ordering of the original graph (undo DFS numbering)
-        if (strchr("pdo234", command))
+        if (strchr(GetAlgorithmChoices(), command))
             gp_SortVertices(theGraph);
 
         // Determine the name of the primary output file
