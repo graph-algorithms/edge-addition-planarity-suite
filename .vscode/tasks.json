@@ -9,6 +9,7 @@
                 "/EHsc",
                 "/nologo",
                 "/DDEBUG", // Added so that _DEBUG is defined; see appconst.h
+                "/DPROFILE", // Added so that PROFILE is defined to enable timing machinery; see appconst.h
                 "/Fe${workspaceFolder}\\planarity.exe",
                 "${workspaceFolder}\\c\\**.c"
             ],
@@ -30,6 +31,7 @@
             "args": [
                 "-fdiagnostics-color=always",
                 "-DDEBUG", // Added so that _DEBUG is defined; see appconst.h
+                "-DPROFILE", // Added so that PROFILE is defined to enable timing machinery; see appconst.h
                 "-g",
                 "${workspaceFolder}\\c\\**.c",
                 "-o",
@@ -52,6 +54,7 @@
                 "-fcolor-diagnostics",
                 "-fansi-escape-codes",
                 "-DDEBUG", // Added so that _DEBUG is defined; see appconst.h
+                "-DPROFILE", // Added so that PROFILE is defined to enable timing machinery; see appconst.h
                 "-g",
                 "${workspaceFolder}/c/**.c",
                 "-o",
@@ -73,6 +76,7 @@
             "args": [
                 "-fdiagnostics-color=always",
                 "-DDEBUG", // Added so that _DEBUG is defined; see appconst.h
+                "-DPROFILE", // Added so that PROFILE is defined to enable timing machinery; see appconst.h
                 "-g",
                 "${workspaceFolder}/c/**.c",
                 "-o",
