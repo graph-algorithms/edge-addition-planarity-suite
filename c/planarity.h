@@ -50,17 +50,11 @@ extern char Mode,
      OrigOut,
      EmbeddableOut,
      ObstructedOut,
-     AdjListsForEmbeddingsOut,
-     quietMode;
+     AdjListsForEmbeddingsOut;
 
 void Reconfigure();
 
 /* Low-level Utilities */
-#define MAXLINE 1024
-extern char Line[MAXLINE];
-
-void Message(char *message);
-void ErrorMessage(char *message);
 void FlushConsole(FILE *f);
 void Prompt(char *message);
 

@@ -216,24 +216,32 @@ int Result = OK;
 
 void WriteAlgorithmResults(graphP theGraph, int Result, char command, platform_time start, platform_time end, char *infileName)
 {
+	char *messageFormat = NULL;
+	char messageContents[MAXLINE + 1];
+	int charsAvailForStr = 0;
+
 	if (infileName)
-		 sprintf(Line, "The graph '%s' ", infileName);
-	else sprintf(Line, "The graph ");
-	Message(Line);
+	{
+		messageFormat = "The graph \"%.*s\" ";
+		charsAvailForStr = (int) (MAXLINE - strlen(messageFormat));
+		sprintf(messageContents, messageFormat, charsAvailForStr, infileName);
+	}
+	else sprintf(messageContents, "The graph ");
+	Message(messageContents);
 
 	switch (command)
 	{
-		case 'p' : sprintf(Line, "is%s planar.\n", Result==OK ? "" : " not"); break;
-		case 'd' : sprintf(Line, "is%s planar.\n", Result==OK ? "" : " not"); break;
-		case 'o' : sprintf(Line, "is%s outerplanar.\n", Result==OK ? "" : " not"); break;
-		case '2' : sprintf(Line, "has %s subgraph homeomorphic to K_{2,3}.\n", Result==OK ? "no" : "a"); break;
-		case '3' : sprintf(Line, "has %s subgraph homeomorphic to K_{3,3}.\n", Result==OK ? "no" : "a"); break;
-		case '4' : sprintf(Line, "has %s subgraph homeomorphic to K_4.\n", Result==OK ? "no" : "a"); break;
-		default  : sprintf(Line, "has not been processed due to unrecognized command.\n"); break;
+		case 'p' : sprintf(messageContents, "is%s planar.\n", Result==OK ? "" : " not"); break;
+		case 'd' : sprintf(messageContents, "is%s planar.\n", Result==OK ? "" : " not"); break;
+		case 'o' : sprintf(messageContents, "is%s outerplanar.\n", Result==OK ? "" : " not"); break;
+		case '2' : sprintf(messageContents, "has %s subgraph homeomorphic to K_{2,3}.\n", Result==OK ? "no" : "a"); break;
+		case '3' : sprintf(messageContents, "has %s subgraph homeomorphic to K_{3,3}.\n", Result==OK ? "no" : "a"); break;
+		case '4' : sprintf(messageContents, "has %s subgraph homeomorphic to K_4.\n", Result==OK ? "no" : "a"); break;
+		default  : sprintf(messageContents, "has not been processed due to unrecognized command.\n"); break;
 	}
-	Message(Line);
+	Message(messageContents);
 
-	sprintf(Line, "Algorithm '%s' executed in %.3lf seconds.\n",
+	sprintf(messageContents, "Algorithm '%s' executed in %.3lf seconds.\n",
 			GetAlgorithmName(command), platform_GetDuration(start,end));
-	Message(Line);
+	Message(messageContents);
 }
