@@ -173,7 +173,9 @@ int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr
 					
 					if (outputStr != NULL)
 						(*outputStr) = sf_getTheStr(testOutput);
-					
+					else if (sf_getFile(testOutput) != NULL)
+						fclose(sf_getFile(testOutput));
+
 					sf_Free(&testOutput);
 				}
 			}
