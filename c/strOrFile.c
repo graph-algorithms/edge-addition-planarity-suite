@@ -181,13 +181,24 @@ int sf_fputs(char *strToWrite, strOrFileP theStrOrFile)
 
 /********************************************************************
  sf_getTheStr()
- Returns the char * stored int he string-or-file container, if any
+ Returns the char * stored in the string-or-file container, if any
  (i.e. will be NULL if the string-or-file container is meant to contain
  a FILE *).
  ********************************************************************/
 char * sf_getTheStr(strOrFileP theStrOrFile)
 {
 	return theStrOrFile->theStr;
+}
+
+/********************************************************************
+ sf_getFile()
+ Returns the FILE * stored in the string-or-file container, if any
+ (i.e. will be NULL if the string-or-file container is meant to contain
+ a char *).
+ ********************************************************************/
+FILE * sf_getFile(strOrFileP theStrOrFile)
+{
+	return theStrOrFile->pFile;
 }
 
 /********************************************************************
