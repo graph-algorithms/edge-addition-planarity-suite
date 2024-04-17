@@ -59,6 +59,13 @@ char * GetAlgorithmChoices(void)
 	return "pdo234";
 }
 
+char * GetSupportedOutputChoices(void)
+{
+	return  "G. G6 format\n"
+			"A. Adjacency List format\n"
+			"M. Adjacency Matrix format\n";
+}
+
 char * GetSupportedOutputFormats(void)
 {
 	return "gam";
@@ -320,9 +327,11 @@ void TransformMenu()
 
 	do
 	{
+		Message(GetSupportedOutputChoices());
 		Prompt("Enter output format: ");
 		fflush(stdin);
 		scanf(" %c", &outputFormat);
+		outputFormat = tolower(outputFormat);
 		if (strchr(GetSupportedOutputFormats(), outputFormat))
 			sprintf(commandStr, "-t%c", outputFormat);
 	}

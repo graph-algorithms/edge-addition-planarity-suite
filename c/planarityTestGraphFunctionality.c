@@ -67,7 +67,7 @@ int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr
 			else
 			{
 				ErrorMessage("Invalid argument; currently, only -t(gam) is allowed.\n");
-				return -1;
+				return NOTOK;
 			}
 
 			if (inputStr)
@@ -93,7 +93,6 @@ int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr
 				if (Result != OK)
 					ErrorMessage("Unable to write graph.\n");
 			}
-	
 		}
 		else if (strchr(GetAlgorithmChoices(), commandString[1]))
 		{
@@ -182,26 +181,11 @@ int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr
 						return NOTOK;
 					}
 
-					testAllStatsP stats = (testAllStatsP) calloc(1, sizeof(testAllStats));
-					if (stats == NULL)
-					{
-						ErrorMessage("Unable allocate memory for test stats.\n");
-
-						free(inputStr);
-						inputStr = NULL;
-
-						gp_Free(&theGraph);
-
-						sf_Free(&testOutput);
-
-						free(headerStr);
-						headerStr = NULL;
-
-						return NOTOK;
-					}
-
+					testAllStats stats;
+					memset(&stats, 0, sizeof(testAllStats));
+					
 					char command = commandString[1];
-					Result = testAllGraphs(theGraph, command, inputStr, stats);
+					Result = testAllGraphs(theGraph, command, inputStr, &stats);
 
 					// Stop the timer
 					platform_GetTime(end);
@@ -216,9 +200,9 @@ int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr
 
 					char *resultsStr = (char *) malloc(
 														(
-															3 +_getNumCharsToReprInt(stats->numGraphsRead) +
-															1 + _getNumCharsToReprInt(stats->numOK) +
-															1 + _getNumCharsToReprInt(stats->numNONEMBEDDABLE)+
+															3 +_getNumCharsToReprInt(stats.numGraphsRead) +
+															1 + _getNumCharsToReprInt(stats.numOK) +
+															1 + _getNumCharsToReprInt(stats.numNONEMBEDDABLE)+
 															1 + 8 + // either ERROR or SUCCESS, so the longer of which is 7 + 1 chars
 															3
 														) * sizeof(char));
@@ -229,9 +213,6 @@ int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr
 						free(inputStr);
 						inputStr = NULL;
 
-						free(stats);
-						stats = NULL;
-
 						gp_Free(&theGraph);
 
 						sf_Free(&testOutput);
@@ -240,7 +221,7 @@ int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr
 					}
 
 					sprintf(resultsStr, "-%c %d %d %d %s\n",
-										command, stats->numGraphsRead, stats->numOK, stats->numNONEMBEDDABLE, stats->errorFlag ? "ERROR" : "SUCCESS");
+										command, stats.numGraphsRead, stats.numOK, stats.numNONEMBEDDABLE, stats.errorFlag ? "ERROR" : "SUCCESS");
 					sf_fputs(resultsStr, testOutput);
 
 					free(resultsStr);
@@ -251,9 +232,6 @@ int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr
 						free(inputStr);
 						inputStr = NULL;
 					}
-
-					free(stats);
-					stats = NULL;
 					
 					if (outputStr != NULL)
 						(*outputStr) = sf_getTheStr(testOutput);
@@ -267,13 +245,13 @@ int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr
 		else
 		{
 			ErrorMessage("Invalid argument; only -(pdo234)|-t(gam) is allowed.\n");
-			return -1;
+			return NOTOK;
 		}
 	}
 	else
 	{
 		ErrorMessage("Invalid argument; must start with '-'.\n");
-		return -1;
+		return NOTOK;
 	}
 
 	gp_Free(&theGraph);
@@ -319,7 +297,7 @@ int testAllGraphs(graphP theGraph, char command, char *inputStr, testAllStatsP s
 
 	graphP copyOfOrigGraph = NULL;
 	int embedFlags = GetEmbedFlags(command);
-	int numGraphsRead = 0, numOK = 0, numNONEMBEDDABLE = 0, errorFlag = 0;
+	int numGraphsRead = 0, numOK = 0, numNONEMBEDDABLE = 0, errorFlag = FALSE;
 
 	G6ReadIterator *pG6ReadIterator = NULL;
 	exitCode = allocateG6ReadIterator(&pG6ReadIterator, theGraph);

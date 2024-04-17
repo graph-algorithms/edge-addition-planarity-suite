@@ -534,7 +534,7 @@ int runGraphTransformationTest(char *command, char *infileName, int inputInMemFl
 			if (Result != OK || expectedOutfileName == NULL)
 			{
 				ErrorMessage("Unable to construct output filename for expected transformation output.\n");
-				return NOTOK;
+				return -1;
 			}
 
 			Result = TextFileMatchesString(expectedOutfileName, actualOutput);
