@@ -154,14 +154,13 @@ int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr
 					sprintf(messageContents, "\nDone testing all graphs (%.3lf seconds).\n", stats.duration);
 					Message(messageContents);
 
-					Result = outputTestAllGraphsResults(command, &stats, infileName, outfileName, outputStr);
-
-					if (Result != OK)
+					if (outputTestAllGraphsResults(command, &stats, infileName, outfileName, outputStr) != OK)
 					{
 						messageFormat = "Error outputting results running command '%c' on graphs in \"%.*s\".\n";
 						charsAvailForFilename = (int) (MAXLINE - strlen(messageFormat));
 						sprintf(messageContents, messageFormat, command, charsAvailForFilename, infileName);
 						ErrorMessage(messageContents);
+						Result = NOTOK;
 					}
 
 					if (inputStr != NULL)
