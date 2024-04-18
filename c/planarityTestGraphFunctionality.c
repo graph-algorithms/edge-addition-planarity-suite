@@ -390,20 +390,27 @@ int outputTestAllGraphsResults(char command, testAllStatsP stats, char * infileN
 	}
 	else
 	{
-		if ((*outputStr) == NULL)
-			(*outputStr) = (char *) malloc(1 * sizeof(char));
-		
-		if ((*outputStr) == NULL)
+		if (outputStr == NULL)
 		{
-			ErrorMessage("Unable to allocate memory for outputStr.\n");
+			ErrorMessage("Both outfileName and pointer to outputStr are NULL.\n");
 		}
 		else
 		{
-			testOutput = sf_New(NULL, (*outputStr));
-			if (testOutput == NULL)
+			if ((*outputStr) == NULL)
+				(*outputStr) = (char *) malloc(1 * sizeof(char));
+		
+			if ((*outputStr) == NULL)
 			{
-				free((*outputStr));
-				(*outputStr) = NULL;
+				ErrorMessage("Unable to allocate memory for outputStr.\n");
+			}
+			else
+			{
+				testOutput = sf_New(NULL, (*outputStr));
+				if (testOutput == NULL)
+				{
+					free((*outputStr));
+					(*outputStr) = NULL;
+				}
 			}
 		}
 	}
