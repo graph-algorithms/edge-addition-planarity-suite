@@ -322,60 +322,9 @@ int outputTestAllGraphsResults(char command, testAllStatsP stats, char * infileN
 {
 	int Result = OK;
 
-	FILE *outputFileP;
-
 	int charsAvailForFilename = 0;
 	char *messageFormat = NULL;
 	char messageContents[MAXLINE + 1];
-
-	strOrFileP testOutput = NULL;
-
-	if (outfileName != NULL)
-	{
-		outputFileP = fopen(outfileName, "w");
-		if (outputFileP == NULL)
-		{
-			charsAvailForFilename = (int) (MAXLINE - strlen(outfileName));
-			messageFormat = "Unable to open file \"%.*s\" for output.\n";
-			sprintf(messageContents, messageFormat, charsAvailForFilename, outfileName);
-			ErrorMessage(messageContents);
-			return NOTOK;
-		}
-		
-		testOutput = sf_New(outputFileP, NULL);
-	}
-	else
-	{
-		if ((*outputStr) == NULL)
-			(*outputStr) = (char *) malloc(1 * sizeof(char));
-		
-		if ((*outputStr) == NULL)
-		{
-			ErrorMessage("Unable to allocate memory for outputStr.\n");
-			return NOTOK;
-		}
-
-		testOutput = sf_New(NULL, (*outputStr));
-	}
-
-	if (testOutput == NULL)
-	{
-		ErrorMessage("Unable to set up string-or-file container for test output.\n");
-
-		if (outputFileP != NULL)
-		{
-			fclose(outputFileP);
-			outputFileP = NULL;
-		}
-
-		if ((*outputStr) != NULL)
-		{
-			free(outputStr);
-			outputStr = NULL;
-		}
-
-		return NOTOK;
-	}
 
 	char *finalSlash = strrchr(infileName, FILE_DELIMITER);
 	char *infileBasename = finalSlash ? (finalSlash + 1) : infileName;
@@ -391,15 +340,10 @@ int outputTestAllGraphsResults(char command, testAllStatsP stats, char * infileN
 	if (headerStr == NULL)
 	{
 		ErrorMessage("Unable allocate memory for output file header.\n");
-		sf_Free(&testOutput);
 		return NOTOK;
 	}
 
 	sprintf(headerStr, headerFormat, infileBasename, stats->duration);
-
-	sf_fputs(headerStr, testOutput);
-	free(headerStr);
-	headerStr = NULL;
 
 	char *resultsStr = (char *) malloc(
 										(
@@ -412,14 +356,76 @@ int outputTestAllGraphsResults(char command, testAllStatsP stats, char * infileN
 	if (resultsStr == NULL)
 	{
 		ErrorMessage("Unable allocate memory for results string.\n");
-		sf_Free(&testOutput);
+
+		free(headerStr);
+		headerStr = NULL;
+
 		return NOTOK;
 	}
 
 	sprintf(resultsStr, "-%c %d %d %d %s\n",
 						command, stats->numGraphsRead, stats->numOK, stats->numNONEMBEDDABLE, stats->errorFlag ? "ERROR" : "SUCCESS");
-	sf_fputs(resultsStr, testOutput);
 
+	strOrFileP testOutput = NULL;
+
+	if (outfileName != NULL)
+	{
+		FILE *outputFileP = fopen(outfileName, "w");
+		if (outputFileP == NULL)
+		{
+			charsAvailForFilename = (int) (MAXLINE - strlen(outfileName));
+			messageFormat = "Unable to open file \"%.*s\" for output.\n";
+			sprintf(messageContents, messageFormat, charsAvailForFilename, outfileName);
+			ErrorMessage(messageContents);
+		}
+		else
+		{
+			testOutput = sf_New(outputFileP, NULL);
+			if (testOutput == NULL)
+			{
+				fclose(outputFileP);
+				outputFileP = NULL;
+			}
+		}
+	}
+	else
+	{
+		if ((*outputStr) == NULL)
+			(*outputStr) = (char *) malloc(1 * sizeof(char));
+		
+		if ((*outputStr) == NULL)
+		{
+			ErrorMessage("Unable to allocate memory for outputStr.\n");
+		}
+		else
+		{
+			testOutput = sf_New(NULL, (*outputStr));
+			if (testOutput == NULL)
+			{
+				free((*outputStr));
+				(*outputStr) = NULL;
+			}
+		}
+	}
+
+	if (testOutput == NULL)
+	{
+		ErrorMessage("Unable to set up string-or-file container for test output.\n");
+
+		free(headerStr);
+		headerStr = NULL;
+
+		free(resultsStr);
+		resultsStr = NULL;
+
+		return NOTOK;
+	}
+
+	sf_fputs(headerStr, testOutput);
+	free(headerStr);
+	headerStr = NULL;
+
+	sf_fputs(resultsStr, testOutput);
 	free(resultsStr);
 	resultsStr = NULL;
 
