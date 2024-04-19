@@ -168,9 +168,13 @@ int sf_fputs(char *strToWrite, strOrFileP theStrOrFile)
 	else if (theStrOrFile->theStr != NULL)
 	{
 		// Want to be able to contain the original theStr contents, the strToWrite, and a null terminator (added by strcat)
-		theStrOrFile->theStr = realloc(theStrOrFile->theStr, (strlen(theStrOrFile->theStr) + lenOfStringToPuts + 1) * sizeof(char));
-		if (theStrOrFile->theStr == NULL)
+		char *newStr = realloc(theStrOrFile->theStr, (strlen(theStrOrFile->theStr) + lenOfStringToPuts + 1) * sizeof(char));
+		// If realloc failed, pointer returned will be NULL; error will be handled by eventually freeing iterator, which will
+		// clean up the old memory for theStrOrFile->theStr
+		if (newStr == NULL)
 			return outputLen;
+		else
+			theStrOrFile->theStr = newStr;
 		strcat(theStrOrFile->theStr, strToWrite);
 		theStrOrFile->theStrPos += lenOfStringToPuts;
 		outputLen = lenOfStringToPuts;

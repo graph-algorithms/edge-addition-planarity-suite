@@ -56,6 +56,7 @@ int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr
 	int charsAvailForFilename = 0;
 	char *messageFormat = NULL;
 	char messageContents[MAXLINE + 1];
+	messageContents[MAXLINE] = '\0';
 
 	graphP theGraph;
 
@@ -151,12 +152,23 @@ int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr
 					// Stop the timer
 					platform_GetTime(end);
 					stats.duration = platform_GetDuration(start, end);
-					sprintf(messageContents, "\nDone testing all graphs (%.3lf seconds).\n", stats.duration);
-					Message(messageContents);
+
+					if (Result != OK && Result != NONEMBEDDABLE)
+					{
+						messageFormat = "\nEncountered error while running command '%c' on all graphs in \"%.*s\".\n";
+						charsAvailForFilename = (int) (MAXLINE - strlen(messageFormat));
+						sprintf(messageContents, messageFormat, command, charsAvailForFilename, infileName);
+						ErrorMessage(messageContents);
+					}
+					else
+					{
+						sprintf(messageContents, "\nDone testing all graphs (%.3lf seconds).\n", stats.duration);
+						Message(messageContents);
+					}
 
 					if (outputTestAllGraphsResults(command, &stats, infileName, outfileName, outputStr) != OK)
 					{
-						messageFormat = "Error outputting results running command '%c' on graphs in \"%.*s\".\n";
+						messageFormat = "Error outputting results running command '%c' on all graphs in \"%.*s\".\n";
 						charsAvailForFilename = (int) (MAXLINE - strlen(messageFormat));
 						sprintf(messageContents, messageFormat, command, charsAvailForFilename, infileName);
 						ErrorMessage(messageContents);
@@ -223,6 +235,7 @@ int testAllGraphs(graphP theGraph, char command, char *inputStr, testAllStatsP s
 
 	char *messageFormat = NULL;
 	char messageContents[MAXLINE + 1];
+	messageContents[MAXLINE] = '\0';
 
 	graphP copyOfOrigGraph = NULL;
 	int embedFlags = GetEmbedFlags(command);
@@ -347,7 +360,7 @@ int outputTestAllGraphsResults(char command, testAllStatsP stats, char * infileN
 
 	char *resultsStr = (char *) malloc(
 										(
-											3 +_getNumCharsToReprInt(stats->numGraphsRead) +
+											3 + _getNumCharsToReprInt(stats->numGraphsRead) +
 											1 + _getNumCharsToReprInt(stats->numOK) +
 											1 + _getNumCharsToReprInt(stats->numNONEMBEDDABLE)+
 											1 + 8 + // either ERROR or SUCCESS, so the longer of which is 7 + 1 chars
@@ -432,18 +445,74 @@ int outputTestAllGraphsResults(char command, testAllStatsP stats, char * infileN
 		return NOTOK;
 	}
 
-	sf_fputs(headerStr, testOutput);
+	if (sf_fputs(headerStr, testOutput) != strlen(headerStr))
+	{
+		ErrorMessage("Unable to output headerStr to testOutput.\n");
+		Result = NOTOK;
+	}
+
+	if (Result == OK)
+	{
+		if (sf_fputs(resultsStr, testOutput) != strlen(resultsStr))
+		{
+			ErrorMessage("Unable to output resultsStr to testOutput.\n");
+			Result = NOTOK;
+		}
+	}
+
+	if (Result == OK)
+	{
+		if (outputStr != NULL)
+			(*outputStr) = sf_getTheStr(testOutput);
+		else if (sf_getFile(testOutput) != NULL)
+		{
+			if (fclose(sf_getFile(testOutput)) != 0)
+			{
+				charsAvailForFilename = (int) (MAXLINE - strlen(outfileName));
+				messageFormat = "Unable to close output file \"%.*s\".\n";
+				sprintf(messageContents, messageFormat, charsAvailForFilename, outfileName);
+				ErrorMessage(messageContents);
+				Result = NOTOK;
+			}
+		}
+	}
+	else
+	{
+		if (outputStr != NULL && (*outputStr) != NULL)
+		{
+			free((*outputStr));
+			(*outputStr) = NULL;
+		}
+		else if (sf_getFile(testOutput) != NULL)
+		{
+			if (fclose(sf_getFile(testOutput)) != 0)
+			{
+				charsAvailForFilename = (int) (MAXLINE - strlen(outfileName));
+				messageFormat = "Unable to close output file \"%.*s\".\n";
+				sprintf(messageContents, messageFormat, charsAvailForFilename, outfileName);
+				ErrorMessage(messageContents);
+				Result = NOTOK;
+			}
+			else
+			{
+				if (remove(outfileName) != 0)
+				{
+					charsAvailForFilename = (int) (MAXLINE - strlen(outfileName));
+					messageFormat = "Unable to remove output file \"%.*s\" after error.\n";
+					sprintf(messageContents, messageFormat, charsAvailForFilename, outfileName);
+					ErrorMessage(messageContents);
+					Result = NOTOK;
+				}
+			}
+			
+		}
+	}
+
 	free(headerStr);
 	headerStr = NULL;
 
-	sf_fputs(resultsStr, testOutput);
 	free(resultsStr);
 	resultsStr = NULL;
-
-	if (outputStr != NULL)
-		(*outputStr) = sf_getTheStr(testOutput);
-	else if (sf_getFile(testOutput) != NULL)
-		fclose(sf_getFile(testOutput));
 
 	sf_Free(&testOutput);
 

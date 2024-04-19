@@ -203,7 +203,12 @@ int _beginG6WriteIteration(G6WriteIterator *pG6WriteIterator)
 {
 	int exitCode = OK;
 
-	sf_fputs(">>graph6<<", pG6WriteIterator->g6Output);
+	char *g6Header = ">>graph6<<";
+	if (sf_fputs(g6Header, pG6WriteIterator->g6Output) != strlen(g6Header))
+	{
+		ErrorMessage("Unable to fputs header to g6Output.\n");
+		return NOTOK;
+	}
 
 	pG6WriteIterator->graphOrder = pG6WriteIterator->currGraph->N;
 
@@ -265,10 +270,8 @@ int writeGraphUsingG6WriteIterator(G6WriteIterator *pG6WriteIterator)
 	}
 
 	exitCode = _printEncodedGraph(pG6WriteIterator);
-	if (exitCode != OK) {
+	if (exitCode != OK)
 		ErrorMessage("Unable to output g6 encoded graph to string-or-file container.\n");
-		fflush(stdout);
-	}
 
 	return exitCode;
 }
@@ -445,9 +448,7 @@ int _printEncodedGraph(G6WriteIterator *pG6WriteIterator)
 		return NOTOK;
 	}
 
-	int outputLen = sf_fputs(pG6WriteIterator->currGraphBuff, pG6WriteIterator->g6Output);
-
-	if (outputLen != strlen(pG6WriteIterator->currGraphBuff))
+	if (sf_fputs(pG6WriteIterator->currGraphBuff, pG6WriteIterator->g6Output) != strlen(pG6WriteIterator->currGraphBuff))
 	{
 		ErrorMessage("Failed to output all characters of g6 encoding.\n");
 		exitCode = NOTOK;
@@ -549,6 +550,7 @@ int _WriteGraphToG6FilePath(graphP pGraph, char *g6OutputFilename)
 	if (exitCode != OK)
 	{
 		ErrorMessage("Unable to allocate G6WriteIterator.\n");
+		freeG6WriteIterator(&pG6WriteIterator);
 		return exitCode;
 	}
 
@@ -557,6 +559,7 @@ int _WriteGraphToG6FilePath(graphP pGraph, char *g6OutputFilename)
 	if (exitCode != OK)
 	{
 		ErrorMessage("Unable to begin G6 write iteration.\n");
+		freeG6WriteIterator(&pG6WriteIterator);
 		return exitCode;
 	}
 
@@ -565,21 +568,27 @@ int _WriteGraphToG6FilePath(graphP pGraph, char *g6OutputFilename)
 	if (exitCode != OK)
 	{
 		ErrorMessage("Unable to write graph using G6WriteIterator.\n");
-		return exitCode;
 	}
 
-	exitCode = endG6WriteIteration(pG6WriteIterator);
+	// FIXME: Is this the right way to ensure the return codes from endG6WriteIteration and freeG6WriteIterator
+	// don't stomp over exitCode from writeGraphsUsingG6WriteIterator? I don't want success of end and free to
+	// wipe out failure of write.
+	// FIXME: also, do we want to fclose() and remove() the g6OutputFile if we fail in endG6WriteIteration or freeG6WriteIterator?
+	int endG6WriteIterationCode = endG6WriteIteration(pG6WriteIterator);
 
-	if (exitCode != OK)
+	if (endG6WriteIterationCode != OK)
 	{
 		ErrorMessage("Unable to end G6 write iteration.\n");
-		return exitCode;
+		exitCode = endG6WriteIterationCode;
 	}
 
-	exitCode = freeG6WriteIterator(&pG6WriteIterator);
+	int freeG6WriteIteratorCode = freeG6WriteIterator(&pG6WriteIterator);
 	
-	if (exitCode != OK)
+	if (freeG6WriteIteratorCode != OK)
+	{
 		ErrorMessage("Unable to free G6Writer.\n");
+		exitCode = freeG6WriteIteratorCode;
+	}
 
 	return exitCode;
 }
@@ -595,6 +604,7 @@ int _WriteGraphToG6FilePointer(graphP pGraph, FILE *g6Outfile)
 	if (exitCode != OK)
 	{
 		ErrorMessage("Unable to allocate G6WriteIterator.\n");
+		freeG6WriteIterator(&pG6WriteIterator);
 		return exitCode;
 	}
 
@@ -603,6 +613,7 @@ int _WriteGraphToG6FilePointer(graphP pGraph, FILE *g6Outfile)
 	if (exitCode != OK)
 	{
 		ErrorMessage("Unable to begin G6 write iteration.\n");
+		freeG6WriteIterator(&pG6WriteIterator);
 		return exitCode;
 	}
 
@@ -611,21 +622,27 @@ int _WriteGraphToG6FilePointer(graphP pGraph, FILE *g6Outfile)
 	if (exitCode != OK)
 	{
 		ErrorMessage("Unable to write graph using G6WriteIterator.\n");
-		return exitCode;
 	}
 
-	exitCode = endG6WriteIteration(pG6WriteIterator);
+	// FIXME: Is this the right way to ensure the return codes from endG6WriteIteration and freeG6WriteIterator
+	// don't stomp over exitCode from writeGraphsUsingG6WriteIterator? I don't want success of end and free to
+	// wipe out failure of write.
+	// FIXME: also, do we want to fclose() and remove() the g6OutputFile if we fail in endG6WriteIteration or freeG6WriteIterator?
+	int endG6WriteIterationCode = endG6WriteIteration(pG6WriteIterator);
 
-	if (exitCode != OK)
+	if (endG6WriteIterationCode != OK)
 	{
 		ErrorMessage("Unable to end G6 write iteration.\n");
-		return exitCode;
+		exitCode = endG6WriteIterationCode;
 	}
 
-	exitCode = freeG6WriteIterator(&pG6WriteIterator);
+	int freeG6WriteIteratorCode = freeG6WriteIterator(&pG6WriteIterator);
 	
-	if (exitCode != OK)
+	if (freeG6WriteIteratorCode != OK)
+	{
 		ErrorMessage("Unable to free G6Writer.\n");
+		exitCode = freeG6WriteIteratorCode;
+	}
 
 	return exitCode;
 }
@@ -641,6 +658,7 @@ int _WriteGraphToG6String(graphP pGraph, char **g6OutputStr)
 	if (exitCode != OK)
 	{
 		ErrorMessage("Unable to allocate G6WriteIterator.\n");
+		freeG6WriteIterator(&pG6WriteIterator);
 		return exitCode;
 	}
 
@@ -649,31 +667,36 @@ int _WriteGraphToG6String(graphP pGraph, char **g6OutputStr)
 	if (exitCode != OK)
 	{
 		ErrorMessage("Unable to begin G6 write iteration.\n");
+		freeG6WriteIterator(&pG6WriteIterator);
 		return exitCode;
 	}
 
 	exitCode = writeGraphUsingG6WriteIterator(pG6WriteIterator);
 
 	if (exitCode != OK)
-	{
 		ErrorMessage("Unable to write graph using G6WriteIterator.\n");
-		return exitCode;
-	}
+	else
+		(*g6OutputStr) = sf_getTheStr(pG6WriteIterator->g6Output);
 
-	(*g6OutputStr) = sf_getTheStr(pG6WriteIterator->g6Output);
+	// FIXME: Is this the right way to ensure the return codes from endG6WriteIteration and freeG6WriteIterator
+	// don't stomp over exitCode from writeGraphsUsingG6WriteIterator? I don't want success of end and free to
+	// wipe out failure of write.
+	// FIXME: also, do we want to null out (*g6OutputStr) if we fail in endG6WriteIteration or freeG6WriteIterator?
+	int endG6WriteIterationCode = endG6WriteIteration(pG6WriteIterator);
 
-	exitCode = endG6WriteIteration(pG6WriteIterator);
-
-	if (exitCode != OK)
+	if (endG6WriteIterationCode != OK)
 	{
 		ErrorMessage("Unable to end G6 write iteration.\n");
-		return exitCode;
+		exitCode = endG6WriteIterationCode;
 	}
 
-	exitCode = freeG6WriteIterator(&pG6WriteIterator);
+	int freeG6WriteIteratorCode = freeG6WriteIterator(&pG6WriteIterator);
 	
-	if (exitCode != OK)
+	if (freeG6WriteIteratorCode != OK)
+	{
 		ErrorMessage("Unable to free G6Writer.\n");
+		exitCode = freeG6WriteIteratorCode;
+	}
 
 	return exitCode;
 }
