@@ -421,6 +421,7 @@ int outputTestAllGraphsResults(char command, testAllStatsP stats, char * infileN
 				}
 				else
 				{
+					(*outputStr)[0] = '\0';
 					testOutput = sf_New(NULL, (*outputStr));
 					if (testOutput == NULL)
 					{
