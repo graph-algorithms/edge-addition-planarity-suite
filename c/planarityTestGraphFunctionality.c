@@ -446,7 +446,7 @@ int outputTestAllGraphsResults(char command, testAllStatsP stats, char * infileN
 		return NOTOK;
 	}
 
-	if (sf_fputs(headerStr, testOutput) != strlen(headerStr))
+	if (sf_fputs(headerStr, testOutput) < 0)
 	{
 		ErrorMessage("Unable to output headerStr to testOutput.\n");
 		Result = NOTOK;
@@ -454,7 +454,7 @@ int outputTestAllGraphsResults(char command, testAllStatsP stats, char * infileN
 
 	if (Result == OK)
 	{
-		if (sf_fputs(resultsStr, testOutput) != strlen(resultsStr))
+		if (sf_fputs(resultsStr, testOutput) < 0)
 		{
 			ErrorMessage("Unable to output resultsStr to testOutput.\n");
 			Result = NOTOK;

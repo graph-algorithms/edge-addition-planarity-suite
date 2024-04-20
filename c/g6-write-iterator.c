@@ -204,7 +204,7 @@ int _beginG6WriteIteration(G6WriteIterator *pG6WriteIterator)
 	int exitCode = OK;
 
 	char *g6Header = ">>graph6<<";
-	if (sf_fputs(g6Header, pG6WriteIterator->g6Output) != strlen(g6Header))
+	if (sf_fputs(g6Header, pG6WriteIterator->g6Output) < 0)
 	{
 		ErrorMessage("Unable to fputs header to g6Output.\n");
 		return NOTOK;
@@ -448,7 +448,7 @@ int _printEncodedGraph(G6WriteIterator *pG6WriteIterator)
 		return NOTOK;
 	}
 
-	if (sf_fputs(pG6WriteIterator->currGraphBuff, pG6WriteIterator->g6Output) != strlen(pG6WriteIterator->currGraphBuff))
+	if (sf_fputs(pG6WriteIterator->currGraphBuff, pG6WriteIterator->g6Output) < 0)
 	{
 		ErrorMessage("Failed to output all characters of g6 encoding.\n");
 		exitCode = NOTOK;
