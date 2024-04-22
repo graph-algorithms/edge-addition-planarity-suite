@@ -174,12 +174,6 @@ int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr
 						ErrorMessage(messageContents);
 						Result = NOTOK;
 					}
-
-					if (inputStr != NULL)
-					{
-						free(inputStr);
-						inputStr = NULL;
-					}
 				}
 			}
 		}
@@ -398,6 +392,8 @@ int outputTestAllGraphsResults(char command, testAllStatsP stats, char * infileN
 			{
 				fclose(outputFileP);
 				outputFileP = NULL;
+				// TODO: (#56) What happens to file that we opened for write, then immediately close? We won't be able to remove
+				// because testOutput failed to initialize
 			}
 		}
 	}
@@ -423,11 +419,6 @@ int outputTestAllGraphsResults(char command, testAllStatsP stats, char * infileN
 				{
 					(*outputStr)[0] = '\0';
 					testOutput = sf_New(NULL, (*outputStr));
-					if (testOutput == NULL)
-					{
-						free((*outputStr));
-						(*outputStr) = NULL;
-					}
 				}
 			}
 		}
@@ -442,6 +433,12 @@ int outputTestAllGraphsResults(char command, testAllStatsP stats, char * infileN
 
 		free(resultsStr);
 		resultsStr = NULL;
+
+		if (outputStr != NULL && (*outputStr) != NULL)
+		{
+			free((*outputStr));
+			(*outputStr) = NULL;
+		}
 
 		return NOTOK;
 	}
@@ -464,49 +461,7 @@ int outputTestAllGraphsResults(char command, testAllStatsP stats, char * infileN
 	if (Result == OK)
 	{
 		if (outputStr != NULL)
-			(*outputStr) = sf_getTheStr(testOutput);
-		else if (sf_getFile(testOutput) != NULL)
-		{
-			if (fclose(sf_getFile(testOutput)) != 0)
-			{
-				charsAvailForFilename = (int) (MAXLINE - strlen(outfileName));
-				messageFormat = "Unable to close output file \"%.*s\".\n";
-				sprintf(messageContents, messageFormat, charsAvailForFilename, outfileName);
-				ErrorMessage(messageContents);
-				Result = NOTOK;
-			}
-		}
-	}
-	else
-	{
-		if (outputStr != NULL && (*outputStr) != NULL)
-		{
-			free((*outputStr));
-			(*outputStr) = NULL;
-		}
-		else if (sf_getFile(testOutput) != NULL)
-		{
-			if (fclose(sf_getFile(testOutput)) != 0)
-			{
-				charsAvailForFilename = (int) (MAXLINE - strlen(outfileName));
-				messageFormat = "Unable to close output file \"%.*s\".\n";
-				sprintf(messageContents, messageFormat, charsAvailForFilename, outfileName);
-				ErrorMessage(messageContents);
-				Result = NOTOK;
-			}
-			else
-			{
-				if (remove(outfileName) != 0)
-				{
-					charsAvailForFilename = (int) (MAXLINE - strlen(outfileName));
-					messageFormat = "Unable to remove output file \"%.*s\" after error.\n";
-					sprintf(messageContents, messageFormat, charsAvailForFilename, outfileName);
-					ErrorMessage(messageContents);
-					Result = NOTOK;
-				}
-			}
-			
-		}
+			(*outputStr) = sf_takeTheStr(testOutput);
 	}
 
 	free(headerStr);
@@ -514,6 +469,15 @@ int outputTestAllGraphsResults(char command, testAllStatsP stats, char * infileN
 
 	free(resultsStr);
 	resultsStr = NULL;
+
+	if (sf_closeFile(testOutput) != OK)
+	{
+		charsAvailForFilename = (int) (MAXLINE - strlen(outfileName));
+		messageFormat = "Unable to close output file \"%.*s\".\n";
+		sprintf(messageContents, messageFormat, charsAvailForFilename, outfileName);
+		ErrorMessage(messageContents);
+		Result = NOTOK;
+	}
 
 	sf_Free(&testOutput);
 

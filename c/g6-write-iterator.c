@@ -21,7 +21,7 @@ int allocateG6WriteIterator(G6WriteIterator **ppG6WriteIterator, graphP pGraph)
 		return NOTOK;
 	}
 
-	// fileOwnerFlag, numGraphsWritten, graphOrder, numCharsForGraphOrder,
+	// numGraphsWritten, graphOrder, numCharsForGraphOrder,
 	// numCharsForGraphEncoding, and currGraphBuffSize all set to 0
 	(*ppG6WriteIterator) = (G6WriteIterator *) calloc(1, sizeof(G6WriteIterator));
 
@@ -142,8 +142,6 @@ int beginG6WriteIterationToG6FilePath(G6WriteIterator *pG6WriteIterator, char *g
 		ErrorMessage(messageContents);
 		return NOTOK;
 	}
-
-	pG6WriteIterator->fileOwnerFlag = true;
 
 	exitCode = beginG6WriteIterationToG6FilePointer(pG6WriteIterator, g6Outfile);
 
@@ -465,16 +463,10 @@ int endG6WriteIteration(G6WriteIterator *pG6WriteIterator)
 	{
 		if (pG6WriteIterator->g6Output != NULL)
 		{
-			if (pG6WriteIterator->g6Output->pFile != NULL && pG6WriteIterator->fileOwnerFlag)
-			{
-				int fcloseCode = fclose(pG6WriteIterator->g6Output->pFile);
+			exitCode = sf_closeFile(pG6WriteIterator->g6Output);
 
-				if (fcloseCode != 0)
-				{
-					ErrorMessage("Unable to close G6WriteIterator's g6Outfile.\n");
-					exitCode = NOTOK;
-				}
-			}
+			if (exitCode != OK)
+				ErrorMessage("Unable to close g6Output file pointer.\n");
 
 			sf_Free(&(pG6WriteIterator->g6Output));
 		}
@@ -502,17 +494,7 @@ int freeG6WriteIterator(G6WriteIterator **ppG6WriteIterator)
 	if (ppG6WriteIterator != NULL && (*ppG6WriteIterator) != NULL)
 	{
 		if ((*ppG6WriteIterator)->g6Output != NULL)
-		{
-			if ((*ppG6WriteIterator)->g6Output->pFile != NULL && (*ppG6WriteIterator)->fileOwnerFlag)
-			{
-				exitCode = fclose((*ppG6WriteIterator)->g6Output->pFile);
-
-				if (exitCode != 0)
-					ErrorMessage("Unable to close g6Output file pointer.\n");
-			}
-
 			sf_Free(&((*ppG6WriteIterator)->g6Output));
-		}
 
 		(*ppG6WriteIterator)->numGraphsWritten = 0;
 		(*ppG6WriteIterator)->graphOrder = 0;
@@ -676,7 +658,7 @@ int _WriteGraphToG6String(graphP pGraph, char **g6OutputStr)
 	if (exitCode != OK)
 		ErrorMessage("Unable to write graph using G6WriteIterator.\n");
 	else
-		(*g6OutputStr) = sf_getTheStr(pG6WriteIterator->g6Output);
+		(*g6OutputStr) = sf_takeTheStr(pG6WriteIterator->g6Output);
 
 	// FIXME: Is this the right way to ensure the return codes from endG6WriteIteration and freeG6WriteIterator
 	// don't stomp over exitCode from writeGraphsUsingG6WriteIterator? I don't want success of end and free to

@@ -21,7 +21,7 @@ int allocateG6ReadIterator(G6ReadIterator **ppG6ReadIterator, graphP pGraph)
 		return NOTOK;
 	}
 
-	// fileOwnerFlag, numGraphsRead, graphOrder, numCharsForGraphOrder,
+	// numGraphsRead, graphOrder, numCharsForGraphOrder,
 	// numCharsForGraphEncoding, and currGraphBuffSize all set to 0
 	(*ppG6ReadIterator) = (G6ReadIterator *) calloc(1, sizeof(G6ReadIterator));
 
@@ -131,7 +131,6 @@ int beginG6ReadIterationFromG6FilePath(G6ReadIterator *pG6ReadIterator, char *g6
 		return NOTOK;
 	}
 
-	pG6ReadIterator->fileOwnerFlag = true;
 	exitCode = beginG6ReadIterationFromG6FilePointer(pG6ReadIterator, g6Infile);
 
 	return exitCode;
@@ -673,13 +672,10 @@ int endG6ReadIteration(G6ReadIterator *pG6ReadIterator)
 	{
 		if (pG6ReadIterator->g6Input != NULL)
 		{
-			if (pG6ReadIterator->g6Input->pFile != NULL && pG6ReadIterator->fileOwnerFlag)
-			{
-				exitCode = fclose(pG6ReadIterator->g6Input->pFile);
-				if (exitCode != 0)
-					ErrorMessage("Unable to close g6Input file pointer.\n");
-			}
-
+			exitCode = sf_closeFile(pG6ReadIterator->g6Input);
+			if (exitCode != OK)
+				ErrorMessage("Unable to close g6Input file pointer.\n");
+		
 			sf_Free(&(pG6ReadIterator->g6Input));
 		}
 
@@ -701,12 +697,9 @@ int freeG6ReadIterator(G6ReadIterator **ppG6ReadIterator)
 	{
 		if ((*ppG6ReadIterator)->g6Input != NULL)
 		{
-			if ((*ppG6ReadIterator)->g6Input->pFile != NULL && (*ppG6ReadIterator)->fileOwnerFlag)
-			{
-				exitCode = fclose((*ppG6ReadIterator)->g6Input->pFile);
-				if (exitCode != 0)
-					ErrorMessage("Unable to close g6Input file pointer.\n");
-			}
+			exitCode = sf_closeFile((*ppG6ReadIterator)->g6Input);
+			if (exitCode != OK)
+				ErrorMessage("Unable to close g6Input file pointer.\n");
 
 			sf_Free(&((*ppG6ReadIterator)->g6Input));
 		}

@@ -355,6 +355,12 @@ void TransformMenu()
 		if (Result != OK)
 			ErrorMessage("Failed to perform transformation.\n");
 	}
+
+	if (outputStr != NULL)
+	{
+		free(outputStr);
+		outputStr = NULL;
+	}
 }
 
 void TestMenu()

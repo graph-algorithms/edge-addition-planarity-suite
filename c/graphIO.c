@@ -407,7 +407,12 @@ int RetVal;
             extraDataAllowed = true;
     }
     else
+    {
         RetVal = _ReadGraphFromG6FilePointer(theGraph, Infile);
+        // Since G6ReadIterator closes Infile via sf_Free(), we don't want
+        // to try to fclose() again.
+        Infile = NULL;
+    }
 
     // The possibility of "extra data" is not allowed for .g6 format:
     // .g6 files may contain multiple graphs, which are not valid input
@@ -449,7 +454,7 @@ int RetVal;
         }
     }
 
-    if (strcmp(FileName, "stdin") != 0)
+    if (strcmp(FileName, "stdin") != 0 && Infile != NULL)
         fclose(Infile);
 
     return RetVal;
@@ -457,8 +462,12 @@ int RetVal;
 
 /********************************************************************
  gp_ReadFromString()
- Populates theGraph using the information stored in inputStr.
+ Populates theGraph using the information stored in inputStr (whose
+ ownership is transferred from the caller, and therefore must be
+ freed before returning).
+
  Supports adjacency list and adjacency matrix formats, not LEDA.
+
  Returns NOTOK for any error, or OK otherwise
  ********************************************************************/
 
@@ -470,16 +479,28 @@ int	 gp_ReadFromString(graphP theGraph, char *inputStr)
 
     strBufP inBuf = sb_New(0);
     if (inBuf == NULL)
+    {
+        if (inputStr != NULL)
+            free(inputStr);
         return NOTOK;
+    }
 
     if (sb_ConcatString(inBuf, inputStr) != OK)
     {
         sb_Free(&inBuf);
+
+        if (inputStr != NULL)
+            free(inputStr);
+
         return NOTOK;
     }
 
     if (strncmp(inputStr, "LEDA.GRAPH", strlen("LEDA.GRAPH")) == 0)
+    {
+        if (inputStr != NULL)
+            free(inputStr);
         return NOTOK;
+    }
     else if (strncmp(inputStr, "N=", strlen("N=")) == 0)
     {
         RetVal = _ReadAdjList(theGraph, NULL, inBuf);
@@ -493,7 +514,12 @@ int	 gp_ReadFromString(graphP theGraph, char *inputStr)
             extraDataAllowed = true;
     }
     else
+    {
         RetVal = _ReadGraphFromG6String(theGraph, inputStr);
+        // Since G6ReadIterator frees the inputStr via sf_Free(), we don't want
+        // to try to free again.
+        inputStr = NULL;
+    }
 
     // The possibility of "extra data" is not allowed for .g6 format:
     // .g6 files may contain multiple graphs, which are not valid input
@@ -511,6 +537,10 @@ int	 gp_ReadFromString(graphP theGraph, char *inputStr)
      }
 
     sb_Free(&inBuf);
+
+    if (inputStr != NULL)
+        free(inputStr);
+
     return RetVal;
 }
 
@@ -835,6 +865,9 @@ int RetVal;
      {
         case WRITE_G6        :
             RetVal = _WriteGraphToG6FilePointer(theGraph, Outfile);
+            // Since G6WriteIterator closes Outfile, we don't want
+            // to try to fclose() again.
+            Outfile = NULL;
             break;
         case WRITE_ADJLIST   :
             RetVal = _WriteAdjList(theGraph, Outfile, NULL);
@@ -868,7 +901,7 @@ int RetVal;
      if (strcmp(FileName, "stdout") == 0 || strcmp(FileName, "stderr") == 0)
          fflush(Outfile);
 
-     else if (fclose(Outfile) != 0)
+     else if (Outfile != NULL && fclose(Outfile) != 0)
          RetVal = NOTOK;
 
      return RetVal;
