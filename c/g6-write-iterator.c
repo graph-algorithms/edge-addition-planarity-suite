@@ -35,7 +35,6 @@ int allocateG6WriteIterator(G6WriteIterator **ppG6WriteIterator, graphP pGraph)
 	(*ppG6WriteIterator)->currGraphBuff = NULL;
 	(*ppG6WriteIterator)->columnOffsets = NULL;
 
-	// TODO: How to determine that pGraph is properly initialized?
 	if (pGraph == NULL || pGraph->N <= 0)
 	{
 		ErrorMessage("[ERROR] Must allocate and initialize graph with an order greater than 0 to use the G6WriteIterator.\n");
@@ -300,8 +299,7 @@ int _encodeAdjMatAsG6(G6WriteIterator *pG6WriteIterator) {
 
 	graphP pGraph = pG6WriteIterator->currGraph;
 
-	// TODO: How to determine that pGraph is properly initialized?
-	if (pGraph == NULL || pGraph->N == 0) //|| pGraph->adjMat == NULL) {
+	if (pGraph == NULL || pGraph->N == 0)
 	{
 		ErrorMessage("Graph is not allocated.\n");
 		return NOTOK;
@@ -551,17 +549,15 @@ int _WriteGraphToG6FilePath(graphP pGraph, char *g6OutputFilename)
 	{
 		ErrorMessage("Unable to write graph using G6WriteIterator.\n");
 	}
-
-	// FIXME: Is this the right way to ensure the return codes from endG6WriteIteration and freeG6WriteIterator
-	// don't stomp over exitCode from writeGraphsUsingG6WriteIterator? I don't want success of end and free to
-	// wipe out failure of write.
-	// FIXME: also, do we want to fclose() and remove() the g6OutputFile if we fail in endG6WriteIteration or freeG6WriteIterator?
-	int endG6WriteIterationCode = endG6WriteIteration(pG6WriteIterator);
-
-	if (endG6WriteIterationCode != OK)
+	else
 	{
-		ErrorMessage("Unable to end G6 write iteration.\n");
-		exitCode = endG6WriteIterationCode;
+		int endG6WriteIterationCode = endG6WriteIteration(pG6WriteIterator);
+
+		if (endG6WriteIterationCode != OK)
+		{
+			ErrorMessage("Unable to end G6 write iteration.\n");
+			exitCode = endG6WriteIterationCode;
+		}
 	}
 
 	int freeG6WriteIteratorCode = freeG6WriteIterator(&pG6WriteIterator);
@@ -605,17 +601,15 @@ int _WriteGraphToG6FilePointer(graphP pGraph, FILE *g6Outfile)
 	{
 		ErrorMessage("Unable to write graph using G6WriteIterator.\n");
 	}
-
-	// FIXME: Is this the right way to ensure the return codes from endG6WriteIteration and freeG6WriteIterator
-	// don't stomp over exitCode from writeGraphsUsingG6WriteIterator? I don't want success of end and free to
-	// wipe out failure of write.
-	// FIXME: also, do we want to fclose() and remove() the g6OutputFile if we fail in endG6WriteIteration or freeG6WriteIterator?
-	int endG6WriteIterationCode = endG6WriteIteration(pG6WriteIterator);
-
-	if (endG6WriteIterationCode != OK)
+	else
 	{
-		ErrorMessage("Unable to end G6 write iteration.\n");
-		exitCode = endG6WriteIterationCode;
+		int endG6WriteIterationCode = endG6WriteIteration(pG6WriteIterator);
+
+		if (endG6WriteIterationCode != OK)
+		{
+			ErrorMessage("Unable to end G6 write iteration.\n");
+			exitCode = endG6WriteIterationCode;
+		}
 	}
 
 	int freeG6WriteIteratorCode = freeG6WriteIterator(&pG6WriteIterator);
@@ -658,18 +652,16 @@ int _WriteGraphToG6String(graphP pGraph, char **g6OutputStr)
 	if (exitCode != OK)
 		ErrorMessage("Unable to write graph using G6WriteIterator.\n");
 	else
+	{
 		(*g6OutputStr) = sf_takeTheStr(pG6WriteIterator->g6Output);
 
-	// FIXME: Is this the right way to ensure the return codes from endG6WriteIteration and freeG6WriteIterator
-	// don't stomp over exitCode from writeGraphsUsingG6WriteIterator? I don't want success of end and free to
-	// wipe out failure of write.
-	// FIXME: also, do we want to null out (*g6OutputStr) if we fail in endG6WriteIteration or freeG6WriteIterator?
-	int endG6WriteIterationCode = endG6WriteIteration(pG6WriteIterator);
+		int endG6WriteIterationCode = endG6WriteIteration(pG6WriteIterator);
 
-	if (endG6WriteIterationCode != OK)
-	{
-		ErrorMessage("Unable to end G6 write iteration.\n");
-		exitCode = endG6WriteIterationCode;
+		if (endG6WriteIterationCode != OK)
+		{
+			ErrorMessage("Unable to end G6 write iteration.\n");
+			exitCode = endG6WriteIterationCode;
+		}
 	}
 
 	int freeG6WriteIteratorCode = freeG6WriteIterator(&pG6WriteIterator);

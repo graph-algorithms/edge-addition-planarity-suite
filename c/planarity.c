@@ -315,6 +315,12 @@ void TransformMenu()
 		Prompt("Enter input filename:\n");
 		fflush(stdin);
 		fgets(infileName, MAXLINE, stdin);
+
+		if (strncmp(infileName, "stdin", 5) == 0)
+		{
+			ErrorMessage("stdin not supported from menu.\n");
+			infileName[0] = '\0';
+		}
 	}
 	while(strlen(infileName) == 0);
 
@@ -381,6 +387,12 @@ void TestMenu()
 		Prompt("Enter input filename:\n");
 		fflush(stdin);
 		fgets(infileName, MAXLINE, stdin);
+
+		if (strncmp(infileName, "stdin", 5) == 0)
+		{
+			ErrorMessage("stdin not supported from menu.\n");
+			infileName[0] = '\0';
+		}
 	}
 	while(strlen(infileName) == 0);
 	
