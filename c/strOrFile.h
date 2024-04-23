@@ -14,6 +14,7 @@ extern "C" {
 #include <stdio.h>
 
 typedef struct {
+    char fileMode;
     FILE *pFile;
     char *theStr;
     int theStrPos;
@@ -26,9 +27,12 @@ strOrFileP sf_New(FILE * pFile, char *theStr);
 char sf_getc(strOrFileP theStrOrFile);
 char sf_ungetc(char theChar, strOrFileP theStrOrFile);
 char * sf_fgets(char *str, int count, strOrFileP theStrOrFile);
+
 int sf_fputs(char *strToWrite, strOrFileP theStrOrFile);
-char * sf_getTheStr(strOrFileP theStrOrFile);
-FILE * sf_getFile(strOrFileP theStrOrFile);
+
+char * sf_takeTheStr(strOrFileP theStrOrFile);
+
+int sf_closeFile(strOrFileP theStrOrFile);
 
 void sf_Free(strOrFileP *pStrOrFile);
 

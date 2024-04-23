@@ -21,7 +21,7 @@ int allocateG6WriteIterator(G6WriteIterator **ppG6WriteIterator, graphP pGraph)
 		return NOTOK;
 	}
 
-	// fileOwnerFlag, numGraphsWritten, graphOrder, numCharsForGraphOrder,
+	// numGraphsWritten, graphOrder, numCharsForGraphOrder,
 	// numCharsForGraphEncoding, and currGraphBuffSize all set to 0
 	(*ppG6WriteIterator) = (G6WriteIterator *) calloc(1, sizeof(G6WriteIterator));
 
@@ -35,7 +35,6 @@ int allocateG6WriteIterator(G6WriteIterator **ppG6WriteIterator, graphP pGraph)
 	(*ppG6WriteIterator)->currGraphBuff = NULL;
 	(*ppG6WriteIterator)->columnOffsets = NULL;
 
-	// TODO: How to determine that pGraph is properly initialized?
 	if (pGraph == NULL || pGraph->N <= 0)
 	{
 		ErrorMessage("[ERROR] Must allocate and initialize graph with an order greater than 0 to use the G6WriteIterator.\n");
@@ -143,8 +142,6 @@ int beginG6WriteIterationToG6FilePath(G6WriteIterator *pG6WriteIterator, char *g
 		return NOTOK;
 	}
 
-	pG6WriteIterator->fileOwnerFlag = true;
-
 	exitCode = beginG6WriteIterationToG6FilePointer(pG6WriteIterator, g6Outfile);
 
 	if (exitCode != OK)
@@ -203,7 +200,12 @@ int _beginG6WriteIteration(G6WriteIterator *pG6WriteIterator)
 {
 	int exitCode = OK;
 
-	sf_fputs(">>graph6<<", pG6WriteIterator->g6Output);
+	char *g6Header = ">>graph6<<";
+	if (sf_fputs(g6Header, pG6WriteIterator->g6Output) < 0)
+	{
+		ErrorMessage("Unable to fputs header to g6Output.\n");
+		return NOTOK;
+	}
 
 	pG6WriteIterator->graphOrder = pG6WriteIterator->currGraph->N;
 
@@ -265,10 +267,8 @@ int writeGraphUsingG6WriteIterator(G6WriteIterator *pG6WriteIterator)
 	}
 
 	exitCode = _printEncodedGraph(pG6WriteIterator);
-	if (exitCode != OK) {
+	if (exitCode != OK)
 		ErrorMessage("Unable to output g6 encoded graph to string-or-file container.\n");
-		fflush(stdout);
-	}
 
 	return exitCode;
 }
@@ -299,8 +299,7 @@ int _encodeAdjMatAsG6(G6WriteIterator *pG6WriteIterator) {
 
 	graphP pGraph = pG6WriteIterator->currGraph;
 
-	// TODO: How to determine that pGraph is properly initialized?
-	if (pGraph == NULL || pGraph->N == 0) //|| pGraph->adjMat == NULL) {
+	if (pGraph == NULL || pGraph->N == 0)
 	{
 		ErrorMessage("Graph is not allocated.\n");
 		return NOTOK;
@@ -445,9 +444,7 @@ int _printEncodedGraph(G6WriteIterator *pG6WriteIterator)
 		return NOTOK;
 	}
 
-	int outputLen = sf_fputs(pG6WriteIterator->currGraphBuff, pG6WriteIterator->g6Output);
-
-	if (outputLen != strlen(pG6WriteIterator->currGraphBuff))
+	if (sf_fputs(pG6WriteIterator->currGraphBuff, pG6WriteIterator->g6Output) < 0)
 	{
 		ErrorMessage("Failed to output all characters of g6 encoding.\n");
 		exitCode = NOTOK;
@@ -464,16 +461,10 @@ int endG6WriteIteration(G6WriteIterator *pG6WriteIterator)
 	{
 		if (pG6WriteIterator->g6Output != NULL)
 		{
-			if (pG6WriteIterator->g6Output->pFile != NULL && pG6WriteIterator->fileOwnerFlag)
-			{
-				int fcloseCode = fclose(pG6WriteIterator->g6Output->pFile);
+			exitCode = sf_closeFile(pG6WriteIterator->g6Output);
 
-				if (fcloseCode != 0)
-				{
-					ErrorMessage("Unable to close G6WriteIterator's g6Outfile.\n");
-					exitCode = NOTOK;
-				}
-			}
+			if (exitCode != OK)
+				ErrorMessage("Unable to close g6Output file pointer.\n");
 
 			sf_Free(&(pG6WriteIterator->g6Output));
 		}
@@ -501,17 +492,7 @@ int freeG6WriteIterator(G6WriteIterator **ppG6WriteIterator)
 	if (ppG6WriteIterator != NULL && (*ppG6WriteIterator) != NULL)
 	{
 		if ((*ppG6WriteIterator)->g6Output != NULL)
-		{
-			if ((*ppG6WriteIterator)->g6Output->pFile != NULL && (*ppG6WriteIterator)->fileOwnerFlag)
-			{
-				exitCode = fclose((*ppG6WriteIterator)->g6Output->pFile);
-
-				if (exitCode != 0)
-					ErrorMessage("Unable to close g6Output file pointer.\n");
-			}
-
 			sf_Free(&((*ppG6WriteIterator)->g6Output));
-		}
 
 		(*ppG6WriteIterator)->numGraphsWritten = 0;
 		(*ppG6WriteIterator)->graphOrder = 0;
@@ -549,6 +530,7 @@ int _WriteGraphToG6FilePath(graphP pGraph, char *g6OutputFilename)
 	if (exitCode != OK)
 	{
 		ErrorMessage("Unable to allocate G6WriteIterator.\n");
+		freeG6WriteIterator(&pG6WriteIterator);
 		return exitCode;
 	}
 
@@ -557,6 +539,7 @@ int _WriteGraphToG6FilePath(graphP pGraph, char *g6OutputFilename)
 	if (exitCode != OK)
 	{
 		ErrorMessage("Unable to begin G6 write iteration.\n");
+		freeG6WriteIterator(&pG6WriteIterator);
 		return exitCode;
 	}
 
@@ -565,21 +548,25 @@ int _WriteGraphToG6FilePath(graphP pGraph, char *g6OutputFilename)
 	if (exitCode != OK)
 	{
 		ErrorMessage("Unable to write graph using G6WriteIterator.\n");
-		return exitCode;
 	}
-
-	exitCode = endG6WriteIteration(pG6WriteIterator);
-
-	if (exitCode != OK)
+	else
 	{
-		ErrorMessage("Unable to end G6 write iteration.\n");
-		return exitCode;
+		int endG6WriteIterationCode = endG6WriteIteration(pG6WriteIterator);
+
+		if (endG6WriteIterationCode != OK)
+		{
+			ErrorMessage("Unable to end G6 write iteration.\n");
+			exitCode = endG6WriteIterationCode;
+		}
 	}
 
-	exitCode = freeG6WriteIterator(&pG6WriteIterator);
+	int freeG6WriteIteratorCode = freeG6WriteIterator(&pG6WriteIterator);
 	
-	if (exitCode != OK)
+	if (freeG6WriteIteratorCode != OK)
+	{
 		ErrorMessage("Unable to free G6Writer.\n");
+		exitCode = freeG6WriteIteratorCode;
+	}
 
 	return exitCode;
 }
@@ -595,6 +582,7 @@ int _WriteGraphToG6FilePointer(graphP pGraph, FILE *g6Outfile)
 	if (exitCode != OK)
 	{
 		ErrorMessage("Unable to allocate G6WriteIterator.\n");
+		freeG6WriteIterator(&pG6WriteIterator);
 		return exitCode;
 	}
 
@@ -603,6 +591,7 @@ int _WriteGraphToG6FilePointer(graphP pGraph, FILE *g6Outfile)
 	if (exitCode != OK)
 	{
 		ErrorMessage("Unable to begin G6 write iteration.\n");
+		freeG6WriteIterator(&pG6WriteIterator);
 		return exitCode;
 	}
 
@@ -611,21 +600,25 @@ int _WriteGraphToG6FilePointer(graphP pGraph, FILE *g6Outfile)
 	if (exitCode != OK)
 	{
 		ErrorMessage("Unable to write graph using G6WriteIterator.\n");
-		return exitCode;
 	}
-
-	exitCode = endG6WriteIteration(pG6WriteIterator);
-
-	if (exitCode != OK)
+	else
 	{
-		ErrorMessage("Unable to end G6 write iteration.\n");
-		return exitCode;
+		int endG6WriteIterationCode = endG6WriteIteration(pG6WriteIterator);
+
+		if (endG6WriteIterationCode != OK)
+		{
+			ErrorMessage("Unable to end G6 write iteration.\n");
+			exitCode = endG6WriteIterationCode;
+		}
 	}
 
-	exitCode = freeG6WriteIterator(&pG6WriteIterator);
+	int freeG6WriteIteratorCode = freeG6WriteIterator(&pG6WriteIterator);
 	
-	if (exitCode != OK)
+	if (freeG6WriteIteratorCode != OK)
+	{
 		ErrorMessage("Unable to free G6Writer.\n");
+		exitCode = freeG6WriteIteratorCode;
+	}
 
 	return exitCode;
 }
@@ -641,6 +634,7 @@ int _WriteGraphToG6String(graphP pGraph, char **g6OutputStr)
 	if (exitCode != OK)
 	{
 		ErrorMessage("Unable to allocate G6WriteIterator.\n");
+		freeG6WriteIterator(&pG6WriteIterator);
 		return exitCode;
 	}
 
@@ -649,31 +643,34 @@ int _WriteGraphToG6String(graphP pGraph, char **g6OutputStr)
 	if (exitCode != OK)
 	{
 		ErrorMessage("Unable to begin G6 write iteration.\n");
+		freeG6WriteIterator(&pG6WriteIterator);
 		return exitCode;
 	}
 
 	exitCode = writeGraphUsingG6WriteIterator(pG6WriteIterator);
 
 	if (exitCode != OK)
-	{
 		ErrorMessage("Unable to write graph using G6WriteIterator.\n");
-		return exitCode;
-	}
-
-	(*g6OutputStr) = sf_getTheStr(pG6WriteIterator->g6Output);
-
-	exitCode = endG6WriteIteration(pG6WriteIterator);
-
-	if (exitCode != OK)
+	else
 	{
-		ErrorMessage("Unable to end G6 write iteration.\n");
-		return exitCode;
+		(*g6OutputStr) = sf_takeTheStr(pG6WriteIterator->g6Output);
+
+		int endG6WriteIterationCode = endG6WriteIteration(pG6WriteIterator);
+
+		if (endG6WriteIterationCode != OK)
+		{
+			ErrorMessage("Unable to end G6 write iteration.\n");
+			exitCode = endG6WriteIterationCode;
+		}
 	}
 
-	exitCode = freeG6WriteIterator(&pG6WriteIterator);
+	int freeG6WriteIteratorCode = freeG6WriteIterator(&pG6WriteIterator);
 	
-	if (exitCode != OK)
+	if (freeG6WriteIteratorCode != OK)
+	{
 		ErrorMessage("Unable to free G6Writer.\n");
+		exitCode = freeG6WriteIteratorCode;
+	}
 
 	return exitCode;
 }

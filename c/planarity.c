@@ -59,6 +59,13 @@ char * GetAlgorithmChoices(void)
 	return "pdo234";
 }
 
+char * GetSupportedOutputChoices(void)
+{
+	return  "G. G6 format\n"
+			"A. Adjacency List format\n"
+			"M. Adjacency Matrix format\n";
+}
+
 char * GetSupportedOutputFormats(void)
 {
 	return "gam";
@@ -308,6 +315,12 @@ void TransformMenu()
 		Prompt("Enter input filename:\n");
 		fflush(stdin);
 		fgets(infileName, MAXLINE, stdin);
+
+		if (strncmp(infileName, "stdin", 5) == 0)
+		{
+			ErrorMessage("stdin not supported from menu.\n");
+			infileName[0] = '\0';
+		}
 	}
 	while(strlen(infileName) == 0);
 
@@ -320,9 +333,11 @@ void TransformMenu()
 
 	do
 	{
+		Message(GetSupportedOutputChoices());
 		Prompt("Enter output format: ");
 		fflush(stdin);
 		scanf(" %c", &outputFormat);
+		outputFormat = tolower(outputFormat);
 		if (strchr(GetSupportedOutputFormats(), outputFormat))
 			sprintf(commandStr, "-t%c", outputFormat);
 	}
@@ -346,6 +361,12 @@ void TransformMenu()
 		if (Result != OK)
 			ErrorMessage("Failed to perform transformation.\n");
 	}
+
+	if (outputStr != NULL)
+	{
+		free(outputStr);
+		outputStr = NULL;
+	}
 }
 
 void TestMenu()
@@ -366,6 +387,12 @@ void TestMenu()
 		Prompt("Enter input filename:\n");
 		fflush(stdin);
 		fgets(infileName, MAXLINE, stdin);
+
+		if (strncmp(infileName, "stdin", 5) == 0)
+		{
+			ErrorMessage("stdin not supported from menu.\n");
+			infileName[0] = '\0';
+		}
 	}
 	while(strlen(infileName) == 0);
 	

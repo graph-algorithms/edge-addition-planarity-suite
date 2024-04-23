@@ -419,7 +419,8 @@ int runSpecificGraphTest(char *command, char *infileName, int inputInMemFlag)
 
 	if  (Result == OK)
 	{
-		// Perform the indicated algorithm on the graph in the input file or string.
+		// Perform the indicated algorithm on the graph in the input file or string. gp_ReadFromString()
+		// will handle freeing inputString.
 		Result = SpecificGraph(algorithmCode,
 				               infileName, NULL, NULL,
 							   inputString, &actualOutput, &actualOutput2);
@@ -474,8 +475,6 @@ int runSpecificGraphTest(char *command, char *infileName, int inputInMemFlag)
 	// Cleanup and then return the command-line style result code
 	Message("\n");
 
-	if (inputString != NULL)
-		free(inputString);
 	if (actualOutput != NULL)
 		free(actualOutput);
 	if (actualOutput2 != NULL)
@@ -517,7 +516,8 @@ int runGraphTransformationTest(char *command, char *infileName, int inputInMemFl
 		int zeroBasedOutputFlag = 0;
 		char *actualOutput = NULL;
 		// We want to handle the test being run when we read from an input file or read from a string,
-		//	so pass both infileName and inputString.
+		// so pass both infileName and inputString. Ownership of inputString is relinquished to TestGraphFunctionality,
+		// and gp_ReadFromString() will handle freeing it.
 		// We want to output to string, so we pass in the address of the actualOutput string.
 		Result = TestGraphFunctionality(command, infileName, inputString, &zeroBasedOutputFlag, NULL, &actualOutput);
 		
@@ -534,7 +534,7 @@ int runGraphTransformationTest(char *command, char *infileName, int inputInMemFl
 			if (Result != OK || expectedOutfileName == NULL)
 			{
 				ErrorMessage("Unable to construct output filename for expected transformation output.\n");
-				return NOTOK;
+				return -1;
 			}
 
 			Result = TextFileMatchesString(expectedOutfileName, actualOutput);
@@ -568,12 +568,6 @@ int runGraphTransformationTest(char *command, char *infileName, int inputInMemFl
 	}
 
 	Message("\n");
-
-	if (inputString != NULL)
-	{
-		free(inputString);
-		inputString = NULL;
-	}
 
 	return (Result == OK) ? 0 : -1;
 }

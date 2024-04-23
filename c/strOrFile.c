@@ -7,6 +7,7 @@ See the LICENSE.TXT file for licensing information.
 #include <string.h>
 #include <stdlib.h>
 
+#include "appconst.h"
 #include "strOrFile.h"
 
 /********************************************************************
@@ -15,6 +16,7 @@ See the LICENSE.TXT file for licensing information.
 
  Returns the allocated string-or-file container, or NULL on error.
  ********************************************************************/
+ // TODO: (#56) add char fileMode to differentiate between read and write modes
 strOrFileP sf_New(FILE * pFile, char *theStr)
 {
 strOrFileP theStrOrFile;
@@ -168,9 +170,13 @@ int sf_fputs(char *strToWrite, strOrFileP theStrOrFile)
 	else if (theStrOrFile->theStr != NULL)
 	{
 		// Want to be able to contain the original theStr contents, the strToWrite, and a null terminator (added by strcat)
-		theStrOrFile->theStr = realloc(theStrOrFile->theStr, (strlen(theStrOrFile->theStr) + lenOfStringToPuts + 1) * sizeof(char));
-		if (theStrOrFile->theStr == NULL)
+		char *newStr = realloc(theStrOrFile->theStr, (strlen(theStrOrFile->theStr) + lenOfStringToPuts + 1) * sizeof(char));
+		// If realloc failed, pointer returned will be NULL; error will be handled by eventually freeing iterator, which will
+		// clean up the old memory for theStrOrFile->theStr
+		if (newStr == NULL)
 			return outputLen;
+		else
+			theStrOrFile->theStr = newStr;
 		strcat(theStrOrFile->theStr, strToWrite);
 		theStrOrFile->theStrPos += lenOfStringToPuts;
 		outputLen = lenOfStringToPuts;
@@ -180,41 +186,86 @@ int sf_fputs(char *strToWrite, strOrFileP theStrOrFile)
 }
 
 /********************************************************************
- sf_getTheStr()
- Returns the char * stored in the string-or-file container, if any
- (i.e. will be NULL if the string-or-file container is meant to contain
- a FILE *).
+ sf_takeTheStr()
+ Returns the char * stored in the string-or-file container and NULLs
+ out the internal reference so ownership of the memory is transferred
+ to the caller.
+
+ The pointer returned will be NULL if the strOrFile contains a FILE *.
  ********************************************************************/
-char * sf_getTheStr(strOrFileP theStrOrFile)
+char * sf_takeTheStr(strOrFileP theStrOrFile)
 {
-	return theStrOrFile->theStr;
+	char * theStr =  theStrOrFile->theStr;
+	theStrOrFile->theStr = NULL;
+	return theStr;
 }
 
 /********************************************************************
- sf_getFile()
- Returns the FILE * stored in the string-or-file container, if any
- (i.e. will be NULL if the string-or-file container is meant to contain
- a char *).
+ sf_closeFile()
+ If the strOrFile container contains a string, degenerately returns OK.
+
+ If the strOrFile container contains a FILE pointer:
+   - if the FILE pointer is one of stdin, stdout, or stderr, calls
+   fflush() on the stream and captures the errorCode
+   - else, closes pFile and sets the internal pointer to NULL, then
+   captures the errorCode from fclose()
+ If the errorCode is less than 0, returns NOTOK, otherwise returns OK.
  ********************************************************************/
-FILE * sf_getFile(strOrFileP theStrOrFile)
+int sf_closeFile(strOrFileP theStrOrFile)
 {
-	return theStrOrFile->pFile;
+	FILE *pFile = theStrOrFile->pFile;
+	theStrOrFile->pFile = NULL;
+	if (pFile != NULL)
+	{
+		int errorCode = 0;
+
+		if (pFile == stdin || pFile == stdout || pFile == stderr)
+			errorCode = fflush(pFile);
+		else
+			errorCode = fclose(pFile);
+		
+		if (errorCode < 0)
+			return NOTOK;
+	}
+
+	return OK;
 }
 
 /********************************************************************
  sf_Free()
  Receives a pointer-pointer to a string-or-file container.
- Sets the pointers to theStr and pFile to NULL, then uses the 
- indirection operator to free the string-or-file container and set the
- pointer to NULL.
+
+ If the strOrFile contains a string which has not yet been "taken"
+ using sf_takeTheStr() (i.e. we want inputStr to be freed, and in an
+ error state we want to free outputStr), the string is freed, the
+ internal pointer is set to NULL, and theStrPos is set to 0.
+
+ If the strOrFile contains a FILE pointer, we call sf_closeFile()
+ and set the internal pointer to NULL. Note that unless we are in an
+ error state when sf_Free() is called, sf_closeFile should have already
+ been called.
+
+ Finally, we use the indirection operator to free the strOrFile
+ container and set the pointer to NULL.
  ********************************************************************/
 void sf_Free(strOrFileP *pStrOrFile)
 {
 	if (pStrOrFile != NULL && (*pStrOrFile) != NULL)
 	{
+		if ((*pStrOrFile)->theStr != NULL)
+			free((*pStrOrFile)->theStr);
 		(*pStrOrFile)->theStr = NULL;
-		(*pStrOrFile)->pFile = NULL;
 		(*pStrOrFile)->theStrPos = 0;
+
+		if ((*pStrOrFile)->pFile != NULL)
+		{
+			// If sf_closeFile() has not previously been called, we must be in an error state
+			sf_closeFile((*pStrOrFile));
+			// TODO: (#56) if the strOrFile container's FILE pointer corresponds to an output file,
+			// i.e. fileMode is 'w', we should try to remove the file since the error state means
+			// the contents are invalid
+		}
+		(*pStrOrFile)->pFile = NULL;
 
 		free(*pStrOrFile);
 		(*pStrOrFile) = NULL;

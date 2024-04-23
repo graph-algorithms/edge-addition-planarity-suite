@@ -19,7 +19,6 @@ extern "C" {
 
 typedef struct {
 	strOrFileP g6Input;
-	bool fileOwnerFlag;
 	int numGraphsRead;
 
 	int graphOrder;
