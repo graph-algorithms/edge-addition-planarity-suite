@@ -385,10 +385,7 @@ char lineBuff[255];
 int RetVal;
 
     if (strcmp(FileName, "stdin") == 0)
-    {
         Infile = stdin;
-        fflush(Infile);
-    }
     else if ((Infile = fopen(FileName, READTEXT)) == NULL)
         return NOTOK;
 
