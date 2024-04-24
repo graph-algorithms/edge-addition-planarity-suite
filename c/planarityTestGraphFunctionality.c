@@ -154,6 +154,9 @@ int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr
 							sprintf(messageContents, messageFormat, fileBufSize, charsAvailForFilename, infileName);
 							ErrorMessage(messageContents);
 
+							fclose(infile);
+							infile = NULL;
+							
 							gp_Free(&theGraph);
 
 							return NOTOK;
