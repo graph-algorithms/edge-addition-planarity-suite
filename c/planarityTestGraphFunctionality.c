@@ -23,7 +23,7 @@ typedef testAllStats * testAllStatsP;
 int transformFile(graphP theGraph, char *infileName);
 int transformString(graphP theGraph, char *inputStr);
 
-int testAllGraphs(graphP theGraph, char command, char *inputStr, testAllStatsP stats);
+int testAllGraphs(graphP theGraph, char command, FILE *infile, testAllStatsP stats);
 int outputTestAllGraphsResults(char command, testAllStatsP stats, char *infileName, char *outfileName, char **outputStr);
 
 int _getNumCharsToReprInt(int theNum)
@@ -47,8 +47,9 @@ int _getNumCharsToReprInt(int theNum)
  outputFormat - output format; currently only supports WRITE_ADJLIST
  outfileName - name of primary output file, or NULL to construct an output filename based on the input
  outputStr - pointer to string which we wish to use to store the transformation output
+ fileBufSize - desired FILE buffer size
  ****************************************************************************/
-int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr, int *outputBase, char *outfileName, char **outputStr)
+int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr, int *outputBase, char *outfileName, char **outputStr, size_t fileBufSize)
 {
 	int Result = OK;
 	platform_time start, end;
@@ -129,9 +130,8 @@ int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr
 					// Start the timer
 					platform_GetTime(start);
 
-					inputStr = ReadTextFileIntoString(infileName);
-
-					if (inputStr == NULL)
+					FILE *infile = fopen(infileName, "r");
+					if (infile == NULL)
 					{
 						charsAvailForFilename = (int) (MAXLINE - strlen(infileName));
 						messageFormat = "Unable to open file \"%.*s\" for input.\n";
@@ -143,11 +143,28 @@ int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr
 						return NOTOK;
 					}
 
+					if (fileBufSize > 0)
+					{
+						fileBufSize = (fileBufSize > BUFSIZ && fileBufSize < 2000000000) ? fileBufSize : BUFSIZ;
+
+						if (setvbuf(infile, NULL, _IOFBF, fileBufSize) != 0)
+						{
+							charsAvailForFilename = (int) (MAXLINE - strlen(infileName));
+							messageFormat = "Unable to change FILE buffer size to %zu after opening \"%.*s\" for input.\n";
+							sprintf(messageContents, messageFormat, fileBufSize, charsAvailForFilename, infileName);
+							ErrorMessage(messageContents);
+
+							gp_Free(&theGraph);
+
+							return NOTOK;
+						}
+					}
+
 					testAllStats stats;
 					memset(&stats, 0, sizeof(testAllStats));
 
 					char command = commandString[1];
-					Result = testAllGraphs(theGraph, command, inputStr, &stats);
+					Result = testAllGraphs(theGraph, command, infile, &stats);
 
 					// Stop the timer
 					platform_GetTime(end);
@@ -223,7 +240,7 @@ int transformString(graphP theGraph, char *inputStr)
 	TEST ALL GRAPHS IN .G6
 */
 
-int testAllGraphs(graphP theGraph, char command, char *inputStr, testAllStatsP stats)
+int testAllGraphs(graphP theGraph, char command, FILE *infile, testAllStatsP stats)
 {
 	int Result = OK;
 
@@ -244,7 +261,7 @@ int testAllGraphs(graphP theGraph, char command, char *inputStr, testAllStatsP s
 		return Result;
 	}
 
-	Result = beginG6ReadIterationFromG6String(pG6ReadIterator, inputStr);
+	Result = beginG6ReadIterationFromG6FilePointer(pG6ReadIterator, infile);
 
 	if (Result != OK)
 	{

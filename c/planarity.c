@@ -345,7 +345,7 @@ void TransformMenu()
 
 	if (strlen(outfileName) == 0)
 	{
-		Result = TestGraphFunctionality(commandStr, infileName, NULL, NULL, NULL, &outputStr);
+		Result = TestGraphFunctionality(commandStr, infileName, NULL, NULL, NULL, &outputStr, 0);
 		if (Result != OK || outputStr == NULL)
 			ErrorMessage("Failed to perform transformation.\n");
 		else
@@ -357,7 +357,7 @@ void TransformMenu()
 	}
 	else
 	{
-		Result = TestGraphFunctionality(commandStr, infileName, NULL, NULL, outfileName, NULL);
+		Result = TestGraphFunctionality(commandStr, infileName, NULL, NULL, outfileName, NULL, 0);
 		if (Result != OK)
 			ErrorMessage("Failed to perform transformation.\n");
 	}
@@ -418,7 +418,7 @@ void TestMenu()
 
 	if (strlen(outfileName) == 0)
 	{
-		Result = TestGraphFunctionality(commandStr, infileName, NULL, NULL, NULL, &outputStr);
+		Result = TestGraphFunctionality(commandStr, infileName, NULL, NULL, NULL, &outputStr, 0);
 		if (Result != OK || outputStr == NULL)
 			ErrorMessage("Algorithm test on all graphs in .g6 input file failed.\n");
 		else
@@ -430,7 +430,7 @@ void TestMenu()
 	}
 	else
 	{
-		Result = TestGraphFunctionality(commandStr, infileName, NULL, NULL, outfileName, NULL);
+		Result = TestGraphFunctionality(commandStr, infileName, NULL, NULL, outfileName, NULL, 0);
 		if (Result != OK)
 			ErrorMessage("Algorithm test on all graphs in .g6 input file failed.\n");
 	}
