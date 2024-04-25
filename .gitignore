@@ -93,7 +93,7 @@ compile
 test-driver
 
 # Ignoring configuration for VSCode
-**/.vscode/
+#**/.vscode/
 
 ## MacOS excludes
 .DS_Store
