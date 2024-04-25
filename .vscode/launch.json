@@ -15,11 +15,6 @@
                 // Command: `planarity -test <samplesDir>`
                 // "-test",
                 // "${workspaceFolder}\\c\\samples"
-                "-t",
-                "-p",
-                "${workspaceFolder}\\c\\samples\\test.n11.m14.g6",
-                "${workspaceFolder}\\c\\samples\\test.n11.m14.g6.p.commandline.out",
-                "0"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
@@ -56,11 +51,6 @@
                 // Command: `planarity -test <samplesDir>`
                 // "-test",
                 // "${workspaceFolder}\\c\\samples"
-                "-t",
-                "-p",
-                "${workspaceFolder}\\c\\samples\\test.n11.m14.g6",
-                "${workspaceFolder}\\c\\samples\\test.n11.m14.g6.p.commandline.out",
-                "0"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
@@ -147,11 +137,6 @@
                 // Command: `planarity -test <samplesDir>`
                 // "-test",
                 // "${workspaceFolder}\\c\\samples"
-                "-t",
-                "-p",
-                "${workspaceFolder}\\c\\samples\\test.n11.m14.g6",
-                "${workspaceFolder}\\c\\samples\\test.n11.m14.g6.p.commandline.out",
-                "1"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
@@ -175,11 +160,6 @@
                 // Command: `planarity -test <samplesDir>`
                 // "-test",
                 // "${workspaceFolder}\\c\\samples"
-                "-t",
-                "-p",
-                "${workspaceFolder}\\c\\samples\\test.n11.m14.g6",
-                "${workspaceFolder}\\c\\samples\\test.n11.m14.g6.p.commandline.out",
-                "1"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
