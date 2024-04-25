@@ -143,10 +143,10 @@ int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr
 						return NOTOK;
 					}
 
+					fileBufSize = (fileBufSize >= BUFSIZ && fileBufSize <= 2000000000) ? fileBufSize : 0;
+
 					if (fileBufSize > 0)
 					{
-						fileBufSize = (fileBufSize > BUFSIZ && fileBufSize < 2000000000) ? fileBufSize : BUFSIZ;
-
 						if (setvbuf(infile, NULL, _IOFBF, fileBufSize) != 0)
 						{
 							charsAvailForFilename = (int) (MAXLINE - strlen(infileName));
