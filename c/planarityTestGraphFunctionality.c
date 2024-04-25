@@ -16,6 +16,7 @@ typedef struct {
 	int numOK;
 	int numNONEMBEDDABLE;
 	int errorFlag;
+	size_t fileBufSize;
 } testAllStats;
 
 typedef testAllStats * testAllStatsP;
@@ -165,6 +166,8 @@ int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr
 
 					testAllStats stats;
 					memset(&stats, 0, sizeof(testAllStats));
+
+					stats.fileBufSize = (fileBufSize == 0) ? BUFSIZ : fileBufSize;
 
 					char command = commandString[1];
 					Result = testAllGraphs(theGraph, command, infile, &stats);
@@ -356,12 +359,13 @@ int outputTestAllGraphsResults(char command, testAllStatsP stats, char * infileN
 	char *finalSlash = strrchr(infileName, FILE_DELIMITER);
 	char *infileBasename = finalSlash ? (finalSlash + 1) : infileName;
 
-	char *headerFormat = "FILENAME=\"%s\" DURATION=\"%.3lf\"\n";
+	char *headerFormat = "FILENAME=\"%s\" DURATION=\"%.3lf\" BUFSIZ=\"%zu\"\n";
 	char *headerStr = (char *) malloc(
 										(
 											strlen(headerFormat) +
 											strlen(infileBasename) +
 											strlen("-1.7976931348623158e+308") + // -DBL_MAX from float.h
+											strlen("18446744073709551615") + // largest unsigned long int
 											3
 										) * sizeof(char));
 	if (headerStr == NULL)
@@ -370,7 +374,7 @@ int outputTestAllGraphsResults(char command, testAllStatsP stats, char * infileN
 		return NOTOK;
 	}
 
-	sprintf(headerStr, headerFormat, infileBasename, stats->duration);
+	sprintf(headerStr, headerFormat, infileBasename, stats->duration, stats->fileBufSize);
 
 	char *resultsStr = (char *) malloc(
 										(
