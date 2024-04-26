@@ -702,7 +702,6 @@ int callTestGraphFunctionality(int argc, char *argv[])
 	int offset = 0;
 	char *commandString = NULL;
 	char *infileName = NULL, *outfileName = NULL;
-	size_t fileBufSize = 0;
 
 	if (argc < 5)
 		return -1;
