@@ -519,7 +519,7 @@ int runGraphTransformationTest(char *command, char *infileName, int inputInMemFl
 		// so pass both infileName and inputString. Ownership of inputString is relinquished to TestGraphFunctionality,
 		// and gp_ReadFromString() will handle freeing it.
 		// We want to output to string, so we pass in the address of the actualOutput string.
-		Result = TestGraphFunctionality(command, infileName, inputString, &zeroBasedOutputFlag, NULL, &actualOutput, 0);
+		Result = TestGraphFunctionality(command, infileName, inputString, &zeroBasedOutputFlag, NULL, &actualOutput);
 		
 		if (Result != OK || actualOutput == NULL)
 		{
@@ -719,12 +719,7 @@ int callTestGraphFunctionality(int argc, char *argv[])
 	infileName = argv[3+offset];
 	outfileName = argv[4+offset];
 
-	if (argc == (6 + offset))
-	{
-		fileBufSize = (size_t) strtoul(argv[5 + offset], NULL, 10);
-	}
-
 	// We don't want to read from string nor output to string, so inputStr and outputStr are NULL
 	// We don't need to capture whether output is 0- or 1-based, so zeroBasedOutputFlag arg is NULL
-	return TestGraphFunctionality(commandString, infileName, NULL, NULL, outfileName, NULL, fileBufSize);
+	return TestGraphFunctionality(commandString, infileName, NULL, NULL, outfileName, NULL);
 }

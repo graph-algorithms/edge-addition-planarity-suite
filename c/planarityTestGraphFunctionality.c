@@ -4,6 +4,10 @@ All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
 #include "planarity.h"
 #include "graph.h"
 #include "platformTime.h"
@@ -16,7 +20,6 @@ typedef struct {
 	int numOK;
 	int numNONEMBEDDABLE;
 	int errorFlag;
-	size_t fileBufSize;
 } testAllStats;
 
 typedef testAllStats * testAllStatsP;
@@ -48,9 +51,8 @@ int _getNumCharsToReprInt(int theNum)
  outputFormat - output format; currently only supports WRITE_ADJLIST
  outfileName - name of primary output file, or NULL to construct an output filename based on the input
  outputStr - pointer to string which we wish to use to store the transformation output
- fileBufSize - desired FILE buffer size
  ****************************************************************************/
-int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr, int *outputBase, char *outfileName, char **outputStr, size_t fileBufSize)
+int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr, int *outputBase, char *outfileName, char **outputStr)
 {
 	int Result = OK;
 	platform_time start, end;
@@ -144,15 +146,17 @@ int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr
 						return NOTOK;
 					}
 
-					fileBufSize = (fileBufSize >= BUFSIZ && fileBufSize <= 2000000000) ? fileBufSize : 0;
+					testAllStats stats;
+					memset(&stats, 0, sizeof(testAllStats));
 
-					if (fileBufSize > 0)
+					struct stat buffer;
+					if (stat(infileName, &buffer) == 0)
 					{
-						if (setvbuf(infile, NULL, _IOFBF, fileBufSize) != 0)
+						if (setvbuf(infile, NULL, _IOFBF, buffer.st_blksize) != 0)
 						{
 							charsAvailForFilename = (int) (MAXLINE - strlen(infileName));
-							messageFormat = "Unable to change FILE buffer size to %zu after opening \"%.*s\" for input.\n";
-							sprintf(messageContents, messageFormat, fileBufSize, charsAvailForFilename, infileName);
+							messageFormat = "Unable to change FILE buffer size to %d after opening \"%.*s\" for input.\n";
+							sprintf(messageContents, messageFormat,  buffer.st_blksize, charsAvailForFilename, infileName);
 							ErrorMessage(messageContents);
 
 							fclose(infile);
@@ -163,11 +167,6 @@ int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr
 							return NOTOK;
 						}
 					}
-
-					testAllStats stats;
-					memset(&stats, 0, sizeof(testAllStats));
-
-					stats.fileBufSize = (fileBufSize == 0) ? BUFSIZ : fileBufSize;
 
 					char command = commandString[1];
 					Result = testAllGraphs(theGraph, command, infile, &stats);
@@ -365,7 +364,6 @@ int outputTestAllGraphsResults(char command, testAllStatsP stats, char * infileN
 											strlen(headerFormat) +
 											strlen(infileBasename) +
 											strlen("-1.7976931348623158e+308") + // -DBL_MAX from float.h
-											strlen("18446744073709551615") + // largest unsigned long int
 											3
 										) * sizeof(char));
 	if (headerStr == NULL)
@@ -374,7 +372,7 @@ int outputTestAllGraphsResults(char command, testAllStatsP stats, char * infileN
 		return NOTOK;
 	}
 
-	sprintf(headerStr, headerFormat, infileBasename, stats->duration, stats->fileBufSize);
+	sprintf(headerStr, headerFormat, infileBasename, stats->duration);
 
 	char *resultsStr = (char *) malloc(
 										(
