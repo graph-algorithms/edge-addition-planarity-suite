@@ -4,10 +4,6 @@ All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-
 #include "planarity.h"
 #include "graph.h"
 #include "platformTime.h"
@@ -148,25 +144,6 @@ int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr
 
 					testAllStats stats;
 					memset(&stats, 0, sizeof(testAllStats));
-
-					struct stat buffer;
-					if (stat(infileName, &buffer) == 0)
-					{
-						if (setvbuf(infile, NULL, _IOFBF, buffer.st_blksize) != 0)
-						{
-							charsAvailForFilename = (int) (MAXLINE - strlen(infileName));
-							messageFormat = "Unable to change FILE buffer size to %d after opening \"%.*s\" for input.\n";
-							sprintf(messageContents, messageFormat,  buffer.st_blksize, charsAvailForFilename, infileName);
-							ErrorMessage(messageContents);
-
-							fclose(infile);
-							infile = NULL;
-							
-							gp_Free(&theGraph);
-
-							return NOTOK;
-						}
-					}
 
 					char command = commandString[1];
 					Result = testAllGraphs(theGraph, command, infile, &stats);
@@ -358,7 +335,7 @@ int outputTestAllGraphsResults(char command, testAllStatsP stats, char * infileN
 	char *finalSlash = strrchr(infileName, FILE_DELIMITER);
 	char *infileBasename = finalSlash ? (finalSlash + 1) : infileName;
 
-	char *headerFormat = "FILENAME=\"%s\" DURATION=\"%.3lf\" BUFSIZ=\"%zu\"\n";
+	char *headerFormat = "FILENAME=\"%s\" DURATION=\"%.3lf\"\n";
 	char *headerStr = (char *) malloc(
 										(
 											strlen(headerFormat) +
