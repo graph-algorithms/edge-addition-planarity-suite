@@ -28,8 +28,7 @@ if __name__ == "__main__":
     Path.mkdir(Path((output_dir)), parents=True, exist_ok=True)
 
     count = multiprocessing.cpu_count()
-    # edgecounts = range(((order * (order - 1)) / 2) + 1)
-    call_geng_args = [(geng_path, order, edge_count, output_dir) for edge_count in range(2)]
+    call_geng_args = [(geng_path, order, edge_count, output_dir) for edge_count in  range((int)((order * (order - 1)) / 2) + 1)]
     with multiprocessing.Pool(processes=count) as pool:
         _ = pool.starmap_async(call_geng, call_geng_args)
         pool.close()
