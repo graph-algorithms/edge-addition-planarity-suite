@@ -5,8 +5,8 @@ SET planarityPath="C:\Users\wbkbo\git\edge-addition-planarity-suite-fork\Release
 
 REM Change to correspond to the parent of the test files directory
 SET graphFilesDir="E:\graphs"
-REM Change to correspond to the root output directory; ensure directory exists, and that
-REM directory correspondi
+
+REM Change to correspond to the root output directory
 SET outputDir="C:\Users\wbkbo\git\edge-addition-planarity-suite-fork\TestSupport\results"
 
 SET /A N=11
