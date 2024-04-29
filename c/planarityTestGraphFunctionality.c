@@ -23,7 +23,7 @@ typedef testAllStats * testAllStatsP;
 int transformFile(graphP theGraph, char *infileName);
 int transformString(graphP theGraph, char *inputStr);
 
-int testAllGraphs(graphP theGraph, char command, char *inputStr, testAllStatsP stats);
+int testAllGraphs(graphP theGraph, char command, FILE *infile, testAllStatsP stats);
 int outputTestAllGraphsResults(char command, testAllStatsP stats, char *infileName, char *outfileName, char **outputStr);
 
 int _getNumCharsToReprInt(int theNum)
@@ -129,9 +129,8 @@ int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr
 					// Start the timer
 					platform_GetTime(start);
 
-					inputStr = ReadTextFileIntoString(infileName);
-
-					if (inputStr == NULL)
+					FILE *infile = fopen(infileName, "r");
+					if (infile == NULL)
 					{
 						charsAvailForFilename = (int) (MAXLINE - strlen(infileName));
 						messageFormat = "Unable to open file \"%.*s\" for input.\n";
@@ -147,7 +146,7 @@ int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr
 					memset(&stats, 0, sizeof(testAllStats));
 
 					char command = commandString[1];
-					Result = testAllGraphs(theGraph, command, inputStr, &stats);
+					Result = testAllGraphs(theGraph, command, infile, &stats);
 
 					// Stop the timer
 					platform_GetTime(end);
@@ -223,7 +222,7 @@ int transformString(graphP theGraph, char *inputStr)
 	TEST ALL GRAPHS IN .G6
 */
 
-int testAllGraphs(graphP theGraph, char command, char *inputStr, testAllStatsP stats)
+int testAllGraphs(graphP theGraph, char command, FILE *infile, testAllStatsP stats)
 {
 	int Result = OK;
 
@@ -244,7 +243,7 @@ int testAllGraphs(graphP theGraph, char command, char *inputStr, testAllStatsP s
 		return Result;
 	}
 
-	Result = beginG6ReadIterationFromG6String(pG6ReadIterator, inputStr);
+	Result = beginG6ReadIterationFromG6FilePointer(pG6ReadIterator, infile);
 
 	if (Result != OK)
 	{
