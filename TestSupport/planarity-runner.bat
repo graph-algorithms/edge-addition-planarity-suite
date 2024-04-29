@@ -13,9 +13,9 @@ SET /A N=11
 SET C=p
 IF NOT "%1"=="" (
 	SET N=%1
-	IF NOT "%2"=="" {
+	IF NOT "%2"=="" (
 		SET C=%2
-	}
+    )
 )
 
 IF NOT EXIST "%outputDir%\%N%\%C%" mkdir "%outputDir%\%N%\%C%"
