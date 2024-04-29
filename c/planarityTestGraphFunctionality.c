@@ -240,6 +240,7 @@ int testAllGraphs(graphP theGraph, char command, FILE *infile, testAllStatsP sta
 	if (Result != OK)
 	{
 		ErrorMessage("Unable to allocate G6ReadIterator.\n");
+		stats->errorFlag = TRUE;
 		return Result;
 	}
 
@@ -249,6 +250,7 @@ int testAllGraphs(graphP theGraph, char command, FILE *infile, testAllStatsP sta
 	{
 		ErrorMessage("Unable to begin .g6 read iteration.\n");
 		freeG6ReadIterator(&pG6ReadIterator);
+		stats->errorFlag = TRUE;
 		return Result;
 	}
 
@@ -258,6 +260,7 @@ int testAllGraphs(graphP theGraph, char command, FILE *infile, testAllStatsP sta
 	if (copyOfOrigGraph == NULL)
 	{
 		ErrorMessage("Unable to allocate graph to store copy of original graph before embedding.\n");
+		stats->errorFlag = TRUE;
 		return NOTOK;
 	}
 
@@ -267,6 +270,7 @@ int testAllGraphs(graphP theGraph, char command, FILE *infile, testAllStatsP sta
 		ErrorMessage("Unable to initialize graph datastructure to store copy of original graph before embedding.\n");
 		gp_Free(&copyOfOrigGraph);
 		freeG6ReadIterator(&pG6ReadIterator);
+		stats->errorFlag = TRUE;
 		return Result;
 	}
 
@@ -281,6 +285,7 @@ int testAllGraphs(graphP theGraph, char command, FILE *infile, testAllStatsP sta
 			messageFormat = "Unable to read graph on line %d from .g6 read iterator.\n";
 			sprintf(messageContents, messageFormat, pG6ReadIterator->numGraphsRead + 1);
 			ErrorMessage(messageContents);
+			errorFlag = TRUE;
 			break;
 		}
 
