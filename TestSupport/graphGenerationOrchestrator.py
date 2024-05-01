@@ -32,4 +32,3 @@ if __name__ == "__main__":
         _ = pool.starmap_async(call_geng, call_geng_args)
         pool.close()
         pool.join()
-
