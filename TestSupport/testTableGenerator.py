@@ -23,7 +23,6 @@ class TestTableGenerator():
         if (Path.is_file(output_dir)):
             raise ValueError(f'\'{output_dir}\' is a file.')
         
-        Path.mkdir(output_dir, parents=True, exist_ok=True)
         self.output_dir = output_dir
     
     def getOrderAndCommandFromInputDir(self):
@@ -188,6 +187,9 @@ class TestTableGenerator():
                 numNONEMBEDDABLE, errorFlag 
 
     def printOutput(self):
+        self.output_dir = Path.joinpath(self.output_dir, f'{self.order}')
+        Path.mkdir(self.output_dir, parents=True, exist_ok=True)
+
         output_path = Path.joinpath(
             self.output_dir,
             f'n{self.order}.mALL.{self.command}.out.txt'
