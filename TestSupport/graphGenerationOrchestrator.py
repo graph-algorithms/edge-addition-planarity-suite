@@ -24,7 +24,7 @@ if __name__ == "__main__":
 
     order = args.order
     geng_path = args.gengpath
-    output_dir = args.outputdir
+    output_dir = Path.joinpath(args.outputdir, str(order))
     Path.mkdir(Path((output_dir)), parents=True, exist_ok=True)
 
     call_geng_args = [(geng_path, order, edge_count, output_dir) for edge_count in  range((int)((order * (order - 1)) / 2) + 1)]
@@ -32,4 +32,3 @@ if __name__ == "__main__":
         _ = pool.starmap_async(call_geng, call_geng_args)
         pool.close()
         pool.join()
-
