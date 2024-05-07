@@ -254,6 +254,22 @@ int testAllGraphs(graphP theGraph, char command, FILE *infile, testAllStatsP sta
 		return Result;
 	}
 
+	int graphOrder = pG6ReadIterator->graphOrder;
+	// We have to set the maximum arc capacity (i.e. (N * (N - 1))) because some of the test files
+	// can contain complete graphs, and the graph drawing, K_{3, 3} search, and K_4 search extensions
+	// don't support expanding the arc capacity after being attached.
+	if (strchr("d34", command) != NULL)
+	{
+		Result = gp_EnsureArcCapacity(pG6ReadIterator->currGraph, (graphOrder * (graphOrder - 1)));
+		if (Result != OK)
+		{
+			ErrorMessage("Unable to maximize arc capacity of G6ReadIterator's graph struct.\n");
+			freeG6ReadIterator(&pG6ReadIterator);
+			stats->errorFlag = TRUE;
+			return Result;
+		}
+	}
+	
 	AttachAlgorithm(pG6ReadIterator->currGraph, command);
 
 	copyOfOrigGraph = gp_New();
@@ -264,7 +280,7 @@ int testAllGraphs(graphP theGraph, char command, FILE *infile, testAllStatsP sta
 		return NOTOK;
 	}
 
-	Result = gp_InitGraph(copyOfOrigGraph, pG6ReadIterator->graphOrder);
+	Result = gp_InitGraph(copyOfOrigGraph, graphOrder);
 	if (Result != OK)
 	{
 		ErrorMessage("Unable to initialize graph datastructure to store copy of original graph before embedding.\n");
@@ -274,7 +290,18 @@ int testAllGraphs(graphP theGraph, char command, FILE *infile, testAllStatsP sta
 		return Result;
 	}
 
-	AttachAlgorithm(copyOfOrigGraph, command);
+	if (strchr("d34", command) != NULL)
+	{
+		Result = gp_EnsureArcCapacity(copyOfOrigGraph, (graphOrder * (graphOrder - 1)));
+		if (Result != OK)
+		{
+			ErrorMessage("Unable to maximize arc capacity of graph struct to contain copy of original graph.\n");
+			freeG6ReadIterator(&pG6ReadIterator);
+			stats->errorFlag = TRUE;
+			return Result;
+		}
+	}
+
 
 	while (true)
 	{

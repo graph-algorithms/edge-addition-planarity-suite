@@ -50,14 +50,6 @@ int Result = OK;
     // Create the graph and, if needed, attach the correct algorithm to it
     theGraph = gp_New();
 
-	switch (command)
-	{
-		case 'd' : gp_AttachDrawPlanar(theGraph); break;
-		case '2' : gp_AttachK23Search(theGraph); break;
-		case '3' : gp_AttachK33Search(theGraph); break;
-		case '4' : gp_AttachK4Search(theGraph); break;
-	}
-
     // Read the graph into memory
 	if (inputStr == NULL)
 	{
@@ -66,17 +58,6 @@ int Result = OK;
 	else
 	{
 		Result = gp_ReadFromString(theGraph, inputStr);
-	}
-
-	if (Result == NONEMBEDDABLE)
-	{
-		Message("The graph contains too many edges.\n");
-		// Some of the algorithms will still run correctly with some edges removed.
-		if (strchr(GetAlgorithmChoices(), command))
-		{
-			Message("Some edges were removed, but the algorithm will still run correctly.\n");
-			Result = OK;
-		}
 	}
 
 	// If there was an unrecoverable error, report it
@@ -88,11 +69,19 @@ int Result = OK;
 	else
 	{
 		// Copy the graph for integrity checking
-        origGraph = gp_DupGraph(theGraph);
+		origGraph = gp_DupGraph(theGraph);
 
         // Run the algorithm
         if (strchr(GetAlgorithmChoices(), command))
         {
+			switch (command)
+			{
+				case 'd' : gp_AttachDrawPlanar(theGraph); break;
+				case '2' : gp_AttachK23Search(theGraph); break;
+				case '3' : gp_AttachK33Search(theGraph); break;
+				case '4' : gp_AttachK4Search(theGraph); break;
+			}
+
     		int embedFlags = GetEmbedFlags(command);
 	        platform_GetTime(start);
 
@@ -114,8 +103,8 @@ int Result = OK;
 
         // Write what the algorithm determined and how long it took
         WriteAlgorithmResults(theGraph, Result, command, start, end, infileName);
-
-        // Free the graph obtained for integrity checking.
+		
+		// Free the graph obtained for integrity checking.
         gp_Free(&origGraph);
 	}
 
