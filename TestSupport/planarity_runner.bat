@@ -22,6 +22,6 @@ IF NOT EXIST "%outputDir%\%N%\%C%" mkdir "%outputDir%\%N%\%C%"
 
 SET /A MAXM = (%N% * (%N% - 1^)) / 2
 
-FOR /L %%M IN (1,1,%MAXM%) DO (
+FOR /L %%M IN (0,1,%MAXM%) DO (
 	CALL %planarityPath% -t -%C% "%graphFilesDir%\%N%\test.n%N%.m%%M.g6" "%outputDir%\%N%\%C%\n%N%.m%%M.%C%.out.txt"
 )

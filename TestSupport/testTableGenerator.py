@@ -27,14 +27,16 @@ class TestTableGenerator():
     
     def getOrderAndCommandFromInputDir(self):
         parts = self.input_dir.parts
-        order = int(parts[-2])
+        try:
+            order = int(parts[-2])
+        except ValueError:
+            order = None
+
         command = parts[-1]
         # You may reference class attributes either by the name of the class,
         # seen here, or by using "self"
         if command not in TestTableGenerator.__planarity_commands:
             command = None
-        if (not isinstance(order, int) or (order < 2) or (order > 100000)):
-            order = None
 
         self.order = order
         self.max_num_edges = ((order * (order - 1)) / 2) if order else None
