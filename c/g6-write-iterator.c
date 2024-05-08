@@ -338,6 +338,7 @@ int _encodeAdjMatAsG6(G6WriteIterator *pG6WriteIterator) {
 
 	int charOffset = 0;
 	int bitPositionPower = 0;
+	int tempVert = NIL;
 	while (u != NIL && v != NIL)
 	{
 		// The internal graph representation is usually 1-based, but may be 0-based, so
@@ -345,6 +346,17 @@ int _encodeAdjMatAsG6(G6WriteIterator *pG6WriteIterator) {
 		// because the .g6 format is 0-based
 		u -=  gp_GetFirstVertex(theGraph);
 		v -=  gp_GetFirstVertex(theGraph);
+
+		// The columnOffset machinery assumes that we are traversing the edges represented in 
+		// the upper-triangular matrix. Since we are dealing with simple graphs, if (v, u)
+		// exists, then (u, v) exists, and so the edge is indicated by a 1 in row = min(u, v)
+		// and col = max(u, v) in the upper-triangular adjacency matrix.
+		if (v < u)
+		{
+			tempVert = v;
+			v = u;
+			u = tempVert;
+		}
 
 		// (columnOffsets[v] + u) describes the bit index of the current edge
 		// given the column and row in the adjacency matrix representation;
