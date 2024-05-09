@@ -541,18 +541,6 @@ int embedFlags = GetEmbedFlags('p');
 		char *g6OutfileNameStr = sb_TakeString(g6OutfileName);
 		sb_Free(&g6OutfileName);
 
-		strBufP adjListOutfileName = sb_New(strlen(outfileName));
-		sb_ConcatString(adjListOutfileName, outfileName);
-		sb_ConcatString(adjListOutfileName, ".AdjList.out.txt");
-		char *adjListOutfileNameStr = sb_TakeString(adjListOutfileName);
-		sb_Free(&adjListOutfileName);
-
-		strBufP adjMatOutfileName = sb_New(strlen(outfileName));
-		sb_ConcatString(adjMatOutfileName, outfileName);
-		sb_ConcatString(adjMatOutfileName, ".AdjMat.out.txt");
-		char *adjMatOutfileNameStr = sb_TakeString(adjMatOutfileName);
-		sb_Free(&adjMatOutfileName);
-
 		if (gp_Write(theGraph, g6OutfileNameStr, WRITE_G6) != OK)
 		{
 			ErrorMessage("Failed to write random maximal planar graph to .g6 file.\n");
@@ -563,11 +551,15 @@ int embedFlags = GetEmbedFlags('p');
 			gp_Free(&adjListReadFromG6ReadFromAdjList);
 
 			free(g6OutfileNameStr);
-			free(adjListOutfileNameStr);
-			free(adjMatOutfileNameStr);
 
 			return NOTOK;
 		}
+
+		strBufP adjListOutfileName = sb_New(strlen(outfileName));
+		sb_ConcatString(adjListOutfileName, outfileName);
+		sb_ConcatString(adjListOutfileName, ".AdjList.out.txt");
+		char *adjListOutfileNameStr = sb_TakeString(adjListOutfileName);
+		sb_Free(&adjListOutfileName);
 
 		if (gp_Write(theGraph, adjListOutfileNameStr, WRITE_ADJLIST) != OK)
 		{
@@ -580,23 +572,6 @@ int embedFlags = GetEmbedFlags('p');
 
 			free(g6OutfileNameStr);
 			free(adjListOutfileNameStr);
-			free(adjMatOutfileNameStr);
-
-			return NOTOK;
-		}
-
-		if (gp_Write(theGraph, adjMatOutfileNameStr, WRITE_ADJMATRIX) != OK)
-		{
-			ErrorMessage("Failed to write random maximal planar graph to AdjMat file.\n");
-
-			gp_Free(&theGraph);
-			gp_Free(&g6ReadFromAdjList);
-			gp_Free(&adjListReadFromG6);
-			gp_Free(&adjListReadFromG6ReadFromAdjList);
-
-			free(g6OutfileNameStr);
-			free(adjListOutfileNameStr);
-			free(adjMatOutfileNameStr);
 
 			return NOTOK;
 		}
@@ -619,7 +594,6 @@ int embedFlags = GetEmbedFlags('p');
 
 			free(g6OutfileNameStr);
 			free(adjListOutfileNameStr);
-			free(adjMatOutfileNameStr);
 
 			free(adjListToG6OutfileNameStr);
 
@@ -637,7 +611,6 @@ int embedFlags = GetEmbedFlags('p');
 
 			free(g6OutfileNameStr);
 			free(adjListOutfileNameStr);
-			free(adjMatOutfileNameStr);
 
 			free(adjListToG6OutfileNameStr);
 
@@ -653,7 +626,7 @@ int embedFlags = GetEmbedFlags('p');
 
 		if (gp_Read(adjListReadFromG6ReadFromAdjList, adjListToG6OutfileNameStr) != OK)
 		{
-			ErrorMessage("Failed to read random maximal planar graph from Adj List.\n");
+			ErrorMessage("Failed to read random maximal planar graph from .g6 infile (Adj List to .g6).\n");
 
 			gp_Free(&theGraph);
 			gp_Free(&g6ReadFromAdjList);
@@ -662,7 +635,6 @@ int embedFlags = GetEmbedFlags('p');
 
 			free(g6OutfileNameStr);
 			free(adjListOutfileNameStr);
-			free(adjMatOutfileNameStr);
 
 			free(adjListToG6OutfileNameStr);
 
@@ -673,7 +645,7 @@ int embedFlags = GetEmbedFlags('p');
 
 		if (gp_Write(adjListReadFromG6ReadFromAdjList, adjListToG6ToAdjListOutfileNameStr, WRITE_ADJLIST) != OK)
 		{
-			ErrorMessage("Failed to write random maximal planar graph read from Adj List to .g6 to Adj List.\n");
+			ErrorMessage("Failed to write random maximal planar graph as Adj List (Adj List to .g6 to Adj List).\n");
 
 			gp_Free(&theGraph);
 			gp_Free(&g6ReadFromAdjList);
@@ -682,7 +654,6 @@ int embedFlags = GetEmbedFlags('p');
 
 			free(g6OutfileNameStr);
 			free(adjListOutfileNameStr);
-			free(adjMatOutfileNameStr);
 
 			free(adjListToG6OutfileNameStr);
 
@@ -709,7 +680,6 @@ int embedFlags = GetEmbedFlags('p');
 
 			free(g6OutfileNameStr);
 			free(adjListOutfileNameStr);
-			free(adjMatOutfileNameStr);
 
 			free(adjListToG6OutfileNameStr);
 
@@ -731,7 +701,6 @@ int embedFlags = GetEmbedFlags('p');
 
 			free(g6OutfileNameStr);
 			free(adjListOutfileNameStr);
-			free(adjMatOutfileNameStr);
 
 			free(adjListToG6OutfileNameStr);
 
@@ -742,81 +711,15 @@ int embedFlags = GetEmbedFlags('p');
 			return NOTOK;
 		}
 
-		// attempt to gp_Write *original* graph as g6 again; is it the same as the BAD g6 from first step?
-		strBufP g6AgainOutfileName = sb_New(strlen(outfileName));
-		sb_ConcatString(g6AgainOutfileName, outfileName);
-		sb_ConcatString(g6AgainOutfileName, ".again.g6");
-		char *g6AgainOutfileNameStr = sb_TakeString(g6AgainOutfileName);
-		sb_Free(&g6AgainOutfileName);
-
-		if (gp_Write(theGraph, g6AgainOutfileNameStr, WRITE_G6) != OK)
-		{
-			ErrorMessage("Failed to write random maximal planar graph to .g6 again (x1).\n");
-
-			gp_Free(&theGraph);
-			gp_Free(&g6ReadFromAdjList);
-			gp_Free(&adjListReadFromG6);
-			gp_Free(&adjListReadFromG6ReadFromAdjList);
-
-			free(g6OutfileNameStr);
-			free(adjListOutfileNameStr);
-			free(adjMatOutfileNameStr);
-
-			free(adjListToG6OutfileNameStr);
-
-			free(adjListToG6ToAdjListOutfileNameStr);
-
-			free(g6ToAdjListOutfileNameStr);
-
-			free(g6AgainOutfileNameStr);
-
-			return NOTOK;
-		}
-
-		// attempt to gp_Write *original* graph as g6 AGAIN again; breakpoint and step into
-		strBufP g6AgainAgainOutfileName = sb_New(strlen(outfileName));
-		sb_ConcatString(g6AgainAgainOutfileName, outfileName);
-		sb_ConcatString(g6AgainAgainOutfileName, ".againAgain.g6");
-		char *g6AgainAgainOutfileNameStr = sb_TakeString(g6AgainAgainOutfileName);
-		sb_Free(&g6AgainAgainOutfileName);
-
-		if (gp_Write(theGraph, g6AgainAgainOutfileNameStr, WRITE_G6) != OK)
-		{
-			ErrorMessage("Failed to write random maximal planar graph to .g6 again (x2).\n");
-
-			gp_Free(&theGraph);
-			gp_Free(&g6ReadFromAdjList);
-			gp_Free(&adjListReadFromG6);
-			gp_Free(&adjListReadFromG6ReadFromAdjList);
-
-			free(g6OutfileNameStr);
-			free(adjListOutfileNameStr);
-			free(adjMatOutfileNameStr);
-
-			free(adjListToG6OutfileNameStr);
-
-			free(adjListToG6ToAdjListOutfileNameStr);
-
-			free(g6ToAdjListOutfileNameStr);
-
-			free(g6AgainOutfileNameStr);
-			free(g6AgainAgainOutfileNameStr);
-
-			return NOTOK;
-		}
 		
 		free(g6OutfileNameStr);
 		free(adjListOutfileNameStr);
-		free(adjMatOutfileNameStr);
 
 		free(adjListToG6OutfileNameStr);
 
 		free(adjListToG6ToAdjListOutfileNameStr);
 
 		free(g6ToAdjListOutfileNameStr);
-
-		free(g6AgainOutfileNameStr);
-		free(g6AgainAgainOutfileNameStr);
 	}
 	else
 	{
