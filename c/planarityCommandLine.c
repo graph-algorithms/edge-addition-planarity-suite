@@ -18,7 +18,6 @@ int callSpecificGraph(int argc, char *argv[]);
 int callRandomMaxPlanarGraph(int argc, char *argv[]);
 int callRandomNonplanarGraph(int argc, char *argv[]);
 int callTestGraphFunctionality(int argc, char *argv[]);
-int callGenerateRandomMaxPlanarGraph(int argc, char *argv[]);
 
 /****************************************************************************
  Command Line Processor

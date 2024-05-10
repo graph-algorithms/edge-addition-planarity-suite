@@ -338,7 +338,6 @@ int _encodeAdjMatAsG6(G6WriteIterator *pG6WriteIterator) {
 
 	int charOffset = 0;
 	int bitPositionPower = 0;
-	int tempVert = NIL;
 	while (u != NIL && v != NIL)
 	{
 		// The internal graph representation is usually 1-based, but may be 0-based, so
@@ -353,7 +352,7 @@ int _encodeAdjMatAsG6(G6WriteIterator *pG6WriteIterator) {
 		// and col = max(u, v) in the upper-triangular adjacency matrix.
 		if (v < u)
 		{
-			tempVert = v;
+			int tempVert = v;
 			v = u;
 			u = tempVert;
 		}
