@@ -59,9 +59,6 @@ int commandLine(int argc, char *argv[])
 	else if (strncmp(argv[1], "-t", 2) == 0)
 		Result = callTestGraphFunctionality(argc, argv);
 
-	else if (strcmp(argv[1], "-m") == 0)
-		Result = callGenerateRandomMaxPlanarGraph(argc, argv);
-
 	else
 	{
 		ErrorMessage("Unsupported command line.  Here is the help for this program.\n");
@@ -725,32 +722,4 @@ int callTestGraphFunctionality(int argc, char *argv[])
 	// We don't want to read from string nor output to string, so inputStr and outputStr are NULL
 	// We don't need to capture whether output is 0- or 1-based, so zeroBasedOutputFlag arg is NULL
 	return TestGraphFunctionality(commandString, infileName, NULL, NULL, outfileName, NULL);
-}
-
-/****************************************************************************
- callGenerateRandomMaxPlanarGraph()
- ****************************************************************************/
-
-// 'planarity -m [-q] N O': Generate maximal planar graph of order N and
-// output to O
-int callGenerateRandomMaxPlanarGraph(int argc, char *argv[])
-{
-	int offset = 0;
-	int graphOrder = 0;
-	char *outfileName = NULL;
-
-	if (argc < 4)
-		return -1;
-
-	if (argv[2][0] == '-' && argv[2][1] == 'q')
-	{
-		if (argc < 5)
-			return -1;
-		offset = 1;
-	}
-
-	graphOrder = atoi(argv[2 + offset]);
-	outfileName = argv[3 + offset];
-
-	return GenerateRandomMaxPlanarGraph(graphOrder, outfileName);
 }
