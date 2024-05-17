@@ -228,7 +228,8 @@ class G6DiffFinder:
                 logging.info(
                     'Outputting graphs present in both '
                     f'{first_comparand_infile_name} and '
-                    f'{second_comparand_infile_name} to {outfile_path}.'
+                    f'{second_comparand_infile_name} that appear on different '
+                    f'lines to {outfile_path}.'
                     )
                 with open(outfile_path, 'w') as graph_set_intersection_outfile:
                     graph_set_intersection_outfile.write(
