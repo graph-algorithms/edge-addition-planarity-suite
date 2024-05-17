@@ -189,7 +189,7 @@ class G6DiffFinder:
                         graph_set_diff_outfile.write(g6_encoding)
                         graph_set_diff_outfile.write('\n')
 
-    def check_graph_set_intersection_line_nums(self):
+    def graph_set_intersection_with_different_line_nums(self):
         try:
             first_comparand_infile_dir, first_comparand_infile_name, \
                 second_comparand_infile_name = self._get_infile_names(
@@ -216,7 +216,8 @@ class G6DiffFinder:
                 logging.info(
                     'No graphs present in both '
                     f'{first_comparand_infile_name} and '
-                    f'{second_comparand_infile_name}'
+                    f'{second_comparand_infile_name} that appear on different '
+                    'lines.'
                     )
             else:
                 outfile_path = Path.joinpath(
@@ -311,7 +312,7 @@ if __name__ == '__main__':
         )
     
     try:
-        g6_diff_finder.check_graph_set_intersection_line_nums()
+        g6_diff_finder.graph_set_intersection_with_different_line_nums()
     except:
         raise G6DiffFinderException(
             'Failed to determine set intersection of two .g6 input files.'
