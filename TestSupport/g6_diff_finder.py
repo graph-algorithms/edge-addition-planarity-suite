@@ -73,7 +73,7 @@ class G6DiffFinder:
                             )
                     else:
                         comparand_dict[line] = {
-                            'first_occurrence': line_num,
+                            'first_line': line_num,
                             'duplicate_line_nums': []
                         }
                     line_num += 1
@@ -114,12 +114,14 @@ class G6DiffFinder:
                     g6_encoded_graph: comparand_dict[g6_encoded_graph]
                     for g6_encoded_graph in comparand_dict
                     if g6_encoded_graph != 'infile_path'
-                        and len(comparand_dict[g6_encoded_graph]['duplicate_line_nums']) > 0
+                    if len(
+                        comparand_dict[g6_encoded_graph]['duplicate_line_nums']
+                        ) > 0
                 }
             
             if not duplicated_g6_encodings:
                 logging.info(
-                    f'\tNo duplicates present in \'{comparand_infile_path}\'.'
+                    f'No duplicates present in \'{comparand_infile_path}\'.'
                     )
             else:
                 with open(comparand_outfile_path, 'w') as comparand_outfile:
@@ -147,7 +149,99 @@ class G6DiffFinder:
             self,
             first_comparand_dict: dict,
             second_comparand_dict: dict
-            ):
+        ):
+        try:
+            first_comparand_infile_dir, first_comparand_infile_name, \
+                second_comparand_infile_name = self._get_infile_names(
+                    first_comparand_dict, second_comparand_dict
+                )
+        except KeyError as e:
+            raise G6DiffFinderException(
+                'Unable to extract infile_names from dicts.'
+                ) from e
+        else:
+            graphs_in_first_but_not_second = [
+                g6_encoding
+                for g6_encoding in first_comparand_dict
+                if g6_encoding != 'infile_path'
+                if g6_encoding not in second_comparand_dict
+            ]
+            
+            if not graphs_in_first_but_not_second:
+                logging.info(
+                    'No graphs present in '
+                    f'{first_comparand_infile_name} that aren\'t in '
+                    f'{second_comparand_infile_name}'
+                    )
+            else:
+                outfile_path = Path.joinpath(
+                    first_comparand_infile_dir,
+                    f'graphs_in_{first_comparand_infile_name}_not_in_' +
+                    f'{second_comparand_infile_name}.txt'
+                    )
+                logging.info(
+                    'Outputting graphs present in '
+                    f'{first_comparand_infile_name} that aren\'t in '
+                    f'{second_comparand_infile_name} to {outfile_path}.'
+                    )
+                with open(outfile_path, 'w') as graph_set_diff_outfile:
+                    for g6_encoding in graphs_in_first_but_not_second:
+                        graph_set_diff_outfile.write(g6_encoding)
+                        graph_set_diff_outfile.write('\n')
+
+    def check_graph_set_intersection_line_nums(self):
+        try:
+            first_comparand_infile_dir, first_comparand_infile_name, \
+                second_comparand_infile_name = self._get_infile_names(
+                    self._first_comparand_dict, self._second_comparand_dict
+                )
+        except KeyError as e:
+            raise G6DiffFinderException(
+                'Unable to extract infile_names from dicts.'
+                ) from e
+        else:
+            graphs_in_first_and_second = {
+                g6_encoding: (
+                    self._first_comparand_dict[g6_encoding]['first_line'],
+                    self._second_comparand_dict[g6_encoding]['first_line']
+                    )
+                for g6_encoding in self._first_comparand_dict
+                if g6_encoding != 'infile_path'
+                if g6_encoding in self._second_comparand_dict
+                if self._first_comparand_dict[g6_encoding]['first_line'] != \
+                    self._second_comparand_dict[g6_encoding]['first_line']
+            }
+
+            if not graphs_in_first_and_second:
+                logging.info(
+                    'No graphs present in both '
+                    f'{first_comparand_infile_name} and '
+                    f'{second_comparand_infile_name}'
+                    )
+            else:
+                outfile_path = Path.joinpath(
+                    first_comparand_infile_dir,
+                    f'graphs_in_{first_comparand_infile_name}_and_' +
+                    f'{second_comparand_infile_name}.txt'
+                    )
+                logging.info(
+                    'Outputting graphs present in both '
+                    f'{first_comparand_infile_name} and '
+                    f'{second_comparand_infile_name} to {outfile_path}.'
+                    )
+                with open(outfile_path, 'w') as graph_set_intersection_outfile:
+                    graph_set_intersection_outfile.write(
+                        json.dumps(
+                            graphs_in_first_and_second,
+                            indent = 4
+                        )
+                    )
+
+    def _get_infile_names(
+            self,
+            first_comparand_dict: dict,
+            second_comparand_dict: dict
+        ):
         try:
             first_comparand_infile_path = \
                 Path(first_comparand_dict['infile_path']).resolve()
@@ -167,28 +261,9 @@ class G6DiffFinder:
                     'Invalid dict structure: missing \'infile_path\'.'
                     )
             else:
-                graphs_in_first_but_not_second = [
-                    g6_encoding
-                    for g6_encoding in first_comparand_dict.keys()
-                    if g6_encoding != 'infile_path'
-                    if g6_encoding not in second_comparand_dict.keys()
-                ]
-                if not graphs_in_first_but_not_second:
-                    logging.info(
-                        '\tNo graphs present in '
-                        f'{first_comparand_infile_name} that aren\'t in '
-                        f'{second_comparand_infile_name}'
-                        )
-                else:
-                    outfile_path = Path.joinpath(
-                        first_comparand_infile_dir,
-                        f'graphs_in_{first_comparand_infile_name}_not_in_' +
-                        f'{second_comparand_infile_name}.txt'
-                        )
-                    with open(outfile_path, 'w') as graph_set_diff_outfile:
-                        for g6_encoding in graphs_in_first_but_not_second:
-                            graph_set_diff_outfile.write(g6_encoding)
-                            graph_set_diff_outfile.write('\n')
+                return first_comparand_infile_dir, \
+                    first_comparand_infile_name, \
+                    second_comparand_infile_name
 
 
 if __name__ == '__main__':
@@ -220,17 +295,24 @@ if __name__ == '__main__':
         raise G6DiffFinderException(
             'Unable to initialize G6DiffFinder with given input files.'
             )
-    else:
-        try:
-            g6_diff_finder.output_duplicates()
-        except:
-            raise G6DiffFinderException(
-                'Unable to output duplicates for given input files.'
-                )
-        else:
-            try:
-                g6_diff_finder.graph_set_diff()
-            except:
-                raise G6DiffFinderException(
-                    'Failed to discern diff between two .g6 input files.'
-                )
+
+    try:
+        g6_diff_finder.output_duplicates()
+    except:
+        raise G6DiffFinderException(
+            'Unable to output duplicates for given input files.'
+            )
+
+    try:
+        g6_diff_finder.graph_set_diff()
+    except:
+        raise G6DiffFinderException(
+            'Failed to discern diff between two .g6 input files.'
+        )
+    
+    try:
+        g6_diff_finder.check_graph_set_intersection_line_nums()
+    except:
+        raise G6DiffFinderException(
+            'Failed to determine set intersection of two .g6 input files.'
+        )
