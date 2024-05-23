@@ -1,6 +1,37 @@
+#!/usr/bin/env python
+
+__all__ = []
+
 import argparse
 from pathlib import Path
 import re
+
+
+class TestAllGraphsOutputFileContentsError(BaseException):
+    """
+    Custom exception for representing errors that arise when processing
+    files which are purportedly the output files produced by running the
+    planarity Test All Graphs functionality for a single algorithm command
+    """
+
+    def __init__(self, message):
+        super().__init__(message)
+        self.message = message
+
+
+class TestAllGraphsPathError(BaseException):
+    """
+    Custom exception signalling issues with the paths of input for the Test
+    Table Generator.
+    
+    For example:
+    - input filename contains an order or command that doesn't align with the
+        order and command extracted from the parts of the parent directory
+    """
+
+    def __init__(self, message):
+        super().__init__(message)
+        self.message = message
 
 
 class TestTableGenerator():
@@ -8,24 +39,55 @@ class TestTableGenerator():
     __planarity_commands = ('p', 'd', 'o', '2', '3', '4')
 
     def __init__(self, input_dir:Path, output_dir:Path):
+        """Initializes TestTableGenerator instance.
+
+        Checks that input_dir exists and is a directory, and that it contains
+        input files. Also checks that the output_dir exists and is a directory.
+
+        Args:
+            input_dir: Directory containing the files output by running the
+                planarity Test All Graphs functionality for a given algorithm
+                command on .g6 input files containing all graphs of a given
+                order and edge count
+            output_dir: Directory to which you wish to write the output file
+                containing the tabulated results compiled from the input files
+                in the input_dir.
+
+        Raises:
+            TestAllGraphsPathError: If the input_dir doesn't correspond to a
+                directory, or if it is empty; or if the output_dir doesn't 
+                correspond to a directory.
+        """
         # According to PEP-8, one must use one leading underscore only for 
         # non-public methods and instance variables.
         self._processed_data = {}
 
-        if (not Path.is_dir(input_dir)):
-            raise ValueError(f'\'{input_dir}\' is not a valid directory.')
+        if not Path.is_dir(input_dir):
+            raise TestAllGraphsPathError(
+                f'\'{input_dir}\' is not a valid directory.')
         
-        if (len(list(input_dir.iterdir())) == 0):
-            raise ValueError(f'\'{input_dir}\' contains no files.')
+        if len(list(input_dir.iterdir())) == 0:
+            raise TestAllGraphsPathError(f'\'{input_dir}\' contains no files.')
         
         self.input_dir = input_dir
 
-        if (Path.is_file(output_dir)):
-            raise ValueError(f'\'{output_dir}\' is a file.')
+        if not Path.is_directory(output_dir):
+            raise TestAllGraphsPathError(
+                f'\'{output_dir}\' is not a valid directory.')
         
         self.output_dir = output_dir
     
-    def getOrderAndCommandFromInputDir(self):
+    def get_order_and_command_from_input_dir(self):
+        """Extract order and command from input_dir if possible
+
+        Takes the self.input_dir pathlib.Path object's parts and attempts to
+        extract the order and command from the directory structure. If the 
+        input directory is such that the path is of the form
+            {parent_dir}/{order}/{command}/
+        Then we can extract these values early, allowing us to validate
+        individual input files later in the process. Otherwise, sets
+        self.order, self.max_num_edges, and self.command to None.
+        """
         parts = self.input_dir.parts
         try:
             order = int(parts[-2])
@@ -42,15 +104,31 @@ class TestTableGenerator():
         self.max_num_edges = ((order * (order - 1)) / 2) if order else None
         self.command = command
     
-    def processFiles(self):
+    def process_files(self):
+        """Process input files to populate _processed_data and _totals dicts 
+
+        Iterates over the filenames within the input_dir and constructs the
+        full infile_path, then calls self._process_file() on this infile_path.
+
+        After all files have been processed, constructs the self._totals dict
+        containing the compiled results for the numGraphs, numOK,
+        numNONEMBEDDABLE, numErrors, and duration. Their values are generated
+        by summing the results of a list-comprehension, which extracts the
+        values of the same key name in the list of dicts within
+        self._processed_data.values()
+
+        Raises:
+            TestAllGraphsOutputFileError: If an error occurred processing the
+                input file corresponding to path infile_path
+        """
         for (dirpath, _, filenames) in Path.walk(input_dir):
             for filename in filenames:
                 infile_path = Path.joinpath(dirpath, filename)
                 try:
-                    self._processFile(infile_path)
-                except ValueError as e:
-                    raise ValueError(f'Error processing \'{infile_path}\'.') \
-                        from e
+                    self._process_file(infile_path)
+                except TestAllGraphsOutputFileContentsError as e:
+                    raise TestAllGraphsOutputFileContentsError(
+                        f'Error processing \'{infile_path}\'.') from e
                 
         self._totals = {
             'numGraphs': sum(
@@ -74,24 +152,41 @@ class TestTableGenerator():
                 )
         }
 
-    def _processFile(self, infile_path:Path):
+    def _process_file(self, infile_path:Path):
+        """Process infile and integrate into _processed_data dict
+
+        Validates the infile name...
+
+        MORE COMING SOON
+
+        Args:
+            infile_path: Corresponds to a file within the self.input_dir
+        
+        Raises:
+            TestAllGraphsPathError: If invalid infile_path
+            TestAllGraphsOutputFileContentsError: If input file corresponds to
+                results that have already been processed, or re-raises
+                exception thrown by self._process_file_contents()
+        """
         infile_name = infile_path.parts[-1]
         try:
-            num_edges = self._validateInfileName(infile_path)
-        except ValueError as e:
-            raise ValueError('Invalid infile name.') from e
+            num_edges = self._validate_infile_name(infile_path)
+        except TestAllGraphsPathError as e:
+            raise TestAllGraphsPathError(
+                'Unable to process file when given invalid infile name.'
+                ) from e
         else:
             if num_edges in self._processed_data.keys():
-                raise ValueError(
-                                f'Already processed a file corresponding to' \
-                                ' {num_edges} edges.'
-                                )
+                raise TestAllGraphsOutputFileContentsError(
+                                'Already processed a file corresponding to ' \
+                                f'{num_edges} edges.')
             try:
                 planarity_infile_name, duration, numGraphs, numOK, \
                 numNONEMBEDDABLE, errorFlag \
-                    = self._processFileContents(infile_path)
-            except ValueError as e:
-                raise ValueError('Invalid file contents.') from e
+                    = self._process_file_contents(infile_path)
+            except TestAllGraphsOutputFileContentsError as e:
+                raise TestAllGraphsOutputFileContentsError(
+                    f'Unable to process contents of \'{infile_path}\'.') from e
             else:
                 self._processed_data[num_edges] = {
                     'infilename': planarity_infile_name,
@@ -103,12 +198,15 @@ class TestTableGenerator():
                 }
 
 
-    def _validateInfileName(self, infile_path:Path):
+    def _validate_infile_name(self, infile_path:Path):
         infile_name = infile_path.parts[-1]
-        match = re.match(r'n(?P<order>\d+)\.m(?P<num_edges>\d+)(?:\.g6)?\.(?P<command>[pdo234])\.out\.txt', infile_name)
+        match = re.match(
+            r'n(?P<order>\d+)\.m(?P<num_edges>\d+)(?:\.g6)?\.' \
+            r'(?P<command>[pdo234])\.out\.txt',
+            infile_name)
         if not match:
-            raise ValueError(f'Infile name \'{infile_name}\' doesn\'t match '\
-                             'expected pattern.')
+            raise TestAllGraphsPathError(
+                f'Infile name \'{infile_name}\' doesn\'t match pattern.')
         
         order = int(match.group('order'))
         num_edges = int(match.group('num_edges'))
@@ -118,46 +216,48 @@ class TestTableGenerator():
             self.order = order
             self.max_num_edges = ((order * (order - 1)) / 2)
         elif self.order != order:
-            raise ValueError(
+            raise TestAllGraphsPathError(
                 f'Infile name \'{infile_name}\' indicates graph order doesn\'t'
-                ' match previously processed files.'
-            )
+                ' match previously processed files.')
         
         if self.max_num_edges and (num_edges > self.max_num_edges):
-            raise ValueError(
+            raise TestAllGraphsPathError(
                 f'Infile name \'{infile_name}\' indicates graph num_edges is'
-                ' greater than possible for a simple graph.'
-            )
+                ' greater than possible for a simple graph.')
         
         if command not in TestTableGenerator.__planarity_commands:
-            raise ValueError(
+            raise TestAllGraphsPathError(
                 f'Infile name \'{infile_name}\' contains invalid algorithm '
-                f'command \'{command}\'.'
-            )
+                f'command \'{command}\'.')
+
         if not self.command:
             self.command = command
         elif command != self.command:
-            raise ValueError(
-                'Command specified in input filename doesn\'t match expected '
-                'value.'
+            raise TestAllGraphsPathError(
+                'Command specified in input filename doesn\'t match command '
+                'extrated from parent directory path.'
             )
         return num_edges
         
-    def _processFileContents(self, infile_path:Path):
+    def _process_file_contents(self, infile_path:Path):
         with open(infile_path, 'r') as infile:
             line = infile.readline()
-            match = re.match(r'FILENAME="(?P<filename>test\.n\d+\.m\d+\.g6)"' \
-                             r' DURATION="(?P<duration>\d+\.\d{3})"', line)
+            match = re.match(
+                r'FILENAME="(?P<filename>test\.n\d+\.m\d+\.g6)"' \
+                r' DURATION="(?P<duration>\d+\.\d{3})"', line)
             if not match:
-                raise ValueError(f'Invalid file header.')
+                raise TestAllGraphsOutputFileContentsError(
+                    'Invalid file header.')
             
             planarity_infile_name = match.group('filename')
             if not planarity_infile_name:
-                raise ValueError(f'Header doesn\'t contain input filename.')
+                raise TestAllGraphsOutputFileContentsError(
+                    'Header doesn\'t contain input filename.')
             
             duration = match.group('duration')
             if not duration:
-                raise ValueError('Unable to extract duration from input file.')
+                raise TestAllGraphsOutputFileContentsError(
+                    'Unable to extract duration from input file.')
             
             duration = float(duration)
 
@@ -168,11 +268,12 @@ class TestTableGenerator():
                 r'(?P<errorFlag>SUCCESS|ERROR)', line
             )
             if not match:
-                raise ValueError(f'Invalid file contents.')
+                raise TestAllGraphsOutputFileContentsError(
+                    'Invalid file contents.')
             
             command = match.group('command')
             if command != self.command:
-                raise ValueError(
+                raise TestAllGraphsOutputFileContentsError(
                     'Command specified in input file doesn\'t match command '
                     'given in input filename.'
                 )
@@ -183,12 +284,13 @@ class TestTableGenerator():
 
             errorFlag = match.group('errorFlag')
             if not errorFlag:
-                raise ValueError('Invalid errorFlag; must be SUCCESS or ERROR')
+                raise TestAllGraphsOutputFileContentsError(
+                    'Invalid errorFlag; must be SUCCESS or ERROR')
             
             return planarity_infile_name, duration, numGraphs, numOK, \
                 numNONEMBEDDABLE, errorFlag 
 
-    def printOutput(self):
+    def write_table_formatted_data_to_file(self):
         self.output_dir = Path.joinpath(self.output_dir, f'{self.order}')
         Path.mkdir(self.output_dir, parents=True, exist_ok=True)
 
@@ -315,10 +417,14 @@ class TestTableGenerator():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        prog='Test Table Generator',
-        description='Process output from execution of planarity'
-        )
-    
+        formatter_class=argparse.RawTextHelpFormatter,
+        usage='python %(prog)s [options]',
+        description="""Test Table Generator
+
+Tabulates results from output files produced by planarity's Test All Graphs
+functionality.
+""")
+
     parser.add_argument('inputdir', type=Path)
     parser.add_argument('outputdir', type=Path)
 
@@ -328,6 +434,6 @@ if __name__ == "__main__":
     output_dir = Path.absolute(args.outputdir)
 
     ttg = TestTableGenerator(input_dir, output_dir)
-    ttg.getOrderAndCommandFromInputDir()
-    ttg.processFiles()
-    ttg.printOutput()
+    ttg.get_order_and_command_from_input_dir()
+    ttg.process_files()
+    ttg.write_table_formatted_data_to_file()
