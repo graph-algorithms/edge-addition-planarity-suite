@@ -420,7 +420,7 @@ numbers
     parser.add_argument(
         '--second_comparand', '-s',
         type=Path,
-        help='The seconnd .g6 file to compare.',
+        help='The second .g6 file to compare.',
         metavar='SECOND_COMPARAND.g6',
         required=True
         )
