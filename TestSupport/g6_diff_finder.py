@@ -270,26 +270,39 @@ class G6DiffFinder:
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-        prog='G6 Diff Finder',
-        description='Tool to help interrogate and compare two `.g6` files.'
+        formatter_class=argparse.RawTextHelpFormatter,
+        usage='python %(prog)s [options]',
+        description="""Tool to help interrogate and compare two .g6 files.
+
+- Determines if there are duplicates in the first and second comparand .g6 
+files, output to separate files.
+- Determines if there any graphs that appear in the first .g6 file that do not 
+appear in the second .g6 file, and vice versa, output to separate files.
+- Records graphs that occur in both files but which appear on different line 
+numbers
+""",
         )
     
     parser.add_argument(
-        '--first_comparator', '-f',
+        '--first_comparand', '-f',
         type=Path,
-        default=Path('../n11.m20.g6')
+        help='The first .g6 file to compare.',
+        metavar='FIRST_COMPARAND.g6',
+        required=True
         )
     parser.add_argument(
-        '--second_comparator', '-s',
+        '--second_comparand', '-s',
         type=Path,
-        default=Path('../n11.m20.oldgeng.g6')
+        help='The seconnd .g6 file to compare.',
+        metavar='SECOND_COMPARAND.g6',
+        required=True
         )
 
     args = parser.parse_args()
 
     try:
         g6_diff_finder = G6DiffFinder(
-            args.first_comparator, args.second_comparator
+            args.first_comparand, args.second_comparand
             )
     except:
         raise G6DiffFinderException(
