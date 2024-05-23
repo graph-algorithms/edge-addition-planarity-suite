@@ -271,9 +271,7 @@ class G6DiffFinder:
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         prog='G6 Diff Finder',
-        description='Compares two .g6 files and finds the duplicates for ' \
-            'each, as well as determines whether graphs exist in one file ' \
-            'but not the other.'
+        description='Tool to help interrogate and compare two `.g6` files.'
         )
     
     parser.add_argument(
