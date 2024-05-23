@@ -24,6 +24,16 @@ class G6DiffFinder:
 
     def __init__(self, first_comparand_infile_path: Path,
                  second_comparand_infile_path: Path):
+        """
+        Initializes G6DiffFinder instance.
+
+        For each .g6 path provided, validates the infile path and then
+        populates the corresponding comparand dict.
+
+        Args:
+            first_comparand_infile_path: path to a .g6 file
+            second_comparand_infile_path: path to a .g6 file
+        """
         try:
             self._validate_infile_path(first_comparand_infile_path)
         except ValueError as e:
@@ -41,6 +51,14 @@ class G6DiffFinder:
                 self._populate_comparand_dict(second_comparand_infile_path);
 
     def _validate_infile_path(self, infile_path: Path):
+        """
+        Ensures the path provided corresponds to a file, and that the file has
+        the expected extension. No further validation is performed to ensure
+        the file actually corresponds to a .g6 file.
+
+        Args:
+            infile_path: path to a .g6 file
+        """
         if not infile_path.is_file() \
             or infile_path.suffix != G6DiffFinder._g6_ext:
             raise ValueError(
@@ -48,6 +66,22 @@ class G6DiffFinder:
                 )
     
     def _populate_comparand_dict(self, comparand_infile_path: Path) -> dict:
+        """
+        Opens the file corresponding to path comparand_infile_path, then
+        iterates over the lines of the file object. If the first line contains
+        the .g6 header, it is stripped from the line contents. Then, 
+        the line contents are stripped of whitespace, after which we check to
+        see if the graph encoding already has appeared in the file. If so, we
+        add the current line_num to the duplicate_line_nums list corresponding
+        to that encoding. If not, we insert a key-value pair into the comparand
+        dict corresponding to the graph encoding mapped to a sub-dict with the
+        first_line on which the encoding occurs and an empty list of
+        duplicate_line_nums in case that same encoding appears again in the
+        file.
+
+        Args:
+            comparand_infile_path: path to a .g6 file
+        """
         try:
             logging.info(
                 'Populating comparand dict from infile path '
@@ -85,6 +119,11 @@ class G6DiffFinder:
                 ) from e
 
     def output_duplicates(self):
+        """
+        Calls self._output_duplicates() for each comparand dict so that we have
+        two separate output files containing the duplicates within their
+        respective .g6 input files.
+        """
         try:
             self._output_duplicates(self._first_comparand_dict)
         except BaseException as e:
@@ -100,6 +139,23 @@ class G6DiffFinder:
                 )
 
     def _output_duplicates(self, comparand_dict: dict):
+        """
+        Performs a dictionary-comprehension to get each g6_encoded_graph whose
+        corresponding value has a non-empty duplicate_line_nums list.
+
+        If this dictionary is empty, emits a log message that no duplicates
+        were found.
+
+        If the dictionary is nonempty, json.dumps() to file whose name is 
+        the comparand_infile_path with '.duplicates.out.txt' appended. The file
+        is overwritten if it already exists.
+
+        Args:
+            comparand_dict: contains key-value pairs of graph encodings mapped
+                to sub-dicts, which contain the first_line on which the
+                encoding occurred and the list of duplicate_line_nums on which
+                the graph recurred in the file.
+        """
         try:
             comparand_infile_path = \
                 Path(comparand_dict['infile_path']).resolve()
@@ -138,6 +194,12 @@ class G6DiffFinder:
                         )
 
     def graph_set_diff(self):
+        """
+        Calls self._graph_set_diff() for both the self._first_comparand_dict
+        against the second self._second_comparand_dict and vice versa to output
+        which graphs are in the first .g6 file that are absent from the second,
+        and in the second .g6 file that are absent from the first.
+        """
         self._graph_set_diff(
             self._first_comparand_dict, self._second_comparand_dict
             )
@@ -150,6 +212,33 @@ class G6DiffFinder:
             first_comparand_dict: dict,
             second_comparand_dict: dict
         ):
+        """
+        Gets the first_comparand_infile_dir (which is where the output
+        file will be written to, if the result is nonempty) and the infile
+        names that were used to populate the respective dicts; these are used
+        to construct the outfile path.
+        
+        Performs a list-comprehension to determine which graph encodings appear
+        in the first file that don't appear in the second.
+
+        If the graphs_in_first_but_not_second is empty, emits a log message
+        indicating that no graphs were found in the first dict that were not
+        in the second.
+
+        If graphs_in_first_but_not_second is nonempty, writes each graph
+        encoding followed by a newline so that the output constitutes a valid
+        .g6 file.
+
+        The output filepath will be of the form
+        {first_comparand_infile_dir}/graphs_in_{first_comparand_infile_name}_and_{second_comparand_infile_name}.g6
+
+        Args:
+            first_comparand_dict: contains key-value pairs of graph encodings
+                mapped to sub-dicts, which contain the first_line on which the
+                encoding occurred and the list of duplicate_line_nums on which
+                the graph recurred in the file. 
+            second_comparand_dict: Same structure as first_comparand_dict.
+        """
         try:
             first_comparand_infile_dir, first_comparand_infile_name, \
                 second_comparand_infile_name = self._get_infile_names(
@@ -177,7 +266,7 @@ class G6DiffFinder:
                 outfile_path = Path.joinpath(
                     first_comparand_infile_dir,
                     f'graphs_in_{first_comparand_infile_name}_not_in_' +
-                    f'{second_comparand_infile_name}.txt'
+                    f'{second_comparand_infile_name}.g6'
                     )
                 logging.info(
                     'Outputting graphs present in '
@@ -190,6 +279,26 @@ class G6DiffFinder:
                         graph_set_diff_outfile.write('\n')
 
     def graph_set_intersection_with_different_line_nums(self):
+        """
+        Takes the two comparand dicts associated with the G6DiffFinder and gets
+        the first_comparand_infile_dir (which is where the output
+        file will be written to, if the result is nonempty) and the infile
+        names corresponding to the self._first_comparand_dict and
+        self._second_comparand_dict; these are used to construct the outfile
+        path.
+
+        Performs a dictionary comprehension to produce key-value pairs of
+        graph encoding mapped to a tuple containing the first_line on which the
+        encoding occurred in the first .g6 infile and the first_line on which
+        the encoding occurred in the second .g6 infile.
+
+        If the graphs_in_first_and_second is empty, emits a log message
+        indicating that the intersection is empty.
+
+        If graphs_in_first_and_second is nonempty, json.dumps() the dict to the
+        output file of the form:
+        {first_comparand_infile_dir}/graphs_in_{first_comparand_infile_name}_and_{second_comparand_infile_name}.txt
+        """
         try:
             first_comparand_infile_dir, first_comparand_infile_name, \
                 second_comparand_infile_name = self._get_infile_names(
@@ -244,6 +353,24 @@ class G6DiffFinder:
             first_comparand_dict: dict,
             second_comparand_dict: dict
         ):
+        """
+        Uses pathlib.Path object's .parent attribute to get the directory of
+        the first .g6 input file, stored in the first_comparand_dict's
+        infile_path attribute. Then, gets the first_comparand_infile_name by
+        stripping the .g6 extension, and likewise for the
+        second_comparand_infile_name.
+
+        Args:
+            first_comparand_dict: Dict containing the key infile_name,
+                in addition to the key-value pairs of graph encodings mapped to
+                their first_line and the list of duplicate_line_nums
+            second_comparand_dict: Same structure as first_comparand_dict
+        
+        Returns:
+            first_comparand_infile_dir: Parent directory of the first .g6 file
+            first_comparand_infile_name: base name of the first .g6 file
+            second_comparand_infile_name: base name of the second .g6 file
+        """
         try:
             first_comparand_infile_path = \
                 Path(first_comparand_dict['infile_path']).resolve()
