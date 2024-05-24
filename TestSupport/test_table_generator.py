@@ -72,7 +72,7 @@ class TestTableGenerator():
         
         self.input_dir = input_dir
 
-        if not Path.is_directory(output_dir):
+        if not Path.is_dir(output_dir):
             raise TestAllGraphsPathError(
                 f'\'{output_dir}\' is not a valid directory.')
         
@@ -295,7 +295,7 @@ class TestTableGenerator():
         with open(infile_path, 'r') as infile:
             line = infile.readline()
             match = re.match(
-                r'FILENAME="(?P<filename>test\.n\d+\.m\d+\.g6)"' \
+                r'FILENAME="(?P<filename>n\d+\.m\d+\.g6)"' \
                 r' DURATION="(?P<duration>\d+\.\d{3})"', line)
             if not match:
                 raise TestAllGraphsOutputFileContentsError(

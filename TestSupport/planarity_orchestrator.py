@@ -76,7 +76,7 @@ Orchestrates calls to planarity's Test All Graphs functionality.
 
     call_planarity_args = [
         (planarity_path, command, order, num_edges, input_dir, output_dir)
-        for num_edges in range(1, (int)((order * (order - 1)) / 2) + 1)
+        for num_edges in range((int)((order * (order - 1)) / 2) + 1)
         for command in _planarity_algorithm_commands
         ]
 
