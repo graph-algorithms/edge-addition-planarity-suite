@@ -25,6 +25,7 @@ class TestAllGraphsPathError(BaseException):
     Table Generator.
     
     For example:
+    - input_dir or output_dir don't correspond to directories that exist
     - input filename contains an order or command that doesn't align with the
         order and command extracted from the parts of the parent directory
     """
@@ -48,7 +49,7 @@ class TestTableGenerator():
             input_dir: Directory containing the files output by running the
                 planarity Test All Graphs functionality for a given algorithm
                 command on .g6 input files containing all graphs of a given
-                order and edge count
+                order and edge count.
             output_dir: Directory to which you wish to write the output file
                 containing the tabulated results compiled from the input files
                 in the input_dir.
@@ -155,9 +156,8 @@ class TestTableGenerator():
     def _process_file(self, infile_path:Path):
         """Process infile and integrate into _processed_data dict
 
-        Validates the infile name...
-
-        MORE COMING SOON
+        Validates the infile name, then processes file contents and adds to the
+        self._processed_data dict.
 
         Args:
             infile_path: Corresponds to a file within the self.input_dir
@@ -199,6 +199,21 @@ class TestTableGenerator():
 
 
     def _validate_infile_name(self, infile_path:Path):
+        """Checks that infile_path corresponds to output of running planarity
+        
+        Args:
+            infile_path: pathlib.Path object indicating the input file whose
+                name should be validated before processing
+        Raises:
+            TestAllGraphsPathError: If infile_name doesn't match the expected
+                pattern for an output file from planarity Test All Graphs for,
+                if the graph order indicated by the infile_name doesn't match
+                previously processed files, if the num edges in the input graph
+                doesn't make sense (greater than max_num_edges), if the
+                algorithm command specifier isn't one of the supported values,
+                or if the algorithm command specifier doesn't match previously 
+                processed files.
+        """
         infile_name = infile_path.parts[-1]
         match = re.match(
             r'n(?P<order>\d+)\.m(?P<num_edges>\d+)(?:\.g6)?\.' \
@@ -218,7 +233,7 @@ class TestTableGenerator():
         elif self.order != order:
             raise TestAllGraphsPathError(
                 f'Infile name \'{infile_name}\' indicates graph order doesn\'t'
-                ' match previously processed files.')
+                ' equal previously derived order.')
         
         if self.max_num_edges and (num_edges > self.max_num_edges):
             raise TestAllGraphsPathError(
@@ -234,12 +249,49 @@ class TestTableGenerator():
             self.command = command
         elif command != self.command:
             raise TestAllGraphsPathError(
-                'Command specified in input filename doesn\'t match command '
-                'extrated from parent directory path.'
+                'Command specified in input filename doesn\'t match previously'
+                ' derived algorithm command.'
             )
         return num_edges
         
     def _process_file_contents(self, infile_path:Path):
+        """Processes and validates input file contents
+
+        Uses re.match() to determine whether the file contents are of the
+        expected form and attempts to extract the values produced by running
+        planarity Test All Graphs for a given algorithm command.
+
+        Args:
+            infile_path: pathlib.Path object indicating the input file whose
+                contents are validated and processed
+
+        Returns:
+            planarity_infile_name: extracted from infile_path.parts
+            duration: How long it took to run planarity Test All Graphs on all
+                graphs of the given order for the given number of edges for
+            numGraphs: total number of graphs processed in the .g6 infile
+            numOK: number of graphs for which running the planarity algorithm
+                specified by the command returned OK (i.e. gp_Embed() with
+                embedFlags corresponding to the command returned OK and 
+                gp_TestEmbedResultIntegrity() also returned OK)
+            numNONEMBEDDABLE: number of graphs for which running the planarity 
+                algorithm specified by the command returned NONEMBEDDABLE (i.e.
+                gp_Embed() with embedFlags corresponding to the command
+                returned NONEMBEDDABLE and gp_TestEmbedResultIntegrity() also 
+                returned NONEMBEDDABLE) 
+            errorFlag: either SUCCESS (if all graphs reported OK or
+                NONEMBEDDABLE) or ERROR (if an error was encountered allocating
+                memory for or managing the graph datastructures, if an error
+                was raised by the G6ReadIterator, or if the Result from
+                gp_Embed() doesn't concur with gp_TestEmbedResultIntegrity())
+
+        Raises:
+            TestAllGraphsOutputFileContentsError: If the input file's header
+                doesn't have the expected format or values for those fields, if
+                the body of the input file doesn't have the expected format, if
+                the command derived doesn't match the expected algorithm
+                command specifier, or if the 
+        """
         with open(infile_path, 'r') as infile:
             line = infile.readline()
             match = re.match(
@@ -283,7 +335,7 @@ class TestTableGenerator():
             numNONEMBEDDABLE = match.group('numNONEMBEDDABLE')
 
             errorFlag = match.group('errorFlag')
-            if not errorFlag:
+            if not errorFlag or errorFlag not in ('SUCCESS', 'ERROR'):
                 raise TestAllGraphsOutputFileContentsError(
                     'Invalid errorFlag; must be SUCCESS or ERROR')
             
@@ -291,6 +343,8 @@ class TestTableGenerator():
                 numNONEMBEDDABLE, errorFlag 
 
     def write_table_formatted_data_to_file(self):
+        """Writes the data extracted from the input files and totals to table
+        """
         self.output_dir = Path.joinpath(self.output_dir, f'{self.order}')
         Path.mkdir(self.output_dir, parents=True, exist_ok=True)
 
