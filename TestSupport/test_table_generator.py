@@ -206,7 +206,7 @@ class TestTableGenerator():
                 name should be validated before processing
         Raises:
             TestAllGraphsPathError: If infile_name doesn't match the expected
-                pattern for an output file from planarity Test All Graphs for,
+                pattern for an output file from planarity Test All Graphs,
                 if the graph order indicated by the infile_name doesn't match
                 previously processed files, if the num edges in the input graph
                 doesn't make sense (greater than max_num_edges), if the
@@ -259,7 +259,8 @@ class TestTableGenerator():
 
         Uses re.match() to determine whether the file contents are of the
         expected form and attempts to extract the values produced by running
-        planarity Test All Graphs for a given algorithm command.
+        planarity Test All Graphs for a given algorithm command on a specific
+        .g6 file containing all graphs of a given order and single edge-count.
 
         Args:
             infile_path: pathlib.Path object indicating the input file whose
@@ -267,8 +268,8 @@ class TestTableGenerator():
 
         Returns:
             planarity_infile_name: extracted from infile_path.parts
-            duration: How long it took to run planarity Test All Graphs on all
-                graphs of the given order for the given number of edges for
+            duration: How long it took to run the chosen graph algorithm on all
+                graphs of the given order for the given number of edges
             numGraphs: total number of graphs processed in the .g6 infile
             numOK: number of graphs for which running the planarity algorithm
                 specified by the command returned OK (i.e. gp_Embed() with
