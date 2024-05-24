@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+__all__ = []
+
 import json
 import argparse
 import logging
@@ -33,22 +35,41 @@ class G6DiffFinder:
         Args:
             first_comparand_infile_path: path to a .g6 file
             second_comparand_infile_path: path to a .g6 file
+        
+        Raises:
+            ValueError: If either first_comparand_infile_path or
+                second_comparand_infile_path are invalid
+            FileNotFoundError: If _populate_comparand_dict() failed to open
+                either input file, re-raise error
         """
         try:
             self._validate_infile_path(first_comparand_infile_path)
         except ValueError as e:
             raise e
         else:
-            self._first_comparand_dict = \
-                self._populate_comparand_dict(first_comparand_infile_path);
+            try:
+                self._first_comparand_dict = \
+                    self._populate_comparand_dict(first_comparand_infile_path);
+            except FileNotFoundError as e:
+                raise FileNotFoundError(
+                    'Unable to populate comparand dict: '
+                    'can\'t open first input file'
+                    ) from e
 
         try:
             self._validate_infile_path(second_comparand_infile_path)
         except ValueError as e:
             raise e
         else:
-            self._second_comparand_dict = \
-                self._populate_comparand_dict(second_comparand_infile_path);
+            try:
+                self._second_comparand_dict = \
+                    self._populate_comparand_dict(
+                        second_comparand_infile_path);
+            except FileNotFoundError as e:
+                raise FileNotFoundError(
+                    'Unable to populate comparand dict: '
+                    'can\'t open second input file'
+                    ) from e
 
     def _validate_infile_path(self, infile_path: Path):
         """
@@ -58,6 +79,9 @@ class G6DiffFinder:
 
         Args:
             infile_path: path to a .g6 file
+        Raises:
+            ValueError: If the infile_path doesn't correspond to a file or if
+                the file extension is invalid
         """
         if not infile_path.is_file() \
             or infile_path.suffix != G6DiffFinder._g6_ext:
@@ -81,6 +105,8 @@ class G6DiffFinder:
 
         Args:
             comparand_infile_path: path to a .g6 file
+        Raises:
+            FileNotFoundError: If open() fails on comparand_infile_path
         """
         try:
             logging.info(
@@ -119,24 +145,29 @@ class G6DiffFinder:
                 ) from e
 
     def output_duplicates(self):
-        """
+        """Output duplicates in each comparand dict
+
         Calls self._output_duplicates() for each comparand dict so that we have
         two separate output files containing the duplicates within their
         respective .g6 input files.
+
+        Raises:
+            G6DiffFinderException: Re-raises if _output_duplicates() failed on
+                either comparand dict
         """
         try:
             self._output_duplicates(self._first_comparand_dict)
-        except BaseException as e:
+        except G6DiffFinderException as e:
             raise G6DiffFinderException(
                 'Unable to output duplicates for first .g6 file.'
-                )
+                ) from e
 
         try:
             self._output_duplicates(self._second_comparand_dict)
-        except:
+        except G6DiffFinderException as e:
             raise G6DiffFinderException(
                 'Unable to output duplicates for second .g6 file.'
-                )
+                ) from e
 
     def _output_duplicates(self, comparand_dict: dict):
         """
@@ -155,12 +186,18 @@ class G6DiffFinder:
                 to sub-dicts, which contain the first_line on which the
                 encoding occurred and the list of duplicate_line_nums on which
                 the graph recurred in the file.
+
+        Raises:
+            G6DiffFinderException: If KeyError encountered when trying to
+                get value corresponding to key infile_path from the comparand
+                dict
         """
         try:
             comparand_infile_path = \
                 Path(comparand_dict['infile_path']).resolve()
         except KeyError as e:
-            raise KeyError('Invalid dict structure: missing \'infile_path\'.')
+            raise G6DiffFinderException(
+                'Invalid dict structure: missing \'infile_path\'.') from e
         else:
             comparand_outfile_path = Path(
                 str(comparand_infile_path) + '.duplicates.out.txt'
@@ -238,13 +275,17 @@ class G6DiffFinder:
                 encoding occurred and the list of duplicate_line_nums on which
                 the graph recurred in the file. 
             second_comparand_dict: Same structure as first_comparand_dict.
+
+        Raises:
+            G6DiffFinderException: Re-raises if exeption encountered when we
+                _get_infile_names() from the two comparand dicts
         """
         try:
             first_comparand_infile_dir, first_comparand_infile_name, \
                 second_comparand_infile_name = self._get_infile_names(
                     first_comparand_dict, second_comparand_dict
                 )
-        except KeyError as e:
+        except G6DiffFinderException as e:
             raise G6DiffFinderException(
                 'Unable to extract infile_names from dicts.'
                 ) from e
@@ -298,13 +339,17 @@ class G6DiffFinder:
         If graphs_in_first_and_second is nonempty, json.dumps() the dict to the
         output file of the form:
         {first_comparand_infile_dir}/graphs_in_{first_comparand_infile_name}_and_{second_comparand_infile_name}.txt
+
+        Raises:
+            G6DiffFinderException: Re-raises if exeption encountered when we
+                _get_infile_names() from the two comparand dicts
         """
         try:
             first_comparand_infile_dir, first_comparand_infile_name, \
                 second_comparand_infile_name = self._get_infile_names(
                     self._first_comparand_dict, self._second_comparand_dict
                 )
-        except KeyError as e:
+        except G6DiffFinderException as e:
             raise G6DiffFinderException(
                 'Unable to extract infile_names from dicts.'
                 ) from e
@@ -370,12 +415,18 @@ class G6DiffFinder:
             first_comparand_infile_dir: Parent directory of the first .g6 file
             first_comparand_infile_name: base name of the first .g6 file
             second_comparand_infile_name: base name of the second .g6 file
+        
+        Raises:
+            G6DiffFinderException: If KeyError encountered when trying to
+                get value corresponding to key infile_path from either of the
+                two comparand dicts
         """
         try:
             first_comparand_infile_path = \
                 Path(first_comparand_dict['infile_path']).resolve()
         except KeyError as e:
-            raise KeyError('Invalid dict structure: missing \'infile_path\'.')
+            raise G6DiffFinderException(
+                'Invalid dict structure: missing \'infile_path\'.') from e
         else:
             first_comparand_infile_dir = first_comparand_infile_path.parent
             first_comparand_infile_name = \
@@ -386,9 +437,9 @@ class G6DiffFinder:
                         second_comparand_dict['infile_path']
                         ).with_suffix('').name
             except KeyError as e:
-                raise KeyError(
+                raise G6DiffFinderException(
                     'Invalid dict structure: missing \'infile_path\'.'
-                    )
+                    ) from e
             else:
                 return first_comparand_infile_dir, \
                     first_comparand_infile_name, \
