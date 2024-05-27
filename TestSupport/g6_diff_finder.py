@@ -2,12 +2,15 @@
 
 __all__ = []
 
+import sys
 import json
 import argparse
 import logging
 from pathlib import Path
 
-logging.basicConfig(level=logging.DEBUG)
+
+logging.basicConfig(stream=sys.stdout, level=logging.DEBUG, format= \
+                    '[%(levelname)s] - %(funcName)s - %(message)s')
 
 class G6DiffFinderException(Exception):
     """
@@ -24,7 +27,8 @@ class G6DiffFinder:
     _g6_header = '>>graph6<<'
     _g6_ext = '.g6'
 
-    def __init__(self, first_comparand_infile_path: Path,
+    def __init__(self,
+                 first_comparand_infile_path: Path,
                  second_comparand_infile_path: Path):
         """
         Initializes G6DiffFinder instance.
