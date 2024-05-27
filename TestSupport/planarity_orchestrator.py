@@ -11,7 +11,7 @@ _planarity_algorithm_commands =  ('p', 'd', 'o', '2', '3', '4')
 
 
 def call_planarity(
-        planarity_path:str, command:str, order:int, num_edges:int,
+        planarity_path:Path, command:str, order:int, num_edges:int,
         input_dir:Path, output_dir:Path):
     """Call planarity as blocking process on multiprocessing thread
 
@@ -22,7 +22,7 @@ def call_planarity(
        planarity -t {command} {infile_path} {outfile_path}
 
     Args:
-        planarity_path: Path to the nauty geng executable
+        planarity_path: Path to the planarity executable
         command: Algorithm specifier character
         order: Desired number of vertices
         num_edges: Desired number of edges
@@ -53,11 +53,23 @@ if __name__ == "__main__":
 
 Orchestrates calls to planarity's Test All Graphs functionality.
 """)
-
-    parser.add_argument('planaritypath', type=str)
-    parser.add_argument('-n', '--order', type=int, default=11)
-    parser.add_argument('inputdir', type=Path)
-    parser.add_argument('outputdir', type=Path)
+    parser.add_argument(
+        '-p', '--planaritypath',
+        type=Path,
+        metavar='PATH_TO_PLANARITY_EXECUTABLE')
+    parser.add_argument(
+        '-n', '--order',
+        type=int,
+        metavar='N',
+        default=11)
+    parser.add_argument(
+        '-i', '--inputdir',
+        type=Path,
+        metavar='DIR_CONTAINING_G6_FILES')
+    parser.add_argument(
+        '-o', '--outputdir',
+        type=Path,
+        metavar='DIR_FOR_RESULTS')
 
     args = parser.parse_args()
 

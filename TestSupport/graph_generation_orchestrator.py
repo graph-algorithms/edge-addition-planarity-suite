@@ -8,7 +8,7 @@ import argparse
 from pathlib import Path
 
 
-def call_geng(geng_path:str, order:int, num_edges:int, output_dir:Path):
+def call_geng(geng_path:Path, order:int, num_edges:int, output_dir:Path):
     """Call nauty geng as blocking process on multiprocessing thread
 
     Opens a file for write (overwrites file if it exists) within the output_dir
@@ -43,9 +43,17 @@ Orchestrates calls to nauty's geng to generate graphs for a given order,
 separated out into files for each edge count.
 """)
 
-    parser.add_argument('gengpath', type=str)
-    parser.add_argument('-n', '--order', type=int, default=11)
-    parser.add_argument('outputdir', type=Path)
+    parser.add_argument(
+        '-g', '--gengpath',
+        type=Path,
+        metavar='PATH_TO_GENG_EXECUTABLE')
+    parser.add_argument(
+        '-n', '--order',
+        type=int, default=11)
+    parser.add_argument(
+        '-o', '--outputdir',
+        type=Path,
+        metavar='G6_OUTPUT_DIR')
 
     args = parser.parse_args()
 
