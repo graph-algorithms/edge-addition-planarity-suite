@@ -30,7 +30,7 @@ def call_geng(geng_path:str, order:int, num_edges:int, output_dir:Path):
     with open(filename, "w") as outfile:
         subprocess.run(
             [f'{geng_path}', f'{order}', f'{num_edges}:{num_edges}'],
-            stdout=outfile, stderr=subprocess.PIPE, shell=True)
+            stdout=outfile, stderr=subprocess.PIPE)
 
 
 if __name__ == "__main__":

@@ -42,7 +42,7 @@ def call_planarity(
             f'{infile_path}',
             f'{outfile_path}'
         ],
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
 
 if __name__ == "__main__":
