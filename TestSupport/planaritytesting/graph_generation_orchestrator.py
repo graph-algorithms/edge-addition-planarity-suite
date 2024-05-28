@@ -1,0 +1,156 @@
+#!/usr/bin/env python
+
+__all__ = ['distribute_geng_workload']
+
+import sys
+import logging
+import multiprocessing
+import subprocess
+import argparse
+import shutil
+from pathlib import Path
+
+logging.basicConfig(stream=sys.stdout, level=logging.DEBUG, format= \
+                    '[%(levelname)s] - %(module)s.%(funcName)s - %(message)s')
+
+def _call_geng(geng_path:Path, order:int, num_edges:int, output_dir:Path):
+    """Call nauty geng as blocking process on multiprocessing thread
+
+    Opens a file for write (overwrites file if it exists) within the output_dir
+    and uses subprocess.run() to start a blocking process on the
+    multiprocessing pool thread to call the nauty geng executable with the
+    desired order and number of edges, with stdout redirected to the output
+    file object.
+
+    The resulting .g6 output file will contain all graphs of the desired order
+    for a single edge count.
+
+    Args:
+        geng_path: Path to the nauty geng executable
+        order: Desired number of vertices
+        num_edges: Desired number of edges
+        output_dir: Directory to which you wish to write the resulting .g6 file
+    """
+    filename = Path.joinpath(output_dir, f'n{order}.m{num_edges}.g6')
+    with open(filename, "w") as outfile:
+        subprocess.run(
+            [f'{geng_path}', f'{order}', f'{num_edges}:{num_edges}'],
+            stdout=outfile, stderr=subprocess.PIPE)
+
+
+def _validate_geng_workload_args(
+        geng_path: Path, order: int, output_dir: Path)->tuple[Path, int, Path]:
+    """Validates args provided to distribute_geng_workload
+
+    Ensures geng_path corresponds to an executable, that order is an integer
+    in closed interval [2, 12], and that output_dir is a valid Path specifying
+    where results from executing geng should be output.
+    
+    Args:
+        geng_path: Path to the nauty geng executable
+        order: Desired number of vertices
+        output_dir: Directory to which you wish to write the resulting .g6 file
+
+    Raises:
+        argparse.ArgumentTypeError: If any of the args passed from the command
+            line are determined invalid under more specific scrutiny
+    Returns:
+        A tuple comprised of the geng_path, order, and output_dir
+    """
+    if (not geng_path or
+        not isinstance(geng_path, Path) or
+        not shutil.which(str(geng_path.resolve()))):
+        raise argparse.ArgumentTypeError(
+            f"Path to geng executable '{geng_path}' does not correspond to an "
+            "executable.")
+    
+    if (not order or
+        order < 2 or
+        order > 12):
+        raise argparse.ArgumentTypeError(
+            "Graph order must be between 2 and 12.")
+    
+    if (not output_dir or
+        not isinstance(output_dir, Path) or
+        output_dir.is_file()):
+        raise argparse.ArgumentTypeError(
+            "Output directory path is invalid.")
+    
+    output_dir = output_dir.resolve()
+    try:
+        candidate_order_from_path = (int)(output_dir.parts[-1])
+    except ValueError:
+        pass
+    except IndexError as e:
+        raise argparse.ArgumentTypeError(
+            f"Unable to extract parts from "
+            "output dir path '{output_dir}'.") from e
+    else:
+        if candidate_order_from_path != order:
+            logging.warning(
+                f"Output directory '{output_dir}' seems to indicate "
+                f"graph order should be '{candidate_order_from_path}'"
+                f", which does not mach order from command line args "
+                f"'{order}'. Creating appropriately named child "
+                "directory.")
+            output_dir = Path.joinpath(output_dir, str(order))
+    
+    Path.mkdir(output_dir, parents=True, exist_ok=True)
+
+    return geng_path, order, output_dir
+
+
+def distribute_geng_workload(geng_path: Path, order: int, output_dir: Path):
+    """Create multiprocessing thread pool and use starmap_async to _call_geng
+
+    Args:
+        geng_path: Path to the nauty geng executable
+        order: Desired number of vertices
+        output_dir: Directory to which you wish to write the resulting .g6 file
+    """
+    geng_path, order, output_dir = _validate_geng_workload_args(
+        geng_path, order, output_dir)
+
+    call_geng_args = [
+        (geng_path, order, edge_count, output_dir) 
+        for edge_count in range((int)((order * (order - 1)) / 2) + 1)
+        ]
+
+    with multiprocessing.Pool(processes=multiprocessing.cpu_count()) as pool:
+        _ = pool.starmap_async(_call_geng, call_geng_args)
+        pool.close()
+        pool.join()
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.RawTextHelpFormatter,
+        usage='python %(prog)s [options]',
+        description="""Graph Generation Orchestrator
+
+Orchestrates calls to nauty's geng to generate graphs for a given order,
+separated out into files for each edge count. The output files will have paths:
+    {output_dir}/{order}/n{order}.m{num_edges}.g6
+""")
+    parser.add_argument(
+        '-g', '--gengpath',
+        type=Path,
+        metavar='PATH_TO_GENG_EXECUTABLE')
+    parser.add_argument(
+        '-n', '--order',
+        type=int,
+        default=11,
+        metavar='N')
+    parser.add_argument(
+        '-o', '--outputdir',
+        type=Path,
+        default=Path('.'),
+        metavar='G6_OUTPUT_DIR')
+
+    args = parser.parse_args()
+
+    order = args.order
+    geng_path = args.gengpath
+    output_dir = args.outputdir
+
+    distribute_geng_workload(geng_path, order, output_dir)

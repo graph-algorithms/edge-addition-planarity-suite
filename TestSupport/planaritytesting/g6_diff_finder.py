@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-__all__ = []
+__all__ = ['G6DiffFinder', 'G6DiffFinderException']
 
 import sys
 import json
@@ -10,7 +10,7 @@ from pathlib import Path
 
 
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG, format= \
-                    '[%(levelname)s] - %(funcName)s - %(message)s')
+                    '[%(levelname)s] - %(module)s.%(funcName)s - %(message)s')
 
 class G6DiffFinderException(Exception):
     """
