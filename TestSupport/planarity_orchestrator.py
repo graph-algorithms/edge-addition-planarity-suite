@@ -52,6 +52,14 @@ if __name__ == "__main__":
         description="""Planarity execution orchestrator
 
 Orchestrates calls to planarity's Test All Graphs functionality.
+
+Expects input directory to contain a subdirectory whose name is the order
+containing .g6 files to be tested. Each .g6 file contains all graphs of the
+given order with a specific number of edges:
+    {input_dir}/{order}/n{order}.m{num_edges}.g6
+
+Output files will have paths:
+    {output_dir}/{order}/{command}/n{order}.m{num_edges}.{command}.out.txt
 """)
     parser.add_argument(
         '-p', '--planaritypath',

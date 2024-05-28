@@ -478,6 +478,20 @@ if __name__ == "__main__":
 
 Tabulates results from output files produced by planarity's Test All Graphs
 functionality.
+
+Expects to be given an input directory containing only the output files
+produced by running planarity's Test All Graphs for a specific algorithm.
+
+Preferably, this will be the output from having run the Planarity Orchestrator,
+and will have a path of the form:
+    {parent_dir}/{order}/{command}/
+
+And will contain files with the full path:
+    {parent_dir}/{order}/{command}/n{order}.m{numEdges}.{command}.out.txt
+
+Will output one file per graph algorithm containing the tabulated data compiled
+from the planarity Test All Graphs output files:
+    {output_dir}/n{order}.mALL.{command}.out.txt
 """)
 
     parser.add_argument('inputdir', type=Path)

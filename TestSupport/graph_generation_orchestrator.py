@@ -40,7 +40,8 @@ if __name__ == "__main__":
         description="""Graph Generation Orchestrator
 
 Orchestrates calls to nauty's geng to generate graphs for a given order,
-separated out into files for each edge count.
+separated out into files for each edge count. The output files will have paths:
+    {output_dir}/{order}/n{order}.m{num_edges}.g6
 """)
 
     parser.add_argument(
