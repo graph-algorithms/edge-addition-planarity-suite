@@ -181,9 +181,11 @@ class G6DiffFinder:
         If this dictionary is empty, emits a log message that no duplicates
         were found.
 
-        If the dictionary is nonempty, json.dumps() to file whose name is 
-        the comparand_infile_path with '.duplicates.out.txt' appended. The file
-        is overwritten if it already exists.
+        If the dictionary is nonempty, json.dumps() to an output file whose
+        path is:
+            {comparand_infile_path}.duplicates.out.txt
+        
+        The file is overwritten if it already exists.
 
         Args:
             comparand_dict: contains key-value pairs of graph encodings mapped
@@ -271,7 +273,7 @@ class G6DiffFinder:
         .g6 file.
 
         The output filepath will be of the form
-        {first_comparand_infile_dir}/graphs_in_{first_comparand_infile_name}_and_{second_comparand_infile_name}.g6
+        {first_comparand_infile_dir}/graphs_in_{first_comparand_infile_name}_not_in_{second_comparand_infile_name}.g6
 
         Args:
             first_comparand_dict: contains key-value pairs of graph encodings
@@ -457,11 +459,19 @@ if __name__ == '__main__':
         description="""Tool to help interrogate and compare two .g6 files.
 
 - Determines if there are duplicates in the first and second comparand .g6 
-files, output to separate files.
+files; outputs to files with paths:
+    {first_comparand_infile_path}.duplicates.out.txt
+    {second_comparand_infile_path}.duplicates.out.txt
+
 - Determines if there any graphs that appear in the first .g6 file that do not 
-appear in the second .g6 file, and vice versa, output to separate files.
+appear in the second .g6 file, and vice versa; outputs to files with paths:
+    {first_comparand_infile_dir}/graphs_in_{first_comparand_infile_name}_not_in_{second_comparand_infile_name}.g6
+    {second_comparand_infile_dir}/graphs_in_{second_comparand_infile_name}_not_in_{first_comparand_infile_name}.g6
+
 - Records graphs that occur in both files but which appear on different line 
-numbers
+numbers; outputs to a file with path:
+    {first_comparand_infile_dir}/graphs_in_{first_comparand_infile_name}_and_{second_comparand_infile_name}.txt
+
 """,
         )
     
