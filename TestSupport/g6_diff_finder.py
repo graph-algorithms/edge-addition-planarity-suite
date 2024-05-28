@@ -56,8 +56,8 @@ class G6DiffFinder:
                     self._populate_comparand_dict(first_comparand_infile_path);
             except FileNotFoundError as e:
                 raise FileNotFoundError(
-                    'Unable to populate comparand dict: '
-                    'can\'t open first input file'
+                    "Unable to populate comparand dict: "
+                    "can't open first input file"
                     ) from e
 
         try:
@@ -71,8 +71,8 @@ class G6DiffFinder:
                         second_comparand_infile_path);
             except FileNotFoundError as e:
                 raise FileNotFoundError(
-                    'Unable to populate comparand dict: '
-                    'can\'t open second input file'
+                    "Unable to populate comparand dict: "
+                    "can't open second input file"
                     ) from e
 
     def _validate_infile_path(self, infile_path: Path):
@@ -90,7 +90,7 @@ class G6DiffFinder:
         if not infile_path.is_file() \
             or infile_path.suffix != G6DiffFinder._g6_ext:
             raise ValueError(
-                f'Path \'{infile_path}\' doesn\'t correspond to a .g6 infile.'
+                f"Path '{infile_path}' doesn't correspond to a .g6 infile."
                 )
     
     def _populate_comparand_dict(self, comparand_infile_path: Path) -> dict:
@@ -114,8 +114,8 @@ class G6DiffFinder:
         """
         try:
             logging.info(
-                'Populating comparand dict from infile path '
-                f'\'{comparand_infile_path}\'.'
+                "Populating comparand dict from infile path "
+                f"'{comparand_infile_path}'."
                 )
 
             with open(comparand_infile_path, 'r') as comparand_infile:
@@ -144,8 +144,8 @@ class G6DiffFinder:
                 return comparand_dict
         except FileNotFoundError as e:
             raise FileNotFoundError(
-                'Unable to open comparand infile with path '
-                f'\'{comparand_infile_path}\'.'
+                "Unable to open comparand infile with path "
+                f"'{comparand_infile_path}'."
                 ) from e
 
     def output_duplicates(self):
@@ -163,14 +163,14 @@ class G6DiffFinder:
             self._output_duplicates(self._first_comparand_dict)
         except G6DiffFinderException as e:
             raise G6DiffFinderException(
-                'Unable to output duplicates for first .g6 file.'
+                "Unable to output duplicates for first .g6 file."
                 ) from e
 
         try:
             self._output_duplicates(self._second_comparand_dict)
         except G6DiffFinderException as e:
             raise G6DiffFinderException(
-                'Unable to output duplicates for second .g6 file.'
+                "Unable to output duplicates for second .g6 file."
                 ) from e
 
     def _output_duplicates(self, comparand_dict: dict):
@@ -203,7 +203,7 @@ class G6DiffFinder:
                 Path(comparand_dict['infile_path']).resolve()
         except KeyError as e:
             raise G6DiffFinderException(
-                'Invalid dict structure: missing \'infile_path\'.') from e
+                "Invalid dict structure: missing 'infile_path'.") from e
         else:
             comparand_outfile_path = Path(
                 str(comparand_infile_path) + '.duplicates.out.txt'
@@ -220,17 +220,17 @@ class G6DiffFinder:
             
             if not duplicated_g6_encodings:
                 logging.info(
-                    f'No duplicates present in \'{comparand_infile_path}\'.'
+                    f"No duplicates present in '{comparand_infile_path}'."
                     )
             else:
                 with open(comparand_outfile_path, 'w') as comparand_outfile:
                     logging.info(
-                        'Outputting duplicates present in '
-                        f'\'{comparand_infile_path}\''
+                        "Outputting duplicates present in "
+                        f"'{comparand_infile_path}'"
                         )
                     comparand_outfile.write(
-                        'Comparand infile name: '
-                        f'\'{comparand_infile_path.name}\'\n'
+                        "Comparand infile name: "
+                        f"'{comparand_infile_path.name}'\n"
                         )
                     comparand_outfile.write(
                         json.dumps(duplicated_g6_encodings, indent=4)
@@ -293,7 +293,7 @@ class G6DiffFinder:
                 )
         except G6DiffFinderException as e:
             raise G6DiffFinderException(
-                'Unable to extract infile_names from dicts.'
+                "Unable to extract infile_names from dicts."
                 ) from e
         else:
             graphs_in_first_but_not_second = [
@@ -305,20 +305,20 @@ class G6DiffFinder:
             
             if not graphs_in_first_but_not_second:
                 logging.info(
-                    'No graphs present in '
-                    f'{first_comparand_infile_name} that aren\'t in '
-                    f'{second_comparand_infile_name}'
+                    "No graphs present in "
+                    f"'{first_comparand_infile_name}' that aren't in "
+                    f"'{second_comparand_infile_name}'"
                     )
             else:
                 outfile_path = Path.joinpath(
                     first_comparand_infile_dir,
-                    f'graphs_in_{first_comparand_infile_name}_not_in_' +
-                    f'{second_comparand_infile_name}.g6'
+                    f"graphs_in_{first_comparand_infile_name}_not_in_" +
+                    f"{second_comparand_infile_name}.g6"
                     )
                 logging.info(
-                    'Outputting graphs present in '
-                    f'{first_comparand_infile_name} that aren\'t in '
-                    f'{second_comparand_infile_name} to {outfile_path}.'
+                    "Outputting graphs present in "
+                    f"'{first_comparand_infile_name}' that aren't in "
+                    f"'{second_comparand_infile_name}' to '{outfile_path}'."
                     )
                 with open(outfile_path, 'w') as graph_set_diff_outfile:
                     for g6_encoding in graphs_in_first_but_not_second:
@@ -357,7 +357,7 @@ class G6DiffFinder:
                 )
         except G6DiffFinderException as e:
             raise G6DiffFinderException(
-                'Unable to extract infile_names from dicts.'
+                "Unable to extract infile_names from dicts."
                 ) from e
         else:
             graphs_in_first_and_second = {
@@ -374,22 +374,22 @@ class G6DiffFinder:
 
             if not graphs_in_first_and_second:
                 logging.info(
-                    'No graphs present in both '
-                    f'{first_comparand_infile_name} and '
-                    f'{second_comparand_infile_name} that appear on different '
-                    'lines.'
+                    "No graphs present in both "
+                    f"'{first_comparand_infile_name}' and "
+                    f"'{second_comparand_infile_name}' that appear on "
+                    "different lines."
                     )
             else:
                 outfile_path = Path.joinpath(
                     first_comparand_infile_dir,
-                    f'graphs_in_{first_comparand_infile_name}_and_' +
-                    f'{second_comparand_infile_name}.txt'
+                    f"graphs_in_{first_comparand_infile_name}_and_" +
+                    f"{second_comparand_infile_name}.txt"
                     )
                 logging.info(
-                    'Outputting graphs present in both '
-                    f'{first_comparand_infile_name} and '
-                    f'{second_comparand_infile_name} that appear on different '
-                    f'lines to {outfile_path}.'
+                    "Outputting graphs present in both "
+                    f"'{first_comparand_infile_name}' and "
+                    f"'{second_comparand_infile_name}' that appear on "
+                    f"different lines to '{outfile_path}'."
                     )
                 with open(outfile_path, 'w') as graph_set_intersection_outfile:
                     graph_set_intersection_outfile.write(
@@ -432,7 +432,7 @@ class G6DiffFinder:
                 Path(first_comparand_dict['infile_path']).resolve()
         except KeyError as e:
             raise G6DiffFinderException(
-                'Invalid dict structure: missing \'infile_path\'.') from e
+                "Invalid dict structure: missing key 'infile_path'.") from e
         else:
             first_comparand_infile_dir = first_comparand_infile_path.parent
             first_comparand_infile_name = \
@@ -444,7 +444,7 @@ class G6DiffFinder:
                         ).with_suffix('').name
             except KeyError as e:
                 raise G6DiffFinderException(
-                    'Invalid dict structure: missing \'infile_path\'.'
+                    "Invalid dict structure: missing key 'infile_path'."
                     ) from e
             else:
                 return first_comparand_infile_dir, \
@@ -498,26 +498,26 @@ numbers; outputs to a file with path:
             )
     except:
         raise G6DiffFinderException(
-            'Unable to initialize G6DiffFinder with given input files.'
+            "Unable to initialize G6DiffFinder with given input files."
             )
 
     try:
         g6_diff_finder.output_duplicates()
     except:
         raise G6DiffFinderException(
-            'Unable to output duplicates for given input files.'
+            "Unable to output duplicates for given input files."
             )
 
     try:
         g6_diff_finder.graph_set_diff()
     except:
         raise G6DiffFinderException(
-            'Failed to discern diff between two .g6 input files.'
+            "Failed to discern diff between two .g6 input files."
         )
     
     try:
         g6_diff_finder.graph_set_intersection_with_different_line_nums()
     except:
         raise G6DiffFinderException(
-            'Failed to determine set intersection of two .g6 input files.'
+            "Failed to determine set intersection of two .g6 input files."
         )
