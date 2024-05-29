@@ -471,10 +471,7 @@ appear in the second .g6 file, and vice versa; outputs to files with paths:
 - Records graphs that occur in both files but which appear on different line 
 numbers; outputs to a file with path:
     {first_comparand_infile_dir}/graphs_in_{first_comparand_infile_name}_and_{second_comparand_infile_name}.txt
-
-""",
-        )
-    
+""")
     parser.add_argument(
         '--first_comparand', '-f',
         type=Path,

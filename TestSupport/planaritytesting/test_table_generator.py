@@ -67,7 +67,7 @@ class TestTableGenerator():
             raise TestAllGraphsPathError(
                 f'\'{input_dir}\' is not a valid directory.')
         
-        if len(list(input_dir.iterdir())) == 0:
+        if not any(input_dir.iterdir()):
             raise TestAllGraphsPathError(f'\'{input_dir}\' contains no files.')
         
         self.input_dir = input_dir
@@ -499,7 +499,7 @@ from the planarity Test All Graphs output files:
 
     args = parser.parse_args()
 
-    input_dir = Path.absolute(args.inputdir)   
+    input_dir = Path.absolute(args.inputdir)
     output_dir = Path.absolute(args.outputdir)
 
     ttg = TestTableGenerator(input_dir, output_dir)

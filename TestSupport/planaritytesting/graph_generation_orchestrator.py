@@ -2,18 +2,16 @@
 
 __all__ = ['distribute_geng_workload']
 
-import sys
-import logging
 import multiprocessing
 import subprocess
 import argparse
 import shutil
 from pathlib import Path
 
-logging.basicConfig(stream=sys.stdout, level=logging.DEBUG, format= \
-                    '[%(levelname)s] - %(module)s.%(funcName)s - %(message)s')
 
-def _call_geng(geng_path:Path, order:int, num_edges:int, output_dir:Path):
+def _call_geng(
+        geng_path:Path, canonical_files: bool, order:int, num_edges:int,
+        output_dir:Path):
     """Call nauty geng as blocking process on multiprocessing thread
 
     Opens a file for write (overwrites file if it exists) within the output_dir
@@ -27,15 +25,21 @@ def _call_geng(geng_path:Path, order:int, num_edges:int, output_dir:Path):
 
     Args:
         geng_path: Path to the nauty geng executable
+        canonical_files: Bool to indicate whether or not to generate
+            graphs with canonical labelling
         order: Desired number of vertices
         num_edges: Desired number of edges
         output_dir: Directory to which you wish to write the resulting .g6 file
     """
-    filename = Path.joinpath(output_dir, f'n{order}.m{num_edges}.g6')
+    filename = Path.joinpath(
+        output_dir,
+        f"n{order}.m{num_edges}{'.canonical' if canonical_files else ''}.g6"
+        )
     with open(filename, "w") as outfile:
-        subprocess.run(
-            [f'{geng_path}', f'{order}', f'{num_edges}:{num_edges}'],
-            stdout=outfile, stderr=subprocess.PIPE)
+        command = [f'{geng_path}', f'{order}', f'{num_edges}:{num_edges}']
+        if canonical_files:
+            command.insert(1, '-l')
+        subprocess.run(command, stdout=outfile, stderr=subprocess.PIPE)
 
 
 def _validate_geng_workload_args(
@@ -80,39 +84,41 @@ def _validate_geng_workload_args(
     try:
         candidate_order_from_path = (int)(output_dir.parts[-1])
     except ValueError:
-        pass
+        output_dir = Path.joinpath(output_dir, str(order))
     except IndexError as e:
         raise argparse.ArgumentTypeError(
             f"Unable to extract parts from "
             "output dir path '{output_dir}'.") from e
     else:
         if candidate_order_from_path != order:
-            logging.warning(
+            raise argparse.ArgumentTypeError(
                 f"Output directory '{output_dir}' seems to indicate "
                 f"graph order should be '{candidate_order_from_path}'"
                 f", which does not mach order from command line args "
-                f"'{order}'. Creating appropriately named child "
-                "directory.")
-            output_dir = Path.joinpath(output_dir, str(order))
-    
-    Path.mkdir(output_dir, parents=True, exist_ok=True)
+                f"'{order}'. Please verify your command line args and retry.")
 
     return geng_path, order, output_dir
 
 
-def distribute_geng_workload(geng_path: Path, order: int, output_dir: Path):
-    """Create multiprocessing thread pool and use starmap_async to _call_geng
+def distribute_geng_workload(
+        geng_path: Path, canonical_files:bool, order: int,
+        output_dir: Path):
+    """Use starmap_async on multiprocessingn pool to _call_geng
 
     Args:
         geng_path: Path to the nauty geng executable
         order: Desired number of vertices
+        generate_canonical: Bool to indicate whether or not to generate
+            graphs with canonical labelling
         output_dir: Directory to which you wish to write the resulting .g6 file
     """
     geng_path, order, output_dir = _validate_geng_workload_args(
         geng_path, order, output_dir)
 
+    Path.mkdir(output_dir, parents=True, exist_ok=True)
+
     call_geng_args = [
-        (geng_path, order, edge_count, output_dir) 
+        (geng_path, canonical_files, order, edge_count, output_dir) 
         for edge_count in range((int)((order * (order - 1)) / 2) + 1)
         ]
 
@@ -137,6 +143,10 @@ separated out into files for each edge count. The output files will have paths:
         type=Path,
         metavar='PATH_TO_GENG_EXECUTABLE')
     parser.add_argument(
+        '-l', '--canonicalfiles',
+        action='store_true'
+    )
+    parser.add_argument(
         '-n', '--order',
         type=int,
         default=11,
@@ -150,7 +160,8 @@ separated out into files for each edge count. The output files will have paths:
     args = parser.parse_args()
 
     order = args.order
+    canonical_files = args.l
     geng_path = args.gengpath
     output_dir = args.outputdir
 
-    distribute_geng_workload(geng_path, order, output_dir)
+    distribute_geng_workload(geng_path, canonical_files, order, output_dir)
