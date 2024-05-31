@@ -2,6 +2,7 @@
 
 __all__ = []
 
+import sys
 import os
 import shutil
 import argparse
@@ -21,7 +22,8 @@ class G6GenerationAndComparisonDriver:
             orders: tuple
         ):
         try:
-            self._validate_input(
+            geng_path, planarity_path, planarity_backup_path, \
+            output_parent_dir, orders = self._validate_and_normalize_input(
                 geng_path, planarity_path, planarity_backup_path,
                 output_parent_dir, orders
             )
@@ -37,11 +39,11 @@ class G6GenerationAndComparisonDriver:
         self.output_parent_dir = output_parent_dir
         self.orders = orders
 
-    def _validate_input(
+    def _validate_and_normalize_input(
             self, geng_path: Path, planarity_path: Path,
             planarity_backup_path: Path, output_parent_dir: Path,
             orders: tuple
-        ):
+        )->tuple[Path, Path, Path, Path, tuple]:
         """Validates G6GenerationAndComparisonDriver initialization values
 
         Args:
@@ -101,14 +103,27 @@ class G6GenerationAndComparisonDriver:
                 "inclusive."
             )
 
+        if not output_parent_dir:
+            script_entrypoint = Path(sys.argv[0]).resolve().parent.parent
+            output_parent_dir = Path.joinpath(
+                script_entrypoint, 'results', 'g6_generation_and_comparison_driver'
+            )
+            Path.mkdir(output_parent_dir, parents=True, exist_ok=True)
+            for order in orders:
+                candidate_output_dir = Path.joinpath(output_parent_dir, f"{order}")
+                if Path.is_dir(candidate_output_dir):
+                    shutil.rmtree(candidate_output_dir)
+
         if (
-            not output_parent_dir
-            or not isinstance(output_parent_dir, Path)
-            or output_parent_dir.is_file()
+            not isinstance(output_parent_dir, Path) or
+            not output_parent_dir.is_dir()
             ):
             raise argparse.ArgumentTypeError(
                 "Output directory path is invalid."
             )
+        
+        return geng_path, planarity_path, planarity_backup_path, \
+            output_parent_dir, orders
 
     def generate_g6_files(self):
         for order in self.orders:
@@ -241,42 +256,22 @@ class G6GenerationAndComparisonDriver:
         geng_g6_output_dir_for_order_and_edgecount = Path.joinpath(
             geng_g6_output_dir_for_order, "graphs", f"{num_edges}"
         )
+
         Path.mkdir(
             geng_g6_output_dir_for_order_and_edgecount,
             parents=True, exist_ok=True
         )
 
-        geng_outfile_path = Path.joinpath(
-                geng_g6_output_dir_for_order,
-                f"n{order}.m{num_edges}.g6"
-        )
-        
-        geng_outfile_move_candidate_path = Path.joinpath(
-                geng_g6_output_dir_for_order_and_edgecount,
-                f"n{order}.m{num_edges}.g6"
-        )
-        if Path.is_file(geng_outfile_move_candidate_path):
-            os.remove(geng_outfile_move_candidate_path)
-        
-        shutil.move(
-            geng_outfile_path,
+        geng_g6_outfile_name = f"n{order}.m{num_edges}.g6"
+        self._move_file(
+            geng_g6_output_dir_for_order, geng_g6_outfile_name,
             geng_g6_output_dir_for_order_and_edgecount
         )
-        
-        geng_canonical_outfile_path = Path.joinpath(
-                geng_g6_output_dir_for_order,
-                f"n{order}.m{num_edges}.canonical.g6"
-        )
-        
-        geng_canonical_move_candidate_path = Path.joinpath(
-            geng_g6_output_dir_for_order_and_edgecount,
+
+        geng_canonical_g6_outfile_name = \
             f"n{order}.m{num_edges}.canonical.g6"
-        )
-        if Path.is_file(geng_canonical_move_candidate_path):
-            os.remove(geng_canonical_move_candidate_path)
-        
-        shutil.move(
-            geng_canonical_outfile_path,
+        self._move_file(
+            geng_g6_output_dir_for_order, geng_canonical_g6_outfile_name,
             geng_g6_output_dir_for_order_and_edgecount
         )
 
@@ -296,36 +291,32 @@ class G6GenerationAndComparisonDriver:
             parents=True, exist_ok=True
         )
 
-        planarity_outfile_path = Path.joinpath(
-                orig_planarity_output_dir,
-                f"n{order}.m{num_edges}.{command}.out.txt"
+        g6_planarity_outfile_name = \
+            f"n{order}.m{num_edges}.{command}.out.txt"
+        self._move_file(
+            orig_planarity_output_dir, g6_planarity_outfile_name,
+            new_planarity_output_dir_for_order_and_edgecount
         )
-        
-        planarity_outfile_move_candidate_path = Path.joinpath(
-                new_planarity_output_dir_for_order_and_edgecount,
-                f"n{order}.m{num_edges}.{command}.out.txt"
+
+        canonical_g6_planarity_outfile_name = \
+            f"n{order}.m{num_edges}.canonical.{command}.out.txt"
+        self._move_file(
+            orig_planarity_output_dir, canonical_g6_planarity_outfile_name,
+            new_planarity_output_dir_for_order_and_edgecount
         )
-        if Path.is_file(planarity_outfile_move_candidate_path):
-            os.remove(planarity_outfile_move_candidate_path)
+    
+    def _move_file(
+            self, src_dir: Path, outfile_name: str, dest_dir: Path
+        ):
+        src_path = Path.joinpath(src_dir, outfile_name)
+        dest_path = Path.joinpath(dest_dir, outfile_name)
+        if Path.is_file(dest_path):
+            os.remove(dest_path)
         
         shutil.move(
-            planarity_outfile_path,
-            new_planarity_output_dir_for_order_and_edgecount)
-        
-        planarity_canonical_outfile_path = Path.joinpath(
-                orig_planarity_output_dir,
-                f"n{order}.m{num_edges}.canonical.{command}.out.txt"
-            )
-        
-        planarity_canonical_move_candidate_path = Path.joinpath(
-            new_planarity_output_dir_for_order_and_edgecount,
-            f"n{order}.m{num_edges}.canonical.{command}.out.txt")
-        if Path.is_file(planarity_canonical_move_candidate_path):
-            os.remove(planarity_canonical_move_candidate_path)
-        
-        shutil.move(
-            planarity_canonical_outfile_path,
-            new_planarity_output_dir_for_order_and_edgecount)
+            src_path,
+            dest_dir
+        )
 
     def identify_planarity_result_discrepancies(self, command: str = '3'):
         pass
@@ -341,6 +332,7 @@ class G6GenerationAndComparisonDriver:
                 'results',
                 'difflogs',
             )
+
             Path.mkdir(log_dir_for_order, parents=True, exist_ok=True)
 
             log_path_for_geng_g6_vs_geng_canonical_g6 = Path.joinpath(
@@ -509,10 +501,12 @@ Upon successful execution, these directories will contain the following files:
     parser.add_argument(
         '-o', '--outputdir',
         type=Path,
-        default=Path(".").resolve(),
-        help='Parent directory under which subdirectories will be created '\
-            'for output results',
-        metavar='OUTPUT_DIR_PATH')
+        default=None,
+        metavar='OUTPUT_DIR_PATH',
+        help="""Parent directory under which subdirectories will be created
+for output results. If none provided, defaults to:
+    TestSupport/results/g6_generation_and_comparison_driver"""
+    )
 
     args = parser.parse_args()
 

@@ -93,10 +93,14 @@ compile
 test-driver
 
 # Ignoring configuration for VSCode
-#**/.vscode/
+**/.vscode/
 
 ## MacOS excludes
 .DS_Store
 
 # Ignore binary produced by compiling on MacOS
 planarity
+
+# Ignore planaritytesting Package default output directories and pycache
+TestSupport/planaritytesting/__pycache__/
+TestSupport/results/

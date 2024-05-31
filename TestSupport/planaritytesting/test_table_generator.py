@@ -2,6 +2,8 @@
 
 __all__ = []
 
+import shutil
+import sys
 import argparse
 from pathlib import Path
 import re
@@ -65,16 +67,22 @@ class TestTableGenerator():
 
         if not Path.is_dir(input_dir):
             raise TestAllGraphsPathError(
-                f'\'{input_dir}\' is not a valid directory.')
+                f'\'{input_dir}\' is not a valid directory.'
+            )
         
         if not any(input_dir.iterdir()):
             raise TestAllGraphsPathError(f'\'{input_dir}\' contains no files.')
         
         self.input_dir = input_dir
 
-        if not Path.is_dir(output_dir):
+        if Path.is_file(output_dir):
             raise TestAllGraphsPathError(
-                f'\'{output_dir}\' is not a valid directory.')
+                f'\'{output_dir}\' is not a valid directory.'
+            )
+        
+        if Path.is_dir(output_dir):
+            shutil.rmtree(output_dir)
+        Path.mkdir(output_dir, parents=True, exist_ok=True)
         
         self.output_dir = output_dir
     
@@ -174,12 +182,13 @@ class TestTableGenerator():
         except TestAllGraphsPathError as e:
             raise TestAllGraphsPathError(
                 'Unable to process file when given invalid infile name.'
-                ) from e
+            ) from e
         else:
             if num_edges in self._processed_data.keys():
                 raise TestAllGraphsOutputFileContentsError(
                                 'Already processed a file corresponding to ' \
-                                f'{num_edges} edges.')
+                                f'{num_edges} edges.'
+                            )
             try:
                 planarity_infile_name, duration, numGraphs, numOK, \
                 numNONEMBEDDABLE, errorFlag \
@@ -221,7 +230,8 @@ class TestTableGenerator():
             infile_name)
         if not match:
             raise TestAllGraphsPathError(
-                f'Infile name \'{infile_name}\' doesn\'t match pattern.')
+                f'Infile name \'{infile_name}\' doesn\'t match pattern.'
+            )
         
         order = int(match.group('order'))
         num_edges = int(match.group('num_edges'))
@@ -233,17 +243,20 @@ class TestTableGenerator():
         elif self.order != order:
             raise TestAllGraphsPathError(
                 f'Infile name \'{infile_name}\' indicates graph order doesn\'t'
-                ' equal previously derived order.')
+                ' equal previously derived order.'
+            )
         
         if self.max_num_edges and (num_edges > self.max_num_edges):
             raise TestAllGraphsPathError(
                 f'Infile name \'{infile_name}\' indicates graph num_edges is'
-                ' greater than possible for a simple graph.')
+                ' greater than possible for a simple graph.'
+            )
         
         if command not in TestTableGenerator.__planarity_commands:
             raise TestAllGraphsPathError(
                 f'Infile name \'{infile_name}\' contains invalid algorithm '
-                f'command \'{command}\'.')
+                f'command \'{command}\'.'
+            )
 
         if not self.command:
             self.command = command
@@ -300,17 +313,20 @@ class TestTableGenerator():
                 r' DURATION="(?P<duration>\d+\.\d{3})"', line)
             if not match:
                 raise TestAllGraphsOutputFileContentsError(
-                    'Invalid file header.')
+                    'Invalid file header.'
+                )
             
             planarity_infile_name = match.group('filename')
             if not planarity_infile_name:
                 raise TestAllGraphsOutputFileContentsError(
-                    'Header doesn\'t contain input filename.')
+                    'Header doesn\'t contain input filename.'
+                )
             
             duration = match.group('duration')
             if not duration:
                 raise TestAllGraphsOutputFileContentsError(
-                    'Unable to extract duration from input file.')
+                    'Unable to extract duration from input file.'
+                )
             
             duration = float(duration)
 
@@ -322,7 +338,8 @@ class TestTableGenerator():
             )
             if not match:
                 raise TestAllGraphsOutputFileContentsError(
-                    'Invalid file contents.')
+                    'Invalid file contents.'
+                )
             
             command = match.group('command')
             if command != self.command:
@@ -338,7 +355,8 @@ class TestTableGenerator():
             errorFlag = match.group('errorFlag')
             if not errorFlag or errorFlag not in ('SUCCESS', 'ERROR'):
                 raise TestAllGraphsOutputFileContentsError(
-                    'Invalid errorFlag; must be SUCCESS or ERROR')
+                    'Invalid errorFlag; must be SUCCESS or ERROR'
+                )
             
             return planarity_infile_name, duration, numGraphs, numOK, \
                 numNONEMBEDDABLE, errorFlag 
@@ -493,14 +511,51 @@ Will output one file per graph algorithm containing the tabulated data compiled
 from the planarity Test All Graphs output files:
     {output_dir}/n{order}.mALL.{command}.out.txt
 """)
-
-    parser.add_argument('inputdir', type=Path)
-    parser.add_argument('outputdir', type=Path)
+    parser.add_argument(
+        '-i', '--inputdir',
+        type=Path,
+        default=None,
+        metavar='INPUT_DIR'
+    )
+    parser.add_argument(
+        '-o', '--outputdir',
+        type=Path,
+        default=None,
+        metavar='OUTPUT_DIR'
+    )
+    parser.add_argument(
+        '-c', '--command',
+        type=str,
+        default='3',
+        metavar='ALGORITHM_COMMAND',
+        help="One of (pdo234); defaults to '%(default)s'"
+    )
+    parser.add_argument(
+        '-n', '--order',
+        type=int,
+        default=11,
+        metavar='ORDER',
+        help="""Order of graphs for which you wish to compile results of having
+run planarity with given command specifier. Defaults to N = %(default)s"""
+    )
 
     args = parser.parse_args()
 
-    input_dir = Path.absolute(args.inputdir)
-    output_dir = Path.absolute(args.outputdir)
+    command = args.command
+    order = args.order
+    test_support_dir = Path(sys.argv[0]).resolve().parent.parent
+    if not args.inputdir:
+        input_dir = Path.joinpath(
+            test_support_dir, 'results', 'planarity_orchestrator', f"{order}",
+            f"{command}"
+        )
+    else:
+        input_dir = Path(args.inputdir).resolve()
+
+    if not args.outputdir:
+        output_dir = Path.joinpath(test_support_dir, 'tables', f"{order}")
+    else:
+        output_dir = Path(args.outputdir).resolve()
 
     ttg = TestTableGenerator(input_dir, output_dir)
     ttg.get_order_and_command_from_input_dir()

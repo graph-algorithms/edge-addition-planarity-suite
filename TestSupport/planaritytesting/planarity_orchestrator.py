@@ -2,6 +2,7 @@
 
 __all__ = ['distribute_planarity_workload']
 
+import sys
 import shutil
 import multiprocessing
 import subprocess
@@ -53,10 +54,10 @@ def call_planarity(
         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
 
-def _validate_planarity_workload_args(
+def _validate_and_normalize_planarity_workload_args(
         planarity_path: Path, order: int, input_dir: Path, output_dir: Path
         )->tuple[Path, int, Path, Path]:
-    """Validates args provided to distribute_planarity_workload
+    """Validates and normalizes args provided to distribute_planarity_workload
 
     Ensures planarity_path corresponds to an executable, that order is an
     integer in closed interval [2, 12], that input_dir is a valid Path that
@@ -68,10 +69,13 @@ def _validate_planarity_workload_args(
         planarity_path: Path to the planarity executable
         order: Desired number of vertices
         input_dir: Directory containing all graphs of the desired order,
-            with each file containing all graphs of a specific edge-count
+            with each file containing all graphs of a specific edge-count.
+            If none provided, defaults to:
+                TestSupport/results/graph_generation_orchestrator/{order}
         output_dir: Directory to which the results of executing planarity Test
             All Graphs for the respective command on each .g6 file will be
-            written
+            written. If none provided, defaults to:
+                TestSupport/results/planarity_orchestrator/{order}
 
     Raises:
         argparse.ArgumentTypeError: If any of the args passed from the command
@@ -89,14 +93,20 @@ def _validate_planarity_workload_args(
             "correspond to an executable.")
     
     if (not order or
+        not isinstance(order, int) or
         order < 2 or
         order > 12):
         raise argparse.ArgumentTypeError(
-            "Graph order must be between 2 and 12.")
+            "Graph order must be an integer between 2 and 12.")
     
-    if (not input_dir or
-        not isinstance(input_dir, Path) or
-        input_dir.is_file()):
+    if not input_dir:
+        test_support_dir = Path(sys.argv[0]).resolve().parent.parent
+        input_dir = Path.joinpath(
+            test_support_dir, 'results', 'graph_generation_orchestrator',
+            f"{order}"
+        )
+
+    if not isinstance(input_dir, Path) or not input_dir.is_dir():
         raise argparse.ArgumentTypeError(
             "Input directory path is invalid.")
     
@@ -120,9 +130,16 @@ def _validate_planarity_workload_args(
                 f", which does not mach order from command line args "
                 f"'{order}'. Please verify your command line args and retry.")
 
-    if (not output_dir or
-        not isinstance(output_dir, Path) or
-        output_dir.is_file()):
+    if not output_dir:
+        test_support_dir = Path(sys.argv[0]).resolve().parent.parent
+        output_parent_dir = Path.joinpath(
+            test_support_dir, 'results', 'planarity_orchestrator'
+        )
+        candidate_output_dir = Path.joinpath(output_parent_dir, f"{order}")
+        if Path.is_dir(candidate_output_dir):
+            shutil.rmtree(candidate_output_dir)
+        output_dir = candidate_output_dir
+    elif not isinstance(output_dir, Path) or output_dir.is_file():
         raise argparse.ArgumentTypeError(
             "Output directory path is invalid.")
 
@@ -164,7 +181,7 @@ def distribute_planarity_workload(
             written
     """
     planarity_path, order, input_dir, output_dir = \
-        _validate_planarity_workload_args(
+        _validate_and_normalize_planarity_workload_args(
             planarity_path, order, input_dir, output_dir)
 
     for command in _planarity_algorithm_commands:
@@ -205,7 +222,8 @@ Output files will have paths:
     parser.add_argument(
         '-p', '--planaritypath',
         type=Path,
-        metavar='PATH_TO_PLANARITY_EXECUTABLE')
+        metavar='PATH_TO_PLANARITY_EXECUTABLE'
+    )
     parser.add_argument(
         '-l', '--canonicalfiles',
         action='store_true'
@@ -214,20 +232,29 @@ Output files will have paths:
         '-n', '--order',
         type=int,
         metavar='N',
-        default=11)
+        default=11
+    )
     parser.add_argument(
         '-i', '--inputdir',
         type=Path,
-        metavar='DIR_CONTAINING_G6_FILES')
+        default=None,
+        metavar='DIR_CONTAINING_G6_FILES',
+        help="""If no input directory provided, defaults to
+TestSupport/results/graph_generation_orcehstrator/{order}"""
+    )
     parser.add_argument(
         '-o', '--outputdir',
         type=Path,
-        metavar='DIR_FOR_RESULTS')
+        default=None,
+        metavar='DIR_FOR_RESULTS',
+        help="""If no output directory provided, defaults to
+TestSupport/results/planarity_orchestrator/{order}"""
+    )
 
     args = parser.parse_args()
 
     planarity_path = args.planaritypath
-    canonical_files = args.l
+    canonical_files = args.canonicalfiles
     order = args.order
     input_dir = args.inputdir
     output_dir = args.outputdir

@@ -2,6 +2,7 @@
 
 __all__ = ['distribute_geng_workload']
 
+import sys
 import multiprocessing
 import subprocess
 import argparse
@@ -42,9 +43,9 @@ def _call_geng(
         subprocess.run(command, stdout=outfile, stderr=subprocess.PIPE)
 
 
-def _validate_geng_workload_args(
+def _validate_and_normalize_geng_workload_args(
         geng_path: Path, order: int, output_dir: Path)->tuple[Path, int, Path]:
-    """Validates args provided to distribute_geng_workload
+    """Validates and normalizes args provided to distribute_geng_workload
 
     Ensures geng_path corresponds to an executable, that order is an integer
     in closed interval [2, 12], and that output_dir is a valid Path specifying
@@ -54,6 +55,8 @@ def _validate_geng_workload_args(
         geng_path: Path to the nauty geng executable
         order: Desired number of vertices
         output_dir: Directory to which you wish to write the resulting .g6 file
+            If none provided, defaults to:
+                TestSupport/results/graph_generation_orchestrator/{order}
 
     Raises:
         argparse.ArgumentTypeError: If any of the args passed from the command
@@ -74,9 +77,16 @@ def _validate_geng_workload_args(
         raise argparse.ArgumentTypeError(
             "Graph order must be between 2 and 12.")
     
-    if (not output_dir or
-        not isinstance(output_dir, Path) or
-        output_dir.is_file()):
+    if not output_dir:
+        test_support_dir = Path(sys.argv[0]).resolve().parent.parent
+        output_parent_dir = Path.joinpath(
+            test_support_dir, 'results', 'graph_generation_orchestrator'
+        )
+        candidate_output_dir = Path.joinpath(output_parent_dir, f"{order}")
+        if Path.is_dir(candidate_output_dir):
+            shutil.rmtree(candidate_output_dir)
+        output_dir = candidate_output_dir
+    elif not isinstance(output_dir, Path) or output_dir.is_file():
         raise argparse.ArgumentTypeError(
             "Output directory path is invalid.")
     
@@ -97,6 +107,8 @@ def _validate_geng_workload_args(
                 f", which does not mach order from command line args "
                 f"'{order}'. Please verify your command line args and retry.")
 
+    Path.mkdir(output_dir, parents=True, exist_ok=True)
+
     return geng_path, order, output_dir
 
 
@@ -112,7 +124,7 @@ def distribute_geng_workload(
             graphs with canonical labelling
         output_dir: Directory to which you wish to write the resulting .g6 file
     """
-    geng_path, order, output_dir = _validate_geng_workload_args(
+    geng_path, order, output_dir = _validate_and_normalize_geng_workload_args(
         geng_path, order, output_dir)
 
     Path.mkdir(output_dir, parents=True, exist_ok=True)
@@ -141,7 +153,8 @@ separated out into files for each edge count. The output files will have paths:
     parser.add_argument(
         '-g', '--gengpath',
         type=Path,
-        metavar='PATH_TO_GENG_EXECUTABLE')
+        metavar='PATH_TO_GENG_EXECUTABLE'
+    )
     parser.add_argument(
         '-l', '--canonicalfiles',
         action='store_true'
@@ -150,17 +163,21 @@ separated out into files for each edge count. The output files will have paths:
         '-n', '--order',
         type=int,
         default=11,
-        metavar='N')
+        metavar='N'
+    )
     parser.add_argument(
         '-o', '--outputdir',
         type=Path,
-        default=Path('.'),
-        metavar='G6_OUTPUT_DIR')
+        default=None,
+        metavar='G6_OUTPUT_DIR',
+        help="""If no output directory provided, defaults to
+TestSupport/results/graph_generation_orcehstrator/{order}"""
+    )
 
     args = parser.parse_args()
 
     order = args.order
-    canonical_files = args.l
+    canonical_files = args.canonicalfiles
     geng_path = args.gengpath
     output_dir = args.outputdir
 
