@@ -2,6 +2,7 @@
 
 __all__ = ['G6DiffFinder', 'G6DiffFinderException']
 
+import os
 import sys
 import json
 import argparse
@@ -27,7 +28,7 @@ class G6DiffFinder:
     def __init__(self,
                  first_comparand_infile_path: Path,
                  second_comparand_infile_path: Path,
-                 log_path: Path = Path('G6DiffFinder.log')):
+                 log_path: Path = None):
         """
         Initializes G6DiffFinder instance.
 
@@ -76,11 +77,21 @@ class G6DiffFinder:
                     ) from e
 
     def _setup_logger(self, log_path: Path):
+        if not log_path:
+            test_support_dir = Path(sys.argv[0]).resolve().parent.parent
+            g6_diff_finder_logdir = Path.joinpath(
+                test_support_dir, 'g6_diff_finder_logs'
+            )
+            Path.mkdir(g6_diff_finder_logdir, parents=True, exist_ok=True)
+            log_path = Path.joinpath(g6_diff_finder_logdir, 'G6DiffFinder.log')
+            if log_path.is_file():
+                os.remove(log_path)
+        
         # logging.getLogger() returns the *same instance* of a logger
         # when given the same name. In order to prevent this, must either give
         # a unique name, or must prevent adding additional handlers to the
         # logger
-        self.logger = logging.getLogger(__name__+str(log_path))
+        self.logger = logging.getLogger(__name__+str(log_path.name))
         self.logger.setLevel(logging.DEBUG)
 
         if not self.logger.handlers:

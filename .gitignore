@@ -104,3 +104,4 @@ planarity
 # Ignore planaritytesting Package default output directories and pycache
 TestSupport/planaritytesting/__pycache__/
 TestSupport/results/
+TestSupport/g6_diff_finder_logs/
