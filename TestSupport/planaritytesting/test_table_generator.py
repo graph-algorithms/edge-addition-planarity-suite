@@ -80,10 +80,6 @@ class TestTableGenerator():
                 f'\'{output_dir}\' is not a valid directory.'
             )
         
-        if Path.is_dir(output_dir):
-            shutil.rmtree(output_dir)
-        Path.mkdir(output_dir, parents=True, exist_ok=True)
-        
         self.output_dir = output_dir
     
     def get_order_and_command_from_input_dir(self):
@@ -553,7 +549,7 @@ run planarity with given command specifier. Defaults to N = %(default)s"""
         input_dir = Path(args.inputdir).resolve()
 
     if not args.outputdir:
-        output_dir = Path.joinpath(test_support_dir, 'tables', f"{order}")
+        output_dir = Path.joinpath(test_support_dir, 'tables')
     else:
         output_dir = Path(args.outputdir).resolve()
 
