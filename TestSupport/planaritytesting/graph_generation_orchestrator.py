@@ -65,8 +65,8 @@ def _validate_geng_workload_args(
         not isinstance(geng_path, Path) or
         not shutil.which(str(geng_path.resolve()))):
         raise argparse.ArgumentTypeError(
-            f"Path to geng executable '{geng_path}' does not correspond to an "
-            "executable.")
+            f"Path for geng executable '{geng_path}' does not correspond to "
+            "an executable.")
     
     if (not order or
         order < 2 or

@@ -85,7 +85,7 @@ def _validate_planarity_workload_args(
         not isinstance(planarity_path, Path) or
         not shutil.which(str(planarity_path.resolve()))):
         raise argparse.ArgumentTypeError(
-            f"Path to planarity executable '{planarity_path}' does not "
+            f"Path for planarity executable '{planarity_path}' does not "
             "correspond to an executable.")
     
     if (not order or

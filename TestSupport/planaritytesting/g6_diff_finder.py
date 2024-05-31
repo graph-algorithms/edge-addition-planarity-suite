@@ -9,9 +9,6 @@ import logging
 from pathlib import Path
 
 
-logging.basicConfig(stream=sys.stdout, level=logging.DEBUG, format= \
-                    '[%(levelname)s] - %(module)s.%(funcName)s - %(message)s')
-
 class G6DiffFinderException(Exception):
     """
     Custom exception for representing errors that arise when processing two
@@ -29,7 +26,8 @@ class G6DiffFinder:
 
     def __init__(self,
                  first_comparand_infile_path: Path,
-                 second_comparand_infile_path: Path):
+                 second_comparand_infile_path: Path,
+                 log_path: Path = Path('G6DiffFinder.log')):
         """
         Initializes G6DiffFinder instance.
 
@@ -46,6 +44,8 @@ class G6DiffFinder:
             FileNotFoundError: If _populate_comparand_dict() failed to open
                 either input file, re-raise error
         """
+        self._setup_logger(log_path)
+
         try:
             self._validate_infile_path(first_comparand_infile_path)
         except ValueError as e:
@@ -74,6 +74,29 @@ class G6DiffFinder:
                     "Unable to populate comparand dict: "
                     "can't open second input file"
                     ) from e
+
+    def _setup_logger(self, log_path: Path):
+        # logging.getLogger() returns the *same instance* of a logger
+        # when given the same name. In order to prevent this, must either give
+        # a unique name, or must prevent adding additional handlers to the
+        # logger
+        self.logger = logging.getLogger(__name__+str(log_path))
+        self.logger.setLevel(logging.DEBUG)
+
+        if not self.logger.handlers:
+            # Create the Handler for logging data to a file
+            logger_handler = logging.FileHandler(filename=log_path)
+            logger_handler.setLevel(logging.DEBUG)
+
+            # Create a Formatter for formatting the log messages
+            logger_formatter = logging.Formatter(
+                '[%(levelname)s] - %(module)s.%(funcName)s - %(message)s')
+
+            # Add the Formatter to the Handler
+            logger_handler.setFormatter(logger_formatter)
+
+            # Add the Handler to the Logger
+            self.logger.addHandler(logger_handler)
 
     def _validate_infile_path(self, infile_path: Path):
         """
@@ -113,7 +136,7 @@ class G6DiffFinder:
             FileNotFoundError: If open() fails on comparand_infile_path
         """
         try:
-            logging.info(
+            self.logger.info(
                 "Populating comparand dict from infile path "
                 f"'{comparand_infile_path}'."
                 )
@@ -205,9 +228,17 @@ class G6DiffFinder:
             raise G6DiffFinderException(
                 "Invalid dict structure: missing 'infile_path'.") from e
         else:
-            comparand_outfile_path = Path(
-                str(comparand_infile_path) + '.duplicates.out.txt'
-                )
+            comparand_outfile_results_directory_path = Path.joinpath(
+                comparand_infile_path.parent, 'results'
+            )
+            Path.mkdir(
+                comparand_outfile_results_directory_path,
+                parents=True, exist_ok=True
+            )
+            comparand_outfile_path = Path.joinpath(
+                comparand_outfile_results_directory_path,
+                comparand_infile_path.parts[-1] + '.duplicates.out.txt'
+            )
 
             duplicated_g6_encodings = {
                     g6_encoded_graph: comparand_dict[g6_encoded_graph]
@@ -219,12 +250,12 @@ class G6DiffFinder:
                 }
             
             if not duplicated_g6_encodings:
-                logging.info(
+                self.logger.info(
                     f"No duplicates present in '{comparand_infile_path}'."
                     )
             else:
                 with open(comparand_outfile_path, 'w') as comparand_outfile:
-                    logging.info(
+                    self.logger.info(
                         "Outputting duplicates present in "
                         f"'{comparand_infile_path}'"
                         )
@@ -273,7 +304,7 @@ class G6DiffFinder:
         .g6 file.
 
         The output filepath will be of the form
-        {first_comparand_infile_dir}/graphs_in_{first_comparand_infile_name}_not_in_{second_comparand_infile_name}.g6
+        {first_comparand_infile_dir}/results/graphs_in_{first_comparand_infile_name}_not_in_{second_comparand_infile_name}.g6
 
         Args:
             first_comparand_dict: contains key-value pairs of graph encodings
@@ -304,18 +335,25 @@ class G6DiffFinder:
             ]
             
             if not graphs_in_first_but_not_second:
-                logging.info(
+                self.logger.info(
                     "No graphs present in "
                     f"'{first_comparand_infile_name}' that aren't in "
                     f"'{second_comparand_infile_name}'"
                     )
             else:
+                comparand_outfile_results_directory_path = Path.joinpath(
+                    first_comparand_infile_dir, 'results'
+                )
+                Path.mkdir(
+                    comparand_outfile_results_directory_path,
+                    parents=True, exist_ok=True
+                )
                 outfile_path = Path.joinpath(
-                    first_comparand_infile_dir,
+                    comparand_outfile_results_directory_path,
                     f"graphs_in_{first_comparand_infile_name}_not_in_" +
                     f"{second_comparand_infile_name}.g6"
                     )
-                logging.info(
+                self.logger.info(
                     "Outputting graphs present in "
                     f"'{first_comparand_infile_name}' that aren't in "
                     f"'{second_comparand_infile_name}' to '{outfile_path}'."
@@ -344,7 +382,7 @@ class G6DiffFinder:
 
         If graphs_in_first_and_second is nonempty, json.dumps() the dict to the
         output file of the form:
-        {first_comparand_infile_dir}/graphs_in_{first_comparand_infile_name}_and_{second_comparand_infile_name}.txt
+        {first_comparand_infile_dir}/results/graphs_in_{first_comparand_infile_name}_and_{second_comparand_infile_name}.txt
 
         Raises:
             G6DiffFinderException: Re-raises if exeption encountered when we
@@ -373,19 +411,27 @@ class G6DiffFinder:
             }
 
             if not graphs_in_first_and_second:
-                logging.info(
+                self.logger.info(
                     "No graphs present in both "
                     f"'{first_comparand_infile_name}' and "
                     f"'{second_comparand_infile_name}' that appear on "
                     "different lines."
                     )
             else:
-                outfile_path = Path.joinpath(
+                comparand_outfile_results_directory_path = Path.joinpath(
                     first_comparand_infile_dir,
+                    'results'
+                )
+                Path.mkdir(
+                    comparand_outfile_results_directory_path,
+                    parents=True, exist_ok=True
+                )
+                outfile_path = Path.joinpath(
+                    comparand_outfile_results_directory_path,
                     f"graphs_in_{first_comparand_infile_name}_and_" +
                     f"{second_comparand_infile_name}.txt"
                     )
-                logging.info(
+                self.logger.info(
                     "Outputting graphs present in both "
                     f"'{first_comparand_infile_name}' and "
                     f"'{second_comparand_infile_name}' that appear on "
@@ -460,17 +506,17 @@ if __name__ == '__main__':
 
 - Determines if there are duplicates in the first and second comparand .g6 
 files; outputs to files with paths:
-    {first_comparand_infile_path}.duplicates.out.txt
-    {second_comparand_infile_path}.duplicates.out.txt
+    {first_comparand_infile_dir}/results/{first_comparand_infile_name}.duplicates.out.txt
+    {second_comparand_infile_dir}/results/{second_comparand_infile_name}.duplicates.out.txt
 
 - Determines if there any graphs that appear in the first .g6 file that do not 
 appear in the second .g6 file, and vice versa; outputs to files with paths:
-    {first_comparand_infile_dir}/graphs_in_{first_comparand_infile_name}_not_in_{second_comparand_infile_name}.g6
-    {second_comparand_infile_dir}/graphs_in_{second_comparand_infile_name}_not_in_{first_comparand_infile_name}.g6
+    {first_comparand_infile_dir}/results/graphs_in_{first_comparand_infile_name}_not_in_{second_comparand_infile_name}.g6
+    {second_comparand_infile_dir}/results/graphs_in_{second_comparand_infile_name}_not_in_{first_comparand_infile_name}.g6
 
 - Records graphs that occur in both files but which appear on different line 
 numbers; outputs to a file with path:
-    {first_comparand_infile_dir}/graphs_in_{first_comparand_infile_name}_and_{second_comparand_infile_name}.txt
+    {first_comparand_infile_dir}/results/graphs_in_{first_comparand_infile_name}_and_{second_comparand_infile_name}.txt
 """)
     parser.add_argument(
         '--first_comparand', '-f',
