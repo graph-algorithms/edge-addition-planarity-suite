@@ -9,8 +9,8 @@ import subprocess
 import argparse
 from pathlib import Path
 
+from planarity_constants import PLANARITY_ALGORITHM_SPECIFIERS
 
-_planarity_algorithm_commands = ('p', 'd', 'o', '2', '3', '4')
 
 def call_planarity(
         planarity_path:Path, canonical_files: bool, command:str, order:int,
@@ -184,7 +184,7 @@ def distribute_planarity_workload(
         _validate_and_normalize_planarity_workload_args(
             planarity_path, order, input_dir, output_dir)
 
-    for command in _planarity_algorithm_commands:
+    for command in PLANARITY_ALGORITHM_SPECIFIERS():
         path_to_make = Path.joinpath(output_dir, f'{command}')
         Path.mkdir(path_to_make, parents=True, exist_ok=True)
 
@@ -194,7 +194,7 @@ def distribute_planarity_workload(
             input_dir, output_dir
         )
         for num_edges in range((int)((order * (order - 1)) / 2) + 1)
-        for command in _planarity_algorithm_commands
+        for command in PLANARITY_ALGORITHM_SPECIFIERS()
         ]
 
     with multiprocessing.Pool(processes=multiprocessing.cpu_count()) as pool:
