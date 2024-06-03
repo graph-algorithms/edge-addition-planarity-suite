@@ -171,7 +171,7 @@ separated out into files for each edge count. The output files will have paths:
         default=None,
         metavar='G6_OUTPUT_DIR',
         help="""If no output directory provided, defaults to
-TestSupport/results/graph_generation_orcehstrator/{order}"""
+TestSupport/results/graph_generation_orchestrator/{order}"""
     )
 
     args = parser.parse_args()

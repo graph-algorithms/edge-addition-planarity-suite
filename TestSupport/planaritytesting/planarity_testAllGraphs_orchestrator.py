@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-__all__ = ['distribute_planarity_workload']
+__all__ = ['distribute_planarity_testAllGraphs_workload']
 
 import sys
 import shutil
@@ -12,7 +12,7 @@ from pathlib import Path
 from planarity_constants import PLANARITY_ALGORITHM_SPECIFIERS
 
 
-def call_planarity(
+def call_planarity_testAllGraphs(
         planarity_path:Path, canonical_files: bool, command:str, order:int,
         num_edges:int, input_dir:Path, output_dir:Path):
     """Call planarity as blocking process on multiprocessing thread
@@ -54,7 +54,7 @@ def call_planarity(
         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
 
-def _validate_and_normalize_planarity_workload_args(
+def _validate_and_normalize_planarity_testAllGraphs_workload_args(
         planarity_path: Path, order: int, input_dir: Path, output_dir: Path
         )->tuple[Path, int, Path, Path]:
     """Validates and normalizes args provided to distribute_planarity_workload
@@ -75,7 +75,7 @@ def _validate_and_normalize_planarity_workload_args(
         output_dir: Directory to which the results of executing planarity Test
             All Graphs for the respective command on each .g6 file will be
             written. If none provided, defaults to:
-                TestSupport/results/planarity_orchestrator/{order}
+                TestSupport/results/planarity_testAllGraphs_orchestrator/{order}
 
     Raises:
         argparse.ArgumentTypeError: If any of the args passed from the command
@@ -133,7 +133,7 @@ def _validate_and_normalize_planarity_workload_args(
     if not output_dir:
         test_support_dir = Path(sys.argv[0]).resolve().parent.parent
         output_parent_dir = Path.joinpath(
-            test_support_dir, 'results', 'planarity_orchestrator'
+            test_support_dir, 'results', 'planarity_testAllGraphs_orchestrator'
         )
         candidate_output_dir = Path.joinpath(output_parent_dir, f"{order}")
         if Path.is_dir(candidate_output_dir):
@@ -163,7 +163,7 @@ def _validate_and_normalize_planarity_workload_args(
     return planarity_path, order, input_dir, output_dir
 
 
-def distribute_planarity_workload(
+def distribute_planarity_testAllGraphs_workload(
         planarity_path: Path, canonical_files: bool, order: int,
         input_dir: Path, output_dir: Path):
     """Use starmap_async on multiprocessing pool to _call_planarity
@@ -181,7 +181,7 @@ def distribute_planarity_workload(
             written
     """
     planarity_path, order, input_dir, output_dir = \
-        _validate_and_normalize_planarity_workload_args(
+        _validate_and_normalize_planarity_testAllGraphs_workload_args(
             planarity_path, order, input_dir, output_dir)
 
     for command in PLANARITY_ALGORITHM_SPECIFIERS():
@@ -198,7 +198,7 @@ def distribute_planarity_workload(
         ]
 
     with multiprocessing.Pool(processes=multiprocessing.cpu_count()) as pool:
-        _ = pool.starmap_async(call_planarity, call_planarity_args)
+        _ = pool.starmap_async(call_planarity_testAllGraphs, call_planarity_args)
         pool.close()
         pool.join()
 
@@ -207,7 +207,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawTextHelpFormatter,
         usage='python %(prog)s [options]',
-        description="""Planarity execution orchestrator
+        description="""Planarity testAllGraphs execution orchestrator
 
 Orchestrates calls to planarity's Test All Graphs functionality.
 
@@ -240,7 +240,7 @@ Output files will have paths:
         default=None,
         metavar='DIR_CONTAINING_G6_FILES',
         help="""If no input directory provided, defaults to
-TestSupport/results/graph_generation_orcehstrator/{order}"""
+TestSupport/results/graph_generation_orchestrator/{order}"""
     )
     parser.add_argument(
         '-o', '--outputdir',
@@ -248,7 +248,7 @@ TestSupport/results/graph_generation_orcehstrator/{order}"""
         default=None,
         metavar='DIR_FOR_RESULTS',
         help="""If no output directory provided, defaults to
-TestSupport/results/planarity_orchestrator/{order}"""
+TestSupport/results/planarity_testAllGraphs_orchestrator/{order}"""
     )
 
     args = parser.parse_args()
@@ -259,5 +259,5 @@ TestSupport/results/planarity_orchestrator/{order}"""
     input_dir = args.inputdir
     output_dir = args.outputdir
 
-    distribute_planarity_workload(
+    distribute_planarity_testAllGraphs_workload(
         planarity_path, canonical_files, order, input_dir, output_dir)

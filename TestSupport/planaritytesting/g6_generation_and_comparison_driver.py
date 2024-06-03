@@ -10,7 +10,9 @@ from pathlib import Path
 import subprocess
 
 from graph_generation_orchestrator import distribute_geng_workload
-from planarity_orchestrator import distribute_planarity_workload
+from planarity_testAllGraphs_orchestrator import (
+    distribute_planarity_testAllGraphs_workload
+)
 from g6_diff_finder import G6DiffFinder, G6DiffFinderException
 
 class G6GenerationAndComparisonDriver:
@@ -221,13 +223,13 @@ class G6GenerationAndComparisonDriver:
             self, order: int, geng_g6_output_dir_for_order: Path,
             planarity_output_dir_for_order: Path
         ):
-        distribute_planarity_workload(
+        distribute_planarity_testAllGraphs_workload(
             planarity_path=self.planarity_path, canonical_files=False,
             order=order, input_dir=geng_g6_output_dir_for_order,
             output_dir=planarity_output_dir_for_order
         )
         
-        distribute_planarity_workload(
+        distribute_planarity_testAllGraphs_workload(
             planarity_path=self.planarity_path, canonical_files=True,
             order=order, input_dir=geng_g6_output_dir_for_order,
             output_dir=planarity_output_dir_for_order
@@ -347,6 +349,16 @@ class G6GenerationAndComparisonDriver:
                 log_dir_for_order,
                 f"G6DiffFinder.n{order}.geng_vs_makeg.log"
             )
+            log_path_for_geng_canonical_g6_vs_makeg_canonical_g6 = \
+                Path.joinpath(
+                    log_dir_for_order,
+                    f"G6DiffFinder.n{order}."
+                    +"geng-canonical_vs_makeg-canonical.log"
+                )
+            log_path_for_geng_g6_vs_makeg_canonical_g6 = Path.joinpath(
+                log_dir_for_order,
+                f"G6DiffFinder.n{order}.geng_vs_makeg-canonical.log"
+            )
 
             max_num_edges_for_order = (int)((order * (order - 1)) / 2) + 1
             for num_edges in range(max_num_edges_for_order):
@@ -380,11 +392,25 @@ class G6GenerationAndComparisonDriver:
                     geng_g6_path, geng_canonical_g6_path,
                     log_path_for_geng_g6_vs_geng_canonical_g6
                 )
-                self._get_diffs(
-                    makeg_g6_path, makeg_canonical_g6_path,
-                    log_path_for_makeg_g6_vs_makeg_canonical_g6
-                )
-    
+
+                if self.planarity_backup_path:
+                    self._get_diffs(
+                        geng_g6_path, makeg_g6_path,
+                        log_path_for_geng_g6_vs_makeg_g6
+                    )
+                    self._get_diffs(
+                        makeg_g6_path, makeg_canonical_g6_path,
+                        log_path_for_makeg_g6_vs_makeg_canonical_g6
+                    )
+                    self._get_diffs(
+                        geng_canonical_g6_path, makeg_canonical_g6_path,
+                        log_path_for_geng_canonical_g6_vs_makeg_canonical_g6
+                    )
+                    self._get_diffs(
+                        geng_g6_path, makeg_canonical_g6_path,
+                        log_path_for_geng_g6_vs_makeg_canonical_g6
+                    )
+
     def _get_diffs(
             self, first_comparand_infile: Path, second_comparand_infile: Path,
             log_path: Path

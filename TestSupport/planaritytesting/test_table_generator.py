@@ -7,10 +7,11 @@ import argparse
 from pathlib import Path
 
 from planarity_constants import PLANARITY_ALGORITHM_SPECIFIERS
-from planarity_output_parsing import (
+from planarity_testAllGraphs_output_parsing import (
     TestAllGraphsPathError,
     TestAllGraphsOutputFileContentsError,
-    process_file,
+    validate_infile_name,
+    process_file_contents,
 )
 
 
@@ -127,17 +128,11 @@ class TestTableGenerator():
             TestTableGeneratorFileProcessingError: If an error occurred
                 processing the input file corresponding to path infile_path
         """
-        for (dirpath, _, filenames) in Path.walk(input_dir):
+        for (dirpath, _, filenames) in Path.walk(self.input_dir):
             for filename in filenames:
                 infile_path = Path.joinpath(dirpath, filename)
                 try:
-                    self._processed_data, self.order, self.command = \
-                        process_file(
-                            infile_path,
-                            self._processed_data,
-                            self.order,
-                            self.command
-                        )
+                    self._process_file(infile_path)
                 except (
                             TestAllGraphsPathError,
                             TestAllGraphsOutputFileContentsError
@@ -167,6 +162,57 @@ class TestTableGenerator():
                 for x in self._processed_data.values()
                 )
         } 
+
+    def _process_file(self, infile_path:Path):
+        """Process infile and integrate into self._processed_data dict
+
+        Validates the infile name, then processes file contents and adds them
+        to the self._processed_data dict by mapping the num_edges to a sub-dict
+        containing fields for the infilename, numGraphs, numOK,
+        numNONEMBEDDABLE, errorFlag, and duration
+
+        Args:
+            infile_path: Corresponds to a file within the input_dir
+            processed_data: Dict to which we wish to add information parsed
+                from the infile
+
+        Raises:
+            TestAllGraphsPathError: If invalid infile_path
+            TestAllGraphsOutputFileContentsError: If input file corresponds to
+                results that have already been processed, or re-raises
+                exception thrown by process_file_contents()
+        """
+        try:
+            self.order, num_edges, self.command = \
+                validate_infile_name(infile_path, self.order, self.command)
+        except TestAllGraphsPathError as e:
+            raise TestAllGraphsPathError(
+                "Unable to process file when given invalid infile name."
+            ) from e
+        else:
+            if num_edges in self._processed_data.keys():
+                raise TestAllGraphsOutputFileContentsError(
+                    "Already processed a file corresponding to "
+                    f"{num_edges} edges."
+                )
+            
+            try:
+                planarity_infile_name, duration, numGraphs, numOK, \
+                numNONEMBEDDABLE, errorFlag \
+                    = process_file_contents(infile_path, self.command)
+            except TestAllGraphsOutputFileContentsError as e:
+                raise TestAllGraphsOutputFileContentsError(
+                    f"Unable to process contents of '{infile_path}'."
+                ) from e
+            else:
+                self._processed_data[num_edges] = {
+                    'infilename': planarity_infile_name,
+                    'numGraphs': numGraphs,
+                    'numOK': numOK,
+                    'numNONEMBEDDABLE': numNONEMBEDDABLE,
+                    'errorFlag': errorFlag,
+                    'duration': duration
+                }
 
     def write_table_formatted_data_to_file(self):
         """Writes the data extracted from the input files and totals to table
@@ -353,8 +399,8 @@ run planarity with given command specifier. Defaults to N = %(default)s"""
     test_support_dir = Path(sys.argv[0]).resolve().parent.parent
     if not args.inputdir:
         input_dir = Path.joinpath(
-            test_support_dir, 'results', 'planarity_orchestrator', f"{order}",
-            f"{command}"
+            test_support_dir, 'results',
+            'planarity_testAllGraphs_orchestrator', f"{order}", f"{command}"
         )
     else:
         input_dir = Path(args.inputdir).resolve()
