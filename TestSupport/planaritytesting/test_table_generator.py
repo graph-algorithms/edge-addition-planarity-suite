@@ -386,11 +386,11 @@ and will have a path of the form:
     {parent_dir}/{order}/{command}/
 
 And will contain files with the full path:
-    {parent_dir}/{order}/{command}/n{order}.m{numEdges}.{command}.out.txt
+    {parent_dir}/{order}/{command}/n{order}.m{numEdges}(.makeg)?(.canonical)?.{command}.out.txt
 
 Will output one file per graph algorithm containing the tabulated data compiled
 from the planarity Test All Graphs output files:
-    {output_dir}/n{order}.mALL.{command}.out.txt
+    {output_dir}/n{order}.mALL(.makeg)?(.canonical)?.{command}.out.txt
 """)
     parser.add_argument(
         '-i', '--inputdir',

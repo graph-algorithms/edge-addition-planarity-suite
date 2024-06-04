@@ -147,7 +147,7 @@ if __name__ == "__main__":
 
 Orchestrates calls to nauty's geng to generate graphs for a given order,
 separated out into files for each edge count. The output files will have paths:
-    {output_dir}/{order}/n{order}.m{num_edges}.g6
+    {output_dir}/{order}/n{order}.m{num_edges}(.canonical)?.g6
 """)
     parser.add_argument(
         '-g', '--gengpath',
@@ -156,7 +156,8 @@ separated out into files for each edge count. The output files will have paths:
     )
     parser.add_argument(
         '-l', '--canonicalfiles',
-        action='store_true'
+        action='store_true',
+        help="Generate canonical .g6 files"
     )
     parser.add_argument(
         '-n', '--order',
