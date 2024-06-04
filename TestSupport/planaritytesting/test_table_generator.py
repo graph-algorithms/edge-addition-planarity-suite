@@ -42,7 +42,10 @@ class TestTableGeneratorFileProcessingError(BaseException):
 
 
 class TestTableGenerator():
-    def __init__(self, input_dir:Path, output_dir:Path):
+    def __init__(
+        self, input_dir:Path, output_dir:Path, canonical_files:bool = False,
+        makeg_files:bool = False
+    ):
         """Initializes TestTableGenerator instance.
 
         Checks that input_dir exists and is a directory, and that it contains
@@ -56,6 +59,10 @@ class TestTableGenerator():
             output_dir: Directory to which you wish to write the output file
                 containing the tabulated results compiled from the input files
                 in the input_dir.
+            canonical_files: Optional bool to indicate planarity output
+                corresponds to canonical format
+            makeg_files: Optional bool to indicate planarity output corresponds
+                to makeg .g6
 
         Raises:
             TestTableGeneratorPathError: If the input_dir doesn't correspond to
@@ -84,6 +91,9 @@ class TestTableGenerator():
             )
         
         self.output_dir = output_dir
+
+        self.canonical_files = canonical_files
+        self.makeg_files = makeg_files
     
     def get_order_and_command_from_input_dir(self):
         """Extract order and command from input_dir if possible
@@ -130,6 +140,13 @@ class TestTableGenerator():
         """
         for (dirpath, _, filenames) in Path.walk(self.input_dir):
             for filename in filenames:
+                if (
+                    (self.canonical_files and 'canonical' not in filename)
+                    or (self.makeg_files and 'makeg' not in filename)
+                    or (not self.canonical_files and 'canonical' in filename)
+                    or (not self.makeg_files and 'makeg' in filename)
+                ):
+                    continue
                 infile_path = Path.joinpath(dirpath, filename)
                 try:
                     self._process_file(infile_path)
@@ -140,7 +157,15 @@ class TestTableGenerator():
                     raise TestTableGeneratorFileProcessingError(
                         f"Error processing '{infile_path}'."
                     ) from e
-                
+        
+        if not self._processed_data:
+            raise TestTableGeneratorFileProcessingError(
+                f"No files in input directory '{input_dir}' matched the "
+                f"patterns indicated by the input flags:"
+                f"\n\tcanonical_files={self.canonical_files}"
+                f"\n\tmakeg_files={self.makeg_files}"
+            )
+
         self._totals = {
             'numGraphs': sum(
                 int(x.get('numGraphs')) for x in self._processed_data.values()
@@ -219,10 +244,13 @@ class TestTableGenerator():
         """
         self.output_dir = Path.joinpath(self.output_dir, f'{self.order}')
         Path.mkdir(self.output_dir, parents=True, exist_ok=True)
-
+       
+        makeg_ext = '.makeg' if self.makeg_files else ''
+        canonical_ext = '.canonical' if self.canonical_files else ''
         output_path = Path.joinpath(
             self.output_dir,
-            f'n{self.order}.mALL.{self.command}.out.txt'
+            f'n{self.order}.mALL{makeg_ext}{canonical_ext}.{self.command}' +
+            '.out.txt'
         )
 
         infilename_heading = 'Input filename'
@@ -388,14 +416,28 @@ from the planarity Test All Graphs output files:
         type=int,
         default=11,
         metavar='ORDER',
-        help="""Order of graphs for which you wish to compile results of having
-run planarity with given command specifier. Defaults to N = %(default)s"""
+        help="""Order of graphs for which you wish to compile results of
+having run planarity with given command specifier. Defaults to N = %(default)s
+"""
+    )
+    parser.add_argument(
+        '-l', '--canonicalfiles',
+        action='store_true',
+        help="Planarity output files must contain 'canonical' in name"
+    )
+    parser.add_argument(
+        '-m', '--makegfiles',
+        action='store_true',
+        help="Planarity output files must contain 'makeg' in name"
     )
 
     args = parser.parse_args()
 
     command = args.command
     order = args.order
+    canonical_files = args.canonicalfiles
+    makeg_files = args.makegfiles
+
     test_support_dir = Path(sys.argv[0]).resolve().parent.parent
     if not args.inputdir:
         input_dir = Path.joinpath(
@@ -410,7 +452,9 @@ run planarity with given command specifier. Defaults to N = %(default)s"""
     else:
         output_dir = Path(args.outputdir).resolve()
 
-    ttg = TestTableGenerator(input_dir, output_dir)
+    ttg = TestTableGenerator(
+        input_dir, output_dir, canonical_files, makeg_files
+    )
     ttg.get_order_and_command_from_input_dir()
     ttg.process_files()
     ttg.write_table_formatted_data_to_file()

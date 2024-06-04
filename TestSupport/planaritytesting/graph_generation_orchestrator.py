@@ -9,6 +9,7 @@ import argparse
 import shutil
 from pathlib import Path
 
+from planarity_constants import max_num_edges_for_order
 
 def _call_geng(
         geng_path:Path, canonical_files: bool, order:int, num_edges:int,
@@ -83,8 +84,6 @@ def _validate_and_normalize_geng_workload_args(
             test_support_dir, 'results', 'graph_generation_orchestrator'
         )
         candidate_output_dir = Path.joinpath(output_parent_dir, f"{order}")
-        if Path.is_dir(candidate_output_dir):
-            shutil.rmtree(candidate_output_dir)
         output_dir = candidate_output_dir
     elif not isinstance(output_dir, Path) or output_dir.is_file():
         raise argparse.ArgumentTypeError(
@@ -131,7 +130,7 @@ def distribute_geng_workload(
 
     call_geng_args = [
         (geng_path, canonical_files, order, edge_count, output_dir) 
-        for edge_count in range((int)((order * (order - 1)) / 2) + 1)
+        for edge_count in range(max_num_edges_for_order(order) + 1)
         ]
 
     with multiprocessing.Pool(processes=multiprocessing.cpu_count()) as pool:

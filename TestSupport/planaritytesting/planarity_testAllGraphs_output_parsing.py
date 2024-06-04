@@ -8,7 +8,11 @@ __all__ = [
 from pathlib import Path
 import re
 
-from planarity_constants import PLANARITY_ALGORITHM_SPECIFIERS
+from planarity_constants import (
+    PLANARITY_ALGORITHM_SPECIFIERS,
+    max_num_edges_for_order
+)
+
 
 class TestAllGraphsPathError(BaseException):
     """
@@ -66,8 +70,8 @@ def validate_infile_name(
     """
     infile_name = infile_path.parts[-1]
     match = re.match(
-        r'n(?P<order>\d+)\.m(?P<num_edges>\d+)(?:\.canonical)?(?:\.g6)?\.' \
-        r'(?P<command>[pdo234])\.out\.txt',
+        r'n(?P<order>\d+)\.m(?P<num_edges>\d+)(?:\.makeg)?(?:\.canonical)?' \
+        r'(?:\.g6)?\.(?P<command>[pdo234])\.out\.txt',
         infile_name)
     if not match:
         raise TestAllGraphsPathError(
@@ -84,8 +88,7 @@ def validate_infile_name(
             " equal previously derived order."
         )
     
-    max_num_edges = ((order * (order - 1)) / 2)
-    if num_edges_from_filename > max_num_edges:
+    if num_edges_from_filename > max_num_edges_for_order(order):
         raise TestAllGraphsPathError(
             f"Infile name '{infile_name}' indicates graph num_edges is"
             " greater than possible for a simple graph."
@@ -153,11 +156,11 @@ def process_file_contents(
     with open(infile_path, 'r') as infile:
         line = infile.readline()
         match = re.match(
-            r'FILENAME="(?P<filename>n\d+\.m\d+(\.canonical)?\.g6)"' \
+            r'FILENAME="(?P<filename>n\d+\.m\d+(\.makeg)?(\.canonical)?\.g6)"'\
             r' DURATION="(?P<duration>\d+\.\d{3})"', line)
         if not match:
             raise TestAllGraphsOutputFileContentsError(
-                "Invalid file header."
+               f"Invalid file header in '{infile_path}'."
             )
         
         planarity_infile_name_from_file = match.group('filename')
