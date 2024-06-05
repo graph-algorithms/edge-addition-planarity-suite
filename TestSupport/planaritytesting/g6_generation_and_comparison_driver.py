@@ -422,6 +422,17 @@ class G6GenerationAndComparisonDriver:
                         makeg_canonical_g6_output, order, num_edges, command,
                         'makeg_canonical_g6'
                     )
+
+                    if (
+                        self._planarity_results[order][num_edges][command]['geng_g6'] == 
+                        self._planarity_results[order][num_edges][command]['makeg_g6'] ==
+                        self._planarity_results[order][num_edges][command]['geng_canonical_g6'] ==
+                        self._planarity_results[order][num_edges][command]['makeg_canonical_g6']
+                    ):
+                        del(self._planarity_results[order][num_edges][command])
+                
+                if not self._planarity_results[order][num_edges]:
+                    del(self._planarity_results[order][num_edges])
         # FIXME: Remove; only used for temporary examination of output
         PrettyPrinter(indent=4).pprint(self._planarity_results)
 
@@ -430,14 +441,13 @@ class G6GenerationAndComparisonDriver:
             command: str, file_type: str
         ):
         _, _, numGraphs_from_file, numOK_from_file, \
-            numNONEMBEDDABLE_from_file, errorFlag_from_file = \
+            numNONEMBEDDABLE_from_file, _ = \
                 process_file_contents(planarity_outfile, command)
 
         self._planarity_results[order][num_edges][command][file_type] = {
             'numGraphs': numGraphs_from_file,
             'numOK': numOK_from_file,
             'numNONEMBEDDABLE': numNONEMBEDDABLE_from_file,
-            'errorFlag': errorFlag_from_file
         }
 
     def get_all_diffs(self):
