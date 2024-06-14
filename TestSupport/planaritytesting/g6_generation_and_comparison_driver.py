@@ -709,10 +709,33 @@ class G6GenerationAndComparisonDriver:
         contain log.info messages emitted by the G6DiffFinder when comparing:
 
         - geng .g6 vs. geng canonical .g6
+            - G6DiffFinder.n{order}.geng_vs_geng-canonical.log
         - geng .g6 vs. makeg .g6
+            - G6DiffFinder.n{order}.geng_vs_makeg.log
         - geng .g6 vs. makeg canonical .g6
+            - G6DiffFinder.n{order}.geng_vs_makeg-canonical.log
         - geng canonical .g6 vs. makeg canonical .g6
-        - makeg .g6 vs. makeg canonical .g6 
+            - G6DiffFinder.n{order}.geng-canonical_vs_makeg-canonical.log
+        - makeg .g6 vs. makeg canonical .g6
+            - G6DiffFinder.n{order}.makeg_vs_makeg-canonical.log
+        
+        Up to 10 diff files will be output to the directory
+            {self.output_parent_dir}/{order}/{graphs}/{num_edges}/{results}/
+        - geng .g6 vs. geng canonical .g6 corresponds to the files:
+            - graphs_in_n{order}.m{num_edges}_not_in_n{order}.m{num_edges}.canonical.g6
+            - graphs_in_n{order}.m{num_edges}.canonical_not_in_n{order}.m{num_edges}.g6
+        - geng .g6 vs. makeg .g6 corresponds to the files:
+            - graphs_in_n{order}.m{num_edges}_not_in_n{order}.m{num_edges}.makeg.g6
+            - graphs_in_n{order}.m{num_edges}.makeg_not_in_n{order}.m{num_edges}.g6
+        - geng .g6 vs. makeg canonical .g6 corresponds to the files:
+            - graphs_in_n{order}.m{num_edges}_not_in_n{order}.m{num_edges}.makeg.canonical.g6
+            - graphs_in_n{order}.m{num_edges}.makeg.canonical_not_in_n{order}.m{num_edges}.g6
+        - geng canonical .g6 vs. makeg canonical .g6 corresponds to the files:
+            - graphs_in_n{order}.m{num_edges}.canonical_not_in_n{order}.m{num_edges}.makeg.canonical.g6
+            - graphs_in_n{order}.m{num_edges}.makeg.canonical_not_in_n{order}.m{num_edges}.canonical.g6
+        - makeg .g6 vs. makeg canonical .g6 corresponds to the files:
+            - graphs_in_n{order}.m{num_edges}.makeg_not_in_n{order}.m{num_edges}.makeg.canonical.g6
+            - graphs_in_n{order}.m{num_edges}.makeg.canonical_not_in_n{order}.m{num_edges}.makeg.g6
         """
         diffs_performed = {}
         for order in self.planarity_discrepancies.keys():
@@ -790,16 +813,19 @@ class G6GenerationAndComparisonDriver:
                         log_path_for_geng_g6_vs_makeg_g6
                     )
                     self._get_diffs(
-                        makeg_g6_path, makeg_canonical_g6_path,
-                        log_path_for_makeg_g6_vs_makeg_canonical_g6
+                        geng_g6_path, makeg_canonical_g6_path,
+                        log_path_for_geng_g6_vs_makeg_canonical_g6
                     )
+                    # Don't bother with geng canonical vs. makeg, because makeg
+                    # and geng are so similar; only do the other 4 possible
+                    # pairings (4C2 - 1 = 5 cases, which each produce 2 files)
                     self._get_diffs(
                         geng_canonical_g6_path, makeg_canonical_g6_path,
                         log_path_for_geng_canonical_g6_vs_makeg_canonical_g6
                     )
                     self._get_diffs(
-                        geng_g6_path, makeg_canonical_g6_path,
-                        log_path_for_geng_g6_vs_makeg_canonical_g6
+                        makeg_g6_path, makeg_canonical_g6_path,
+                        log_path_for_makeg_g6_vs_makeg_canonical_g6
                     )
 
     def _get_diffs(
