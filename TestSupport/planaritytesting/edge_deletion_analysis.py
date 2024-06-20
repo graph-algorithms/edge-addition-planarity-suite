@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 
-__all__ = []
+__all__ = [
+    'EdgeDeletionAnalyzer',
+    'EdgeDeletionAnalysisError'
+]
 
 import argparse
 from copy import deepcopy
@@ -81,8 +84,8 @@ class EdgeDeletionAnalyzer:
 
         if output_dir.is_file():
             raise argparse.ArgumentTypeError(
-                f"Path '{output_dir}' corresponds to a file, and can't be used "
-                "as the output directory."
+                f"Path '{output_dir}' corresponds to a file, and can't be "
+                "used as the output directory."
             )
 
         output_dir = Path.joinpath(
@@ -658,27 +661,27 @@ if __name__ == '__main__':
         description="Edge deletion analysis tool\n\n"
 "When given an input graph:\n"
 "1. Runs\n"
-"    planarity -t -ta {input_file} {infile_stem}.AdjList.out.txt\n"
+"\tplanarity -t -ta {input_file} {infile_stem}.AdjList.out.txt\n"
 "to transform the graph to adjacency list\n"
 "2. Runs\n"
-"    planarity -s -3 {infile_stem}.AdjList.out.txt \
-{infile_stem}.AdjList.s.3.out.txt\n"
-"and report whether a subgraph homeomorphic to K_{3, 3} was found \
-(NONEMBEDDABLE) or not.\n"
-"3. If no subgraph homeomorphic to K_{3, 3} was found (i.e. previous test \
-yielded OK), run\n"
-"    planarity -s -p {infile_stem}.AdjList.out.txt \\\n\t\
-{infile_stem}.AdjList.s.p.out.txt {infile_stem}.AdjList.s.p.obstruction.txt\n"
-"a. If the graph is reported as planar, then we can be sure no K_{3, 3} \
-exists in the graph and execution terminates.\n"
-"b. If the graph was reported as nonplanar, then examine the obstruction in \n"
-"\t{input_file}.AdjList.s.p.obstruction.txt:\n"
-"    i. If the obstruction is homeomorphic to K_{3, 3}, then report that the \
-original graph contains a subgraph homeomorphic to K_{3, 3} that was not \
-found by the K_{3, 3} search\n"
-"    ii. If the obstruction is homeomorphic to K_5, then perform the \
-edge-deletion analysis to determine whether the graph doesn't contain a \
-K_{3, 3} (with high confidence)"
+"\tplanarity -s -3 {infile_stem}.AdjList.out.txt"
+"{infile_stem}.AdjList.s.3.out.txt\n"
+"and report whether a subgraph homeomorphic to K_{3, 3} was found "
+"(NONEMBEDDABLE) or not.\n"
+"3. If no subgraph homeomorphic to K_{3, 3} was found (i.e. previous test "
+"yielded OK), run\n"
+"\tplanarity -s -p {infile_stem}.AdjList.out.txt "
+"{infile_stem}.AdjList.s.p.out.txt {infile_stem}.AdjList.s.p.obstruction.txt\n"
+"\ta. If the graph is reported as planar, then we can be sure no K_{3, 3}"
+"exists in the graph and execution terminates.\n"
+"\tb. If the graph was reported as nonplanar, examine the obstruction in \n"
+"\t\t{input_file}.AdjList.s.p.obstruction.txt:\n"
+"\t\ti. If the obstruction is homeomorphic to K_{3, 3}, then report that the "
+"original graph contains a subgraph homeomorphic to K_{3, 3} that was not "
+"found by the K_{3, 3} search\n"
+"\t\tii. If the obstruction is homeomorphic to K_5, then perform the "
+"edge-deletion analysis to determine whether the graph doesn't contain a "
+"K_{3, 3} (with high confidence)"
 )
     parser.add_argument(
         '-p', '--planaritypath',
@@ -697,9 +700,9 @@ K_{3, 3} (with high confidence)"
         type=Path,
         default=None,
         metavar='OUTPUT_DIR_PATH',
-        help="Parent directory under which subdirectory named after " \
-            "{infile_stem} will be created for output results. If none " \
-            "provided, defaults to:\n" \
+        help="Parent directory under which subdirectory named after "
+            "{infile_stem} will be created for output results. If none "
+            "provided, defaults to:\n"
             "\tTestSupport/results/edge_deletion_analysis/{infile_stem}"
     )
 

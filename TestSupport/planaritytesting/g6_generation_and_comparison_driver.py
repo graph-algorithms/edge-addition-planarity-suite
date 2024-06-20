@@ -906,38 +906,40 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawTextHelpFormatter,
         usage='python %(prog)s [options]',
-        description="""G6 File Generation and Comparison Tool
-
-For each graph order in the specified range, a child directory of the output
-directory will be created named 'n{order}'. This directory will contain
-subdirectories:
-- graphs/
-    - For each edge-count from 0 to (N * (N - 1)) / 2, a directory is created
-    to contain:
-    n{order}.m{num_edges}.g6
-    n{order}.m{num_edges}.canonical.g6
-    n{order}.m{num_edges}.makeg.g6 (req. planarity-backup path)
-    n{order}.m{num_edges}.makeg.canonical.g6 (req. planarity-backup path)
-    - results/ which will contain the diffs of these .g6 files, pairs of files:
-        - graphs_in_{first_infile}_not_in_{second_infile}.g6
-        - graphs_in_{second_infile}_not_in_{first_infile}.g6
-    These pairs should contain the same number of graphs
-- planarity_results/
-    - For each graph algorithm command specifier, there will be a subdirectory
-    containing one subdirectory for each edge-count (0 to (N * (N - 1)) / 2),
-    which will contain files:
-    n{order}.m{num_edges}.{command}.out.txt
-    n{order}.m{num_edges}.canonical.{command}.out.txt
-    n{order}.m{num_edges}.makeg.{command}.out.txt
-    n{order}.m{num_edges}.makeg.canonical.{command}.out.txt
-- g6_diff_finder_logs/
-    - Will contain logs for each of the following comparisons:
-    G6DiffFinder.n{order}.geng_vs_geng-canonical.log
-    G6DiffFinder.n{order}.geng_vs_makeg.log
-    G6DiffFinder.n{order}.geng_vs_makeg-canonical.log
-    G6DiffFinder.n{order}.geng-canonical_vs_makeg-canonical.log
-    G6DiffFinder.n{order}.makeg_vs_makeg-canonical.log
-""")
+        description="G6 File Generation and Comparison Tool\n\n"
+            "For each graph order in the specified range, a child directory "
+            "of the output directory will be created named 'n{order}'. This "
+            "directory will contain subdirectories:\n"
+            "- graphs/\n"
+            "\t- For each edge-count from 0 to (N * (N - 1)) / 2, a "
+            "directory is created to contain:\n"
+            "\tn{order}.m{num_edges}.g6\n"
+            "\tn{order}.m{num_edges}.canonical.g6\n"
+            "\tn{order}.m{num_edges}.makeg.g6 (req. planarity-backup "
+            "\tpath)\n"
+            "\tn{order}.m{num_edges}.makeg.canonical.g6 (req. "
+            "planarity-backup path)\n"
+            "\t- results/ which will contain the diffs of these .g6 "
+            " files, pairs of files:\n"
+            "\t\t- graphs_in_{first_infile}_not_in_{second_infile}.g6\n"
+            "\t\t- graphs_in_{second_infile}_not_in_{first_infile}.g6\n"
+            "\tThese pairs should contain the same number of graphs\n"
+            "- planarity_results/\n"
+            "\t- For each graph algorithm command specifier, there will be "
+            "a subdirectory containing one subdirectory for each edge-count "
+            "(0 to (N * (N - 1)) / 2), which will contain files:\n"
+            "\tn{order}.m{num_edges}.{command}.out.txt\n"
+            "\tn{order}.m{num_edges}.canonical.{command}.out.txt\n"
+            "\tn{order}.m{num_edges}.makeg.{command}.out.txt\n"
+            "\tn{order}.m{num_edges}.makeg.canonical.{command}.out.txt\n"
+            "- g6_diff_finder_logs/\n"
+            "\t- Will contain logs for each of the following comparisons:\n"
+            "\tG6DiffFinder.n{order}.geng_vs_geng-canonical.log\n"
+            "\tG6DiffFinder.n{order}.geng_vs_makeg.log\n"
+            "\tG6DiffFinder.n{order}.geng_vs_makeg-canonical.log\n"
+            "\tG6DiffFinder.n{order}.geng-canonical_vs_makeg-canonical.log\n"
+            "\tG6DiffFinder.n{order}.makeg_vs_makeg-canonical.log\n"
+)
 
     parser.add_argument(
         '-p', '--planaritypath',
@@ -968,9 +970,9 @@ subdirectories:
         type=Path,
         default=None,
         metavar='OUTPUT_DIR_PATH',
-        help="""Parent directory under which subdirectories will be created
-for output results. If none provided, defaults to:
-    TestSupport/results/g6_generation_and_comparison_driver"""
+        help="Parent directory under which subdirectories will be created "
+            "for output results. If none provided, defaults to:\n"
+            "\tTestSupport/results/g6_generation_and_comparison_driver"
     )
 
     args = parser.parse_args()
