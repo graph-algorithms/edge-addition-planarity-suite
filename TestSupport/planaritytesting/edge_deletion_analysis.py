@@ -192,12 +192,15 @@ class EdgeDeletionAnalyzer:
             planarity -t -ta {input_file} {infile_stem}.AdjList.out.txt
         to transform the graph to adjacency list
         2. Runs 
-            planarity -s -3 {infile_stem}.AdjList.out.txt {infile_stem}.AdjList.s.3.out.txt
+            planarity -s -3 {infile_stem}.AdjList.out.txt \
+                {infile_stem}.AdjList.s.3.out.txt
         and report whether a subgraph homeomorphic to K_{3, 3} was found
         (NONEMBEDDABLE) or not.
         3. If no subgraph homeomorphic to K_{3, 3} was found (i.e. previous
         test yielded OK), run
-            planarity -s -p {infile_stem}.AdjList.out.txt {infile_stem}.AdjList.s.p.out.txt {infile_stem}.AdjList.s.p.obstruction.txt
+            planarity -s -p {infile_stem}.AdjList.out.txt \
+                {infile_stem}.AdjList.s.p.out.txt \
+                {infile_stem}.AdjList.s.p.obstruction.txt
         a. If the graph is reported as planar, then we can be sure no K_{3, 3}
         exists in the graph and execution terminates.
         b. If the graph was reported as nonplanar, then examine the obstruction
@@ -652,22 +655,31 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawTextHelpFormatter,
         usage='python %(prog)s [options]',
-        description="""Edge deletion analysis tool
-
-When given an input graph:
-1. Runs 
-    planarity -t -ta {input_file} {infile_stem}.AdjList.out.txt
-to transform the graph to adjacency list
-2. Runs 
-    planarity -s -3 {infile_stem}.AdjList.out.txt {infile_stem}.AdjList.s.3.out.txt
-and report whether a subgraph homeomorphic to K_{3, 3} was found (NONEMBEDDABLE) or not.
-3. If no subgraph homeomorphic to K_{3, 3} was found (i.e. previous test yielded OK), run
-    planarity -s -p {infile_stem}.AdjList.out.txt {infile_stem}.AdjList.s.p.out.txt {infile_stem}.AdjList.s.p.obstruction.txt
-a. If the graph is reported as planar, then we can be sure no K_{3, 3} exists in the graph and execution terminates.
-b. If the graph was reported as nonplanar, then examine the obstruction in {input_file}.AdjList.s.p.obstruction.txt:
-    i. If the obstruction is homeomorphic to K_{3, 3}, then report that the original graph contains a subgraph homeomorphic to K_{3, 3} that was not found by the K_{3, 3} search
-    ii. If the obstruction is homeomorphic to K_5, then perform the edge-deletion analysis to determine whether the graph doesn't contain a K_{3, 3} (with high confidence)
-""")
+        description="Edge deletion analysis tool\n\n"
+"When given an input graph:\n"
+"1. Runs\n"
+"    planarity -t -ta {input_file} {infile_stem}.AdjList.out.txt\n"
+"to transform the graph to adjacency list\n"
+"2. Runs\n"
+"    planarity -s -3 {infile_stem}.AdjList.out.txt \
+{infile_stem}.AdjList.s.3.out.txt\n"
+"and report whether a subgraph homeomorphic to K_{3, 3} was found \
+(NONEMBEDDABLE) or not.\n"
+"3. If no subgraph homeomorphic to K_{3, 3} was found (i.e. previous test \
+yielded OK), run\n"
+"    planarity -s -p {infile_stem}.AdjList.out.txt \\\n\t\
+{infile_stem}.AdjList.s.p.out.txt {infile_stem}.AdjList.s.p.obstruction.txt\n"
+"a. If the graph is reported as planar, then we can be sure no K_{3, 3} \
+exists in the graph and execution terminates.\n"
+"b. If the graph was reported as nonplanar, then examine the obstruction in \n"
+"\t{input_file}.AdjList.s.p.obstruction.txt:\n"
+"    i. If the obstruction is homeomorphic to K_{3, 3}, then report that the \
+original graph contains a subgraph homeomorphic to K_{3, 3} that was not \
+found by the K_{3, 3} search\n"
+"    ii. If the obstruction is homeomorphic to K_5, then perform the \
+edge-deletion analysis to determine whether the graph doesn't contain a \
+K_{3, 3} (with high confidence)"
+)
     parser.add_argument(
         '-p', '--planaritypath',
         type=Path,
@@ -685,8 +697,10 @@ b. If the graph was reported as nonplanar, then examine the obstruction in {inpu
         type=Path,
         default=None,
         metavar='OUTPUT_DIR_PATH',
-        help="""Parent directory under which subdirectory named after {infile_stem} will be created for output results. If none provided, defaults to:
-    TestSupport/results/edge_deletion_analysis/{infile_stem}"""
+        help="Parent directory under which subdirectory named after " \
+            "{infile_stem} will be created for output results. If none " \
+            "provided, defaults to:\n" \
+            "\tTestSupport/results/edge_deletion_analysis/{infile_stem}"
     )
 
     args = parser.parse_args()
