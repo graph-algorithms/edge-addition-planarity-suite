@@ -10,21 +10,21 @@ from pathlib import Path
 import subprocess
 import json
 
-from TestSupport.planaritytesting.graph_generation_orchestrator import (
+from graph_generation_orchestrator import (
     distribute_geng_workload
 )
-from TestSupport.planaritytesting.planarity_testAllGraphs_orchestrator import (
+from planarity_testAllGraphs_orchestrator import (
     distribute_planarity_testAllGraphs_workload
 )
-from TestSupport.planaritytesting.g6_diff_finder import (
+from g6_diff_finder import (
     G6DiffFinder,
     G6DiffFinderException
 )
-from TestSupport.planaritytesting.planaritytesting_utils import (
+from planaritytesting_utils import (
     PLANARITY_ALGORITHM_SPECIFIERS,
     max_num_edges_for_order
 )
-from TestSupport.planaritytesting.planarity_testAllGraphs_output_parsing \
+from planarity_testAllGraphs_output_parsing \
     import process_file_contents
 
 

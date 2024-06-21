@@ -9,7 +9,7 @@ import argparse
 import shutil
 from pathlib import Path
 
-from TestSupport.planaritytesting.planaritytesting_utils import (
+from planaritytesting_utils import (
     max_num_edges_for_order
 )
 
@@ -100,8 +100,8 @@ def _validate_and_normalize_geng_workload_args(
         output_dir = Path.joinpath(output_dir, str(order))
     except IndexError as e:
         raise argparse.ArgumentTypeError(
-            f"Unable to extract parts from "
-            "output dir path '{output_dir}'.") from e
+            f"Unable to extract parts from output dir path '{output_dir}'."
+        ) from e
     else:
         if candidate_order_from_path != order:
             raise argparse.ArgumentTypeError(

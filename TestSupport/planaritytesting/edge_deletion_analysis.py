@@ -16,8 +16,8 @@ import subprocess
 import sys
 from typing import Optional
 
-from TestSupport.planaritytesting.graph import Graph, GraphError
-from TestSupport.planaritytesting.planaritytesting_utils import (
+from graph import Graph, GraphError
+from planaritytesting_utils import (
     g6_header,
     g6_suffix,
     LEDA_header

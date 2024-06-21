@@ -6,10 +6,10 @@ import sys
 import argparse
 from pathlib import Path
 
-from TestSupport.planaritytesting.planaritytesting_utils import (
+from planaritytesting_utils import (
         PLANARITY_ALGORITHM_SPECIFIERS
 )
-from TestSupport.planaritytesting.planarity_testAllGraphs_output_parsing \
+from planarity_testAllGraphs_output_parsing \
     import (
         TestAllGraphsPathError,
         TestAllGraphsOutputFileContentsError,

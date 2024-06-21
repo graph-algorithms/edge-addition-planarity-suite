@@ -9,7 +9,7 @@ from pathlib import Path
 import re
 from typing import Optional
 
-from TestSupport.planaritytesting.planaritytesting_utils import (
+from planaritytesting_utils import (
     PLANARITY_ALGORITHM_SPECIFIERS,
     max_num_edges_for_order
 )

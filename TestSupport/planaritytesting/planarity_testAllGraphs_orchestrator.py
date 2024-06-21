@@ -9,7 +9,7 @@ import subprocess
 import argparse
 from pathlib import Path
 
-from TestSupport.planaritytesting.planaritytesting_utils import (
+from planaritytesting_utils import (
     PLANARITY_ALGORITHM_SPECIFIERS,
     max_num_edges_for_order
 )

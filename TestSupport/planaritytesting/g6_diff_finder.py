@@ -10,7 +10,7 @@ import logging
 from pathlib import Path
 from typing import Optional
 
-from TestSupport.planaritytesting.planaritytesting_utils import (
+from planaritytesting_utils import (
     g6_header,
     g6_suffix,
 )
