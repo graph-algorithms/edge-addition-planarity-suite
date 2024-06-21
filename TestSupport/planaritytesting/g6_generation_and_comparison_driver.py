@@ -617,31 +617,39 @@ class G6GenerationAndComparisonDriver:
                         'geng_canonical_g6'
                     )
 
-                    makeg_g6_output = Path.joinpath(
-                        planarity_output_dir_for_order_and_edgecount,
-                        f"n{order}.m{num_edges}.makeg.{command}.out.txt"
-                    )
-                    self._extract_planarity_results(
-                        makeg_g6_output, order, num_edges, command, 'makeg_g6'
-                    )
+                    if self.planarity_backup_path:
+                        makeg_g6_output = Path.joinpath(
+                            planarity_output_dir_for_order_and_edgecount,
+                            f"n{order}.m{num_edges}.makeg.{command}.out.txt"
+                        )
+                        self._extract_planarity_results(
+                            makeg_g6_output, order, num_edges, command,
+                            'makeg_g6'
+                        )
 
-                    makeg_canonical_g6_output = Path.joinpath(
-                        planarity_output_dir_for_order_and_edgecount,
-                        f"n{order}.m{num_edges}.makeg.canonical.{command}" +
-                        ".out.txt"
-                    )
-                    self._extract_planarity_results(
-                        makeg_canonical_g6_output, order, num_edges, command,
-                        'makeg_canonical_g6'
-                    )
+                        makeg_canonical_g6_output = Path.joinpath(
+                            planarity_output_dir_for_order_and_edgecount,
+                            f"n{order}.m{num_edges}.makeg.canonical." +
+                            f"{command}.out.txt"
+                        )
+                        self._extract_planarity_results(
+                            makeg_canonical_g6_output, order, num_edges,
+                            command, 'makeg_canonical_g6'
+                        )
 
-                    if (
-                        self.planarity_discrepancies[order][num_edges][command]['geng_g6'] == 
-                        self.planarity_discrepancies[order][num_edges][command]['makeg_g6'] ==
-                        self.planarity_discrepancies[order][num_edges][command]['geng_canonical_g6'] ==
-                        self.planarity_discrepancies[order][num_edges][command]['makeg_canonical_g6']
-                    ):
-                        del(self.planarity_discrepancies[order][num_edges][command])
+                        if (
+                            self.planarity_discrepancies[order][num_edges][command]['geng_g6'] == 
+                            self.planarity_discrepancies[order][num_edges][command]['makeg_g6'] ==
+                            self.planarity_discrepancies[order][num_edges][command]['geng_canonical_g6'] ==
+                            self.planarity_discrepancies[order][num_edges][command]['makeg_canonical_g6']
+                        ):
+                            del(self.planarity_discrepancies[order][num_edges][command])
+                    else:
+                        if (
+                            self.planarity_discrepancies[order][num_edges][command]['geng_g6'] == 
+                            self.planarity_discrepancies[order][num_edges][command]['geng_canonical_g6']
+                        ):
+                            del(self.planarity_discrepancies[order][num_edges][command])
                 
                 if not self.planarity_discrepancies[order][num_edges]:
                     del(self.planarity_discrepancies[order][num_edges])
