@@ -6,13 +6,16 @@ import sys
 import argparse
 from pathlib import Path
 
-from planarity_constants import PLANARITY_ALGORITHM_SPECIFIERS
-from planarity_testAllGraphs_output_parsing import (
-    TestAllGraphsPathError,
-    TestAllGraphsOutputFileContentsError,
-    validate_infile_name,
-    process_file_contents,
+from TestSupport.planaritytesting.planaritytesting_utils import (
+        PLANARITY_ALGORITHM_SPECIFIERS
 )
+from TestSupport.planaritytesting.planarity_testAllGraphs_output_parsing \
+    import (
+        TestAllGraphsPathError,
+        TestAllGraphsOutputFileContentsError,
+        validate_infile_name,
+        process_file_contents,
+    )
 
 
 class TestTableGeneratorPathError(BaseException):
@@ -42,9 +45,11 @@ class TestTableGeneratorFileProcessingError(BaseException):
 
 
 class TestTableGenerator():
+    """Process output from running planarity testAllGraphs for a single command
+    """
     def __init__(
-        self, input_dir:Path, output_dir:Path, canonical_files:bool = False,
-        makeg_files:bool = False
+        self, input_dir: Path, output_dir: Path, canonical_files: bool = False,
+        makeg_files: bool = False
     ):
         """Initializes TestTableGenerator instance.
 
@@ -69,9 +74,13 @@ class TestTableGenerator():
                 a directory, or if it is empty; or if the output_dir doesn't 
                 correspond to a directory.
         """
+        self.order = None
+        self.command = None
+
         # According to PEP-8, one must use one leading underscore only for 
         # non-public methods and instance variables.
         self._processed_data = {}
+        self._totals = {}
 
         if not Path.is_dir(input_dir):
             raise TestTableGeneratorPathError(
@@ -108,18 +117,18 @@ class TestTableGenerator():
         """
         parts = self.input_dir.parts
         try:
-            order = int(parts[-2])
+            order_from_input_dir = int(parts[-2])
         except ValueError:
-            order = None
+            order_from_input_dir = None
 
-        command = parts[-1]
+        command_from_input_dir = parts[-1]
         # You may reference class attributes either by the name of the class,
         # seen here, or by using "self"
-        if command not in PLANARITY_ALGORITHM_SPECIFIERS():
-            command = None
+        if command_from_input_dir not in PLANARITY_ALGORITHM_SPECIFIERS():
+            command_from_input_dir = None
 
-        self.order = order
-        self.command = command
+        self.order = order_from_input_dir
+        self.command = command_from_input_dir
     
     def process_files(self):
         """Process input files to populate _processed_data and _totals dicts 
@@ -160,7 +169,7 @@ class TestTableGenerator():
         
         if not self._processed_data:
             raise TestTableGeneratorFileProcessingError(
-                f"No files in input directory '{input_dir}' matched the "
+                f"No files in input directory '{self.input_dir}' matched the "
                 f"patterns indicated by the input flags:"
                 f"\n\tcanonical_files={self.canonical_files}"
                 f"\n\tmakeg_files={self.makeg_files}"
@@ -215,7 +224,7 @@ class TestTableGenerator():
                 "Unable to process file when given invalid infile name."
             ) from e
         else:
-            if num_edges in self._processed_data.keys():
+            if num_edges in self._processed_data:
                 raise TestAllGraphsOutputFileContentsError(
                     "Already processed a file corresponding to "
                     f"{num_edges} edges."
@@ -263,21 +272,17 @@ class TestTableGenerator():
 
         max_infilename_length = max(
             len(infilename_heading),
-            max(
-                    [
-                        len(x.get('infilename')) 
-                        for x in self._processed_data.values()
-                    ]
-            )
+            *[
+                len(x.get('infilename')) 
+                for x in self._processed_data.values()
+            ]
         )
         max_num_edges_length = max(
             len(num_edges_heading),
-            max(
-                    [
-                        len(str(num_edges))
-                        for num_edges in self._processed_data.keys()
-                    ]
-                )
+            *[
+                len(str(num_edges))
+                for num_edges in self._processed_data
+            ]
         )
         max_numGraphs_length = max(
             len(str(self._totals.get('numGraphs'))), len(num_graphs_heading)
@@ -295,7 +300,7 @@ class TestTableGenerator():
             len(duration_heading)
         )
 
-        with open(output_path, 'w') as outfile:
+        with open(output_path, 'w', encoding='utf-8') as outfile:
             # Print the table header
             outfile.write(
                 "| {:<{}} | {:<{}} | {:<{}} | {:<{}} | {:<{}} | {:<{}} | {:<{}} |\n"
@@ -326,6 +331,11 @@ class TestTableGenerator():
             # Print the table rows
             for num_edges in sorted(self._processed_data.keys()):
                 data = self._processed_data.get(num_edges)
+                if data is None:
+                    raise TestTableGeneratorFileProcessingError(
+                        f"Data for M = {num_edges} is missing from processed "
+                        "data dict."
+                    )
                 outfile.write(
                     "| {:<{}} | {:<{}} | {:<{}} | {:<{}} | {:<{}} | {:<{}} | {:<{}} |\n"
                     .format(
@@ -373,25 +383,24 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawTextHelpFormatter,
         usage='python %(prog)s [options]',
-        description="""Test Table Generator
-
-Tabulates results from output files produced by planarity's Test All Graphs
-functionality.
-
-Expects to be given an input directory containing only the output files
-produced by running planarity's Test All Graphs for a specific algorithm.
-
-Preferably, this will be the output from having run the Planarity Orchestrator,
-and will have a path of the form:
-    {parent_dir}/{order}/{command}/
-
-And will contain files with the full path:
-    {parent_dir}/{order}/{command}/n{order}.m{numEdges}(.makeg)?(.canonical)?.{command}.out.txt
-
-Will output one file per graph algorithm containing the tabulated data compiled
-from the planarity Test All Graphs output files:
-    {output_dir}/n{order}.mALL(.makeg)?(.canonical)?.{command}.out.txt
-""")
+        description="Test Table Generator\n"
+            "Tabulates results from output files produced by planarity's "
+            "Test All Graphs functionality.\n\n"
+            "Expects to be given an input directory containing only the "
+            "output files produced by running planarity's Test All Graphs "
+            "for a specific algorithm.\n\n"
+            "Preferably, this will be the output from having run the "
+            "Planarity Orchestrator, and will have a path of the form:\n"
+            "\t{parent_dir}/{order}/{command}/\n"
+            "And will contain files with the full path:\n"
+            "\t{parent_dir}/{order}/{command}/n{order}.m{numEdges}(.makeg)?"
+            "(.canonical)?.{command}.out.txt\n\n"
+            "Will output one file per graph algorithm containing the "
+            "tabulated data compiled from the planarity Test All Graphs "
+            "output files:\n"
+            "\t{output_dir}/n{order}.mALL(.makeg)?(.canonical)?.{command}.out"
+            ".txt"
+    )
     parser.add_argument(
         '-i', '--inputdir',
         type=Path,
@@ -416,9 +425,9 @@ from the planarity Test All Graphs output files:
         type=int,
         default=11,
         metavar='ORDER',
-        help="""Order of graphs for which you wish to compile results of
-having run planarity with given command specifier. Defaults to N = %(default)s
-"""
+        help="Order of graphs for which you wish to compile results of "
+            "having run planarity with given command specifier. Defaults to "
+            "N = %(default)s"
     )
     parser.add_argument(
         '-l', '--canonicalfiles',

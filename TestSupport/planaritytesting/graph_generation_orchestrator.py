@@ -9,7 +9,9 @@ import argparse
 import shutil
 from pathlib import Path
 
-from planarity_constants import max_num_edges_for_order
+from TestSupport.planaritytesting.planaritytesting_utils import (
+    max_num_edges_for_order
+)
 
 def _call_geng(
         geng_path:Path, canonical_files: bool, order:int, num_edges:int,
@@ -37,11 +39,13 @@ def _call_geng(
         output_dir,
         f"n{order}.m{num_edges}{'.canonical' if canonical_files else ''}.g6"
         )
-    with open(filename, "w") as outfile:
+    with open(filename, "w", encoding='utf-8') as outfile:
         command = [f'{geng_path}', f'{order}', f'{num_edges}:{num_edges}']
         if canonical_files:
             command.insert(1, '-l')
-        subprocess.run(command, stdout=outfile, stderr=subprocess.PIPE)
+        subprocess.run(
+            command, stdout=outfile, stderr=subprocess.PIPE, check=False
+        )
 
 
 def _validate_and_normalize_geng_workload_args(
@@ -143,12 +147,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawTextHelpFormatter,
         usage='python %(prog)s [options]',
-        description="""Graph Generation Orchestrator
-
-Orchestrates calls to nauty's geng to generate graphs for a given order,
-separated out into files for each edge count. The output files will have paths:
-    {output_dir}/{order}/n{order}.m{num_edges}(.canonical)?.g6
-""")
+        description="Graph Generation Orchestrator\n"
+            "Orchestrates calls to nauty's geng to generate graphs for a "
+            "given order, separated out into files for each edge count. The "
+            "output files will have paths:\n"
+            "\t{output_dir}/{order}/n{order}.m{num_edges}(.canonical)?.g6"
+    )
     parser.add_argument(
         '-g', '--gengpath',
         type=Path,
@@ -170,8 +174,8 @@ separated out into files for each edge count. The output files will have paths:
         type=Path,
         default=None,
         metavar='G6_OUTPUT_DIR',
-        help="""If no output directory provided, defaults to
-TestSupport/results/graph_generation_orchestrator/{order}"""
+        help="If no output directory provided, defaults to\n"
+            "\tTestSupport/results/graph_generation_orchestrator/{order}"
     )
 
     args = parser.parse_args()

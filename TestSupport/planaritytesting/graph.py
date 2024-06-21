@@ -4,6 +4,7 @@ __all__ = [
 ]
 
 from copy import deepcopy
+from typing import Optional
 
 
 class GraphError(BaseException):
@@ -14,9 +15,12 @@ class GraphError(BaseException):
 
 
 class Graph:
+    """A simple graph datastructure containing the order graph adjacency list
+    """
     def __init__(
-            self, order: int = 0, graph_adj_list_repr: list[list[int]] = None
-        ) -> None:
+            self, order: int = 0,
+            graph_adj_list_repr: Optional[list[list[int]]] = None
+    ) -> None:
         """Constructor for Graph class
 
         Had to do some fancy footwork to support deepcopy() machinery: if you
@@ -113,7 +117,7 @@ class Graph:
                     )
 
                 if v == -1:
-                    if len(adj_list[adj_list_index + 1]) > 0:
+                    if len(graph_adj_list_repr[adj_list_index + 1]) > 0:
                         raise GraphError(
                             f"Adjacency list for vertex {u} is malformed: "
                             "there must be no elements after -1, since this "
@@ -244,10 +248,15 @@ class Graph:
             raise GraphError(
                 f"Unable to add arc ({u}, {v})."
             ) from e
-        
+
         self.graph_adj_list_repr[u].append(v)
-    
+
     def get_max_degree(self)->int:
+        """Infer max degree from graph adjacency list representation
+        Returns:
+            The length of the longest adjacency list in the graph adjacency
+                list representation (i.e. the list of lists of integers)
+        """
         return max(len(x) for x in self.graph_adj_list_repr)
 
     def delete_edge(self, u: int, v: int):

@@ -14,8 +14,14 @@ import re
 import shutil
 import subprocess
 import sys
+from typing import Optional
 
-from graph import Graph, GraphError
+from TestSupport.planaritytesting.graph import Graph, GraphError
+from TestSupport.planaritytesting.planaritytesting_utils import (
+    g6_header,
+    g6_suffix,
+    LEDA_header
+)
 
 
 class EdgeDeletionAnalysisError(BaseException):
@@ -30,10 +36,12 @@ class EdgeDeletionAnalysisError(BaseException):
 
 
 class EdgeDeletionAnalyzer:
+    __MAX_NUM_ERRORS = 1000
+
     def __init__(
             self, planarity_path: Path, infile_path: Path,
-            output_dir: Path = None, log_path: Path = None
-    ):
+            output_dir: Optional[Path] = None, log_path: Optional[Path] = None
+    ) -> None:
         """Validate input and set up for edge-deletion analysis
 
         If output_dir was not None and doesn't correspond to a file,
@@ -111,7 +119,49 @@ class EdgeDeletionAnalyzer:
 
         self._setup_logger(log_path)
 
-    def _setup_logger(self, log_path: Path = None) -> None:
+    @staticmethod
+    def _determine_input_filetype(infile_path: Path) -> str:
+        """Determine whether input file encoding
+        Args:
+            infile_path: Path to graph input file
+
+        Returns:
+            str: One of 'LEDA', 'AdjList', 'AdjMat', or 'G6'
+        
+        Raises:
+            EdgeDeletionAnalysisError: If infile is empty or if unable to
+                determine the input file encoding
+        """
+        with open(infile_path, 'r', encoding='utf-8') as infile:
+            first_line = infile.readline()
+            if not first_line:
+                raise EdgeDeletionAnalysisError(
+                    f"'{infile_path}' is empty."
+                )
+            
+            if LEDA_header() in first_line:
+                return 'LEDA'
+            elif re.match(r'N=(\d+)', first_line):
+                return 'AdjList'
+            elif first_line[0].isdigit():
+                return 'AdjMat'
+            elif (
+                    infile_path.suffix == g6_suffix() and
+                    (
+                        first_line.find(g6_header()) or
+                        (
+                            ord(first_line[0]) >= 63 and
+                            ord(first_line[0]) <= 126
+                        )
+                    )
+            ):
+                return 'G6'
+            else:
+                raise EdgeDeletionAnalysisError(
+                   f"Unable to determine filetype of '{infile_path}'."
+                )
+
+    def _setup_logger(self, log_path: Optional[Path] = None) -> None:
         """Set up logger instance for EdgeDeletionAnalyzer
         
         Args:
@@ -153,21 +203,86 @@ class EdgeDeletionAnalyzer:
             stderr_handler.setFormatter(logger_formatter)
             self.logger.addHandler(stderr_handler)
 
-    def transform_graph(self) -> None:
+    def analyze_graphs(self) -> None:
+        """
+
+        Raises:
+            EdgeDeletionAnalysisError: COMING SOON
+        """
+        # TODO: exception handling 
+        file_type = EdgeDeletionAnalyzer._determine_input_filetype(
+            self.orig_infile_path
+        )
+
+        if file_type != 'G6':
+            raise EdgeDeletionAnalysisError(
+                f"'{file_type}' is not supported; please supply a .g6 file."
+            )
+        
+        num_errors = 0
+        with open(self.orig_infile_path, 'r', encoding='utf-8') as orig_infile:
+            line_num = 0
+            for line in orig_infile:
+                line_num += 1
+                if line_num == 1:
+                    line.replace(g6_header(), '')
+                
+                new_g6_name = f"{self.orig_infile_path.name}." \
+                    f"{line_num}"
+                new_parent_dir = Path.joinpath(
+                    self.output_dir, new_g6_name
+                )
+                Path.mkdir(new_parent_dir, parents=True, exist_ok=True)
+                new_g6_path = Path.joinpath(
+                    new_parent_dir,
+                    f"{new_g6_name}.g6"
+                )
+                with open(new_g6_path, 'w', encoding='utf-8') as new_g6_file:
+                    new_g6_file.write(line)
+
+                adj_list_path = self.transform_input(
+                    new_g6_path, new_parent_dir
+                )
+                contains_missed_K33 = self.analyze_transformed_graph(
+                    adj_list_path, new_parent_dir
+                )
+                if not contains_missed_K33:
+                    shutil.rmtree(new_parent_dir, ignore_errors=True)
+                else:
+                    num_errors += 1
+                    if num_errors > EdgeDeletionAnalyzer.__MAX_NUM_ERRORS:
+                        self.logger.error(
+                            "Encountered more errors than supported "
+                            f"(i.e. {EdgeDeletionAnalyzer.__MAX_NUM_ERRORS})"
+                        )
+                        break
+
+    def transform_input(self, infile_path: Path, output_dir:Path) -> Path:
         """Transforms input graph to adjacency list
 
+        Runs 
+            planarity -t -ta {input_file} {infile_stem}.AdjList.out.txt
+        to transform the graph to adjacency list
+
+        Args:
+            infile_path: Path to input file containing a single graph
+            output_dir: Directory to which transformed graph is output
+        
+        Returns:
+            Path to Adjacency List representation of input graph.
+        
         Raises:
             EdgeDeletionAnalysisError: if calling planarity returned nonzero
                 exit code
         """
         adj_list_path = Path.joinpath(
-            self.output_dir,
-            self.orig_infile_path.stem + '.AdjList.out.txt'
+            output_dir,
+            infile_path.stem + '.AdjList.out.txt'
         )
 
         planarity_transform_args = [
             f"{self.planarity_path}", '-t', '-ta',
-            f"{self.orig_infile_path}", f"{adj_list_path}" 
+            f"{infile_path}", f"{adj_list_path}" 
         ]
 
         # TestGraphFunctionality() returns either OK or NOTOK, which means
@@ -175,25 +290,24 @@ class EdgeDeletionAnalyzer:
         try:
             subprocess.run(planarity_transform_args, check=True)
         except subprocess.CalledProcessError as e:
-            error_message = f"Unable to transform '{self.orig_infile_path}' " \
+            error_message = f"Unable to transform '{infile_path}' " \
                 "to Adjacency list."
             self.logger.error(error_message)
             raise EdgeDeletionAnalysisError(
                 error_message
             ) from e
-        else:
-            self.adj_list_path = adj_list_path
+        
+        return adj_list_path
 
-    def perform_analysis(self) -> None:
+    def analyze_transformed_graph(
+            self, adj_list_path: Path, output_dir: Path
+    ) -> bool:
         """Perform steps of edge-deletion analysis
+        
+        First os.chdir() to the output_dir, since SpecificGraph() calls
+        ConstructInputFilename(), which enforces a limit on the length of the
+        infileName.
 
-        First os.chdir() to the root of the self.output_dir, since
-        SpecificGraph() calls ConstructInputFilename(), which enforces a limit
-        on the length of the infileName.
-
-        1. Runs 
-            planarity -t -ta {input_file} {infile_stem}.AdjList.out.txt
-        to transform the graph to adjacency list
         2. Runs 
             planarity -s -3 {infile_stem}.AdjList.out.txt \
                 {infile_stem}.AdjList.s.3.out.txt
@@ -205,7 +319,8 @@ class EdgeDeletionAnalyzer:
                 {infile_stem}.AdjList.s.p.out.txt \
                 {infile_stem}.AdjList.s.p.obstruction.txt
         a. If the graph is reported as planar, then we can be sure no K_{3, 3}
-        exists in the graph and execution terminates.
+        exists in the graph and execution continues without running the rest
+        of the loop body.
         b. If the graph was reported as nonplanar, then examine the obstruction
         in {input_file}.AdjList.s.p.obstruction.txt:
             i. If the obstruction is homeomorphic to K_{3, 3}, then report that
@@ -215,58 +330,74 @@ class EdgeDeletionAnalyzer:
             edge-deletion analysis to determine whether the graph doesn't
             contain a K_{3, 3} (with a high degree of confidence)
 
+        Args:
+            adj_list_path: Path to adjacency list representation of input graph
+            output_dir: Path to output directory
+
+        Return:
+            bool indicating whether or not a K_{3, 3} was found that K_{3, 3}
+                search missed
         Raises:
             EdgeDeletionAnalysisError: re-raised from any step of the analysis
         """
+        contains_missed_K33 = False
         orig_dir = os.getcwd()
-        os.chdir(self.output_dir)
+        os.chdir(output_dir)
         try:
-            contains_K33 = self._run_k33_search(self.orig_infile_path)
+            contains_K33 = self._run_k33_search(adj_list_path)
             if not contains_K33:
                 planar_obstruction_name = self._run_planarity(
-                    self.orig_infile_path
+                    adj_list_path, output_dir
                 )
                 if planar_obstruction_name is not None:
                     obstruction_type = self.determine_obstruction_type(
-                        planar_obstruction_name
+                        planar_obstruction_name, output_dir
                     )
                     planar_obstruction_path = Path.joinpath(
-                            self.output_dir, planar_obstruction_name
+                            output_dir, planar_obstruction_name
                         )
                     if obstruction_type == 'K33':
                         self.logger.error(
-                            f"'{self.orig_infile_path}' contains a "
+                            f"In '{adj_list_path}', planarity found a "
                             "K_{3, 3} that was not found by K_{3, 3} search; "
                             f"see '{planar_obstruction_path}'."
                         )
+                        contains_missed_K33 = True
                     elif obstruction_type == 'K5':
                         self.logger.info(
-                            f"'{self.orig_infile_path}' contains a subgraph "
+                            f"'{adj_list_path}' contains a subgraph "
                             "homeomorphic to K_5; proceeding with "
                             "edge-deletion analysis."
                             "\n=======================\n"
                         )
-                        contains_K33 = self._edge_deletion_analysis()
+                        contains_missed_K33 = self._edge_deletion_analysis(
+                            adj_list_path, output_dir
+                        )
                         self.logger.info("\n=======================\n")
-                        if contains_K33:
+                        if contains_missed_K33:
                             self.logger.error(
-                                f"'{self.orig_infile_path}' contains a "
+                                f"In '{adj_list_path}', edge-deletion "
+                                "analysis determined that there is a "
                                 "K_{3, 3} that was not found by K_{3, 3} "
-                                f"search."
+                                "search."
                             )
                         else:
                             self.logger.info(
-                                f"'{self.orig_infile_path}' likely doesn't "
+                                f"'{adj_list_path}' likely doesn't "
                                 "contain a K_{3, 3}."
                             )
         except EdgeDeletionAnalysisError as e:
             raise EdgeDeletionAnalysisError(
-                f"Encountered error when processing '{self.orig_infile_path}'."
+                f"Encountered error when processing '{adj_list_path}'."
             ) from e
+        else:
+            return contains_missed_K33
         finally:
             os.chdir(orig_dir)
 
-    def _run_k33_search(self, graph_infile_path: Path) -> bool:
+    def _run_k33_search(
+            self, graph_infile_path: Path
+    ) -> Optional[bool]:
         """Run K_{3, 3} search
 
         Args:
@@ -305,7 +436,7 @@ class EdgeDeletionAnalyzer:
                 result.check_returncode()
             except subprocess.CalledProcessError as e:
                 error_message = "Encountered an error running K_{3, 3} " \
-                    f"search on '{self.adj_list_path}':" \
+                    f"search on '{graph_infile_path}':" \
                     f"\n\tOutput to stdout:\n\t\t{result.stdout}" \
                     f"\n\tOutput to stderr:\n\t\t{result.stderr}"
                 self.logger.error(error_message)
@@ -315,7 +446,7 @@ class EdgeDeletionAnalyzer:
             if b'has a subgraph homeomorphic to' not in result.stdout:
                 error_message = "planarity SpecificGraph() exit code " \
                     "doesn't align with stdout result for " \
-                    f"'{self.adj_list_path}':" \
+                    f"'{graph_infile_path}':" \
                     f"\n\tOutput to stdout:\n\t\t{result.stdout}" \
                     f"\n\tOutput to stderr:\n\t\t{result.stderr}"
                 self.logger.error(error_message)
@@ -330,7 +461,7 @@ class EdgeDeletionAnalyzer:
             if b'has no subgraph homeomorphic to' not in result.stdout:
                 error_message = "planarity SpecificGraph() exit code " \
                     "doesn't align with stdout result for " \
-                    f"'{self.adj_list_path}':" \
+                    f"'{graph_infile_path}':" \
                     f"\n\tOutput to stdout:\n\t\t{result.stdout}" \
                     f"\n\tOutput to stderr:\n\t\t{result.stderr}"
                 self.logger.error(error_message)
@@ -341,16 +472,19 @@ class EdgeDeletionAnalyzer:
             )
             return False
 
-    def _run_planarity(self, graph_infile_path: Path) -> Path:
+    def _run_planarity(
+            self, graph_infile_path: Path, output_dir: Path
+    ) -> Optional[Path]:
         """Invoke planar graph embedder/Kuratowski subgraph isolator
 
         Args:
             graph_infile_path: Path to graph on which you wish to run planarity
+            output_dir: Path to which you wish to output results of planarity
         
         Returns:
             planar_obstruction_name: Path object that only contains the stem
                 and extension of the obstruction to planarity; expected to be a
-                file within self.output_dir.
+                file within output_dir.
 
         Raises:
             EdgeDeletionAnalysisError: if calling planarity returned anything
@@ -385,7 +519,7 @@ class EdgeDeletionAnalyzer:
                 result.check_returncode()
             except subprocess.CalledProcessError as e:
                 error_message = "Encountered an error running core " \
-                    f"planarity on '{self.adj_list_path}':" \
+                    f"planarity on '{graph_infile_path}':" \
                     f"\n\tOutput to stdout:\n\t\t{result.stdout}" \
                     f"\n\tOutput to stderr:\n\t\t{result.stderr}"
                 self.logger.error(error_message)
@@ -395,7 +529,7 @@ class EdgeDeletionAnalyzer:
             if b'is not planar' not in result.stdout:
                 error_message =  "planarity SpecificGraph() exit code " \
                     "doesn't align with stdout result for " \
-                    f"'{self.adj_list_path}':" \
+                    f"'{graph_infile_path}':" \
                     f"\n\tOutput to stdout:\n\t\t{result.stdout}" \
                     f"\n\tOutput to stderr:\n\t\t{result.stderr}"
                 self.logger.error(error_message)
@@ -408,13 +542,13 @@ class EdgeDeletionAnalyzer:
             if b'is planar' not in result.stdout:
                 error_message = "planarity SpecificGraph() exit code " \
                     "doesn't align with stdout result for " \
-                    f"'{self.adj_list_path}':" \
+                    f"'{graph_infile_path}':" \
                     f"\n\tOutput to stdout:\n\t\t{result.stdout}" \
                     f"\n\tOutput to stderr:\n\t\t{result.stderr}"
                 self.logger.error(error_message)
                 raise EdgeDeletionAnalysisError(error_message)
             core_planarity_output_path = Path.joinpath(
-                self.output_dir,
+                output_dir,
                 core_planarity_output_name
             )
             self.logger.info(
@@ -425,7 +559,9 @@ class EdgeDeletionAnalyzer:
 
         return planar_obstruction_name
 
-    def determine_obstruction_type(self, planar_obstruction_name: Path)->str:
+    def determine_obstruction_type(
+            self, planar_obstruction_name: Path, output_dir: Path
+    ) -> str:
         """Determine obstruction type based on max degree
 
         A coarse test for the type of obstruction encountered by the planar
@@ -448,7 +584,7 @@ class EdgeDeletionAnalyzer:
             raise EdgeDeletionAnalysisError(
                 "Encountered error when trying to read obstruction subgraph "
                 "from "
-                f"'{Path.joinpath(self.output_dir, planar_obstruction_name)}'"
+                f"'{Path.joinpath(output_dir, planar_obstruction_name)}'"
             ) from e
 
         obstruction_max_degree = obstruction_graph.get_max_degree()
@@ -460,11 +596,11 @@ class EdgeDeletionAnalyzer:
             raise EdgeDeletionAnalysisError(
                 "The obstruction found doesn't have the expected "
                 "characteristics of neither K_5 nor K_{3, 3}; see "
-                f"'{Path.joinpath(self.output_dir, planar_obstruction_name)}'."
+                f"'{Path.joinpath(output_dir, planar_obstruction_name)}'."
             )
 
     @staticmethod
-    def _read_adj_list_graph_repr(graph_path: Path)->Graph:
+    def _read_adj_list_graph_repr(graph_path: Path) -> Graph:
         """Static method to read graph as adjacency list from file
         
         Args:
@@ -480,7 +616,7 @@ class EdgeDeletionAnalyzer:
                 GraphError was encountered when we tried to add an edge based
                 on file contents.
         """
-        with open(graph_path, 'r') as graph_file:
+        with open(graph_path, 'r', encoding='utf-8') as graph_file:
             header = graph_file.readline()
             match = re.match(
                 r'N=(?P<order>\d+)',
@@ -515,7 +651,9 @@ class EdgeDeletionAnalyzer:
 
         return graph
 
-    def _edge_deletion_analysis(self) -> bool:
+    def _edge_deletion_analysis(
+            self, adj_list_path: Path, output_dir: Path
+    ) -> bool:
         """Search for K_{3, 3} by removing graph edges and re-running planarity
 
         If the original graph was determined to not contain a subgraph
@@ -540,6 +678,12 @@ class EdgeDeletionAnalyzer:
             is not a 100% guarantee of finding the K_{3, 3} that we should have
             found in the original graph.
 
+        Args:
+            adj_list_path: Path to adjacency list upon which to perform
+                edge-deletion analysis
+            output_dir: Directory to which you wish to output the results of
+                edge-deletion analysis on the input graph
+
         Returns:
             bool indicating at least one K_{3, 3} was found as a result of the
             edge-deletion manipulation.
@@ -560,16 +704,16 @@ class EdgeDeletionAnalyzer:
         """
         try:
             orig_graph = EdgeDeletionAnalyzer._read_adj_list_graph_repr(
-                self.adj_list_path
+                adj_list_path
             )
         except EdgeDeletionAnalysisError as e:
             raise EdgeDeletionAnalysisError(
                 "Unable to read original graph adjacency list representation"
-                f"from file '{self.adj_list_path}'."
+                f"from file '{adj_list_path}'."
             ) from e
 
-        adj_list_stem = '.'.join(self.adj_list_path.name.split('.')[:-3])
-        adj_list_suffix = ''.join(self.adj_list_path.suffixes[-3:])
+        adj_list_stem = '.'.join(adj_list_path.name.split('.')[:-3])
+        adj_list_suffix = ''.join(adj_list_path.suffixes[-3:])
 
         orig_graph_contains_K33 = False
         u = -1
@@ -589,16 +733,19 @@ class EdgeDeletionAnalyzer:
                         ) from e
 
                     orig_graph_minus_edge_path = Path.joinpath(
-                        self.adj_list_path.parent,
+                        adj_list_path.parent,
                         f"{adj_list_stem}.rem{u}-{v}" \
                         f"{adj_list_suffix}"
                     )
-                    with open(orig_graph_minus_edge_path, 'w') as outfile:
+                    with (
+                        open(orig_graph_minus_edge_path, 'w', encoding='utf-8')
+                        as outfile
+                    ):
                         outfile.write(str(orig_graph_minus_edge))
                     
                     try:
                         obstruction_name = self._run_planarity(
-                            orig_graph_minus_edge_path
+                            orig_graph_minus_edge_path, output_dir
                         )
                     except EdgeDeletionAnalysisError as e:
                         raise EdgeDeletionAnalysisError(
@@ -609,7 +756,7 @@ class EdgeDeletionAnalyzer:
                     if obstruction_name:
                         try:
                             obstruction_type = self.determine_obstruction_type(
-                                obstruction_name
+                                obstruction_name, output_dir
                             )
                         except EdgeDeletionAnalysisError as e:
                             raise EdgeDeletionAnalysisError(
@@ -618,7 +765,7 @@ class EdgeDeletionAnalyzer:
                                 f"{{{u}, {v}}} from the original graph."
                             ) from e
                         planar_obstruction_path = Path.joinpath(
-                                self.output_dir, obstruction_name
+                                output_dir, obstruction_name
                             )
                         if obstruction_type == 'K33':
                             self.logger.info(
@@ -659,30 +806,34 @@ if __name__ == '__main__':
         formatter_class=argparse.RawTextHelpFormatter,
         usage='python %(prog)s [options]',
         description="Edge deletion analysis tool\n\n"
-"When given an input graph:\n"
-"1. Runs\n"
-"\tplanarity -t -ta {input_file} {infile_stem}.AdjList.out.txt\n"
-"to transform the graph to adjacency list\n"
-"2. Runs\n"
-"\tplanarity -s -3 {infile_stem}.AdjList.out.txt"
-"{infile_stem}.AdjList.s.3.out.txt\n"
-"and report whether a subgraph homeomorphic to K_{3, 3} was found "
-"(NONEMBEDDABLE) or not.\n"
-"3. If no subgraph homeomorphic to K_{3, 3} was found (i.e. previous test "
-"yielded OK), run\n"
-"\tplanarity -s -p {infile_stem}.AdjList.out.txt "
-"{infile_stem}.AdjList.s.p.out.txt {infile_stem}.AdjList.s.p.obstruction.txt\n"
-"\ta. If the graph is reported as planar, then we can be sure no K_{3, 3}"
-"exists in the graph and execution terminates.\n"
-"\tb. If the graph was reported as nonplanar, examine the obstruction in \n"
-"\t\t{input_file}.AdjList.s.p.obstruction.txt:\n"
-"\t\ti. If the obstruction is homeomorphic to K_{3, 3}, then report that the "
-"original graph contains a subgraph homeomorphic to K_{3, 3} that was not "
-"found by the K_{3, 3} search\n"
-"\t\tii. If the obstruction is homeomorphic to K_5, then perform the "
-"edge-deletion analysis to determine whether the graph doesn't contain a "
-"K_{3, 3} (with high confidence)"
-)
+            "When given an input file, determine the type of input. If the "
+            "file is a not a .g6 file, an error is raised. Otherwise, iterate "
+            "over each line and create a separate .g6 file:\n"
+            "\t{input_file.stem}.{line_num}.g6\n"
+            "And perform the following steps on each graph:\n"
+            "1. Runs\n"
+            "\tplanarity -t -ta {input_file} {infile_stem}.AdjList.out.txt\n"
+            "to transform the graph to adjacency list\n"
+            "2. Runs\n"
+            "\tplanarity -s -3 {infile_stem}.AdjList.out.txt"
+            "{infile_stem}.AdjList.s.3.out.txt\n"
+            "and report whether a subgraph homeomorphic to K_{3, 3} was found "
+            "(NONEMBEDDABLE) or not.\n"
+            "3. If no subgraph homeomorphic to K_{3, 3} was found (i.e. previous test "
+            "yielded OK), run\n"
+            "\tplanarity -s -p {infile_stem}.AdjList.out.txt "
+            "{infile_stem}.AdjList.s.p.out.txt {infile_stem}.AdjList.s.p.obstruction.txt\n"
+            "\ta. If the graph is reported as planar, then we can be sure no K_{3, 3}"
+            "exists in the graph and execution terminates.\n"
+            "\tb. If the graph was reported as nonplanar, examine the obstruction in \n"
+            "\t\t{input_file}.AdjList.s.p.obstruction.txt:\n"
+            "\t\ti. If the obstruction is homeomorphic to K_{3, 3}, then report that the "
+            "original graph contains a subgraph homeomorphic to K_{3, 3} that was not "
+            "found by the K_{3, 3} search\n"
+            "\t\tii. If the obstruction is homeomorphic to K_5, then perform the "
+            "edge-deletion analysis to determine whether the graph doesn't contain a "
+            "K_{3, 3} (with high confidence)"
+    )
     parser.add_argument(
         '-p', '--planaritypath',
         type=Path,
@@ -693,8 +844,8 @@ if __name__ == '__main__':
         '-i', '--inputfile',
         type=Path,
         required=True,
-        help='Path to graph to analyze',
-        metavar='PATH_TO_GRAPH')
+        help='Path to graph(s) to analyze',
+        metavar='PATH_TO_GRAPH(s)')
     parser.add_argument(
         '-o', '--outputdir',
         type=Path,
@@ -713,5 +864,4 @@ if __name__ == '__main__':
     infile_path = args.inputfile
 
     eda = EdgeDeletionAnalyzer(planarity_path, infile_path, output_dir)
-    eda.transform_graph()
-    eda.perform_analysis()
+    eda.analyze_graphs()

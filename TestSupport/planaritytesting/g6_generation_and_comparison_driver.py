@@ -10,19 +10,27 @@ from pathlib import Path
 import subprocess
 import json
 
-from graph_generation_orchestrator import distribute_geng_workload
-from planarity_testAllGraphs_orchestrator import (
+from TestSupport.planaritytesting.graph_generation_orchestrator import (
+    distribute_geng_workload
+)
+from TestSupport.planaritytesting.planarity_testAllGraphs_orchestrator import (
     distribute_planarity_testAllGraphs_workload
 )
-from g6_diff_finder import G6DiffFinder, G6DiffFinderException
-from planarity_constants import (
+from TestSupport.planaritytesting.g6_diff_finder import (
+    G6DiffFinder,
+    G6DiffFinderException
+)
+from TestSupport.planaritytesting.planaritytesting_utils import (
     PLANARITY_ALGORITHM_SPECIFIERS,
     max_num_edges_for_order
 )
-from planarity_testAllGraphs_output_parsing import process_file_contents
+from TestSupport.planaritytesting.planarity_testAllGraphs_output_parsing \
+    import process_file_contents
 
 
 class G6GenerationAndComparisonDriver:
+    """Generates .g6 files, runs planarity, and identifies discrepancies
+    """
     def __init__(
             self, geng_path: Path, planarity_path: Path,
             planarity_backup_path: Path, output_parent_dir: Path,
@@ -53,21 +61,23 @@ class G6GenerationAndComparisonDriver:
             )
         except argparse.ArgumentError as e:
             raise argparse.ArgumentError(
-                'Invalid parameters; unable to proceed with generation and '
-                'comparison.'
-            )
+                argument=None,
+                message="Invalid parameters; unable to proceed with "
+                "generation and comparison."
+            ) from e
         
         self.geng_path = geng_path
         self.planarity_path = planarity_path
         self.planarity_backup_path = planarity_backup_path
         self.output_parent_dir = output_parent_dir
         self.orders = orders
+        self.planarity_discrepancies = {}
 
     def _validate_and_normalize_input(
             self, geng_path: Path, planarity_path: Path,
             planarity_backup_path: Path, output_parent_dir: Path,
             orders: tuple
-        )->tuple[Path, Path, Path, Path, tuple]:
+        )->tuple[Path, Path, Path, Path, tuple[int, ...]]:
         """Validates G6GenerationAndComparisonDriver initialization values
 
         Args:
@@ -193,7 +203,7 @@ class G6GenerationAndComparisonDriver:
         )
         
         distribute_geng_workload(
-            geng_path=geng_path, canonical_files=True, order=order,
+            geng_path=self.geng_path, canonical_files=True, order=order,
             output_dir=geng_g6_output_dir_for_order
         )
 
@@ -287,11 +297,11 @@ class G6GenerationAndComparisonDriver:
             f"makeg{canonical_ext}.{command}.out.txt"
         )
         with (
-                open(planarity_backup_outfile_name, "w")
+                open(planarity_backup_outfile_name, 'w', encoding='utf-8')
                 as makeg_outfile
-            ):
+        ):
             planarity_backup_args = [
-                    f"{planarity_backup_path}", '-gen',
+                    f"{self.planarity_backup_path}", '-gen',
                     f"{g6_output_dir_for_order_and_edgecount}", f"-{command}",
                     f"{order}", f"{num_edges}", f"{num_edges}"
             ]
@@ -299,7 +309,8 @@ class G6GenerationAndComparisonDriver:
                 planarity_backup_args.insert(4, '-l')
             subprocess.run(
                 planarity_backup_args,
-                stdout=makeg_outfile, stderr=subprocess.PIPE
+                stdout=makeg_outfile, stderr=subprocess.PIPE,
+                check=False
             )
 
     def run_planarity(self):
@@ -572,7 +583,6 @@ class G6GenerationAndComparisonDriver:
             ...
         }
         """
-        self.planarity_discrepancies = {}
         for order in self.orders:
             planarity_output_dir = Path.joinpath(
                         self.output_parent_dir, f"{order}",
@@ -655,7 +665,7 @@ class G6GenerationAndComparisonDriver:
                 )
 
     def _extract_planarity_results(
-            self, planarity_outfile: str, order: int, num_edges: int,
+            self, planarity_outfile: Path, order: int, num_edges: int,
             command: str, file_type: str
         ):
         """Use planarity_testAllGraphs_output_parsing to parse planarity output

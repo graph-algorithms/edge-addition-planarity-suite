@@ -9,7 +9,7 @@ import subprocess
 import argparse
 from pathlib import Path
 
-from planarity_constants import (
+from TestSupport.planaritytesting.planaritytesting_utils import (
     PLANARITY_ALGORITHM_SPECIFIERS,
     max_num_edges_for_order
 )
@@ -59,7 +59,9 @@ def call_planarity_testAllGraphs(
             f'{infile_path}',
             f'{outfile_path}'
         ],
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        check=False
+    )
 
 
 def _validate_and_normalize_planarity_testAllGraphs_workload_args(
@@ -128,8 +130,8 @@ def _validate_and_normalize_planarity_testAllGraphs_workload_args(
         pass
     except IndexError as e:
         raise argparse.ArgumentTypeError(
-            f"Unable to extract parts from "
-            "input dir path '{input_dir}'.") from e
+            f"Unable to extract parts from input dir path '{input_dir}'."
+        ) from e
     else:
         if candidate_order_from_path != order:
             raise argparse.ArgumentTypeError(
@@ -173,7 +175,8 @@ def _validate_and_normalize_planarity_testAllGraphs_workload_args(
 
 def distribute_planarity_testAllGraphs_workload(
         planarity_path: Path, canonical_files: bool, makeg_g6:bool, order: int,
-        input_dir: Path, output_dir: Path):
+        input_dir: Path, output_dir: Path
+):
     """Use starmap_async on multiprocessing pool to _call_planarity
 
     Args:
@@ -217,18 +220,19 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawTextHelpFormatter,
         usage='python %(prog)s [options]',
-        description="""Planarity testAllGraphs execution orchestrator
-
-Orchestrates calls to planarity's Test All Graphs functionality.
-
-Expects input directory to contain a subdirectory whose name is the order
-containing .g6 files to be tested. Each .g6 file contains all graphs of the
-given order with a specific number of edges:
-    {input_dir}/{order}/n{order}.m{num_edges}(.makeg)?(.canonical)?.g6
-
-Output files will have paths:
-    {output_dir}/{order}/{command}/n{order}.m{num_edges}(.makeg)?(.canonical)?.{command}.out.txt
-""")
+        description="Planarity testAllGraphs execution orchestrator\n\n"
+            "Orchestrates calls to planarity's Test All Graphs "
+            "functionality.\n"
+            "Expects input directory to contain a subdirectory whose name is "
+            "the order containing .g6 files to be tested. Each .g6 file "
+            "contains all graphs of the given order with a specific number of "
+            "edges:\n"
+            "\t{input_dir}/{order}/n{order}.m{num_edges}(.makeg)?"
+            "(.canonical)?.g6\n\n"
+            "Output files will have paths:\n"
+            "\t{output_dir}/{order}/{command}/n{order}.m{num_edges}(.makeg)?"
+            "(.canonical)?.{command}.out.txt"
+    )
     parser.add_argument(
         '-p', '--planaritypath',
         type=Path,
@@ -255,16 +259,17 @@ Output files will have paths:
         type=Path,
         default=None,
         metavar='DIR_CONTAINING_G6_FILES',
-        help="""If no input directory provided, defaults to
-TestSupport/results/graph_generation_orchestrator/{order}"""
+        help="If no input directory provided, defaults to\n"
+            "\tTestSupport/results/graph_generation_orchestrator/{order}"
     )
     parser.add_argument(
         '-o', '--outputdir',
         type=Path,
         default=None,
         metavar='DIR_FOR_RESULTS',
-        help="""If no output directory provided, defaults to
-TestSupport/results/planarity_testAllGraphs_orchestrator/{order}"""
+        help="If no output directory provided, defaults to\n"
+            "\tTestSupport/results/planarity_testAllGraphs_orchestrator/"
+            "{order}"
     )
 
     args = parser.parse_args()
