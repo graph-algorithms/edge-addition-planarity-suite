@@ -1,8 +1,24 @@
+"""Pure Python module for processing output from planarity testAllGraphs()
+
+Classes:
+    TestAllGraphsPathError
+    TestAllGraphsOutputFileContentsError
+
+Functions:
+    validate_infile_name(
+            infile_path:Path, order: Optional[int] = 0,
+            command: Optional[str] = ''
+    ) -> tuple[int, int, str]
+    process_file_contents(
+        infile_path:Path, command: str
+    ) -> tuple[str, float, int, int, int, str]
+"""  # pylint: disable=invalid-name
+
 __all__ = [
-    'TestAllGraphsOutputFileContentsError',
-    'TestAllGraphsPathError',
-    'validate_infile_name',
-    'process_file_contents'
+    "TestAllGraphsOutputFileContentsError",
+    "TestAllGraphsPathError",
+    "validate_infile_name",
+    "process_file_contents",
 ]
 
 from pathlib import Path
@@ -11,7 +27,7 @@ from typing import Optional
 
 from planaritytesting_utils import (
     PLANARITY_ALGORITHM_SPECIFIERS,
-    max_num_edges_for_order
+    max_num_edges_for_order,
 )
 
 
@@ -39,10 +55,10 @@ class TestAllGraphsOutputFileContentsError(BaseException):
 
 
 def validate_infile_name(
-        infile_path:Path, order: Optional[int] = 0, command: Optional[str] = ''
+    infile_path: Path, order: Optional[int] = 0, command: Optional[str] = ""
 ) -> tuple[int, int, str]:
     """Checks that infile_path corresponds to output of running planarity
-    
+
     Args:
         infile_path: pathlib.Path object indicating the input file whose
             name should be validated before processing
@@ -58,7 +74,7 @@ def validate_infile_name(
 
     Returns:
         order_from_filename, num_edges_from_filename, command_from_filename
-    
+
     Raises:
         TestAllGraphsPathError: If infile_name doesn't match the expected
             pattern for an output file from planarity Test All Graphs,
@@ -66,29 +82,30 @@ def validate_infile_name(
             previously processed files, if the num edges in the input graph
             doesn't make sense (greater than max_num_edges), if the
             algorithm command specifier isn't one of the supported values,
-            or if the algorithm command specifier doesn't match previously 
+            or if the algorithm command specifier doesn't match previously
             processed files.
     """
     infile_name = infile_path.parts[-1]
     match = re.match(
-        r'n(?P<order>\d+)\.m(?P<num_edges>\d+)(?:\.makeg)?(?:\.canonical)?' \
-        r'(?:\.g6)?\.(?P<command>[pdo234])\.out\.txt',
-        infile_name)
+        r"n(?P<order>\d+)\.m(?P<num_edges>\d+)(?:\.makeg)?(?:\.canonical)?"
+        r"(?:\.g6)?\.(?P<command>[pdo234])\.out\.txt",
+        infile_name,
+    )
     if not match:
         raise TestAllGraphsPathError(
             f"Infile name '{infile_name}' doesn't match pattern."
         )
-    
-    order_from_filename = int(match.group('order'))
-    num_edges_from_filename = int(match.group('num_edges'))
-    command_from_filename = match.group('command')
+
+    order_from_filename = int(match.group("order"))
+    num_edges_from_filename = int(match.group("num_edges"))
+    command_from_filename = match.group("command")
 
     if order and order != order_from_filename:
         raise TestAllGraphsPathError(
             f"Infile name '{infile_name}' indicates graph order doesn't"
             " equal previously derived order."
         )
-    
+
     if order and num_edges_from_filename > max_num_edges_for_order(order):
         raise TestAllGraphsPathError(
             f"Infile name '{infile_name}' indicates graph num_edges is"
@@ -106,12 +123,12 @@ def validate_infile_name(
             f"Command specified in input filename, '{command_from_filename}', "
             f"doesn't match previously derived algorithm command, '{command}'."
         )
-    
+
     return order_from_filename, num_edges_from_filename, command_from_filename
 
 
 def process_file_contents(
-        infile_path:Path, command: str
+    infile_path: Path, command: str
 ) -> tuple[str, float, int, int, int, str]:
     """Processes and validates input file contents
 
@@ -133,13 +150,13 @@ def process_file_contents(
         numGraphs: total number of graphs processed in the .g6 infile
         numOK: number of graphs for which running the planarity algorithm
             specified by the command returned OK (i.e. gp_Embed() with
-            embedFlags corresponding to the command returned OK and 
+            embedFlags corresponding to the command returned OK and
             gp_TestEmbedResultIntegrity() also returned OK)
-        numNONEMBEDDABLE: number of graphs for which running the planarity 
+        numNONEMBEDDABLE: number of graphs for which running the planarity
             algorithm specified by the command returned NONEMBEDDABLE (i.e.
             gp_Embed() with embedFlags corresponding to the command
-            returned NONEMBEDDABLE and gp_TestEmbedResultIntegrity() also 
-            returned NONEMBEDDABLE) 
+            returned NONEMBEDDABLE and gp_TestEmbedResultIntegrity() also
+            returned NONEMBEDDABLE)
         errorFlag: either SUCCESS (if all graphs reported OK or
             NONEMBEDDABLE) or ERROR (if an error was encountered allocating
             memory for or managing the graph datastructures, if an error
@@ -154,23 +171,25 @@ def process_file_contents(
             command specifier, or if the error flag is something other than
             ERROR or SUCCESS.
     """
-    with open(infile_path, 'r', encoding='utf-8') as infile:
+    with open(infile_path, "r", encoding="utf-8") as infile:
         line = infile.readline()
         match = re.match(
-            r'FILENAME="(?P<filename>n\d+\.m\d+(\.makeg)?(\.canonical)?\.g6)"'\
-            r' DURATION="(?P<duration>\d+\.\d{3})"', line)
+            r'FILENAME="(?P<filename>n\d+\.m\d+(\.makeg)?(\.canonical)?\.g6)"'
+            r' DURATION="(?P<duration>\d+\.\d{3})"',
+            line,
+        )
         if not match:
             raise TestAllGraphsOutputFileContentsError(
-               f"Invalid file header in '{infile_path}'."
+                f"Invalid file header in '{infile_path}'."
             )
 
-        planarity_infile_name_from_file = match.group('filename')
+        planarity_infile_name_from_file = match.group("filename")
         if not planarity_infile_name_from_file:
             raise TestAllGraphsOutputFileContentsError(
                 "Header doesn't contain input filename."
             )
 
-        duration_from_file = match.group('duration')
+        duration_from_file = match.group("duration")
         if not duration_from_file:
             raise TestAllGraphsOutputFileContentsError(
                 "Unable to extract duration from input file."
@@ -180,16 +199,17 @@ def process_file_contents(
 
         line = infile.readline()
         match = re.match(
-            r'-(?P<command>\w) (?P<numGraphs>\d+) ' \
-            r'(?P<numOK>\d+) (?P<numNONEMBEDDABLE>\d+) ' \
-            r'(?P<errorFlag>SUCCESS|ERROR)', line
+            r"-(?P<command>\w) (?P<numGraphs>\d+) "
+            r"(?P<numOK>\d+) (?P<numNONEMBEDDABLE>\d+) "
+            r"(?P<errorFlag>SUCCESS|ERROR)",
+            line,
         )
         if not match:
             raise TestAllGraphsOutputFileContentsError(
-                'Invalid file contents.'
+                "Invalid file contents."
             )
 
-        command_from_file = match.group('command')
+        command_from_file = match.group("command")
         if command != command_from_file:
             raise TestAllGraphsOutputFileContentsError(
                 f"Command specified in input file, '{command_from_file}', "
@@ -203,34 +223,39 @@ def process_file_contents(
                 f"'{infile_path}' is not valid"
             )
 
-        numGraphs_from_file = match.group('numGraphs')
+        numGraphs_from_file = match.group("numGraphs")
         if not numGraphs_from_file:
             raise TestAllGraphsOutputFileContentsError(
                 f"Unable ot extract numGraphs from input file '{infile_path}'."
             )
 
-        numOK_from_file = match.group('numOK')
+        numOK_from_file = match.group("numOK")
         if not numOK_from_file:
             raise TestAllGraphsOutputFileContentsError(
                 f"Unable ot extract numOK from input file '{infile_path}'."
             )
 
-        numNONEMBEDDABLE_from_file = match.group('numNONEMBEDDABLE')
+        numNONEMBEDDABLE_from_file = match.group("numNONEMBEDDABLE")
         if not numOK_from_file:
             raise TestAllGraphsOutputFileContentsError(
                 "Unable ot extract numNONEMBEDDABLE from input file "
                 f"'{infile_path}'."
             )
 
-        errorFlag_from_file = match.group('errorFlag')
-        if (
-            not errorFlag_from_file or 
-            errorFlag_from_file not in ('SUCCESS', 'ERROR')
+        errorFlag_from_file = match.group("errorFlag")
+        if not errorFlag_from_file or errorFlag_from_file not in (
+            "SUCCESS",
+            "ERROR",
         ):
             raise TestAllGraphsOutputFileContentsError(
                 "Invalid errorFlag; must be SUCCESS or ERROR"
             )
 
-        return planarity_infile_name_from_file, duration_from_file, \
-            numGraphs_from_file, numOK_from_file, \
-            numNONEMBEDDABLE_from_file, errorFlag_from_file # type: ignore
+        return (
+            planarity_infile_name_from_file,
+            duration_from_file,
+            numGraphs_from_file,
+            numOK_from_file,
+            numNONEMBEDDABLE_from_file,
+            errorFlag_from_file,
+        )  # type: ignore

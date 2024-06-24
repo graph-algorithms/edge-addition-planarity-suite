@@ -1,7 +1,11 @@
-__all__ = [
-    'Graph',
-    'GraphError'
-]
+"""Pure Python module containing classes to represent graphs as adjacency lists
+
+Classes:
+    GraphError
+    Graph
+"""
+
+__all__ = ["Graph", "GraphError"]
 
 from copy import deepcopy
 from typing import Optional
@@ -9,17 +13,19 @@ from typing import Optional
 
 class GraphError(BaseException):
     """Signals issues encountered while managing a Graph object"""
+
     def __init__(self, message):
         super().__init__(message)
         self.message = message
 
 
 class Graph:
-    """A simple graph datastructure containing the order graph adjacency list
-    """
+    """A simple graph datastructure containing the order graph adjacency list"""
+
     def __init__(
-            self, order: int = 0,
-            graph_adj_list_repr: Optional[list[list[int]]] = None
+        self,
+        order: int = 0,
+        graph_adj_list_repr: Optional[list[list[int]]] = None,
     ) -> None:
         """Constructor for Graph class
 
@@ -53,9 +59,9 @@ class Graph:
                     raise GraphError(
                         "Unable to initialize graph from given adjacency list."
                     ) from e
-                else:
-                    self.order = order_implied_by_adj_list
-                    self.graph_adj_list_repr = graph_adj_list_repr
+
+                self.order = order_implied_by_adj_list
+                self.graph_adj_list_repr = graph_adj_list_repr
         else:
             if order < 2 or order > 12:
                 raise GraphError(
@@ -69,9 +75,9 @@ class Graph:
                         "Unable to initialize Graph with given order and "
                         "adjacency list"
                     ) from e
-                else:
-                    self.order = order
-                    self.graph_adj_list_repr = graph_adj_list_repr
+
+                self.order = order
+                self.graph_adj_list_repr = graph_adj_list_repr
             else:
                 self.graph_adj_list_repr = [[] for _ in range(order)]
                 self.order = order
@@ -86,7 +92,7 @@ class Graph:
             order: The order of the graph
             graph_adj_list_repr: A list of lists of integers comprising the
                 graph's adjacency list representation
-        
+
         Raises:
             GraphError: If the number of vertices in the adjacency list doesn't
                 correspond to the given graph order, if the adjacency list
@@ -130,7 +136,7 @@ class Graph:
                         f"[{acceptable_vertex_labels[0]}, "
                         f"{acceptable_vertex_labels[-1]}]."
                     )
-                
+
                 if v in neighbours_seen:
                     raise GraphError(
                         "Duplicate neighbours present in adjacency list for "
@@ -153,7 +159,7 @@ class Graph:
         """
         if id(self) in memo:
             return memo[id(self)]
-        
+
         graph_deepcopy = Graph(
             self.order, deepcopy(self.graph_adj_list_repr, memo)
         )
@@ -181,14 +187,15 @@ class Graph:
             adjacency lists disagree for any of the vertices, then return False
         """
         if (
-            isinstance(other, Graph) and
-            self.order == other.order and
-            len(self.graph_adj_list_repr) == len(other.graph_adj_list_repr) and
-            all(
-                    u_list == v_list
-                    for (u_list, v_list)
-                    in zip(self.graph_adj_list_repr, other.graph_adj_list_repr)
+            isinstance(other, Graph)
+            and self.order == other.order
+            and len(self.graph_adj_list_repr) == len(other.graph_adj_list_repr)
+            and all(
+                u_list == v_list
+                for (u_list, v_list) in zip(
+                    self.graph_adj_list_repr, other.graph_adj_list_repr
                 )
+            )
         ):
             return True
         return False
@@ -212,7 +219,7 @@ class Graph:
             line = f"{u}: "
             for v in adj_list:
                 line += f"{v} "
-            line += '-1\n'
+            line += "-1\n"
 
             adj_list_str += line
         return adj_list_str
@@ -222,7 +229,7 @@ class Graph:
 
         Args:
             u: Vertex index
-        
+
         Raises:
             GraphError: If endpoints are out of bounds for 0-based labelling
         """
@@ -231,7 +238,7 @@ class Graph:
                 "Invalid vertex label; must be in closed interval "
                 f"[0, {self.order - 1}]."
             )
-    
+
     def add_arc(self, u: int, v: int):
         """Add arc to graph's adjacency list representation
 
@@ -245,13 +252,11 @@ class Graph:
             self._vertex_validation(u)
             self._vertex_validation(v)
         except GraphError as e:
-            raise GraphError(
-                f"Unable to add arc ({u}, {v})."
-            ) from e
+            raise GraphError(f"Unable to add arc ({u}, {v}).") from e
 
         self.graph_adj_list_repr[u].append(v)
 
-    def get_max_degree(self)->int:
+    def get_max_degree(self) -> int:
         """Infer max degree from graph adjacency list representation
         Returns:
             The length of the longest adjacency list in the graph adjacency
@@ -275,9 +280,7 @@ class Graph:
             self._vertex_validation(u)
             self._vertex_validation(v)
         except GraphError as e:
-            raise GraphError(
-                f"Unable to delete edge {{{u}, {v}}}."
-            ) from e
+            raise GraphError(f"Unable to delete edge {{{u}, {v}}}.") from e
 
         self.graph_adj_list_repr[u].remove(v)
         self.graph_adj_list_repr[v].remove(u)
