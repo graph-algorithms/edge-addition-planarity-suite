@@ -445,7 +445,7 @@ class G6DiffFinder:
                 self._first_comparand_dict[g6_encoding]["first_line"],  # type: ignore
                 self._second_comparand_dict[g6_encoding]["first_line"],  # type: ignore
             )
-            for g6_encoding in self._first_comparand_dict.items()
+            for g6_encoding in self._first_comparand_dict
             if g6_encoding != "infile_path"
             if g6_encoding in self._second_comparand_dict
             if (

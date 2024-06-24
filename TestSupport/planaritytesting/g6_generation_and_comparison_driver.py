@@ -849,7 +849,7 @@ class G6GenerationAndComparisonDriver:
             - graphs_in_n{order}.m{num_edges}.makeg.canonical_not_in_n{order}.m{num_edges}.makeg.g6
         """  # pylint: disable=line-too-long
         diffs_performed = {}
-        for order in self.planarity_discrepancies.items():
+        for order in self.planarity_discrepancies:
             if not diffs_performed.get(order):
                 diffs_performed[order] = set()
 
