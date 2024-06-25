@@ -79,16 +79,16 @@ class G6DiffFinder:
             self._validate_infile_path(second_comparand_infile_path)
         except ValueError as second_comparand_infile_path_error:
             raise second_comparand_infile_path_error
-        else:
-            try:
-                self._second_comparand_dict = self._populate_comparand_dict(
-                    second_comparand_infile_path
-                )
-            except FileNotFoundError as comparand_infile_not_found_error:
-                raise FileNotFoundError(
-                    "Unable to populate comparand dict: "
-                    "can't open second input file"
-                ) from comparand_infile_not_found_error
+
+        try:
+            self._second_comparand_dict = self._populate_comparand_dict(
+                second_comparand_infile_path
+            )
+        except FileNotFoundError as comparand_infile_not_found_error:
+            raise FileNotFoundError(
+                "Unable to populate comparand dict: "
+                "can't open second input file"
+            ) from comparand_infile_not_found_error
 
     def _setup_logger(self, log_path: Optional[Path] = None) -> None:
         if not log_path:
