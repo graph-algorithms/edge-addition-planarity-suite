@@ -1,3 +1,23 @@
+"""Use multithreading and subprocess modules to parallelize geng calls
+
+Functions:
+    _call_geng(
+        geng_path: Path,
+        canonical_files: bool,
+        order: int,
+        num_edges: int,
+        output_dir: Path,
+    ) -> None
+
+    _validate_and_normalize_geng_workload_args(
+        geng_path: Path, order: int, output_dir: Path
+    ) -> tuple[Path, int, Path]
+
+    distribute_geng_workload(
+        geng_path: Path, canonical_files: bool, order: int, output_dir: Path
+    ) -> None
+"""
+
 #!/usr/bin/env python
 
 __all__ = ["distribute_geng_workload"]
@@ -18,7 +38,7 @@ def _call_geng(
     order: int,
     num_edges: int,
     output_dir: Path,
-):
+) -> None:
     """Call nauty geng as blocking process on multiprocessing thread
 
     Opens a file for write (overwrites file if it exists) within the output_dir
@@ -123,7 +143,7 @@ def _validate_and_normalize_geng_workload_args(
 
 def distribute_geng_workload(
     geng_path: Path, canonical_files: bool, order: int, output_dir: Path
-):
+) -> None:
     """Use starmap_async on multiprocessingn pool to _call_geng
 
     Args:

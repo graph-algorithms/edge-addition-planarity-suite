@@ -1,3 +1,11 @@
+"""Compile planarity testAllGraphs() output into table
+
+Classes:
+    TestTableGeneratorPathError
+    TestTableGeneratorFileProcessingError
+    TestTableGenerator
+"""
+
 #!/usr/bin/env python
 
 __all__ = []
