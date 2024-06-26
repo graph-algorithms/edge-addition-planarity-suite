@@ -1,3 +1,12 @@
+"""Generate .g6 files, run planarity, identify discrepancies, and perform diffs
+
+Classes:
+    G6GenerationAndComparisonDriver
+
+Functions:
+    parse_range(value: str) -> tuple
+"""  # pylint: disable=too-many-lines
+
 #!/usr/bin/env python
 
 __all__ = []
@@ -12,22 +21,27 @@ import json
 
 from graph_generation_orchestrator import distribute_geng_workload
 from planarity_testAllGraphs_orchestrator import (
-    distribute_planarity_testAllGraphs_workload
+    distribute_planarity_testAllGraphs_workload,
 )
 from g6_diff_finder import G6DiffFinder, G6DiffFinderException
-from planarity_constants import (
+from planaritytesting_utils import (
     PLANARITY_ALGORITHM_SPECIFIERS,
-    max_num_edges_for_order
+    max_num_edges_for_order,
 )
 from planarity_testAllGraphs_output_parsing import process_file_contents
 
 
 class G6GenerationAndComparisonDriver:
+    """Generates .g6 files, runs planarity, and identifies discrepancies"""
+
     def __init__(
-            self, geng_path: Path, planarity_path: Path,
-            planarity_backup_path: Path, output_parent_dir: Path,
-            orders: tuple
-        ):
+        self,
+        geng_path: Path,
+        planarity_path: Path,
+        planarity_backup_path: Path,
+        output_parent_dir: Path,
+        orders: tuple,
+    ):  # pylint: disable=too-many-arguments
         """Initializes G6GenerationAndComparisonDriver instance.
 
         Args:
@@ -38,7 +52,7 @@ class G6GenerationAndComparisonDriver:
             planarity_backup_path: The path to the planarity-backup executable
                 (optional; used to generate the makeg .g6 files)
             output_parent_dir: Directory to which you wish to output results
-            orders: A tuple of ints corresponding to the graph orders for which 
+            orders: A tuple of ints corresponding to the graph orders for which
                 we wish to perform the graph generation and comparison
 
         Raises:
@@ -46,28 +60,41 @@ class G6GenerationAndComparisonDriver:
                 invalid
         """
         try:
-            geng_path, planarity_path, planarity_backup_path, \
-            output_parent_dir, orders = self._validate_and_normalize_input(
-                geng_path, planarity_path, planarity_backup_path,
-                output_parent_dir, orders
+            (
+                geng_path,
+                planarity_path,
+                planarity_backup_path,
+                output_parent_dir,
+                orders,
+            ) = self._validate_and_normalize_input(
+                geng_path,
+                planarity_path,
+                planarity_backup_path,
+                output_parent_dir,
+                orders,
             )
         except argparse.ArgumentError as e:
             raise argparse.ArgumentError(
-                'Invalid parameters; unable to proceed with generation and '
-                'comparison.'
-            )
-        
+                argument=None,
+                message="Invalid parameters; unable to proceed with "
+                "generation and comparison.",
+            ) from e
+
         self.geng_path = geng_path
         self.planarity_path = planarity_path
         self.planarity_backup_path = planarity_backup_path
         self.output_parent_dir = output_parent_dir
         self.orders = orders
+        self.planarity_discrepancies = {}
 
-    def _validate_and_normalize_input(
-            self, geng_path: Path, planarity_path: Path,
-            planarity_backup_path: Path, output_parent_dir: Path,
-            orders: tuple
-        )->tuple[Path, Path, Path, Path, tuple]:
+    def _validate_and_normalize_input(  # pylint: disable=too-many-arguments
+        self,
+        geng_path: Path,
+        planarity_path: Path,
+        planarity_backup_path: Path,
+        output_parent_dir: Path,
+        orders: tuple,
+    ) -> tuple[Path, Path, Path, Path, tuple[int, ...]]:
         """Validates G6GenerationAndComparisonDriver initialization values
 
         Args:
@@ -83,30 +110,30 @@ class G6GenerationAndComparisonDriver:
             argparse.ArgumentTypeError: If any of the arguments were invalid
         """
         if (
-                not geng_path or
-                not isinstance(geng_path, Path) or
-                not shutil.which(str(geng_path.resolve()))
-            ):
+            not geng_path
+            or not isinstance(geng_path, Path)
+            or not shutil.which(str(geng_path.resolve()))
+        ):
             raise argparse.ArgumentTypeError(
                 f"Path for geng executable '{geng_path}' does not correspond "
                 "to an executable."
             )
-        
+
         if (
-                not planarity_path
-                or not isinstance(planarity_path, Path)
-                or not shutil.which(str(planarity_path.resolve()))
-            ):
+            not planarity_path
+            or not isinstance(planarity_path, Path)
+            or not shutil.which(str(planarity_path.resolve()))
+        ):
             raise argparse.ArgumentTypeError(
                 f"Path for planarity executable '{planarity_path}' does not "
                 "correspond to an executable."
             )
-        
+
         if (
-                planarity_backup_path 
-                and not isinstance(planarity_backup_path, Path)
-                and not shutil.which(str(planarity_backup_path.resolve()))
-            ):
+            planarity_backup_path
+            and not isinstance(planarity_backup_path, Path)
+            and not shutil.which(str(planarity_backup_path.resolve()))
+        ):
             raise argparse.ArgumentTypeError(
                 "Path for planarity_backup executable "
                 f"'{planarity_backup_path}' does not correspond to an "
@@ -115,13 +142,14 @@ class G6GenerationAndComparisonDriver:
 
         if not orders:
             raise argparse.ArgumentTypeError("No graph orders given.")
-        
+
         if any(
-                order for order in orders
-                if order < 2
-                if order > 12
-                if not isinstance(order, int)
-            ):
+            order
+            for order in orders
+            if order < 2
+            if order > 12
+            if not isinstance(order, int)
+        ):
             raise argparse.ArgumentTypeError(
                 "Desired graph orders must be integers between 2 an 12 "
                 "inclusive."
@@ -130,8 +158,9 @@ class G6GenerationAndComparisonDriver:
         if not output_parent_dir:
             script_entrypoint = Path(sys.argv[0]).resolve().parent.parent
             output_parent_dir = Path.joinpath(
-                script_entrypoint, 'results',
-                'g6_generation_and_comparison_driver'
+                script_entrypoint,
+                "results",
+                "g6_generation_and_comparison_driver",
             )
             Path.mkdir(output_parent_dir, parents=True, exist_ok=True)
             for order in orders:
@@ -142,22 +171,27 @@ class G6GenerationAndComparisonDriver:
                     shutil.rmtree(candidate_output_dir)
 
         if (
-            not isinstance(output_parent_dir, Path) or
-            not output_parent_dir.is_dir()
-            ):
+            not isinstance(output_parent_dir, Path)
+            or not output_parent_dir.is_dir()
+        ):
             raise argparse.ArgumentTypeError(
                 "Output directory path is invalid."
             )
-        
-        return geng_path, planarity_path, planarity_backup_path, \
-            output_parent_dir, orders
+
+        return (
+            geng_path,
+            planarity_path,
+            planarity_backup_path,
+            output_parent_dir,
+            orders,
+        )
 
     def generate_g6_files(self):
         """Generate .g6 files using nauty geng and planarity-backup's makeg
 
         For each graph order in self.orders, uses the graph generation
         orchestrator to generate the geng .g6 and geng canonical .g6 files (all
-        graphs of a single edge-count per file), then if the path to the 
+        graphs of a single edge-count per file), then if the path to the
         planarity-backup executable was provided, calls this executable for
         each edge-count from 0 to (N * (N - 1)) / 2 to generate the makeg .g6
         and makeg canonical .g6 files.
@@ -177,8 +211,8 @@ class G6GenerationAndComparisonDriver:
                     )
 
     def _generate_geng_g6_files_for_order(
-            self, order: int, geng_g6_output_dir_for_order: Path
-        ):
+        self, order: int, geng_g6_output_dir_for_order: Path
+    ):
         """Parallelize geng calls
 
         Args:
@@ -188,32 +222,36 @@ class G6GenerationAndComparisonDriver:
                 the geng .g6 and geng canonical .g6 graph files
         """
         distribute_geng_workload(
-            geng_path=self.geng_path, canonical_files=False, order=order,
-            output_dir=geng_g6_output_dir_for_order
+            geng_path=self.geng_path,
+            canonical_files=False,
+            order=order,
+            output_dir=geng_g6_output_dir_for_order,
         )
-        
+
         distribute_geng_workload(
-            geng_path=geng_path, canonical_files=True, order=order,
-            output_dir=geng_g6_output_dir_for_order
+            geng_path=self.geng_path,
+            canonical_files=True,
+            order=order,
+            output_dir=geng_g6_output_dir_for_order,
         )
 
     def _generate_makeg_g6_files_for_order_and_num_edges(
-            self, order: int, num_edges: int, command: str = '3'
-        ):
+        self, order: int, num_edges: int, command: str = "3"
+    ):
         """Generate makeg .g6 and makeg canonical .g6 files
 
         The makeg .g6 and makeg canonical .g6 files generated have paths:
             {self.output_parent_dir}/{order}/n{order}.m{num_edges}.makeg(.canonical)?.g6
         Which is an intermediate directory required for the use of the
         planarity_testAllGraphs_orchestrator (which runs on all .g6 files in
-        the given root directory matching a specific pattern indicated by the 
+        the given root directory matching a specific pattern indicated by the
         canonical_files and makeg_g6 flags)
 
         The output files of planarity-backup's Test All Graphs for the
         given algorithm command specifier have paths:
             {self.output_parent_dir}/{order}/planarity_results/{command}/
                 {num_edges}/planarity-backup-output_n{order}.m{num_edges}.makeg(.canonical)?.{command}.out.txt
-        
+
         Args:
             order: Order of graphs to generate
             num_edges: Restricts .g6 output file to contain only graphs with
@@ -221,37 +259,49 @@ class G6GenerationAndComparisonDriver:
             command: Algorithm command specifier to use when testing all graphs
                 of the given order and edge-count (Defaults to '3'
                 corresponding to K_{3, 3} search)
-        """
+        """  # pylint: disable=line-too-long
         g6_output_dir_for_order_and_edgecount = Path.joinpath(
             self.output_parent_dir, f"{order}"
         )
         Path.mkdir(
             g6_output_dir_for_order_and_edgecount, parents=True, exist_ok=True
         )
-        
+
         planarity_backup_outfile_dir = Path.joinpath(
-            self.output_parent_dir, f"{order}", 'planarity_results',
-            f"{command}", f"{num_edges}"
+            self.output_parent_dir,
+            f"{order}",
+            "planarity_results",
+            f"{command}",
+            f"{num_edges}",
         )
         Path.mkdir(planarity_backup_outfile_dir, parents=True, exist_ok=True)
 
         self._generate_makeg_g6_file_for_order_and_num_edges(
             g6_output_dir_for_order_and_edgecount,
             planarity_backup_outfile_dir,
-            order, num_edges, False, command
+            order,
+            num_edges,
+            False,
+            command,
         )
         self._generate_makeg_g6_file_for_order_and_num_edges(
             g6_output_dir_for_order_and_edgecount,
             planarity_backup_outfile_dir,
-            order, num_edges, True, command
+            order,
+            num_edges,
+            True,
+            command,
         )
-    
-    def _generate_makeg_g6_file_for_order_and_num_edges(
-            self, g6_output_dir_for_order_and_edgecount: Path,
-            planarity_backup_outfile_dir: Path,
-            order: int, num_edges: int, canonical_files:bool,
-            command: str = '3'
-        ):
+
+    def _generate_makeg_g6_file_for_order_and_num_edges(  # pylint: disable=too-many-arguments
+        self,
+        g6_output_dir_for_order_and_edgecount: Path,
+        planarity_backup_outfile_dir: Path,
+        order: int,
+        num_edges: int,
+        canonical_files: bool,
+        command: str = "3",
+    ):
         """Run planarity-backup executable to generate makeg .g6 files
 
         Runs the old planarity-backup code with the given algorithm command
@@ -268,7 +318,7 @@ class G6GenerationAndComparisonDriver:
                 which you wish to output makeg .g6 files for the given order
                 and edge-count
             planarity_backup_outfile_dir: (Intermediate) directory to which you
-                wish to output the results of running the planarity-backup 
+                wish to output the results of running the planarity-backup
                 executable for the given command specifier on all graphs of the
                 given order and edge-count
             order: Order of graphs to generate
@@ -280,26 +330,31 @@ class G6GenerationAndComparisonDriver:
                 of the given order and edge-count (Defaults to '3'
                 corresponding to K_{3, 3} search)
         """
-        canonical_ext = '.canonical' if canonical_files else ''
+        canonical_ext = ".canonical" if canonical_files else ""
         planarity_backup_outfile_name = Path.joinpath(
             planarity_backup_outfile_dir,
-            f"planarity-backup-output_n{order}.m{num_edges}." +
-            f"makeg{canonical_ext}.{command}.out.txt"
+            f"planarity-backup-output_n{order}.m{num_edges}."
+            + f"makeg{canonical_ext}.{command}.out.txt",
         )
-        with (
-                open(planarity_backup_outfile_name, "w")
-                as makeg_outfile
-            ):
+        with open(
+            planarity_backup_outfile_name, "w", encoding="utf-8"
+        ) as makeg_outfile:
             planarity_backup_args = [
-                    f"{planarity_backup_path}", '-gen',
-                    f"{g6_output_dir_for_order_and_edgecount}", f"-{command}",
-                    f"{order}", f"{num_edges}", f"{num_edges}"
+                f"{self.planarity_backup_path}",
+                "-gen",
+                f"{g6_output_dir_for_order_and_edgecount}",
+                f"-{command}",
+                f"{order}",
+                f"{num_edges}",
+                f"{num_edges}",
             ]
             if canonical_files:
-                planarity_backup_args.insert(4, '-l')
+                planarity_backup_args.insert(4, "-l")
             subprocess.run(
                 planarity_backup_args,
-                stdout=makeg_outfile, stderr=subprocess.PIPE
+                stdout=makeg_outfile,
+                stderr=subprocess.PIPE,
+                check=False,
             )
 
     def run_planarity(self):
@@ -309,7 +364,7 @@ class G6GenerationAndComparisonDriver:
         for every algorithm command specifier on all geng .g6 and geng
         canonical .g6 files:
             {self.output_parent_dir}/{order}/n{order}.m{num_edges}(.canonical)?.g6
-        
+
         If a path to the planarity-backup executable was provided, runs
         planarity Test All Graphs for every algorithm command specifier on all
         makeg .g6 and makeg canonical .g6 files:
@@ -320,25 +375,30 @@ class G6GenerationAndComparisonDriver:
                 self.output_parent_dir, f"{order}"
             )
             planarity_output_dir_for_order = Path.joinpath(
-                self.output_parent_dir, 'results', f"{order}"
+                self.output_parent_dir, "results", f"{order}"
             )
             self._run_planarity_on_g6_files_for_order(
-                order, geng_g6_output_dir_for_order,
+                order,
+                geng_g6_output_dir_for_order,
                 planarity_output_dir_for_order,
-                makeg_g6=False
+                makeg_g6=False,
             )
 
             if self.planarity_backup_path:
                 self._run_planarity_on_g6_files_for_order(
-                    order, geng_g6_output_dir_for_order,
+                    order,
+                    geng_g6_output_dir_for_order,
                     planarity_output_dir_for_order,
-                    makeg_g6=True
+                    makeg_g6=True,
                 )
 
     def _run_planarity_on_g6_files_for_order(
-            self, order: int, g6_output_dir_for_order: Path,
-            planarity_output_dir_for_order: Path, makeg_g6: bool
-        ):
+        self,
+        order: int,
+        g6_output_dir_for_order: Path,
+        planarity_output_dir_for_order: Path,
+        makeg_g6: bool,
+    ):
         """Parallelize running planarity TestAllGraphs for all commands
 
         Args:
@@ -353,19 +413,23 @@ class G6GenerationAndComparisonDriver:
                 generated using planarity-backup's makeg
         """
         distribute_planarity_testAllGraphs_workload(
-            planarity_path=self.planarity_path, canonical_files=False,
-            makeg_g6=makeg_g6, order=order,
+            planarity_path=self.planarity_path,
+            canonical_files=False,
+            makeg_g6=makeg_g6,
+            order=order,
             input_dir=g6_output_dir_for_order,
-            output_dir=planarity_output_dir_for_order
+            output_dir=planarity_output_dir_for_order,
         )
-        
+
         distribute_planarity_testAllGraphs_workload(
-            planarity_path=self.planarity_path, canonical_files=True,
-            makeg_g6=makeg_g6, order=order,
+            planarity_path=self.planarity_path,
+            canonical_files=True,
+            makeg_g6=makeg_g6,
+            order=order,
             input_dir=g6_output_dir_for_order,
-            output_dir=planarity_output_dir_for_order
+            output_dir=planarity_output_dir_for_order,
         )
-    
+
     def reorganize_files(self):
         """Reorganize .g6 and planarity Test All Graphs output files
 
@@ -375,7 +439,7 @@ class G6GenerationAndComparisonDriver:
         """
         for order in self.orders:
             orig_geng_g6_output_dir_for_order = Path.joinpath(
-                    self.output_parent_dir, f"{order}"
+                self.output_parent_dir, f"{order}"
             )
             for num_edges in range(max_num_edges_for_order(order) + 1):
                 self._move_g6_files(
@@ -385,14 +449,13 @@ class G6GenerationAndComparisonDriver:
                     order, num_edges, orig_geng_g6_output_dir_for_order
                 )
 
-        shutil.rmtree(Path.joinpath(self.output_parent_dir, 'results'))
+        shutil.rmtree(Path.joinpath(self.output_parent_dir, "results"))
 
     def _move_g6_files(
-            self, order: int, num_edges: int,
-            g6_output_dir_for_order: Path
-        ):
+        self, order: int, num_edges: int, g6_output_dir_for_order: Path
+    ):
         """Sort generated .g6 files into sub-dirs by graph edge-count
-        
+
         After moving, {self.output_parent_dir}/{order}/graphs/{num_edges}/
         contains:
             n{order}.m{num_edges}.g6
@@ -400,7 +463,7 @@ class G6GenerationAndComparisonDriver:
         If planarity-backup path provided, also shall include:
             n{order}.m{num_edges}.makeg.g6
             n{order}.m{num_edges}.makeg.canonical.g6
-        
+
         Args:
             order: Order of graphs contained in the .g6 files to move
             num_edges: Only move the .g6 files that contain all graphs of a
@@ -413,44 +476,45 @@ class G6GenerationAndComparisonDriver:
         )
 
         Path.mkdir(
-            g6_output_dir_for_order_and_edgecount,
-            parents=True, exist_ok=True
+            g6_output_dir_for_order_and_edgecount, parents=True, exist_ok=True
         )
 
         geng_g6_outfile_name = f"n{order}.m{num_edges}.g6"
         self._move_file(
-            g6_output_dir_for_order, geng_g6_outfile_name,
-            g6_output_dir_for_order_and_edgecount
+            g6_output_dir_for_order,
+            geng_g6_outfile_name,
+            g6_output_dir_for_order_and_edgecount,
         )
 
-        geng_canonical_g6_outfile_name = \
-            f"n{order}.m{num_edges}.canonical.g6"
+        geng_canonical_g6_outfile_name = f"n{order}.m{num_edges}.canonical.g6"
         self._move_file(
-            g6_output_dir_for_order, geng_canonical_g6_outfile_name,
-            g6_output_dir_for_order_and_edgecount
+            g6_output_dir_for_order,
+            geng_canonical_g6_outfile_name,
+            g6_output_dir_for_order_and_edgecount,
         )
 
         if self.planarity_backup_path:
-            makeg_g6_outfile_name = \
-                f"n{order}.m{num_edges}.makeg.g6"
+            makeg_g6_outfile_name = f"n{order}.m{num_edges}.makeg.g6"
             self._move_file(
-                g6_output_dir_for_order, makeg_g6_outfile_name,
-                g6_output_dir_for_order_and_edgecount
+                g6_output_dir_for_order,
+                makeg_g6_outfile_name,
+                g6_output_dir_for_order_and_edgecount,
             )
 
-            makeg_canonical_g6_outfile_name = \
+            makeg_canonical_g6_outfile_name = (
                 f"n{order}.m{num_edges}.makeg.canonical.g6"
+            )
             self._move_file(
-                g6_output_dir_for_order, makeg_canonical_g6_outfile_name,
-                g6_output_dir_for_order_and_edgecount
+                g6_output_dir_for_order,
+                makeg_canonical_g6_outfile_name,
+                g6_output_dir_for_order_and_edgecount,
             )
 
     def _move_planarity_output_files(
-            self, order: int, num_edges:int,
-            new_output_dir_for_order: Path
-        ):
+        self, order: int, num_edges: int, new_output_dir_for_order: Path
+    ):
         """Sort planarity output files into sub-dirs by command and edge-count
-        
+
         After moving, {order}/planarity_results/{command}/{num_edges}/
         contains:
             n{order}.m{num_edges}.{command}.out.txt
@@ -472,48 +536,56 @@ class G6GenerationAndComparisonDriver:
                 self.output_parent_dir, "results", f"{order}", f"{command}"
             )
             new_planarity_output_dir_for_order_and_edgecount = Path.joinpath(
-                new_output_dir_for_order, "planarity_results", f"{command}",
-                f"{num_edges}"
+                new_output_dir_for_order,
+                "planarity_results",
+                f"{command}",
+                f"{num_edges}",
             )
-            
+
             Path.mkdir(
                 new_planarity_output_dir_for_order_and_edgecount,
-                parents=True, exist_ok=True
+                parents=True,
+                exist_ok=True,
             )
 
-            g6_planarity_outfile_name = \
+            g6_planarity_outfile_name = (
                 f"n{order}.m{num_edges}.{command}.out.txt"
+            )
             self._move_file(
-                orig_planarity_output_dir, g6_planarity_outfile_name,
-                new_planarity_output_dir_for_order_and_edgecount
+                orig_planarity_output_dir,
+                g6_planarity_outfile_name,
+                new_planarity_output_dir_for_order_and_edgecount,
             )
 
-            canonical_g6_planarity_outfile_name = \
+            canonical_g6_planarity_outfile_name = (
                 f"n{order}.m{num_edges}.canonical.{command}.out.txt"
+            )
             self._move_file(
-                orig_planarity_output_dir, canonical_g6_planarity_outfile_name,
-                new_planarity_output_dir_for_order_and_edgecount
+                orig_planarity_output_dir,
+                canonical_g6_planarity_outfile_name,
+                new_planarity_output_dir_for_order_and_edgecount,
             )
 
             if self.planarity_backup_path:
-                makeg_g6_planarity_outfile_name = \
+                makeg_g6_planarity_outfile_name = (
                     f"n{order}.m{num_edges}.makeg.{command}.out.txt"
+                )
                 self._move_file(
-                    orig_planarity_output_dir, makeg_g6_planarity_outfile_name,
-                    new_planarity_output_dir_for_order_and_edgecount
+                    orig_planarity_output_dir,
+                    makeg_g6_planarity_outfile_name,
+                    new_planarity_output_dir_for_order_and_edgecount,
                 )
 
-                canonical_makeg_g6_planarity_outfile_name = \
+                canonical_makeg_g6_planarity_outfile_name = (
                     f"n{order}.m{num_edges}.makeg.canonical.{command}.out.txt"
+                )
                 self._move_file(
                     orig_planarity_output_dir,
                     canonical_makeg_g6_planarity_outfile_name,
-                    new_planarity_output_dir_for_order_and_edgecount
+                    new_planarity_output_dir_for_order_and_edgecount,
                 )
-    
-    def _move_file(
-            self, src_dir: Path, filename: str, dest_dir: Path
-        ):
+
+    def _move_file(self, src_dir: Path, filename: str, dest_dir: Path):
         """Moves {src_dir}/{filename} to {dest_dir}/
 
         If a file with name {filename} occurs in {dest_dir}, we os.remove() it
@@ -528,11 +600,8 @@ class G6GenerationAndComparisonDriver:
         dest_path = Path.joinpath(dest_dir, filename)
         if Path.is_file(dest_path):
             os.remove(dest_path)
-        
-        shutil.move(
-            src_path,
-            dest_dir
-        )
+
+        shutil.move(src_path, dest_dir)
 
     def find_planarity_discrepancies(self):
         """Find graph order, edge-count, and command w/ planarity disagreements
@@ -572,92 +641,127 @@ class G6GenerationAndComparisonDriver:
             ...
         }
         """
-        self.planarity_discrepancies = {}
         for order in self.orders:
             planarity_output_dir = Path.joinpath(
-                        self.output_parent_dir, f"{order}",
-                        "planarity_results"
-                    )
+                self.output_parent_dir, f"{order}", "planarity_results"
+            )
             self.planarity_discrepancies[order] = {}
             for num_edges in range(max_num_edges_for_order(order) + 1):
                 self.planarity_discrepancies[order][num_edges] = {}
                 for command in PLANARITY_ALGORITHM_SPECIFIERS():
-                    self.planarity_discrepancies[order][num_edges][command] = \
-                        {}
+                    self.planarity_discrepancies[order][num_edges][
+                        command
+                    ] = {}
 
-                    planarity_output_dir_for_order_and_edgecount = \
+                    planarity_output_dir_for_order_and_edgecount = (
                         Path.joinpath(
                             planarity_output_dir, f"{command}", f"{num_edges}"
                         )
+                    )
 
                     geng_g6_output = Path.joinpath(
                         planarity_output_dir_for_order_and_edgecount,
-                        f"n{order}.m{num_edges}.{command}.out.txt"
+                        f"n{order}.m{num_edges}.{command}.out.txt",
                     )
                     self._extract_planarity_results(
-                        geng_g6_output, order, num_edges, command, 'geng_g6'
+                        geng_g6_output, order, num_edges, command, "geng_g6"
                     )
 
                     geng_canonical_g6_output = Path.joinpath(
                         planarity_output_dir_for_order_and_edgecount,
-                        f"n{order}.m{num_edges}.canonical.{command}.out.txt"
+                        f"n{order}.m{num_edges}.canonical.{command}.out.txt",
                     )
                     self._extract_planarity_results(
-                        geng_canonical_g6_output, order, num_edges, command,
-                        'geng_canonical_g6'
+                        geng_canonical_g6_output,
+                        order,
+                        num_edges,
+                        command,
+                        "geng_canonical_g6",
                     )
 
-                    makeg_g6_output = Path.joinpath(
-                        planarity_output_dir_for_order_and_edgecount,
-                        f"n{order}.m{num_edges}.makeg.{command}.out.txt"
-                    )
-                    self._extract_planarity_results(
-                        makeg_g6_output, order, num_edges, command, 'makeg_g6'
-                    )
+                    if self.planarity_backup_path:
+                        makeg_g6_output = Path.joinpath(
+                            planarity_output_dir_for_order_and_edgecount,
+                            f"n{order}.m{num_edges}.makeg.{command}.out.txt",
+                        )
+                        self._extract_planarity_results(
+                            makeg_g6_output,
+                            order,
+                            num_edges,
+                            command,
+                            "makeg_g6",
+                        )
 
-                    makeg_canonical_g6_output = Path.joinpath(
-                        planarity_output_dir_for_order_and_edgecount,
-                        f"n{order}.m{num_edges}.makeg.canonical.{command}" +
-                        ".out.txt"
-                    )
-                    self._extract_planarity_results(
-                        makeg_canonical_g6_output, order, num_edges, command,
-                        'makeg_canonical_g6'
-                    )
+                        makeg_canonical_g6_output = Path.joinpath(
+                            planarity_output_dir_for_order_and_edgecount,
+                            f"n{order}.m{num_edges}.makeg.canonical."
+                            + f"{command}.out.txt",
+                        )
+                        self._extract_planarity_results(
+                            makeg_canonical_g6_output,
+                            order,
+                            num_edges,
+                            command,
+                            "makeg_canonical_g6",
+                        )
 
-                    if (
-                        self.planarity_discrepancies[order][num_edges][command]['geng_g6'] == 
-                        self.planarity_discrepancies[order][num_edges][command]['makeg_g6'] ==
-                        self.planarity_discrepancies[order][num_edges][command]['geng_canonical_g6'] ==
-                        self.planarity_discrepancies[order][num_edges][command]['makeg_canonical_g6']
-                    ):
-                        del(self.planarity_discrepancies[order][num_edges][command])
-                
+                        if (
+                            self.planarity_discrepancies[order][num_edges][
+                                command
+                            ]["geng_g6"]
+                            == self.planarity_discrepancies[order][num_edges][
+                                command
+                            ]["makeg_g6"]
+                            == self.planarity_discrepancies[order][num_edges][
+                                command
+                            ]["geng_canonical_g6"]
+                            == self.planarity_discrepancies[order][num_edges][
+                                command
+                            ]["makeg_canonical_g6"]
+                        ):
+                            del self.planarity_discrepancies[order][num_edges][
+                                command
+                            ]
+                    else:
+                        if (
+                            self.planarity_discrepancies[order][num_edges][
+                                command
+                            ]["geng_g6"]
+                            == self.planarity_discrepancies[order][num_edges][
+                                command
+                            ]["geng_canonical_g6"]
+                        ):
+                            del self.planarity_discrepancies[order][num_edges][
+                                command
+                            ]
+
                 if not self.planarity_discrepancies[order][num_edges]:
-                    del(self.planarity_discrepancies[order][num_edges])
+                    del self.planarity_discrepancies[order][num_edges]
             planarity_discrepancies_for_order_outfile_path = Path.joinpath(
                 planarity_output_dir, f"n{order}.planarity_discrepancies.txt"
             )
-            with (
-                open(planarity_discrepancies_for_order_outfile_path, 'w') 
-                as planarity_discrepancies_for_order_outfile
-            ):
+            with open(
+                planarity_discrepancies_for_order_outfile_path,
+                "w",
+                encoding="utf-8",
+            ) as planarity_discrepancies_for_order_outfile:
                 planarity_discrepancies_for_order_outfile.write(
                     "Discrepancies in planarity output results for order "
                     f"{order} by edge-count and algorithm specifier:\n"
                     "======\n"
                 )
                 planarity_discrepancies_for_order_outfile.write(
-                    json.dumps(
-                        self.planarity_discrepancies[order],
-                        indent=4
-                    )
+                    json.dumps(self.planarity_discrepancies[order], indent=4)
                 )
 
     def _extract_planarity_results(
-            self, planarity_outfile: str, order: int, num_edges: int,
-            command: str, file_type: str
-        ):
+        self,
+        planarity_outfile: Path,
+        order: int,
+        num_edges: int,
+        command: str,
+        file_type: str,
+    ):
         """Use planarity_testAllGraphs_output_parsing to parse planarity output
 
         Args:
@@ -672,17 +776,24 @@ class G6GenerationAndComparisonDriver:
                 makeg_canonical_g6, indicating the type of the original .g6
                 input file
         """
-        _, _, numGraphs_from_file, numOK_from_file, \
-            numNONEMBEDDABLE_from_file, _ = \
-                process_file_contents(planarity_outfile, command)
+        (
+            _,
+            _,
+            numGraphs_from_file,  # pylint: disable=invalid-name
+            numOK_from_file,  # pylint: disable=invalid-name
+            numNONEMBEDDABLE_from_file,  # pylint: disable=invalid-name
+            _,
+        ) = process_file_contents(planarity_outfile, command)
 
         self.planarity_discrepancies[order][num_edges][command][file_type] = {
-            'numGraphs': numGraphs_from_file,
-            'numOK': numOK_from_file,
-            'numNONEMBEDDABLE': numNONEMBEDDABLE_from_file,
+            "numGraphs": numGraphs_from_file,
+            "numOK": numOK_from_file,
+            "numNONEMBEDDABLE": numNONEMBEDDABLE_from_file,
         }
 
-    def get_planarity_discrepancy_g6_diffs(self):
+    def get_planarity_discrepancy_g6_diffs(
+        self,
+    ):  # pylint: disable=too-many-locals
         """Get .g6 file diffs only if discrepancies exist in planarity output
 
         Since discrepancies in planarity results for all graphs of a given
@@ -692,8 +803,8 @@ class G6GenerationAndComparisonDriver:
         NONEMBEDDABLEs.
 
         The dictionary self.planarity_discrepancies is populated during the
-        course of find_planarity_discrepancies(). 
-        
+        course of find_planarity_discrepancies().
+
         To avoid duplicating work, the dictionary diffs_performed maps graph
         orders to a set of edge-counts for which we have already
         performed the diffs between the various .g6 file combinations:
@@ -718,7 +829,7 @@ class G6GenerationAndComparisonDriver:
             - G6DiffFinder.n{order}.geng-canonical_vs_makeg-canonical.log
         - makeg .g6 vs. makeg canonical .g6
             - G6DiffFinder.n{order}.makeg_vs_makeg-canonical.log
-        
+
         Up to 10 diff files will be output to the directory
             {self.output_parent_dir}/{order}/{graphs}/{num_edges}/{results}/
         - geng .g6 vs. geng canonical .g6 corresponds to the files:
@@ -736,42 +847,42 @@ class G6GenerationAndComparisonDriver:
         - makeg .g6 vs. makeg canonical .g6 corresponds to the files:
             - graphs_in_n{order}.m{num_edges}.makeg_not_in_n{order}.m{num_edges}.makeg.canonical.g6
             - graphs_in_n{order}.m{num_edges}.makeg.canonical_not_in_n{order}.m{num_edges}.makeg.g6
-        """
+        """  # pylint: disable=line-too-long
         diffs_performed = {}
-        for order in self.planarity_discrepancies.keys():
+        for order in self.planarity_discrepancies:
             if not diffs_performed.get(order):
                 diffs_performed[order] = set()
-            
+
             output_dir_for_order = Path.joinpath(
                 self.output_parent_dir, f"{order}"
             )
             log_dir_for_order = Path.joinpath(
                 output_dir_for_order,
-                'g6_diff_finder_logs',
+                "g6_diff_finder_logs",
             )
             Path.mkdir(log_dir_for_order, parents=True, exist_ok=True)
 
             log_path_for_geng_g6_vs_geng_canonical_g6 = Path.joinpath(
                 log_dir_for_order,
-                f"G6DiffFinder.n{order}.geng_vs_geng-canonical.log"
+                f"G6DiffFinder.n{order}.geng_vs_geng-canonical.log",
             )
             log_path_for_makeg_g6_vs_makeg_canonical_g6 = Path.joinpath(
                 log_dir_for_order,
-                f"G6DiffFinder.n{order}.makeg_vs_makeg-canonical.log"
+                f"G6DiffFinder.n{order}.makeg_vs_makeg-canonical.log",
             )
             log_path_for_geng_g6_vs_makeg_g6 = Path.joinpath(
-                log_dir_for_order,
-                f"G6DiffFinder.n{order}.geng_vs_makeg.log"
+                log_dir_for_order, f"G6DiffFinder.n{order}.geng_vs_makeg.log"
             )
-            log_path_for_geng_canonical_g6_vs_makeg_canonical_g6 = \
+            log_path_for_geng_canonical_g6_vs_makeg_canonical_g6 = (
                 Path.joinpath(
                     log_dir_for_order,
                     f"G6DiffFinder.n{order}."
-                    +"geng-canonical_vs_makeg-canonical.log"
+                    + "geng-canonical_vs_makeg-canonical.log",
                 )
+            )
             log_path_for_geng_g6_vs_makeg_canonical_g6 = Path.joinpath(
                 log_dir_for_order,
-                f"G6DiffFinder.n{order}.geng_vs_makeg-canonical.log"
+                f"G6DiffFinder.n{order}.geng_vs_makeg-canonical.log",
             )
 
             for num_edges in self.planarity_discrepancies[order].keys():
@@ -781,63 +892,68 @@ class G6GenerationAndComparisonDriver:
                 diffs_performed[order].add(num_edges)
 
                 g6_files_for_order_and_edgecount = Path.joinpath(
-                    output_dir_for_order,
-                    'graphs',
-                    f"{num_edges}"
+                    output_dir_for_order, "graphs", f"{num_edges}"
                 )
                 geng_g6_path = Path.joinpath(
                     g6_files_for_order_and_edgecount,
-                    f"n{order}.m{num_edges}.g6"
+                    f"n{order}.m{num_edges}.g6",
                 )
                 geng_canonical_g6_path = Path.joinpath(
                     g6_files_for_order_and_edgecount,
-                    f"n{order}.m{num_edges}.canonical.g6"
+                    f"n{order}.m{num_edges}.canonical.g6",
                 )
                 makeg_g6_path = Path.joinpath(
                     g6_files_for_order_and_edgecount,
-                    f"n{order}.m{num_edges}.makeg.g6"
+                    f"n{order}.m{num_edges}.makeg.g6",
                 )
                 makeg_canonical_g6_path = Path.joinpath(
                     g6_files_for_order_and_edgecount,
-                    f"n{order}.m{num_edges}.makeg.canonical.g6"
+                    f"n{order}.m{num_edges}.makeg.canonical.g6",
                 )
 
                 self._get_diffs(
-                    geng_g6_path, geng_canonical_g6_path,
-                    log_path_for_geng_g6_vs_geng_canonical_g6
+                    geng_g6_path,
+                    geng_canonical_g6_path,
+                    log_path_for_geng_g6_vs_geng_canonical_g6,
                 )
 
                 if self.planarity_backup_path:
                     self._get_diffs(
-                        geng_g6_path, makeg_g6_path,
-                        log_path_for_geng_g6_vs_makeg_g6
+                        geng_g6_path,
+                        makeg_g6_path,
+                        log_path_for_geng_g6_vs_makeg_g6,
                     )
                     self._get_diffs(
-                        geng_g6_path, makeg_canonical_g6_path,
-                        log_path_for_geng_g6_vs_makeg_canonical_g6
+                        geng_g6_path,
+                        makeg_canonical_g6_path,
+                        log_path_for_geng_g6_vs_makeg_canonical_g6,
                     )
                     # Don't bother with geng canonical vs. makeg, because makeg
                     # and geng are so similar; only do the other 4 possible
                     # pairings (4C2 - 1 = 5 cases, which each produce 2 files)
                     self._get_diffs(
-                        geng_canonical_g6_path, makeg_canonical_g6_path,
-                        log_path_for_geng_canonical_g6_vs_makeg_canonical_g6
+                        geng_canonical_g6_path,
+                        makeg_canonical_g6_path,
+                        log_path_for_geng_canonical_g6_vs_makeg_canonical_g6,
                     )
                     self._get_diffs(
-                        makeg_g6_path, makeg_canonical_g6_path,
-                        log_path_for_makeg_g6_vs_makeg_canonical_g6
+                        makeg_g6_path,
+                        makeg_canonical_g6_path,
+                        log_path_for_makeg_g6_vs_makeg_canonical_g6,
                     )
 
     def _get_diffs(
-            self, first_comparand_infile: Path, second_comparand_infile: Path,
-            log_path: Path
-        ):
+        self,
+        first_comparand_infile: Path,
+        second_comparand_infile: Path,
+        log_path: Path,
+    ):
         """Uses G6DiffFinder to output set differences of two .g6 infiles
 
         Args:
             first_comparand_infile: Path to first .g6 comparand infile
             second_comparand_infile: Path to second .g6 comparand infile
-            log_path: Path to which logs should be written 
+            log_path: Path to which logs should be written
 
         Raises:
             G6DiffFinderException: If an error occurred during the processing
@@ -847,11 +963,11 @@ class G6GenerationAndComparisonDriver:
             g6_diff_finder = G6DiffFinder(
                 first_comparand_infile, second_comparand_infile, log_path
             )
-        except:
+        except Exception as g6_diff_finder_error:
             raise G6DiffFinderException(
                 "Unable to initialize G6DiffFinder with given input files: "
                 f"'{first_comparand_infile}', '{second_comparand_infile}'"
-            )
+            ) from g6_diff_finder_error
 
         try:
             g6_diff_finder.graph_set_diff()
@@ -861,132 +977,141 @@ class G6GenerationAndComparisonDriver:
             ) from e
 
 
-def parse_range(value: str)->tuple:
+def parse_range(value: str) -> tuple:
     """Parse a single integer or a range of integers.
-    
+
     Args:
         value: A string of the form 'X[,Y]', i.e. either a single value for the
             desired order X, or an interval inclusive of the endpoints [X, Y]
-    
+
     Returns:
         A tuple containing either a single element, X, or every integer from X
         up to and including Y
     """
-    separator = ','
+    separator = ","
     if separator in value:
         if value.count(separator) > 1:
             raise argparse.ArgumentTypeError(
                 f"Invalid range '{value}' contains multiple commas; range "
-                "should be of the form 'X,Y'")
-        
+                "should be of the form 'X,Y'"
+            )
+
         start, end = value.split(separator)
         try:
             start, end = int(start), int(end)
-        except ValueError:
+        except ValueError as e:
             raise argparse.ArgumentTypeError(
                 f"Invalid range '{value}': both start and end values must be "
-                "integers.")
+                "integers."
+            ) from e
         if start > end:
             raise argparse.ArgumentTypeError(
                 f"Invalid range '{value}': start value must not be greater "
-                "than end value.")
+                "than end value."
+            )
         # Transforms to interval that includes endpoints: '5,8' corresponds to
         # the tuple (5, 6, 7, 8)
         return tuple(range(start, end + 1))
-    else:
-        try:
-            return (int(value),)
-        except ValueError:
-            raise argparse.ArgumentTypeError(
-                f"Invalid order specifier '{value}': should be a single "
-                "integer 'X'")
+
+    try:
+        return (int(value),)
+    except ValueError as e:
+        raise argparse.ArgumentTypeError(
+            f"Invalid order specifier '{value}': should be a single "
+            "integer 'X'"
+        ) from e
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawTextHelpFormatter,
-        usage='python %(prog)s [options]',
-        description="""G6 File Generation and Comparison Tool
-
-For each graph order in the specified range, a child directory of the output
-directory will be created named 'n{order}'. This directory will contain
-subdirectories:
-- graphs/
-    - For each edge-count from 0 to (N * (N - 1)) / 2, a directory is created
-    to contain:
-    n{order}.m{num_edges}.g6
-    n{order}.m{num_edges}.canonical.g6
-    n{order}.m{num_edges}.makeg.g6 (req. planarity-backup path)
-    n{order}.m{num_edges}.makeg.canonical.g6 (req. planarity-backup path)
-    - results/ which will contain the diffs of these .g6 files, pairs of files:
-        - graphs_in_{first_infile}_not_in_{second_infile}.g6
-        - graphs_in_{second_infile}_not_in_{first_infile}.g6
-    These pairs should contain the same number of graphs
-- planarity_results/
-    - For each graph algorithm command specifier, there will be a subdirectory
-    containing one subdirectory for each edge-count (0 to (N * (N - 1)) / 2),
-    which will contain files:
-    n{order}.m{num_edges}.{command}.out.txt
-    n{order}.m{num_edges}.canonical.{command}.out.txt
-    n{order}.m{num_edges}.makeg.{command}.out.txt
-    n{order}.m{num_edges}.makeg.canonical.{command}.out.txt
-- g6_diff_finder_logs/
-    - Will contain logs for each of the following comparisons:
-    G6DiffFinder.n{order}.geng_vs_geng-canonical.log
-    G6DiffFinder.n{order}.geng_vs_makeg.log
-    G6DiffFinder.n{order}.geng_vs_makeg-canonical.log
-    G6DiffFinder.n{order}.geng-canonical_vs_makeg-canonical.log
-    G6DiffFinder.n{order}.makeg_vs_makeg-canonical.log
-""")
+        usage="python %(prog)s [options]",
+        description="G6 File Generation and Comparison Tool\n\n"
+        "For each graph order in the specified range, a child directory "
+        "of the output directory will be created named 'n{order}'. This "
+        "directory will contain subdirectories:\n"
+        "- graphs/\n"
+        "\t- For each edge-count from 0 to (N * (N - 1)) / 2, a "
+        "directory is created to contain:\n"
+        "\tn{order}.m{num_edges}.g6\n"
+        "\tn{order}.m{num_edges}.canonical.g6\n"
+        "\tn{order}.m{num_edges}.makeg.g6 (req. planarity-backup "
+        "\tpath)\n"
+        "\tn{order}.m{num_edges}.makeg.canonical.g6 (req. "
+        "planarity-backup path)\n"
+        "\t- results/ which will contain the diffs of these .g6 "
+        " files, pairs of files:\n"
+        "\t\t- graphs_in_{first_infile}_not_in_{second_infile}.g6\n"
+        "\t\t- graphs_in_{second_infile}_not_in_{first_infile}.g6\n"
+        "\tThese pairs should contain the same number of graphs\n"
+        "- planarity_results/\n"
+        "\t- For each graph algorithm command specifier, there will be "
+        "a subdirectory containing one subdirectory for each edge-count "
+        "(0 to (N * (N - 1)) / 2), which will contain files:\n"
+        "\tn{order}.m{num_edges}.{command}.out.txt\n"
+        "\tn{order}.m{num_edges}.canonical.{command}.out.txt\n"
+        "\tn{order}.m{num_edges}.makeg.{command}.out.txt\n"
+        "\tn{order}.m{num_edges}.makeg.canonical.{command}.out.txt\n"
+        "- g6_diff_finder_logs/\n"
+        "\t- Will contain logs for each of the following comparisons:\n"
+        "\tG6DiffFinder.n{order}.geng_vs_geng-canonical.log\n"
+        "\tG6DiffFinder.n{order}.geng_vs_makeg.log\n"
+        "\tG6DiffFinder.n{order}.geng_vs_makeg-canonical.log\n"
+        "\tG6DiffFinder.n{order}.geng-canonical_vs_makeg-canonical.log\n"
+        "\tG6DiffFinder.n{order}.makeg_vs_makeg-canonical.log\n",
+    )
 
     parser.add_argument(
-        '-p', '--planaritypath',
+        "-p",
+        "--planaritypath",
         type=Path,
         required=True,
-        help='Path to planarity executable',
-        metavar='PATH_TO_PLANARITY_EXECUTABLE')
+        help="Path to planarity executable",
+        metavar="PATH_TO_PLANARITY_EXECUTABLE",
+    )
     parser.add_argument(
-        '-g', '--gengpath',
+        "-g",
+        "--gengpath",
         type=Path,
         required=True,
-        help='Path to nauty geng executable',
-        metavar='PATH_TO_GENG_EXECUTABLE')
+        help="Path to nauty geng executable",
+        metavar="PATH_TO_GENG_EXECUTABLE",
+    )
     parser.add_argument(
-        '-b', '--planaritybackuppath',
+        "-b",
+        "--planaritybackuppath",
         type=Path,
         required=False,
-        help='Path to planarity-backup executable (optional; not public!)',
-        metavar='PATH_TO_PLANARITY_BACKUP_EXECUTABLE')
+        help="Path to planarity-backup executable (optional; not public!)",
+        metavar="PATH_TO_PLANARITY_BACKUP_EXECUTABLE",
+    )
     parser.add_argument(
-        '-n', '--orders',
+        "-n",
+        "--orders",
         type=parse_range,
         required=True,
-        help='Order(s) of graphs for which you wish to generate .g6 files',
-        metavar='X[,Y]')
+        help="Order(s) of graphs for which you wish to generate .g6 files",
+        metavar="X[,Y]",
+    )
     parser.add_argument(
-        '-o', '--outputdir',
+        "-o",
+        "--outputdir",
         type=Path,
         default=None,
-        metavar='OUTPUT_DIR_PATH',
-        help="""Parent directory under which subdirectories will be created
-for output results. If none provided, defaults to:
-    TestSupport/results/g6_generation_and_comparison_driver"""
+        metavar="OUTPUT_DIR_PATH",
+        help="Parent directory under which subdirectories will be created "
+        "for output results. If none provided, defaults to:\n"
+        "\tTestSupport/results/g6_generation_and_comparison_driver",
     )
 
     args = parser.parse_args()
 
-    geng_path = args.gengpath
-    planarity_path = args.planaritypath
-    planarity_backup_path = args.planaritybackuppath
-    output_parent_dir = args.outputdir
-    orders = args.orders
-
     g6_generation_and_comparison_driver = G6GenerationAndComparisonDriver(
-        geng_path=geng_path,
-        planarity_path=planarity_path,
-        planarity_backup_path=planarity_backup_path,
-        output_parent_dir=output_parent_dir,
-        orders=orders
+        geng_path=args.gengpath,
+        planarity_path=args.planaritypath,
+        planarity_backup_path=args.planaritybackuppath,
+        output_parent_dir=args.outputdir,
+        orders=args.orders,
     )
 
     g6_generation_and_comparison_driver.generate_g6_files()

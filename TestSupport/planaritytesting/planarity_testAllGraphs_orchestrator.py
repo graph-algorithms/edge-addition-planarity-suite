@@ -1,6 +1,34 @@
+"""Orchestrate calls to planarity's testAllGraphs() functionality
+
+Functions:
+    call_planarity_testAllGraphs(
+        planarity_path: Path,
+        canonical_files: bool,
+        makeg_g6: bool,
+        command: str,
+        order: int,
+        num_edges: int,
+        input_dir: Path,
+        output_dir: Path,
+    ) -> None
+
+    _validate_and_normalize_planarity_testAllGraphs_workload_args(
+        planarity_path: Path, order: int, input_dir: Path, output_dir: Path
+    ) -> tuple[Path, int, Path, Path]
+
+    distribute_planarity_testAllGraphs_workload(
+        planarity_path: Path,
+        canonical_files: bool,
+        makeg_g6: bool,
+        order: int,
+        input_dir: Path,
+        output_dir: Path,
+    ) -> None
+"""  # pylint: disable=invalid-name
+
 #!/usr/bin/env python
 
-__all__ = ['distribute_planarity_testAllGraphs_workload']
+__all__ = ["distribute_planarity_testAllGraphs_workload"]
 
 import sys
 import shutil
@@ -9,17 +37,22 @@ import subprocess
 import argparse
 from pathlib import Path
 
-from planarity_constants import (
+from planaritytesting_utils import (
     PLANARITY_ALGORITHM_SPECIFIERS,
-    max_num_edges_for_order
+    max_num_edges_for_order,
 )
 
 
-def call_planarity_testAllGraphs(
-        planarity_path:Path, canonical_files: bool, makeg_g6: bool,
-        command:str, order:int, num_edges:int, input_dir:Path,
-        output_dir:Path
-    ):
+def call_planarity_testAllGraphs(  # pylint: disable=invalid-name
+    planarity_path: Path,
+    canonical_files: bool,
+    makeg_g6: bool,
+    command: str,
+    order: int,
+    num_edges: int,
+    input_dir: Path,
+    output_dir: Path,
+) -> None:
     """Call planarity as blocking process on multiprocessing thread
 
     Uses subprocess.run() to start a blocking process on the multiprocessing
@@ -43,28 +76,33 @@ def call_planarity_testAllGraphs(
             the algorithm corresponding to the command to all graphs in the
             input .g6 file
     """
-    canonical_ext = '.canonical' if canonical_files else ''
-    makeg_ext = '.makeg' if makeg_g6 else ''
+    canonical_ext = ".canonical" if canonical_files else ""
+    makeg_ext = ".makeg" if makeg_g6 else ""
     infile_path = Path.joinpath(
-        input_dir,
-        f"n{order}.m{num_edges}{makeg_ext}{canonical_ext}.g6")
+        input_dir, f"n{order}.m{num_edges}{makeg_ext}{canonical_ext}.g6"
+    )
     outfile_path = Path.joinpath(
         output_dir,
         f"{command}",
-        f"n{order}.m{num_edges}{makeg_ext}{canonical_ext}.{command}.out.txt")
+        f"n{order}.m{num_edges}{makeg_ext}{canonical_ext}.{command}.out.txt",
+    )
     subprocess.run(
         [
-            f'{planarity_path}',
-            '-t', f'-{command}',
-            f'{infile_path}',
-            f'{outfile_path}'
+            f"{planarity_path}",
+            "-t",
+            f"-{command}",
+            f"{infile_path}",
+            f"{outfile_path}",
         ],
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
 
 
-def _validate_and_normalize_planarity_testAllGraphs_workload_args(
-        planarity_path: Path, order: int, input_dir: Path, output_dir: Path
-        )->tuple[Path, int, Path, Path]:
+def _validate_and_normalize_planarity_testAllGraphs_workload_args(  # pylint: disable=invalid-name disable=too-many-branches
+    planarity_path: Path, order: int, input_dir: Path, output_dir: Path
+) -> tuple[Path, int, Path, Path]:
     """Validates and normalizes args provided to distribute_planarity_workload
 
     Ensures planarity_path corresponds to an executable, that order is an
@@ -72,7 +110,7 @@ def _validate_and_normalize_planarity_testAllGraphs_workload_args(
     corresponds to a directory containing .g6 files, and that output_dir is a
     valid Path specifying where results from executing planarity should be
     output.
-    
+
     Args:
         planarity_path: Path to the planarity executable
         order: Desired number of vertices
@@ -88,37 +126,39 @@ def _validate_and_normalize_planarity_testAllGraphs_workload_args(
     Raises:
         argparse.ArgumentTypeError: If any of the args passed from the command
             line are determined invalid under more specific scrutiny
-    
+
     Returns:
         A tuple comprised of the planarity_path, order, input_dir, and
         output_dir
     """
-    if (not planarity_path or
-        not isinstance(planarity_path, Path) or
-        not shutil.which(str(planarity_path.resolve()))):
+    if (
+        not planarity_path
+        or not isinstance(planarity_path, Path)
+        or not shutil.which(str(planarity_path.resolve()))
+    ):
         raise argparse.ArgumentTypeError(
             f"Path for planarity executable '{planarity_path}' does not "
-            "correspond to an executable.")
-    
-    if (not order or
-        not isinstance(order, int) or
-        order < 2 or
-        order > 12):
+            "correspond to an executable."
+        )
+
+    if not order or not isinstance(order, int) or order < 2 or order > 12:
         raise argparse.ArgumentTypeError(
-            "Graph order must be an integer between 2 and 12.")
-    
+            "Graph order must be an integer between 2 and 12."
+        )
+
     if not input_dir:
         test_support_dir = Path(sys.argv[0]).resolve().parent.parent
         input_dir = Path.joinpath(
-            test_support_dir, 'results', 'graph_generation_orchestrator',
-            f"{order}"
+            test_support_dir,
+            "results",
+            "graph_generation_orchestrator",
+            f"{order}",
         )
 
     if not isinstance(input_dir, Path) or not input_dir.is_dir():
-        raise argparse.ArgumentTypeError(
-            "Input directory path is invalid.")
-    
-    if (input_dir.is_dir() and not any(Path(input_dir).iterdir())):
+        raise argparse.ArgumentTypeError("Input directory path is invalid.")
+
+    if input_dir.is_dir() and not any(Path(input_dir).iterdir()):
         raise argparse.ArgumentTypeError("Input dir exists, but is empty.")
 
     input_dir = input_dir.resolve()
@@ -128,26 +168,26 @@ def _validate_and_normalize_planarity_testAllGraphs_workload_args(
         pass
     except IndexError as e:
         raise argparse.ArgumentTypeError(
-            f"Unable to extract parts from "
-            "input dir path '{input_dir}'.") from e
+            f"Unable to extract parts from input dir path '{input_dir}'."
+        ) from e
     else:
         if candidate_order_from_path != order:
             raise argparse.ArgumentTypeError(
                 f"Input directory '{input_dir}' seems to indicate "
                 f"graph order should be '{candidate_order_from_path}'"
                 f", which does not mach order from command line args "
-                f"'{order}'. Please verify your command line args and retry.")
+                f"'{order}'. Please verify your command line args and retry."
+            )
 
     if not output_dir:
         test_support_dir = Path(sys.argv[0]).resolve().parent.parent
         output_parent_dir = Path.joinpath(
-            test_support_dir, 'results', 'planarity_testAllGraphs_orchestrator'
+            test_support_dir, "results", "planarity_testAllGraphs_orchestrator"
         )
         candidate_output_dir = Path.joinpath(output_parent_dir, f"{order}")
         output_dir = candidate_output_dir
     elif not isinstance(output_dir, Path) or output_dir.is_file():
-        raise argparse.ArgumentTypeError(
-            "Output directory path is invalid.")
+        raise argparse.ArgumentTypeError("Output directory path is invalid.")
 
     output_dir = output_dir.resolve()
     try:
@@ -156,24 +196,30 @@ def _validate_and_normalize_planarity_testAllGraphs_workload_args(
         output_dir = Path.joinpath(output_dir, str(order))
     except IndexError as e:
         raise argparse.ArgumentTypeError(
-            f"Unable to extract parts from "
-            "output dir path '{output_dir}'.") from e
+            f"Unable to extract parts from output dir path '{output_dir}'."
+        ) from e
     else:
         if candidate_order_from_path != order:
             raise argparse.ArgumentTypeError(
                 f"Output directory '{output_dir}' seems to indicate "
                 f"graph order should be '{candidate_order_from_path}'"
                 f", which does not mach order from command line args "
-                f"'{order}'. Please verify your command line args and retry.")
+                f"'{order}'. Please verify your command line args and retry."
+            )
 
     Path.mkdir(output_dir, parents=True, exist_ok=True)
-    
+
     return planarity_path, order, input_dir, output_dir
 
 
-def distribute_planarity_testAllGraphs_workload(
-        planarity_path: Path, canonical_files: bool, makeg_g6:bool, order: int,
-        input_dir: Path, output_dir: Path):
+def distribute_planarity_testAllGraphs_workload(  # pylint: disable=invalid-name disable=too-many-arguments
+    planarity_path: Path,
+    canonical_files: bool,
+    makeg_g6: bool,
+    order: int,
+    input_dir: Path,
+    output_dir: Path,
+) -> None:
     """Use starmap_async on multiprocessing pool to _call_planarity
 
     Args:
@@ -190,25 +236,35 @@ def distribute_planarity_testAllGraphs_workload(
             Test All Graphs for the respective command on each .g6 file will be
             written
     """
-    planarity_path, order, input_dir, output_dir = \
+    planarity_path, order, input_dir, output_dir = (
         _validate_and_normalize_planarity_testAllGraphs_workload_args(
-            planarity_path, order, input_dir, output_dir)
+            planarity_path, order, input_dir, output_dir
+        )
+    )
 
     for command in PLANARITY_ALGORITHM_SPECIFIERS():
-        path_to_make = Path.joinpath(output_dir, f'{command}')
+        path_to_make = Path.joinpath(output_dir, f"{command}")
         Path.mkdir(path_to_make, parents=True, exist_ok=True)
 
     call_planarity_args = [
         (
-            planarity_path, canonical_files, makeg_g6, command, order,
-            num_edges, input_dir, output_dir
+            planarity_path,
+            canonical_files,
+            makeg_g6,
+            command,
+            order,
+            num_edges,
+            input_dir,
+            output_dir,
         )
         for num_edges in range(max_num_edges_for_order(order) + 1)
         for command in PLANARITY_ALGORITHM_SPECIFIERS()
     ]
 
     with multiprocessing.Pool(processes=multiprocessing.cpu_count()) as pool:
-        _ = pool.starmap_async(call_planarity_testAllGraphs, call_planarity_args)
+        _ = pool.starmap_async(
+            call_planarity_testAllGraphs, call_planarity_args
+        )
         pool.close()
         pool.join()
 
@@ -216,67 +272,66 @@ def distribute_planarity_testAllGraphs_workload(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawTextHelpFormatter,
-        usage='python %(prog)s [options]',
-        description="""Planarity testAllGraphs execution orchestrator
-
-Orchestrates calls to planarity's Test All Graphs functionality.
-
-Expects input directory to contain a subdirectory whose name is the order
-containing .g6 files to be tested. Each .g6 file contains all graphs of the
-given order with a specific number of edges:
-    {input_dir}/{order}/n{order}.m{num_edges}(.makeg)?(.canonical)?.g6
-
-Output files will have paths:
-    {output_dir}/{order}/{command}/n{order}.m{num_edges}(.makeg)?(.canonical)?.{command}.out.txt
-""")
+        usage="python %(prog)s [options]",
+        description="Planarity testAllGraphs execution orchestrator\n\n"
+        "Orchestrates calls to planarity's Test All Graphs "
+        "functionality.\n"
+        "Expects input directory to contain a subdirectory whose name is "
+        "the order containing .g6 files to be tested. Each .g6 file "
+        "contains all graphs of the given order with a specific number of "
+        "edges:\n"
+        "\t{input_dir}/{order}/n{order}.m{num_edges}(.makeg)?"
+        "(.canonical)?.g6\n\n"
+        "Output files will have paths:\n"
+        "\t{output_dir}/{order}/{command}/n{order}.m{num_edges}(.makeg)?"
+        "(.canonical)?.{command}.out.txt",
+    )
     parser.add_argument(
-        '-p', '--planaritypath',
+        "-p",
+        "--planaritypath",
         type=Path,
-        metavar='PATH_TO_PLANARITY_EXECUTABLE'
+        metavar="PATH_TO_PLANARITY_EXECUTABLE",
     )
     parser.add_argument(
-        '-l', '--canonicalfiles',
-        action='store_true',
-        help="Indicates .g6 input files are in canonical form"
+        "-l",
+        "--canonicalfiles",
+        action="store_true",
+        help="Indicates .g6 input files are in canonical form",
     )
     parser.add_argument(
-        '-m', '--makegfiles',
-        action='store_true',
-        help="Indicates .g6 input files were generated by makeg"
+        "-m",
+        "--makegfiles",
+        action="store_true",
+        help="Indicates .g6 input files were generated by makeg",
     )
+    parser.add_argument("-n", "--order", type=int, metavar="N", default=11)
     parser.add_argument(
-        '-n', '--order',
-        type=int,
-        metavar='N',
-        default=11
-    )
-    parser.add_argument(
-        '-i', '--inputdir',
-        type=Path,
-        default=None,
-        metavar='DIR_CONTAINING_G6_FILES',
-        help="""If no input directory provided, defaults to
-TestSupport/results/graph_generation_orchestrator/{order}"""
-    )
-    parser.add_argument(
-        '-o', '--outputdir',
+        "-i",
+        "--inputdir",
         type=Path,
         default=None,
-        metavar='DIR_FOR_RESULTS',
-        help="""If no output directory provided, defaults to
-TestSupport/results/planarity_testAllGraphs_orchestrator/{order}"""
+        metavar="DIR_CONTAINING_G6_FILES",
+        help="If no input directory provided, defaults to\n"
+        "\tTestSupport/results/graph_generation_orchestrator/{order}",
+    )
+    parser.add_argument(
+        "-o",
+        "--outputdir",
+        type=Path,
+        default=None,
+        metavar="DIR_FOR_RESULTS",
+        help="If no output directory provided, defaults to\n"
+        "\tTestSupport/results/planarity_testAllGraphs_orchestrator/"
+        "{order}",
     )
 
     args = parser.parse_args()
 
-    planarity_path = args.planaritypath
-    canonical_files = args.canonicalfiles
-    makeg_files = args.makegfiles
-    order = args.order
-    input_dir = args.inputdir
-    output_dir = args.outputdir
-
     distribute_planarity_testAllGraphs_workload(
-        planarity_path, canonical_files, makeg_files, order,
-        input_dir, output_dir
+        planarity_path=args.planaritypath,
+        canonical_files=args.canonicalfiles,
+        makeg_g6=args.makegfiles,
+        order=args.order,
+        input_dir=args.inputdir,
+        output_dir=args.outputdir,
     )
