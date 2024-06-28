@@ -29,7 +29,10 @@ import argparse
 import shutil
 from pathlib import Path
 
-from planaritytesting_utils import max_num_edges_for_order
+from planaritytesting_utils import (
+    max_num_edges_for_order,
+    is_path_to_executable,
+)
 
 
 def _call_geng(
@@ -93,11 +96,7 @@ def _validate_and_normalize_geng_workload_args(
     Returns:
         A tuple comprised of the geng_path, order, and output_dir
     """
-    if (
-        not geng_path
-        or not isinstance(geng_path, Path)
-        or not shutil.which(str(geng_path.resolve()))
-    ):
+    if not is_path_to_executable(geng_path):
         raise argparse.ArgumentTypeError(
             f"Path for geng executable '{geng_path}' does not correspond to "
             "an executable."

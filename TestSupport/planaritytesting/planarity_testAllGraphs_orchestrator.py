@@ -40,6 +40,7 @@ from pathlib import Path
 from planaritytesting_utils import (
     PLANARITY_ALGORITHM_SPECIFIERS,
     max_num_edges_for_order,
+    is_path_to_executable,
 )
 
 
@@ -131,11 +132,7 @@ def _validate_and_normalize_planarity_testAllGraphs_workload_args(  # pylint: di
         A tuple comprised of the planarity_path, order, input_dir, and
         output_dir
     """
-    if (
-        not planarity_path
-        or not isinstance(planarity_path, Path)
-        or not shutil.which(str(planarity_path.resolve()))
-    ):
+    if not is_path_to_executable(planarity_path):
         raise argparse.ArgumentTypeError(
             f"Path for planarity executable '{planarity_path}' does not "
             "correspond to an executable."
