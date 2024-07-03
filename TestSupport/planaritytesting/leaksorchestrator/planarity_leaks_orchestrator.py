@@ -1,0 +1,664 @@
+"""Run leaks on MacOS to test for memory issues, e.g. leaks or overruns"""
+
+#!/usr/bin/env python
+
+__all__ = []
+
+import argparse
+from datetime import datetime
+import configparser
+import logging
+import multiprocessing
+import os
+from pathlib import Path
+import platform
+import shutil
+import subprocess
+import sys
+from typing import Optional
+
+sys.path.append(str(Path(sys.argv[0]).parent.parent))
+
+# pylint: disable=wrong-import-position
+
+from planaritytesting_utils import (
+    PLANARITY_ALGORITHM_SPECIFIERS,
+    determine_input_filetype,
+    is_path_to_executable,
+)
+
+# pylint: enable=wrong-import-position
+
+
+class PlanarityLeaksOrchestratorError(Exception):
+    """
+    Custom exception for representing errors that arise when performing memory
+    checks on a planarity executable.
+    """
+
+    def __init__(self, message):
+        super().__init__(message)
+        self.message = message
+
+
+class PlanarityLeaksOrchestrator:
+    """Driver for planarity memory leak analysis on MacOS using leaks util"""
+
+    def __init__(
+        self,
+        planarity_path: Optional[Path] = None,
+        output_dir: Optional[Path] = None,
+    ) -> None:
+        """Initialize PlanarityLeaksOrchestrator instance
+
+        Args:
+            planarity_path: Path to planarity executable
+            output_dir: Directory under which subdirectories will be created
+                for each of the jobs specified in planarity_leaks_config.ini
+        Raises:
+            argparse.ArgumentTypeError: If the planarity_path doesn't
+                correspond to an executable, if the output_dir corresponds to
+                a file,
+            OSError: If run on any platform other than MacOS, or if the leaks
+                utility is not found
+        """
+        if platform.system() != "Darwin":
+            raise OSError("This utility is only for use on MacOS.")
+
+        if not shutil.which("leaks"):
+            raise OSError(
+                "leaks is not installed; please install leaks and ensure your "
+                "path variable contains the directory to which it is "
+                "installed."
+            )
+
+        planarity_project_root = (
+            Path(sys.argv[0]).resolve().parent.parent.parent.parent
+        )
+        if not planarity_path:
+            planarity_path = Path.joinpath(
+                planarity_project_root, "Release", "planarity"
+            )
+
+        if not is_path_to_executable(planarity_path):
+            raise argparse.ArgumentTypeError(
+                f"'Path for planarity executable {planarity_path}' doesn't "
+                "correspond to an executable."
+            )
+
+        self.curr_timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+        if not output_dir:
+            output_dir = Path.joinpath(
+                planarity_project_root,
+                "TestSupport",
+                "results",
+                "planarity_leaks_orchestrator",
+            )
+
+        if output_dir.is_file():
+            raise argparse.ArgumentTypeError(
+                f"Path '{output_dir}' corresponds to a file, and can't be "
+                "used as the output directory."
+            )
+
+        output_dir = Path.joinpath(output_dir, f"{self.curr_timestamp}")
+
+        if Path.is_dir(output_dir):
+            shutil.rmtree(output_dir)
+
+        Path.mkdir(output_dir, parents=True, exist_ok=True)
+
+        self.planarity_path = planarity_path
+        self.output_dir = output_dir
+
+        self._setup_logger()
+
+    def _setup_logger(self) -> None:
+        """Set up logger instance for PlanarityLeaksAnalyzer"""
+
+        log_path = Path.joinpath(
+            self.output_dir,
+            f"edge_deletion_analysis-{self.curr_timestamp}.log",
+        )
+        # TODO: set up logging support for multithreading
+
+        # logging.getLogger() returns the *same instance* of a logger
+        # when given the same name. In order to prevent this, must either give
+        # a unique name, or must prevent adding additional handlers to the
+        # logger
+        self.logger = logging.getLogger(__name__ + self.curr_timestamp)
+        self.logger.setLevel(logging.DEBUG)
+
+        if not self.logger.handlers:
+            # Create the Handler for logging data to a file
+            logger_handler = logging.FileHandler(filename=log_path)
+            logger_handler.setLevel(logging.DEBUG)
+
+            # Create a Formatter for formatting the log messages
+            logger_formatter = logging.Formatter(
+                "[%(levelname)s] - %(module)s.%(funcName)s - %(message)s"
+            )
+
+            # Add the Formatter to the Handler
+            logger_handler.setFormatter(logger_formatter)
+
+            # Add the Handler to the Logger
+            self.logger.addHandler(logger_handler)
+
+            stderr_handler = logging.StreamHandler()
+            stderr_handler.setLevel(logging.ERROR)
+            stderr_handler.setFormatter(logger_formatter)
+            self.logger.addHandler(stderr_handler)
+
+    @staticmethod
+    def setup_leaks_environment_variables(
+        perform_full_analysis: bool = False,
+    ) -> dict[str, str]:
+        """Sets up environment variables to configure granularity of leaks runs
+
+        Args:
+            perform_full_analysis: bool to indicate whether additional
+                environment variables should be set for the leaks run; if True,
+                sets the following additional environment variables:
+
+                MallocStackLoggingNoCompact - This option is similar to
+                    MallocStackLogging but makes sure that all allocations are
+                    logged, no matter how small or how short lived the buffer
+                    may be.
+                MallocScribble - If set, free sets each byte of every released
+                    block to the value 0x55.
+                MallocPreScribble - If set, malloc sets each byte of a newly
+                    allocated block to the value 0xAA. This increases the
+                    likelihood that a program making assumptions about freshly
+                    allocated memory fails.
+                MallocGuardEdges - If set, malloc adds guard pages before and
+                    after large allocations.
+                MallocCheckHeapStart = <s> - If set, specifies the number of
+                    allocations <s> to wait before begining periodic heap
+                    checks every <n> as specified by MallocCheckHeapEach. If
+                    MallocCheckHeapStart is set but MallocCheckHeapEach is not
+                    specified, the default check repetition is 1000.
+                MallocCheckHeapEach = <n> - If set, run a consistency check on
+                    the heap every <n> operations.  MallocCheckHeapEach is only
+                    meaningful if MallocCheckHeapStart is also set.
+        """
+        leaks_environment_variables = os.environ.copy()
+        leaks_environment_variables["MallocStackLogging"] = "1"
+        if perform_full_analysis:
+            leaks_environment_variables = dict(
+                leaks_environment_variables,
+                **{
+                    "MallocStackLoggingNoCompact": "1",
+                    "MallocScribble": "1",
+                    "MallocPreScribble": "1",
+                    "MallocGuardEdges": "1",
+                    "MallocCheckHeapStart": "1",
+                    "MallocCheckHeapEach": "100",  # TODO: If you do less than 100 heap allocations, will we not check again?
+                },
+            )
+        return leaks_environment_variables
+
+    def _run_leaks(
+        self,
+        command_args: list[str],
+        leaks_outfile_basename: Path,
+        leaks_env: dict,
+        cwd: Optional[Path] = None,
+    ) -> None:
+        """Run leaks utility for given args
+
+        Args:
+            command_args: List of strings comprised of executable name and
+                command line arguments
+            leaks_outfile_name: name of file to which you wish to write leaks
+                output
+            leaks_env: dictionary containing all relevant environment variables
+                for leaks execution (e.g. os.environ() + MallocStackLogging=1)
+            cwd: If not None, indicates to subprocess.run() that we wish to
+                change the working directory to cwd before executing the child
+        """
+        stdout_outfile_path = leaks_outfile_basename.with_suffix(
+            leaks_outfile_basename.suffix + ".stdout.txt"
+        )
+        stderr_outfile_path = leaks_outfile_basename.with_suffix(
+            leaks_outfile_basename.suffix + ".stderr.txt"
+        )
+
+        if cwd:
+            stdout_outfile_path = Path.joinpath(cwd, stdout_outfile_path)
+            stderr_outfile_path = Path.joinpath(cwd, stderr_outfile_path)
+
+        with open(
+            stdout_outfile_path, "w", encoding="utf-8"
+        ) as stdout_outfile, open(
+            stderr_outfile_path, "w", encoding="utf-8"
+        ) as stderr_outfile:
+            # running leaks processes hang if I set stderr=subprocess.PIPE, so
+            # instead of routing stderr to subprocess.STDOUT, might as well
+            # capture stderr in a separate file.
+            full_args = ["leaks", "-atExit", "--"] + command_args
+            subprocess.run(
+                full_args,
+                stdout=stdout_outfile,
+                stderr=stderr_outfile,
+                env=leaks_env,
+                check=False,
+                cwd=cwd,
+            )
+
+    @staticmethod
+    def _valid_commands_to_run(commands_to_run: tuple[str, ...]) -> bool:
+        """Ensures all algorithm command specifiers in tuple are valid
+
+        Args:
+            commands_to_run: tuple of strings which we wish to ensure are valid
+                algorithm command specifiers
+
+        Returns:
+            bool indicating whether or not the commands_to_run are valid
+        """
+        return set(commands_to_run) <= set(PLANARITY_ALGORITHM_SPECIFIERS())
+
+    def test_random_graphs(
+        self,
+        num_graphs_to_generate: int,
+        order: int,
+        commands_to_run: tuple[str, ...] = PLANARITY_ALGORITHM_SPECIFIERS(),
+        perform_full_analysis: bool = False,
+    ) -> None:
+        """Check RandomGraphs() for memory issues
+        'planarity -r [-q] C K N': Random graphs
+
+        Args:
+            num_graphs_to_generate: Number of graphs to randomly generate
+            order: Number of vertices in each randomly generated graph
+            commands_to_run: Tuple containing algorithm command specifiers
+                which we wish to use to test random graphs.
+            perform_full_analysis: bool to determine what environment variables
+                leaks_env will hold (to be sent to subprocess.run())
+
+        Raises:
+            PlanarityLeaksOrchestratorError: If commands_to_run contains [an]
+                invalid algorithm command specifier(s)
+        """
+        if not self._valid_commands_to_run(commands_to_run):
+            raise PlanarityLeaksOrchestratorError(
+                "commands_to_run param contains invalid command specifiers: "
+                f"'{commands_to_run}'."
+            )
+
+        leaks_env = self.setup_leaks_environment_variables(
+            perform_full_analysis
+        )
+
+        test_random_graphs_args = [
+            (command, num_graphs_to_generate, order, leaks_env)
+            for command in commands_to_run
+        ]
+        with multiprocessing.Pool(
+            processes=multiprocessing.cpu_count()
+        ) as pool:
+            _ = pool.starmap_async(
+                self._test_random_graphs, test_random_graphs_args
+            )
+            pool.close()
+            pool.join()
+
+    def _test_random_graphs(
+        self,
+        command: str,
+        num_graphs_to_generate: int,
+        order: int,
+        leaks_env: dict,
+    ) -> None:
+        """Runs RandomGraphs() for a given algorithm command specifier
+
+        Args:
+            command: algorithm command specifier
+            num_graphs_to_generate: Number of graphs to randomly generate
+            order: Number of vertices in each randomly generated graph
+            leaks_env: dictionary containing all relevant environment variables
+                for leaks execution (e.g. os.environ() + MallocStackLogging=1)
+        """
+        random_graphs_args = [
+            f"{self.planarity_path}",
+            "-r",
+            f"-{command}",
+            f"{num_graphs_to_generate}",
+            f"{order}",
+        ]
+        random_graphs_outfile_parent_dir = Path.joinpath(
+            self.output_dir,
+            "RandomGraphs",
+        )
+        Path.mkdir(
+            random_graphs_outfile_parent_dir, parents=True, exist_ok=True
+        )
+        random_graphs_leaks_outfile_basename = Path.joinpath(
+            random_graphs_outfile_parent_dir,
+            f"RandomGraphs.{command}.{num_graphs_to_generate}.{order}",
+        )
+        self._run_leaks(
+            random_graphs_args, random_graphs_leaks_outfile_basename, leaks_env
+        )
+
+    def test_max_planar_graph_generator(
+        self,
+        order: int,
+        perform_full_analysis: bool = False,
+    ) -> None:
+        """Check callRandomMaxPlanarGraph for memory issues
+
+        'planarity -rm [-q] N O [O2]': Maximal planar random graph
+
+        Args:
+            order: Desired number of vertices for randomly generated maximal
+                planar graph
+            perform_full_analysis: bool to determine what environment variables
+                leaks_env will hold (to be sent to subprocess.run())
+        """
+        leaks_env = (
+            PlanarityLeaksOrchestrator.setup_leaks_environment_variables(
+                perform_full_analysis
+            )
+        )
+        max_planar_graph_generator_outfile_parent_dir = Path.joinpath(
+            self.output_dir,
+            "RandomMaxPlanarGraphGenerator",
+        )
+        Path.mkdir(
+            max_planar_graph_generator_outfile_parent_dir,
+            parents=True,
+            exist_ok=True,
+        )
+        max_planar_graph_generator_leaks_outfile_basename = Path.joinpath(
+            max_planar_graph_generator_outfile_parent_dir,
+            f"RandomMaxPlanarGraphGenerator.{order}",
+        )
+        max_planar_graph_generator_adjlist_before_processing = (
+            max_planar_graph_generator_leaks_outfile_basename.with_suffix(
+                max_planar_graph_generator_leaks_outfile_basename.suffix
+                + ".AdjList.BEFORE.out.txt"
+            )
+        )
+        max_planar_graph_generator_adjlist_after_processing = (
+            max_planar_graph_generator_leaks_outfile_basename.with_suffix(
+                max_planar_graph_generator_leaks_outfile_basename.suffix
+                + ".AdjList.AFTER.out.txt"
+            )
+        )
+
+        max_planar_graph_args = [
+            f"{self.planarity_path}",
+            "-rm",
+            "-q",  # FIXME: This is due to planarityRandomGraphs.c line 432 - do we want to saveEdgeListFormat? How do I even do that???
+            f"{order}",
+            f"{max_planar_graph_generator_adjlist_after_processing}",
+            f"{max_planar_graph_generator_adjlist_before_processing}",
+        ]
+        self._run_leaks(
+            max_planar_graph_args,
+            max_planar_graph_generator_leaks_outfile_basename,
+            leaks_env,
+        )
+
+    def test_specific_graph(
+        self,
+        infile_path: Path,
+        commands_to_run: tuple[str, ...] = PLANARITY_ALGORITHM_SPECIFIERS(),
+        perform_full_analysis: bool = False,
+    ) -> None:
+        """Check SpecificGraph() for memory issues for given commands
+
+        Args:
+            infile_path: Path to .g6 infile containing single graph on which we
+                wish to run the algorithms specified in commands_to_run
+            commands_to_run: Tuple containing algorithm command specifiers
+                which we wish to use to test specific graph.
+            perform_full_analysis: bool to determine what environment variables
+                leaks_env will hold (to be sent to subprocess.run())
+
+        Raises:
+            PlanarityLeaksOrchestratorError: If input_file is not a valid .g6
+                file, or if commands_to_run contains invalid algorithm command
+                specifiers.
+        """
+        try:
+            file_type = determine_input_filetype(infile_path)
+        except ValueError as input_filetype_error:
+            raise PlanarityLeaksOrchestratorError(
+                "Failed to determine input filetype of " f"'{infile_path}'."
+            ) from input_filetype_error
+
+        if file_type != "G6":
+            raise PlanarityLeaksOrchestratorError(
+                f"Determined '{infile_path}' has filetype '{file_type}', "
+                "which is not supported; please supply a .g6 file."
+            )
+
+        if not self._valid_commands_to_run(commands_to_run):
+            raise PlanarityLeaksOrchestratorError(
+                "commands_to_run param contains invalid command specifiers: "
+                f"'{commands_to_run}'."
+            )
+
+        specific_graph_outfile_parent_dir = Path.joinpath(
+            self.output_dir,
+            "SpecificGraph",
+        )
+        Path.mkdir(
+            specific_graph_outfile_parent_dir,
+            parents=True,
+            exist_ok=True,
+        )
+
+        infile_copy_path = Path.joinpath(
+            specific_graph_outfile_parent_dir, infile_path.name
+        ).resolve()
+
+        shutil.copyfile(infile_path, infile_copy_path)
+
+        infile_path = infile_copy_path
+
+        leaks_env = (
+            PlanarityLeaksOrchestrator.setup_leaks_environment_variables(
+                perform_full_analysis
+            )
+        )
+
+        test_specific_graph_args = [
+            (
+                specific_graph_outfile_parent_dir,
+                infile_path,
+                command,
+                leaks_env,
+            )
+            for command in commands_to_run
+        ]
+        with multiprocessing.Pool(
+            processes=multiprocessing.cpu_count()
+        ) as pool:
+            _ = pool.starmap_async(
+                self._test_specific_graph, test_specific_graph_args
+            )
+            pool.close()
+            pool.join()
+
+    def _test_specific_graph(
+        self,
+        specific_graph_outfile_parent_dir: Path,
+        infile_path: Path,
+        command: str,
+        leaks_env: dict,
+    ) -> None:
+        """Check SpecificGraph() for memory issues for given command
+
+        'planarity -s [-q] C I O [O2]': Specific graph
+
+        Args:
+            specific_graph_outfile_parent_dir: Directory to which results for
+                testing SpecificGraph() will be output
+            infile_path: Path to .g6 infile containing single graph on which we
+                wish to run the algorithm specified by command
+            command:
+            leaks_env: dictionary containing all relevant environment variables
+                for leaks execution (e.g. os.environ() + MallocStackLogging=1)
+        """
+        specific_graph_leaks_outfile_basename = Path(
+            f"SpecificGraph.{infile_path.with_suffix('').name}.{command}",
+        )
+        specific_graph_primary_output = (
+            specific_graph_leaks_outfile_basename.with_suffix(
+                specific_graph_leaks_outfile_basename.suffix
+                + ".PRIMARY.out.txt"
+            )
+        )
+        specific_graph_secondary_output = (
+            specific_graph_leaks_outfile_basename.with_suffix(
+                specific_graph_leaks_outfile_basename.suffix
+                + ".SECONDARY.out.txt"
+            )
+        )
+        specific_graph_args = [
+            f"{self.planarity_path}",
+            "-s",
+            f"-{command}",
+            f"{infile_path.name}",
+            f"{specific_graph_primary_output}",
+            f"{specific_graph_secondary_output}",
+        ]
+        self._run_leaks(
+            command_args=specific_graph_args,
+            leaks_outfile_basename=specific_graph_leaks_outfile_basename,
+            leaks_env=leaks_env,
+            cwd=specific_graph_outfile_parent_dir,
+        )
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.RawTextHelpFormatter,
+        usage="python %(prog)s [options]",
+        description="Planarity leaks analysis\n"
+        "Automates runs of leaks on MacOS to identify memory issues for the "
+        "following:\n"
+        "- Random graphs with one small graph,\n"
+        "- Max planar graph generator,\n"
+        "If a .g6 infile containing one or more graphs is provided, will "
+        "run:\n"
+        "- Specific Graph (will only run on first graph in input file)\n"
+        "- Test All Graphs\n"
+        "For algorithm command specifiers given in config (i.e. subset of "
+        "{P, D, O, 2, 3, 4}).\n"
+        "Additionally, if a .g6 infile is provided, will test the Graph "
+        "Transformation tool (will only transform the first graph in"
+        "the file)\n\n"
+        "If an output directory is specified, a subdirectory will be created "
+        "to contain the results:\n"
+        "\t{output_dir}/{test_timestamp}/\n"
+        "If an output directory is not specified, defaults to:\n"
+        "\tTestSupport/results/planarity_leaks_orchestrator/{test_timestamp}/\n",
+    )
+    parser.add_argument(
+        "-p",
+        "--planaritypath",
+        type=Path,
+        default=None,
+        help="Must be a path to a planarity executable that was compiled "
+        "with -g; defaults to:\n"
+        "\t{planarity_project_root}/Release/planarity",
+        metavar="PATH_TO_PLANARITY_EXECUTABLE",
+    )
+    parser.add_argument(
+        "-c",
+        "--configfile",
+        type=Path,
+        default=None,
+        metavar="PATH_TO_CONFIG_FILE",
+        help="Optional path to planarity leaks orchestrator config file;"
+        "defaults to:\n"
+        "\t{planarity_project_root}/TestSupport/planaritytesting/"
+        "planarity_leaks_config.ini",
+    )
+    parser.add_argument(
+        "-o",
+        "--outputdir",
+        type=Path,
+        default=None,
+        metavar="DIR_FOR_RESULTS",
+        help="If no output directory provided, defaults to\n"
+        "\t{planarity_project_root}/TestSupport/results/"
+        "planarity_leaks_orchestrator/",
+    )
+
+    args = parser.parse_args()
+
+    leaks_orchestrator_root = Path(sys.argv[0]).resolve().parent
+    config_file = args.configfile
+    if not config_file:
+        config_file = Path.joinpath(
+            leaks_orchestrator_root,
+            "planarity_leaks_config.ini",
+        )
+    config = configparser.ConfigParser(
+        converters={
+            "list": lambda x: (
+                [i.strip() for i in x.split(",") if i] if len(x) > 0 else []
+            )
+        }
+    )
+    config.read(config_file)
+    if not config.sections():
+        raise argparse.ArgumentTypeError(
+            f"'{config_file}' doesn't correspond to a planarity leaks config "
+            "file. Please run planarity leaks config manager to generate "
+            "default config and modify values as necessary for the jobs you "
+            "wish to run."
+        )
+
+    planarity_leaks_orchestrator = PlanarityLeaksOrchestrator(
+        planarity_path=args.planaritypath,
+        output_dir=args.outputdir,
+    )
+    for section in config:
+        if not config[section].get("enabled"):
+            continue
+
+        if section == "RandomGraphs":
+            num_graphs_from_config = int(config[section]["num_graphs"])
+            order_from_config = int(config[section]["order"])
+            commands_to_run_from_config = config.getlist(  # type: ignore
+                section, "commands_to_run"
+            )
+            perform_full_analysis_from_config = bool(
+                config[section]["perform_full_analysis"]
+            )
+            planarity_leaks_orchestrator.test_random_graphs(
+                num_graphs_to_generate=num_graphs_from_config,
+                order=order_from_config,
+                commands_to_run=commands_to_run_from_config,
+                perform_full_analysis=perform_full_analysis_from_config,
+            )
+        elif section == "RandomMaxPlanarGraphGenerator":
+            order_from_config = int(config[section]["order"])
+            perform_full_analysis_from_config = bool(
+                config[section]["perform_full_analysis"]
+            )
+            planarity_leaks_orchestrator.test_max_planar_graph_generator(
+                order=order_from_config,
+                perform_full_analysis=perform_full_analysis_from_config,
+            )
+        elif section == "SpecificGraph":
+            infile_path_from_config = Path(config[section]["infile_path"])
+            perform_full_analysis_from_config = bool(
+                config[section]["perform_full_analysis"]
+            )
+            commands_to_run_from_config = config.getlist(  # type: ignore
+                section, "commands_to_run"
+            )
+            planarity_leaks_orchestrator.test_specific_graph(
+                infile_path=infile_path_from_config,
+                commands_to_run=commands_to_run_from_config,
+                perform_full_analysis=perform_full_analysis_from_config,
+            )
