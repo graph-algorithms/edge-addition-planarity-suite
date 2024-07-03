@@ -17,7 +17,7 @@ import subprocess
 import sys
 from typing import Optional
 
-sys.path.append(str(Path(sys.argv[0]).parent.parent))
+sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
 
 # pylint: disable=wrong-import-position
 
@@ -264,7 +264,7 @@ class PlanarityLeaksOrchestrator:
         self,
         num_graphs_to_generate: int,
         order: int,
-        commands_to_run: tuple[str, ...] = PLANARITY_ALGORITHM_SPECIFIERS(),
+        commands_to_run: tuple[str, ...] = (),
         perform_full_analysis: bool = False,
     ) -> None:
         """Check RandomGraphs() for memory issues
@@ -282,7 +282,9 @@ class PlanarityLeaksOrchestrator:
             PlanarityLeaksOrchestratorError: If commands_to_run contains [an]
                 invalid algorithm command specifier(s)
         """
-        if not self._valid_commands_to_run(commands_to_run):
+        if not commands_to_run:
+            commands_to_run = PLANARITY_ALGORITHM_SPECIFIERS()
+        elif not self._valid_commands_to_run(commands_to_run):
             raise PlanarityLeaksOrchestratorError(
                 "commands_to_run param contains invalid command specifiers: "
                 f"'{commands_to_run}'."
@@ -392,7 +394,7 @@ class PlanarityLeaksOrchestrator:
         max_planar_graph_args = [
             f"{self.planarity_path}",
             "-rm",
-            "-q",  # FIXME: This is due to planarityRandomGraphs.c line 432 - do we want to saveEdgeListFormat? How do I even do that???
+            "-q",  # FIXME: planarityRandomGraphs.c line 432 - do we want to saveEdgeListFormat?
             f"{order}",
             f"{max_planar_graph_generator_adjlist_after_processing}",
             f"{max_planar_graph_generator_adjlist_before_processing}",
@@ -406,7 +408,7 @@ class PlanarityLeaksOrchestrator:
     def test_specific_graph(
         self,
         infile_path: Path,
-        commands_to_run: tuple[str, ...] = PLANARITY_ALGORITHM_SPECIFIERS(),
+        commands_to_run: tuple[str, ...] = (),
         perform_full_analysis: bool = False,
     ) -> None:
         """Check SpecificGraph() for memory issues for given commands
@@ -436,8 +438,9 @@ class PlanarityLeaksOrchestrator:
                 f"Determined '{infile_path}' has filetype '{file_type}', "
                 "which is not supported; please supply a .g6 file."
             )
-
-        if not self._valid_commands_to_run(commands_to_run):
+        if not commands_to_run:
+            commands_to_run = PLANARITY_ALGORITHM_SPECIFIERS()
+        elif not self._valid_commands_to_run(commands_to_run):
             raise PlanarityLeaksOrchestratorError(
                 "commands_to_run param contains invalid command specifiers: "
                 f"'{commands_to_run}'."
@@ -545,15 +548,13 @@ if __name__ == "__main__":
         "following:\n"
         "- Random graphs with one small graph,\n"
         "- Max planar graph generator,\n"
-        "If a .g6 infile containing one or more graphs is provided, will "
-        "run:\n"
         "- Specific Graph (will only run on first graph in input file)\n"
         "- Test All Graphs\n"
-        "For algorithm command specifiers given in config (i.e. subset of "
-        "{P, D, O, 2, 3, 4}).\n"
-        "Additionally, if a .g6 infile is provided, will test the Graph "
-        "Transformation tool (will only transform the first graph in"
-        "the file)\n\n"
+        "-Graph Transformation tool\n"
+        "\tN.B. One must run the planarity_leaks_config_manager.py script, "
+        "and update default configuration values. For example, you must "
+        "provide an infile_name for the SpecificGraph job, and any jobs you "
+        "wish to run must have enabled set to True.\n"
         "If an output directory is specified, a subdirectory will be created "
         "to contain the results:\n"
         "\t{output_dir}/{test_timestamp}/\n"
@@ -622,7 +623,7 @@ if __name__ == "__main__":
         output_dir=args.outputdir,
     )
     for section in config:
-        if not config[section].get("enabled"):
+        if not config[section].getboolean("enabled"):
             continue
 
         if section == "RandomGraphs":
@@ -631,9 +632,10 @@ if __name__ == "__main__":
             commands_to_run_from_config = config.getlist(  # type: ignore
                 section, "commands_to_run"
             )
-            perform_full_analysis_from_config = bool(
-                config[section]["perform_full_analysis"]
+            perform_full_analysis_from_config = config[section].getboolean(
+                "perform_full_analysis"
             )
+
             planarity_leaks_orchestrator.test_random_graphs(
                 num_graphs_to_generate=num_graphs_from_config,
                 order=order_from_config,
@@ -642,8 +644,8 @@ if __name__ == "__main__":
             )
         elif section == "RandomMaxPlanarGraphGenerator":
             order_from_config = int(config[section]["order"])
-            perform_full_analysis_from_config = bool(
-                config[section]["perform_full_analysis"]
+            perform_full_analysis_from_config = config[section].getboolean(
+                "perform_full_analysis"
             )
             planarity_leaks_orchestrator.test_max_planar_graph_generator(
                 order=order_from_config,
@@ -651,8 +653,8 @@ if __name__ == "__main__":
             )
         elif section == "SpecificGraph":
             infile_path_from_config = Path(config[section]["infile_path"])
-            perform_full_analysis_from_config = bool(
-                config[section]["perform_full_analysis"]
+            perform_full_analysis_from_config = config[section].getboolean(
+                "perform_full_analysis"
             )
             commands_to_run_from_config = config.getlist(  # type: ignore
                 section, "commands_to_run"

@@ -32,11 +32,11 @@ def initialize_test_random_graphs_config(config_path: Path) -> None:
     test_random_graphs_config.read(config_path)
 
     test_random_graphs_config["RandomGraphs"] = {
-        "enabled": "True",
+        "enabled": "False",
         "perform_full_analysis": "True",
         "num_graphs": "50",
         "order": "6",
-        "commands_to_run": "3",
+        "commands_to_run": "",
     }
 
     with open(config_path, "w", encoding="utf-8") as config_file:
@@ -56,9 +56,9 @@ def initialize_test_max_planar_graph_generator_config(
     test_random_max_planar_graph_config.read(config_path)
 
     test_random_max_planar_graph_config["RandomMaxPlanarGraphGenerator"] = {
-        "enabled": "True",
+        "enabled": "False",
         "perform_full_analysis": "True",
-        "order": "6",  # FIXME: What is a good default value for this config?
+        "order": "100",
     }
 
     with open(config_path, "w", encoding="utf-8") as config_file:
@@ -78,10 +78,10 @@ def initialize_test_specific_graph_config(
     test_specific_graph_config.read(config_path)
 
     test_specific_graph_config["SpecificGraph"] = {
-        "enabled": "True",
+        "enabled": "False",
         "perform_full_analysis": "True",
         "infile_path": ">>CHANGEME<<",
-        "commands_to_run": "p, 3",
+        "commands_to_run": "",
     }
 
     with open(config_path, "w", encoding="utf-8") as config_file:
