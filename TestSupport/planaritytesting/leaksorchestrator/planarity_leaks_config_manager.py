@@ -20,6 +20,7 @@ def initialize_planarity_leaks_orchestrator_config(config_path: Path) -> None:
     initialize_test_random_max_planar_graph_generator_config(config_path)
     initialize_test_random_nonplanar_graph_generator_config(config_path)
     initialize_test_specific_graph_config(config_path)
+    initialize_test_transform_graph_config(config_path)
 
 
 def initialize_test_random_graphs_config(config_path: Path) -> None:
@@ -113,6 +114,29 @@ def initialize_test_specific_graph_config(
 
     with open(config_path, "w", encoding="utf-8") as config_file:
         test_specific_graph_config.write(config_file)
+
+
+def initialize_test_transform_graph_config(
+    config_path: Path,
+) -> None:
+    """Initialize planarity leaks orchestrator Graph Transformation config
+
+    Args:
+        config_path: Path to config file to initialize with defaults for
+            PlanarityLeaksOrchestrator.test_transform_graph()
+    """
+    test_transform_graph_config = configparser.ConfigParser()
+    test_transform_graph_config.read(config_path)
+
+    test_transform_graph_config["TransformGraph"] = {
+        "enabled": "False",
+        "perform_full_analysis": "True",
+        "infile_path": ">>CHANGEME<<",
+        "output_formats_to_test": "",
+    }
+
+    with open(config_path, "w", encoding="utf-8") as config_file:
+        test_transform_graph_config.write(config_file)
 
 
 if __name__ == "__main__":

@@ -2,6 +2,7 @@
 
 Functions:
     PLANARITY_ALGORITHM_SPECIFIERS() -> tuple[str, ...]
+    GRAPH_FORMAT_SPECIFIERS() -> dict[str, str]
     max_num_edges_for_order(order: int) -> int
     g6_header() -> str
     g6_suffix() -> str
@@ -12,6 +13,7 @@ Functions:
 
 __all__ = [
     "PLANARITY_ALGORITHM_SPECIFIERS",
+    "GRAPH_FORMAT_SPECIFIERS",
     "max_num_edges_for_order",
     "g6_header",
     "g6_suffix",
@@ -30,6 +32,13 @@ def PLANARITY_ALGORITHM_SPECIFIERS() -> (
 ):  # pylint: disable=invalid-name
     """Returns immutable tuple containing algorithm command specifiers"""
     return ("p", "d", "o", "2", "3", "4")
+
+
+def GRAPH_FORMAT_SPECIFIERS() -> (
+    dict[str, str]
+):  # pylint: disable=invalid-name
+    """Returns dict containing graph format specifiers mapped to extensions"""
+    return {"g": "G6", "a": "AdjList", "m": "AdjMat"}
 
 
 def max_num_edges_for_order(order: int) -> int:

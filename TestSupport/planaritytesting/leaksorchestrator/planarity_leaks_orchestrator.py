@@ -24,6 +24,7 @@ sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
 
 from planaritytesting_utils import (
     PLANARITY_ALGORITHM_SPECIFIERS,
+    GRAPH_FORMAT_SPECIFIERS,
     determine_input_filetype,
     is_path_to_executable,
 )
@@ -265,6 +266,21 @@ class PlanarityLeaksOrchestrator:
         """
         return set(commands_to_run) <= set(PLANARITY_ALGORITHM_SPECIFIERS())
 
+    @staticmethod
+    def _valid_graph_output_formats(
+        output_formats_to_run: tuple[str, ...]
+    ) -> bool:
+        """Ensures all graph output format specifiers in tuple are valid
+
+        Args:
+            output_formats_to_run: tuple of strings which we wish to ensure are
+                valid graph output format specifiers
+
+        Returns:
+            bool indicating whether or not the output_formats_to_run are valid
+        """
+        return set(output_formats_to_run) <= set(GRAPH_FORMAT_SPECIFIERS())
+
     def test_random_graphs(
         self,
         num_graphs_to_generate: int,
@@ -477,8 +493,8 @@ class PlanarityLeaksOrchestrator:
 
         Raises:
             PlanarityLeaksOrchestratorError: If input_file is not a valid .g6
-                file, or if commands_to_run contains invalid algorithm command
-                specifiers.
+                file, or if commands_to_run contains at least one invalid
+                algorithm command specifier.
         """
         try:
             file_type = determine_input_filetype(infile_path)
@@ -496,8 +512,8 @@ class PlanarityLeaksOrchestrator:
             commands_to_run = PLANARITY_ALGORITHM_SPECIFIERS()
         elif not self._valid_commands_to_run(commands_to_run):
             raise PlanarityLeaksOrchestratorError(
-                "commands_to_run param contains invalid command specifiers: "
-                f"'{commands_to_run}'."
+                "commands_to_run param contains invalid contains at least one "
+                f"invalid algorithm command specifier: '{commands_to_run}'."
             )
 
         specific_graph_outfile_parent_dir = Path.joinpath(
@@ -558,7 +574,8 @@ class PlanarityLeaksOrchestrator:
                 testing SpecificGraph() will be output
             infile_path: Path to .g6 infile containing single graph on which we
                 wish to run the algorithm specified by command
-            command:
+            command: Algorithm command specifier to indicate what
+                algorithm you wish to run SpecificGraph() with
             leaks_env: dictionary containing all relevant environment variables
                 for leaks execution (e.g. os.environ() + MallocStackLogging=1)
         """
@@ -592,6 +609,128 @@ class PlanarityLeaksOrchestrator:
             cwd=specific_graph_outfile_parent_dir,
         )
 
+    def test_transform_graph(
+        self,
+        infile_path: Path,
+        output_formats_to_test: tuple[str, ...] = (),
+        perform_full_analysis: bool = False,
+    ) -> None:
+        """Check Graph Transformation for memory issues for given formats
+
+        Args:
+            infile_path: Path to graph input file containing single graph to be
+                transformed to each of the desired output_formats_to_test
+            output_formats_to_test: Tuple containing graph output formats to
+                to test.
+            perform_full_analysis: bool to determine what environment variables
+                leaks_env will hold (to be sent to subprocess.run())
+
+        Raises:
+            PlanarityLeaksOrchestratorError: If input_file is not a valid graph
+                input file, or if output_formats_to_test contains at least one
+                invalid graph output format specifier.
+        """
+        try:
+            _ = determine_input_filetype(infile_path)
+        except ValueError as input_filetype_error:
+            raise PlanarityLeaksOrchestratorError(
+                "Failed to determine input filetype of " f"'{infile_path}'."
+            ) from input_filetype_error
+
+        if not output_formats_to_test:
+            output_formats_to_test = tuple(GRAPH_FORMAT_SPECIFIERS().keys())
+        elif not self._valid_graph_output_formats(output_formats_to_test):
+            raise PlanarityLeaksOrchestratorError(
+                "output_formats_to_test param contains at least one invalid "
+                f"graph output format specifier: '{output_formats_to_test}'."
+            )
+
+        transform_graph_outfile_parent_dir = Path.joinpath(
+            self.output_dir,
+            "TransformGraph",
+        )
+        Path.mkdir(
+            transform_graph_outfile_parent_dir,
+            parents=True,
+            exist_ok=True,
+        )
+
+        infile_copy_path = Path.joinpath(
+            transform_graph_outfile_parent_dir, infile_path.name
+        ).resolve()
+
+        shutil.copyfile(infile_path, infile_copy_path)
+
+        infile_path = infile_copy_path
+
+        leaks_env = self.setup_leaks_environment_variables(
+            perform_full_analysis
+        )
+
+        test_transform_graph_args = [
+            (
+                transform_graph_outfile_parent_dir,
+                infile_path,
+                output_format,
+                leaks_env,
+            )
+            for output_format in output_formats_to_test
+        ]
+        with multiprocessing.Pool(
+            processes=multiprocessing.cpu_count()
+        ) as pool:
+            _ = pool.starmap_async(
+                self._test_transform_graph, test_transform_graph_args
+            )
+            pool.close()
+            pool.join()
+
+    def _test_transform_graph(
+        self,
+        transform_graph_outfile_parent_dir: Path,
+        infile_path: Path,
+        output_format: str,
+        leaks_env: dict,
+    ) -> None:
+        """Check Graph Transformation for memory issues for given output format
+
+        'planarity -t [-q] -t(gam) I O ': Transform graph
+
+        Args:
+            transform_graph_outfile_parent_dir: Directory to which results for
+                testing graph transformation to desired format will be output
+            infile_path: Path to graph input file containing single graph to be
+                transformed to the desired output_format
+            output_format: Graph output format specifier to indicate the
+                target graph output format for which you wish to test graph
+                transform
+            leaks_env: dictionary containing all relevant environment variables
+                for leaks execution (e.g. os.environ() + MallocStackLogging=1)
+        """
+        graph_format_specifiers = GRAPH_FORMAT_SPECIFIERS()
+        transform_graph_leaks_outfile_basename = Path(
+            f"TransformGraph.{infile_path.with_suffix('').name}"
+            f".{graph_format_specifiers[output_format]}",
+        )
+        transform_graph_output = (
+            transform_graph_leaks_outfile_basename.with_suffix(
+                transform_graph_leaks_outfile_basename.suffix + ".out.txt"
+            )
+        )
+        specific_graph_args = [
+            f"{self.planarity_path}",
+            "-t",
+            f"-t{output_format}",
+            f"{infile_path.name}",
+            f"{transform_graph_output}",
+        ]
+        self._run_leaks(
+            command_args=specific_graph_args,
+            leaks_outfile_basename=transform_graph_leaks_outfile_basename,
+            leaks_env=leaks_env,
+            cwd=transform_graph_outfile_parent_dir,
+        )
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -601,19 +740,21 @@ if __name__ == "__main__":
         "Automates runs of leaks on MacOS to identify memory issues for the "
         "following:\n"
         "- Random graphs with one small graph,\n"
-        "- Max planar graph generator,\n"
+        "- Random max planar graph generator,\n"
+        "- Random nonplanar graph generator,\n"
         "- Specific Graph (will only run on first graph in input file)\n"
+        "- Graph Transformation tool\n"
         "- Test All Graphs\n"
-        "-Graph Transformation tool\n"
-        "\tN.B. One must run the planarity_leaks_config_manager.py script, "
+        "\n\tN.B. One must run the planarity_leaks_config_manager.py script, "
         "and update default configuration values. For example, you must "
         "provide an infile_name for the SpecificGraph job, and any jobs you "
-        "wish to run must have enabled set to True.\n"
+        "wish to run must have 'enabled' set to True.\n\n"
         "If an output directory is specified, a subdirectory will be created "
         "to contain the results:\n"
         "\t{output_dir}/{test_timestamp}/\n"
         "If an output directory is not specified, defaults to:\n"
-        "\tTestSupport/results/planarity_leaks_orchestrator/{test_timestamp}/\n",
+        "\tTestSupport/results/planarity_leaks_orchestrator/"
+        "{test_timestamp}/\n",
     )
     parser.add_argument(
         "-p",
@@ -683,7 +824,7 @@ if __name__ == "__main__":
         if section == "RandomGraphs":
             num_graphs_from_config = int(config[section]["num_graphs"])
             order_from_config = int(config[section]["order"])
-            commands_to_run_from_config = config.getlist(  # type: ignore
+            output_formats_to_test_from_config = config.getlist(  # type: ignore
                 section, "commands_to_run"
             )
             perform_full_analysis_from_config = config[section].getboolean(
@@ -693,7 +834,7 @@ if __name__ == "__main__":
             planarity_leaks_orchestrator.test_random_graphs(
                 num_graphs_to_generate=num_graphs_from_config,
                 order=order_from_config,
-                commands_to_run=commands_to_run_from_config,
+                commands_to_run=output_formats_to_test_from_config,
                 perform_full_analysis=perform_full_analysis_from_config,
             )
         elif section == "RandomMaxPlanarGraphGenerator":
@@ -719,11 +860,24 @@ if __name__ == "__main__":
             perform_full_analysis_from_config = config[section].getboolean(
                 "perform_full_analysis"
             )
-            commands_to_run_from_config = config.getlist(  # type: ignore
+            output_formats_to_test_from_config = config.getlist(  # type: ignore
                 section, "commands_to_run"
             )
             planarity_leaks_orchestrator.test_specific_graph(
                 infile_path=infile_path_from_config,
-                commands_to_run=commands_to_run_from_config,
+                commands_to_run=output_formats_to_test_from_config,
+                perform_full_analysis=perform_full_analysis_from_config,
+            )
+        elif section == "TransformGraph":
+            infile_path_from_config = Path(config[section]["infile_path"])
+            perform_full_analysis_from_config = config[section].getboolean(
+                "perform_full_analysis"
+            )
+            output_formats_to_test_from_config = config.getlist(  # type: ignore
+                section, "output_formats_to_test"
+            )
+            planarity_leaks_orchestrator.test_transform_graph(
+                infile_path=infile_path_from_config,
+                output_formats_to_test=output_formats_to_test_from_config,
                 perform_full_analysis=perform_full_analysis_from_config,
             )
