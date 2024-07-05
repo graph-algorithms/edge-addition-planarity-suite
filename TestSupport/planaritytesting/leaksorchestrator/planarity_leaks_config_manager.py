@@ -17,7 +17,8 @@ def initialize_planarity_leaks_orchestrator_config(config_path: Path) -> None:
         config_path: Path to config file to initialize with defaults
     """
     initialize_test_random_graphs_config(config_path)
-    initialize_test_max_planar_graph_generator_config(config_path)
+    initialize_test_random_max_planar_graph_generator_config(config_path)
+    initialize_test_random_nonplanar_graph_generator_config(config_path)
     initialize_test_specific_graph_config(config_path)
 
 
@@ -34,8 +35,8 @@ def initialize_test_random_graphs_config(config_path: Path) -> None:
     test_random_graphs_config["RandomGraphs"] = {
         "enabled": "False",
         "perform_full_analysis": "True",
-        "num_graphs": "50",
-        "order": "6",
+        "num_graphs": "500",
+        "order": "1000",
         "commands_to_run": "",
     }
 
@@ -43,26 +44,52 @@ def initialize_test_random_graphs_config(config_path: Path) -> None:
         test_random_graphs_config.write(config_file)
 
 
-def initialize_test_max_planar_graph_generator_config(
+def initialize_test_random_max_planar_graph_generator_config(
     config_path: Path,
 ) -> None:
     """Initialize planarity leaks orchestrator callRandomMaxPlanarGraph config
 
     Args:
         config_path: Path to config file to initialize with defaults for
-            PlanarityLeaksOrchestrator.test_max_planar_graph_generator()
+            PlanarityLeaksOrchestrator.test_random_max_planar_graph_generator()
     """
-    test_random_max_planar_graph_config = configparser.ConfigParser()
-    test_random_max_planar_graph_config.read(config_path)
+    test_random_max_planar_graph_generator_config = configparser.ConfigParser()
+    test_random_max_planar_graph_generator_config.read(config_path)
 
-    test_random_max_planar_graph_config["RandomMaxPlanarGraphGenerator"] = {
+    test_random_max_planar_graph_generator_config[
+        "RandomMaxPlanarGraphGenerator"
+    ] = {
         "enabled": "False",
         "perform_full_analysis": "True",
-        "order": "100",
+        "order": "1000",
     }
 
     with open(config_path, "w", encoding="utf-8") as config_file:
-        test_random_max_planar_graph_config.write(config_file)
+        test_random_max_planar_graph_generator_config.write(config_file)
+
+
+def initialize_test_random_nonplanar_graph_generator_config(
+    config_path: Path,
+) -> None:
+    """Initialize planarity leaks orchestrator callRandomNonplanarGraph config
+
+    Args:
+        config_path: Path to config file to initialize with defaults for
+            PlanarityLeaksOrchestrator.test_random_nonplanar_graph_generator()
+    """
+    test_random_nonplanar_graph_generator_config = configparser.ConfigParser()
+    test_random_nonplanar_graph_generator_config.read(config_path)
+
+    test_random_nonplanar_graph_generator_config[
+        "RandomNonplanarGraphGenerator"
+    ] = {
+        "enabled": "False",
+        "perform_full_analysis": "True",
+        "order": "1000",
+    }
+
+    with open(config_path, "w", encoding="utf-8") as config_file:
+        test_random_nonplanar_graph_generator_config.write(config_file)
 
 
 def initialize_test_specific_graph_config(

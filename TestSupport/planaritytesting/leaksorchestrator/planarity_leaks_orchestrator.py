@@ -17,6 +17,7 @@ import subprocess
 import sys
 from typing import Optional
 
+# This is required to import from modules in the parent package
 sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
 
 # pylint: disable=wrong-import-position
@@ -79,6 +80,8 @@ class PlanarityLeaksOrchestrator:
             planarity_path = Path.joinpath(
                 planarity_project_root, "Release", "planarity"
             )
+        else:
+            planarity_path = planarity_path.resolve()
 
         if not is_path_to_executable(planarity_path):
             raise argparse.ArgumentTypeError(
@@ -194,7 +197,9 @@ class PlanarityLeaksOrchestrator:
                     "MallocPreScribble": "1",
                     "MallocGuardEdges": "1",
                     "MallocCheckHeapStart": "1",
-                    "MallocCheckHeapEach": "100",  # TODO: If you do less than 100 heap allocations, will we not check again?
+                    "MallocCheckHeapEach": "6",
+                    # "MallocErrorAbort": "1",
+                    # "MallocCheckHeapAbort": "1",
                 },
             )
         return leaks_environment_variables
@@ -345,7 +350,7 @@ class PlanarityLeaksOrchestrator:
             random_graphs_args, random_graphs_leaks_outfile_basename, leaks_env
         )
 
-    def test_max_planar_graph_generator(
+    def test_random_max_planar_graph_generator(
         self,
         order: int,
         perform_full_analysis: bool = False,
@@ -374,34 +379,83 @@ class PlanarityLeaksOrchestrator:
             parents=True,
             exist_ok=True,
         )
-        max_planar_graph_generator_leaks_outfile_basename = Path.joinpath(
+        leaks_outfile_basename = Path.joinpath(
             max_planar_graph_generator_outfile_parent_dir,
             f"RandomMaxPlanarGraphGenerator.{order}",
         )
-        max_planar_graph_generator_adjlist_before_processing = (
-            max_planar_graph_generator_leaks_outfile_basename.with_suffix(
-                max_planar_graph_generator_leaks_outfile_basename.suffix
-                + ".AdjList.BEFORE.out.txt"
-            )
+        adjlist_before_processing = leaks_outfile_basename.with_suffix(
+            leaks_outfile_basename.suffix + ".AdjList.BEFORE.out.txt"
         )
-        max_planar_graph_generator_adjlist_after_processing = (
-            max_planar_graph_generator_leaks_outfile_basename.with_suffix(
-                max_planar_graph_generator_leaks_outfile_basename.suffix
-                + ".AdjList.AFTER.out.txt"
-            )
+        adjlist_after_processing = leaks_outfile_basename.with_suffix(
+            leaks_outfile_basename.suffix + ".AdjList.AFTER.out.txt"
         )
 
-        max_planar_graph_args = [
+        random_max_planar_graph_args = [
             f"{self.planarity_path}",
             "-rm",
             "-q",  # FIXME: planarityRandomGraphs.c line 432 - do we want to saveEdgeListFormat?
             f"{order}",
-            f"{max_planar_graph_generator_adjlist_after_processing}",
-            f"{max_planar_graph_generator_adjlist_before_processing}",
+            f"{adjlist_after_processing}",
+            f"{adjlist_before_processing}",
         ]
         self._run_leaks(
-            max_planar_graph_args,
-            max_planar_graph_generator_leaks_outfile_basename,
+            random_max_planar_graph_args,
+            leaks_outfile_basename,
+            leaks_env,
+        )
+
+    def test_random_nonplanar_graph_generator(
+        self,
+        order: int,
+        perform_full_analysis: bool = False,
+    ) -> None:
+        """Check callRandomNonplanarGraph for memory issues
+
+        'planarity -rn [-q] N O [O2]': Non-planar random graph (maximal planar
+            plus edge)
+
+        Args:
+            order: Desired number of vertices for randomly generated nonplanar
+                graph
+            perform_full_analysis: bool to determine what environment variables
+                leaks_env will hold (to be sent to subprocess.run())
+        """
+        leaks_env = (
+            PlanarityLeaksOrchestrator.setup_leaks_environment_variables(
+                perform_full_analysis
+            )
+        )
+        random_nonplanar_graph_generator_outfile_parent_dir = Path.joinpath(
+            self.output_dir,
+            "RandomNonplanarGraphGenerator",
+        )
+        Path.mkdir(
+            random_nonplanar_graph_generator_outfile_parent_dir,
+            parents=True,
+            exist_ok=True,
+        )
+        leaks_outfile_basename = Path.joinpath(
+            random_nonplanar_graph_generator_outfile_parent_dir,
+            f"RandomNonplanarGraphGenerator.{order}",
+        )
+        adjlist_before_processing = leaks_outfile_basename.with_suffix(
+            leaks_outfile_basename.suffix + ".AdjList.BEFORE.out.txt"
+        )
+        adjlist_after_processing = leaks_outfile_basename.with_suffix(
+            leaks_outfile_basename.suffix + ".AdjList.AFTER.out.txt"
+        )
+
+        random_nonplanar_graph_generator_args = [
+            f"{self.planarity_path}",
+            "-rn",
+            "-q",
+            f"{order}",
+            f"{adjlist_after_processing}",
+            f"{adjlist_before_processing}",
+        ]
+        self._run_leaks(
+            random_nonplanar_graph_generator_args,
+            leaks_outfile_basename,
             leaks_env,
         )
 
@@ -647,7 +701,16 @@ if __name__ == "__main__":
             perform_full_analysis_from_config = config[section].getboolean(
                 "perform_full_analysis"
             )
-            planarity_leaks_orchestrator.test_max_planar_graph_generator(
+            planarity_leaks_orchestrator.test_random_max_planar_graph_generator(
+                order=order_from_config,
+                perform_full_analysis=perform_full_analysis_from_config,
+            )
+        elif section == "RandomNonplanarGraphGenerator":
+            order_from_config = int(config[section]["order"])
+            perform_full_analysis_from_config = config[section].getboolean(
+                "perform_full_analysis"
+            )
+            planarity_leaks_orchestrator.test_random_nonplanar_graph_generator(
                 order=order_from_config,
                 perform_full_analysis=perform_full_analysis_from_config,
             )
