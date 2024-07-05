@@ -709,20 +709,23 @@ class PlanarityLeaksOrchestrator:
         """
         graph_format_specifiers = GRAPH_FORMAT_SPECIFIERS()
         transform_graph_leaks_outfile_basename = Path(
-            f"TransformGraph.{infile_path.with_suffix('').name}"
+            f"{infile_path.with_suffix('').name}"
             f".{graph_format_specifiers[output_format]}",
         )
-        transform_graph_output = (
+        transformed_graph_output = (
             transform_graph_leaks_outfile_basename.with_suffix(
                 transform_graph_leaks_outfile_basename.suffix + ".out.txt"
             )
+        )
+        transform_graph_leaks_outfile_basename = Path(
+            "TransformGraph" + f".{transform_graph_leaks_outfile_basename}"
         )
         specific_graph_args = [
             f"{self.planarity_path}",
             "-t",
             f"-t{output_format}",
             f"{infile_path.name}",
-            f"{transform_graph_output}",
+            f"{transformed_graph_output}",
         ]
         self._run_leaks(
             command_args=specific_graph_args,
@@ -824,7 +827,7 @@ if __name__ == "__main__":
         if section == "RandomGraphs":
             num_graphs_from_config = int(config[section]["num_graphs"])
             order_from_config = int(config[section]["order"])
-            output_formats_to_test_from_config = config.getlist(  # type: ignore
+            commands_to_run_from_config = config.getlist(  # type: ignore
                 section, "commands_to_run"
             )
             perform_full_analysis_from_config = config[section].getboolean(
@@ -834,7 +837,7 @@ if __name__ == "__main__":
             planarity_leaks_orchestrator.test_random_graphs(
                 num_graphs_to_generate=num_graphs_from_config,
                 order=order_from_config,
-                commands_to_run=output_formats_to_test_from_config,
+                commands_to_run=commands_to_run_from_config,
                 perform_full_analysis=perform_full_analysis_from_config,
             )
         elif section == "RandomMaxPlanarGraphGenerator":
@@ -860,12 +863,12 @@ if __name__ == "__main__":
             perform_full_analysis_from_config = config[section].getboolean(
                 "perform_full_analysis"
             )
-            output_formats_to_test_from_config = config.getlist(  # type: ignore
+            commands_to_run_from_config = config.getlist(  # type: ignore
                 section, "commands_to_run"
             )
             planarity_leaks_orchestrator.test_specific_graph(
                 infile_path=infile_path_from_config,
-                commands_to_run=output_formats_to_test_from_config,
+                commands_to_run=commands_to_run_from_config,
                 perform_full_analysis=perform_full_analysis_from_config,
             )
         elif section == "TransformGraph":
