@@ -1,4 +1,17 @@
-"""Creates default config file, 
+"""Create default config file for values required by PlanarityLeaksOrchestrator
+
+Functions:
+    initialize_planarity_leaks_orchestrator_config(config_path: Path) -> None
+    initialize_test_random_graphs_config(config_path: Path) -> None
+    initialize_test_random_max_planar_graph_generator_config(
+        config_path: Path,
+    ) -> None:
+    initialize_test_random_nonplanar_graph_generator_config(
+        config_path: Path,
+    ) -> None:
+    initialize_test_specific_graph_config(config_path: Path) -> None
+    initialize_test_transform_graph_config(config_path: Path) -> None
+    initialize_test_test_all_graphs_config(config_path: Path) -> None
 """
 
 #!/usr/bin/env python
@@ -21,6 +34,7 @@ def initialize_planarity_leaks_orchestrator_config(config_path: Path) -> None:
     initialize_test_random_nonplanar_graph_generator_config(config_path)
     initialize_test_specific_graph_config(config_path)
     initialize_test_transform_graph_config(config_path)
+    initialize_test_test_all_graphs_config(config_path)
 
 
 def initialize_test_random_graphs_config(config_path: Path) -> None:
@@ -93,9 +107,7 @@ def initialize_test_random_nonplanar_graph_generator_config(
         test_random_nonplanar_graph_generator_config.write(config_file)
 
 
-def initialize_test_specific_graph_config(
-    config_path: Path,
-) -> None:
+def initialize_test_specific_graph_config(config_path: Path) -> None:
     """Initialize planarity leaks orchestrator SpecificGraph config
 
     Args:
@@ -116,9 +128,7 @@ def initialize_test_specific_graph_config(
         test_specific_graph_config.write(config_file)
 
 
-def initialize_test_transform_graph_config(
-    config_path: Path,
-) -> None:
+def initialize_test_transform_graph_config(config_path: Path) -> None:
     """Initialize planarity leaks orchestrator Graph Transformation config
 
     Args:
@@ -137,6 +147,27 @@ def initialize_test_transform_graph_config(
 
     with open(config_path, "w", encoding="utf-8") as config_file:
         test_transform_graph_config.write(config_file)
+
+
+def initialize_test_test_all_graphs_config(config_path: Path) -> None:
+    """Initialize planarity leaks orchestrator TestAllGraphs config
+
+    Args:
+        config_path: Path to config file to initialize with defaults for
+            PlanarityLeaksOrchestrator.test_test_all_graphs()
+    """
+    test_test_all_graphs_config = configparser.ConfigParser()
+    test_test_all_graphs_config.read(config_path)
+
+    test_test_all_graphs_config["TestAllGraphs"] = {
+        "enabled": "False",
+        "perform_full_analysis": "True",
+        "infile_path": ">>CHANGEME<<",
+        "commands_to_run": "",
+    }
+
+    with open(config_path, "w", encoding="utf-8") as config_file:
+        test_test_all_graphs_config.write(config_file)
 
 
 if __name__ == "__main__":

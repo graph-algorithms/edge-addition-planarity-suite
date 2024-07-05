@@ -734,6 +734,134 @@ class PlanarityLeaksOrchestrator:
             cwd=transform_graph_outfile_parent_dir,
         )
 
+    def test_test_all_graphs(
+        self,
+        infile_path: Path,
+        commands_to_run: tuple[str, ...] = (),
+        perform_full_analysis: bool = False,
+    ) -> None:
+        """Check Test All Graphs for memory issues for given commands
+
+        Args:
+            infile_path: Path to .g6 infile containing at least one graph on
+                which we wish to run the algorithms specified in
+                commands_to_run
+            commands_to_run: Tuple containing algorithm command specifiers
+                which we wish to use to test test all graphs.
+            perform_full_analysis: bool to determine what environment variables
+                leaks_env will hold (to be sent to subprocess.run())
+
+        Raises:
+            PlanarityLeaksOrchestratorError: If input_file is not a valid .g6
+                file, or if commands_to_run contains at least one invalid
+                algorithm command specifier.
+        """
+        try:
+            file_type = determine_input_filetype(infile_path)
+        except ValueError as input_filetype_error:
+            raise PlanarityLeaksOrchestratorError(
+                "Failed to determine input filetype of " f"'{infile_path}'."
+            ) from input_filetype_error
+
+        if file_type != "G6":
+            raise PlanarityLeaksOrchestratorError(
+                f"Determined '{infile_path}' has filetype '{file_type}', "
+                "which is not supported; please supply a .g6 file."
+            )
+        if not commands_to_run:
+            commands_to_run = PLANARITY_ALGORITHM_SPECIFIERS()
+        elif not self._valid_commands_to_run(commands_to_run):
+            raise PlanarityLeaksOrchestratorError(
+                "commands_to_run param contains invalid contains at least one "
+                f"invalid algorithm command specifier: '{commands_to_run}'."
+            )
+
+        test_all_graphs_outfile_parent_dir = Path.joinpath(
+            self.output_dir,
+            "TestAllGraphs",
+        )
+        Path.mkdir(
+            test_all_graphs_outfile_parent_dir,
+            parents=True,
+            exist_ok=True,
+        )
+
+        infile_copy_path = Path.joinpath(
+            test_all_graphs_outfile_parent_dir, infile_path.name
+        ).resolve()
+
+        shutil.copyfile(infile_path, infile_copy_path)
+
+        infile_path = infile_copy_path
+
+        leaks_env = (
+            PlanarityLeaksOrchestrator.setup_leaks_environment_variables(
+                perform_full_analysis
+            )
+        )
+
+        test_specific_graph_args = [
+            (
+                test_all_graphs_outfile_parent_dir,
+                infile_path,
+                command,
+                leaks_env,
+            )
+            for command in commands_to_run
+        ]
+        with multiprocessing.Pool(
+            processes=multiprocessing.cpu_count()
+        ) as pool:
+            _ = pool.starmap_async(
+                self._test_test_all_graphs, test_specific_graph_args
+            )
+            pool.close()
+            pool.join()
+
+    def _test_test_all_graphs(
+        self,
+        test_all_graphs_outfile_parent_dir: Path,
+        infile_path: Path,
+        command: str,
+        leaks_env: dict,
+    ) -> None:
+        """Check Test All Graphs for memory issues for given command
+
+        'planarity -t [-q] C I O': Test All Graphs
+
+        Args:
+            test_all_graphs_outfile_parent_dir: Directory to which results for
+                testing Test All Graphs functionality will be output
+            infile_path: Path to .g6 infile containing single graph on which we
+                wish to run the algorithm specified by command
+            command: Algorithm command specifier to indicate what
+                algorithm you wish to run Test All Graphs with
+            leaks_env: dictionary containing all relevant environment variables
+                for leaks execution (e.g. os.environ() + MallocStackLogging=1)
+        """
+        test_all_graphs_leaks_outfile_basename = Path(
+            f"TestAllGraphs.{infile_path.with_suffix('').name}.{command}",
+        )
+        test_all_graphs_output = (
+            test_all_graphs_leaks_outfile_basename.with_suffix(
+                test_all_graphs_leaks_outfile_basename.suffix + ".out.txt"
+            )
+        )
+
+        test_all_graphs_args = [
+            f"{self.planarity_path}",
+            "-t",
+            f"-{command}",
+            f"{infile_path.name}",
+            f"{test_all_graphs_output}",
+        ]
+        self._run_leaks(
+            command_args=test_all_graphs_args,
+            leaks_outfile_basename=test_all_graphs_leaks_outfile_basename,
+            leaks_env=leaks_env,
+            cwd=test_all_graphs_outfile_parent_dir,
+        )
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -882,5 +1010,18 @@ if __name__ == "__main__":
             planarity_leaks_orchestrator.test_transform_graph(
                 infile_path=infile_path_from_config,
                 output_formats_to_test=output_formats_to_test_from_config,
+                perform_full_analysis=perform_full_analysis_from_config,
+            )
+        elif section == "TestAllGraphs":
+            infile_path_from_config = Path(config[section]["infile_path"])
+            perform_full_analysis_from_config = config[section].getboolean(
+                "perform_full_analysis"
+            )
+            commands_to_run_from_config = config.getlist(  # type: ignore
+                section, "commands_to_run"
+            )
+            planarity_leaks_orchestrator.test_test_all_graphs(
+                infile_path=infile_path_from_config,
+                commands_to_run=commands_to_run_from_config,
                 perform_full_analysis=perform_full_analysis_from_config,
             )
