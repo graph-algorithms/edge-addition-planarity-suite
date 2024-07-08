@@ -224,34 +224,27 @@ class PlanarityLeaksOrchestrator:
             cwd: If not None, indicates to subprocess.run() that we wish to
                 change the working directory to cwd before executing the child
         """
-        stdout_outfile_path = leaks_outfile_basename.with_suffix(
-            leaks_outfile_basename.suffix + ".stdout.txt"
+        outfile_path = leaks_outfile_basename.with_suffix(
+            leaks_outfile_basename.suffix + ".log"
         )
-        stderr_outfile_path = leaks_outfile_basename.with_suffix(
-            leaks_outfile_basename.suffix + ".stderr.txt"
-        )
-
         if cwd:
-            stdout_outfile_path = Path.joinpath(cwd, stdout_outfile_path)
-            stderr_outfile_path = Path.joinpath(cwd, stderr_outfile_path)
+            outfile_path = Path.joinpath(cwd, outfile_path)
 
-        with open(
-            stdout_outfile_path, "w", encoding="utf-8"
-        ) as stdout_outfile, open(
-            stderr_outfile_path, "w", encoding="utf-8"
-        ) as stderr_outfile:
-            # running leaks processes hang if I set stderr=subprocess.PIPE, so
-            # instead of routing stderr to subprocess.STDOUT, might as well
-            # capture stderr in a separate file.
-            full_args = ["leaks", "-atExit", "--"] + command_args
-            subprocess.run(
-                full_args,
-                stdout=stdout_outfile,
-                stderr=stderr_outfile,
-                env=leaks_env,
-                check=False,
-                cwd=cwd,
-            )
+        full_args = [
+            "script",
+            f"{outfile_path}",
+            "leaks",
+            "-atExit",
+            "--",
+        ] + command_args
+        subprocess.run(
+            full_args,
+            # Must default to None for stdout and stdin so that script utility
+            # will capture *all* output; see #59 for investigation
+            env=leaks_env,
+            check=False,
+            cwd=cwd,
+        )
 
     @staticmethod
     def _valid_commands_to_run(commands_to_run: tuple[str, ...]) -> bool:
