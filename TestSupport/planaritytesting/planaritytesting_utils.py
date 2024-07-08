@@ -8,7 +8,7 @@ Functions:
     g6_suffix() -> str
     LEDA_header() -> str
     determine_input_filetype(infile_path: Path) -> str
-    is_executable(executable_path: Path) -> bool
+    is_path_to_executable(executable_path: Path) -> bool
 """
 
 __all__ = [

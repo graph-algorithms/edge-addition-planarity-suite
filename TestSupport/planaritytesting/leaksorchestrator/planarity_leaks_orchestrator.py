@@ -859,7 +859,7 @@ if __name__ == "__main__":
         help="Optional path to planarity leaks orchestrator config file;"
         "defaults to:\n"
         "\t{planarity_project_root}/TestSupport/planaritytesting/"
-        "planarity_leaks_config.ini",
+        "leaksorchestrator/planarity_leaks_config.ini",
     )
     parser.add_argument(
         "-o",
