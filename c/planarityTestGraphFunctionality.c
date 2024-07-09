@@ -10,7 +10,8 @@ See the LICENSE.TXT file for licensing information.
 #include "g6-read-iterator.h"
 #include "strOrFile.h"
 
-typedef struct {
+typedef struct
+{
 	double duration;
 	int numGraphsRead;
 	int numOK;
@@ -18,7 +19,7 @@ typedef struct {
 	int errorFlag;
 } testAllStats;
 
-typedef testAllStats * testAllStatsP;
+typedef testAllStats *testAllStatsP;
 
 int transformFile(graphP theGraph, char *infileName);
 int transformString(graphP theGraph, char *inputStr);
@@ -30,7 +31,7 @@ int _getNumCharsToReprInt(int theNum)
 {
 	int numCharsRequired = 1;
 
-	while(theNum /= 10)
+	while (theNum /= 10)
 		numCharsRequired++;
 
 	return numCharsRequired;
@@ -86,12 +87,13 @@ int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr
 			else
 				Result = transformFile(theGraph, infileName);
 
-			if (Result != OK) {
+			if (Result != OK)
+			{
 				ErrorMessage("Unable to transform input graph.\n");
 			}
 			else
 			{
-				// Want to know whether the output is 0- or 1-based; will always be 
+				// Want to know whether the output is 0- or 1-based; will always be
 				// 0-based for transformations of .g6 input
 				if (outputBase != NULL)
 					(*outputBase) = (theGraph->internalFlags & FLAGS_ZEROBASEDIO) ? 1 : 0;
@@ -100,7 +102,7 @@ int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr
 					Result = gp_WriteToString(theGraph, outputStr, outputFormat);
 				else
 					Result = gp_Write(theGraph, outfileName, outputFormat);
-				
+
 				if (Result != OK)
 					ErrorMessage("Unable to write graph.\n");
 			}
@@ -122,17 +124,17 @@ int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr
 				else
 				{
 					messageFormat = "Start testing all graphs in \"%.*s\".\n";
-					charsAvailForFilename = (int) (MAXLINE - strlen(messageFormat));
+					charsAvailForFilename = (int)(MAXLINE - strlen(messageFormat));
 					sprintf(messageContents, messageFormat, charsAvailForFilename, infileName);
 					Message(messageContents);
-					
+
 					// Start the timer
 					platform_GetTime(start);
 
 					FILE *infile = fopen(infileName, "r");
 					if (infile == NULL)
 					{
-						charsAvailForFilename = (int) (MAXLINE - strlen(infileName));
+						charsAvailForFilename = (int)(MAXLINE - strlen(infileName));
 						messageFormat = "Unable to open file \"%.*s\" for input.\n";
 						sprintf(messageContents, messageFormat, charsAvailForFilename, infileName);
 						ErrorMessage(messageContents);
@@ -155,7 +157,7 @@ int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr
 					if (Result != OK && Result != NONEMBEDDABLE)
 					{
 						messageFormat = "\nEncountered error while running command '%c' on all graphs in \"%.*s\".\n";
-						charsAvailForFilename = (int) (MAXLINE - strlen(messageFormat));
+						charsAvailForFilename = (int)(MAXLINE - strlen(messageFormat));
 						sprintf(messageContents, messageFormat, command, charsAvailForFilename, infileName);
 						ErrorMessage(messageContents);
 					}
@@ -168,7 +170,7 @@ int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr
 					if (outputTestAllGraphsResults(command, &stats, infileName, outfileName, outputStr) != OK)
 					{
 						messageFormat = "Error outputting results running command '%c' on all graphs in \"%.*s\".\n";
-						charsAvailForFilename = (int) (MAXLINE - strlen(messageFormat));
+						charsAvailForFilename = (int)(MAXLINE - strlen(messageFormat));
 						sprintf(messageContents, messageFormat, command, charsAvailForFilename, infileName);
 						ErrorMessage(messageContents);
 						Result = NOTOK;
@@ -214,7 +216,7 @@ int transformString(graphP theGraph, char *inputStr)
 		ErrorMessage("Input string is null or empty.\n");
 		return NOTOK;
 	}
-	
+
 	return gp_ReadFromString(theGraph, inputStr);
 }
 
@@ -269,7 +271,7 @@ int testAllGraphs(graphP theGraph, char command, FILE *infile, testAllStatsP sta
 			return Result;
 		}
 	}
-	
+
 	AttachAlgorithm(pG6ReadIterator->currGraph, command);
 
 	copyOfOrigGraph = gp_New();
@@ -296,12 +298,12 @@ int testAllGraphs(graphP theGraph, char command, FILE *infile, testAllStatsP sta
 		if (Result != OK)
 		{
 			ErrorMessage("Unable to maximize arc capacity of graph struct to contain copy of original graph.\n");
+			gp_Free(&copyOfOrigGraph);
 			freeG6ReadIterator(&pG6ReadIterator);
 			stats->errorFlag = TRUE;
 			return Result;
 		}
 	}
-
 
 	while (true)
 	{
@@ -318,14 +320,14 @@ int testAllGraphs(graphP theGraph, char command, FILE *infile, testAllStatsP sta
 
 		if (pG6ReadIterator->currGraph == NULL)
 			break;
-		
+
 		gp_CopyGraph(copyOfOrigGraph, pG6ReadIterator->currGraph);
 
 		Result = gp_Embed(pG6ReadIterator->currGraph, embedFlags);
 
 		if (gp_TestEmbedResultIntegrity(pG6ReadIterator->currGraph, copyOfOrigGraph, Result) != Result)
 			Result = NOTOK;
-		
+
 		if (Result == OK)
 			numOK++;
 		else if (Result == NONEMBEDDABLE)
@@ -352,11 +354,13 @@ int testAllGraphs(graphP theGraph, char command, FILE *infile, testAllStatsP sta
 
 	if (freeG6ReadIterator(&pG6ReadIterator) != OK)
 		ErrorMessage("Unable to free G6ReadIterator.\n");
-	
+
+	gp_Free(&copyOfOrigGraph);
+
 	return Result;
 }
 
-int outputTestAllGraphsResults(char command, testAllStatsP stats, char * infileName, char *outfileName, char **outputStr)
+int outputTestAllGraphsResults(char command, testAllStatsP stats, char *infileName, char *outfileName, char **outputStr)
 {
 	int Result = OK;
 
@@ -368,13 +372,13 @@ int outputTestAllGraphsResults(char command, testAllStatsP stats, char * infileN
 	char *infileBasename = finalSlash ? (finalSlash + 1) : infileName;
 
 	char *headerFormat = "FILENAME=\"%s\" DURATION=\"%.3lf\"\n";
-	char *headerStr = (char *) malloc(
-										(
-											strlen(headerFormat) +
-											strlen(infileBasename) +
-											strlen("-1.7976931348623158e+308") + // -DBL_MAX from float.h
-											3
-										) * sizeof(char));
+	char *headerStr = (char *)malloc(
+		(
+			strlen(headerFormat) +
+			strlen(infileBasename) +
+			strlen("-1.7976931348623158e+308") + // -DBL_MAX from float.h
+			3) *
+		sizeof(char));
 	if (headerStr == NULL)
 	{
 		ErrorMessage("Unable allocate memory for output file header.\n");
@@ -383,14 +387,14 @@ int outputTestAllGraphsResults(char command, testAllStatsP stats, char * infileN
 
 	sprintf(headerStr, headerFormat, infileBasename, stats->duration);
 
-	char *resultsStr = (char *) malloc(
-										(
-											3 + _getNumCharsToReprInt(stats->numGraphsRead) +
-											1 + _getNumCharsToReprInt(stats->numOK) +
-											1 + _getNumCharsToReprInt(stats->numNONEMBEDDABLE)+
-											1 + 8 + // either ERROR or SUCCESS, so the longer of which is 7 + 1 chars
-											3
-										) * sizeof(char));
+	char *resultsStr = (char *)malloc(
+		(
+			3 + _getNumCharsToReprInt(stats->numGraphsRead) +
+			1 + _getNumCharsToReprInt(stats->numOK) +
+			1 + _getNumCharsToReprInt(stats->numNONEMBEDDABLE) +
+			1 + 8 + // either ERROR or SUCCESS, so the longer of which is 7 + 1 chars
+			3) *
+		sizeof(char));
 	if (resultsStr == NULL)
 	{
 		ErrorMessage("Unable allocate memory for results string.\n");
@@ -402,7 +406,7 @@ int outputTestAllGraphsResults(char command, testAllStatsP stats, char * infileN
 	}
 
 	sprintf(resultsStr, "-%c %d %d %d %s\n",
-						command, stats->numGraphsRead, stats->numOK, stats->numNONEMBEDDABLE, stats->errorFlag ? "ERROR" : "SUCCESS");
+			command, stats->numGraphsRead, stats->numOK, stats->numNONEMBEDDABLE, stats->errorFlag ? "ERROR" : "SUCCESS");
 
 	strOrFileP testOutput = NULL;
 
@@ -411,7 +415,7 @@ int outputTestAllGraphsResults(char command, testAllStatsP stats, char * infileN
 		FILE *outputFileP = fopen(outfileName, "w");
 		if (outputFileP == NULL)
 		{
-			charsAvailForFilename = (int) (MAXLINE - strlen(outfileName));
+			charsAvailForFilename = (int)(MAXLINE - strlen(outfileName));
 			messageFormat = "Unable to open file \"%.*s\" for output.\n";
 			sprintf(messageContents, messageFormat, charsAvailForFilename, outfileName);
 			ErrorMessage(messageContents);
@@ -440,8 +444,8 @@ int outputTestAllGraphsResults(char command, testAllStatsP stats, char * infileN
 				ErrorMessage("Expected memory to which outputStr points to be NULL.\n");
 			else
 			{
-				(*outputStr) = (char *) malloc(1 * sizeof(char));
-		
+				(*outputStr) = (char *)malloc(1 * sizeof(char));
+
 				if ((*outputStr) == NULL)
 				{
 					ErrorMessage("Unable to allocate memory for outputStr.\n");
@@ -503,7 +507,7 @@ int outputTestAllGraphsResults(char command, testAllStatsP stats, char * infileN
 
 	if (sf_closeFile(testOutput) != OK)
 	{
-		charsAvailForFilename = (int) (MAXLINE - strlen(outfileName));
+		charsAvailForFilename = (int)(MAXLINE - strlen(outfileName));
 		messageFormat = "Unable to close output file \"%.*s\".\n";
 		sprintf(messageContents, messageFormat, charsAvailForFilename, outfileName);
 		ErrorMessage(messageContents);
