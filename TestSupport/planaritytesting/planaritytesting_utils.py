@@ -88,7 +88,7 @@ def determine_input_filetype(infile_path: Path) -> str:
         if first_line[0].isdigit():
             return "AdjMat"
         if infile_path.suffix == g6_suffix() and (
-            first_line.find(g6_header())
+            (first_line.find(g6_header()) == 0)
             or (ord(first_line[0]) >= 63 and ord(first_line[0]) <= 126)
         ):
             return "G6"
