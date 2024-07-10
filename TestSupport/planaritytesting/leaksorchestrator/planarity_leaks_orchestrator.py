@@ -366,7 +366,10 @@ class PlanarityLeaksOrchestrator:
         random_max_planar_graph_args = [
             f"{self.planarity_path}",
             "-rm",
-            "-q",  # FIXME: planarityRandomGraphs.c line 432 - do we want to saveEdgeListFormat?
+            # planarityRandomGraphs.c line 432 - we don't want to
+            # saveEdgeListFormat, since we're only testing what's available
+            # from command line
+            "-q",
             f"{order}",
             f"{adjlist_after_processing}",
             f"{adjlist_before_processing}",
