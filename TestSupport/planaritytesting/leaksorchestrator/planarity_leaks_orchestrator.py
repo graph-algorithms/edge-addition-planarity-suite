@@ -191,6 +191,9 @@ class PlanarityLeaksOrchestrator:
             outfile_path = Path.joinpath(cwd, outfile_path)
 
         full_args = [
+            # Use script utility to wrap leaks because there is some issue
+            # capturing *all* terminal output when you invoke leaks directly
+            # and redirect stdout and stderr to file
             "script",
             f"{outfile_path}",
             "leaks",
@@ -200,7 +203,8 @@ class PlanarityLeaksOrchestrator:
         subprocess.run(
             full_args,
             # Must default to None for stdout and stdin so that script utility
-            # will capture *all* output; see #59 for investigation
+            # will capture *all* leaks output from running planarity; see #59
+            # for investigation
             env=leaks_env,
             check=False,
             cwd=cwd,
@@ -819,7 +823,7 @@ class PlanarityLeaksOrchestrator:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawTextHelpFormatter,
-        usage="python %(prog)s [options]",
+        usage="python %(prog)s [options] > /dev/null 2>&1",
         description="Planarity leaks analysis\n"
         "Automates runs of leaks on MacOS to identify memory issues for the "
         "following:\n"
