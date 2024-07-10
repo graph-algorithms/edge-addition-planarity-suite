@@ -17,10 +17,7 @@ import logging
 from pathlib import Path
 from typing import Optional
 
-from planaritytesting_utils import (
-    g6_header,
-    g6_suffix,
-)
+from planaritytesting_utils import g6_header, determine_input_filetype
 
 
 class G6DiffFinderException(Exception):
@@ -62,9 +59,16 @@ class G6DiffFinder:
         self._setup_logger(log_path)
 
         try:
-            self._validate_infile_path(first_comparand_infile_path)
-        except ValueError as first_comparand_infile_path_error:
-            raise first_comparand_infile_path_error
+            first_comparand_filetype = determine_input_filetype(
+                first_comparand_infile_path
+            )
+        except ValueError as comparand_infile_error:
+            raise comparand_infile_error
+
+        if first_comparand_filetype != "G6":
+            raise ValueError(
+                f"'{first_comparand_infile_path}' is not a .g6 file."
+            )
 
         try:
             self._first_comparand_dict = self._populate_comparand_dict(
@@ -76,9 +80,16 @@ class G6DiffFinder:
             ) from comparand_infile_not_found_error
 
         try:
-            self._validate_infile_path(second_comparand_infile_path)
-        except ValueError as second_comparand_infile_path_error:
-            raise second_comparand_infile_path_error
+            second_comparand_filetype = determine_input_filetype(
+                second_comparand_infile_path
+            )
+        except ValueError as comparand_infile_error:
+            raise comparand_infile_error
+
+        if second_comparand_filetype != "G6":
+            raise ValueError(
+                f"'{second_comparand_infile_path}' is not a .g6 file."
+            )
 
         try:
             self._second_comparand_dict = self._populate_comparand_dict(
@@ -123,23 +134,6 @@ class G6DiffFinder:
 
             # Add the Handler to the Logger
             self.logger.addHandler(logger_handler)
-
-    def _validate_infile_path(self, infile_path: Path) -> None:
-        """
-        Ensures the path provided corresponds to a file, and that the file has
-        the expected extension. No further validation is performed to ensure
-        the file actually corresponds to a .g6 file.
-
-        Args:
-            infile_path: path to a .g6 file
-        Raises:
-            ValueError: If the infile_path doesn't correspond to a file or if
-                the file extension is invalid
-        """
-        if not infile_path.is_file() or infile_path.suffix != g6_suffix():
-            raise ValueError(
-                f"Path '{infile_path}' doesn't correspond to a .g6 infile."
-            )
 
     def _populate_comparand_dict(
         self, comparand_infile_path: Path

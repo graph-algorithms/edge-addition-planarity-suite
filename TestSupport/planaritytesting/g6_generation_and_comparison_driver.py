@@ -27,6 +27,7 @@ from g6_diff_finder import G6DiffFinder, G6DiffFinderException
 from planaritytesting_utils import (
     PLANARITY_ALGORITHM_SPECIFIERS,
     max_num_edges_for_order,
+    is_path_to_executable,
 )
 from planarity_testAllGraphs_output_parsing import process_file_contents
 
@@ -109,31 +110,19 @@ class G6GenerationAndComparisonDriver:
         Raises:
             argparse.ArgumentTypeError: If any of the arguments were invalid
         """
-        if (
-            not geng_path
-            or not isinstance(geng_path, Path)
-            or not shutil.which(str(geng_path.resolve()))
-        ):
+        if not is_path_to_executable(geng_path):
             raise argparse.ArgumentTypeError(
                 f"Path for geng executable '{geng_path}' does not correspond "
                 "to an executable."
             )
 
-        if (
-            not planarity_path
-            or not isinstance(planarity_path, Path)
-            or not shutil.which(str(planarity_path.resolve()))
-        ):
+        if not is_path_to_executable(planarity_path):
             raise argparse.ArgumentTypeError(
                 f"Path for planarity executable '{planarity_path}' does not "
                 "correspond to an executable."
             )
 
-        if (
-            planarity_backup_path
-            and not isinstance(planarity_backup_path, Path)
-            and not shutil.which(str(planarity_backup_path.resolve()))
-        ):
+        if not is_path_to_executable(planarity_backup_path):
             raise argparse.ArgumentTypeError(
                 "Path for planarity_backup executable "
                 f"'{planarity_backup_path}' does not correspond to an "

@@ -21,7 +21,11 @@ import sys
 from typing import Optional
 
 from graph import Graph, GraphError
-from planaritytesting_utils import g6_header, g6_suffix, LEDA_header
+from planaritytesting_utils import (
+    g6_header,
+    determine_input_filetype,
+    is_path_to_executable,
+)
 
 
 class EdgeDeletionAnalysisError(BaseException):
@@ -75,19 +79,23 @@ class EdgeDeletionAnalyzer:
                 file (rather than an existing directory, or to a directory that
                 does not yet exist)
         """
-        if (
-            not planarity_path
-            or not isinstance(planarity_path, Path)
-            or not shutil.which(str(planarity_path.resolve()))
-        ):
+        if not is_path_to_executable(planarity_path):
             raise argparse.ArgumentTypeError(
                 f"Path for planarity executable '{planarity_path}' does not "
                 "correspond to an executable."
             )
 
-        if not infile_path.is_file():
+        try:
+            file_type = determine_input_filetype(infile_path)
+        except ValueError as input_filetype_error:
             raise argparse.ArgumentTypeError(
-                f"Path '{infile_path}' doesn't correspond to a file."
+                "Failed to determine input filetype of " f"'{infile_path}'."
+            ) from input_filetype_error
+
+        if file_type != "G6":
+            raise argparse.ArgumentTypeError(
+                f"Determined '{infile_path}' has filetype '{file_type}', "
+                "which is not supported; please supply a .g6 file."
             )
 
         if not output_dir:
@@ -120,39 +128,6 @@ class EdgeDeletionAnalyzer:
         self.output_dir = output_dir
 
         self._setup_logger(log_path)
-
-    @staticmethod
-    def _determine_input_filetype(infile_path: Path) -> str:
-        """Determine whether input file encoding
-        Args:
-            infile_path: Path to graph input file
-
-        Returns:
-            str: One of 'LEDA', 'AdjList', 'AdjMat', or 'G6'
-
-        Raises:
-            EdgeDeletionAnalysisError: If infile is empty or if unable to
-                determine the input file encoding
-        """
-        with open(infile_path, "r", encoding="utf-8") as infile:
-            first_line = infile.readline()
-            if not first_line:
-                raise EdgeDeletionAnalysisError(f"'{infile_path}' is empty.")
-            if LEDA_header() in first_line:
-                return "LEDA"
-            if re.match(r"N=(\d+)", first_line):
-                return "AdjList"
-            if first_line[0].isdigit():
-                return "AdjMat"
-            if infile_path.suffix == g6_suffix() and (
-                first_line.find(g6_header())
-                or (ord(first_line[0]) >= 63 and ord(first_line[0]) <= 126)
-            ):
-                return "G6"
-
-            raise EdgeDeletionAnalysisError(
-                f"Unable to determine filetype of '{infile_path}'."
-            )
 
     def _setup_logger(self, log_path: Optional[Path] = None) -> None:
         """Set up logger instance for EdgeDeletionAnalyzer
@@ -213,21 +188,6 @@ class EdgeDeletionAnalyzer:
                 graph(s), or if any of the analysis steps failed for the input
                 graph(s)
         """
-        try:
-            file_type = EdgeDeletionAnalyzer._determine_input_filetype(
-                self.orig_infile_path
-            )
-        except EdgeDeletionAnalysisError as input_filetype_error:
-            raise EdgeDeletionAnalysisError(
-                "Failed to determine input filetype of "
-                f"'{self.orig_infile_path}'."
-            ) from input_filetype_error
-
-        if file_type != "G6":
-            raise EdgeDeletionAnalysisError(
-                f"'{file_type}' is not supported; please supply a .g6 file."
-            )
-
         num_errors = 0
         with open(self.orig_infile_path, "r", encoding="utf-8") as orig_infile:
             line_num = 0
