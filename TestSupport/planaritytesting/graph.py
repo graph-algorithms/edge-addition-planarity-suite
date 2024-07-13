@@ -264,6 +264,23 @@ class Graph:
         """
         return max(len(x) for x in self.graph_adj_list_repr)
 
+    def get_vertex_degree_counts(self) -> dict[int, int]:
+        """Determine number of vertices of each degree in graph
+
+        Returns:
+            Dict mapping integers (degree) to integers (number of vertices of
+                of that degree in graph)
+        """
+        vertex_degree_counts = {}
+        for adj_list in self.graph_adj_list_repr:
+            deg_of_u = len(adj_list)
+            try:
+                vertex_degree_counts[deg_of_u] += 1
+            except KeyError:
+                vertex_degree_counts[deg_of_u] = 1
+
+        return vertex_degree_counts
+
     def delete_edge(self, u: int, v: int):
         """Delete edge
 
