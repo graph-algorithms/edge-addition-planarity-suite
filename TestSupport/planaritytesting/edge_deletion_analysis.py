@@ -3,7 +3,7 @@
 Classes:
     EdgeDeletionAnalysisError
     EdgeDeletionAnalyzer
-"""
+"""  # pylint: disable=too-many-lines
 
 #!/usr/bin/env python
 
@@ -56,12 +56,10 @@ class EdgeDeletionAnalyzer:
 
         If output_dir was not None and doesn't correspond to a file,
         self.output_dir will be set to:
-            {output_dir}/{infile_path.stem}
+            {output_dir}/{infile_path.stem}/{extension_choice}
         If output_dir was None, self.output_dir will be set to
-            TestSupport/results/edge_deletion_analysis/{infile_path.stem}
-        Where the infile_path.stem removes the final suffix, e.g. for file
-        n{order}.m{num_edges}.g6, we create the directory
-            TestSupport/results/edge_deletion_analysis/n{order}.m{num_edges}
+            TestSupport/results/edge_deletion_analysis/{infile_path.stem}/
+                {extension_choice}/
 
         If the output_dir exists, all of its contents are wiped and the
         directory remade. Then, the input file is copied into this directory.
@@ -184,7 +182,7 @@ class EdgeDeletionAnalyzer:
     def analyze_graphs(self) -> None:
         """Transform input graph(s) and perform edge-deletion analysis on each
 
-        Iterates over contents of .g6 input file; for each line fo the input
+        Iterates over contents of .g6 input file; for each line of the input
         file, write a new .g6 file containing only that graph. Then, run the
         transformation to adjacency list, and finally perform the edge-deletion
         analysis steps to determine if the graph contains a K_{3, 3} (extension
@@ -238,6 +236,9 @@ class EdgeDeletionAnalyzer:
                     ) from analysis_error
 
                 if not contains_missed_homeomorph:
+                    self.logger.info(
+                        "Cleaning up '%s' directory.", new_parent_dir
+                    )
                     shutil.rmtree(new_parent_dir, ignore_errors=True)
                 else:
                     num_errors += 1
@@ -301,15 +302,15 @@ class EdgeDeletionAnalyzer:
         ConstructInputFilename(), which enforces a limit on the length of the
         infileName.
 
-        2. Runs 
+        Runs 
             planarity -s -{self.extension_to_run} \
                 {infile_stem}.AdjList.out.txt \
                 {infile_stem}.AdjList.s.{self.extension_to_run}.out.txt
         and report whether a subgraph homeomorphic to K_{3, 3} (extension
         choice is 3) or K_4 (extension choice is 4) was found (NONEMBEDDABLE)
         or not (OK).
-        3. If no subgraph homeomorphic to K_{3, 3} (3) or
-        K_4 (4) was found (i.e. previous test yielded OK), run
+        If no subgraph homeomorphic to K_{3, 3} (3) or K_4 (4) was found (i.e. 
+        previous test yielded OK), run
             planarity -s -[po] {infile_stem}.AdjList.out.txt \
                 {infile_stem}.AdjList.s.[po].out.txt \
                 {infile_stem}.AdjList.s.[po].obstruction.txt
@@ -350,7 +351,7 @@ class EdgeDeletionAnalyzer:
                 obstruction_name = self._run_alternate_check(
                     adj_list_path, output_dir
                 )
-                if obstruction_name is not None:
+                if obstruction_name:
                     obstruction_type = self.determine_obstruction_type(
                         obstruction_name, output_dir
                     )
@@ -378,9 +379,8 @@ class EdgeDeletionAnalyzer:
                         contains_missed_homeomorph = True
                     elif obstruction_type == alternate_obstruction_type:
                         self.logger.info(
-                            "'%s' contains a subgraph "
-                            "homeomorphic to %s; proceeding with "
-                            "edge-deletion analysis."
+                            "'%s' contains a subgraph homeomorphic to %s; "
+                            "proceeding with edge-deletion analysis."
                             "\n=======================\n",
                             adj_list_path,
                             alternate_obstruction_type,
@@ -406,7 +406,6 @@ class EdgeDeletionAnalyzer:
                                 adj_list_path,
                                 target_obstruction_type,
                             )
-
         except EdgeDeletionAnalysisError as e:
             raise EdgeDeletionAnalysisError(
                 f"Encountered error when processing '{adj_list_path}'."
@@ -489,9 +488,8 @@ class EdgeDeletionAnalyzer:
         if result.returncode == 1:
             if "has a subgraph homeomorphic to" not in result.stdout:
                 error_message = (
-                    f"{descriptor}ity SpecificGraph() exit code "
-                    "doesn't align with stdout result for "
-                    f"'{graph_infile_path}':"
+                    f"{descriptor}ity SpecificGraph() exit code doesn't align "
+                    f"with stdout result for '{graph_infile_path}':"
                     f"\n\tOutput to stdout:\n\t\t{result.stdout}"
                     f"\n\tOutput to stderr:\n\t\t{result.stderr}"
                 )
@@ -508,9 +506,8 @@ class EdgeDeletionAnalyzer:
         if result.returncode == 0:
             if "has no subgraph homeomorphic to" not in result.stdout:
                 error_message = (
-                    f"{descriptor}ity SpecificGraph() exit code "
-                    "doesn't align with stdout result for "
-                    f"'{graph_infile_path}':"
+                    f"{descriptor}ity SpecificGraph() exit code doesn't align "
+                    f"with stdout result for '{graph_infile_path}':"
                     f"\n\tOutput to stdout:\n\t\t{result.stdout}"
                     f"\n\tOutput to stderr:\n\t\t{result.stderr}"
                 )
@@ -599,9 +596,8 @@ class EdgeDeletionAnalyzer:
         if result.returncode == 1:
             if f"is not {descriptor}" not in result.stdout:
                 error_message = (
-                    f"{descriptor}ity SpecificGraph() exit code "
-                    "doesn't align with stdout result for "
-                    f"'{graph_infile_path}':"
+                    f"{descriptor}ity SpecificGraph() exit code doesn't align "
+                    f"with stdout result for '{graph_infile_path}':"
                     f"\n\tOutput to stdout:\n\t\t{result.stdout}"
                     f"\n\tOutput to stderr:\n\t\t{result.stderr}"
                 )
@@ -616,9 +612,8 @@ class EdgeDeletionAnalyzer:
         elif result.returncode == 0:
             if f"is {descriptor}" not in result.stdout:
                 error_message = (
-                    f"{descriptor}ity SpecificGraph() exit code "
-                    "doesn't align with stdout result for "
-                    f"'{graph_infile_path}':"
+                    f"{descriptor}ity SpecificGraph() exit code doesn't align "
+                    f"with stdout result for '{graph_infile_path}':"
                     f"\n\tOutput to stdout:\n\t\t{result.stdout}"
                     f"\n\tOutput to stderr:\n\t\t{result.stderr}"
                 )
@@ -666,12 +661,12 @@ class EdgeDeletionAnalyzer:
             obstruction_graph = EdgeDeletionAnalyzer._read_adj_list_graph_repr(
                 obstruction_name
             )
-        except EdgeDeletionAnalysisError as e:
+        except EdgeDeletionAnalysisError as read_adj_list_error:
             raise EdgeDeletionAnalysisError(
                 "Encountered error when trying to read obstruction subgraph "
                 "from "
                 f"'{Path.joinpath(output_dir, obstruction_name)}'"
-            ) from e
+            ) from read_adj_list_error
 
         vertex_degree_counts = obstruction_graph.get_vertex_degree_counts()
         vertices_with_nonzero_degree = (
@@ -764,7 +759,7 @@ class EdgeDeletionAnalyzer:
         return target_obstruction_type, alternate_obstruction_type
 
     @staticmethod
-    def _get_specific_graph_alternate_check_names(  # FIXME: Is there a better name?
+    def _get_specific_graph_alternate_check_names(
         extension_choice: int,
     ) -> tuple[str, str]:
         """
@@ -789,8 +784,8 @@ class EdgeDeletionAnalyzer:
         """Static method to read graph as adjacency list from file
 
         Args:
-            graph_path: Path to adjacency-list representation of graph we wish
-                to use to initialize a Graph object
+            graph_path: Path to 0-based adjacency-list representation of graph
+                we wish to use to initialize a Graph object
 
         Returns:
             Graph with order and graph_adj_list_repr corresponding to file
@@ -834,33 +829,40 @@ class EdgeDeletionAnalyzer:
     def _edge_deletion_analysis(  # pylint: disable=too-many-locals
         self, adj_list_path: Path, output_dir: Path
     ) -> bool:
-        """Search for homeomorph by removing graph edges and re-running planarity/outerplanarity
+        """Search for homeomorph by removing edges and running alternate check
 
         If the original graph was determined to not contain a subgraph
-        homeomorphic to the target graph (K_{3, 3} or K_4) by the corresponding
-        search algorithm but was reported as nonplanar (K_{3, 3}) or not
-        outerplanar (K_4) and the obstruction found was homeomorphic to K_5
-        (K_{3, 3}) or K_{2, 3} (K_4), we want to see if there is no subgraph
-        homeomorphic to K_{3, 3} (extension choice is 3) or K_4 (4) with a high
-        degree of confidence (not a guarantee).
+        homeomorphic to K_{3, 3} (extension choice is 3) or K_4 (4), but was
+        reported as nonplanar (3) or nonouterplanar (4) and the obstruction
+        found was homeomorphic to K_5 (3) or K_{2, 3} (4), we want to see if
+        there is no subgraph homeomorphic to K_{3, 3} (3) or K_4 (4) with a
+        high degree of confidence (not a guarantee).
 
         This is done by iterating over the graph_adj_list_repr of the original
         graph:
             - for each edge, if the head vertex label is greater than the
             tail vertex label, create a deepcopy of the original graph and
-            remove that edge before re-running planarity to see if it is
-            planar. If so, then continue to next iteration. If it is nonplanar,
-            either it finds an obstruction homeomorphic to K_{3, 3} (extension
-            choice is 3) or K_4 (extension choice is 4) and we emit a message
-            and continue to the next iteration, or the obstruction is
-            homeomorphic to K_5 (3) or K_{2, 3} (4). If so, run K_{3, 3} search
-            (3) or K_4 search (4) on the graph-minus-one-edge and see if we
-            still report that there is no K_{3, 3} (3) or K_4 (4). It may be
-            the case that the graph-minus-one-edge still has the same
-            underlying structure that causes the issue with K_{3, 3} search (3)
-            or K_4 search (4) on the original graph, so even this additional
-            test is not a 100% guarantee of finding the target homeomorph that
-            we should have found in the original graph.
+            remove that edge before running planarity/outerplanarity
+            - if the graph-minus-one-edge is planar/outerplanar, we continue to
+            the next loop iteration to see if removing a different edge will
+            reveal the target obstruction
+            - if the graph-minus-one-edge is nonplanar/nonouterplanar, we check
+            the obstruction type:
+              - if the obstruction is homeomorphic to K_{3, 3} (extension
+              choice is 3) or K_4 (extension choice is 4), we emit a message to
+              to indicate that we found a target homeomorph (K_{3, 3} or K_4)
+              that was missed by their respective search
+              - if the obstruction is homeomorphic to K_5 (3) or K_{2, 3} (4),
+              run K_{3, 3} search (3) or K_4 search (4) on the
+              graph-minus-one-edge; either:
+                - we report that a K_{3, 3} (3) or K_4 (4) was found that was
+                missed, or
+                - we report that no K_{3, 3} (3) or K_4 (4) was found.
+        It may be the case that the graph-minus-one-edge still has the same
+        underlying structure that causes the issue with K_{3, 3} search (3) or
+        K_4 search (4) on the original graph, so even this additional test is
+        not a 100% guarantee of finding the target homeomorph that we should
+        have found in the original graph.
 
         Args:
             adj_list_path: Path to adjacency list upon which to perform
@@ -901,102 +903,100 @@ class EdgeDeletionAnalyzer:
 
         orig_graph_contains_homeomorph = False
         u = -1
-        for (  # pylint: disable=too-many-nested-blocks
-            adj_list
-        ) in orig_graph.graph_adj_list_repr:
+        for adj_list in orig_graph.graph_adj_list_repr:
             u += 1
             adj_list_index = -1
             for v in adj_list:
                 adj_list_index += 1
-                if v > u:
-                    orig_graph_minus_edge = deepcopy(orig_graph)
-                    try:
-                        orig_graph_minus_edge.delete_edge(u, v)
-                    except EdgeDeletionAnalysisError as e:
-                        raise EdgeDeletionAnalysisError(
-                            f"Unable to delete edge {{{u}, {v}}} from copied "
-                            "graph."
-                        ) from e
+                if v < u:
+                    continue
 
-                    orig_graph_minus_edge_path = Path.joinpath(
-                        adj_list_path.parent,
-                        f"{adj_list_stem}.rem{u}-{v}" f"{adj_list_suffix}",
+                orig_graph_minus_edge = deepcopy(orig_graph)
+                try:
+                    orig_graph_minus_edge.delete_edge(u, v)
+                except EdgeDeletionAnalysisError as delete_edge_error:
+                    raise EdgeDeletionAnalysisError(
+                        f"Unable to delete edge {{{u}, {v}}} from copied graph"
+                    ) from delete_edge_error
+
+                orig_graph_minus_edge_path = Path.joinpath(
+                    adj_list_path.parent,
+                    f"{adj_list_stem}.rem{u}-{v}{adj_list_suffix}",
+                )
+                with open(
+                    orig_graph_minus_edge_path, "w", encoding="utf-8"
+                ) as outfile:
+                    outfile.write(str(orig_graph_minus_edge))
+
+                try:
+                    obstruction_name = self._run_alternate_check(
+                        orig_graph_minus_edge_path, output_dir
                     )
-                    with open(
-                        orig_graph_minus_edge_path, "w", encoding="utf-8"
-                    ) as outfile:
-                        outfile.write(str(orig_graph_minus_edge))
+                except EdgeDeletionAnalysisError as e:
+                    raise EdgeDeletionAnalysisError(
+                        "Failed to run planarity on "
+                        f"'{orig_graph_minus_edge_path}'."
+                    ) from e
 
-                    try:
-                        obstruction_name = self._run_alternate_check(
-                            orig_graph_minus_edge_path, output_dir
-                        )
-                    except EdgeDeletionAnalysisError as e:
-                        raise EdgeDeletionAnalysisError(
-                            "Failed to run planarity on "
-                            f"'{orig_graph_minus_edge_path}'."
-                        ) from e
+                if not obstruction_name:
+                    continue
 
-                    if obstruction_name:
-                        try:
-                            obstruction_type = self.determine_obstruction_type(
-                                obstruction_name, output_dir
-                            )
-                        except EdgeDeletionAnalysisError as e:
-                            raise EdgeDeletionAnalysisError(
-                                "Failed to determine obstruction type of "
-                                "graph produced by removing edge "
-                                f"{{{u}, {v}}} from the original graph."
-                            ) from e
-                        planar_obstruction_path = Path.joinpath(
-                            output_dir, obstruction_name
-                        )
-                        target_obstruction_type, alternate_obstruction_type = (
-                            self._get_forbidden_minor_pair(
-                                self.extension_choice
-                            )
-                        )
+                try:
+                    obstruction_type = self.determine_obstruction_type(
+                        obstruction_name, output_dir
+                    )
+                except EdgeDeletionAnalysisError as e:
+                    raise EdgeDeletionAnalysisError(
+                        "Failed to determine obstruction type of graph "
+                        f"produced by removing edge {{{u}, {v}}} from the "
+                        "original graph."
+                    ) from e
+                planar_obstruction_path = Path.joinpath(
+                    output_dir, obstruction_name
+                )
+                target_obstruction_type, alternate_obstruction_type = (
+                    self._get_forbidden_minor_pair(self.extension_choice)
+                )
 
-                        if obstruction_type == target_obstruction_type:
-                            self.logger.info(
-                                "'%s' contains a "
-                                "%s that was not found by %s "
-                                "search; see '%s'.",
-                                orig_graph_minus_edge_path,
-                                target_obstruction_type,
-                                target_obstruction_type,
-                                planar_obstruction_path,
-                            )
-                            orig_graph_contains_homeomorph = True
-                        elif obstruction_type == alternate_obstruction_type:
-                            self.logger.info(
-                                "'%s' contains a subgraph homeomorphic to %s; "
-                                "see '%s'.",
-                                orig_graph_minus_edge_path,
-                                alternate_obstruction_type,
-                                planar_obstruction_path,
-                            )
-                            orig_graph_minus_edge_contains_homeomorph = (
-                                self._run_homeomorph_search(
-                                    orig_graph_minus_edge_path
-                                )
-                            )
-                            if orig_graph_minus_edge_contains_homeomorph:
-                                self.logger.info(
-                                    "'%s' contains a %s that was not found by "
-                                    "%s search; see '%s'.",
-                                    orig_graph_minus_edge_path,
-                                    target_obstruction_type,
-                                    target_obstruction_type,
-                                    planar_obstruction_path,
-                                )
-                                orig_graph_contains_homeomorph = True
-                            else:
-                                self.logger.info(
-                                    "'%s' doesn't appear to contain a %s.",
-                                    orig_graph_minus_edge_path,
-                                    target_obstruction_type,
-                                )
+                if obstruction_type == target_obstruction_type:
+                    self.logger.info(
+                        "'%s' contains a %s that was not found by %s search; "
+                        "see '%s'.",
+                        orig_graph_minus_edge_path,
+                        target_obstruction_type,
+                        target_obstruction_type,
+                        planar_obstruction_path,
+                    )
+                    orig_graph_contains_homeomorph = True
+                elif obstruction_type == alternate_obstruction_type:
+                    self.logger.info(
+                        "'%s' contains a subgraph homeomorphic to %s; see "
+                        "'%s'. Attempting to see if edge-removal allows %s "
+                        "search to find the target homeomorph.",
+                        orig_graph_minus_edge_path,
+                        alternate_obstruction_type,
+                        planar_obstruction_path,
+                        target_obstruction_type,
+                    )
+                    orig_graph_minus_edge_contains_homeomorph = (
+                        self._run_homeomorph_search(orig_graph_minus_edge_path)
+                    )
+                    if orig_graph_minus_edge_contains_homeomorph:
+                        self.logger.info(
+                            "'%s' contains a %s that was not found by %s "
+                            "search; see '%s'.",
+                            orig_graph_minus_edge_path,
+                            target_obstruction_type,
+                            target_obstruction_type,
+                            planar_obstruction_path,
+                        )
+                        orig_graph_contains_homeomorph = True
+                    else:
+                        self.logger.info(
+                            "'%s' doesn't appear to contain a %s.",
+                            orig_graph_minus_edge_path,
+                            target_obstruction_type,
+                        )
 
         return orig_graph_contains_homeomorph
 
