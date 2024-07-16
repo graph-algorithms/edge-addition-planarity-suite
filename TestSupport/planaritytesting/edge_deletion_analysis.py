@@ -70,7 +70,8 @@ class EdgeDeletionAnalyzer:
             output_dir: Directory under which a new subdirectory will be
                 created to which results will be written.
             extension_choice: Specifies the graph algorithm extension you wish
-                to test, either 3 for K_{3, 3} search or 4 for K_4 search
+                to test, either 2  for K_{2, 3} search, 3 for K_{3, 3} search
+                or 4 for K_4 search
 
         Raises:
             argparse.ArgumentTypeError: If the planarity_path doesn't
@@ -98,11 +99,11 @@ class EdgeDeletionAnalyzer:
                 "which is not supported; please supply a .g6 file."
             )
 
-        if extension_choice not in (3, 4):
+        if extension_choice not in (2, 3, 4):
             raise ValueError(
                 f"'{extension_choice}' is not a valid graph algorithm "
-                "extension command specifier; expecting either 3 (K_{3, 3}) "
-                "4 (K_4)"
+                "extension command specifier; expecting either 2 (K_{2, 3}), "
+                "3 (K_{3, 3}), or 4 (K_4)."
             )
 
         if not output_dir:
@@ -185,9 +186,11 @@ class EdgeDeletionAnalyzer:
         Iterates over contents of .g6 input file; for each line of the input
         file, write a new .g6 file containing only that graph. Then, run the
         transformation to adjacency list, and finally perform the edge-deletion
-        analysis steps to determine if the graph contains a K_{3, 3} (extension
-        choice is 3) or K_4 (extension choice is 4) that was missed by the
-        K_{3, 3} search (3) or K_4 search (4) graph algorithm extension.
+        analysis steps to determine if the graph contains the target
+        homeomorph, either a graph homeomorphic to K_{2, 3} (extension choice
+        is 2), a K_{3, 3} (extension choice is 3), or a K_4 (extension choice
+        is 4) that was missed by the K_{2, 3} search (2), K_{3, 3} search (3)
+        or K_4 search (4) graph algorithm extension.
 
         Raises:
             EdgeDeletionAnalysisError: If an error occured when trying to
@@ -306,37 +309,39 @@ class EdgeDeletionAnalyzer:
             planarity -s -{self.extension_to_run} \
                 {infile_stem}.AdjList.out.txt \
                 {infile_stem}.AdjList.s.{self.extension_to_run}.out.txt
-        and report whether a subgraph homeomorphic to K_{3, 3} (extension
-        choice is 3) or K_4 (extension choice is 4) was found (NONEMBEDDABLE)
-        or not (OK).
-        If no subgraph homeomorphic to K_{3, 3} (3) or K_4 (4) was found (i.e. 
+        and report whether a subgraph homeomorphic to K_{2, 3} (extension
+        choice is 2), K_{3, 3} (3) or K_4 (4) was found (NONEMBEDDABLE) or not
+        (OK).
+        If no subgraph homeomorphic to the target homeomorph was found (i.e. 
         previous test yielded OK), run
             planarity -s -[po] {infile_stem}.AdjList.out.txt \
                 {infile_stem}.AdjList.s.[po].out.txt \
                 {infile_stem}.AdjList.s.[po].obstruction.txt
-        a. If the graph is reported as planar (3) or outerplanar (4), then we
-        can be sure no K_{3, 3} (3) or K_4 (4) exists in the graph and
-        execution continues without running the rest of the loop body.
-        b. If the graph was reported as nonplanar (3) or not outerplanar (4),
+        a. If the graph is reported as planar (3) or outerplanar (2, 4), then
+        we can be sure there is no subgraph homeomorphic to the target
+        homeomorph exists in the graph and execution continues without running
+        the rest of the loop body.
+        b. If the graph was reported as nonplanar (3) or nonouterplanar (2, 4),
         then examine the obstruction in the secondary output file
         {input_file}.AdjList.s.[po].obstruction.txt:
-            i. If the obstruction is homeomorphic to K_{3, 3} (3)
-            or K_4 (4), then report that the original graph contains a
-            subgraph homeomorphic to K_{3, 3} (3) or K_4 (4) that was not found
-            by the K_{3, 3} search (3) or K_4 search (4)
-            ii. If the obstruction is homeomorphic to K_5 (3) or K_{2, 3} (4),
-            then perform the edge-deletion analysis to determine whether the
-            graph doesn't contain a K_{3, 3} (3) or K_4 (4) (with a high degree
-            of confidence)
+            i. If the obstruction is homeomorphic to the target homeomorph,
+            then report that the original graph contains a
+            subgraph homeomorphic to the target homeomorph that was not found
+            by the respective search graph algorithm extension.
+            ii. If the obstruction is homeomorphic to K_4 (2), K_5 (3), or
+            K_{2, 3} (4), then perform the edge-deletion analysis to determine
+            whether the graph doesn't contain a K_{2, 3} (2), K_{3, 3} (3), or
+            K_4 (4) (with a high degree of confidence)
 
         Args:
             adj_list_path: Path to adjacency list representation of input graph
             output_dir: Path to output directory
 
         Return:
-            bool indicating whether or not a K_{3, 3} (3) or K_4 (4) was found
-                by planarity (3) or by outerplanarity (4) that K_{3, 3} search
-                (3) or K_4 search (4) missed
+            bool indicating whether or not a K_{2, 3} (2), K_{3, 3} (3), or
+                K_4 (4) was found by planarity (3) or by outerplanarity (2, 4)
+                that was not found by the respective search graph algorithm
+                extension.
         Raises:
             EdgeDeletionAnalysisError: re-raised from any step of the analysis
         """
@@ -418,20 +423,23 @@ class EdgeDeletionAnalyzer:
     def _run_homeomorph_search(
         self, graph_infile_path: Path
     ) -> Optional[bool]:
-        """Run K_{3, 3} search (extension choice is 3) or K_4 search (4)
+        """Run homeomorph search based on extension choice
+
+        Runs K_{2, 3} search for extension choice 2, K_{3, 3} search for
+        extension choice 3, or K_4 search for extension choice 4.
 
         Args:
-            graph_infile_path: Path to graph on which you wish to run K_{3, 3}
-                search (3) or K_4 search (4)
+            graph_infile_path: Path to graph on which you wish to run the
+                homeomorph search algorithm
 
         Returns:
-            bool: indicates whether or not the input graph contained a K_{3, 3}
-                or K_4
+            bool: indicates whether or not the input graph contained the target
+                homeomorph
 
         Raises:
-            EdgeDeletionAnalysisError: If calling planarity returned anything
-                other than 0 (OK) or 1 (NONEMBEDDABLE), or if messages emitted
-                to stdout don't align with their respective exit codes
+            EdgeDeletionAnalysisError: If calling SpecificGraph returned
+                anything other than 0 (OK) or 1 (NONEMBEDDABLE), or if messages
+                emitted to stdout don't align with their respective exit codes.
         """
         homeomorph_search_output_name = Path(
             graph_infile_path.stem + f".s.{self.extension_choice}.out.txt"
@@ -741,21 +749,35 @@ class EdgeDeletionAnalyzer:
         """Gets pair of "forbidden minors" for given extension choice
 
         Args:
-            extension_choice: either 3 (K_{3, 3} search) or 4 (K_4 search)
+            extension_choice: either 2 (K_{2, 3} search), 3 (K_{3, 3} search),
+                or 4 (K_4 search)
 
         Returns:
             The pair of forbidden minors for the given extension choice
         """
-        if extension_choice not in (3, 4):
+        if extension_choice not in (2, 3, 4):
             raise EdgeDeletionAnalysisError(
                 f"Invalid extension choice: '{extension_choice}'"
             )
-        target_obstruction_type = (
-            "K_{3, 3}" if extension_choice == 3 else "K_4"
-        )
-        alternate_obstruction_type = (
-            "K_5" if extension_choice == 3 else "K_{2, 3}"
-        )
+        target_obstruction_correspondence = {
+            2: "K_{2, 3}",
+            3: "K_{3, 3}",
+            4: "K_4",
+        }
+
+        alternate_obstruction_correspondence = {
+            2: "K_4",
+            3: "K_5",
+            4: "K_{2, 3}",
+        }
+
+        target_obstruction_type = target_obstruction_correspondence[
+            extension_choice
+        ]
+        alternate_obstruction_type = alternate_obstruction_correspondence[
+            extension_choice
+        ]
+
         return target_obstruction_type, alternate_obstruction_type
 
     @staticmethod
@@ -764,18 +786,28 @@ class EdgeDeletionAnalyzer:
     ) -> tuple[str, str]:
         """
         Args:
-            extension_choice: either 3 (K_{3, 3} search) or 4 (K_4 search)
+            extension_choice: either 2 (K_{2, 3} search), 3 (K_{3, 3} search),
+                or 4 (K_4 search)
 
         Returns:
             The pair of command_specifier and descriptor for the given
                 extension choice
         """
-        if extension_choice not in (3, 4):
+        if extension_choice not in (2, 3, 4):
             raise EdgeDeletionAnalysisError(
                 f"Invalid extension choice: '{extension_choice}'"
             )
-        command_specifier = "p" if extension_choice == 3 else "o"
-        descriptor = "planar" if extension_choice == 3 else "outerplanar"
+
+        command_correspondence = {2: "o", 3: "p", 4: "o"}
+
+        descriptor_correspondence = {
+            2: "outerplanar",
+            3: "planar",
+            4: "outerplanar",
+        }
+
+        command_specifier = command_correspondence[extension_choice]
+        descriptor = descriptor_correspondence[extension_choice]
 
         return command_specifier, descriptor
 
@@ -832,11 +864,12 @@ class EdgeDeletionAnalyzer:
         """Search for homeomorph by removing edges and running alternate check
 
         If the original graph was determined to not contain a subgraph
-        homeomorphic to K_{3, 3} (extension choice is 3) or K_4 (4), but was
-        reported as nonplanar (3) or nonouterplanar (4) and the obstruction
-        found was homeomorphic to K_5 (3) or K_{2, 3} (4), we want to see if
-        there is no subgraph homeomorphic to K_{3, 3} (3) or K_4 (4) with a
-        high degree of confidence (not a guarantee).
+        homeomorphic to K_{2, 3} (extension choice is 2), K_{3, 3} (3), or
+        K_4 (4), but was reported as nonplanar (3) or nonouterplanar (2, 4) and
+        the obstruction found was homeomorphic to K_4 (2), K_5 (3) or
+        K_{2, 3} (4), we want to see if there is no subgraph homeomorphic to
+        K_{2, 3} (2), K_{3, 3} (3) or K_4 (4) with a high degree of confidence
+        (not a guarantee).
 
         This is done by iterating over the graph_adj_list_repr of the original
         graph:
@@ -848,21 +881,21 @@ class EdgeDeletionAnalyzer:
             reveal the target obstruction
             - if the graph-minus-one-edge is nonplanar/nonouterplanar, we check
             the obstruction type:
-              - if the obstruction is homeomorphic to K_{3, 3} (extension
-              choice is 3) or K_4 (extension choice is 4), we emit a message to
-              to indicate that we found a target homeomorph (K_{3, 3} or K_4)
+              - if the obstruction is homeomorphic to the target homeomorph, we
+              emit a message to indicate that we found a target homeomorph
               that was missed by their respective search
-              - if the obstruction is homeomorphic to K_5 (3) or K_{2, 3} (4),
-              run K_{3, 3} search (3) or K_4 search (4) on the
-              graph-minus-one-edge; either:
-                - we report that a K_{3, 3} (3) or K_4 (4) was found that was
-                missed, or
-                - we report that no K_{3, 3} (3) or K_4 (4) was found.
+              - if the obstruction is homeomorphic to the K_4 (2), K_5 (3), or
+              K_{2, 3} (4), run K_{2, 3} search (2), K_{3, 3} search (3), or
+              K_4 search (4) on the graph-minus-one-edge; either:
+                - we report that a subgraph homeomorphic to the target graph
+                was missed by the original call to the graph search extension
+                - we report that no subgraph homeomorphic to the target graph
+                was found by the edge-deletion-analysis.
         It may be the case that the graph-minus-one-edge still has the same
-        underlying structure that causes the issue with K_{3, 3} search (3) or
-        K_4 search (4) on the original graph, so even this additional test is
-        not a 100% guarantee of finding the target homeomorph that we should
-        have found in the original graph.
+        underlying structure that causes the issue with K_{2, 3} search (2),
+        K_{3, 3} search (3), or K_4 search (4) on the original graph, so even
+        this additional test is not a 100% guarantee of finding the target
+        homeomorph that we should have found in the original graph.
 
         Args:
             adj_list_path: Path to adjacency list upon which to perform
@@ -871,8 +904,8 @@ class EdgeDeletionAnalyzer:
                 edge-deletion analysis on the input graph
 
         Returns:
-            bool indicating at least one K_{3, 3}/K_4 was found as a result of
-                the edge-deletion manipulation.
+            bool indicating at least one K_{2, 3}/K_{3, 3}/K_4 was found as a
+                result of the edge-deletion manipulation.
 
         Raises:
             EdgeDeletionAnalysisError is raised if:
@@ -1018,28 +1051,32 @@ if __name__ == "__main__":
         "2. Runs\n"
         "\tplanarity -s -{extension_choice} {infile_stem}.AdjList.out.txt "
         "{infile_stem}.AdjList.s.{extension_choice}.out.txt\n"
-        "and report whether a subgraph homeomorphic to K_{3, 3} (extension "
-        "choice is 3) or K_4 (extension choice is 4) was found "
-        "(NONEMBEDDABLE) or not (OK).\n"
-        "3. If no subgraph homeomorphic to K_{3, 3}/K_4 was found "
+        "and report whether a subgraph homeomorphic to K_{2, 3} (extension "
+        "choice is 2), K_{3, 3} (extension choice is 3), or K_4 (extension "
+        "choice is 4) was found (NONEMBEDDABLE) or not (OK).\n"
+        "3. If no subgraph homeomorphic to the target homeomorph was found "
         "(i.e. previous test yielded OK), run\n"
         "\tplanarity -s -p {infile_stem}.AdjList.out.txt "
         "{infile_stem}.AdjList.s.[po].out.txt {infile_stem}.AdjList.s.[po]."
         "obstruction.txt\n"
         "Where we run planarity if the extension choice is 3 or "
-        "outerplanarity if the extension choice is 4.\n"
+        "outerplanarity if the extension choice is 2 or 4.\n"
         "\ta. If the graph is reported as planar/outerplanar, then we can be "
-        "sure no K_{3, 3}/K_4 exists in the graph and execution terminates.\n"
+        "sure the target homeomorph will not be present in the graph and "
+        "execution terminates.\n"
         "\tb. If the graph was reported as nonplanar/nonouterplanar, examine "
         "the obstruction in \n"
         "\t\t{input_file}.AdjList.s.[po].obstruction.txt:\n"
-        "\t\ti. If the obstruction is homeomorphic to K_{3, 3}/K_4, then "
-        "report that the  original graph contains a subgraph "
-        "homeomorphic to K_{3, 3}/K_4 that was not found by the K_{3, 3} "
-        "search/K_4 search\n"
-        "\t\tii. If the obstruction is homeomorphic to K_5/K_{2, 3}, then "
-        "perform the edge-deletion analysis to determine whether the "
-        "graph doesn't contain a K_{3, 3}/K_4 (with high confidence).",
+        "\t\ti. If the obstruction is homeomorphic to K_{2, 3}/K_{3, 3}/K_4, "
+        "then report that the original graph contains the target homeomorph "
+        "that was not found by the respective graph search extension.\n"
+        "\t\tii. If the obstruction is homeomorphic to the other forbidden "
+        "minor (K_4 for K{2, 3}, K_5 for K_{3, 3}, or K_{2, 3} for K_4) then "
+        "perform the edge-deletion analysis to determine if the original "
+        "graph contains a subgraph homeomorphic to the target homeomorph that"
+        "wasn't found by the corresponding graph search extension, or if the "
+        "original graph doesn't contain the target homeomorph (with high "
+        "confidence).",
     )
     parser.add_argument(
         "-p",
@@ -1074,8 +1111,8 @@ if __name__ == "__main__":
         type=int,
         metavar="ALGORITHM_COMMAND",
         default=3,
-        help="Graph algorithm command specifier, either 3 (K_{3, 3} search) "
-        "or 4 (K_4 search)",
+        help="Graph algorithm command specifier, either 2 (K_{2, 3} search), "
+        "3 (K_{3, 3} search), or 4 (K_4 search)",
     )
 
     args = parser.parse_args()
