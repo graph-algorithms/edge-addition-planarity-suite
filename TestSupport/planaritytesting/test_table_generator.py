@@ -8,11 +8,16 @@ Classes:
 
 #!/usr/bin/env python
 
-__all__ = []
+__all__ = [
+    "TestTableGeneratorPathError",
+    "TestTableGeneratorFileProcessingError",
+    "TestTableGenerator",
+]
 
 import sys
 import argparse
 from pathlib import Path
+from typing import Optional
 
 from planaritytesting_utils import PLANARITY_ALGORITHM_SPECIFIERS
 from planarity_testAllGraphs_output_parsing import (
@@ -53,12 +58,15 @@ class TestTableGeneratorFileProcessingError(BaseException):
 class TestTableGenerator:  # pylint: disable=too-many-instance-attributes
     """Process output from running planarity testAllGraphs for a single command"""
 
+    __COL_WIDTH_TOLERANCE = 2
+
     def __init__(
         self,
         test_table_input_dir: Path,
         test_table_output_dir: Path,
         canonical_files: bool = False,
         makeg_files: bool = False,
+        edge_deletion_analysis_results: Optional[dict[str, int]] = None,
     ):
         """Initializes TestTableGenerator instance.
 
@@ -112,6 +120,7 @@ class TestTableGenerator:  # pylint: disable=too-many-instance-attributes
 
         self.canonical_files = canonical_files
         self.makeg_files = makeg_files
+        self._edge_deletion_analysis_results = edge_deletion_analysis_results
 
     def get_order_and_command_from_input_dir(self):
         """Extract order and command from input_dir if possible
@@ -160,8 +169,8 @@ class TestTableGenerator:  # pylint: disable=too-many-instance-attributes
             for filename in filenames:
                 if (
                     (self.canonical_files and "canonical" not in filename)
-                    or (self.makeg_files and "makeg" not in filename)
                     or (not self.canonical_files and "canonical" in filename)
+                    or (self.makeg_files and "makeg" not in filename)
                     or (not self.makeg_files and "makeg" in filename)
                 ):
                     continue
@@ -179,7 +188,7 @@ class TestTableGenerator:  # pylint: disable=too-many-instance-attributes
         if not self._processed_data:
             raise TestTableGeneratorFileProcessingError(
                 f"No files in input directory '{self.input_dir}' matched the "
-                f"patterns indicated by the input flags:"
+                "patterns indicated by the input flags:"
                 f"\n\tcanonical_files={self.canonical_files}"
                 f"\n\tmakeg_files={self.makeg_files}"
             )
@@ -232,37 +241,48 @@ class TestTableGenerator:  # pylint: disable=too-many-instance-attributes
             raise TestAllGraphsPathError(
                 "Unable to process file when given invalid infile name."
             ) from e
-        else:
-            if num_edges in self._processed_data:
-                raise TestAllGraphsOutputFileContentsError(
-                    "Already processed a file corresponding to "
-                    f"{num_edges} edges."
+
+        if num_edges in self._processed_data:
+            raise TestAllGraphsOutputFileContentsError(
+                "Already processed a file corresponding to "
+                f"{num_edges} edges."
+            )
+
+        try:
+            (
+                planarity_infile_name,
+                duration,
+                numGraphs,
+                numOK,
+                numNONEMBEDDABLE,
+                errorFlag,
+            ) = process_file_contents(infile_path, self.command)
+        except TestAllGraphsOutputFileContentsError as e:
+            raise TestAllGraphsOutputFileContentsError(
+                f"Unable to process contents of '{infile_path}'."
+            ) from e
+
+        self._processed_data[num_edges] = {
+            "infilename": planarity_infile_name,
+            "numGraphs": numGraphs,
+            "numOK": numOK,
+            "numNONEMBEDDABLE": numNONEMBEDDABLE,
+            "errorFlag": errorFlag,
+            "duration": duration,
+        }
+
+        if self._edge_deletion_analysis_results:
+            edge_deletion_analysis_for_infile = (
+                self._edge_deletion_analysis_results.get(planarity_infile_name)
+            )
+            if edge_deletion_analysis_for_infile:
+                self._processed_data[num_edges].update(
+                    {"numInvalidOK": edge_deletion_analysis_for_infile}
                 )
 
-            try:
-                (
-                    planarity_infile_name,
-                    duration,
-                    numGraphs,
-                    numOK,
-                    numNONEMBEDDABLE,
-                    errorFlag,
-                ) = process_file_contents(infile_path, self.command)
-            except TestAllGraphsOutputFileContentsError as e:
-                raise TestAllGraphsOutputFileContentsError(
-                    f"Unable to process contents of '{infile_path}'."
-                ) from e
-            else:
-                self._processed_data[num_edges] = {
-                    "infilename": planarity_infile_name,
-                    "numGraphs": numGraphs,
-                    "numOK": numOK,
-                    "numNONEMBEDDABLE": numNONEMBEDDABLE,
-                    "errorFlag": errorFlag,
-                    "duration": duration,
-                }
-
-    def write_table_formatted_data_to_file(self):
+    def write_table_formatted_data_to_file(
+        self,
+    ):  # pylint: disable=too-many-locals
         """Writes the data extracted from the input files and totals to table"""
         self.output_dir = Path.joinpath(self.output_dir, f"{self.order}")
         Path.mkdir(self.output_dir, parents=True, exist_ok=True)
@@ -282,69 +302,87 @@ class TestTableGenerator:  # pylint: disable=too-many-instance-attributes
         num_NONEMBEDDABLE_heading = "# NONEMBEDDABLE"
         errorFlag_heading = "Error flag"
         duration_heading = "Duration"
+        numInvalidOK_heading = "# Invalid OK"
 
-        max_infilename_length = max(
-            len(infilename_heading),
-            *[len(x.get("infilename")) for x in self._processed_data.values()],
+        infilename_len = (
+            max(
+                len(infilename_heading),
+                *[
+                    len(x.get("infilename"))
+                    for x in self._processed_data.values()
+                ],
+            )
+            + TestTableGenerator.__COL_WIDTH_TOLERANCE
         )
-        max_num_edges_length = max(
-            len(num_edges_heading),
-            *[len(str(num_edges)) for num_edges in self._processed_data],
+        num_edges_len = (
+            max(
+                len(num_edges_heading),
+                *[len(str(num_edges)) for num_edges in self._processed_data],
+            )
+            + TestTableGenerator.__COL_WIDTH_TOLERANCE
         )
-        max_numGraphs_length = max(
-            len(str(self._totals.get("numGraphs"))), len(num_graphs_heading)
+        numGraphs_len = (
+            max(
+                len(str(self._totals.get("numGraphs"))),
+                len(num_graphs_heading),
+            )
+            + TestTableGenerator.__COL_WIDTH_TOLERANCE
         )
-        max_numOK_length = max(
-            len(str(self._totals.get("numOK"))), len(numOK_heading)
+        numOK_len = (
+            max(len(str(self._totals.get("numOK"))), len(numOK_heading))
+            + TestTableGenerator.__COL_WIDTH_TOLERANCE
         )
-        max_numNONEMBEDDABLE_length = max(
-            len(str(self._totals.get("numNONEMBEDDABLE"))),
-            len(num_NONEMBEDDABLE_heading),
+        numNONEMBEDDABLE_len = (
+            max(
+                len(str(self._totals.get("numNONEMBEDDABLE"))),
+                len(num_NONEMBEDDABLE_heading),
+            )
+            + TestTableGenerator.__COL_WIDTH_TOLERANCE
         )
-        max_errorFlag_length = len(errorFlag_heading)
-        max_duration_length = max(
-            len(str(self._totals.get("duration"))), len(duration_heading)
+        errorFlag_len = len(errorFlag_heading)
+        duration_len = (
+            max(len(str(self._totals.get("duration"))), len(duration_heading))
+            + TestTableGenerator.__COL_WIDTH_TOLERANCE
         )
+
+        numInvalidOK_len = 0
+        total_numInvalidOK = self._totals.get("numInvalidOK")
+        if total_numInvalidOK:
+            numInvalidOK_len = (
+                max(len(str(total_numInvalidOK)), len(numInvalidOK_heading))
+                + TestTableGenerator.__COL_WIDTH_TOLERANCE
+            )
 
         with open(output_path, "w", encoding="utf-8") as outfile:
             # Print the table header
             outfile.write(
-                "| {:<{}} | {:<{}} | {:<{}} | {:<{}} | {:<{}} | {:<{}} | {:<{}} |\n".format(
-                    infilename_heading,
-                    max_infilename_length,
-                    num_edges_heading,
-                    max_num_edges_length,
-                    num_graphs_heading,
-                    max_numGraphs_length,
-                    numOK_heading,
-                    max_numOK_length,
-                    num_NONEMBEDDABLE_heading,
-                    max_numNONEMBEDDABLE_length,
-                    errorFlag_heading,
-                    max_errorFlag_length,
-                    duration_heading,
-                    max_duration_length,
-                )
+                f"|{infilename_heading:^{infilename_len}}"
+                f"|{num_edges_heading:^{num_edges_len}}"
+                f"|{num_graphs_heading:^{numGraphs_len}}"
+                f"|{numOK_heading:^{numOK_len}}"
+                f"|{num_NONEMBEDDABLE_heading:^{numNONEMBEDDABLE_len}}"
+                f"|{errorFlag_heading:^{errorFlag_len}}"
+                f"|{duration_heading:^{duration_len}}"
             )
+
+            if total_numInvalidOK:
+                outfile.write(f"|{numInvalidOK_heading:^{numInvalidOK_len}}")
+            outfile.write("|\n")
+
             # Print the table header separator
             outfile.write(
-                "|={:=<{}}=|={:=<{}}=|={:=<{}}=|={:=<{}}=|={:=<{}}=|={:=<{}}=|={:=<{}}=|\n".format(
-                    "",
-                    max_infilename_length,
-                    "",
-                    max_num_edges_length,
-                    "",
-                    max_numGraphs_length,
-                    "",
-                    max_numOK_length,
-                    "",
-                    max_numNONEMBEDDABLE_length,
-                    "",
-                    max_errorFlag_length,
-                    "",
-                    max_duration_length,
-                )
+                f"|{'='*infilename_len}"
+                f"|{'='*num_edges_len}"
+                f"|{'='*numGraphs_len}"
+                f"|{'='*numOK_len}"
+                f"|{'='*numNONEMBEDDABLE_len}"
+                f"|{'='*len('Error flag')}"
+                f"|{'='*duration_len}"
             )
+
+            if total_numInvalidOK:
+                outfile.write(f"|{'='*numInvalidOK_len}")
+            outfile.write("|\n")
 
             # Print the table rows
             for num_edges in sorted(self._processed_data.keys()):
@@ -354,65 +392,57 @@ class TestTableGenerator:  # pylint: disable=too-many-instance-attributes
                         f"Data for M = {num_edges} is missing from processed "
                         "data dict."
                     )
+
                 outfile.write(
-                    "| {:<{}} | {:<{}} | {:<{}} | {:<{}} | {:<{}} | {:<{}} | {:<{}} |\n".format(
-                        data.get("infilename"),
-                        max_infilename_length,
-                        num_edges,
-                        max_num_edges_length,
-                        data.get("numGraphs"),
-                        max_numGraphs_length,
-                        data.get("numOK"),
-                        max_numOK_length,
-                        data.get("numNONEMBEDDABLE"),
-                        max_numNONEMBEDDABLE_length,
-                        data.get("errorFlag"),
-                        max_errorFlag_length,
-                        data.get("duration"),
-                        max_duration_length,
-                    )
+                    f"|{data.get('infilename'):<{infilename_len}}"
+                    f"|{num_edges:<{num_edges_len}}"
+                    f"|{data.get('numGraphs'):<{numGraphs_len}}"
+                    f"|{data.get('numOK'):<{numOK_len}}"
+                    f"|{data.get('numNONEMBEDDABLE'):<{numNONEMBEDDABLE_len}}"
+                    f"|{data.get('errorFlag'):<{errorFlag_len}}"
+                    f"|{data.get('duration'):<{duration_len}}"
                 )
+
+                if total_numInvalidOK:
+                    outfile.write(
+                        f"|{data.get('numInvalidOK'):<{numInvalidOK_len}}"
+                    )
+
+                outfile.write("|\n")
 
             # Print the table footer separator
             outfile.write(
-                "|={:=<{}}=|={:=<{}}=|={:=<{}}=|={:=<{}}=|={:=<{}}=|={:=<{}}=|={:=<{}}=|\n".format(
-                    "",
-                    max_infilename_length,
-                    "",
-                    max_num_edges_length,
-                    "",
-                    max_numGraphs_length,
-                    "",
-                    max_numOK_length,
-                    "",
-                    max_numNONEMBEDDABLE_length,
-                    "",
-                    max_errorFlag_length,
-                    "",
-                    max_duration_length,
-                )
+                f"|{'='*infilename_len}"
+                f"|{'='*num_edges_len}"
+                f"|{'='*numGraphs_len}"
+                f"|{'='*numOK_len}"
+                f"|{'='*numNONEMBEDDABLE_len}"
+                f"|{'='*len('Error flag')}"
+                f"|{'='*duration_len}"
             )
+
+            if total_numInvalidOK:
+                outfile.write(f"|{'='*numInvalidOK_len}")
+
+            outfile.write("|\n")
 
             # Print the totals footer
             data = self._totals
             outfile.write(
-                "| {:<{}}   {:<{}} | {:<{}} | {:<{}} | {:<{}} | {:<{}} | {:<{}} |\n".format(
-                    "TOTALS",
-                    max_infilename_length,
-                    "",
-                    max_num_edges_length,
-                    data.get("numGraphs"),
-                    max_numGraphs_length,
-                    data.get("numOK"),
-                    max_numOK_length,
-                    data.get("numNONEMBEDDABLE"),
-                    max_numNONEMBEDDABLE_length,
-                    data.get("numErrors"),
-                    max_errorFlag_length,
-                    data.get("duration"),
-                    max_duration_length,
-                )
+                f"|{'TOTALS':<{infilename_len + num_edges_len + 1}}"
+                f"|{data.get('numGraphs'):<{numGraphs_len}}"
+                f"|{data.get('numOK'):<{numOK_len}}"
+                f"|{data.get('numNONEMBEDDABLE'):<{numNONEMBEDDABLE_len}}"
+                f"|{data.get('numErrors'):<{errorFlag_len}}"
+                f"|{data.get('duration'):<{duration_len}}"
             )
+
+            if total_numInvalidOK:
+                outfile.write(
+                    f"|{data.get('numInvalidOK'):<{numInvalidOK_len}}"
+                )
+
+            outfile.write("|\n")
 
 
 if __name__ == "__main__":

@@ -24,14 +24,13 @@ Functions:
         input_dir: Path,
         output_dir: Path,
     ) -> None
-"""  # pylint: disable=invalid-name
+"""
 
 #!/usr/bin/env python
 
 __all__ = ["distribute_planarity_testAllGraphs_workload"]
 
 import sys
-import shutil
 import multiprocessing
 import subprocess
 import argparse
@@ -44,7 +43,7 @@ from planaritytesting_utils import (
 )
 
 
-def call_planarity_testAllGraphs(  # pylint: disable=invalid-name
+def call_planarity_testAllGraphs(
     planarity_path: Path,
     canonical_files: bool,
     makeg_g6: bool,
@@ -101,7 +100,7 @@ def call_planarity_testAllGraphs(  # pylint: disable=invalid-name
     )
 
 
-def _validate_and_normalize_planarity_testAllGraphs_workload_args(  # pylint: disable=invalid-name disable=too-many-branches
+def _validate_and_normalize_planarity_testAllGraphs_workload_args(  # pylint: disable=too-many-branches
     planarity_path: Path, order: int, input_dir: Path, output_dir: Path
 ) -> tuple[Path, int, Path, Path]:
     """Validates and normalizes args provided to distribute_planarity_workload
@@ -209,7 +208,7 @@ def _validate_and_normalize_planarity_testAllGraphs_workload_args(  # pylint: di
     return planarity_path, order, input_dir, output_dir
 
 
-def distribute_planarity_testAllGraphs_workload(  # pylint: disable=invalid-name disable=too-many-arguments
+def distribute_planarity_testAllGraphs_workload(  # pylint: disable=too-many-arguments
     planarity_path: Path,
     canonical_files: bool,
     makeg_g6: bool,

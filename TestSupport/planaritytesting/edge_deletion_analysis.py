@@ -25,6 +25,7 @@ from planaritytesting_utils import (
     g6_header,
     determine_input_filetype,
     is_path_to_executable,
+    EDGE_DELETION_ANALYSIS_SPECIFIERS,
 )
 
 
@@ -43,14 +44,14 @@ class EdgeDeletionAnalysisError(BaseException):
 class EdgeDeletionAnalyzer:
     """Performs edge-deletion analysis on graph(s) in a .g6 input file"""
 
-    __MAX_NUM_ERRORS = 1000
+    __MAX_NUM_INVALID_OKs = 1000
 
     def __init__(
         self,
         planarity_path: Path,
         infile_path: Path,
         output_dir: Optional[Path] = None,
-        extension_choice: int = 3,
+        extension_choice: str = "3",
     ) -> None:
         """Validate input and set up for edge-deletion analysis
 
@@ -99,7 +100,7 @@ class EdgeDeletionAnalyzer:
                 "which is not supported; please supply a .g6 file."
             )
 
-        if extension_choice not in (2, 3, 4):
+        if extension_choice not in EDGE_DELETION_ANALYSIS_SPECIFIERS():
             raise ValueError(
                 f"'{extension_choice}' is not a valid graph algorithm "
                 "extension command specifier; expecting either 2 (K_{2, 3}), "
@@ -107,9 +108,9 @@ class EdgeDeletionAnalyzer:
             )
 
         if not output_dir:
-            script_entrypoint = Path(sys.argv[0]).resolve().parent.parent
+            test_support_dir = Path(sys.argv[0]).resolve().parent.parent
             output_dir = Path.joinpath(
-                script_entrypoint, "results", "edge_deletion_analysis"
+                test_support_dir, "results", "edge_deletion_analysis"
             )
 
         if output_dir.is_file():
@@ -180,7 +181,7 @@ class EdgeDeletionAnalyzer:
             stderr_handler.setFormatter(logger_formatter)
             self.logger.addHandler(stderr_handler)
 
-    def analyze_graphs(self) -> None:
+    def analyze_graphs(self) -> int:
         """Transform input graph(s) and perform edge-deletion analysis on each
 
         Iterates over contents of .g6 input file; for each line of the input
@@ -192,6 +193,10 @@ class EdgeDeletionAnalyzer:
         is 4) that was missed by the K_{2, 3} search (2), K_{3, 3} search (3)
         or K_4 search (4) graph algorithm extension.
 
+        Returns:
+            num_invalid_OKs: number of graphs in the infile for which
+                contains_missed_homeomorph was true.
+
         Raises:
             EdgeDeletionAnalysisError: If an error occured when trying to
                 determine the input file type, if the input file is anything
@@ -199,7 +204,7 @@ class EdgeDeletionAnalyzer:
                 graph(s), or if any of the analysis steps failed for the input
                 graph(s)
         """
-        num_errors = 0
+        num_invalid_OKs = 0
         with open(self.orig_infile_path, "r", encoding="utf-8") as orig_infile:
             line_num = 0
             for line in orig_infile:
@@ -244,14 +249,19 @@ class EdgeDeletionAnalyzer:
                     )
                     shutil.rmtree(new_parent_dir, ignore_errors=True)
                 else:
-                    num_errors += 1
-                    if num_errors > EdgeDeletionAnalyzer.__MAX_NUM_ERRORS:
+                    num_invalid_OKs += 1
+                    if (
+                        num_invalid_OKs
+                        > EdgeDeletionAnalyzer.__MAX_NUM_INVALID_OKs
+                    ):
                         self.logger.error(
-                            "Encountered more errors than supported "
+                            "Encountered more invalid OKs than supported "
                             "(i.e. %d)",
-                            EdgeDeletionAnalyzer.__MAX_NUM_ERRORS,
+                            EdgeDeletionAnalyzer.__MAX_NUM_INVALID_OKs,
                         )
                         break
+
+        return num_invalid_OKs
 
     def transform_input(self, infile_path: Path, output_dir: Path) -> Path:
         """Transforms input graph to adjacency list
@@ -744,7 +754,7 @@ class EdgeDeletionAnalyzer:
 
     @staticmethod
     def _get_forbidden_minor_pair(
-        extension_choice: int,
+        extension_choice: str,
     ) -> tuple[str, str]:
         """Gets pair of "forbidden minors" for given extension choice
 
@@ -755,20 +765,21 @@ class EdgeDeletionAnalyzer:
         Returns:
             The pair of forbidden minors for the given extension choice
         """
-        if extension_choice not in (2, 3, 4):
+        if extension_choice not in EDGE_DELETION_ANALYSIS_SPECIFIERS():
             raise EdgeDeletionAnalysisError(
                 f"Invalid extension choice: '{extension_choice}'"
             )
+
         target_obstruction_correspondence = {
-            2: "K_{2, 3}",
-            3: "K_{3, 3}",
-            4: "K_4",
+            "2": "K_{2, 3}",
+            "3": "K_{3, 3}",
+            "4": "K_4",
         }
 
         alternate_obstruction_correspondence = {
-            2: "K_4",
-            3: "K_5",
-            4: "K_{2, 3}",
+            "2": "K_4",
+            "3": "K_5",
+            "4": "K_{2, 3}",
         }
 
         target_obstruction_type = target_obstruction_correspondence[
@@ -782,7 +793,7 @@ class EdgeDeletionAnalyzer:
 
     @staticmethod
     def _get_specific_graph_alternate_check_names(
-        extension_choice: int,
+        extension_choice: str,
     ) -> tuple[str, str]:
         """
         Args:
@@ -793,17 +804,17 @@ class EdgeDeletionAnalyzer:
             The pair of command_specifier and descriptor for the given
                 extension choice
         """
-        if extension_choice not in (2, 3, 4):
+        if extension_choice not in EDGE_DELETION_ANALYSIS_SPECIFIERS():
             raise EdgeDeletionAnalysisError(
                 f"Invalid extension choice: '{extension_choice}'"
             )
 
-        command_correspondence = {2: "o", 3: "p", 4: "o"}
+        command_correspondence = {"2": "o", "3": "p", "4": "o"}
 
         descriptor_correspondence = {
-            2: "outerplanar",
-            3: "planar",
-            4: "outerplanar",
+            "2": "outerplanar",
+            "3": "planar",
+            "4": "outerplanar",
         }
 
         command_specifier = command_correspondence[extension_choice]
@@ -1108,9 +1119,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "-c",
         "--command",
-        type=int,
+        type=str,
         metavar="ALGORITHM_COMMAND",
-        default=3,
+        default="3",
         help="Graph algorithm command specifier, either 2 (K_{2, 3} search), "
         "3 (K_{3, 3} search), or 4 (K_4 search)",
     )
@@ -1123,4 +1134,6 @@ if __name__ == "__main__":
         output_dir=args.outputdir,
         extension_choice=args.command,
     )
-    eda.analyze_graphs()
+
+    num_invalidOKs = eda.analyze_graphs()
+    eda.logger.info("NUMBER OF INVALID OKs: %d", num_invalidOKs)

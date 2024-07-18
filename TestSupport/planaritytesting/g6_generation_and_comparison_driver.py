@@ -17,6 +17,7 @@ import shutil
 import argparse
 from pathlib import Path
 import subprocess
+from typing import Optional
 import json
 
 from graph_generation_orchestrator import distribute_geng_workload
@@ -28,6 +29,7 @@ from planaritytesting_utils import (
     PLANARITY_ALGORITHM_SPECIFIERS,
     max_num_edges_for_order,
     is_path_to_executable,
+    parse_range,
 )
 from planarity_testAllGraphs_output_parsing import process_file_contents
 
@@ -38,23 +40,23 @@ class G6GenerationAndComparisonDriver:
     def __init__(
         self,
         geng_path: Path,
-        planarity_path: Path,
-        planarity_backup_path: Path,
-        output_parent_dir: Path,
         orders: tuple,
+        planarity_path: Optional[Path] = None,
+        planarity_backup_path: Optional[Path] = None,
+        output_parent_dir: Optional[Path] = None,
     ):  # pylint: disable=too-many-arguments
         """Initializes G6GenerationAndComparisonDriver instance.
 
         Args:
             geng_path: The path to the nauty geng executable used to generate
                 .g6 graph files for each order and edge-count
+            orders: A tuple of ints corresponding to the graph orders for which
+                we wish to perform the graph generation and comparison
             planarity_path: The path to the edge-addition-planarity-suite
                 executable
             planarity_backup_path: The path to the planarity-backup executable
                 (optional; used to generate the makeg .g6 files)
             output_parent_dir: Directory to which you wish to output results
-            orders: A tuple of ints corresponding to the graph orders for which
-                we wish to perform the graph generation and comparison
 
         Raises:
             argparse.ArgumentError: Re-raises if any of the arguments were
@@ -63,16 +65,16 @@ class G6GenerationAndComparisonDriver:
         try:
             (
                 geng_path,
+                orders,
                 planarity_path,
                 planarity_backup_path,
                 output_parent_dir,
-                orders,
             ) = self._validate_and_normalize_input(
                 geng_path,
+                orders,
                 planarity_path,
                 planarity_backup_path,
                 output_parent_dir,
-                orders,
             )
         except argparse.ArgumentError as e:
             raise argparse.ArgumentError(
@@ -82,31 +84,37 @@ class G6GenerationAndComparisonDriver:
             ) from e
 
         self.geng_path = geng_path
+        self.orders = orders
         self.planarity_path = planarity_path
         self.planarity_backup_path = planarity_backup_path
         self.output_parent_dir = output_parent_dir
-        self.orders = orders
+
         self.planarity_discrepancies = {}
 
     def _validate_and_normalize_input(  # pylint: disable=too-many-arguments
         self,
         geng_path: Path,
-        planarity_path: Path,
-        planarity_backup_path: Path,
-        output_parent_dir: Path,
         orders: tuple,
-    ) -> tuple[Path, Path, Path, Path, tuple[int, ...]]:
+        planarity_path: Optional[Path] = None,
+        planarity_backup_path: Optional[Path] = None,
+        output_parent_dir: Optional[Path] = None,
+    ) -> tuple[Path, tuple[int, ...], Path, Optional[Path], Path]:
         """Validates G6GenerationAndComparisonDriver initialization values
 
         Args:
             geng_path: Path to geng executable
-            planarity_path: Path to planarity executable
-            planarity_backup_path: Path to planarity-backup executable, or None
-            output_parent_dir: Path to directory to which you wish to output
-                .g6 files and comparison results
             orders: Tuple containing orders of graphs for which you wish to
                 generate the .g6 files
+            planarity_path: Path to planarity executable; defaults to:
+                    Release/planarity
+            planarity_backup_path: Path to planarity-backup executable, or None
+            output_parent_dir: Path to directory to which you wish to output
+                .g6 files and comparison results; defaults to:
+                    TestSupport/results/g6_generation_and_comparison_driver/
 
+        Returns:
+            A tuple comprised of the valid and normalized input in their
+                original order.
         Raises:
             argparse.ArgumentTypeError: If any of the arguments were invalid
         """
@@ -114,19 +122,6 @@ class G6GenerationAndComparisonDriver:
             raise argparse.ArgumentTypeError(
                 f"Path for geng executable '{geng_path}' does not correspond "
                 "to an executable."
-            )
-
-        if not is_path_to_executable(planarity_path):
-            raise argparse.ArgumentTypeError(
-                f"Path for planarity executable '{planarity_path}' does not "
-                "correspond to an executable."
-            )
-
-        if not is_path_to_executable(planarity_backup_path):
-            raise argparse.ArgumentTypeError(
-                "Path for planarity_backup executable "
-                f"'{planarity_backup_path}' does not correspond to an "
-                "executable."
             )
 
         if not orders:
@@ -144,10 +139,34 @@ class G6GenerationAndComparisonDriver:
                 "inclusive."
             )
 
+        planarity_project_root = (
+            Path(sys.argv[0]).resolve().parent.parent.parent
+        )
+
+        if not planarity_path:
+            planarity_path = Path.joinpath(
+                planarity_project_root, "Release", "planarity"
+            )
+
+        if not is_path_to_executable(planarity_path):
+            raise argparse.ArgumentTypeError(
+                f"Path for planarity executable '{planarity_path}' does not "
+                "correspond to an executable."
+            )
+
+        if planarity_backup_path and not is_path_to_executable(
+            planarity_backup_path
+        ):
+            raise argparse.ArgumentTypeError(
+                "Path for planarity_backup executable "
+                f"'{planarity_backup_path}' does not correspond to an "
+                "executable."
+            )
+
         if not output_parent_dir:
-            script_entrypoint = Path(sys.argv[0]).resolve().parent.parent
             output_parent_dir = Path.joinpath(
-                script_entrypoint,
+                planarity_project_root,
+                "TestSupport",
                 "results",
                 "g6_generation_and_comparison_driver",
             )
@@ -169,10 +188,10 @@ class G6GenerationAndComparisonDriver:
 
         return (
             geng_path,
+            orders,
             planarity_path,
             planarity_backup_path,
             output_parent_dir,
-            orders,
         )
 
     def generate_g6_files(self):
@@ -230,7 +249,8 @@ class G6GenerationAndComparisonDriver:
         """Generate makeg .g6 and makeg canonical .g6 files
 
         The makeg .g6 and makeg canonical .g6 files generated have paths:
-            {self.output_parent_dir}/{order}/n{order}.m{num_edges}.makeg(.canonical)?.g6
+            {self.output_parent_dir}/{order}/
+                n{order}.m{num_edges}.makeg(.canonical)?.g6
         Which is an intermediate directory required for the use of the
         planarity_testAllGraphs_orchestrator (which runs on all .g6 files in
         the given root directory matching a specific pattern indicated by the
@@ -352,12 +372,14 @@ class G6GenerationAndComparisonDriver:
         For each graph order in self.orders, runs planarity Test All Graphs
         for every algorithm command specifier on all geng .g6 and geng
         canonical .g6 files:
-            {self.output_parent_dir}/{order}/n{order}.m{num_edges}(.canonical)?.g6
+            {self.output_parent_dir}/{order}/
+                n{order}.m{num_edges}(.canonical)?.g6
 
         If a path to the planarity-backup executable was provided, runs
         planarity Test All Graphs for every algorithm command specifier on all
         makeg .g6 and makeg canonical .g6 files:
-            {self.output_parent_dir}/{order}/n{order}.m{num_edges}(.makeg)?(.canonical)?.g6
+            {self.output_parent_dir}/{order}/
+                n{order}.m{num_edges}(.makeg)?(.canonical)?.g6
         """
         for order in self.orders:
             geng_g6_output_dir_for_order = Path.joinpath(
@@ -768,9 +790,9 @@ class G6GenerationAndComparisonDriver:
         (
             _,
             _,
-            numGraphs_from_file,  # pylint: disable=invalid-name
-            numOK_from_file,  # pylint: disable=invalid-name
-            numNONEMBEDDABLE_from_file,  # pylint: disable=invalid-name
+            numGraphs_from_file,
+            numOK_from_file,
+            numNONEMBEDDABLE_from_file,
             _,
         ) = process_file_contents(planarity_outfile, command)
 
@@ -838,7 +860,10 @@ class G6GenerationAndComparisonDriver:
             - graphs_in_n{order}.m{num_edges}.makeg.canonical_not_in_n{order}.m{num_edges}.makeg.g6
         """  # pylint: disable=line-too-long
         diffs_performed = {}
-        for order in self.planarity_discrepancies:
+        for (
+            order,
+            discrepancies_for_order,
+        ) in self.planarity_discrepancies.items():
             if not diffs_performed.get(order):
                 diffs_performed[order] = set()
 
@@ -874,7 +899,7 @@ class G6GenerationAndComparisonDriver:
                 f"G6DiffFinder.n{order}.geng_vs_makeg-canonical.log",
             )
 
-            for num_edges in self.planarity_discrepancies[order].keys():
+            for num_edges in discrepancies_for_order.keys():
                 if num_edges in diffs_performed[order]:
                     continue
 
@@ -966,51 +991,6 @@ class G6GenerationAndComparisonDriver:
             ) from e
 
 
-def parse_range(value: str) -> tuple:
-    """Parse a single integer or a range of integers.
-
-    Args:
-        value: A string of the form 'X[,Y]', i.e. either a single value for the
-            desired order X, or an interval inclusive of the endpoints [X, Y]
-
-    Returns:
-        A tuple containing either a single element, X, or every integer from X
-        up to and including Y
-    """
-    separator = ","
-    if separator in value:
-        if value.count(separator) > 1:
-            raise argparse.ArgumentTypeError(
-                f"Invalid range '{value}' contains multiple commas; range "
-                "should be of the form 'X,Y'"
-            )
-
-        start, end = value.split(separator)
-        try:
-            start, end = int(start), int(end)
-        except ValueError as e:
-            raise argparse.ArgumentTypeError(
-                f"Invalid range '{value}': both start and end values must be "
-                "integers."
-            ) from e
-        if start > end:
-            raise argparse.ArgumentTypeError(
-                f"Invalid range '{value}': start value must not be greater "
-                "than end value."
-            )
-        # Transforms to interval that includes endpoints: '5,8' corresponds to
-        # the tuple (5, 6, 7, 8)
-        return tuple(range(start, end + 1))
-
-    try:
-        return (int(value),)
-    except ValueError as e:
-        raise argparse.ArgumentTypeError(
-            f"Invalid order specifier '{value}': should be a single "
-            "integer 'X'"
-        ) from e
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawTextHelpFormatter,
@@ -1049,15 +1029,6 @@ if __name__ == "__main__":
         "\tG6DiffFinder.n{order}.geng-canonical_vs_makeg-canonical.log\n"
         "\tG6DiffFinder.n{order}.makeg_vs_makeg-canonical.log\n",
     )
-
-    parser.add_argument(
-        "-p",
-        "--planaritypath",
-        type=Path,
-        required=True,
-        help="Path to planarity executable",
-        metavar="PATH_TO_PLANARITY_EXECUTABLE",
-    )
     parser.add_argument(
         "-g",
         "--gengpath",
@@ -1065,14 +1036,6 @@ if __name__ == "__main__":
         required=True,
         help="Path to nauty geng executable",
         metavar="PATH_TO_GENG_EXECUTABLE",
-    )
-    parser.add_argument(
-        "-b",
-        "--planaritybackuppath",
-        type=Path,
-        required=False,
-        help="Path to planarity-backup executable (optional; not public!)",
-        metavar="PATH_TO_PLANARITY_BACKUP_EXECUTABLE",
     )
     parser.add_argument(
         "-n",
@@ -1083,6 +1046,22 @@ if __name__ == "__main__":
         metavar="X[,Y]",
     )
     parser.add_argument(
+        "-p",
+        "--planaritypath",
+        type=Path,
+        required=False,
+        help="Path to planarity executable",
+        metavar="PATH_TO_PLANARITY_EXECUTABLE",
+    )
+    parser.add_argument(
+        "-b",
+        "--planaritybackuppath",
+        type=Path,
+        required=False,
+        help="Path to planarity-backup executable (optional; not public!)",
+        metavar="PATH_TO_PLANARITY_BACKUP_EXECUTABLE",
+    )
+    parser.add_argument(
         "-o",
         "--outputdir",
         type=Path,
@@ -1090,17 +1069,17 @@ if __name__ == "__main__":
         metavar="OUTPUT_DIR_PATH",
         help="Parent directory under which subdirectories will be created "
         "for output results. If none provided, defaults to:\n"
-        "\tTestSupport/results/g6_generation_and_comparison_driver",
+        "\tTestSupport/results/g6_generation_and_comparison_driver/",
     )
 
     args = parser.parse_args()
 
     g6_generation_and_comparison_driver = G6GenerationAndComparisonDriver(
         geng_path=args.gengpath,
+        orders=args.orders,
         planarity_path=args.planaritypath,
         planarity_backup_path=args.planaritybackuppath,
         output_parent_dir=args.outputdir,
-        orders=args.orders,
     )
 
     g6_generation_and_comparison_driver.generate_g6_files()

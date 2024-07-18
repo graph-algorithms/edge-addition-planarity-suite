@@ -2,6 +2,7 @@
 
 Functions:
     PLANARITY_ALGORITHM_SPECIFIERS() -> tuple[str, ...]
+    EDGE_DELETION_ANALYSIS_SPECIFIERS() -> tuple[str, ...]
     GRAPH_FORMAT_SPECIFIERS() -> dict[str, str]
     max_num_edges_for_order(order: int) -> int
     g6_header() -> str
@@ -9,10 +10,12 @@ Functions:
     LEDA_header() -> str
     determine_input_filetype(infile_path: Path) -> str
     is_path_to_executable(executable_path: Path) -> bool
+    parse_range(value: str) -> tuple[int, ...]
 """
 
 __all__ = [
     "PLANARITY_ALGORITHM_SPECIFIERS",
+    "EDGE_DELETION_ANALYSIS_SPECIFIERS",
     "GRAPH_FORMAT_SPECIFIERS",
     "max_num_edges_for_order",
     "g6_header",
@@ -20,6 +23,7 @@ __all__ = [
     "LEDA_header",
     "determine_input_filetype",
     "is_path_to_executable",
+    "parse_range",
 ]
 
 import re
@@ -27,16 +31,17 @@ from pathlib import Path
 import shutil
 
 
-def PLANARITY_ALGORITHM_SPECIFIERS() -> (
-    tuple[str, ...]
-):  # pylint: disable=invalid-name
+def PLANARITY_ALGORITHM_SPECIFIERS() -> tuple[str, ...]:
     """Returns immutable tuple containing algorithm command specifiers"""
     return ("p", "d", "o", "2", "3", "4")
 
 
-def GRAPH_FORMAT_SPECIFIERS() -> (
-    dict[str, str]
-):  # pylint: disable=invalid-name
+def EDGE_DELETION_ANALYSIS_SPECIFIERS() -> tuple[str, ...]:
+    """Allowed algorithm command specifiers for edge-deletion analysis"""
+    return ("2", "3", "4")
+
+
+def GRAPH_FORMAT_SPECIFIERS() -> dict[str, str]:
     """Returns dict containing graph format specifiers mapped to extensions"""
     return {"g": "G6", "a": "AdjList", "m": "AdjMat"}
 
@@ -56,7 +61,7 @@ def g6_suffix() -> str:
     return ".g6"
 
 
-def LEDA_header() -> str:  # pylint: disable=invalid-name
+def LEDA_header() -> str:
     """Returns expected LEDA file header string"""
     return "LEDA.GRAPH"
 
@@ -114,3 +119,53 @@ def is_path_to_executable(executable_path: Path) -> bool:
     ):
         return False
     return True
+
+
+def parse_range(value: str) -> tuple[int, ...]:
+    """Parse a single integer or a range of integers.
+
+    Args:
+        value: A string of the form 'X[,Y]', i.e. either a single value for the
+            desired order X, or an interval inclusive of the endpoints [X, Y]
+
+    Returns:
+        A tuple containing either a single element, X, or every integer from X
+        up to and including Y
+
+    Raises:
+        ValueError: if input string does not correspond to range notation, or
+            if range endpoints (or singleton) aren't integers
+    """
+    separator = ","
+    if separator in value:
+        if value.count(separator) > 1:
+            raise ValueError(
+                f"Invalid range '{value}' contains multiple commas; range "
+                "should be of the form 'X,Y'"
+            )
+
+        start, end = value.split(separator)
+        try:
+            start, end = int(start), int(end)
+        except ValueError as int_cast_error:
+            raise ValueError(
+                f"Invalid range '{value}': both start and end values must be "
+                "integers."
+            ) from int_cast_error
+
+        if start > end:
+            raise ValueError(
+                f"Invalid range '{value}': start value must not be greater "
+                "than end value."
+            )
+        # Transforms to interval that includes endpoints: '5,8' corresponds to
+        # the tuple (5, 6, 7, 8)
+        return tuple(range(start, end + 1))
+
+    try:
+        return (int(value),)
+    except ValueError as int_cast_error:
+        raise ValueError(
+            f"Invalid order specifier '{value}': should be a single "
+            "integer 'X'"
+        ) from int_cast_error
