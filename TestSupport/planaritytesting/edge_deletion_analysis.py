@@ -144,20 +144,24 @@ class EdgeDeletionAnalyzer:
     def _setup_logger(self) -> None:
         """Set up logger instance for EdgeDeletionAnalyzer
         Defaults to:
-            {self.output_dir}/edge_deletion_analysis-{graph_input_name}.log
+            {self.output_dir}/
+                edge_deletion_analysis-{graph_input_name}.{command}.log
         """
         graph_input_name = self.orig_infile_path.stem
 
         log_path = Path.joinpath(
             self.output_dir,
-            f"edge_deletion_analysis-{graph_input_name}.log",
+            f"edge_deletion_analysis-{graph_input_name}"
+            f".{self.extension_choice}.log",
         )
 
         # logging.getLogger() returns the *same instance* of a logger
         # when given the same name. In order to prevent this, must either give
         # a unique name, or must prevent adding additional handlers to the
         # logger
-        self.logger = logging.getLogger(__name__ + graph_input_name)
+        self.logger = logging.getLogger(
+            __name__ + f"{graph_input_name}_{self.extension_choice}"
+        )
         self.logger.setLevel(logging.DEBUG)
 
         if not self.logger.handlers:

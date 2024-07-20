@@ -120,7 +120,11 @@ class TestTableGenerator:  # pylint: disable=too-many-instance-attributes
 
         self.canonical_files = canonical_files
         self.makeg_files = makeg_files
-        self._edge_deletion_analysis_results = edge_deletion_analysis_results
+        self._edge_deletion_analysis_results = (
+            edge_deletion_analysis_results
+            if edge_deletion_analysis_results
+            else {}
+        )
 
     def get_order_and_command_from_input_dir(self):
         """Extract order and command from input_dir if possible
@@ -212,6 +216,10 @@ class TestTableGenerator:  # pylint: disable=too-many-instance-attributes
             "duration": sum(
                 float(x.get("duration")) for x in self._processed_data.values()
             ),
+            "numInvalidOK": sum(
+                int(x.get("numInvalidOK"))
+                for x in self._processed_data.values()
+            ),
         }
 
     def _process_file(self, infile_path: Path):
@@ -271,14 +279,13 @@ class TestTableGenerator:  # pylint: disable=too-many-instance-attributes
             "duration": duration,
         }
 
-        if self._edge_deletion_analysis_results:
-            edge_deletion_analysis_for_infile = (
-                self._edge_deletion_analysis_results.get(planarity_infile_name)
-            )
-            if edge_deletion_analysis_for_infile:
-                self._processed_data[num_edges].update(
-                    {"numInvalidOK": edge_deletion_analysis_for_infile}
+        self._processed_data[num_edges].update(
+            {
+                "numInvalidOK": self._edge_deletion_analysis_results.get(
+                    planarity_infile_name, 0
                 )
+            }
+        )
 
     def write_table_formatted_data_to_file(
         self,
