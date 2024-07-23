@@ -66,7 +66,7 @@ class TestTableGenerator:  # pylint: disable=too-many-instance-attributes
         test_table_output_dir: Path,
         canonical_files: bool = False,
         makeg_files: bool = False,
-        edge_deletion_analysis_results: Optional[dict[str, int]] = None,
+        edge_deletion_analysis_results: Optional[dict[str, dict]] = None,
     ):
         """Initializes TestTableGenerator instance.
 
@@ -85,6 +85,14 @@ class TestTableGenerator:  # pylint: disable=too-many-instance-attributes
                 corresponds to canonical format
             makeg_files: Optional bool to indicate planarity output corresponds
                 to makeg .g6
+            edge_deletion_analysis_results: (Optional) When generating the test
+                table for K_{2, 3} search, K_{3, 3} search, or K_4 search, one
+                may optionally pass in a dictionary mapping input filenames to
+                a sub-dict containing the numInvalidOK count derived by running
+                the EdgeDeletionAnalyzer for this graph algorithm extension,
+                the sum of the system and user CPU time of the current process
+                (proc_time_s), and the total time elapsed during measurement
+                (tot_time_s).
 
         Raises:
             TestTableGeneratorPathError: If the input_dir doesn't correspond to
@@ -163,7 +171,14 @@ class TestTableGenerator:  # pylint: disable=too-many-instance-attributes
         numNONEMBEDDABLE, numErrors, and duration. Their values are generated
         by summing the results of a list-comprehension, which extracts the
         values of the same key name in the list of dicts within
-        self._processed_data.values()
+        self._processed_data.values().
+
+        If edge_deletion_analysis_results is nonempty, then the values in the
+        self._processed_data dict for the numInvalidOK count derived by running
+        the EdgeDeletionAnalyzer for this graph algorithm extension, the sum of
+        the system and user CPU time of the current process (proc_time_s), and
+        the total time elapsed during measurement (tot_time_s) will be summed
+        and added to the self._totals dictionary.
 
         Raises:
             TestTableGeneratorFileProcessingError: If an error occurred
@@ -220,6 +235,14 @@ class TestTableGenerator:  # pylint: disable=too-many-instance-attributes
                 int(x.get("numInvalidOK"))
                 for x in self._processed_data.values()
             ),
+            "proc_time_s": sum(
+                float(x.get("proc_time_s"))
+                for x in self._processed_data.values()
+            ),
+            "tot_time_s": sum(
+                float(x.get("tot_time_s"))
+                for x in self._processed_data.values()
+            ),
         }
 
     def _process_file(self, infile_path: Path):
@@ -228,7 +251,11 @@ class TestTableGenerator:  # pylint: disable=too-many-instance-attributes
         Validates the infile name, then processes file contents and adds them
         to the self._processed_data dict by mapping the num_edges to a sub-dict
         containing fields for the infilename, numGraphs, numOK,
-        numNONEMBEDDABLE, errorFlag, and duration
+        numNONEMBEDDABLE, errorFlag, and duration.
+
+        If edge_deletion_analysis_results is nonempty, those results (i.e. the
+        numInvalidOK count, the proc_time_s, and the "wall time" tot_time_s)
+        are integrated into the self._processed_data dict.
 
         Args:
             infile_path: Corresponds to a file within the input_dir
@@ -282,14 +309,20 @@ class TestTableGenerator:  # pylint: disable=too-many-instance-attributes
         self._processed_data[num_edges].update(
             {
                 "numInvalidOK": self._edge_deletion_analysis_results.get(
-                    planarity_infile_name, 0
-                )
+                    planarity_infile_name, {}
+                ).get("numInvalidOK", 0),
+                "proc_time_s": self._edge_deletion_analysis_results.get(
+                    planarity_infile_name, {}
+                ).get("proc_time_s", 0.0),
+                "tot_time_s": self._edge_deletion_analysis_results.get(
+                    planarity_infile_name, {}
+                ).get("tot_time_s", 0.0),
             }
         )
 
     def write_table_formatted_data_to_file(
         self,
-    ):  # pylint: disable=too-many-locals
+    ):  # pylint: disable=too-many-locals disable=too-many-statements
         """Writes the data extracted from the input files and totals to table"""
         self.output_dir = Path.joinpath(self.output_dir, f"{self.order}")
         Path.mkdir(self.output_dir, parents=True, exist_ok=True)
@@ -310,6 +343,8 @@ class TestTableGenerator:  # pylint: disable=too-many-instance-attributes
         errorFlag_heading = "Error flag"
         duration_heading = "Duration"
         numInvalidOK_heading = "# Invalid OK"
+        proc_time_s_heading = "EDA Proc Time"
+        tot_time_s_heading = "EDA Total Time"
 
         infilename_len = (
             max(
@@ -354,9 +389,25 @@ class TestTableGenerator:  # pylint: disable=too-many-instance-attributes
 
         numInvalidOK_len = 0
         total_numInvalidOK = self._totals.get("numInvalidOK")
+        proc_time_s_len = 0
+        tot_time_s_len = 0
         if total_numInvalidOK:
             numInvalidOK_len = (
                 max(len(str(total_numInvalidOK)), len(numInvalidOK_heading))
+                + TestTableGenerator.__COL_WIDTH_TOLERANCE
+            )
+            proc_time_s_len = (
+                max(
+                    len(str(self._totals.get("proc_time_s"))),
+                    len(proc_time_s_heading),
+                )
+                + TestTableGenerator.__COL_WIDTH_TOLERANCE
+            )
+            tot_time_s_len = (
+                max(
+                    len(str(self._totals.get("tot_time_s"))),
+                    len(tot_time_s_heading),
+                )
                 + TestTableGenerator.__COL_WIDTH_TOLERANCE
             )
 
@@ -371,9 +422,10 @@ class TestTableGenerator:  # pylint: disable=too-many-instance-attributes
                 f"|{errorFlag_heading:^{errorFlag_len}}"
                 f"|{duration_heading:^{duration_len}}"
             )
-
             if total_numInvalidOK:
                 outfile.write(f"|{numInvalidOK_heading:^{numInvalidOK_len}}")
+                outfile.write(f"|{proc_time_s_heading:^{proc_time_s_len}}")
+                outfile.write(f"|{tot_time_s_heading:^{tot_time_s_len}}")
             outfile.write("|\n")
 
             # Print the table header separator
@@ -386,9 +438,10 @@ class TestTableGenerator:  # pylint: disable=too-many-instance-attributes
                 f"|{'='*len('Error flag')}"
                 f"|{'='*duration_len}"
             )
-
             if total_numInvalidOK:
                 outfile.write(f"|{'='*numInvalidOK_len}")
+                outfile.write(f"|{'='*proc_time_s_len}")
+                outfile.write(f"|{'='*tot_time_s_len}")
             outfile.write("|\n")
 
             # Print the table rows
@@ -409,12 +462,16 @@ class TestTableGenerator:  # pylint: disable=too-many-instance-attributes
                     f"|{data.get('errorFlag'):<{errorFlag_len}}"
                     f"|{data.get('duration'):<{duration_len}}"
                 )
-
                 if total_numInvalidOK:
                     outfile.write(
                         f"|{data.get('numInvalidOK'):<{numInvalidOK_len}}"
                     )
-
+                    outfile.write(
+                        f"|{data.get('proc_time_s'):<{proc_time_s_len}.{3}f}"
+                    )
+                    outfile.write(
+                        f"|{data.get('tot_time_s'):<{tot_time_s_len}.{3}f}"
+                    )
                 outfile.write("|\n")
 
             # Print the table footer separator
@@ -427,10 +484,10 @@ class TestTableGenerator:  # pylint: disable=too-many-instance-attributes
                 f"|{'='*len('Error flag')}"
                 f"|{'='*duration_len}"
             )
-
             if total_numInvalidOK:
                 outfile.write(f"|{'='*numInvalidOK_len}")
-
+                outfile.write(f"|{'='*proc_time_s_len}")
+                outfile.write(f"|{'='*tot_time_s_len}")
             outfile.write("|\n")
 
             # Print the totals footer
@@ -443,12 +500,16 @@ class TestTableGenerator:  # pylint: disable=too-many-instance-attributes
                 f"|{data.get('numErrors'):<{errorFlag_len}}"
                 f"|{data.get('duration'):<{duration_len}}"
             )
-
             if total_numInvalidOK:
                 outfile.write(
                     f"|{data.get('numInvalidOK'):<{numInvalidOK_len}}"
                 )
-
+                outfile.write(
+                    f"|{data.get('proc_time_s'):<{proc_time_s_len}.{3}f}"
+                )
+                outfile.write(
+                    f"|{data.get('tot_time_s'):<{tot_time_s_len}.{3}f}"
+                )
             outfile.write("|\n")
 
 

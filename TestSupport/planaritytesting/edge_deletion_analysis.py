@@ -44,7 +44,9 @@ class EdgeDeletionAnalysisError(BaseException):
 class EdgeDeletionAnalyzer:
     """Performs edge-deletion analysis on graph(s) in a .g6 input file"""
 
-    __MAX_NUM_INVALID_OKs = 1000
+    # Cap this at a much lower value, since EDA for N=10 takes days if this
+    # threshold is high
+    __MAX_NUM_INVALID_OKs = 5
 
     def __init__(
         self,
@@ -171,7 +173,8 @@ class EdgeDeletionAnalyzer:
 
             # Create a Formatter for formatting the log messages
             logger_formatter = logging.Formatter(
-                "[%(levelname)s] - %(module)s.%(funcName)s - %(message)s"
+                "%(asctime)s - [%(levelname)s] - %(module)s.%(funcName)s - "
+                "%(message)s"
             )
 
             # Add the Formatter to the Handler
