@@ -38,6 +38,7 @@ class TestTableGenerationWithInvalidOKs:
         self,
         planarity_path: Optional[Path] = None,
         orders: Optional[tuple[int, ...]] = None,
+        generate_tables_for_commands: Optional[tuple[str, ...]] = None,
         graph_dir: Optional[Path] = None,
         planarity_output_dir: Optional[Path] = None,
         test_table_output_dir: Optional[Path] = None,
@@ -53,6 +54,9 @@ class TestTableGenerationWithInvalidOKs:
             orders: Graph orders for which to perform edge-deletion analysis
                 for relevant graph algorithm extensions and to tabulate results
                 of running planarity Test All Graphs
+            generate_tables_for_commands: Command specifiers for which you wish
+                to generate test tables; defaults to tuple returned by
+                PLANARITY_ALGORITHM_SPECIFIERS()
             graph_dir: Path to parent directory containing subdirectories for
                 each graph order, the contents of which are .g6 graph files,
                 one for each edgecount from 0 to (N * (N - 1)) / 2. If none
@@ -75,8 +79,9 @@ class TestTableGenerationWithInvalidOKs:
         Raises:
             argparse.ArgumentTypeError: if planarity_path doesn't correspond to
                 an executable, if the specified graph orders are invalid, if
-                the graph_dir is invalid, or if the planarity_output_dir is
-                invalid
+                the command specifiers for which you wish to generate test
+                tables are invalid, if the graph_dir is invalid, or if the
+                planarity_output_dir is invalid
         """
         self.canonical_files = canonical_files
         self.makeg_files = makeg_files
@@ -105,6 +110,26 @@ class TestTableGenerationWithInvalidOKs:
             )
 
         self.orders = orders
+
+        if not generate_tables_for_commands:
+            generate_tables_for_commands = PLANARITY_ALGORITHM_SPECIFIERS()
+
+        if not all(
+            (c in PLANARITY_ALGORITHM_SPECIFIERS())
+            for c in generate_tables_for_commands
+        ):
+            raise argparse.ArgumentTypeError(
+                "Invalid command specifier(s) given when indicating which "
+                "algorithms for which you wish to generate test tables."
+            )
+
+        self.generate_tables_for_commands = generate_tables_for_commands
+
+        self.perform_eda_for_commands = tuple(
+            c
+            for c in EDGE_DELETION_ANALYSIS_SPECIFIERS()
+            if c in self.generate_tables_for_commands
+        )
 
         self.test_support_dir = Path.joinpath(
             planarity_project_root, "TestSupport"
@@ -308,10 +333,10 @@ class TestTableGenerationWithInvalidOKs:
                             f"'{planarity_output_dir_for_order}' has no "
                             "subdirectories: expected one subdirectory for "
                             "each command specifier in "
-                            f"{PLANARITY_ALGORITHM_SPECIFIERS()}."
+                            f"{self.generate_tables_for_commands}."
                         )
 
-                    for command in PLANARITY_ALGORITHM_SPECIFIERS():
+                    for command in self.generate_tables_for_commands:
                         if command not in subdirs:
                             raise argparse.ArgumentTypeError(
                                 "Planarity output subdirectory "
@@ -359,12 +384,12 @@ class TestTableGenerationWithInvalidOKs:
             f"{order}",
         )
 
-        for num_edges in range(max_num_edges_for_order(order) + 1):
-            g6_infile_path = Path.joinpath(
-                graph_dir_for_order,
-                f"n{order}.m{num_edges}{makeg_ext}{canonical_ext}.g6",
-            )
-            for command in EDGE_DELETION_ANALYSIS_SPECIFIERS():
+        for command in self.perform_eda_for_commands:
+            for num_edges in range(max_num_edges_for_order(order) + 1):
+                g6_infile_path = Path.joinpath(
+                    graph_dir_for_order,
+                    f"n{order}.m{num_edges}{makeg_ext}{canonical_ext}.g6",
+                )
                 self._call_edge_deletion_analysis(
                     order, command, g6_infile_path
                 )
@@ -428,7 +453,7 @@ class TestTableGenerationWithInvalidOKs:
             f"{order}",
         )
 
-        for command in PLANARITY_ALGORITHM_SPECIFIERS():
+        for command in self.generate_tables_for_commands:
             input_dir_for_order_and_command = Path.joinpath(
                 input_dir_for_order, f"{command}"
             )
@@ -478,6 +503,16 @@ if __name__ == "__main__":
         f"for commands {EDGE_DELETION_ANALYSIS_SPECIFIERS()}, will include "
         "numInvalidOKs derived by edge-deletion analysis.",
         metavar="X[,Y]",
+    )
+    parser.add_argument(
+        "-c",
+        "--gentablecommands",
+        nargs="+",
+        default=[],
+        required=False,
+        help="List of algorithm command specifiers for which you wish to "
+        "generate test tables. Defaults to "
+        f"{PLANARITY_ALGORITHM_SPECIFIERS()}",
     )
     parser.add_argument(
         "-g",
@@ -539,6 +574,7 @@ if __name__ == "__main__":
     eda_ttg = TestTableGenerationWithInvalidOKs(
         planarity_path=args.planaritypath,
         orders=args.orders,
+        generate_tables_for_commands=args.gentablecommands,
         graph_dir=args.graphdir,
         planarity_output_dir=args.planarityoutputdir,
         test_table_output_dir=args.outputdir,
