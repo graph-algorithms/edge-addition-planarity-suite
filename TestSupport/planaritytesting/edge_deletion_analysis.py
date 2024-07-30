@@ -46,7 +46,7 @@ class EdgeDeletionAnalyzer:
 
     # Cap this at a much lower value, since EDA for N=10 takes days if this
     # threshold is high
-    __MAX_NUM_INVALID_OKs = 5
+    __MAX_NUM_INVALID_OKs = 500
 
     def __init__(
         self,
@@ -259,7 +259,7 @@ class EdgeDeletionAnalyzer:
                     num_invalid_OKs += 1
                     if (
                         num_invalid_OKs
-                        > EdgeDeletionAnalyzer.__MAX_NUM_INVALID_OKs
+                        >= EdgeDeletionAnalyzer.__MAX_NUM_INVALID_OKs
                     ):
                         self.logger.error(
                             "Encountered more invalid OKs than supported "
