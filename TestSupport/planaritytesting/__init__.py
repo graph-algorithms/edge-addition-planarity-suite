@@ -8,6 +8,7 @@ __all__ = [
     "planarity_testAllGraphs_output_parsing",
     "graph",
     "edge_deletion_analysis",
+    "test_table_generator",
 ]
 
 import logging
@@ -19,6 +20,7 @@ from . import g6_diff_finder
 from . import planarity_testAllGraphs_output_parsing
 from . import graph
 from . import edge_deletion_analysis
+from . import test_table_generator
 
 # This ensures that no logging occurs by default unless a logger has been
 # properly configured on a per-module basis

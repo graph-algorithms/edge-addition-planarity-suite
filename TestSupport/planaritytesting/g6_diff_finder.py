@@ -126,7 +126,8 @@ class G6DiffFinder:
 
             # Create a Formatter for formatting the log messages
             logger_formatter = logging.Formatter(
-                "[%(levelname)s] - %(module)s.%(funcName)s - %(message)s"
+                "%(asctime)s - [%(levelname)s] - %(module)s.%(funcName)s - "
+                "%(message)s"
             )
 
             # Add the Formatter to the Handler

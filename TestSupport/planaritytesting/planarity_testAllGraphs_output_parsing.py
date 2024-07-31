@@ -12,7 +12,7 @@ Functions:
     process_file_contents(
         infile_path:Path, command: str
     ) -> tuple[str, float, int, int, int, str]
-"""  # pylint: disable=invalid-name
+"""
 
 __all__ = [
     "TestAllGraphsOutputFileContentsError",
