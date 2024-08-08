@@ -63,7 +63,7 @@ pkginclude_HEADERS = \
 
 bin_PROGRAMS = planarity
 planarity_LDADD  = libplanarity.la
-planarity_SOURCES = c/planarityApp/planarity.c c/planarityApp/planarityCommandLine.c
+planarity_SOURCES = c/planarityApp/planarity.c  c/planarityApp/planarityHelp.c c/planarityApp/planarityMenu.c c/planarityApp/planarityCommandLine.c
 
 man1_MANS = c/planarityApp/planarity.1
 EXTRA_DIST=$(man1_MANS)
