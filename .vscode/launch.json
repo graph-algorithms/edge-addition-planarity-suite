@@ -192,8 +192,8 @@
                 // "${workspaceFolder}/c/samples/nauty_example.g6",
                 // "${workspaceFolder}/c/samples/nauty_example.g6.AdjList.expected.out.txt"
                 // Command: `planarity -test <samplesDir>`
-                "-test",
-                "${workspaceFolder}/c/samples"
+                // "-test",
+                // "${workspaceFolder}/c/samples"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
@@ -214,8 +214,8 @@
                 // "${workspaceFolder}/c/samples/nauty_example.g6",
                 // "${workspaceFolder}/c/samples/nauty_example.g6.AdjList.expected.out.txt"
                 // Command: `planarity -test <samplesDir>`
-                "-test",
-                "${workspaceFolder}/c/samples"
+                // "-test",
+                // "${workspaceFolder}/c/samples"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
