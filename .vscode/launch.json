@@ -1,6 +1,24 @@
 {
     "configurations": [
         {
+            "name": "Python Debugger: Current File with Arguments",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "subProcess": true,
+            "justMyCode": false,
+            "args": [
+                // Args to test test_table_generation_with_numInvalidOK.py 
+                // "-n",
+                // "5,8",
+                // "-c",
+                // "3",
+                // "p",
+                // "o"
+            ]
+        },
+        {
             "name": "C/C++: (Windows) [Debug] gcc.exe build and debug planarity project",
             "type": "cppdbg",
             "request": "launch",
@@ -11,7 +29,6 @@
                 // "-ta",
                 // "${workspaceFolder}\\c\\samples\\nauty_example.g6",
                 // "${workspaceFolder}\\c\\samples\\nauty_example.g6.AdjList.expected.out.txt"
-                
                 // Command: `planarity -test <samplesDir>`
                 // "-test",
                 // "${workspaceFolder}\\c\\samples"
@@ -47,7 +64,6 @@
                 // "-ta",
                 // "${workspaceFolder}\\c\\samples\\nauty_example.g6",
                 // "${workspaceFolder}\\c\\samples\\nauty_example.g6.AdjList.expected.out.txt"
-                
                 // Command: `planarity -test <samplesDir>`
                 // "-test",
                 // "${workspaceFolder}\\c\\samples"
@@ -72,7 +88,6 @@
                 // "-ta",
                 // "${workspaceFolder}/c/samples/nauty_example.g6",
                 // "${workspaceFolder}/c/samples/nauty_example.g6.AdjList.expected.out.txt"
-                
                 // Command: `planarity -test <samplesDir>`
                 // "-test",
                 // "${workspaceFolder}/c/samples"
@@ -108,7 +123,6 @@
                 // "-ta",
                 // "${workspaceFolder}/c/samples/nauty_example.g6",
                 // "${workspaceFolder}/c/samples/nauty_example.g6.AdjList.expected.out.txt"
-                
                 // Command: `planarity -test <samplesDir>`
                 // "-test",
                 // "${workspaceFolder}/c/samples"
@@ -133,7 +147,6 @@
                 // "-ta",
                 // "${workspaceFolder}\\c\\samples\\nauty_example.g6",
                 // "${workspaceFolder}\\c\\samples\\nauty_example.g6.AdjList.expected.out.txt"
-                
                 // Command: `planarity -test <samplesDir>`
                 // "-test",
                 // "${workspaceFolder}\\c\\samples"
@@ -156,7 +169,6 @@
                 // "-ta",
                 // "${workspaceFolder}\\c\\samples\\nauty_example.g6",
                 // "${workspaceFolder}\\c\\samples\\nauty_example.g6.AdjList.expected.out.txt"
-                
                 // Command: `planarity -test <samplesDir>`
                 // "-test",
                 // "${workspaceFolder}\\c\\samples"
@@ -179,7 +191,6 @@
                 // "-ta",
                 // "${workspaceFolder}/c/samples/nauty_example.g6",
                 // "${workspaceFolder}/c/samples/nauty_example.g6.AdjList.expected.out.txt"
-                
                 // Command: `planarity -test <samplesDir>`
                 // "-test",
                 // "${workspaceFolder}/c/samples"
@@ -202,7 +213,6 @@
                 // "-ta",
                 // "${workspaceFolder}/c/samples/nauty_example.g6",
                 // "${workspaceFolder}/c/samples/nauty_example.g6.AdjList.expected.out.txt"
-                
                 // Command: `planarity -test <samplesDir>`
                 // "-test",
                 // "${workspaceFolder}/c/samples"
