@@ -5,7 +5,6 @@ lib_LTLIBRARIES = libplanarity.la
 libplanarity_la_SOURCES = \
 	c/graphLib/graphDFSUtils.c \
 	c/graphLib/graphUtils.c \
-	c/graphLib/listcoll.c \
 	c/graphLib/extensionSystem/graphExtensions.c \
 	c/graphLib/homeomorphSearch/graphK23Search.c \
 	c/graphLib/homeomorphSearch/graphK23Search_Extensions.c \
@@ -20,6 +19,7 @@ libplanarity_la_SOURCES = \
 	c/graphLib/io/strbuf.c \
 	c/graphLib/io/strOrFile.c \
 	c/graphLib/lowLevelUtils/apiutils.c \
+	c/graphLib/lowLevelUtils/listcoll.c \
 	c/graphLib/lowLevelUtils/stack.c \
 	c/graphLib/planarityRelated/graphDrawPlanar.c \
 	c/graphLib/planarityRelated/graphDrawPlanar_Extensions.c \
@@ -27,18 +27,13 @@ libplanarity_la_SOURCES = \
 	c/graphLib/planarityRelated/graphIsolator.c \
 	c/graphLib/planarityRelated/graphNonplanar.c \
 	c/graphLib/planarityRelated/graphOuterplanarObstruction.c \
-	c/graphLib/planarityRelated/graphTests.c \
-	c/planarityApp/planarityRandomGraphs.c \
-	c/planarityApp/planaritySpecificGraph.c \
-	c/planarityApp/planarityTestGraphFunctionality.c \
-	c/planarityApp/planarityUtils.c
+	c/graphLib/planarityRelated/graphTests.c
 
 libplanarity_la_LDFLAGS = -no-undefined $(AM_LDFLAGS) -version-info @LT_CURRENT@:@LT_REVISION@:@LT_AGE@
 
 pkginclude_HEADERS = \
 	c/graphLib/graph.h \
 	c/graphLib/graphStructures.h \
-	c/graphLib/listcoll.h \
 	c/graphLib/extensionSystem/graphExtensions.h \
 	c/graphLib/extensionSystem/graphExtensions.private.h \
 	c/graphLib/extensionSystem/graphFunctionTable.h \
@@ -55,6 +50,7 @@ pkginclude_HEADERS = \
 	c/graphLib/io/strOrFile.h \
 	c/graphLib/lowLevelUtils/apiutils.h \
 	c/graphLib/lowLevelUtils/appconst.h \
+	c/graphLib/lowLevelUtils/listcoll.h \
 	c/graphLib/lowLevelUtils/platformTime.h \
 	c/graphLib/lowLevelUtils/stack.h \
 	c/graphLib/planarityRelated/graphDrawPlanar.h \
@@ -63,7 +59,15 @@ pkginclude_HEADERS = \
 
 bin_PROGRAMS = planarity
 planarity_LDADD  = libplanarity.la
-planarity_SOURCES = c/planarityApp/planarity.c  c/planarityApp/planarityHelp.c c/planarityApp/planarityMenu.c c/planarityApp/planarityCommandLine.c
+planarity_SOURCES = \
+	c/planarityApp/planarity.c \
+	c/planarityApp/planarityCommandLine.c \
+	c/planarityApp/planarityHelp.c \
+	c/planarityApp/planarityMenu.c \
+	c/planarityApp/planarityRandomGraphs.c \
+	c/planarityApp/planaritySpecificGraph.c \
+	c/planarityApp/planarityTestGraphFunctionality.c \
+	c/planarityApp/planarityUtils.c
 
 man1_MANS = c/planarityApp/planarity.1
 EXTRA_DIST=$(man1_MANS)

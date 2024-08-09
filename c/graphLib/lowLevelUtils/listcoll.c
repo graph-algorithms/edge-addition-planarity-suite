@@ -6,7 +6,7 @@ See the LICENSE.TXT file for licensing information.
 
 #define _LISTCOLL_C
 
-#include "lowLevelUtils/appconst.h"
+#include "appconst.h"
 #include "listcoll.h"
 #include <stdlib.h>
 

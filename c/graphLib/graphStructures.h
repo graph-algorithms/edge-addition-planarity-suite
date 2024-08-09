@@ -9,7 +9,7 @@ See the LICENSE.TXT file for licensing information.
 
 #include <stdio.h>
 #include "lowLevelUtils/appconst.h"
-#include "listcoll.h"
+#include "lowLevelUtils/listcoll.h"
 #include "lowLevelUtils/stack.h"
 #include "io/strbuf.h"
 
