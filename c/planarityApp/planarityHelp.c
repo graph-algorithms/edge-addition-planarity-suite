@@ -29,55 +29,6 @@ char *GetProjectTitle()
 }
 
 /****************************************************************************
- ALGORITHM FLAGS/SPECIFIERS
-****************************************************************************/
-
-char *GetAlgorithmFlags(void)
-{
-    return "C = command (algorithm implementation to run)\n"
-           "    -p = Planar embedding and Kuratowski subgraph isolation\n"
-           "    -d = Planar graph drawing by visibility representation\n"
-           "    -o = Outerplanar embedding and obstruction isolation\n"
-           "    -2 = Search for subgraph homeomorphic to K_{2,3}\n"
-           "    -3 = Search for subgraph homeomorphic to K_{3,3}\n"
-           "    -4 = Search for subgraph homeomorphic to K_4\n"
-           "\n";
-}
-
-// FIXME: this function is used only in planarityMenu.c, not planarityHelp.c
-char *GetAlgorithmSpecifiers(void)
-{
-    return "P. Planar embedding and Kuratowski subgraph isolation\n"
-           "D. Planar graph drawing by visibility representation\n"
-           "O. Outerplanar embedding and obstruction isolation\n"
-           "2. Search for subgraph homeomorphic to K_{2,3}\n"
-           "3. Search for subgraph homeomorphic to K_{3,3}\n"
-           "4. Search for subgraph homeomorphic to K_4\n";
-}
-
-// FIXME: this function is used in planarityMenu.c, planarityRandomGraphs.c,
-// planaritySpecificGraph.c, and planarityTestGraphFunctionality.c, but
-// *not* planarityHelp.c
-char *GetAlgorithmChoices(void)
-{
-    return "pdo234";
-}
-
-// FIXME: this function is used only in planarityMenu.c, not planarityHelp.c
-char *GetSupportedOutputChoices(void)
-{
-    return "G. G6 format\n"
-           "A. Adjacency List format\n"
-           "M. Adjacency Matrix format\n";
-}
-
-// FIXME: this function is used only in planarityMenu.c, not planarityHelp.c
-char *GetSupportedOutputFormats(void)
-{
-    return "gam";
-}
-
-/****************************************************************************
  helpMessage()
  ****************************************************************************/
 

@@ -10,29 +10,29 @@ See the LICENSE.TXT file for licensing information.
  Configuration
  ****************************************************************************/
 
-char Mode='r',
-	 OrigOut='n',
-	 EmbeddableOut='n',
-	 ObstructedOut='n',
-	 AdjListsForEmbeddingsOut='n';
+char Mode = 'r',
+	 OrigOut = 'n',
+	 EmbeddableOut = 'n',
+	 ObstructedOut = 'n',
+	 AdjListsForEmbeddingsOut = 'n';
 
 void Reconfigure()
 {
-	 fflush(stdin);
+	fflush(stdin);
 
-	 Prompt("\nDo you want to \n"
-			"  Randomly generate graphs (r),\n"
-			"  Specify a graph (s),\n"
-			"  Randomly generate a maximal planar graph (m), or\n"
-			"  Randomly generate a non-planar graph (n)?");
-	 scanf(" %c", &Mode);
+	Prompt("\nDo you want to \n"
+		   "  Randomly generate graphs (r),\n"
+		   "  Specify a graph (s),\n"
+		   "  Randomly generate a maximal planar graph (m), or\n"
+		   "  Randomly generate a non-planar graph (n)?");
+	scanf(" %c", &Mode);
 
-	 Mode = tolower(Mode);
-	 if (!strchr("rsmn", Mode))
-		 Mode = 's';
+	Mode = tolower(Mode);
+	if (!strchr("rsmn", Mode))
+		Mode = 's';
 
-	 if (Mode == 'r')
-	 {
+	if (Mode == 'r')
+	{
 		Message("\nNOTE: The directories for the graphs you want must exist.\n\n");
 
 		Prompt("Do you want original graphs in directory 'random' (last 10 max)?");
@@ -46,9 +46,9 @@ void Reconfigure()
 
 		Prompt("Do you want adjacency list format of embeddings in directory 'adjlist' (last 10 max)?");
 		scanf(" %c", &AdjListsForEmbeddingsOut);
-	 }
+	}
 
-	 FlushConsole(stdout);
+	FlushConsole(stdout);
 }
 
 void FlushConsole(FILE *f)
@@ -67,7 +67,7 @@ void Prompt(char *message)
 
 void SaveAsciiGraph(graphP theGraph, char *filename)
 {
-	int  e, EsizeOccupied, vertexLabelFix;
+	int e, EsizeOccupied, vertexLabelFix;
 	FILE *outfile = fopen(filename, WRITETEXT);
 
 	// The filename may specify a directory that doesn't exist
@@ -75,7 +75,7 @@ void SaveAsciiGraph(graphP theGraph, char *filename)
 	{
 		char *messageFormat = "Failed to write to \"%.*s\"\nMake the directory if not present\n";
 		char messageContents[MAXLINE + 1];
-		int charsAvailForStrToInclude = (int) (MAXLINE - strlen(messageFormat));
+		int charsAvailForStrToInclude = (int)(MAXLINE - strlen(messageFormat));
 		sprintf(messageContents, messageFormat, charsAvailForStrToInclude, outfile);
 		ErrorMessage(messageContents);
 		return;
@@ -83,7 +83,7 @@ void SaveAsciiGraph(graphP theGraph, char *filename)
 
 	// If filename includes path elements, remove them before writing the file's name to the file
 	if (strrchr(filename, FILE_DELIMITER))
-		filename = strrchr(filename, FILE_DELIMITER)+1;
+		filename = strrchr(filename, FILE_DELIMITER) + 1;
 
 	fprintf(outfile, "%s\n", filename);
 
@@ -95,14 +95,14 @@ void SaveAsciiGraph(graphP theGraph, char *filename)
 
 	// Iterate over the edges of the graph
 	EsizeOccupied = gp_EdgeInUseIndexBound(theGraph);
-	for (e = gp_GetFirstEdge(theGraph); e < EsizeOccupied; e+=2)
+	for (e = gp_GetFirstEdge(theGraph); e < EsizeOccupied; e += 2)
 	{
 		// Only output edges that haven't been deleted (i.e. skip the edge holes)
 		if (gp_EdgeInUse(theGraph, e))
 		{
 			fprintf(outfile, "%d %d\n",
 					gp_GetNeighbor(theGraph, e) + vertexLabelFix,
-					gp_GetNeighbor(theGraph, e+1) + vertexLabelFix);
+					gp_GetNeighbor(theGraph, e + 1) + vertexLabelFix);
 		}
 	}
 
@@ -136,9 +136,9 @@ char *ReadTextFileIntoString(char *infileName)
 		fileSize = ftell(infile);
 		fseek(infile, filePos, SEEK_SET);
 
-		if ((inputString = (char *) malloc((fileSize + 1) * sizeof(char))) != NULL)
+		if ((inputString = (char *)malloc((fileSize + 1) * sizeof(char))) != NULL)
 		{
-			long bytesRead = fread((void *) inputString, 1, fileSize, infile);
+			long bytesRead = fread((void *)inputString, 1, fileSize, infile);
 			inputString[bytesRead] = '\0';
 		}
 
@@ -160,7 +160,7 @@ char *ReadTextFileIntoString(char *infileName)
  * Returns TRUE if the contents are textually equal, FALSE otherwise
  ****************************************************************************/
 
-int  TextFileMatchesString(char *theFilename, char *theString)
+int TextFileMatchesString(char *theFilename, char *theString)
 {
 	FILE *infile = NULL;
 	int Result = TRUE;
@@ -172,7 +172,7 @@ int  TextFileMatchesString(char *theFilename, char *theString)
 		Result = FALSE;
 	else
 	{
-		int c1=0, c2=0, stringIndex=0;
+		int c1 = 0, c2 = 0, stringIndex = 0;
 
 		// Read the input file to the end
 		while ((c1 = fgetc(infile)) != EOF)
@@ -184,7 +184,7 @@ int  TextFileMatchesString(char *theFilename, char *theString)
 
 			// Since c1 now has a non-CR, non-EOF from the input file,  we now also
 			// get a character from the string, except ignoring CRs again
-			while ((c2 = (int) theString[stringIndex++]) == '\r')
+			while ((c2 = (int)theString[stringIndex++]) == '\r')
 				;
 
 			// If c1 doesn't equal c2 (whether c2 is a null terminator or a different character)
@@ -200,7 +200,7 @@ int  TextFileMatchesString(char *theFilename, char *theString)
 		if (c1 == EOF)
 		{
 			// Then get another character from the string, once again suppressing CRs, and then...
-			while ((c2 = (int) theString[stringIndex++]) == '\r')
+			while ((c2 = (int)theString[stringIndex++]) == '\r')
 				;
 			// Test whether or not the second file also ends, same as the first.
 			if (c2 != '\0')
@@ -208,14 +208,15 @@ int  TextFileMatchesString(char *theFilename, char *theString)
 		}
 	}
 
-	if (infile != NULL) fclose(infile);
+	if (infile != NULL)
+		fclose(infile);
 	return Result;
 }
 
 /****************************************************************************
  ****************************************************************************/
 
-int  TextFilesEqual(char *file1Name, char *file2Name)
+int TextFilesEqual(char *file1Name, char *file2Name)
 {
 	FILE *infile1 = NULL, *infile2 = NULL;
 	int Result = TRUE;
@@ -227,7 +228,7 @@ int  TextFilesEqual(char *file1Name, char *file2Name)
 		Result = FALSE;
 	else
 	{
-		int c1=0, c2=0;
+		int c1 = 0, c2 = 0;
 
 		// Read the first file to the end
 		while ((c1 = fgetc(infile1)) != EOF)
@@ -269,15 +270,17 @@ int  TextFilesEqual(char *file1Name, char *file2Name)
 		}
 	}
 
-	if (infile1 != NULL) fclose(infile1);
-	if (infile2 != NULL) fclose(infile2);
+	if (infile1 != NULL)
+		fclose(infile1);
+	if (infile2 != NULL)
+		fclose(infile2);
 	return Result;
 }
 
 /****************************************************************************
  ****************************************************************************/
 
-int  BinaryFilesEqual(char *file1Name, char *file2Name)
+int BinaryFilesEqual(char *file1Name, char *file2Name)
 {
 	FILE *infile1 = NULL, *infile2 = NULL;
 	int Result = TRUE;
@@ -289,7 +292,7 @@ int  BinaryFilesEqual(char *file1Name, char *file2Name)
 		Result = FALSE;
 	else
 	{
-		int c1=0, c2=0;
+		int c1 = 0, c2 = 0;
 
 		// Read the first file to the end
 		while ((c1 = fgetc(infile1)) != EOF)
@@ -320,9 +323,42 @@ int  BinaryFilesEqual(char *file1Name, char *file2Name)
 		}
 	}
 
-	if (infile1 != NULL) fclose(infile1);
-	if (infile2 != NULL) fclose(infile2);
+	if (infile1 != NULL)
+		fclose(infile1);
+	if (infile2 != NULL)
+		fclose(infile2);
 	return Result;
+}
+
+/****************************************************************************
+ ALGORITHM FLAGS/SPECIFIERS
+****************************************************************************/
+
+char *GetAlgorithmFlags(void)
+{
+	return "C = command (algorithm implementation to run)\n"
+		   "    -p = Planar embedding and Kuratowski subgraph isolation\n"
+		   "    -d = Planar graph drawing by visibility representation\n"
+		   "    -o = Outerplanar embedding and obstruction isolation\n"
+		   "    -2 = Search for subgraph homeomorphic to K_{2,3}\n"
+		   "    -3 = Search for subgraph homeomorphic to K_{3,3}\n"
+		   "    -4 = Search for subgraph homeomorphic to K_4\n"
+		   "\n";
+}
+
+char *GetAlgorithmSpecifiers(void)
+{
+	return "P. Planar embedding and Kuratowski subgraph isolation\n"
+		   "D. Planar graph drawing by visibility representation\n"
+		   "O. Outerplanar embedding and obstruction isolation\n"
+		   "2. Search for subgraph homeomorphic to K_{2,3}\n"
+		   "3. Search for subgraph homeomorphic to K_{3,3}\n"
+		   "4. Search for subgraph homeomorphic to K_4\n";
+}
+
+char *GetAlgorithmChoices(void)
+{
+	return "pdo234";
 }
 
 /****************************************************************************
@@ -334,12 +370,24 @@ int GetEmbedFlags(char command)
 
 	switch (command)
 	{
-		case 'o' : embedFlags = EMBEDFLAGS_OUTERPLANAR; break;
-		case 'p' : embedFlags = EMBEDFLAGS_PLANAR; break;
-		case 'd' : embedFlags = EMBEDFLAGS_DRAWPLANAR; break;
-		case '2' : embedFlags = EMBEDFLAGS_SEARCHFORK23; break;
-		case '3' : embedFlags = EMBEDFLAGS_SEARCHFORK33; break;
-		case '4' : embedFlags = EMBEDFLAGS_SEARCHFORK4; break;
+	case 'o':
+		embedFlags = EMBEDFLAGS_OUTERPLANAR;
+		break;
+	case 'p':
+		embedFlags = EMBEDFLAGS_PLANAR;
+		break;
+	case 'd':
+		embedFlags = EMBEDFLAGS_DRAWPLANAR;
+		break;
+	case '2':
+		embedFlags = EMBEDFLAGS_SEARCHFORK23;
+		break;
+	case '3':
+		embedFlags = EMBEDFLAGS_SEARCHFORK33;
+		break;
+	case '4':
+		embedFlags = EMBEDFLAGS_SEARCHFORK4;
+		break;
 	}
 
 	return embedFlags;
@@ -354,12 +402,24 @@ char *GetAlgorithmName(char command)
 
 	switch (command)
 	{
-		case 'p' : algorithmName = "PlanarEmbed"; break;
-		case 'd' : algorithmName = DRAWPLANAR_NAME;	break;
-		case 'o' : algorithmName = "OuterplanarEmbed"; break;
-		case '2' : algorithmName = K23SEARCH_NAME; break;
-		case '3' : algorithmName = K33SEARCH_NAME; break;
-		case '4' : algorithmName = K4SEARCH_NAME; break;
+	case 'p':
+		algorithmName = "PlanarEmbed";
+		break;
+	case 'd':
+		algorithmName = DRAWPLANAR_NAME;
+		break;
+	case 'o':
+		algorithmName = "OuterplanarEmbed";
+		break;
+	case '2':
+		algorithmName = K23SEARCH_NAME;
+		break;
+	case '3':
+		algorithmName = K33SEARCH_NAME;
+		break;
+	case '4':
+		algorithmName = K4SEARCH_NAME;
+		break;
 	}
 
 	return algorithmName;
@@ -374,12 +434,30 @@ char *GetTransformationName(char command)
 
 	switch (command)
 	{
-		case 'a' : transformationName = "AdjList"; 	break;
-		case 'm' : transformationName = "AdjMat";	break;
-		case 'g' : transformationName = "G6"; 		break;
+	case 'g':
+		transformationName = "G6";
+		break;
+	case 'a':
+		transformationName = "AdjList";
+		break;
+	case 'm':
+		transformationName = "AdjMat";
+		break;
 	}
 
 	return transformationName;
+}
+
+char *GetSupportedOutputChoices(void)
+{
+	return "G. G6 format\n"
+		   "A. Adjacency List format\n"
+		   "M. Adjacency Matrix format\n";
+}
+
+char *GetSupportedOutputFormats(void)
+{
+	return "gam";
 }
 
 /****************************************************************************
@@ -399,10 +477,18 @@ void AttachAlgorithm(graphP theGraph, char command)
 {
 	switch (command)
 	{
-		case 'd' : gp_AttachDrawPlanar(theGraph); break;
-		case '2' : gp_AttachK23Search(theGraph); break;
-		case '3' : gp_AttachK33Search(theGraph); break;
-		case '4' : gp_AttachK4Search(theGraph); break;
+	case 'd':
+		gp_AttachDrawPlanar(theGraph);
+		break;
+	case '2':
+		gp_AttachK23Search(theGraph);
+		break;
+	case '3':
+		gp_AttachK33Search(theGraph);
+		break;
+	case '4':
+		gp_AttachK4Search(theGraph);
+		break;
 	}
 }
 
@@ -416,7 +502,7 @@ void AttachAlgorithm(graphP theGraph, char command)
 #define ALGORITHMNAMEMAXLENGTH 32
 #define SUFFIXMAXLENGTH 32
 
-char theFileName[FILENAMEMAXLENGTH+1+ALGORITHMNAMEMAXLENGTH+1+SUFFIXMAXLENGTH+1];
+char theFileName[FILENAMEMAXLENGTH + 1 + ALGORITHMNAMEMAXLENGTH + 1 + SUFFIXMAXLENGTH + 1];
 
 /****************************************************************************
  ConstructInputFilename()
@@ -498,7 +584,7 @@ char *ConstructPrimaryOutputFilename(char *infileName, char *outfileName, char c
 			strcat(theFileName, ".out.txt");
 			char *messageFormat = "Outfile filename is too long. Result placed in \"%.*s\"";
 			char messageContents[MAXLINE + 1];
-			int charsAvailForStrToInclude = (int) (MAXLINE - strlen(messageFormat));
+			int charsAvailForStrToInclude = (int)(MAXLINE - strlen(messageFormat));
 			sprintf(messageContents, messageFormat, charsAvailForStrToInclude, theFileName);
 			ErrorMessage(messageContents);
 		}
@@ -537,8 +623,8 @@ int ConstructTransformationExpectedResultFilename(char *infileName, char **outfi
 
 	if ((*outfileName) == NULL)
 	{
-		(*outfileName) = (char *) calloc(infileNameLen + 1 + strlen(baseName) + 1 + strlen(transformationName) + ((command == 'g') ? strlen(".out.g6") : strlen(".out.txt")) + 1, sizeof(char));
-		
+		(*outfileName) = (char *)calloc(infileNameLen + 1 + strlen(baseName) + 1 + strlen(transformationName) + ((command == 'g') ? strlen(".out.g6") : strlen(".out.txt")) + 1, sizeof(char));
+
 		if ((*outfileName) == NULL)
 		{
 			ErrorMessage("Unable to allocate memory for output filename.\n");
