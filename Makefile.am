@@ -33,6 +33,7 @@ libplanarity_la_LDFLAGS = -no-undefined $(AM_LDFLAGS) -version-info @LT_CURRENT@
 
 pkginclude_HEADERS = \
 	c/graphLib/graph.h \
+	c/graphLib/graphLib.h \
 	c/graphLib/graphStructures.h \
 	c/graphLib/extensionSystem/graphExtensions.h \
 	c/graphLib/extensionSystem/graphExtensions.private.h \
