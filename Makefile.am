@@ -3,69 +3,74 @@ SUBDIRS = c/samples
 lib_LTLIBRARIES = libplanarity.la
 
 libplanarity_la_SOURCES = \
-	c/apiutils.c \
-	c/g6-api-utilities.c \
-	c/g6-read-iterator.c \
-	c/g6-write-iterator.c \
-	c/graphDFSUtils.c \
-	c/graphDrawPlanar.c \
-	c/graphDrawPlanar_Extensions.c \
-	c/graphEmbed.c \
-	c/graphExtensions.c \
-	c/graphIO.c \
-	c/graphIsolator.c \
-	c/graphK23Search.c \
-	c/graphK23Search_Extensions.c \
-	c/graphK33Search.c \
-	c/graphK33Search_Extensions.c \
-	c/graphK4Search.c \
-	c/graphK4Search_Extensions.c \
-	c/graphNonplanar.c \
-	c/graphOuterplanarObstruction.c \
-	c/graphTests.c \
-	c/graphUtils.c \
-	c/listcoll.c \
-	c/planarityRandomGraphs.c \
-	c/planaritySpecificGraph.c \
-	c/planarityTestGraphFunctionality.c \
-	c/planarityUtils.c \
-	c/stack.c \
-	c/strbuf.c \
-	c/strOrFile.c
-	
+	c/graphLib/graphDFSUtils.c \
+	c/graphLib/graphUtils.c \
+	c/graphLib/extensionSystem/graphExtensions.c \
+	c/graphLib/homeomorphSearch/graphK23Search.c \
+	c/graphLib/homeomorphSearch/graphK23Search_Extensions.c \
+	c/graphLib/homeomorphSearch/graphK33Search.c \
+	c/graphLib/homeomorphSearch/graphK33Search_Extensions.c \
+	c/graphLib/homeomorphSearch/graphK4Search.c \
+	c/graphLib/homeomorphSearch/graphK4Search_Extensions.c \
+	c/graphLib/io/g6-api-utilities.c \
+	c/graphLib/io/g6-read-iterator.c \
+	c/graphLib/io/g6-write-iterator.c \
+	c/graphLib/io/graphIO.c \
+	c/graphLib/io/strbuf.c \
+	c/graphLib/io/strOrFile.c \
+	c/graphLib/lowLevelUtils/apiutils.c \
+	c/graphLib/lowLevelUtils/listcoll.c \
+	c/graphLib/lowLevelUtils/stack.c \
+	c/graphLib/planarityRelated/graphDrawPlanar.c \
+	c/graphLib/planarityRelated/graphDrawPlanar_Extensions.c \
+	c/graphLib/planarityRelated/graphEmbed.c \
+	c/graphLib/planarityRelated/graphIsolator.c \
+	c/graphLib/planarityRelated/graphNonplanar.c \
+	c/graphLib/planarityRelated/graphOuterplanarObstruction.c \
+	c/graphLib/planarityRelated/graphTests.c
+
 libplanarity_la_LDFLAGS = -no-undefined $(AM_LDFLAGS) -version-info @LT_CURRENT@:@LT_REVISION@:@LT_AGE@
 
 pkginclude_HEADERS = \
-	c/apiutils.h \
-	c/appconst.h \
-	c/g6-api-utilities.h \
-	c/g6-read-iterator.h \
-	c/g6-write-iterator.h \
-	c/graph.h \
-	c/graphDrawPlanar.h \
-	c/graphDrawPlanar.private.h \
-	c/graphExtensions.h \
-	c/graphExtensions.private.h \
-	c/graphFunctionTable.h \
-	c/graphK23Search.h \
-	c/graphK23Search.private.h \
-	c/graphK33Search.h \
-	c/graphK33Search.private.h \
-	c/graphK4Search.h \
-	c/graphK4Search.private.h \
-	c/graphStructures.h \
-	c/listcoll.h \
-	c/planarity.h \
-	c/platformTime.h \
-	c/stack.h \
-	c/strbuf.h \
-	c/strOrFile.h
+	c/graphLib/graph.h \
+	c/graphLib/graphLib.h \
+	c/graphLib/graphStructures.h \
+	c/graphLib/extensionSystem/graphExtensions.h \
+	c/graphLib/extensionSystem/graphExtensions.private.h \
+	c/graphLib/extensionSystem/graphFunctionTable.h \
+	c/graphLib/homeomorphSearch/graphK23Search.h \
+	c/graphLib/homeomorphSearch/graphK23Search.private.h \
+	c/graphLib/homeomorphSearch/graphK33Search.h \
+	c/graphLib/homeomorphSearch/graphK33Search.private.h \
+	c/graphLib/homeomorphSearch/graphK4Search.h \
+	c/graphLib/homeomorphSearch/graphK4Search.private.h \
+	c/graphLib/io/g6-api-utilities.h \
+	c/graphLib/io/g6-read-iterator.h \
+	c/graphLib/io/g6-write-iterator.h \
+	c/graphLib/io/strbuf.h \
+	c/graphLib/io/strOrFile.h \
+	c/graphLib/lowLevelUtils/apiutils.h \
+	c/graphLib/lowLevelUtils/appconst.h \
+	c/graphLib/lowLevelUtils/listcoll.h \
+	c/graphLib/lowLevelUtils/platformTime.h \
+	c/graphLib/lowLevelUtils/stack.h \
+	c/graphLib/planarityRelated/graphDrawPlanar.h \
+	c/graphLib/planarityRelated/graphDrawPlanar.private.h \
+	c/planarityApp/planarity.h
 
 bin_PROGRAMS = planarity
 planarity_LDADD  = libplanarity.la
-planarity_SOURCES = c/planarity.c c/planarityCommandLine.c
+planarity_SOURCES = \
+	c/planarityApp/planarity.c \
+	c/planarityApp/planarityCommandLine.c \
+	c/planarityApp/planarityHelp.c \
+	c/planarityApp/planarityMenu.c \
+	c/planarityApp/planarityRandomGraphs.c \
+	c/planarityApp/planaritySpecificGraph.c \
+	c/planarityApp/planarityTestGraphFunctionality.c \
+	c/planarityApp/planarityUtils.c
 
-man1_MANS = planarity.1
+man1_MANS = c/planarityApp/planarity.1
 EXTRA_DIST=$(man1_MANS)
 
 TESTS = test-samples.sh
