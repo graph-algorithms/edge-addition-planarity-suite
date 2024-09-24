@@ -21,9 +21,6 @@ typedef struct
 
 typedef testAllStats *testAllStatsP;
 
-int transformFile(graphP theGraph, char *infileName);
-int transformString(graphP theGraph, char *inputStr);
-
 int testAllGraphs(graphP theGraph, char command, FILE *infile, testAllStatsP stats);
 int outputTestAllGraphsResults(char command, testAllStatsP stats, char *infileName, char *outfileName, char **outputStr);
 
@@ -38,18 +35,16 @@ int _getNumCharsToReprInt(int theNum)
 }
 
 /****************************************************************************
- TestGraphFunctionality()
- commandString - command to run; e.g. `-t(gam)` to transform graph to .g6, adjacency list, or
- adjacency matrix format, or `-(pdo234)` to perform the corresponding algorithm on each graph in
+ TestAllGraphs()
+ commandString - command to run; e.g.`-(pdo234)` to perform the corresponding algorithm on each graph in
  a .g6 file
  infileName - name of file to read, or NULL to cause the program to prompt the user for a filename
- inputStr - string containing input graph, or NULL to cause the program to fall back on reading from file
  outputBase - pointer to the flag set for whether output is 0- or 1-based
- outputFormat - output format; currently only supports WRITE_ADJLIST
+ outputFormat - output format
  outfileName - name of primary output file, or NULL to construct an output filename based on the input
  outputStr - pointer to string which we wish to use to store the transformation output
  ****************************************************************************/
-int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr, int *outputBase, char *outfileName, char **outputStr)
+int TestAllGraphs(char *commandString, char *infileName, int *outputBase, char *outfileName, char **outputStr)
 {
 	int Result = OK;
 	platform_time start, end;
@@ -64,123 +59,74 @@ int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr
 	// Create the graph and, if needed, attach the correct algorithm to it
 	theGraph = gp_New();
 
-	int outputFormat = -1;
-
 	if (commandString[0] == '-')
 	{
-		if (commandString[1] == 't')
+		if (strchr(GetAlgorithmChoices(), commandString[1]))
 		{
-			if (commandString[2] == 'g')
-				outputFormat = WRITE_G6;
-			else if (commandString[2] == 'a')
-				outputFormat = WRITE_ADJLIST;
-			else if (commandString[2] == 'm')
-				outputFormat = WRITE_ADJMATRIX;
-			else
+			if (infileName == NULL)
 			{
-				ErrorMessage("Invalid argument; currently, only -t(gam) is allowed.\n");
-				return NOTOK;
-			}
-
-			if (inputStr)
-				Result = transformString(theGraph, inputStr);
-			else
-				Result = transformFile(theGraph, infileName);
-
-			if (Result != OK)
-			{
-				ErrorMessage("Unable to transform input graph.\n");
-			}
-			else
-			{
-				// Want to know whether the output is 0- or 1-based; will always be
-				// 0-based for transformations of .g6 input
-				if (outputBase != NULL)
-					(*outputBase) = (theGraph->internalFlags & FLAGS_ZEROBASEDIO) ? 1 : 0;
-
-				if (outputStr != NULL)
-					Result = gp_WriteToString(theGraph, outputStr, outputFormat);
-				else
-					Result = gp_Write(theGraph, outfileName, outputFormat);
-
-				if (Result != OK)
-					ErrorMessage("Unable to write graph.\n");
-			}
-		}
-		else if (strchr(GetAlgorithmChoices(), commandString[1]))
-		{
-			if (inputStr != NULL)
-			{
-				ErrorMessage("TestGraphFunctionality only supports applying chosen algorithm to graphs read from file at this time.\n");
+				ErrorMessage("No input file provided.\n");
 				Result = NOTOK;
 			}
 			else
 			{
-				if (infileName == NULL)
+				messageFormat = "Start testing all graphs in \"%.*s\".\n";
+				charsAvailForFilename = (int)(MAXLINE - strlen(messageFormat));
+				sprintf(messageContents, messageFormat, charsAvailForFilename, infileName);
+				Message(messageContents);
+
+				// Start the timer
+				platform_GetTime(start);
+
+				FILE *infile = fopen(infileName, "r");
+				if (infile == NULL)
 				{
-					ErrorMessage("No input file provided.\n");
-					Result = NOTOK;
+					charsAvailForFilename = (int)(MAXLINE - strlen(infileName));
+					messageFormat = "Unable to open file \"%.*s\" for input.\n";
+					sprintf(messageContents, messageFormat, charsAvailForFilename, infileName);
+					ErrorMessage(messageContents);
+
+					gp_Free(&theGraph);
+
+					return NOTOK;
+				}
+
+				testAllStats stats;
+				memset(&stats, 0, sizeof(testAllStats));
+
+				char command = commandString[1];
+				Result = testAllGraphs(theGraph, command, infile, &stats);
+
+				// Stop the timer
+				platform_GetTime(end);
+				stats.duration = platform_GetDuration(start, end);
+
+				if (Result != OK && Result != NONEMBEDDABLE)
+				{
+					messageFormat = "\nEncountered error while running command '%c' on all graphs in \"%.*s\".\n";
+					charsAvailForFilename = (int)(MAXLINE - strlen(messageFormat));
+					sprintf(messageContents, messageFormat, command, charsAvailForFilename, infileName);
+					ErrorMessage(messageContents);
 				}
 				else
 				{
-					messageFormat = "Start testing all graphs in \"%.*s\".\n";
-					charsAvailForFilename = (int)(MAXLINE - strlen(messageFormat));
-					sprintf(messageContents, messageFormat, charsAvailForFilename, infileName);
+					sprintf(messageContents, "\nDone testing all graphs (%.3lf seconds).\n", stats.duration);
 					Message(messageContents);
+				}
 
-					// Start the timer
-					platform_GetTime(start);
-
-					FILE *infile = fopen(infileName, "r");
-					if (infile == NULL)
-					{
-						charsAvailForFilename = (int)(MAXLINE - strlen(infileName));
-						messageFormat = "Unable to open file \"%.*s\" for input.\n";
-						sprintf(messageContents, messageFormat, charsAvailForFilename, infileName);
-						ErrorMessage(messageContents);
-
-						gp_Free(&theGraph);
-
-						return NOTOK;
-					}
-
-					testAllStats stats;
-					memset(&stats, 0, sizeof(testAllStats));
-
-					char command = commandString[1];
-					Result = testAllGraphs(theGraph, command, infile, &stats);
-
-					// Stop the timer
-					platform_GetTime(end);
-					stats.duration = platform_GetDuration(start, end);
-
-					if (Result != OK && Result != NONEMBEDDABLE)
-					{
-						messageFormat = "\nEncountered error while running command '%c' on all graphs in \"%.*s\".\n";
-						charsAvailForFilename = (int)(MAXLINE - strlen(messageFormat));
-						sprintf(messageContents, messageFormat, command, charsAvailForFilename, infileName);
-						ErrorMessage(messageContents);
-					}
-					else
-					{
-						sprintf(messageContents, "\nDone testing all graphs (%.3lf seconds).\n", stats.duration);
-						Message(messageContents);
-					}
-
-					if (outputTestAllGraphsResults(command, &stats, infileName, outfileName, outputStr) != OK)
-					{
-						messageFormat = "Error outputting results running command '%c' on all graphs in \"%.*s\".\n";
-						charsAvailForFilename = (int)(MAXLINE - strlen(messageFormat));
-						sprintf(messageContents, messageFormat, command, charsAvailForFilename, infileName);
-						ErrorMessage(messageContents);
-						Result = NOTOK;
-					}
+				if (outputTestAllGraphsResults(command, &stats, infileName, outfileName, outputStr) != OK)
+				{
+					messageFormat = "Error outputting results running command '%c' on all graphs in \"%.*s\".\n";
+					charsAvailForFilename = (int)(MAXLINE - strlen(messageFormat));
+					sprintf(messageContents, messageFormat, command, charsAvailForFilename, infileName);
+					ErrorMessage(messageContents);
+					Result = NOTOK;
 				}
 			}
 		}
 		else
 		{
-			ErrorMessage("Invalid argument; only -(pdo234)|-t(gam) is allowed.\n");
+			ErrorMessage("Invalid argument; only -(pdo234) is allowed.\n");
 			Result = NOTOK;
 		}
 	}
@@ -193,36 +139,6 @@ int TestGraphFunctionality(char *commandString, char *infileName, char *inputStr
 	gp_Free(&theGraph);
 	return Result;
 }
-
-/*
-	TRANSFORM GRAPH
-*/
-
-int transformFile(graphP theGraph, char *infileName)
-{
-	if (infileName == NULL)
-	{
-		if ((infileName = ConstructInputFilename(infileName)) == NULL)
-			return NOTOK;
-	}
-
-	return gp_Read(theGraph, infileName);
-}
-
-int transformString(graphP theGraph, char *inputStr)
-{
-	if (inputStr == NULL || strlen(inputStr) == 0)
-	{
-		ErrorMessage("Input string is null or empty.\n");
-		return NOTOK;
-	}
-
-	return gp_ReadFromString(theGraph, inputStr);
-}
-
-/*
-	TEST ALL GRAPHS IN .G6
-*/
 
 int testAllGraphs(graphP theGraph, char command, FILE *infile, testAllStatsP stats)
 {

@@ -17,7 +17,8 @@ int callRandomGraphs(int argc, char *argv[]);
 int callSpecificGraph(int argc, char *argv[]);
 int callRandomMaxPlanarGraph(int argc, char *argv[]);
 int callRandomNonplanarGraph(int argc, char *argv[]);
-int callTestGraphFunctionality(int argc, char *argv[]);
+int callTestAllGraphs(int argc, char *argv[]);
+int callTransformGraph(int argc, char *argv[]);
 
 /****************************************************************************
  Command Line Processor
@@ -55,8 +56,11 @@ int commandLine(int argc, char *argv[])
 	else if (strcmp(argv[1], "-rn") == 0)
 		Result = callRandomNonplanarGraph(argc, argv);
 
+	else if (strncmp(argv[1], "-x", 2) == 0)
+		Result = callTransformGraph(argc, argv);
+
 	else if (strncmp(argv[1], "-t", 2) == 0)
-		Result = callTestGraphFunctionality(argc, argv);
+		Result = callTestAllGraphs(argc, argv);
 
 	else
 	{
@@ -87,8 +91,8 @@ int commandLine(int argc, char *argv[])
 
 int legacyCommandLine(int argc, char *argv[])
 {
-graphP theGraph = gp_New();
-int Result;
+	graphP theGraph = gp_New();
+	int Result;
 
 	Result = gp_Read(theGraph, argv[1]);
 	if (Result != OK)
@@ -97,7 +101,7 @@ int Result;
 		{
 			char *messageFormat = "Failed to read graph \"%.*s\"";
 			char messageContents[MAXLINE + 1];
-			int charsAvailForFilename = (int) (MAXLINE - strlen(messageFormat));
+			int charsAvailForFilename = (int)(MAXLINE - strlen(messageFormat));
 			sprintf(messageContents, messageFormat, charsAvailForFilename, argv[1]);
 			ErrorMessage(messageContents);
 			return -2;
@@ -114,7 +118,7 @@ int Result;
 
 	else if (Result == NONEMBEDDABLE)
 	{
-		if (argc >= 5 && strcmp(argv[3], "-n")==0)
+		if (argc >= 5 && strcmp(argv[3], "-n") == 0)
 		{
 			gp_SortVertices(theGraph);
 			gp_Write(theGraph, argv[4], WRITE_ADJLIST);
@@ -126,7 +130,7 @@ int Result;
 	gp_Free(&theGraph);
 
 	// In the legacy 1.x versions, OK/NONEMBEDDABLE was 0 and NOTOK was -2
-	return Result==OK || Result==NONEMBEDDABLE ? 0 : -2;
+	return Result == OK || Result == NONEMBEDDABLE ? 0 : -2;
 }
 
 /****************************************************************************
@@ -190,42 +194,50 @@ int runSpecificGraphTests(char *samplesDir)
 #if NIL == 0
 	Message("Starting NIL == 0 Tests\n");
 
-	if (runSpecificGraphTest("-p", "maxPlanar5.txt", TRUE) < 0) {
+	if (runSpecificGraphTest("-p", "maxPlanar5.txt", TRUE) < 0)
+	{
 		retVal = -1;
 		Message("Planarity test on maxPlanar5.txt failed.\n");
 	}
 
-	if (runSpecificGraphTest("-d", "maxPlanar5.txt", FALSE) < 0) {
+	if (runSpecificGraphTest("-d", "maxPlanar5.txt", FALSE) < 0)
+	{
 		retVal = -1;
 		Message("Graph drawing test maxPlanar5.txt failed.\n");
 	}
 
-	if (runSpecificGraphTest("-d", "drawExample.txt", TRUE) < 0) {
+	if (runSpecificGraphTest("-d", "drawExample.txt", TRUE) < 0)
+	{
 		retVal = -1;
 		Message("Graph drawing on drawExample.txt failed.\n");
 	}
 
-	if (runSpecificGraphTest("-p", "Petersen.txt", FALSE) < 0) {
+	if (runSpecificGraphTest("-p", "Petersen.txt", FALSE) < 0)
+	{
 		retVal = -1;
 		Message("Planarity test on Petersen.txt failed.\n");
 	}
 
-	if (runSpecificGraphTest("-o", "Petersen.txt", TRUE) < 0) {
+	if (runSpecificGraphTest("-o", "Petersen.txt", TRUE) < 0)
+	{
 		retVal = -1;
 		Message("Outerplanarity test on Petersen.txt failed.\n");
 	}
 
-	if (runSpecificGraphTest("-2", "Petersen.txt", FALSE) < 0) {
+	if (runSpecificGraphTest("-2", "Petersen.txt", FALSE) < 0)
+	{
 		retVal = -1;
 		Message("K_{2,3} search on Petersen.txt failed.\n");
 	}
 
-	if (runSpecificGraphTest("-3", "Petersen.txt", TRUE) < 0) {
+	if (runSpecificGraphTest("-3", "Petersen.txt", TRUE) < 0)
+	{
 		retVal = -1;
 		Message("K_{3,3} search on Petersen.txt failed.\n");
 	}
 
-	if (runSpecificGraphTest("-4", "Petersen.txt", FALSE) < 0) {
+	if (runSpecificGraphTest("-4", "Petersen.txt", FALSE) < 0)
+	{
 		retVal = -1;
 		Message("K_4 search on Petersen.txt failed.\n");
 	}
@@ -233,134 +245,140 @@ int runSpecificGraphTests(char *samplesDir)
 	Message("Finished NIL == 0 Tests.\n\n");
 #endif
 
-	if (runSpecificGraphTest("-p", "maxPlanar5.0-based.txt", FALSE) < 0) {
+	if (runSpecificGraphTest("-p", "maxPlanar5.0-based.txt", FALSE) < 0)
+	{
 		retVal = -1;
 		Message("Planarity test on maxPlanar5.0-based.txt failed.\n");
 	}
 
-	if (runSpecificGraphTest("-d", "maxPlanar5.0-based.txt", TRUE) < 0) {
+	if (runSpecificGraphTest("-d", "maxPlanar5.0-based.txt", TRUE) < 0)
+	{
 		retVal = -1;
 		Message("Graph drawing test maxPlanar5.0-based.txt failed.\n");
 	}
 
-	if (runSpecificGraphTest("-d", "drawExample.0-based.txt", FALSE) < 0) {
+	if (runSpecificGraphTest("-d", "drawExample.0-based.txt", FALSE) < 0)
+	{
 		retVal = -1;
 		Message("Graph drawing on drawExample.0-based.txt failed.\n");
 	}
 
-	if (runSpecificGraphTest("-p", "Petersen.0-based.txt", TRUE) < 0) {
+	if (runSpecificGraphTest("-p", "Petersen.0-based.txt", TRUE) < 0)
+	{
 		retVal = -1;
 		Message("Planarity test on Petersen.0-based.txt failed.\n");
 	}
 
-	if (runSpecificGraphTest("-o", "Petersen.0-based.txt", FALSE) < 0) {
+	if (runSpecificGraphTest("-o", "Petersen.0-based.txt", FALSE) < 0)
+	{
 		retVal = -1;
 		Message("Outerplanarity test on Petersen.0-based.txt failed.\n");
 	}
 
-	if (runSpecificGraphTest("-2", "Petersen.0-based.txt", TRUE) < 0) {
+	if (runSpecificGraphTest("-2", "Petersen.0-based.txt", TRUE) < 0)
+	{
 		retVal = -1;
 		Message("K_{2,3} search on Petersen.0-based.txt failed.\n");
 	}
 
-	if (runSpecificGraphTest("-3", "Petersen.0-based.txt", FALSE) < 0) {
+	if (runSpecificGraphTest("-3", "Petersen.0-based.txt", FALSE) < 0)
+	{
 		retVal = -1;
 		Message("K_{3,3} search on Petersen.0-based.txt failed.\n");
 	}
 
-	if (runSpecificGraphTest("-4", "Petersen.0-based.txt", TRUE) < 0) {
+	if (runSpecificGraphTest("-4", "Petersen.0-based.txt", TRUE) < 0)
+	{
 		retVal = -1;
 		Message("K_4 search on Petersen.0-based.txt failed.\n");
 	}
 
-
-/*
-	GRAPH TRANSFORMATION TESTS
-*/
+	/*
+		GRAPH TRANSFORMATION TESTS
+	*/
 	//	TRANSFORM TO ADJACENCY LIST
 
 	// runGraphTransformationTest by reading file contents into string
-	if (runGraphTransformationTest("-ta", "nauty_example.g6", TRUE) < 0)
+	if (runGraphTransformationTest("-a", "nauty_example.g6", TRUE) < 0)
 	{
 		retVal = -1;
 		Message("Transforming nauty_example.g6 file contents as string to adjacency list failed.\n");
 	}
 
 	// runGraphTransformationTest by reading from file
-	if (runGraphTransformationTest("-ta", "nauty_example.g6", FALSE) < 0)
+	if (runGraphTransformationTest("-a", "nauty_example.g6", FALSE) < 0)
 	{
 		retVal = -1;
 		Message("Transforming nauty_example.g6 using file pointer to adjacency list failed.\n");
 	}
 
 	// runGraphTransformationTest by reading first graph from file into string
-	if (runGraphTransformationTest("-ta", "N5-all.g6", TRUE) < 0)
+	if (runGraphTransformationTest("-a", "N5-all.g6", TRUE) < 0)
 	{
 		retVal = -1;
 		Message("Transforming first graph in N5-all.g6 (read as string) to adjacency list failed.\n");
 	}
 
 	// runGraphTransformationTest by reading first graph from file pointer
-	if (runGraphTransformationTest("-ta", "N5-all.g6", FALSE) < 0)
+	if (runGraphTransformationTest("-a", "N5-all.g6", FALSE) < 0)
 	{
 		retVal = -1;
 		Message("Transforming first graph in N5-all.g6 (read from file pointer) to adjacency list failed.\n");
 	}
 
 	// runGraphTransformationTest by reading file contents corresponding to dense graph into string
-	if (runGraphTransformationTest("-ta", "K10.g6", TRUE) < 0)
+	if (runGraphTransformationTest("-a", "K10.g6", TRUE) < 0)
 	{
 		retVal = -1;
 		Message("Transforming K10.g6 file contents as string to adjacency list failed.\n");
 	}
 
 	// runGraphTransformationTest by reading dense graph from file
-	if (runGraphTransformationTest("-ta", "K10.g6", FALSE) < 0)
+	if (runGraphTransformationTest("-a", "K10.g6", FALSE) < 0)
 	{
 		retVal = -1;
 		Message("Transforming K10.g6 using file pointer to adjacency list failed.\n");
 	}
 
-
 	//	TRANSFORM TO ADJACENCY MATRIX
 
 	// runGraphTransformationTest by reading file contents into string
-	if (runGraphTransformationTest("-tm", "nauty_example.g6", TRUE) < 0)
+	if (runGraphTransformationTest("-m", "nauty_example.g6", TRUE) < 0)
 	{
 		retVal = -1;
 		Message("Transforming nauty_example.g6 file contents as string to adjacency matrix failed.\n");
 	}
 
 	// runGraphTransformationTest by reading from file
-	if (runGraphTransformationTest("-tm", "nauty_example.g6", FALSE) < 0)
+	if (runGraphTransformationTest("-m", "nauty_example.g6", FALSE) < 0)
 	{
 		retVal = -1;
 		Message("Transforming nauty_example.g6 using file pointer to adjacency matrix failed.\n");
 	}
 
 	// runGraphTransformationTest by reading first graph from file into string
-	if (runGraphTransformationTest("-tm", "N5-all.g6", TRUE) < 0)
+	if (runGraphTransformationTest("-m", "N5-all.g6", TRUE) < 0)
 	{
 		retVal = -1;
 		Message("Transforming first graph in N5-all.g6 (read as string) to adjacency matrix failed.\n");
 	}
 
 	// runGraphTransformationTest by reading first graph from file pointer
-	if (runGraphTransformationTest("-tm", "N5-all.g6", FALSE) < 0)
+	if (runGraphTransformationTest("-m", "N5-all.g6", FALSE) < 0)
 	{
 		retVal = -1;
 		Message("Transforming first graph in N5-all.g6 (read from file pointer) to adjacency matrix failed.\n");
 	}
 
 	// runGraphTransformationTest by reading file contents corresponding to dense graph into string
-	if (runGraphTransformationTest("-tm", "K10.g6", TRUE) < 0)
+	if (runGraphTransformationTest("-m", "K10.g6", TRUE) < 0)
 	{
 		retVal = -1;
 		Message("Transforming K10.g6 file contents as string to adjacency matrix failed.\n");
 	}
 
 	// runGraphTransformationTest by reading dense graph from file
-	if (runGraphTransformationTest("-tm", "K10.g6", FALSE) < 0)
+	if (runGraphTransformationTest("-m", "K10.g6", FALSE) < 0)
 	{
 		retVal = -1;
 		Message("Transforming K10.g6 using file pointer to adjacency matrix failed.\n");
@@ -369,19 +387,18 @@ int runSpecificGraphTests(char *samplesDir)
 	//	TRANSFORM TO .G6
 
 	// runGraphTransformationTest by reading from file
-	if (runGraphTransformationTest("-tg", "nauty_example.g6.0-based.AdjList.out.txt", TRUE) < 0)
+	if (runGraphTransformationTest("-g", "nauty_example.g6.0-based.AdjList.out.txt", TRUE) < 0)
 	{
 		retVal = -1;
 		Message("Transforming nauty_example.g6.0-based.AdjList.out.txt using file pointer to .g6 failed.\n");
 	}
 
 	// runGraphTransformationTest by reading from file
-	if (runGraphTransformationTest("-tg", "K10.g6.0-based.AdjList.out.txt", TRUE) < 0)
+	if (runGraphTransformationTest("-g", "K10.g6.0-based.AdjList.out.txt", TRUE) < 0)
 	{
 		retVal = -1;
 		Message("Transforming K10.g6.0-based.AdjList.out.txt using file pointer to .g6 failed.\n");
 	}
-
 
 	if (retVal == 0)
 		Message("Tests of all specific graphs succeeded.\n");
@@ -389,7 +406,7 @@ int runSpecificGraphTests(char *samplesDir)
 		Message("One or more specific graph tests FAILED.\n");
 
 	chdir(origDir);
-    FlushConsole(stdout);
+	FlushConsole(stdout);
 	return retVal;
 }
 
@@ -411,18 +428,19 @@ int runSpecificGraphTest(char *command, char *infileName, int inputInMemFlag)
 	if (inputInMemFlag)
 	{
 		inputString = ReadTextFileIntoString(infileName);
-		if (inputString == NULL) {
+		if (inputString == NULL)
+		{
 			ErrorMessage("Failed to read input file into string.\n");
 			Result = NOTOK;
 		}
 	}
 
-	if  (Result == OK)
+	if (Result == OK)
 	{
 		// Perform the indicated algorithm on the graph in the input file or string. gp_ReadFromString()
 		// will handle freeing inputString.
 		Result = SpecificGraph(algorithmCode,
-				               infileName, NULL, NULL,
+							   infileName, NULL, NULL,
 							   inputString, &actualOutput, &actualOutput2);
 	}
 
@@ -450,7 +468,7 @@ int runSpecificGraphTest(char *command, char *infileName, int inputInMemFlag)
 	// Test that the secondary actual output matches the secondary expected output
 	if (algorithmCode == 'd' && Result == 0)
 	{
-		char *expectedSecondaryResultFileName = (char *) malloc(strlen(expectedPrimaryResultFileName) + strlen(".render.txt") + 1);
+		char *expectedSecondaryResultFileName = (char *)malloc(strlen(expectedPrimaryResultFileName) + strlen(".render.txt") + 1);
 
 		if (expectedSecondaryResultFileName != NULL)
 		{
@@ -486,17 +504,17 @@ int runSpecificGraphTest(char *command, char *infileName, int inputInMemFlag)
 int runGraphTransformationTest(char *command, char *infileName, int inputInMemFlag)
 {
 	int Result = OK;
-	
+
 	char transformationCode = '\0';
 	// runGraphTransformationTest will not test performing an algorithm on a given
-	// input graph; it will only support "-t(gam)"
-	if (command == NULL || strlen(command) < 3)
+	// input graph; it will only support "-(gam)"
+	if (command == NULL || strlen(command) < 2)
 	{
-		ErrorMessage("runGraphTransformationTest only supports -t(gam).\n");
+		ErrorMessage("runGraphTransformationTest only supports -(gam).\n");
 		return NOTOK;
 	}
-	else if (strlen(command) == 3)
-		transformationCode = command[2];
+	else if (strlen(command) == 2)
+		transformationCode = command[1];
 
 	// SpecificGraph() can invoke gp_Read() if the graph is to be read from a file, or it can invoke
 	// gp_ReadFromString() if the inputInMemFlag is set.
@@ -504,7 +522,8 @@ int runGraphTransformationTest(char *command, char *infileName, int inputInMemFl
 	if (inputInMemFlag)
 	{
 		inputString = ReadTextFileIntoString(infileName);
-		if (inputString == NULL) {
+		if (inputString == NULL)
+		{
 			ErrorMessage("Failed to read input file into string.\n");
 			Result = NOTOK;
 		}
@@ -516,11 +535,11 @@ int runGraphTransformationTest(char *command, char *infileName, int inputInMemFl
 		int zeroBasedOutputFlag = 0;
 		char *actualOutput = NULL;
 		// We want to handle the test being run when we read from an input file or read from a string,
-		// so pass both infileName and inputString. Ownership of inputString is relinquished to TestGraphFunctionality,
+		// so pass both infileName and inputString. Ownership of inputString is relinquished to TestAllGraphs,
 		// and gp_ReadFromString() will handle freeing it.
 		// We want to output to string, so we pass in the address of the actualOutput string.
-		Result = TestGraphFunctionality(command, infileName, inputString, &zeroBasedOutputFlag, NULL, &actualOutput);
-		
+		Result = TransformGraph(command, infileName, inputString, &zeroBasedOutputFlag, NULL, &actualOutput);
+
 		if (Result != OK || actualOutput == NULL)
 		{
 			ErrorMessage("Failed to perform transformation.\n");
@@ -545,7 +564,7 @@ int runGraphTransformationTest(char *command, char *infileName, int inputInMemFl
 			if (Result == TRUE)
 			{
 				messageFormat = "For the transformation %s on file \"%.*s\", actual output file matched expected output file.\n";
-				charsAvailForFilename = (int) (MAXLINE - strlen(messageFormat));
+				charsAvailForFilename = (int)(MAXLINE - strlen(messageFormat));
 				sprintf(messageContents, messageFormat, command, charsAvailForFilename, infileName);
 				Message(messageContents);
 				Result = OK;
@@ -553,7 +572,7 @@ int runGraphTransformationTest(char *command, char *infileName, int inputInMemFl
 			else
 			{
 				messageFormat = "For the transformation %s on file \"%.*s\", actual output file did not match expected output file.\n";
-				charsAvailForFilename = (int) (MAXLINE - strlen(messageFormat));
+				charsAvailForFilename = (int)(MAXLINE - strlen(messageFormat));
 				sprintf(messageContents, messageFormat, command, charsAvailForFilename, infileName);
 				ErrorMessage(messageContents);
 				Result = NOTOK;
@@ -593,10 +612,10 @@ int callRandomGraphs(int argc, char *argv[])
 		offset = 1;
 	}
 
-	NumGraphs = atoi(argv[3+offset]);
-	SizeOfGraphs = atoi(argv[4+offset]);
+	NumGraphs = atoi(argv[3 + offset]);
+	SizeOfGraphs = atoi(argv[4 + offset]);
 
-    return RandomGraphs(Choice, NumGraphs, SizeOfGraphs);
+	return RandomGraphs(Choice, NumGraphs, SizeOfGraphs);
 }
 
 /****************************************************************************
@@ -606,7 +625,7 @@ int callRandomGraphs(int argc, char *argv[])
 // 'planarity -s [-q] C I O [O2]': Specific graph
 int callSpecificGraph(int argc, char *argv[])
 {
-	char Choice=0, *infileName=NULL, *outfileName=NULL, *outfile2Name=NULL;
+	char Choice = 0, *infileName = NULL, *outfileName = NULL, *outfile2Name = NULL;
 	int offset = 0;
 
 	if (argc < 5)
@@ -620,10 +639,10 @@ int callSpecificGraph(int argc, char *argv[])
 		offset = 1;
 	}
 
-	infileName = argv[3+offset];
-	outfileName = argv[4+offset];
-	if (argc == 6+offset)
-	    outfile2Name = argv[5+offset];
+	infileName = argv[3 + offset];
+	outfileName = argv[4 + offset];
+	if (argc == 6 + offset)
+		outfile2Name = argv[5 + offset];
 
 	return SpecificGraph(Choice, infileName, outfileName, outfile2Name, NULL, NULL, NULL);
 }
@@ -648,10 +667,10 @@ int callRandomMaxPlanarGraph(int argc, char *argv[])
 		offset = 1;
 	}
 
-	numVertices = atoi(argv[2+offset]);
-	outfileName = argv[3+offset];
-	if (argc == 5+offset)
-	    outfile2Name = argv[4+offset];
+	numVertices = atoi(argv[2 + offset]);
+	outfileName = argv[3 + offset];
+	if (argc == 5 + offset)
+		outfile2Name = argv[4 + offset];
 
 	return RandomGraph('p', 0, numVertices, outfileName, outfile2Name);
 }
@@ -676,28 +695,22 @@ int callRandomNonplanarGraph(int argc, char *argv[])
 		offset = 1;
 	}
 
-	numVertices = atoi(argv[2+offset]);
-	outfileName = argv[3+offset];
-	if (argc == 5+offset)
-	    outfile2Name = argv[4+offset];
+	numVertices = atoi(argv[2 + offset]);
+	outfileName = argv[3 + offset];
+	if (argc == 5 + offset)
+		outfile2Name = argv[4 + offset];
 
 	return RandomGraph('p', 1, numVertices, outfileName, outfile2Name);
 }
 
 /****************************************************************************
- callTestGraphFunctionality()
+ callTransformGraph()
  ****************************************************************************/
 
-// 'planarity -t [-q] C|-t(gam) I O':
-//     * If -t(gam) is given rather than an algorithm command C, then the input
-// file I is transformed from its given format to the format given by the g (g6),
-// a (adjacency list) or m (matrix), and written to output file O.
-//     * Otherwise, if the command line argument after -t [-q] is a recognized
-// algorithm command C, then the input file I must be in ".g6" format
-// (report an error otherwise), and the algorithm(s) indicated by C are executed
-// on the graph(s) in the input file, with the results of the execution stored
-// in output file O.
-int callTestGraphFunctionality(int argc, char *argv[])
+// 'planarity -x [-q] -(gam) I O': Input file I is transformed from its given
+// format to the format given by the g (g6), a (adjacency list) or m (matrix),
+// and written to output file O.
+int callTransformGraph(int argc, char *argv[])
 {
 	int offset = 0;
 	char *commandString = NULL;
@@ -713,12 +726,48 @@ int callTestGraphFunctionality(int argc, char *argv[])
 		offset = 1;
 	}
 
-	commandString = argv[2+offset];
+	commandString = argv[2 + offset];
 
-	infileName = argv[3+offset];
-	outfileName = argv[4+offset];
+	infileName = argv[3 + offset];
+	outfileName = argv[4 + offset];
 
-	// We don't want to read from string nor output to string, so inputStr and outputStr are NULL
+	// We don't want to read from string, so inputStr is NULL
+	// We don't want to write to string, so outputStr is NULL
 	// We don't need to capture whether output is 0- or 1-based, so zeroBasedOutputFlag arg is NULL
-	return TestGraphFunctionality(commandString, infileName, NULL, NULL, outfileName, NULL);
+	return TransformGraph(commandString, infileName, NULL, NULL, outfileName, NULL);
+}
+
+/****************************************************************************
+ callTestAllGraphs()
+ ****************************************************************************/
+
+// 'planarity -t [-q] C I O': If the command line argument after -t [-q] is a
+// recognized algorithm command C, then the input file I must be in ".g6" format
+// (report an error otherwise), and the algorithm(s) indicated by C are executed
+// on the graph(s) in the input file, with the results of the execution stored
+// in output file O.
+int callTestAllGraphs(int argc, char *argv[])
+{
+	int offset = 0;
+	char *commandString = NULL;
+	char *infileName = NULL, *outfileName = NULL;
+
+	if (argc < 5)
+		return -1;
+
+	if (argv[2][0] == '-' && argv[2][1] == 'q')
+	{
+		if (argc < 6)
+			return -1;
+		offset = 1;
+	}
+
+	commandString = argv[2 + offset];
+
+	infileName = argv[3 + offset];
+	outfileName = argv[4 + offset];
+
+	// We don't want to write to string, so outputStr is NULL
+	// We don't need to capture whether output is 0- or 1-based, so zeroBasedOutputFlag arg is NULL
+	return TestAllGraphs(commandString, infileName, NULL, outfileName, NULL);
 }

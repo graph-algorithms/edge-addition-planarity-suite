@@ -9,9 +9,8 @@ See the LICENSE.TXT file for licensing information.
 /****************************************************************************
  MENU-DRIVEN PROGRAM
  ****************************************************************************/
-void TransformOrTestMenu(void);
-void TransformMenu(void);
-void TestMenu(void);
+void TransformGraphMenu(void);
+void TestAllGraphsMenu(void);
 
 int menu()
 {
@@ -24,10 +23,11 @@ int menu()
         Message(GetAlgorithmSpecifiers());
 
         Message(
-            "T. Test graph functionality\n"
+            "X. Transform single graph in supported file to .g6, adjacency list, or adjacency matrix\n"
+            "T. Perform an algorithm test on all graphs in .g6 input file\n"
             "H. Help message for command line version\n"
             "R. Reconfigure options\n"
-            "X. Exit\n"
+            "Q. Quit\n"
             "\n");
 
         Prompt("Enter Choice: ");
@@ -41,10 +41,13 @@ int menu()
         else if (Choice == 'r')
             Reconfigure();
 
-        else if (Choice == 't')
-            TransformOrTestMenu();
+        else if (Choice == 'x')
+            TransformGraphMenu();
 
-        else if (Choice != 'x')
+        else if (Choice == 't')
+            TestAllGraphsMenu();
+
+        else if (Choice != 'q')
         {
             char *secondOutfile = NULL;
             if (Choice == 'p' || Choice == 'd' || Choice == 'o')
@@ -74,7 +77,7 @@ int menu()
             }
         }
 
-        if (Choice != 'r' && Choice != 'x')
+        if (Choice != 'r' && Choice != 'q')
         {
             Prompt("\nPress a key then hit ENTER to continue...");
             fflush(stdin);
@@ -84,7 +87,7 @@ int menu()
             FlushConsole(stdout);
         }
 
-    } while (Choice != 'x');
+    } while (Choice != 'q');
 
     // Certain debuggers don't terminate correctly with pending output content
     FlushConsole(stdout);
@@ -93,35 +96,7 @@ int menu()
     return 0;
 }
 
-void TransformOrTestMenu()
-{
-    char Choice;
-    char *messageFormat;
-    char messageContents[MAXLINE + 1];
-
-    Message("\n");
-    Message("T. Transform single graph in supported file to .g6, adjacency list, or adjacency matrix\n");
-    Message("A. Perform an algorithm test on all graphs in .g6 input file\n");
-    Message("\nPress any other key to return to the main menu.\n");
-    Message("\n");
-
-    Prompt("Enter Choice: ");
-    fflush(stdin);
-    scanf(" %c", &Choice);
-    Choice = tolower(Choice);
-
-    switch (Choice)
-    {
-    case 't':
-        TransformMenu();
-        return;
-    case 'a':
-        TestMenu();
-        return;
-    }
-}
-
-void TransformMenu()
+void TransformGraphMenu()
 {
     int Result = OK;
 
@@ -162,12 +137,12 @@ void TransformMenu()
         scanf(" %c", &outputFormat);
         outputFormat = tolower(outputFormat);
         if (strchr(GetSupportedOutputFormats(), outputFormat))
-            sprintf(commandStr, "-t%c", outputFormat);
+            sprintf(commandStr, "-%c", outputFormat);
     } while (strlen(commandStr) == 0);
 
     if (strlen(outfileName) == 0)
     {
-        Result = TestGraphFunctionality(commandStr, infileName, NULL, NULL, NULL, &outputStr);
+        Result = TransformGraph(commandStr, infileName, NULL, NULL, NULL, &outputStr);
         if (Result != OK || outputStr == NULL)
             ErrorMessage("Failed to perform transformation.\n");
         else
@@ -179,7 +154,7 @@ void TransformMenu()
     }
     else
     {
-        Result = TestGraphFunctionality(commandStr, infileName, NULL, NULL, outfileName, NULL);
+        Result = TransformGraph(commandStr, infileName, NULL, NULL, outfileName, NULL);
         if (Result != OK)
             ErrorMessage("Failed to perform transformation.\n");
     }
@@ -191,7 +166,7 @@ void TransformMenu()
     }
 }
 
-void TestMenu()
+void TestAllGraphsMenu()
 {
     int Result = OK;
 
@@ -238,7 +213,7 @@ void TestMenu()
 
     if (strlen(outfileName) == 0)
     {
-        Result = TestGraphFunctionality(commandStr, infileName, NULL, NULL, NULL, &outputStr);
+        Result = TestAllGraphs(commandStr, infileName, NULL, NULL, &outputStr);
         if (Result != OK || outputStr == NULL)
             ErrorMessage("Algorithm test on all graphs in .g6 input file failed.\n");
         else
@@ -250,7 +225,7 @@ void TestMenu()
     }
     else
     {
-        Result = TestGraphFunctionality(commandStr, infileName, NULL, NULL, outfileName, NULL);
+        Result = TestAllGraphs(commandStr, infileName, NULL, outfileName, NULL);
         if (Result != OK)
             ErrorMessage("Algorithm test on all graphs in .g6 input file failed.\n");
     }

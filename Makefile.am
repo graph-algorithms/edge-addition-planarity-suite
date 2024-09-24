@@ -67,7 +67,8 @@ planarity_SOURCES = \
 	c/planarityApp/planarityMenu.c \
 	c/planarityApp/planarityRandomGraphs.c \
 	c/planarityApp/planaritySpecificGraph.c \
-	c/planarityApp/planarityTestGraphFunctionality.c \
+	c/planarityApp/planarityTransformGraph.c \
+	c/planarityApp/planarityTestAllGraphs.c \
 	c/planarityApp/planarityUtils.c
 
 man1_MANS = c/planarityApp/planarity.1
