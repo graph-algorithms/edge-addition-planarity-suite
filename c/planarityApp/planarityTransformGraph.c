@@ -33,7 +33,6 @@ int TransformGraph(char *commandString, char *infileName, char *inputStr, int *o
 
 	graphP theGraph;
 
-	// Create the graph and, if needed, attach the correct algorithm to it
 	theGraph = gp_New();
 
 	int outputFormat = -1;

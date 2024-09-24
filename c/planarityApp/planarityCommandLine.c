@@ -535,7 +535,7 @@ int runGraphTransformationTest(char *command, char *infileName, int inputInMemFl
 		int zeroBasedOutputFlag = 0;
 		char *actualOutput = NULL;
 		// We want to handle the test being run when we read from an input file or read from a string,
-		// so pass both infileName and inputString. Ownership of inputString is relinquished to TestAllGraphs,
+		// so pass both infileName and inputString. Ownership of inputString is relinquished to TransformGraph(),
 		// and gp_ReadFromString() will handle freeing it.
 		// We want to output to string, so we pass in the address of the actualOutput string.
 		Result = TransformGraph(command, infileName, inputString, &zeroBasedOutputFlag, NULL, &actualOutput);
