@@ -39,7 +39,7 @@ case "$OSTYPE" in
     ;;
 esac
 
-cp -R .vscode ../.vscode
+cp -R .vscode ../
 cp TestSupport/planaritytesting/.pylintrc ../TestSupport/planaritytesting/
 cp TestSupport/planaritytesting/leaksorchestrator/planarity_leaks_config.ini ../TestSupport/planaritytesting/leaksorchestrator/
 cp eclipse/.project ../.project
