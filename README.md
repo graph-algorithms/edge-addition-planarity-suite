@@ -18,22 +18,22 @@ These instructions will get you a copy of the project up and running on your loc
 
 ### Pre-compiled Executable Releases for Non-Developers
 
-On several distributions of Linux, you may be able to get the planarity executable with _sudo apt-get install planarity_ , or you may already have it you have Matlab. For non-developer Windows users, there is also a pre-compiled executable version of the algorithm implementations. Download and decompress the _planarity-N.N.N.N.WindowsExe.zip_ file. 
+On several (Debian-based) distributions of Linux, you may be able to get the planarity executable with `sudo apt-get install planarity`, or you may already have it you have Matlab. For non-developer Windows users, there is also a pre-compiled executable version of the algorithm implementations: download and decompress the `planarity-N.N.N.N.WindowsExe.zip` file. 
 
-If you run the _planarity_ executable program, it will offer an interactive, menu-driven mode that lets a user manually select algorithms to run and, where appropriate, files containing graphs on which to run the algorithms. 
+If you run the `planarity` executable program, it will offer an interactive, menu-driven mode that lets a user manually select algorithms to run and, where appropriate, files containing graphs on which to run the algorithms. 
 
-The _planarity_ executable program also supports an extensive list of command-line parameters that make it possible to automate the execution of any of the algorithms included in the application. Run _planarity_ with the "-h" command-line parameter to get more information about the command line options, and use "-h -menu" for more extensive information about command-line mode. Essentially, all functionality available in the interactive, menu-driven mode is also available via the command-line parameters.
+The `planarity` executable program also supports an extensive list of command-line parameters that make it possible to automate the execution of any of the algorithms included in the application. Run `planarity` with the `-h` command-line parameter to get more information about the command line options, and use `-h -menu` for more extensive information about command-line mode. Essentially, all functionality available in the interactive, menu-driven mode is also available via the command-line parameters.
 
 ### Setting up a Development Environment
 
-A development environment for the C reference implementations can be set up based on Eclipse.
+A development environment for the C reference implementations can be set up on Windows using the Eclipse IDE.
 
 1. Install a recent version of the Java JDK (such as Java version 14 or higher)
-2. Ensure that you set the JAVA_HOME system environment variable (e.g. to c:\Program Files\Java\jdk-14.0.1)
-3. Ensure that you add %JAVA_HOME%\bin to your system PATH
+2. Ensure that you set the `JAVA_HOME` system environment variable (e.g. to `c:\Program Files\Java\jdk-14.0.1`)
+3. Ensure that you add `%JAVA_HOME%\bin` to your system `PATH`
 4. Install Eclipse, such as the "Eclipse IDE for Enterprise Java Developers"
-5. Install gcc, gdb, and msys (e.g. download and run mingw-get-setup.exe from [here](https://osdn.net/projects/mingw/releases/) and then use the package installer to install C and C++, GDB, MSYS, and any other packages you may want.)
-6. Ensure your gcc is accessible from the command line (e.g. add C:\MinGW\bin to the system PATH)
+5. Install `gcc`, `gdb`, and `msys` (e.g. download and run `mingw-get-setup.exe` from [here](https://osdn.net/projects/mingw/releases/) and then use the package installer to install C and C++, GDB, MSYS, and any other packages you may want.)
+6. Ensure your `gcc` is accessible from the command line (e.g. add `C:\MinGW\bin` to the system `PATH`)
 7. In Eclipse, and install the C Development Tools (CDT)
     1. In Eclipse, choose the menu option Help > Install New Software
     2. Choose to work with the main repository (e.g. 2020 - 06 - http://download.eclipse.org/releases)
@@ -42,56 +42,56 @@ A development environment for the C reference implementations can be set up base
 ### Working with the Code in the Development Environment
 
 1. Copy the HTTPS clone URL into the copy/paste buffer
-     1. In this repository, the "Code" button provides the [HTTPS clone](https://github.com/graph-algorithms/edge-addition-planarity-suite.git) link to use to get the code.
-2. Start by making a new eclipse workspace for 'graph-algorithms'
-     1. You may need to select 'Prompt for Workspace on startup' in Window | Preferences | General | Startup and Shutdown | Workspaces, then close and reopen eclipse
-     2. In the initial workspace dialogue, one can specify a new folder that gets created, e.g. c:\Users\\_you_\Documents\eclipse\workspaces-cpp\graph-algorithms
+     1. In this repository, the "Code" button provides the [HTTPS clone](https://github.com/graph-algorithms/edge-addition-planarity-suite.git) link to use to clone the repository.
+2. Start by making a new eclipse workspace for `graph-algorithms`
+     1. You may need to select 'Prompt for Workspace on startup' in Window | Preferences | General | Startup and Shutdown | Workspaces, then close and reopen Eclipse
+     2. In the initial workspace dialogue, one can specify a new folder that gets created (e.g. `c:\Users\<USERNAME>\Documents\eclipse\workspaces-cpp\graph-algorithms`)
 3. Click 'Checkout projects from Git' in the new workspace Welcome page 
 4. Pick 'Clone URI' and hit Next
 5. The URI, Host, and Repository are pre-filled correctly from the copy/paste clipboard.
 6. Leave the User/Password blank (unless you have read/write access to the project), and hit Next
-7. The master branch is selected by default, so just hit Next again
-8. Change the destination directory to a subdirectory where you want to store the project code (e.g. c:\Users\\_you_\Documents\eclipse\workspaces-cpp\graph-algorithms\edge-addition-planarity-suite)
-9. Hit Next (which downloads the project), Hit Next again (to Import existing Eclipse projects), Hit Finish
+7. The `master` branch is selected by default, so just hit Next again
+8. Change the destination directory to a subdirectory where you want to store the project code (e.g. `c:\Users\<USERNAME>\Documents\eclipse\workspaces-cpp\graph-algorithms\edge-addition-planarity-suite`)
+9. Click 'Next' (which downloads the project), then click 'Next' again (to Import existing Eclipse projects), and finally click 'Finish'
 
 Now that the project is available, the code can be built and executed:
 
 1. Open the C/C++ Perspective
-     1. Use the Open Perspectives button (or use Windows | Perspective | Open Perspective | Other...)
+     1. Use the 'Open Perspectives' button (or use Windows | Perspective | Open Perspective | Other...)
      2. Select C/C++
-2. Right-click Planarity-C project, Build Configurations, Build All
-3. Right-click Planarity-C project, Build Configurations, Set Active, Release
-4. Right-click Planarity-C project, Run As, Local Application, planarity.exe (release)
+2. Right-click Planarity-C project, select 'Build Configurations' from the context menu, then click 'Build All'
+3. Right-click Planarity-C project, select 'Build Configurations' from the context menu, then click 'Set Active' and choose 'Release'
+4. Right-click Planarity-C project, select 'Run As' from the context menu, click 'Local Application', and choose 'planarity.exe (Release)'
 
 ### Making the Distribution
 
 Once one has set up the development environment and is able to work with the code in the development environment, it is possible to make the distribution with the following additional steps:
 
-1. Ensure that the autotools, configure, and make are available on the command-line (e.g. add C:\MinGW\msys\1.0\bin to the system PATH before Windows Program Files to ensure that the _find_ program is the one from MSYS rather than the one from Windows (e.g., adjust the PATH variable as needed)). 
-2. Navigate to .../edge-addition-planarity-suite (the directory containing _configure.ac_ and the _c_ subdirectory)
-3. Get into _bash_ (e.g., type _bash_ in the Windows command-line), then enter the following commands:
-    1. autogen.sh
-    2. configure
-    3. make dist
-    4. make distcheck 
+1. Ensure that the `autotools`, `configure`, and `make` are available on the command-line (e.g. add `C:\MinGW\msys\1.0\bin` to the system `PATH` before Windows Program Files to ensure that the `find` program is the one from `MSYS` rather than the one from Windows (e.g. adjust the `PATH` variable as needed)). 
+2. Navigate to the root of the `edge-addition-planarity-suite` repository (i.e. the directory containing `configure.ac` and the `c` subdirectory)
+3. Get into `bash` (e.g., type `bash` in the Windows command-line), then enter the following commands:
+    1. `./autogen.sh`
+    2. `./configure`
+    3. `make dist`
+    4. `make distcheck`
 
-The result is a validated _planarity-N.N.N.N.tar.gz_ distribution, where _N.N.N.N_ is the version number expressed in the _configure.ac_ file. 
+The result is a validated `planarity-N.N.N.N.tar.gz` distribution, where `N.N.N.N` is the version number expressed in the `configure.ac` file. 
 
 ### Making and Running the Software from the Distribution
 
 If you have done the steps to set up the development environment and work with the code, then you can make and run the software using the development environment, so you don't necessarily need to make or run the software using the process below.
 
-You also don't necessarily need to make and install the planarity software on Linux if you are able to get it using _sudo apt-get planarity_ . 
+You also don't necessarily need to `make` and `make install` the planarity software on Linux if you are able to get it using `sudo apt-get planarity` (i.e. are using a Debian-based Linux distribution which uses [`apt`](https://en.wikipedia.org/wiki/APT_(software)) for package management)
 
-However, you may have only downloaded the distribution (i.e., _planarity-N.N.N.N.tar.gz_ ) from a Release tag of this project. Once you have decompressed the distribution into a directory, you can make it by getting into _bash_ (e.g., type _bash_ in the Windows command-line) and then entering the following commands: 
-1. configure
-2. make
+However, you may have only downloaded the distribution (i.e., `planarity-N.N.N.N.tar.gz`) from a Release tag of this project. Once you have decompressed the distribution into a directory, you can make it by getting into `bash` (e.g. type `bash` in the Windows command-line) and then entering the following commands: 
+1. `./configure`
+2. `make`
 
-At this point, the planarity executable can be run from within the distribution directory. For example, on Windows, go to the ".libs" subdirectory containing the planarity executuable and the libplanarity DLL and run _planarity -test ../c/samples_ on the command-line. 
+At this point, the `planarity` executable can be run from within the distribution directory. For example, on Windows, go to the `.libs/` subdirectory containing the `planarity` executuable and the `libplanarity` DLL and run `planarity -test ../c/samples` on the command-line. 
 
-On Linux, the planarity program can also be installed by entering _sudo make install_ on the command-line. Note that the _libplanarity_ shared object and symlinks will be installed to _/usr/local/lib_ so it will be necessary to set LD_LIBRARY_PATH accordingly. For one session, this can be done with _export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib_ . To make it more permanent, you could use:
-1. Create a new file " _/etc/ld.so.conf.d/planarity.conf_ " containing " _/usr/local/lib_ " (without the quotes)
-2. sudo ldconfig 
+On Linux, the planarity program can also be installed by entering `sudo make install` on the command-line. Note that the `libplanarity` shared object and symlinks will be installed to `/usr/local/lib` so it will be necessary to set `LD_LIBRARY_PATH` accordingly. For one session, this can be done with `export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib`. To make it more permanent, you could use:
+1. Create a new file `/etc/ld.so.conf.d/planarity.conf` containing `/usr/local/lib`
+2. Run `sudo ldconfig`
 
 ## Contributing
 
@@ -104,13 +104,13 @@ Subject to your acceptance of the license agreement, contributions can be made v
 
 ## Versioning
 
-The APIs for the graph library and the planarity algorithm implementations are versioned using the method documented in [configure.ac](configure.ac).
+The APIs for the graph library and the planarity algorithm implementations are versioned using the method documented in [`configure.ac`](configure.ac).
 
-The _planarity.exe_ application, which provides command-line and menu-driven interfaces for the graph library and planarity algorithms, is versioned according to the _Major.Minor.Maintenance.Tweak_ numbering system documented in the comments in [planarity.c](c/planarity.c). 
+The `planarity.exe` application, which provides command-line and menu-driven interfaces for the graph library and planarity algorithms, is versioned according to the `Major.Minor.Maintenance.Tweak` numbering system documented in the comments in [`planarity.c`](c/planarity.c). 
 
 ## License
 
-This project is licensed under a 3-clause BSD License appearing in [LICENSE.TXT](LICENSE.TXT).
+This project is licensed under a 3-clause BSD License appearing in [`LICENSE.TXT`](LICENSE.TXT).
 
 ## Related Works and Further Documentation
 
