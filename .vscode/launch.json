@@ -24,9 +24,9 @@
             "request": "launch",
             "program": "${workspaceFolder}\\Debug\\planarity.exe",
             "args": [
-                // Command: `planarity -t [-q] -ta I O`
-                // "-t",
-                // "-ta",
+                // Command: `planarity -x [-q] -a I O`
+                // "-x",
+                // "-a",
                 // "${workspaceFolder}\\c\\samples\\nauty_example.g6",
                 // "${workspaceFolder}\\c\\samples\\nauty_example.g6.AdjList.expected.out.txt"
                 // Command: `planarity -test <samplesDir>`
@@ -59,9 +59,9 @@
             "request": "launch",
             "program": "${workspaceFolder}\\Release\\planarity.exe",
             "args": [
-                // Command: `planarity -t [-q] -ta I O`
-                // "-t",
-                // "-ta",
+                // Command: `planarity -x [-q] -a I O`
+                // "-x",
+                // "-a",
                 // "${workspaceFolder}\\c\\samples\\nauty_example.g6",
                 // "${workspaceFolder}\\c\\samples\\nauty_example.g6.AdjList.expected.out.txt"
                 // Command: `planarity -test <samplesDir>`
@@ -83,9 +83,9 @@
             "request": "launch",
             "program": "${workspaceFolder}/Debug/planarity",
             "args": [
-                // Command: `planarity -t [-q] -ta I O`
-                // "-t",
-                // "-ta",
+                // Command: `planarity -x [-q] -a I O`
+                // "-x",
+                // "-a",
                 // "${workspaceFolder}/c/samples/nauty_example.g6",
                 // "${workspaceFolder}/c/samples/nauty_example.g6.AdjList.expected.out.txt"
                 // Command: `planarity -test <samplesDir>`
@@ -118,9 +118,9 @@
             "request": "launch",
             "program": "${workspaceFolder}/Release/planarity",
             "args": [
-                // Command: `planarity -t [-q] -ta I O`
-                // "-t",
-                // "-ta",
+                // Command: `planarity -x [-q] -a I O`
+                // "-x",
+                // "-a",
                 // "${workspaceFolder}/c/samples/nauty_example.g6",
                 // "${workspaceFolder}/c/samples/nauty_example.g6.AdjList.expected.out.txt"
                 // Command: `planarity -test <samplesDir>`
@@ -142,9 +142,9 @@
             "request": "launch",
             "program": "${workspaceFolder}\\Debug\\planarity.exe",
             "args": [
-                // Command: `planarity -t [-q] -ta I O`
-                // "-t",
-                // "-ta",
+                // Command: `planarity -x [-q] -a I O`
+                // "-x",
+                // "-a",
                 // "${workspaceFolder}\\c\\samples\\nauty_example.g6",
                 // "${workspaceFolder}\\c\\samples\\nauty_example.g6.AdjList.expected.out.txt"
                 // Command: `planarity -test <samplesDir>`
@@ -164,9 +164,9 @@
             "request": "launch",
             "program": "${workspaceFolder}\\Release\\planarity.exe",
             "args": [
-                // Command: `planarity -t [-q] -ta I O`
-                // "-t",
-                // "-ta",
+                // Command: `planarity -x [-q] -a I O`
+                // "-x",
+                // "-a",
                 // "${workspaceFolder}\\c\\samples\\nauty_example.g6",
                 // "${workspaceFolder}\\c\\samples\\nauty_example.g6.AdjList.expected.out.txt"
                 // Command: `planarity -test <samplesDir>`
@@ -186,9 +186,9 @@
             "request": "launch",
             "program": "${workspaceFolder}/Debug/planarity",
             "args": [
-                // Command: `planarity -t [-q] -ta I O`
-                // "-t",
-                // "-ta",
+                // Command: `planarity -x [-q] -a I O`
+                // "-x",
+                // "-a",
                 // "${workspaceFolder}/c/samples/nauty_example.g6",
                 // "${workspaceFolder}/c/samples/nauty_example.g6.AdjList.expected.out.txt"
                 // Command: `planarity -test <samplesDir>`
@@ -208,9 +208,9 @@
             "request": "launch",
             "program": "${workspaceFolder}/Release/planarity",
             "args": [
-                // Command: `planarity -t [-q] -ta I O`
-                // "-t",
-                // "-ta",
+                // Command: `planarity -x [-q] -a I O`
+                // "-x",
+                // "-a",
                 // "${workspaceFolder}/c/samples/nauty_example.g6",
                 // "${workspaceFolder}/c/samples/nauty_example.g6.AdjList.expected.out.txt"
                 // Command: `planarity -test <samplesDir>`
