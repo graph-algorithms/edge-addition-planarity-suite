@@ -83,12 +83,12 @@ planarity-*
 planarity-*/*
 
 # Ignoring configuration for VSCode
-.vscode/
+/.vscode/
 
 # Ignoring configuration for Eclipse project
 .project
-c/.project
-c/.cproject
+/c/.project
+/c/.cproject
 
 ## MacOS excludes
 .DS_Store
