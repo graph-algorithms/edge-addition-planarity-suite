@@ -154,7 +154,7 @@ int _IsolateOuterplanarityObstructionE1orE2(graphP theGraph)
     isolatorContextP IC = &theGraph->IC;
     int XPrevLink = 1;
 
-    if (_MarkHighestXYPath(theGraph) != TRUE)
+    if (_MarkHighestXYPath(theGraph) != OK || theGraph->IC.py == NIL)
         return NOTOK;
 
     /* Isolate E1 */
@@ -212,7 +212,7 @@ int _IsolateOuterplanarityObstructionE3orE4(graphP theGraph)
     if (FUTUREPERTINENT(theGraph, theGraph->IC.x, theGraph->IC.v) ||
         FUTUREPERTINENT(theGraph, theGraph->IC.y, theGraph->IC.v))
     {
-        if (_MarkHighestXYPath(theGraph) != TRUE)
+        if (_MarkHighestXYPath(theGraph) != OK || theGraph->IC.py == NIL)
             return NOTOK;
 
         gp_UpdateVertexFuturePertinentChild(theGraph, theGraph->IC.x, theGraph->IC.v);

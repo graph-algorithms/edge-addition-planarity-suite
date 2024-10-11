@@ -120,7 +120,7 @@ int _IsolateOuterplanarObstruction(graphP theGraph, int v, int R)
 
     if (theGraph->IC.minorType & MINORTYPE_E)
     {
-        if (_MarkHighestXYPath(theGraph) != TRUE)
+        if (_MarkHighestXYPath(theGraph) != OK || theGraph->IC.py == NIL)
             return NOTOK;
     }
 

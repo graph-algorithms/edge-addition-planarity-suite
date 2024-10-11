@@ -36,8 +36,7 @@ extern int _SetVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x);
 extern int _OrientExternalFacePath(graphP theGraph, int u, int v, int w, int x);
 
 extern int _ChooseTypeOfNonplanarityMinor(graphP theGraph, int v, int R);
-extern int _MarkHighestXYPath(graphP theGraph);
-
+extern int _MarkLowestXYPath(graphP theGraph);
 extern int _IsolateKuratowskiSubgraph(graphP theGraph, int v, int R);
 
 extern int _GetLeastAncestorConnection(graphP theGraph, int cutVertex);
@@ -76,7 +75,7 @@ int _FindExternalConnectionDescendantEndpoint(graphP theGraph, int ancestor,
 int _SearchForMergeBlocker(graphP theGraph, K33SearchContext *context, int v, int *pMergeBlocker);
 int _FindK33WithMergeBlocker(graphP theGraph, K33SearchContext *context, int v, int mergeBlocker);
 
-int _TestForLowXYPath(graphP theGraph);
+int _MarkLowestXYPath(graphP theGraph);
 int _TestForZtoWPath(graphP theGraph);
 int _TestForStraddlingBridge(graphP theGraph, K33SearchContext *context, int u_max);
 int _K33Search_DeleteUnmarkedEdgesInBicomp(graphP theGraph, K33SearchContext *context, int BicompRoot);
@@ -351,11 +350,25 @@ int _RunExtraK33Tests(graphP theGraph, K33SearchContext *context)
 
     /* Case 4: If there exists any x-y path with points of attachment px and py
                 such that px!=x or py!=y, then a K_{3,3} homeomorph can be isolated
-                with Minor E4. */
+                with Minor E4.  */
 
-    if (_TestForLowXYPath(theGraph) != OK)
+    // Prior tests to choose the type of non-planarity minor selected the highest
+    // x-y path, so we need to clear the visited flags of that path before marking 
+    // instead the x-y path with the lowest attachment points (those closest to W
+    // along the external face).
+    if (_ClearVisitedFlagsInBicomp(theGraph, IC->r) != OK)
         return NOTOK;
 
+    // Now mark the lowest x-y path so that we can test whether _any_ x-y path
+    // has points of attachment, px or py, below x or y, respectively (where
+    // below means closer to W than x or y, respectively, along the external face).
+    if (_MarkLowestXYPath(theGraph) != TRUE)
+        return NOTOK;
+
+    // Now we test for E4 based on whether px!=x or py!=y. Note that the inequality
+    // test is sufficient because not equal means attached lower by the time we are
+    // testing for E4 because the prior test for non-planarity minor C already ruled
+    // out the possibility that inequality could mean attached higher than x or y.
     if (IC->px != IC->x || IC->py != IC->y)
     {
         if (_FinishIsolatorContextInitialization(theGraph, context) != OK ||
@@ -369,6 +382,13 @@ int _RunExtraK33Tests(graphP theGraph, K33SearchContext *context)
                 internal path from the internal vertex to W/Z, then a K_{3,3} homeomorph
                 can be isolated with Minor E5. */
 
+    // Since the E4 test above has already marked the lowest X-Y path, and only
+    // the lowest one could possibly have a Z-to-W path attached to it, we
+    // simply reuse the x-y path from E4 here in the E5 test.
+    // (NOTE: Only the lowest X-Y path could have a Z-to-W path because all 
+    //        bicomps are planar embeddings, and so a Z-to-W path emanating 
+    //        from a higher X-Y path would cross the lowest one, violating the
+    //        planarity of the bicomp).
     if (_TestForZtoWPath(theGraph) != OK)
         return NOTOK;
 
@@ -886,80 +906,8 @@ int _FindK33WithMergeBlocker(graphP theGraph, K33SearchContext *context, int v, 
 }
 
 /****************************************************************************
- _TestForLowXYPath()
- Is there an x-y path that does not include X?
- If not, is there an x-y path that does not include Y?
- If not, then we restore the original x-y path.
- If such a low x-y path exists, then we adjust px or py accordingly,
-    and we make sure that X or Y (whichever is excluded) and its edges are
-    not marked visited.
- This method uses the stack, though it is called with an empty stack currently,
- it does happen to preserve any preceding stack content. This method pushes
- at most one integer per edge incident to the bicomp root plus two integers
- per vertex in the bicomp.
- ****************************************************************************/
-
-int _TestForLowXYPath(graphP theGraph)
-{
-    isolatorContextP IC = &theGraph->IC;
-    int result;
-    int stackBottom;
-
-    /* Clear the previously marked X-Y path */
-
-    if (_ClearVisitedFlagsInBicomp(theGraph, IC->r) != OK)
-        return NOTOK;
-
-    /* Save the size of the stack before hiding any edges, so we will know
-       how many edges to restore */
-
-    stackBottom = sp_GetCurrentSize(theGraph->theStack);
-
-    /* Hide the internal edges of X */
-
-    if (_HideInternalEdges(theGraph, IC->x) != OK)
-        return NOTOK;
-
-    /* Try to find a low X-Y path that excludes X, then restore the
-        internal edges of X. */
-
-    result = _MarkHighestXYPath(theGraph);
-    if (_RestoreInternalEdges(theGraph, stackBottom) != OK)
-        return NOTOK;
-
-    /* If we found the low X-Y path, then return. */
-
-    if (result == TRUE)
-        return OK;
-
-    /* Hide the internal edges of Y */
-
-    if (_HideInternalEdges(theGraph, IC->y) != OK)
-        return NOTOK;
-
-    /* Try to find a low X-Y path that excludes Y, then restore the
-        internal edges of Y. */
-
-    result = _MarkHighestXYPath(theGraph);
-    if (_RestoreInternalEdges(theGraph, stackBottom) != OK)
-        return NOTOK;
-
-    /* If we found the low X-Y path, then return. */
-
-    if (result == TRUE)
-        return OK;
-
-    /* Restore the original X-Y path and return with no error
-            (the search failure is reflected by no change to px and py */
-
-    if (_MarkHighestXYPath(theGraph) != TRUE)
-        return NOTOK;
-
-    return OK;
-}
-
-/****************************************************************************
  _TestForZtoWPath()
+
  This function tests whether there is a path inside the bicomp leading from W
  to some internal node of the x-y path.  If there is, the path is marked (the
  visited flags of its vertices and edges are set).
@@ -969,8 +917,9 @@ int _TestForLowXYPath(graphP theGraph)
 
  The function returns NOTOK on internal error, OK otherwise.
 
- Preconditions: All internal vertices have an obstruction type setting of
- unknown, as do W and the bicomp root.  There is an X-Y path marked visited.
+ Preconditions: The X-Y path is marked visited by a prior invocation of
+ the meothd _MarkLowestXYPath() above.
+
  So, we start a depth first search from W to find a visited vertex, except
  we prune the search to ignore vertices whose obstruction type is other than
  unknown.  This ensures the path found, if any, avoids external face vertices,
