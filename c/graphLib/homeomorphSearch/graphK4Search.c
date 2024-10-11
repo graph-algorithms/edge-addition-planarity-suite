@@ -177,11 +177,16 @@ int _SearchForK4InBicomp(graphP theGraph, K4SearchContext *context, int v, int R
 		if (_ClearVisitedFlagsInBicomp(theGraph, R) != OK)
 			return NOTOK;
 
+		// Now Mark the X-Y path
 		// NOTE: This call preserves the stack and does not overflow. There
 		//       are at most 4 integers per cut vertex merge point, all of which
 		//       are not in the bicomp, and this call pushes at most 3 integers
 		//       per bicomp vertex, so the maximum stack requirement is 4N
-		if (_MarkHighestXYPath(theGraph) == TRUE)
+		if (_MarkHighestXYPath(theGraph) != OK)
+			return NOTOK;
+
+		// If there was an X-Y path to mark...
+		if (theGraph->IC.py != NIL)
 		{
 			// Now that we know we can find a K4, the Walkdown will not continue
 			// and we can do away with the stack content.
@@ -202,9 +207,12 @@ int _SearchForK4InBicomp(graphP theGraph, K4SearchContext *context, int v, int R
 				return NOTOK;
 			}
 
+			// Fail if there is an internal error or if there isn't an X-Y path
+			if (_MarkHighestXYPath(theGraph) != OK || theGraph->IC.py == NIL)
+				return NOTOK;
+
 			// Isolate the K4 homeomorph
-			if (_MarkHighestXYPath(theGraph) != TRUE ||
-				_K4_IsolateMinorA2(theGraph) != OK ||
+			if (_K4_IsolateMinorA2(theGraph) != OK ||
 				_DeleteUnmarkedVerticesAndEdges(theGraph) != OK)
 				return NOTOK;
 
@@ -309,10 +317,11 @@ int _SearchForK4InBicomp(graphP theGraph, K4SearchContext *context, int v, int R
 					return NOTOK;
 			}
 
-			// The X-Y path doesn't have to be the same one that was associated with the
-			// separating internal edge.
+			// The X-Y path doesn't have to be the same one that was associated with 
+			// the separating internal edge (but it has to be there, else error).
 			if (_SetVertexTypesForMarkingXYPath(theGraph) != OK ||
-				_MarkHighestXYPath(theGraph) != TRUE)
+				_MarkHighestXYPath(theGraph) != OK ||
+				theGraph->IC.py == NIL)
 				return NOTOK;
 
 			// Isolate the K4 homeomorph
@@ -367,7 +376,7 @@ int _SearchForK4InBicomp(graphP theGraph, K4SearchContext *context, int v, int R
 
 		if (_SetVertexTypesForMarkingXYPath(theGraph) != OK)
 			return NOTOK;
-		if (_MarkHighestXYPath(theGraph) != TRUE)
+		if (_MarkHighestXYPath(theGraph) != OK || theGraph->IC.py == NIL)
 			return NOTOK;
 
 		// Isolate the K4 homeomorph
