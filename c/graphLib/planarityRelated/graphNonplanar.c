@@ -32,6 +32,7 @@ int _SetVertexTypesForMarkingXYPath(graphP theGraph);
 int _PopAndUnmarkVerticesAndEdges(graphP theGraph, int Z, int stackBottom);
 
 int _MarkHighestXYPath(graphP theGraph);
+int _MarkClosestXYPath(graphP theGraph, int targetVertex);
 int _MarkZtoRPath(graphP theGraph);
 int _FindFuturePertinenceBelowXYPath(graphP theGraph);
 
@@ -74,7 +75,7 @@ int _ChooseTypeOfNonplanarityMinor(graphP theGraph, int v, int R)
 
     /* Find the highest obstructing X-Y path */
 
-    if (_MarkHighestXYPath(theGraph) != TRUE)
+    if (_MarkHighestXYPath(theGraph) != OK || theGraph->IC.py == NIL)
         return NOTOK;
 
     Px = theGraph->IC.px;
@@ -397,78 +398,156 @@ int _PopAndUnmarkVerticesAndEdges(graphP theGraph, int Z, int stackBottom)
 /****************************************************************************
  _MarkHighestXYPath()
 
- An X-Y path in the bicomp rooted by R is a path attached to the external
- face at points Px and Py that separates W from R such that a back edge (R, W)
- cannot be embedded within the bicomp. Recall that R is a root copy of v, so
- (R, W) is the representative of (v, W).  Also, note that W is pertinent if
- either W *or* one of its descendants in a separate bicomp has, in the input
- graph, a back edge to v.
+ Sets the visited flags on the highest X-Y path, i.e. the one closest to the
+ root vertex R of the biconnected component containing X and Y as well as a
+ pertinent vertex W that the Walkdown could not reach due to the future 
+ pertinent vertices X and Y being along both external face paths 
+ emanating from the root R. 
 
- If no X-Y path separating W from R is found, then NOTOK is returned because
- the proof of correctness guarantees that one exists (although this routine
- can also be used to help test for the existence of an X-Y path, and NOTOK
- means 'no' in that case).
+ The caller receives an OK result if the method succeeded in operating or 
+ NOTOK on an internal failure. However, there may or may not be any X-Y path,
+ in which case no visitation flags are set and the return result is still OK
+ because the caller must decide whether the absence of an X-Y path is an
+ operational error. 
 
- The desired output is to set the 'visited' flags of the X-Y path with
- highest points of attachment to the external face (i.e. the points of
- attachment that are closest to R along the external face).  This includes
- marking both the vertices and edges along the X-Y path.
-
- Previously, during non-planarity context initialization, the vertices along
- the external face (other than R and W) have been classified as 'high RXW',
- 'low RXW', 'high RXY', or 'low RXY'. Once the vertices have been categorized,
- we proceed with trying to set the visitation flags in the way described above.
- First, we remove all edges incident to R except the two edges that join R to
- the external face. The result is that R and its two remaining edges are a
- 'corner' in the external face but also in a single proper face whose boundary
- includes the X-Y path with the highest attachment points. Thus, we simply need
- to walk this proper face to find the desired X-Y path. Note, however, that the
- resulting face boundary may have attached cut vertices.  Any such separable
- component contains a vertex neighbor of R, but the edge to R has been
- temporarily removed.  The algorithm removes loop of vertices and edges along
- the proper face so that only a path is identified.
-
- To walk the proper face containing R, we begin with its first arc successor,
- then take the *predecessor* arc at every subsequent corner.  For each vertex,
- we mark as visited the vertex as well as the edge used to enter the vertex
- (except for the edge used to enter the RXW vertex).  We also push the visited
- vertices and edges onto a stack.
-
- As we walk the proper face, we keep track of the last vertex P_x we visited of
- type RXW (high or low).  Each time we encounter a vertex of type RXW (high or
- low), we pop the stack and unmark all of the edges and vertices visited because
- they were part of a path parallel to the external face that does not obstruct
- W from reaching R within the bicomp.  If we encounter vertex W, then there is
- no obstructing X-Y path since we removed only edges incident to R, so we pop
- the stack unmarking everything then return NOTOK as stated above.  If we
- encounter a vertex Z previously visited, then we pop the stack, unmarking the
- vertices and edges popped, until we find the prior occurence of Z on the stack.
-
- Otherwise, the first time we encounter a vertex P_y of type 'RYW', we stop
- because the obstructing X-Y path has been marked visited and its points of
- connection P_x and P_y have been found.
-
- Once the X-Y path is identified, we restore the edges incident to R.
-
- This method uses the stack, but it preserves any prior content.
- The stack space used is no greater than 3N.  The first N accounts for removing
- the edges incident to R.  The other 2N accounts for the fact that each
- iteration of the main loop visits a vertex, pushing its index and the
- location of an edge record.  If a vertex is encountered that is already
- on the stack, then it is not pushed again (and in fact part of the stack
- is removed).
-
- Returns TRUE if the X-Y path is found, FALSE otherwise.
- In debug mode it can also return NOTOK. This is equivalent to FALSE, but
- NOTOK is better for documenting the error condition in the code, and
- it produces a debug message. Also, in many cases the equivalent-to-FALSE
- result is an error condition for the caller, so NOTOK usually percolates up.
+ This method also sets the isolator context's points of attachment on the 
+ external face of the marked X-Y path, if there was an X-Y path.  So, the 
+ caller can also use this call to decide if there was an X-Y path by
+ testing whether theGraph->IC.px and py have been set to non-NIL values.
  ****************************************************************************/
 
 int _MarkHighestXYPath(graphP theGraph)
 {
+    return _MarkClosestXYPath(theGraph, theGraph->IC.r);
+}
+
+/****************************************************************************
+ _MarkLowestXYPath()
+
+ Sets the visited flags on the lowest X-Y path, i.e. the one closest to the
+ pertinent vertex W that the Walkdown could not reach due to future pertinent
+ vertices X and Y along both external face paths emanating from the root R
+ of the biconnected component containing W, X and Y. 
+
+ The caller receives an OK result if the method succeeded in operating or 
+ NOTOK on an internal failure. However, there may or may not be any X-Y path,
+ in which case no visitation flags are set and the return result is still OK
+ because the caller must decide whether the absence of an X-Y path is an
+ operational error. 
+
+ This method also sets the isolator context's points of attachment on the 
+ external face of the marked X-Y path, if there was an X-Y path.  So, the 
+ caller can also use this call to decide if there was an X-Y path by
+ testing whether theGraph->IC.px and py have been set to non-NIL values.  
+ ****************************************************************************/
+
+int _MarkLowestXYPath(graphP theGraph)
+{
+    return _MarkClosestXYPath(theGraph, theGraph->IC.w);
+}
+
+/****************************************************************************
+ _MarkClosestXYPath()
+
+ This method searches for and marks the X-Y path in the bicomp rooted by R 
+ that is either closest to R (highest) or closest to W (lowest). This method 
+ will return NOTOK if the targetVertex parameter is other than R or W.
+ 
+ The closest X-Y path is the path through the inside of the bicomp that 
+ only attaches to the external face at its two endpoint vertices and 
+ those endpoints are closer along the external face path emanating from
+ the targetVertex than the attachment points of any other X-Y path.
+
+ This method returns NOTOK if there is an internal processing error and
+ otherwise it returns OK. If there is no X-Y path, the method still returns 
+ OK to indicate no internal failures, but on return the caller can detect
+ whether there was an X-Y path by testing whether the attachment points in
+ the isolator context have been set to non-NIL values. Specifically, test
+ whether theGraph->IC.px and py have been set to non-NIL values. The caller
+ must decide whether the absence of an X-Y path is an error. For example,
+ in core planarity, the proof of correctness guarantees an X-Y path exists
+ by the time this method is called, so that caller would decide to return
+ NOTOK since there should be an X-Y path.
+
+ If there is an X-Y path, it is marked using the visited flags on the
+ vertices and edges.
+
+ PRECONDITION: During non-planarity context initialization, the vertices along
+ the external face (other than R and W) have been classified as 'high RXW',
+ 'low RXW', 'high RXY', or 'low RXY'. Once the vertices have been categorized,
+ we proceed with trying to set the visitation flags of vertices and edges.
+ First, we remove all edges incident to the targetVertex, except the two edges 
+ that join it to the external face. The result is that the targetVertex and its 
+ two remaining edges are a 'corner' in the external face but also in a single 
+ proper face whose boundary includes the X-Y path with the closest attachment 
+ points. Thus, we simply need to walk this proper face to find the desired 
+ X-Y path. Note, however, that the resulting face boundary may have attached 
+ cut vertices.  Any such separable component contains a vertex neighbor of 
+ the targetVertex, but the edge to the targetVertex has been temporarily hidden.
+ The algorithm removes loops of vertices and edges along the proper face so 
+ that only the desired path is identified.
+
+ To walk the proper face containing the targetVertex, we first identify an 
+ arc that will be considered to be the one used to enter the targetVertex.
+ When the first loop iteration exits the targetVertex, it comes out on the 
+ RXW side (even though it may be an internal vertex not marked RXW). 
+ Then we take either the next arc (if targetVertex==W) or predecessor arc
+ (if targetVertex==R) at every subsequent corner to determine the exit arc
+ for the vertex. Then, we use the twin arc of the exit arc to determine the
+ entry arc for the next vertex. 
+ 
+ For each vertex, we mark as visited the vertex as well as both arcs of 
+ the edge used to enter the vertex. We also push the visited vertices and 
+ edges onto a stack. Each time the traversal lands on an external face 
+ vertex on the RXW side, it is recorded as a candidate point of attachment Px.
+ We also pop and unmark all previously visited vertices and edges because they
+ are now known to not be part of the internal X-Y path after encountering the
+ point of attachment. Instead, these preceding edges and vertices were part 
+ of a path parallel to the external face that does not obstruct the space 
+ between R and W inside the bicomp.  
+
+ As we walk the proper face, we keep track of the last vertex P_x we visited of
+ type RXW (high or low). If we encounter antipodalVertex of the targetVertex
+ (i.e., W if the targetVertex is R, or R if the targetVertex is W), then there 
+ is no obstructing X-Y path since we removed only edges incident to the 
+ targetVertex, so we pop the stack unmarking everything then clear the 
+ X-Y path points of attachment in the isolator context so the caller will know
+ that no X-Y path was found (and then we return OK since there was no internal 
+ error). 
+ 
+ If, during the traversal, we encounter a vertex Z previously visited, then we 
+ pop the stack, unmarking the vertices and edges popped, until we find the 
+ prior occurence of Z on the stack. This is because we have traversed a path
+ that would connect back to the targetVertex had we not hidden the internal 
+ edges of the targetVertex.
+
+ Otherwise, the first time we encounter a vertex of type 'RYW', we stop
+ because the obstructing X-Y path has been marked visited and its points of
+ attachment to the external face have been found. This second point of 
+ attachment Py is stored in the isolator context.
+
+ Once the X-Y path is identified (or once we have found that there is no 
+ X-Y path), we restore the previously hidden edges incident to the targetVertex.
+
+ This method uses the stack, but it preserves any prior content.
+ The stack space used is no greater than 3N.  The first N accounts for hiding
+ the edges incident to the targetVertex.  The other 2N accounts for the fact 
+ that each iteration of the main loop visits a vertex, pushing its index and 
+ the location of an edge record.  If a vertex is encountered that is already
+ on the stack, then it is not pushed again (and in fact part of the stack
+ is removed).
+
+ Returns OK on successful operation and NOTOK on internal failure. 
+ Also, if an X-Y path is found (which will be the closest), then
+ the graph isolator context contains its attachment points on the 
+ external face of the bicomp rooted by R, and the edges and vertices
+ in the X-Y path have been marked visted. 
+ ****************************************************************************/
+
+int _MarkClosestXYPath(graphP theGraph, int targetVertex)
+{
     int e, Z;
-    int R, W;
+    int R, W, antipodalVertex;
     int stackBottom1, stackBottom2;
 
     /* Initialization */
@@ -477,14 +556,23 @@ int _MarkHighestXYPath(graphP theGraph)
     W = theGraph->IC.w;
     theGraph->IC.px = theGraph->IC.py = NIL;
 
+    /* This method only makes sense for a targetVertex of R or W */
+    if (targetVertex != R && targetVertex != W)
+        return NOTOK;
+
+    /* The vertex opposite the targetVertex is needed to detect when
+       there is no X-Y path */
+
+    antipodalVertex = targetVertex == R ? W : R;
+
     /* Save the stack bottom before we start hiding internal edges, so
        we will know how many edges to restore */
 
     stackBottom1 = sp_GetCurrentSize(theGraph->theStack);
 
-    /* Remove the internal edges incident to vertex R */
+    /* Remove the internal edges incident to targetVertex (R or W) */
 
-    if (_HideInternalEdges(theGraph, R) != OK)
+    if (_HideInternalEdges(theGraph, targetVertex) != OK)
         return NOTOK;
 
     /* Now we're going to use the stack to collect the vertices of potential
@@ -494,22 +582,30 @@ int _MarkHighestXYPath(graphP theGraph)
 
     stackBottom2 = sp_GetCurrentSize(theGraph->theStack);
 
-    /* Walk the proper face containing R to find and mark the highest
-            X-Y path. Note that if W is encountered, then there is no
-            intervening X-Y path, so we would return FALSE in that case. */
+    /* Walk the proper face containing targetVertex to find and mark the 
+        closest X-Y path.  */
 
-    Z = R;
-    // This setting of e is the arc equivalent of prevLink=1
-    // As loop progresses, e indicates the arc used to enter Z, not the exit arc
-    e = gp_GetLastArc(theGraph, R);
+    Z = targetVertex;
+
+    // Now we will get the arc that we consider to be the arc used to enter
+    // the targetVertex (which will be an edge on the RYW side, and the 
+    // first line of the loop code will get the previous or next arc to exit 
+    // the targetVertex on the RXW side of the bicomp)
+    e = targetVertex == R ? gp_GetLastArc(theGraph, R) : gp_GetFirstArc(theGraph, W);
 
     while (gp_GetVertexObstructionType(theGraph, Z) != VERTEX_OBSTRUCTIONTYPE_HIGH_RYW &&
            gp_GetVertexObstructionType(theGraph, Z) != VERTEX_OBSTRUCTIONTYPE_LOW_RYW)
     {
-        /* Advance e and Z along the proper face containing R */
+        /* Advance e and Z along the proper face containing the targetVertex */
 
-        e = gp_GetPrevArcCircular(theGraph, e);
+        // Get the opposing arc of the corner at vertex Z, as the arc to exit Z
+        e = targetVertex == R ? gp_GetPrevArcCircular(theGraph, e)
+                              : gp_GetNextArcCircular(theGraph, e);
+        
+        // Now use the exit arc to get the next Z to visit
         Z = gp_GetNeighbor(theGraph, e);
+
+        // And get the entry arc of the new Z being visited
         e = gp_GetTwinArc(theGraph, e);
 
         /* If Z is already visited, then pop everything since the last time
@@ -525,12 +621,12 @@ int _MarkHighestXYPath(graphP theGraph)
 
         else
         {
-            /* If we find W, then there is no X-Y path. Never happens
-               for Kuratowski subgraph isolator, but this routine is
-               also used to test for certain X-Y paths.
+            /* If we find the antipodalVertex of the targetVertex (W if R, R if W), 
+               then there is no X-Y path. Never happens for Kuratowski subgraph 
+               isolator, but this routine is also used to test for certain X-Y paths.
                So, we clean up and bail out in that case. */
 
-            if (Z == W)
+            if (Z == antipodalVertex)
             {
                 if (_PopAndUnmarkVerticesAndEdges(theGraph, NIL, stackBottom2) != OK)
                     return NOTOK;
@@ -566,7 +662,7 @@ int _MarkHighestXYPath(graphP theGraph)
             }
 
             /* If we found an RYW vertex, then we have successfully finished
-               identifying the highest X-Y path, so we record the point of
+               identifying the closest X-Y path, so we record the point of
                attachment and break the loop. */
 
             if (gp_GetVertexObstructionType(theGraph, Z) == VERTEX_OBSTRUCTIONTYPE_HIGH_RYW ||
@@ -588,7 +684,10 @@ int _MarkHighestXYPath(graphP theGraph)
 
     /* Return the result */
 
-    return gp_IsVertex(theGraph->IC.py) ? TRUE : FALSE;
+    if (!gp_IsVertex(theGraph->IC.py))
+        theGraph->IC.px = NIL;
+
+    return OK;
 }
 
 /****************************************************************************
