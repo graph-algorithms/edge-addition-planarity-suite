@@ -274,7 +274,7 @@ class EdgeDeletionAnalyzer:
         """Transforms input graph to adjacency list
 
         Runs
-            planarity -t -ta {input_file} {infile_stem}.AdjList.out.txt
+            planarity -x -a {input_file} {infile_stem}.AdjList.out.txt
         to transform the graph to adjacency list
 
         Args:
@@ -294,8 +294,8 @@ class EdgeDeletionAnalyzer:
 
         planarity_transform_args = [
             f"{self.planarity_path}",
-            "-t",
-            "-ta",
+            "-x",
+            "-a",
             f"{infile_path}",
             f"{adj_list_path}",
         ]
@@ -1063,7 +1063,7 @@ if __name__ == "__main__":
         "\t{input_file.stem}.{line_num}.g6\n"
         "And perform the following steps on each graph:\n"
         "1. Runs\n"
-        "\tplanarity -t -ta {input_file} {infile_stem}.AdjList.out"
+        "\tplanarity -x -a {input_file} {infile_stem}.AdjList.out"
         ".txt\n"
         "to transform the graph to adjacency list\n"
         "2. Runs\n"
