@@ -18,7 +18,7 @@ These instructions will get you a copy of the project up and running on your loc
 
 ### Pre-compiled Executable Releases for Non-Developers
 
-On several (Debian-based) distributions of Linux, you may be able to get the planarity executable with `sudo apt install planarity`, or you may already have it you have Matlab. For non-developer Windows users, there is also a pre-compiled executable version of the algorithm implementations: download and decompress the `planarity-N.N.N.N.WindowsExe.zip` file. 
+On several (Debian-based) distributions of Linux, you may be able to get the planarity executable with `sudo apt install planarity`, or you may already have it if you have Matlab. For non-developer Windows users, there is also a pre-compiled executable version of the algorithm implementations: download and decompress the `planarity-N.N.N.N.WindowsExe.zip` file. 
 
 If you run the `planarity` executable program, it will offer an interactive, menu-driven mode that lets a user manually select algorithms to run and, where appropriate, files containing graphs on which to run the algorithms. 
 
@@ -26,8 +26,7 @@ The `planarity` executable program also supports an extensive list of command-li
 
 ### Setting up a Development Environment
 
-Please refer to the [2. Dev Setup](https://github.com/graph-algorithms/edge-addition-planarity-suite/wiki/2.-Dev-Setup) wiki page for instructions on how to install development dependencies on Windows 10 22H2, Debian 12.70, or MacOS Sequoia 15.0, as
-well as how to get started working with the project in Visual Studio Code.
+Please refer to the [2. Dev Setup](https://github.com/graph-algorithms/edge-addition-planarity-suite/wiki/2.-Dev-Setup) wiki page for instructions on how to install development dependencies on various supported platforms, as well as how to get started working with the project in Visual Studio Code.
 
 ### Making the Distribution
 
@@ -47,7 +46,7 @@ The result is a validated `planarity-N.N.N.N.tar.gz` distribution, where `N.N.N.
 
 If you have done the steps to set up the development environment and work with the code, then you can make and run the software using the development environment, so you don't necessarily need to make or run the software using the process below.
 
-You also don't necessarily need to `make` and `make install` the planarity software on Linux if you are able to get it using `sudo apt planarity` (i.e. are using a Debian-based Linux distribution which uses [`apt`](https://en.wikipedia.org/wiki/APT_(software)) for package management)
+You also don't necessarily need to `make` and `make install` the planarity software on Linux if you are able to get it using `sudo apt planarity` (i.e. using a Debian-based Linux distribution, which uses [`apt`](https://en.wikipedia.org/wiki/APT_(software)) for package management)
 
 However, you may have only downloaded the distribution (i.e., `planarity-N.N.N.N.tar.gz`) from a Release tag of this project. Once you have decompressed the distribution into a directory, you can make it by getting into `bash` (e.g. type `bash` in the Windows command-line) and then entering the following commands: 
 1. `./configure`
