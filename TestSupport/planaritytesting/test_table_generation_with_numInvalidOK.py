@@ -727,7 +727,7 @@ class TTGwithEDA(ABC):
             canonical_files=self.path_config.canonical_files,
             makeg_files=self.path_config.makeg_files,
             edge_deletion_analysis_results=self._numInvalidOKs.get(
-                order, {}
+                str(order), {}
             ).get(command, {}),
         )
         ttg.get_order_and_command_from_input_dir()
