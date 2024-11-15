@@ -79,7 +79,7 @@ class TTGWithEDAPathConfig:
     makeg_files: bool = False
 
     def __post_init__(self):
-        """Custom post-init logic to set defaults for None values and"""
+        """Custom post-init logic to normalize and validate path config"""
         self.planarity_project_root: Path = (
             Path(sys.argv[0]).resolve().parent.parent.parent
         )
@@ -115,8 +115,6 @@ class TTGWithEDAPathConfig:
                 f"'{self.planarity_executable_path}' does not correspond to "
                 "an executable."
             )
-        # TODO: would it be helpful to check the output from <executable> -h to
-        # see if it matches that of planarity?
 
     def _normalize_and_validate_graph_dir(self) -> None:
         """Set default for graph_dir and ensure directory exists
