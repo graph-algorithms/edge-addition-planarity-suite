@@ -15,6 +15,7 @@ from dataclasses import dataclass
 import json
 from os import walk
 from pathlib import Path
+import platform
 import re
 import sys
 import time
@@ -97,8 +98,9 @@ class TTGWithEDAPathConfig:
                 - planarity_path doesn't corespond to an executable
         """
         if not self.planarity_executable_path:
+            extension = ".exe" if platform.system() == "Windows" else ""
             self.planarity_executable_path = Path.joinpath(
-                self.planarity_project_root, "Release", "planarity"
+                self.planarity_project_root, "Release", f"planarity{extension}"
             )
         try:
             self.planarity_executable_path = (
