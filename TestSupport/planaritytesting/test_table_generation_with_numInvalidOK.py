@@ -29,6 +29,7 @@ from planaritytesting_utils import (
     PLANARITY_ALGORITHM_SPECIFIERS,
     EDGE_DELETION_ANALYSIS_SPECIFIERS,
     max_num_edges_for_order,
+    raise_on_duplicates,
 )
 from test_table_generator import (
     TestTableGenerator,
@@ -78,6 +79,7 @@ class TTGWithEDAPathConfig:
     makeg_files: bool = False
 
     def __post_init__(self):
+        """Custom post-init logic to set defaults for None values and"""
         self.planarity_project_root: Path = (
             Path(sys.argv[0]).resolve().parent.parent.parent
         )
@@ -91,14 +93,13 @@ class TTGWithEDAPathConfig:
 
         Raises:
             ValueError:
-                - planarity_path doesn't corespond to an executable
                 - planarity_path cannot be resolved
+                - planarity_path doesn't corespond to an executable
         """
         if not self.planarity_executable_path:
             self.planarity_executable_path = Path.joinpath(
                 self.planarity_project_root, "Release", "planarity"
             )
-
         try:
             self.planarity_executable_path = (
                 self.planarity_executable_path.resolve()
@@ -108,14 +109,12 @@ class TTGWithEDAPathConfig:
                 "Path to planarity executable "
                 f"'{self.planarity_executable_path}' cannot be resolved."
             ) from planarity_path_resolve_error
-
         if not is_path_to_executable(self.planarity_executable_path):
             raise ValueError(
                 "Path for planarity executable "
                 f"'{self.planarity_executable_path}' does not correspond to "
                 "an executable."
             )
-
         # TODO: would it be helpful to check the output from <executable> -h to
         # see if it matches that of planarity?
 
@@ -132,7 +131,6 @@ class TTGWithEDAPathConfig:
                 "results",
                 "graph_generation_orchestrator",
             )
-
         if not self.graph_dir.is_dir():
             raise ValueError(
                 f"graph_dir = '{self.graph_dir}' does not correspond to a "
@@ -152,7 +150,6 @@ class TTGWithEDAPathConfig:
                 "results",
                 "planarity_testAllGraphs_orchestrator",
             )
-
         if not self.planarity_output_dir.is_dir():
             raise ValueError(
                 f"planarity_output_dir = '{self.planarity_output_dir}' does "
@@ -171,7 +168,6 @@ class TTGWithEDAPathConfig:
                 "TestSupport",
                 "tables",
             )
-
         if not self.test_table_output_dir.is_dir():
             raise ValueError(
                 f"test_table_output_dir = '{self.test_table_output_dir}' "
@@ -227,7 +223,6 @@ class TTGWithEDAPathConfig:
             Path object graph_dir
         """
         assert self.graph_dir is not None
-
         for dirpath, dirnames, filenames in walk(self.graph_dir):
             if len(filenames) > 0:
                 raise ValueError(
@@ -235,14 +230,12 @@ class TTGWithEDAPathConfig:
                     "structure: should only contain subdirectories, one for "
                     f"each graph order in {orders}."
                 )
-
             if len(dirnames) == 0:
                 raise ValueError(
                     f"graph_dir = '{self.graph_dir}' has no subdirectories: "
                     "expected one subdirectory for each graph order in "
                     f"{orders}."
                 )
-
             for order in orders:
                 if str(order) not in dirnames:
                     raise ValueError(
@@ -300,7 +293,6 @@ class TTGWithEDAPathConfig:
                 the expected scheme
         """
         assert self.planarity_output_dir is not None
-
         for dirpath, dirnames, filenames in walk(self.planarity_output_dir):
             if len(filenames) > 0:
                 raise ValueError(
@@ -309,25 +301,21 @@ class TTGWithEDAPathConfig:
                     "subdirectories, one for each graph order in "
                     f"{orders}."
                 )
-
             if len(dirnames) == 0:
                 raise ValueError(
                     f"planarity_output_dir = '{self.planarity_output_dir}' "
                     "has no subdirectories: expected one subdirectory for "
                     f"each graph order in {orders}."
                 )
-
             for order in orders:
                 if str(order) not in dirnames:
                     raise ValueError(
                         f"planarity_output_dir = '{self.planarity_output_dir}'"
                         f" is missing subdirectory for graph order N={order}."
                     )
-
             for dirname in dirnames:
                 if int(dirname) not in orders:
                     continue
-
                 planarity_output_dir_for_order = Path.joinpath(
                     Path(dirpath).resolve(), dirname
                 )
@@ -340,7 +328,6 @@ class TTGWithEDAPathConfig:
                             f"'{planarity_output_dir_for_order}' should only "
                             "contain subdirectories."
                         )
-
                     if len(dirnames) == 0:
                         raise ValueError(
                             "Planarity output subdirectory "
@@ -349,7 +336,6 @@ class TTGWithEDAPathConfig:
                             "each command specifier in "
                             f"{generate_tables_for_commands}."
                         )
-
                     for command in generate_tables_for_commands:
                         if command not in subdirs:
                             raise ValueError(
@@ -381,9 +367,8 @@ class TTGWithEDAPathConfig:
 class TTGwithEDAOrchestrator:
     """Orchestrate test table generation with results of edge-deletion analysis
 
-    Based on parameters passed in from command-line, instantiate either
-    MultiOrderTTGwithEDA or ResumableTTGwithEDA, which are subclasses of
-    TTGwithEDA (which defines the functions that must be overridden).
+    Validate command-line parameters and, based on their values, instantiate
+    MultiOrderTTGwithEDA or ResumableTTGwithEDA.
     """
 
     def __init__(
@@ -402,7 +387,7 @@ class TTGwithEDAOrchestrator:
                 boolean flags representing whether we are performing the work
                 on canonical_files and/or makeg_files.
             orders: Graph orders for which to perform edge-deletion analysis
-                for relevant graph algorithm extensions and to tabulate results
+                for chosen graph algorithm extensions and to tabulate results
                 of running planarity Test All Graphs
             edgecount_limit: When generating table for single graph order and
                 command specifier, indicates the maximum edgecount for which
@@ -417,28 +402,23 @@ class TTGwithEDAOrchestrator:
         Raises:
             ValueError:
                 - the specified graph orders are invalid
-                - the command specifiers for which you wish to generate test
-                tables are invalid
+                - the command specifiers for which you wish to perform EDA (if
+                applicable) and generate the respective test tables are invalid
                 - the edgecount limit is invalid, in light of the chosen graph
                 order(s) and command specifier(s)
                 - the graph_dir does not have the correct structure
                 - the planarity_output_dir does not have the expected structure
         """
         self.orders = self._validate_orders(orders)
-
         self.generate_tables_for_commands = self._validate_command_specifiers(
             generate_tables_for_commands
         )
-
         self.edgecount_limit = self._validate_edgecount_limit(edgecount_limit)
-
         path_config.check_graph_dir_contents(self.orders)
         path_config.check_planarity_output_dir_contents(
             self.orders, self.generate_tables_for_commands
         )
-
         self.path_config = path_config
-
         self.ttg_with_eda_driver: Optional[TTGwithEDA] = None
 
     def _validate_orders(
@@ -455,22 +435,23 @@ class TTGwithEDAOrchestrator:
         """
         if orders is None or len(orders) == 0:
             orders = tuple(range(6, 10))  # orders defaults to (6, 7, 8, 9)
-
         if not all(isinstance(x, int) for x in orders):
             raise ValueError("Orders tuple contains non-integer values.")
-
         if len(orders) > 1 and max(orders) > 9:
             raise ValueError(
                 "When specifying a range of orders, the maximum order must "
                 "not exceed 9, otherwise the system will run out of memory."
             )
-
         return orders
 
     def _validate_command_specifiers(
         self, generate_tables_for_commands: Optional[tuple[str, ...]]
     ) -> tuple[str, ...]:
         """Validating commands for which you wish to generate test tables.
+
+        Args:
+            generate_tables_for_commands: tuple of str indicating the graph
+                algorithm extensions for which you wish to generate tables
 
         Raises:
             ValueError:
@@ -483,13 +464,11 @@ class TTGwithEDAOrchestrator:
         """
         if self.orders is None or len(self.orders) == 0:
             raise ValueError("Invalid self.orders tuple.")
-
         if (
             generate_tables_for_commands is None
             or len(generate_tables_for_commands) == 0
         ):
             generate_tables_for_commands = PLANARITY_ALGORITHM_SPECIFIERS()
-
         if not all(
             (c in PLANARITY_ALGORITHM_SPECIFIERS())
             for c in generate_tables_for_commands
@@ -498,18 +477,15 @@ class TTGwithEDAOrchestrator:
                 "Invalid command specifier(s) given when indicating which "
                 "algorithms for which you wish to generate test tables."
             )
-
-        # NOTE: if the first conjunct 'max(self.orders) > 9' is true,
-        # self.orders should only contain one element, since before this
-        # self._validate_orders() would throw an error if the user specified a
-        # range of graph orders with the max exceeding 9.
+        # NOTE: if (max(self.orders) > 9) holds, self.orders should only
+        # contain one element, since self._validate_orders() would throw an
+        # error if the user specified a range of graph orders with the max > 9
         if max(self.orders) > 9 and len(generate_tables_for_commands) > 1:
             raise ValueError(
                 "When the specified graph order is greater than 9, must only "
                 "choose one algorithm command specifier for which you wish to "
                 "perform edge-deletion analysis and generate table."
             )
-
         return generate_tables_for_commands
 
     def _orders_and_commands_are_valid(self) -> bool:
@@ -527,6 +503,9 @@ class TTGwithEDAOrchestrator:
         self, edgecount_limit: Optional[int]
     ) -> Optional[int]:
         """Ensure edgecount limit is valid relative to other options
+
+        Args:
+            edgecount_limit: max edge-count up to which you wish to perform EDA
 
         Raises:
             ValueError:
@@ -546,7 +525,6 @@ class TTGwithEDAOrchestrator:
                 "Unable to validate edgecount limit: invalid self.orders or "
                 "self.generate_tables_for_commands tuples."
             )
-
         if len(self.orders) > 1 or len(self.generate_tables_for_commands) > 1:
             if edgecount_limit is not None:
                 raise ValueError(
@@ -555,36 +533,43 @@ class TTGwithEDAOrchestrator:
                     "orders and/or graph algorithm commands."
                 )
         else:
-            # FIXME: I have to add this assert in order to resolve index error
-            # thrown by Pylance, in spite of creating
-            # self._orders_and_commands_are_valid() to ensure self.orders is
-            # nonempty, and being in this else statement means there should
-            # therefore only be one element
             assert self.orders is not None and len(self.orders) == 1
-
             edgecount_limit = self._normalize_edgecount_limit(
                 self.orders[0], edgecount_limit
             )
-
         return edgecount_limit
 
     def _normalize_edgecount_limit(
         self, order: int, edgecount_limit: Optional[int]
     ) -> int:
-        """Given the graph order"""
+        """For a given graph order, normalize and validate the edgecount_limit
+
+        Args:
+            order: The graph order against which you wish to check whether the
+                edgecount_limit is valid
+            edgecount_limit: either None (will be set to (N*(N-1))/2) or some
+                int we wish to verify is within the accepted range
+
+        Raises:
+            ValueError:
+                - invalid graph order supplied
+                - edgecount_limit exceeds (N*(N-1))/2
+
+        Returns:
+            Either the original int edgecount_limit if it is within the
+                accepted range, or (N*(N-1))/2) for the given order
+        """
         if order < 1:
             raise ValueError(
                 "Unable to normalize edgecount limit given invalid graph "
                 f"order {order}"
             )
         max_edgecount_for_order = max_num_edges_for_order(order)
-
         edgecount_limit = (
             edgecount_limit
             if (edgecount_limit is not None and edgecount_limit > -1)
             else max_edgecount_for_order
         )
-
         if edgecount_limit > max_edgecount_for_order:
             raise ValueError(
                 f"Given edgecount argument {edgecount_limit} exceeds the "
@@ -592,12 +577,10 @@ class TTGwithEDAOrchestrator:
                 "choose an edgecount limit less than or equal to "
                 f"{max_edgecount_for_order}."
             )
-
         return edgecount_limit
 
     def initialize_driver(self) -> None:
-        """Based on command-line parameters, initialize driver for TTG with EDA
-        results."""
+        """Initialize correct driver for TTG with EDA based on init parameters"""
         if not self._orders_and_commands_are_valid():
             raise ValueError(
                 "Unable to initialize driver for test table generation with "
@@ -624,14 +607,14 @@ class TTGwithEDAOrchestrator:
             )
 
     def generate_test_tables_with_invalidOKs(self) -> None:
-        """Leverage polymorphism to call the right methods in the right case"""
+        """Leverage polymorphism to invoke correct behaviour based on params"""
         assert self.ttg_with_eda_driver is not None
         self.ttg_with_eda_driver.determine_numInvalidOKs()
         self.ttg_with_eda_driver.generate_tables_with_numInvalidOKs()
 
 
 class TTGwithEDA(ABC):
-    """Abstract base class defining common behaviour of two use-cases"""
+    """Abstract base class defining common behaviour of TTG with EDA"""
 
     @abstractmethod
     def __init__(
@@ -648,6 +631,13 @@ class TTGwithEDA(ABC):
     def _determine_numInvalidOKs(
         self, order: int, num_edges: int, command: str
     ) -> None:
+        """Set up correct infile name and call EDA
+
+        Args:
+            order: The graph order for which we wish to perform EDA
+            num_edges: The number of edges of the graphs in the .g6 file
+            command: The command specifier for which we wish to perform EDA
+        """
         canonical_ext = (
             ".canonical" if self.path_config.canonical_files else ""
         )
@@ -667,7 +657,7 @@ class TTGwithEDA(ABC):
         """For given command, get numInvalidOKs for each order and edge-count
 
         Args:
-            order: The graph order of the graphs in the input file
+            order: The order of the graphs in the input file
             command: string indicating graph search algorithm command specifier
                 for which we wish to determine the number of invalid OKs using
                 the edge-deletion analysis tool.
@@ -699,11 +689,14 @@ class TTGwithEDA(ABC):
             tot_time_s,
         )
 
-        if not self._numInvalidOKs.get(order):
-            self._numInvalidOKs[order] = {}
-        if not self._numInvalidOKs[order].get(command):
-            self._numInvalidOKs[order][command] = {}
-        self._numInvalidOKs[order][command][infile_name] = {
+        # NOTE: Since the json spec disallows int as keys, one must cast the
+        # order to a str
+        order_key = str(order)
+        if not self._numInvalidOKs.get(order_key):
+            self._numInvalidOKs[order_key] = {}
+        if not self._numInvalidOKs[order_key].get(command):
+            self._numInvalidOKs[order_key][command] = {}
+        self._numInvalidOKs[order_key][command][infile_name] = {
             "numInvalidOK": numInvalidOK_for_infile,
             "proc_time_s": proc_time_s,
             "tot_time_s": tot_time_s,
@@ -716,11 +709,17 @@ class TTGwithEDA(ABC):
     def _generate_table_with_numInvalidOKs_for_order_and_command(
         self, order: int, command: str
     ) -> None:
+        """For an order and command, compile planarity output and EDA results
+
+        Args:
+            order: The graph order for which you wish to generate test table
+                with numInvalidOKs
+            command: The algorithm command specifier for which testing was done
+        """
         assert self.path_config.planarity_output_dir is not None
         input_dir_for_order_and_command = Path.joinpath(
             self.path_config.planarity_output_dir, f"{order}", f"{command}"
         )
-
         assert self.path_config.test_table_output_dir is not None
         ttg = TestTableGenerator(
             test_table_input_dir=input_dir_for_order_and_command,
@@ -772,12 +771,10 @@ class MultiOrderOrCommandTTGwithEDA(TTGwithEDA):
 
 
 class ResumableTTGwithEDA(TTGwithEDA):
-    """
-
-    When a user specifies a single graph order and a single algorithm command
-    specifier (one of (2, 3, 4) corresponding to K_{2, 3}, K_{3, 3}, or K_4
-    search), we are able to leverage a resume file to save state after
-    processing each edge-count. This
+    """When a user specifies a single graph order and a single algorithm
+    command specifier (one of (2, 3, 4) corresponding to K_{2, 3}, K_{3, 3}, or
+    K_4 search), we are able to leverage a resume file to save state after
+    processing each edge-count.
     """
 
     def __init__(
@@ -804,15 +801,13 @@ class ResumableTTGwithEDA(TTGwithEDA):
 
         Raises:
             TypeError: resume_file_path exists but corresponds to a directory
-            ValueError:
-                - if the resume file is not a valid JSON file, causing
-                    json.load() to fail
-                - if the contents of the resume file are invalid
+            ValueError: json.load() fails when trying to load the resume file
+
         Returns:
-            Path to resume file for order and command, as well as the
-            initialized numInvalidOKs dict. This dict either is empty if the
-            resume file doesn't exist, or otherwise has been populated with
-            the validated contents of the resume file.
+            Path to resume file for order and command, the highest processed
+            edge-count, and the initialized numInvalidOKs dict. This dict
+            either is empty if the resume file doesn't exist, or otherwise has
+            been populated with the validated contents of the resume file.
         """
         numInvalidOKs = {}
         highest_processed_edgecount = 0
@@ -826,27 +821,19 @@ class ResumableTTGwithEDA(TTGwithEDA):
                 )
             with open(resume_file_path, "r", encoding="utf-8") as resume_file:
                 try:
-                    resume_file_contents = json.load(resume_file)
+                    resume_file_contents = json.load(
+                        resume_file, object_pairs_hook=raise_on_duplicates
+                    )
                 except json.JSONDecodeError as invalid_resume_file_error:
                     raise ValueError(
                         "Unable to load resume file contents from "
                         f"path '{resume_file_path}'; please delete and "
                         "retry."
                     ) from invalid_resume_file_error
-
-                try:
-                    highest_processed_edgecount = self._validate_resume_file(
-                        resume_file_contents
-                    )
-                except ValueError as invalid_resume_file_contents_error:
-                    raise ValueError(
-                        "Unable to load resume file with path "
-                        f"'{resume_file_path}' contains invalid data; "
-                        "please delete and retry."
-                    ) from invalid_resume_file_contents_error
-
+                highest_processed_edgecount = self._validate_resume_file(
+                    resume_file_contents
+                )
                 numInvalidOKs = resume_file_contents
-
         return resume_file_path, highest_processed_edgecount, numInvalidOKs
 
     def _determine_resume_file_path(self) -> Path:
@@ -862,81 +849,181 @@ class ResumableTTGwithEDA(TTGwithEDA):
         return resume_file_dir / (f"N_{self.order}-C_{self.command}" ".json")
 
     def _validate_resume_file(
-        self, resume_file_contents: dict[int, dict[str, dict[str, dict]]]
+        self, resume_file_contents: dict[str, dict[str, dict[str, dict]]]
     ) -> int:
-        """Determine if resume file contents are valid for specified params"""
+        """Determine if resume file contents are valid for specified params
+
+        Args:
+            resume_file_contents: the results of json.load() on the resume file
+                for the current order and command
+
+        Raises:
+            ValueError: if the resume file contents don't match:
+                {
+                    <graph order N>:
+                    {
+                        "<command specifier C>":
+                        {
+                            <dict mapping infile name to numInvalidOK data
+                            for that edge-count>
+                        }
+                    }
+                }
+
+        Returns:
+            The highest_processed_edgecount determined when validating the dict
+        """
         highest_processed_edgecount = 0
+        if len(resume_file_contents) > 1:
+            raise ValueError(
+                f"Resume file '{self._resume_file_path}' is invalid; "
+                "contains multiple top-level keys: "
+                f"'{resume_file_contents.keys()}'. Should only contain one "
+                "graph order."
+            )
         if len(resume_file_contents) == 1:
-            contents_for_order = resume_file_contents.get(self.order, {})
+            contents_for_order = resume_file_contents.get(str(self.order), {})
+            if len(contents_for_order) > 1:
+                raise ValueError(
+                    f"Resume file '{self._resume_file_path}' is invalid; "
+                    "contains multiple secondary keys: "
+                    f"'{contents_for_order.keys()}'. Should only contain one "
+                    "command specifier."
+                )
             if len(contents_for_order) == 1:
                 contents_for_command = contents_for_order.get(self.command, {})
                 if contents_for_command:
-                    processed_edgecounts = []
-                    for infile_name in contents_for_command:
-                        match = re.match(
-                            r"n(?P<order>\d+)\.m(?P<edgecount>\d+)",
-                            infile_name,
-                        )
+                    highest_processed_edgecount = (
+                        self._validate_numInvalidOK_data(contents_for_command)
+                    )
+        return highest_processed_edgecount
 
-                        if not match:
-                            raise ValueError(
-                                "Invalid infile name in resume file: "
-                                f"'{infile_name}'."
-                            )
+    def _validate_numInvalidOK_data(
+        self, contents_for_order_and_command: dict[str, dict]
+    ) -> int:
+        """Check data for each previously processed edge-count in resume file
 
-                        order_from_infile = int(match.group("order"))
-                        if not order_from_infile:
-                            raise ValueError(
-                                "Invalid infile name in resume file: "
-                                f"'{infile_name}' is missing graph order."
-                            )
+        Args:
+            contents_for_order_and_command: dict; maps infile name to EDA data
 
-                        if int(order_from_infile) != self.order:
-                            raise ValueError(
-                                "Invalid infile name in resume file: "
-                                f"'{infile_name}' corresponds to the wrong "
-                                "graph order."
-                            )
+        Raises:
+            ValueError: If the contents for the given order and command don't
+                match:
+                    {
+                        "<infile_name for M=0>":
+                        {
+                            "numInvalidOK": numInvalidOK,
+                            "proc_time_s": proc_time_s,
+                            "tot_time_s": tot_time_s
+                        },
+                        "<infile_name for M=1>":
+                        {
+                            "numInvalidOK": numInvalidOK,
+                            "proc_time_s": proc_time_s,
+                            "tot_time_s": tot_time_s
+                        },
+                        ...
+                        "<infile_name for M=highest_processed_edgecount>":
+                        {
+                            "numInvalidOK": numInvalidOK,
+                            "proc_time_s": proc_time_s,
+                            "tot_time_s": tot_time_s
+                        }
+                    }
 
-                        edgecount_from_infile = int(match.group("edgecount"))
-                        if not edgecount_from_infile:
-                            raise ValueError(
-                                "Invalid infile name in resume file: "
-                                f"'{infile_name}' is missing edgecount."
-                            )
-
-                        if (
-                            edgecount_from_infile < 0
-                            or edgecount_from_infile > self.edgecount_limit
-                        ):
-                            raise ValueError(
-                                "Invalid infile name in resume file: "
-                                f"'{infile_name}' contains edgecount outside "
-                                f"of range [0, {self.edgecount_limit}]."
-                            )
-                        highest_processed_edgecount = max(
-                            highest_processed_edgecount, edgecount_from_infile
-                        )
-                        processed_edgecounts.append(edgecount_from_infile)
-
-                    processed_edgecounts.sort()
-                    for x, y in zip(
-                        processed_edgecounts,
-                        range(0, max(processed_edgecounts) + 1),
-                    ):
-                        if x != y:
-                            raise ValueError(
-                                "Invalid resume file contents: missing data "
-                                f"for edgecount {y}; delete the resume file "
-                                "and retry."
-                            )
+        Returns:
+            The highest_processed_edgecount determined when validating the dict
+        """
+        highest_processed_edgecount = 0
+        processed_edgecounts = []
+        for infile_name in contents_for_order_and_command:
+            match = re.match(
+                r"n(?P<order>\d+)\.m(?P<edgecount>\d+)",
+                infile_name,
+            )
+            if not match:
+                raise ValueError(
+                    "Invalid infile name in resume file: " f"'{infile_name}'."
+                )
+            order_from_infile = match.group("order")
+            if not order_from_infile:
+                raise ValueError(
+                    "Invalid infile name in resume file: "
+                    f"'{infile_name}' is missing graph order."
+                )
+            try:
+                order_from_infile = int(order_from_infile)
+            except TypeError as order_from_infile_conversion_error:
+                raise ValueError(
+                    "Unable to convert order extracted from "
+                    "infile to int; received "
+                    f"'{order_from_infile}'"
+                ) from order_from_infile_conversion_error
+            if order_from_infile != self.order:
+                raise ValueError(
+                    "Invalid infile name in resume file: "
+                    f"'{infile_name}' corresponds to the wrong "
+                    "graph order."
+                )
+            edgecount_from_infile = match.group("edgecount")
+            if not edgecount_from_infile:
+                raise ValueError(
+                    "Invalid infile name in resume file: "
+                    f"'{infile_name}' is missing edgecount."
+                )
+            try:
+                edgecount_from_infile = int(edgecount_from_infile)
+            except TypeError as edgecount_from_infile_conversion_error:
+                raise ValueError(
+                    "Unable to convert edgecount extracted from "
+                    "infile to int; received "
+                    f"'{edgecount_from_infile}'"
+                ) from edgecount_from_infile_conversion_error
+            if (
+                edgecount_from_infile < 0
+                or edgecount_from_infile > self.edgecount_limit
+            ):
+                raise ValueError(
+                    "Invalid infile name in resume file: "
+                    f"'{infile_name}' contains edgecount "
+                    f"{edgecount_from_infile} which is outside of range "
+                    f"[0, {self.edgecount_limit}]; either delete resume file "
+                    "or adjust edge-count limit."
+                )
+            highest_processed_edgecount = max(
+                highest_processed_edgecount, edgecount_from_infile
+            )
+            processed_edgecounts.append(edgecount_from_infile)
+        processed_edgecounts.sort()
+        for x, y in zip(
+            processed_edgecounts,
+            range(0, max(processed_edgecounts) + 1),
+        ):
+            if x != y:
+                raise ValueError(
+                    "Invalid resume file contents: missing data "
+                    f"for edgecount {y}; delete the resume file "
+                    "and retry."
+                )
+        if highest_processed_edgecount == self.edgecount_limit:
+            response = input(
+                "Highest processed edge-count is equal to specified edge-"
+                "count limit; do you wish to proceed (yY)?\n"
+                "\t(If not, press any other key to abort, then delete the "
+                "existing resume file)\n"
+            )
+            if response.lower() != "y":
+                sys.exit(0)
         return highest_processed_edgecount
 
     def determine_numInvalidOKs(self) -> None:
-        """Define logic for running EDA"""
-        for num_edges in range(
-            self.highest_processed_edgecount + 1, self.edgecount_limit + 1
-        ):
+        """Define logic for running EDA while interacting with resume file"""
+        starting_edgecount = (
+            self.highest_processed_edgecount + 1
+            if self.highest_processed_edgecount > 0
+            else 0
+        )
+        for num_edges in range(starting_edgecount, self.edgecount_limit + 1):
             self._determine_numInvalidOKs(self.order, num_edges, self.command)
             assert self._resume_file_path is not None
             Path.mkdir(
@@ -948,10 +1035,11 @@ class ResumableTTGwithEDA(TTGwithEDA):
                 json.dump(self._numInvalidOKs, resume_file, indent=4)
 
     def generate_tables_with_numInvalidOKs(self) -> None:
-        """Define logic for generating tables"""
+        """Define logic for generating table for single order and command"""
         self._generate_table_with_numInvalidOKs_for_order_and_command(
             order=self.order, command=self.command
         )
+        Path.unlink(self._resume_file_path, missing_ok=True)
 
 
 if __name__ == "__main__":
@@ -1061,9 +1149,7 @@ if __name__ == "__main__":
         action="store_true",
         help="Indicates .g6 input files were generated by makeg",
     )
-
     args = parser.parse_args()
-
     path_config_from_args = TTGWithEDAPathConfig(
         planarity_executable_path=args.planaritypath,
         graph_dir=args.graphdir,
@@ -1072,13 +1158,11 @@ if __name__ == "__main__":
         canonical_files=args.canonicalfiles,
         makeg_files=args.makegfiles,
     )
-
     eda_ttg_orchestrator = TTGwithEDAOrchestrator(
         path_config=path_config_from_args,
         orders=args.orders,
         edgecount_limit=args.edgecountlimit,
         generate_tables_for_commands=args.gentablecommands,
     )
-
     eda_ttg_orchestrator.initialize_driver()
     eda_ttg_orchestrator.generate_test_tables_with_invalidOKs()

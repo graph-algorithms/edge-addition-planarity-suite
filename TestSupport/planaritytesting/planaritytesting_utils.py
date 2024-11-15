@@ -11,6 +11,8 @@ Functions:
     determine_input_filetype(infile_path: Path) -> str
     is_path_to_executable(executable_path: Path) -> bool
     parse_range(value: str) -> tuple[int, ...]
+    raise_on_duplicates(ordered_pairs: list[tuple[Any, Any]]) -> Optional[Any]
+
 """
 
 __all__ = [
@@ -24,11 +26,13 @@ __all__ = [
     "determine_input_filetype",
     "is_path_to_executable",
     "parse_range",
+    "raise_on_duplicates",
 ]
 
 import re
 from pathlib import Path
 import shutil
+from typing import Any, Optional
 
 
 def PLANARITY_ALGORITHM_SPECIFIERS() -> tuple[str, ...]:
@@ -169,3 +173,13 @@ def parse_range(value: str) -> tuple[int, ...]:
             f"Invalid order specifier '{value}': should be a single "
             "integer 'X'"
         ) from int_cast_error
+
+
+def raise_on_duplicates(ordered_pairs: list[tuple[Any, Any]]) -> Optional[Any]:
+    """Reject duplicate keys."""
+    d = {}
+    for k, v in ordered_pairs:
+        if k in d:
+            raise ValueError(f"Duplicate key: {k}")
+        d[k] = v
+    return d
