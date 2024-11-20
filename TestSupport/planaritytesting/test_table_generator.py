@@ -387,13 +387,18 @@ class TestTableGenerator:  # pylint: disable=too-many-instance-attributes
             + TestTableGenerator.__COL_WIDTH_TOLERANCE
         )
 
+        nonempty_edge_deletion_analysis_results = bool(
+            self._edge_deletion_analysis_results
+        )
         numInvalidOK_len = 0
-        total_numInvalidOK = self._totals.get("numInvalidOK")
         proc_time_s_len = 0
         tot_time_s_len = 0
-        if total_numInvalidOK:
+        if nonempty_edge_deletion_analysis_results:
             numInvalidOK_len = (
-                max(len(str(total_numInvalidOK)), len(numInvalidOK_heading))
+                max(
+                    len(str(self._totals.get("numInvalidOK"))),
+                    len(numInvalidOK_heading),
+                )
                 + TestTableGenerator.__COL_WIDTH_TOLERANCE
             )
             proc_time_s_len = (
@@ -422,7 +427,7 @@ class TestTableGenerator:  # pylint: disable=too-many-instance-attributes
                 f"|{errorFlag_heading:^{errorFlag_len}}"
                 f"|{duration_heading:^{duration_len}}"
             )
-            if total_numInvalidOK:
+            if self._edge_deletion_analysis_results:
                 outfile.write(f"|{numInvalidOK_heading:^{numInvalidOK_len}}")
                 outfile.write(f"|{proc_time_s_heading:^{proc_time_s_len}}")
                 outfile.write(f"|{tot_time_s_heading:^{tot_time_s_len}}")
@@ -438,7 +443,7 @@ class TestTableGenerator:  # pylint: disable=too-many-instance-attributes
                 f"|{'='*len('Error flag')}"
                 f"|{'='*duration_len}"
             )
-            if total_numInvalidOK:
+            if nonempty_edge_deletion_analysis_results:
                 outfile.write(f"|{'='*numInvalidOK_len}")
                 outfile.write(f"|{'='*proc_time_s_len}")
                 outfile.write(f"|{'='*tot_time_s_len}")
@@ -462,7 +467,7 @@ class TestTableGenerator:  # pylint: disable=too-many-instance-attributes
                     f"|{data.get('errorFlag'):<{errorFlag_len}}"
                     f"|{data.get('duration'):<{duration_len}}"
                 )
-                if total_numInvalidOK:
+                if nonempty_edge_deletion_analysis_results:
                     outfile.write(
                         f"|{data.get('numInvalidOK'):<{numInvalidOK_len}}"
                     )
@@ -484,7 +489,7 @@ class TestTableGenerator:  # pylint: disable=too-many-instance-attributes
                 f"|{'='*len('Error flag')}"
                 f"|{'='*duration_len}"
             )
-            if total_numInvalidOK:
+            if nonempty_edge_deletion_analysis_results:
                 outfile.write(f"|{'='*numInvalidOK_len}")
                 outfile.write(f"|{'='*proc_time_s_len}")
                 outfile.write(f"|{'='*tot_time_s_len}")
@@ -500,7 +505,7 @@ class TestTableGenerator:  # pylint: disable=too-many-instance-attributes
                 f"|{data.get('numErrors'):<{errorFlag_len}}"
                 f"|{data.get('duration'):<{duration_len}}"
             )
-            if total_numInvalidOK:
+            if nonempty_edge_deletion_analysis_results:
                 outfile.write(
                     f"|{data.get('numInvalidOK'):<{numInvalidOK_len}}"
                 )
