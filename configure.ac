@@ -1,4 +1,4 @@
-AC_INIT(planarity, 3.0.2.0, jboyer@acm.org)
+AC_INIT([planarity],[3.0.2.0],[jboyer@acm.org])
 AM_INIT_AUTOMAKE([subdir-objects] [foreign])
 AC_CONFIG_SRCDIR([c/])
 
@@ -21,7 +21,7 @@ AC_SUBST(LT_REVISION)
 AC_SUBST(LT_AGE)
 
 AC_PROG_CC
-AC_PROG_LIBTOOL
+LT_INIT
 AC_PROG_INSTALL
 
 AC_CHECK_HEADERS([ctype.h stdio.h stdlib.h string.h time.h unistd.h])
