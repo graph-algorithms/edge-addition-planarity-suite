@@ -7,6 +7,7 @@
             "args": [
                 "-fdiagnostics-color=always",
                 "-DDEBUG", // Added so that _DEBUG is defined; see appconst.h
+                "-Wall",
                 "-g",
                 "${workspaceFolder}\\c\\planarityApp\\**.c",
                 "${workspaceFolder}\\c\\graphLib\\**.c",
@@ -33,6 +34,7 @@
             "command": "C:\\MinGW\\bin\\gcc.exe",
             "args": [
                 "-O3",
+                "-Wall",
                 "-g",
                 "${workspaceFolder}\\c\\planarityApp\\**.c",
                 "${workspaceFolder}\\c\\graphLib\\**.c",
@@ -60,6 +62,7 @@
             "args": [
                 "-fdiagnostics-color=always",
                 "-DDEBUG", // Added so that _DEBUG is defined; see appconst.h
+                "-Wall",
                 "-g",
                 "${workspaceFolder}/c/planarityApp/**.c",
                 "${workspaceFolder}/c/graphLib/**.c",
@@ -86,6 +89,7 @@
             "command": "/usr/bin/gcc",
             "args": [
                 "-O3",
+                "-Wall",
                 "-g",
                 "${workspaceFolder}/c/planarityApp/**.c",
                 "${workspaceFolder}/c/graphLib/**.c",
@@ -111,10 +115,12 @@
             "label": "C/C++: (Windows) [Debug] cl.exe build planarity project",
             "command": "cl.exe",
             "args": [
+                "/Od", // Disables optimization, which speeds compilation and simplifies debugging
                 "/Zi",
                 "/EHsc",
                 "/nologo",
                 "/DDEBUG", // Added so that _DEBUG is defined; see appconst.h
+                "/Wall",
                 "/Fe${workspaceFolder}\\Debug\\planarity.exe",
                 "${workspaceFolder}\\c\\planarityApp\\**.c",
                 "${workspaceFolder}\\c\\graphLib\\**.c",
@@ -140,8 +146,9 @@
             "label": "C/C++: (Windows) [Release] cl.exe build planarity project",
             "command": "cl.exe",
             "args": [
-                "/O2",
+                "/O2", // This is the maximum optimization level available for MSVC cl
                 "/nologo",
+                "/Wall",
                 "/Fe${workspaceFolder}\\Release\\planarity.exe",
                 "${workspaceFolder}\\c\\planarityApp\\**.c",
                 "${workspaceFolder}\\c\\graphLib\\**.c",
@@ -169,7 +176,7 @@
             "args": [
                 "-fcolor-diagnostics",
                 "-fansi-escape-codes",
-                //"-Wall",
+                "-Wall",
                 "-DDEBUG", // Added so that _DEBUG is defined; see appconst.h
                 "-g",
                 "${workspaceFolder}/c/planarityApp/**.c",
@@ -197,6 +204,7 @@
             "command": "clang",
             "args": [
                 "-O3",
+                "-Wall",
                 "-g",
                 "${workspaceFolder}/c/planarityApp/**.c",
                 "${workspaceFolder}/c/graphLib/**.c",
