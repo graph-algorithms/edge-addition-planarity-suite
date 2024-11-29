@@ -24,12 +24,6 @@ int transformString(graphP theGraph, char *inputStr);
 int TransformGraph(char *commandString, char *infileName, char *inputStr, int *outputBase, char *outfileName, char **outputStr)
 {
 	int Result = OK;
-	platform_time start, end;
-
-	int charsAvailForFilename = 0;
-	char *messageFormat = NULL;
-	char messageContents[MAXLINE + 1];
-	messageContents[MAXLINE] = '\0';
 
 	graphP theGraph;
 

@@ -474,7 +474,6 @@ int gp_Read(graphP theGraph, char *FileName)
 int gp_ReadFromString(graphP theGraph, char *inputStr)
 {
     int RetVal;
-    char Ch;
     bool extraDataAllowed = false;
 
     strBufP inBuf = sb_New(0);

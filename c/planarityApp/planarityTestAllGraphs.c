@@ -150,7 +150,7 @@ int testAllGraphs(graphP theGraph, char command, FILE *infile, testAllStatsP sta
 
 	graphP copyOfOrigGraph = NULL;
 	int embedFlags = GetEmbedFlags(command);
-	int numGraphsRead = 0, numOK = 0, numNONEMBEDDABLE = 0, errorFlag = FALSE;
+	int numOK = 0, numNONEMBEDDABLE = 0, errorFlag = FALSE;
 
 	G6ReadIterator *pG6ReadIterator = NULL;
 	Result = allocateG6ReadIterator(&pG6ReadIterator, theGraph);

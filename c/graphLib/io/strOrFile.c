@@ -113,8 +113,6 @@ char sf_ungetc(char theChar, strOrFileP theStrOrFile)
  ********************************************************************/
 char *sf_fgets(char *str, int count, strOrFileP theStrOrFile)
 {
-	int numCharsRead = -1;
-
 	if (str == NULL || count < 0 || theStrOrFile == NULL)
 		return NULL;
 
