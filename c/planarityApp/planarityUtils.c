@@ -76,7 +76,7 @@ void SaveAsciiGraph(graphP theGraph, char *filename)
 		char *messageFormat = "Failed to write to \"%.*s\"\nMake the directory if not present\n";
 		char messageContents[MAXLINE + 1];
 		int charsAvailForStrToInclude = (int)(MAXLINE - strlen(messageFormat));
-		sprintf(messageContents, messageFormat, charsAvailForStrToInclude, outfile);
+		sprintf(messageContents, messageFormat, charsAvailForStrToInclude, filename);
 		ErrorMessage(messageContents);
 		return;
 	}
