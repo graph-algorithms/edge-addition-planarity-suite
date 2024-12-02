@@ -6,8 +6,11 @@ See the LICENSE.TXT file for licensing information.
 
 #include "planarity.h"
 
-#if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
+#if defined(_MSC_VER) && !defined(__llvm__) && !defined(__INTEL_COMPILER)
 // MSVC under Windows doesn't have unistd.h, but does define functions like getcwd and chdir
+#include <direct.h>
+#define getcwd _getcwd
+#define chdir _chdir
 #else
 #include <unistd.h>
 #endif
