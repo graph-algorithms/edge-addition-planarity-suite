@@ -31,7 +31,7 @@ extern "C"
     int RandomGraph(char command, int extraEdges, int numVertices, char *outfileName, char *outfile2Name);
     int RandomGraphs(char command, int NumGraphs, int SizeOfGraphs);
     int TransformGraph(char *commandString, char *infileName, char *inputStr, int *outputBase, char *outfileName, char **outputStr);
-    int TestAllGraphs(char *commandString, char *infileName, int *outputBase, char *outfileName, char **outputStr);
+    int TestAllGraphs(char *commandString, char *infileName, char *outfileName, char **outputStr);
 
     /* Command line, Menu, and Configuration */
     int menu(void);

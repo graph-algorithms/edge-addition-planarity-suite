@@ -39,12 +39,10 @@ int _getNumCharsToReprInt(int theNum)
  commandString - command to run; e.g.`-(pdo234)` to perform the corresponding algorithm on each graph in
  a .g6 file
  infileName - name of file to read, or NULL to cause the program to prompt the user for a filename
- outputBase - pointer to the flag set for whether output is 0- or 1-based
- outputFormat - output format
  outfileName - name of primary output file, or NULL to construct an output filename based on the input
  outputStr - pointer to string which we wish to use to store the transformation output
  ****************************************************************************/
-int TestAllGraphs(char *commandString, char *infileName, int *outputBase, char *outfileName, char **outputStr)
+int TestAllGraphs(char *commandString, char *infileName, char *outfileName, char **outputStr)
 {
 	int Result = OK;
 	platform_time start, end;
