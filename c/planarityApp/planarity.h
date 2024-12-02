@@ -34,7 +34,7 @@ extern "C"
     int TestAllGraphs(char *commandString, char *infileName, int *outputBase, char *outfileName, char **outputStr);
 
     /* Command line, Menu, and Configuration */
-    int menu();
+    int menu(void);
     int commandLine(int argc, char *argv[]);
     int legacyCommandLine(int argc, char *argv[]);
 
@@ -44,7 +44,7 @@ extern "C"
         ObstructedOut,
         AdjListsForEmbeddingsOut;
 
-    void Reconfigure();
+    void Reconfigure(void);
 
     /* Low-level Utilities */
     void FlushConsole(FILE *f);

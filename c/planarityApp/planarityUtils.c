@@ -16,7 +16,7 @@ char Mode = 'r',
 	 ObstructedOut = 'n',
 	 AdjListsForEmbeddingsOut = 'n';
 
-void Reconfigure()
+void Reconfigure(void)
 {
 	fflush(stdin);
 

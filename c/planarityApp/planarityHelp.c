@@ -6,7 +6,7 @@ See the LICENSE.TXT file for licensing information.
 
 #include "planarity.h"
 
-char *GetProjectTitle()
+char *GetProjectTitle(void)
 {
     // This message is the main location of the version number.
     // The format is major.minor.maintenance.tweak

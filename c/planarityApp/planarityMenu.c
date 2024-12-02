@@ -12,7 +12,7 @@ See the LICENSE.TXT file for licensing information.
 void TransformGraphMenu(void);
 void TestAllGraphsMenu(void);
 
-int menu()
+int menu(void)
 {
     char Choice;
 
@@ -96,7 +96,7 @@ int menu()
     return 0;
 }
 
-void TransformGraphMenu()
+void TransformGraphMenu(void)
 {
     int Result = OK;
 
@@ -166,7 +166,7 @@ void TransformGraphMenu()
     }
 }
 
-void TestAllGraphsMenu()
+void TestAllGraphsMenu(void)
 {
     int Result = OK;
 
