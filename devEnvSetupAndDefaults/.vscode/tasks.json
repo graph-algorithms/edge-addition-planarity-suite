@@ -8,6 +8,7 @@
                 "-fdiagnostics-color=always",
                 "-DDEBUG", // Added so that _DEBUG is defined; see appconst.h
                 "-Wall",
+                "-Wextra",
                 "-g",
                 "${workspaceFolder}\\c\\planarityApp\\**.c",
                 "${workspaceFolder}\\c\\graphLib\\**.c",
@@ -35,6 +36,7 @@
             "args": [
                 "-O3",
                 "-Wall",
+                "-Wextra",
                 "-g",
                 "${workspaceFolder}\\c\\planarityApp\\**.c",
                 "${workspaceFolder}\\c\\graphLib\\**.c",
@@ -63,6 +65,7 @@
                 "-fdiagnostics-color=always",
                 "-DDEBUG", // Added so that _DEBUG is defined; see appconst.h
                 "-Wall",
+                "-Wextra",
                 "-g",
                 "${workspaceFolder}/c/planarityApp/**.c",
                 "${workspaceFolder}/c/graphLib/**.c",
@@ -90,6 +93,7 @@
             "args": [
                 "-O3",
                 "-Wall",
+                "-Wextra",
                 "-g",
                 "${workspaceFolder}/c/planarityApp/**.c",
                 "${workspaceFolder}/c/graphLib/**.c",
@@ -121,6 +125,12 @@
                 "/nologo",
                 "/DDEBUG", // Added so that _DEBUG is defined; see appconst.h
                 "/Wall",
+                "/wd4464", // Ignore warnings about relative paths
+                "/wd4710", // Ignore warnings about not inlining scanf, sprintf, printf, fprintf, etc.
+                "/wd4711", // Ignore warnings about automatic inline expansion, as we are not concerned with code size
+                "/wd4774", // Ignore warnings about format string not being a string literal; requires developer caution!
+                "/wd4996", // Ignore safety warnings about sprintf, scanf, strcpy, strcat, fopen, etc.
+                "/wd5045", // Ignore Spectre mitigation warning
                 "/Fe${workspaceFolder}\\Debug\\planarity.exe",
                 "${workspaceFolder}\\c\\planarityApp\\**.c",
                 "${workspaceFolder}\\c\\graphLib\\**.c",
@@ -149,6 +159,12 @@
                 "/O2", // This is the maximum optimization level available for MSVC cl
                 "/nologo",
                 "/Wall",
+                "/wd4464", // Ignore warnings about relative paths
+                "/wd4710", // Ignore warnings about not inlining scanf, sprintf, printf, fprintf, etc.
+                "/wd4711", // Ignore warnings about automatic inline expansion, as we are not concerned with code size
+                "/wd4774", // Ignore warnings about format string not being a string literal; requires developer caution!
+                "/wd4996", // Ignore safety warnings about sprintf, scanf, strcpy, strcat, fopen, etc.
+                "/wd5045", // Ignore Spectre mitigation warning
                 "/Fe${workspaceFolder}\\Release\\planarity.exe",
                 "${workspaceFolder}\\c\\planarityApp\\**.c",
                 "${workspaceFolder}\\c\\graphLib\\**.c",
@@ -177,6 +193,7 @@
                 "-fcolor-diagnostics",
                 "-fansi-escape-codes",
                 "-Wall",
+                "-Wextra",
                 "-DDEBUG", // Added so that _DEBUG is defined; see appconst.h
                 "-g",
                 "${workspaceFolder}/c/planarityApp/**.c",
@@ -205,6 +222,7 @@
             "args": [
                 "-O3",
                 "-Wall",
+                "-Wextra",
                 "-g",
                 "${workspaceFolder}/c/planarityApp/**.c",
                 "${workspaceFolder}/c/graphLib/**.c",
