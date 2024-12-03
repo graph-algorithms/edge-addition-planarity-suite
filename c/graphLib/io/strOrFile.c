@@ -20,7 +20,7 @@ See the LICENSE.TXT file for licensing information.
 strOrFileP sf_New(FILE *pFile, char *theStr)
 {
 	strOrFileP theStrOrFile;
-	if (((pFile == NULL) && (theStr == NULL)) || ((pFile != NULL) && ((theStr != NULL) && (strlen(theStr) >= 0))))
+	if (((pFile == NULL) && (theStr == NULL)) || ((pFile != NULL) && (theStr != NULL)))
 		return NULL;
 
 	theStrOrFile = (strOrFileP)calloc(sizeof(strOrFile), 1);
@@ -28,7 +28,7 @@ strOrFileP sf_New(FILE *pFile, char *theStr)
 	{
 		if (pFile != NULL)
 			theStrOrFile->pFile = pFile;
-		else if ((theStr != NULL) && (strlen(theStr) >= 0))
+		else if ((theStr != NULL))
 		{
 			theStrOrFile->theStr = theStr;
 			theStrOrFile->theStrPos = 0;

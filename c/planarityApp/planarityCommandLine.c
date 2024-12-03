@@ -771,6 +771,5 @@ int callTestAllGraphs(int argc, char *argv[])
 	outfileName = argv[4 + offset];
 
 	// We don't want to write to string, so outputStr is NULL
-	// We don't need to capture whether output is 0- or 1-based, so zeroBasedOutputFlag arg is NULL
-	return TestAllGraphs(commandString, infileName, NULL, outfileName, NULL);
+	return TestAllGraphs(commandString, infileName, outfileName, NULL);
 }

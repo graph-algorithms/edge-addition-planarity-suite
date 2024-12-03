@@ -213,7 +213,7 @@ void TestAllGraphsMenu(void)
 
     if (strlen(outfileName) == 0)
     {
-        Result = TestAllGraphs(commandStr, infileName, NULL, NULL, &outputStr);
+        Result = TestAllGraphs(commandStr, infileName, NULL, &outputStr);
         if (Result != OK || outputStr == NULL)
             ErrorMessage("Algorithm test on all graphs in .g6 input file failed.\n");
         else
@@ -225,7 +225,7 @@ void TestAllGraphsMenu(void)
     }
     else
     {
-        Result = TestAllGraphs(commandStr, infileName, NULL, outfileName, NULL);
+        Result = TestAllGraphs(commandStr, infileName, outfileName, NULL);
         if (Result != OK)
             ErrorMessage("Algorithm test on all graphs in .g6 input file failed.\n");
     }
