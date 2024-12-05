@@ -16,19 +16,19 @@ See the LICENSE.TXT file for licensing information.
 /* Defines fopen strings for reading and writing text files on PC and UNIX */
 
 #ifdef WINDOWS
-#define READTEXT        "rt"
-#define WRITETEXT       "wt"
-#define FILE_DELIMITER  '\\'
+#define READTEXT "rt"
+#define WRITETEXT "wt"
+#define FILE_DELIMITER '\\'
 #else
-#define READTEXT        "r"
-#define WRITETEXT       "w"
-#define FILE_DELIMITER  '/'
+#define READTEXT "r"
+#define WRITETEXT "w"
+#define FILE_DELIMITER '/'
 #endif
 
 // When PROFILE is defined, prints out run-time stats on a number of subordinate
 // routines in the embedder
 
-//#define PROFILE
+// #define PROFILE
 #ifdef PROFILE
 #include "platformTime.h"
 #endif
@@ -49,37 +49,37 @@ See the LICENSE.TXT file for licensing information.
 /* Return status values; OK/NOTOK behave like Boolean true/false,
    not like program exit codes. */
 
-#define OK              1
-#define NOTOK           0
+#define OK 1
+#define NOTOK 0
 
 #ifdef DEBUG
 #undef NOTOK
-extern int debugNOTOK();
+extern int debugNOTOK(void);
 #include <stdio.h>
-#define NOTOK           (printf("NOTOK on Line %d of %s\n", __LINE__, __FILE__), debugNOTOK())
+#define NOTOK (printf("NOTOK on Line %d of %s\n", __LINE__, __FILE__), debugNOTOK())
 #endif
 
 #ifndef TRUE
-#define TRUE            1
+#define TRUE 1
 #endif
 
 #ifndef FALSE
-#define FALSE           0
+#define FALSE 0
 #endif
 
 #ifndef NULL
-#define NULL			0L
+#define NULL 0L
 #endif
 
 /* Array indices are used as pointers, and NIL means bad pointer */
 
 // This definition is used with 1-based array indexing
-#define NIL			0
-#define NIL_CHAR	0x00
+#define NIL 0
+#define NIL_CHAR 0x00
 
 // This definition is used in combination with 0-based array indexing
-//#define NIL		-1
-//#define NIL_CHAR	0xFF
+// #define NIL		-1
+// #define NIL_CHAR	0xFF
 
 /********************************************************************
  A few simple integer selection macros

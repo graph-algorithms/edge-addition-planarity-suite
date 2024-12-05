@@ -11,7 +11,7 @@ See the LICENSE.TXT file for licensing information.
 
 int quietMode = FALSE;
 
-int getQuietModeSetting()
+int getQuietModeSetting(void)
 {
 	return quietMode;
 }

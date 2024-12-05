@@ -12,7 +12,7 @@ See the LICENSE.TXT file for licensing information.
 void TransformGraphMenu(void);
 void TestAllGraphsMenu(void);
 
-int menu()
+int menu(void)
 {
     char Choice;
 
@@ -96,7 +96,7 @@ int menu()
     return 0;
 }
 
-void TransformGraphMenu()
+void TransformGraphMenu(void)
 {
     int Result = OK;
 
@@ -166,7 +166,7 @@ void TransformGraphMenu()
     }
 }
 
-void TestAllGraphsMenu()
+void TestAllGraphsMenu(void)
 {
     int Result = OK;
 
@@ -213,7 +213,7 @@ void TestAllGraphsMenu()
 
     if (strlen(outfileName) == 0)
     {
-        Result = TestAllGraphs(commandStr, infileName, NULL, NULL, &outputStr);
+        Result = TestAllGraphs(commandStr, infileName, NULL, &outputStr);
         if (Result != OK || outputStr == NULL)
             ErrorMessage("Algorithm test on all graphs in .g6 input file failed.\n");
         else
@@ -225,7 +225,7 @@ void TestAllGraphsMenu()
     }
     else
     {
-        Result = TestAllGraphs(commandStr, infileName, NULL, outfileName, NULL);
+        Result = TestAllGraphs(commandStr, infileName, outfileName, NULL);
         if (Result != OK)
             ErrorMessage("Algorithm test on all graphs in .g6 input file failed.\n");
     }
