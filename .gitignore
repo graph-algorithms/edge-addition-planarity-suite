@@ -81,6 +81,7 @@ compile
 test-driver
 planarity-*
 planarity-*/*
+libplanarity.pc
 
 # Ignoring configuration for VSCode
 /.vscode/

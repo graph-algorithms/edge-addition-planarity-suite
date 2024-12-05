@@ -79,3 +79,5 @@ TESTS = test-samples.sh
 # The @docdir@ variable will be replaced by the ./configure script.
 docdir = @docdir@
 dist_doc_DATA = README.md LICENSE.TXT
+
+pkgconfig_DATA = libplanarity.pc
