@@ -8,13 +8,13 @@ See the LICENSE.TXT file for licensing information.
 */
 
 #include <stdio.h>
-#include "lowLevelUtils/appconst.h"
-#include "lowLevelUtils/listcoll.h"
-#include "lowLevelUtils/stack.h"
-#include "io/strbuf.h"
+#include "c/graphLib/lowLevelUtils/appconst.h"
+#include "c/graphLib/lowLevelUtils/listcoll.h"
+#include "c/graphLib/lowLevelUtils/stack.h"
+#include "c/graphLib/io/strbuf.h"
 
-#include "extensionSystem/graphFunctionTable.h"
-#include "extensionSystem/graphExtensions.private.h"
+#include "c/graphLib/extensionSystem/graphFunctionTable.h"
+#include "c/graphLib/extensionSystem/graphExtensions.private.h"
 
 #ifdef __cplusplus
 extern "C"

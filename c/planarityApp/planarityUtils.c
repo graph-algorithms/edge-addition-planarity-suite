@@ -4,7 +4,7 @@ All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
 
-#include "planarity.h"
+#include "c/planarityApp/planarity.h"
 
 /****************************************************************************
  Configuration

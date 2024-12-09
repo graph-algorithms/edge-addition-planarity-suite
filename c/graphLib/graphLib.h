@@ -16,13 +16,13 @@ extern "C"
 #include <stdlib.h>
 #include <time.h>
 #include <ctype.h>
-#include "graph.h"
-#include "lowLevelUtils/platformTime.h"
+#include "c/graphLib/graph.h"
+#include "c/graphLib/lowLevelUtils/platformTime.h"
 
-#include "homeomorphSearch/graphK23Search.h"
-#include "homeomorphSearch/graphK33Search.h"
-#include "homeomorphSearch/graphK4Search.h"
-#include "planarityRelated/graphDrawPlanar.h"
+#include "c/graphLib/homeomorphSearch/graphK23Search.h"
+#include "c/graphLib/homeomorphSearch/graphK33Search.h"
+#include "c/graphLib/homeomorphSearch/graphK4Search.h"
+#include "c/graphLib/planarityRelated/graphDrawPlanar.h"
 
 #ifdef __cplusplus
 }

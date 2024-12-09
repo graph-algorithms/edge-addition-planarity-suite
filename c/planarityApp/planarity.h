@@ -12,7 +12,7 @@ extern "C"
 {
 #endif
 
-#include "../graphLib/graphLib.h"
+#include "c/graphLib/graphLib.h"
 
     char *GetProjectTitle(void);
     char *GetAlgorithmFlags(void);

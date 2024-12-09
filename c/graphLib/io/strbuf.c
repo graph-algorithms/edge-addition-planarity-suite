@@ -4,8 +4,8 @@ All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
 
-#include "../lowLevelUtils/appconst.h"
-#include "strbuf.h"
+#include "c/graphLib/lowLevelUtils/appconst.h"
+#include "c/graphLib/io/strbuf.h"
 #include <stdlib.h>
 #include <ctype.h>
 

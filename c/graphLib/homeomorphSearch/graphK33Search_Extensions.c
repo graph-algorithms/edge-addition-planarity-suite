@@ -6,8 +6,8 @@ See the LICENSE.TXT file for licensing information.
 
 #include <stdlib.h>
 
-#include "graphK33Search.private.h"
-#include "graphK33Search.h"
+#include "c/graphLib/homeomorphSearch/graphK33Search.private.h"
+#include "c/graphLib/homeomorphSearch/graphK33Search.h"
 
 extern int  _SearchForMergeBlocker(graphP theGraph, K33SearchContext *context, int v, int *pMergeBlocker);
 extern int  _FindK33WithMergeBlocker(graphP theGraph, K33SearchContext *context, int v, int mergeBlocker);

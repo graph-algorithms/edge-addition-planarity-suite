@@ -7,8 +7,8 @@ See the LICENSE.TXT file for licensing information.
 #include <string.h>
 #include <stdlib.h>
 
-#include "../lowLevelUtils/appconst.h"
-#include "strOrFile.h"
+#include "c/graphLib/lowLevelUtils/appconst.h"
+#include "c/graphLib/io/strOrFile.h"
 
 /********************************************************************
  sf_New()

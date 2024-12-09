@@ -6,7 +6,7 @@ See the LICENSE.TXT file for licensing information.
 
 #define GRAPHDFSUTILS_C
 
-#include "graph.h"
+#include "c/graphLib/graph.h"
 
 extern void _ClearVertexVisitedFlags(graphP theGraph, int);
 
@@ -23,8 +23,7 @@ extern void _ClearVertexVisitedFlags(graphP theGraph, int);
  library. The core planarity algorithm uses its own DFS in order to build
  up related data structures at the same time as the DFS tree is created.
  ********************************************************************/
-
-#include "./lowLevelUtils/platformTime.h"
+#include "c/graphLib/lowLevelUtils/platformTime.h"
 
 int gp_CreateDFSTree(graphP theGraph)
 {

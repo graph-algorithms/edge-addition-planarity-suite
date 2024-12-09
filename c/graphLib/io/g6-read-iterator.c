@@ -7,8 +7,8 @@ See the LICENSE.TXT file for licensing information.
 #include <stdlib.h>
 #include <string.h>
 
-#include "g6-read-iterator.h"
-#include "g6-api-utilities.h"
+#include "c/graphLib/io/g6-read-iterator.h"
+#include "c/graphLib/io/g6-api-utilities.h"
 
 
 int allocateG6ReadIterator(G6ReadIterator **ppG6ReadIterator, graphP pGraph)

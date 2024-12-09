@@ -4,8 +4,8 @@ All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
 
-#include "appconst.h"
-#include "stack.h"
+#include "c/graphLib/lowLevelUtils/appconst.h"
+#include "c/graphLib/lowLevelUtils/stack.h"
 #include <stdlib.h>
 
 stackP sp_New(int capacity)

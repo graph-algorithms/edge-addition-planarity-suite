@@ -7,7 +7,7 @@ All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
 
-#include "graphFunctionTable.h"
+#include "c/graphLib/extensionSystem/graphFunctionTable.h"
 
 #ifdef __cplusplus
 extern "C" {

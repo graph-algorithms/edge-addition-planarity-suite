@@ -7,8 +7,8 @@ See the LICENSE.TXT file for licensing information.
 #include <stdlib.h>
 #include <string.h>
 
-#include "g6-write-iterator.h"
-#include "g6-api-utilities.h"
+#include "c/graphLib/io/g6-write-iterator.h"
+#include "c/graphLib/io/g6-api-utilities.h"
 
 
 int allocateG6WriteIterator(G6WriteIterator **ppG6WriteIterator, graphP pGraph)

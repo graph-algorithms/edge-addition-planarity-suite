@@ -6,8 +6,8 @@ See the LICENSE.TXT file for licensing information.
 
 #include <stdlib.h>
 
-#include "graphK23Search.private.h"
-#include "graphK23Search.h"
+#include "c/graphLib/homeomorphSearch/graphK23Search.private.h"
+#include "c/graphLib/homeomorphSearch/graphK23Search.h"
 
 extern int  _SearchForK23InBicomp(graphP theGraph, int v, int R);
 
