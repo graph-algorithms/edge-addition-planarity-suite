@@ -14,7 +14,7 @@ extern "C"
 
 #include "graphStructures.h"
 
-#include "./extensionSystem/graphExtensions.h"
+#include "extensionSystem/graphExtensions.h"
 
 	///////////////////////////////////////////////////////////////////////////////
 	// Definitions for higher-order operations at the vertex, edge and graph levels

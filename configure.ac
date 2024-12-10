@@ -20,6 +20,8 @@ AC_SUBST(LT_CURRENT)
 AC_SUBST(LT_REVISION)
 AC_SUBST(LT_AGE)
 
+PKG_INSTALLDIR
+
 AC_PROG_CC
 LT_INIT
 AC_PROG_INSTALL
@@ -31,5 +33,6 @@ AC_CONFIG_FILES([
   c/samples/Makefile
 ])
 AC_CONFIG_FILES([test-samples.sh], [chmod +x test-samples.sh])
+AC_CONFIG_FILES([libplanarity.pc])
 
 AC_OUTPUT
