@@ -24,7 +24,7 @@ extern void _ClearVertexVisitedFlags(graphP theGraph, int);
  up related data structures at the same time as the DFS tree is created.
  ********************************************************************/
 
-#include "./lowLevelUtils/platformTime.h"
+#include "lowLevelUtils/platformTime.h"
 
 int gp_CreateDFSTree(graphP theGraph)
 {
