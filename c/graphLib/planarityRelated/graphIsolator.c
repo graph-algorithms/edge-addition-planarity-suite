@@ -6,7 +6,7 @@ See the LICENSE.TXT file for licensing information.
 
 #define GRAPHISOLATOR_C
 
-#include "../graph.h"
+#include "c/graphLib/graph.h"
 
 /* Imported functions */
 

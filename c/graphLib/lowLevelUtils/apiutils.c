@@ -6,8 +6,8 @@ See the LICENSE.TXT file for licensing information.
 
 #include <stdarg.h>
 
-#include "apiutils.h"
-#include "appconst.h"
+#include "c/graphLib/lowLevelUtils/apiutils.h"
+#include "c/graphLib/lowLevelUtils/appconst.h"
 
 int quietMode = FALSE;
 

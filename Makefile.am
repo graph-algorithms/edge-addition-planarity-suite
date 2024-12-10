@@ -32,6 +32,9 @@ libplanarity_la_SOURCES = \
 libplanarity_la_LDFLAGS = -no-undefined $(AM_LDFLAGS) -version-info @LT_CURRENT@:@LT_REVISION@:@LT_AGE@
 
 pkginclude_HEADERS = \
+	c/graph.h
+
+nobase_pkginclude_HEADERS = \
 	c/graphLib/graph.h \
 	c/graphLib/graphLib.h \
 	c/graphLib/graphStructures.h \
@@ -79,3 +82,5 @@ TESTS = test-samples.sh
 # The @docdir@ variable will be replaced by the ./configure script.
 docdir = @docdir@
 dist_doc_DATA = README.md LICENSE.TXT
+
+pkgconfig_DATA = libplanarity.pc

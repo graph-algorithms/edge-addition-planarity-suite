@@ -7,11 +7,11 @@ See the LICENSE.TXT file for licensing information.
 #include <stdlib.h>
 #include <string.h>
 
-#include "../lowLevelUtils/appconst.h"
+#include "c/graphLib/lowLevelUtils/appconst.h"
 
-#include "graphExtensions.private.h"
-#include "graphExtensions.h"
-#include "graphFunctionTable.h"
+#include "c/graphLib/extensionSystem/graphExtensions.private.h"
+#include "c/graphLib/extensionSystem/graphExtensions.h"
+#include "c/graphLib/extensionSystem/graphFunctionTable.h"
 
 /* Imported functions */
 

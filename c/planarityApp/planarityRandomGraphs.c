@@ -4,7 +4,7 @@ All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
 
-#include "planarity.h"
+#include "c/planarityApp/planarity.h"
 
 void GetNumberIfZero(int *pNum, char *prompt, int min, int max);
 void ReinitializeGraph(graphP *pGraph, int ReuseGraphs, char command);

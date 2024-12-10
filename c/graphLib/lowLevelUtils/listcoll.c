@@ -6,8 +6,8 @@ See the LICENSE.TXT file for licensing information.
 
 #define _LISTCOLL_C
 
-#include "appconst.h"
-#include "listcoll.h"
+#include "c/graphLib/lowLevelUtils/appconst.h"
+#include "c/graphLib/lowLevelUtils/listcoll.h"
 #include <stdlib.h>
 
 /*****************************************************************************

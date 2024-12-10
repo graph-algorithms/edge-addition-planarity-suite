@@ -4,12 +4,12 @@ All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
 
-#include "graphK4Search.h"
-#include "graphK4Search.private.h"
+#include "c/graphLib/homeomorphSearch/graphK4Search.h"
+#include "c/graphLib/homeomorphSearch/graphK4Search.private.h"
 
 extern int K4SEARCH_ID;
 
-#include "../graph.h"
+#include "c/graphLib/graph.h"
 
 /* Imported functions */
 

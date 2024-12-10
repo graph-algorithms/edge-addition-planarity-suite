@@ -7,7 +7,7 @@ All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
 
-#include "apiutils.h"
+#include "c/graphLib/lowLevelUtils/apiutils.h"
 
 #ifdef WIN32
 #define WINDOWS
@@ -30,7 +30,7 @@ See the LICENSE.TXT file for licensing information.
 
 // #define PROFILE
 #ifdef PROFILE
-#include "platformTime.h"
+#include "c/graphLib/lowLevelUtils/platformTime.h"
 #endif
 
 /* Define DEBUG to get additional debugging. The default is to define it when MSC does */

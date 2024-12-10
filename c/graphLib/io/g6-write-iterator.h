@@ -15,8 +15,8 @@ extern "C"
 #include <stdio.h>
 #include <stdbool.h>
 
-#include "../graph.h"
-#include "strOrFile.h"
+#include "c/graphLib/graph.h"
+#include "c/graphLib/io/strOrFile.h"
 
 	typedef struct
 	{

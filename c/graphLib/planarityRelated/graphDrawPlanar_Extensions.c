@@ -6,8 +6,8 @@ See the LICENSE.TXT file for licensing information.
 
 #include <stdlib.h>
 
-#include "graphDrawPlanar.private.h"
-#include "graphDrawPlanar.h"
+#include "c/graphLib/planarityRelated/graphDrawPlanar.private.h"
+#include "c/graphLib/planarityRelated/graphDrawPlanar.h"
 
 extern void _ClearVertexVisitedFlags(graphP theGraph, int);
 

@@ -12,9 +12,9 @@ extern "C"
 {
 #endif
 
-#include "graphStructures.h"
+#include "c/graphLib/graphStructures.h"
 
-#include "./extensionSystem/graphExtensions.h"
+#include "c/graphLib/extensionSystem/graphExtensions.h"
 
 	///////////////////////////////////////////////////////////////////////////////
 	// Definitions for higher-order operations at the vertex, edge and graph levels

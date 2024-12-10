@@ -4,11 +4,11 @@ All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
 
-#include "planarity.h"
-#include "../graphLib/graph.h"
-#include "../graphLib/lowLevelUtils/platformTime.h"
-#include "../graphLib/io/g6-read-iterator.h"
-#include "../graphLib/io/strOrFile.h"
+#include "c/planarityApp/planarity.h"
+#include "c/graphLib/graph.h"
+#include "c/graphLib/lowLevelUtils/platformTime.h"
+#include "c/graphLib/io/g6-read-iterator.h"
+#include "c/graphLib/io/strOrFile.h"
 
 typedef struct
 {

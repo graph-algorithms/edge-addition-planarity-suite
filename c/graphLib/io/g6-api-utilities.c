@@ -4,7 +4,7 @@ All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
 
-#include "g6-api-utilities.h"
+#include "c/graphLib/io/g6-api-utilities.h"
 
 int _getMaxEdgeCount(int graphOrder)
 {

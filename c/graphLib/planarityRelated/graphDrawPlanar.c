@@ -4,12 +4,12 @@ All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
 
-#include "graphDrawPlanar.h"
-#include "graphDrawPlanar.private.h"
+#include "c/graphLib/planarityRelated/graphDrawPlanar.h"
+#include "c/graphLib/planarityRelated/graphDrawPlanar.private.h"
 
 extern int DRAWPLANAR_ID;
 
-#include "../graph.h"
+#include "c/graphLib/graph.h"
 
 #include <string.h>
 #include <stdlib.h>

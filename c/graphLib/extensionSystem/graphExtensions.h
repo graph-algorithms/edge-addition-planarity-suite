@@ -12,7 +12,7 @@ extern "C"
 {
 #endif
 
-#include "../graphStructures.h"
+#include "c/graphLib/graphStructures.h"
 
     int gp_AddExtension(graphP theGraph,
                         int *pModuleID,

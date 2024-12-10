@@ -6,8 +6,8 @@ See the LICENSE.TXT file for licensing information.
 
 #define GRAPHTEST_C
 
-#include "../graph.h"
-#include "../lowLevelUtils/stack.h"
+#include "c/graphLib/graph.h"
+#include "c/graphLib/lowLevelUtils/stack.h"
 
 extern void _ClearVertexVisitedFlags(graphP theGraph, int);
 

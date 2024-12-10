@@ -10,7 +10,7 @@ See the LICENSE.TXT file for licensing information.
 extern "C" {
 #endif
 
-#include "stdio.h"
+#include <stdio.h>
 
 // N.B. Every time this is used to create a string for a message or
 // error message, the developer must check that there will not be a

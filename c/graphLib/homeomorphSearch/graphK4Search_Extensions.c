@@ -6,8 +6,8 @@ See the LICENSE.TXT file for licensing information.
 
 #include <stdlib.h>
 
-#include "graphK4Search.private.h"
-#include "graphK4Search.h"
+#include "c/graphLib/homeomorphSearch/graphK4Search.private.h"
+#include "c/graphLib/homeomorphSearch/graphK4Search.h"
 
 extern int  _SearchForK4InBicomp(graphP theGraph, K4SearchContext *context, int v, int R);
 
