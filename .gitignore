@@ -76,6 +76,7 @@ Makefile.in
 missing
 ltmain.sh
 configure
+configure~
 aclocal.m4
 compile
 test-driver
