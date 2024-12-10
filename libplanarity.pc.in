@@ -5,7 +5,7 @@ includedir=@includedir@
 
 Name: @PACKAGE_NAME@
 URL: https://github.com/graph-algorithms/edge-addition-planarity-suite
-Description: Planarity Library for Edge Addition Planarity Suite
+Description: Edge Addition Planarity Suite Graph Library
 Version: @PACKAGE_VERSION@
 Libs: -L${libdir} -lplanarity
 Cflags: -I${includedir}

@@ -38,7 +38,7 @@ pkginclude_HEADERS = \
 	c/graphLib.h
 
 # This is the full set of pkgincludes for which "nobase_" has been used to ensure that
-# the directory structure is retained.
+# the directory structure is retained when installing the planarity headers.
 nobase_pkginclude_HEADERS = \
 	c/graphLib/graph.h \
 	c/graphLib/graphLib.h \
