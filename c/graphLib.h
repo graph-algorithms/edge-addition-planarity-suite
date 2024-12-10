@@ -7,7 +7,7 @@ All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
 
-// NOTE: This helper stub has been added to make it eaier for downstream
+// NOTE: This helper stub has been added to make it easier for downstream
 // consumers to obtain access to to all features in the graph library of
 // the planarity project.
 

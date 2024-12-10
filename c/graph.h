@@ -8,10 +8,10 @@ See the LICENSE.TXT file for licensing information.
 */
 
 // NOTE: This helper stub has been added for backwards compatibility to
-// support current downstream consumers who expect graph.h to be at the
+// support downstream consumers who expect graph.h to be at the
 // root of the installed planarity headers directory. Future downstream
 // consumers are advised to include the graphLib.h helper stub instead
-// beause it offers access to to all features in the graph library of
+// because it offers access to all features in the graph library of
 // the planarity project.
 
 #ifdef __cplusplus
