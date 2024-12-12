@@ -32,9 +32,9 @@ Please refer to the [2. Dev Setup](https://github.com/graph-algorithms/edge-addi
 
 Once one has set up the development environment and is able to work with the code in the development environment, it is possible to make the distribution with the following additional steps:
 
-1. Ensure that the `autotools`, `configure`, and `make` are available on the command-line (e.g. add `C:\MinGW\msys\1.0\bin` to the system `PATH` before Windows Program Files to ensure that the `find` program is the one from `MSYS` rather than the one from Windows (e.g. adjust the `PATH` variable as needed)). 
-2. Navigate to the root of the `edge-addition-planarity-suite` repository (i.e. the directory containing `configure.ac` and the `c` subdirectory)
-3. Get into `bash` (e.g., type `bash` in the Windows command-line), then enter the following commands:
+1. Ensure that the `autotools`, `configure`, and `make` are available on the command-line (e.g. add `C:\msys64\usr\bin` to the system `PATH` before Windows Program Files to ensure that the `find` program is the one from `MSYS2` rather than the one from Windows (e.g. adjust the `PATH` variable as needed)). 
+2. Open the MSYS2 UCRT64 terminal app and navigate to the root of the `edge-addition-planarity-suite` repository (i.e. the directory containing `configure.ac` and the `c` subdirectory)
+3. Enter the following commands:
     1. `./autogen.sh`
     2. `./configure`
     3. `make dist`
