@@ -3,7 +3,7 @@
         {
             "type": "cppbuild",
             "label": "C/C++: (Windows) [Debug] gcc.exe build planarity project",
-            "command": "C:\\MinGW\\bin\\gcc.exe",
+            "command": "C:\\msys64\\ucrt64\\bin\\gcc.exe",
             "args": [
                 "-fdiagnostics-color=always",
                 "-DDEBUG", // Added so that _DEBUG is defined; see appconst.h
@@ -32,7 +32,7 @@
         {
             "type": "cppbuild",
             "label": "C/C++: (Windows) [Release] gcc.exe build planarity project",
-            "command": "C:\\MinGW\\bin\\gcc.exe",
+            "command": "C:\\msys64\\ucrt64\\bin\\gcc.exe",
             "args": [
                 "-O3",
                 "-Wall",
