@@ -7,20 +7,23 @@ All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
 
-#ifdef WIN32
+// NOTE: Since platformTime.h is only #include'd by appconst.h, and since appconst.h
+// #define's WINDOWS before including platformTime.h, we condition on WINDOWS being defined.
+#ifdef WINDOWS
 
 #include <windows.h>
 #include <winbase.h>
 
 #define platform_time DWORD
 #define platform_GetTime(timeVar) (timeVar = GetTickCount())
-#define platform_GetDuration(startTime, endTime) ((double) (endTime-startTime) / 1000.0)
+#define platform_GetDuration(startTime, endTime) ((double)(endTime - startTime) / 1000.0)
 
 #else
 
 #include <time.h>
 
-typedef struct {
+typedef struct
+{
 	clock_t hiresTime;
 	time_t lowresTime;
 } platform_time;
@@ -32,9 +35,7 @@ typedef struct {
 // If we're getting a duration longer than that, then we fall back to the coarser time() measure
 
 #define platform_GetDuration(startTime, endTime) ( \
-		( (double) (endTime.lowresTime - startTime.lowresTime) ) > 2000 ? \
-		( (double) (endTime.lowresTime - startTime.lowresTime) ) : \
-		( (double) (endTime.hiresTime - startTime.hiresTime)) / CLOCKS_PER_SEC)
+	((double)(endTime.lowresTime - startTime.lowresTime)) > 2000 ? ((double)(endTime.lowresTime - startTime.lowresTime)) : ((double)(endTime.hiresTime - startTime.hiresTime)) / CLOCKS_PER_SEC)
 
 /*
 #define platform_time clock_t
