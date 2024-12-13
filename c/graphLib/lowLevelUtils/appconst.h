@@ -9,7 +9,9 @@ See the LICENSE.TXT file for licensing information.
 
 #include "apiutils.h"
 
-#ifdef WIN32
+// NOTE: This is defined on 32- and 64-bit Windows systems; see
+// https://sourceforge.net/p/predef/wiki/OperatingSystems
+#if defined(WIN32) || defined(_WIN32)
 #define WINDOWS
 #endif
 

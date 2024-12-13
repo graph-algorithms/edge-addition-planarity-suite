@@ -131,6 +131,8 @@
                 "/wd4774", // Ignore warnings about format string not being a string literal; requires developer caution!
                 "/wd4996", // Ignore safety warnings about sprintf, scanf, strcpy, strcat, fopen, etc.
                 "/wd5045", // Ignore Spectre mitigation warning
+                "/external:anglebrackets",
+                "/external:W0", // Ignore warnings thrown by external headers
                 "/Fe${workspaceFolder}\\Debug\\planarity.exe",
                 "${workspaceFolder}\\c\\planarityApp\\**.c",
                 "${workspaceFolder}\\c\\graphLib\\**.c",
@@ -165,6 +167,8 @@
                 "/wd4774", // Ignore warnings about format string not being a string literal; requires developer caution!
                 "/wd4996", // Ignore safety warnings about sprintf, scanf, strcpy, strcat, fopen, etc.
                 "/wd5045", // Ignore Spectre mitigation warning
+                "/external:anglebrackets",
+                "/external:W0", // Ignore warnings thrown by external headers
                 "/Fe${workspaceFolder}\\Release\\planarity.exe",
                 "${workspaceFolder}\\c\\planarityApp\\**.c",
                 "${workspaceFolder}\\c\\graphLib\\**.c",
