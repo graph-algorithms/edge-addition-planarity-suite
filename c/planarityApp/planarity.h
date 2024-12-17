@@ -29,7 +29,7 @@ extern "C"
         char *infileName, char *outfileName, char *outfile2Name,
         char *inputStr, char **pOutputStr, char **pOutput2Str);
     int RandomGraph(char command, int extraEdges, int numVertices, char *outfileName, char *outfile2Name);
-    int RandomGraphs(char command, int NumGraphs, int SizeOfGraphs);
+    int RandomGraphs(char command, int NumGraphs, int SizeOfGraphs, char *outfileName, char **outputStr);
     int TransformGraph(char *commandString, char *infileName, char *inputStr, int *outputBase, char *outfileName, char **outputStr);
     int TestAllGraphs(char *commandString, char *infileName, char *outfileName, char **outputStr);
 
@@ -40,6 +40,7 @@ extern "C"
 
     extern char Mode,
         OrigOut,
+        OrigOutFormat,
         EmbeddableOut,
         ObstructedOut,
         AdjListsForEmbeddingsOut;
@@ -67,6 +68,8 @@ extern "C"
     char *ConstructPrimaryOutputFilename(char *infileName, char *outfileName, char command);
     int ConstructTransformationExpectedResultFilename(char *infileName, char **outfileName, char command, int actualOrExpectedFlag);
     void WriteAlgorithmResults(graphP theGraph, int Result, char command, platform_time start, platform_time end, char *infileName);
+
+    int GetNumCharsToReprInt(int theNum);
 
 #ifdef __cplusplus
 }

@@ -17,7 +17,7 @@ planarity - The Edge Addition Planarity Suite
 
 .B planarity -s [-q] \fICOMMAND\fR \fIINPUT\fR \fIOUTPUT\fR [\fICOMPLEMENT\fR]
 
-.B planarity -r [-q] \fICOMMAND\fR \fIK\fR \fIN\fR
+.B planarity -r [-q] \fICOMMAND\fR \fIK\fR \fIN\fR [\fIOUTPUT\fR]
 
 .B planarity -rm [-q] \fIN\fR \fIOUTPUT\fR [\fICOMPLEMENT\fR]
 
@@ -62,9 +62,9 @@ planar or doesn't contain a homeomorphic subgraph) and 1 if it isn't
 embeddable (e.g. non planar or does contain a homeomorphic subgraph).
 
 .TP
-.B -r [-q] \fICOMMAND\fR \fIK\fR \fIN\fR
+.B -r [-q] \fICOMMAND\fR \fIK\fR \fIN\fR [\fIOUTPUT\fR]
 Run the \fICOMMAND\fR (see below) on \fIK\fR random graphs with
-\fIN\fR vertices.
+\fIN\fR vertices. Optionally, write all generated graphs to .g6 \fIOUTPUT\fR.
 
 .TP
 .B -rm [-q] \fIN\fR \fIOUTPUT\fR [\fICOMPLEMENT\fR]

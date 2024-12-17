@@ -3,6 +3,7 @@
 **/Debug/
 /c/.settings/
 
+# Ignore directories for output of Random Graphs
 **/random/
 **/embedded/
 **/adjlist/
