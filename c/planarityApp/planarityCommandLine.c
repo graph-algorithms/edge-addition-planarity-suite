@@ -618,7 +618,11 @@ int callRandomGraphs(int argc, char *argv[])
 
 	NumGraphs = atoi(argv[3 + offset]);
 	SizeOfGraphs = atoi(argv[4 + offset]);
-	outfileName = argv[5 + offset];
+
+	if (argc == (6 + offset))
+	{
+		outfileName = argv[5 + offset];
+	}
 
 	return RandomGraphs(Choice, NumGraphs, SizeOfGraphs, outfileName);
 }
