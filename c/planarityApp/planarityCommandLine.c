@@ -620,8 +620,7 @@ int callRandomGraphs(int argc, char *argv[])
 	SizeOfGraphs = atoi(argv[4 + offset]);
 	outfileName = argv[5 + offset];
 
-	// NOTE: We don't want to write to string, so outputStr is NULL
-	return RandomGraphs(Choice, NumGraphs, SizeOfGraphs, outfileName, NULL);
+	return RandomGraphs(Choice, NumGraphs, SizeOfGraphs, outfileName);
 }
 
 /****************************************************************************

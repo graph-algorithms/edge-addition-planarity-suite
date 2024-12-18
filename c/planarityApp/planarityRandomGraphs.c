@@ -4,10 +4,7 @@ All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
 
-#include <limits.h>
-
 #include "planarity.h"
-#include "../graphLib/io/strOrFile.h"
 
 void GetNumberIfZero(int *pNum, char *prompt, int min, int max);
 void ReinitializeGraph(graphP *pGraph, int ReuseGraphs, char command);
@@ -24,7 +21,7 @@ graphP MakeGraph(int Size, char command);
 
 #define NUM_MINORS 9
 
-int RandomGraphs(char command, int NumGraphs, int SizeOfGraphs, char *outfileName, char **outputStr)
+int RandomGraphs(char command, int NumGraphs, int SizeOfGraphs, char *outfileName)
 {
 	char theFileName[MAXLINE + 1];
 	int K, countUpdateFreq;
@@ -59,7 +56,7 @@ int RandomGraphs(char command, int NumGraphs, int SizeOfGraphs, char *outfileNam
 		ObstructionMinorFreqs[K] = 0;
 
 	G6WriteIterator *pG6WriteIterator = NULL;
-	if (outfileName != NULL || (outputStr != NULL && (*outputStr) == NULL) || (tolower(OrigOut) == 'y' && tolower(OrigOutFormat) == 'g'))
+	if (outfileName != NULL || (tolower(OrigOut) == 'y' && tolower(OrigOutFormat) == 'g'))
 	{
 		if (allocateG6WriteIterator(&pG6WriteIterator, theGraph) != OK)
 		{
@@ -86,9 +83,13 @@ int RandomGraphs(char command, int NumGraphs, int SizeOfGraphs, char *outfileNam
 	}
 	else
 	{
-		if (outputStr != NULL)
+		// If outfileName is NULL, then the only case in which we would want to
+		// output the generated random graphs to .g6 is if we Reconfigure() and
+		// choose these options; in that case, need to set a default output filename.
+		if (tolower(OrigOut) == 'y' && tolower(OrigOutFormat) == 'g')
 		{
-			if (beginG6WriteIterationToG6String(pG6WriteIterator, outputStr) != OK)
+			sprintf(theFileName, "random%cn%d.k%d.g6", FILE_DELIMITER, SizeOfGraphs, NumGraphs);
+			if (beginG6WriteIterationToG6FilePath(pG6WriteIterator, theFileName) != OK)
 			{
 				ErrorMessage("Unable to begin writing random graphs to G6WriteIterator.\n");
 
@@ -99,29 +100,6 @@ int RandomGraphs(char command, int NumGraphs, int SizeOfGraphs, char *outfileNam
 
 				gp_Free(&theGraph);
 				return NOTOK;
-			}
-		}
-		else
-		{
-			// If both outfileName and outputStr are both NULL, then the only case
-			// in which we would want to output the generated random graphs to .g6
-			// is if we Reconfigure() and choose these options; in that case, need
-			// to set a default output filename.
-			if (tolower(OrigOut) == 'y' && tolower(OrigOutFormat) == 'g')
-			{
-				sprintf(theFileName, "random%cn%d.k%d.g6", FILE_DELIMITER, SizeOfGraphs, NumGraphs);
-				if (beginG6WriteIterationToG6FilePath(pG6WriteIterator, theFileName) != OK)
-				{
-					ErrorMessage("Unable to begin writing random graphs to G6WriteIterator.\n");
-
-					if (freeG6WriteIterator(&pG6WriteIterator) != OK)
-					{
-						ErrorMessage("Unable to free G6WriteIterator.\n");
-					}
-
-					gp_Free(&theGraph);
-					return NOTOK;
-				}
 			}
 		}
 	}

@@ -25,7 +25,7 @@ void Reconfigure(void)
 		   "  Randomly generate graphs (r),\n"
 		   "  Specify a graph (s),\n"
 		   "  Randomly generate a maximal planar graph (m), or\n"
-		   "  Randomly generate a non-planar graph (n)?");
+		   "  Randomly generate a non-planar graph (n)? ");
 	scanf(" %c", &Mode);
 
 	Mode = tolower(Mode);
@@ -36,22 +36,22 @@ void Reconfigure(void)
 	{
 		Message("\nNOTE: The directories for the graphs you want must exist.\n\n");
 
-		Prompt("Do you want original graphs in directory 'random'? (y/n)");
+		Prompt("Do you want original graphs in directory 'random'? (y/n) ");
 		scanf(" %c", &OrigOut);
 
 		if (tolower(OrigOut) == 'y')
 		{
-			Prompt("Do you want to output generated graphs to Adjacency List (last 10 only) or to G6 (all)? (a/g)");
+			Prompt("Do you want to output generated graphs to Adjacency List (last 10 only) or to G6 (all)? (a/g) ");
 			scanf(" %c", &OrigOutFormat);
 		}
 
-		Prompt("Do you want adj. matrix of embeddable graphs in directory 'embedded' (last 10 max))? (y/n)");
+		Prompt("Do you want adj. matrix of embeddable graphs in directory 'embedded' (last 10 max))? (y/n) ");
 		scanf(" %c", &EmbeddableOut);
 
-		Prompt("Do you want adj. matrix of obstructed graphs in directory 'obstructed' (last 10 max)? (y/n)");
+		Prompt("Do you want adj. matrix of obstructed graphs in directory 'obstructed' (last 10 max)? (y/n) ");
 		scanf(" %c", &ObstructedOut);
 
-		Prompt("Do you want adjacency list format of embeddings in directory 'adjlist' (last 10 max)? (y/n)");
+		Prompt("Do you want adjacency list format of embeddings in directory 'adjlist' (last 10 max)? (y/n) ");
 		scanf(" %c", &AdjListsForEmbeddingsOut);
 	}
 

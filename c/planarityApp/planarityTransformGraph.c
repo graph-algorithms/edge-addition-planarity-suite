@@ -5,7 +5,6 @@ See the LICENSE.TXT file for licensing information.
 */
 
 #include "planarity.h"
-#include "../graphLib/graph.h"
 
 int transformFile(graphP theGraph, char *infileName);
 int transformString(graphP theGraph, char *inputStr);
