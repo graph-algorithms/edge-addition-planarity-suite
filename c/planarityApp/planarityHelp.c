@@ -88,7 +88,7 @@ int helpMessage(char *param)
     else if (strcmp(param, "-menu") == 0)
     {
         Message(
-            "'planarity -r [-q] C K N': Random graphs\n"
+            "'planarity -r [-q] C K N [O]': Random graphs\n"
             "'planarity -s [-q] C I O [O2]': Specific graph\n"
             "'planarity -rm [-q] N O [O2]': Random maximal planar graph\n"
             "'planarity -rn [-q] N O [O2]': Random nonplanar graph (maximal planar + edge)\n"

@@ -12,6 +12,7 @@ See the LICENSE.TXT file for licensing information.
 
 char Mode = 'r',
 	 OrigOut = 'n',
+	 OrigOutFormat = 'a',
 	 EmbeddableOut = 'n',
 	 ObstructedOut = 'n',
 	 AdjListsForEmbeddingsOut = 'n';
@@ -24,7 +25,7 @@ void Reconfigure(void)
 		   "  Randomly generate graphs (r),\n"
 		   "  Specify a graph (s),\n"
 		   "  Randomly generate a maximal planar graph (m), or\n"
-		   "  Randomly generate a non-planar graph (n)?");
+		   "  Randomly generate a non-planar graph (n)? ");
 	scanf(" %c", &Mode);
 
 	Mode = tolower(Mode);
@@ -35,16 +36,22 @@ void Reconfigure(void)
 	{
 		Message("\nNOTE: The directories for the graphs you want must exist.\n\n");
 
-		Prompt("Do you want original graphs in directory 'random' (last 10 max)?");
+		Prompt("Do you want original graphs in directory 'random'? (y/n) ");
 		scanf(" %c", &OrigOut);
 
-		Prompt("Do you want adj. matrix of embeddable graphs in directory 'embedded' (last 10 max))?");
+		if (tolower(OrigOut) == 'y')
+		{
+			Prompt("Do you want to output generated graphs to Adjacency List (last 10 only) or to G6 (all)? (a/g) ");
+			scanf(" %c", &OrigOutFormat);
+		}
+
+		Prompt("Do you want adj. matrix of embeddable graphs in directory 'embedded' (last 10 max))? (y/n) ");
 		scanf(" %c", &EmbeddableOut);
 
-		Prompt("Do you want adj. matrix of obstructed graphs in directory 'obstructed' (last 10 max)?");
+		Prompt("Do you want adj. matrix of obstructed graphs in directory 'obstructed' (last 10 max)? (y/n) ");
 		scanf(" %c", &ObstructedOut);
 
-		Prompt("Do you want adjacency list format of embeddings in directory 'adjlist' (last 10 max)?");
+		Prompt("Do you want adjacency list format of embeddings in directory 'adjlist' (last 10 max)? (y/n) ");
 		scanf(" %c", &AdjListsForEmbeddingsOut);
 	}
 
@@ -73,8 +80,8 @@ void SaveAsciiGraph(graphP theGraph, char *filename)
 	// The filename may specify a directory that doesn't exist
 	if (outfile == NULL)
 	{
-		char *messageFormat = "Failed to write to \"%.*s\"\nMake the directory if not present\n";
 		char messageContents[MAXLINE + 1];
+		char *messageFormat = "Failed to write to \"%.*s\"\nMake the directory if not present\n";
 		int charsAvailForStrToInclude = (int)(MAXLINE - strlen(messageFormat));
 		sprintf(messageContents, messageFormat, charsAvailForStrToInclude, filename);
 		ErrorMessage(messageContents);
@@ -582,8 +589,8 @@ char *ConstructPrimaryOutputFilename(char *infileName, char *outfileName, char c
 				strcat(theFileName, algorithmName);
 			}
 			strcat(theFileName, ".out.txt");
-			char *messageFormat = "Outfile filename is too long. Result placed in \"%.*s\"";
 			char messageContents[MAXLINE + 1];
+			char *messageFormat = "Outfile filename is too long. Result placed in \"%.*s\"";
 			int charsAvailForStrToInclude = (int)(MAXLINE - strlen(messageFormat));
 			sprintf(messageContents, messageFormat, charsAvailForStrToInclude, theFileName);
 			ErrorMessage(messageContents);
@@ -645,4 +652,14 @@ int ConstructTransformationExpectedResultFilename(char *infileName, char **outfi
 	}
 
 	return Result;
+}
+
+int GetNumCharsToReprInt(int theNum)
+{
+	int numCharsRequired = 1;
+
+	while (theNum /= 10)
+		numCharsRequired++;
+
+	return numCharsRequired;
 }

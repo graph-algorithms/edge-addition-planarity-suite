@@ -7,7 +7,8 @@ See the LICENSE.TXT file for licensing information.
 #define APIUTILS_H
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #include "stdio.h"
@@ -17,13 +18,13 @@ extern "C" {
 // memory overwrite error.
 #define MAXLINE 1024
 
-extern int quietMode;
+    extern int quietMode;
 
-extern int getQuietModeSetting(void);
-extern void setQuietModeSetting(int);
+    extern int getQuietModeSetting(void);
+    extern void setQuietModeSetting(int);
 
-extern void Message(char *message);
-extern void ErrorMessage(char *message);
+    extern void Message(char *message);
+    extern void ErrorMessage(char *message);
 
 #ifdef __cplusplus
 }

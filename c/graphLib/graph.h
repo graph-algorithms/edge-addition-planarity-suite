@@ -14,6 +14,11 @@ extern "C"
 
 #include "graphStructures.h"
 
+#include "io/g6-read-iterator.h"
+#include "io/g6-write-iterator.h"
+#include "io/strbuf.h"
+#include "io/strOrFile.h"
+
 #include "extensionSystem/graphExtensions.h"
 
 	///////////////////////////////////////////////////////////////////////////////
