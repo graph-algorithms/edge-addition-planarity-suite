@@ -68,6 +68,8 @@ extern "C"
     int ConstructTransformationExpectedResultFilename(char *infileName, char **outfileName, char command, int actualOrExpectedFlag);
     void WriteAlgorithmResults(graphP theGraph, int Result, char command, platform_time start, platform_time end, char *infileName);
 
+    int GetNumCharsToReprInt(int theNum);
+
 #ifdef __cplusplus
 }
 #endif

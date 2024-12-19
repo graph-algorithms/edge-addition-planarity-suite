@@ -109,11 +109,15 @@ void TransformGraphMenu(void)
     char commandStr[4];
     commandStr[0] = '\0';
 
+    char *fileNameFormatFormat = " %%%d[^\r\n]";
+    char *fileNameFormat = (char *)malloc((strlen(fileNameFormatFormat) + GetNumCharsToReprInt(MAXLINE) + 1) * sizeof(char));
+    sprintf(fileNameFormat, fileNameFormatFormat, MAXLINE);
+
     do
     {
         Prompt("Enter input filename:\n");
         fflush(stdin);
-        fgets(infileName, MAXLINE, stdin);
+        scanf(fileNameFormat, infileName);
 
         if (strncmp(infileName, "stdin", 5) == 0)
         {
@@ -122,12 +126,9 @@ void TransformGraphMenu(void)
         }
     } while (strlen(infileName) == 0);
 
-    infileName[strcspn(infileName, "\n\r")] = '\0';
-
     Prompt("Enter output filename, or press return to output to console:\n");
     fflush(stdin);
-    fgets(outfileName, MAXLINE, stdin);
-    outfileName[strcspn(outfileName, "\n\r")] = '\0';
+    scanf(fileNameFormat, outfileName);
 
     do
     {
@@ -179,11 +180,15 @@ void TestAllGraphsMenu(void)
     char commandStr[3];
     commandStr[0] = '\0';
 
+    char *fileNameFormatFormat = " %%%d[^\r\n]";
+    char *fileNameFormat = (char *)malloc((strlen(fileNameFormatFormat) + GetNumCharsToReprInt(MAXLINE) + 1) * sizeof(char));
+    sprintf(fileNameFormat, fileNameFormatFormat, MAXLINE);
+
     do
     {
         Prompt("Enter input filename:\n");
         fflush(stdin);
-        fgets(infileName, MAXLINE, stdin);
+        scanf(fileNameFormat, infileName);
 
         if (strncmp(infileName, "stdin", 5) == 0)
         {
@@ -192,12 +197,9 @@ void TestAllGraphsMenu(void)
         }
     } while (strlen(infileName) == 0);
 
-    infileName[strcspn(infileName, "\n\r")] = '\0';
-
     Prompt("Enter output filename, or press return to output to console:\n");
     fflush(stdin);
-    fgets(outfileName, MAXLINE, stdin);
-    outfileName[strcspn(outfileName, "\n\r")] = '\0';
+    scanf(fileNameFormat, outfileName);
 
     do
     {
