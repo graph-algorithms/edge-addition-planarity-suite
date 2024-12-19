@@ -5,10 +5,6 @@ See the LICENSE.TXT file for licensing information.
 */
 
 #include "planarity.h"
-#include "../graphLib/graph.h"
-#include "../graphLib/lowLevelUtils/platformTime.h"
-#include "../graphLib/io/g6-read-iterator.h"
-#include "../graphLib/io/strOrFile.h"
 
 typedef struct
 {
@@ -23,16 +19,6 @@ typedef testAllStats *testAllStatsP;
 
 int testAllGraphs(graphP theGraph, char command, FILE *infile, testAllStatsP stats);
 int outputTestAllGraphsResults(char command, testAllStatsP stats, char *infileName, char *outfileName, char **outputStr);
-
-int _getNumCharsToReprInt(int theNum)
-{
-	int numCharsRequired = 1;
-
-	while (theNum /= 10)
-		numCharsRequired++;
-
-	return numCharsRequired;
-}
 
 /****************************************************************************
  TestAllGraphs()
@@ -79,8 +65,8 @@ int TestAllGraphs(char *commandString, char *infileName, char *outfileName, char
 				FILE *infile = fopen(infileName, "r");
 				if (infile == NULL)
 				{
-					charsAvailForFilename = (int)(MAXLINE - strlen(infileName));
 					messageFormat = "Unable to open file \"%.*s\" for input.\n";
+					charsAvailForFilename = (int)(MAXLINE - strlen(messageFormat));
 					sprintf(messageContents, messageFormat, charsAvailForFilename, infileName);
 					ErrorMessage(messageContents);
 
@@ -303,9 +289,9 @@ int outputTestAllGraphsResults(char command, testAllStatsP stats, char *infileNa
 
 	char *resultsStr = (char *)malloc(
 		(
-			3 + _getNumCharsToReprInt(stats->numGraphsRead) +
-			1 + _getNumCharsToReprInt(stats->numOK) +
-			1 + _getNumCharsToReprInt(stats->numNONEMBEDDABLE) +
+			3 + GetNumCharsToReprInt(stats->numGraphsRead) +
+			1 + GetNumCharsToReprInt(stats->numOK) +
+			1 + GetNumCharsToReprInt(stats->numNONEMBEDDABLE) +
 			1 + 8 + // either ERROR or SUCCESS, so the longer of which is 7 + 1 chars
 			3) *
 		sizeof(char));
@@ -329,8 +315,8 @@ int outputTestAllGraphsResults(char command, testAllStatsP stats, char *infileNa
 		FILE *outputFileP = fopen(outfileName, "w");
 		if (outputFileP == NULL)
 		{
-			charsAvailForFilename = (int)(MAXLINE - strlen(outfileName));
 			messageFormat = "Unable to open file \"%.*s\" for output.\n";
+			charsAvailForFilename = (int)(MAXLINE - strlen(messageFormat));
 			sprintf(messageContents, messageFormat, charsAvailForFilename, outfileName);
 			ErrorMessage(messageContents);
 		}
@@ -421,8 +407,8 @@ int outputTestAllGraphsResults(char command, testAllStatsP stats, char *infileNa
 
 	if (sf_closeFile(testOutput) != OK)
 	{
-		charsAvailForFilename = (int)(MAXLINE - strlen(outfileName));
 		messageFormat = "Unable to close output file \"%.*s\".\n";
+		charsAvailForFilename = (int)(MAXLINE - strlen(messageFormat));
 		sprintf(messageContents, messageFormat, charsAvailForFilename, outfileName);
 		ErrorMessage(messageContents);
 		Result = NOTOK;

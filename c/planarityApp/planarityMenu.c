@@ -65,7 +65,7 @@ int menu(void)
                     SpecificGraph(Choice, NULL, NULL, secondOutfile, NULL, NULL, NULL);
                     break;
                 case 'r':
-                    RandomGraphs(Choice, 0, 0);
+                    RandomGraphs(Choice, 0, 0, NULL);
                     break;
                 case 'm':
                     RandomGraph(Choice, 0, 0, NULL, NULL);

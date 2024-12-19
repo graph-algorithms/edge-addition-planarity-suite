@@ -598,13 +598,14 @@ int runGraphTransformationTest(char *command, char *infileName, int inputInMemFl
  callRandomGraphs()
  ****************************************************************************/
 
-// 'planarity -r [-q] C K N': Random graphs
+// 'planarity -r [-q] C K N [O]': Random graphs
 int callRandomGraphs(int argc, char *argv[])
 {
 	char Choice = 0;
 	int offset = 0, NumGraphs, SizeOfGraphs;
+	char *outfileName = NULL;
 
-	if (argc < 5)
+	if (argc < 5 || argc > 7)
 		return -1;
 
 	if (argv[2][0] == '-' && (Choice = argv[2][1]) == 'q')
@@ -618,7 +619,12 @@ int callRandomGraphs(int argc, char *argv[])
 	NumGraphs = atoi(argv[3 + offset]);
 	SizeOfGraphs = atoi(argv[4 + offset]);
 
-	return RandomGraphs(Choice, NumGraphs, SizeOfGraphs);
+	if (argc == (6 + offset))
+	{
+		outfileName = argv[5 + offset];
+	}
+
+	return RandomGraphs(Choice, NumGraphs, SizeOfGraphs, outfileName);
 }
 
 /****************************************************************************
@@ -770,6 +776,6 @@ int callTestAllGraphs(int argc, char *argv[])
 	infileName = argv[3 + offset];
 	outfileName = argv[4 + offset];
 
-	// We don't want to write to string, so outputStr is NULL
+	// NOTE: We don't want to write to string, so outputStr is NULL
 	return TestAllGraphs(commandString, infileName, outfileName, NULL);
 }

@@ -16,7 +16,9 @@ extern "C"
 #include <stdlib.h>
 #include <time.h>
 #include <ctype.h>
+
 #include "graph.h"
+
 #include "lowLevelUtils/platformTime.h"
 
 #include "homeomorphSearch/graphK23Search.h"

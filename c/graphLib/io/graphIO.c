@@ -9,8 +9,6 @@ See the LICENSE.TXT file for licensing information.
 #include <ctype.h>
 
 #include "../graph.h"
-#include "g6-read-iterator.h"
-#include "g6-write-iterator.h"
 
 /* Private functions (exported to system) */
 
