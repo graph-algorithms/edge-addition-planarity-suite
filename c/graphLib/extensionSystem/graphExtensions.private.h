@@ -10,22 +10,23 @@ See the LICENSE.TXT file for licensing information.
 #include "graphFunctionTable.h"
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-typedef struct
-{
-    int  moduleID;
-    void *context;
-    void *(*dupContext)(void *, void *);
-    void (*freeContext)(void *);
+    typedef struct
+    {
+        int moduleID;
+        void *context;
+        void *(*dupContext)(void *, void *);
+        void (*freeContext)(void *);
 
-    graphFunctionTableP functions;
+        graphFunctionTableP functions;
 
-    struct graphExtension *next;
-} graphExtension;
+        struct graphExtension *next;
+    } graphExtension;
 
-typedef graphExtension * graphExtensionP;
+    typedef graphExtension *graphExtensionP;
 
 #ifdef __cplusplus
 }

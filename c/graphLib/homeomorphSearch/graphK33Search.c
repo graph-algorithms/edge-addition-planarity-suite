@@ -353,7 +353,7 @@ int _RunExtraK33Tests(graphP theGraph, K33SearchContext *context)
                 with Minor E4.  */
 
     // Prior tests to choose the type of non-planarity minor selected the highest
-    // x-y path, so we need to clear the visited flags of that path before marking 
+    // x-y path, so we need to clear the visited flags of that path before marking
     // instead the x-y path with the lowest attachment points (those closest to W
     // along the external face).
     if (_ClearVisitedFlagsInBicomp(theGraph, IC->r) != OK)
@@ -385,8 +385,8 @@ int _RunExtraK33Tests(graphP theGraph, K33SearchContext *context)
     // Since the E4 test above has already marked the lowest X-Y path, and only
     // the lowest one could possibly have a Z-to-W path attached to it, we
     // simply reuse the x-y path from E4 here in the E5 test.
-    // (NOTE: Only the lowest X-Y path could have a Z-to-W path because all 
-    //        bicomps are planar embeddings, and so a Z-to-W path emanating 
+    // (NOTE: Only the lowest X-Y path could have a Z-to-W path because all
+    //        bicomps are planar embeddings, and so a Z-to-W path emanating
     //        from a higher X-Y path would cross the lowest one, violating the
     //        planarity of the bicomp).
     if (_TestForZtoWPath(theGraph) != OK)

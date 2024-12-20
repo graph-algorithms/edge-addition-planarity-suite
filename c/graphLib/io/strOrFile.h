@@ -8,33 +8,35 @@ See the LICENSE.TXT file for licensing information.
 #define STR_OR_FILE_H
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #include <stdio.h>
 
-typedef struct {
-    char fileMode;
-    FILE *pFile;
-    char *theStr;
-    int theStrPos;
-} strOrFile;
+    typedef struct
+    {
+        char fileMode;
+        FILE *pFile;
+        char *theStr;
+        int theStrPos;
+    } strOrFile;
 
-typedef strOrFile *strOrFileP;
+    typedef strOrFile *strOrFileP;
 
-strOrFileP sf_New(FILE * pFile, char *theStr);
+    strOrFileP sf_New(FILE *pFile, char *theStr);
 
-char sf_getc(strOrFileP theStrOrFile);
-char sf_ungetc(char theChar, strOrFileP theStrOrFile);
-char * sf_fgets(char *str, int count, strOrFileP theStrOrFile);
+    char sf_getc(strOrFileP theStrOrFile);
+    char sf_ungetc(char theChar, strOrFileP theStrOrFile);
+    char *sf_fgets(char *str, int count, strOrFileP theStrOrFile);
 
-int sf_fputs(char *strToWrite, strOrFileP theStrOrFile);
+    int sf_fputs(char *strToWrite, strOrFileP theStrOrFile);
 
-char * sf_takeTheStr(strOrFileP theStrOrFile);
+    char *sf_takeTheStr(strOrFileP theStrOrFile);
 
-int sf_closeFile(strOrFileP theStrOrFile);
+    int sf_closeFile(strOrFileP theStrOrFile);
 
-void sf_Free(strOrFileP *pStrOrFile);
+    void sf_Free(strOrFileP *pStrOrFile);
 
 #ifdef __cplusplus
 }

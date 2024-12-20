@@ -12,19 +12,19 @@ See the LICENSE.TXT file for licensing information.
 
 int main(int argc, char *argv[])
 {
-	int retVal = 0;
+    int retVal = 0;
 
-	if (argc <= 1)
-		retVal = menu();
+    if (argc <= 1)
+        retVal = menu();
 
-	else if (argv[1][0] == '-')
-		retVal = commandLine(argc, argv);
+    else if (argv[1][0] == '-')
+        retVal = commandLine(argc, argv);
 
-	else
-		retVal = legacyCommandLine(argc, argv);
+    else
+        retVal = legacyCommandLine(argc, argv);
 
-	// Close the log file if logging
-	gp_Log(NULL);
+    // Close the log file if logging
+    gp_Log(NULL);
 
-	return retVal;
+    return retVal;
 }

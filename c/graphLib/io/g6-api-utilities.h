@@ -8,13 +8,14 @@ See the LICENSE.TXT file for licensing information.
 #define G6_API_UTILITIES
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-int _getMaxEdgeCount(int);
-int _getNumCharsForGraphEncoding(int);
-int _getNumCharsForGraphOrder(int);
-int _getExpectedNumPaddingZeroes(const int, const int);
+    int _getMaxEdgeCount(int);
+    int _getNumCharsForGraphEncoding(int);
+    int _getNumCharsForGraphOrder(int);
+    int _getExpectedNumPaddingZeroes(const int, const int);
 
 #ifdef __cplusplus
 }

@@ -32,37 +32,37 @@ extern "C"
 // before calling gp_InitGraph() or gp_Read().
 #define DEFAULT_EDGE_LIMIT 3
 
-	/********************************************************************
-	 Edge Record Definition
+    /********************************************************************
+     Edge Record Definition
 
-	 An edge is defined by a pair of edge records, or arcs, allocated in
-	 array E of a graph.  An edge record represents the edge in the
-	 adjacency list of each vertex to which the edge is incident.
+     An edge is defined by a pair of edge records, or arcs, allocated in
+     array E of a graph.  An edge record represents the edge in the
+     adjacency list of each vertex to which the edge is incident.
 
-	 link[2]: the next and previous edge records (arcs) in the adjacency
-			  list that contains this edge record.
+     link[2]: the next and previous edge records (arcs) in the adjacency
+              list that contains this edge record.
 
-	 v: The vertex neighbor of the vertex whose adjacency list contains
-		this edge record (an index into array V).
+     v: The vertex neighbor of the vertex whose adjacency list contains
+        this edge record (an index into array V).
 
-	 flags: Bits 0-15 reserved for library; bits 16 and higher for apps
-			Bit 0: Visited
-			Bit 1: DFS type has been set, versus not set
-			Bit 2: DFS tree edge, versus cycle edge (co-tree edge, etc.)
-			Bit 3: DFS arc to descendant, versus arc to ancestor
-			Bit 4: Inverted (same as marking an edge with a "sign" of -1)
-			Bit 5: Arc is directed into the containing vertex only
-			Bit 6: Arc is directed from the containing vertex only
-	 ********************************************************************/
+     flags: Bits 0-15 reserved for library; bits 16 and higher for apps
+            Bit 0: Visited
+            Bit 1: DFS type has been set, versus not set
+            Bit 2: DFS tree edge, versus cycle edge (co-tree edge, etc.)
+            Bit 3: DFS arc to descendant, versus arc to ancestor
+            Bit 4: Inverted (same as marking an edge with a "sign" of -1)
+            Bit 5: Arc is directed into the containing vertex only
+            Bit 6: Arc is directed from the containing vertex only
+     ********************************************************************/
 
-	typedef struct
-	{
-		int link[2];
-		int neighbor;
-		unsigned flags;
-	} edgeRec;
+    typedef struct
+    {
+        int link[2];
+        int neighbor;
+        unsigned flags;
+    } edgeRec;
 
-	typedef edgeRec *edgeRecP;
+    typedef edgeRec *edgeRecP;
 
 #if NIL == 0
 #define gp_IsArc(e) (e)
@@ -129,7 +129,7 @@ extern "C"
 #define gp_ClearEdgeType(theGraph, e) (theGraph->E[e].flags &= ~EDGE_TYPE_MASK)
 #define gp_SetEdgeType(theGraph, e, type) (theGraph->E[e].flags |= type)
 #define gp_ResetEdgeType(theGraph, e, type) \
-	(theGraph->E[e].flags = (theGraph->E[e].flags & ~EDGE_TYPE_MASK) | type)
+    (theGraph->E[e].flags = (theGraph->E[e].flags & ~EDGE_TYPE_MASK) | type)
 
 #define EDGEFLAG_INVERTED_MASK 16
 #define gp_GetEdgeFlagInverted(theGraph, e) (theGraph->E[e].flags & EDGEFLAG_INVERTED_MASK)
@@ -147,68 +147,68 @@ extern "C"
 // A direction of 0 clears directedness. Otherwise, edge record e is set
 // to edgeFlag_Direction and e's twin arc is set to the opposing setting.
 #define gp_SetDirection(theGraph, e, edgeFlag_Direction)                                       \
-	{                                                                                          \
-		if (edgeFlag_Direction == EDGEFLAG_DIRECTION_INONLY)                                   \
-		{                                                                                      \
-			theGraph->E[e].flags |= EDGEFLAG_DIRECTION_INONLY;                                 \
-			theGraph->E[gp_GetTwinArc(theGraph, e)].flags |= EDGEFLAG_DIRECTION_OUTONLY;       \
-		}                                                                                      \
-		else if (edgeFlag_Direction == EDGEFLAG_DIRECTION_OUTONLY)                             \
-		{                                                                                      \
-			theGraph->E[e].flags |= EDGEFLAG_DIRECTION_OUTONLY;                                \
-			theGraph->E[gp_GetTwinArc(theGraph, e)].flags |= EDGEFLAG_DIRECTION_INONLY;        \
-		}                                                                                      \
-		else                                                                                   \
-		{                                                                                      \
-			theGraph->E[e].flags &= ~(EDGEFLAG_DIRECTION_INONLY | EDGEFLAG_DIRECTION_OUTONLY); \
-			theGraph->E[gp_GetTwinArc(theGraph, e)].flags &= ~EDGEFLAG_DIRECTION_MASK;         \
-		}                                                                                      \
-	}
+    {                                                                                          \
+        if (edgeFlag_Direction == EDGEFLAG_DIRECTION_INONLY)                                   \
+        {                                                                                      \
+            theGraph->E[e].flags |= EDGEFLAG_DIRECTION_INONLY;                                 \
+            theGraph->E[gp_GetTwinArc(theGraph, e)].flags |= EDGEFLAG_DIRECTION_OUTONLY;       \
+        }                                                                                      \
+        else if (edgeFlag_Direction == EDGEFLAG_DIRECTION_OUTONLY)                             \
+        {                                                                                      \
+            theGraph->E[e].flags |= EDGEFLAG_DIRECTION_OUTONLY;                                \
+            theGraph->E[gp_GetTwinArc(theGraph, e)].flags |= EDGEFLAG_DIRECTION_INONLY;        \
+        }                                                                                      \
+        else                                                                                   \
+        {                                                                                      \
+            theGraph->E[e].flags &= ~(EDGEFLAG_DIRECTION_INONLY | EDGEFLAG_DIRECTION_OUTONLY); \
+            theGraph->E[gp_GetTwinArc(theGraph, e)].flags &= ~EDGEFLAG_DIRECTION_MASK;         \
+        }                                                                                      \
+    }
 
 #define gp_CopyEdgeRec(dstGraph, edst, srcGraph, esrc) (dstGraph->E[edst] = srcGraph->E[esrc])
 
-	/********************************************************************
-	 Vertex Record Definition
+    /********************************************************************
+     Vertex Record Definition
 
-	 This record definition provides the data members needed for the
-	 core structural information for both vertices and virtual vertices.
-	 Vertices are also equipped with additional information provided by
-	 the vertexInfo structure.
+     This record definition provides the data members needed for the
+     core structural information for both vertices and virtual vertices.
+     Vertices are also equipped with additional information provided by
+     the vertexInfo structure.
 
-	 The vertices of a graph are stored in the first N locations of array V.
-	 Virtual vertices are secondary vertices used to help represent the
-	 main vertices in substructural components of a graph (e.g. biconnected
-	 components).
+     The vertices of a graph are stored in the first N locations of array V.
+     Virtual vertices are secondary vertices used to help represent the
+     main vertices in substructural components of a graph (e.g. biconnected
+     components).
 
-	 link[2]: the first and last edge records (arcs) in the adjacency list
-			  of the vertex.
+     link[2]: the first and last edge records (arcs) in the adjacency list
+              of the vertex.
 
-	 index: In vertices, stores either the depth first index of a vertex or
-			the original array index of the vertex if the vertices of the
-			graph are sorted by DFI.
-			In virtual vertices, the index may be used to indicate the vertex
-			that the virtual vertex represents, unless an algorithm has some
-			other way of making the association (for example, the planarity
-			algorithms rely on biconnected components and therefore place
-			virtual vertices of a vertex at positions corresponding to the
-			DFS children of the vertex).
+     index: In vertices, stores either the depth first index of a vertex or
+            the original array index of the vertex if the vertices of the
+            graph are sorted by DFI.
+            In virtual vertices, the index may be used to indicate the vertex
+            that the virtual vertex represents, unless an algorithm has some
+            other way of making the association (for example, the planarity
+            algorithms rely on biconnected components and therefore place
+            virtual vertices of a vertex at positions corresponding to the
+            DFS children of the vertex).
 
-	 flags: Bits 0-15 reserved for library; bits 16 and higher for apps
-			Bit 0: visited, for vertices and virtual vertices
-					Use in lieu of TYPE_VERTEX_VISITED in K4 algorithm
-			Bit 1: Obstruction type VERTEX_TYPE_SET (versus not set, i.e. VERTEX_TYPE_UNKNOWN)
-			Bit 2: Obstruction type qualifier RYW (set) versus RXW (clear)
-			Bit 3: Obstruction type qualifier high (set) versus low (clear)
-	 ********************************************************************/
+     flags: Bits 0-15 reserved for library; bits 16 and higher for apps
+            Bit 0: visited, for vertices and virtual vertices
+                    Use in lieu of TYPE_VERTEX_VISITED in K4 algorithm
+            Bit 1: Obstruction type VERTEX_TYPE_SET (versus not set, i.e. VERTEX_TYPE_UNKNOWN)
+            Bit 2: Obstruction type qualifier RYW (set) versus RXW (clear)
+            Bit 3: Obstruction type qualifier high (set) versus low (clear)
+     ********************************************************************/
 
-	typedef struct
-	{
-		int link[2];
-		int index;
-		unsigned flags;
-	} vertexRec;
+    typedef struct
+    {
+        int link[2];
+        int index;
+        unsigned flags;
+    } vertexRec;
 
-	typedef vertexRec *vertexRecP;
+    typedef vertexRec *vertexRecP;
 
 // Accessors for vertex adjacency list links
 #define gp_GetFirstArc(theGraph, v) (theGraph->V[v].link[0])
@@ -312,101 +312,101 @@ extern "C"
 #define gp_ClearVertexObstructionType(theGraph, v) (theGraph->V[v].flags &= ~VERTEX_OBSTRUCTIONTYPE_MASK)
 #define gp_SetVertexObstructionType(theGraph, v, type) (theGraph->V[v].flags |= type)
 #define gp_ResetVertexObstructionType(theGraph, v, type) \
-	(theGraph->V[v].flags = (theGraph->V[v].flags & ~VERTEX_OBSTRUCTIONTYPE_MASK) | type)
+    (theGraph->V[v].flags = (theGraph->V[v].flags & ~VERTEX_OBSTRUCTIONTYPE_MASK) | type)
 
 #define gp_CopyVertexRec(dstGraph, vdst, srcGraph, vsrc) (dstGraph->V[vdst] = srcGraph->V[vsrc])
 
 #define gp_SwapVertexRec(dstGraph, vdst, srcGraph, vsrc) \
-	{                                                    \
-		vertexRec tempV = dstGraph->V[vdst];             \
-		dstGraph->V[vdst] = srcGraph->V[vsrc];           \
-		srcGraph->V[vsrc] = tempV;                       \
-	}
+    {                                                    \
+        vertexRec tempV = dstGraph->V[vdst];             \
+        dstGraph->V[vdst] = srcGraph->V[vsrc];           \
+        srcGraph->V[vsrc] = tempV;                       \
+    }
 
-	/********************************************************************
-	 This structure defines a pair of links used by each vertex and virtual vertex
-	 to create "short circuit" paths that eliminate unimportant vertices from
-	 the external face, enabling more efficient traversal of the external face.
+    /********************************************************************
+     This structure defines a pair of links used by each vertex and virtual vertex
+     to create "short circuit" paths that eliminate unimportant vertices from
+     the external face, enabling more efficient traversal of the external face.
 
-	 It is also possible to embed the "short circuit" edges, but this approach
-	 creates a better separation of concerns, imparts greater clarity, and
-	 removes exceptionalities for handling additional fake "short circuit" edges.
+     It is also possible to embed the "short circuit" edges, but this approach
+     creates a better separation of concerns, imparts greater clarity, and
+     removes exceptionalities for handling additional fake "short circuit" edges.
 
-	 vertex[2]: The two adjacent vertices along the external face, possibly
-				short-circuiting paths of inactive vertices.
-	*/
+     vertex[2]: The two adjacent vertices along the external face, possibly
+                short-circuiting paths of inactive vertices.
+    */
 
-	typedef struct
-	{
-		int vertex[2];
-	} extFaceLinkRec;
+    typedef struct
+    {
+        int vertex[2];
+    } extFaceLinkRec;
 
-	typedef extFaceLinkRec *extFaceLinkRecP;
+    typedef extFaceLinkRec *extFaceLinkRecP;
 
 #define gp_GetExtFaceVertex(theGraph, v, link) (theGraph->extFace[v].vertex[link])
 #define gp_SetExtFaceVertex(theGraph, v, link, theVertex) (theGraph->extFace[v].vertex[link] = theVertex)
 
-	/********************************************************************
-	 Vertex Info Structure Definition.
+    /********************************************************************
+     Vertex Info Structure Definition.
 
-	 This structure equips the primary (non-virtual) vertices with additional
-	 information needed for lowpoint and planarity-related algorithms.
+     This structure equips the primary (non-virtual) vertices with additional
+     information needed for lowpoint and planarity-related algorithms.
 
-		parent: The DFI of the DFS tree parent of this vertex
-		leastAncestor: min(DFI of neighbors connected by backedge)
-		lowpoint: min(leastAncestor, min(lowpoint of DFS Children))
+        parent: The DFI of the DFS tree parent of this vertex
+        leastAncestor: min(DFI of neighbors connected by backedge)
+        lowpoint: min(leastAncestor, min(lowpoint of DFS Children))
 
-		visitedInfo: enables algorithms to manage vertex visitation with more than
-					 just a flag.  For example, the planarity test flags visitation
-					 as a step number that implicitly resets on each step, whereas
-					 part of the planar drawing method signifies a first visitation
-					 by storing the index of the first edge used to reach a vertex
-		pertinentEdge: Used by the planarity method; during Walkup, each vertex
-					that is directly adjacent via a back edge to the vertex v
-					currently being embedded will have the forward edge's index
-					stored in this field.  During Walkdown, each vertex for which
-					this field is set will cause a back edge to be embedded.
-					Implicitly resets at each vertex step of the planarity method
-		pertinentRootsList: used by Walkup to store a list of child bicomp roots of
-					a vertex descendant of the current vertex that are pertinent
-					and must be merged by the Walkdown in order to embed the cycle
-					edges of the current vertex.  Future pertinent child bicomp roots
-					are placed at the end of the list to ensure bicomps that are
-					only pertinent are processed first.
-		futurePertinentChild: indicates a DFS child with a lowpoint less than the
-					current vertex v.  This member is initialized to the start of
-					the sortedDFSChildList and is advanced in a relaxed manner as
-					needed until one with a lowpoint less than v is found or until
-					there are no more children.
-		sortedDFSChildList: at the start of embedding, the list of DFS children of
-					this vertex is calculated in ascending order by DFI (sorted in
-					linear time). The list is used during Walkdown processing of
-					a vertex to process all of its children.  It is also used in
-					future pertinence management when processing the ancestors of
-					the vertex. When a child C is merged into the same bicomp as
-					the vertex, it is removed from the list.
-		fwdArcList: at the start of embedding, the "back" edges from a vertex to
-					its DFS *descendants* (i.e. the forward arcs of the back edges)
-					are separated from the main adjacency list and placed in a
-					circular list until they are embedded. The list is sorted in
-					ascending DFI order of the descendants (in linear time).
-					This member indicates a node in that list.
-	*/
+        visitedInfo: enables algorithms to manage vertex visitation with more than
+                     just a flag.  For example, the planarity test flags visitation
+                     as a step number that implicitly resets on each step, whereas
+                     part of the planar drawing method signifies a first visitation
+                     by storing the index of the first edge used to reach a vertex
+        pertinentEdge: Used by the planarity method; during Walkup, each vertex
+                    that is directly adjacent via a back edge to the vertex v
+                    currently being embedded will have the forward edge's index
+                    stored in this field.  During Walkdown, each vertex for which
+                    this field is set will cause a back edge to be embedded.
+                    Implicitly resets at each vertex step of the planarity method
+        pertinentRootsList: used by Walkup to store a list of child bicomp roots of
+                    a vertex descendant of the current vertex that are pertinent
+                    and must be merged by the Walkdown in order to embed the cycle
+                    edges of the current vertex.  Future pertinent child bicomp roots
+                    are placed at the end of the list to ensure bicomps that are
+                    only pertinent are processed first.
+        futurePertinentChild: indicates a DFS child with a lowpoint less than the
+                    current vertex v.  This member is initialized to the start of
+                    the sortedDFSChildList and is advanced in a relaxed manner as
+                    needed until one with a lowpoint less than v is found or until
+                    there are no more children.
+        sortedDFSChildList: at the start of embedding, the list of DFS children of
+                    this vertex is calculated in ascending order by DFI (sorted in
+                    linear time). The list is used during Walkdown processing of
+                    a vertex to process all of its children.  It is also used in
+                    future pertinence management when processing the ancestors of
+                    the vertex. When a child C is merged into the same bicomp as
+                    the vertex, it is removed from the list.
+        fwdArcList: at the start of embedding, the "back" edges from a vertex to
+                    its DFS *descendants* (i.e. the forward arcs of the back edges)
+                    are separated from the main adjacency list and placed in a
+                    circular list until they are embedded. The list is sorted in
+                    ascending DFI order of the descendants (in linear time).
+                    This member indicates a node in that list.
+    */
 
-	typedef struct
-	{
-		int parent, leastAncestor, lowpoint;
+    typedef struct
+    {
+        int parent, leastAncestor, lowpoint;
 
-		int visitedInfo;
+        int visitedInfo;
 
-		int pertinentEdge,
-			pertinentRoots,
-			futurePertinentChild,
-			sortedDFSChildList,
-			fwdArcList;
-	} vertexInfo;
+        int pertinentEdge,
+            pertinentRoots,
+            futurePertinentChild,
+            sortedDFSChildList,
+            fwdArcList;
+    } vertexInfo;
 
-	typedef vertexInfo *vertexInfoP;
+    typedef vertexInfo *vertexInfoP;
 
 #define gp_GetVertexVisitedInfo(theGraph, v) (theGraph->VI[v].visitedInfo)
 #define gp_SetVertexVisitedInfo(theGraph, v, theVisitedInfo) (theGraph->VI[v].visitedInfo = theVisitedInfo)
@@ -432,16 +432,16 @@ extern "C"
 #define gp_GetVertexLastPertinentRootChild(theGraph, v) LCGetPrev(theGraph->BicompRootLists, theGraph->VI[v].pertinentRoots, NIL)
 
 #define gp_DeleteVertexPertinentRoot(theGraph, v, R) \
-	gp_SetVertexPertinentRootsList(theGraph, v,      \
-								   LCDelete(theGraph->BicompRootLists, gp_GetVertexPertinentRootsList(theGraph, v), gp_GetDFSChildFromRoot(theGraph, R)))
+    gp_SetVertexPertinentRootsList(theGraph, v,      \
+                                   LCDelete(theGraph->BicompRootLists, gp_GetVertexPertinentRootsList(theGraph, v), gp_GetDFSChildFromRoot(theGraph, R)))
 
 #define gp_PrependVertexPertinentRoot(theGraph, v, R) \
-	gp_SetVertexPertinentRootsList(theGraph, v,       \
-								   LCPrepend(theGraph->BicompRootLists, gp_GetVertexPertinentRootsList(theGraph, v), gp_GetDFSChildFromRoot(theGraph, R)))
+    gp_SetVertexPertinentRootsList(theGraph, v,       \
+                                   LCPrepend(theGraph->BicompRootLists, gp_GetVertexPertinentRootsList(theGraph, v), gp_GetDFSChildFromRoot(theGraph, R)))
 
 #define gp_AppendVertexPertinentRoot(theGraph, v, R) \
-	gp_SetVertexPertinentRootsList(theGraph, v,      \
-								   LCAppend(theGraph->BicompRootLists, gp_GetVertexPertinentRootsList(theGraph, v), gp_GetDFSChildFromRoot(theGraph, R)))
+    gp_SetVertexPertinentRootsList(theGraph, v,      \
+                                   LCAppend(theGraph->BicompRootLists, gp_GetVertexPertinentRootsList(theGraph, v), gp_GetDFSChildFromRoot(theGraph, R)))
 
 #define gp_GetVertexFuturePertinentChild(theGraph, v) (theGraph->VI[v].futurePertinentChild)
 #define gp_SetVertexFuturePertinentChild(theGraph, v, theFuturePertinentChild) (theGraph->VI[v].futurePertinentChild = theFuturePertinentChild)
@@ -450,18 +450,18 @@ extern "C"
 // Once futurePertinentChild advances past a child, no future planarity operation could make that child
 // relevant to future pertinence
 #define gp_UpdateVertexFuturePertinentChild(theGraph, w, v)                                             \
-	while (gp_IsVertex(theGraph->VI[w].futurePertinentChild))                                           \
-	{                                                                                                   \
-		/* Skip children that 1) aren't future pertinent, 2) have been merged into the bicomp with w */ \
-		if (gp_GetVertexLowpoint(theGraph, theGraph->VI[w].futurePertinentChild) >= v ||                \
-			gp_IsNotSeparatedDFSChild(theGraph, theGraph->VI[w].futurePertinentChild))                  \
-		{                                                                                               \
-			theGraph->VI[w].futurePertinentChild =                                                      \
-				gp_GetVertexNextDFSChild(theGraph, w, gp_GetVertexFuturePertinentChild(theGraph, w));   \
-		}                                                                                               \
-		else                                                                                            \
-			break;                                                                                      \
-	}
+    while (gp_IsVertex(theGraph->VI[w].futurePertinentChild))                                           \
+    {                                                                                                   \
+        /* Skip children that 1) aren't future pertinent, 2) have been merged into the bicomp with w */ \
+        if (gp_GetVertexLowpoint(theGraph, theGraph->VI[w].futurePertinentChild) >= v ||                \
+            gp_IsNotSeparatedDFSChild(theGraph, theGraph->VI[w].futurePertinentChild))                  \
+        {                                                                                               \
+            theGraph->VI[w].futurePertinentChild =                                                      \
+                gp_GetVertexNextDFSChild(theGraph, w, gp_GetVertexFuturePertinentChild(theGraph, w));   \
+        }                                                                                               \
+        else                                                                                            \
+            break;                                                                                      \
+    }
 
 #define gp_GetVertexSortedDFSChildList(theGraph, v) (theGraph->VI[v].sortedDFSChildList)
 #define gp_SetVertexSortedDFSChildList(theGraph, v, theSortedDFSChildList) (theGraph->VI[v].sortedDFSChildList = theSortedDFSChildList)
@@ -469,7 +469,7 @@ extern "C"
 #define gp_GetVertexNextDFSChild(theGraph, v, c) LCGetNext(theGraph->sortedDFSChildLists, gp_GetVertexSortedDFSChildList(theGraph, v), c)
 
 #define gp_AppendDFSChild(theGraph, v, c) \
-	LCAppend(theGraph->sortedDFSChildLists, gp_GetVertexSortedDFSChildList(theGraph, v), c)
+    LCAppend(theGraph->sortedDFSChildLists, gp_GetVertexSortedDFSChildList(theGraph, v), c)
 
 #define gp_GetVertexFwdArcList(theGraph, v) (theGraph->VI[v].fwdArcList)
 #define gp_SetVertexFwdArcList(theGraph, v, theFwdArcList) (theGraph->VI[v].fwdArcList = theFwdArcList)
@@ -477,39 +477,39 @@ extern "C"
 #define gp_CopyVertexInfo(dstGraph, dstI, srcGraph, srcI) (dstGraph->VI[dstI] = srcGraph->VI[srcI])
 
 #define gp_SwapVertexInfo(dstGraph, dstPos, srcGraph, srcPos) \
-	{                                                         \
-		vertexInfo tempVI = dstGraph->VI[dstPos];             \
-		dstGraph->VI[dstPos] = srcGraph->VI[srcPos];          \
-		srcGraph->VI[srcPos] = tempVI;                        \
-	}
+    {                                                         \
+        vertexInfo tempVI = dstGraph->VI[dstPos];             \
+        dstGraph->VI[dstPos] = srcGraph->VI[srcPos];          \
+        srcGraph->VI[srcPos] = tempVI;                        \
+    }
 
-	/********************************************************************
-	 Variables needed in embedding by Kuratowski subgraph isolator:
-			minorType: the type of planarity obstruction found.
-			v: the current vertex being processed
-			r: the root of the bicomp on which the Walkdown failed
-			x,y: stopping vertices on bicomp rooted by r
-			w: pertinent vertex on ext. face path below x and y
-			px, py: attachment points of x-y path,
-			z: Unused except in minors D and E (not needed in A, B, C).
+    /********************************************************************
+     Variables needed in embedding by Kuratowski subgraph isolator:
+            minorType: the type of planarity obstruction found.
+            v: the current vertex being processed
+            r: the root of the bicomp on which the Walkdown failed
+            x,y: stopping vertices on bicomp rooted by r
+            w: pertinent vertex on ext. face path below x and y
+            px, py: attachment points of x-y path,
+            z: Unused except in minors D and E (not needed in A, B, C).
 
-			ux,dx: endpoints of unembedded edge that helps connext x with
-					ancestor of v
-			uy,dy: endpoints of unembedded edge that helps connext y with
-					ancestor of v
-			dw: descendant endpoint in unembedded edge to v
-			uz,dz: endpoints of unembedded edge that helps connext z with
-					ancestor of v (for minors B and E, not A, C, D).
-	*/
+            ux,dx: endpoints of unembedded edge that helps connext x with
+                    ancestor of v
+            uy,dy: endpoints of unembedded edge that helps connext y with
+                    ancestor of v
+            dw: descendant endpoint in unembedded edge to v
+            uz,dz: endpoints of unembedded edge that helps connext z with
+                    ancestor of v (for minors B and E, not A, C, D).
+    */
 
-	typedef struct
-	{
-		int minorType;
-		int v, r, x, y, w, px, py, z;
-		int ux, dx, uy, dy, dw, uz, dz;
-	} isolatorContext;
+    typedef struct
+    {
+        int minorType;
+        int v, r, x, y, w, px, py, z;
+        int ux, dx, uy, dy, dw, uz, dz;
+    } isolatorContext;
 
-	typedef isolatorContext *isolatorContextP;
+    typedef isolatorContext *isolatorContextP;
 
 #define MINORTYPE_A 1
 #define MINORTYPE_B 2
@@ -525,69 +525,69 @@ extern "C"
 #define MINORTYPE_E6 1024
 #define MINORTYPE_E7 2048
 
-	/********************************************************************
-	 Graph structure definition
-			V : Array of vertex records (allocated size N + NV)
-			VI: Array of additional vertexInfo structures (allocated size N)
-			N : Number of primary vertices (the "order" of the graph)
-			NV: Number of virtual vertices (currently always equal to N)
+    /********************************************************************
+     Graph structure definition
+            V : Array of vertex records (allocated size N + NV)
+            VI: Array of additional vertexInfo structures (allocated size N)
+            N : Number of primary vertices (the "order" of the graph)
+            NV: Number of virtual vertices (currently always equal to N)
 
-			E : Array of edge records (edge records come in pairs and represent half edges, or arcs)
-			M: Number of edges (the "size" of the graph)
-			arcCapacity: the maximum number of edge records allowed in E (the size of E)
-			edgeHoles: free locations in E where edges have been deleted
+            E : Array of edge records (edge records come in pairs and represent half edges, or arcs)
+            M: Number of edges (the "size" of the graph)
+            arcCapacity: the maximum number of edge records allowed in E (the size of E)
+            edgeHoles: free locations in E where edges have been deleted
 
-			theStack: Used by various graph routines needing a stack
-			internalFlags: Additional state information about the graph
-			embedFlags: controls type of embedding (e.g. planar)
+            theStack: Used by various graph routines needing a stack
+            internalFlags: Additional state information about the graph
+            embedFlags: controls type of embedding (e.g. planar)
 
-			IC: contains additional useful variables for Kuratowski subgraph isolation.
-			BicompRootLists: storage space for pertinent bicomp root lists that develop
-							during embedding
-			sortedDFSChildLists: storage for the sorted DFS child lists of each vertex
-			extFace: Array of (N + NV) external face short circuit records
+            IC: contains additional useful variables for Kuratowski subgraph isolation.
+            BicompRootLists: storage space for pertinent bicomp root lists that develop
+                            during embedding
+            sortedDFSChildLists: storage for the sorted DFS child lists of each vertex
+            extFace: Array of (N + NV) external face short circuit records
 
-			extensions: a list of extension data structures
-			functions: a table of function pointers that can be overloaded to provide
-					   extension behaviors to the graph
-	*/
+            extensions: a list of extension data structures
+            functions: a table of function pointers that can be overloaded to provide
+                       extension behaviors to the graph
+    */
 
-	struct baseGraphStructure
-	{
-		vertexRecP V;
-		vertexInfoP VI;
-		int N, NV;
+    struct baseGraphStructure
+    {
+        vertexRecP V;
+        vertexInfoP VI;
+        int N, NV;
 
-		edgeRecP E;
-		int M, arcCapacity;
-		stackP edgeHoles;
+        edgeRecP E;
+        int M, arcCapacity;
+        stackP edgeHoles;
 
-		stackP theStack;
-		int internalFlags, embedFlags;
+        stackP theStack;
+        int internalFlags, embedFlags;
 
-		isolatorContext IC;
-		listCollectionP BicompRootLists, sortedDFSChildLists;
-		extFaceLinkRecP extFace;
+        isolatorContext IC;
+        listCollectionP BicompRootLists, sortedDFSChildLists;
+        extFaceLinkRecP extFace;
 
-		graphExtensionP extensions;
-		graphFunctionTable functions;
-	};
+        graphExtensionP extensions;
+        graphFunctionTable functions;
+    };
 
-	typedef struct baseGraphStructure baseGraphStructure;
-	typedef baseGraphStructure *graphP;
+    typedef struct baseGraphStructure baseGraphStructure;
+    typedef baseGraphStructure *graphP;
 
-	/* Flags for graph:
-			FLAGS_DFSNUMBERED is set if DFSNumber() has succeeded for the graph
-			FLAGS_SORTEDBYDFI records whether the graph is in original vertex
-					order or sorted by depth first index.  Successive calls to
-					SortVertices() toggle this bit.
-			FLAGS_OBSTRUCTIONFOUND is set by gp_Embed() if an embedding obstruction
-					was isolated in the graph returned.  It is cleared by gp_Embed()
-					if an obstruction was not found.  The flag is used by
-					gp_TestEmbedResultIntegrity() to decide what integrity tests to run.
-			FLAGS_ZEROBASEDIO is typically set by gp_Read() to indicate that the
-					adjacency list representation began with index 0.
-	*/
+    /* Flags for graph:
+            FLAGS_DFSNUMBERED is set if DFSNumber() has succeeded for the graph
+            FLAGS_SORTEDBYDFI records whether the graph is in original vertex
+                    order or sorted by depth first index.  Successive calls to
+                    SortVertices() toggle this bit.
+            FLAGS_OBSTRUCTIONFOUND is set by gp_Embed() if an embedding obstruction
+                    was isolated in the graph returned.  It is cleared by gp_Embed()
+                    if an obstruction was not found.  The flag is used by
+                    gp_TestEmbedResultIntegrity() to decide what integrity tests to run.
+            FLAGS_ZEROBASEDIO is typically set by gp_Read() to indicate that the
+                    adjacency list representation began with index 0.
+    */
 
 #define FLAGS_DFSNUMBERED 1
 #define FLAGS_SORTEDBYDFI 2
@@ -602,190 +602,190 @@ extern "C"
 // as if the adjacency list were circular, i.e. that the
 // first arc and last arc were linked
 #define gp_GetNextArcCircular(theGraph, e) \
-	(gp_IsArc(gp_GetNextArc(theGraph, e)) ? gp_GetNextArc(theGraph, e) : gp_GetFirstArc(theGraph, theGraph->E[gp_GetTwinArc(theGraph, e)].neighbor))
+    (gp_IsArc(gp_GetNextArc(theGraph, e)) ? gp_GetNextArc(theGraph, e) : gp_GetFirstArc(theGraph, theGraph->E[gp_GetTwinArc(theGraph, e)].neighbor))
 
 #define gp_GetPrevArcCircular(theGraph, e) \
-	(gp_IsArc(gp_GetPrevArc(theGraph, e)) ? gp_GetPrevArc(theGraph, e) : gp_GetLastArc(theGraph, theGraph->E[gp_GetTwinArc(theGraph, e)].neighbor))
+    (gp_IsArc(gp_GetPrevArc(theGraph, e)) ? gp_GetPrevArc(theGraph, e) : gp_GetLastArc(theGraph, theGraph->E[gp_GetTwinArc(theGraph, e)].neighbor))
 
 // Definitions that make the cross-link binding between a vertex and an arc
 // The old first or last arc should be bound to this arc by separate calls,
 // e.g. see gp_AttachFirstArc() and gp_AttachLastArc()
 #define gp_BindFirstArc(theGraph, v, arc)  \
-	{                                      \
-		gp_SetPrevArc(theGraph, arc, NIL); \
-		gp_SetFirstArc(theGraph, v, arc);  \
-	}
+    {                                      \
+        gp_SetPrevArc(theGraph, arc, NIL); \
+        gp_SetFirstArc(theGraph, v, arc);  \
+    }
 
 #define gp_BindLastArc(theGraph, v, arc)   \
-	{                                      \
-		gp_SetNextArc(theGraph, arc, NIL); \
-		gp_SetLastArc(theGraph, v, arc);   \
-	}
+    {                                      \
+        gp_SetNextArc(theGraph, arc, NIL); \
+        gp_SetLastArc(theGraph, v, arc);   \
+    }
 
 // Attaches an arc between the current binding between a vertex and its first arc
 #define gp_AttachFirstArc(theGraph, v, arc)                            \
-	{                                                                  \
-		if (gp_IsArc(gp_GetFirstArc(theGraph, v)))                     \
-		{                                                              \
-			gp_SetNextArc(theGraph, arc, gp_GetFirstArc(theGraph, v)); \
-			gp_SetPrevArc(theGraph, gp_GetFirstArc(theGraph, v), arc); \
-		}                                                              \
-		else                                                           \
-			gp_BindLastArc(theGraph, v, arc);                          \
-		gp_BindFirstArc(theGraph, v, arc);                             \
-	}
+    {                                                                  \
+        if (gp_IsArc(gp_GetFirstArc(theGraph, v)))                     \
+        {                                                              \
+            gp_SetNextArc(theGraph, arc, gp_GetFirstArc(theGraph, v)); \
+            gp_SetPrevArc(theGraph, gp_GetFirstArc(theGraph, v), arc); \
+        }                                                              \
+        else                                                           \
+            gp_BindLastArc(theGraph, v, arc);                          \
+        gp_BindFirstArc(theGraph, v, arc);                             \
+    }
 
 // Attaches an arc between the current binding betwen a vertex and its last arc
 #define gp_AttachLastArc(theGraph, v, arc)                            \
-	{                                                                 \
-		if (gp_IsArc(gp_GetLastArc(theGraph, v)))                     \
-		{                                                             \
-			gp_SetPrevArc(theGraph, arc, gp_GetLastArc(theGraph, v)); \
-			gp_SetNextArc(theGraph, gp_GetLastArc(theGraph, v), arc); \
-		}                                                             \
-		else                                                          \
-			gp_BindFirstArc(theGraph, v, arc);                        \
-		gp_BindLastArc(theGraph, v, arc);                             \
-	}
+    {                                                                 \
+        if (gp_IsArc(gp_GetLastArc(theGraph, v)))                     \
+        {                                                             \
+            gp_SetPrevArc(theGraph, arc, gp_GetLastArc(theGraph, v)); \
+            gp_SetNextArc(theGraph, gp_GetLastArc(theGraph, v), arc); \
+        }                                                             \
+        else                                                          \
+            gp_BindFirstArc(theGraph, v, arc);                        \
+        gp_BindLastArc(theGraph, v, arc);                             \
+    }
 
 // Moves an arc that is in the adjacency list of v to the start of the adjacency list
 #define gp_MoveArcToFirst(theGraph, v, arc)                                                      \
-	if (arc != gp_GetFirstArc(theGraph, v))                                                      \
-	{                                                                                            \
-		/* If the arc is last in the adjacency list of uparent,                                  \
-		   then we delete it by adjacency list end management */                                 \
-		if (arc == gp_GetLastArc(theGraph, v))                                                   \
-		{                                                                                        \
-			gp_SetNextArc(theGraph, gp_GetPrevArc(theGraph, arc), NIL);                          \
-			gp_SetLastArc(theGraph, v, gp_GetPrevArc(theGraph, arc));                            \
-		}                                                                                        \
-		/* Otherwise, we delete the arc from the middle of the list */                           \
-		else                                                                                     \
-		{                                                                                        \
-			gp_SetNextArc(theGraph, gp_GetPrevArc(theGraph, arc), gp_GetNextArc(theGraph, arc)); \
-			gp_SetPrevArc(theGraph, gp_GetNextArc(theGraph, arc), gp_GetPrevArc(theGraph, arc)); \
-		}                                                                                        \
+    if (arc != gp_GetFirstArc(theGraph, v))                                                      \
+    {                                                                                            \
+        /* If the arc is last in the adjacency list of uparent,                                  \
+           then we delete it by adjacency list end management */                                 \
+        if (arc == gp_GetLastArc(theGraph, v))                                                   \
+        {                                                                                        \
+            gp_SetNextArc(theGraph, gp_GetPrevArc(theGraph, arc), NIL);                          \
+            gp_SetLastArc(theGraph, v, gp_GetPrevArc(theGraph, arc));                            \
+        }                                                                                        \
+        /* Otherwise, we delete the arc from the middle of the list */                           \
+        else                                                                                     \
+        {                                                                                        \
+            gp_SetNextArc(theGraph, gp_GetPrevArc(theGraph, arc), gp_GetNextArc(theGraph, arc)); \
+            gp_SetPrevArc(theGraph, gp_GetNextArc(theGraph, arc), gp_GetPrevArc(theGraph, arc)); \
+        }                                                                                        \
                                                                                                  \
-		/* Now add arc e as the new first arc of uparent.                                        \
-		   Note that the adjacency list is non-empty at this time */                             \
-		gp_SetNextArc(theGraph, arc, gp_GetFirstArc(theGraph, v));                               \
-		gp_SetPrevArc(theGraph, gp_GetFirstArc(theGraph, v), arc);                               \
-		gp_BindFirstArc(theGraph, v, arc);                                                       \
-	}
+        /* Now add arc e as the new first arc of uparent.                                        \
+           Note that the adjacency list is non-empty at this time */                             \
+        gp_SetNextArc(theGraph, arc, gp_GetFirstArc(theGraph, v));                               \
+        gp_SetPrevArc(theGraph, gp_GetFirstArc(theGraph, v), arc);                               \
+        gp_BindFirstArc(theGraph, v, arc);                                                       \
+    }
 
 // Moves an arc that is in the adjacency list of v to the end of the adjacency list
 #define gp_MoveArcToLast(theGraph, v, arc)                                                       \
-	if (arc != gp_GetLastArc(theGraph, v))                                                       \
-	{                                                                                            \
-		/* If the arc is first in the adjacency list of vertex v,                                \
-		   then we delete it by adjacency list end management */                                 \
-		if (arc == gp_GetFirstArc(theGraph, v))                                                  \
-		{                                                                                        \
-			gp_SetPrevArc(theGraph, gp_GetNextArc(theGraph, arc), NIL);                          \
-			gp_SetFirstArc(theGraph, v, gp_GetNextArc(theGraph, arc));                           \
-		}                                                                                        \
-		/* Otherwise, we delete the arc from the middle of the list */                           \
-		else                                                                                     \
-		{                                                                                        \
-			gp_SetNextArc(theGraph, gp_GetPrevArc(theGraph, arc), gp_GetNextArc(theGraph, arc)); \
-			gp_SetPrevArc(theGraph, gp_GetNextArc(theGraph, arc), gp_GetPrevArc(theGraph, arc)); \
-		}                                                                                        \
+    if (arc != gp_GetLastArc(theGraph, v))                                                       \
+    {                                                                                            \
+        /* If the arc is first in the adjacency list of vertex v,                                \
+           then we delete it by adjacency list end management */                                 \
+        if (arc == gp_GetFirstArc(theGraph, v))                                                  \
+        {                                                                                        \
+            gp_SetPrevArc(theGraph, gp_GetNextArc(theGraph, arc), NIL);                          \
+            gp_SetFirstArc(theGraph, v, gp_GetNextArc(theGraph, arc));                           \
+        }                                                                                        \
+        /* Otherwise, we delete the arc from the middle of the list */                           \
+        else                                                                                     \
+        {                                                                                        \
+            gp_SetNextArc(theGraph, gp_GetPrevArc(theGraph, arc), gp_GetNextArc(theGraph, arc)); \
+            gp_SetPrevArc(theGraph, gp_GetNextArc(theGraph, arc), gp_GetPrevArc(theGraph, arc)); \
+        }                                                                                        \
                                                                                                  \
-		/* Now add the arc as the new last arc of v.                                             \
-		   Note that the adjacency list is non-empty at this time */                             \
-		gp_SetPrevArc(theGraph, arc, gp_GetLastArc(theGraph, v));                                \
-		gp_SetNextArc(theGraph, gp_GetLastArc(theGraph, v), arc);                                \
-		gp_BindLastArc(theGraph, v, arc);                                                        \
-	}
+        /* Now add the arc as the new last arc of v.                                             \
+           Note that the adjacency list is non-empty at this time */                             \
+        gp_SetPrevArc(theGraph, arc, gp_GetLastArc(theGraph, v));                                \
+        gp_SetNextArc(theGraph, gp_GetLastArc(theGraph, v), arc);                                \
+        gp_BindLastArc(theGraph, v, arc);                                                        \
+    }
 
-	// Methods for attaching an arc into the adjacency list or detaching an arc from it.
-	// The terms AddArc, InsertArc and DeleteArc are not used because the arcs are not
-	// inserted or added to or deleted from storage (only whole edges are inserted or deleted)
-	void gp_AttachArc(graphP theGraph, int v, int e, int link, int newArc);
-	void gp_DetachArc(graphP theGraph, int arc);
+    // Methods for attaching an arc into the adjacency list or detaching an arc from it.
+    // The terms AddArc, InsertArc and DeleteArc are not used because the arcs are not
+    // inserted or added to or deleted from storage (only whole edges are inserted or deleted)
+    void gp_AttachArc(graphP theGraph, int v, int e, int link, int newArc);
+    void gp_DetachArc(graphP theGraph, int arc);
 
-	/********************************************************************
-	 PERTINENT()
-	 A vertex is pertinent in a partially processed graph if there is an
-	 unprocessed back edge between the vertex v whose edges are currently
-	 being processed and either the vertex or a DFS descendant D of the
-	 vertex not in the same bicomp as the vertex.
+    /********************************************************************
+     PERTINENT()
+     A vertex is pertinent in a partially processed graph if there is an
+     unprocessed back edge between the vertex v whose edges are currently
+     being processed and either the vertex or a DFS descendant D of the
+     vertex not in the same bicomp as the vertex.
 
-	 The vertex is either directly adjacent to v by an unembedded back edge
-	 or there is an unembedded back edge (v, D) and the vertex is a cut
-	 vertex in the partially processed graph along the DFS tree path from
-	 D to v.
+     The vertex is either directly adjacent to v by an unembedded back edge
+     or there is an unembedded back edge (v, D) and the vertex is a cut
+     vertex in the partially processed graph along the DFS tree path from
+     D to v.
 
-	 Pertinence is a dynamic property that can change for a vertex after
-	 each edge addition.  In other words, a vertex can become non-pertinent
-	 during step v as more back edges to v are embedded.
-	 ********************************************************************/
+     Pertinence is a dynamic property that can change for a vertex after
+     each edge addition.  In other words, a vertex can become non-pertinent
+     during step v as more back edges to v are embedded.
+     ********************************************************************/
 
 #define PERTINENT(theGraph, theVertex)                           \
-	(gp_IsArc(gp_GetVertexPertinentEdge(theGraph, theVertex)) || \
-	 gp_IsVertex(gp_GetVertexPertinentRootsList(theGraph, theVertex)))
+    (gp_IsArc(gp_GetVertexPertinentEdge(theGraph, theVertex)) || \
+     gp_IsVertex(gp_GetVertexPertinentRootsList(theGraph, theVertex)))
 
 #define NOTPERTINENT(theGraph, theVertex)                           \
-	(gp_IsNotArc(gp_GetVertexPertinentEdge(theGraph, theVertex)) && \
-	 gp_IsNotVertex(gp_GetVertexPertinentRootsList(theGraph, theVertex)))
+    (gp_IsNotArc(gp_GetVertexPertinentEdge(theGraph, theVertex)) && \
+     gp_IsNotVertex(gp_GetVertexPertinentRootsList(theGraph, theVertex)))
 
-	/********************************************************************
-	 FUTUREPERTINENT()
-	 A vertex is future-pertinent in a partially processed graph if
-	 there is an unprocessed back edge between a DFS ancestor A of the
-	 vertex v whose edges are currently being processed and either
-	 theVertex or a DFS descendant D of theVertex not in the same bicomp
-	 as theVertex.
+    /********************************************************************
+     FUTUREPERTINENT()
+     A vertex is future-pertinent in a partially processed graph if
+     there is an unprocessed back edge between a DFS ancestor A of the
+     vertex v whose edges are currently being processed and either
+     theVertex or a DFS descendant D of theVertex not in the same bicomp
+     as theVertex.
 
-	 Either theVertex is directly adjacent to A by an unembedded back edge
-	 or there is an unembedded back edge (A, D) and theVertex is a cut
-	 vertex in the partially processed graph along the DFS tree path from
-	 D to A.
+     Either theVertex is directly adjacent to A by an unembedded back edge
+     or there is an unembedded back edge (A, D) and theVertex is a cut
+     vertex in the partially processed graph along the DFS tree path from
+     D to A.
 
-	 If no more edges are added to the partially processed graph prior to
-	 processing the edges of A, then the vertex would be pertinent.
-	 The addition of edges to the partially processed graph can alter
-	 both the pertinence and future pertinence of a vertex.  For example,
-	 if the vertex is pertinent due to an unprocessed back edge (v, D1) and
-	 future pertinent due to an unprocessed back edge (A, D2), then the
-	 vertex may lose both its pertinence and future pertinence when edge
-	 (v, D1) is added if D2 is in the same subtree as D1.
+     If no more edges are added to the partially processed graph prior to
+     processing the edges of A, then the vertex would be pertinent.
+     The addition of edges to the partially processed graph can alter
+     both the pertinence and future pertinence of a vertex.  For example,
+     if the vertex is pertinent due to an unprocessed back edge (v, D1) and
+     future pertinent due to an unprocessed back edge (A, D2), then the
+     vertex may lose both its pertinence and future pertinence when edge
+     (v, D1) is added if D2 is in the same subtree as D1.
 
-	 Generally, pertinence and future pertinence are dynamic properties
-	 that can change for a vertex after each edge addition.
+     Generally, pertinence and future pertinence are dynamic properties
+     that can change for a vertex after each edge addition.
 
-	 Note that gp_UpdateVertexFuturePertinentChild() must be called before
-	 this macro. Since it is a statement and not a void expression, the
-	 desired commented out version does not compile (except with special
-	 compiler extensions not assumed by this code).
-	 ********************************************************************/
+     Note that gp_UpdateVertexFuturePertinentChild() must be called before
+     this macro. Since it is a statement and not a void expression, the
+     desired commented out version does not compile (except with special
+     compiler extensions not assumed by this code).
+     ********************************************************************/
 
 #define FUTUREPERTINENT(theGraph, theVertex, v)                    \
-	(theGraph->VI[theVertex].leastAncestor < v ||                  \
-	 (gp_IsVertex(theGraph->VI[theVertex].futurePertinentChild) && \
-	  theGraph->VI[theGraph->VI[theVertex].futurePertinentChild].lowpoint < v))
+    (theGraph->VI[theVertex].leastAncestor < v ||                  \
+     (gp_IsVertex(theGraph->VI[theVertex].futurePertinentChild) && \
+      theGraph->VI[theGraph->VI[theVertex].futurePertinentChild].lowpoint < v))
 
 #define NOTFUTUREPERTINENT(theGraph, theVertex, v)                    \
-	(theGraph->VI[theVertex].leastAncestor >= v &&                    \
-	 (gp_IsNotVertex(theGraph->VI[theVertex].futurePertinentChild) || \
-	  theGraph->VI[theGraph->VI[theVertex].futurePertinentChild].lowpoint >= v))
+    (theGraph->VI[theVertex].leastAncestor >= v &&                    \
+     (gp_IsNotVertex(theGraph->VI[theVertex].futurePertinentChild) || \
+      theGraph->VI[theGraph->VI[theVertex].futurePertinentChild].lowpoint >= v))
 
-	// This is the definition that would be preferrable if a while loop could be a void expression
-	// #define FUTUREPERTINENT(theGraph, theVertex, v)
-	//        (  theGraph->VI[theVertex].leastAncestor < v ||
-	//           ((gp_UpdateVertexFuturePertinentChild(theGraph, theVertex, v),
-	//        	   gp_IsArc(theGraph->VI[theVertex].futurePertinentChild)) &&
-	//             theGraph->VI[theGraph->VI[theVertex].futurePertinentChild].lowpoint < v) )
+    // This is the definition that would be preferrable if a while loop could be a void expression
+    // #define FUTUREPERTINENT(theGraph, theVertex, v)
+    //        (  theGraph->VI[theVertex].leastAncestor < v ||
+    //           ((gp_UpdateVertexFuturePertinentChild(theGraph, theVertex, v),
+    //             gp_IsArc(theGraph->VI[theVertex].futurePertinentChild)) &&
+    //             theGraph->VI[theGraph->VI[theVertex].futurePertinentChild].lowpoint < v) )
 
-	/********************************************************************
-	 INACTIVE()
-	 For planarity algorithms, a vertex is inactive if it is neither pertinent
-	 nor future pertinent.
-	 ********************************************************************/
+    /********************************************************************
+     INACTIVE()
+     For planarity algorithms, a vertex is inactive if it is neither pertinent
+     nor future pertinent.
+     ********************************************************************/
 
 #define INACTIVE(theGraph, theVertex, v)  \
-	(NOTPERTINENT(theGraph, theVertex) && \
-	 NOTFUTUREPERTINENT(theGraph, theVertex, v))
+    (NOTPERTINENT(theGraph, theVertex) && \
+     NOTFUTUREPERTINENT(theGraph, theVertex, v))
 
 #ifdef __cplusplus
 }

@@ -24,8 +24,8 @@ See the LICENSE.TXT file for licensing information.
 
 typedef struct
 {
-	clock_t hiresTime;
-	time_t lowresTime;
+    clock_t hiresTime;
+    time_t lowresTime;
 } platform_time;
 
 #define platform_GetTime(timeVar) (timeVar.hiresTime = clock(), timeVar.lowresTime = time(NULL))
@@ -35,7 +35,7 @@ typedef struct
 // If we're getting a duration longer than that, then we fall back to the coarser time() measure
 
 #define platform_GetDuration(startTime, endTime) ( \
-	((double)(endTime.lowresTime - startTime.lowresTime)) > 2000 ? ((double)(endTime.lowresTime - startTime.lowresTime)) : ((double)(endTime.hiresTime - startTime.hiresTime)) / CLOCKS_PER_SEC)
+    ((double)(endTime.lowresTime - startTime.lowresTime)) > 2000 ? ((double)(endTime.lowresTime - startTime.lowresTime)) : ((double)(endTime.hiresTime - startTime.hiresTime)) / CLOCKS_PER_SEC)
 
 /*
 #define platform_time clock_t
