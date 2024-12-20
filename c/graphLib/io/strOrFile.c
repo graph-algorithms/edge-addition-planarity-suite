@@ -19,23 +19,23 @@ See the LICENSE.TXT file for licensing information.
 // TODO: (#56) add char fileMode to differentiate between read and write modes
 strOrFileP sf_New(FILE *pFile, char *theStr)
 {
-	strOrFileP theStrOrFile;
-	if (((pFile == NULL) && (theStr == NULL)) || ((pFile != NULL) && (theStr != NULL)))
-		return NULL;
+    strOrFileP theStrOrFile;
+    if (((pFile == NULL) && (theStr == NULL)) || ((pFile != NULL) && (theStr != NULL)))
+        return NULL;
 
-	theStrOrFile = (strOrFileP)calloc(sizeof(strOrFile), 1);
-	if (theStrOrFile != NULL)
-	{
-		if (pFile != NULL)
-			theStrOrFile->pFile = pFile;
-		else if ((theStr != NULL))
-		{
-			theStrOrFile->theStr = theStr;
-			theStrOrFile->theStrPos = 0;
-		}
-	}
+    theStrOrFile = (strOrFileP)calloc(sizeof(strOrFile), 1);
+    if (theStrOrFile != NULL)
+    {
+        if (pFile != NULL)
+            theStrOrFile->pFile = pFile;
+        else if ((theStr != NULL))
+        {
+            theStrOrFile->theStr = theStr;
+            theStrOrFile->theStrPos = 0;
+        }
+    }
 
-	return theStrOrFile;
+    return theStrOrFile;
 }
 
 /********************************************************************
@@ -46,22 +46,22 @@ strOrFileP sf_New(FILE *pFile, char *theStr)
  ********************************************************************/
 char sf_getc(strOrFileP theStrOrFile)
 {
-	char theChar = '\0';
+    char theChar = '\0';
 
-	if (theStrOrFile != NULL)
-	{
-		if (theStrOrFile->pFile != NULL)
-			theChar = getc(theStrOrFile->pFile);
-		else if (theStrOrFile->theStr != NULL)
-		{
-			if ((theStrOrFile->theStr + theStrOrFile->theStrPos)[0] == '\0')
-				return EOF;
+    if (theStrOrFile != NULL)
+    {
+        if (theStrOrFile->pFile != NULL)
+            theChar = getc(theStrOrFile->pFile);
+        else if (theStrOrFile->theStr != NULL)
+        {
+            if ((theStrOrFile->theStr + theStrOrFile->theStrPos)[0] == '\0')
+                return EOF;
 
-			theChar = theStrOrFile->theStr[theStrOrFile->theStrPos++];
-		}
-	}
+            theChar = theStrOrFile->theStr[theStrOrFile->theStrPos++];
+        }
+    }
 
-	return theChar;
+    return theChar;
 }
 
 /********************************************************************
@@ -77,24 +77,24 @@ char sf_getc(strOrFileP theStrOrFile)
  ********************************************************************/
 char sf_ungetc(char theChar, strOrFileP theStrOrFile)
 {
-	char charToReturn = EOF;
+    char charToReturn = EOF;
 
-	if (theStrOrFile != NULL)
-	{
-		if (theStrOrFile->pFile != NULL)
-			charToReturn = ungetc(theChar, theStrOrFile->pFile);
-		// Don't want to ungetc to an index before theStrOrFile->theStr start
-		else if (theStrOrFile->theStr != NULL)
-		{
-			if (theStrOrFile->theStrPos <= 0)
-				return EOF;
+    if (theStrOrFile != NULL)
+    {
+        if (theStrOrFile->pFile != NULL)
+            charToReturn = ungetc(theChar, theStrOrFile->pFile);
+        // Don't want to ungetc to an index before theStrOrFile->theStr start
+        else if (theStrOrFile->theStr != NULL)
+        {
+            if (theStrOrFile->theStrPos <= 0)
+                return EOF;
 
-			// Decrement theStrPos, then replace the character in theStr at that position with theChar
-			charToReturn = theStrOrFile->theStr[--(theStrOrFile->theStrPos)] = theChar;
-		}
-	}
+            // Decrement theStrPos, then replace the character in theStr at that position with theChar
+            charToReturn = theStrOrFile->theStr[--(theStrOrFile->theStrPos)] = theChar;
+        }
+    }
 
-	return charToReturn;
+    return charToReturn;
 }
 
 /********************************************************************
@@ -113,35 +113,35 @@ char sf_ungetc(char theChar, strOrFileP theStrOrFile)
  ********************************************************************/
 char *sf_fgets(char *str, int count, strOrFileP theStrOrFile)
 {
-	if (str == NULL || count < 0 || theStrOrFile == NULL)
-		return NULL;
+    if (str == NULL || count < 0 || theStrOrFile == NULL)
+        return NULL;
 
-	if (theStrOrFile->pFile != NULL)
-	{
-		return fgets(str, count, theStrOrFile->pFile);
-	}
-	else if (theStrOrFile->theStr != NULL && theStrOrFile->theStr[theStrOrFile->theStrPos] != '\0')
-	{
-		strncpy(str, theStrOrFile->theStr + theStrOrFile->theStrPos, count);
-		str[count - 1] = '\0';
-		// Handles \n and \r\n
-		char *findDelim = strchr(str, '\n');
-		if (findDelim != NULL)
-			findDelim[1] = '\0';
-		// Handles \r
-		else
-		{
-			findDelim = strchr(str, '\r');
-			if (findDelim != NULL)
-				findDelim[1] = '\0';
-		}
+    if (theStrOrFile->pFile != NULL)
+    {
+        return fgets(str, count, theStrOrFile->pFile);
+    }
+    else if (theStrOrFile->theStr != NULL && theStrOrFile->theStr[theStrOrFile->theStrPos] != '\0')
+    {
+        strncpy(str, theStrOrFile->theStr + theStrOrFile->theStrPos, count);
+        str[count - 1] = '\0';
+        // Handles \n and \r\n
+        char *findDelim = strchr(str, '\n');
+        if (findDelim != NULL)
+            findDelim[1] = '\0';
+        // Handles \r
+        else
+        {
+            findDelim = strchr(str, '\r');
+            if (findDelim != NULL)
+                findDelim[1] = '\0';
+        }
 
-		theStrOrFile->theStrPos += strlen(str);
+        theStrOrFile->theStrPos += strlen(str);
 
-		return str;
-	}
+        return str;
+    }
 
-	return NULL;
+    return NULL;
 }
 
 /********************************************************************
@@ -156,30 +156,30 @@ char *sf_fgets(char *str, int count, strOrFileP theStrOrFile)
  ********************************************************************/
 int sf_fputs(char *strToWrite, strOrFileP theStrOrFile)
 {
-	int outputLen = EOF;
+    int outputLen = EOF;
 
-	if (strToWrite == NULL || theStrOrFile == NULL)
-		return outputLen;
+    if (strToWrite == NULL || theStrOrFile == NULL)
+        return outputLen;
 
-	int lenOfStringToPuts = strlen(strToWrite);
-	if (theStrOrFile->pFile != NULL)
-		outputLen = fputs(strToWrite, theStrOrFile->pFile);
-	else if (theStrOrFile->theStr != NULL)
-	{
-		// Want to be able to contain the original theStr contents, the strToWrite, and a null terminator (added by strcat)
-		char *newStr = realloc(theStrOrFile->theStr, (strlen(theStrOrFile->theStr) + lenOfStringToPuts + 1) * sizeof(char));
-		// If realloc failed, pointer returned will be NULL; error will be handled by eventually freeing iterator, which will
-		// clean up the old memory for theStrOrFile->theStr
-		if (newStr == NULL)
-			return outputLen;
-		else
-			theStrOrFile->theStr = newStr;
-		strcat(theStrOrFile->theStr, strToWrite);
-		theStrOrFile->theStrPos += lenOfStringToPuts;
-		outputLen = lenOfStringToPuts;
-	}
+    int lenOfStringToPuts = strlen(strToWrite);
+    if (theStrOrFile->pFile != NULL)
+        outputLen = fputs(strToWrite, theStrOrFile->pFile);
+    else if (theStrOrFile->theStr != NULL)
+    {
+        // Want to be able to contain the original theStr contents, the strToWrite, and a null terminator (added by strcat)
+        char *newStr = realloc(theStrOrFile->theStr, (strlen(theStrOrFile->theStr) + lenOfStringToPuts + 1) * sizeof(char));
+        // If realloc failed, pointer returned will be NULL; error will be handled by eventually freeing iterator, which will
+        // clean up the old memory for theStrOrFile->theStr
+        if (newStr == NULL)
+            return outputLen;
+        else
+            theStrOrFile->theStr = newStr;
+        strcat(theStrOrFile->theStr, strToWrite);
+        theStrOrFile->theStrPos += lenOfStringToPuts;
+        outputLen = lenOfStringToPuts;
+    }
 
-	return outputLen;
+    return outputLen;
 }
 
 /********************************************************************
@@ -192,9 +192,9 @@ int sf_fputs(char *strToWrite, strOrFileP theStrOrFile)
  ********************************************************************/
 char *sf_takeTheStr(strOrFileP theStrOrFile)
 {
-	char *theStr = theStrOrFile->theStr;
-	theStrOrFile->theStr = NULL;
-	return theStr;
+    char *theStr = theStrOrFile->theStr;
+    theStrOrFile->theStr = NULL;
+    return theStr;
 }
 
 /********************************************************************
@@ -210,22 +210,22 @@ char *sf_takeTheStr(strOrFileP theStrOrFile)
  ********************************************************************/
 int sf_closeFile(strOrFileP theStrOrFile)
 {
-	FILE *pFile = theStrOrFile->pFile;
-	theStrOrFile->pFile = NULL;
-	if (pFile != NULL)
-	{
-		int errorCode = 0;
+    FILE *pFile = theStrOrFile->pFile;
+    theStrOrFile->pFile = NULL;
+    if (pFile != NULL)
+    {
+        int errorCode = 0;
 
-		if (pFile == stdin || pFile == stdout || pFile == stderr)
-			errorCode = fflush(pFile);
-		else
-			errorCode = fclose(pFile);
+        if (pFile == stdin || pFile == stdout || pFile == stderr)
+            errorCode = fflush(pFile);
+        else
+            errorCode = fclose(pFile);
 
-		if (errorCode < 0)
-			return NOTOK;
-	}
+        if (errorCode < 0)
+            return NOTOK;
+    }
 
-	return OK;
+    return OK;
 }
 
 /********************************************************************
@@ -247,24 +247,24 @@ int sf_closeFile(strOrFileP theStrOrFile)
  ********************************************************************/
 void sf_Free(strOrFileP *pStrOrFile)
 {
-	if (pStrOrFile != NULL && (*pStrOrFile) != NULL)
-	{
-		if ((*pStrOrFile)->theStr != NULL)
-			free((*pStrOrFile)->theStr);
-		(*pStrOrFile)->theStr = NULL;
-		(*pStrOrFile)->theStrPos = 0;
+    if (pStrOrFile != NULL && (*pStrOrFile) != NULL)
+    {
+        if ((*pStrOrFile)->theStr != NULL)
+            free((*pStrOrFile)->theStr);
+        (*pStrOrFile)->theStr = NULL;
+        (*pStrOrFile)->theStrPos = 0;
 
-		if ((*pStrOrFile)->pFile != NULL)
-		{
-			// If sf_closeFile() has not previously been called, we must be in an error state
-			sf_closeFile((*pStrOrFile));
-			// TODO: (#56) if the strOrFile container's FILE pointer corresponds to an output file,
-			// i.e. fileMode is 'w', we should try to remove the file since the error state means
-			// the contents are invalid
-		}
-		(*pStrOrFile)->pFile = NULL;
+        if ((*pStrOrFile)->pFile != NULL)
+        {
+            // If sf_closeFile() has not previously been called, we must be in an error state
+            sf_closeFile((*pStrOrFile));
+            // TODO: (#56) if the strOrFile container's FILE pointer corresponds to an output file,
+            // i.e. fileMode is 'w', we should try to remove the file since the error state means
+            // the contents are invalid
+        }
+        (*pStrOrFile)->pFile = NULL;
 
-		free(*pStrOrFile);
-		(*pStrOrFile) = NULL;
-	}
+        free(*pStrOrFile);
+        (*pStrOrFile) = NULL;
+    }
 }

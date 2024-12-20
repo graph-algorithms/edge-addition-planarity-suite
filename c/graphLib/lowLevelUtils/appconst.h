@@ -80,8 +80,8 @@ extern int debugNOTOK(void);
 #define NIL_CHAR 0x00
 
 // This definition is used in combination with 0-based array indexing
-// #define NIL		-1
-// #define NIL_CHAR	0xFF
+// #define NIL      -1
+// #define NIL_CHAR 0xFF
 
 /********************************************************************
  A few simple integer selection macros
