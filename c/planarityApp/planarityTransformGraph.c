@@ -22,81 +22,81 @@ int transformString(graphP theGraph, char *inputStr);
  ****************************************************************************/
 int TransformGraph(char *commandString, char *infileName, char *inputStr, int *outputBase, char *outfileName, char **outputStr)
 {
-	int Result = OK;
+    int Result = OK;
 
-	graphP theGraph;
+    graphP theGraph;
 
-	theGraph = gp_New();
+    theGraph = gp_New();
 
-	int outputFormat = -1;
+    int outputFormat = -1;
 
-	if (commandString[0] == '-')
-	{
-		if (commandString[1] == 'g')
-			outputFormat = WRITE_G6;
-		else if (commandString[1] == 'a')
-			outputFormat = WRITE_ADJLIST;
-		else if (commandString[1] == 'm')
-			outputFormat = WRITE_ADJMATRIX;
-		else
-		{
-			ErrorMessage("Invalid argument; only -(gam) is allowed.\n");
-			return NOTOK;
-		}
+    if (commandString[0] == '-')
+    {
+        if (commandString[1] == 'g')
+            outputFormat = WRITE_G6;
+        else if (commandString[1] == 'a')
+            outputFormat = WRITE_ADJLIST;
+        else if (commandString[1] == 'm')
+            outputFormat = WRITE_ADJMATRIX;
+        else
+        {
+            ErrorMessage("Invalid argument; only -(gam) is allowed.\n");
+            return NOTOK;
+        }
 
-		if (inputStr)
-			Result = transformString(theGraph, inputStr);
-		else
-			Result = transformFile(theGraph, infileName);
+        if (inputStr)
+            Result = transformString(theGraph, inputStr);
+        else
+            Result = transformFile(theGraph, infileName);
 
-		if (Result != OK)
-		{
-			ErrorMessage("Unable to transform input graph.\n");
-		}
-		else
-		{
-			// Want to know whether the output is 0- or 1-based; will always be
-			// 0-based for transformations of .g6 input
-			if (outputBase != NULL)
-				(*outputBase) = (theGraph->internalFlags & FLAGS_ZEROBASEDIO) ? 1 : 0;
+        if (Result != OK)
+        {
+            ErrorMessage("Unable to transform input graph.\n");
+        }
+        else
+        {
+            // Want to know whether the output is 0- or 1-based; will always be
+            // 0-based for transformations of .g6 input
+            if (outputBase != NULL)
+                (*outputBase) = (theGraph->internalFlags & FLAGS_ZEROBASEDIO) ? 1 : 0;
 
-			if (outputStr != NULL)
-				Result = gp_WriteToString(theGraph, outputStr, outputFormat);
-			else
-				Result = gp_Write(theGraph, outfileName, outputFormat);
+            if (outputStr != NULL)
+                Result = gp_WriteToString(theGraph, outputStr, outputFormat);
+            else
+                Result = gp_Write(theGraph, outfileName, outputFormat);
 
-			if (Result != OK)
-				ErrorMessage("Unable to write graph.\n");
-		}
-	}
-	else
-	{
-		ErrorMessage("Invalid argument; must start with '-'.\n");
-		Result = NOTOK;
-	}
+            if (Result != OK)
+                ErrorMessage("Unable to write graph.\n");
+        }
+    }
+    else
+    {
+        ErrorMessage("Invalid argument; must start with '-'.\n");
+        Result = NOTOK;
+    }
 
-	gp_Free(&theGraph);
-	return Result;
+    gp_Free(&theGraph);
+    return Result;
 }
 
 int transformFile(graphP theGraph, char *infileName)
 {
-	if (infileName == NULL)
-	{
-		if ((infileName = ConstructInputFilename(infileName)) == NULL)
-			return NOTOK;
-	}
+    if (infileName == NULL)
+    {
+        if ((infileName = ConstructInputFilename(infileName)) == NULL)
+            return NOTOK;
+    }
 
-	return gp_Read(theGraph, infileName);
+    return gp_Read(theGraph, infileName);
 }
 
 int transformString(graphP theGraph, char *inputStr)
 {
-	if (inputStr == NULL || strlen(inputStr) == 0)
-	{
-		ErrorMessage("Input string is null or empty.\n");
-		return NOTOK;
-	}
+    if (inputStr == NULL || strlen(inputStr) == 0)
+    {
+        ErrorMessage("Input string is null or empty.\n");
+        return NOTOK;
+    }
 
-	return gp_ReadFromString(theGraph, inputStr);
+    return gp_ReadFromString(theGraph, inputStr);
 }

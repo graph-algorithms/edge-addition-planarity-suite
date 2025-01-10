@@ -13,28 +13,28 @@ int quietMode = FALSE;
 
 int getQuietModeSetting(void)
 {
-	return quietMode;
+    return quietMode;
 }
 
 void setQuietModeSetting(int newQuietModeSetting)
 {
-	quietMode = newQuietModeSetting;
+    quietMode = newQuietModeSetting;
 }
 
 void Message(char *message)
 {
-	if (!getQuietModeSetting())
-	{
-		fprintf(stdout, "%s", message);
-		fflush(stdout);
-	}
+    if (!getQuietModeSetting())
+    {
+        fprintf(stdout, "%s", message);
+        fflush(stdout);
+    }
 }
 
 void ErrorMessage(char *message)
 {
-	if (!getQuietModeSetting())
-	{
-		fprintf(stderr, "%s", message);
-		fflush(stderr);
-	}
+    if (!getQuietModeSetting())
+    {
+        fprintf(stderr, "%s", message);
+        fflush(stderr);
+    }
 }
