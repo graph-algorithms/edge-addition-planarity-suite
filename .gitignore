@@ -69,10 +69,10 @@ libtool
 test-samples.sh
 Makefile
 config.status
-config.guess
-config.sub
+config.guess*
+config.sub*
 depcomp
-install-sh
+install-sh*
 Makefile.in
 missing
 ltmain.sh
@@ -84,6 +84,7 @@ test-driver
 planarity-*
 planarity-*/*
 libplanarity.pc
+m4/
 
 # Ignoring configuration for VSCode
 /.vscode/
