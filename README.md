@@ -35,7 +35,7 @@ Once one has set up the development environment and is able to work with the cod
 1. Ensure that the `autotools`, `configure`, and `make` are available on the command-line (e.g. add `C:\msys64\usr\bin` to the system `PATH` before Windows Program Files to ensure that the `find` program is the one from `MSYS2` rather than the one from Windows (e.g. adjust the `PATH` variable as needed)). 
 2. Open the start menu and start typing "MSYS2 UCRT64" to open the correct terminal app, then navigate to the root of the `edge-addition-planarity-suite` repository (i.e. the directory containing `configure.ac` and the `c` subdirectory)
 3. Enter the following commands:
-    1. `./autogen.sh`
+    1. `autoreconf -fi`
     2. `./configure`
     3. `make dist`
     4. `make distcheck`
