@@ -27,7 +27,15 @@ strOrFileP sf_New(FILE *pFile, char *theStr)
     if (theStrOrFile != NULL)
     {
         if (pFile != NULL)
+        {
             theStrOrFile->pFile = pFile;
+            theStrOrFile->ungetBuf = sb_New(MAXLINE);
+            if (theStrOrFile->ungetBuf == NULL)
+            {
+                sf_Free(&theStrOrFile);
+                return NULL;
+            }
+        }
         else if ((theStr != NULL))
         {
             theStrOrFile->theStr = theStr;
@@ -51,7 +59,20 @@ char sf_getc(strOrFileP theStrOrFile)
     if (theStrOrFile != NULL)
     {
         if (theStrOrFile->pFile != NULL)
-            theChar = getc(theStrOrFile->pFile);
+        {
+            int ungetBufSize = sb_GetSize(theStrOrFile->ungetBuf);
+            int ungetBufReadPos = sb_GetReadPos(theStrOrFile->ungetBuf);
+            int numCharsInUngetBuf = ungetBufSize - ungetBufReadPos;
+            if ((theStrOrFile->ungetBuf != NULL) && (numCharsInUngetBuf > 0))
+            {
+                // TODO: Feels like we should add more accessor functions
+                // to strbuf.c or macros to strbuf.h rather than my directly
+                // indexing into the underlying strOrfile's strBuf's char*
+                theChar = (theStrOrFile->ungetBuf)->buf[(theStrOrFile->ungetBuf)->readPos++];
+            }
+            else
+                theChar = getc(theStrOrFile->pFile);
+        }
         else if (theStrOrFile->theStr != NULL)
         {
             if ((theStrOrFile->theStr + theStrOrFile->theStrPos)[0] == '\0')
@@ -62,6 +83,23 @@ char sf_getc(strOrFileP theStrOrFile)
     }
 
     return theChar;
+}
+
+/********************************************************************
+ sf_ReadSkipChar()
+ Calls sf_getc() and does nothing with the returned character
+ ********************************************************************/
+void sf_ReadSkipChar(strOrFileP theStrOrFile)
+{
+    sf_getc(theStrOrFile);
+}
+
+/********************************************************************
+ sf_ReadInteger()
+ Calls sf_getc() and does nothing with the returned character
+ ********************************************************************/
+int sf_ReadInteger(strOrFileP theStrOrFile)
+{
 }
 
 /********************************************************************
@@ -82,7 +120,15 @@ char sf_ungetc(char theChar, strOrFileP theStrOrFile)
     if (theStrOrFile != NULL)
     {
         if (theStrOrFile->pFile != NULL)
-            charToReturn = ungetc(theChar, theStrOrFile->pFile);
+        {
+            if (theStrOrFile->ungetBuf == NULL)
+                return EOF;
+            // FIXME: the ungetBuf is a strBufP, so it dynamically resizes.
+            // Do we want to impose an artificial limit on the number of
+            // characters we want to be able to unget?
+            if (sb_ConcatChar(theStrOrFile->ungetBuf, theChar) == OK)
+                charToReturn = theChar;
+        }
         // Don't want to ungetc to an index before theStrOrFile->theStr start
         else if (theStrOrFile->theStr != NULL)
         {
@@ -98,12 +144,33 @@ char sf_ungetc(char theChar, strOrFileP theStrOrFile)
 }
 
 /********************************************************************
+ sf_ungetcontents()
+
+ If strOrFileP has FILE pointer to input file, appends to the ungetBuf.
+
+ If strOrFileP has input string, TODO: EXPLAIN BEHAVIOUR WHEN STRORFILE CONTAINS STRING
+
+ Returns OK on success and NOTOK on failure.
+ ********************************************************************/
+int sf_ungetContent(char *contentsToUnget, strOrFileP theStrOrFile)
+{
+    if (theStrOrFile == NULL || theStrOrFile->ungetBuf == NULL)
+        return NOTOK;
+    // TODO: What do we want to do if ungetBuf already has contents?
+    // TODO: What do we want to do if theStrOrFile contains a string rather than FILE *?
+    // TODO: Do we need to inspect fileMode to error out if we are ungetContents for file opened in write mode or stdout/stderr?
+
+    return sb_ConcatString(theStrOrFile->ungetBuf, contentsToUnget);
+}
+
+/********************************************************************
  sf_fgets()
  Order of parameters matches stdio fgets().
 
  First param is the string to populate, second param
- is the max number of characters to read, and third param is the pointer to the
- string-or-file container from which we wish to read count characters.
+ is the max number of characters to read, and third param is the pointer
+ to the string-or-file container from which we wish to read count
+ characters.
 
  Like fgets() in stdio, this function doesn't check that enough memory
  is allocated for str to contain (count - 1) characters.
@@ -118,7 +185,48 @@ char *sf_fgets(char *str, int count, strOrFileP theStrOrFile)
 
     if (theStrOrFile->pFile != NULL)
     {
-        return fgets(str, count, theStrOrFile->pFile);
+        int charsToReadFromUngetBuf = 0;
+        int charsToReadFromStream = count;
+        if ((theStrOrFile->ungetBuf != NULL))
+        {
+            int ungetBufSize = sb_GetSize(theStrOrFile->ungetBuf);
+            int ungetBufReadPos = sb_GetReadPos(theStrOrFile->ungetBuf);
+            int numCharsInUngetBuf = ungetBufSize - ungetBufReadPos;
+            if (numCharsInUngetBuf > 0)
+            {
+                int newlineIndex = strcspn(sb_GetReadString(theStrOrFile->ungetBuf), "\n");
+                if (newlineIndex == numCharsInUngetBuf)
+                {
+                    // N.B. No newline found
+                    charsToReadFromUngetBuf = (count > numCharsInUngetBuf) ? numCharsInUngetBuf : count;
+                    charsToReadFromStream = (count > numCharsInUngetBuf) ? (count - charsToReadFromUngetBuf) : 0;
+                }
+                else
+                {
+                    // N.B. Newline found
+                    charsToReadFromUngetBuf = (count > newlineIndex) ? (newlineIndex + 1) : count;
+                    charsToReadFromStream = 0;
+                }
+
+                if (charsToReadFromUngetBuf > 0)
+                {
+                    strncpy(str, sb_GetReadString(theStrOrFile->ungetBuf), charsToReadFromUngetBuf);
+                    sb_SetReadPos(theStrOrFile->ungetBuf, (ungetBufReadPos + charsToReadFromUngetBuf));
+                }
+            }
+        }
+
+        if (charsToReadFromStream > 0)
+        {
+            if (fgets(str + charsToReadFromUngetBuf, charsToReadFromStream, theStrOrFile->pFile) == NULL)
+            {
+                // FIXME: if the fgets fails, then do I need to restore the contents of the ungetBuf
+                // (by setting ungetBuf's readPos to the original ungetBufReadPos) and then calloc the str??
+                return NULL;
+            }
+        }
+
+        return str;
     }
     else if (theStrOrFile->theStr != NULL && theStrOrFile->theStr[theStrOrFile->theStrPos] != '\0')
     {
@@ -224,6 +332,7 @@ int sf_closeFile(strOrFileP theStrOrFile)
         if (errorCode < 0)
             return NOTOK;
     }
+    // TODO: Do I want to clear the ungetBuf when we close file?
 
     return OK;
 }
@@ -263,6 +372,12 @@ void sf_Free(strOrFileP *pStrOrFile)
             // the contents are invalid
         }
         (*pStrOrFile)->pFile = NULL;
+
+        if ((*pStrOrFile)->ungetBuf != NULL)
+        {
+            sb_Free(&((*pStrOrFile)->ungetBuf));
+        }
+        (*pStrOrFile)->ungetBuf = NULL;
 
         free(*pStrOrFile);
         (*pStrOrFile) = NULL;

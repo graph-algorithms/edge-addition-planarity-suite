@@ -13,7 +13,8 @@ See the LICENSE.TXT file for licensing information.
 /* Private functions (exported to system) */
 
 int _ReadAdjMatrix(graphP theGraph, FILE *Infile, strBufP inBuf);
-int _ReadAdjList(graphP theGraph, FILE *Infile, strBufP inBuf);
+// int _ReadAdjList(graphP theGraph, FILE *Infile, strBufP inBuf);
+int _ReadAdjList(graphP theGraph, strOrFileP inputContainer, strBufP inBuf);
 int _WriteAdjList(graphP theGraph, FILE *Outfile, strBufP outBuf);
 int _WriteAdjMatrix(graphP theGraph, FILE *Outfile, strBufP outBuf);
 int _WriteDebugInfo(graphP theGraph, FILE *Outfile);
@@ -104,24 +105,44 @@ int _ReadAdjMatrix(graphP theGraph, FILE *Infile, strBufP inBuf)
           NOTOK on file content error (or internal error)
  ********************************************************************/
 
-int _ReadAdjList(graphP theGraph, FILE *Infile, strBufP inBuf)
+// int _ReadAdjList(graphP theGraph, FILE *Infile, strBufP inBuf)
+int _ReadAdjList(graphP theGraph, strOrFileP inputContainer, strBufP inBuf)
 {
     int N = -1;
     int v, W, adjList, e, indexValue, ErrorCode;
     int zeroBased = FALSE;
 
-    if (Infile == NULL && inBuf == NULL)
+    // if (Infile == NULL && inBuf == NULL)
+    if (inputContainer == NULL && inBuf == NULL)
+        return NOTOK;
+    else if (inputContainer != NULL && (inputContainer->pFile == NULL || inputContainer->ungetBuf == NULL))
         return NOTOK;
 
     // Skip the "N=" and then read the N value for number of vertices
-    if (Infile != NULL)
+    // if (Infile != NULL)
+    // {
+    //     fgetc(Infile);
+    //     fgetc(Infile);
+    //     fscanf(Infile, " %d ", &N);
+    // }
+    if (inputContainer != NULL && inputContainer->pFile != NULL)
     {
-        fgetc(Infile);
-        fgetc(Infile);
-        fscanf(Infile, " %d ", &N);
+        // TODO: Implement the equivalents of sb_ReadSkipChar(),
+        // sb_ReadSkipWhitespace(), and sb_ReadSkipInteger(), as well as
+        // implement , to make this pattern
+        // of processing the input standard
+        sf_getc(inputContainer);
+        sf_getc(inputContainer);
+        // TODO: Should I be making sure the inputContainer's fileMode flag is
+        // set to indicate "file opened for read"? Or checking to make sure the pFile
+        // corresponds to stdin and not stdout/stderr?
+        // FIXME: Need to implement sf_ReadInteger() so that we respect the ungetBuf
+        if (fscanf(inputContainer->pFile, " %d ", &N) != 1)
+            return NOTOK;
     }
     else
     {
+        // TODO: Update when sf_ReadSkip[Char|Whitespace|Integer]() is implemented
         sb_ReadSkipChar(inBuf);
         sb_ReadSkipChar(inBuf);
         sb_ReadSkipWhitespace(inBuf);
@@ -143,8 +164,11 @@ int _ReadAdjList(graphP theGraph, FILE *Infile, strBufP inBuf)
     for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
     {
         // Read the vertex number
-        if (Infile != NULL)
-            fscanf(Infile, "%d", &indexValue);
+        // if (Infile != NULL)
+        // TODO: it feels yucky to be accessing the pFile directly
+        // and that how we get the integer should be hidden
+        if (inputContainer != NULL && inputContainer->pFile != NULL)
+            fscanf(inputContainer->pFile, "%d", &indexValue);
         else
         {
             sscanf(sb_GetReadString(inBuf), "%d", &indexValue);
@@ -162,8 +186,11 @@ int _ReadAdjList(graphP theGraph, FILE *Infile, strBufP inBuf)
             return NOTOK;
 
         // Skip the colon after the vertex number
-        if (Infile != NULL)
-            fgetc(Infile);
+        // if (Infile != NULL)
+        //      fgetc(InputFile);
+        // TODO: it feels yucky to be accessing the pFile directly
+        if (inputContainer != NULL && inputContainer->pFile != NULL)
+            fgetc(inputContainer->pFile);
         else
             sb_ReadSkipChar(inBuf);
 
@@ -204,8 +231,12 @@ int _ReadAdjList(graphP theGraph, FILE *Infile, strBufP inBuf)
         while (1)
         {
             // Read the value indicating the next adjacent vertex (or the list end)
-            if (Infile != NULL)
-                fscanf(Infile, " %d ", &W);
+            // if (Infile != NULL)
+            //    fscanf(Infile, " %d ", &W);
+
+            // TODO: it feels yucky to be accessing the pFile directly
+            if (inputContainer != NULL && inputContainer->pFile != NULL)
+                fscanf(inputContainer->pFile, " %d ", &W);
             else
             {
                 sb_ReadSkipWhitespace(inBuf);
@@ -387,25 +418,55 @@ int gp_Read(graphP theGraph, char *FileName)
     else if ((Infile = fopen(FileName, READTEXT)) == NULL)
         return NOTOK;
 
-    fgets(lineBuff, 255, Infile);
+    strOrFileP inputContainer = sf_New(Infile, NULL);
+    if (inputContainer == NULL)
+    {
+        if (strcmp(FileName, "stdin") != 0)
+        {
+            fclose(Infile);
+            Infile = NULL;
+        }
+        return NOTOK;
+    }
+
+    if (sf_fgets(lineBuff, 255, inputContainer) == NULL)
+    {
+        sf_Free(&inputContainer);
+        return NOTOK;
+    }
+
+    if (sf_ungetContent(lineBuff, inputContainer) != OK)
+    {
+        sf_Free(&inputContainer);
+        return NOTOK;
+    }
+
+    // fgets(lineBuff, 255, Infile);
     // Reset file pointer to beginning of file
-    fseek(Infile, 0, SEEK_SET);
+    // fseek(Infile, 0, SEEK_SET);
     if (strncmp(lineBuff, "LEDA.GRAPH", strlen("LEDA.GRAPH")) == 0)
+    {
+        fseek(Infile, 0, SEEK_SET);
         RetVal = _ReadLEDAGraph(theGraph, Infile);
+    }
     else if (strncmp(lineBuff, "N=", strlen("N=")) == 0)
     {
-        RetVal = _ReadAdjList(theGraph, Infile, NULL);
+        // fseek(Infile, 0, SEEK_SET);
+        // RetVal = _ReadAdjList(theGraph, Infile, NULL);
+        RetVal = _ReadAdjList(theGraph, inputContainer, NULL);
         if (RetVal == OK)
             extraDataAllowed = true;
     }
     else if (isdigit(lineBuff[0]))
     {
+        fseek(Infile, 0, SEEK_SET);
         RetVal = _ReadAdjMatrix(theGraph, Infile, NULL);
         if (RetVal == OK)
             extraDataAllowed = true;
     }
     else
     {
+        fseek(Infile, 0, SEEK_SET);
         RetVal = _ReadGraphFromG6FilePointer(theGraph, Infile);
         // Since G6ReadIterator closes Infile via sf_Free(), we don't want
         // to try to fclose() again.

@@ -14,10 +14,13 @@ extern "C"
 
 #include <stdio.h>
 
+#include "strbuf.h"
+
     typedef struct
     {
         char fileMode;
         FILE *pFile;
+        strBufP ungetBuf;
         char *theStr;
         int theStrPos;
     } strOrFile;
@@ -27,7 +30,11 @@ extern "C"
     strOrFileP sf_New(FILE *pFile, char *theStr);
 
     char sf_getc(strOrFileP theStrOrFile);
+    void sf_ReadSkipChar(strOrFileP theStrOrFile);
+
     char sf_ungetc(char theChar, strOrFileP theStrOrFile);
+    int sf_ungetContent(char *contentsToUnget, strOrFileP theStrOrFile);
+
     char *sf_fgets(char *str, int count, strOrFileP theStrOrFile);
 
     int sf_fputs(char *strToWrite, strOrFileP theStrOrFile);
