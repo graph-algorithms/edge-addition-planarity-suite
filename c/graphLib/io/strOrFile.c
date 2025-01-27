@@ -4,8 +4,10 @@ All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
 
-#include <string.h>
+#include <ctype.h>
 #include <stdlib.h>
+#include <stdbool.h>
+#include <string.h>
 
 #include "../lowLevelUtils/appconst.h"
 #include "strOrFile.h"
@@ -98,8 +100,49 @@ void sf_ReadSkipChar(strOrFileP theStrOrFile)
  sf_ReadInteger()
  Calls sf_getc() and does nothing with the returned character
  ********************************************************************/
-int sf_ReadInteger(strOrFileP theStrOrFile)
+int sf_ReadInteger(int *intToRead, strOrFileP theStrOrFile)
 {
+    if (theStrOrFile == NULL || (theStrOrFile->pFile == NULL && theStrOrFile->theStr == NULL))
+        return NOTOK;
+
+    strBufP intCandidateStr = sb_New(20);
+    int intCandidate = 0;
+    char currChar = '\0';
+    bool startedReadingInt = FALSE;
+
+    while ((currChar = sf_getc(theStrOrFile)) != EOF)
+    {
+        if (currChar == '-' || isdigit(currChar))
+        {
+            if (sb_ConcatChar(intCandidateStr, currChar) != OK)
+                return NOTOK;
+            startedReadingInt = TRUE;
+        }
+        else if (isalpha(currChar) || ispunct(currChar))
+        {
+            if (sf_ungetc(currChar, theStrOrFile) != currChar)
+                return NOTOK;
+            break;
+        }
+        else if (strchr("\n\r", currChar) != NULL || currChar == EOF)
+            break;
+        else if (isspace(currChar))
+            // If we encounter a space after we've already started reading
+            // the digits that comprise an int, then we must stop trying
+            // to query additional characters
+            if (startedReadingInt)
+                break;
+            else
+                continue;
+        else
+            return NOTOK;
+    }
+
+    if (sscanf(sb_GetReadString(intCandidateStr), " %d ", &intCandidate) != 1)
+        return NOTOK;
+
+    (*intToRead) = intCandidate;
+    return OK;
 }
 
 /********************************************************************
@@ -154,11 +197,11 @@ char sf_ungetc(char theChar, strOrFileP theStrOrFile)
  ********************************************************************/
 int sf_ungetContent(char *contentsToUnget, strOrFileP theStrOrFile)
 {
-    if (theStrOrFile == NULL || theStrOrFile->ungetBuf == NULL)
+    if (theStrOrFile == NULL || theStrOrFile->pFile == NULL || theStrOrFile->ungetBuf == NULL || theStrOrFile->theStr != NULL)
         return NOTOK;
-    // TODO: What do we want to do if ungetBuf already has contents?
-    // TODO: What do we want to do if theStrOrFile contains a string rather than FILE *?
-    // TODO: Do we need to inspect fileMode to error out if we are ungetContents for file opened in write mode or stdout/stderr?
+
+    // FIXME: Do we need to inspect fileMode to error out if we are ungetContents
+    // for file opened in write mode, or if pFile corresponds to stdout/stderr?
 
     return sb_ConcatString(theStrOrFile->ungetBuf, contentsToUnget);
 }
@@ -218,11 +261,13 @@ char *sf_fgets(char *str, int count, strOrFileP theStrOrFile)
 
         if (charsToReadFromStream > 0)
         {
+            // N.B. if fgets() returns NULL (can't read more characters) AND the ungetBuf was empty,
+            // then return NULL (error trying to read from empty stream). Otherwise, return str (that
+            // was read from ungetBuf)
             if (fgets(str + charsToReadFromUngetBuf, charsToReadFromStream, theStrOrFile->pFile) == NULL)
             {
-                // FIXME: if the fgets fails, then do I need to restore the contents of the ungetBuf
-                // (by setting ungetBuf's readPos to the original ungetBufReadPos) and then calloc the str??
-                return NULL;
+                if (charsToReadFromUngetBuf == 0)
+                    return NULL;
             }
         }
 
@@ -270,6 +315,7 @@ int sf_fputs(char *strToWrite, strOrFileP theStrOrFile)
         return outputLen;
 
     int lenOfStringToPuts = strlen(strToWrite);
+    // N.B. fputs() will fail and return EOF if pFile doesn't correspond to an output stream
     if (theStrOrFile->pFile != NULL)
         outputLen = fputs(strToWrite, theStrOrFile->pFile);
     else if (theStrOrFile->theStr != NULL)
@@ -332,7 +378,12 @@ int sf_closeFile(strOrFileP theStrOrFile)
         if (errorCode < 0)
             return NOTOK;
     }
-    // TODO: Do I want to clear the ungetBuf when we close file?
+
+    if (theStrOrFile->ungetBuf != NULL)
+    {
+        sb_Free(&(theStrOrFile->ungetBuf));
+    }
+    theStrOrFile->ungetBuf = NULL;
 
     return OK;
 }

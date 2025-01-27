@@ -136,8 +136,9 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer, strBufP inBuf)
         // TODO: Should I be making sure the inputContainer's fileMode flag is
         // set to indicate "file opened for read"? Or checking to make sure the pFile
         // corresponds to stdin and not stdout/stderr?
-        // FIXME: Need to implement sf_ReadInteger() so that we respect the ungetBuf
-        if (fscanf(inputContainer->pFile, " %d ", &N) != 1)
+        // if (fscanf(inputContainer->pFile, " %d ", &N) != 1)
+        //     return NOTOK;
+        if (sf_ReadInteger(&N, inputContainer) != OK)
             return NOTOK;
     }
     else
@@ -165,10 +166,12 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer, strBufP inBuf)
     {
         // Read the vertex number
         // if (Infile != NULL)
-        // TODO: it feels yucky to be accessing the pFile directly
-        // and that how we get the integer should be hidden
         if (inputContainer != NULL && inputContainer->pFile != NULL)
-            fscanf(inputContainer->pFile, "%d", &indexValue);
+        {
+            // fscanf(inputContainer->pFile, "%d", &indexValue);
+            if (sf_ReadInteger(&indexValue, inputContainer) != OK)
+                return NOTOK;
+        }
         else
         {
             sscanf(sb_GetReadString(inBuf), "%d", &indexValue);
@@ -185,12 +188,11 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer, strBufP inBuf)
         if (gp_GetVertexIndex(theGraph, v) != v)
             return NOTOK;
 
-        // Skip the colon after the vertex number
         // if (Infile != NULL)
         //      fgetc(InputFile);
-        // TODO: it feels yucky to be accessing the pFile directly
+        // Skip the colon after the vertex number
         if (inputContainer != NULL && inputContainer->pFile != NULL)
-            fgetc(inputContainer->pFile);
+            sf_ReadSkipChar(inputContainer);
         else
             sb_ReadSkipChar(inBuf);
 
@@ -230,13 +232,14 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer, strBufP inBuf)
         // Read the adjacency list.
         while (1)
         {
-            // Read the value indicating the next adjacent vertex (or the list end)
             // if (Infile != NULL)
             //    fscanf(Infile, " %d ", &W);
-
-            // TODO: it feels yucky to be accessing the pFile directly
+            // Read the value indicating the next adjacent vertex (or the list end)
             if (inputContainer != NULL && inputContainer->pFile != NULL)
-                fscanf(inputContainer->pFile, " %d ", &W);
+            {
+                if (sf_ReadInteger(&W, inputContainer) != OK)
+                    return NOTOK;
+            }
             else
             {
                 sb_ReadSkipWhitespace(inBuf);
@@ -513,8 +516,9 @@ int gp_Read(graphP theGraph, char *FileName)
         }
     }
 
-    if (strcmp(FileName, "stdin") != 0 && Infile != NULL)
-        fclose(Infile);
+    // if (strcmp(FileName, "stdin") != 0 && Infile != NULL)
+    //     fclose(Infile);
+    sf_Free(inputContainer);
 
     return RetVal;
 }
