@@ -102,26 +102,71 @@ void sf_ReadSkipChar(strOrFileP theStrOrFile)
  ********************************************************************/
 int sf_ReadInteger(int *intToRead, strOrFileP theStrOrFile)
 {
+    int exitCode = OK;
+
     if (theStrOrFile == NULL || (theStrOrFile->pFile == NULL && theStrOrFile->theStr == NULL))
         return NOTOK;
 
     strBufP intCandidateStr = sb_New(20);
+    if (intCandidateStr == NULL)
+        return NOTOK;
+
     int intCandidate = 0;
-    char currChar = '\0';
+    char currChar, nextChar = '\0';
     bool startedReadingInt = FALSE;
 
     while ((currChar = sf_getc(theStrOrFile)) != EOF)
     {
-        if (currChar == '-' || isdigit(currChar))
+        if (currChar == '-')
+        {
+            if (startedReadingInt)
+            {
+                exitCode = NOTOK;
+                break;
+            }
+            else
+            {
+                nextChar = sf_getc(theStrOrFile);
+                if (nextChar == EOF)
+                {
+                    exitCode = NOTOK;
+                    break;
+                }
+                else if (!isdigit(nextChar))
+                {
+                    exitCode = NOTOK;
+                    break;
+                }
+                else
+                {
+                    if (sf_ungetc(nextChar, theStrOrFile) != nextChar)
+                    {
+                        exitCode = NOTOK;
+                        break;
+                    }
+                    if (sb_ConcatChar(intCandidateStr, currChar) != OK)
+                    {
+                        exitCode = NOTOK;
+                        break;
+                    }
+                }
+            }
+        }
+        else if (isdigit(currChar))
         {
             if (sb_ConcatChar(intCandidateStr, currChar) != OK)
-                return NOTOK;
+            {
+                exitCode = NOTOK;
+                break;
+            }
             startedReadingInt = TRUE;
         }
         else if (isalpha(currChar) || ispunct(currChar))
         {
             if (sf_ungetc(currChar, theStrOrFile) != currChar)
-                return NOTOK;
+            {
+                exitCode = NOTOK;
+            }
             break;
         }
         else if (strchr("\n\r", currChar) != NULL || currChar == EOF)
@@ -135,14 +180,21 @@ int sf_ReadInteger(int *intToRead, strOrFileP theStrOrFile)
             else
                 continue;
         else
-            return NOTOK;
+            exitCode = NOTOK;
     }
 
-    if (sscanf(sb_GetReadString(intCandidateStr), " %d ", &intCandidate) != 1)
-        return NOTOK;
+    if (exitCode == OK)
+    {
+        if (sscanf(sb_GetReadString(intCandidateStr), " %d ", &intCandidate) != 1)
+            exitCode = NOTOK;
 
-    (*intToRead) = intCandidate;
-    return OK;
+        (*intToRead) = intCandidate;
+    }
+
+    sb_Free(&intCandidateStr);
+    intCandidateStr = NULL;
+
+    return exitCode;
 }
 
 /********************************************************************

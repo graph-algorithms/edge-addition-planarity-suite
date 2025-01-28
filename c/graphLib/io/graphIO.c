@@ -454,8 +454,6 @@ int gp_Read(graphP theGraph, char *FileName)
     }
     else if (strncmp(lineBuff, "N=", strlen("N=")) == 0)
     {
-        // fseek(Infile, 0, SEEK_SET);
-        // RetVal = _ReadAdjList(theGraph, Infile, NULL);
         RetVal = _ReadAdjList(theGraph, inputContainer, NULL);
         if (RetVal == OK)
             extraDataAllowed = true;
@@ -516,9 +514,7 @@ int gp_Read(graphP theGraph, char *FileName)
         }
     }
 
-    // if (strcmp(FileName, "stdin") != 0 && Infile != NULL)
-    //     fclose(Infile);
-    sf_Free(inputContainer);
+    sf_Free(&inputContainer);
 
     return RetVal;
 }
