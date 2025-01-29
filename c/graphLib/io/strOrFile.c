@@ -31,7 +31,7 @@ strOrFileP sf_New(FILE *pFile, char *theStr)
         if (pFile != NULL)
         {
             theStrOrFile->pFile = pFile;
-            theStrOrFile->ungetBuf = sb_New(MAXLINE);
+            theStrOrFile->ungetBuf = sp_New(MAXLINE);
             if (theStrOrFile->ungetBuf == NULL)
             {
                 sf_Free(&theStrOrFile);
@@ -50,7 +50,8 @@ strOrFileP sf_New(FILE *pFile, char *theStr)
 
 /********************************************************************
  sf_getc()
- If strOrFileP has FILE pointer to input file, calls getc().
+ If strOrFileP has FILE pointer to input file, pops from the ungetBuf
+ first if it's nonempty, otherwise calls getc() on the pFile.
  If strOrFileP has input string, returns character at theStrPos and
  increments theStrPos.
  ********************************************************************/
@@ -62,15 +63,11 @@ char sf_getc(strOrFileP theStrOrFile)
     {
         if (theStrOrFile->pFile != NULL)
         {
-            int ungetBufSize = sb_GetSize(theStrOrFile->ungetBuf);
-            int ungetBufReadPos = sb_GetReadPos(theStrOrFile->ungetBuf);
-            int numCharsInUngetBuf = ungetBufSize - ungetBufReadPos;
-            if ((theStrOrFile->ungetBuf != NULL) && (numCharsInUngetBuf > 0))
+            if ((theStrOrFile->ungetBuf != NULL) && (sp_GetCurrentSize(theStrOrFile->ungetBuf) > 0))
             {
-                // TODO: Feels like we should add more accessor functions
-                // to strbuf.c or macros to strbuf.h rather than my directly
-                // indexing into the underlying strOrfile's strBuf's char*
-                theChar = (theStrOrFile->ungetBuf)->buf[(theStrOrFile->ungetBuf)->readPos++];
+                int currChar = 0;
+                sp_Pop(theStrOrFile->ungetBuf, currChar);
+                theChar = (char)currChar;
             }
             else
                 theChar = getc(theStrOrFile->pFile);
@@ -97,26 +94,51 @@ void sf_ReadSkipChar(strOrFileP theStrOrFile)
 }
 
 /********************************************************************
+ sf_ReadSkipWhitespace()
+ Repeatedly calls sf_getc() to find the next non-space character
+ before hitting EOF
+ ********************************************************************/
+void sf_ReadSkipWhitespace(strOrFileP theStrOrFile)
+{
+    char currChar = '\0';
+    if (theStrOrFile != NULL)
+    {
+        while ((currChar = sf_getc(theStrOrFile)) != EOF && isspace(currChar))
+        {
+            continue;
+        }
+        sf_ungetc(currChar, theStrOrFile);
+    }
+}
+
+/********************************************************************
  sf_ReadInteger()
- Calls sf_getc() and does nothing with the returned character
+ Repeatedly calls sf_getc() to obtain the characters corresponding to
+ an int, then parses that char* using sscanf() to extract the integer.
  ********************************************************************/
 int sf_ReadInteger(int *intToRead, strOrFileP theStrOrFile)
 {
     int exitCode = OK;
 
-    if (theStrOrFile == NULL || (theStrOrFile->pFile == NULL && theStrOrFile->theStr == NULL))
+    if (theStrOrFile == NULL ||
+        (theStrOrFile->pFile == NULL && theStrOrFile->theStr == NULL))
         return NOTOK;
 
-    strBufP intCandidateStr = sb_New(20);
-    if (intCandidateStr == NULL)
-        return NOTOK;
+    char intCandidateStr[MAXCHARSFOR32BITINT];
+    memset(intCandidateStr, '\0', MAXCHARSFOR32BITINT);
 
     int intCandidate = 0;
     char currChar, nextChar = '\0';
     bool startedReadingInt = FALSE;
-
+    int intCandidateIndex = 0;
     while ((currChar = sf_getc(theStrOrFile)) != EOF)
     {
+        if (intCandidateIndex > (MAXCHARSFOR32BITINT - 2))
+        {
+            exitCode = NOTOK;
+            break;
+        }
+
         if (currChar == '-')
         {
             if (startedReadingInt)
@@ -127,12 +149,7 @@ int sf_ReadInteger(int *intToRead, strOrFileP theStrOrFile)
             else
             {
                 nextChar = sf_getc(theStrOrFile);
-                if (nextChar == EOF)
-                {
-                    exitCode = NOTOK;
-                    break;
-                }
-                else if (!isdigit(nextChar))
+                if (!isdigit(nextChar))
                 {
                     exitCode = NOTOK;
                     break;
@@ -144,24 +161,16 @@ int sf_ReadInteger(int *intToRead, strOrFileP theStrOrFile)
                         exitCode = NOTOK;
                         break;
                     }
-                    if (sb_ConcatChar(intCandidateStr, currChar) != OK)
-                    {
-                        exitCode = NOTOK;
-                        break;
-                    }
+                    intCandidateStr[intCandidateIndex++] = currChar;
                 }
             }
         }
         else if (isdigit(currChar))
         {
-            if (sb_ConcatChar(intCandidateStr, currChar) != OK)
-            {
-                exitCode = NOTOK;
-                break;
-            }
+            intCandidateStr[intCandidateIndex++] = currChar;
             startedReadingInt = TRUE;
         }
-        else if (isalpha(currChar) || ispunct(currChar))
+        else if (currChar != EOF)
         {
             if (sf_ungetc(currChar, theStrOrFile) != currChar)
             {
@@ -169,30 +178,15 @@ int sf_ReadInteger(int *intToRead, strOrFileP theStrOrFile)
             }
             break;
         }
-        else if (strchr("\n\r", currChar) != NULL || currChar == EOF)
-            break;
-        else if (isspace(currChar))
-            // If we encounter a space after we've already started reading
-            // the digits that comprise an int, then we must stop trying
-            // to query additional characters
-            if (startedReadingInt)
-                break;
-            else
-                continue;
-        else
-            exitCode = NOTOK;
     }
 
     if (exitCode == OK)
     {
-        if (sscanf(sb_GetReadString(intCandidateStr), " %d ", &intCandidate) != 1)
+        if (sscanf(intCandidateStr, "%d", &intCandidate) != 1)
             exitCode = NOTOK;
 
         (*intToRead) = intCandidate;
     }
-
-    sb_Free(&intCandidateStr);
-    intCandidateStr = NULL;
 
     return exitCode;
 }
@@ -210,19 +204,21 @@ int sf_ReadInteger(int *intToRead, strOrFileP theStrOrFile)
  ********************************************************************/
 char sf_ungetc(char theChar, strOrFileP theStrOrFile)
 {
-    char charToReturn = EOF;
-
-    if (theStrOrFile != NULL)
+    if (theStrOrFile != NULL && theChar != EOF)
     {
         if (theStrOrFile->pFile != NULL)
         {
             if (theStrOrFile->ungetBuf == NULL)
                 return EOF;
-            // FIXME: the ungetBuf is a strBufP, so it dynamically resizes.
-            // Do we want to impose an artificial limit on the number of
-            // characters we want to be able to unget?
-            if (sb_ConcatChar(theStrOrFile->ungetBuf, theChar) == OK)
-                charToReturn = theChar;
+
+            if (sp_GetCurrentSize(theStrOrFile->ungetBuf) >= sp_GetCapacity(theStrOrFile->ungetBuf))
+                return EOF;
+
+            // FIXME: If you use the speed macro, I don't know what value is returned... If you
+            // don't use the speed macros, then OK/NOTOK are returned; does this mean there's no
+            // real way to check the success of sp_Push()? No other occurrence seems to check success
+            sp_Push(theStrOrFile->ungetBuf, theChar);
+            return theChar;
         }
         // Don't want to ungetc to an index before theStrOrFile->theStr start
         else if (theStrOrFile->theStr != NULL)
@@ -231,31 +227,44 @@ char sf_ungetc(char theChar, strOrFileP theStrOrFile)
                 return EOF;
 
             // Decrement theStrPos, then replace the character in theStr at that position with theChar
-            charToReturn = theStrOrFile->theStr[--(theStrOrFile->theStrPos)] = theChar;
+            theStrOrFile->theStr[--(theStrOrFile->theStrPos)] = theChar;
+            return theStrOrFile->theStr[(theStrOrFile->theStrPos + 1)];
         }
     }
 
-    return charToReturn;
+    return EOF;
 }
 
 /********************************************************************
- sf_ungetcontents()
+ sf_ungetcontent()
 
- If strOrFileP has FILE pointer to input file, appends to the ungetBuf.
+ If strOrFileP has FILE pointer to input file, pushes to the ungetBuf.
 
- If strOrFileP has input string, TODO: EXPLAIN BEHAVIOUR WHEN STRORFILE CONTAINS STRING
+ If strOrFileP has input string, then we fail (since we do not use the
+ ungetBuf)
 
  Returns OK on success and NOTOK on failure.
  ********************************************************************/
 int sf_ungetContent(char *contentsToUnget, strOrFileP theStrOrFile)
 {
-    if (theStrOrFile == NULL || theStrOrFile->pFile == NULL || theStrOrFile->ungetBuf == NULL || theStrOrFile->theStr != NULL)
+    if (theStrOrFile == NULL ||
+        theStrOrFile->pFile == NULL ||
+        theStrOrFile->ungetBuf == NULL ||
+        theStrOrFile->theStr != NULL)
         return NOTOK;
 
     // FIXME: Do we need to inspect fileMode to error out if we are ungetContents
     // for file opened in write mode, or if pFile corresponds to stdout/stderr?
 
-    return sb_ConcatString(theStrOrFile->ungetBuf, contentsToUnget);
+    for (int i = (strlen(contentsToUnget) - 1); i >= 0; i--)
+    {
+        // FIXME: when speed macros aren't used, sp_Push() returns OK/NOTOK,
+        // but I don't know if there's a return value; if it is, it probably returns
+        // the value that was assigned to the specific index, so then comparing against
+        // OK/NOTOK may erroneously fail
+        sp_Push(theStrOrFile->ungetBuf, contentsToUnget[i]);
+    }
+    return OK;
 }
 
 /********************************************************************
@@ -284,30 +293,21 @@ char *sf_fgets(char *str, int count, strOrFileP theStrOrFile)
         int charsToReadFromStream = count;
         if ((theStrOrFile->ungetBuf != NULL))
         {
-            int ungetBufSize = sb_GetSize(theStrOrFile->ungetBuf);
-            int ungetBufReadPos = sb_GetReadPos(theStrOrFile->ungetBuf);
-            int numCharsInUngetBuf = ungetBufSize - ungetBufReadPos;
+            int numCharsInUngetBuf = sp_GetCurrentSize(theStrOrFile->ungetBuf);
             if (numCharsInUngetBuf > 0)
             {
-                int newlineIndex = strcspn(sb_GetReadString(theStrOrFile->ungetBuf), "\n");
-                if (newlineIndex == numCharsInUngetBuf)
+                charsToReadFromUngetBuf = (count > numCharsInUngetBuf) ? numCharsInUngetBuf : count;
+                char currChar = '\0';
+                for (int i = (charsToReadFromUngetBuf - 1); i >= 0; i--)
                 {
-                    // N.B. No newline found
-                    charsToReadFromUngetBuf = (count > numCharsInUngetBuf) ? numCharsInUngetBuf : count;
-                    charsToReadFromStream = (count > numCharsInUngetBuf) ? (count - charsToReadFromUngetBuf) : 0;
+                    currChar = sf_getc(theStrOrFile);
+                    if (currChar == EOF)
+                    {
+                        return NULL;
+                    }
+                    str[i] = currChar;
                 }
-                else
-                {
-                    // N.B. Newline found
-                    charsToReadFromUngetBuf = (count > newlineIndex) ? (newlineIndex + 1) : count;
-                    charsToReadFromStream = 0;
-                }
-
-                if (charsToReadFromUngetBuf > 0)
-                {
-                    strncpy(str, sb_GetReadString(theStrOrFile->ungetBuf), charsToReadFromUngetBuf);
-                    sb_SetReadPos(theStrOrFile->ungetBuf, (ungetBufReadPos + charsToReadFromUngetBuf));
-                }
+                charsToReadFromStream = (charsToReadFromUngetBuf > 0) ? (count - charsToReadFromUngetBuf) : 0;
             }
         }
 
@@ -433,7 +433,7 @@ int sf_closeFile(strOrFileP theStrOrFile)
 
     if (theStrOrFile->ungetBuf != NULL)
     {
-        sb_Free(&(theStrOrFile->ungetBuf));
+        sp_Free(&(theStrOrFile->ungetBuf));
     }
     theStrOrFile->ungetBuf = NULL;
 
@@ -478,7 +478,7 @@ void sf_Free(strOrFileP *pStrOrFile)
 
         if ((*pStrOrFile)->ungetBuf != NULL)
         {
-            sb_Free(&((*pStrOrFile)->ungetBuf));
+            sp_Free(&((*pStrOrFile)->ungetBuf));
         }
         (*pStrOrFile)->ungetBuf = NULL;
 

@@ -14,13 +14,13 @@ extern "C"
 
 #include <stdio.h>
 
-#include "strbuf.h"
+#include "../lowLevelUtils/stack.h"
 
     typedef struct
     {
         char fileMode;
         FILE *pFile;
-        strBufP ungetBuf;
+        stackP ungetBuf;
         char *theStr;
         int theStrPos;
     } strOrFile;
@@ -31,6 +31,7 @@ extern "C"
 
     char sf_getc(strOrFileP theStrOrFile);
     void sf_ReadSkipChar(strOrFileP theStrOrFile);
+    void sf_ReadSkipWhitespace(strOrFileP theStrOrFile);
     int sf_ReadInteger(int *intToRead, strOrFileP theStrOrFile);
 
     char sf_ungetc(char theChar, strOrFileP theStrOrFile);
