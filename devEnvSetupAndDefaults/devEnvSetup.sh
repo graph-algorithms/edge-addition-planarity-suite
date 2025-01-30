@@ -15,3 +15,6 @@ mkdir -p ../embedded
 mkdir -p ../adjlist
 mkdir -p ../obstructed
 mkdir -p ../error
+
+echo -e "Making m4 directory for autotools build process.\n"
+mkdir -p ../m4

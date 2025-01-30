@@ -1,5 +1,6 @@
 AC_INIT([planarity],[3.0.2.0],[jboyer@acm.org])
 AM_INIT_AUTOMAKE([subdir-objects] [foreign])
+AC_CONFIG_MACRO_DIRS([m4])
 AC_CONFIG_SRCDIR([c/])
 
 # The version of the libtool library is of the form current:revision:age
