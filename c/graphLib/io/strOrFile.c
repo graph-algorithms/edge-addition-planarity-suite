@@ -192,6 +192,33 @@ int sf_ReadInteger(int *intToRead, strOrFileP theStrOrFile)
 }
 
 /********************************************************************
+ sf_ReadSkipInteger()
+ Calls sf_ReadInteger() and discards the result.
+ ********************************************************************/
+int sf_ReadSkipInteger(strOrFileP theStrOrFile)
+{
+    int temp = 0;
+    if (sf_ReadInteger(&temp, theStrOrFile) != OK)
+        return NOTOK;
+    return OK;
+}
+
+/********************************************************************
+ sf_ReadSkipLineRemainder()
+ Calls sf_fgets() and discards the result.
+ ********************************************************************/
+int sf_ReadSkipLineRemainder(strOrFileP theStrOrFile)
+{
+    char lineRemainderToSkip[255];
+    memset(lineRemainderToSkip, '\0', 255);
+
+    if (sf_fgets(lineRemainderToSkip, 254, theStrOrFile) == NULL)
+        return NOTOK;
+
+    return OK;
+}
+
+/********************************************************************
  sf_ungetc()
  Order of parameters matches stdio ungetc().
 
@@ -298,16 +325,24 @@ char *sf_fgets(char *str, int count, strOrFileP theStrOrFile)
             {
                 charsToReadFromUngetBuf = (count > numCharsInUngetBuf) ? numCharsInUngetBuf : count;
                 char currChar = '\0';
-                for (int i = (charsToReadFromUngetBuf - 1); i >= 0; i--)
+                bool encounteredNewline = FALSE;
+                for (int i = 0; i < charsToReadFromUngetBuf; i++)
                 {
                     currChar = sf_getc(theStrOrFile);
                     if (currChar == EOF)
-                    {
                         return NULL;
-                    }
                     str[i] = currChar;
+                    // N.B. fgets() includes the \n in the string returned, and
+                    // no further characters shall be read
+                    if (currChar == '\n')
+                    {
+                        encounteredNewline = TRUE;
+                        break;
+                    }
                 }
-                charsToReadFromStream = (charsToReadFromUngetBuf > 0) ? (count - charsToReadFromUngetBuf) : 0;
+                // N.B. If we broke out of the loop early due to \n, do not read
+                // any further characters from stream
+                charsToReadFromStream = (encounteredNewline) ? 0 : ((count > numCharsInUngetBuf) ? (count - charsToReadFromUngetBuf) : 0);
             }
         }
 
@@ -328,6 +363,7 @@ char *sf_fgets(char *str, int count, strOrFileP theStrOrFile)
     else if (theStrOrFile->theStr != NULL && theStrOrFile->theStr[theStrOrFile->theStrPos] != '\0')
     {
         strncpy(str, theStrOrFile->theStr + theStrOrFile->theStrPos, count);
+        // TODO: Probably better to use str[strcspn(str, "\n\r")] = '\0'; to simplify
         str[count - 1] = '\0';
         // Handles \n and \r\n
         char *findDelim = strchr(str, '\n');
@@ -341,6 +377,7 @@ char *sf_fgets(char *str, int count, strOrFileP theStrOrFile)
                 findDelim[1] = '\0';
         }
 
+        // FIXME: Verify that this actually advances theStrPos sufficiently
         theStrOrFile->theStrPos += strlen(str);
 
         return str;

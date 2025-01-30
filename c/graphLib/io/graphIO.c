@@ -13,8 +13,8 @@ See the LICENSE.TXT file for licensing information.
 /* Private functions (exported to system) */
 
 int _ReadAdjMatrix(graphP theGraph, FILE *Infile, strBufP inBuf);
-// int _ReadAdjList(graphP theGraph, FILE *Infile, strBufP inBuf);
 int _ReadAdjList(graphP theGraph, strOrFileP inputContainer, strBufP inBuf);
+int _ReadLEDAGraph(graphP theGraph, strOrFileP inputContainer);
 int _WriteAdjList(graphP theGraph, FILE *Outfile, strBufP outBuf);
 int _WriteAdjMatrix(graphP theGraph, FILE *Outfile, strBufP outBuf);
 int _WriteDebugInfo(graphP theGraph, FILE *Outfile);
@@ -105,7 +105,6 @@ int _ReadAdjMatrix(graphP theGraph, FILE *Infile, strBufP inBuf)
           NOTOK on file content error (or internal error)
  ********************************************************************/
 
-// int _ReadAdjList(graphP theGraph, FILE *Infile, strBufP inBuf)
 int _ReadAdjList(graphP theGraph, strOrFileP inputContainer, strBufP inBuf)
 {
     int N = -1;
@@ -334,38 +333,63 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer, strBufP inBuf)
           NOTOK on file content error (or internal error)
  ********************************************************************/
 
-int _ReadLEDAGraph(graphP theGraph, FILE *Infile)
+int _ReadLEDAGraph(graphP theGraph, strOrFileP inputContainer)
 {
     char Line[256];
     int N = -1;
-    int M, m, u, v, ErrorCode;
+    int graphType, M, m, u, v, ErrorCode;
     int zeroBasedOffset = gp_GetFirstVertex(theGraph) == 0 ? 1 : 0;
 
-    /* Skip the lines that say LEDA.GRAPH and give the node and edge types */
-    fgets(Line, 255, Infile);
+    /*
+        N.B. Skip the lines that say LEDA.GRAPH and give the node and
+        edge types then determine if graph is directed (-1) or
+        undirected (-2); we only support undirected graphs at this time.
+    */
+    for (int i = 0; i < 3; i++)
+        if (sf_ReadSkipLineRemainder(inputContainer) != OK)
+            return NOTOK;
 
-    fgets(Line, 255, Infile);
-    fgets(Line, 255, Infile);
+    if (sf_ReadInteger(&graphType, inputContainer) != OK)
+        return NOTOK;
 
-    /* Read the number of vertices N, initialize the graph, then skip N. */
-    fgets(Line, 255, Infile);
-    sscanf(Line, " %d", &N);
+    // N.B. We currently only support undirected graphs
+    if (graphType != -2)
+        return NOTOK;
+
+    /*
+        Skip any preceding whitespace, read the number of vertices N,
+        and skip any subsequent whitespace.
+    */
+    sf_ReadSkipWhitespace(inputContainer);
+    if (sf_ReadInteger(&N, inputContainer) != OK)
+        return NOTOK;
+    sf_ReadSkipWhitespace(inputContainer);
 
     if (gp_InitGraph(theGraph, N) != OK)
         return NOTOK;
 
     for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
-        fgets(Line, 255, Infile);
+        if (sf_fgets(Line, 255, inputContainer) == NULL)
+            return NOTOK;
 
     /* Read the number of edges */
-    fgets(Line, 255, Infile);
-    sscanf(Line, " %d", &M);
+    sf_ReadSkipWhitespace(inputContainer);
+    if (sf_ReadInteger(&M, inputContainer) != OK)
+        return NOTOK;
+    sf_ReadSkipWhitespace(inputContainer);
 
     /* Read and add each edge, omitting loops and parallel edges */
     for (m = 0; m < M; m++)
     {
-        fgets(Line, 255, Infile);
-        sscanf(Line, " %d %d", &u, &v);
+        sf_ReadSkipWhitespace(inputContainer);
+        if (sf_ReadInteger(&u, inputContainer) != OK)
+            return NOTOK;
+        sf_ReadSkipWhitespace(inputContainer);
+        if (sf_ReadInteger(&v, inputContainer) != OK)
+            return NOTOK;
+        if (sf_ReadSkipLineRemainder(inputContainer) != OK)
+            return NOTOK;
+
         if (u != v && !gp_IsNeighbor(theGraph, u - zeroBasedOffset, v - zeroBasedOffset))
         {
             if ((ErrorCode = gp_DynamicAddEdge(theGraph, u - zeroBasedOffset, 0, v - zeroBasedOffset, 0)) != OK)
@@ -437,8 +461,8 @@ int gp_Read(graphP theGraph, char *FileName)
     // fseek(Infile, 0, SEEK_SET);
     if (strncmp(lineBuff, "LEDA.GRAPH", strlen("LEDA.GRAPH")) == 0)
     {
-        fseek(Infile, 0, SEEK_SET);
-        RetVal = _ReadLEDAGraph(theGraph, Infile);
+        // fseek(Infile, 0, SEEK_SET);
+        RetVal = _ReadLEDAGraph(theGraph, inputContainer);
     }
     else if (strncmp(lineBuff, "N=", strlen("N=")) == 0)
     {

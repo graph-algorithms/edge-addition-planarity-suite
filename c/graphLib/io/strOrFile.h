@@ -33,6 +33,8 @@ extern "C"
     void sf_ReadSkipChar(strOrFileP theStrOrFile);
     void sf_ReadSkipWhitespace(strOrFileP theStrOrFile);
     int sf_ReadInteger(int *intToRead, strOrFileP theStrOrFile);
+    int sf_ReadSkipInteger(strOrFileP theStrOrFile);
+    int sf_ReadSkipLineRemainder(strOrFileP theStrOrFile);
 
     char sf_ungetc(char theChar, strOrFileP theStrOrFile);
     int sf_ungetContent(char *contentsToUnget, strOrFileP theStrOrFile);
