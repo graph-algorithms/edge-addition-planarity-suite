@@ -112,9 +112,34 @@ void sf_ReadSkipWhitespace(strOrFileP theStrOrFile)
 }
 
 /********************************************************************
+ sf_ReadSingleDigit()
+ Calls sf_getc() and tests whether the character read corresponds to
+ a digit.
+
+ Returns NOTOK if the character returned from sf_getc() is not a digit.
+ Assigns the digit read to the int * and returns OK upon success.
+ ********************************************************************/
+int sf_ReadSingleDigit(int *digitToRead, strOrFileP theStrOrFile)
+{
+    int candidateDigit = EOF;
+
+    candidateDigit = sf_getc(theStrOrFile);
+    if (!isdigit(candidateDigit))
+        return NOTOK;
+
+    // N.B. Subtract '0' = 48 to convert the digit
+    // char to the corresponding int
+    (*digitToRead) = candidateDigit - '0';
+    return OK;
+}
+
+/********************************************************************
  sf_ReadInteger()
  Repeatedly calls sf_getc() to obtain the characters corresponding to
  an int, then parses that char* using sscanf() to extract the integer.
+
+ Returns OK if successfully extracted the digits of and produced the
+ int from theStrOrFile, or NOTOK otherwise.
  ********************************************************************/
 int sf_ReadInteger(int *intToRead, strOrFileP theStrOrFile)
 {
@@ -253,7 +278,8 @@ char sf_ungetc(char theChar, strOrFileP theStrOrFile)
             if (theStrOrFile->theStrPos <= 0)
                 return EOF;
 
-            // Decrement theStrPos, then replace the character in theStr at that position with theChar
+            // Decrement theStrPos, then replace the character in theStr
+            // at that position with theChar
             theStrOrFile->theStr[--(theStrOrFile->theStrPos)] = theChar;
             return theStrOrFile->theStr[(theStrOrFile->theStrPos + 1)];
         }
@@ -266,9 +292,11 @@ char sf_ungetc(char theChar, strOrFileP theStrOrFile)
  sf_ungetcontent()
 
  If strOrFileP has FILE pointer to input file, pushes to the ungetBuf.
+    N.B. The characters are pushed in reverse order so that they can
+    be fetched from the ungetBuf in the order of the original string.
 
  If strOrFileP has input string, then we fail (since we do not use the
- ungetBuf)
+ ungetBuf).
 
  Returns OK on success and NOTOK on failure.
  ********************************************************************/
@@ -280,8 +308,11 @@ int sf_ungetContent(char *contentsToUnget, strOrFileP theStrOrFile)
         theStrOrFile->theStr != NULL)
         return NOTOK;
 
-    // FIXME: Do we need to inspect fileMode to error out if we are ungetContents
-    // for file opened in write mode, or if pFile corresponds to stdout/stderr?
+    if ((sp_GetCapacity(theStrOrFile->ungetBuf) - sp_GetCurrentSize(theStrOrFile->ungetBuf)) < strlen(contentsToUnget))
+        return NOTOK;
+
+    // FIXME: Do we need to inspect fileMode to error out if we are
+    // trying to unget contents "to" an output stream
 
     for (int i = (strlen(contentsToUnget) - 1); i >= 0; i--)
     {
@@ -401,20 +432,25 @@ int sf_fputs(char *strToWrite, strOrFileP theStrOrFile)
     int outputLen = EOF;
 
     if (strToWrite == NULL || theStrOrFile == NULL)
-        return outputLen;
+        return EOF;
 
     int lenOfStringToPuts = strlen(strToWrite);
-    // N.B. fputs() will fail and return EOF if pFile doesn't correspond to an output stream
+    // N.B. fputs() will fail and return EOF if pFile doesn't correspond
+    // to an output stream
     if (theStrOrFile->pFile != NULL)
         outputLen = fputs(strToWrite, theStrOrFile->pFile);
     else if (theStrOrFile->theStr != NULL)
     {
-        // Want to be able to contain the original theStr contents, the strToWrite, and a null terminator (added by strcat)
-        char *newStr = realloc(theStrOrFile->theStr, (strlen(theStrOrFile->theStr) + lenOfStringToPuts + 1) * sizeof(char));
-        // If realloc failed, pointer returned will be NULL; error will be handled by eventually freeing iterator, which will
+        // Want to be able to contain the original theStr contents, the
+        // strToWrite, and a null terminator (added by strcat)
+        char *newStr = realloc(
+            theStrOrFile->theStr,
+            (strlen(theStrOrFile->theStr) + lenOfStringToPuts + 1) * sizeof(char));
+        // If realloc failed, pointer returned will be NULL; error will
+        // be handled by eventually freeing iterator, which will
         // clean up the old memory for theStrOrFile->theStr
         if (newStr == NULL)
-            return outputLen;
+            return EOF;
         else
             theStrOrFile->theStr = newStr;
         strcat(theStrOrFile->theStr, strToWrite);
@@ -505,11 +541,13 @@ void sf_Free(strOrFileP *pStrOrFile)
 
         if ((*pStrOrFile)->pFile != NULL)
         {
-            // If sf_closeFile() has not previously been called, we must be in an error state
+            // If sf_closeFile() has not previously been called, we
+            // must be in an error state
             sf_closeFile((*pStrOrFile));
-            // TODO: (#56) if the strOrFile container's FILE pointer corresponds to an output file,
-            // i.e. fileMode is 'w', we should try to remove the file since the error state means
-            // the contents are invalid
+            // TODO: (#56) if the strOrFile container's FILE pointer
+            // corresponds to an output file, i.e. fileMode is 'w',
+            // we should try to remove the file since the error state
+            // means the contents are invalid
         }
         (*pStrOrFile)->pFile = NULL;
 

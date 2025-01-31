@@ -12,7 +12,7 @@ See the LICENSE.TXT file for licensing information.
 
 /* Private functions (exported to system) */
 
-int _ReadAdjMatrix(graphP theGraph, FILE *Infile, strBufP inBuf);
+int _ReadAdjMatrix(graphP theGraph, strOrFileP inputContainer, strBufP inBuf);
 int _ReadAdjList(graphP theGraph, strOrFileP inputContainer, strBufP inBuf);
 int _ReadLEDAGraph(graphP theGraph, strOrFileP inputContainer);
 int _WriteAdjList(graphP theGraph, FILE *Outfile, strBufP outBuf);
@@ -28,17 +28,22 @@ int _WriteDebugInfo(graphP theGraph, FILE *Outfile);
  Returns: OK, NOTOK on internal error, NONEMBEDDABLE if too many edges
  ********************************************************************/
 
-int _ReadAdjMatrix(graphP theGraph, FILE *Infile, strBufP inBuf)
+// int _ReadAdjMatrix(graphP theGraph, FILE *Infile, strBufP inBuf)
+int _ReadAdjMatrix(graphP theGraph, strOrFileP inputContainer, strBufP inBuf)
+
 {
     int N = -1;
     int v, w, Flag;
 
-    if (Infile == NULL && inBuf == NULL)
+    if (inputContainer == NULL && inBuf == NULL)
         return NOTOK;
 
     // Read the number of vertices from the first line of the file
-    if (Infile != NULL)
-        fscanf(Infile, " %d ", &N);
+    if (inputContainer != NULL)
+    {
+        sf_ReadSkipWhitespace(inputContainer);
+        sf_ReadInteger(&N, inputContainer);
+    }
     else
     {
         sb_ReadSkipWhitespace(inBuf);
@@ -59,8 +64,16 @@ int _ReadAdjMatrix(graphP theGraph, FILE *Infile, strBufP inBuf)
         for (w = v + 1; gp_VertexInRange(theGraph, w); w++)
         {
             // Read each of v's w-neighbor flags
-            if (Infile != NULL)
-                fscanf(Infile, " %1d", &Flag);
+            if (inputContainer != NULL)
+            {
+                sf_ReadSkipWhitespace(inputContainer);
+                if (sf_ReadSingleDigit(&Flag, inputContainer) != OK)
+                    return NOTOK;
+                // N.B. Currently do not allow edge-weights in Adjacency
+                // Matrix format
+                if (Flag != 0 && Flag != 1)
+                    return NOTOK;
+            }
             else
             {
                 sb_ReadSkipWhitespace(inBuf);
@@ -124,6 +137,9 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer, strBufP inBuf)
         // TODO: Should I be making sure the inputContainer's fileMode flag is
         // set to indicate "file opened for read"? Or checking to make sure the pFile
         // corresponds to stdin and not stdout/stderr?
+        // sf_ReadSkipWhitespace() and sf_ReadInteger() will surface errors bubbling
+        // up from sf_getc(), which would include things like failing to getc()
+        // from an output stream
         sf_ReadSkipWhitespace(inputContainer);
         if (sf_ReadInteger(&N, inputContainer) != OK)
             return NOTOK;
@@ -472,8 +488,7 @@ int gp_Read(graphP theGraph, char *FileName)
     }
     else if (isdigit(lineBuff[0]))
     {
-        fseek(Infile, 0, SEEK_SET);
-        RetVal = _ReadAdjMatrix(theGraph, Infile, NULL);
+        RetVal = _ReadAdjMatrix(theGraph, inputContainer, NULL);
         if (RetVal == OK)
             extraDataAllowed = true;
     }

@@ -32,6 +32,7 @@ extern "C"
     char sf_getc(strOrFileP theStrOrFile);
     void sf_ReadSkipChar(strOrFileP theStrOrFile);
     void sf_ReadSkipWhitespace(strOrFileP theStrOrFile);
+    int sf_ReadSingleDigit(int *digitToRead, strOrFileP theStrOrFile);
     int sf_ReadInteger(int *intToRead, strOrFileP theStrOrFile);
     int sf_ReadSkipInteger(strOrFileP theStrOrFile);
     int sf_ReadSkipLineRemainder(strOrFileP theStrOrFile);
