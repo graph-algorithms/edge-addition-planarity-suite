@@ -185,6 +185,23 @@ int beginG6ReadIterationFromG6String(G6ReadIterator *pG6ReadIterator, char *g6In
     return exitCode;
 }
 
+int beginG6ReadIterationFromG6StrOrFile(G6ReadIterator *pG6ReadIterator, strOrFileP g6InputContainer)
+{
+    if (
+        g6InputContainer == NULL ||
+        (g6InputContainer->pFile == NULL &&
+         (g6InputContainer->theStr == NULL ||
+          strlen(g6InputContainer->theStr) == 0)))
+    {
+        ErrorMessage("Invalid g6InputContainer; must contain either valid input stream or non-empty string.\n");
+        return NOTOK;
+    }
+
+    pG6ReadIterator->g6Input = g6InputContainer;
+
+    return _beginG6ReadIteration(pG6ReadIterator);
+}
+
 int _beginG6ReadIteration(G6ReadIterator *pG6ReadIterator)
 {
     int exitCode = OK;
@@ -670,13 +687,7 @@ int endG6ReadIteration(G6ReadIterator *pG6ReadIterator)
     if (pG6ReadIterator != NULL)
     {
         if (pG6ReadIterator->g6Input != NULL)
-        {
-            exitCode = sf_closeFile(pG6ReadIterator->g6Input);
-            if (exitCode != OK)
-                ErrorMessage("Unable to close g6Input file pointer.\n");
-
             sf_Free(&(pG6ReadIterator->g6Input));
-        }
 
         if (pG6ReadIterator->currGraphBuff != NULL)
         {
@@ -695,13 +706,7 @@ int freeG6ReadIterator(G6ReadIterator **ppG6ReadIterator)
     if (ppG6ReadIterator != NULL && (*ppG6ReadIterator) != NULL)
     {
         if ((*ppG6ReadIterator)->g6Input != NULL)
-        {
-            exitCode = sf_closeFile((*ppG6ReadIterator)->g6Input);
-            if (exitCode != OK)
-                ErrorMessage("Unable to close g6Input file pointer.\n");
-
             sf_Free(&((*ppG6ReadIterator)->g6Input));
-        }
 
         (*ppG6ReadIterator)->numGraphsRead = 0;
         (*ppG6ReadIterator)->graphOrder = 0;
@@ -860,4 +865,36 @@ int _ReadGraphFromG6String(graphP pGraphToRead, char *g6EncodedString)
         ErrorMessage("Unable to free G6ReadIterator.\n");
 
     return exitCode;
+}
+
+int _ReadGraphFromG6StrOrFile(graphP pGraphToRead, strOrFileP g6InputContainer)
+{
+    G6ReadIterator *pG6ReadIterator = NULL;
+
+    if (allocateG6ReadIterator(&pG6ReadIterator, pGraphToRead) != OK)
+    {
+        ErrorMessage("Unable to allocate G6ReadIterator.\n");
+        return NOTOK;
+    }
+
+    if (beginG6ReadIterationFromG6StrOrFile(pG6ReadIterator, g6InputContainer) != OK)
+    {
+        ErrorMessage("Unable to begin .g6 read iteration.\n");
+
+        if (freeG6ReadIterator(&pG6ReadIterator) != OK)
+            ErrorMessage("Unable to free G6ReadIterator.\n");
+
+        return NOTOK;
+    }
+
+    if (readGraphUsingG6ReadIterator(pG6ReadIterator) != OK)
+        ErrorMessage("Unable to read graph from .g6 read iterator.\n");
+
+    if (endG6ReadIteration(pG6ReadIterator) != OK)
+        ErrorMessage("Unable to end G6ReadIterator.\n");
+
+    if (freeG6ReadIterator(&pG6ReadIterator) != OK)
+        ErrorMessage("Unable to free G6ReadIterator.\n");
+
+    return OK;
 }

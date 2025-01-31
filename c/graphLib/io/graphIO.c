@@ -169,7 +169,6 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer, strBufP inBuf)
     for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
     {
         // Read the vertex number
-        // if (Infile != NULL)
         if (inputContainer != NULL && inputContainer->pFile != NULL)
         {
             sf_ReadSkipWhitespace(inputContainer);
@@ -472,12 +471,8 @@ int gp_Read(graphP theGraph, char *FileName)
         return NOTOK;
     }
 
-    // fgets(lineBuff, 255, Infile);
-    // Reset file pointer to beginning of file
-    // fseek(Infile, 0, SEEK_SET);
     if (strncmp(lineBuff, "LEDA.GRAPH", strlen("LEDA.GRAPH")) == 0)
     {
-        // fseek(Infile, 0, SEEK_SET);
         RetVal = _ReadLEDAGraph(theGraph, inputContainer);
     }
     else if (strncmp(lineBuff, "N=", strlen("N=")) == 0)
@@ -494,11 +489,12 @@ int gp_Read(graphP theGraph, char *FileName)
     }
     else
     {
-        fseek(Infile, 0, SEEK_SET);
-        RetVal = _ReadGraphFromG6FilePointer(theGraph, Infile);
-        // Since G6ReadIterator closes Infile via sf_Free(), we don't want
-        // to try to fclose() again.
-        Infile = NULL;
+        RetVal = _ReadGraphFromG6StrOrFile(theGraph, inputContainer);
+        // N.B. Unlike the other _Read functions, we are relinquishing
+        // ownership of inputContainer to the G6ReadIterator, which
+        // calls sf_Free() when ending iteration. This assignment
+        // prevents calling free on alread-freed memory.
+        inputContainer = NULL;
     }
 
     // The possibility of "extra data" is not allowed for .g6 format:
@@ -507,7 +503,10 @@ int gp_Read(graphP theGraph, char *FileName)
     // we don't want to add extra data if the graph is nonembeddable, as
     // the FILE pointer isn't necessarily advanced past the graph
     // encoding unless OK is returned.
-    if (extraDataAllowed)
+    // FIXME: How did this not cause an illegal seek error when Infile corresponds to stdin??
+    // It's been like this since before the G6ReadIterator introduction:
+    // see https://github.com/graph-algorithms/edge-addition-planarity-suite/blob/4297a7a416f38229c89760a4ebf882178711899e/c/graphIO.c
+    if (extraDataAllowed && strncmp(FileName, "stdin", strlen("stdin")) != 0)
     {
         void *extraData = NULL;
         long filePos = ftell(Infile);
@@ -541,7 +540,9 @@ int gp_Read(graphP theGraph, char *FileName)
         }
     }
 
-    sf_Free(&inputContainer);
+    if (inputContainer != NULL)
+        sf_Free(&inputContainer);
+    inputContainer = NULL;
 
     return RetVal;
 }

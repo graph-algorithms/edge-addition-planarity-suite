@@ -33,19 +33,22 @@ extern "C"
     } G6ReadIterator;
 
     int allocateG6ReadIterator(G6ReadIterator **, graphP);
-    bool _isG6ReadIteratorAllocated(G6ReadIterator *pG6ReadIterator);
+    bool _isG6ReadIteratorAllocated(G6ReadIterator *);
 
     int getNumGraphsRead(G6ReadIterator *, int *);
     int getOrderOfGraphToRead(G6ReadIterator *, int *);
     int getPointerToGraphReadIn(G6ReadIterator *, graphP *);
 
+    // TODO: should I get rid of all these alternate beginG6ReadIteration
+    // functions and only allow begin .g6 read iteration with strOrFileP?
     int beginG6ReadIterationFromG6FilePath(G6ReadIterator *, char *);
     int beginG6ReadIterationFromG6FilePointer(G6ReadIterator *, FILE *);
-    int beginG6ReadIterationFromG6String(G6ReadIterator *pG6ReadIterator, char *g6InputStr);
-    int _beginG6ReadIteration(G6ReadIterator *pG6ReadIterator);
-    int _processAndCheckHeader(strOrFileP g6Input);
+    int beginG6ReadIterationFromG6String(G6ReadIterator *, char *);
+    int beginG6ReadIterationFromG6StrOrFile(G6ReadIterator *, strOrFileP);
+    int _beginG6ReadIteration(G6ReadIterator *);
+    int _processAndCheckHeader(strOrFileP);
     bool _firstCharIsValid(char, const int);
-    int _getGraphOrder(strOrFileP g6Input, int *);
+    int _getGraphOrder(strOrFileP, int *);
 
     int readGraphUsingG6ReadIterator(G6ReadIterator *);
     int _checkGraphOrder(char *, int);
@@ -56,9 +59,11 @@ extern "C"
 
     int freeG6ReadIterator(G6ReadIterator **);
 
+    // TODO: Should all of these make strOrFileP and pass to _readGraphFromG6StrOrFile()?
     int _ReadGraphFromG6FilePath(graphP, char *);
-    int _ReadGraphFromG6FilePointer(graphP pGraphToRead, FILE *g6Infile);
+    int _ReadGraphFromG6FilePointer(graphP, FILE *);
     int _ReadGraphFromG6String(graphP, char *);
+    int _ReadGraphFromG6StrOrFile(graphP, strOrFileP);
 
 #ifdef __cplusplus
 }

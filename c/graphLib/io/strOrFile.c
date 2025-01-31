@@ -539,16 +539,12 @@ void sf_Free(strOrFileP *pStrOrFile)
         (*pStrOrFile)->theStr = NULL;
         (*pStrOrFile)->theStrPos = 0;
 
+        // TODO: (#56) if the strOrFile container's FILE pointer
+        // corresponds to an output file, i.e. fileMode is 'w',
+        // we should try to remove the file since the error state
+        // means the contents are invalid
         if ((*pStrOrFile)->pFile != NULL)
-        {
-            // If sf_closeFile() has not previously been called, we
-            // must be in an error state
             sf_closeFile((*pStrOrFile));
-            // TODO: (#56) if the strOrFile container's FILE pointer
-            // corresponds to an output file, i.e. fileMode is 'w',
-            // we should try to remove the file since the error state
-            // means the contents are invalid
-        }
         (*pStrOrFile)->pFile = NULL;
 
         if ((*pStrOrFile)->ungetBuf != NULL)
