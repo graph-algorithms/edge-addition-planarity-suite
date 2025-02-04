@@ -12,8 +12,9 @@ See the LICENSE.TXT file for licensing information.
 
 /* Private functions (exported to system) */
 
-int _ReadAdjMatrix(graphP theGraph, strOrFileP inputContainer, strBufP inBuf);
-int _ReadAdjList(graphP theGraph, strOrFileP inputContainer, strBufP inBuf);
+int _ReadGraph(graphP theGraph, strOrFileP inputContainer);
+int _ReadAdjMatrix(graphP theGraph, strOrFileP inputContainer);
+int _ReadAdjList(graphP theGraph, strOrFileP inputContainer);
 int _ReadLEDAGraph(graphP theGraph, strOrFileP inputContainer);
 int _WriteAdjList(graphP theGraph, FILE *Outfile, strBufP outBuf);
 int _WriteAdjMatrix(graphP theGraph, FILE *Outfile, strBufP outBuf);
@@ -21,6 +22,7 @@ int _WriteDebugInfo(graphP theGraph, FILE *Outfile);
 
 /********************************************************************
  _ReadAdjMatrix()
+
  This function reads the undirected graph in upper triangular matrix format.
  Though O(N^2) time is required, this routine is useful during
  reliability testing due to the wealth of graph generating software
@@ -28,29 +30,18 @@ int _WriteDebugInfo(graphP theGraph, FILE *Outfile);
  Returns: OK, NOTOK on internal error, NONEMBEDDABLE if too many edges
  ********************************************************************/
 
-// int _ReadAdjMatrix(graphP theGraph, FILE *Infile, strBufP inBuf)
-int _ReadAdjMatrix(graphP theGraph, strOrFileP inputContainer, strBufP inBuf)
+int _ReadAdjMatrix(graphP theGraph, strOrFileP inputContainer)
 
 {
     int N = -1;
     int v, w, Flag;
 
-    if (inputContainer == NULL && inBuf == NULL)
+    if (sf_ValidateStrOrFile(inputContainer) != OK)
         return NOTOK;
 
     // Read the number of vertices from the first line of the file
-    if (inputContainer != NULL)
-    {
-        sf_ReadSkipWhitespace(inputContainer);
-        sf_ReadInteger(&N, inputContainer);
-    }
-    else
-    {
-        sb_ReadSkipWhitespace(inBuf);
-        sscanf(sb_GetReadString(inBuf), " %d ", &N);
-        sb_ReadSkipInteger(inBuf);
-        sb_ReadSkipWhitespace(inBuf);
-    }
+    sf_ReadSkipWhitespace(inputContainer);
+    sf_ReadInteger(&N, inputContainer);
 
     // Initialize the graph based on the number of vertices
     if (gp_InitGraph(theGraph, N) != OK)
@@ -64,22 +55,13 @@ int _ReadAdjMatrix(graphP theGraph, strOrFileP inputContainer, strBufP inBuf)
         for (w = v + 1; gp_VertexInRange(theGraph, w); w++)
         {
             // Read each of v's w-neighbor flags
-            if (inputContainer != NULL)
-            {
-                sf_ReadSkipWhitespace(inputContainer);
-                if (sf_ReadSingleDigit(&Flag, inputContainer) != OK)
-                    return NOTOK;
-                // N.B. Currently do not allow edge-weights in Adjacency
-                // Matrix format
-                if (Flag != 0 && Flag != 1)
-                    return NOTOK;
-            }
-            else
-            {
-                sb_ReadSkipWhitespace(inBuf);
-                sscanf(sb_GetReadString(inBuf), " %1d", &Flag);
-                sb_ReadSkipInteger(inBuf);
-            }
+            sf_ReadSkipWhitespace(inputContainer);
+            if (sf_ReadSingleDigit(&Flag, inputContainer) != OK)
+                return NOTOK;
+            // N.B. Currently do not allow edge-weights in Adjacency
+            // Matrix format
+            if (Flag != 0 && Flag != 1)
+                return NOTOK;
 
             // Add the edge (v, w) if the flag is raised
             if (Flag)
@@ -97,12 +79,12 @@ int _ReadAdjMatrix(graphP theGraph, strOrFileP inputContainer, strBufP inBuf)
  _ReadAdjList()
  This function reads the graph in adjacency list format.
 
- The file format is
- On the first line    : N= number of vertices
- On N subsequent lines: #: a b c ... -1
- where # is a vertex number and a, b, c, ... are its neighbors.
+ The graph format is:
+    On the first line    : N=<number of vertices>
+    On N subsequent lines: #: a b c ... -1
+        where # is a vertex number and a, b, c, ... are its neighbors.
 
- NOTE:  The vertex number is for file documentation only.  It is an
+ NOTE:  The vertex number is for file documentation only. It is an
         error if the vertices are not in sorted order in the file.
 
  NOTE:  If a loop edge is found, it is ignored without error.
@@ -118,43 +100,28 @@ int _ReadAdjMatrix(graphP theGraph, strOrFileP inputContainer, strBufP inBuf)
           NOTOK on file content error (or internal error)
  ********************************************************************/
 
-int _ReadAdjList(graphP theGraph, strOrFileP inputContainer, strBufP inBuf)
+int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
 {
     int N = -1;
     int v, W, adjList, e, indexValue, ErrorCode;
     int zeroBased = FALSE;
 
-    if (inputContainer == NULL && inBuf == NULL)
-        return NOTOK;
-    else if (inputContainer != NULL && (inputContainer->pFile == NULL || inputContainer->ungetBuf == NULL))
+    if (sf_ValidateStrOrFile(inputContainer) != OK)
         return NOTOK;
 
     // Skip the "N=" and then read the N value for number of vertices
-    if (inputContainer != NULL && inputContainer->pFile != NULL)
-    {
-        sf_ReadSkipChar(inputContainer);
-        sf_ReadSkipChar(inputContainer);
-        // TODO: Should I be making sure the inputContainer's fileMode flag is
-        // set to indicate "file opened for read"? Or checking to make sure the pFile
-        // corresponds to stdin and not stdout/stderr?
-        // sf_ReadSkipWhitespace() and sf_ReadInteger() will surface errors bubbling
-        // up from sf_getc(), which would include things like failing to getc()
-        // from an output stream
-        sf_ReadSkipWhitespace(inputContainer);
-        if (sf_ReadInteger(&N, inputContainer) != OK)
-            return NOTOK;
-        sf_ReadSkipWhitespace(inputContainer);
-    }
-    else
-    {
-        // TODO: Update when sf_ReadSkip[Char|Whitespace|Integer]() is implemented
-        sb_ReadSkipChar(inBuf);
-        sb_ReadSkipChar(inBuf);
-        sb_ReadSkipWhitespace(inBuf);
-        sscanf(sb_GetReadString(inBuf), " %d ", &N);
-        sb_ReadSkipInteger(inBuf);
-        sb_ReadSkipWhitespace(inBuf);
-    }
+    sf_ReadSkipChar(inputContainer);
+    sf_ReadSkipChar(inputContainer);
+    // TODO: Should I be making sure the inputContainer's fileMode flag is
+    // set to indicate "file opened for read"? Or checking to make sure the pFile
+    // corresponds to stdin and not stdout/stderr?
+    // sf_ReadSkipWhitespace() and sf_ReadInteger() will surface errors bubbling
+    // up from sf_getc(), which would include things like failing to getc()
+    // from an output stream
+    sf_ReadSkipWhitespace(inputContainer);
+    if (sf_ReadInteger(&N, inputContainer) != OK)
+        return NOTOK;
+    sf_ReadSkipWhitespace(inputContainer);
 
     // Initialize theGraph based on the number of vertices in the input
     if (gp_InitGraph(theGraph, N) != OK)
@@ -169,18 +136,11 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer, strBufP inBuf)
     for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
     {
         // Read the vertex number
-        if (inputContainer != NULL && inputContainer->pFile != NULL)
-        {
-            sf_ReadSkipWhitespace(inputContainer);
-            if (sf_ReadInteger(&indexValue, inputContainer) != OK)
-                return NOTOK;
-            sf_ReadSkipWhitespace(inputContainer);
-        }
-        else
-        {
-            sscanf(sb_GetReadString(inBuf), "%d", &indexValue);
-            sb_ReadSkipInteger(inBuf);
-        }
+
+        sf_ReadSkipWhitespace(inputContainer);
+        if (sf_ReadInteger(&indexValue, inputContainer) != OK)
+            return NOTOK;
+        sf_ReadSkipWhitespace(inputContainer);
 
         if (indexValue == 0 && v == gp_GetFirstVertex(theGraph))
             zeroBased = TRUE;
@@ -193,10 +153,7 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer, strBufP inBuf)
             return NOTOK;
 
         // Skip the colon after the vertex number
-        if (inputContainer != NULL && inputContainer->pFile != NULL)
-            sf_ReadSkipChar(inputContainer);
-        else
-            sb_ReadSkipChar(inBuf);
+        sf_ReadSkipChar(inputContainer);
 
         // If the vertex already has a non-empty adjacency list, then it is
         // the result of adding edges during processing of preceding vertices.
@@ -235,20 +192,11 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer, strBufP inBuf)
         while (1)
         {
             // Read the value indicating the next adjacent vertex (or the list end)
-            if (inputContainer != NULL && inputContainer->pFile != NULL)
-            {
-                sf_ReadSkipWhitespace(inputContainer);
-                if (sf_ReadInteger(&W, inputContainer) != OK)
-                    return NOTOK;
-                sf_ReadSkipWhitespace(inputContainer);
-            }
-            else
-            {
-                sb_ReadSkipWhitespace(inBuf);
-                sscanf(sb_GetReadString(inBuf), " %d ", &W);
-                sb_ReadSkipInteger(inBuf);
-                sb_ReadSkipWhitespace(inBuf);
-            }
+            sf_ReadSkipWhitespace(inputContainer);
+            if (sf_ReadInteger(&W, inputContainer) != OK)
+                return NOTOK;
+            sf_ReadSkipWhitespace(inputContainer);
+
             W += zeroBased ? gp_GetFirstVertex(theGraph) : 0;
 
             // A value below the valid range indicates the adjacency list end
@@ -355,6 +303,9 @@ int _ReadLEDAGraph(graphP theGraph, strOrFileP inputContainer)
     int graphType, M, m, u, v, ErrorCode;
     int zeroBasedOffset = gp_GetFirstVertex(theGraph) == 0 ? 1 : 0;
 
+    if (sf_ValidateStrOrFile(inputContainer) != OK)
+        return NOTOK;
+
     /*
         N.B. Skip the lines that say LEDA.GRAPH and give the node and
         edge types then determine if graph is directed (-1) or
@@ -420,28 +371,23 @@ int _ReadLEDAGraph(graphP theGraph, strOrFileP inputContainer)
 
 /********************************************************************
  gp_Read()
- Opens the given file, determines whether it is in adjacency list or
- matrix format based on whether the file start with N or just a number,
- calls the appropriate read function, then closes the file and returns
- the graph.
 
- Digraphs and loop edges are not supported in the adjacency matrix format,
- which is upper triangular.
+  Populates theGraph using the information stored in inputStr.
 
- In the adjacency list format, digraphs are supported.  Loop edges are
- ignored without producing an error.
+ The ownership of inputStr is transferred from the caller; it is
+ assigned to a strOrFile container and ownership is transferred to
+ the internal helper function _ReadGraph(), which then handles
+ freeing this memory.
 
- Pass "stdin" for the FileName to read from the stdin stream
+ Pass "stdin" for the FileName to read from the stdin stream.
 
  Returns: OK, NOTOK on internal error, NONEMBEDDABLE if too many edges
  ********************************************************************/
 
 int gp_Read(graphP theGraph, char *FileName)
 {
+    // int RetVal;
     FILE *Infile;
-    bool extraDataAllowed = false;
-    char lineBuff[255];
-    int RetVal;
 
     if (strcmp(FileName, "stdin") == 0)
         Infile = stdin;
@@ -459,13 +405,66 @@ int gp_Read(graphP theGraph, char *FileName)
         return NOTOK;
     }
 
+    return _ReadGraph(theGraph, inputContainer);
+}
+
+/********************************************************************
+ gp_ReadFromString()
+ Populates theGraph using the information stored in inputStr.
+
+ The ownership of inputStr is transferred from the caller; it is
+ assigned to a strOrFile container and ownership is transferred to
+ the internal helper function _ReadGraph(), which then handles
+ freeing this memory.
+
+ Returns NOTOK for any error, or OK otherwise
+ ********************************************************************/
+
+int gp_ReadFromString(graphP theGraph, char *inputStr)
+{
+    strOrFileP inputContainer = sf_New(NULL, inputStr);
+    if (inputContainer == NULL)
+    {
+        if (inputStr != NULL)
+            free(inputStr);
+        inputStr = NULL;
+        return NOTOK;
+    }
+
+    return _ReadGraph(theGraph, inputContainer);
+}
+
+/********************************************************************
+ _ReadGraph()
+
+ Determines the graph input format by parsing the first line of the
+ input stream or string contained by the inputContainer and calling the
+ appropriate read function, then then cleans up the inputContainer and
+ returns the graph.
+
+ Digraphs and loop edges are not supported in the adjacency matrix
+ format, which is upper triangular.
+
+ In the adjacency list format, digraphs are supported. Loop edges are
+ ignored without producing an error.
+ ********************************************************************/
+
+int _ReadGraph(graphP theGraph, strOrFileP inputContainer)
+{
+    int RetVal = OK;
+    bool extraDataAllowed = false;
+    char lineBuff[256];
+
+    if (sf_ValidateStrOrFile(inputContainer) != OK)
+        return NOTOK;
+
     if (sf_fgets(lineBuff, 255, inputContainer) == NULL)
     {
         sf_Free(&inputContainer);
         return NOTOK;
     }
 
-    if (sf_ungetContent(lineBuff, inputContainer) != OK)
+    if (sf_ungets(lineBuff, inputContainer) != OK)
     {
         sf_Free(&inputContainer);
         return NOTOK;
@@ -477,13 +476,13 @@ int gp_Read(graphP theGraph, char *FileName)
     }
     else if (strncmp(lineBuff, "N=", strlen("N=")) == 0)
     {
-        RetVal = _ReadAdjList(theGraph, inputContainer, NULL);
+        RetVal = _ReadAdjList(theGraph, inputContainer);
         if (RetVal == OK)
             extraDataAllowed = true;
     }
     else if (isdigit(lineBuff[0]))
     {
-        RetVal = _ReadAdjMatrix(theGraph, inputContainer, NULL);
+        RetVal = _ReadAdjMatrix(theGraph, inputContainer);
         if (RetVal == OK)
             extraDataAllowed = true;
     }
@@ -503,129 +502,43 @@ int gp_Read(graphP theGraph, char *FileName)
     // we don't want to add extra data if the graph is nonembeddable, as
     // the FILE pointer isn't necessarily advanced past the graph
     // encoding unless OK is returned.
-    // FIXME: How did this not cause an illegal seek error when Infile corresponds to stdin??
-    // It's been like this since before the G6ReadIterator introduction:
-    // see https://github.com/graph-algorithms/edge-addition-planarity-suite/blob/4297a7a416f38229c89760a4ebf882178711899e/c/graphIO.c
-    if (extraDataAllowed && strncmp(FileName, "stdin", strlen("stdin")) != 0)
+    if (extraDataAllowed)
     {
-        void *extraData = NULL;
-        long filePos = ftell(Infile);
-        long fileSize;
-
-        fseek(Infile, 0, SEEK_END);
-        fileSize = ftell(Infile);
-        fseek(Infile, filePos, SEEK_SET);
-
-        if (filePos < fileSize)
+        char charAfterGraphRead = EOF;
+        if ((charAfterGraphRead = sf_getc(inputContainer)) != EOF)
         {
-            extraData = malloc(fileSize - filePos + 1);
-            fread(extraData, fileSize - filePos, 1, Infile);
-        }
-        /*
-                // Useful for quick debugging of IO extensibility
+            if (sf_ungetc(charAfterGraphRead, inputContainer) != charAfterGraphRead)
+                RetVal = NOTOK;
+            else
+            {
+                strBufP extraData = sb_New(0);
                 if (extraData == NULL)
-                    printf("extraData == NULL\n");
+                    RetVal = NOTOK;
                 else
                 {
-                    char *extraDataString = (char *) extraData;
-                    extraDataString[fileSize - filePos] = '\0';
-                    printf("extraData = '%s'\n", extraDataString);
-                }
-        */
+                    // FIXME: how do I distinguish between "there's no more content on input stream" and "I've hit an error state"
+                    while (sf_fgets(lineBuff, 255, inputContainer) != NULL)
+                    {
+                        if (sb_ConcatString(extraData, lineBuff) != OK)
+                        {
+                            RetVal = NOTOK;
+                            break;
+                        }
+                    }
 
-        if (extraData != NULL)
-        {
-            RetVal = theGraph->functions.fpReadPostprocess(theGraph, extraData, fileSize - filePos);
-            free((void *)extraData);
+                    if (sb_GetSize(extraData) > 0)
+                        RetVal = theGraph->functions.fpReadPostprocess(theGraph, sb_GetReadString(extraData), sb_GetSize(extraData));
+
+                    sb_Free(&extraData);
+                    extraData = NULL;
+                }
+            }
         }
     }
 
     if (inputContainer != NULL)
         sf_Free(&inputContainer);
     inputContainer = NULL;
-
-    return RetVal;
-}
-
-/********************************************************************
- gp_ReadFromString()
- Populates theGraph using the information stored in inputStr (whose
- ownership is transferred from the caller, and therefore must be
- freed before returning).
-
- Supports adjacency list and adjacency matrix formats, not LEDA.
-
- Returns NOTOK for any error, or OK otherwise
- ********************************************************************/
-
-int gp_ReadFromString(graphP theGraph, char *inputStr)
-{
-    int RetVal;
-    bool extraDataAllowed = false;
-
-    strBufP inBuf = sb_New(0);
-    if (inBuf == NULL)
-    {
-        if (inputStr != NULL)
-            free(inputStr);
-        return NOTOK;
-    }
-
-    if (sb_ConcatString(inBuf, inputStr) != OK)
-    {
-        sb_Free(&inBuf);
-
-        if (inputStr != NULL)
-            free(inputStr);
-
-        return NOTOK;
-    }
-
-    if (strncmp(inputStr, "LEDA.GRAPH", strlen("LEDA.GRAPH")) == 0)
-    {
-        if (inputStr != NULL)
-            free(inputStr);
-        return NOTOK;
-    }
-    else if (strncmp(inputStr, "N=", strlen("N=")) == 0)
-    {
-        RetVal = _ReadAdjList(theGraph, NULL, inBuf);
-        if (RetVal == OK)
-            extraDataAllowed = true;
-    }
-    else if (isdigit(inputStr[0]))
-    {
-        RetVal = _ReadAdjMatrix(theGraph, NULL, inBuf);
-        if (RetVal == OK)
-            extraDataAllowed = true;
-    }
-    else
-    {
-        RetVal = _ReadGraphFromG6String(theGraph, inputStr);
-        // Since G6ReadIterator frees the inputStr via sf_Free(), we don't want
-        // to try to free again.
-        inputStr = NULL;
-    }
-
-    // The possibility of "extra data" is not allowed for .g6 format:
-    // .g6 files may contain multiple graphs, which are not valid input
-    // for the extra data readers (i.e. fpReadPostProcess) Additionally,
-    // we don't want to add extra data if the graph is nonembeddable, as
-    // the FILE pointer isn't necessarily advanced past the graph
-    // encoding unless OK is returned.
-    if (extraDataAllowed)
-    {
-        char *extraData = sb_GetReadString(inBuf);
-        int extraDataLen = extraData == NULL ? 0 : strlen(extraData);
-
-        if (extraDataLen > 0)
-            RetVal = theGraph->functions.fpReadPostprocess(theGraph, extraData, extraDataLen);
-    }
-
-    sb_Free(&inBuf);
-
-    if (inputStr != NULL)
-        free(inputStr);
 
     return RetVal;
 }

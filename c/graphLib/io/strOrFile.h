@@ -28,6 +28,7 @@ extern "C"
     typedef strOrFile *strOrFileP;
 
     strOrFileP sf_New(FILE *pFile, char *theStr);
+    int sf_ValidateStrOrFile(strOrFileP);
 
     char sf_getc(strOrFileP theStrOrFile);
     void sf_ReadSkipChar(strOrFileP theStrOrFile);
@@ -38,7 +39,7 @@ extern "C"
     int sf_ReadSkipLineRemainder(strOrFileP theStrOrFile);
 
     char sf_ungetc(char theChar, strOrFileP theStrOrFile);
-    int sf_ungetContent(char *contentsToUnget, strOrFileP theStrOrFile);
+    int sf_ungets(char *contentsToUnget, strOrFileP theStrOrFile);
 
     char *sf_fgets(char *str, int count, strOrFileP theStrOrFile);
 
