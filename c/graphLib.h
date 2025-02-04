@@ -2,7 +2,7 @@
 #define HELPERSTUB_GRAPHLIB_H
 
 /*
-Copyright (c) 1997-2024, John M. Boyer
+Copyright (c) 1997-2025, John M. Boyer
 All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
