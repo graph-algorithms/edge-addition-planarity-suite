@@ -20,7 +20,7 @@ char *GetProjectTitle(void)
     // of Current, Revision and/or Age as documented in configure.ac
 
     return "\n=================================================="
-           "\nThe Edge Addition Planarity Suite version 3.0.2.0"
+           "\nThe Edge Addition Planarity Suite version 4.0.0.0"
            "\nCopyright (c) 1997-2025 by John M. Boyer"
            "\nAll rights reserved."
            "\nSee the LICENSE.TXT file for licensing information."
