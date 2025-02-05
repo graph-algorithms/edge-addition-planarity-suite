@@ -1,3 +1,5 @@
+# The version number in the following line must be synchronized with 
+# the project version numbering in graphLib.h 
 AC_INIT([planarity],[4.0.0.0],[jboyer@acm.org])
 AM_INIT_AUTOMAKE([subdir-objects] [foreign])
 AC_CONFIG_MACRO_DIRS([m4])
@@ -6,6 +8,9 @@ AC_CONFIG_SRCDIR([c/])
 # The version of the libtool library is of the form current:revision:age
 #
 # See http://www.gnu.org/software/libtool/manual/html_node/Updating-version-info.html
+#
+# The version number in the following line must be synchronized with 
+# the LibPlanarity version numbers in graphLib.h 
 #
 # When doing a release, they should be updated like this:
 # 1. If no interfaces changed, only implementations: just increment

@@ -10,7 +10,7 @@ The primary purpose of this repository is to provide implementations of the edge
 
 * [Simplified O(n) Algorithms for Planar Graph Embedding, Kuratowski Subgraph Isolation, and Related Problems](https://dspace.library.uvic.ca/handle/1828/9918)
 
-As secondary purpose of this repository is to provide a generalized graph API that enables implementation of a very wide range of in-memory graph algorithms including basic methods for reading, writing, depth first search, and lowpoint as well as advanced methods for solving planarity, outerplanarity, drawing, and selected subgraph homeomorphism problems. An extension mechanism is also provided to enable implementation of planarity-related algorithms by overriding and augmenting data structures and methods of the core planarity algorithm.
+A secondary purpose of this repository is to provide a generalized graph API that enables implementation of a very wide range of in-memory graph algorithms including basic methods for reading, writing, depth first search, and lowpoint as well as advanced methods for solving planarity, outerplanarity, drawing, and selected subgraph homeomorphism problems. An extension mechanism is also provided to enable implementation of planarity-related algorithms by overriding and augmenting data structures and methods of the core planarity algorithm.
 
 ## Getting Started
 
@@ -60,9 +60,9 @@ On Linux, the planarity program can also be installed by entering `sudo make ins
 
 ## Versioning
 
-The APIs for the graph library and the planarity algorithm implementations are versioned using the method documented in [`configure.ac`](configure.ac).
+The overall project and the APIs for the graph library and the planarity-related algorithm implementations are versioned using the methods documented in [`configure.ac`](configure.ac) and [`graphLib.h`](c/graphLib/graphLib.h). The overall project version adheres to a `Major.Minor.Maintenance.Tweak` numbering system, and the `libPlanarity` shared library, which contains the graph library and planarity-related algorithm implementations, is versioned using the _current:revision:age_ system from `LibTool`.
 
-The `planarity.exe` application, which provides command-line and menu-driven interfaces for the graph library and planarity algorithms, is versioned according to the `Major.Minor.Maintenance.Tweak` numbering system documented in the comments in [`planarity.c`](c/planarity.c). 
+The `planarity.exe` application, which provides command-line and menu-driven interfaces for the graph library and planarity-related algorithms, is versioned using the overall project version defined in [`graphLib.h`](c/graphLib/graphLib.h) (see [`planarityHelp.c`](c/planarityApp/planarityHelp.c)). 
 
 ## License
 

@@ -1016,7 +1016,7 @@ void _LogLine(char *Str)
     _Log("\n");
 }
 
-static char LogStr[512];
+static char LogStr[MAXLINE + 1];
 
 char *_MakeLogStr1(char *format, int one)
 {
