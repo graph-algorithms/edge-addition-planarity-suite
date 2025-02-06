@@ -15,14 +15,14 @@ extern "C"
 #include <stdio.h>
 
 #include "../lowLevelUtils/stack.h"
+#include "strbuf.h"
 
     typedef struct
     {
         char fileMode;
         FILE *pFile;
         stackP ungetBuf;
-        char *theStr;
-        int theStrPos;
+        strBufP theStr;
     } strOrFile;
 
     typedef strOrFile *strOrFileP;

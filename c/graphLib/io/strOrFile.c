@@ -24,7 +24,7 @@ See the LICENSE.TXT file for licensing information.
 strOrFileP sf_New(FILE *pFile, char *theStr)
 {
     strOrFileP theStrOrFile;
-    if (((pFile == NULL) && (theStr == NULL)) || ((pFile != NULL) && (theStr != NULL)))
+    if ((pFile != NULL) && (theStr != NULL))
         return NULL;
 
     theStrOrFile = (strOrFileP)calloc(sizeof(strOrFile), 1);
@@ -32,10 +32,23 @@ strOrFileP sf_New(FILE *pFile, char *theStr)
     {
         if (pFile != NULL)
             theStrOrFile->pFile = pFile;
-        else if ((theStr != NULL))
+        else
         {
-            theStrOrFile->theStr = theStr;
-            theStrOrFile->theStrPos = 0;
+            strBufP strBufToAssign = sb_New(0);
+            if (strBufToAssign == NULL)
+            {
+                sf_Free(&theStrOrFile);
+                return NULL;
+            }
+
+            if (theStr != NULL && sb_ConcatString(strBufToAssign, theStr) != OK)
+            {
+                sb_Free(&strBufToAssign);
+                sf_Free(&theStrOrFile);
+                return NULL;
+            }
+
+            theStrOrFile->theStr = strBufToAssign;
         }
 
         theStrOrFile->ungetBuf = sp_New(MAXLINE);
@@ -61,6 +74,11 @@ strOrFileP sf_New(FILE *pFile, char *theStr)
 
  Returns NOTOK if any of these conditions are not met, otherwise OK.
  ********************************************************************/
+
+// FIXME: Need to add more refined validation; for example, if the
+// container is to be used for input, then it's expected to have an
+// ungetBuf. However, if it's meant for output, then a valid container
+// wouldn't have an ungetBuf.
 int sf_ValidateStrOrFile(strOrFileP theStrOrFile)
 {
     if (theStrOrFile == NULL ||
@@ -95,12 +113,11 @@ char sf_getc(strOrFileP theStrOrFile)
         }
         else if (theStrOrFile->pFile != NULL)
             theChar = getc(theStrOrFile->pFile);
-        else if (theStrOrFile->theStr != NULL)
+        else if (theStrOrFile->theStr != NULL && sb_GetUnreadCharCount(theStrOrFile->theStr) > 0)
         {
-            if ((theStrOrFile->theStr + theStrOrFile->theStrPos)[0] == '\0')
-                return EOF;
-
-            theChar = theStrOrFile->theStr[theStrOrFile->theStrPos++];
+            theChar = sb_GetReadString(theStrOrFile->theStr)[0];
+            if (theChar != EOF)
+                sb_ReadSkipChar(theStrOrFile->theStr);
         }
     }
 
@@ -181,7 +198,7 @@ int sf_ReadInteger(int *intToRead, strOrFileP theStrOrFile)
         return NOTOK;
 
     char intCandidateStr[MAXCHARSFOR32BITINT];
-    memset(intCandidateStr, '\0', MAXCHARSFOR32BITINT);
+    memset(intCandidateStr, '\0', MAXCHARSFOR32BITINT * sizeof(char));
 
     int intCandidate = 0;
     char currChar, nextChar = '\0';
@@ -405,23 +422,20 @@ char *sf_fgets(char *str, int count, strOrFileP theStrOrFile)
         }
         else if (theStrOrFile->theStr != NULL)
         {
-            if (strlen(theStrOrFile->theStr + theStrOrFile->theStrPos) == 0 && charsToReadFromUngetBuf == 0)
-                return NULL;
-            strncpy(str + charsToReadFromUngetBuf, theStrOrFile->theStr + theStrOrFile->theStrPos, charsToReadFromStrOrFile);
-            str[count] = '\0';
-            // Handles \n and \r\n; sets \0 at index *after* \n
-            char *findDelim = strchr(str, '\n');
-            if (findDelim != NULL)
-                findDelim[1] = '\0';
-            // Handles \r
-            else
+            if (sb_GetUnreadCharCount(theStrOrFile->theStr) > 0)
             {
-                findDelim = strchr(str, '\r');
-                if (findDelim != NULL)
-                    findDelim[1] = '\0';
-            }
+                if (strncpy(
+                        str + charsToReadFromUngetBuf,
+                        sb_GetReadString(theStrOrFile->theStr),
+                        charsToReadFromStrOrFile) == NULL)
+                    return NULL;
 
-            theStrOrFile->theStrPos += strlen(str + charsToReadFromUngetBuf);
+                // FIXME: Should I add a macro to strBuf.h to set the readPos?
+                for (int i = 0; i < charsToReadFromStrOrFile; i++)
+                    sb_ReadSkipChar(theStrOrFile->theStr);
+            }
+            else if (charsToReadFromUngetBuf == 0)
+                return NULL;
         }
     }
 
@@ -447,28 +461,16 @@ int sf_fputs(char *strToWrite, strOrFileP theStrOrFile)
     if (strToWrite == NULL || sf_ValidateStrOrFile(theStrOrFile) != OK)
         return EOF;
 
-    int lenOfStringToPuts = strlen(strToWrite);
     // N.B. fputs() will fail and return EOF if pFile doesn't correspond
     // to an output stream
     if (theStrOrFile->pFile != NULL)
         outputLen = fputs(strToWrite, theStrOrFile->pFile);
     else if (theStrOrFile->theStr != NULL)
     {
-        // Want to be able to contain the original theStr contents, the
-        // strToWrite, and a null terminator (added by strcat)
-        char *newStr = realloc(
-            theStrOrFile->theStr,
-            (strlen(theStrOrFile->theStr) + lenOfStringToPuts + 1) * sizeof(char));
-        // If realloc failed, pointer returned will be NULL; error will
-        // be handled by eventually freeing iterator, which will
-        // clean up the old memory for theStrOrFile->theStr
-        if (newStr == NULL)
-            return EOF;
+        if (sb_ConcatString(theStrOrFile->theStr, strToWrite) == OK)
+            outputLen = strlen(strToWrite);
         else
-            theStrOrFile->theStr = newStr;
-        strcat(theStrOrFile->theStr, strToWrite);
-        theStrOrFile->theStrPos += lenOfStringToPuts;
-        outputLen = lenOfStringToPuts;
+            outputLen = EOF;
     }
 
     return outputLen;
@@ -486,8 +488,14 @@ int sf_fputs(char *strToWrite, strOrFileP theStrOrFile)
 
 char *sf_takeTheStr(strOrFileP theStrOrFile)
 {
-    char *theStr = theStrOrFile->theStr;
-    theStrOrFile->theStr = NULL;
+    char *theStr = NULL;
+    if (theStrOrFile->theStr != NULL)
+    {
+        theStr = sb_TakeString(theStrOrFile->theStr);
+        sb_Free((&theStrOrFile->theStr));
+        theStrOrFile->theStr = NULL;
+    }
+
     return theStr;
 }
 
@@ -554,9 +562,8 @@ void sf_Free(strOrFileP *pStrOrFile)
     if (pStrOrFile != NULL && (*pStrOrFile) != NULL)
     {
         if ((*pStrOrFile)->theStr != NULL)
-            free((*pStrOrFile)->theStr);
+            sb_Free((&(*pStrOrFile)->theStr));
         (*pStrOrFile)->theStr = NULL;
-        (*pStrOrFile)->theStrPos = 0;
 
         // TODO: (#56) if the strOrFile container's FILE pointer
         // corresponds to an output file, i.e. fileMode is 'w',

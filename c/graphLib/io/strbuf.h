@@ -33,6 +33,7 @@ extern "C"
 #define sb_GetFullString(theStrBuf) (theStrBuf->buf)
 #define sb_GetSize(theStrBuf) (theStrBuf->size)
 #define sb_GetCapacity(theStrBuf) (theStrBuf->capacity)
+#define sb_GetUnreadCharCount(theStrBuf) (theStrBuf->size - theStrBuf->readPos)
 #define sb_GetReadString(theStrBuf) ((theStrBuf != NULL && theStrBuf->buf != NULL) ? (theStrBuf->buf + theStrBuf->readPos) : NULL)
 
 #define sb_GetReadPos(theStrBuf) (theStrBuf->readPos)

@@ -191,7 +191,7 @@ int beginG6ReadIterationFromG6StrOrFile(G6ReadIterator *pG6ReadIterator, strOrFi
         g6InputContainer == NULL ||
         (g6InputContainer->pFile == NULL &&
          (g6InputContainer->theStr == NULL ||
-          strlen(g6InputContainer->theStr) == 0)))
+          sb_GetSize(g6InputContainer->theStr) == 0)))
     {
         ErrorMessage("Invalid g6InputContainer; must contain either valid input stream or non-empty string.\n");
         return NOTOK;
