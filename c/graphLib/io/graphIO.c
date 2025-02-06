@@ -117,9 +117,6 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
     // TODO: Should I be making sure the inputContainer's fileMode flag is
     // set to indicate "file opened for read"? Or checking to make sure the pFile
     // corresponds to stdin and not stdout/stderr?
-    // sf_ReadSkipWhitespace() and sf_ReadInteger() will surface errors bubbling
-    // up from sf_getc(), which would include things like failing to getc()
-    // from an output stream
     sf_ReadSkipWhitespace(inputContainer);
     if (sf_ReadInteger(&N, inputContainer) != OK)
         return NOTOK;
@@ -1005,10 +1002,20 @@ int gp_WriteToString(graphP theGraph, char **pOutputStr, int Mode)
 
     RetVal = _WriteGraph(theGraph, &outputContainer, pOutputStr, Mode);
 
-    if (RetVal == OK)
+    // N.B. Since we pass ownership of the outputContainer to the
+    // G6WriteIterator when we WRITE_G6, we make sure to take the string *before*
+    // we endG6WriteIteration(), since that calls sf_Free() on the g6Output
+    // (i.e. outputContainer) and therefore sb_Free() on theStr. This means
+    // that we need to make sure outputContainer and theStr it contains are
+    // both non-NULL before trying to take the string, as WRITE_ADJLIST,
+    // WRITE_ADJMATRIX, and WRITE_DEBUGINFO do *not* clean up the outputContainer.
+    if (RetVal == OK && outputContainer != NULL)
     {
         (*pOutputStr) = sf_takeTheStr(outputContainer);
     }
+
+    if ((*pOutputStr) == NULL || strlen(*pOutputStr) == 0)
+        RetVal = NOTOK;
 
     if (outputContainer != NULL)
         sf_Free(&outputContainer);
@@ -1063,7 +1070,7 @@ int _WriteGraph(graphP theGraph, strOrFileP *outputContainer, char **pOutputStr,
 
         if (extraData != NULL)
         {
-            // FIXME: What is the unifying logic here that can be hidden down in the strOrFile layer?
+            // FIXME: Once extraData is a char*, should be able to sf_fputs() to the outputContainer
             if ((*outputContainer)->pFile != NULL)
             {
                 if (!fwrite(extraData, extraDataSize, 1, (*outputContainer)->pFile))
@@ -1072,8 +1079,6 @@ int _WriteGraph(graphP theGraph, strOrFileP *outputContainer, char **pOutputStr,
             }
             else if ((*outputContainer)->theStr != NULL)
             {
-                // FIXME: The only way I'd get here is if we're WRITE_ADJLIST or WRITE_ADJMATRIX,
-                // so can I assume theStr hasn't been freed yet????
                 for (int i = 0; i < extraDataSize; i++)
                     sb_ConcatChar((*outputContainer)->theStr, ((char *)extraData)[i]);
                 free(extraData);

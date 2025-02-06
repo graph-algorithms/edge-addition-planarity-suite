@@ -316,9 +316,6 @@ char sf_ungetc(char theChar, strOrFileP theStrOrFile)
         sp_GetCurrentSize(theStrOrFile->ungetBuf) >= sp_GetCapacity(theStrOrFile->ungetBuf))
         return EOF;
 
-    // FIXME: If you use the speed macro, I don't know what value is returned... If you
-    // don't use the speed macros, then OK/NOTOK are returned; does this mean there's no
-    // real way to check the success of sp_Push()? No other occurrence seems to check success
     sp_Push(theStrOrFile->ungetBuf, theChar);
     return theChar;
 }
@@ -343,13 +340,7 @@ int sf_ungets(char *strToUnget, strOrFileP theStrOrFile)
     // trying to unget contents "to" an output stream
 
     for (int i = (strlen(strToUnget) - 1); i >= 0; i--)
-    {
-        // FIXME: when speed macros aren't used, sp_Push() returns OK/NOTOK,
-        // but I don't know if there's a return value; if it is, it probably returns
-        // the value that was assigned to the specific index, so then comparing against
-        // OK/NOTOK may erroneously fail
         sp_Push(theStrOrFile->ungetBuf, strToUnget[i]);
-    }
 
     return OK;
 }
