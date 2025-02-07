@@ -42,8 +42,11 @@ int _ReadAdjMatrix(graphP theGraph, strOrFileP inputContainer)
         return NOTOK;
 
     // Read the number of vertices from the first line of the file
-    sf_ReadSkipWhitespace(inputContainer);
-    sf_ReadInteger(&N, inputContainer);
+    if (sf_ReadSkipWhitespace(inputContainer) != OK)
+        return NOTOK;
+
+    if (sf_ReadInteger(&N, inputContainer) != OK)
+        return NOTOK;
 
     // Initialize the graph based on the number of vertices
     if (gp_InitGraph(theGraph, N) != OK)
@@ -57,7 +60,9 @@ int _ReadAdjMatrix(graphP theGraph, strOrFileP inputContainer)
         for (w = v + 1; gp_VertexInRange(theGraph, w); w++)
         {
             // Read each of v's w-neighbor flags
-            sf_ReadSkipWhitespace(inputContainer);
+            if (sf_ReadSkipWhitespace(inputContainer) != OK)
+                return NOTOK;
+
             if (sf_ReadSingleDigit(&Flag, inputContainer) != OK)
                 return NOTOK;
             // N.B. Currently do not allow edge-weights in Adjacency
@@ -112,15 +117,20 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
         return NOTOK;
 
     // Skip the "N=" and then read the N value for number of vertices
-    sf_ReadSkipChar(inputContainer);
-    sf_ReadSkipChar(inputContainer);
-    // TODO: Should I be making sure the inputContainer's fileMode flag is
-    // set to indicate "file opened for read"? Or checking to make sure the pFile
-    // corresponds to stdin and not stdout/stderr?
-    sf_ReadSkipWhitespace(inputContainer);
+    if (sf_ReadSkipChar(inputContainer) != OK)
+        return NOTOK;
+
+    if (sf_ReadSkipChar(inputContainer) != OK)
+        return NOTOK;
+
+    if (sf_ReadSkipWhitespace(inputContainer) != OK)
+        return NOTOK;
+
     if (sf_ReadInteger(&N, inputContainer) != OK)
         return NOTOK;
-    sf_ReadSkipWhitespace(inputContainer);
+
+    if (sf_ReadSkipWhitespace(inputContainer) != OK)
+        return NOTOK;
 
     // Initialize theGraph based on the number of vertices in the input
     if (gp_InitGraph(theGraph, N) != OK)
@@ -135,10 +145,12 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
     for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
     {
         // Read the vertex number
-        sf_ReadSkipWhitespace(inputContainer);
+        if (sf_ReadSkipWhitespace(inputContainer) != OK)
+            return NOTOK;
         if (sf_ReadInteger(&indexValue, inputContainer) != OK)
             return NOTOK;
-        sf_ReadSkipWhitespace(inputContainer);
+        if (sf_ReadSkipWhitespace(inputContainer) != OK)
+            return NOTOK;
 
         if (indexValue == 0 && v == gp_GetFirstVertex(theGraph))
             zeroBased = TRUE;
@@ -151,7 +163,8 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
             return NOTOK;
 
         // Skip the colon after the vertex number
-        sf_ReadSkipChar(inputContainer);
+        if (sf_ReadSkipChar(inputContainer) != OK)
+            return NOTOK;
 
         // If the vertex already has a non-empty adjacency list, then it is
         // the result of adding edges during processing of preceding vertices.
@@ -190,10 +203,12 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
         while (1)
         {
             // Read the value indicating the next adjacent vertex (or the list end)
-            sf_ReadSkipWhitespace(inputContainer);
+            if (sf_ReadSkipWhitespace(inputContainer) != OK)
+                return NOTOK;
             if (sf_ReadInteger(&W, inputContainer) != OK)
                 return NOTOK;
-            sf_ReadSkipWhitespace(inputContainer);
+            if (sf_ReadSkipWhitespace(inputContainer) != OK)
+                return NOTOK;
 
             W += zeroBased ? gp_GetFirstVertex(theGraph) : 0;
 
@@ -324,10 +339,12 @@ int _ReadLEDAGraph(graphP theGraph, strOrFileP inputContainer)
         Skip any preceding whitespace, read the number of vertices N,
         and skip any subsequent whitespace.
     */
-    sf_ReadSkipWhitespace(inputContainer);
+    if (sf_ReadSkipWhitespace(inputContainer) != OK)
+        return NOTOK;
     if (sf_ReadInteger(&N, inputContainer) != OK)
         return NOTOK;
-    sf_ReadSkipWhitespace(inputContainer);
+    if (sf_ReadSkipWhitespace(inputContainer) != OK)
+        return NOTOK;
 
     if (gp_InitGraph(theGraph, N) != OK)
         return NOTOK;
@@ -337,18 +354,22 @@ int _ReadLEDAGraph(graphP theGraph, strOrFileP inputContainer)
             return NOTOK;
 
     /* Read the number of edges */
-    sf_ReadSkipWhitespace(inputContainer);
+    if (sf_ReadSkipWhitespace(inputContainer) != OK)
+        return NOTOK;
     if (sf_ReadInteger(&M, inputContainer) != OK)
         return NOTOK;
-    sf_ReadSkipWhitespace(inputContainer);
+    if (sf_ReadSkipWhitespace(inputContainer) != OK)
+        return NOTOK;
 
     /* Read and add each edge, omitting loops and parallel edges */
     for (m = 0; m < M; m++)
     {
-        sf_ReadSkipWhitespace(inputContainer);
+        if (sf_ReadSkipWhitespace(inputContainer) != OK)
+            return NOTOK;
         if (sf_ReadInteger(&u, inputContainer) != OK)
             return NOTOK;
-        sf_ReadSkipWhitespace(inputContainer);
+        if (sf_ReadSkipWhitespace(inputContainer) != OK)
+            return NOTOK;
         if (sf_ReadInteger(&v, inputContainer) != OK)
             return NOTOK;
         if (sf_ReadSkipLineRemainder(inputContainer) != OK)

@@ -182,22 +182,23 @@ char sf_getc(strOrFileP theStrOrFile)
 {
     char theChar = EOF;
 
-    if (theStrOrFile != NULL)
+    if (sf_ValidateStrOrFile(theStrOrFile) != OK ||
+        theStrOrFile->containerType != INPUT_CONTAINER)
+        return NOTOK;
+
+    if ((theStrOrFile->ungetBuf != NULL) && (sp_GetCurrentSize(theStrOrFile->ungetBuf) > 0))
     {
-        if ((theStrOrFile->ungetBuf != NULL) && (sp_GetCurrentSize(theStrOrFile->ungetBuf) > 0))
-        {
-            int currChar = 0;
-            sp_Pop(theStrOrFile->ungetBuf, currChar);
-            theChar = (char)currChar;
-        }
-        else if (theStrOrFile->pFile != NULL)
-            theChar = getc(theStrOrFile->pFile);
-        else if (theStrOrFile->theStr != NULL && sb_GetUnreadCharCount(theStrOrFile->theStr) > 0)
-        {
-            theChar = sb_GetReadString(theStrOrFile->theStr)[0];
-            if (theChar != EOF)
-                sb_ReadSkipChar(theStrOrFile->theStr);
-        }
+        int currChar = 0;
+        sp_Pop(theStrOrFile->ungetBuf, currChar);
+        theChar = (char)currChar;
+    }
+    else if (theStrOrFile->pFile != NULL)
+        theChar = getc(theStrOrFile->pFile);
+    else if (theStrOrFile->theStr != NULL && sb_GetUnreadCharCount(theStrOrFile->theStr) > 0)
+    {
+        theChar = sb_GetReadString(theStrOrFile->theStr)[0];
+        if (theChar != EOF)
+            sb_ReadSkipChar(theStrOrFile->theStr);
     }
 
     return theChar;
@@ -209,9 +210,16 @@ char sf_getc(strOrFileP theStrOrFile)
  Calls sf_getc() and does nothing with the returned character
  ********************************************************************/
 
-void sf_ReadSkipChar(strOrFileP theStrOrFile)
+int sf_ReadSkipChar(strOrFileP theStrOrFile)
 {
-    sf_getc(theStrOrFile);
+    if (sf_ValidateStrOrFile(theStrOrFile) != OK ||
+        theStrOrFile->containerType != INPUT_CONTAINER)
+        return NOTOK;
+
+    if (sf_getc(theStrOrFile) == EOF)
+        return NOTOK;
+
+    return OK;
 }
 
 /********************************************************************
@@ -221,17 +229,23 @@ void sf_ReadSkipChar(strOrFileP theStrOrFile)
  before hitting EOF
  ********************************************************************/
 
-void sf_ReadSkipWhitespace(strOrFileP theStrOrFile)
+int sf_ReadSkipWhitespace(strOrFileP theStrOrFile)
 {
-    char currChar = '\0';
-    if (theStrOrFile != NULL)
+    char currChar = EOF;
+
+    if (sf_ValidateStrOrFile(theStrOrFile) != OK ||
+        theStrOrFile->containerType != INPUT_CONTAINER)
+        return NOTOK;
+
+    while ((currChar = sf_getc(theStrOrFile)) != EOF && isspace(currChar))
     {
-        while ((currChar = sf_getc(theStrOrFile)) != EOF && isspace(currChar))
-        {
-            continue;
-        }
-        sf_ungetc(currChar, theStrOrFile);
+        continue;
     }
+
+    if (sf_ungetc(currChar, theStrOrFile) != currChar)
+        return NOTOK;
+
+    return OK;
 }
 
 /********************************************************************
@@ -247,6 +261,10 @@ void sf_ReadSkipWhitespace(strOrFileP theStrOrFile)
 int sf_ReadSingleDigit(int *digitToRead, strOrFileP theStrOrFile)
 {
     int candidateDigit = EOF;
+
+    if (sf_ValidateStrOrFile(theStrOrFile) != OK ||
+        theStrOrFile->containerType != INPUT_CONTAINER)
+        return NOTOK;
 
     candidateDigit = sf_getc(theStrOrFile);
     if (!isdigit(candidateDigit))
@@ -272,8 +290,8 @@ int sf_ReadInteger(int *intToRead, strOrFileP theStrOrFile)
 {
     int exitCode = OK;
 
-    if (theStrOrFile == NULL ||
-        (theStrOrFile->pFile == NULL && theStrOrFile->theStr == NULL))
+    if (sf_ValidateStrOrFile(theStrOrFile) != OK ||
+        theStrOrFile->containerType != INPUT_CONTAINER)
         return NOTOK;
 
     char intCandidateStr[MAXCHARSFOR32BITINT];
@@ -352,8 +370,10 @@ int sf_ReadInteger(int *intToRead, strOrFileP theStrOrFile)
 int sf_ReadSkipInteger(strOrFileP theStrOrFile)
 {
     int temp = 0;
+
     if (sf_ReadInteger(&temp, theStrOrFile) != OK)
         return NOTOK;
+
     return OK;
 }
 
@@ -380,7 +400,7 @@ int sf_ReadSkipLineRemainder(strOrFileP theStrOrFile)
  Order of parameters matches stdio ungetc().
 
  For both the case where the strOrFile contains a FILE * and the case
- where it contains a char *, we unget to the ungetBuf; this ungetBuf
+ where it contains a strBufP, we unget to the ungetBuf; this ungetBuf
  is consumed first when we sf_getc(), sf_fgets(), etc.
 
  Like ungetc() in stdio, on success theChar is returned. On failure,
@@ -390,8 +410,8 @@ int sf_ReadSkipLineRemainder(strOrFileP theStrOrFile)
 char sf_ungetc(char theChar, strOrFileP theStrOrFile)
 {
     if (theChar == EOF ||
-        theStrOrFile == NULL ||
-        theStrOrFile->ungetBuf == NULL ||
+        sf_ValidateStrOrFile(theStrOrFile) != OK ||
+        theStrOrFile->containerType != INPUT_CONTAINER ||
         sp_GetCurrentSize(theStrOrFile->ungetBuf) >= sp_GetCapacity(theStrOrFile->ungetBuf))
         return EOF;
 
@@ -412,11 +432,9 @@ char sf_ungetc(char theChar, strOrFileP theStrOrFile)
 int sf_ungets(char *strToUnget, strOrFileP theStrOrFile)
 {
     if (sf_ValidateStrOrFile(theStrOrFile) != OK ||
+        theStrOrFile->containerType != INPUT_CONTAINER ||
         strlen(strToUnget) > (sp_GetCapacity(theStrOrFile->ungetBuf) - sp_GetCurrentSize(theStrOrFile->ungetBuf)))
         return NOTOK;
-
-    // FIXME: Do we need to inspect ioMode to error out if we are
-    // trying to unget contents "to" an output stream
 
     for (int i = (strlen(strToUnget) - 1); i >= 0; i--)
         sp_Push(theStrOrFile->ungetBuf, strToUnget[i]);
@@ -443,7 +461,9 @@ int sf_ungets(char *strToUnget, strOrFileP theStrOrFile)
 
 char *sf_fgets(char *str, int count, strOrFileP theStrOrFile)
 {
-    if (str == NULL || count < 0 || sf_ValidateStrOrFile(theStrOrFile) != OK)
+    if (str == NULL || count < 0 ||
+        sf_ValidateStrOrFile(theStrOrFile) != OK ||
+        theStrOrFile->containerType != INPUT_CONTAINER)
         return NULL;
 
     int charsToReadFromUngetBuf = 0;
@@ -528,7 +548,9 @@ int sf_fputs(char *strToWrite, strOrFileP theStrOrFile)
 {
     int outputLen = EOF;
 
-    if (strToWrite == NULL || sf_ValidateStrOrFile(theStrOrFile) != OK)
+    if (strToWrite == NULL ||
+        sf_ValidateStrOrFile(theStrOrFile) != OK ||
+        theStrOrFile->containerType != OUTPUT_CONTAINER)
         return EOF;
 
     // N.B. fputs() will fail and return EOF if pFile doesn't correspond
