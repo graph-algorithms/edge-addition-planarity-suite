@@ -17,18 +17,21 @@ extern "C"
 #include "../lowLevelUtils/stack.h"
 #include "strbuf.h"
 
+#define INPUT_CONTAINER 1
+#define OUTPUT_CONTAINER 2
     typedef struct
     {
-        char fileMode;
-        FILE *pFile;
-        stackP ungetBuf;
         strBufP theStr;
+        FILE *pFile;
+        int containerType;
+        stackP ungetBuf;
+
     } strOrFile;
 
     typedef strOrFile *strOrFileP;
 
-    strOrFileP sf_New(FILE *pFile, char *theStr);
-    int sf_ValidateStrOrFile(strOrFileP);
+    strOrFileP sf_New(char *theStr, char *fileName, char *ioMode);
+    int sf_ValidateStrOrFile(strOrFileP theStrOrFile);
 
     char sf_getc(strOrFileP theStrOrFile);
     void sf_ReadSkipChar(strOrFileP theStrOrFile);

@@ -20,18 +20,91 @@ See the LICENSE.TXT file for licensing information.
  Returns the allocated string-or-file container, or NULL on error.
  ********************************************************************/
 
-// TODO: (#56) add char fileMode to differentiate between read and write modes
-strOrFileP sf_New(FILE *pFile, char *theStr)
+strOrFileP sf_New(char *theStr, char *fileName, char *ioMode)
 {
     strOrFileP theStrOrFile;
-    if ((pFile != NULL) && (theStr != NULL))
+    int containerType = 0;
+
+    if ((fileName != NULL) && (theStr != NULL))
         return NULL;
 
     theStrOrFile = (strOrFileP)calloc(sizeof(strOrFile), 1);
     if (theStrOrFile != NULL)
     {
-        if (pFile != NULL)
+        if (fileName != NULL)
+        {
+            // N.B. If the ioMode is specified but is neither
+            // READTEXT nor WRITETEXT, error out
+            if (ioMode != NULL &&
+                strncmp(ioMode, READTEXT, strlen(READTEXT)) != 0 &&
+                strncmp(ioMode, WRITETEXT, strlen(WRITETEXT)) != 0)
+            {
+                sf_Free(&theStrOrFile);
+                return NULL;
+            }
+
+            FILE *pFile;
+
+            // N.B. If the fileName indicates a stream, then make sure
+            // ioMode is correct. Since we previously made sure that
+            // non-NULL ioMode must either refer to READTEXT or WRITETEXT,
+            // we don't have to worry about freeing up the former string
+            // before re-assigning.
+            if (strcmp(fileName, "stdin") == 0)
+            {
+                if (ioMode != NULL && strncmp(ioMode, READTEXT, strlen(READTEXT)) != 0)
+                {
+                    sf_Free(&theStrOrFile);
+                    return NULL;
+                }
+
+                pFile = stdin;
+                containerType = INPUT_CONTAINER;
+            }
+            else if (strcmp(fileName, "stdout") == 0)
+            {
+                if (ioMode != NULL && strncmp(ioMode, READTEXT, strlen(READTEXT)) != 0)
+                {
+                    sf_Free(&theStrOrFile);
+                    return NULL;
+                }
+
+                pFile = stdout;
+                containerType = OUTPUT_CONTAINER;
+            }
+            else if (strcmp(fileName, "stderr") == 0)
+            {
+                if (ioMode != NULL && strncmp(ioMode, READTEXT, strlen(READTEXT)) != 0)
+                {
+                    sf_Free(&theStrOrFile);
+                    return NULL;
+                }
+
+                pFile = stderr;
+                containerType = OUTPUT_CONTAINER;
+            }
+            else
+            {
+                // N.B. Clean up and return NULL if:
+                // - fileName is not one of stdin/stdout/stderr, and
+                // if the ioMode is not given
+                // - ioMode is given but is neither READTEXT nor
+                // WRITETEXT
+                if (ioMode == NULL ||
+                    (pFile = fopen(fileName, ioMode)) == NULL)
+                {
+                    sf_Free(&theStrOrFile);
+                    return NULL;
+                }
+
+                if (strncmp(ioMode, READTEXT, strlen(READTEXT)) == 0)
+                    containerType = INPUT_CONTAINER;
+                else if (strncmp(ioMode, WRITETEXT, strlen(WRITETEXT)) == 0)
+                    containerType = OUTPUT_CONTAINER;
+            }
+
             theStrOrFile->pFile = pFile;
+        }
         else
         {
             strBufP strBufToAssign = sb_New(0);
@@ -48,8 +121,15 @@ strOrFileP sf_New(FILE *pFile, char *theStr)
                 return NULL;
             }
 
+            if (strncmp(ioMode, READTEXT, strlen(READTEXT)) == 0)
+                containerType = INPUT_CONTAINER;
+            else if (strncmp(ioMode, WRITETEXT, strlen(WRITETEXT)) == 0)
+                containerType = OUTPUT_CONTAINER;
+
             theStrOrFile->theStr = strBufToAssign;
         }
+
+        theStrOrFile->containerType = containerType;
 
         theStrOrFile->ungetBuf = sp_New(MAXLINE);
         if (theStrOrFile->ungetBuf == NULL)
@@ -71,20 +151,19 @@ strOrFileP sf_New(FILE *pFile, char *theStr)
  3. Both pFile and theStr are not NULL
  4. Both pFile and theStr are not both assigned (since this container
     should only contain one source).
+ 5. containerType is either set to INPUT_CONTAINER or OUTPUT_CONTAINER
 
  Returns NOTOK if any of these conditions are not met, otherwise OK.
  ********************************************************************/
 
-// FIXME: Need to add more refined validation; for example, if the
-// container is to be used for input, then it's expected to have an
-// ungetBuf. However, if it's meant for output, then a valid container
-// wouldn't have an ungetBuf.
 int sf_ValidateStrOrFile(strOrFileP theStrOrFile)
 {
     if (theStrOrFile == NULL ||
         theStrOrFile->ungetBuf == NULL ||
         (theStrOrFile->pFile == NULL && theStrOrFile->theStr == NULL) ||
-        (theStrOrFile->pFile != NULL && theStrOrFile->theStr != NULL))
+        (theStrOrFile->pFile != NULL && theStrOrFile->theStr != NULL) ||
+        (theStrOrFile->containerType != INPUT_CONTAINER &&
+         theStrOrFile->containerType != OUTPUT_CONTAINER))
         return NOTOK;
 
     return OK;
@@ -336,7 +415,7 @@ int sf_ungets(char *strToUnget, strOrFileP theStrOrFile)
         strlen(strToUnget) > (sp_GetCapacity(theStrOrFile->ungetBuf) - sp_GetCurrentSize(theStrOrFile->ungetBuf)))
         return NOTOK;
 
-    // FIXME: Do we need to inspect fileMode to error out if we are
+    // FIXME: Do we need to inspect ioMode to error out if we are
     // trying to unget contents "to" an output stream
 
     for (int i = (strlen(strToUnget) - 1); i >= 0; i--)
@@ -557,7 +636,7 @@ void sf_Free(strOrFileP *pStrOrFile)
         (*pStrOrFile)->theStr = NULL;
 
         // TODO: (#56) if the strOrFile container's FILE pointer
-        // corresponds to an output file, i.e. fileMode is 'w',
+        // corresponds to an output file, i.e. ioMode is 'w',
         // we should try to remove the file since the error state
         // means the contents are invalid
         if ((*pStrOrFile)->pFile != NULL)

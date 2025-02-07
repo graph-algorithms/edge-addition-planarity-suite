@@ -111,90 +111,6 @@ int getGraphBuff(G6WriteIterator *pG6WriteIterator, char **ppCurrGraphBuff)
     return OK;
 }
 
-int beginG6WriteIterationToG6FilePath(G6WriteIterator *pG6WriteIterator, char *g6FilePath)
-{
-    int exitCode = OK;
-
-    if (!_isG6WriteIteratorAllocated(pG6WriteIterator))
-    {
-        ErrorMessage("G6WriteIterator is not allocated.\n");
-        return NOTOK;
-    }
-
-    if (g6FilePath == NULL || strlen(g6FilePath) == 0)
-    {
-        ErrorMessage("g6FilePath is null or has length 0.\n");
-        return NOTOK;
-    }
-
-    g6FilePath[strcspn(g6FilePath, "\n\r")] = '\0';
-
-    FILE *g6Outfile = fopen(g6FilePath, "w");
-
-    if (g6Outfile == NULL)
-    {
-        char *messageFormat = "Unable to open \"%.*s\" for writing.\n";
-        char messageContents[MAXLINE + 1];
-        int charsAvailForStr = (int)(MAXLINE - strlen(messageFormat));
-        sprintf(messageContents, messageFormat, charsAvailForStr, g6FilePath);
-        ErrorMessage(messageContents);
-        return NOTOK;
-    }
-
-    exitCode = beginG6WriteIterationToG6FilePointer(pG6WriteIterator, g6Outfile);
-
-    if (exitCode != OK)
-        ErrorMessage("Unable to begin write iteration from .g6 file pointer corresponding to given file path.\n");
-
-    return exitCode;
-}
-
-int beginG6WriteIterationToG6FilePointer(G6WriteIterator *pG6WriteIterator, FILE *g6Outfile)
-{
-    int exitCode = OK;
-
-    if (g6Outfile == NULL)
-    {
-        ErrorMessage(".g6 outfile pointer is NULL.\n");
-        return NOTOK;
-    }
-
-    pG6WriteIterator->g6Output = sf_New(g6Outfile, NULL);
-
-    exitCode = _beginG6WriteIteration(pG6WriteIterator);
-
-    if (exitCode != OK)
-        ErrorMessage("Unable to begin .g6 write iteration from given file pointer.\n");
-
-    return exitCode;
-}
-
-int beginG6WriteIterationToG6String(G6WriteIterator *pG6WriteIterator, char **g6OutputStr)
-{
-    int exitCode = OK;
-
-    if (g6OutputStr == NULL)
-    {
-        ErrorMessage("No .g6 output string pointer provided.\n");
-        return NOTOK;
-    }
-
-    if ((*g6OutputStr) == NULL)
-    {
-        (*g6OutputStr) = (char *)malloc(1 * sizeof(char));
-        (*g6OutputStr)[0] = '\0';
-    }
-
-    pG6WriteIterator->g6Output = sf_New(NULL, (*g6OutputStr));
-
-    exitCode = _beginG6WriteIteration(pG6WriteIterator);
-
-    if (exitCode != OK)
-        ErrorMessage("Unable to begin .g6 write iteration from given file pointer.\n");
-
-    return exitCode;
-}
-
 int beginG6WriteIterationToG6StrOrFile(G6WriteIterator *pG6WriteIterator, strOrFileP outputContainer)
 {
     int exitCode = OK;
@@ -503,14 +419,7 @@ int endG6WriteIteration(G6WriteIterator *pG6WriteIterator)
     if (pG6WriteIterator != NULL)
     {
         if (pG6WriteIterator->g6Output != NULL)
-        {
-            exitCode = sf_closeFile(pG6WriteIterator->g6Output);
-
-            if (exitCode != OK)
-                ErrorMessage("Unable to close g6Output file pointer.\n");
-
             sf_Free(&(pG6WriteIterator->g6Output));
-        }
 
         if (pG6WriteIterator->currGraphBuff != NULL)
         {
@@ -564,158 +473,26 @@ int freeG6WriteIterator(G6WriteIterator **ppG6WriteIterator)
 
 int _WriteGraphToG6FilePath(graphP pGraph, char *g6OutputFilename)
 {
-    int exitCode = OK;
-
-    G6WriteIterator *pG6WriteIterator = NULL;
-
-    exitCode = allocateG6WriteIterator(&pG6WriteIterator, pGraph);
-
-    if (exitCode != OK)
+    strOrFileP outputContainer = sf_New(NULL, g6OutputFilename, WRITETEXT);
+    if (outputContainer == NULL)
     {
-        ErrorMessage("Unable to allocate G6WriteIterator.\n");
-        freeG6WriteIterator(&pG6WriteIterator);
-        return exitCode;
+        ErrorMessage("Unable to allocate outputContainer to which to write.\n");
+        return NOTOK;
     }
 
-    exitCode = beginG6WriteIterationToG6FilePath(pG6WriteIterator, g6OutputFilename);
-
-    if (exitCode != OK)
-    {
-        ErrorMessage("Unable to begin G6 write iteration.\n");
-        freeG6WriteIterator(&pG6WriteIterator);
-        return exitCode;
-    }
-
-    exitCode = writeGraphUsingG6WriteIterator(pG6WriteIterator);
-
-    if (exitCode != OK)
-    {
-        ErrorMessage("Unable to write graph using G6WriteIterator.\n");
-    }
-    else
-    {
-        int endG6WriteIterationCode = endG6WriteIteration(pG6WriteIterator);
-
-        if (endG6WriteIterationCode != OK)
-        {
-            ErrorMessage("Unable to end G6 write iteration.\n");
-            exitCode = endG6WriteIterationCode;
-        }
-    }
-
-    int freeG6WriteIteratorCode = freeG6WriteIterator(&pG6WriteIterator);
-
-    if (freeG6WriteIteratorCode != OK)
-    {
-        ErrorMessage("Unable to free G6Writer.\n");
-        exitCode = freeG6WriteIteratorCode;
-    }
-
-    return exitCode;
-}
-
-int _WriteGraphToG6FilePointer(graphP pGraph, FILE *g6Outfile)
-{
-    int exitCode = OK;
-
-    G6WriteIterator *pG6WriteIterator = NULL;
-
-    exitCode = allocateG6WriteIterator(&pG6WriteIterator, pGraph);
-
-    if (exitCode != OK)
-    {
-        ErrorMessage("Unable to allocate G6WriteIterator.\n");
-        freeG6WriteIterator(&pG6WriteIterator);
-        return exitCode;
-    }
-
-    exitCode = beginG6WriteIterationToG6FilePointer(pG6WriteIterator, g6Outfile);
-
-    if (exitCode != OK)
-    {
-        ErrorMessage("Unable to begin G6 write iteration.\n");
-        freeG6WriteIterator(&pG6WriteIterator);
-        return exitCode;
-    }
-
-    exitCode = writeGraphUsingG6WriteIterator(pG6WriteIterator);
-
-    if (exitCode != OK)
-    {
-        ErrorMessage("Unable to write graph using G6WriteIterator.\n");
-    }
-    else
-    {
-        int endG6WriteIterationCode = endG6WriteIteration(pG6WriteIterator);
-
-        if (endG6WriteIterationCode != OK)
-        {
-            ErrorMessage("Unable to end G6 write iteration.\n");
-            exitCode = endG6WriteIterationCode;
-        }
-    }
-
-    int freeG6WriteIteratorCode = freeG6WriteIterator(&pG6WriteIterator);
-
-    if (freeG6WriteIteratorCode != OK)
-    {
-        ErrorMessage("Unable to free G6Writer.\n");
-        exitCode = freeG6WriteIteratorCode;
-    }
-
-    return exitCode;
+    return _WriteGraphToG6StrOrFile(pGraph, outputContainer, NULL);
 }
 
 int _WriteGraphToG6String(graphP pGraph, char **g6OutputStr)
 {
-    int exitCode = OK;
-
-    G6WriteIterator *pG6WriteIterator = NULL;
-
-    exitCode = allocateG6WriteIterator(&pG6WriteIterator, pGraph);
-
-    if (exitCode != OK)
+    strOrFileP outputContainer = sf_New(NULL, NULL, WRITETEXT);
+    if (outputContainer == NULL)
     {
-        ErrorMessage("Unable to allocate G6WriteIterator.\n");
-        freeG6WriteIterator(&pG6WriteIterator);
-        return exitCode;
+        ErrorMessage("Unable to allocate outputContainer to which to write.\n");
+        return NOTOK;
     }
 
-    exitCode = beginG6WriteIterationToG6String(pG6WriteIterator, g6OutputStr);
-
-    if (exitCode != OK)
-    {
-        ErrorMessage("Unable to begin G6 write iteration.\n");
-        freeG6WriteIterator(&pG6WriteIterator);
-        return exitCode;
-    }
-
-    exitCode = writeGraphUsingG6WriteIterator(pG6WriteIterator);
-
-    if (exitCode != OK)
-        ErrorMessage("Unable to write graph using G6WriteIterator.\n");
-    else
-    {
-        (*g6OutputStr) = sf_takeTheStr(pG6WriteIterator->g6Output);
-
-        int endG6WriteIterationCode = endG6WriteIteration(pG6WriteIterator);
-
-        if (endG6WriteIterationCode != OK)
-        {
-            ErrorMessage("Unable to end G6 write iteration.\n");
-            exitCode = endG6WriteIterationCode;
-        }
-    }
-
-    int freeG6WriteIteratorCode = freeG6WriteIterator(&pG6WriteIterator);
-
-    if (freeG6WriteIteratorCode != OK)
-    {
-        ErrorMessage("Unable to free G6Writer.\n");
-        exitCode = freeG6WriteIteratorCode;
-    }
-
-    return exitCode;
+    return _WriteGraphToG6StrOrFile(pGraph, outputContainer, g6OutputStr);
 }
 
 int _WriteGraphToG6StrOrFile(graphP pGraph, strOrFileP outputContainer, char **outputStr)
@@ -732,7 +509,9 @@ int _WriteGraphToG6StrOrFile(graphP pGraph, strOrFileP outputContainer, char **o
 
     if (outputContainer->theStr != NULL && (outputStr == NULL))
     {
-        ErrorMessage("If writing G6 to string, must provide output string to store results of writing.\n");
+        ErrorMessage("If writing G6 to string, must provide pointer-pointer "
+                     "to allow _WriteGraphToG6StrOrFile() to assign the address "
+                     "of the output string.\n");
         return NOTOK;
     }
 

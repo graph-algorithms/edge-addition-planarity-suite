@@ -135,7 +135,6 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
     for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
     {
         // Read the vertex number
-
         sf_ReadSkipWhitespace(inputContainer);
         if (sf_ReadInteger(&indexValue, inputContainer) != OK)
             return NOTOK;
@@ -371,12 +370,8 @@ int _ReadLEDAGraph(graphP theGraph, strOrFileP inputContainer)
 /********************************************************************
  gp_Read()
 
-  Populates theGraph using the information stored in inputStr.
-
- The ownership of inputStr is transferred from the caller; it is
- assigned to a strOrFile container and ownership is transferred to
- the internal helper function _ReadGraph(), which then handles
- freeing this memory.
+ Populates theGraph from the contents of the input file with path
+ FileName.
 
  Pass "stdin" for the FileName to read from the stdin stream.
 
@@ -385,29 +380,16 @@ int _ReadLEDAGraph(graphP theGraph, strOrFileP inputContainer)
 
 int gp_Read(graphP theGraph, char *FileName)
 {
-    FILE *Infile;
-
-    if (strcmp(FileName, "stdin") == 0)
-        Infile = stdin;
-    else if ((Infile = fopen(FileName, READTEXT)) == NULL)
-        return NOTOK;
-
-    strOrFileP inputContainer = sf_New(Infile, NULL);
+    strOrFileP inputContainer = sf_New(NULL, FileName, READTEXT);
     if (inputContainer == NULL)
-    {
-        if (strcmp(FileName, "stdin") != 0)
-        {
-            fclose(Infile);
-            Infile = NULL;
-        }
         return NOTOK;
-    }
 
     return _ReadGraph(theGraph, inputContainer);
 }
 
 /********************************************************************
  gp_ReadFromString()
+
  Populates theGraph using the information stored in inputStr.
 
  The ownership of inputStr is transferred from the caller; it is
@@ -420,7 +402,7 @@ int gp_Read(graphP theGraph, char *FileName)
 
 int gp_ReadFromString(graphP theGraph, char *inputStr)
 {
-    strOrFileP inputContainer = sf_New(NULL, inputStr);
+    strOrFileP inputContainer = sf_New(inputStr, NULL, READTEXT);
     if (inputContainer == NULL)
     {
         if (inputStr != NULL)
@@ -567,14 +549,6 @@ int _WriteAdjList(graphP theGraph, strOrFileP outputContainer)
         return NOTOK;
 
     // Write the number of vertices of the graph to the file or string buffer
-    // if (Outfile != NULL)
-    //     fprintf(Outfile, "N=%d\n", theGraph->N);
-    // else
-    // {
-    //     sprintf(numberStr, "N=%d\n", theGraph->N);
-    //     if (sb_ConcatString(outBuf, numberStr) != OK)
-    //         return NOTOK;
-    // }
     if (sprintf(numberStr, "N=%d\n", theGraph->N) < 1)
         return NOTOK;
     if (sf_fputs(numberStr, outputContainer) == EOF)
@@ -583,14 +557,6 @@ int _WriteAdjList(graphP theGraph, strOrFileP outputContainer)
     // Write the adjacency list of each vertex
     for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
     {
-        // if (Outfile != NULL)
-        //     fprintf(Outfile, "%d:", v - zeroBasedOffset);
-        // else
-        // {
-        //     sprintf(numberStr, "%d:", v - zeroBasedOffset);
-        //     if (sb_ConcatString(outBuf, numberStr) != OK)
-        //         return NOTOK;
-        // }
         if (sprintf(numberStr, "%d:", v - zeroBasedOffset) < 1)
             return NOTOK;
         if (sf_fputs(numberStr, outputContainer) == EOF)
@@ -601,14 +567,6 @@ int _WriteAdjList(graphP theGraph, strOrFileP outputContainer)
         {
             if (gp_GetDirection(theGraph, e) != EDGEFLAG_DIRECTION_INONLY)
             {
-                // if (Outfile != NULL)
-                //     fprintf(Outfile, " %d", gp_GetNeighbor(theGraph, e) - zeroBasedOffset);
-                // else
-                // {
-                //     sprintf(numberStr, " %d", gp_GetNeighbor(theGraph, e) - zeroBasedOffset);
-                //     if (sb_ConcatString(outBuf, numberStr) != OK)
-                //         return NOTOK;
-                // }
                 if (sprintf(numberStr, " %d", gp_GetNeighbor(theGraph, e) - zeroBasedOffset) < 1)
                     return NOTOK;
                 if (sf_fputs(numberStr, outputContainer) == EOF)
@@ -619,14 +577,6 @@ int _WriteAdjList(graphP theGraph, strOrFileP outputContainer)
         }
 
         // Write NIL at the end of the adjacency list (in zero-based I/O, NIL was -1)
-        // if (Outfile != NULL)
-        //     fprintf(Outfile, " %d\n", (theGraph->internalFlags & FLAGS_ZEROBASEDIO) ? -1 : NIL);
-        // else
-        // {
-        //     sprintf(numberStr, " %d\n", (theGraph->internalFlags & FLAGS_ZEROBASEDIO) ? -1 : NIL);
-        //     if (sb_ConcatString(outBuf, numberStr) != OK)
-        //         return NOTOK;
-        // }
         if (sprintf(numberStr, " %d\n", (theGraph->internalFlags & FLAGS_ZEROBASEDIO) ? -1 : NIL) < 1)
             return NOTOK;
         if (sf_fputs(numberStr, outputContainer) == EOF)
@@ -660,14 +610,6 @@ int _WriteAdjMatrix(graphP theGraph, strOrFileP outputContainer)
         return NOTOK;
 
     // Write the number of vertices in the graph to the file or string buffer
-    // if (Outfile != NULL)
-    //     fprintf(Outfile, "%d\n", theGraph->N);
-    // else
-    // {
-    //     sprintf(numberStr, "%d\n", theGraph->N);
-    //     if (sb_ConcatString(outBuf, numberStr) != OK)
-    //         return NOTOK;
-    // }
     if (sprintf(numberStr, "%d\n", theGraph->N) < 1)
         return NOTOK;
     if (sf_fputs(numberStr, outputContainer) == EOF)
@@ -702,10 +644,6 @@ int _WriteAdjMatrix(graphP theGraph, strOrFileP outputContainer)
         Row[theGraph->N + 1] = '\0';
 
         // Write the row to the file or string buffer
-        // if (Outfile != NULL)
-        //     fprintf(Outfile, "%s", Row);
-        // else
-        //     sb_ConcatString(outBuf, Row);
         if (sf_fputs(Row, outputContainer) == EOF)
             return NOTOK;
     }
@@ -771,7 +709,6 @@ int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer)
         return NOTOK;
 
     /* Print parent copy vertices and their adjacency lists */
-    // fprintf(Outfile, "DEBUG N=%d M=%d\n", theGraph->N, theGraph->M);
     if (sprintf(lineBuf, "DEBUG N=%d M=%d\n", theGraph->N, theGraph->M) < 1)
         return NOTOK;
     if (sf_fputs(lineBuf, outputContainer) == EOF)
@@ -779,11 +716,6 @@ int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer)
 
     for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
     {
-        // fprintf(Outfile, "%d(P=%d,lA=%d,LowPt=%d,v=%d):",
-        //         v, gp_GetVertexParent(theGraph, v),
-        //         gp_GetVertexLeastAncestor(theGraph, v),
-        //         gp_GetVertexLowpoint(theGraph, v),
-        //         gp_GetVertexIndex(theGraph, v));
         if (sprintf(lineBuf, "%d(P=%d,lA=%d,LowPt=%d,v=%d):",
                     v, gp_GetVertexParent(theGraph, v),
                     gp_GetVertexLeastAncestor(theGraph, v),
@@ -796,7 +728,6 @@ int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer)
         e = gp_GetFirstArc(theGraph, v);
         while (gp_IsArc(e))
         {
-            // fprintf(Outfile, " %d(e=%d)", gp_GetNeighbor(theGraph, e), e);
             if (sprintf(lineBuf, " %d(e=%d)", gp_GetNeighbor(theGraph, e), e) < 1)
                 return NOTOK;
             if (sf_fputs(lineBuf, outputContainer) == EOF)
@@ -804,7 +735,6 @@ int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer)
             e = gp_GetNextArc(theGraph, e);
         }
 
-        // fprintf(Outfile, " %d\n", NIL);
         if (sprintf(lineBuf, " %d\n", NIL) < 1)
             return NOTOK;
         if (sf_fputs(lineBuf, outputContainer) == EOF)
@@ -818,9 +748,6 @@ int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer)
         if (!gp_VirtualVertexInUse(theGraph, v))
             continue;
 
-        // fprintf(Outfile, "%d(copy of=%d, DFS child=%d):",
-        //         v, gp_GetVertexIndex(theGraph, v),
-        //         gp_GetDFSChildFromRoot(theGraph, v));
         if (sprintf(lineBuf, "%d(copy of=%d, DFS child=%d):",
                     v, gp_GetVertexIndex(theGraph, v),
                     gp_GetDFSChildFromRoot(theGraph, v)) < 1)
@@ -831,7 +758,6 @@ int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer)
         e = gp_GetFirstArc(theGraph, v);
         while (gp_IsArc(e))
         {
-            // fprintf(Outfile, " %d(e=%d)", gp_GetNeighbor(theGraph, e), e);
             if (sprintf(lineBuf, " %d(e=%d)", gp_GetNeighbor(theGraph, e), e) < 1)
                 return NOTOK;
             if (sf_fputs(lineBuf, outputContainer) == EOF)
@@ -840,7 +766,6 @@ int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer)
             e = gp_GetNextArc(theGraph, e);
         }
 
-        // fprintf(Outfile, " %d\n", NIL);
         if (sprintf(lineBuf, " %d\n", NIL) < 1)
             return NOTOK;
         if (sf_fputs(lineBuf, outputContainer) == EOF)
@@ -848,18 +773,11 @@ int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer)
     }
 
     /* Print information about vertices and root copy (virtual) vertices */
-    // fprintf(Outfile, "\nVERTEX INFORMATION\n");
     if (sf_fputs("\nVERTEX INFORMATION\n", outputContainer) == EOF)
         return NOTOK;
 
     for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
     {
-        // fprintf(Outfile, "V[%3d] index=%3d, type=%c, first arc=%3d, last arc=%3d\n",
-        //         v,
-        //         gp_GetVertexIndex(theGraph, v),
-        //         (gp_IsVirtualVertex(theGraph, v) ? 'X' : _GetVertexObstructionTypeChar(theGraph, v)),
-        //         gp_GetFirstArc(theGraph, v),
-        //         gp_GetLastArc(theGraph, v));
         if (sprintf(lineBuf, "V[%3d] index=%3d, type=%c, first arc=%3d, last arc=%3d\n",
                     v,
                     gp_GetVertexIndex(theGraph, v),
@@ -875,12 +793,6 @@ int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer)
         if (gp_VirtualVertexNotInUse(theGraph, v))
             continue;
 
-        // fprintf(Outfile, "V[%3d] index=%3d, type=%c, first arc=%3d, last arc=%3d\n",
-        //         v,
-        //         gp_GetVertexIndex(theGraph, v),
-        //         (gp_IsVirtualVertex(theGraph, v) ? 'X' : _GetVertexObstructionTypeChar(theGraph, v)),
-        //         gp_GetFirstArc(theGraph, v),
-        //         gp_GetLastArc(theGraph, v));
         if (sprintf(lineBuf, "V[%3d] index=%3d, type=%c, first arc=%3d, last arc=%3d\n",
                     v,
                     gp_GetVertexIndex(theGraph, v),
@@ -894,7 +806,6 @@ int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer)
 
     /* Print information about edges */
 
-    // fprintf(Outfile, "\nEDGE INFORMATION\n");
     if (sf_fputs("\nEDGE INFORMATION\n", outputContainer) == EOF)
         return NOTOK;
 
@@ -903,12 +814,6 @@ int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer)
     {
         if (gp_EdgeInUse(theGraph, e))
         {
-            // fprintf(Outfile, "E[%3d] neighbor=%3d, type=%c, next arc=%3d, prev arc=%3d\n",
-            //         e,
-            //         gp_GetNeighbor(theGraph, e),
-            //         _GetEdgeTypeChar(theGraph, e),
-            //         gp_GetNextArc(theGraph, e),
-            //         gp_GetPrevArc(theGraph, e));
             if (sprintf(lineBuf, "E[%3d] neighbor=%3d, type=%c, next arc=%3d, prev arc=%3d\n",
                         e,
                         gp_GetNeighbor(theGraph, e),
@@ -937,7 +842,6 @@ int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer)
 
 int gp_Write(graphP theGraph, char *FileName, int Mode)
 {
-    FILE *Outfile;
     int RetVal;
 
     if (theGraph == NULL || FileName == NULL)
@@ -946,23 +850,9 @@ int gp_Write(graphP theGraph, char *FileName, int Mode)
     if (strcmp(FileName, "nullwrite") == 0)
         return OK;
 
-    if (strcmp(FileName, "stdout") == 0)
-        Outfile = stdout;
-    else if (strcmp(FileName, "stderr") == 0)
-        Outfile = stderr;
-    else if ((Outfile = fopen(FileName, WRITETEXT)) == NULL)
-        return NOTOK;
-
-    strOrFileP outputContainer = sf_New(Outfile, NULL);
+    strOrFileP outputContainer = sf_New(NULL, FileName, WRITETEXT);
     if (outputContainer == NULL)
-    {
-        if (strcmp(FileName, "stdout") != 0 && strcmp(FileName, "stderr") != 0)
-        {
-            fclose(Outfile);
-            Outfile = NULL;
-        }
         return NOTOK;
-    }
 
     RetVal = _WriteGraph(theGraph, &outputContainer, NULL, Mode);
 
@@ -996,7 +886,7 @@ int gp_WriteToString(graphP theGraph, char **pOutputStr, int Mode)
     if (theGraph == NULL || pOutputStr == NULL)
         return NOTOK;
 
-    strOrFileP outputContainer = sf_New(NULL, NULL);
+    strOrFileP outputContainer = sf_New(NULL, NULL, WRITETEXT);
     if (outputContainer == NULL)
         return NOTOK;
 

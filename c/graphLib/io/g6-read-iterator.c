@@ -100,98 +100,11 @@ int getPointerToGraphReadIn(G6ReadIterator *pG6ReadIterator, graphP *ppGraph)
     return OK;
 }
 
-int beginG6ReadIterationFromG6FilePath(G6ReadIterator *pG6ReadIterator, char *g6FilePath)
-{
-    int exitCode = OK;
-
-    if (!_isG6ReadIteratorAllocated(pG6ReadIterator))
-    {
-        ErrorMessage("G6ReadIterator is not allocated.\n");
-        return NOTOK;
-    }
-
-    if (g6FilePath == NULL || strlen(g6FilePath) == 0)
-    {
-        ErrorMessage("g6FilePath is null or has length 0.\n");
-        return NOTOK;
-    }
-
-    g6FilePath[strcspn(g6FilePath, "\n\r")] = '\0';
-
-    FILE *g6Infile = fopen(g6FilePath, "r");
-
-    if (g6Infile == NULL)
-    {
-        char *messageFormat = "Unable to open .g6 file with path \"%.*s\"\n";
-        char messageContents[MAXLINE + 1];
-        int charsAvailForFilename = (int)(MAXLINE - strlen(messageFormat));
-        sprintf(messageContents, messageFormat, charsAvailForFilename, g6FilePath);
-        ErrorMessage(messageContents);
-        return NOTOK;
-    }
-
-    exitCode = beginG6ReadIterationFromG6FilePointer(pG6ReadIterator, g6Infile);
-
-    return exitCode;
-}
-
-int beginG6ReadIterationFromG6FilePointer(G6ReadIterator *pG6ReadIterator, FILE *g6Infile)
-{
-    int exitCode = OK;
-
-    if (g6Infile == NULL)
-    {
-        ErrorMessage(".g6 file pointer is NULL.\n");
-        return NOTOK;
-    }
-
-    strOrFileP g6Input = sf_New(g6Infile, NULL);
-
-    if (g6Input == NULL)
-    {
-        ErrorMessage("Unable to allocate string-or-file container.\n");
-        return NOTOK;
-    }
-
-    pG6ReadIterator->g6Input = g6Input;
-
-    exitCode = _beginG6ReadIteration(pG6ReadIterator);
-
-    return exitCode;
-}
-
-int beginG6ReadIterationFromG6String(G6ReadIterator *pG6ReadIterator, char *g6InputStr)
-{
-    int exitCode = OK;
-
-    if (g6InputStr == NULL || strlen(g6InputStr) <= 0)
-    {
-        ErrorMessage("g6InputStr must not be null or empty string.\n");
-        return NOTOK;
-    }
-
-    strOrFileP g6Input = sf_New(NULL, g6InputStr);
-
-    if (g6Input == NULL)
-    {
-        ErrorMessage("Unable to allocate string-or-file container.\n");
-        return NOTOK;
-    }
-
-    pG6ReadIterator->g6Input = g6Input;
-
-    exitCode = _beginG6ReadIteration(pG6ReadIterator);
-
-    return exitCode;
-}
-
 int beginG6ReadIterationFromG6StrOrFile(G6ReadIterator *pG6ReadIterator, strOrFileP g6InputContainer)
 {
     if (
-        g6InputContainer == NULL ||
-        (g6InputContainer->pFile == NULL &&
-         (g6InputContainer->theStr == NULL ||
-          sb_GetSize(g6InputContainer->theStr) == 0)))
+        sf_ValidateStrOrFile(g6InputContainer) != OK ||
+        (g6InputContainer->theStr != NULL && sb_GetSize(g6InputContainer->theStr) == 0))
     {
         ErrorMessage("Invalid g6InputContainer; must contain either valid input stream or non-empty string.\n");
         return NOTOK;
@@ -726,150 +639,54 @@ int freeG6ReadIterator(G6ReadIterator **ppG6ReadIterator)
     return exitCode;
 }
 
-// Although _ReadGraphFromG6FilePath is almost identical to _ReadGraphFromG6FilePointer,
-// these two helper functions are meant for demonstrative purposes and are unlikely
-// to change. If you do modify this function, be sure to modify _ReadGraphFromG6FilePointer.
 int _ReadGraphFromG6FilePath(graphP pGraphToRead, char *pathToG6File)
 {
-    int exitCode = OK;
+    char *messageFormat = NULL;
+    char messageContents[MAXLINE + 1];
+    messageContents[MAXLINE] = '\0';
+    int charsAvailForStr = 0;
 
-    G6ReadIterator *pG6ReadIterator = NULL;
-    exitCode = allocateG6ReadIterator(&pG6ReadIterator, pGraphToRead);
-
-    if (exitCode != OK)
+    strOrFileP inputContainer = sf_New(NULL, pathToG6File, READTEXT);
+    if (inputContainer == NULL)
     {
-        ErrorMessage("Unable to allocate G6ReadIterator.\n");
-        return exitCode;
+        messageFormat = "Unable to allocate strOrFile container for infile \"%.*s\".\n";
+        charsAvailForStr = (int)(MAXLINE - strlen(messageFormat));
+        sprintf(messageContents, messageFormat, charsAvailForStr, pathToG6File);
+        ErrorMessage(messageContents);
+
+        return NOTOK;
     }
 
-    exitCode = beginG6ReadIterationFromG6FilePath(pG6ReadIterator, pathToG6File);
-
-    if (exitCode != OK)
-    {
-        ErrorMessage("Unable to begin .g6 read iteration.\n");
-
-        exitCode = freeG6ReadIterator(&pG6ReadIterator);
-
-        if (exitCode != OK)
-            ErrorMessage("Unable to free G6ReadIterator.\n");
-
-        return exitCode;
-    }
-
-    exitCode = readGraphUsingG6ReadIterator(pG6ReadIterator);
-    if (exitCode != OK)
-        ErrorMessage("Unable to read graph from .g6 read iterator.\n");
-
-    exitCode = endG6ReadIteration(pG6ReadIterator);
-    if (exitCode != OK)
-        ErrorMessage("Unable to end G6ReadIterator.\n");
-
-    exitCode = freeG6ReadIterator(&pG6ReadIterator);
-
-    if (exitCode != OK)
-        ErrorMessage("Unable to free G6ReadIterator.\n");
-
-    return exitCode;
-}
-
-// Although _ReadGraphFromG6FilePointer is almost identical to _ReadGraphFromG6FilePath,
-// these two helper functions are meant for demonstrative purposes and are unlikely
-// to change. If you do change this function, be sure to modify _ReadGraphFromG6FilePath.
-int _ReadGraphFromG6FilePointer(graphP pGraphToRead, FILE *g6Infile)
-{
-    int exitCode = OK;
-
-    G6ReadIterator *pG6ReadIterator = NULL;
-    exitCode = allocateG6ReadIterator(&pG6ReadIterator, pGraphToRead);
-
-    if (exitCode != OK)
-    {
-        ErrorMessage("Unable to allocate G6ReadIterator.\n");
-        return exitCode;
-    }
-
-    exitCode = beginG6ReadIterationFromG6FilePointer(pG6ReadIterator, g6Infile);
-
-    if (exitCode != OK)
-    {
-        ErrorMessage("Unable to begin .g6 read iteration.\n");
-
-        exitCode = freeG6ReadIterator(&pG6ReadIterator);
-
-        if (exitCode != OK)
-            ErrorMessage("Unable to free G6ReadIterator.\n");
-
-        return exitCode;
-    }
-
-    exitCode = readGraphUsingG6ReadIterator(pG6ReadIterator);
-    if (exitCode != OK)
-        ErrorMessage("Unable to read graph from .g6 read iterator.\n");
-
-    exitCode = endG6ReadIteration(pG6ReadIterator);
-    if (exitCode != OK)
-        ErrorMessage("Unable to end G6ReadIterator.\n");
-
-    exitCode = freeG6ReadIterator(&pG6ReadIterator);
-
-    if (exitCode != OK)
-        ErrorMessage("Unable to free G6ReadIterator.\n");
-
-    return exitCode;
+    return _ReadGraphFromG6StrOrFile(pGraphToRead, inputContainer);
 }
 
 int _ReadGraphFromG6String(graphP pGraphToRead, char *g6EncodedString)
 {
-    int exitCode = OK;
-
     if (g6EncodedString == NULL || strlen(g6EncodedString) == 0)
     {
-        ErrorMessage("Input string is empty.\n");
+        ErrorMessage("Unable to proceed with empty .g6 input string.\n");
         return NOTOK;
     }
 
-    G6ReadIterator *pG6ReadIterator = NULL;
-    exitCode = allocateG6ReadIterator(&pG6ReadIterator, pGraphToRead);
-
-    if (exitCode != OK)
+    strOrFileP inputContainer = sf_New(g6EncodedString, NULL, READTEXT);
+    if (inputContainer == NULL)
     {
-        ErrorMessage("Unable to allocate G6ReadIterator.\n");
-        return exitCode;
+        ErrorMessage("Unable to allocate strOrFile container for .g6 input string.\n");
+        return NOTOK;
     }
 
-    exitCode = beginG6ReadIterationFromG6String(pG6ReadIterator, g6EncodedString);
-
-    if (exitCode != OK)
-    {
-        ErrorMessage("Unable to begin .g6 read iteration.\n");
-
-        exitCode = freeG6ReadIterator(&pG6ReadIterator);
-
-        if (exitCode != OK)
-            ErrorMessage("Unable to free G6ReadIterator.\n");
-
-        return exitCode;
-    }
-
-    exitCode = readGraphUsingG6ReadIterator(pG6ReadIterator);
-    if (exitCode != OK)
-        ErrorMessage("Unable to read graph from .g6 read iterator.\n");
-
-    exitCode = endG6ReadIteration(pG6ReadIterator);
-    if (exitCode != OK)
-        ErrorMessage("Unable to end G6ReadIterator.\n");
-
-    exitCode = freeG6ReadIterator(&pG6ReadIterator);
-
-    if (exitCode != OK)
-        ErrorMessage("Unable to free G6ReadIterator.\n");
-
-    return exitCode;
+    return _ReadGraphFromG6StrOrFile(pGraphToRead, inputContainer);
 }
 
 int _ReadGraphFromG6StrOrFile(graphP pGraphToRead, strOrFileP g6InputContainer)
 {
     G6ReadIterator *pG6ReadIterator = NULL;
+
+    if (sf_ValidateStrOrFile(g6InputContainer) != OK)
+    {
+        ErrorMessage("Invalid G6 output container.\n");
+        return NOTOK;
+    }
 
     if (allocateG6ReadIterator(&pG6ReadIterator, pGraphToRead) != OK)
     {
