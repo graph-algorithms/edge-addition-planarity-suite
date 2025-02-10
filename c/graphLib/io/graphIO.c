@@ -528,7 +528,7 @@ int _ReadGraph(graphP theGraph, strOrFileP inputContainer)
                     }
 
                     if (sb_GetSize(extraData) > 0)
-                        RetVal = theGraph->functions.fpReadPostprocess(theGraph, sb_GetReadString(extraData), sb_GetSize(extraData));
+                        RetVal = theGraph->functions.fpReadPostprocess(theGraph, sb_GetReadString(extraData));
 
                     sb_Free(&extraData);
                     extraData = NULL;
@@ -544,7 +544,7 @@ int _ReadGraph(graphP theGraph, strOrFileP inputContainer)
     return RetVal;
 }
 
-int _ReadPostprocess(graphP theGraph, void *extraData, long extraDataSize)
+int _ReadPostprocess(graphP theGraph, char *extraData)
 {
     return OK;
 }
@@ -974,26 +974,15 @@ int _WriteGraph(graphP theGraph, strOrFileP *outputContainer, char **pOutputStr,
 
     if (RetVal == OK)
     {
-        void *extraData = NULL;
-        long extraDataSize;
+        char *extraData = NULL;
 
-        RetVal = theGraph->functions.fpWritePostprocess(theGraph, &extraData, &extraDataSize);
+        RetVal = theGraph->functions.fpWritePostprocess(theGraph, &extraData);
 
         if (extraData != NULL)
         {
-            // FIXME: Once extraData is a char*, should be able to sf_fputs() to the outputContainer
-            if ((*outputContainer)->pFile != NULL)
-            {
-                if (!fwrite(extraData, extraDataSize, 1, (*outputContainer)->pFile))
-                    RetVal = NOTOK;
-                free(extraData);
-            }
-            else if ((*outputContainer)->theStr != NULL)
-            {
-                for (int i = 0; i < extraDataSize; i++)
-                    sb_ConcatChar((*outputContainer)->theStr, ((char *)extraData)[i]);
-                free(extraData);
-            }
+            if (sf_fputs(extraData, (*outputContainer)) == EOF)
+                RetVal = NOTOK;
+            free(extraData);
         }
     }
 
@@ -1006,7 +995,7 @@ int _WriteGraph(graphP theGraph, strOrFileP *outputContainer, char **pOutputStr,
  By default, no additional information is written.
  ********************************************************************/
 
-int _WritePostprocess(graphP theGraph, void **pExtraData, long *pExtraDataSize)
+int _WritePostprocess(graphP theGraph, char **pExtraData)
 {
     return OK;
 }

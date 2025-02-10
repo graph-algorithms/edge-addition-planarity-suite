@@ -45,8 +45,8 @@ extern "C"
         int (*fpEnsureArcCapacity)(graphP, int);
         int (*fpSortVertices)(graphP);
 
-        int (*fpReadPostprocess)(graphP, void *, long);
-        int (*fpWritePostprocess)(graphP, void **, long *);
+        int (*fpReadPostprocess)(graphP, char *);
+        int (*fpWritePostprocess)(graphP, char **);
 
         void (*fpHideEdge)(graphP, int);
         void (*fpRestoreEdge)(graphP, int);

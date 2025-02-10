@@ -39,8 +39,8 @@ void _DrawPlanar_ReinitializeGraph(graphP theGraph);
 int _DrawPlanar_EnsureArcCapacity(graphP theGraph, int requiredArcCapacity);
 int _DrawPlanar_SortVertices(graphP theGraph);
 
-int _DrawPlanar_ReadPostprocess(graphP theGraph, void *extraData, long extraDataSize);
-int _DrawPlanar_WritePostprocess(graphP theGraph, void **pExtraData, long *pExtraDataSize);
+int _DrawPlanar_ReadPostprocess(graphP theGraph, char *extraData);
+int _DrawPlanar_WritePostprocess(graphP theGraph, char **pExtraData);
 
 /* Forward declarations of functions used by the extension system */
 
@@ -550,17 +550,17 @@ int _DrawPlanar_CheckObstructionIntegrity(graphP theGraph, graphP origGraph)
 /********************************************************************
  ********************************************************************/
 
-int _DrawPlanar_ReadPostprocess(graphP theGraph, void *extraData, long extraDataSize)
+int _DrawPlanar_ReadPostprocess(graphP theGraph, char *extraData)
 {
     DrawPlanarContext *context = NULL;
     gp_FindExtension(theGraph, DRAWPLANAR_ID, (void *)&context);
 
     if (context != NULL)
     {
-        if (context->functions.fpReadPostprocess(theGraph, extraData, extraDataSize) != OK)
+        if (context->functions.fpReadPostprocess(theGraph, extraData) != OK)
             return NOTOK;
 
-        else if (extraData != NULL && extraDataSize > 0)
+        else if (extraData != NULL && strlen(extraData) > 0)
         {
             int v, e, tempInt, EsizeOccupied;
             char line[64], tempChar;
@@ -573,7 +573,7 @@ int _DrawPlanar_ReadPostprocess(graphP theGraph, void *extraData, long extraData
                 return NOTOK;
 
             // Advance past the start tag
-            extraData = (void *)((char *)extraData + strlen(line) + 1);
+            extraData = extraData + strlen(line) + 1;
 
             // Read the N lines of vertex information
             for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
@@ -608,21 +608,21 @@ int _DrawPlanar_ReadPostprocess(graphP theGraph, void *extraData, long extraData
 /********************************************************************
  ********************************************************************/
 
-int _DrawPlanar_WritePostprocess(graphP theGraph, void **pExtraData, long *pExtraDataSize)
+int _DrawPlanar_WritePostprocess(graphP theGraph, char **pExtraData)
 {
     DrawPlanarContext *context = NULL;
     gp_FindExtension(theGraph, DRAWPLANAR_ID, (void *)&context);
 
     if (context != NULL)
     {
-        if (context->functions.fpWritePostprocess(theGraph, pExtraData, pExtraDataSize) != OK)
+        if (context->functions.fpWritePostprocess(theGraph, pExtraData) != OK)
             return NOTOK;
         else
         {
             int v, e, EsizeOccupied;
             char line[64];
             int maxLineSize = 64, extraDataPos = 0;
-            char *extraData = (char *)malloc((1 + theGraph->N + 2 * theGraph->M + 1) * maxLineSize * sizeof(char));
+            char *extraData = (char *)calloc((1 + theGraph->N + 2 * theGraph->M + 1) * maxLineSize, sizeof(char));
             int zeroBasedVertexOffset = (theGraph->internalFlags & FLAGS_ZEROBASEDIO) ? gp_GetFirstVertex(theGraph) : 0;
             int zeroBasedEdgeOffset = (theGraph->internalFlags & FLAGS_ZEROBASEDIO) ? gp_GetFirstEdge(theGraph) : 0;
 
@@ -669,8 +669,7 @@ int _DrawPlanar_WritePostprocess(graphP theGraph, void **pExtraData, long *pExtr
             strcpy(extraData + extraDataPos, line);
             extraDataPos += (int)strlen(line);
 
-            *pExtraData = (void *)extraData;
-            *pExtraDataSize = extraDataPos * sizeof(char);
+            *pExtraData = extraData;
         }
 
         return OK;
