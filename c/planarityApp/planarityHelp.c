@@ -1,5 +1,5 @@
 /*
-Copyright (c) 1997-2024, John M. Boyer
+Copyright (c) 1997-2025, John M. Boyer
 All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
@@ -8,24 +8,20 @@ See the LICENSE.TXT file for licensing information.
 
 char *GetProjectTitle(void)
 {
-    // This message is the main location of the version number.
-    // The format is major.minor.maintenance.tweak
-    // Major is for an overhaul (e.g. many features, data structure change, change of backward compatibility)
-    // Minor is for feature addition (e.g. a new algorithm implementation added, new interface)
-    // Maintenance is for functional revision (e.g. bug fix to existing algorithm implementation)
-    // Tweak is for a non-functional revision (e.g. change of build scripts or testing code, user-facing string changes)
+    static char projectTitle[MAXLINE + 1];
+    sprintf(projectTitle,
+            "\n==================================================="
+            "\nThe Edge Addition Planarity Suite version %s"
+            "\nbased on libPlanarity graph library version %s"
+            "\nCopyright (c) 1997-2025 by John M. Boyer"
+            "\nAll rights reserved."
+            "\nSee the LICENSE.TXT file for licensing information."
+            "\nContact info: jboyer at acm.org"
+            "\n===================================================\n",
+            gp_GetProjectVersionFull(),
+            gp_GetLibPlanarityVersionFull());
 
-    // If the version here is increased, also increase it in configure.ac
-    // Furthermore, a change of Major, Minor or Maintenance here should cause a change
-    // of Current, Revision and/or Age as documented in configure.ac
-
-    return "\n=================================================="
-           "\nThe Edge Addition Planarity Suite version 3.0.2.0"
-           "\nCopyright (c) 1997-2024 by John M. Boyer"
-           "\nAll rights reserved."
-           "\nSee the LICENSE.TXT file for licensing information."
-           "\nContact info: jboyer at acm.org"
-           "\n==================================================\n";
+    return projectTitle;
 }
 
 /****************************************************************************
