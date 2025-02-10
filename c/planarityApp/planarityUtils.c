@@ -28,7 +28,7 @@ void Reconfigure(void)
            "  Randomly generate a non-planar graph (n)? ");
     scanf(" %c", &Mode);
 
-    Mode = tolower(Mode);
+    Mode = (char)tolower(Mode);
     if (!strchr("rsmn", Mode))
         Mode = 's';
 

@@ -24,7 +24,7 @@ graphP MakeGraph(int Size, char command);
 int RandomGraphs(char command, int NumGraphs, int SizeOfGraphs, char *outfileName)
 {
     char theFileName[MAXLINE + 1];
-    strOrFileP outputContainer;
+    strOrFileP outputContainer = NULL;
     int K, countUpdateFreq;
     int Result = OK, MainStatistic = 0;
     int ObstructionMinorFreqs[NUM_MINORS];
@@ -106,7 +106,7 @@ int RandomGraphs(char command, int NumGraphs, int SizeOfGraphs, char *outfileNam
         }
     }
 
-    if (pG6WriteIterator != NULL)
+    if (pG6WriteIterator != NULL && outputContainer != NULL)
     {
         if (beginG6WriteIterationToG6StrOrFile(pG6WriteIterator, outputContainer) != OK)
         {

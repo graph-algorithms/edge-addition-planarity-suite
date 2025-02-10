@@ -184,7 +184,7 @@ char sf_getc(strOrFileP theStrOrFile)
 
     if (sf_ValidateStrOrFile(theStrOrFile) != OK ||
         theStrOrFile->containerType != INPUT_CONTAINER)
-        return NOTOK;
+        return EOF;
 
     if ((theStrOrFile->ungetBuf != NULL) && (sp_GetCurrentSize(theStrOrFile->ungetBuf) > 0))
     {
@@ -193,7 +193,7 @@ char sf_getc(strOrFileP theStrOrFile)
         theChar = (char)currChar;
     }
     else if (theStrOrFile->pFile != NULL)
-        theChar = getc(theStrOrFile->pFile);
+        theChar = (char)getc(theStrOrFile->pFile);
     else if (theStrOrFile->theStr != NULL && sb_GetUnreadCharCount(theStrOrFile->theStr) > 0)
     {
         theChar = sb_GetReadString(theStrOrFile->theStr)[0];
@@ -433,7 +433,7 @@ int sf_ungets(char *strToUnget, strOrFileP theStrOrFile)
 {
     if (sf_ValidateStrOrFile(theStrOrFile) != OK ||
         theStrOrFile->containerType != INPUT_CONTAINER ||
-        strlen(strToUnget) > (sp_GetCapacity(theStrOrFile->ungetBuf) - sp_GetCurrentSize(theStrOrFile->ungetBuf)))
+        (int)strlen(strToUnget) > (sp_GetCapacity(theStrOrFile->ungetBuf) - sp_GetCurrentSize(theStrOrFile->ungetBuf)))
         return NOTOK;
 
     for (int i = (strlen(strToUnget) - 1); i >= 0; i--)
@@ -512,17 +512,16 @@ char *sf_fgets(char *str, int count, strOrFileP theStrOrFile)
         }
         else if (theStrOrFile->theStr != NULL)
         {
-            if (sb_GetUnreadCharCount(theStrOrFile->theStr) > 0)
+            char *theStrBuf = sb_GetReadString(theStrOrFile->theStr);
+            if (theStrBuf != NULL && sb_GetUnreadCharCount(theStrOrFile->theStr) > 0)
             {
                 if (strncpy(
                         str + charsToReadFromUngetBuf,
-                        sb_GetReadString(theStrOrFile->theStr),
+                        theStrBuf,
                         charsToReadFromStrOrFile) == NULL)
                     return NULL;
 
-                // FIXME: Should I add a macro to strBuf.h to set the readPos?
-                for (int i = 0; i < charsToReadFromStrOrFile; i++)
-                    sb_ReadSkipChar(theStrOrFile->theStr);
+                sb_SetReadPos(theStrOrFile->theStr, (sb_GetReadPos(theStrOrFile->theStr) + charsToReadFromStrOrFile));
             }
             else if (charsToReadFromUngetBuf == 0)
                 return NULL;

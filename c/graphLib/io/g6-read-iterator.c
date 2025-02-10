@@ -118,7 +118,7 @@ int beginG6ReadIterationFromG6StrOrFile(G6ReadIterator *pG6ReadIterator, strOrFi
 int _beginG6ReadIteration(G6ReadIterator *pG6ReadIterator)
 {
     int exitCode = OK;
-    int charConfirmation = -1;
+    char charConfirmation = EOF;
 
     char messageContents[MAXLINE + 1];
 
@@ -132,7 +132,7 @@ int _beginG6ReadIteration(G6ReadIterator *pG6ReadIterator)
     }
     else
     {
-        charConfirmation = sf_ungetc(firstChar, g6Input);
+        charConfirmation = sf_ungetc((char)firstChar, g6Input);
 
         if (charConfirmation != firstChar)
         {
@@ -153,7 +153,7 @@ int _beginG6ReadIteration(G6ReadIterator *pG6ReadIterator)
 
     int lineNum = 1;
     firstChar = sf_getc(g6Input);
-    charConfirmation = sf_ungetc(firstChar, g6Input);
+    charConfirmation = sf_ungetc((char)firstChar, g6Input);
 
     if (charConfirmation != firstChar)
     {
@@ -161,7 +161,7 @@ int _beginG6ReadIteration(G6ReadIterator *pG6ReadIterator)
         return NOTOK;
     }
 
-    if (!_firstCharIsValid(firstChar, lineNum))
+    if (!_firstCharIsValid((char)firstChar, lineNum))
         return NOTOK;
 
     // Despite the general specification indicating that n \in [0, 68,719,476,735],
@@ -302,7 +302,7 @@ int _getGraphOrder(strOrFileP g6Input, int *graphOrder)
             return NOTOK;
         }
 
-        sf_ungetc(graphChar, g6Input);
+        sf_ungetc((char)graphChar, g6Input);
 
         for (int i = 2; i >= 0; i--)
         {
@@ -383,7 +383,7 @@ int readGraphUsingG6ReadIterator(G6ReadIterator *pG6ReadIterator)
         // If the line was too long, then we would have placed the null terminator at the final
         // index (where it already was; see strcpn docs), and the length of the string will be
         // longer than the line should have been, i.e. orderOffset + numCharsForGraphRepr
-        if (strlen(currGraphBuff) != (((numGraphsRead == 1) ? 0 : numCharsForGraphOrder) + numCharsForGraphEncoding))
+        if ((int)strlen(currGraphBuff) != (((numGraphsRead == 1) ? 0 : numCharsForGraphOrder) + numCharsForGraphEncoding))
         {
             sprintf(messageContents, "Invalid line length read on line %d\n", numGraphsRead);
             ErrorMessage(messageContents);

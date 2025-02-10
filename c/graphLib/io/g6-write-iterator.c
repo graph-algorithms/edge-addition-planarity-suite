@@ -264,7 +264,7 @@ int _encodeAdjMatAsG6(G6WriteIterator *pG6WriteIterator)
     }
     else if (graphOrder > 1 && graphOrder < 63)
     {
-        g6Encoding[0] = graphOrder + 63;
+        g6Encoding[0] = (char)(graphOrder + 63);
     }
 
     int u = NIL, v = NIL, e = NIL;

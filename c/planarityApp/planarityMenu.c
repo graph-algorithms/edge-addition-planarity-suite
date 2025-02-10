@@ -33,7 +33,7 @@ int menu(void)
         Prompt("Enter Choice: ");
         fflush(stdin);
         scanf(" %c", &Choice);
-        Choice = tolower(Choice);
+        Choice = (char)tolower(Choice);
 
         if (Choice == 'h')
             helpMessage(NULL);
@@ -136,7 +136,7 @@ void TransformGraphMenu(void)
         Prompt("Enter output format: ");
         fflush(stdin);
         scanf(" %c", &outputFormat);
-        outputFormat = tolower(outputFormat);
+        outputFormat = (char)tolower(outputFormat);
         if (strchr(GetSupportedOutputFormats(), outputFormat))
             sprintf(commandStr, "-%c", outputFormat);
     } while (strlen(commandStr) == 0);
@@ -208,7 +208,7 @@ void TestAllGraphsMenu(void)
         Prompt("Enter algorithm specifier: ");
         fflush(stdin);
         scanf(" %c", &algorithmSpecifier);
-        algorithmSpecifier = tolower(algorithmSpecifier);
+        algorithmSpecifier = (char)tolower(algorithmSpecifier);
         if (strchr(GetAlgorithmChoices(), algorithmSpecifier))
             sprintf(commandStr, "-%c", algorithmSpecifier);
     } while (strlen(commandStr) == 0);
