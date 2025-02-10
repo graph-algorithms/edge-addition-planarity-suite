@@ -1,5 +1,5 @@
 /*
-Copyright (c) 1997-2022, John M. Boyer
+Copyright (c) 1997-2025, John M. Boyer
 All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
@@ -1016,7 +1016,7 @@ void _LogLine(char *Str)
     _Log("\n");
 }
 
-static char LogStr[512];
+static char LogStr[MAXLINE + 1];
 
 char *_MakeLogStr1(char *format, int one)
 {
