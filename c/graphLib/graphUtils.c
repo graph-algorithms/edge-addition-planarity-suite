@@ -6,8 +6,6 @@ See the LICENSE.TXT file for licensing information.
 
 #include <stdlib.h>
 
-// #include "graphStructures.h"
-// #include "graph.h"
 #include "graphLib.h"
 
 /* Imported functions for FUNCTION POINTERS */
