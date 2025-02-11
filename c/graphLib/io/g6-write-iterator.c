@@ -545,7 +545,7 @@ int _WriteGraphToG6StrOrFile(graphP pGraph, strOrFileP outputContainer, char **o
         ErrorMessage("Unable to write graph using G6WriteIterator.\n");
     else
     {
-        if (pG6WriteIterator->g6Output->theStr != NULL)
+        if (outputStr != NULL && pG6WriteIterator->g6Output->theStr != NULL)
             (*outputStr) = sf_takeTheStr(pG6WriteIterator->g6Output);
 
         int endG6WriteIterationCode = endG6WriteIteration(pG6WriteIterator);
