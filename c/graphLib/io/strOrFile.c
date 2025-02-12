@@ -107,6 +107,17 @@ strOrFileP sf_New(char *theStr, char *fileName, char *ioMode)
         }
         else
         {
+            if (strncmp(ioMode, READTEXT, strlen(READTEXT)) == 0)
+                containerType = INPUT_CONTAINER;
+            else if (strncmp(ioMode, WRITETEXT, strlen(WRITETEXT)) == 0)
+                containerType = OUTPUT_CONTAINER;
+
+            if (containerType != INPUT_CONTAINER && theStr != NULL)
+            {
+                sf_Free(&theStrOrFile);
+                return NULL;
+            }
+
             strBufP strBufToAssign = sb_New(0);
             if (strBufToAssign == NULL)
             {
@@ -120,11 +131,6 @@ strOrFileP sf_New(char *theStr, char *fileName, char *ioMode)
                 sf_Free(&theStrOrFile);
                 return NULL;
             }
-
-            if (strncmp(ioMode, READTEXT, strlen(READTEXT)) == 0)
-                containerType = INPUT_CONTAINER;
-            else if (strncmp(ioMode, WRITETEXT, strlen(WRITETEXT)) == 0)
-                containerType = OUTPUT_CONTAINER;
 
             theStrOrFile->theStr = strBufToAssign;
         }
