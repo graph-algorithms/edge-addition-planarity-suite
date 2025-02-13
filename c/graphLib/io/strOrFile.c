@@ -63,7 +63,7 @@ strOrFileP sf_New(char *theStr, char *fileName, char *ioMode)
             }
             else if (strcmp(fileName, "stdout") == 0)
             {
-                if (ioMode != NULL && strncmp(ioMode, READTEXT, strlen(READTEXT)) != 0)
+                if (ioMode != NULL && strncmp(ioMode, WRITETEXT, strlen(WRITETEXT)) != 0)
                 {
                     sf_Free(&theStrOrFile);
                     return NULL;
@@ -74,7 +74,7 @@ strOrFileP sf_New(char *theStr, char *fileName, char *ioMode)
             }
             else if (strcmp(fileName, "stderr") == 0)
             {
-                if (ioMode != NULL && strncmp(ioMode, READTEXT, strlen(READTEXT)) != 0)
+                if (ioMode != NULL && strncmp(ioMode, WRITETEXT, strlen(WRITETEXT)) != 0)
                 {
                     sf_Free(&theStrOrFile);
                     return NULL;
