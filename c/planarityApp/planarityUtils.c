@@ -523,18 +523,29 @@ char *ConstructInputFilename(char *infileName)
 {
     if (infileName == NULL)
     {
-        Prompt("Enter graph file name: ");
-        fflush(stdin);
-        scanf(" %s", theFileName);
+        do
+        {
+            Prompt("Enter graph file name: ");
+            fflush(stdin);
+            scanf(" %s", theFileName);
 
-        if (!strchr(theFileName, '.'))
-            strcat(theFileName, ".txt");
+            if (strncmp(theFileName, "stdin", strlen("stdin")) != 0 && !strchr(theFileName, '.'))
+            {
+                Message("Graph file name does not have extension; automatically appending \".txt\".\n");
+                strcat(theFileName, ".txt");
+            }
+        } while (strlen(theFileName) == 0);
     }
     else
     {
         if (strlen(infileName) > FILENAMEMAXLENGTH)
         {
             ErrorMessage("Filename is too long");
+            return NULL;
+        }
+        else if (strlen(infileName) == 0)
+        {
+            ErrorMessage("Filename is empty");
             return NULL;
         }
         strcpy(theFileName, infileName);
