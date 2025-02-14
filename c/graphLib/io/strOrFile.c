@@ -301,7 +301,7 @@ int sf_ReadInteger(int *intToRead, strOrFileP theStrOrFile)
         return NOTOK;
 
     char intCandidateStr[MAXCHARSFOR32BITINT + 1];
-    memset(intCandidateStr, '\0', MAXCHARSFOR32BITINT * sizeof(char));
+    memset(intCandidateStr, '\0', (MAXCHARSFOR32BITINT + 1) * sizeof(char));
 
     int intCandidate = 0;
     char currChar, nextChar = '\0';

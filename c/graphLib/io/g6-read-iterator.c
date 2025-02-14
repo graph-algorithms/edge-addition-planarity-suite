@@ -710,13 +710,19 @@ int _ReadGraphFromG6StrOrFile(graphP pGraphToRead, strOrFileP g6InputContainer)
     if (exitCode != OK)
         ErrorMessage("Unable to read graph from .g6 read iterator.\n");
 
-    exitCode = endG6ReadIteration(pG6ReadIterator);
-    if (exitCode != OK)
+    int endG6ReadIterationCode = endG6ReadIteration(pG6ReadIterator);
+    if (endG6ReadIterationCode != OK)
+    {
         ErrorMessage("Unable to end G6ReadIterator.\n");
+        exitCode = endG6ReadIterationCode;
+    }
 
-    exitCode = freeG6ReadIterator(&pG6ReadIterator);
+    int freeG6ReadIteratorCode = freeG6ReadIterator(&pG6ReadIterator);
     if (exitCode != OK)
+    {
         ErrorMessage("Unable to free G6ReadIterator.\n");
+        exitCode = freeG6ReadIteratorCode;
+    }
 
     return exitCode;
 }
