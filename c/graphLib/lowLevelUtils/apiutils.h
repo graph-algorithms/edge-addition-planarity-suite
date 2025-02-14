@@ -19,10 +19,10 @@ extern "C"
 #define MAXLINE 1024
 
 // N.B. Every time you're trying to read a 32-bit int from a string,
-// you should only need this many characters: an optional '-',
-// followed by 10 digits (max signed int value is 2,147,483,647) and
-// a null-terminator)
-#define MAXCHARSFOR32BITINT 12
+// you should only need to read this many characters: an optional '-',
+// followed by 10 digits (max signed int value is 2,147,483,647). One
+// must always allocate an additional byte for the null-terminator!
+#define MAXCHARSFOR32BITINT 11
 
     extern int quietMode;
 

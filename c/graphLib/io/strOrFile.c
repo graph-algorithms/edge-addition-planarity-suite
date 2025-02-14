@@ -300,7 +300,7 @@ int sf_ReadInteger(int *intToRead, strOrFileP theStrOrFile)
         theStrOrFile->containerType != INPUT_CONTAINER)
         return NOTOK;
 
-    char intCandidateStr[MAXCHARSFOR32BITINT];
+    char intCandidateStr[MAXCHARSFOR32BITINT + 1];
     memset(intCandidateStr, '\0', MAXCHARSFOR32BITINT * sizeof(char));
 
     int intCandidate = 0;
@@ -309,7 +309,7 @@ int sf_ReadInteger(int *intToRead, strOrFileP theStrOrFile)
     int intCandidateIndex = 0;
     while ((currChar = sf_getc(theStrOrFile)) != EOF)
     {
-        if (intCandidateIndex > (MAXCHARSFOR32BITINT - 2))
+        if (intCandidateIndex > (MAXCHARSFOR32BITINT - 1))
         {
             exitCode = NOTOK;
             break;
@@ -391,10 +391,10 @@ int sf_ReadSkipInteger(strOrFileP theStrOrFile)
 
 int sf_ReadSkipLineRemainder(strOrFileP theStrOrFile)
 {
-    char lineRemainderToSkip[255];
-    memset(lineRemainderToSkip, '\0', 255);
+    char lineRemainderToSkip[MAXLINE + 1];
+    memset(lineRemainderToSkip, '\0', (MAXLINE + 1));
 
-    if (sf_fgets(lineRemainderToSkip, 254, theStrOrFile) == NULL)
+    if (sf_fgets(lineRemainderToSkip, MAXLINE, theStrOrFile) == NULL)
         return NOTOK;
 
     return OK;

@@ -311,7 +311,7 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
 
 int _ReadLEDAGraph(graphP theGraph, strOrFileP inputContainer)
 {
-    char Line[256];
+    char Line[MAXLINE + 1];
     int N = -1;
     int graphType, M, m, u, v, ErrorCode;
     int zeroBasedOffset = gp_GetFirstVertex(theGraph) == 0 ? 1 : 0;
@@ -350,7 +350,7 @@ int _ReadLEDAGraph(graphP theGraph, strOrFileP inputContainer)
         return NOTOK;
 
     for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
-        if (sf_fgets(Line, 255, inputContainer) == NULL)
+        if (sf_fgets(Line, MAXLINE, inputContainer) == NULL)
             return NOTOK;
 
     /* Read the number of edges */
@@ -454,12 +454,12 @@ int _ReadGraph(graphP theGraph, strOrFileP inputContainer)
 {
     int RetVal = OK;
     bool extraDataAllowed = false;
-    char lineBuff[256];
+    char lineBuff[MAXLINE + 1];
 
     if (sf_ValidateStrOrFile(inputContainer) != OK)
         return NOTOK;
 
-    if (sf_fgets(lineBuff, 255, inputContainer) == NULL)
+    if (sf_fgets(lineBuff, MAXLINE, inputContainer) == NULL)
     {
         sf_Free(&inputContainer);
         return NOTOK;
@@ -518,7 +518,7 @@ int _ReadGraph(graphP theGraph, strOrFileP inputContainer)
                 else
                 {
                     // FIXME: how do I distinguish between "there's no more content on input stream" and "I've hit an error state"
-                    while (sf_fgets(lineBuff, 255, inputContainer) != NULL)
+                    while (sf_fgets(lineBuff, MAXLINE, inputContainer) != NULL)
                     {
                         if (sb_ConcatString(extraData, lineBuff) != OK)
                         {
@@ -723,8 +723,8 @@ char _GetVertexObstructionTypeChar(graphP theGraph, int v)
 int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer)
 {
     int v, e, EsizeOccupied;
-    char lineBuf[256];
-    memset(lineBuf, '\0', 256 * sizeof(char));
+    char lineBuf[MAXLINE + 1];
+    memset(lineBuf, '\0', (MAXLINE + 1) * sizeof(char));
 
     if (theGraph == NULL || sf_ValidateStrOrFile(outputContainer) != OK)
         return NOTOK;

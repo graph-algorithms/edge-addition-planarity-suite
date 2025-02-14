@@ -531,7 +531,7 @@ int RandomGraph(char command, int extraEdges, int numVertices, char *outfileName
 
         if (tolower(saveEdgeListFormat) == 'y')
         {
-            char theFileName[256];
+            char theFileName[MAXLINE + 1];
 
             if (extraEdges > 0)
                 strcpy(theFileName, "nonPlanarEdgeList.txt");
