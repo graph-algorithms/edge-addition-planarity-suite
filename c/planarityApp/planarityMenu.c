@@ -33,7 +33,7 @@ int menu(void)
         Prompt("Enter Choice: ");
         fflush(stdin);
         scanf(" %c", &Choice);
-        Choice = tolower(Choice);
+        Choice = (char)tolower(Choice);
 
         if (Choice == 'h')
             helpMessage(NULL);
@@ -104,7 +104,6 @@ void TransformGraphMenu(void)
     infileName[0] = '\0';
     char outfileName[MAXLINE + 1];
     outfileName[0] = '\0';
-    char *outputStr = NULL;
     char outputFormat = '\0';
     char commandStr[4];
     commandStr[0] = '\0';
@@ -119,16 +118,19 @@ void TransformGraphMenu(void)
         fflush(stdin);
         scanf(fileNameFormat, infileName);
 
-        if (strncmp(infileName, "stdin", 5) == 0)
+        if (strncmp(infileName, "stdin", strlen("stdin")) == 0)
         {
-            ErrorMessage("stdin not supported from menu.\n");
+            ErrorMessage("\n\tPlease choose an input file path: stdin not supported from menu.\n\n");
             infileName[0] = '\0';
         }
     } while (strlen(infileName) == 0);
 
-    Prompt("Enter output filename, or press return to output to console:\n");
-    fflush(stdin);
-    scanf(fileNameFormat, outfileName);
+    do
+    {
+        Prompt("Enter output filename, or type \"stdout\" to output to console:\n");
+        fflush(stdin);
+        scanf(fileNameFormat, outfileName);
+    } while (strlen(outfileName) == 0);
 
     do
     {
@@ -136,35 +138,14 @@ void TransformGraphMenu(void)
         Prompt("Enter output format: ");
         fflush(stdin);
         scanf(" %c", &outputFormat);
-        outputFormat = tolower(outputFormat);
+        outputFormat = (char)tolower(outputFormat);
         if (strchr(GetSupportedOutputFormats(), outputFormat))
             sprintf(commandStr, "-%c", outputFormat);
     } while (strlen(commandStr) == 0);
 
-    if (strlen(outfileName) == 0)
-    {
-        Result = TransformGraph(commandStr, infileName, NULL, NULL, NULL, &outputStr);
-        if (Result != OK || outputStr == NULL)
-            ErrorMessage("Failed to perform transformation.\n");
-        else
-        {
-            Message("Output:\n");
-            Message(outputStr);
-            Message("\n");
-        }
-    }
-    else
-    {
-        Result = TransformGraph(commandStr, infileName, NULL, NULL, outfileName, NULL);
-        if (Result != OK)
-            ErrorMessage("Failed to perform transformation.\n");
-    }
-
-    if (outputStr != NULL)
-    {
-        free(outputStr);
-        outputStr = NULL;
-    }
+    Result = TransformGraph(commandStr, infileName, NULL, NULL, outfileName, NULL);
+    if (Result != OK)
+        ErrorMessage("Failed to perform transformation.\n");
 }
 
 void TestAllGraphsMenu(void)
@@ -175,7 +156,6 @@ void TestAllGraphsMenu(void)
     infileName[0] = '\0';
     char outfileName[MAXLINE + 1];
     outfileName[0] = '\0';
-    char *outputStr = NULL;
     char algorithmSpecifier = '\0';
     char commandStr[3];
     commandStr[0] = '\0';
@@ -190,16 +170,19 @@ void TestAllGraphsMenu(void)
         fflush(stdin);
         scanf(fileNameFormat, infileName);
 
-        if (strncmp(infileName, "stdin", 5) == 0)
+        if (strncmp(infileName, "stdin", strlen("stdin")) == 0)
         {
-            ErrorMessage("stdin not supported from menu.\n");
+            ErrorMessage("\n\tPlease choose an input file path: stdin not supported from menu.\n\n");
             infileName[0] = '\0';
         }
     } while (strlen(infileName) == 0);
 
-    Prompt("Enter output filename, or press return to output to console:\n");
-    fflush(stdin);
-    scanf(fileNameFormat, outfileName);
+    do
+    {
+        Prompt("Enter output filename, or type \"stdout\" to output to console:\n");
+        fflush(stdin);
+        scanf(fileNameFormat, outfileName);
+    } while (strlen(outfileName) == 0);
 
     do
     {
@@ -208,27 +191,12 @@ void TestAllGraphsMenu(void)
         Prompt("Enter algorithm specifier: ");
         fflush(stdin);
         scanf(" %c", &algorithmSpecifier);
-        algorithmSpecifier = tolower(algorithmSpecifier);
+        algorithmSpecifier = (char)tolower(algorithmSpecifier);
         if (strchr(GetAlgorithmChoices(), algorithmSpecifier))
             sprintf(commandStr, "-%c", algorithmSpecifier);
     } while (strlen(commandStr) == 0);
 
-    if (strlen(outfileName) == 0)
-    {
-        Result = TestAllGraphs(commandStr, infileName, NULL, &outputStr);
-        if (Result != OK || outputStr == NULL)
-            ErrorMessage("Algorithm test on all graphs in .g6 input file failed.\n");
-        else
-        {
-            Message("Output:\n");
-            Message(outputStr);
-            Message("\n");
-        }
-    }
-    else
-    {
-        Result = TestAllGraphs(commandStr, infileName, outfileName, NULL);
-        if (Result != OK)
-            ErrorMessage("Algorithm test on all graphs in .g6 input file failed.\n");
-    }
+    Result = TestAllGraphs(commandStr, infileName, outfileName, NULL);
+    if (Result != OK)
+        ErrorMessage("Algorithm test on all graphs in .g6 input file failed.\n");
 }

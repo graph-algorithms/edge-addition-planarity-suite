@@ -42,8 +42,23 @@ int SpecificGraph(
     // Get the filename of the graph to test
     if (inputStr == NULL)
     {
-        if ((infileName = ConstructInputFilename(infileName)) == NULL)
-            return NOTOK;
+        if (infileName != NULL)
+        {
+            if ((infileName = ConstructInputFilename(infileName)) == NULL)
+                return NOTOK;
+        }
+        else
+        {
+            do
+            {
+                infileName = ConstructInputFilename(infileName);
+                if (infileName != NULL && strncmp(infileName, "stdin", strlen("stdin")) == 0)
+                {
+                    ErrorMessage("\n\tPlease choose an input file path: stdin not supported from menu.\n\n");
+                    infileName = NULL;
+                }
+            } while (infileName == NULL || strlen(infileName) == 0);
+        }
     }
 
     // Create the graph and, if needed, attach the correct algorithm to it

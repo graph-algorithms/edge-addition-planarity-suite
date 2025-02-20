@@ -23,8 +23,8 @@ extern int _MarkDFSPath(graphP theGraph, int ancestor, int descendant);
 extern int _EmbedPostprocess(graphP theGraph, int v, int edgeEmbeddingResult);
 extern int _CheckEmbeddingIntegrity(graphP theGraph, graphP origGraph);
 extern int _CheckObstructionIntegrity(graphP theGraph, graphP origGraph);
-extern int _ReadPostprocess(graphP theGraph, void *extraData, long extraDataSize);
-extern int _WritePostprocess(graphP theGraph, void **pExtraData, long *pExtraDataSize);
+extern int _ReadPostprocess(graphP theGraph, char *extraData);
+extern int _WritePostprocess(graphP theGraph, char **pExtraData);
 
 /* Internal util functions for FUNCTION POINTERS */
 
