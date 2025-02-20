@@ -547,18 +547,16 @@ int _WriteGraphToG6StrOrFile(graphP pGraph, strOrFileP outputContainer, char **o
     {
         if (outputStr != NULL && pG6WriteIterator->g6Output->theStr != NULL)
             (*outputStr) = sf_takeTheStr(pG6WriteIterator->g6Output);
+    }
 
-        int endG6WriteIterationCode = endG6WriteIteration(pG6WriteIterator);
-
-        if (endG6WriteIterationCode != OK)
-        {
-            ErrorMessage("Unable to end G6 write iteration.\n");
-            exitCode = endG6WriteIterationCode;
-        }
+    int endG6WriteIterationCode = endG6WriteIteration(pG6WriteIterator);
+    if (endG6WriteIterationCode != OK)
+    {
+        ErrorMessage("Unable to end G6 write iteration.\n");
+        exitCode = endG6WriteIterationCode;
     }
 
     int freeG6WriteIteratorCode = freeG6WriteIterator(&pG6WriteIterator);
-
     if (freeG6WriteIteratorCode != OK)
     {
         ErrorMessage("Unable to free G6Writer.\n");

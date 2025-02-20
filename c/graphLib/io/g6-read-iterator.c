@@ -718,7 +718,7 @@ int _ReadGraphFromG6StrOrFile(graphP pGraphToRead, strOrFileP g6InputContainer)
     }
 
     int freeG6ReadIteratorCode = freeG6ReadIterator(&pG6ReadIterator);
-    if (exitCode != OK)
+    if (freeG6ReadIteratorCode != OK)
     {
         ErrorMessage("Unable to free G6ReadIterator.\n");
         exitCode = freeG6ReadIteratorCode;
