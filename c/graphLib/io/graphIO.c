@@ -563,8 +563,8 @@ int _WriteAdjList(graphP theGraph, strOrFileP outputContainer)
 {
     int v, e;
     int zeroBasedOffset = (theGraph->internalFlags & FLAGS_ZEROBASEDIO) ? gp_GetFirstVertex(theGraph) : 0;
-    char numberStr[128];
-    memset(numberStr, '\0', 128 * sizeof(char));
+    char numberStr[MAXCHARSFOR32BITINT + 1];
+    memset(numberStr, '\0', (MAXCHARSFOR32BITINT + 1) * sizeof(char));
 
     if (theGraph == NULL || sf_ValidateStrOrFile(outputContainer) != OK)
         return NOTOK;
@@ -624,8 +624,8 @@ int _WriteAdjMatrix(graphP theGraph, strOrFileP outputContainer)
 {
     int v, e, K;
     char *Row = NULL;
-    char numberStr[128];
-    memset(numberStr, '\0', 128 * sizeof(char));
+    char numberStr[MAXCHARSFOR32BITINT + 1];
+    memset(numberStr, '\0', (MAXCHARSFOR32BITINT + 1) * sizeof(char));
 
     if (theGraph == NULL || sf_ValidateStrOrFile(outputContainer) != OK)
         return NOTOK;
