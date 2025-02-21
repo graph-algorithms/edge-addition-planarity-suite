@@ -33,7 +33,7 @@ Please refer to the [2. Dev Setup](https://github.com/graph-algorithms/edge-addi
 Once one has set up the development environment and is able to work with the code in the development environment, it is possible to make the distribution with the following additional steps:
 
 1. Ensure that the `autotools`, `configure`, and `make` are available on the command-line (e.g. add `C:\msys64\usr\bin` to the system `PATH` before Windows Program Files to ensure that the `find` program is the one from `MSYS2` rather than the one from Windows (e.g. adjust the `PATH` variable as needed)). 
-2. Open the start menu and start typing "MSYS2 UCRT64" to open the correct terminal app, then navigate to the root of the `edge-addition-planarity-suite` repository (i.e. the directory containing `configure.ac` and the `c` subdirectory)
+2. Open `bash` (e.g., on Windows, open the start menu and start typing "MSYS2 UCRT64" to open the correct terminal app), then within `bash` navigate to the root of the `edge-addition-planarity-suite` repository (i.e., the directory containing `configure.ac` and the `c` subdirectory)
 3. Enter the following commands:
     1. `autoreconf -fi`
     2. `./configure`
@@ -48,7 +48,7 @@ If you have done the steps to set up the development environment and work with t
 
 You also don't necessarily need to `make` and `make install` the planarity software on Linux if you are able to get it using `sudo apt planarity` (i.e. using a Debian-based Linux distribution, which uses [`apt`](https://en.wikipedia.org/wiki/APT_(software)) for package management)
 
-However, you may have only downloaded the distribution (i.e., `planarity-N.N.N.N.tar.gz`) from a Release tag of this project. Once you have decompressed the distribution into a directory, you can make it by getting into `bash` (e.g. type `bash` in the Windows command-line) and then entering the following commands: 
+However, you may have only downloaded the distribution (i.e., `planarity-N.N.N.N.tar.gz`) from a Release tag of this project. Once you have decompressed the distribution into a directory, you can make it by getting into `bash` (e.g., on Windows, open the start menu and start typing "MSYS2 UCRT64" to open the correct terminal app) and then entering the following commands: 
 1. `./configure`
 2. `make`
 
