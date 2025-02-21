@@ -18,7 +18,7 @@ These instructions will get you a copy of the project up and running on your loc
 
 ### Pre-compiled Executable Releases for Non-Developers
 
-On several (Debian-based) distributions of Linux, you may be able to get the planarity executable with `sudo apt install planarity`, or you may already have it if you have Matlab. For non-developer Windows users, there is also a pre-compiled executable version of the algorithm implementations: download and decompress the `planarity-N.N.N.N.WindowsExe.zip` file. 
+On several (Debian-based) distributions of Linux, you may be able to get the planarity executable with `sudo apt install planarity`, or you may already have access to its key functionality if you have SageMath or MATLAB. For non-developer users on an operating system _Platform_ supported by the release, a pre-compiled executable version of the `planarity` executable can be obtained by downloading from the release tag and then decompressing the `planarity-N.N.N.N.`_Platform_`Exe.zip` file. 
 
 If you run the `planarity` executable program, it will offer an interactive, menu-driven mode that lets a user manually select algorithms to run and, where appropriate, files containing graphs on which to run the algorithms. 
 
@@ -40,7 +40,7 @@ Once one has set up the development environment and is able to work with the cod
     3. `make dist`
     4. `make distcheck`
 
-The result is a validated `planarity-N.N.N.N.tar.gz` distribution, where `N.N.N.N` is the version number expressed in the `configure.ac` file. 
+The result is a validated `planarity-N.N.N.N.tar.gz` distribution, where `N.N.N.N` is the version number expressed in the `AC_INIT` line of the `configure.ac` file. 
 
 ### Making and Running the Software from the Distribution
 
