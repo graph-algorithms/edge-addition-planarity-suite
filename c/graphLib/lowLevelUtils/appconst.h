@@ -75,13 +75,15 @@ extern int debugNOTOK(void);
 
 /* Array indices are used as pointers, and NIL means bad pointer */
 
+#ifdef ZEROBASED
+// This definition is used with 0-based array indexing
+#define NIL -1
+#define NIL_CHAR 0xFF
+#else
 // This definition is used with 1-based array indexing
 #define NIL 0
 #define NIL_CHAR 0x00
-
-// This definition is used in combination with 0-based array indexing
-// #define NIL      -1
-// #define NIL_CHAR 0xFF
+#endif
 
 /********************************************************************
  A few simple integer selection macros
