@@ -282,12 +282,24 @@ int outputTestAllGraphsResults(char command, testAllStatsP stats, char *infileNa
     }
 
     sprintf(headerStr, headerFormat, infileBasename, stats->duration);
+    int numCharsToReprNumGraphsRead = 0, numCharsToReprNumOK = 0, numCharsToReprNumNONEMBEDDABLE = 0;
+    if (GetNumCharsToReprInt(stats->numGraphsRead, &numCharsToReprNumGraphsRead) != OK ||
+        GetNumCharsToReprInt(stats->numOK, &numCharsToReprNumOK) != OK ||
+        GetNumCharsToReprInt(stats->numNONEMBEDDABLE, &numCharsToReprNumNONEMBEDDABLE) != OK)
+    {
+        ErrorMessage("Unable to determine the number of characters required to represent testAllGraphs stat values.\n");
+
+        free(headerStr);
+        headerStr = NULL;
+
+        return NOTOK;
+    }
 
     char *resultsStr = (char *)malloc(
         (
-            3 + GetNumCharsToReprInt(stats->numGraphsRead) +
-            1 + GetNumCharsToReprInt(stats->numOK) +
-            1 + GetNumCharsToReprInt(stats->numNONEMBEDDABLE) +
+            3 + numCharsToReprNumGraphsRead +
+            1 + numCharsToReprNumOK +
+            1 + numCharsToReprNumNONEMBEDDABLE +
             1 + 8 + // either ERROR or SUCCESS, so the longer of which is 7 + 1 chars
             3) *
         sizeof(char));

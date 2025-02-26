@@ -20,8 +20,8 @@ extern "C"
 
 // N.B. Every time you're trying to read a 32-bit int from a string,
 // you should only need to read this many characters: an optional '-',
-// followed by 10 digits (max signed int value is 2,147,483,647). One
-// must always allocate an additional byte for the null-terminator!
+// followed by 10 digits (max signed 32-bit int value is 2,147,483,647).
+// One must always allocate an additional byte for the null-terminator!
 #define MAXCHARSFOR32BITINT 11
 
     extern int quietMode;
@@ -31,6 +31,9 @@ extern "C"
 
     extern void Message(char *message);
     extern void ErrorMessage(char *message);
+
+    int GetNumCharsToReprInt(int theNum, int *numCharsRequired);
+    int ChopNumDigitsFromInt(int *intToTruncate, int numDigitsToChop);
 
 #ifdef __cplusplus
 }

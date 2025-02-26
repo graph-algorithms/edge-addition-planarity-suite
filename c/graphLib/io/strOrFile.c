@@ -303,18 +303,12 @@ int sf_ReadInteger(int *intToRead, strOrFileP theStrOrFile)
     char intCandidateStr[MAXCHARSFOR32BITINT + 1];
     memset(intCandidateStr, '\0', (MAXCHARSFOR32BITINT + 1) * sizeof(char));
 
-    int intCandidate = 0;
-    char currChar, nextChar = '\0';
-    bool startedReadingInt = FALSE;
-    int intCandidateIndex = 0;
-    while ((currChar = sf_getc(theStrOrFile)) != EOF)
+    int intCandidate = 0, intCandidateIndex = 0;
+    char currChar = '\0', nextChar = '\0';
+    bool startedReadingInt = FALSE, isNegative = FALSE;
+    do
     {
-        if (intCandidateIndex > (MAXCHARSFOR32BITINT - 1))
-        {
-            exitCode = NOTOK;
-            break;
-        }
-
+        currChar = sf_getc(theStrOrFile);
         if (currChar == '-')
         {
             if (startedReadingInt)
@@ -325,6 +319,12 @@ int sf_ReadInteger(int *intToRead, strOrFileP theStrOrFile)
             else
             {
                 nextChar = sf_getc(theStrOrFile);
+                if (sf_ungetc(nextChar, theStrOrFile) != nextChar)
+                {
+                    exitCode = NOTOK;
+                    break;
+                }
+
                 if (!isdigit(nextChar))
                 {
                     exitCode = NOTOK;
@@ -332,12 +332,8 @@ int sf_ReadInteger(int *intToRead, strOrFileP theStrOrFile)
                 }
                 else
                 {
-                    if (sf_ungetc(nextChar, theStrOrFile) != nextChar)
-                    {
-                        exitCode = NOTOK;
-                        break;
-                    }
                     intCandidateStr[intCandidateIndex++] = currChar;
+                    isNegative = TRUE;
                 }
             }
         }
@@ -346,22 +342,64 @@ int sf_ReadInteger(int *intToRead, strOrFileP theStrOrFile)
             intCandidateStr[intCandidateIndex++] = currChar;
             startedReadingInt = TRUE;
         }
-        else if (currChar != EOF)
+        else
         {
             if (sf_ungetc(currChar, theStrOrFile) != currChar)
-            {
                 exitCode = NOTOK;
+            break;
+        }
+
+        if (
+            (!isNegative && (intCandidateIndex == (MAXCHARSFOR32BITINT - 2))) ||
+            (isNegative && (intCandidateIndex == (MAXCHARSFOR32BITINT - 1))))
+        {
+            if (sscanf(intCandidateStr, "%d", &intCandidate) != 1)
+                exitCode = NOTOK;
+            else
+            {
+                // N.B. The only way we could be here is if `i` is less than the max possible
+                // length of the string representation of a signed 32-bit integer (10 for
+                // positive and 11 for negative)
+                int underflowThreshold = INT32_MIN, overflowThreshold = INT32_MAX;
+                if (ChopNumDigitsFromInt((&underflowThreshold), 1) != OK || ChopNumDigitsFromInt((&overflowThreshold), 1) != OK)
+                    exitCode = NOTOK;
+
+                nextChar = sf_getc(theStrOrFile);
+                if (isdigit(nextChar))
+                {
+                    if (isNegative)
+                    {
+                        if (intCandidate < underflowThreshold)
+                            exitCode = NOTOK;
+                        else if (intCandidate == underflowThreshold && nextChar == '9')
+                            exitCode = NOTOK;
+                    }
+                    else
+                    {
+                        if (intCandidate > overflowThreshold)
+                            exitCode = NOTOK;
+                        else if (intCandidate == overflowThreshold && (nextChar == '8' || nextChar == '9'))
+                            exitCode = NOTOK;
+                    }
+
+                    if (exitCode == OK)
+                    {
+                        intCandidateStr[intCandidateIndex++] = nextChar;
+                    }
+                }
+                else if (sf_ungetc(nextChar, theStrOrFile) != nextChar)
+                    exitCode = NOTOK;
             }
             break;
         }
-    }
+    } while (currChar != EOF);
 
     if (exitCode == OK)
     {
         if (sscanf(intCandidateStr, "%d", &intCandidate) != 1)
             exitCode = NOTOK;
-
-        (*intToRead) = intCandidate;
+        else
+            (*intToRead) = intCandidate;
     }
 
     return exitCode;

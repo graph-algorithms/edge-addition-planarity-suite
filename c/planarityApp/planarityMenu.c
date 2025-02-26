@@ -108,8 +108,15 @@ void TransformGraphMenu(void)
     char commandStr[4];
     commandStr[0] = '\0';
 
+    int numCharsToReprMAXLINE = 0;
+    if (GetNumCharsToReprInt(MAXLINE, &numCharsToReprMAXLINE) != OK)
+    {
+        ErrorMessage("Unable to determine number of characters required to represent MAXLINE.\n");
+        return;
+    }
+
     char *fileNameFormatFormat = " %%%d[^\r\n]";
-    char *fileNameFormat = (char *)malloc((strlen(fileNameFormatFormat) + GetNumCharsToReprInt(MAXLINE) + 1) * sizeof(char));
+    char *fileNameFormat = (char *)malloc((strlen(fileNameFormatFormat) + numCharsToReprMAXLINE + 1) * sizeof(char));
     sprintf(fileNameFormat, fileNameFormatFormat, MAXLINE);
 
     do
@@ -160,8 +167,15 @@ void TestAllGraphsMenu(void)
     char commandStr[3];
     commandStr[0] = '\0';
 
+    int numCharsToReprMAXLINE = 0;
+    if (GetNumCharsToReprInt(MAXLINE, &numCharsToReprMAXLINE) != OK)
+    {
+        ErrorMessage("Unable to determine number of characters required to represent MAXLINE.\n");
+        return;
+    }
+
     char *fileNameFormatFormat = " %%%d[^\r\n]";
-    char *fileNameFormat = (char *)malloc((strlen(fileNameFormatFormat) + GetNumCharsToReprInt(MAXLINE) + 1) * sizeof(char));
+    char *fileNameFormat = (char *)malloc((strlen(fileNameFormatFormat) + numCharsToReprMAXLINE + 1) * sizeof(char));
     sprintf(fileNameFormat, fileNameFormatFormat, MAXLINE);
 
     do

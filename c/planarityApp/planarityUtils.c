@@ -664,13 +664,3 @@ int ConstructTransformationExpectedResultFilename(char *infileName, char **outfi
 
     return Result;
 }
-
-int GetNumCharsToReprInt(int theNum)
-{
-    int numCharsRequired = 1;
-
-    while (theNum /= 10)
-        numCharsRequired++;
-
-    return numCharsRequired;
-}
