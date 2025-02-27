@@ -7,7 +7,7 @@
             "args": [
                 "-fdiagnostics-color=always",
                 "-DDEBUG", // Added so that _DEBUG is defined; see appconst.h
-                //"-DZEROBASED", // Uncomment if you wish to use (slow) 0-based array indexing
+                //"-DUSE_0BASEDARRAYS", // Commented out to use faster 1-based array indexing
                 "-Wall",
                 // "-Wextra",
                 "-g",
@@ -63,7 +63,7 @@
             "command": "C:\\msys64\\ucrt64\\bin\\gcc.exe",
             "args": [
                 "-O3",
-                //"-DZEROBASED", // Uncomment if you wish to use (slow) 0-based array indexing
+                //"-DUSE_0BASEDARRAYS", // Commented out to use faster 1-based array indexing
                 "-Wall",
                 // "-Wextra",
                 "-g",
@@ -120,7 +120,7 @@
             "args": [
                 "-fdiagnostics-color=always",
                 "-DDEBUG", // Added so that _DEBUG is defined; see appconst.h
-                //"-DZEROBASED", // Uncomment if you wish to use (slow) 0-based array indexing
+                //"-DUSE_0BASEDARRAYS", // Commented out to use faster 1-based array indexing
                 "-Wall",
                 // "-Wextra",
                 "-g",
@@ -149,7 +149,7 @@
             "command": "/usr/bin/gcc",
             "args": [
                 "-O3",
-                //"-DZEROBASED", // Uncomment if you wish to use (slow) 0-based array indexing
+                //"-DUSE_0BASEDARRAYS", // Commented out to use faster 1-based array indexing
                 "-Wall",
                 // "-Wextra",
                 "-g",
@@ -182,7 +182,7 @@
                 "/EHsc",
                 "/nologo",
                 "/DDEBUG", // Added so that _DEBUG is defined; see appconst.h
-                //"/DZEROBASED", // Uncomment if you wish to use (slow) 0-based array indexing
+                //"/DUSE_0BASEDARRAYS", // Commented out to use faster 1-based array indexing
                 "/Wall",
                 "/wd4464", // Ignore warnings about relative paths
                 "/wd4710", // Ignore warnings about not inlining scanf, sprintf, printf, fprintf, etc.
@@ -219,7 +219,7 @@
             "args": [
                 "/O2", // This is the maximum optimization level available for MSVC cl
                 "/nologo",
-                //"/DZEROBASED", // Uncomment if you wish to use (slow) 0-based array indexing
+                //"/DUSE_0BASEDARRAYS", // Commented out to use faster 1-based array indexing
                 "/Wall",
                 "/wd4464", // Ignore warnings about relative paths
                 "/wd4710", // Ignore warnings about not inlining scanf, sprintf, printf, fprintf, etc.
@@ -257,7 +257,7 @@
                 "-fcolor-diagnostics",
                 "-fansi-escape-codes",
                 "-DDEBUG", // Added so that _DEBUG is defined; see appconst.h
-                //"-DZEROBASED", // Uncomment if you wish to use (slow) 0-based array indexing
+                //"-DUSE_0BASEDARRAYS", // Commented out to use faster 1-based array indexing
                 "-Wall",
                 // "-Wextra",
                 "-g",
@@ -286,7 +286,7 @@
             "command": "clang",
             "args": [
                 "-O3",
-                //"-DZEROBASED", // Uncomment if you wish to use (slow) 0-based array indexing
+                //"-DUSE_0BASEDARRAYS", // Commented out to use faster 1-based array indexing
                 "-Wall",
                 // "-Wextra",
                 "-g",

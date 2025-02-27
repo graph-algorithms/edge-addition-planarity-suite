@@ -274,7 +274,11 @@ int _InitGraph(graphP theGraph, int N)
  ********************************************************************/
 void _InitVertices(graphP theGraph)
 {
-#ifdef ZEROBASED
+#ifdef USE_FASTER_1BASEDARRAYS
+    memset(theGraph->V, NIL_CHAR, gp_VertexIndexBound(theGraph) * sizeof(vertexRec));
+    memset(theGraph->VI, NIL_CHAR, gp_PrimaryVertexIndexBound(theGraph) * sizeof(vertexInfo));
+    memset(theGraph->extFace, NIL_CHAR, gp_VertexIndexBound(theGraph) * sizeof(extFaceLinkRec));
+#else
     int v;
 
     memset(theGraph->V, NIL_CHAR, gp_VertexIndexBound(theGraph) * sizeof(vertexRec));
@@ -282,11 +286,7 @@ void _InitVertices(graphP theGraph)
     memset(theGraph->extFace, NIL_CHAR, gp_VertexIndexBound(theGraph) * sizeof(extFaceLinkRec));
 
     for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
-        gp_InitVertexFlags(theGraph, v);
-#else
-    memset(theGraph->V, NIL_CHAR, gp_VertexIndexBound(theGraph) * sizeof(vertexRec));
-    memset(theGraph->VI, NIL_CHAR, gp_PrimaryVertexIndexBound(theGraph) * sizeof(vertexInfo));
-    memset(theGraph->extFace, NIL_CHAR, gp_VertexIndexBound(theGraph) * sizeof(extFaceLinkRec));
+        gp_InitVertexFlags(theGraph, v);    
 #endif
     // N.B. This is the legacy API-based approach to initializing the vertices
     // int v;
@@ -314,7 +314,9 @@ void _InitVertices(graphP theGraph)
  ********************************************************************/
 void _InitEdges(graphP theGraph)
 {
-#ifdef ZEROBASED
+#ifdef USE_FASTER_1BASEDARRAYS
+    memset(theGraph->E, NIL_CHAR, gp_EdgeIndexBound(theGraph) * sizeof(edgeRec));
+#else
     int e, Esize;
 
     memset(theGraph->E, NIL_CHAR, gp_EdgeIndexBound(theGraph) * sizeof(edgeRec));
@@ -322,8 +324,6 @@ void _InitEdges(graphP theGraph)
     Esize = gp_EdgeIndexBound(theGraph);
     for (e = gp_GetFirstEdge(theGraph); e < Esize; e++)
         gp_InitEdgeFlags(theGraph, e);
-#else
-    memset(theGraph->E, NIL_CHAR, gp_EdgeIndexBound(theGraph) * sizeof(edgeRec));
 #endif
     // N.B. This is the legacy API-based approach to initializing the edges
     // int e, Esize;
@@ -1789,11 +1789,11 @@ int gp_DeleteEdge(graphP theGraph, int e, int nextLink)
 
     // Clear the two edge records
     // (the bit twiddle (e & ~1) chooses the lesser of e and its twin arc)
-#ifdef ZEROBASED
+#ifdef USE_FASTER_1BASEDARRAYS
+    memset(theGraph->E + (e & ~1), NIL_CHAR, sizeof(edgeRec) << 1);
+#else
     _InitEdgeRec(theGraph, e);
     _InitEdgeRec(theGraph, gp_GetTwinArc(theGraph, e));
-#else
-    memset(theGraph->E + (e & ~1), NIL_CHAR, sizeof(edgeRec) << 1);
 #endif
 
     // Now we reduce the number of edges in the data structure

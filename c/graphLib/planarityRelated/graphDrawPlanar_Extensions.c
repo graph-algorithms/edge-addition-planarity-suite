@@ -221,7 +221,10 @@ int _DrawPlanar_CreateStructures(DrawPlanarContext *context)
  ********************************************************************/
 int _DrawPlanar_InitStructures(DrawPlanarContext *context)
 {
-#ifdef ZEROBASED
+#ifdef USE_FASTER_1BASEDARRAYS
+    memset(context->VI, NIL_CHAR, gp_PrimaryVertexIndexBound(context->theGraph) * sizeof(DrawPlanar_VertexInfo));
+    memset(context->E, NIL_CHAR, gp_EdgeIndexBound(context->theGraph) * sizeof(DrawPlanar_EdgeRec));
+#else
     int v, e, Esize;
     graphP theGraph = context->theGraph;
 
@@ -234,9 +237,6 @@ int _DrawPlanar_InitStructures(DrawPlanarContext *context)
     Esize = gp_EdgeIndexBound(theGraph);
     for (e = gp_GetFirstEdge(theGraph); e < Esize; e++)
         _DrawPlanar_InitEdgeRec(context, e);
-#else
-    memset(context->VI, NIL_CHAR, gp_PrimaryVertexIndexBound(context->theGraph) * sizeof(DrawPlanar_VertexInfo));
-    memset(context->E, NIL_CHAR, gp_EdgeIndexBound(context->theGraph) * sizeof(DrawPlanar_EdgeRec));
 #endif
 
     return OK;
