@@ -33,8 +33,6 @@ extern "C"
     extern void ErrorMessage(char *message);
 
     int GetNumCharsToReprInt(int theNum, int *numCharsRequired);
-    int ChopNumDigitsFromInt(int *intToTruncate, int numDigitsToChop);
-
 #ifdef __cplusplus
 }
 #endif

@@ -357,16 +357,13 @@ int sf_ReadInteger(int *intToRead, strOrFileP theStrOrFile)
                 exitCode = NOTOK;
             else
             {
-                // N.B. The only way we could be here is if `i` is less than the max possible
-                // length of the string representation of a signed 32-bit integer (10 for
-                // positive and 11 for negative)
-                int underflowThreshold = INT32_MIN, overflowThreshold = INT32_MAX;
-                if (ChopNumDigitsFromInt((&underflowThreshold), 1) != OK || ChopNumDigitsFromInt((&overflowThreshold), 1) != OK)
-                    exitCode = NOTOK;
-
                 nextChar = sf_getc(theStrOrFile);
                 if (isdigit(nextChar))
                 {
+                    // N.B. The only way we could be here is if `i` is less than the max possible
+                    // length of the string representation of a signed 32-bit integer (10 for
+                    // positive and 11 for negative)
+                    int underflowThreshold = (INT32_MIN / 10), overflowThreshold = (INT32_MAX / 10);
                     if (isNegative)
                     {
                         if (intCandidate < underflowThreshold)

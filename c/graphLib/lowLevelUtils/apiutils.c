@@ -71,32 +71,3 @@ int GetNumCharsToReprInt(int theNum, int *numCharsRequired)
 
     return OK;
 }
-
-int ChopNumDigitsFromInt(int *intToTruncate, int numDigitsToChop)
-{
-    int exitCode = OK;
-
-    int numCharsToRepIntToTruncate = 0;
-    if (GetNumCharsToReprInt((*intToTruncate), &numCharsToRepIntToTruncate) != OK)
-        return NOTOK;
-
-    char *strReprIntToTruncate = (char *)malloc((numCharsToRepIntToTruncate + 1) * sizeof(char));
-    if (strReprIntToTruncate == NULL)
-        return NOTOK;
-
-    sprintf(strReprIntToTruncate, "%d", (*intToTruncate));
-    strReprIntToTruncate[numCharsToRepIntToTruncate - numDigitsToChop] = '\0';
-    int truncationCandidate = 0;
-    if (sscanf(strReprIntToTruncate, "%d", &truncationCandidate) != 1)
-        exitCode = NOTOK;
-    else
-        (*intToTruncate) = truncationCandidate;
-
-    if (strReprIntToTruncate != NULL)
-    {
-        free(strReprIntToTruncate);
-        strReprIntToTruncate = NULL;
-    }
-
-    return exitCode;
-}
