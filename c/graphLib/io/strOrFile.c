@@ -5,6 +5,7 @@ See the LICENSE.TXT file for licensing information.
 */
 
 #include <ctype.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
