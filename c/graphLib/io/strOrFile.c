@@ -4,34 +4,144 @@ All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
 
-#include <string.h>
+#include <ctype.h>
 #include <stdlib.h>
+#include <stdbool.h>
+#include <string.h>
 
 #include "../lowLevelUtils/appconst.h"
 #include "strOrFile.h"
 
 /********************************************************************
  sf_New()
- Accepts a FILE pointer XOR a string, which are not owned by the container.
+
+ Accepts a FILE pointer XOR a string, which are owned by the container.
 
  Returns the allocated string-or-file container, or NULL on error.
  ********************************************************************/
-// TODO: (#56) add char fileMode to differentiate between read and write modes
-strOrFileP sf_New(FILE *pFile, char *theStr)
+
+strOrFileP sf_New(char *theStr, char *fileName, char *ioMode)
 {
     strOrFileP theStrOrFile;
-    if (((pFile == NULL) && (theStr == NULL)) || ((pFile != NULL) && (theStr != NULL)))
+    int containerType = 0;
+
+    if ((fileName != NULL) && (theStr != NULL))
         return NULL;
 
     theStrOrFile = (strOrFileP)calloc(sizeof(strOrFile), 1);
     if (theStrOrFile != NULL)
     {
-        if (pFile != NULL)
-            theStrOrFile->pFile = pFile;
-        else if ((theStr != NULL))
+        if (fileName != NULL)
         {
-            theStrOrFile->theStr = theStr;
-            theStrOrFile->theStrPos = 0;
+            // N.B. If the ioMode is specified but is neither
+            // READTEXT nor WRITETEXT, error out
+            if (ioMode != NULL &&
+                strncmp(ioMode, READTEXT, strlen(READTEXT)) != 0 &&
+                strncmp(ioMode, WRITETEXT, strlen(WRITETEXT)) != 0)
+            {
+                sf_Free(&theStrOrFile);
+                return NULL;
+            }
+
+            FILE *pFile;
+
+            // N.B. If the fileName indicates a stream, then make sure
+            // ioMode is correct. Since we previously made sure that
+            // non-NULL ioMode must either refer to READTEXT or WRITETEXT,
+            // we don't have to worry about freeing up the former string
+            // before re-assigning.
+            if (strcmp(fileName, "stdin") == 0)
+            {
+                if (ioMode != NULL && strncmp(ioMode, READTEXT, strlen(READTEXT)) != 0)
+                {
+                    sf_Free(&theStrOrFile);
+                    return NULL;
+                }
+
+                pFile = stdin;
+                containerType = INPUT_CONTAINER;
+            }
+            else if (strcmp(fileName, "stdout") == 0)
+            {
+                if (ioMode != NULL && strncmp(ioMode, WRITETEXT, strlen(WRITETEXT)) != 0)
+                {
+                    sf_Free(&theStrOrFile);
+                    return NULL;
+                }
+
+                pFile = stdout;
+                containerType = OUTPUT_CONTAINER;
+            }
+            else if (strcmp(fileName, "stderr") == 0)
+            {
+                if (ioMode != NULL && strncmp(ioMode, WRITETEXT, strlen(WRITETEXT)) != 0)
+                {
+                    sf_Free(&theStrOrFile);
+                    return NULL;
+                }
+
+                pFile = stderr;
+                containerType = OUTPUT_CONTAINER;
+            }
+            else
+            {
+                // N.B. Clean up and return NULL if:
+                // - fileName is not one of stdin/stdout/stderr, and
+                // if the ioMode is not given
+                // - ioMode is given but is neither READTEXT nor
+                // WRITETEXT
+                if (ioMode == NULL ||
+                    (pFile = fopen(fileName, ioMode)) == NULL)
+                {
+                    sf_Free(&theStrOrFile);
+                    return NULL;
+                }
+
+                if (strncmp(ioMode, READTEXT, strlen(READTEXT)) == 0)
+                    containerType = INPUT_CONTAINER;
+                else if (strncmp(ioMode, WRITETEXT, strlen(WRITETEXT)) == 0)
+                    containerType = OUTPUT_CONTAINER;
+            }
+
+            theStrOrFile->pFile = pFile;
+        }
+        else
+        {
+            if (strncmp(ioMode, READTEXT, strlen(READTEXT)) == 0)
+                containerType = INPUT_CONTAINER;
+            else if (strncmp(ioMode, WRITETEXT, strlen(WRITETEXT)) == 0)
+                containerType = OUTPUT_CONTAINER;
+
+            if (containerType != INPUT_CONTAINER && theStr != NULL)
+            {
+                sf_Free(&theStrOrFile);
+                return NULL;
+            }
+
+            strBufP strBufToAssign = sb_New(0);
+            if (strBufToAssign == NULL)
+            {
+                sf_Free(&theStrOrFile);
+                return NULL;
+            }
+
+            if (theStr != NULL && sb_ConcatString(strBufToAssign, theStr) != OK)
+            {
+                sb_Free(&strBufToAssign);
+                sf_Free(&theStrOrFile);
+                return NULL;
+            }
+
+            theStrOrFile->theStr = strBufToAssign;
+        }
+
+        theStrOrFile->containerType = containerType;
+
+        theStrOrFile->ungetBuf = sp_New(MAXLINE);
+        if (theStrOrFile->ungetBuf == NULL)
+        {
+            sf_Free(&theStrOrFile);
+            return NULL;
         }
     }
 
@@ -39,113 +149,432 @@ strOrFileP sf_New(FILE *pFile, char *theStr)
 }
 
 /********************************************************************
- sf_getc()
- If strOrFileP has FILE pointer to input file, calls getc().
- If strOrFileP has input string, returns character at theStrPos and
- increments theStrPos.
+ sf_ValidateStrOrFile()
+
+ Ensures that theStrOrFile:
+ 1. Is not NULL
+ 2. Has ungetBuf allocated
+ 3. Both pFile and theStr are not NULL
+ 4. Both pFile and theStr are not both assigned (since this container
+    should only contain one source).
+ 5. containerType is either set to INPUT_CONTAINER or OUTPUT_CONTAINER
+
+ Returns NOTOK if any of these conditions are not met, otherwise OK.
  ********************************************************************/
+
+int sf_ValidateStrOrFile(strOrFileP theStrOrFile)
+{
+    if (theStrOrFile == NULL ||
+        theStrOrFile->ungetBuf == NULL ||
+        (theStrOrFile->pFile == NULL && theStrOrFile->theStr == NULL) ||
+        (theStrOrFile->pFile != NULL && theStrOrFile->theStr != NULL) ||
+        (theStrOrFile->containerType != INPUT_CONTAINER &&
+         theStrOrFile->containerType != OUTPUT_CONTAINER))
+        return NOTOK;
+
+    return OK;
+}
+
+/********************************************************************
+ sf_getc()
+
+ If strOrFileP has a non-empty ungetBuf, pop and return the character.
+ If the ungetBuf is empty, then we'll read from pFile using getc() OR
+ from theStr by fetching the character at theStrPos and incrementing
+ theStrPos.
+ ********************************************************************/
+
 char sf_getc(strOrFileP theStrOrFile)
 {
-    char theChar = '\0';
+    char theChar = EOF;
 
-    if (theStrOrFile != NULL)
+    if (sf_ValidateStrOrFile(theStrOrFile) != OK ||
+        theStrOrFile->containerType != INPUT_CONTAINER)
+        return EOF;
+
+    if ((theStrOrFile->ungetBuf != NULL) && (sp_GetCurrentSize(theStrOrFile->ungetBuf) > 0))
     {
-        if (theStrOrFile->pFile != NULL)
-            theChar = getc(theStrOrFile->pFile);
-        else if (theStrOrFile->theStr != NULL)
-        {
-            if ((theStrOrFile->theStr + theStrOrFile->theStrPos)[0] == '\0')
-                return EOF;
-
-            theChar = theStrOrFile->theStr[theStrOrFile->theStrPos++];
-        }
+        int currChar = 0;
+        sp_Pop(theStrOrFile->ungetBuf, currChar);
+        theChar = (char)currChar;
+    }
+    else if (theStrOrFile->pFile != NULL)
+        theChar = (char)getc(theStrOrFile->pFile);
+    else if (theStrOrFile->theStr != NULL && sb_GetUnreadCharCount(theStrOrFile->theStr) > 0)
+    {
+        theChar = sb_GetReadString(theStrOrFile->theStr)[0];
+        if (theChar != EOF)
+            sb_ReadSkipChar(theStrOrFile->theStr);
     }
 
     return theChar;
 }
 
 /********************************************************************
- sf_ungetc()
- Order of parameters matches stdio ungetc().
+ sf_ReadSkipChar()
 
- If strOrFileP has FILE pointer to input file, calls ungetc().
- If strOrFileP has input string, decrements theStrPos and returns
- character at theStrPos.
-
- Like ungetc() in stdio, on success theChar is returned. On failure, EOF
- is returned.
+ Calls sf_getc() and does nothing with the returned character
  ********************************************************************/
-char sf_ungetc(char theChar, strOrFileP theStrOrFile)
+
+int sf_ReadSkipChar(strOrFileP theStrOrFile)
 {
-    char charToReturn = EOF;
+    if (sf_ValidateStrOrFile(theStrOrFile) != OK ||
+        theStrOrFile->containerType != INPUT_CONTAINER)
+        return NOTOK;
 
-    if (theStrOrFile != NULL)
+    if (sf_getc(theStrOrFile) == EOF)
+        return NOTOK;
+
+    return OK;
+}
+
+/********************************************************************
+ sf_ReadSkipWhitespace()
+
+ Repeatedly calls sf_getc() to find the next non-space character
+ before hitting EOF
+ ********************************************************************/
+
+int sf_ReadSkipWhitespace(strOrFileP theStrOrFile)
+{
+    char currChar = EOF;
+
+    if (sf_ValidateStrOrFile(theStrOrFile) != OK ||
+        theStrOrFile->containerType != INPUT_CONTAINER)
+        return NOTOK;
+
+    while ((currChar = sf_getc(theStrOrFile)) != EOF && isspace(currChar))
     {
-        if (theStrOrFile->pFile != NULL)
-            charToReturn = ungetc(theChar, theStrOrFile->pFile);
-        // Don't want to ungetc to an index before theStrOrFile->theStr start
-        else if (theStrOrFile->theStr != NULL)
-        {
-            if (theStrOrFile->theStrPos <= 0)
-                return EOF;
-
-            // Decrement theStrPos, then replace the character in theStr at that position with theChar
-            charToReturn = theStrOrFile->theStr[--(theStrOrFile->theStrPos)] = theChar;
-        }
+        continue;
     }
 
-    return charToReturn;
+    if (sf_ungetc(currChar, theStrOrFile) != currChar)
+        return NOTOK;
+
+    return OK;
+}
+
+/********************************************************************
+ sf_ReadSingleDigit()
+
+ Calls sf_getc() and tests whether the character read corresponds to
+ a digit.
+
+ Returns NOTOK if the character returned from sf_getc() is not a digit.
+ Assigns the digit read to the int * and returns OK upon success.
+ ********************************************************************/
+
+int sf_ReadSingleDigit(int *digitToRead, strOrFileP theStrOrFile)
+{
+    int candidateDigit = EOF;
+
+    if (sf_ValidateStrOrFile(theStrOrFile) != OK ||
+        theStrOrFile->containerType != INPUT_CONTAINER)
+        return NOTOK;
+
+    candidateDigit = sf_getc(theStrOrFile);
+    if (!isdigit(candidateDigit))
+        return NOTOK;
+
+    // N.B. Subtract '0' = 48 to convert the digit
+    // char to the corresponding int
+    (*digitToRead) = candidateDigit - '0';
+    return OK;
+}
+
+/********************************************************************
+ sf_ReadInteger()
+
+ Repeatedly calls sf_getc() to obtain the characters corresponding to
+ an int, then parses that char* using sscanf() to extract the integer.
+
+ Returns OK if successfully extracted the digits of and produced the
+ int from theStrOrFile, or NOTOK otherwise.
+ ********************************************************************/
+
+int sf_ReadInteger(int *intToRead, strOrFileP theStrOrFile)
+{
+    int exitCode = OK;
+
+    if (sf_ValidateStrOrFile(theStrOrFile) != OK ||
+        theStrOrFile->containerType != INPUT_CONTAINER)
+        return NOTOK;
+
+    char intCandidateStr[MAXCHARSFOR32BITINT + 1];
+    memset(intCandidateStr, '\0', (MAXCHARSFOR32BITINT + 1) * sizeof(char));
+
+    int intCandidate = 0, intCandidateIndex = 0;
+    char currChar = '\0', nextChar = '\0';
+    bool startedReadingInt = FALSE, isNegative = FALSE;
+    do
+    {
+        currChar = sf_getc(theStrOrFile);
+        if (currChar == '-')
+        {
+            if (startedReadingInt)
+            {
+                exitCode = NOTOK;
+                break;
+            }
+            else
+            {
+                nextChar = sf_getc(theStrOrFile);
+                if (sf_ungetc(nextChar, theStrOrFile) != nextChar)
+                {
+                    exitCode = NOTOK;
+                    break;
+                }
+
+                if (!isdigit(nextChar))
+                {
+                    exitCode = NOTOK;
+                    break;
+                }
+                else
+                {
+                    intCandidateStr[intCandidateIndex++] = currChar;
+                    isNegative = TRUE;
+                }
+            }
+        }
+        else if (isdigit(currChar))
+        {
+            intCandidateStr[intCandidateIndex++] = currChar;
+            startedReadingInt = TRUE;
+        }
+        else
+        {
+            if (sf_ungetc(currChar, theStrOrFile) != currChar)
+                exitCode = NOTOK;
+            break;
+        }
+
+        if (
+            (!isNegative && (intCandidateIndex == (MAXCHARSFOR32BITINT - 2))) ||
+            (isNegative && (intCandidateIndex == (MAXCHARSFOR32BITINT - 1))))
+        {
+            if (sscanf(intCandidateStr, "%d", &intCandidate) != 1)
+                exitCode = NOTOK;
+            else
+            {
+                nextChar = sf_getc(theStrOrFile);
+                if (isdigit(nextChar))
+                {
+                    // N.B. The only way we could be here is if `i` is less than the max possible
+                    // length of the string representation of a signed 32-bit integer (10 for
+                    // positive and 11 for negative)
+                    int underflowThreshold = (INT32_MIN / 10), overflowThreshold = (INT32_MAX / 10);
+                    if (isNegative)
+                    {
+                        if (intCandidate < underflowThreshold)
+                            exitCode = NOTOK;
+                        else if (intCandidate == underflowThreshold && nextChar == '9')
+                            exitCode = NOTOK;
+                    }
+                    else
+                    {
+                        if (intCandidate > overflowThreshold)
+                            exitCode = NOTOK;
+                        else if (intCandidate == overflowThreshold && (nextChar == '8' || nextChar == '9'))
+                            exitCode = NOTOK;
+                    }
+
+                    if (exitCode == OK)
+                    {
+                        intCandidateStr[intCandidateIndex++] = nextChar;
+                    }
+                }
+                else if (sf_ungetc(nextChar, theStrOrFile) != nextChar)
+                    exitCode = NOTOK;
+            }
+            break;
+        }
+    } while (currChar != EOF);
+
+    if (exitCode == OK)
+    {
+        if (sscanf(intCandidateStr, "%d", &intCandidate) != 1)
+            exitCode = NOTOK;
+        else
+            (*intToRead) = intCandidate;
+    }
+
+    return exitCode;
+}
+
+/********************************************************************
+ sf_ReadSkipInteger()
+
+ Calls sf_ReadInteger() and discards the result.
+ ********************************************************************/
+
+int sf_ReadSkipInteger(strOrFileP theStrOrFile)
+{
+    int temp = 0;
+
+    if (sf_ReadInteger(&temp, theStrOrFile) != OK)
+        return NOTOK;
+
+    return OK;
+}
+
+/********************************************************************
+ sf_ReadSkipLineRemainder()
+
+ Calls sf_fgets() and discards the result.
+ ********************************************************************/
+
+int sf_ReadSkipLineRemainder(strOrFileP theStrOrFile)
+{
+    char lineRemainderToSkip[MAXLINE + 1];
+    memset(lineRemainderToSkip, '\0', (MAXLINE + 1));
+
+    if (sf_fgets(lineRemainderToSkip, MAXLINE, theStrOrFile) == NULL)
+        return NOTOK;
+
+    return OK;
+}
+
+/********************************************************************
+ sf_ungetc()
+
+ Order of parameters matches stdio ungetc().
+
+ For both the case where the strOrFile contains a FILE * and the case
+ where it contains a strBufP, we unget to the ungetBuf; this ungetBuf
+ is consumed first when we sf_getc(), sf_fgets(), etc.
+
+ Like ungetc() in stdio, on success theChar is returned. On failure,
+ EOF is returned.
+ ********************************************************************/
+
+char sf_ungetc(char theChar, strOrFileP theStrOrFile)
+{
+    if (theChar == EOF ||
+        sf_ValidateStrOrFile(theStrOrFile) != OK ||
+        theStrOrFile->containerType != INPUT_CONTAINER ||
+        sp_GetCurrentSize(theStrOrFile->ungetBuf) >= sp_GetCapacity(theStrOrFile->ungetBuf))
+        return EOF;
+
+    sp_Push(theStrOrFile->ungetBuf, theChar);
+    return theChar;
+}
+
+/********************************************************************
+ sf_ungets()
+
+ Pushes characters of strToUnget in reverse order to the ungetBuf so
+ that they can be fetched from the ungetBuf in the order of the
+ original string.
+
+ Returns OK on success and NOTOK on failure.
+ ********************************************************************/
+
+int sf_ungets(char *strToUnget, strOrFileP theStrOrFile)
+{
+    if (sf_ValidateStrOrFile(theStrOrFile) != OK ||
+        theStrOrFile->containerType != INPUT_CONTAINER ||
+        (int)strlen(strToUnget) > (sp_GetCapacity(theStrOrFile->ungetBuf) - sp_GetCurrentSize(theStrOrFile->ungetBuf)))
+        return NOTOK;
+
+    for (int i = (strlen(strToUnget) - 1); i >= 0; i--)
+        sp_Push(theStrOrFile->ungetBuf, strToUnget[i]);
+
+    return OK;
 }
 
 /********************************************************************
  sf_fgets()
+
  Order of parameters matches stdio fgets().
 
- First param is the string to populate, second param
- is the max number of characters to read, and third param is the pointer to the
- string-or-file container from which we wish to read count characters.
+ First param is the string to populate (assumes allocated (count + 1)
+ bytes), second param is the max number of characters to read, and
+ third param is the pointer to the string-or-file container from which
+ we wish to read count characters (or up to and including \n).
 
  Like fgets() in stdio, this function doesn't check that enough memory
- is allocated for str to contain (count - 1) characters.
+ is allocated for str to contain count characters plus \0.
 
  Like fgets() in stdio, on success the pointer to the buffer is returned.
  On failure, NULL is returned.
  ********************************************************************/
+
 char *sf_fgets(char *str, int count, strOrFileP theStrOrFile)
 {
-    if (str == NULL || count < 0 || theStrOrFile == NULL)
+    if (str == NULL || count < 0 ||
+        sf_ValidateStrOrFile(theStrOrFile) != OK ||
+        theStrOrFile->containerType != INPUT_CONTAINER)
         return NULL;
 
-    if (theStrOrFile->pFile != NULL)
+    int charsToReadFromUngetBuf = 0;
+    int charsToReadFromStrOrFile = count;
+    if (theStrOrFile->ungetBuf != NULL)
     {
-        return fgets(str, count, theStrOrFile->pFile);
-    }
-    else if (theStrOrFile->theStr != NULL && theStrOrFile->theStr[theStrOrFile->theStrPos] != '\0')
-    {
-        strncpy(str, theStrOrFile->theStr + theStrOrFile->theStrPos, count);
-        str[count - 1] = '\0';
-        // Handles \n and \r\n
-        char *findDelim = strchr(str, '\n');
-        if (findDelim != NULL)
-            findDelim[1] = '\0';
-        // Handles \r
-        else
+        int numCharsInUngetBuf = sp_GetCurrentSize(theStrOrFile->ungetBuf);
+        if (numCharsInUngetBuf > 0)
         {
-            findDelim = strchr(str, '\r');
-            if (findDelim != NULL)
-                findDelim[1] = '\0';
+            charsToReadFromUngetBuf = (count > numCharsInUngetBuf) ? numCharsInUngetBuf : count;
+            char currChar = '\0';
+            bool encounteredNewline = FALSE;
+            for (int i = 0; i < charsToReadFromUngetBuf; i++)
+            {
+                currChar = sf_getc(theStrOrFile);
+                if (currChar == EOF)
+                    return NULL;
+                str[i] = currChar;
+                str[i + 1] = '\0';
+                // N.B. fgets() includes the \n in the string returned, and
+                // no further characters shall be read
+                if (currChar == '\n')
+                {
+                    encounteredNewline = TRUE;
+                    break;
+                }
+            }
+            // N.B. If we broke out of the loop early due to \n, do not read
+            // any further characters from stream
+            charsToReadFromStrOrFile = (encounteredNewline) ? 0 : ((count > numCharsInUngetBuf) ? (count - charsToReadFromUngetBuf) : 0);
         }
-
-        theStrOrFile->theStrPos += strlen(str);
-
-        return str;
     }
 
-    return NULL;
+    if (charsToReadFromStrOrFile > 0)
+    {
+        if (theStrOrFile->pFile != NULL)
+        {
+            // N.B. if fgets() returns NULL (can't read more characters) AND the ungetBuf was empty,
+            // then return NULL (error trying to read from empty stream). Otherwise, return str (that
+            // was read from ungetBuf)
+            if (fgets(str + charsToReadFromUngetBuf, charsToReadFromStrOrFile, theStrOrFile->pFile) == NULL)
+            {
+                if (charsToReadFromUngetBuf == 0)
+                    return NULL;
+            }
+        }
+        else if (theStrOrFile->theStr != NULL)
+        {
+            char *theStrBuf = sb_GetReadString(theStrOrFile->theStr);
+            if (theStrBuf != NULL && sb_GetUnreadCharCount(theStrOrFile->theStr) > 0)
+            {
+                if (strncpy(
+                        str + charsToReadFromUngetBuf,
+                        theStrBuf,
+                        charsToReadFromStrOrFile) == NULL)
+                    return NULL;
+
+                sb_SetReadPos(theStrOrFile->theStr, (sb_GetReadPos(theStrOrFile->theStr) + charsToReadFromStrOrFile));
+            }
+            else if (charsToReadFromUngetBuf == 0)
+                return NULL;
+        }
+    }
+
+    return str;
 }
 
 /********************************************************************
  sf_fputs()
+
  Order of parameters matches stdio fputs().
 
  First param is the string to append, and the second param is the
@@ -154,29 +583,26 @@ char *sf_fgets(char *str, int count, strOrFileP theStrOrFile)
  On success, returns the number of characters written.
  On failure, returns EOF.
  ********************************************************************/
+
 int sf_fputs(char *strToWrite, strOrFileP theStrOrFile)
 {
     int outputLen = EOF;
 
-    if (strToWrite == NULL || theStrOrFile == NULL)
-        return outputLen;
+    if (strToWrite == NULL ||
+        sf_ValidateStrOrFile(theStrOrFile) != OK ||
+        theStrOrFile->containerType != OUTPUT_CONTAINER)
+        return EOF;
 
-    int lenOfStringToPuts = strlen(strToWrite);
+    // N.B. fputs() will fail and return EOF if pFile doesn't correspond
+    // to an output stream
     if (theStrOrFile->pFile != NULL)
         outputLen = fputs(strToWrite, theStrOrFile->pFile);
     else if (theStrOrFile->theStr != NULL)
     {
-        // Want to be able to contain the original theStr contents, the strToWrite, and a null terminator (added by strcat)
-        char *newStr = realloc(theStrOrFile->theStr, (strlen(theStrOrFile->theStr) + lenOfStringToPuts + 1) * sizeof(char));
-        // If realloc failed, pointer returned will be NULL; error will be handled by eventually freeing iterator, which will
-        // clean up the old memory for theStrOrFile->theStr
-        if (newStr == NULL)
-            return outputLen;
+        if (sb_ConcatString(theStrOrFile->theStr, strToWrite) == OK)
+            outputLen = strlen(strToWrite);
         else
-            theStrOrFile->theStr = newStr;
-        strcat(theStrOrFile->theStr, strToWrite);
-        theStrOrFile->theStrPos += lenOfStringToPuts;
-        outputLen = lenOfStringToPuts;
+            outputLen = EOF;
     }
 
     return outputLen;
@@ -184,21 +610,30 @@ int sf_fputs(char *strToWrite, strOrFileP theStrOrFile)
 
 /********************************************************************
  sf_takeTheStr()
+
  Returns the char * stored in the string-or-file container and NULLs
  out the internal reference so ownership of the memory is transferred
  to the caller.
 
  The pointer returned will be NULL if the strOrFile contains a FILE *.
  ********************************************************************/
+
 char *sf_takeTheStr(strOrFileP theStrOrFile)
 {
-    char *theStr = theStrOrFile->theStr;
-    theStrOrFile->theStr = NULL;
+    char *theStr = NULL;
+    if (theStrOrFile->theStr != NULL)
+    {
+        theStr = sb_TakeString(theStrOrFile->theStr);
+        sb_Free((&theStrOrFile->theStr));
+        theStrOrFile->theStr = NULL;
+    }
+
     return theStr;
 }
 
 /********************************************************************
  sf_closeFile()
+
  If the strOrFile container contains a string, degenerately returns OK.
 
  If the strOrFile container contains a FILE pointer:
@@ -208,6 +643,7 @@ char *sf_takeTheStr(strOrFileP theStrOrFile)
    captures the errorCode from fclose()
  If the errorCode is less than 0, returns NOTOK, otherwise returns OK.
  ********************************************************************/
+
 int sf_closeFile(strOrFileP theStrOrFile)
 {
     FILE *pFile = theStrOrFile->pFile;
@@ -225,11 +661,18 @@ int sf_closeFile(strOrFileP theStrOrFile)
             return NOTOK;
     }
 
+    if (theStrOrFile->ungetBuf != NULL)
+    {
+        sp_Free(&(theStrOrFile->ungetBuf));
+    }
+    theStrOrFile->ungetBuf = NULL;
+
     return OK;
 }
 
 /********************************************************************
  sf_Free()
+
  Receives a pointer-pointer to a string-or-file container.
 
  If the strOrFile contains a string which has not yet been "taken"
@@ -245,24 +688,28 @@ int sf_closeFile(strOrFileP theStrOrFile)
  Finally, we use the indirection operator to free the strOrFile
  container and set the pointer to NULL.
  ********************************************************************/
+
 void sf_Free(strOrFileP *pStrOrFile)
 {
     if (pStrOrFile != NULL && (*pStrOrFile) != NULL)
     {
         if ((*pStrOrFile)->theStr != NULL)
-            free((*pStrOrFile)->theStr);
+            sb_Free((&(*pStrOrFile)->theStr));
         (*pStrOrFile)->theStr = NULL;
-        (*pStrOrFile)->theStrPos = 0;
 
+        // TODO: (#56) if the strOrFile container's FILE pointer
+        // corresponds to an output file, i.e. ioMode is 'w',
+        // we should try to remove the file since the error state
+        // means the contents are invalid
         if ((*pStrOrFile)->pFile != NULL)
-        {
-            // If sf_closeFile() has not previously been called, we must be in an error state
             sf_closeFile((*pStrOrFile));
-            // TODO: (#56) if the strOrFile container's FILE pointer corresponds to an output file,
-            // i.e. fileMode is 'w', we should try to remove the file since the error state means
-            // the contents are invalid
-        }
         (*pStrOrFile)->pFile = NULL;
+
+        if ((*pStrOrFile)->ungetBuf != NULL)
+        {
+            sp_Free(&((*pStrOrFile)->ungetBuf));
+        }
+        (*pStrOrFile)->ungetBuf = NULL;
 
         free(*pStrOrFile);
         (*pStrOrFile) = NULL;

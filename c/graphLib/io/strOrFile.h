@@ -14,20 +14,36 @@ extern "C"
 
 #include <stdio.h>
 
+#include "../lowLevelUtils/stack.h"
+#include "strbuf.h"
+
+#define INPUT_CONTAINER 1
+#define OUTPUT_CONTAINER 2
     typedef struct
     {
-        char fileMode;
+        strBufP theStr;
         FILE *pFile;
-        char *theStr;
-        int theStrPos;
+        int containerType;
+        stackP ungetBuf;
+
     } strOrFile;
 
     typedef strOrFile *strOrFileP;
 
-    strOrFileP sf_New(FILE *pFile, char *theStr);
+    strOrFileP sf_New(char *theStr, char *fileName, char *ioMode);
+    int sf_ValidateStrOrFile(strOrFileP theStrOrFile);
 
     char sf_getc(strOrFileP theStrOrFile);
+    int sf_ReadSkipChar(strOrFileP theStrOrFile);
+    int sf_ReadSkipWhitespace(strOrFileP theStrOrFile);
+    int sf_ReadSingleDigit(int *digitToRead, strOrFileP theStrOrFile);
+    int sf_ReadInteger(int *intToRead, strOrFileP theStrOrFile);
+    int sf_ReadSkipInteger(strOrFileP theStrOrFile);
+    int sf_ReadSkipLineRemainder(strOrFileP theStrOrFile);
+
     char sf_ungetc(char theChar, strOrFileP theStrOrFile);
+    int sf_ungets(char *contentsToUnget, strOrFileP theStrOrFile);
+
     char *sf_fgets(char *str, int count, strOrFileP theStrOrFile);
 
     int sf_fputs(char *strToWrite, strOrFileP theStrOrFile);
