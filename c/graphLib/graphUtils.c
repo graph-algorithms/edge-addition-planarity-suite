@@ -274,40 +274,39 @@ int _InitGraph(graphP theGraph, int N)
  ********************************************************************/
 void _InitVertices(graphP theGraph)
 {
-#if NIL == 0
+#ifdef USE_FASTER_1BASEDARRAYS
     memset(theGraph->V, NIL_CHAR, gp_VertexIndexBound(theGraph) * sizeof(vertexRec));
     memset(theGraph->VI, NIL_CHAR, gp_PrimaryVertexIndexBound(theGraph) * sizeof(vertexInfo));
     memset(theGraph->extFace, NIL_CHAR, gp_VertexIndexBound(theGraph) * sizeof(extFaceLinkRec));
-#elif NIL == -1
-    int v;
-
-    memset(theGraph->V, NIL_CHAR, gp_VertexIndexBound(theGraph) * sizeof(vertexRec));
-    memset(theGraph->VI, NIL_CHAR, gp_PrimaryVertexIndexBound(theGraph) * sizeof(vertexInfo));
-    memset(theGraph->extFace, NIL_CHAR, gp_VertexIndexBound(theGraph) * sizeof(extFaceLinkRec));
-
-    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
-        gp_InitVertexFlags(theGraph, v);
-
 #else
     int v;
 
-    // Initialize primary vertices
-    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
-    {
-        _InitVertexRec(theGraph, v);
-        _InitVertexInfo(theGraph, v);
-        gp_SetExtFaceVertex(theGraph, v, 0, NIL);
-        gp_SetExtFaceVertex(theGraph, v, 1, NIL);
-    }
+    memset(theGraph->V, NIL_CHAR, gp_VertexIndexBound(theGraph) * sizeof(vertexRec));
+    memset(theGraph->VI, NIL_CHAR, gp_PrimaryVertexIndexBound(theGraph) * sizeof(vertexInfo));
+    memset(theGraph->extFace, NIL_CHAR, gp_VertexIndexBound(theGraph) * sizeof(extFaceLinkRec));
 
-    // Initialize virtual vertices
-    for (v = gp_GetFirstVirtualVertex(theGraph); gp_VirtualVertexInRange(theGraph, v); v++)
-    {
-        _InitVertexRec(theGraph, v);
-        gp_SetExtFaceVertex(theGraph, v, 0, NIL);
-        gp_SetExtFaceVertex(theGraph, v, 1, NIL);
-    }
+    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
+        gp_InitVertexFlags(theGraph, v);    
 #endif
+    // N.B. This is the legacy API-based approach to initializing the vertices
+    // int v;
+
+    // // Initialize primary vertices
+    // for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
+    // {
+    //     _InitVertexRec(theGraph, v);
+    //     _InitVertexInfo(theGraph, v);
+    //     gp_SetExtFaceVertex(theGraph, v, 0, NIL);
+    //     gp_SetExtFaceVertex(theGraph, v, 1, NIL);
+    // }
+
+    // // Initialize virtual vertices
+    // for (v = gp_GetFirstVirtualVertex(theGraph); gp_VirtualVertexInRange(theGraph, v); v++)
+    // {
+    //     _InitVertexRec(theGraph, v);
+    //     gp_SetExtFaceVertex(theGraph, v, 0, NIL);
+    //     gp_SetExtFaceVertex(theGraph, v, 1, NIL);
+    // }
 }
 
 /********************************************************************
@@ -315,9 +314,9 @@ void _InitVertices(graphP theGraph)
  ********************************************************************/
 void _InitEdges(graphP theGraph)
 {
-#if NIL == 0
+#ifdef USE_FASTER_1BASEDARRAYS
     memset(theGraph->E, NIL_CHAR, gp_EdgeIndexBound(theGraph) * sizeof(edgeRec));
-#elif NIL == -1
+#else
     int e, Esize;
 
     memset(theGraph->E, NIL_CHAR, gp_EdgeIndexBound(theGraph) * sizeof(edgeRec));
@@ -325,14 +324,13 @@ void _InitEdges(graphP theGraph)
     Esize = gp_EdgeIndexBound(theGraph);
     for (e = gp_GetFirstEdge(theGraph); e < Esize; e++)
         gp_InitEdgeFlags(theGraph, e);
-
-#else
-    int e, Esize;
-
-    Esize = gp_EdgeIndexBound(theGraph);
-    for (e = gp_GetFirstEdge(theGraph); e < Esize; e++)
-        _InitEdgeRec(theGraph, e);
 #endif
+    // N.B. This is the legacy API-based approach to initializing the edges
+    // int e, Esize;
+
+    // Esize = gp_EdgeIndexBound(theGraph);
+    // for (e = gp_GetFirstEdge(theGraph); e < Esize; e++)
+    //     _InitEdgeRec(theGraph, e);
 }
 
 /********************************************************************
@@ -1791,7 +1789,7 @@ int gp_DeleteEdge(graphP theGraph, int e, int nextLink)
 
     // Clear the two edge records
     // (the bit twiddle (e & ~1) chooses the lesser of e and its twin arc)
-#if NIL == 0
+#ifdef USE_FASTER_1BASEDARRAYS
     memset(theGraph->E + (e & ~1), NIL_CHAR, sizeof(edgeRec) << 1);
 #else
     _InitEdgeRec(theGraph, e);

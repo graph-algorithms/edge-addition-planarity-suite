@@ -194,8 +194,8 @@ int runSpecificGraphTests(char *samplesDir)
         }
     }
 
-#if NIL == 0
-    Message("Starting NIL == 0 Tests\n");
+#ifdef USE_FASTER_1BASEDARRAYS
+    Message("\n\tStarting 1-based Array Index Tests\n\n");
 
     if (runSpecificGraphTest("-p", "maxPlanar5.txt", TRUE) < 0)
     {
@@ -245,7 +245,7 @@ int runSpecificGraphTests(char *samplesDir)
         Message("K_4 search on Petersen.txt failed.\n");
     }
 
-    Message("Finished NIL == 0 Tests.\n\n");
+    Message("\tFinished 1-based Array Index Tests.\n\n");
 #endif
 
     if (runSpecificGraphTest("-p", "maxPlanar5.0-based.txt", FALSE) < 0)

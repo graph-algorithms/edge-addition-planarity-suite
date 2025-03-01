@@ -188,15 +188,14 @@ int _K4Search_CreateStructures(K4SearchContext *context)
  ********************************************************************/
 int _K4Search_InitStructures(K4SearchContext *context)
 {
-#if NIL == 0 || NIL == -1
     memset(context->E, NIL_CHAR, gp_EdgeIndexBound(context->theGraph) * sizeof(K4Search_EdgeRec));
-#else
-    int e, Esize;
+    // N.B. This is the legacy API-based approach to initializing the structures
+    // required for the K_4 search graph algorithm extension.
+    // int e, Esize;
 
-    Esize = gp_EdgeIndexBound(context->theGraph);
-    for (e = gp_GetFirstEdge(context->theGraph); e < Esize; e++)
-        _K4Search_InitEdgeRec(context, e);
-#endif
+    // Esize = gp_EdgeIndexBound(context->theGraph);
+    // for (e = gp_GetFirstEdge(context->theGraph); e < Esize; e++)
+    //     _K4Search_InitEdgeRec(context, e);
 
     return OK;
 }
