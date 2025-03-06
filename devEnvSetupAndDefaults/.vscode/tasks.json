@@ -10,7 +10,7 @@
                 //"-DUSE_0BASEDARRAYS", // Commented out to use faster 1-based array indexing
                 "-Wall",
                 // "-Wextra",
-                "-g",
+                "-g", // Generate debug symbols
                 "${workspaceFolder}\\c\\planarityApp\\planarity.c",
                 "${workspaceFolder}\\c\\planarityApp\\planarityCommandLine.c",
                 "${workspaceFolder}\\c\\planarityApp\\planarityHelp.c",
@@ -66,7 +66,7 @@
                 //"-DUSE_0BASEDARRAYS", // Commented out to use faster 1-based array indexing
                 "-Wall",
                 // "-Wextra",
-                "-g",
+                // "-g", // Uncomment to generate debug symbols for Release build and debug with VSCode
                 "${workspaceFolder}\\c\\planarityApp\\planarity.c",
                 "${workspaceFolder}\\c\\planarityApp\\planarityCommandLine.c",
                 "${workspaceFolder}\\c\\planarityApp\\planarityHelp.c",
@@ -123,7 +123,7 @@
                 //"-DUSE_0BASEDARRAYS", // Commented out to use faster 1-based array indexing
                 "-Wall",
                 // "-Wextra",
-                "-g",
+                "-g", // Generate debug symbols
                 "${workspaceFolder}/c/planarityApp/**.c",
                 "${workspaceFolder}/c/graphLib/**.c",
                 "${workspaceFolder}/c/graphLib/extensionSystem/**.c",
@@ -152,7 +152,7 @@
                 //"-DUSE_0BASEDARRAYS", // Commented out to use faster 1-based array indexing
                 "-Wall",
                 // "-Wextra",
-                "-g",
+                // "-g", // Uncomment to generate debug symbols for Release build and debug with VSCode
                 "${workspaceFolder}/c/planarityApp/**.c",
                 "${workspaceFolder}/c/graphLib/**.c",
                 "${workspaceFolder}/c/graphLib/extensionSystem/**.c",
@@ -178,7 +178,7 @@
             "command": "cl.exe",
             "args": [
                 "/Od", // Disables optimization, which speeds compilation and simplifies debugging
-                "/Zi",
+                "/Zi", // Generate debug symbols
                 "/EHsc",
                 "/nologo",
                 "/DDEBUG", // Added so that _DEBUG is defined; see appconst.h
@@ -260,7 +260,7 @@
                 //"-DUSE_0BASEDARRAYS", // Commented out to use faster 1-based array indexing
                 "-Wall",
                 // "-Wextra",
-                "-g",
+                "-g", // Generate debug symbols
                 "${workspaceFolder}/c/planarityApp/**.c",
                 "${workspaceFolder}/c/graphLib/**.c",
                 "${workspaceFolder}/c/graphLib/extensionSystem/**.c",
@@ -289,7 +289,7 @@
                 //"-DUSE_0BASEDARRAYS", // Commented out to use faster 1-based array indexing
                 "-Wall",
                 // "-Wextra",
-                "-g",
+                // "-g", // Uncomment to generate debug symbols for Release build and debug with VSCode
                 "${workspaceFolder}/c/planarityApp/**.c",
                 "${workspaceFolder}/c/graphLib/**.c",
                 "${workspaceFolder}/c/graphLib/extensionSystem/**.c",
