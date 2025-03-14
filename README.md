@@ -37,9 +37,9 @@ Once one has set up the development environment and is able to work with the cod
 3. Enter the following commands:
     1. If on Windows using MSYS2 UCRT64 MinGW-W64, make sure to run `dos2unix configure.ac` to make absolutely sure `LF` is Unix-style `\n`
     2. `autoreconf -fi`
-    2. `./configure`
-    3. `make dist`
-    4. `make distcheck`
+    3. `./configure`
+    4. `make dist`
+    5. `make distcheck`
 
 The result is a validated `planarity-N.N.N.N.tar.gz` distribution, where `N.N.N.N` is the version number expressed in the `AC_INIT` line of the `configure.ac` file. 
 
