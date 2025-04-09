@@ -34,11 +34,26 @@ AC_PROG_INSTALL
 
 AC_CHECK_HEADERS([ctype.h stdio.h stdlib.h string.h time.h unistd.h])
 
+
+# Enable compiler warnings
+
+AC_ARG_ENABLE([compile-warnings],
+    [AS_HELP_STRING([--enable-compile-warnings], [enable compiler warnings])],
+    [enable_compile_warnings=yes],
+    [enable_compile_warnings=no])
+AC_MSG_CHECKING([whether enable compiler warnings])
+AC_MSG_RESULT([$enable_compile_warnings])
+
+AS_IF([test "x$enable_compile_warnings" != "xno"],
+  [ax_enable_compile_warnings=yes
+   AX_COMPILER_FLAGS_CFLAGS([WARNING_CFLAGS], [], [ dnl
+       -pedantic dnl])
+   AC_SUBST([WARNING_CFLAGS])])
+
 AC_CONFIG_FILES([
   Makefile
   c/samples/Makefile
 ])
 AC_CONFIG_FILES([test-samples.sh], [chmod +x test-samples.sh])
 AC_CONFIG_FILES([libplanarity.pc])
-
 AC_OUTPUT
