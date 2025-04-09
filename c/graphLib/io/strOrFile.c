@@ -21,7 +21,7 @@ See the LICENSE.TXT file for licensing information.
  Returns the allocated string-or-file container, or NULL on error.
  ********************************************************************/
 
-strOrFileP sf_New(char *theStr, char *fileName, char *ioMode)
+strOrFileP sf_New(char const*theStr, char const*fileName, char const*ioMode)
 {
     strOrFileP theStrOrFile;
     int containerType = 0;
@@ -585,7 +585,7 @@ char *sf_fgets(char *str, int count, strOrFileP theStrOrFile)
  On failure, returns EOF.
  ********************************************************************/
 
-int sf_fputs(char *strToWrite, strOrFileP theStrOrFile)
+int sf_fputs(char const*strToWrite, strOrFileP theStrOrFile)
 {
     int outputLen = EOF;
 

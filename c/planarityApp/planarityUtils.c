@@ -63,7 +63,7 @@ void FlushConsole(FILE *f)
     fflush(f);
 }
 
-void Prompt(char *message)
+void Prompt(char const*message)
 {
     Message(message);
     FlushConsole(stdout);
@@ -81,7 +81,7 @@ void SaveAsciiGraph(graphP theGraph, char *filename)
     if (outfile == NULL)
     {
         char messageContents[MAXLINE + 1];
-        char *messageFormat = "Failed to write to \"%.*s\"\nMake the directory if not present\n";
+        char const*messageFormat = "Failed to write to \"%.*s\"\nMake the directory if not present\n";
         int charsAvailForStrToInclude = (int)(MAXLINE - strlen(messageFormat));
         sprintf(messageContents, messageFormat, charsAvailForStrToInclude, filename);
         ErrorMessage(messageContents);
@@ -127,7 +127,7 @@ void SaveAsciiGraph(graphP theGraph, char *filename)
  Returns NULL on error, or an allocated string containing the file content.
  ****************************************************************************/
 
-char *ReadTextFileIntoString(char *infileName)
+char *ReadTextFileIntoString(char const*infileName)
 {
     FILE *infile = NULL;
     char *inputString = NULL;
@@ -167,7 +167,7 @@ char *ReadTextFileIntoString(char *infileName)
  * Returns TRUE if the contents are textually equal, FALSE otherwise
  ****************************************************************************/
 
-int TextFileMatchesString(char *theFilename, char *theString)
+int TextFileMatchesString(char const*theFilename, char const*theString)
 {
     FILE *infile = NULL;
     int Result = TRUE;
@@ -341,7 +341,7 @@ int BinaryFilesEqual(char *file1Name, char *file2Name)
  ALGORITHM FLAGS/SPECIFIERS
 ****************************************************************************/
 
-char *GetAlgorithmFlags(void)
+char const*GetAlgorithmFlags(void)
 {
     return "C = command (algorithm implementation to run)\n"
            "    -p = Planar embedding and Kuratowski subgraph isolation\n"
@@ -353,7 +353,7 @@ char *GetAlgorithmFlags(void)
            "\n";
 }
 
-char *GetAlgorithmSpecifiers(void)
+char const*GetAlgorithmSpecifiers(void)
 {
     return "P. Planar embedding and Kuratowski subgraph isolation\n"
            "D. Planar graph drawing by visibility representation\n"
@@ -363,7 +363,7 @@ char *GetAlgorithmSpecifiers(void)
            "4. Search for subgraph homeomorphic to K_4\n";
 }
 
-char *GetAlgorithmChoices(void)
+char const*GetAlgorithmChoices(void)
 {
     return "pdo234";
 }
@@ -403,9 +403,9 @@ int GetEmbedFlags(char command)
 /****************************************************************************
  ****************************************************************************/
 
-char *GetAlgorithmName(char command)
+char const*GetAlgorithmName(char command)
 {
-    char *algorithmName = "UnsupportedAlgorithm";
+    char const*algorithmName = "UnsupportedAlgorithm";
 
     switch (command)
     {
@@ -435,9 +435,9 @@ char *GetAlgorithmName(char command)
 /****************************************************************************
  ****************************************************************************/
 
-char *GetTransformationName(char command)
+char const*GetTransformationName(char command)
 {
-    char *transformationName = "UnsupportedTransformation";
+    char const*transformationName = "UnsupportedTransformation";
 
     switch (command)
     {
@@ -455,14 +455,14 @@ char *GetTransformationName(char command)
     return transformationName;
 }
 
-char *GetSupportedOutputChoices(void)
+char const*GetSupportedOutputChoices(void)
 {
     return "G. G6 format\n"
            "A. Adjacency List format\n"
            "M. Adjacency Matrix format\n";
 }
 
-char *GetSupportedOutputFormats(void)
+char const*GetSupportedOutputFormats(void)
 {
     return "gam";
 }
@@ -470,9 +470,9 @@ char *GetSupportedOutputFormats(void)
 /****************************************************************************
  ****************************************************************************/
 
-char *GetBaseName(int baseFlag)
+char const*GetBaseName(int baseFlag)
 {
-    char *transformationName = baseFlag ? "1-based" : "0-based";
+    char const*transformationName = baseFlag ? "1-based" : "0-based";
 
     return transformationName;
 }
@@ -519,7 +519,7 @@ char theFileName[FILENAMEMAXLENGTH + 1 + ALGORITHMNAMEMAXLENGTH + 1 + SUFFIXMAXL
  Returns NULL on error, or a non-NULL string on success.
  ****************************************************************************/
 
-char *ConstructInputFilename(char *infileName)
+char *ConstructInputFilename(char const*infileName)
 {
     if (infileName == NULL)
     {
@@ -564,9 +564,9 @@ char *ConstructInputFilename(char *infileName)
  Returns non-NULL string
  ****************************************************************************/
 
-char *ConstructPrimaryOutputFilename(char *infileName, char *outfileName, char command)
+char *ConstructPrimaryOutputFilename(char const*infileName, char const*outfileName, char command)
 {
-    char *algorithmName = GetAlgorithmName(command);
+    char const*algorithmName = GetAlgorithmName(command);
 
     if (outfileName == NULL)
     {
@@ -601,7 +601,7 @@ char *ConstructPrimaryOutputFilename(char *infileName, char *outfileName, char c
             }
             strcat(theFileName, ".out.txt");
             char messageContents[MAXLINE + 1];
-            char *messageFormat = "Outfile filename is too long. Result placed in \"%.*s\"";
+            char const*messageFormat = "Outfile filename is too long. Result placed in \"%.*s\"";
             int charsAvailForStrToInclude = (int)(MAXLINE - strlen(messageFormat));
             sprintf(messageContents, messageFormat, charsAvailForStrToInclude, theFileName);
             ErrorMessage(messageContents);
@@ -626,11 +626,11 @@ char *ConstructPrimaryOutputFilename(char *infileName, char *outfileName, char c
  Returns non-NULL string
  ****************************************************************************/
 
-int ConstructTransformationExpectedResultFilename(char *infileName, char **outfileName, char command, int baseFlag)
+int ConstructTransformationExpectedResultFilename(char const*infileName, char **outfileName, char command, int baseFlag)
 {
     int Result = OK;
-    char *baseName = GetBaseName(baseFlag);
-    char *transformationName = GetTransformationName(command);
+    char const*baseName = GetBaseName(baseFlag);
+    char const*transformationName = GetTransformationName(command);
     int infileNameLen = -1;
 
     if (infileName == NULL || (infileNameLen = strlen(infileName)) < 1)

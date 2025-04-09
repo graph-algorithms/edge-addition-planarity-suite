@@ -6,7 +6,7 @@ See the LICENSE.TXT file for licensing information.
 
 #include "planarity.h"
 
-char *GetProjectTitle(void)
+char const *GetProjectTitle(void)
 {
     static char projectTitle[MAXLINE + 1];
     sprintf(projectTitle,

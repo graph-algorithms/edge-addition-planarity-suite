@@ -38,7 +38,7 @@ extern "C"
 
     void gp_Free(graphP *pGraph);
 
-    int gp_Read(graphP theGraph, char *FileName);
+    int gp_Read(graphP theGraph, char const*FileName);
     int gp_ReadFromString(graphP theGraph, char *inputStr);
 
 #define WRITE_ADJLIST 1
@@ -46,7 +46,7 @@ extern "C"
 #define WRITE_DEBUGINFO 3
 #define WRITE_G6 4
 
-    int gp_Write(graphP theGraph, char *FileName, int Mode);
+    int gp_Write(graphP theGraph, char const*FileName, int Mode);
     int gp_WriteToString(graphP theGraph, char **pOutputStr, int Mode);
 
     int gp_IsNeighbor(graphP theGraph, int u, int v);

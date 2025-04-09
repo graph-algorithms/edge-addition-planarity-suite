@@ -102,7 +102,7 @@ int legacyCommandLine(int argc, char *argv[])
     {
         if (Result != NONEMBEDDABLE)
         {
-            char *messageFormat = "Failed to read graph \"%.*s\"";
+            char const*messageFormat = "Failed to read graph \"%.*s\"";
             char messageContents[MAXLINE + 1];
             int charsAvailForFilename = (int)(MAXLINE - strlen(messageFormat));
             sprintf(messageContents, messageFormat, charsAvailForFilename, argv[1]);
@@ -140,13 +140,13 @@ int legacyCommandLine(int argc, char *argv[])
  Quick regression test
  ****************************************************************************/
 
-int runSpecificGraphTests(char *);
-int runSpecificGraphTest(char *command, char *infileName, int inputInMemFlag);
-int runGraphTransformationTest(char *command, char *infileName, int inputInMemFlag);
+int runSpecificGraphTests(char const*);
+int runSpecificGraphTest(char const*command, char const*infileName, int inputInMemFlag);
+int runGraphTransformationTest(char const*command, char const*infileName, int inputInMemFlag);
 
 int runQuickRegressionTests(int argc, char *argv[])
 {
-    char *samplesDir = "samples";
+    char const*samplesDir = "samples";
     int samplesDirArgLocation = 2;
 
     // Skip optional -q quiet mode command-line paramater, if present
@@ -163,7 +163,7 @@ int runQuickRegressionTests(int argc, char *argv[])
     return OK;
 }
 
-int runSpecificGraphTests(char *samplesDir)
+int runSpecificGraphTests(char const*samplesDir)
 {
     char origDir[2049];
     int retVal = 0;
@@ -413,14 +413,14 @@ int runSpecificGraphTests(char *samplesDir)
     return retVal;
 }
 
-int runSpecificGraphTest(char *command, char *infileName, int inputInMemFlag)
+int runSpecificGraphTest(char const*command, char const*infileName, int inputInMemFlag)
 {
     int Result = OK;
     char algorithmCode = command[1];
 
     // The algorithm, indicated by algorithmCode, operating on 'infilename' is expected to produce
     // an output that is stored in the file named 'expectedResultFileName' (return string not owned)
-    char *expectedPrimaryResultFileName = ConstructPrimaryOutputFilename(infileName, NULL, command[1]);
+    char const*expectedPrimaryResultFileName = ConstructPrimaryOutputFilename(infileName, NULL, command[1]);
 
     char *inputString = NULL;
     char *actualOutput = NULL;
@@ -504,7 +504,7 @@ int runSpecificGraphTest(char *command, char *infileName, int inputInMemFlag)
     return Result;
 }
 
-int runGraphTransformationTest(char *command, char *infileName, int inputInMemFlag)
+int runGraphTransformationTest(char const*command, char const*infileName, int inputInMemFlag)
 {
     int Result = OK;
 
@@ -561,7 +561,7 @@ int runGraphTransformationTest(char *command, char *infileName, int inputInMemFl
 
             Result = TextFileMatchesString(expectedOutfileName, actualOutput);
 
-            char *messageFormat = NULL;
+            char const*messageFormat = NULL;
             char messageContents[MAXLINE + 1];
             int charsAvailForFilename = 0;
             if (Result == TRUE)

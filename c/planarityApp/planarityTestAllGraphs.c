@@ -34,7 +34,7 @@ int TestAllGraphs(char *commandString, char *infileName, char *outfileName, char
     platform_time start, end;
 
     int charsAvailForFilename = 0;
-    char *messageFormat = NULL;
+    char const*messageFormat = NULL;
     char messageContents[MAXLINE + 1];
     messageContents[MAXLINE] = '\0';
 
@@ -128,7 +128,7 @@ int testAllGraphs(graphP theGraph, char command, strOrFileP inputContainer, test
 {
     int Result = OK;
 
-    char *messageFormat = NULL;
+    char const*messageFormat = NULL;
     char messageContents[MAXLINE + 1];
     messageContents[MAXLINE] = '\0';
 
@@ -267,7 +267,7 @@ int outputTestAllGraphsResults(char command, testAllStatsP stats, char *infileNa
     char *finalSlash = strrchr(infileName, FILE_DELIMITER);
     char *infileBasename = finalSlash ? (finalSlash + 1) : infileName;
 
-    char *headerFormat = "FILENAME=\"%s\" DURATION=\"%.3lf\"\n";
+    char const*headerFormat = "FILENAME=\"%s\" DURATION=\"%.3lf\"\n";
     char *headerStr = (char *)malloc(
         (
             strlen(headerFormat) +

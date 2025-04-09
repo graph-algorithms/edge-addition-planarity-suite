@@ -32,8 +32,8 @@ See the LICENSE.TXT file for licensing information.
 
 int SpecificGraph(
     char command,
-    char *infileName, char *outfileName, char *outfile2Name,
-    char *inputStr, char **pOutputStr, char **pOutput2Str)
+    char const*infileName, char const*outfileName, char*outfile2Name,
+    char*inputStr, char **pOutputStr, char **pOutput2Str)
 {
     graphP theGraph, origGraph;
     platform_time start, end;
@@ -194,7 +194,7 @@ int SpecificGraph(
                 {
                     // By default, use the same name as the primary output filename
                     if (strlen(outfile2Name) == 0)
-                        outfile2Name = outfileName;
+                        outfile2Name = (char*)outfileName;
                     writeResult = gp_Write(theGraph, outfile2Name, WRITE_ADJLIST);
                 }
                 else if (command == 'd' && Result == OK)
@@ -203,7 +203,7 @@ int SpecificGraph(
                     // of selecting a default name for the second output file.
                     // By default, add ".render.txt" to the primary output filename
                     if (strlen(outfile2Name) == 0)
-                        strcat((outfile2Name = outfileName), ".render.txt");
+                        strcat((outfile2Name = (char*)outfileName), ".render.txt");
                     writeResult = gp_DrawPlanar_RenderToFile(theGraph, outfile2Name);
                 }
             }
@@ -225,9 +225,9 @@ int SpecificGraph(
  WriteAlgorithmResults()
  ****************************************************************************/
 
-void WriteAlgorithmResults(graphP theGraph, int Result, char command, platform_time start, platform_time end, char *infileName)
+void WriteAlgorithmResults(graphP theGraph, int Result, char command, platform_time start, platform_time end, char const*infileName)
 {
-    char *messageFormat = NULL;
+    char const*messageFormat = NULL;
     char messageContents[MAXLINE + 1];
     int charsAvailForStr = 0;
 

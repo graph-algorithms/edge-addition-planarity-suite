@@ -49,7 +49,7 @@ extern "C"
                 theStrBuf->readPos++; \
         }
 
-        int sb_ConcatString(strBufP, char *);
+        int sb_ConcatString(strBufP, char const*);
         int sb_ConcatChar(strBufP, char);
 
         char *sb_TakeString(strBufP);
