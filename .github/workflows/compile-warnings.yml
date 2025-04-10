@@ -1,0 +1,33 @@
+name: Compiler warnings
+on: [pull_request, workflow_dispatch]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    name: ${{ matrix.compiler }}
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    env:
+      CC: ${{ matrix.compiler }}
+      CFLAGS: -Werror
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [clang-18, gcc-14]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compiler information . . .
+        run: $CC --version
+        # TODO: Add --enable-compile-warnings to ./configure when available
+      - name: Configure . . .
+        run: |
+          mkdir -p m4
+          autoreconf -if
+          ./configure CC="$CC" CFLAGS="$CFLAGS"
+      - name: Build . . .
+        run: make -j4
+        # We don't run the tests, since in this job we are only checking for
+        # compiler warnings
