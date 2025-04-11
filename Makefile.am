@@ -90,4 +90,5 @@ TESTS = test-samples.sh
 docdir = @docdir@
 dist_doc_DATA = README.md LICENSE.TXT
 
-pkgconfig_DATA = libplanarity.pc
+pkgconfigdir	= $(libdir)/pkgconfig
+pkgconfig_DATA	= libplanarity.pc
