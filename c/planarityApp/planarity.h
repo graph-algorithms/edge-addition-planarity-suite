@@ -26,7 +26,7 @@ extern "C"
     /* Functions that call the Graph Library */
     int SpecificGraph(
         char command,
-        char const*infileName, char const*outfileName, char*outfile2Name,
+        char const*infileName, char*outfileName, char*outfile2Name,
         char *inputStr, char **pOutputStr, char **pOutput2Str);
     int RandomGraph(char command, int extraEdges, int numVertices, char *outfileName, char *outfile2Name);
     int RandomGraphs(char command, int NumGraphs, int SizeOfGraphs, char *outfileName);

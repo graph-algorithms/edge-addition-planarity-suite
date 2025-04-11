@@ -32,7 +32,7 @@ See the LICENSE.TXT file for licensing information.
 
 int SpecificGraph(
     char command,
-    char const*infileName, char const*outfileName, char*outfile2Name,
+    char const*infileName, char*outfileName, char*outfile2Name,
     char*inputStr, char **pOutputStr, char **pOutput2Str)
 {
     graphP theGraph, origGraph;
@@ -194,7 +194,7 @@ int SpecificGraph(
                 {
                     // By default, use the same name as the primary output filename
                     if (strlen(outfile2Name) == 0)
-                        outfile2Name = (char*)outfileName;
+                        outfile2Name = outfileName;
                     writeResult = gp_Write(theGraph, outfile2Name, WRITE_ADJLIST);
                 }
                 else if (command == 'd' && Result == OK)
@@ -203,7 +203,7 @@ int SpecificGraph(
                     // of selecting a default name for the second output file.
                     // By default, add ".render.txt" to the primary output filename
                     if (strlen(outfile2Name) == 0)
-                        strcat((outfile2Name = (char*)outfileName), ".render.txt");
+                        strcat((outfile2Name = outfileName), ".render.txt");
                     writeResult = gp_DrawPlanar_RenderToFile(theGraph, outfile2Name);
                 }
             }
