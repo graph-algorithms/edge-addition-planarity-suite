@@ -4,6 +4,8 @@ ACLOCAL_AMFLAGS = -I m4
 
 lib_LTLIBRARIES = libplanarity.la
 
+AM_CFLAGS = $(WARNING_CFLAGS)
+
 libplanarity_la_SOURCES = \
 	c/graphLib/graphDFSUtils.c \
 	c/graphLib/graphUtils.c \
