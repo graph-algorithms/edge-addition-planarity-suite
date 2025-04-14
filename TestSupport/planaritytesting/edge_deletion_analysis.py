@@ -205,7 +205,7 @@ class EdgeDeletionAnalyzer:
                 contains_missed_homeomorph was true.
 
         Raises:
-            EdgeDeletionAnalysisError: If an error occured when trying to
+            EdgeDeletionAnalysisError: If an error occurred when trying to
                 determine the input file type, if the input file is anything
                 other than a .g6 file, if transformation failed for the input
                 graph(s), or if any of the analysis steps failed for the input

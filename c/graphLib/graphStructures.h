@@ -629,7 +629,7 @@ extern "C"
         gp_BindFirstArc(theGraph, v, arc);                             \
     }
 
-// Attaches an arc between the current binding betwen a vertex and its last arc
+// Attaches an arc between the current binding between a vertex and its last arc
 #define gp_AttachLastArc(theGraph, v, arc)                            \
     {                                                                 \
         if (gp_IsArc(gp_GetLastArc(theGraph, v)))                     \
@@ -764,7 +764,7 @@ extern "C"
      (gp_IsNotVertex(theGraph->VI[theVertex].futurePertinentChild) || \
       theGraph->VI[theGraph->VI[theVertex].futurePertinentChild].lowpoint >= v))
 
-    // This is the definition that would be preferrable if a while loop could be a void expression
+    // This is the definition that would be preferable if a while loop could be a void expression
     // #define FUTUREPERTINENT(theGraph, theVertex, v)
     //        (  theGraph->VI[theVertex].leastAncestor < v ||
     //           ((gp_UpdateVertexFuturePertinentChild(theGraph, theVertex, v),

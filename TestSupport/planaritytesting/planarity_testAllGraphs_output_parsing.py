@@ -226,19 +226,19 @@ def process_file_contents(
         numGraphs_from_file = match.group("numGraphs")
         if not numGraphs_from_file:
             raise TestAllGraphsOutputFileContentsError(
-                f"Unable ot extract numGraphs from input file '{infile_path}'."
+                f"Unable to extract numGraphs from input file '{infile_path}'."
             )
 
         numOK_from_file = match.group("numOK")
         if not numOK_from_file:
             raise TestAllGraphsOutputFileContentsError(
-                f"Unable ot extract numOK from input file '{infile_path}'."
+                f"Unable to extract numOK from input file '{infile_path}'."
             )
 
         numNONEMBEDDABLE_from_file = match.group("numNONEMBEDDABLE")
         if not numOK_from_file:
             raise TestAllGraphsOutputFileContentsError(
-                "Unable ot extract numNONEMBEDDABLE from input file "
+                "Unable to extract numNONEMBEDDABLE from input file "
                 f"'{infile_path}'."
             )
 

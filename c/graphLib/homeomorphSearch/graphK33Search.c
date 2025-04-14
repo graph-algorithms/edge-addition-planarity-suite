@@ -1912,7 +1912,7 @@ int _IsolateMinorE5(graphP theGraph)
  _IsolateMinorE6()
  The paths (x, y), (v, w) and (v, u_{max}) are not needed.
  The path through the straddling bridge that connects from an ancestor of
- u_{max} to v is required, but it may connnect to an ancestor p of v.
+ u_{max} to v is required, but it may connect to an ancestor p of v.
  In such a case, the path (v, p) is required, while (p, u_{max}) is not.
  ****************************************************************************/
 

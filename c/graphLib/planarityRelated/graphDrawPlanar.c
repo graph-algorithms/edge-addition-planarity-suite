@@ -694,7 +694,7 @@ void _CollectDrawingData(DrawPlanarContext *context, int RootVertex, int W, int 
  the whole subtree including WPred between W and the current vertex.
  On the other hand, if WPred was the parent of some DFS child whose
  subtree contained W, then we achieve the same effect of putting WPred
- 'between' W and the curent vertex by marking the DFS child 'beyond'.
+ 'between' W and the current vertex by marking the DFS child 'beyond'.
  Since the DFS child and hence W are beyond W relative to the current
  vertex, WPred is also between W and the current vertex.
 

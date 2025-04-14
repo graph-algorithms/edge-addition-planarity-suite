@@ -45,7 +45,7 @@ See the LICENSE.TXT file for licensing information.
  The function LCDelete() removes a node I from a list L.  If node I is in the
  list alone, then its pointers are set to NIL, and NIL is returned as the list.
  If node I is not alone in the list, but it is the head of the list (in other
- words, I is equal to L), then L's sucessor is returned as the new head of the
+ words, I is equal to L), then L's successor is returned as the new head of the
  list. Whether or not I equals L, node I is deleted by joining its predecessor
  and successor nodes.
 

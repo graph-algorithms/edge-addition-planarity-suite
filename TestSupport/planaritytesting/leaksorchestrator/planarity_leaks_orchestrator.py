@@ -139,7 +139,7 @@ class PlanarityLeaksOrchestrator:
                 MallocGuardEdges - If set, malloc adds guard pages before and
                     after large allocations.
                 MallocCheckHeapStart = <s> - If set, specifies the number of
-                    allocations <s> to wait before begining periodic heap
+                    allocations <s> to wait before beginning periodic heap
                     checks every <n> as specified by MallocCheckHeapEach. If
                     MallocCheckHeapStart is set but MallocCheckHeapEach is not
                     specified, the default check repetition is 1000.
@@ -225,7 +225,7 @@ class PlanarityLeaksOrchestrator:
 
     @staticmethod
     def _valid_graph_output_formats(
-        output_formats_to_run: tuple[str, ...]
+        output_formats_to_run: tuple[str, ...],
     ) -> bool:
         """Ensures all graph output format specifiers in tuple are valid
 
