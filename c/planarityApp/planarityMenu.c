@@ -51,7 +51,7 @@ int menu(void)
         {
             char *secondOutfile = NULL;
             if (Choice == 'p' || Choice == 'd' || Choice == 'o')
-                secondOutfile = "";
+                secondOutfile = (char*)"";
 
             if (!strchr(GetAlgorithmChoices(), Choice))
             {
@@ -115,7 +115,7 @@ void TransformGraphMenu(void)
         return;
     }
 
-    char *fileNameFormatFormat = " %%%d[^\r\n]";
+    char const*fileNameFormatFormat = " %%%d[^\r\n]";
     char *fileNameFormat = (char *)malloc((strlen(fileNameFormatFormat) + numCharsToReprMAXLINE + 1) * sizeof(char));
     sprintf(fileNameFormat, fileNameFormatFormat, MAXLINE);
 
@@ -174,7 +174,7 @@ void TestAllGraphsMenu(void)
         return;
     }
 
-    char *fileNameFormatFormat = " %%%d[^\r\n]";
+    char const*fileNameFormatFormat = " %%%d[^\r\n]";
     char *fileNameFormat = (char *)malloc((strlen(fileNameFormatFormat) + numCharsToReprMAXLINE + 1) * sizeof(char));
     sprintf(fileNameFormat, fileNameFormatFormat, MAXLINE);
 

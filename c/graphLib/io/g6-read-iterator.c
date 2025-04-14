@@ -234,9 +234,9 @@ int _processAndCheckHeader(strOrFileP g6Input)
         return NOTOK;
     }
 
-    char *correctG6Header = ">>graph6<<";
-    char *sparse6Header = ">>sparse6<";
-    char *digraph6Header = ">>digraph6";
+    char const*correctG6Header = ">>graph6<<";
+    char const*sparse6Header = ">>sparse6<";
+    char const*digraph6Header = ">>digraph6";
 
     char headerCandidateChars[11];
     headerCandidateChars[0] = '\0';
@@ -641,7 +641,7 @@ int freeG6ReadIterator(G6ReadIterator **ppG6ReadIterator)
 
 int _ReadGraphFromG6FilePath(graphP pGraphToRead, char *pathToG6File)
 {
-    char *messageFormat = NULL;
+    char const*messageFormat = NULL;
     char messageContents[MAXLINE + 1];
     messageContents[MAXLINE] = '\0';
     int charsAvailForStr = 0;

@@ -6,7 +6,7 @@ See the LICENSE.TXT file for licensing information.
 
 #include "planarity.h"
 
-int transformFile(graphP theGraph, char *infileName);
+int transformFile(graphP theGraph, char const*infileName);
 int transformString(graphP theGraph, char *inputStr);
 
 /****************************************************************************
@@ -20,7 +20,7 @@ int transformString(graphP theGraph, char *inputStr);
  outfileName - name of primary output file, or NULL to construct an output filename based on the input
  outputStr - pointer to string which we wish to use to store the transformation output
  ****************************************************************************/
-int TransformGraph(char *commandString, char *infileName, char *inputStr, int *outputBase, char *outfileName, char **outputStr)
+int TransformGraph(char const*commandString, char const*infileName, char *inputStr, int *outputBase, char const*outfileName, char **outputStr)
 {
     int Result = OK;
 
@@ -79,7 +79,7 @@ int TransformGraph(char *commandString, char *infileName, char *inputStr, int *o
     return Result;
 }
 
-int transformFile(graphP theGraph, char *infileName)
+int transformFile(graphP theGraph, char const*infileName)
 {
     if (infileName == NULL)
     {

@@ -399,7 +399,7 @@ int _ReadLEDAGraph(graphP theGraph, strOrFileP inputContainer)
  Returns: OK, NOTOK on internal error, NONEMBEDDABLE if too many edges
  ********************************************************************/
 
-int gp_Read(graphP theGraph, char *FileName)
+int gp_Read(graphP theGraph, char const*FileName)
 {
     strOrFileP inputContainer = sf_New(NULL, FileName, READTEXT);
     if (inputContainer == NULL)
@@ -861,7 +861,7 @@ int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer)
  Returns NOTOK on error, OK on success.
  ********************************************************************/
 
-int gp_Write(graphP theGraph, char *FileName, int Mode)
+int gp_Write(graphP theGraph, char const*FileName, int Mode)
 {
     int RetVal;
 
@@ -1009,7 +1009,7 @@ int _WritePostprocess(graphP theGraph, char **pExtraData)
  Call this method with NULL to close the log file.
  ********************************************************************/
 
-void _Log(char *Str)
+void _Log(char const*Str)
 {
     static FILE *logfile = NULL;
 
@@ -1028,7 +1028,7 @@ void _Log(char *Str)
         fclose(logfile);
 }
 
-void _LogLine(char *Str)
+void _LogLine(char const*Str)
 {
     _Log(Str);
     _Log("\n");

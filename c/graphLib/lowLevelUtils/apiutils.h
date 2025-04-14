@@ -29,8 +29,8 @@ extern "C"
     extern int getQuietModeSetting(void);
     extern void setQuietModeSetting(int);
 
-    extern void Message(char *message);
-    extern void ErrorMessage(char *message);
+    extern void Message(char const*message);
+    extern void ErrorMessage(char const*message);
 
     int GetNumCharsToReprInt(int theNum, int *numCharsRequired);
 #ifdef __cplusplus

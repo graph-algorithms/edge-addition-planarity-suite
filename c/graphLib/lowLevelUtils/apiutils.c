@@ -24,7 +24,7 @@ void setQuietModeSetting(int newQuietModeSetting)
     quietMode = newQuietModeSetting;
 }
 
-void Message(char *message)
+void Message(char const*message)
 {
     if (!getQuietModeSetting())
     {
@@ -33,7 +33,7 @@ void Message(char *message)
     }
 }
 
-void ErrorMessage(char *message)
+void ErrorMessage(char const*message)
 {
     if (!getQuietModeSetting())
     {

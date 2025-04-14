@@ -6,7 +6,7 @@ See the LICENSE.TXT file for licensing information.
 
 #include "planarity.h"
 
-void GetNumberIfZero(int *pNum, char *prompt, int min, int max);
+void GetNumberIfZero(int *pNum, char const*prompt, int min, int max);
 void ReinitializeGraph(graphP *pGraph, int ReuseGraphs, char command);
 graphP MakeGraph(int Size, char command);
 
@@ -37,7 +37,7 @@ int RandomGraphs(char command, int NumGraphs, int SizeOfGraphs, char *outfileNam
         writeErrorReported_AdjList = FALSE, writeErrorReported_Obstructed = FALSE,
         writeErrorReported_Error = FALSE;
 
-    char *messageFormat = NULL;
+    char const*messageFormat = NULL;
     char messageContents[MAXLINE + 1];
     int charsAvailForStr = 0;
 
@@ -369,7 +369,7 @@ int RandomGraphs(char command, int NumGraphs, int SizeOfGraphs, char *outfileNam
  it is not.
  ****************************************************************************/
 
-void GetNumberIfZero(int *pNum, char *prompt, int min, int max)
+void GetNumberIfZero(int *pNum, char const*prompt, int min, int max)
 {
     if (*pNum == 0)
     {
@@ -461,7 +461,7 @@ int RandomGraph(char command, int extraEdges, int numVertices, char *outfileName
     int embedFlags = GetEmbedFlags(command);
     char saveEdgeListFormat;
 
-    char *messageFormat = NULL;
+    char const*messageFormat = NULL;
     char messageContents[MAXLINE + 1];
     int charsAvailForStr = 0;
 

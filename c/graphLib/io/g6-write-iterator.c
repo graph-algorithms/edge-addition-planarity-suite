@@ -135,7 +135,7 @@ int _beginG6WriteIteration(G6WriteIterator *pG6WriteIterator)
 {
     int exitCode = OK;
 
-    char *g6Header = ">>graph6<<";
+    char const*g6Header = ">>graph6<<";
     if (sf_fputs(g6Header, pG6WriteIterator->g6Output) < 0)
     {
         ErrorMessage("Unable to fputs header to g6Output.\n");
