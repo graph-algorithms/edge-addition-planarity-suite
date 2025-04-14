@@ -52,7 +52,7 @@ However, you may have only downloaded the distribution (i.e., `planarity-N.N.N.N
 1. `./configure`
 2. `make`
 
-At this point, the `planarity` executable can be run from within the distribution directory. For example, on Windows, go to the `.libs/` subdirectory containing the `planarity` executuable and the `libplanarity` DLL and run `planarity -test ../c/samples` on the command-line. 
+At this point, the `planarity` executable can be run from within the distribution directory. For example, on Windows, go to the `.libs/` subdirectory containing the `planarity` executable and the `libplanarity` DLL and run `planarity -test ../c/samples` on the command-line. 
 
 On Linux, the planarity program can also be installed by entering `sudo make install` on the command-line. Note that the `libplanarity` shared object and symlinks will be installed to `/usr/local/lib` so it will be necessary to set `LD_LIBRARY_PATH` accordingly. For one session, this can be done with `export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib`. To make it more permanent, you could use:
 1. Create a new file `/etc/ld.so.conf.d/planarity.conf` containing `/usr/local/lib`

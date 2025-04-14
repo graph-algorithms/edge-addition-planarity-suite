@@ -340,7 +340,7 @@ class G6DiffFinder:
             second_comparand_dict: Same structure as first_comparand_dict.
 
         Raises:
-            G6DiffFinderException: Re-raises if exeption encountered when we
+            G6DiffFinderException: Re-raises if exception encountered when we
                 _get_infile_names() from the two comparand dicts
         """
         try:
@@ -419,7 +419,7 @@ class G6DiffFinder:
         {first_comparand_infile_dir}/results/graphs_in_{first_comparand_infile_name}_and_{second_comparand_infile_name}.txt  # pylint: disable=line-too-long
 
         Raises:
-            G6DiffFinderException: Re-raises if exeption encountered when we
+            G6DiffFinderException: Re-raises if exception encountered when we
                 _get_infile_names() from the two comparand dicts
         """
         try:

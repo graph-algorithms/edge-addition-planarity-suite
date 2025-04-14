@@ -517,7 +517,7 @@ int _MarkLowestXYPath(graphP theGraph)
 
  If, during the traversal, we encounter a vertex Z previously visited, then we
  pop the stack, unmarking the vertices and edges popped, until we find the
- prior occurence of Z on the stack. This is because we have traversed a path
+ prior occurrence of Z on the stack. This is because we have traversed a path
  that would connect back to the targetVertex had we not hidden the internal
  edges of the targetVertex.
 
@@ -541,7 +541,7 @@ int _MarkLowestXYPath(graphP theGraph)
  Also, if an X-Y path is found (which will be the closest), then
  the graph isolator context contains its attachment points on the
  external face of the bicomp rooted by R, and the edges and vertices
- in the X-Y path have been marked visted.
+ in the X-Y path have been marked visited.
  ****************************************************************************/
 
 int _MarkClosestXYPath(graphP theGraph, int targetVertex)
@@ -773,7 +773,7 @@ int _MarkZtoRPath(graphP theGraph)
     while (Z != R)
     {
         /* If we ever encounter a non-internal vertex (other than the root R),
-                then corruption has occured, so we return NOTOK */
+                then corruption has occurred, so we return NOTOK */
 
         if (gp_GetVertexObstructionType(theGraph, Z) != VERTEX_OBSTRUCTIONTYPE_UNKNOWN)
             return NOTOK;

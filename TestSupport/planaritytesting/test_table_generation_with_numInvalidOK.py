@@ -95,7 +95,7 @@ class TTGWithEDAPathConfig:
         Raises:
             ValueError:
                 - planarity_path cannot be resolved
-                - planarity_path doesn't corespond to an executable
+                - planarity_path doesn't correspond to an executable
         """
         if not self.planarity_executable_path:
             extension = ".exe" if platform.system() == "Windows" else ""
@@ -287,7 +287,7 @@ class TTGWithEDAPathConfig:
                 directory:
                 1. contains files,
                 2. contains no subdirectories
-                3. is missing a subdirectory for one of the graph algoritm
+                3. is missing a subdirectory for one of the graph algorithm
                 command specifiers
                 Or if the files in the sub-sub directories are not named in
                 the expected scheme
