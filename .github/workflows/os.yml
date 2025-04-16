@@ -144,3 +144,18 @@ jobs:
             autoreconf -if && ./configure
             make -j4
             ./test-samples.sh
+  debian:
+    name: Debian
+    runs-on: ubuntu-latest
+    container:
+      image: debian:latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install autotools etc . . .
+        run: apt update && apt -y upgrade && apt install -y make autoconf automake libtool
+      - name: Configure . . .
+        run: autoreconf -if && ./configure
+      - name: Build . . .
+        run: make -j4
+      - name: Run the tests . . .
+        run: ./test-samples.sh
