@@ -75,6 +75,25 @@ jobs:
         run: make -j4
       - name: Run the tests . . .
         run: ./test-samples.sh
+  msys-arm:
+    name: Windows-CLANGARM64
+    defaults:
+      run:
+        shell: msys2 {0}
+    runs-on: windows-11-arm
+    steps:
+      - uses: msys2/setup-msys2@v2
+        with:
+          update: true
+          msystem: CLANGARM64
+          pacboy: toolchain autotools
+      - uses: actions/checkout@v4
+      - name: Configure . . .
+        run: autoreconf -if && ./configure
+      - name: Build . . .
+        run: make -j4
+      - name: Run the tests . . .
+        run: ./test-samples.sh
   macos:
     name: macOS
     timeout-minutes: 60
