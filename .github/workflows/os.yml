@@ -49,6 +49,30 @@ jobs:
         run: make -j4
       - name: Run the tests . . .
         run: ./test-samples.sh
+  msys:
+    name: Windows-${{ matrix.sys }}
+    defaults:
+      run:
+        shell: msys2 {0}
+    timeout-minutes: 60
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        sys: [MINGW64, MINGW32, UCRT64, CLANG64]
+    steps:
+      - uses: msys2/setup-msys2@v2
+        with:
+          update: true
+          msystem: ${{ matrix.sys }}
+          pacboy: toolchain autotools
+      - uses: actions/checkout@v4
+      - name: Configure . . .
+        run: autoreconf -if && ./configure
+      - name: Build . . .
+        run: make -j4
+      - name: Run the tests . . .
+        run: ./test-samples.sh
   macos:
     name: macOS
     timeout-minutes: 60
