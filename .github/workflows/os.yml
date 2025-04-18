@@ -35,13 +35,58 @@ jobs:
     name: Cygwin
     defaults:
       run:
-        shell: C:\cygwin64\bin\bash.exe --login -o igncr '{0}'
+        shell: C:\cygwin\bin\bash.exe --noprofile --norc -o igncr -eo pipefail '{0}'
     timeout-minutes: 60
     runs-on: windows-latest
-    env:
-      CHERE_INVOKING: 1
     steps:
-      - uses: gap-actions/setup-cygwin@v1
+      - run: git config --global core.autocrlf input
+        shell: pwsh -command ". '{0}'".
+      - uses: actions/checkout@v4
+      - uses: cygwin/cygwin-install-action@v5
+        with:
+          packages: gcc-core,automake,libtool,autoconf
+      - name: Configure . . .
+        run: autoreconf -if && ./configure
+      - name: Build . . .
+        run: make -j4
+      - name: Run the tests . . .
+        run: ./test-samples.sh
+  msys:
+    name: Windows-${{ matrix.sys }}
+    defaults:
+      run:
+        shell: msys2 {0}
+    timeout-minutes: 60
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        sys: [MINGW64, MINGW32, UCRT64, CLANG64]
+    steps:
+      - uses: msys2/setup-msys2@v2
+        with:
+          update: true
+          msystem: ${{ matrix.sys }}
+          pacboy: toolchain autotools
+      - uses: actions/checkout@v4
+      - name: Configure . . .
+        run: autoreconf -if && ./configure
+      - name: Build . . .
+        run: make -j4
+      - name: Run the tests . . .
+        run: ./test-samples.sh
+  msys-arm:
+    name: Windows-CLANGARM64
+    defaults:
+      run:
+        shell: msys2 {0}
+    runs-on: windows-11-arm
+    steps:
+      - uses: msys2/setup-msys2@v2
+        with:
+          update: true
+          msystem: CLANGARM64
+          pacboy: toolchain autotools
       - uses: actions/checkout@v4
       - name: Configure . . .
         run: autoreconf -if && ./configure
@@ -99,3 +144,18 @@ jobs:
             autoreconf -if && ./configure
             make -j4
             ./test-samples.sh
+  debian:
+    name: Debian
+    runs-on: ubuntu-latest
+    container:
+      image: debian:latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install autotools etc . . .
+        run: apt update && apt -y upgrade && apt install -y make autoconf automake libtool
+      - name: Configure . . .
+        run: autoreconf -if && ./configure
+      - name: Build . . .
+        run: make -j4
+      - name: Run the tests . . .
+        run: ./test-samples.sh
