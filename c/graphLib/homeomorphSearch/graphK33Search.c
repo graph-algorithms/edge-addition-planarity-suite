@@ -50,7 +50,11 @@ extern int _AddAndMarkEdge(graphP theGraph, int ancestor, int descendant);
 extern int _DeleteUnmarkedVerticesAndEdges(graphP theGraph);
 
 extern int _IsolateMinorE1(graphP theGraph);
-// extern int  _IsolateMinorE2(graphP theGraph);
+
+#ifndef USE_MERGEBLOCKER
+extern int _IsolateMinorE2(graphP theGraph);
+#endif
+
 extern int _IsolateMinorE3(graphP theGraph);
 extern int _IsolateMinorE4(graphP theGraph);
 
