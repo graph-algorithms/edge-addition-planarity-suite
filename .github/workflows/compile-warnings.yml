@@ -21,12 +21,11 @@ jobs:
       - uses: actions/checkout@v4
       - name: Compiler information . . .
         run: $CC --version
-        # TODO: Add --enable-compile-warnings to ./configure when available
       - name: Configure . . .
         run: |
           mkdir -p m4
           autoreconf -if
-          ./configure CC="$CC" CFLAGS="$CFLAGS"
+          ./configure --enable-compile-warnings CC="$CC" CFLAGS="$CFLAGS"
       - name: Build . . .
         run: make -j4
         # We don't run the tests, since in this job we are only checking for
