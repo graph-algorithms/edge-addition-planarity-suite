@@ -4,10 +4,17 @@ All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
 
+// K33CERT begin: Now need this here due to use of malloc() and free()
+#include <stdlib.h>
+// K33CERT end
+
 #include "graphK33Search.h"
 #include "graphK33Search.private.h"
 
-// extern int K33SEARCH_ID;
+// K33CERT begin: Uncommented this because the embedding obstruction tree implementation must
+// be able to get the K33 Search extension context from the subgraph of an EONode
+extern int K33SEARCH_ID;
+// K33CERT end
 
 #include "../graph.h"
 
@@ -114,6 +121,10 @@ int _SearchForK33InBicomp(graphP theGraph, K33SearchContext *context, int v, int
 
     if (theGraph->IC.minorType & (MINORTYPE_A | MINORTYPE_B | MINORTYPE_C | MINORTYPE_D))
     {
+        // K33CERT begin: Found Minor A, B, C, or D so eliminate the embedding obstruction tree because the graph is not K3,3-free
+        _K33Search_EONode_Free(&context->associatedEONode);
+        // K33CERT end
+
         /* First we restore the orientations of the vertices in the
             one bicomp we have messed with so that there is no confusion. */
 
@@ -159,6 +170,10 @@ int _SearchForK33InBicomp(graphP theGraph, K33SearchContext *context, int v, int
         (IC->uz < MAX(IC->ux, IC->uy) && IC->ux != IC->uy) ||
         (IC->x != IC->px || IC->y != IC->py))
     {
+        // K33CERT begin: Found Minor E1, E2, E3, or E4 so eliminate the embedding obstruction tree because the graph is not K3,3-free
+        _K33Search_EONode_Free(&context->associatedEONode);
+        // K33CERT end
+
         if (_OrientVerticesInBicomp(theGraph, R, 1) != OK)
             return NOTOK;
 
@@ -513,6 +528,10 @@ int _SearchForMinorE1(graphP theGraph)
 int _FinishIsolatorContextInitialization(graphP theGraph, K33SearchContext *context)
 {
     isolatorContextP IC = &theGraph->IC;
+
+    // K33CERT begin: Found one of Minors E1 through E7 so eliminate the embedding obstruction tree because the graph is not K3,3-free
+    _K33Search_EONode_Free(&context->associatedEONode);
+    // K33CERT end
 
     /* Restore the orientation of the bicomp on which we're working, then
         perform orientation of all vertices in graph. (An unnecessary but
@@ -1407,6 +1426,137 @@ int _ReduceBicomp(graphP theGraph, K33SearchContext *context, int R)
 
     return OK;
 }
+
+// K33CERT begin: Added K33Search_EONode_New()
+/********************************************************************
+ K33Search_EONode_New()
+ ********************************************************************/
+K33Search_EONodeP _K33Search_EONode_New(graphP theSubgraph)
+{
+    K33Search_EONodeP theNewEONode = (K33Search_EONodeP)malloc(sizeof(K33Search_EONode));
+
+    if (theNewEONode == NULL)
+        return NULL;
+
+    theNewEONode->subgraph = theSubgraph;
+    theNewEONode->subgraphOwner = FALSE;
+    theNewEONode->EOType = K33SEARCH_EOTYPE_ENODE;
+
+    return theNewEONode;
+}
+// K33CERT end
+
+// K33CERT begin: Added K33_EONode_Free()
+/********************************************************************
+ K33_EONode_Free()
+********************************************************************/
+void _K33Search_EONode_Free(K33Search_EONodeP *pEONode)
+{
+    if (pEONode != NULL && *pEONode != NULL)
+    {
+        // Loop through the K33_EdgeRecs to find the edgerec pairs with non-NULL EONode pointers,
+        // which are the children of the EONode being freed. Virtual edges aren't used to point
+        // to the parent because we only ever need to traverse downward from root to descendants.
+        // Call _K33_EONode_Free() on them (once per pair), which will recurse all the way down the tree
+        if ((*pEONode)->subgraph != NULL)
+        {
+            graphP theGraph = (*pEONode)->subgraph;
+            K33SearchContext *context = NULL;
+
+            gp_FindExtension(theGraph, K33SEARCH_ID, (void *)&context);
+            if (context != NULL)
+            {
+                int Esize, e;
+                Esize = gp_EdgeIndexBound(theGraph);
+                for (e = gp_GetFirstEdge(theGraph); e < Esize; e++)
+                {
+                    if (e & 1)
+                    {
+                        // Odd positions are after preceding even positions, which are freed below
+                        context->E[e].EONode = NULL;
+                    }
+                    else
+                    {
+                        // Frees node (if it exists) and sets pointer to NULL
+                        _K33Search_EONode_Free(&context->E[e].EONode);
+                    }
+                }
+            }
+        }
+
+        if ((*pEONode)->subgraphOwner)
+        {
+            gp_Free(&(*pEONode)->subgraph);
+            (*pEONode)->subgraphOwner = FALSE;
+        }
+        else
+        {
+            (*pEONode)->subgraph = NULL;
+        }
+
+        free(*pEONode);
+        *pEONode = NULL;
+    }
+}
+// K33CERT end
+
+// K33CERT begin: Added _K33Search_TestForEOTreeChildren()
+/********************************************************************
+ _K33Search_TestForEOTreeChildren()
+
+ Method to determine whether there are any embedding obstruction tree children of a given tree or subtree root
+********************************************************************/
+int _K33Search_TestForEOTreeChildren(K33Search_EONodeP EOTreeRoot)
+{
+    graphP theGraph = EOTreeRoot->subgraph;
+    K33SearchContext *context = NULL;
+
+    gp_FindExtension(theGraph, K33SEARCH_ID, (void *)&context);
+    if (context != NULL)
+    {
+        int Esize, e;
+        Esize = gp_EdgeIndexBound(theGraph);
+        for (e = gp_GetFirstEdge(theGraph); e < Esize; e++)
+        {
+            if (context->E[e].EONode != NULL)
+                return TRUE;
+        }
+    }
+
+    return FALSE;
+}
+// K33CERT end
+
+// K33CERT begin: Added _K33Search_AssembleMainPlanarEmbedding()
+/********************************************************************
+ _K33Search_AssembleMainPlanarEmbedding()
+
+ This method gives the consistent orientation to all the bicomps in the
+ main planar embedding, and it joins the bicomps.
+
+ This method also deletes from the edge array of the main planar
+ embedding any non-virtual edges that are in the paths indicated
+ by the pathConnector data members of the K33Search_EdgeRec instances.
+ These are edges that have already been placed into the new planar
+ subgraphs of E-nodes created during ReduceBicomp() calls, so delete
+ them so that non-virtual edges appear in only one embedded subgraph
+ of the embedding obstruction tree.
+ ********************************************************************/
+int _K33Search_AssembleMainPlanarEmbedding(K33Search_EONodeP EOTreeRoot)
+{
+    return OK;
+}
+// K33CERT end
+
+// K33CERT begin: Added _K33Search_ValidateEmbeddingObstructionTree()
+/********************************************************************
+ _K33Search_ValidateEmbeddingObstructionTree()
+ ********************************************************************/
+int _K33Search_ValidateEmbeddingObstructionTree(K33Search_EONodeP EOTreeRoot, graphP origGraph)
+{
+    return OK;
+}
+// K33CERT end
 
 /********************************************************************
  Edge deletion that occurs during a reduction or restoration of a
