@@ -34,33 +34,35 @@ extern "C"
         graphP currGraph;
     } G6WriteIterator;
 
-    int allocateG6WriteIterator(G6WriteIterator **, graphP);
-    bool _isG6WriteIteratorAllocated(G6WriteIterator *);
+    typedef G6WriteIterator *G6WriteIteratorP;
 
-    int getNumGraphsWritten(G6WriteIterator *, int *);
-    int getOrderOfGraphToWrite(G6WriteIterator *, int *);
-    int getPointerToGraphToWrite(G6WriteIterator *, graphP *);
+    int allocateG6WriteIterator(G6WriteIteratorP *, graphP);
+    bool _isG6WriteIteratorAllocated(G6WriteIteratorP);
 
-    int beginG6WriteIterationToG6StrOrFile(G6WriteIterator *pG6WriteIterator, strOrFileP outputContainer);
-    int _beginG6WriteIteration(G6WriteIterator *pG6WriteIterator);
+    int getNumGraphsWritten(G6WriteIteratorP, int *);
+    int getOrderOfGraphToWrite(G6WriteIteratorP, int *);
+    int getPointerToGraphToWrite(G6WriteIteratorP, graphP *);
+
+    int beginG6WriteIterationToG6StrOrFile(G6WriteIteratorP, strOrFileP);
+    int _beginG6WriteIteration(G6WriteIteratorP);
     void _precomputeColumnOffsets(int *, int);
 
-    int writeGraphUsingG6WriteIterator(G6WriteIterator *);
+    int writeGraphUsingG6WriteIterator(G6WriteIteratorP);
 
-    int _encodeAdjMatAsG6(G6WriteIterator *);
+    int _encodeAdjMatAsG6(G6WriteIteratorP);
     int _getFirstEdge(graphP, int *, int *, int *);
     int _getNextEdge(graphP, int *, int *, int *);
-    int _getNextInUseEdge(graphP theGraph, int *e, int *u, int *v);
+    int _getNextInUseEdge(graphP, int *, int *, int *);
 
-    int _printEncodedGraph(G6WriteIterator *);
+    int _printEncodedGraph(G6WriteIteratorP);
 
-    int endG6WriteIteration(G6WriteIterator *);
+    int endG6WriteIteration(G6WriteIteratorP);
 
-    int freeG6WriteIterator(G6WriteIterator **);
+    int freeG6WriteIterator(G6WriteIteratorP *);
 
-    int _WriteGraphToG6FilePath(graphP pGraph, char *g6OutputFilename);
-    int _WriteGraphToG6String(graphP pGraph, char **g6OutputStr);
-    int _WriteGraphToG6StrOrFile(graphP pGraph, strOrFileP outputContainer, char **outputStr);
+    int _WriteGraphToG6FilePath(graphP, char *);
+    int _WriteGraphToG6String(graphP, char **);
+    int _WriteGraphToG6StrOrFile(graphP, strOrFileP, char **);
 
 #ifdef __cplusplus
 }

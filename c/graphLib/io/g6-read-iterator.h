@@ -32,27 +32,29 @@ extern "C"
         graphP currGraph;
     } G6ReadIterator;
 
-    int allocateG6ReadIterator(G6ReadIterator **, graphP);
-    bool _isG6ReadIteratorAllocated(G6ReadIterator *);
+    typedef G6ReadIterator *G6ReadIteratorP;
 
-    int getNumGraphsRead(G6ReadIterator *, int *);
-    int getOrderOfGraphToRead(G6ReadIterator *, int *);
-    int getPointerToGraphReadIn(G6ReadIterator *, graphP *);
+    int allocateG6ReadIterator(G6ReadIteratorP *, graphP);
+    bool _isG6ReadIteratorAllocated(G6ReadIteratorP);
 
-    int beginG6ReadIterationFromG6StrOrFile(G6ReadIterator *, strOrFileP);
-    int _beginG6ReadIteration(G6ReadIterator *);
+    int getNumGraphsRead(G6ReadIteratorP, int *);
+    int getOrderOfGraphToRead(G6ReadIteratorP, int *);
+    int getPointerToGraphReadIn(G6ReadIteratorP, graphP *);
+
+    int beginG6ReadIterationFromG6StrOrFile(G6ReadIteratorP, strOrFileP);
+    int _beginG6ReadIteration(G6ReadIteratorP);
     int _processAndCheckHeader(strOrFileP);
     bool _firstCharIsValid(char, const int);
     int _getGraphOrder(strOrFileP, int *);
 
-    int readGraphUsingG6ReadIterator(G6ReadIterator *);
+    int readGraphUsingG6ReadIterator(G6ReadIteratorP);
     int _checkGraphOrder(char *, int);
     int _validateGraphEncoding(char *, const int, const int);
     int _decodeGraph(char *, const int, const int, graphP);
 
-    int endG6ReadIteration(G6ReadIterator *);
+    int endG6ReadIteration(G6ReadIteratorP);
 
-    int freeG6ReadIterator(G6ReadIterator **);
+    int freeG6ReadIterator(G6ReadIteratorP *);
 
     int _ReadGraphFromG6FilePath(graphP, char *);
     int _ReadGraphFromG6String(graphP, char *);
