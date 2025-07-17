@@ -34,7 +34,7 @@ int TestAllGraphs(char *commandString, char *infileName, char *outfileName, char
     platform_time start, end;
 
     int charsAvailForFilename = 0;
-    char const*messageFormat = NULL;
+    char const *messageFormat = NULL;
     char messageContents[MAXLINE + 1];
     messageContents[MAXLINE] = '\0';
 
@@ -128,7 +128,7 @@ int testAllGraphs(graphP theGraph, char command, strOrFileP inputContainer, test
 {
     int Result = OK;
 
-    char const*messageFormat = NULL;
+    char const *messageFormat = NULL;
     char messageContents[MAXLINE + 1];
     messageContents[MAXLINE] = '\0';
 
@@ -136,7 +136,7 @@ int testAllGraphs(graphP theGraph, char command, strOrFileP inputContainer, test
     int embedFlags = GetEmbedFlags(command);
     int numOK = 0, numNONEMBEDDABLE = 0, errorFlag = FALSE;
 
-    G6ReadIterator *pG6ReadIterator = NULL;
+    G6ReadIteratorP pG6ReadIterator = NULL;
     Result = allocateG6ReadIterator(&pG6ReadIterator, theGraph);
 
     if (Result != OK)
@@ -267,7 +267,7 @@ int outputTestAllGraphsResults(char command, testAllStatsP stats, char *infileNa
     char *finalSlash = strrchr(infileName, FILE_DELIMITER);
     char *infileBasename = finalSlash ? (finalSlash + 1) : infileName;
 
-    char const*headerFormat = "FILENAME=\"%s\" DURATION=\"%.3lf\"\n";
+    char const *headerFormat = "FILENAME=\"%s\" DURATION=\"%.3lf\"\n";
     char *headerStr = (char *)malloc(
         (
             strlen(headerFormat) +

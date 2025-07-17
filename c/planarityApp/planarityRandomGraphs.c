@@ -56,7 +56,7 @@ int RandomGraphs(char command, int NumGraphs, int SizeOfGraphs, char *outfileNam
     for (K = 0; K < NUM_MINORS; K++)
         ObstructionMinorFreqs[K] = 0;
 
-    G6WriteIterator *pG6WriteIterator = NULL;
+    G6WriteIteratorP pG6WriteIterator = NULL;
     if (outfileName != NULL || (tolower(OrigOut) == 'y' && tolower(OrigOutFormat) == 'g'))
     {
         if (allocateG6WriteIterator(&pG6WriteIterator, theGraph) != OK)
