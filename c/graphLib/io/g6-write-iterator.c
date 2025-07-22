@@ -111,6 +111,20 @@ int getGraphBuff(G6WriteIteratorP pG6WriteIterator, char **ppCurrGraphBuff)
     return OK;
 }
 
+int beginG6WriteIterationToG6String(G6WriteIteratorP pG6WriteIterator)
+{
+    strOrFileP outputContainer = sf_New(NULL, NULL, WRITETEXT);
+
+    return beginG6ReadIterationFromG6StrOrFile(pG6WriteIterator, outputContainer);
+}
+
+int beginG6WriteIterationToG6FilePath(G6WriteIteratorP pG6WriteIterator, char *outputFilename)
+{
+    strOrFileP outputContainer = sf_New(NULL, outputFilename, WRITETEXT);
+
+    return beginG6ReadIterationFromG6StrOrFile(pG6WriteIterator, outputContainer);
+}
+
 int beginG6WriteIterationToG6StrOrFile(G6WriteIteratorP pG6WriteIterator, strOrFileP outputContainer)
 {
     int exitCode = OK;
@@ -135,7 +149,7 @@ int _beginG6WriteIteration(G6WriteIteratorP pG6WriteIterator)
 {
     int exitCode = OK;
 
-    char const*g6Header = ">>graph6<<";
+    char const *g6Header = ">>graph6<<";
     if (sf_fputs(g6Header, pG6WriteIterator->g6Output) < 0)
     {
         ErrorMessage("Unable to fputs header to g6Output.\n");
@@ -492,6 +506,12 @@ int _WriteGraphToG6String(graphP pGraph, char **g6OutputStr)
         return NOTOK;
     }
 
+    // N.B. If g6OutputStr is a pointer to a pointer to a block of memory that
+    // has been allocated, i.e. if g6OutputStr != NULL && (*g6OutputStr) != NULL
+    // then an error will be emitted.
+    // N.B. Once the graph is successfully written, the string is taken from
+    // the G6WriteIterator's outputContainer and assigned to (*g6OutputStr)
+    // before ending G6 write iteration
     return _WriteGraphToG6StrOrFile(pGraph, outputContainer, g6OutputStr);
 }
 

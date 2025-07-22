@@ -6,7 +6,7 @@ See the LICENSE.TXT file for licensing information.
 
 #include "planarity.h"
 
-void GetNumberIfZero(int *pNum, char const*prompt, int min, int max);
+void GetNumberIfZero(int *pNum, char const *prompt, int min, int max);
 void ReinitializeGraph(graphP *pGraph, int ReuseGraphs, char command);
 graphP MakeGraph(int Size, char command);
 
@@ -24,6 +24,8 @@ graphP MakeGraph(int Size, char command);
 int RandomGraphs(char command, int NumGraphs, int SizeOfGraphs, char *outfileName)
 {
     char theFileName[MAXLINE + 1];
+    theFileName[0] = '\0';
+
     strOrFileP outputContainer = NULL;
     int K, countUpdateFreq;
     int Result = OK, MainStatistic = 0;
@@ -37,7 +39,7 @@ int RandomGraphs(char command, int NumGraphs, int SizeOfGraphs, char *outfileNam
         writeErrorReported_AdjList = FALSE, writeErrorReported_Obstructed = FALSE,
         writeErrorReported_Error = FALSE;
 
-    char const*messageFormat = NULL;
+    char const *messageFormat = NULL;
     char messageContents[MAXLINE + 1];
     int charsAvailForStr = 0;
 
@@ -67,6 +69,12 @@ int RandomGraphs(char command, int NumGraphs, int SizeOfGraphs, char *outfileNam
         }
     }
 
+    // FIXME: I don't want to refactor this to use
+    // beginG6WriteIterationToG6FilePath(), because there's two possible ways to
+    // get an output filename: either you called planarity command line and
+    // passed the optional outfileName, or you are using the planarity menu
+    // system after you Reconfigure() to output to .g6 (in which case,
+    // theFileName is constructed).
     messageFormat = "Unable to allocate strOrFile container for outfile \"%.*s\".\n";
     charsAvailForStr = (int)(MAXLINE - strlen(messageFormat));
     if (outfileName != NULL)
@@ -369,7 +377,7 @@ int RandomGraphs(char command, int NumGraphs, int SizeOfGraphs, char *outfileNam
  it is not.
  ****************************************************************************/
 
-void GetNumberIfZero(int *pNum, char const*prompt, int min, int max)
+void GetNumberIfZero(int *pNum, char const *prompt, int min, int max)
 {
     if (*pNum == 0)
     {
@@ -461,7 +469,7 @@ int RandomGraph(char command, int extraEdges, int numVertices, char *outfileName
     int embedFlags = GetEmbedFlags(command);
     char saveEdgeListFormat;
 
-    char const*messageFormat = NULL;
+    char const *messageFormat = NULL;
     char messageContents[MAXLINE + 1];
     int charsAvailForStr = 0;
 

@@ -17,7 +17,7 @@ typedef struct
 
 typedef testAllStats *testAllStatsP;
 
-int testAllGraphs(graphP theGraph, char command, strOrFileP inputContainer, testAllStatsP stats);
+int testAllGraphs(graphP theGraph, char command, char *infileName, testAllStatsP stats);
 int outputTestAllGraphsResults(char command, testAllStatsP stats, char *infileName, char *outfileName, char **outputStr);
 
 /****************************************************************************
@@ -62,24 +62,11 @@ int TestAllGraphs(char *commandString, char *infileName, char *outfileName, char
                 // Start the timer
                 platform_GetTime(start);
 
-                strOrFileP inputContainer = sf_New(NULL, infileName, READTEXT);
-                if (inputContainer == NULL)
-                {
-                    messageFormat = "Unable to open file \"%.*s\" for input.\n";
-                    charsAvailForFilename = (int)(MAXLINE - strlen(messageFormat));
-                    sprintf(messageContents, messageFormat, charsAvailForFilename, infileName);
-                    ErrorMessage(messageContents);
-
-                    gp_Free(&theGraph);
-
-                    return NOTOK;
-                }
-
                 testAllStats stats;
                 memset(&stats, 0, sizeof(testAllStats));
 
                 char command = commandString[1];
-                Result = testAllGraphs(theGraph, command, inputContainer, &stats);
+                Result = testAllGraphs(theGraph, command, infileName, &stats);
 
                 // Stop the timer
                 platform_GetTime(end);
@@ -124,7 +111,7 @@ int TestAllGraphs(char *commandString, char *infileName, char *outfileName, char
     return Result;
 }
 
-int testAllGraphs(graphP theGraph, char command, strOrFileP inputContainer, testAllStatsP stats)
+int testAllGraphs(graphP theGraph, char command, char *infileName, testAllStatsP stats)
 {
     int Result = OK;
 
@@ -146,7 +133,7 @@ int testAllGraphs(graphP theGraph, char command, strOrFileP inputContainer, test
         return Result;
     }
 
-    Result = beginG6ReadIterationFromG6StrOrFile(pG6ReadIterator, inputContainer);
+    Result = beginG6ReadIterationFromG6FilePath(pG6ReadIterator, infileName);
 
     if (Result != OK)
     {

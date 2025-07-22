@@ -100,6 +100,18 @@ int getPointerToGraphReadIn(G6ReadIteratorP pG6ReadIterator, graphP *ppGraph)
     return OK;
 }
 
+int beginG6ReadIterationFromG6String(G6ReadIteratorP pG6ReadIterator, char *inputString)
+{
+    strOrFileP inputContainer = sf_New(inputString, NULL, READTEXT);
+    return beginG6ReadIterationFromG6StrOrFile(pG6ReadIterator, inputContainer);
+}
+
+int beginG6ReadIterationFromG6FilePath(G6ReadIteratorP pG6ReadIterator, char *infileName)
+{
+    strOrFileP inputContainer = sf_New(NULL, infileName, READTEXT);
+    return beginG6ReadIterationFromG6StrOrFile(pG6ReadIterator, inputContainer);
+}
+
 int beginG6ReadIterationFromG6StrOrFile(G6ReadIteratorP pG6ReadIterator, strOrFileP g6InputContainer)
 {
     if (
