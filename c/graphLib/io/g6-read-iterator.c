@@ -10,7 +10,7 @@ See the LICENSE.TXT file for licensing information.
 #include "g6-read-iterator.h"
 #include "g6-api-utilities.h"
 
-int allocateG6ReadIterator(G6ReadIterator **ppG6ReadIterator, graphP pGraph)
+int allocateG6ReadIterator(G6ReadIteratorP *ppG6ReadIterator, graphP pGraph)
 {
     int exitCode = OK;
 
@@ -22,7 +22,7 @@ int allocateG6ReadIterator(G6ReadIterator **ppG6ReadIterator, graphP pGraph)
 
     // numGraphsRead, graphOrder, numCharsForGraphOrder,
     // numCharsForGraphEncoding, and currGraphBuffSize all set to 0
-    (*ppG6ReadIterator) = (G6ReadIterator *)calloc(1, sizeof(G6ReadIterator));
+    (*ppG6ReadIterator) = (G6ReadIteratorP)calloc(1, sizeof(G6ReadIterator));
 
     if ((*ppG6ReadIterator) == NULL)
     {
@@ -49,7 +49,7 @@ int allocateG6ReadIterator(G6ReadIterator **ppG6ReadIterator, graphP pGraph)
     return exitCode;
 }
 
-bool _isG6ReadIteratorAllocated(G6ReadIterator *pG6ReadIterator)
+bool _isG6ReadIteratorAllocated(G6ReadIteratorP pG6ReadIterator)
 {
     bool g6ReadIteratorIsAllocated = true;
 
@@ -61,7 +61,7 @@ bool _isG6ReadIteratorAllocated(G6ReadIterator *pG6ReadIterator)
     return g6ReadIteratorIsAllocated;
 }
 
-int getNumGraphsRead(G6ReadIterator *pG6ReadIterator, int *pNumGraphsRead)
+int getNumGraphsRead(G6ReadIteratorP pG6ReadIterator, int *pNumGraphsRead)
 {
     if (pG6ReadIterator == NULL)
     {
@@ -74,7 +74,7 @@ int getNumGraphsRead(G6ReadIterator *pG6ReadIterator, int *pNumGraphsRead)
     return OK;
 }
 
-int getOrderOfGraphToRead(G6ReadIterator *pG6ReadIterator, int *pGraphOrder)
+int getOrderOfGraphToRead(G6ReadIteratorP pG6ReadIterator, int *pGraphOrder)
 {
     if (pG6ReadIterator == NULL)
     {
@@ -87,7 +87,7 @@ int getOrderOfGraphToRead(G6ReadIterator *pG6ReadIterator, int *pGraphOrder)
     return OK;
 }
 
-int getPointerToGraphReadIn(G6ReadIterator *pG6ReadIterator, graphP *ppGraph)
+int getPointerToGraphReadIn(G6ReadIteratorP pG6ReadIterator, graphP *ppGraph)
 {
     if (pG6ReadIterator == NULL)
     {
@@ -100,7 +100,7 @@ int getPointerToGraphReadIn(G6ReadIterator *pG6ReadIterator, graphP *ppGraph)
     return OK;
 }
 
-int beginG6ReadIterationFromG6StrOrFile(G6ReadIterator *pG6ReadIterator, strOrFileP g6InputContainer)
+int beginG6ReadIterationFromG6StrOrFile(G6ReadIteratorP pG6ReadIterator, strOrFileP g6InputContainer)
 {
     if (
         sf_ValidateStrOrFile(g6InputContainer) != OK ||
@@ -115,7 +115,7 @@ int beginG6ReadIterationFromG6StrOrFile(G6ReadIterator *pG6ReadIterator, strOrFi
     return _beginG6ReadIteration(pG6ReadIterator);
 }
 
-int _beginG6ReadIteration(G6ReadIterator *pG6ReadIterator)
+int _beginG6ReadIteration(G6ReadIteratorP pG6ReadIterator)
 {
     int exitCode = OK;
     char charConfirmation = EOF;
@@ -234,9 +234,9 @@ int _processAndCheckHeader(strOrFileP g6Input)
         return NOTOK;
     }
 
-    char const*correctG6Header = ">>graph6<<";
-    char const*sparse6Header = ">>sparse6<";
-    char const*digraph6Header = ">>digraph6";
+    char const *correctG6Header = ">>graph6<<";
+    char const *sparse6Header = ">>sparse6<";
+    char const *digraph6Header = ">>digraph6";
 
     char headerCandidateChars[11];
     headerCandidateChars[0] = '\0';
@@ -329,7 +329,7 @@ int _getGraphOrder(strOrFileP g6Input, int *graphOrder)
     return exitCode;
 }
 
-int readGraphUsingG6ReadIterator(G6ReadIterator *pG6ReadIterator)
+int readGraphUsingG6ReadIterator(G6ReadIteratorP pG6ReadIterator)
 {
     int exitCode = OK;
 
@@ -593,7 +593,7 @@ int _decodeGraph(char *graphBuff, const int graphOrder, const int numChars, grap
     return exitCode;
 }
 
-int endG6ReadIteration(G6ReadIterator *pG6ReadIterator)
+int endG6ReadIteration(G6ReadIteratorP pG6ReadIterator)
 {
     int exitCode = OK;
 
@@ -612,7 +612,7 @@ int endG6ReadIteration(G6ReadIterator *pG6ReadIterator)
     return exitCode;
 }
 
-int freeG6ReadIterator(G6ReadIterator **ppG6ReadIterator)
+int freeG6ReadIterator(G6ReadIteratorP *ppG6ReadIterator)
 {
     int exitCode = OK;
 
@@ -641,7 +641,7 @@ int freeG6ReadIterator(G6ReadIterator **ppG6ReadIterator)
 
 int _ReadGraphFromG6FilePath(graphP pGraphToRead, char *pathToG6File)
 {
-    char const*messageFormat = NULL;
+    char const *messageFormat = NULL;
     char messageContents[MAXLINE + 1];
     messageContents[MAXLINE] = '\0';
     int charsAvailForStr = 0;
@@ -682,7 +682,7 @@ int _ReadGraphFromG6StrOrFile(graphP pGraphToRead, strOrFileP g6InputContainer)
 {
     int exitCode = OK;
 
-    G6ReadIterator *pG6ReadIterator = NULL;
+    G6ReadIteratorP pG6ReadIterator = NULL;
 
     if (sf_ValidateStrOrFile(g6InputContainer) != OK)
     {

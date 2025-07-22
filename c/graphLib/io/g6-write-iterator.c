@@ -10,7 +10,7 @@ See the LICENSE.TXT file for licensing information.
 #include "g6-write-iterator.h"
 #include "g6-api-utilities.h"
 
-int allocateG6WriteIterator(G6WriteIterator **ppG6WriteIterator, graphP pGraph)
+int allocateG6WriteIterator(G6WriteIteratorP *ppG6WriteIterator, graphP pGraph)
 {
     int exitCode = OK;
 
@@ -22,7 +22,7 @@ int allocateG6WriteIterator(G6WriteIterator **ppG6WriteIterator, graphP pGraph)
 
     // numGraphsWritten, graphOrder, numCharsForGraphOrder,
     // numCharsForGraphEncoding, and currGraphBuffSize all set to 0
-    (*ppG6WriteIterator) = (G6WriteIterator *)calloc(1, sizeof(G6WriteIterator));
+    (*ppG6WriteIterator) = (G6WriteIteratorP)calloc(1, sizeof(G6WriteIterator));
 
     if ((*ppG6WriteIterator) == NULL)
     {
@@ -49,7 +49,7 @@ int allocateG6WriteIterator(G6WriteIterator **ppG6WriteIterator, graphP pGraph)
     return exitCode;
 }
 
-bool _isG6WriteIteratorAllocated(G6WriteIterator *pG6WriteIterator)
+bool _isG6WriteIteratorAllocated(G6WriteIteratorP pG6WriteIterator)
 {
     bool G6WriteIteratorIsAllocated = true;
 
@@ -59,7 +59,7 @@ bool _isG6WriteIteratorAllocated(G6WriteIterator *pG6WriteIterator)
     return G6WriteIteratorIsAllocated;
 }
 
-int getNumGraphsWritten(G6WriteIterator *pG6WriteIterator, int *pNumGraphsRead)
+int getNumGraphsWritten(G6WriteIteratorP pG6WriteIterator, int *pNumGraphsRead)
 {
     if (pG6WriteIterator == NULL)
     {
@@ -72,7 +72,7 @@ int getNumGraphsWritten(G6WriteIterator *pG6WriteIterator, int *pNumGraphsRead)
     return OK;
 }
 
-int getOrderOfGraphToWrite(G6WriteIterator *pG6WriteIterator, int *pGraphOrder)
+int getOrderOfGraphToWrite(G6WriteIteratorP pG6WriteIterator, int *pGraphOrder)
 {
     if (pG6WriteIterator == NULL)
     {
@@ -85,7 +85,7 @@ int getOrderOfGraphToWrite(G6WriteIterator *pG6WriteIterator, int *pGraphOrder)
     return OK;
 }
 
-int getPointerToGraphToWrite(G6WriteIterator *pG6WriteIterator, graphP *ppGraph)
+int getPointerToGraphToWrite(G6WriteIteratorP pG6WriteIterator, graphP *ppGraph)
 {
     if (pG6WriteIterator == NULL)
     {
@@ -98,7 +98,7 @@ int getPointerToGraphToWrite(G6WriteIterator *pG6WriteIterator, graphP *ppGraph)
     return OK;
 }
 
-int getGraphBuff(G6WriteIterator *pG6WriteIterator, char **ppCurrGraphBuff)
+int getGraphBuff(G6WriteIteratorP pG6WriteIterator, char **ppCurrGraphBuff)
 {
     if (pG6WriteIterator == NULL)
     {
@@ -111,7 +111,7 @@ int getGraphBuff(G6WriteIterator *pG6WriteIterator, char **ppCurrGraphBuff)
     return OK;
 }
 
-int beginG6WriteIterationToG6StrOrFile(G6WriteIterator *pG6WriteIterator, strOrFileP outputContainer)
+int beginG6WriteIterationToG6StrOrFile(G6WriteIteratorP pG6WriteIterator, strOrFileP outputContainer)
 {
     int exitCode = OK;
 
@@ -131,7 +131,7 @@ int beginG6WriteIterationToG6StrOrFile(G6WriteIterator *pG6WriteIterator, strOrF
     return exitCode;
 }
 
-int _beginG6WriteIteration(G6WriteIterator *pG6WriteIterator)
+int _beginG6WriteIteration(G6WriteIteratorP pG6WriteIterator)
 {
     int exitCode = OK;
 
@@ -183,7 +183,7 @@ void _precomputeColumnOffsets(int *columnOffsets, int graphOrder)
         columnOffsets[i] = columnOffsets[i - 1] + (i - 1);
 }
 
-int writeGraphUsingG6WriteIterator(G6WriteIterator *pG6WriteIterator)
+int writeGraphUsingG6WriteIterator(G6WriteIteratorP pG6WriteIterator)
 {
     int exitCode = OK;
 
@@ -208,7 +208,7 @@ int writeGraphUsingG6WriteIterator(G6WriteIterator *pG6WriteIterator)
     return exitCode;
 }
 
-int _encodeAdjMatAsG6(G6WriteIterator *pG6WriteIterator)
+int _encodeAdjMatAsG6(G6WriteIteratorP pG6WriteIterator)
 {
     int exitCode = OK;
 
@@ -381,7 +381,7 @@ int _getNextInUseEdge(graphP theGraph, int *e, int *u, int *v)
     return exitCode;
 }
 
-int _printEncodedGraph(G6WriteIterator *pG6WriteIterator)
+int _printEncodedGraph(G6WriteIteratorP pG6WriteIterator)
 {
     int exitCode = OK;
 
@@ -412,7 +412,7 @@ int _printEncodedGraph(G6WriteIterator *pG6WriteIterator)
     return exitCode;
 }
 
-int endG6WriteIteration(G6WriteIterator *pG6WriteIterator)
+int endG6WriteIteration(G6WriteIteratorP pG6WriteIterator)
 {
     int exitCode = OK;
 
@@ -437,7 +437,7 @@ int endG6WriteIteration(G6WriteIterator *pG6WriteIterator)
     return exitCode;
 }
 
-int freeG6WriteIterator(G6WriteIterator **ppG6WriteIterator)
+int freeG6WriteIterator(G6WriteIteratorP *ppG6WriteIterator)
 {
     int exitCode = OK;
 
@@ -499,7 +499,7 @@ int _WriteGraphToG6StrOrFile(graphP pGraph, strOrFileP outputContainer, char **o
 {
     int exitCode = OK;
 
-    G6WriteIterator *pG6WriteIterator = NULL;
+    G6WriteIteratorP pG6WriteIterator = NULL;
 
     if (sf_ValidateStrOrFile(outputContainer) != OK)
     {
