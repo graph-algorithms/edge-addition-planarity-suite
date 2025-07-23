@@ -69,18 +69,11 @@ int RandomGraphs(char command, int NumGraphs, int SizeOfGraphs, char *outfileNam
         }
     }
 
-    // FIXME: I don't want to refactor this to use
-    // beginG6WriteIterationToG6FilePath(), because there's two possible ways to
-    // get an output filename: either you called planarity command line and
-    // passed the optional outfileName, or you are using the planarity menu
-    // system after you Reconfigure() to output to .g6 (in which case,
-    // theFileName is constructed).
-    messageFormat = "Unable to allocate strOrFile container for outfile \"%.*s\".\n";
+    messageFormat = "Unable to begin writing random graphs to G6 outfile \"%.*s\".\n";
     charsAvailForStr = (int)(MAXLINE - strlen(messageFormat));
     if (outfileName != NULL)
     {
-        outputContainer = sf_New(NULL, outfileName, WRITETEXT);
-        if (outputContainer == NULL)
+        if (beginG6WriteIterationToG6FilePath(pG6WriteIterator, outfileName) != OK)
         {
             sprintf(messageContents, messageFormat, charsAvailForStr, outfileName);
             ErrorMessage(messageContents);
@@ -99,8 +92,7 @@ int RandomGraphs(char command, int NumGraphs, int SizeOfGraphs, char *outfileNam
         // output the generated random graphs to .g6 is if we Reconfigure() and
         // choose these options; in that case, need to set a default output filename.
         sprintf(theFileName, "random%cn%d.k%d.g6", FILE_DELIMITER, SizeOfGraphs, NumGraphs);
-        outputContainer = sf_New(NULL, theFileName, WRITETEXT);
-        if (outputContainer == NULL)
+        if (beginG6WriteIterationToG6FilePath(pG6WriteIterator, theFileName) != OK)
         {
             sprintf(messageContents, messageFormat, charsAvailForStr, theFileName);
             ErrorMessage(messageContents);
@@ -110,20 +102,6 @@ int RandomGraphs(char command, int NumGraphs, int SizeOfGraphs, char *outfileNam
 
             gp_Free(&theGraph);
 
-            return NOTOK;
-        }
-    }
-
-    if (pG6WriteIterator != NULL && outputContainer != NULL)
-    {
-        if (beginG6WriteIterationToG6StrOrFile(pG6WriteIterator, outputContainer) != OK)
-        {
-            ErrorMessage("Unable to begin writing random graphs to G6WriteIterator.\n");
-
-            if (freeG6WriteIterator(&pG6WriteIterator) != OK)
-                ErrorMessage("Unable to free G6WriteIterator.\n");
-
-            gp_Free(&theGraph);
             return NOTOK;
         }
     }

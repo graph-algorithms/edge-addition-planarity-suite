@@ -399,7 +399,7 @@ int _ReadLEDAGraph(graphP theGraph, strOrFileP inputContainer)
  Returns: OK, NOTOK on internal error, NONEMBEDDABLE if too many edges
  ********************************************************************/
 
-int gp_Read(graphP theGraph, char const*FileName)
+int gp_Read(graphP theGraph, char const *FileName)
 {
     strOrFileP inputContainer = sf_New(NULL, FileName, READTEXT);
     if (inputContainer == NULL)
@@ -861,7 +861,7 @@ int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer)
  Returns NOTOK on error, OK on success.
  ********************************************************************/
 
-int gp_Write(graphP theGraph, char const*FileName, int Mode)
+int gp_Write(graphP theGraph, char const *FileName, int Mode)
 {
     int RetVal;
 
@@ -914,12 +914,13 @@ int gp_WriteToString(graphP theGraph, char **pOutputStr, int Mode)
     RetVal = _WriteGraph(theGraph, &outputContainer, pOutputStr, Mode);
 
     // N.B. Since we pass ownership of the outputContainer to the
-    // G6WriteIterator when we WRITE_G6, we make sure to take the string *before*
-    // we endG6WriteIteration(), since that calls sf_Free() on the g6Output
-    // (i.e. outputContainer) and therefore sb_Free() on theStr. This means
-    // that we need to make sure outputContainer and theStr it contains are
-    // both non-NULL before trying to take the string, as WRITE_ADJLIST,
-    // WRITE_ADJMATRIX, and WRITE_DEBUGINFO do *not* clean up the outputContainer.
+    // G6WriteIterator when we WRITE_G6, we make sure to take the string
+    // *before* we endG6WriteIteration(), since that calls sf_Free() on the
+    // g6Output (i.e. outputContainer) and therefore sb_Free() on theStr. This
+    // means that we need to make sure outputContainer and theStr it contains
+    // are both non-NULL before trying to take the string, as WRITE_ADJLIST,
+    // WRITE_ADJMATRIX, and WRITE_DEBUGINFO do *not* clean up the
+    // outputContainer.
     if (RetVal == OK && outputContainer != NULL)
     {
         (*pOutputStr) = sf_takeTheStr(outputContainer);
@@ -1009,7 +1010,7 @@ int _WritePostprocess(graphP theGraph, char **pExtraData)
  Call this method with NULL to close the log file.
  ********************************************************************/
 
-void _Log(char const*Str)
+void _Log(char const *Str)
 {
     static FILE *logfile = NULL;
 
@@ -1028,7 +1029,7 @@ void _Log(char const*Str)
         fclose(logfile);
 }
 
-void _LogLine(char const*Str)
+void _LogLine(char const *Str)
 {
     _Log(Str);
     _Log("\n");

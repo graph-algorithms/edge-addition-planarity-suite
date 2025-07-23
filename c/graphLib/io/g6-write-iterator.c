@@ -113,16 +113,16 @@ int getGraphBuff(G6WriteIteratorP pG6WriteIterator, char **ppCurrGraphBuff)
 
 int beginG6WriteIterationToG6String(G6WriteIteratorP pG6WriteIterator)
 {
-    strOrFileP outputContainer = sf_New(NULL, NULL, WRITETEXT);
-
-    return beginG6ReadIterationFromG6StrOrFile(pG6WriteIterator, outputContainer);
+    return beginG6WriteIterationToG6StrOrFile(
+        pG6WriteIterator,
+        sf_New(NULL, NULL, WRITETEXT));
 }
 
 int beginG6WriteIterationToG6FilePath(G6WriteIteratorP pG6WriteIterator, char *outputFilename)
 {
-    strOrFileP outputContainer = sf_New(NULL, outputFilename, WRITETEXT);
-
-    return beginG6ReadIterationFromG6StrOrFile(pG6WriteIterator, outputContainer);
+    return beginG6WriteIterationToG6StrOrFile(
+        pG6WriteIterator,
+        sf_New(NULL, outputFilename, WRITETEXT));
 }
 
 int beginG6WriteIterationToG6StrOrFile(G6WriteIteratorP pG6WriteIterator, strOrFileP outputContainer)
@@ -508,7 +508,7 @@ int _WriteGraphToG6String(graphP pGraph, char **g6OutputStr)
 
     // N.B. If g6OutputStr is a pointer to a pointer to a block of memory that
     // has been allocated, i.e. if g6OutputStr != NULL && (*g6OutputStr) != NULL
-    // then an error will be emitted.
+    // then an error will be emitted by _WriteGraphToG6StrOrFile().
     // N.B. Once the graph is successfully written, the string is taken from
     // the G6WriteIterator's outputContainer and assigned to (*g6OutputStr)
     // before ending G6 write iteration
