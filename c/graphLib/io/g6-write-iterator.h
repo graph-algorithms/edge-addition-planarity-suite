@@ -43,6 +43,8 @@ extern "C"
     int getOrderOfGraphToWrite(G6WriteIteratorP, int *);
     int getPointerToGraphToWrite(G6WriteIteratorP, graphP *);
 
+    int beginG6WriteIterationToG6String(G6WriteIteratorP);
+    int beginG6WriteIterationToG6FilePath(G6WriteIteratorP, char *);
     int beginG6WriteIterationToG6StrOrFile(G6WriteIteratorP, strOrFileP);
     int _beginG6WriteIteration(G6WriteIteratorP);
     void _precomputeColumnOffsets(int *, int);

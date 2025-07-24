@@ -6,7 +6,7 @@ See the LICENSE.TXT file for licensing information.
 
 #include "planarity.h"
 
-void GetNumberIfZero(int *pNum, char const*prompt, int min, int max);
+void GetNumberIfZero(int *pNum, char const *prompt, int min, int max);
 void ReinitializeGraph(graphP *pGraph, int ReuseGraphs, char command);
 graphP MakeGraph(int Size, char command);
 
@@ -24,6 +24,8 @@ graphP MakeGraph(int Size, char command);
 int RandomGraphs(char command, int NumGraphs, int SizeOfGraphs, char *outfileName)
 {
     char theFileName[MAXLINE + 1];
+    theFileName[0] = '\0';
+
     strOrFileP outputContainer = NULL;
     int K, countUpdateFreq;
     int Result = OK, MainStatistic = 0;
@@ -37,7 +39,7 @@ int RandomGraphs(char command, int NumGraphs, int SizeOfGraphs, char *outfileNam
         writeErrorReported_AdjList = FALSE, writeErrorReported_Obstructed = FALSE,
         writeErrorReported_Error = FALSE;
 
-    char const*messageFormat = NULL;
+    char const *messageFormat = NULL;
     char messageContents[MAXLINE + 1];
     int charsAvailForStr = 0;
 
@@ -67,12 +69,11 @@ int RandomGraphs(char command, int NumGraphs, int SizeOfGraphs, char *outfileNam
         }
     }
 
-    messageFormat = "Unable to allocate strOrFile container for outfile \"%.*s\".\n";
+    messageFormat = "Unable to begin writing random graphs to G6 outfile \"%.*s\".\n";
     charsAvailForStr = (int)(MAXLINE - strlen(messageFormat));
     if (outfileName != NULL)
     {
-        outputContainer = sf_New(NULL, outfileName, WRITETEXT);
-        if (outputContainer == NULL)
+        if (beginG6WriteIterationToG6FilePath(pG6WriteIterator, outfileName) != OK)
         {
             sprintf(messageContents, messageFormat, charsAvailForStr, outfileName);
             ErrorMessage(messageContents);
@@ -91,8 +92,7 @@ int RandomGraphs(char command, int NumGraphs, int SizeOfGraphs, char *outfileNam
         // output the generated random graphs to .g6 is if we Reconfigure() and
         // choose these options; in that case, need to set a default output filename.
         sprintf(theFileName, "random%cn%d.k%d.g6", FILE_DELIMITER, SizeOfGraphs, NumGraphs);
-        outputContainer = sf_New(NULL, theFileName, WRITETEXT);
-        if (outputContainer == NULL)
+        if (beginG6WriteIterationToG6FilePath(pG6WriteIterator, theFileName) != OK)
         {
             sprintf(messageContents, messageFormat, charsAvailForStr, theFileName);
             ErrorMessage(messageContents);
@@ -102,20 +102,6 @@ int RandomGraphs(char command, int NumGraphs, int SizeOfGraphs, char *outfileNam
 
             gp_Free(&theGraph);
 
-            return NOTOK;
-        }
-    }
-
-    if (pG6WriteIterator != NULL && outputContainer != NULL)
-    {
-        if (beginG6WriteIterationToG6StrOrFile(pG6WriteIterator, outputContainer) != OK)
-        {
-            ErrorMessage("Unable to begin writing random graphs to G6WriteIterator.\n");
-
-            if (freeG6WriteIterator(&pG6WriteIterator) != OK)
-                ErrorMessage("Unable to free G6WriteIterator.\n");
-
-            gp_Free(&theGraph);
             return NOTOK;
         }
     }
@@ -369,7 +355,7 @@ int RandomGraphs(char command, int NumGraphs, int SizeOfGraphs, char *outfileNam
  it is not.
  ****************************************************************************/
 
-void GetNumberIfZero(int *pNum, char const*prompt, int min, int max)
+void GetNumberIfZero(int *pNum, char const *prompt, int min, int max)
 {
     if (*pNum == 0)
     {
@@ -461,7 +447,7 @@ int RandomGraph(char command, int extraEdges, int numVertices, char *outfileName
     int embedFlags = GetEmbedFlags(command);
     char saveEdgeListFormat;
 
-    char const*messageFormat = NULL;
+    char const *messageFormat = NULL;
     char messageContents[MAXLINE + 1];
     int charsAvailForStr = 0;
 

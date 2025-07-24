@@ -21,7 +21,7 @@ See the LICENSE.TXT file for licensing information.
  Returns the allocated string-or-file container, or NULL on error.
  ********************************************************************/
 
-strOrFileP sf_New(char const*theStr, char const*fileName, char const*ioMode)
+strOrFileP sf_New(char const *theStr, char const *fileName, char const *ioMode)
 {
     strOrFileP theStrOrFile;
     int containerType = 0;
@@ -113,6 +113,12 @@ strOrFileP sf_New(char const*theStr, char const*fileName, char const*ioMode)
             else if (strncmp(ioMode, WRITETEXT, strlen(WRITETEXT)) == 0)
                 containerType = OUTPUT_CONTAINER;
 
+            // N.B. If you're writing to string (since fileName == NULL), but
+            // theStr has already been assigned some pointer, the container is
+            // invalid. One must sf_New(NULL, NULL, WRITETEXT) before handing
+            // off ownership of the container; when processing is done, before
+            // you free the owner of the output container, you must
+            // sf_takeTheStr(theStrOrFile) and return that pointer to the caller
             if (containerType != INPUT_CONTAINER && theStr != NULL)
             {
                 sf_Free(&theStrOrFile);
@@ -585,7 +591,7 @@ char *sf_fgets(char *str, int count, strOrFileP theStrOrFile)
  On failure, returns EOF.
  ********************************************************************/
 
-int sf_fputs(char const*strToWrite, strOrFileP theStrOrFile)
+int sf_fputs(char const *strToWrite, strOrFileP theStrOrFile)
 {
     int outputLen = EOF;
 

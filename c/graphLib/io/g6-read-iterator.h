@@ -41,6 +41,8 @@ extern "C"
     int getOrderOfGraphToRead(G6ReadIteratorP, int *);
     int getPointerToGraphReadIn(G6ReadIteratorP, graphP *);
 
+    int beginG6ReadIterationFromG6String(G6ReadIteratorP, char *);
+    int beginG6ReadIterationFromG6FilePath(G6ReadIteratorP, char *);
     int beginG6ReadIterationFromG6StrOrFile(G6ReadIteratorP, strOrFileP);
     int _beginG6ReadIteration(G6ReadIteratorP);
     int _processAndCheckHeader(strOrFileP);
