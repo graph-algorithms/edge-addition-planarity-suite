@@ -27,8 +27,9 @@ extern "C"
     typedef K33Search_EONode *K33Search_EONodeP;
 
     K33Search_EONodeP _K33Search_EONode_New(graphP theSubgraph);
+    K33Search_EONodeP _K33Search_EONode_NewONode(graphP theGraph);
     void _K33Search_EONode_Free(K33Search_EONodeP *pEONode);
-    int _K33Search_TestForEOTreeChildren(K33Search_EONodeP EOTreeRoot);
+    int _K33Search_TestForEOTreeChildren(K33Search_EONodeP EOTreeNode);
     int _K33Search_AssembleMainPlanarEmbedding(K33Search_EONodeP EOTreeRoot);
     int _K33Search_ValidateEmbeddingObstructionTree(K33Search_EONodeP EOTreeRoot, graphP origGraph);
     // K33CERT end

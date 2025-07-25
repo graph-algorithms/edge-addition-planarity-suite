@@ -101,6 +101,11 @@ int _IsolateMinorE5(graphP theGraph);
 int _IsolateMinorE6(graphP theGraph, K33SearchContext *context);
 int _IsolateMinorE7(graphP theGraph, K33SearchContext *context);
 
+// K33CERT begin: private function headers
+K33Search_EONodeP _K33Search_EONode_NewONode(graphP theGraph);
+int _K33Search_ExtractEmbeddingSubgraphs(graphP theGraph, int R, K33Search_EONodeP newONode);
+// K33CERT end
+
 /****************************************************************************
  _SearchForK33InBicomp()
  ****************************************************************************/
@@ -1235,12 +1240,28 @@ int _ReduceBicomp(graphP theGraph, K33SearchContext *context, int R)
     isolatorContextP IC = &theGraph->IC;
     int min, max, A, A_edge, B, B_edge;
     int rxType, xwType, wyType, yrType, xyType;
+    // K33CERT begin
+    K33Search_EONodeP newONode = NULL;
+    // K33CERT end
 
     /* The vertices in the bicomp need to be oriented so that functions
         like MarkPathAlongBicompExtFace() will work. */
 
     if (_OrientVerticesInBicomp(theGraph, R, 0) != OK)
         return NOTOK;
+
+    // K33CERT begin
+    // We need a new O-node to represent the K5 homeomorph, and to attach its child E-nodes that will
+    // represent the planar subgraphs we extract for Beta_vx, Beta_vy, Beta_wx, Beta_wy, and Beta_xy
+    if ((newONode = _K33Search_EONode_NewONode(theGraph)) == NULL)
+        return NOTOK;
+
+    if (_K33Search_ExtractEmbeddingSubgraphs(theGraph, R, newONode) != OK)
+    {
+        _K33Search_EONode_Free(&newONode);
+        // return NOTOK;
+    }
+    // K33CERT end
 
     /* The reduced edges start with a default type of 'tree' edge. The
          tests below, which identify the additional non-tree paths
@@ -1450,6 +1471,68 @@ K33Search_EONodeP _K33Search_EONode_New(graphP theSubgraph)
 }
 // K33CERT end
 
+// K33CERT begin: Added K33Search_EONode_NewONode()
+/********************************************************************
+ K33Search_EONode_NewONode()
+ ********************************************************************/
+K33Search_EONodeP _K33Search_EONode_NewONode(graphP theGraph)
+{
+    K33Search_EONodeP theNewONode = NULL;
+    graphP theNewK5Graph = NULL;
+    isolatorContextP IC = &theGraph->IC;
+    int v, w;
+
+    // We need a new graph to represent the K5, and we need to attach a  K33 extension instance
+    // so the new graph can store the child E-nodes of the new O-node in its extended edges.
+    if ((theNewK5Graph = gp_New()) == NULL)
+        return NULL;
+
+    if (gp_InitGraph(theNewK5Graph, 5) != OK ||
+        gp_AttachK33Search(theNewK5Graph) != OK)
+    {
+        gp_Free(&theNewK5Graph);
+        return NULL;
+    }
+
+    // We need to tell theNewK5Graph that its 5 vertices represent u_max, v, w, x and y
+    // from the original graph.
+    theNewK5Graph->V[gp_GetFirstVertex(theNewK5Graph)].index = MAX3(IC->ux, IC->uy, IC->uz);
+    theNewK5Graph->V[gp_GetFirstVertex(theNewK5Graph) + 1].index = IC->v;
+    theNewK5Graph->V[gp_GetFirstVertex(theNewK5Graph) + 2].index = IC->w;
+    theNewK5Graph->V[gp_GetFirstVertex(theNewK5Graph) + 3].index = IC->x;
+    theNewK5Graph->V[gp_GetFirstVertex(theNewK5Graph) + 4].index = IC->y;
+
+    // Need to add all 10 edges to theNewK5Graph so that it stores an actual K5
+    for (v = gp_GetFirstVertex(theNewK5Graph); gp_VertexInRange(theGraph, v); v++)
+        for (w = v + 1; gp_VertexInRange(theGraph, w); w++)
+            if (gp_AddEdge(theNewK5Graph, v, 0, w, 0) != OK)
+            {
+                gp_Free(&theNewK5Graph);
+                return NULL;
+            }
+
+    // Now we can contruct an embedding obstruction tree node to associate with theNewK5Graph
+    // and then tell it to be an O-node that owns theNewK5Graph.
+    if ((theNewONode = _K33Search_EONode_New(theNewK5Graph)) == NULL)
+    {
+        gp_Free(&theNewK5Graph);
+        return NULL;
+    }
+    theNewONode->subgraphOwner = TRUE;
+    theNewONode->EOType = K33SEARCH_EOTYPE_ONODE;
+
+    // return the successfully created, orphan O-node
+    return theNewONode;
+}
+// K33CERT end
+
+// K33CERT begin: Added _K33Search_ExtractEmbeddingSubgraphs()
+int _K33Search_ExtractEmbeddingSubgraphs(graphP theGraph, int R, K33Search_EONodeP newONode)
+{
+    return NOTOK;
+}
+// K33CERT end
+
 // K33CERT begin: Added K33_EONode_Free()
 /********************************************************************
  K33_EONode_Free()
@@ -1510,9 +1593,9 @@ void _K33Search_EONode_Free(K33Search_EONodeP *pEONode)
 
  Method to determine whether there are any embedding obstruction tree children of a given tree or subtree root
 ********************************************************************/
-int _K33Search_TestForEOTreeChildren(K33Search_EONodeP EOTreeRoot)
+int _K33Search_TestForEOTreeChildren(K33Search_EONodeP EOTreeNode)
 {
-    graphP theGraph = EOTreeRoot->subgraph;
+    graphP theGraph = EOTreeNode->subgraph;
     K33SearchContext *context = NULL;
 
     gp_FindExtension(theGraph, K33SEARCH_ID, (void *)&context);
