@@ -106,11 +106,14 @@ int _IsolateMinorE6(graphP theGraph, K33SearchContext *context);
 int _IsolateMinorE7(graphP theGraph, K33SearchContext *context);
 
 // K33CERT begin: private function headers
-K33Search_EONodeP _K33Search_EONode_NewONode(graphP theGraph);
+int _K33Search_EONode_NewONode(graphP theGraph, K33Search_EONodeP *pNewONode);
 int _K33Search_ExtractEmbeddingSubgraphs(graphP theGraph, int R, K33Search_EONodeP newONode);
+
 int _K33Search_ExtractExternaFaceBridgeSet(graphP theGraph, int R, int poleVertex, int equatorVertex, K33Search_EONodeP newONode);
 int _K33Search_ExtractXYBridgeSet(graphP theGraph, int R, K33Search_EONodeP newONode);
 int _K33Search_ExtractVWBridgeSet(graphP theGraph, int R, K33Search_EONodeP newONode);
+
+int _K33Search_AttachONodeAsChildOfRoot(graphP theGraph, K33Search_EONodeP newONode);
 // K33CERT end
 
 /****************************************************************************
@@ -1260,7 +1263,7 @@ int _ReduceBicomp(graphP theGraph, K33SearchContext *context, int R)
     // K33CERT begin
     // We need a new O-node to represent the K5 homeomorph, and to attach its child E-nodes that will
     // represent the planar subgraphs we extract for Beta_vx, Beta_vy, Beta_wx, Beta_wy, and Beta_xy
-    if ((newONode = _K33Search_EONode_NewONode(theGraph)) == NULL)
+    if (_K33Search_EONode_NewONode(theGraph, &newONode) != OK)
         return NOTOK;
 
     if (_K33Search_ExtractEmbeddingSubgraphs(theGraph, R, newONode) != OK)
@@ -1456,6 +1459,11 @@ int _ReduceBicomp(graphP theGraph, K33SearchContext *context, int R)
     if (_ReduceXYPathToEdge(theGraph, context, IC->x, IC->y, xyType) != OK)
         return NOTOK;
 
+    // K33CERT begin: Make the new O-node a child of the root E-node, via making an edge of the root embedding point to it
+    if (_K33Search_AttachONodeAsChildOfRoot(theGraph, newONode) != OK)
+        return NOTOK;
+    // K33CERT end
+
     return OK;
 }
 
@@ -1488,23 +1496,26 @@ K33Search_EONodeP _K33Search_EONode_New(graphP theSubgraph)
  Subsequent code will attach subgraphs of the input graph, via E-nodes,
  to this O-node.
  ********************************************************************/
-K33Search_EONodeP _K33Search_EONode_NewONode(graphP theGraph)
+int _K33Search_EONode_NewONode(graphP theGraph, K33Search_EONodeP *pNewONode)
 {
     K33Search_EONodeP theNewONode = NULL;
     graphP theNewK5Graph = NULL;
     isolatorContextP IC = &theGraph->IC;
     int v, w;
 
+    // Clear the output variable
+    *pNewONode = NULL;
+
     // We need a new graph to represent the K5, and we need to attach a  K33 extension instance
     // so the new graph can store the child E-nodes of the new O-node in its extended edges.
     if ((theNewK5Graph = gp_New()) == NULL)
-        return NULL;
+        return NOTOK;
 
     if (gp_InitGraph(theNewK5Graph, 5) != OK ||
         gp_AttachK33Search(theNewK5Graph) != OK)
     {
         gp_Free(&theNewK5Graph);
-        return NULL;
+        return NOTOK;
     }
 
     // We need to tell theNewK5Graph that its 5 vertices represent u_max, v, w, x and y
@@ -1516,12 +1527,13 @@ K33Search_EONodeP _K33Search_EONode_NewONode(graphP theGraph)
     theNewK5Graph->V[gp_GetFirstVertex(theNewK5Graph) + 4].index = IC->y;
 
     // Need to add all 10 edges to theNewK5Graph so that it stores an actual K5
-    for (v = gp_GetFirstVertex(theNewK5Graph); gp_VertexInRange(theGraph, v); v++)
-        for (w = v + 1; gp_VertexInRange(theGraph, w); w++)
+    for (v = gp_GetFirstVertex(theNewK5Graph); gp_VertexInRange(theNewK5Graph, v); v++)
+        for (w = v + 1; gp_VertexInRange(theNewK5Graph, w); w++)
             if (gp_AddEdge(theNewK5Graph, v, 0, w, 0) != OK)
             {
                 gp_Free(&theNewK5Graph);
-                return NULL;
+                printf("v=%d w=%d\n", v, w);
+                return NOTOK;
             }
 
     // Now we can contruct an embedding obstruction tree node to associate with theNewK5Graph
@@ -1529,13 +1541,14 @@ K33Search_EONodeP _K33Search_EONode_NewONode(graphP theGraph)
     if ((theNewONode = _K33Search_EONode_New(theNewK5Graph)) == NULL)
     {
         gp_Free(&theNewK5Graph);
-        return NULL;
+        return NOTOK;
     }
     theNewONode->subgraphOwner = TRUE;
     theNewONode->EOType = K33SEARCH_EOTYPE_ONODE;
 
     // return the successfully created, orphan O-node
-    return theNewONode;
+    *pNewONode = theNewONode;
+    return OK;
 }
 // K33CERT end
 
@@ -1582,6 +1595,29 @@ K33Search_EONodeP _K33Search_EONode_NewONode(graphP theGraph)
     once we delete the edges associated with pathConnector paths, the
     non-NIL pathConnector settings will still signal the virtual-ness
     of edges that are embedded as edges from the original graph.
+
+ NOTE: This method does not and does not need to extract planar subgraphs
+       for (u_{max}, v) nor the two of (u_{max}, w), (u_{max}, x) and
+       (u_{max}, y) for the two of w, x, and y that have back edge
+       connections only to u_{max}.
+
+       In fact, the only planar subgraph that it is strictly necessary to
+       extract and preserve as a child of the new O-node is the one for
+       the beta_{vw} bridge set. This is needed because beta_{vw} must be
+       saved while also preserving planarity of the main planar embedding.
+       K5 minus an edge is planar, and this is why everything except for
+       beta_{vw} is and can be simply left in the main planar embedding
+       during a K_{3,3} search that does not certify K_{3,3}-free results.
+
+       That being said, in this version, we do make E-nodes for not only
+       beta_{vw} but also the other five beta bridge sets in the bicomp
+       being reduced in step v because those other bridge sets are being
+       reduced to single edges as part of maintaining worst-case O(n)
+       performance. The single edges only preserve a path from their
+       respective bridge sets, but if we end up needing to certify a
+       K_{3,3}-free result, then we need the full subgraphs, so we make
+       E-nodes to preserve them, too, and make those other five E-nodes
+       be other children of the O-node.
  ********************************************************************/
 int _K33Search_ExtractEmbeddingSubgraphs(graphP theGraph, int R, K33Search_EONodeP newONode)
 {
@@ -1635,7 +1671,7 @@ int _K33Search_ExtractExternaFaceBridgeSet(graphP theGraph, int R, int poleVerte
     isolatorContextP IC = &theGraph->IC;
     int oppositePoleVertex, oppositeEquatorVertex;
 
-    // Private function, but still making sure the two key parameters were correctly passed.
+    // This is a private function, but still making sure the two key parameters were correctly passed.
     if (poleVertex != IC->v && poleVertex != IC->w ||
         equatorVertex != IC->x && equatorVertex != IC->y)
         return NOTOK;
@@ -1668,7 +1704,8 @@ int _K33Search_ExtractExternaFaceBridgeSet(graphP theGraph, int R, int poleVerte
     // point its EONode pointers at the newly created E-node
 
     // If all operations succeed, then we have successfully extracted the desired bridge set
-    return NOTOK;
+    // return NOTOK;
+    return OK;
 }
 
 /********************************************************************
@@ -1702,7 +1739,7 @@ int _K33Search_ExtractXYBridgeSet(graphP theGraph, int R, K33Search_EONodeP newO
     // makes the extracted graph and E-node for the external face bridge sets and that
     // makes that E-node a child of the newONode.
 
-    return NOTOK;
+    return OK;
 }
 
 /********************************************************************
@@ -1726,7 +1763,46 @@ int _K33Search_ExtractVWBridgeSet(graphP theGraph, int R, K33Search_EONodeP newO
     // they are now in the subgraph, and the traces of the unembedded backedges to v
     // may need to be deleted as well, just to tidy up the data structures.
 
-    return NOTOK;
+    return OK;
+}
+
+/********************************************************************
+ _K33Search_AttachONodeAsChildOfRoot()
+
+ The new O-node must be made a child of the root E-node by pointing
+ the EONode pointers of a main planar embedding edge at the new O-node.
+
+ While this could be an edge such as (u_{max}, w) or (u_{max}, x) or
+ (u_{max}, y), those edges will not be able to be added until a
+ future step u_max. The ReduceBicomp() invocation is occuring during
+ the step v processing, so we use one of the edges created by the
+ ReduceBicomp() process instead.
+ ********************************************************************/
+int _K33Search_AttachONodeAsChildOfRoot(graphP theGraph, K33Search_EONodeP newONode)
+{
+    int e;
+    K33SearchContext *context = NULL;
+
+    // Get the second edge in the adjacency list of x (the first one should be an
+    // external face edge leading to  the bicomp root or to w).
+    e = gp_GetFirstArc(theGraph, theGraph->IC.x);
+    e = gp_GetNextArc(theGraph, e);
+
+    // Ensure that the second edge in the adjacency list of x does in fact lead to y
+    // (in other words, that it is the stand-in for the xy path)
+    if (gp_GetNeighbor(theGraph, e) != theGraph->IC.y)
+        return NOTOK;
+
+    // Get the graph's K_{3,3} extension so we can modify the extended edge records
+    gp_FindExtension(theGraph, K33SEARCH_ID, (void *)&context);
+    if (context == NULL)
+        return NOTOK;
+
+    // Make the xy path edge point to the new O-node, thereby making it a child
+    // of the root E-node associated with the main planar embedding that contains
+    // the xy path edge.
+    context->E[e].EONode = context->E[gp_GetTwinArc(theGraph, e)].EONode = newONode;
+    return OK;
 }
 
 // K33CERT end
