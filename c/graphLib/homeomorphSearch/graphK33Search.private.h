@@ -14,6 +14,20 @@ extern "C"
 {
 #endif
 
+    // K33CERT begin: Marking edges as virtual
+
+    // This should get promoted to graphStructures.h
+    //     flags: Bits 0-15 reserved for library; bits 16 and higher for apps
+    //            ...
+    //            Bit 7: Arc is virtual (the twin arc is always also set or cleared)
+
+#define EDGEFLAG_VIRTUAL_MASK 128
+
+#define gp_GetEdgeVirtual(theGraph, e) (theGraph->E[e].flags & EDGEFLAG_VIRTUAL_MASK)
+#define gp_ClearEdgeVirtual(theGraph, e) (theGraph->E[e].flags &= ~EDGEFLAG_VIRTUAL_MASK)
+#define gp_SetEdgeVirtual(theGraph, e) (theGraph->E[e].flags |= EDGEFLAG_VIRTUAL_MASK)
+// K33CERT end
+
 // K33CERT begin: Declarations for K3,3 embedding obsruction tree nodes
 #define K33SEARCH_EOTYPE_ENODE 0
 #define K33SEARCH_EOTYPE_ONODE 1

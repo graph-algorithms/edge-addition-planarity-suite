@@ -1510,7 +1510,7 @@ int _K33Search_EONode_NewONode(graphP theGraph, K33Search_EONodeP *pNewONode)
     K33Search_EONodeP theNewONode = NULL;
     graphP theNewK5Graph = NULL;
     isolatorContextP IC = &theGraph->IC;
-    int v, w;
+    int v, w, e, Esize;
 
     // Clear the output variable
     *pNewONode = NULL;
@@ -1544,6 +1544,12 @@ int _K33Search_EONode_NewONode(graphP theGraph, K33Search_EONodeP *pNewONode)
                 printf("v=%d w=%d\n", v, w);
                 return NOTOK;
             }
+
+    // We know that the edges of the K5 associated with an O-node are all virtual,
+    // but we take the extra step of marking them virtual anyway.
+    Esize = gp_EdgeIndexBound(theGraph);
+    for (e = gp_GetFirstEdge(theGraph); e < Esize; e++)
+        gp_SetEdgeVirtual(theGraph, e);
 
     // Now we can contruct an embedding obstruction tree node to associate with theNewK5Graph
     // and then tell it to be an O-node that owns theNewK5Graph.
@@ -2177,10 +2183,16 @@ int _ReduceExternalFacePathToEdge(graphP theGraph, K33SearchContext *context, in
     e = gp_GetFirstArc(theGraph, u);
     context->E[e].pathConnector = v;
     gp_SetEdgeType(theGraph, e, _ComputeArcType(theGraph, u, x, edgeType));
+    // K33CERT begin: explicitlly mark the edge as being virtual
+    gp_SetEdgeVirtual(theGraph, e);
+    // K33CERT end
 
     e = gp_GetLastArc(theGraph, x);
     context->E[e].pathConnector = w;
     gp_SetEdgeType(theGraph, e, _ComputeArcType(theGraph, x, u, edgeType));
+    // K33CERT begin: explicitlly mark the edge as being virtual
+    gp_SetEdgeVirtual(theGraph, e);
+    // K33CERT end
 
     /* Set the external face info */
 
@@ -2243,11 +2255,17 @@ int _ReduceXYPathToEdge(graphP theGraph, K33SearchContext *context, int u, int x
     e = gp_GetNextArc(theGraph, e);
     context->E[e].pathConnector = v;
     gp_SetEdgeType(theGraph, e, _ComputeArcType(theGraph, u, x, edgeType));
+    // K33CERT begin: explicitlly mark the edge as being virtual
+    gp_SetEdgeVirtual(theGraph, e);
+    // K33CERT end
 
     e = gp_GetFirstArc(theGraph, x);
     e = gp_GetNextArc(theGraph, e);
     context->E[e].pathConnector = w;
     gp_SetEdgeType(theGraph, e, _ComputeArcType(theGraph, x, u, edgeType));
+    // K33CERT begin: explicitlly mark the edge as being virtual
+    gp_SetEdgeVirtual(theGraph, e);
+    // K33CERT end
 
     return OK;
 }
