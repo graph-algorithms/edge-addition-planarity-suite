@@ -34,6 +34,11 @@ extern "C"
         bool contentsExhausted;
     } G6ReadIterator;
 
+#define G6ReadIteratorContentsExhausted(pG6ReadIterator) \
+    ((pG6ReadIterator) == NULL ||                        \
+     (pG6ReadIterator)->currGraph == NULL ||             \
+     (pG6ReadIterator)->contentsExhausted)
+
     typedef G6ReadIterator *G6ReadIteratorP;
 
     int allocateG6ReadIterator(G6ReadIteratorP *, graphP);

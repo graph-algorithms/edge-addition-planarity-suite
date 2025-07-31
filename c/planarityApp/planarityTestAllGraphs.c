@@ -193,8 +193,8 @@ int testAllGraphs(graphP theGraph, char command, char *infileName, testAllStatsP
             errorFlag = TRUE;
             break;
         }
-        // FIXME: Need to implement "getter" macro to access attributes of G6ReadIterator
-        if (pG6ReadIterator->contentsExhausted)
+
+        if (G6ReadIteratorContentsExhausted(pG6ReadIterator))
             break;
 
         gp_CopyGraph(copyOfOrigGraph, theGraph);
