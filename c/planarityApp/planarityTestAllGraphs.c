@@ -143,13 +143,14 @@ int testAllGraphs(graphP theGraph, char command, char *infileName, testAllStatsP
         return Result;
     }
 
-    int graphOrder = pG6ReadIterator->graphOrder;
+    // FIXME: Need to implement "getter" macro to access attributes of graphP
+    int graphOrder = theGraph->N;
     // We have to set the maximum arc capacity (i.e. (N * (N - 1))) because some of the test files
     // can contain complete graphs, and the graph drawing, K_{3, 3} search, and K_4 search extensions
     // don't support expanding the arc capacity after being attached.
     if (strchr("d34", command) != NULL)
     {
-        Result = gp_EnsureArcCapacity(pG6ReadIterator->currGraph, (graphOrder * (graphOrder - 1)));
+        Result = gp_EnsureArcCapacity(theGraph, (graphOrder * (graphOrder - 1)));
         if (Result != OK)
         {
             ErrorMessage("Unable to maximize arc capacity of G6ReadIterator's graph struct.\n");
@@ -159,7 +160,7 @@ int testAllGraphs(graphP theGraph, char command, char *infileName, testAllStatsP
         }
     }
 
-    AttachAlgorithm(pG6ReadIterator->currGraph, command);
+    AttachAlgorithm(theGraph, command);
 
     copyOfOrigGraph = gp_New();
     if (copyOfOrigGraph == NULL)
@@ -186,20 +187,21 @@ int testAllGraphs(graphP theGraph, char command, char *infileName, testAllStatsP
         if (Result != OK)
         {
             messageFormat = "Unable to read graph on line %d from .g6 read iterator.\n";
+            // FIXME: Need to implement "getter" macro to access attributes of G6ReadIterator
             sprintf(messageContents, messageFormat, pG6ReadIterator->numGraphsRead + 1);
             ErrorMessage(messageContents);
             errorFlag = TRUE;
             break;
         }
-
+        // FIXME: Need to implement "getter" macro to access attributes of G6ReadIterator
         if (pG6ReadIterator->contentsExhausted)
             break;
 
-        gp_CopyGraph(copyOfOrigGraph, pG6ReadIterator->currGraph);
+        gp_CopyGraph(copyOfOrigGraph, theGraph);
 
-        Result = gp_Embed(pG6ReadIterator->currGraph, embedFlags);
+        Result = gp_Embed(theGraph, embedFlags);
 
-        if (gp_TestEmbedResultIntegrity(pG6ReadIterator->currGraph, copyOfOrigGraph, Result) != Result)
+        if (gp_TestEmbedResultIntegrity(theGraph, copyOfOrigGraph, Result) != Result)
             Result = NOTOK;
 
         if (Result == OK)
@@ -209,6 +211,7 @@ int testAllGraphs(graphP theGraph, char command, char *infileName, testAllStatsP
         else
         {
             messageFormat = "Error applying algorithm '%c' to graph on line %d.\n";
+            // FIXME: Need to implement "getter" macro to access attributes of G6ReadIterator
             sprintf(messageContents, messageFormat, command, pG6ReadIterator->numGraphsRead + 1);
             ErrorMessage(messageContents);
             errorFlag = TRUE;
@@ -218,6 +221,7 @@ int testAllGraphs(graphP theGraph, char command, char *infileName, testAllStatsP
         gp_ReinitializeGraph(copyOfOrigGraph);
     }
 
+    // FIXME: Need to implement "getter" macro to access attributes of G6ReadIterator
     stats->numGraphsRead = pG6ReadIterator->numGraphsRead;
     stats->numOK = numOK;
     stats->numNONEMBEDDABLE = numNONEMBEDDABLE;

@@ -233,14 +233,7 @@ int writeGraphUsingG6WriteIterator(G6WriteIteratorP pG6WriteIterator)
 {
     int exitCode = OK;
 
-    if (!_isG6WriteIteratorAllocated(pG6WriteIterator))
-    {
-        ErrorMessage("Unable to write graph, as G6WriteIterator is not allocated.\n");
-        return NOTOK;
-    }
-
     exitCode = _encodeAdjMatAsG6(pG6WriteIterator);
-
     if (exitCode != OK)
     {
         ErrorMessage("Error converting adjacency matrix to g6 format.\n");
@@ -555,7 +548,6 @@ int _WriteGraphToG6StrOrFile(graphP pGraph, strOrFileP outputContainer, char **o
     }
 
     exitCode = allocateG6WriteIterator(&pG6WriteIterator, pGraph);
-
     if (exitCode != OK)
     {
         ErrorMessage("Unable to allocate G6WriteIterator.\n");
@@ -564,7 +556,6 @@ int _WriteGraphToG6StrOrFile(graphP pGraph, strOrFileP outputContainer, char **o
     }
 
     exitCode = beginG6WriteIterationToG6StrOrFile(pG6WriteIterator, outputContainer);
-
     if (exitCode != OK)
     {
         ErrorMessage("Unable to begin G6 write iteration.\n");
@@ -573,7 +564,6 @@ int _WriteGraphToG6StrOrFile(graphP pGraph, strOrFileP outputContainer, char **o
     }
 
     exitCode = writeGraphUsingG6WriteIterator(pG6WriteIterator);
-
     if (exitCode != OK)
         ErrorMessage("Unable to write graph using G6WriteIterator.\n");
     else
