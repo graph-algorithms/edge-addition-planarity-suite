@@ -205,7 +205,7 @@ int testAllGraphs(graphP theGraph, char command, char *infileName, testAllStatsP
             break;
         }
 
-        if (pG6ReadIterator->currGraph == NULL)
+        if (pG6ReadIterator->contentsExhausted)
             break;
 
         gp_CopyGraph(copyOfOrigGraph, pG6ReadIterator->currGraph);

@@ -49,16 +49,6 @@ int allocateG6WriteIterator(G6WriteIteratorP *ppG6WriteIterator, graphP pGraph)
     return exitCode;
 }
 
-bool _isG6WriteIteratorAllocated(G6WriteIteratorP pG6WriteIterator)
-{
-    bool G6WriteIteratorIsAllocated = true;
-
-    if (pG6WriteIterator == NULL || pG6WriteIterator->currGraph == NULL)
-        G6WriteIteratorIsAllocated = false;
-
-    return G6WriteIteratorIsAllocated;
-}
-
 int getNumGraphsWritten(G6WriteIteratorP pG6WriteIterator, int *pNumGraphsRead)
 {
     if (pG6WriteIterator == NULL)
@@ -201,7 +191,7 @@ int writeGraphUsingG6WriteIterator(G6WriteIteratorP pG6WriteIterator)
 {
     int exitCode = OK;
 
-    if (!_isG6WriteIteratorAllocated(pG6WriteIterator))
+    if (ValidateG6WriteIterator(pG6WriteIterator) != OK)
     {
         ErrorMessage("Unable to write graph, as G6WriteIterator is not allocated.\n");
         return NOTOK;
@@ -226,34 +216,9 @@ int _encodeAdjMatAsG6(G6WriteIteratorP pG6WriteIterator)
 {
     int exitCode = OK;
 
-    if (!_isG6WriteIteratorAllocated(pG6WriteIterator))
-    {
-        ErrorMessage("Unable to encode graph, as G6WriteIterator is not allocated.\n");
-        return NOTOK;
-    }
-
     char *g6Encoding = pG6WriteIterator->currGraphBuff;
-
-    if (g6Encoding == NULL)
-    {
-        ErrorMessage("[ERROR] Graph buffer is not allocated.\n");
-        return NOTOK;
-    }
-
     int *columnOffsets = pG6WriteIterator->columnOffsets;
-    if (columnOffsets == NULL)
-    {
-        ErrorMessage("Column offsets array is not allocated.\n");
-        return NOTOK;
-    }
-
     graphP pGraph = pG6WriteIterator->currGraph;
-
-    if (pGraph == NULL || pGraph->N == 0)
-    {
-        ErrorMessage("Graph is not allocated.\n");
-        return NOTOK;
-    }
 
     // memset ensures all bits are zero, which means we only need to set the bits
     // that correspond to an edge; this also takes care of padding zeroes for us

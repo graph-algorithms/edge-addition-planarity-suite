@@ -36,8 +36,16 @@ extern "C"
 
     typedef G6WriteIterator *G6WriteIteratorP;
 
+#define ValidateG6WriteIterator(pG6WriteIterator)              \
+    (sf_ValidateStrOrFile(pG6WriteIterator->g6Output) != OK || \
+             pG6WriteIterator->currGraph == NULL ||            \
+             pG6WriteIterator->currGraph->N == 0 ||            \
+             pG6WriteIterator->currGraphBuff == NULL ||        \
+             pG6WriteIterator->columnOffsets == NULL           \
+         ? NOTOK                                               \
+         : OK)
+
     int allocateG6WriteIterator(G6WriteIteratorP *, graphP);
-    bool _isG6WriteIteratorAllocated(G6WriteIteratorP);
 
     int getNumGraphsWritten(G6WriteIteratorP, int *);
     int getOrderOfGraphToWrite(G6WriteIteratorP, int *);
