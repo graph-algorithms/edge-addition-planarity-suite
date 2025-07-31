@@ -49,6 +49,37 @@ int allocateG6ReadIterator(G6ReadIteratorP *ppG6ReadIterator, graphP pGraph)
     return exitCode;
 }
 
+bool _isG6ReadIteratorAllocated(G6ReadIteratorP pG6ReadIterator)
+{
+    bool g6ReadIteratorIsAllocated = true;
+
+    if (pG6ReadIterator == NULL)
+    {
+        ErrorMessage("G6ReadIterator is NULL.\n");
+        g6ReadIteratorIsAllocated = false;
+    }
+    else
+    {
+        if (sf_ValidateStrOrFile(pG6ReadIterator->g6Input) != OK)
+        {
+            ErrorMessage("G6ReadIterator's g6Input is not valid.\n");
+            g6ReadIteratorIsAllocated = false;
+        }
+        if (pG6ReadIterator->currGraphBuff == NULL)
+        {
+            ErrorMessage("G6ReadIterator's currGraphBuff is NULL.\n");
+            g6ReadIteratorIsAllocated = false;
+        }
+        if (pG6ReadIterator->currGraph == NULL)
+        {
+            ErrorMessage("G6ReadIterator's currGraph is NULL.\n");
+            g6ReadIteratorIsAllocated = false;
+        }
+    }
+
+    return g6ReadIteratorIsAllocated;
+}
+
 int getNumGraphsRead(G6ReadIteratorP pG6ReadIterator, int *pNumGraphsRead)
 {
     if (pG6ReadIterator == NULL)
@@ -337,15 +368,29 @@ int readGraphUsingG6ReadIterator(G6ReadIteratorP pG6ReadIterator)
 
     char messageContents[MAXLINE + 1];
 
-    if (ValidateG6ReadIterator(pG6ReadIterator) != OK)
+    if (!_isG6ReadIteratorAllocated(pG6ReadIterator))
     {
-        ErrorMessage("Cannot read graph using invalid G6ReadIterator.\n");
+        ErrorMessage("G6ReadIterator is not allocated.\n");
         return NOTOK;
     }
 
     strOrFileP g6Input = pG6ReadIterator->g6Input;
+
+    if (g6Input == NULL)
+    {
+        ErrorMessage("Pointer to .g6 string-or-file container is NULL.\n");
+        return NOTOK;
+    }
+
     int numGraphsRead = pG6ReadIterator->numGraphsRead;
+
     char *currGraphBuff = pG6ReadIterator->currGraphBuff;
+
+    if (currGraphBuff == NULL)
+    {
+        ErrorMessage("currGraphBuff string is null.\n");
+        return NOTOK;
+    }
 
     const int graphOrder = pG6ReadIterator->graphOrder;
     const int numCharsForGraphOrder = pG6ReadIterator->numCharsForGraphOrder;

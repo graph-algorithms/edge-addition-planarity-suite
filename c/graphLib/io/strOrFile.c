@@ -156,6 +156,33 @@ strOrFileP sf_New(char const *theStr, char const *fileName, char const *ioMode)
 }
 
 /********************************************************************
+ sf_ValidateStrOrFile()
+
+ Ensures that theStrOrFile:
+ 1. Is not NULL
+ 2. Has ungetBuf allocated
+ 3. Both pFile and theStr are not NULL
+ 4. Both pFile and theStr are not both assigned (since this container
+    should only contain one source).
+ 5. containerType is either set to INPUT_CONTAINER or OUTPUT_CONTAINER
+
+ Returns NOTOK if any of these conditions are not met, otherwise OK.
+ ********************************************************************/
+
+int sf_ValidateStrOrFile(strOrFileP theStrOrFile)
+{
+    if (theStrOrFile == NULL ||
+        theStrOrFile->ungetBuf == NULL ||
+        (theStrOrFile->pFile == NULL && theStrOrFile->theStr == NULL) ||
+        (theStrOrFile->pFile != NULL && theStrOrFile->theStr != NULL) ||
+        (theStrOrFile->containerType != INPUT_CONTAINER &&
+         theStrOrFile->containerType != OUTPUT_CONTAINER))
+        return NOTOK;
+
+    return OK;
+}
+
+/********************************************************************
  sf_getc()
 
  If strOrFileP has a non-empty ungetBuf, pop and return the character.

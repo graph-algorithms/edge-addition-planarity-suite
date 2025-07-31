@@ -30,19 +30,14 @@ extern "C"
         char *currGraphBuff;
 
         graphP currGraph;
+
         bool contentsExhausted;
     } G6ReadIterator;
 
     typedef G6ReadIterator *G6ReadIteratorP;
 
-#define ValidateG6ReadIterator(pG6ReadIterator)              \
-    (sf_ValidateStrOrFile(pG6ReadIterator->g6Input) != OK || \
-             pG6ReadIterator->currGraph == NULL ||           \
-             pG6ReadIterator->currGraphBuff == NULL          \
-         ? NOTOK                                             \
-         : OK)
-
     int allocateG6ReadIterator(G6ReadIteratorP *, graphP);
+    bool _isG6ReadIteratorAllocated(G6ReadIteratorP);
 
     int getNumGraphsRead(G6ReadIteratorP, int *);
     int getOrderOfGraphToRead(G6ReadIteratorP, int *);
@@ -61,7 +56,6 @@ extern "C"
     int _validateGraphEncoding(char *, const int, const int);
     int _decodeGraph(char *, const int, const int, graphP);
 
-    
     int endG6ReadIteration(G6ReadIteratorP);
 
     int freeG6ReadIterator(G6ReadIteratorP *);

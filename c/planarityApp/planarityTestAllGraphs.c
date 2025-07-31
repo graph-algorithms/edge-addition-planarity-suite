@@ -179,19 +179,6 @@ int testAllGraphs(graphP theGraph, char command, char *infileName, testAllStatsP
         return Result;
     }
 
-    if (strchr("d34", command) != NULL)
-    {
-        Result = gp_EnsureArcCapacity(copyOfOrigGraph, (graphOrder * (graphOrder - 1)));
-        if (Result != OK)
-        {
-            ErrorMessage("Unable to maximize arc capacity of graph struct to contain copy of original graph.\n");
-            gp_Free(&copyOfOrigGraph);
-            freeG6ReadIterator(&pG6ReadIterator);
-            stats->errorFlag = TRUE;
-            return Result;
-        }
-    }
-
     while (true)
     {
         Result = readGraphUsingG6ReadIterator(pG6ReadIterator);
