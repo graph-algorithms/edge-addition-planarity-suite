@@ -19,7 +19,7 @@ extern "C"
     // This should get promoted to graphStructures.h
     //     flags: Bits 0-15 reserved for library; bits 16 and higher for apps
     //            ...
-    //            Bit 7: Arc is virtual (the twin arc is always also set or cleared)
+    //            Bit 7: Arc is virtual (caller should ensure the twin arc is also set or cleared)
 
 #define EDGEFLAG_VIRTUAL_MASK 128
 
@@ -40,7 +40,7 @@ extern "C"
 
     typedef K33Search_EONode *K33Search_EONodeP;
 
-    K33Search_EONodeP _K33Search_EONode_New(graphP theSubgraph);
+    K33Search_EONodeP _K33Search_EONode_New(int theEOType, graphP theSubgraph, int theSubgraphOwner);
     void _K33Search_EONode_Free(K33Search_EONodeP *pEONode);
     int _K33Search_TestForEOTreeChildren(K33Search_EONodeP EOTreeNode);
     int _K33Search_AssembleMainPlanarEmbedding(K33Search_EONodeP EOTreeRoot);

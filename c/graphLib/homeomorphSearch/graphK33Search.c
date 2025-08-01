@@ -1213,8 +1213,9 @@ int _TestForStraddlingBridge(graphP theGraph, K33SearchContext *context, int u_m
  _ReduceBicomp()
 
  We want to reduce the given biconnected component to a 4-cycle plus an
- internal edge connecting X and Y.  Each edge is to be associated with a
- path from the original graph, preserving the depth first search tree
+ internal edge connecting X and Y so that the bicomp will be constant-sized
+ for all future operations of the K_{3,3} search.  Each edge is to be associated
+ with a path from the original graph, preserving the depth first search tree
  paths that help connect the vertices R, X, Y, and W.  If a K_{3,3} is later found,
  the paths are restored, but it is necessary to preserve the DFS tree so that
  functions like MarkDFSPath() will be able to pass through the restored bicomp.
@@ -1480,16 +1481,16 @@ int _ReduceBicomp(graphP theGraph, K33SearchContext *context, int R)
 /********************************************************************
  K33Search_EONode_New()
  ********************************************************************/
-K33Search_EONodeP _K33Search_EONode_New(graphP theSubgraph)
+K33Search_EONodeP _K33Search_EONode_New(int theEOType, graphP theSubgraph, int theSubgraphOwner)
 {
     K33Search_EONodeP theNewEONode = (K33Search_EONodeP)malloc(sizeof(K33Search_EONode));
 
     if (theNewEONode == NULL)
         return NULL;
 
+    theNewEONode->EOType = theEOType;
     theNewEONode->subgraph = theSubgraph;
-    theNewEONode->subgraphOwner = FALSE;
-    theNewEONode->EOType = K33SEARCH_EOTYPE_ENODE;
+    theNewEONode->subgraphOwner = theSubgraphOwner;
 
     return theNewEONode;
 }
@@ -1510,7 +1511,7 @@ int _K33Search_EONode_NewONode(graphP theGraph, K33Search_EONodeP *pNewONode)
     K33Search_EONodeP theNewONode = NULL;
     graphP theNewK5Graph = NULL;
     isolatorContextP IC = &theGraph->IC;
-    int v, w, e, Esize;
+    int v, w, e;
 
     // Clear the output variable
     *pNewONode = NULL;
@@ -1538,28 +1539,27 @@ int _K33Search_EONode_NewONode(graphP theGraph, K33Search_EONodeP *pNewONode)
     // Need to add all 10 edges to theNewK5Graph so that it stores an actual K5
     for (v = gp_GetFirstVertex(theNewK5Graph); gp_VertexInRange(theNewK5Graph, v); v++)
         for (w = v + 1; gp_VertexInRange(theNewK5Graph, w); w++)
-            if (gp_AddEdge(theNewK5Graph, v, 0, w, 0) != OK)
+            if (gp_AddEdge(theNewK5Graph, v, 0, w, 0) != OK ||
+                theNewK5Graph->E[e = theNewK5Graph->V[v].link[0]].neighbor != w)
             {
                 gp_Free(&theNewK5Graph);
-                printf("v=%d w=%d\n", v, w);
                 return NOTOK;
             }
-
-    // We know that the edges of the K5 associated with an O-node are all virtual,
-    // but we take the extra step of marking them virtual anyway.
-    Esize = gp_EdgeIndexBound(theGraph);
-    for (e = gp_GetFirstEdge(theGraph); e < Esize; e++)
-        gp_SetEdgeVirtual(theGraph, e);
+            else
+            {
+                // We _know_ that the edges of the K5 associated with an O-node are all virtual,
+                // but we take the extra step of marking them virtual anyway.
+                gp_SetEdgeVirtual(theNewK5Graph, e);
+                gp_SetEdgeVirtual(theNewK5Graph, gp_GetTwinArc(theNewK5Graph, e));
+            }
 
     // Now we can contruct an embedding obstruction tree node to associate with theNewK5Graph
     // and then tell it to be an O-node that owns theNewK5Graph.
-    if ((theNewONode = _K33Search_EONode_New(theNewK5Graph)) == NULL)
+    if ((theNewONode = _K33Search_EONode_New(K33SEARCH_EOTYPE_ONODE, theNewK5Graph, TRUE)) == NULL)
     {
         gp_Free(&theNewK5Graph);
         return NOTOK;
     }
-    theNewONode->subgraphOwner = TRUE;
-    theNewONode->EOType = K33SEARCH_EOTYPE_ONODE;
 
     // return the successfully created, orphan O-node
     *pNewONode = theNewONode;
