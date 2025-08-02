@@ -114,8 +114,14 @@ int _K33Search_ExtractXYBridgeSet(graphP theGraph, int R, K33Search_EONodeP newO
 int _K33Search_ExtractVWBridgeSet(graphP theGraph, int R, K33Search_EONodeP newONode);
 int _K33Search_MarkBridgeSetToExtract(graphP theGraph, int R, int equatorVertex, int poleVertex,
                                       int firstStartingEdge, int linkDir, int lastStartingEdge);
+int _K33Search_ExtractMarkedBridgeSet(graphP theGraph, int R, graphP newSubgraphForBridgeSet);
 
 int _K33Search_AttachONodeAsChildOfRoot(graphP theGraph, K33Search_EONodeP newONode);
+int _K33Search_AttachENodeAsChildONode(K33Search_EONodeP theENode, K33Search_EONodeP theONode);
+
+// When this method is promoted to graphUtils.c, then add extern to front of this header declaration.
+int _CountVisitedVerticesAndEdgesInBicomp(graphP theGraph, int BicompRoot, int *pNumVisitedVertices, int *pNumVisitedEdges);
+
 // K33CERT end
 
 /****************************************************************************
@@ -1540,7 +1546,7 @@ int _K33Search_EONode_NewONode(graphP theGraph, K33Search_EONodeP *pNewONode)
     for (v = gp_GetFirstVertex(theNewK5Graph); gp_VertexInRange(theNewK5Graph, v); v++)
         for (w = v + 1; gp_VertexInRange(theNewK5Graph, w); w++)
             if (gp_AddEdge(theNewK5Graph, v, 0, w, 0) != OK ||
-                theNewK5Graph->E[e = theNewK5Graph->V[v].link[0]].neighbor != w)
+                gp_GetNeighbor(theNewK5Graph, e = theNewK5Graph->V[v].link[0]) != w)
             {
                 gp_Free(&theNewK5Graph);
                 return NOTOK;
@@ -1684,6 +1690,9 @@ int _K33Search_ExtractExternaFaceBridgeSet(graphP theGraph, int R, int poleVerte
     isolatorContextP IC = &theGraph->IC;
     int oppositePoleVertex, oppositeEquatorVertex;
     int linkDir, firstStartingEdge, lastStartingEdge, nextEdge;
+    int numVerticesInSubgraph = 0, numEdgesInSubgraph = 0;
+    graphP newSubgraphForBridgeSet = NULL;
+    K33Search_EONodeP theNewENode = NULL;
 
     // This is a private function, but still making sure the two key parameters were correctly passed.
     // P.S. Parentheses added around && clauses not because needed but to appease -Wparentheses
@@ -1753,15 +1762,47 @@ int _K33Search_ExtractExternaFaceBridgeSet(graphP theGraph, int R, int poleVerte
         gp_GetVertexVisited(theGraph, oppositePoleVertex == IC->v ? R : IC->w))
         return NOTOK;
 
-    // Make a new graph and copy over just the vertices and edges marked visited. We must
-    // also include copying over pathConnector and EONode settings, and we must NULL out any
-    // EONode pointer in the main graph if that pointer was copied to the new subgraph copy.
+    // Get the order and size of the subgraph to be created
+    if (_CountVisitedVerticesAndEdgesInBicomp(theGraph, R, &numVerticesInSubgraph, &numEdgesInSubgraph) != OK)
+        return NOTOK;
 
-    // Make an E-node and associated it with the new subgraph copy, making the E-node
+    // Make a new graph to hold the bridge set subgraph
+    if ((newSubgraphForBridgeSet = gp_New()) == NULL)
+        return NOTOK;
+
+    if (gp_InitGraph(newSubgraphForBridgeSet, numVerticesInSubgraph) != OK ||
+        gp_AttachK33Search(newSubgraphForBridgeSet) != OK)
+    {
+        gp_Free(&newSubgraphForBridgeSet);
+        return NOTOK;
+    }
+
+    // Copy the vertices and edges marked visited from the bicomp to the new subgraph.
+    // This will include transferring EONode pointer ownership to subgraph edges
+    // This will include replacing virtual path connector edges with paths in the subgraph.
+    // Tricky bit is then transferring EO Node ownership from a virtual edge to a real
+    // edge in the path that replaces it.
+    if (_K33Search_ExtractMarkedBridgeSet(theGraph, R, newSubgraphForBridgeSet) != OK)
+    {
+        gp_Free(&newSubgraphForBridgeSet);
+        return NOTOK;
+    }
+
+    // Make an E-node and associate it with the new subgraph copy, making the E-node
     // the owner of the new subgraph.
+    if ((theNewENode = _K33Search_EONode_New(K33SEARCH_EOTYPE_ENODE, newSubgraphForBridgeSet, TRUE)) == NULL)
+    {
+        gp_Free(&newSubgraphForBridgeSet);
+        return NOTOK;
+    }
 
     // Now we find the (poleVertex, equatorVertex) edge in the K5 graph of the O-node and
     // point its EONode pointers at the newly created E-node
+    if (_K33Search_AttachENodeAsChildONode(theNewENode, newONode) != OK)
+    {
+        _K33Search_EONode_Free(&theNewENode);
+        return NOTOK;
+    }
 
     // If all operations succeed, then we have successfully extracted the desired bridge set
     // return NOTOK;
@@ -1792,6 +1833,7 @@ int _K33Search_MarkBridgeSetToExtract(graphP theGraph, int R, int equatorVertex,
     // A DFS exploration will be performed, starting with the equatorVertex, but constrained to
     // proceeding only to the neighbors indicated by the firstStartingEdge to lastStartingEdge
     gp_SetVertexVisited(theGraph, equatorVertex);
+
     ePrev = NIL;
     e = firstStartingEdge;
     while (ePrev != lastStartingEdge)
@@ -1835,6 +1877,7 @@ int _K33Search_MarkBridgeSetToExtract(graphP theGraph, int R, int equatorVertex,
         if (!gp_GetVertexVisited(theGraph, v))
         {
             gp_SetVertexVisited(theGraph, v);
+
             e = gp_GetFirstArc(theGraph, v);
             while (e != NIL)
             {
@@ -1842,6 +1885,7 @@ int _K33Search_MarkBridgeSetToExtract(graphP theGraph, int R, int equatorVertex,
                 {
                     gp_SetEdgeVisited(theGraph, e);
                     gp_SetEdgeVisited(theGraph, gp_GetTwinArc(theGraph, e));
+
                     sp_Push(theGraph->theStack, gp_GetNeighbor(theGraph, e));
                 }
                 e = gp_GetNextArc(theGraph, e);
@@ -1849,6 +1893,15 @@ int _K33Search_MarkBridgeSetToExtract(graphP theGraph, int R, int equatorVertex,
         }
     }
 
+    // Bridge set subgraph successfully marked for extraction.
+    return OK;
+}
+
+/********************************************************************
+ _K33Search_ExtractMarkedBridgeSet()
+ ********************************************************************/
+int _K33Search_ExtractMarkedBridgeSet(graphP theGraph, int R, graphP newSubgraphForBridgeSet)
+{
     return OK;
 }
 
@@ -1946,6 +1999,55 @@ int _K33Search_AttachONodeAsChildOfRoot(graphP theGraph, K33Search_EONodeP newON
     // of the root E-node associated with the main planar embedding that contains
     // the xy path edge.
     context->E[e].EONode = context->E[gp_GetTwinArc(theGraph, e)].EONode = newONode;
+    return OK;
+}
+
+/********************************************************************
+ _K33Search_AttachENodeAsChildONode()
+ ********************************************************************/
+int _K33Search_AttachENodeAsChildONode(K33Search_EONodeP theENode, K33Search_EONodeP theONode)
+{
+    return OK;
+}
+
+/********************************************************************
+ _CountVisitedVerticesAndEdgesInBicomp()
+
+ This should be promoted to graphUtils.c
+ ********************************************************************/
+
+int _CountVisitedVerticesAndEdgesInBicomp(graphP theGraph, int BicompRoot, int *pNumVisitedVertices, int *pNumVisitedEdges)
+{
+    int stackBottom = sp_GetCurrentSize(theGraph->theStack);
+    int v, e;
+    int numVisitedVertices = 0, numVisitedEdges = 0;
+
+    sp_Push(theGraph->theStack, BicompRoot);
+    while (sp_GetCurrentSize(theGraph->theStack) > stackBottom)
+    {
+        sp_Pop(theGraph->theStack, v);
+        if (gp_GetVertexVisited(theGraph, v))
+            numVisitedVertices++;
+
+        e = gp_GetFirstArc(theGraph, v);
+        while (gp_IsArc(e))
+        {
+            if (gp_GetEdgeVisited(theGraph, e))
+                numVisitedEdges++;
+
+            if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_CHILD)
+                sp_Push(theGraph->theStack, gp_GetNeighbor(theGraph, e));
+
+            e = gp_GetNextArc(theGraph, e);
+        }
+    }
+
+    if (pNumVisitedVertices != NULL)
+        *pNumVisitedVertices = numVisitedVertices;
+
+    if (pNumVisitedEdges != NULL)
+        *pNumVisitedEdges = numVisitedEdges >> 1;
+
     return OK;
 }
 
