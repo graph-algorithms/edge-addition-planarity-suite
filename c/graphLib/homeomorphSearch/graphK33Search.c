@@ -114,10 +114,10 @@ int _K33Search_ExtractXYBridgeSet(graphP theGraph, int R, K33Search_EONodeP newO
 int _K33Search_ExtractVWBridgeSet(graphP theGraph, int R, K33Search_EONodeP newONode);
 int _K33Search_MarkBridgeSetToExtract(graphP theGraph, int R, int equatorVertex, int poleVertex,
                                       int firstStartingEdge, int linkDir, int lastStartingEdge);
-int _K33Search_ExtractMarkedBridgeSet(graphP theGraph, int R, graphP newSubgraphForBridgeSet);
+int _K33Search_ExtractMarkedBridgeSet(graphP theGraph, int R, int cutv1, int cutv2, graphP newSubgraphForBridgeSet);
 
 int _K33Search_AttachONodeAsChildOfRoot(graphP theGraph, K33Search_EONodeP newONode);
-int _K33Search_AttachENodeAsChildONode(K33Search_EONodeP theENode, K33Search_EONodeP theONode);
+int _K33Search_AttachENodeAsChildOfONode(K33Search_EONodeP theENode, int cutv1, int cutv2, K33Search_EONodeP theONode);
 
 // When this method is promoted to graphUtils.c, then add extern to front of this header declaration.
 int _CountVisitedVerticesAndEdgesInBicomp(graphP theGraph, int BicompRoot, int *pNumVisitedVertices, int *pNumVisitedEdges);
@@ -1782,7 +1782,7 @@ int _K33Search_ExtractExternaFaceBridgeSet(graphP theGraph, int R, int poleVerte
     // This will include replacing virtual path connector edges with paths in the subgraph.
     // Tricky bit is then transferring EO Node ownership from a virtual edge to a real
     // edge in the path that replaces it.
-    if (_K33Search_ExtractMarkedBridgeSet(theGraph, R, newSubgraphForBridgeSet) != OK)
+    if (_K33Search_ExtractMarkedBridgeSet(theGraph, R, poleVertex, equatorVertex, newSubgraphForBridgeSet) != OK)
     {
         gp_Free(&newSubgraphForBridgeSet);
         return NOTOK;
@@ -1798,7 +1798,7 @@ int _K33Search_ExtractExternaFaceBridgeSet(graphP theGraph, int R, int poleVerte
 
     // Now we find the (poleVertex, equatorVertex) edge in the K5 graph of the O-node and
     // point its EONode pointers at the newly created E-node
-    if (_K33Search_AttachENodeAsChildONode(theNewENode, newONode) != OK)
+    if (_K33Search_AttachENodeAsChildOfONode(theNewENode, poleVertex, equatorVertex, newONode) != OK)
     {
         _K33Search_EONode_Free(&theNewENode);
         return NOTOK;
@@ -1900,7 +1900,7 @@ int _K33Search_MarkBridgeSetToExtract(graphP theGraph, int R, int equatorVertex,
 /********************************************************************
  _K33Search_ExtractMarkedBridgeSet()
  ********************************************************************/
-int _K33Search_ExtractMarkedBridgeSet(graphP theGraph, int R, graphP newSubgraphForBridgeSet)
+int _K33Search_ExtractMarkedBridgeSet(graphP theGraph, int R, int cutv1, int cutv2, graphP newSubgraphForBridgeSet)
 {
     return OK;
 }
@@ -2003,11 +2003,46 @@ int _K33Search_AttachONodeAsChildOfRoot(graphP theGraph, K33Search_EONodeP newON
 }
 
 /********************************************************************
- _K33Search_AttachENodeAsChildONode()
+ _K33Search_AttachENodeAsChildOfONode()
+ The E-node contains a subgraph of the input graph that is separable
+ by the 2-cut (cutv1, cutv2) from the K5 homeomorph in the input graph
+ that is represented by the O-node.
  ********************************************************************/
-int _K33Search_AttachENodeAsChildONode(K33Search_EONodeP theENode, K33Search_EONodeP theONode)
+int _K33Search_AttachENodeAsChildOfONode(K33Search_EONodeP theENode, int cutv1, int cutv2, K33Search_EONodeP theONode)
 {
-    return OK;
+    graphP theK5 = theONode->subgraph;
+    int e, EsizeOccupied, neighborIndex;
+    K33SearchContext *context = NULL;
+
+    // There are only 10 edges in the K5, which is a constant, so we just sequentially
+    // search through them to find the edge that should take the E-node pointer.
+    EsizeOccupied = gp_EdgeInUseIndexBound(theK5);
+    for (e = gp_GetFirstEdge(theK5); e < EsizeOccupied; e += 2)
+    {
+        if (gp_EdgeInUse(theK5, e))
+        {
+            // The index field in each vertex of theK5 gives us the identity of the vertex
+            // to which the K5 vertex maps in the originating graph...
+            neighborIndex = theK5->V[gp_GetNeighbor(theK5, e)].index;
+
+            // ... which we can then compare to the cut vertex indices in the original graph
+            // from which the E-node's subgraph has been extracted.
+            if (neighborIndex == cutv1 || neighborIndex == cutv2)
+            {
+                // And assign the E-node pointer to the EONode pointer in the extended
+                // edge records for the edge whose endpoint vertices have index values of
+                // cutv1 and cutv2.
+                gp_FindExtension(theK5, K33SEARCH_ID, (void *)&context);
+                if (context == NULL)
+                    return NOTOK;
+                context->E[e].EONode = context->E[gp_GetTwinArc(theK5, e)].EONode = theENode;
+                break;
+            }
+        }
+    }
+
+    // Return OK unless we somehow failed to find the desired K5 edge
+    return context != NULL ? OK : NOTOK;
 }
 
 /********************************************************************
