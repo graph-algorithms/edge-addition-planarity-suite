@@ -1790,6 +1790,15 @@ int _K33Search_ExtractExternaFaceBridgeSet(graphP theGraph, int R, int poleVerte
         return NOTOK;
     }
 
+    // The new subgraph should have all edges of the bridge set plus one virtual edge
+    // connecting the 2-cut (poleVertex, equatorVertex), i.e., (first vertex, second vertex)
+    // in the subgraph.
+    // if (newSubgraphForBridgeSet->M != numEdgesInSubgraph + 1)
+    //{
+    //   gp_Free(&newSubgraphForBridgeSet);
+    //    return NOTOK;
+    //}
+
     // Make an E-node and associate it with the new subgraph copy, making the E-node
     // the owner of the new subgraph.
     if ((theNewENode = _K33Search_EONode_New(K33SEARCH_EOTYPE_ENODE, newSubgraphForBridgeSet, TRUE)) == NULL)
@@ -1921,7 +1930,7 @@ int _K33Search_MarkBridgeSetToExtract(graphP theGraph, int R, int equatorVertex,
 int _K33Search_ExtractMarkedBridgeSet(graphP theGraph, int R, int cutv1, int cutv2, graphP newSubgraphForBridgeSet)
 {
     K33SearchContext *context = NULL;
-    int v;
+    int v, e;
 
     // Assign subgraph vertex index locations for all vertices in the bridge set, explicitly placing
     // the cutv1 and cutv2 into the first and second positions.
@@ -1945,6 +1954,14 @@ int _K33Search_ExtractMarkedBridgeSet(graphP theGraph, int R, int cutv1, int cut
                    gp_GetFirstVertex(newSubgraphForBridgeSet), 0,
                    gp_GetFirstVertex(newSubgraphForBridgeSet) + 1, 0) != OK)
         return NOTOK;
+
+    // The new edge is marked virtual because it is added in addition to the edges that are actually
+    // in the bridge set being extracted.
+    e = gp_GetFirstArc(newSubgraphForBridgeSet, gp_GetFirstVertex(newSubgraphForBridgeSet));
+    if (gp_GetNeighbor(newSubgraphForBridgeSet, e) != gp_GetFirstVertex(newSubgraphForBridgeSet) + 1)
+        return NOTOK;
+    gp_SetEdgeVirtual(newSubgraphForBridgeSet, e);
+    gp_SetEdgeVirtual(newSubgraphForBridgeSet, gp_GetTwinArc(newSubgraphForBridgeSet, e));
 
     // Now we call the planarity algorithm so that the new subgraph contains a planar embedding of
     // the extracted bridge set.
@@ -2456,14 +2473,14 @@ int _ReduceExternalFacePathToEdge(graphP theGraph, K33SearchContext *context, in
     e = gp_GetFirstArc(theGraph, u);
     context->E[e].pathConnector = v;
     gp_SetEdgeType(theGraph, e, _ComputeArcType(theGraph, u, x, edgeType));
-    // K33CERT begin: explicitlly mark the edge as being virtual
+    // K33CERT begin: explicitly mark the edge as being virtual
     gp_SetEdgeVirtual(theGraph, e);
     // K33CERT end
 
     e = gp_GetLastArc(theGraph, x);
     context->E[e].pathConnector = w;
     gp_SetEdgeType(theGraph, e, _ComputeArcType(theGraph, x, u, edgeType));
-    // K33CERT begin: explicitlly mark the edge as being virtual
+    // K33CERT begin: explicitly mark the edge as being virtual
     gp_SetEdgeVirtual(theGraph, e);
     // K33CERT end
 
