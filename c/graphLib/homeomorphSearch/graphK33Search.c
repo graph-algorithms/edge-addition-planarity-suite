@@ -123,7 +123,7 @@ int _K33Search_AttachONodeAsChildOfRoot(graphP theGraph, K33Search_EONodeP newON
 int _K33Search_AttachENodeAsChildOfONode(K33Search_EONodeP theENode, int cutv1, int cutv2, K33Search_EONodeP theONode);
 
 // When this method is promoted to graphUtils.c, then add extern to front of this header declaration.
-int _CountVisitedVerticesAndEdgesInBicomp(graphP theGraph, int BicompRoot, int *pNumVisitedVertices, int *pNumVisitedEdges);
+int _CountVerticesAndEdgesInBicomp(graphP theGraph, int BicompRoot, int visitedOnly, int *pNumVisitedVertices, int *pNumVisitedEdges);
 
 // K33CERT end
 
@@ -1766,7 +1766,7 @@ int _K33Search_ExtractExternaFaceBridgeSet(graphP theGraph, int R, int poleVerte
         return NOTOK;
 
     // Get the order and size of the subgraph to be created
-    if (_CountVisitedVerticesAndEdgesInBicomp(theGraph, R, &numVerticesInSubgraph, &numEdgesInSubgraph) != OK)
+    if (_CountVerticesAndEdgesInBicomp(theGraph, R, TRUE, &numVerticesInSubgraph, &numEdgesInSubgraph) != OK)
         return NOTOK;
 
     // Make a new graph to hold the bridge set subgraph
@@ -2174,12 +2174,20 @@ int _K33Search_AttachENodeAsChildOfONode(K33Search_EONodeP theENode, int cutv1, 
 }
 
 /********************************************************************
- _CountVisitedVerticesAndEdgesInBicomp()
+ _CountVerticesAndEdgesInBicomp()
 
  This should be promoted to graphUtils.c
+
+ Counts the vertices and edges in the given bicomp, tallying
+ only those marked visited if visitedOnly is TRUE.
+
+ Returns one or both results, depending on which of the output
+ parameters is non-NULL.
+
+ Returns OK on success, NOTOK on failure.
  ********************************************************************/
 
-int _CountVisitedVerticesAndEdgesInBicomp(graphP theGraph, int BicompRoot, int *pNumVisitedVertices, int *pNumVisitedEdges)
+int _CountVerticesAndEdgesInBicomp(graphP theGraph, int BicompRoot, int visitedOnly, int *pNumVisitedVertices, int *pNumVisitedEdges)
 {
     int stackBottom = sp_GetCurrentSize(theGraph->theStack);
     int v, e;
@@ -2189,13 +2197,13 @@ int _CountVisitedVerticesAndEdgesInBicomp(graphP theGraph, int BicompRoot, int *
     while (sp_GetCurrentSize(theGraph->theStack) > stackBottom)
     {
         sp_Pop(theGraph->theStack, v);
-        if (gp_GetVertexVisited(theGraph, v))
+        if (!visitedOnly || gp_GetVertexVisited(theGraph, v))
             numVisitedVertices++;
 
         e = gp_GetFirstArc(theGraph, v);
         while (gp_IsArc(e))
         {
-            if (gp_GetEdgeVisited(theGraph, e))
+            if (!visitedOnly || gp_GetEdgeVisited(theGraph, e))
                 numVisitedEdges++;
 
             if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_CHILD)
