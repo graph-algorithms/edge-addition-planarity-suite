@@ -62,6 +62,11 @@ extern "C"
     typedef struct
     {
         int separatedDFSChildList, backArcList, mergeBlocker;
+        // K33CERT begin: Addition of a variable often and temporarily used to enable
+        //                internal subroutines to map between a graph's vertex indices
+        //                and the vertex indices of a subgraph being extracted from it
+        int graphToSubgraphIndex, subgraphToGraphIndex;
+        // K33CERT end
     } K33Search_VertexInfo;
 
     typedef K33Search_VertexInfo *K33Search_VertexInfoP;

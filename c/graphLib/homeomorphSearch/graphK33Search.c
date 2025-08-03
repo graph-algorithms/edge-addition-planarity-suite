@@ -115,6 +115,9 @@ int _K33Search_ExtractVWBridgeSet(graphP theGraph, int R, K33Search_EONodeP newO
 int _K33Search_MarkBridgeSetToExtract(graphP theGraph, int R, int equatorVertex, int poleVertex,
                                       int firstStartingEdge, int linkDir, int lastStartingEdge);
 int _K33Search_ExtractMarkedBridgeSet(graphP theGraph, int R, int cutv1, int cutv2, graphP newSubgraphForBridgeSet);
+int _K33Search_MakeGraphSubgraphVertexMaps(graphP theGraph, int R, int cutv1, int cutv2, graphP newSubgraphForBridgeSet);
+int _K33Search_CopyMarkedEdgesToNewSubgraph(graphP theGraph, int R, int cutv1, int cutv2, graphP newSubgraphForBridgeSet);
+int _K33Search_PlanarizeNewSubgraph(graphP theGraph, int R, int cutv1, int cutv2, graphP newSubgraphForBridgeSet);
 
 int _K33Search_AttachONodeAsChildOfRoot(graphP theGraph, K33Search_EONodeP newONode);
 int _K33Search_AttachENodeAsChildOfONode(K33Search_EONodeP theENode, int cutv1, int cutv2, K33Search_EONodeP theONode);
@@ -1778,10 +1781,9 @@ int _K33Search_ExtractExternaFaceBridgeSet(graphP theGraph, int R, int poleVerte
     }
 
     // Copy the vertices and edges marked visited from the bicomp to the new subgraph.
-    // This will include transferring EONode pointer ownership to subgraph edges
-    // This will include replacing virtual path connector edges with paths in the subgraph.
-    // Tricky bit is then transferring EO Node ownership from a virtual edge to a real
-    // edge in the path that replaces it.
+    // This will include transferring EONode pointer ownership to subgraph edges.
+    // The bridge set subgraph is expected to be a planar embedding, including an extra
+    // external face edge between the poleVertex and equatorVertex in the subgraph
     if (_K33Search_ExtractMarkedBridgeSet(theGraph, R, poleVertex, equatorVertex, newSubgraphForBridgeSet) != OK)
     {
         gp_Free(&newSubgraphForBridgeSet);
@@ -1899,8 +1901,134 @@ int _K33Search_MarkBridgeSetToExtract(graphP theGraph, int R, int equatorVertex,
 
 /********************************************************************
  _K33Search_ExtractMarkedBridgeSet()
+
+ Copy the vertices and edges marked visited from the bicomp to the new subgraph.
+ This includes marking as virtual in the subgraph those edges that are virtual
+ in the main graph. This also includes transferring EONode pointer ownership to
+ subgraph edges (and NULLing them out in the main graph, while leaving virtual
+ such edges in the main graph since they must still carry pathConnector info).
+
+ The bridge set being copied is a  planar embedding (given the assumption that
+ it may contain virtual edges that  point to K5's embedded in child O-nodes).
+ While it's difficult to copy a planar embedding from a graph into an
+ appropriately-sized subgraph, while preserving adjacency node order in all
+ subgraph vertices, it is possible to simply copy all of the required edges
+ and then let the planarity algorithm recover *an* appropriate rotation scheme
+ for the subgraph, because that's what planarity algorithms are for.
+ As long as the subgraph can be validated as *a* planar embedding, then it is
+ still K3,3-free, even if it is not *the* planar embedding originally created.
  ********************************************************************/
 int _K33Search_ExtractMarkedBridgeSet(graphP theGraph, int R, int cutv1, int cutv2, graphP newSubgraphForBridgeSet)
+{
+    K33SearchContext *context = NULL;
+    int v;
+
+    // Assign subgraph vertex index locations for all vertices in the bridge set, explicitly placing
+    // the cutv1 and cutv2 into the first and second positions.
+    if (_K33Search_MakeGraphSubgraphVertexMaps(theGraph, R, cutv1, cutv2, newSubgraphForBridgeSet) != OK)
+        return NOTOK;
+
+    // Use the vertex index mappings to help copy the edges of the bridge set into the subgraph,
+    // without trying to preserve the adjacency list order of the planar embedding of the bridge set
+    // contained in theGraph
+    if (_K33Search_CopyMarkedEdgesToNewSubgraph(theGraph, R, cutv1, cutv2, newSubgraphForBridgeSet) != OK)
+        return NOTOK;
+
+    // Now we add an extra edge to the subgraph to connect the two cut vertices, cutv1 and cutv2.
+    // We add it after all the other edges and with link 0 parameters so that it is guaranteed to become
+    // a DFS tree edge during planarization below. And because it is a tree edge, the embedder will
+    // process the two cut vertices last, which ensures that the tree edge will be on the external face.
+    // Rather than using the graph-to-subgraph map to convert cutv1 and cutv2 into vertices in the
+    // subgraph, we rely on the fact that they have been placed into the first and second vertex
+    // positions in the subgraph.
+    if (gp_AddEdge(newSubgraphForBridgeSet,
+                   gp_GetFirstVertex(newSubgraphForBridgeSet), 0,
+                   gp_GetFirstVertex(newSubgraphForBridgeSet) + 1, 0) != OK)
+        return NOTOK;
+
+    // Now we call the planarity algorithm so that the new subgraph contains a planar embedding of
+    // the extracted bridge set.
+    if (_K33Search_PlanarizeNewSubgraph(theGraph, R, cutv1, cutv2, newSubgraphForBridgeSet) != OK)
+        return NOTOK;
+
+    // Get the graph's K3,3 extension because that is where the subgraph-to-graph map is stored
+    gp_FindExtension(theGraph, K33SEARCH_ID, (void *)&context);
+    if (context == NULL)
+        return NOTOK;
+
+    // Copy the subgraph-to-graph map into the index members of the vertices of the new subgraph
+    for (v = gp_GetFirstVertex(newSubgraphForBridgeSet); gp_VertexInRange(newSubgraphForBridgeSet, v); v++)
+        gp_SetVertexIndex(newSubgraphForBridgeSet, v, context->VI[v].subgraphToGraphIndex);
+
+    // For cleanliness, we NIL out the graph-to-subgraph and subgraph-to-graph map locations used
+    // in this bridge set extraction.
+    for (v = gp_GetFirstVertex(newSubgraphForBridgeSet); gp_VertexInRange(newSubgraphForBridgeSet, v); v++)
+    {
+        context->VI[context->VI[v].subgraphToGraphIndex].graphToSubgraphIndex = NIL;
+        context->VI[v].subgraphToGraphIndex = NIL;
+    }
+
+    // A planar embedding of the bridge set has been successfully extracted inot the subgraph
+    return OK;
+}
+
+/********************************************************************
+ _K33Search_MakeGraphSubgraphVertexMaps()
+
+ The cutv1 and cutv2 vertices are made the first two vertices in the
+ new subgraph. From there, all other vertices in the bicomp rooted by
+ R that are marked visited are assigned to successive locations in
+ the subgraphToGraphindex map, and the vertex identities in the
+ graphToSubgraphIndex map are made to point to those successive index
+ locations in the subgraph.
+
+ For example, consider the first vertex visited after cutv1 and cutv2.
+ It will have index 3 in the subgraph. Suppose that vertex has index
+ 27 in theGraph. Then the graph-to-subgraph array for location 27
+ will be set to 3, and the subgraph-to-graph array location 3 will
+ be set to 27. This mapping is needed so we can figure out what
+
+ ********************************************************************/
+
+int _K33Search_MakeGraphSubgraphVertexMaps(graphP theGraph, int R, int cutv1, int cutv2, graphP newSubgraphForBridgeSet)
+{
+    K33SearchContext *context = NULL;
+    int nextSubgraphVertexIndex;
+
+    // Get the graph's K3,3 extension because that is where the subgraph-to-graph map is stored
+    gp_FindExtension(theGraph, K33SEARCH_ID, (void *)&context);
+    if (context == NULL)
+        return NOTOK;
+
+    // Associate cutv1 and cutv2 with the first and second vertex locations in the new subgraph
+    context->VI[cutv1].graphToSubgraphIndex = gp_GetFirstVertex(newSubgraphForBridgeSet);
+    context->VI[cutv2].graphToSubgraphIndex = gp_GetFirstVertex(newSubgraphForBridgeSet) + 1;
+    context->VI[gp_GetFirstVertex(newSubgraphForBridgeSet)].subgraphToGraphIndex = cutv1;
+    context->VI[gp_GetFirstVertex(newSubgraphForBridgeSet) + 1].subgraphToGraphIndex = cutv2;
+
+    // Now we explore the bridge set previously marked in the bicomp rooted by R, and we set up a
+    // similar mapping for all other vertices encountered. Note that cutv1 may be the non-virtual
+    // vertex associated with R, so we ignore R too because it is equivalent to ignoring cutv1 in
+    // the two bridge sets that contain R (beta_{vx} and beta_{vy}), and ignoring R is otherwise
+    // harmless as it is not in the other three bridge sets (beta_{wx}, beta_{wy}, and beta_{xy}).
+    nextSubgraphVertexIndex = gp_GetFirstVertex(newSubgraphForBridgeSet) + 2;
+
+    // The mapping has been successfully created.
+    return OK;
+}
+
+/********************************************************************
+ _K33Search_CopyMarkedEdgesToNewSubgraph()
+ ********************************************************************/
+int _K33Search_CopyMarkedEdgesToNewSubgraph(graphP theGraph, int R, int cutv1, int cutv2, graphP newSubgraphForBridgeSet)
+{
+    return OK;
+}
+
+/********************************************************************
+ _K33Search_PlanarizeNewSubgraph()
+ ********************************************************************/
+int _K33Search_PlanarizeNewSubgraph(graphP theGraph, int R, int cutv1, int cutv2, graphP newSubgraphForBridgeSet)
 {
     return OK;
 }
