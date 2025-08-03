@@ -1793,11 +1793,11 @@ int _K33Search_ExtractExternaFaceBridgeSet(graphP theGraph, int R, int poleVerte
     // The new subgraph should have all edges of the bridge set plus one virtual edge
     // connecting the 2-cut (poleVertex, equatorVertex), i.e., (first vertex, second vertex)
     // in the subgraph.
-    // if (newSubgraphForBridgeSet->M != numEdgesInSubgraph + 1)
-    //{
-    //   gp_Free(&newSubgraphForBridgeSet);
-    //    return NOTOK;
-    //}
+    /////if (newSubgraphForBridgeSet->M != numEdgesInSubgraph + 1)
+    /////{
+    /////    gp_Free(&newSubgraphForBridgeSet);
+    /////    return NOTOK;
+    /////}
 
     // Make an E-node and associate it with the new subgraph copy, making the E-node
     // the owner of the new subgraph.
@@ -2010,7 +2010,7 @@ int _K33Search_ExtractMarkedBridgeSet(graphP theGraph, int R, int cutv1, int cut
 int _K33Search_MakeGraphSubgraphVertexMaps(graphP theGraph, int R, int cutv1, int cutv2, graphP newSubgraphForBridgeSet)
 {
     K33SearchContext *context = NULL;
-    int nextSubgraphVertexIndex;
+    int nextSubgraphVertexIndex, v, e;
 
     // Get the graph's K3,3 extension because that is where the subgraph-to-graph map is stored
     gp_FindExtension(theGraph, K33SEARCH_ID, (void *)&context);
@@ -2029,6 +2029,64 @@ int _K33Search_MakeGraphSubgraphVertexMaps(graphP theGraph, int R, int cutv1, in
     // the two bridge sets that contain R (beta_{vx} and beta_{vy}), and ignoring R is otherwise
     // harmless as it is not in the other three bridge sets (beta_{wx}, beta_{wy}, and beta_{xy}).
     nextSubgraphVertexIndex = gp_GetFirstVertex(newSubgraphForBridgeSet) + 2;
+
+    // No point making this routine immune to preexisting stack content
+    if (!sp_IsEmpty(theGraph->theStack))
+        return NOTOK;
+
+    // Start at the bicomp root looking for all visited vertices to add to the mapping
+    sp_Push(theGraph->theStack, R);
+    while (!sp_IsEmpty(theGraph->theStack))
+    {
+        sp_Pop(theGraph->theStack, v);
+        if (gp_GetVertexVisited(theGraph, v))
+        {
+            // Every visited vertex will be temporarily marked unvisited here so that
+            // we don't add vertices to the mapping multiple times.
+            gp_ClearVertexVisited(theGraph, v);
+
+            // Add to the mapping only vertices other than cutv1 and cutv2 (and also
+            // not R, which may be the representative of cutv1 in the bicomp)
+            if (v != cutv1 && v != cutv2 && v != R)
+            {
+                // We expect no more vertices in the mapping than were previously counted
+                // as being marked in the bicomp.
+                if (nextSubgraphVertexIndex > newSubgraphForBridgeSet->N)
+                    return NOTOK;
+
+                // Create the mapping between v and the next vertex in the subgraph
+                context->VI[v].graphToSubgraphIndex = nextSubgraphVertexIndex;
+                context->VI[nextSubgraphVertexIndex].subgraphToGraphIndex = v;
+
+                // Increment for the next mapping
+                nextSubgraphVertexIndex++;
+            }
+
+            // For every edge in the adjacency list of v, we push its neighbors
+            // that are marked visited. Note that this can push some vertices
+            // multiple times, when they are neighbors of multiple vertices that
+            // are processed before they are. However, such vertices will eventually
+            // get popped for the first time, added to the mapping, and then their
+            // remaining stack entries will be popped and ignored because they
+            // will be changed to unvisited until after the outer loop ends.
+            e = gp_GetFirstArc(theGraph, v);
+            while (gp_IsArc(e))
+            {
+                if (gp_GetEdgeVisited(theGraph, gp_GetNeighbor(theGraph, e)))
+                    sp_Push(theGraph->theStack, gp_GetNeighbor(theGraph, e));
+
+                e = gp_GetNextArc(theGraph, e);
+            }
+        }
+    }
+
+    // We had to mark all the vertices of the subgraph as unvisited, so now
+    // we restore their visited flags to raised. This has to be done specially
+    // for the first vertex because cutv1 may be the non-virtual vertex of R,
+    // but it is R that has to be marked visited again in that case.
+    gp_SetVertexVisited(theGraph, cutv1 == theGraph->IC.v ? R : cutv1);
+    for (v = gp_GetFirstVertex(newSubgraphForBridgeSet) + 1; gp_VertexInRange(newSubgraphForBridgeSet, v); v++)
+        gp_SetVertexVisited(theGraph, context->VI[v].subgraphToGraphIndex);
 
     // The mapping has been successfully created.
     return OK;
