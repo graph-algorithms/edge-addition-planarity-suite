@@ -1793,11 +1793,11 @@ int _K33Search_ExtractExternaFaceBridgeSet(graphP theGraph, int R, int poleVerte
     // The new subgraph should have all edges of the bridge set plus one virtual edge
     // connecting the 2-cut (poleVertex, equatorVertex), i.e., (first vertex, second vertex)
     // in the subgraph.
-    /////if (newSubgraphForBridgeSet->M != numEdgesInSubgraph + 1)
-    /////{
-    /////    gp_Free(&newSubgraphForBridgeSet);
-    /////    return NOTOK;
-    /////}
+    if (newSubgraphForBridgeSet->M != numEdgesInSubgraph + 1)
+    {
+        gp_Free(&newSubgraphForBridgeSet);
+        return NOTOK;
+    }
 
     // Make an E-node and associate it with the new subgraph copy, making the E-node
     // the owner of the new subgraph.
@@ -2034,8 +2034,8 @@ int _K33Search_MakeGraphSubgraphVertexMaps(graphP theGraph, int R, int cutv1, in
     if (!sp_IsEmpty(theGraph->theStack))
         return NOTOK;
 
-    // Start at the bicomp root looking for all visited vertices to add to the mapping
-    sp_Push(theGraph->theStack, R);
+    // Start at the first cut vertex looking for all visited vertices to add to the mapping
+    sp_Push(theGraph->theStack, cutv1 == theGraph->IC.v ? R : cutv1);
     while (!sp_IsEmpty(theGraph->theStack))
     {
         sp_Pop(theGraph->theStack, v);
@@ -2072,7 +2072,7 @@ int _K33Search_MakeGraphSubgraphVertexMaps(graphP theGraph, int R, int cutv1, in
             e = gp_GetFirstArc(theGraph, v);
             while (gp_IsArc(e))
             {
-                if (gp_GetEdgeVisited(theGraph, gp_GetNeighbor(theGraph, e)))
+                if (gp_GetVertexVisited(theGraph, gp_GetNeighbor(theGraph, e)))
                     sp_Push(theGraph->theStack, gp_GetNeighbor(theGraph, e));
 
                 e = gp_GetNextArc(theGraph, e);
@@ -2097,6 +2097,80 @@ int _K33Search_MakeGraphSubgraphVertexMaps(graphP theGraph, int R, int cutv1, in
  ********************************************************************/
 int _K33Search_CopyMarkedEdgesToNewSubgraph(graphP theGraph, int R, int cutv1, int cutv2, graphP newSubgraphForBridgeSet)
 {
+    K33SearchContext *context = NULL, *contextSubgraph = NULL;
+    int v, e, vInSubgraph, wInSubgraph, eInSubgraph;
+
+    // Get the graph's K3,3 extension because that is where the subgraph-to-graph map is stored
+    gp_FindExtension(theGraph, K33SEARCH_ID, (void *)&context);
+    if (context == NULL)
+        return NOTOK;
+
+    // Seems to be no point in immunizing this subroutine from pre-existing stack content
+    if (!sp_IsEmpty(theGraph->theStack))
+        return NOTOK;
+
+    // Starting at the first vertex in the 2-cut, we seek all visited vertices and edges
+    sp_Push(theGraph->theStack, cutv1 == theGraph->IC.v ? R : cutv1);
+    while (!sp_IsEmpty(theGraph->theStack))
+    {
+        sp_Pop(theGraph->theStack, v);
+        if (gp_GetVertexVisited(theGraph, v))
+        {
+            // Need to avoid visiting visited vertices more than once
+            gp_ClearVertexVisited(theGraph, v);
+
+            e = gp_GetFirstArc(theGraph, v);
+            while (gp_IsArc(e))
+            {
+                // If the edge is visited, then it has to be copied to the subgraph
+                if (gp_GetEdgeVisited(theGraph, e))
+                {
+                    // First make sure we won't copy the edge twice
+                    gp_ClearEdgeVisited(theGraph, e);
+                    gp_ClearEdgeVisited(theGraph, gp_GetTwinArc(theGraph, e));
+
+                    // Use the mapping to generate the edge in the subgraph
+                    vInSubgraph = context->VI[v == R ? theGraph->IC.v : v].graphToSubgraphIndex;
+                    wInSubgraph = context->VI[gp_GetNeighbor(theGraph, e)].graphToSubgraphIndex;
+                    if (gp_AddEdge(newSubgraphForBridgeSet, vInSubgraph, 0, wInSubgraph, 0) != OK)
+                        return NOTOK;
+                    eInSubgraph = newSubgraphForBridgeSet->V[vInSubgraph].link[0];
+                    if (gp_GetNeighbor(newSubgraphForBridgeSet, eInSubgraph) != wInSubgraph)
+                        return NOTOK;
+
+                    // Mark the new edge virtual, if the original edge is virtual
+                    // NOTE that we don't have to transfer pathConnector info, just virtualness, because if
+                    // an edge has pathConnector info, then a nearby edge already has an EONode pointer to
+                    // an O-node whose child subtrees contain all the pathConnector edges in their subgraphs
+                    if (gp_GetEdgeVirtual(theGraph, e))
+                    {
+                        gp_SetEdgeVirtual(newSubgraphForBridgeSet, eInSubgraph);
+                        gp_SetEdgeVirtual(newSubgraphForBridgeSet, gp_GetTwinArc(newSubgraphForBridgeSet, eInSubgraph));
+                    }
+
+                    // Transfer ownership of an EONode pointer, if one is there
+                    if (context->E[e].EONode != NULL)
+                    {
+                        gp_FindExtension(newSubgraphForBridgeSet, K33SEARCH_ID, (void *)&contextSubgraph);
+                        if (contextSubgraph == NULL)
+                            return NOTOK;
+
+                        contextSubgraph->E[eInSubgraph].EONode = context->E[e].EONode;
+                        contextSubgraph->E[gp_GetTwinArc(newSubgraphForBridgeSet, eInSubgraph)].EONode = context->E[e].EONode;
+
+                        context->E[e].EONode = context->E[gp_GetTwinArc(theGraph, e)].EONode = NULL;
+                    }
+
+                    // The neighbor incident to v by the visited edge must be pushed so that
+                    // the neighbor's other incident edges can eventually be processed.
+                    sp_Push(theGraph->theStack, gp_GetNeighbor(theGraph, e));
+                }
+
+                e = gp_GetNextArc(theGraph, e);
+            }
+        }
+    }
+
     return OK;
 }
 
