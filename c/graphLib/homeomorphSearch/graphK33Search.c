@@ -1692,7 +1692,7 @@ int _K33Search_ExtractExternaFaceBridgeSet(graphP theGraph, int R, int poleVerte
 {
     isolatorContextP IC = &theGraph->IC;
     int oppositePoleVertex, oppositeEquatorVertex;
-    int linkDir, firstStartingEdge, lastStartingEdge, nextEdge;
+    int linkDir, firstStartingEdge, lastStartingEdge, e;
     int numVerticesInSubgraph = 0, numEdgesInSubgraph = 0;
     graphP newSubgraphForBridgeSet = NULL;
     K33Search_EONodeP theNewENode = NULL;
@@ -1743,10 +1743,10 @@ int _K33Search_ExtractExternaFaceBridgeSet(graphP theGraph, int R, int poleVerte
     lastStartingEdge = firstStartingEdge;
     while (lastStartingEdge != NIL)
     {
-        nextEdge = theGraph->E[lastStartingEdge].link[linkDir];
-        if (gp_GetEdgeVisited(theGraph, nextEdge))
+        e = theGraph->E[lastStartingEdge].link[linkDir];
+        if (gp_GetEdgeVisited(theGraph, e))
             break;
-        lastStartingEdge = nextEdge;
+        lastStartingEdge = e;
     }
 
     if (lastStartingEdge == NIL)
@@ -1793,7 +1793,14 @@ int _K33Search_ExtractExternaFaceBridgeSet(graphP theGraph, int R, int poleVerte
     // The new subgraph should have all edges of the bridge set plus one virtual edge
     // connecting the 2-cut (poleVertex, equatorVertex), i.e., (first vertex, second vertex)
     // in the subgraph.
-    if (newSubgraphForBridgeSet->M != numEdgesInSubgraph + 1)
+    // NOTE: We only add one to the edge count if the virtual edge between the 2-cut endpoints
+    //       was added, which we only do if it is not going to be a duplicate edge.
+
+    e = gp_GetNeighborEdgeRecord(newSubgraphForBridgeSet,
+                                 gp_GetFirstVertex(newSubgraphForBridgeSet),
+                                 gp_GetFirstVertex(newSubgraphForBridgeSet) + 1);
+
+    if (newSubgraphForBridgeSet->M != numEdgesInSubgraph + (gp_GetEdgeVirtual(newSubgraphForBridgeSet, e) ? 1 : 0))
     {
         gp_Free(&newSubgraphForBridgeSet);
         return NOTOK;
@@ -1950,18 +1957,27 @@ int _K33Search_ExtractMarkedBridgeSet(graphP theGraph, int R, int cutv1, int cut
     // Rather than using the graph-to-subgraph map to convert cutv1 and cutv2 into vertices in the
     // subgraph, we rely on the fact that they have been placed into the first and second vertex
     // positions in the subgraph.
-    if (gp_AddEdge(newSubgraphForBridgeSet,
-                   gp_GetFirstVertex(newSubgraphForBridgeSet), 0,
-                   gp_GetFirstVertex(newSubgraphForBridgeSet) + 1, 0) != OK)
-        return NOTOK;
+    // NOTE: The edge need only be added if the 2-cut endpoints are not already joined by an edge
+    //       and it's advantageous in this implementation to omit the unneeded edge because we
+    //       later have to planarize the subgraph, and the planarity implementation doesn't
+    //       support duplicate edges nor loops.
+    if (!gp_IsNeighbor(newSubgraphForBridgeSet,
+                       gp_GetFirstVertex(newSubgraphForBridgeSet),
+                       gp_GetFirstVertex(newSubgraphForBridgeSet) + 1))
+    {
+        if (gp_AddEdge(newSubgraphForBridgeSet,
+                       gp_GetFirstVertex(newSubgraphForBridgeSet), 0,
+                       gp_GetFirstVertex(newSubgraphForBridgeSet) + 1, 0) != OK)
+            return NOTOK;
 
-    // The new edge is marked virtual because it is added in addition to the edges that are actually
-    // in the bridge set being extracted.
-    e = gp_GetFirstArc(newSubgraphForBridgeSet, gp_GetFirstVertex(newSubgraphForBridgeSet));
-    if (gp_GetNeighbor(newSubgraphForBridgeSet, e) != gp_GetFirstVertex(newSubgraphForBridgeSet) + 1)
-        return NOTOK;
-    gp_SetEdgeVirtual(newSubgraphForBridgeSet, e);
-    gp_SetEdgeVirtual(newSubgraphForBridgeSet, gp_GetTwinArc(newSubgraphForBridgeSet, e));
+        // The new edge is marked virtual because it is added in addition to the edges that are actually
+        // in the bridge set being extracted.
+        e = gp_GetFirstArc(newSubgraphForBridgeSet, gp_GetFirstVertex(newSubgraphForBridgeSet));
+        if (gp_GetNeighbor(newSubgraphForBridgeSet, e) != gp_GetFirstVertex(newSubgraphForBridgeSet) + 1)
+            return NOTOK;
+        gp_SetEdgeVirtual(newSubgraphForBridgeSet, e);
+        gp_SetEdgeVirtual(newSubgraphForBridgeSet, gp_GetTwinArc(newSubgraphForBridgeSet, e));
+    }
 
     // Now we call the planarity algorithm so that the new subgraph contains a planar embedding of
     // the extracted bridge set.
@@ -2179,6 +2195,34 @@ int _K33Search_CopyMarkedEdgesToNewSubgraph(graphP theGraph, int R, int cutv1, i
  ********************************************************************/
 int _K33Search_PlanarizeNewSubgraph(graphP theGraph, int R, int cutv1, int cutv2, graphP newSubgraphForBridgeSet)
 {
+    graphP origSubgraph = gp_DupGraph(newSubgraphForBridgeSet);
+    int Result = gp_Embed(newSubgraphForBridgeSet, EMBEDFLAGS_PLANAR);
+
+    // The result should be planar (OK), so if it is NONEMBEDDABLE or NOTOK, we exit this routine with an error
+    if (Result != OK)
+    {
+        gp_Free(&origSubgraph);
+        return NOTOK;
+    }
+
+    // The output of embedding remains sorted in DFI order, so we switch it back
+    // to the original vertex order, which matches the graph-to-subgraph mapping
+    if (gp_SortVertices(newSubgraphForBridgeSet) != OK)
+    {
+        gp_Free(&origSubgraph);
+        return NOTOK;
+    }
+
+    // We don't need to test embedding integrity now because it will be tested later,
+    // but for now, we take the extra step.
+    // Test the integrity of the planar embedding of the extracted bridget set subgraph
+    if (gp_TestEmbedResultIntegrity(newSubgraphForBridgeSet, origSubgraph, OK) != OK)
+    {
+        gp_Free(&origSubgraph);
+        return NOTOK;
+    }
+
+    gp_Free(&origSubgraph);
     return OK;
 }
 
