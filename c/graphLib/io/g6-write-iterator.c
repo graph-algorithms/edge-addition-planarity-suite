@@ -34,7 +34,7 @@ int allocateG6WriteIterator(G6WriteIteratorP *ppG6WriteIterator, graphP pGraph)
     (*ppG6WriteIterator)->currGraphBuff = NULL;
     (*ppG6WriteIterator)->columnOffsets = NULL;
 
-    if (pGraph == NULL || pGraph->N <= 0)
+    if (pGraph == NULL || gp_getN(pGraph) <= 0)
     {
         ErrorMessage("[ERROR] Must allocate and initialize graph with an order greater than 0 to use the G6WriteIterator.\n");
 
@@ -80,7 +80,7 @@ bool _isG6WriteIteratorAllocated(G6WriteIteratorP pG6WriteIterator)
             ErrorMessage("G6WriteIterator's currGraph is NULL.\n");
             G6WriteIteratorIsAllocated = false;
         }
-        if (pG6WriteIterator->currGraph->N == 0)
+        if (gp_getN(pG6WriteIterator->currGraph) == 0)
         {
             ErrorMessage("G6WriteIterator's currGraph does not contain a valid "
                          "graph.\n");
@@ -188,7 +188,7 @@ int _beginG6WriteIteration(G6WriteIteratorP pG6WriteIterator)
         return NOTOK;
     }
 
-    pG6WriteIterator->graphOrder = pG6WriteIterator->currGraph->N;
+    pG6WriteIterator->graphOrder = gp_getN(pG6WriteIterator->currGraph);
 
     pG6WriteIterator->columnOffsets = (int *)calloc(pG6WriteIterator->graphOrder + 1, sizeof(int));
 

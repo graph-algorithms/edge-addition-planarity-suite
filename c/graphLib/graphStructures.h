@@ -570,6 +570,8 @@ extern "C"
     typedef struct baseGraphStructure baseGraphStructure;
     typedef baseGraphStructure *graphP;
 
+#define gp_getN(theGraph) (((theGraph) != NULL) ? (theGraph)->N : 0)
+
     /* Flags for graph:
             FLAGS_DFSNUMBERED is set if DFSNumber() has succeeded for the graph
             FLAGS_SORTEDBYDFI records whether the graph is in original vertex
