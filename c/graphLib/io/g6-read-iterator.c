@@ -53,19 +53,52 @@ bool _isG6ReadIteratorAllocated(G6ReadIteratorP pG6ReadIterator)
 {
     bool g6ReadIteratorIsAllocated = true;
 
-    if (pG6ReadIterator == NULL || pG6ReadIterator->currGraph == NULL)
+    if (pG6ReadIterator == NULL)
     {
+        ErrorMessage("G6ReadIterator is NULL.\n");
         g6ReadIteratorIsAllocated = false;
+    }
+    else
+    {
+        if (sf_ValidateStrOrFile(pG6ReadIterator->g6Input) != OK)
+        {
+            ErrorMessage("G6ReadIterator's g6Input string-or-file container "
+                         "is not valid.\n");
+            g6ReadIteratorIsAllocated = false;
+        }
+        if (pG6ReadIterator->currGraphBuff == NULL)
+        {
+            ErrorMessage("G6ReadIterator's currGraphBuff is NULL.\n");
+            g6ReadIteratorIsAllocated = false;
+        }
+        if (pG6ReadIterator->currGraph == NULL)
+        {
+            ErrorMessage("G6ReadIterator's currGraph is NULL.\n");
+            g6ReadIteratorIsAllocated = false;
+        }
     }
 
     return g6ReadIteratorIsAllocated;
 }
 
+bool contentsExhausted(G6ReadIteratorP pG6ReadIterator)
+{
+    if (pG6ReadIterator == NULL ||
+        pG6ReadIterator->currGraph == NULL ||
+        pG6ReadIterator->contentsExhausted)
+    {
+        return true;
+    }
+    return false;
+}
+
 int getNumGraphsRead(G6ReadIteratorP pG6ReadIterator, int *pNumGraphsRead)
 {
-    if (pG6ReadIterator == NULL)
+    if (_isG6ReadIteratorAllocated(pG6ReadIterator) == false)
     {
-        ErrorMessage("G6ReadIterator is not allocated.\n");
+        ErrorMessage("Unable to get numGraphsRead, as G6ReadIterator is not "
+                     "allocated.\n");
+        (*pNumGraphsRead) = 0;
         return NOTOK;
     }
 
@@ -190,7 +223,7 @@ int _beginG6ReadIteration(G6ReadIteratorP pG6ReadIterator)
         return exitCode;
     }
 
-    if (pG6ReadIterator->currGraph->N == 0)
+    if (gp_getN(pG6ReadIterator->currGraph) == 0)
     {
         exitCode = gp_InitGraph(pG6ReadIterator->currGraph, graphOrder);
 
@@ -205,9 +238,9 @@ int _beginG6ReadIteration(G6ReadIteratorP pG6ReadIterator)
     }
     else
     {
-        if (pG6ReadIterator->currGraph->N != graphOrder)
+        if (gp_getN(pG6ReadIterator->currGraph) != graphOrder)
         {
-            sprintf(messageContents, "Graph datastructure passed to G6ReadIterator already initialized with graph order %d,\n", pG6ReadIterator->currGraph->N);
+            sprintf(messageContents, "Graph datastructure passed to G6ReadIterator already initialized with graph order %d,\n", gp_getN(pG6ReadIterator->currGraph));
             ErrorMessage(messageContents);
             sprintf(messageContents, "\twhich doesn't match the graph order %d specified in the file.\n", graphOrder);
             ErrorMessage(messageContents);
@@ -450,7 +483,10 @@ int readGraphUsingG6ReadIterator(G6ReadIteratorP pG6ReadIterator)
         pG6ReadIterator->numGraphsRead = numGraphsRead;
     }
     else
+    {
         pG6ReadIterator->currGraph = NULL;
+        pG6ReadIterator->contentsExhausted = true;
+    }
 
     return exitCode;
 }

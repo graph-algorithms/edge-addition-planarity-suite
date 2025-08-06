@@ -26,7 +26,6 @@ int RandomGraphs(char command, int NumGraphs, int SizeOfGraphs, char *outfileNam
     char theFileName[MAXLINE + 1];
     theFileName[0] = '\0';
 
-    strOrFileP outputContainer = NULL;
     int K, countUpdateFreq;
     int Result = OK, MainStatistic = 0;
     int ObstructionMinorFreqs[NUM_MINORS];
