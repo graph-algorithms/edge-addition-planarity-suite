@@ -112,7 +112,7 @@ int _K33Search_ExtractEmbeddingSubgraphs(graphP theGraph, int R, K33Search_EONod
 int _K33Search_ExtractExternaFaceBridgeSet(graphP theGraph, int R, int poleVertex, int equatorVertex, K33Search_EONodeP newONode);
 int _K33Search_ExtractXYBridgeSet(graphP theGraph, int R, K33Search_EONodeP newONode);
 int _K33Search_ExtractVWBridgeSet(graphP theGraph, int R, K33Search_EONodeP newONode);
-int _K33Search_MarkBridgeSetToExtract(graphP theGraph, int R, int equatorVertex, int poleVertex,
+int _K33Search_MarkBridgeSetToExtract(graphP theGraph, int R, int cutv1, int cutv2,
                                       int firstStartingEdge, int linkDir, int lastStartingEdge);
 int _K33Search_ExtractMarkedBridgeSet(graphP theGraph, int R, int cutv1, int cutv2, graphP newSubgraphForBridgeSet);
 int _K33Search_MakeGraphSubgraphVertexMaps(graphP theGraph, int R, int cutv1, int cutv2, graphP newSubgraphForBridgeSet);
@@ -1755,7 +1755,7 @@ int _K33Search_ExtractExternaFaceBridgeSet(graphP theGraph, int R, int poleVerte
     // The equatorVertex and the span of edges rotationally from firstStartingEdge to lastStartingEdge
     // indicate how to start exploring the beta bridge set being extracted. This call marks the
     // visited flags in all vertices and edges of the bicomp that need to be extracted.
-    if (_K33Search_MarkBridgeSetToExtract(theGraph, R, equatorVertex, poleVertex,
+    if (_K33Search_MarkBridgeSetToExtract(theGraph, R, poleVertex, equatorVertex,
                                           firstStartingEdge, linkDir, lastStartingEdge) != OK)
         return NOTOK;
 
@@ -1830,12 +1830,19 @@ int _K33Search_ExtractExternaFaceBridgeSet(graphP theGraph, int R, int poleVerte
 /********************************************************************
  _K33Search_MarkBridgeSetToExtract()
 
- Starting with the edges in the bridge set that are incident to the equatorVertex,
- we explore toward and including the polevVertex to obtain the vertices and edges
+ Starting with the edges in the bridge set that are incident to cutv2,
+ we explore toward and including cutv1 to obtain the vertices and edges
  to be extracted to the bridge set subgraph.
+
+ For bridge sets along the external face, it is expected that cutv1
+ is a poleVertex and cutv2 is an equatorVertex.
+
+ The first and last edge and the linkDir are references to edges
+ incident to cutv2. They define the subset of edges to be used to
+ start the exploration of the bridget set being extracted.
  ********************************************************************/
 
-int _K33Search_MarkBridgeSetToExtract(graphP theGraph, int R, int equatorVertex, int poleVertex,
+int _K33Search_MarkBridgeSetToExtract(graphP theGraph, int R, int cutv1, int cutv2,
                                       int firstStartingEdge, int linkDir, int lastStartingEdge)
 {
     int v, e, ePrev;
@@ -1848,9 +1855,9 @@ int _K33Search_MarkBridgeSetToExtract(graphP theGraph, int R, int equatorVertex,
     if (!sp_IsEmpty(theGraph->theStack))
         return NOTOK;
 
-    // A DFS exploration will be performed, starting with the equatorVertex, but constrained to
-    // proceeding only to the neighbors indicated by the firstStartingEdge to lastStartingEdge
-    gp_SetVertexVisited(theGraph, equatorVertex);
+    // A DFS exploration will be performed, starting with cutv2, but constrained to
+    // only the neighbors indicated by the firstStartingEdge to lastStartingEdge
+    gp_SetVertexVisited(theGraph, cutv2);
 
     ePrev = NIL;
     e = firstStartingEdge;
@@ -1881,7 +1888,7 @@ int _K33Search_MarkBridgeSetToExtract(graphP theGraph, int R, int equatorVertex,
     // mark it visited ahead of the main loop so that the DFS will not go beyond it.
     // If the poleVertex is v, then we need to use R because R is v's representative
     // virtual vertex in the bicomp being reduced.
-    gp_SetVertexVisited(theGraph, (poleVertex == theGraph->IC.v ? R : poleVertex));
+    gp_SetVertexVisited(theGraph, (cutv1 == theGraph->IC.v ? R : cutv1));
 
     // Perform the constrained DFS on the bridge set
     while (!sp_IsEmpty(theGraph->theStack))
@@ -1890,8 +1897,8 @@ int _K33Search_MarkBridgeSetToExtract(graphP theGraph, int R, int equatorVertex,
 
         // If the vertex has not already been visited, then we can now mark it visited
         // and process its adjacency list. Note that this if test is the one that also
-        // ensures that the DFS explores no farther than the poleVertex nor any other
-        // edges of the equatorVertex.
+        // ensures that the DFS explores no farther than cutv1 nor any other edges
+        // of cutv2.
         if (!gp_GetVertexVisited(theGraph, v))
         {
             gp_SetVertexVisited(theGraph, v);
