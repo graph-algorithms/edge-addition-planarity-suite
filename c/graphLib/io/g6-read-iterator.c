@@ -396,12 +396,7 @@ int readGraphUsingG6ReadIterator(G6ReadIteratorP pG6ReadIterator)
         return NOTOK;
     }
 
-    int numGraphsRead = 0;
-    if (getNumGraphsRead(pG6ReadIterator, (&numGraphsRead)) != OK)
-    {
-        ErrorMessage("Unable to get number of graphs read from G6ReadIterator.\n");
-        return NOTOK;
-    }
+    int numGraphsRead = pG6ReadIterator->numGraphsRead;
 
     char *currGraphBuff = pG6ReadIterator->currGraphBuff;
 
