@@ -112,6 +112,9 @@ int _K33Search_ExtractEmbeddingSubgraphs(graphP theGraph, int R, K33Search_EONod
 int _K33Search_ExtractExternaFaceBridgeSet(graphP theGraph, int R, int poleVertex, int equatorVertex, K33Search_EONodeP newONode);
 int _K33Search_ExtractXYBridgeSet(graphP theGraph, int R, K33Search_EONodeP newONode);
 int _K33Search_ExtractVWBridgeSet(graphP theGraph, int R, K33Search_EONodeP newONode);
+
+int _K33Search_ExtractEmbeddedBridgeSet(graphP theGraph, int R, int cutv1, int cutv2, K33Search_EONodeP newONode,
+                                        int firstStartingEdge, int linkDir, int lastStartingEdge);
 int _K33Search_MarkBridgeSetToExtract(graphP theGraph, int R, int cutv1, int cutv2,
                                       int firstStartingEdge, int linkDir, int lastStartingEdge);
 int _K33Search_ExtractMarkedBridgeSet(graphP theGraph, int R, int cutv1, int cutv2, graphP newSubgraphForBridgeSet);
@@ -1691,23 +1694,13 @@ int _K33Search_ExtractEmbeddingSubgraphs(graphP theGraph, int R, K33Search_EONod
 int _K33Search_ExtractExternaFaceBridgeSet(graphP theGraph, int R, int poleVertex, int equatorVertex, K33Search_EONodeP newONode)
 {
     isolatorContextP IC = &theGraph->IC;
-    int oppositePoleVertex, oppositeEquatorVertex;
     int linkDir, firstStartingEdge, lastStartingEdge, e;
-    int numVerticesInSubgraph = 0, numEdgesInSubgraph = 0;
-    graphP newSubgraphForBridgeSet = NULL;
-    K33Search_EONodeP theNewENode = NULL;
 
     // This is a private function, but still making sure the two key parameters were correctly passed.
     // P.S. Parentheses added around && clauses not because needed but to appease -Wparentheses
     if ((poleVertex != IC->v && poleVertex != IC->w) ||
         (equatorVertex != IC->x && equatorVertex != IC->y))
         return NOTOK;
-
-    // Find the opposite pole and equator vertices because we need them to detect which
-    // direction is the right way to traverse around the external face to go directly from
-    // the poleVertex to the equatorVertex or vice versa.
-    oppositePoleVertex = poleVertex == IC->v ? IC->w : IC->v;
-    oppositeEquatorVertex = equatorVertex == IC->x ? IC->y : IC->x;
 
     // We mark the highest or lowest xy path, depending on parameterization, because
     // the marking will help find the boundary edges of the bridget set to extract.
@@ -1741,7 +1734,7 @@ int _K33Search_ExtractExternaFaceBridgeSet(graphP theGraph, int R, int poleVerte
     // xy path will be the lastStartingEdge.
 
     lastStartingEdge = firstStartingEdge;
-    while (lastStartingEdge != NIL)
+    while (gp_IsArc(lastStartingEdge))
     {
         e = theGraph->E[lastStartingEdge].link[linkDir];
         if (gp_GetEdgeVisited(theGraph, e))
@@ -1749,20 +1742,110 @@ int _K33Search_ExtractExternaFaceBridgeSet(graphP theGraph, int R, int poleVerte
         lastStartingEdge = e;
     }
 
-    if (lastStartingEdge == NIL)
+    if (gp_IsNotArc(lastStartingEdge))
         return NOTOK;
 
-    // The equatorVertex and the span of edges rotationally from firstStartingEdge to lastStartingEdge
+    return _K33Search_ExtractEmbeddedBridgeSet(theGraph, R, poleVertex, equatorVertex, newONode,
+                                               firstStartingEdge, linkDir, lastStartingEdge);
+}
+
+/********************************************************************
+ _K33Search_ExtractXYBridgeSet()
+
+    This method isolates the bridge set connecting the vertices x and y
+    in the bicomp rooted by R. Because the bicomp is a planar embedding,
+    this is all the vertices and edges that are between (inclusive of)
+    the highest and lowest xy paths.
+    ********************************************************************/
+
+int _K33Search_ExtractXYBridgeSet(graphP theGraph, int R, K33Search_EONodeP newONode)
+{
+    int linkDir, firstStartingEdge, lastStartingEdge;
+
+    // We will be computing the first and last edges emanating from y on which
+    // to start the exploration of beta_{xy}. Because of the previously imposed
+    // consistent vertex orientation, the link[0] edge record of y leads back to
+    // the bicomp root R, and therefore also gives the link iteration direction
+    // to traverse y's adjacency list in the direction from the external face
+    // path to R, toward the highest xy path then the lowest xy path, then the
+    // external face path leading to w.
+    linkDir = 0;
+
+    // We start with marking the highest xy path so we can find the firstStartingEdge
+    if (_ClearVisitedFlagsInBicomp(theGraph, R) != OK || _MarkHighestXYPath(theGraph) != OK)
+        return NOTOK;
+
+    // Find the firstStartingEdge by iterating until the highest xy path edge
+    // emanating from y is found
+    firstStartingEdge = theGraph->V[theGraph->IC.y].link[linkDir];
+    while (gp_IsArc(firstStartingEdge))
+    {
+        if (gp_GetEdgeVisited(theGraph, firstStartingEdge))
+            break;
+        firstStartingEdge = theGraph->E[firstStartingEdge].link[linkDir];
+    }
+
+    if (gp_IsNotArc(firstStartingEdge))
+        return NOTOK;
+
+    // Now we mark the lowest xy path so we can find the lastStartingEdge
+    if (_ClearVisitedFlagsInBicomp(theGraph, R) != OK || _MarkLowestXYPath(theGraph) != OK)
+        return NOTOK;
+
+    // The lastStartingEdge is the lowest xy path edge emanating from y
+    lastStartingEdge = firstStartingEdge;
+    while (gp_IsArc(lastStartingEdge))
+    {
+        if (gp_GetEdgeVisited(theGraph, lastStartingEdge))
+            break;
+        lastStartingEdge = theGraph->E[lastStartingEdge].link[linkDir];
+    }
+
+    if (gp_IsNotArc(lastStartingEdge))
+        return NOTOK;
+
+    return _K33Search_ExtractEmbeddedBridgeSet(theGraph, R, theGraph->IC.x, theGraph->IC.y, newONode,
+                                               firstStartingEdge, linkDir, lastStartingEdge);
+}
+
+/********************************************************************
+ _K33Search_ExtractEmbeddedBridgeSet()
+
+ The five bridge sets that are already fully embedded can be
+ extracted by the same code sequence, including creating of
+ the representative E-node and making that a child of the O-node.
+ ********************************************************************/
+
+int _K33Search_ExtractEmbeddedBridgeSet(graphP theGraph, int R, int cutv1, int cutv2, K33Search_EONodeP newONode,
+                                        int firstStartingEdge, int linkDir, int lastStartingEdge)
+{
+    isolatorContextP IC = &theGraph->IC;
+    int oppositeOfCutv1, oppositeOfCutv2, e;
+    int numVerticesInSubgraph = 0, numEdgesInSubgraph = 0;
+    graphP newSubgraphForBridgeSet = NULL;
+    K33Search_EONodeP theNewENode = NULL;
+
+    // The cutv2 vertex and the span of edges rotationally from firstStartingEdge to lastStartingEdge
     // indicate how to start exploring the beta bridge set being extracted. This call marks the
     // visited flags in all vertices and edges of the bicomp that need to be extracted.
-    if (_K33Search_MarkBridgeSetToExtract(theGraph, R, poleVertex, equatorVertex,
+    if (_K33Search_MarkBridgeSetToExtract(theGraph, R, cutv1, cutv2,
                                           firstStartingEdge, linkDir, lastStartingEdge) != OK)
         return NOTOK;
 
-    // The bridge set is 2-cut separable at the poleVertex and equatorVertex, so it is an error if the
-    // exploration reaches the opposite equator or the opposite pole (or virtual copy if the pole is v).
-    if (gp_GetVertexVisited(theGraph, oppositeEquatorVertex) ||
-        gp_GetVertexVisited(theGraph, oppositePoleVertex == IC->v ? R : IC->w))
+    // The bridge set is 2-cut separable at cutv1 and cutv2, so it is an error if the above
+    // exploration reaches the opposite cutv1 or cutv2 (or virtual copy, if appropriate).
+    if (cutv1 == IC->v || cutv1 == IC->w)
+    {
+        oppositeOfCutv1 = cutv1 == IC->v ? IC->w : R;
+        oppositeOfCutv2 = cutv2 == IC->x ? IC->y : IC->x;
+    }
+    else if (cutv1 == IC->x)
+    {
+        oppositeOfCutv1 = R;
+        oppositeOfCutv2 = IC->w;
+    }
+
+    if (gp_GetVertexVisited(theGraph, oppositeOfCutv1) || gp_GetVertexVisited(theGraph, oppositeOfCutv2))
         return NOTOK;
 
     // Get the order and size of the subgraph to be created
@@ -1783,8 +1866,8 @@ int _K33Search_ExtractExternaFaceBridgeSet(graphP theGraph, int R, int poleVerte
     // Copy the vertices and edges marked visited from the bicomp to the new subgraph.
     // This will include transferring EONode pointer ownership to subgraph edges.
     // The bridge set subgraph is expected to be a planar embedding, including an extra
-    // external face edge between the poleVertex and equatorVertex in the subgraph
-    if (_K33Search_ExtractMarkedBridgeSet(theGraph, R, poleVertex, equatorVertex, newSubgraphForBridgeSet) != OK)
+    // virtual edge between cutv1 and cutv2, if the edge does not already exist
+    if (_K33Search_ExtractMarkedBridgeSet(theGraph, R, cutv1, cutv2, newSubgraphForBridgeSet) != OK)
     {
         gp_Free(&newSubgraphForBridgeSet);
         return NOTOK;
@@ -1814,9 +1897,9 @@ int _K33Search_ExtractExternaFaceBridgeSet(graphP theGraph, int R, int poleVerte
         return NOTOK;
     }
 
-    // Now we find the (poleVertex, equatorVertex) edge in the K5 graph of the O-node and
+    // Now we find the edge in the O-node's K5 that is associated with cutv1 and cutv2 and
     // point its EONode pointers at the newly created E-node
-    if (_K33Search_AttachENodeAsChildOfONode(theNewENode, poleVertex, equatorVertex, newONode) != OK)
+    if (_K33Search_AttachENodeAsChildOfONode(theNewENode, cutv1, cutv2, newONode) != OK)
     {
         _K33Search_EONode_Free(&theNewENode);
         return NOTOK;
@@ -2230,40 +2313,6 @@ int _K33Search_PlanarizeNewSubgraph(graphP theGraph, int R, int cutv1, int cutv2
     }
 
     gp_Free(&origSubgraph);
-    return OK;
-}
-
-/********************************************************************
- _K33Search_ExtractXYBridgeSet()
-
-    This method isolates the bridge set connecting the vertices x and y
-    in the bicomp rooted by R. Because the bicomp is a planar embedding,
-    this is all the vertices and edges that are between (inclusive of)
-    the highest and lowest xy paths.
-    ********************************************************************/
-
-int _K33Search_ExtractXYBridgeSet(graphP theGraph, int R, K33Search_EONodeP newONode)
-{
-    // Generally, the way we're going to do this is to first mark the highest xy path
-    // so we can get the uppoer boundary edge at x for beta_{xy}, then we mark the
-    // lowest xy path and obtain the lower boundary edge at x for beta_{xy}.
-
-    // The orientation to use is determined by whichever direction goes from the upper to
-    // the lower without hitting NIL (signifying the vertex x placement between two edges that
-    // hold it on the external face).
-
-    // Given the orientation, we are able to obtain all edges incident to x in the bicomp
-    // rooted by R that are in the beta_{xy} bridge set.
-
-    // Now we should be able to explore and fully mark visited the vertices and edges of
-    // beta_{xy} by reusing an appropriately parameterization of the subroutine used to
-    // explore and fully mark the external face bridge sets.
-
-    // Now we should be able to extract beta_{xy} as a subgraph into a new subgraph copy.
-    // Clearly we're going to reuse a larger chunk of the ending of the routine that
-    // makes the extracted graph and E-node for the external face bridge sets and that
-    // makes that E-node a child of the newONode.
-
     return OK;
 }
 
