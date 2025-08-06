@@ -37,7 +37,7 @@ extern "C"
 
     int allocateG6ReadIterator(G6ReadIteratorP *, graphP);
     bool _isG6ReadIteratorAllocated(G6ReadIteratorP);
-    bool G6ReadIteratorContentsExhausted(G6ReadIteratorP pG6ReadIterator);
+    bool contentsExhausted(G6ReadIteratorP pG6ReadIterator);
 
     int getNumGraphsRead(G6ReadIteratorP, int *);
     int getOrderOfGraphToRead(G6ReadIteratorP, int *);

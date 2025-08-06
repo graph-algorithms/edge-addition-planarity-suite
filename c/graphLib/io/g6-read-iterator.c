@@ -81,7 +81,7 @@ bool _isG6ReadIteratorAllocated(G6ReadIteratorP pG6ReadIterator)
     return g6ReadIteratorIsAllocated;
 }
 
-bool G6ReadIteratorContentsExhausted(G6ReadIteratorP pG6ReadIterator)
+bool contentsExhausted(G6ReadIteratorP pG6ReadIterator)
 {
     if (pG6ReadIterator == NULL ||
         pG6ReadIterator->currGraph == NULL ||

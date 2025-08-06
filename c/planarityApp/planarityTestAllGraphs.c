@@ -192,7 +192,7 @@ int testAllGraphs(graphP theGraph, char command, char *infileName, testAllStatsP
             break;
         }
 
-        if (G6ReadIteratorContentsExhausted(pG6ReadIterator))
+        if (contentsExhausted(pG6ReadIterator))
             break;
 
         gp_CopyGraph(copyOfOrigGraph, theGraph);
