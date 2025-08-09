@@ -16,7 +16,8 @@ extern "C"
 
     // K33CERT begin: Marking edges as virtual
 
-    // This should get promoted to graphStructures.h
+    // This should get promoted to graphStructures.h (plus check if debug function versions needed)
+    //
     //     flags: Bits 0-15 reserved for library; bits 16 and higher for apps
     //            ...
     //            Bit 7: Arc is virtual (caller should ensure the twin arc is also set or cleared)
@@ -26,6 +27,24 @@ extern "C"
 #define gp_GetEdgeVirtual(theGraph, e) (theGraph->E[e].flags & EDGEFLAG_VIRTUAL_MASK)
 #define gp_ClearEdgeVirtual(theGraph, e) (theGraph->E[e].flags &= ~EDGEFLAG_VIRTUAL_MASK)
 #define gp_SetEdgeVirtual(theGraph, e) (theGraph->E[e].flags |= EDGEFLAG_VIRTUAL_MASK)
+
+    // These vertex macros and flag should also get promoted to graphStructures.h
+    // This could possibly take the form of calling this new bit a 'virtual' bit
+    // instead, but that would require rationalization with the current way of
+    // representing virtual vertices and making new macros for the prior way so
+    // that this can be added without a performance cost on core planarity.
+    //
+    //     flags: Bits 0-15 reserved for library; bits 16 and higher for apps
+    //            ...
+    //            Bit 4: Indicates whether a vertex's primary representation should be
+    //                   hidden, such as due to being transferred to another graph.
+
+#define VERTEX_HIDDEN_MASK 16
+
+#define gp_GetVertexHidden(theGraph, v) (theGraph->V[v].flags & VERTEX_HIDDEN_MASK)
+#define gp_ClearVertexHidden(theGraph, v) (theGraph->V[v].flags &= ~VERTEX_HIDDEN_MASK)
+#define gp_SetVertexHidden(theGraph, v) (theGraph->V[v].flags |= VERTEX_HIDDEN_MASK)
+
 // K33CERT end
 
 // K33CERT begin: Declarations for K3,3 embedding obsruction tree nodes
