@@ -29,21 +29,22 @@ extern "C"
 #define gp_SetEdgeVirtual(theGraph, e) (theGraph->E[e].flags |= EDGEFLAG_VIRTUAL_MASK)
 
     // These vertex macros and flag should also get promoted to graphStructures.h
-    // This could possibly take the form of calling this new bit a 'virtual' bit
-    // instead, but that would require rationalization with the current way of
-    // representing virtual vertices and making new macros for the prior way so
-    // that this can be added without a performance cost on core planarity.
+    //
+    // A fuller implementation of virtual vertices will be rationalized with the
+    // vertices that are virtual due to being at positions N+1 to 2N.
+    // This is being added now as a beachhead to allow primary location vertices
+    // to also be virtual, as is needed in this certification implementation.
     //
     //     flags: Bits 0-15 reserved for library; bits 16 and higher for apps
     //            ...
     //            Bit 4: Indicates whether a vertex's primary representation should be
     //                   hidden, such as due to being transferred to another graph.
 
-#define VERTEX_HIDDEN_MASK 16
+#define VERTEX_VIRTUAL_MASK 16
 
-#define gp_GetVertexHidden(theGraph, v) (theGraph->V[v].flags & VERTEX_HIDDEN_MASK)
-#define gp_ClearVertexHidden(theGraph, v) (theGraph->V[v].flags &= ~VERTEX_HIDDEN_MASK)
-#define gp_SetVertexHidden(theGraph, v) (theGraph->V[v].flags |= VERTEX_HIDDEN_MASK)
+#define gp_GetVertexVirtual(theGraph, v) (theGraph->V[v].flags & VERTEX_VIRTUAL_MASK)
+#define gp_ClearVertexVirtual(theGraph, v) (theGraph->V[v].flags &= ~VERTEX_VIRTUAL_MASK)
+#define gp_SetVertexVirtual(theGraph, v) (theGraph->V[v].flags |= VERTEX_VIRTUAL_MASK)
 
 // K33CERT end
 

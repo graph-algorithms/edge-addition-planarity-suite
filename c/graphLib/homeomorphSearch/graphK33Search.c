@@ -128,10 +128,9 @@ int _K33Search_AttachENodeAsChildOfONode(K33Search_EONodeP theENode, int cutv1, 
 // When these methods are promoted to graphUtils.c, then add extern to front of these header declarations.
 int _CountVerticesAndEdgesInBicomp(graphP theGraph, int BicompRoot, int visitedOnly, int *pNumVisitedVertices, int *pNumVisitedEdges);
 
-int _SetVertexHiddenInBicomp(graphP theGraph, int R);
-int _SetEdgesToVirtualInBicomp(graphP theGraph, int R);
-int _SetVertexHiddenInPertinentOnlySubtrees(graphP theGraph, int w);
-int _SetEdgesToVirtualInPertinentOnlySubtrees(graphP theGraph, int w);
+int _MakeBicompVirtual(graphP theGraph, int R);
+int _MakePertinentOnlySubtreesVirtual(graphP theGraph, int v, int w);
+int _DeleteEdgesOfPertinentOnlySubtreeRoots(graphP theGraph, int w);
 
 int _CountUnembeddedEdgesInPertinentOnlySubtrees(graphP theGraph, int w, int *pNumEdgesInSubgraph);
 int _CountVerticesAndEdgesInPertinentOnlySubtrees(graphP theGraph, int w,
@@ -1686,36 +1685,36 @@ int _K33Search_ExtractEmbeddingSubgraphs(graphP theGraph, int R, K33Search_EONod
         return NOTOK;
 
     // The vertices and edges in the bicomp rooted by R are being represented in the
-    // E-node  subgraphs for beta_{vx}, beta-{vy}, beta_{wx}, beta_{wy}, and beta_{xy},
-    // except for v, w, x, and y. Therefore, the vertices and edges in the bicomp
-    // rooted by R are marked appropriately.
-    if (_SetVertexHiddenInBicomp(theGraph, R) != OK)
+    // E-node subgraphs for beta_{vx}, beta-{vy}, beta_{wx}, beta_{wy}, and beta_{xy},
+    // except for v, w, x, and y. Therefore, the edges and all the other vertices in
+    // the bicomp rooted by R are made virtual.
+    // NOTE: Although the bicomp's edges are subsequently deleted by _ReduceBicomp()
+    //       some are saved via the pathConnector mechanism, so we are making sure
+    //       those are interpreted as virtual by the K_{3,3}-free certifier
+    if (_MakeBicompVirtual(theGraph, R) != OK)
         return NOTOK;
 
     // Note that v is not marked by the call above, and bicomp roots like R don't
     // participate in K_{3,3}-free embedding integrity checks.
-    // For w, x, and y, all three are unhidden because we are leaving the
+    // For w, x, and y, all three are returned to non-virtual because we are leaving the
     // embeddings of beta_w, beta_x, and beta_y in the main planar embedding.
-    gp_ClearVertexHidden(theGraph, R);
-    gp_ClearVertexHidden(theGraph, IC->w);
-    gp_ClearVertexHidden(theGraph, IC->x);
-    gp_ClearVertexHidden(theGraph, IC->y);
-
-    // Although the edges are deleted from the bicomp rooted by R during _ReduceBicomp(),
-    // there are vestigial remnants of some of the edges that remain due to the
-    // pathConnector mechanism. So, we make sure those are virtual and therefore do not
-    // participate in K_{3,3}-free embedding integrity checks.
-    if (_SetEdgesToVirtualInBicomp(theGraph, R) != OK)
-        return NOTOK;
+    gp_ClearVertexVirtual(theGraph, R);
+    gp_ClearVertexVirtual(theGraph, IC->w);
+    gp_ClearVertexVirtual(theGraph, IC->x);
+    gp_ClearVertexVirtual(theGraph, IC->y);
 
     // The edges and vertices in the pertinent-only descendant bicomps of w must be
     // marked in a way which ensures they don't impact the result of K_{3,3}-free
-    // embedding integrity checks. All of the vertices and edges so marked are
-    // represented in the new E-node subgraph for beta_{vw}.
-    if (_SetVertexHiddenInPertinentOnlySubtrees(theGraph, IC->w) != OK)
+    // embedding integrity checks. The vertices and edges made virtual by this
+    // operation are represented  in the new E-node subgraph for beta_{vw}.
+    if (_MakePertinentOnlySubtreesVirtual(theGraph, IC->v, IC->w) != OK)
         return NOTOK;
 
-    if (_SetEdgesToVirtualInPertinentOnlySubtrees(theGraph, IC->w) != OK)
+    // The pertinent-only subgraphs rooted by w have been made virtual, but
+    // we now also delete the edges of the roots of the direct child bicomps
+    // of w, to ensure that the _JoinBicomps() call in embedding post-prcessing
+    // does not attach any of the virtualized graph structure to w.
+    if (_DeleteEdgesOfPertinentOnlySubtreeRoots(theGraph, IC->w) != OK)
         return NOTOK;
 
     // Success if all six bridge sets of the K4 homeomorph on v, w, x, and y were extracted
@@ -2607,47 +2606,87 @@ int _CountVerticesAndEdgesInBicomp(graphP theGraph, int BicompRoot, int visitedO
 }
 
 /********************************************************************
+ _MakeBicompVirtual()
  ********************************************************************/
-int _SetVertexHiddenInBicomp(graphP theGraph, int R)
+int _MakeBicompVirtual(graphP theGraph, int R)
 {
+    int stackBottom = sp_GetCurrentSize(theGraph->theStack);
+    int v, e;
+
+    sp_Push(theGraph->theStack, BicompRoot);
+    while (sp_GetCurrentSize(theGraph->theStack) > stackBottom)
+    {
+        sp_Pop(theGraph->theStack, v);
+        gp_SetVertexVirtual(theGraph, v);
+
+        e = gp_GetFirstArc(theGraph, v);
+        while (gp_IsArc(e))
+        {
+            gp_SetEdgeVirtual(theGraph, e);
+
+            if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_CHILD)
+                sp_Push(theGraph->theStack, gp_GetNeighbor(theGraph, e));
+
+            e = gp_GetNextArc(theGraph, e);
+        }
+    }
+
+    return OK;
+}
+
+/********************************************************************
+ _MakePertinentOnlySubtreesVirtual()
+ ********************************************************************/
+int _MakePertinentOnlySubtreesVirtual(graphP theGraph, int v, int w)
+{
+    // For each pertinent-only child bicomp of w (in pertinentRoots),
+    //    Push the root on the stack to initialize the loop
+
+    // While the stack is not empty, pop a root, call _MakeBicompVirtual(),
+    // and then run its  external face to find all vertices that have
+    // with pertinent-only child bicomps, and  push those onto the stack.
+
+    // After code filled in, change to return OK;
     return NOTOK;
 }
 
 /********************************************************************
  ********************************************************************/
-int _SetEdgesToVirtualInBicomp(graphP theGraph, int R)
+int _DeleteEdgesOfPertinentOnlySubtreeRoots(graphP theGraph, int w)
 {
+    // For each pertinent-only child bicomp of w (in pertinentRoots),
+    //    Delete call gp_DeleteEdge() to delete its incident edges.
+
+    // After code filled in, change to return OK;
     return NOTOK;
 }
 
 /********************************************************************
- excludes w.
- ********************************************************************/
-int _SetVertexHiddenInPertinentOnlySubtrees(graphP theGraph, int w)
-{
-    return NOTOK;
-}
-
-/********************************************************************
- ********************************************************************/
-int _SetEdgesToVirtualInPertinentOnlySubtrees(graphP theGraph, int w)
-{
-    return NOTOK;
-}
-
-/********************************************************************
+ _CountUnembeddedEdgesInPertinentOnlySubtrees()
  ********************************************************************/
 int _CountUnembeddedEdgesInPertinentOnlySubtrees(graphP theGraph, int w, int *pNumEdgesInSubgraph)
 {
+    // Go through the pertinent subtrees the same way as in
+    // _MakePertinentOnlySubtreesVirtual(), except just count the
+    // descendants on the external face that were marked by _Walkup()
+    // as being the descendant endpoint of an as-yet unembedded back edge.
+
+    // After code filled in, change to return OK;
     return NOTOK;
 }
 
 /********************************************************************
- vertex count excludes w.
+ _CountVerticesAndEdgesInPertinentOnlySubtrees()
  ********************************************************************/
 int _CountVerticesAndEdgesInPertinentOnlySubtrees(graphP theGraph, int w,
                                                   int *pNumVerticesInSubgraph, int *pNumEdgesInSubgraph)
 {
+    // Go through the pertinent subtrees the same way as in
+    // _MakePertinentOnlySubtreesVirtual(), except just count the
+    // vertices and edges along the way. The vertex count excludes
+    // w and all bicomp roots encountered along the way.
+
+    // After code filled in, change to return OK;
     return NOTOK;
 }
 
