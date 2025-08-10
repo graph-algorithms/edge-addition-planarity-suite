@@ -2761,6 +2761,17 @@ int _K33Search_AssembleMainPlanarEmbedding(K33Search_EONodeP EOTreeRoot)
  ********************************************************************/
 int _K33Search_ValidateEmbeddingObstructionTree(K33Search_EONodeP EOTreeRoot, graphP origGraph)
 {
+    // 1. Validate the EO-tree's alternating levels of E-nodes and O-nodes
+    // 2. Validate the structure of the O-nodes as K5s whose edges connecting to
+    //    child E-nodes have the matching edge endpoints as their identified 2-cut
+    //    (i.e., in first and second positions of the subgraph in this implementation)
+    // 3. Validate that each E-node's subgraph is a planar embedding
+    // 4. Test the bijection of the non-virtual edges of the embedding with the
+    //    edges in the original graph (in linear time).
+    // 5. Test the bijection between the non-deleted vertices in the embedding,
+    //    excluding the 2-cut vertices in the descendant E-node subgraphs, and
+    //    the vertices of the original graph (no double representation of vertices).
+
     return OK;
 }
 // K33CERT end
