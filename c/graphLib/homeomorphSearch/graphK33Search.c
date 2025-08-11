@@ -135,6 +135,12 @@ int _DeleteEdgesOfPertinentOnlySubtreeRoots(graphP theGraph, int w);
 int _CountUnembeddedEdgesInPertinentOnlySubtrees(graphP theGraph, int w, int *pNumEdgesInSubgraph);
 int _CountVerticesAndEdgesInPertinentOnlySubtrees(graphP theGraph, int w,
                                                   int *pNumVerticesInSubgraph, int *pNumEdgesInSubgraph);
+// End of methods to promote to graphUtils.c
+
+int _K33Search_MapVerticesInPertinentOnlySubtrees(graphP theGraph, K33SearchContext *context, int *pNextSubgraphVertexIndex);
+int _K33Search_MapVerticesInBicomp(graphP theGraph, K33SearchContext *context, int R, int *pNextSubgraphVertexIndex);
+int _K33Search_CopyEdgesFromPertinentOnlySubtrees(graphP theGraph, K33SearchContext *context, int w, graphP newSubgraphForBridgeSet);
+int _K33Search_CopyEdgesFromBicomp(graphP theGraph, K33SearchContext *context, int R, graphP newSubgraphForBridgeSet);
 
 // K33CERT end
 
@@ -2170,13 +2176,6 @@ int _K33Search_MakeGraphSubgraphVertexMaps(graphP theGraph, int R, int cutv1, in
     K33SearchContext *context = NULL;
     int nextSubgraphVertexIndex, v, e;
 
-    if (cutv1 == theGraph->IC.v && cutv2 == theGraph->IC.w)
-    {
-        // TODO: expand the capability of this routine to make the mapping based on the
-        //       pertinent-only subtrees of w, in this case.
-        return NOTOK;
-    }
-
     // Get the graph's K3,3 extension because that is where the subgraph-to-graph map is stored
     gp_FindExtension(theGraph, K33SEARCH_ID, (void *)&context);
     if (context == NULL)
@@ -2198,6 +2197,21 @@ int _K33Search_MakeGraphSubgraphVertexMaps(graphP theGraph, int R, int cutv1, in
     // No point making this routine immune to preexisting stack content
     if (!sp_IsEmpty(theGraph->theStack))
         return NOTOK;
+
+    // If we're making the graph--subgraph vertex maps for beta_{vw}, we have
+    // to call a special subroutine to traverse the pertinent-only subtrees
+    // rooted by w as the way to find all vertices other than v and w
+    if (cutv1 == theGraph->IC.v && cutv2 == theGraph->IC.w)
+    {
+        if (_K33Search_MapVerticesInPertinentOnlySubtrees(theGraph, context, &nextSubgraphVertexIndex) != OK)
+            return NOTOK;
+
+        return OK;
+    }
+
+    // Otherwise, we are processing a bridge set other than beta_{vw}, and whichever of
+    // those we are doing has its vertices and edges marked visited in the bicomp rooted
+    // by R, so we traverse the bicomp and...
 
     // Start at the first cut vertex looking for all visited vertices to add to the mapping
     sp_Push(theGraph->theStack, cutv1 == theGraph->IC.v ? R : cutv1);
@@ -2265,13 +2279,6 @@ int _K33Search_CopyEdgesToNewSubgraph(graphP theGraph, int R, int cutv1, int cut
     K33SearchContext *context = NULL, *contextSubgraph = NULL;
     int v, e, vInSubgraph, wInSubgraph, eInSubgraph;
 
-    if (cutv1 == theGraph->IC.v && cutv2 == theGraph->IC.w)
-    {
-        // TODO: rename to remove 'Marked' and then expand the capability of this routine
-        //       to make the mapping based on the pertinent-only subtrees of w, in this case.
-        return NOTOK;
-    }
-
     // Get the graph's K3,3 extension because that is where the subgraph-to-graph map is stored
     gp_FindExtension(theGraph, K33SEARCH_ID, (void *)&context);
     if (context == NULL)
@@ -2280,6 +2287,22 @@ int _K33Search_CopyEdgesToNewSubgraph(graphP theGraph, int R, int cutv1, int cut
     // Seems to be no point in immunizing this subroutine from pre-existing stack content
     if (!sp_IsEmpty(theGraph->theStack))
         return NOTOK;
+
+    // If we're copying edges to the subgraph for beta_{vw}, we have
+    // to call a special subroutine to traverse the pertinent-only subtrees
+    // rooted by w as the way to find all of the bicomps that contain all
+    // the edges that need to be copied.
+    if (cutv1 == theGraph->IC.v && cutv2 == theGraph->IC.w)
+    {
+        if (_K33Search_CopyEdgesFromPertinentOnlySubtrees(theGraph, context, theGraph->IC.w, newSubgraphForBridgeSet) != OK)
+            return NOTOK;
+
+        return OK;
+    }
+
+    // Otherwise, we are processing a bridge set other than beta_{vw}, and whichever of
+    // those we are doing has its vertices and edges marked visited in the bicomp rooted
+    // by R, so we traverse only the one bicomp to copy the edges marked visited, by ...
 
     // Starting at the first vertex in the 2-cut, we seek all visited vertices and edges
     sp_Push(theGraph->theStack, cutv1 == theGraph->IC.v ? R : cutv1);
@@ -2613,7 +2636,7 @@ int _MakeBicompVirtual(graphP theGraph, int R)
     int stackBottom = sp_GetCurrentSize(theGraph->theStack);
     int v, e;
 
-    sp_Push(theGraph->theStack, BicompRoot);
+    sp_Push(theGraph->theStack, R);
     while (sp_GetCurrentSize(theGraph->theStack) > stackBottom)
     {
         sp_Pop(theGraph->theStack, v);
@@ -2685,6 +2708,59 @@ int _CountVerticesAndEdgesInPertinentOnlySubtrees(graphP theGraph, int w,
     // _MakePertinentOnlySubtreesVirtual(), except just count the
     // vertices and edges along the way. The vertex count excludes
     // w and all bicomp roots encountered along the way.
+
+    // After code filled in, change to return OK;
+    return NOTOK;
+}
+
+/********************************************************************
+ ********************************************************************/
+int _K33Search_MapVerticesInPertinentOnlySubtrees(graphP theGraph, K33SearchContext *context, int *pNextSubgraphVertexIndex)
+{
+    // Go through the pertinent subtrees the same way as in
+    // _MakePertinentOnlySubtreesVirtual(), except just map
+    // each vertex encountered to the next vertex of the subgraph
+
+    // After code filled in, change to return OK;
+    return NOTOK;
+}
+
+/********************************************************************
+ ********************************************************************/
+int _K33Search_MapVerticesInBicomp(graphP theGraph, K33SearchContext *context, int R, int *pNextSubgraphVertexIndex)
+{
+    // To be called for each bicomp in the pertinent-only subtree to do the
+    // actual mapping for vertices, other than R, in the bicomp rooted by R.
+
+    // This is just going to receive the one-bicomp code from _K33Search_MakeGraphSubgraphVertexMaps(),
+    // and then _K33Search_MakeGraphSubgraphVertexMaps() is just going to call this.
+
+    // After code filled in, change to return OK;
+    return NOTOK;
+}
+
+/********************************************************************
+ ********************************************************************/
+int _K33Search_CopyEdgesFromPertinentOnlySubtrees(graphP theGraph, K33SearchContext *context, int w, graphP newSubgraphForBridgeSet)
+{
+    // Go through the pertinent subtrees the same way as in
+    // _MakePertinentOnlySubtreesVirtual(), except call
+    // _K33Search_CopyEdgesFromBicomp() on each bicomp
+    // encountered to copy the edgs to the new subgraph
+
+    // After code filled in, change to return OK;
+    return NOTOK;
+}
+
+/********************************************************************
+ ********************************************************************/
+int _K33Search_CopyEdgesFromBicomp(graphP theGraph, K33SearchContext *context, int R, graphP newSubgraphForBridgeSet)
+{
+    // Copies the edges from the bicomp rooted by R to the new subgraph
+    // Same precautions about copying virtualness and transferring EONodeP pointers
+
+    // This is just going to receive the one-bicomp code from _K33Search_CopyEdgesToNewSubgraph()
+    // and then _K33Search_CopyEdgesToNewSubgraph() is just going to call this.
 
     // After code filled in, change to return OK;
     return NOTOK;
