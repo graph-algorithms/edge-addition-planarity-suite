@@ -130,7 +130,6 @@ int _CountVerticesAndEdgesInBicomp(graphP theGraph, int BicompRoot, int visitedO
 
 int _DeactivateBicomp(graphP theGraph, int R);
 int _DeactivatePertinentOnlySubtrees(graphP theGraph, int w);
-int _DeleteEdgesOfPertinentOnlySubtreeRoots(graphP theGraph, int w);
 
 int _CountUnembeddedEdgesInPertinentOnlySubtrees(graphP theGraph, int w, int *pNumEdgesInSubgraph);
 int _CountVerticesAndEdgesInPertinentOnlySubtrees(graphP theGraph, int w,
@@ -1717,13 +1716,6 @@ int _K33Search_ExtractEmbeddingSubgraphs(graphP theGraph, int R, K33Search_EONod
     if (_DeactivatePertinentOnlySubtrees(theGraph, IC->w) != OK)
         return NOTOK;
 
-    // The pertinent-only subgraphs rooted by w have been made virtual, but
-    // we now also delete the edges of the roots of the direct child bicomps
-    // of w, to ensure that the _JoinBicomps() call in embedding post-prcessing
-    // does not attach any of the virtualized graph structure to w.
-    if (_DeleteEdgesOfPertinentOnlySubtreeRoots(theGraph, IC->w) != OK)
-        return NOTOK;
-
     // Success if all six bridge sets of the K4 homeomorph on v, w, x, and y were extracted
     return OK;
 }
@@ -2679,17 +2671,6 @@ int _DeactivatePertinentOnlySubtrees(graphP theGraph, int w)
     }
 
     return OK;
-}
-
-/********************************************************************
- _DeleteEdgesOfPertinentOnlySubtreeRoots()
- ********************************************************************/
-int _DeleteEdgesOfPertinentOnlySubtreeRoots(graphP theGraph, int w)
-{
-    // iterate the pertinentRoots list of w and, for each root,
-    // iterate its adjacency list and delete the edges.
-    // Then make this method return OK instead of NOTOK
-    return NOTOK;
 }
 
 /********************************************************************
