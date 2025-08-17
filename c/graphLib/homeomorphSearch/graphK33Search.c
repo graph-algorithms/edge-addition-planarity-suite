@@ -129,7 +129,7 @@ int _K33Search_AttachENodeAsChildOfONode(K33Search_EONodeP theENode, int cutv1, 
 int _CountVerticesAndEdgesInBicomp(graphP theGraph, int BicompRoot, int visitedOnly, int *pNumVisitedVertices, int *pNumVisitedEdges);
 
 int _DeactivateBicomp(graphP theGraph, int R);
-int _DeactivatePertinentOnlySubtrees(graphP theGraph, int v, int w);
+int _DeactivatePertinentOnlySubtrees(graphP theGraph, int w);
 int _DeleteEdgesOfPertinentOnlySubtreeRoots(graphP theGraph, int w);
 
 int _CountUnembeddedEdgesInPertinentOnlySubtrees(graphP theGraph, int w, int *pNumEdgesInSubgraph);
@@ -1714,7 +1714,7 @@ int _K33Search_ExtractEmbeddingSubgraphs(graphP theGraph, int R, K33Search_EONod
     // marked in a way which ensures they don't impact the result of K_{3,3}-free
     // embedding integrity checks. The vertices and edges marked by this
     // operation are represented in the new E-node subgraph for beta_{vw}.
-    if (_DeactivatePertinentOnlySubtrees(theGraph, IC->v, IC->w) != OK)
+    if (_DeactivatePertinentOnlySubtrees(theGraph, IC->w) != OK)
         return NOTOK;
 
     // The pertinent-only subgraphs rooted by w have been made virtual, but
@@ -2632,27 +2632,63 @@ int _DeactivateBicomp(graphP theGraph, int R)
 /********************************************************************
  _DeactivatePertinentOnlySubtrees()
  ********************************************************************/
-int _DeactivatePertinentOnlySubtrees(graphP theGraph, int v, int w)
+int _DeactivatePertinentOnlySubtrees(graphP theGraph, int w)
 {
+    int stackBottom = sp_GetCurrentSize(theGraph->theStack);
+    int pertinentRootListElem, pertinentRoot, W, WPrevLink, Wnext;
+
     // For each pertinent-only child bicomp of w (in pertinentRoots),
     //    Push the root on the stack to initialize the loop
+    // NOTE: We push all pertinent bicomp roots because we're in a pertinent-only subtree
+    //       (so no need to test pertinent but not future pertinent here)
+    pertinentRootListElem = gp_GetVertexFirstPertinentRootChild(theGraph, w);
+    while (gp_IsVertex(pertinentRootListElem))
+    {
+        pertinentRoot = gp_GetRootFromDFSChild(theGraph, pertinentRootListElem);
+        sp_Push(theGraph->theStack, pertinentRoot);
+        pertinentRootListElem = LCGetNext(theGraph->BicompRootLists, gp_GetVertexPertinentRootsList(theGraph, w), pertinentRootListElem);
+    }
 
-    // While the stack is not empty, pop a root, call _DeactivateBicomp(),
-    // and then run its  external face to find all vertices that have
-    // with pertinent-only child bicomps, and  push those onto the stack.
+    // While the stack has pertinent roots left (before reaching the caller's stackBottom)
+    // then we pop a bicomp root, deactivate it, and then run its external face to find
+    // all vertices with pertinent child bicomp roots to push.
+    while (sp_GetCurrentSize(theGraph->theStack) > stackBottom)
+    {
+        sp_Pop(theGraph->theStack, pertinentRoot);
 
-    // After code filled in, change to return OK;
-    return NOTOK;
+        if (_DeactivateBicomp(theGraph, pertinentRoot) != OK)
+            return NOTOK;
+
+        // Get a first non-root vertex on the link[0] side of the pertinentRoot
+        W = gp_GetExtFaceVertex(theGraph, pertinentRoot, 0);
+        WPrevLink = gp_GetExtFaceVertex(theGraph, W, 1) == pertinentRoot ? 1 : 0;
+        while (W != pertinentRoot)
+        {
+            pertinentRootListElem = gp_GetVertexFirstPertinentRootChild(theGraph, W);
+            while (gp_IsVertex(pertinentRootListElem))
+            {
+                sp_Push(theGraph->theStack, gp_GetRootFromDFSChild(theGraph, pertinentRootListElem));
+                pertinentRootListElem = LCGetNext(theGraph->BicompRootLists, gp_GetVertexPertinentRootsList(theGraph, W), pertinentRootListElem);
+            }
+
+            // We get the successor on the external face of the current
+            Wnext = gp_GetExtFaceVertex(theGraph, W, 1 ^ WPrevLink);
+            WPrevLink = gp_GetExtFaceVertex(theGraph, W, 1) == W ? 1 : 0;
+            W = Wnext;
+        }
+    }
+
+    return OK;
 }
 
 /********************************************************************
+ _DeleteEdgesOfPertinentOnlySubtreeRoots()
  ********************************************************************/
 int _DeleteEdgesOfPertinentOnlySubtreeRoots(graphP theGraph, int w)
 {
-    // For each pertinent-only child bicomp of w (in pertinentRoots),
-    //    Delete call gp_DeleteEdge() to delete its incident edges.
-
-    // After code filled in, change to return OK;
+    // iterate the pertinentRoots list of w and, for each root,
+    // iterate its adjacency list and delete the edges.
+    // Then make this method return OK instead of NOTOK
     return NOTOK;
 }
 
@@ -2665,6 +2701,9 @@ int _CountUnembeddedEdgesInPertinentOnlySubtrees(graphP theGraph, int w, int *pN
     // _DeactivatePertinentOnlySubtrees(), except just count the
     // descendants on the external face that were marked by _Walkup()
     // as being the descendant endpoint of an as-yet unembedded back edge.
+
+    // Detect unembedded back edge descendant endpoint W
+    //    if (gp_IsArc(gp_GetVertexPertinentEdge(theGraph, W)))
 
     // After code filled in, change to return OK;
     return NOTOK;
