@@ -16,7 +16,8 @@ extern "C"
 
     // K33CERT begin: Marking edges as virtual
 
-    // This should get promoted to graphStructures.h (plus check if debug function versions needed)
+    // This should get promoted to graphStructures.h (plus check if debug function versions needed).
+    // Also, for maximal cleanliness, clear virtualness of any edges in isolated K_{3,3} homeomorphs.
     //
     //     flags: Bits 0-15 reserved for library; bits 16 and higher for apps
     //            ...
@@ -29,22 +30,20 @@ extern "C"
 #define gp_SetEdgeVirtual(theGraph, e) (theGraph->E[e].flags |= EDGEFLAG_VIRTUAL_MASK)
 
     // These vertex macros and flag should also get promoted to graphStructures.h
-    //
-    // A fuller implementation of virtual vertices will be rationalized with the
-    // vertices that are virtual due to being at positions N+1 to 2N.
-    // This is being added now as a beachhead to allow primary location vertices
-    // to also be virtual, as is needed in this certification implementation.
+    // Also, for maximal cleanliness, clear defunct flag on vertices in isolated K_{3,3} homeomorphs.
     //
     //     flags: Bits 0-15 reserved for library; bits 16 and higher for apps
     //            ...
-    //            Bit 4: Indicates whether a vertex's primary representation should be
-    //                   hidden, such as due to being transferred to another graph.
+    //            Bit 4: Indicates whether a vertex has been made defunct, such as
+    //                   due to being transferred to another graph.
 
-#define VERTEX_VIRTUAL_MASK 16
+#define VERTEX_DEFUNCT_MASK 16
 
-#define gp_GetVertexVirtual(theGraph, v) (theGraph->V[v].flags & VERTEX_VIRTUAL_MASK)
-#define gp_ClearVertexVirtual(theGraph, v) (theGraph->V[v].flags &= ~VERTEX_VIRTUAL_MASK)
-#define gp_SetVertexVirtual(theGraph, v) (theGraph->V[v].flags |= VERTEX_VIRTUAL_MASK)
+#define gp_GetVertexDefunct(theGraph, v) (theGraph->V[v].flags & VERTEX_DEFUNCT_MASK)
+#define gp_ClearVertexDefunct(theGraph, v) (theGraph->V[v].flags &= ~VERTEX_DEFUNCT_MASK)
+#define gp_SetVertexDefunct(theGraph, v) (theGraph->V[v].flags |= VERTEX_DEFUNCT_MASK)
+
+#define gp_IsBicompRoot(theGraph, v) ((v) > theGraph->N)
 
 // K33CERT end
 
