@@ -139,6 +139,7 @@ int _CountVerticesAndEdgesInPertinentOnlySubtrees(graphP theGraph, int w,
 
 int _K33Search_MapVerticesInPertinentOnlySubtrees(graphP theGraph, K33SearchContext *context, int *pNextSubgraphVertexIndex);
 int _K33Search_MapVerticesInBicomp(graphP theGraph, K33SearchContext *context, int R, int *pNextSubgraphVertexIndex);
+int _K33Search_AddUnembeddedEdgesToSubgraph(graphP theGraph, K33SearchContext *context, int w, graphP newSubgraphForBridgeSet);
 int _K33Search_CopyEdgesFromPertinentOnlySubtrees(graphP theGraph, K33SearchContext *context, int w, graphP newSubgraphForBridgeSet);
 int _K33Search_CopyEdgesFromBicomp(graphP theGraph, K33SearchContext *context, int R, graphP newSubgraphForBridgeSet);
 int _K33Search_CopyEdgeToNewSubgraph(graphP theGraph, K33SearchContext *context, int e, graphP newSubgraphForBridgeSet);
@@ -2288,6 +2289,9 @@ int _K33Search_CopyEdgesToNewSubgraph(graphP theGraph, int R, int cutv1, int cut
     // the edges that need to be copied.
     if (cutv1 == theGraph->IC.v && cutv2 == theGraph->IC.w)
     {
+        if (_K33Search_AddUnembeddedEdgesToSubgraph(theGraph, context, theGraph->IC.w, newSubgraphForBridgeSet) != OK)
+            return NOTOK;
+
         if (_K33Search_CopyEdgesFromPertinentOnlySubtrees(theGraph, context, theGraph->IC.w, newSubgraphForBridgeSet) != OK)
             return NOTOK;
 
@@ -2870,6 +2874,14 @@ int _K33Search_MapVerticesInBicomp(graphP theGraph, K33SearchContext *context, i
     }
 
     return OK;
+}
+
+/********************************************************************
+ ********************************************************************/
+int _K33Search_AddUnembeddedEdgesToSubgraph(graphP theGraph, K33SearchContext *context, int w, graphP newSubgraphForBridgeSet)
+{
+    // Similar code to _CountUnembeddedEdgesInPertinentOnlySubtrees()
+    return NOTOK;
 }
 
 /********************************************************************
