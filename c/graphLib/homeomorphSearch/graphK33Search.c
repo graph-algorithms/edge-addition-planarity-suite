@@ -3016,16 +3016,62 @@ int _K33Search_AddNewEdgeToSubgraph(graphP theGraph, K33SearchContext *context, 
 }
 
 /********************************************************************
+ _K33Search_CopyEdgesFromPertinentOnlySubtrees()
+
+ Go through the pertinent subtrees the same way as in
+ _DeactivatePertinentOnlySubtrees(), except call
+ _K33Search_CopyEdgesFromBicomp() on each bicomp
+ encountered to copy the edges to the new subgraph
  ********************************************************************/
 int _K33Search_CopyEdgesFromPertinentOnlySubtrees(graphP theGraph, K33SearchContext *context, int w, graphP newSubgraphForBridgeSet)
 {
-    // Go through the pertinent subtrees the same way as in
-    // _DeactivatePertinentOnlySubtrees(), except call
-    // _K33Search_CopyEdgesFromBicomp() on each bicomp
-    // encountered to copy the edgs to the new subgraph
+    int stackBottom = sp_GetCurrentSize(theGraph->theStack);
+    int pertinentRootListElem, pertinentRoot, W, WPrevLink, Wnext;
 
-    // After code filled in, change to return OK;
-    return NOTOK;
+    // For each pertinent-only child bicomp of w (in pertinentRoots),
+    //    Push the root on the stack to initialize the loop
+    // NOTE: We push all pertinent bicomp roots because we're in a pertinent-only subtree
+    //       (so no need to test pertinent but not future pertinent here)
+    pertinentRootListElem = gp_GetVertexFirstPertinentRootChild(theGraph, w);
+    while (gp_IsVertex(pertinentRootListElem))
+    {
+        pertinentRoot = gp_GetRootFromDFSChild(theGraph, pertinentRootListElem);
+        sp_Push(theGraph->theStack, pertinentRoot);
+        pertinentRootListElem = LCGetNext(theGraph->BicompRootLists, gp_GetVertexPertinentRootsList(theGraph, w), pertinentRootListElem);
+    }
+
+    // While the stack has pertinent roots left (before reaching the caller's stackBottom)
+    // then we pop a bicomp root, invoke _K33Search_CopyEdgesFromBicomp() on it, and then
+    // run its external face to find the child bicomps to which we must descend to fully
+    // explore the pertinent only subtrees.
+    while (sp_GetCurrentSize(theGraph->theStack) > stackBottom)
+    {
+        sp_Pop(theGraph->theStack, pertinentRoot);
+
+        if (_K33Search_CopyEdgesFromBicomp(theGraph, context, pertinentRoot, newSubgraphForBridgeSet) != OK)
+            return NOTOK;
+
+        // Get a first non-root vertex on the link[0] side of the pertinentRoot
+        W = gp_GetExtFaceVertex(theGraph, pertinentRoot, 0);
+        WPrevLink = gp_GetExtFaceVertex(theGraph, W, 1) == pertinentRoot ? 1 : 0;
+        while (W != pertinentRoot)
+        {
+            // Push all the pertinent child bicomps of W
+            pertinentRootListElem = gp_GetVertexFirstPertinentRootChild(theGraph, W);
+            while (gp_IsVertex(pertinentRootListElem))
+            {
+                sp_Push(theGraph->theStack, gp_GetRootFromDFSChild(theGraph, pertinentRootListElem));
+                pertinentRootListElem = LCGetNext(theGraph->BicompRootLists, gp_GetVertexPertinentRootsList(theGraph, W), pertinentRootListElem);
+            }
+
+            // We get the successor on the external face of the current
+            Wnext = gp_GetExtFaceVertex(theGraph, W, 1 ^ WPrevLink);
+            WPrevLink = gp_GetExtFaceVertex(theGraph, W, 1) == W ? 1 : 0;
+            W = Wnext;
+        }
+    }
+
+    return OK;
 }
 
 /********************************************************************
