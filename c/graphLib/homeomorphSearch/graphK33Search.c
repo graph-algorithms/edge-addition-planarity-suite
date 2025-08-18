@@ -2400,7 +2400,7 @@ int _K33Search_ExtractVWBridgeSet(graphP theGraph, int R, K33Search_EONodeP newO
     numVerticesInSubgraph = 2;
 
     // Now we add to those counts the number of vertices and edges in all of the
-    // pertinent-only descendant bicomps of w, excluding bicomp roots because they are 
+    // pertinent-only descendant bicomps of w, excluding bicomp roots because they are
     // duplicates of primary vertices used to represent them in their separate child bicomps
     if (_CountVerticesAndEdgesInPertinentOnlySubtrees(theGraph, IC->w, &numVerticesInSubgraph, &numEdgesInSubgraph) != OK)
         return NOTOK;
@@ -2819,29 +2819,57 @@ int _CountVerticesAndEdgesInPertinentOnlySubtrees(graphP theGraph, int w,
 }
 
 /********************************************************************
+ * _K33Search_MapVerticesInPertinentOnlySubtrees()
+
+ Goes through the pertinent subtrees the same way as in
+ _DeactivatePertinentOnlySubtrees(), except just maps
+ each vertex encountered to the next vertex of the subgraph
  ********************************************************************/
 int _K33Search_MapVerticesInPertinentOnlySubtrees(graphP theGraph, K33SearchContext *context, int *pNextSubgraphVertexIndex)
 {
-    // Go through the pertinent subtrees the same way as in
-    // _DeactivatePertinentOnlySubtrees(), except just map
-    // each vertex encountered to the next vertex of the subgraph
 
     // After code filled in, change to return OK;
     return NOTOK;
 }
 
 /********************************************************************
+ _K33Search_MapVerticesInBicomp()
  ********************************************************************/
 int _K33Search_MapVerticesInBicomp(graphP theGraph, K33SearchContext *context, int R, int *pNextSubgraphVertexIndex)
 {
-    // To be called for each bicomp in the pertinent-only subtree to do the
-    // actual mapping for vertices, other than R, in the bicomp rooted by R.
+    int stackBottom = sp_GetCurrentSize(theGraph->theStack);
+    int v, e;
 
-    // This is just going to receive the one-bicomp code from _K33Search_MakeGraphSubgraphVertexMaps(),
-    // and then _K33Search_MakeGraphSubgraphVertexMaps() is just going to call this.
+    sp_Push(theGraph->theStack, R);
+    while (sp_GetCurrentSize(theGraph->theStack) > stackBottom)
+    {
+        sp_Pop(theGraph->theStack, v);
 
-    // After code filled in, change to return OK;
-    return NOTOK;
+        // Map all vertices in the bicomp except for the bicomp root
+        if (v != R)
+        {
+            // Create the mapping between v and the next vertex in the subgraph
+            context->VI[v].graphToSubgraphIndex = *pNextSubgraphVertexIndex;
+            context->VI[*pNextSubgraphVertexIndex].subgraphToGraphIndex = v;
+
+            // Increment for the next mapping
+            (*pNextSubgraphVertexIndex)++;
+        }
+
+        // Push the direct "child" nodes of v (The quotes are around the word child
+        // because an edge marked EDGE_TYPE_CHILD may in fact lead to a descendant
+        // and not a direct child if there has been a ReduceBicomp).
+        e = gp_GetFirstArc(theGraph, v);
+        while (gp_IsArc(e))
+        {
+            if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_CHILD)
+                sp_Push(theGraph->theStack, gp_GetNeighbor(theGraph, e));
+
+            e = gp_GetNextArc(theGraph, e);
+        }
+    }
+
+    return OK;
 }
 
 /********************************************************************
