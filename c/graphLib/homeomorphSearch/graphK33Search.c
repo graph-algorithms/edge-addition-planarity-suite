@@ -137,7 +137,7 @@ int _CountVerticesAndEdgesInPertinentOnlySubtrees(graphP theGraph, int w,
 
 // End of methods to promote to graphUtils.c
 
-int _K33Search_MapVerticesInPertinentOnlySubtrees(graphP theGraph, K33SearchContext *context, int *pNextSubgraphVertexIndex);
+int _K33Search_MapVerticesInPertinentOnlySubtrees(graphP theGraph, K33SearchContext *context, int w, int *pNextSubgraphVertexIndex);
 int _K33Search_MapVerticesInBicomp(graphP theGraph, K33SearchContext *context, int R, int *pNextSubgraphVertexIndex);
 int _K33Search_AddUnembeddedEdgesToSubgraph(graphP theGraph, K33SearchContext *context, int w, graphP newSubgraphForBridgeSet);
 int _K33Search_CopyEdgesFromPertinentOnlySubtrees(graphP theGraph, K33SearchContext *context, int w, graphP newSubgraphForBridgeSet);
@@ -2198,7 +2198,7 @@ int _K33Search_MakeGraphSubgraphVertexMaps(graphP theGraph, int R, int cutv1, in
     // rooted by w as the way to find all vertices other than v and w
     if (cutv1 == theGraph->IC.v && cutv2 == theGraph->IC.w)
     {
-        if (_K33Search_MapVerticesInPertinentOnlySubtrees(theGraph, context, &nextSubgraphVertexIndex) != OK)
+        if (_K33Search_MapVerticesInPertinentOnlySubtrees(theGraph, context, theGraph->IC.w, &nextSubgraphVertexIndex) != OK)
             return NOTOK;
 
         return OK;
@@ -2823,17 +2823,62 @@ int _CountVerticesAndEdgesInPertinentOnlySubtrees(graphP theGraph, int w,
 }
 
 /********************************************************************
- * _K33Search_MapVerticesInPertinentOnlySubtrees()
+ _K33Search_MapVerticesInPertinentOnlySubtrees()
 
  Goes through the pertinent subtrees the same way as in
  _DeactivatePertinentOnlySubtrees(), except just maps
  each vertex encountered to the next vertex of the subgraph
  ********************************************************************/
-int _K33Search_MapVerticesInPertinentOnlySubtrees(graphP theGraph, K33SearchContext *context, int *pNextSubgraphVertexIndex)
+int _K33Search_MapVerticesInPertinentOnlySubtrees(graphP theGraph, K33SearchContext *context, int w, int *pNextSubgraphVertexIndex)
 {
+    int stackBottom = sp_GetCurrentSize(theGraph->theStack);
+    int pertinentRootListElem, pertinentRoot, W, WPrevLink, Wnext;
 
-    // After code filled in, change to return OK;
-    return NOTOK;
+    // For each pertinent-only child bicomp of w (in pertinentRoots),
+    //    Push the root on the stack to initialize the loop
+    // NOTE: We push all pertinent bicomp roots because we're in a pertinent-only subtree
+    //       (so no need to test pertinent but not future pertinent here)
+    pertinentRootListElem = gp_GetVertexFirstPertinentRootChild(theGraph, w);
+    while (gp_IsVertex(pertinentRootListElem))
+    {
+        pertinentRoot = gp_GetRootFromDFSChild(theGraph, pertinentRootListElem);
+        sp_Push(theGraph->theStack, pertinentRoot);
+        pertinentRootListElem = LCGetNext(theGraph->BicompRootLists, gp_GetVertexPertinentRootsList(theGraph, w), pertinentRootListElem);
+    }
+
+    // While the stack has pertinent roots left (before reaching the caller's stackBottom)
+    // then we pop a bicomp root and then run its external face to find the descendants
+    // of w that are endpoints of unembedded back edges to v, and to find more pertinent
+    // child bicomps to which we must descend.
+    while (sp_GetCurrentSize(theGraph->theStack) > stackBottom)
+    {
+        sp_Pop(theGraph->theStack, pertinentRoot);
+
+        // Map the vertices in the bicomp rooted by pertinentRoot
+        if (_K33Search_MapVerticesInBicomp(theGraph, context, pertinentRoot, pNextSubgraphVertexIndex) != OK)
+            return NOTOK;
+
+        // Get a first non-root vertex on the link[0] side of the pertinentRoot
+        W = gp_GetExtFaceVertex(theGraph, pertinentRoot, 0);
+        WPrevLink = gp_GetExtFaceVertex(theGraph, W, 1) == pertinentRoot ? 1 : 0;
+        while (W != pertinentRoot)
+        {
+            // Push all the pertinent child bicomps of W
+            pertinentRootListElem = gp_GetVertexFirstPertinentRootChild(theGraph, W);
+            while (gp_IsVertex(pertinentRootListElem))
+            {
+                sp_Push(theGraph->theStack, gp_GetRootFromDFSChild(theGraph, pertinentRootListElem));
+                pertinentRootListElem = LCGetNext(theGraph->BicompRootLists, gp_GetVertexPertinentRootsList(theGraph, W), pertinentRootListElem);
+            }
+
+            // We get the successor on the external face of the current
+            Wnext = gp_GetExtFaceVertex(theGraph, W, 1 ^ WPrevLink);
+            WPrevLink = gp_GetExtFaceVertex(theGraph, W, 1) == W ? 1 : 0;
+            W = Wnext;
+        }
+    }
+
+    return OK;
 }
 
 /********************************************************************
