@@ -140,6 +140,7 @@ int _CountVerticesAndEdgesInPertinentOnlySubtrees(graphP theGraph, int w,
 int _K33Search_MapVerticesInPertinentOnlySubtrees(graphP theGraph, K33SearchContext *context, int w, int *pNextSubgraphVertexIndex);
 int _K33Search_MapVerticesInBicomp(graphP theGraph, K33SearchContext *context, int R, int *pNextSubgraphVertexIndex);
 int _K33Search_AddUnembeddedEdgesToSubgraph(graphP theGraph, K33SearchContext *context, int w, graphP newSubgraphForBridgeSet);
+int _K33Search_AddNewEdgeToSubgraph(graphP theGraph, K33SearchContext *context, int v, int w, graphP newSubgraphForBridgeSet);
 int _K33Search_CopyEdgesFromPertinentOnlySubtrees(graphP theGraph, K33SearchContext *context, int w, graphP newSubgraphForBridgeSet);
 int _K33Search_CopyEdgesFromBicomp(graphP theGraph, K33SearchContext *context, int R, graphP newSubgraphForBridgeSet);
 int _K33Search_CopyEdgeToNewSubgraph(graphP theGraph, K33SearchContext *context, int e, graphP newSubgraphForBridgeSet);
@@ -2922,11 +2923,96 @@ int _K33Search_MapVerticesInBicomp(graphP theGraph, K33SearchContext *context, i
 }
 
 /********************************************************************
+ _K33Search_AddUnembeddedEdgesToSubgraph()
+
+ Check w and all of its pertinent-only descendant bicomps for vertices
+ marked as needing to have an edge embedded to v, then embed those
+ edges in the new subgraph (since they cannot be put in the main
+ planar embedding without violating its planarity).
+ Similar code to _CountUnembeddedEdgesInPertinentOnlySubtrees()
  ********************************************************************/
 int _K33Search_AddUnembeddedEdgesToSubgraph(graphP theGraph, K33SearchContext *context, int w, graphP newSubgraphForBridgeSet)
 {
-    // Similar code to _CountUnembeddedEdgesInPertinentOnlySubtrees()
-    return NOTOK;
+    int stackBottom = sp_GetCurrentSize(theGraph->theStack);
+    int pertinentRootListElem, pertinentRoot, W, WPrevLink, Wnext;
+
+    // For each pertinent-only child bicomp of w (in pertinentRoots),
+    //    Push the root on the stack to initialize the loop
+    // NOTE: We push all pertinent bicomp roots because we're in a pertinent-only subtree
+    //       (so no need to test pertinent but not future pertinent here)
+    pertinentRootListElem = gp_GetVertexFirstPertinentRootChild(theGraph, w);
+    while (gp_IsVertex(pertinentRootListElem))
+    {
+        pertinentRoot = gp_GetRootFromDFSChild(theGraph, pertinentRootListElem);
+        sp_Push(theGraph->theStack, pertinentRoot);
+        pertinentRootListElem = LCGetNext(theGraph->BicompRootLists, gp_GetVertexPertinentRootsList(theGraph, w), pertinentRootListElem);
+    }
+
+    // While the stack has pertinent roots left (before reaching the caller's stackBottom)
+    // then we pop a bicomp root and then run its external face to find the descendants
+    // of w that are endpoints of unembedded back edges to v, and to find more pertinent
+    // child bicomps to which we must descend.
+    while (sp_GetCurrentSize(theGraph->theStack) > stackBottom)
+    {
+        sp_Pop(theGraph->theStack, pertinentRoot);
+
+        // Get a first non-root vertex on the link[0] side of the pertinentRoot
+        W = gp_GetExtFaceVertex(theGraph, pertinentRoot, 0);
+        WPrevLink = gp_GetExtFaceVertex(theGraph, W, 1) == pertinentRoot ? 1 : 0;
+        while (W != pertinentRoot)
+        {
+            // Test for an unembedded back edge to v, and add the edge if needed
+            if (gp_IsArc(gp_GetVertexPertinentEdge(theGraph, W)))
+            {
+                if (_K33Search_AddNewEdgeToSubgraph(theGraph, context, theGraph->IC.v, W, newSubgraphForBridgeSet) != OK)
+                    return NOTOK;
+            }
+
+            // Push all the pertinent child bicomps of W
+            pertinentRootListElem = gp_GetVertexFirstPertinentRootChild(theGraph, W);
+            while (gp_IsVertex(pertinentRootListElem))
+            {
+                sp_Push(theGraph->theStack, gp_GetRootFromDFSChild(theGraph, pertinentRootListElem));
+                pertinentRootListElem = LCGetNext(theGraph->BicompRootLists, gp_GetVertexPertinentRootsList(theGraph, W), pertinentRootListElem);
+            }
+
+            // We get the successor on the external face of the current
+            Wnext = gp_GetExtFaceVertex(theGraph, W, 1 ^ WPrevLink);
+            WPrevLink = gp_GetExtFaceVertex(theGraph, W, 1) == W ? 1 : 0;
+            W = Wnext;
+        }
+    }
+
+    // If w is also an unembedded back edge endpoint, then vertex map (v, w)
+    // to the new subgraph and add the resulting edge
+    if (gp_IsArc(gp_GetVertexPertinentEdge(theGraph, w)))
+    {
+        if (_K33Search_AddNewEdgeToSubgraph(theGraph, context, theGraph->IC.v, w, newSubgraphForBridgeSet) != OK)
+            return NOTOK;
+    }
+
+    return OK;
+}
+
+/********************************************************************
+ _K33Search_AddNewEdgeToSubgraph()
+ ********************************************************************/
+int _K33Search_AddNewEdgeToSubgraph(graphP theGraph, K33SearchContext *context, int v, int w, graphP newSubgraphForBridgeSet)
+{
+    int vInSubgraph, wInSubgraph, eInSubgraph;
+
+    // Use the mapping to generate the edge in the subgraph
+    vInSubgraph = context->VI[v].graphToSubgraphIndex;
+    wInSubgraph = context->VI[w].graphToSubgraphIndex;
+
+    if (gp_AddEdge(newSubgraphForBridgeSet, vInSubgraph, 0, wInSubgraph, 0) != OK)
+        return NOTOK;
+
+    eInSubgraph = newSubgraphForBridgeSet->V[vInSubgraph].link[0];
+    if (gp_GetNeighbor(newSubgraphForBridgeSet, eInSubgraph) != wInSubgraph)
+        return NOTOK;
+
+    return OK;
 }
 
 /********************************************************************
@@ -2985,7 +3071,7 @@ int _K33Search_CopyEdgeToNewSubgraph(graphP theGraph, K33SearchContext *context,
     K33SearchContext *contextSubgraph = NULL;
     int v, w, vInSubgraph, wInSubgraph, eInSubgraph;
 
-    //  Get the two vertices associated with edge e
+    // Get the two vertices associated with edge e
     v = gp_GetNeighbor(theGraph, gp_GetTwinArc(theGraph, e));
     w = gp_GetNeighbor(theGraph, e);
     v = gp_IsBicompRoot(theGraph, v) ? gp_GetPrimaryVertexFromRoot(theGraph, v) : v;
