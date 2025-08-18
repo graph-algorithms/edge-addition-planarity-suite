@@ -134,6 +134,7 @@ int _DeactivatePertinentOnlySubtrees(graphP theGraph, int w);
 int _CountUnembeddedEdgesInPertinentOnlySubtrees(graphP theGraph, int w, int *pNumEdgesInSubgraph);
 int _CountVerticesAndEdgesInPertinentOnlySubtrees(graphP theGraph, int w,
                                                   int *pNumVerticesInSubgraph, int *pNumEdgesInSubgraph);
+
 // End of methods to promote to graphUtils.c
 
 int _K33Search_MapVerticesInPertinentOnlySubtrees(graphP theGraph, K33SearchContext *context, int *pNextSubgraphVertexIndex);
@@ -2391,14 +2392,16 @@ int _K33Search_ExtractVWBridgeSet(graphP theGraph, int R, K33Search_EONodeP newO
     graphP newSubgraphForBridgeSet = NULL;
     K33Search_EONodeP theNewENode = NULL;
 
-    // We start by counting the edges in the unembedded 'claw' of v in beta_{vw},
-    // and we set numVerticesInSubgraph to 1 to account for v in beta_{vw}.
-    numVerticesInSubgraph = 1;
+    // We start by counting the edges in the unembedded 'claw' of v in beta_{vw}.
     if (_CountUnembeddedEdgesInPertinentOnlySubtrees(theGraph, IC->w, &numEdgesInSubgraph) != OK)
         return NOTOK;
 
+    // We start out the numer of vertices in the subgraph at 2 to account for v and w.
+    numVerticesInSubgraph = 2;
+
     // Now we add to those counts the number of vertices and edges in all of the
-    // pertinent-only descendant bicomps of w
+    // pertinent-only descendant bicomps of w, excluding bicomp roots because they are 
+    // duplicates of primary vertices used to represent them in their separate child bicomps
     if (_CountVerticesAndEdgesInPertinentOnlySubtrees(theGraph, IC->w, &numVerticesInSubgraph, &numEdgesInSubgraph) != OK)
         return NOTOK;
 
@@ -2675,34 +2678,144 @@ int _DeactivatePertinentOnlySubtrees(graphP theGraph, int w)
 
 /********************************************************************
  _CountUnembeddedEdgesInPertinentOnlySubtrees()
+
+ Goes through the pertinent subtrees the same way as in
+ _DeactivatePertinentOnlySubtrees(), except just counts the
+ descendants on the external faces that were marked by _Walkup()
+ as being the descendant endpoint of an as-yet unembedded back edge.
  ********************************************************************/
 int _CountUnembeddedEdgesInPertinentOnlySubtrees(graphP theGraph, int w, int *pNumEdgesInSubgraph)
 {
-    // Go through the pertinent subtrees the same way as in
-    // _DeactivatePertinentOnlySubtrees(), except just count the
-    // descendants on the external face that were marked by _Walkup()
-    // as being the descendant endpoint of an as-yet unembedded back edge.
+    int stackBottom = sp_GetCurrentSize(theGraph->theStack), edgeCount = 0;
+    int pertinentRootListElem, pertinentRoot, W, WPrevLink, Wnext;
 
-    // Detect unembedded back edge descendant endpoint W
-    //    if (gp_IsArc(gp_GetVertexPertinentEdge(theGraph, W)))
+    // For each pertinent-only child bicomp of w (in pertinentRoots),
+    //    Push the root on the stack to initialize the loop
+    // NOTE: We push all pertinent bicomp roots because we're in a pertinent-only subtree
+    //       (so no need to test pertinent but not future pertinent here)
+    pertinentRootListElem = gp_GetVertexFirstPertinentRootChild(theGraph, w);
+    while (gp_IsVertex(pertinentRootListElem))
+    {
+        pertinentRoot = gp_GetRootFromDFSChild(theGraph, pertinentRootListElem);
+        sp_Push(theGraph->theStack, pertinentRoot);
+        pertinentRootListElem = LCGetNext(theGraph->BicompRootLists, gp_GetVertexPertinentRootsList(theGraph, w), pertinentRootListElem);
+    }
 
-    // After code filled in, change to return OK;
-    return NOTOK;
+    // While the stack has pertinent roots left (before reaching the caller's stackBottom)
+    // then we pop a bicomp root and then run its external face to find the descendants
+    // of w that are endpoints of unembedded back edges to v, and to find more pertinent
+    // child bicomps to which we must descend.
+    while (sp_GetCurrentSize(theGraph->theStack) > stackBottom)
+    {
+        sp_Pop(theGraph->theStack, pertinentRoot);
+
+        // Get a first non-root vertex on the link[0] side of the pertinentRoot
+        W = gp_GetExtFaceVertex(theGraph, pertinentRoot, 0);
+        WPrevLink = gp_GetExtFaceVertex(theGraph, W, 1) == pertinentRoot ? 1 : 0;
+        while (W != pertinentRoot)
+        {
+            // Test for an unembedded back edge to v
+            if (gp_IsArc(gp_GetVertexPertinentEdge(theGraph, W)))
+                edgeCount++;
+
+            // Push all the pertinent child bicomps of W
+            pertinentRootListElem = gp_GetVertexFirstPertinentRootChild(theGraph, W);
+            while (gp_IsVertex(pertinentRootListElem))
+            {
+                sp_Push(theGraph->theStack, gp_GetRootFromDFSChild(theGraph, pertinentRootListElem));
+                pertinentRootListElem = LCGetNext(theGraph->BicompRootLists, gp_GetVertexPertinentRootsList(theGraph, W), pertinentRootListElem);
+            }
+
+            // We get the successor on the external face of the current
+            Wnext = gp_GetExtFaceVertex(theGraph, W, 1 ^ WPrevLink);
+            WPrevLink = gp_GetExtFaceVertex(theGraph, W, 1) == W ? 1 : 0;
+            W = Wnext;
+        }
+    }
+
+    // If w is also an unembedded back edge endpoint, then increment the counter
+    if (gp_IsArc(gp_GetVertexPertinentEdge(theGraph, w)))
+        edgeCount++;
+
+    // Increment the value of the output parameter and return successfully
+    *pNumEdgesInSubgraph += edgeCount;
+
+    return OK;
 }
 
 /********************************************************************
  _CountVerticesAndEdgesInPertinentOnlySubtrees()
+
+ Goes through the pertinent subtrees the same way as in
+ _DeactivatePertinentOnlySubtrees(), except just counts the
+ vertices and edges along the way. The vertex count excludes
+ w and all bicomp roots encountered along the way.
  ********************************************************************/
 int _CountVerticesAndEdgesInPertinentOnlySubtrees(graphP theGraph, int w,
                                                   int *pNumVerticesInSubgraph, int *pNumEdgesInSubgraph)
 {
-    // Go through the pertinent subtrees the same way as in
-    // _DeactivatePertinentOnlySubtrees(), except just count the
-    // vertices and edges along the way. The vertex count excludes
-    // w and all bicomp roots encountered along the way.
+    int totalVertexCount = 0, totalEdgeCount = 0;
+    int numVerticesInBicomp, numEdgesInBicomp;
+    int stackBottom = sp_GetCurrentSize(theGraph->theStack);
+    int pertinentRootListElem, pertinentRoot, W, WPrevLink, Wnext;
 
-    // After code filled in, change to return OK;
-    return NOTOK;
+    // For each pertinent-only child bicomp of w (in pertinentRoots),
+    //    Push the root on the stack to initialize the loop
+    // NOTE: We push all pertinent bicomp roots because we're in a pertinent-only subtree
+    //       (so no need to test pertinent but not future pertinent here)
+    pertinentRootListElem = gp_GetVertexFirstPertinentRootChild(theGraph, w);
+    while (gp_IsVertex(pertinentRootListElem))
+    {
+        pertinentRoot = gp_GetRootFromDFSChild(theGraph, pertinentRootListElem);
+        sp_Push(theGraph->theStack, pertinentRoot);
+        pertinentRootListElem = LCGetNext(theGraph->BicompRootLists, gp_GetVertexPertinentRootsList(theGraph, w), pertinentRootListElem);
+    }
+
+    // While the stack has pertinent roots left (before reaching the caller's stackBottom)
+    // then we pop a bicomp root and then run its external face to find the descendants
+    // of w that are endpoints of unembedded back edges to v, and to find more pertinent
+    // child bicomps to which we must descend.
+    while (sp_GetCurrentSize(theGraph->theStack) > stackBottom)
+    {
+        sp_Pop(theGraph->theStack, pertinentRoot);
+
+        // Count the number of vertices and edges in the bicomp, in total (3rd param FALSE)
+        numVerticesInBicomp = numEdgesInBicomp = 0;
+        if (_CountVerticesAndEdgesInBicomp(theGraph, pertinentRoot, FALSE, &numVerticesInBicomp, &numEdgesInBicomp) != OK)
+            return NOTOK;
+
+        // Contribute the bicomp numbers to the totals
+        // (excluding the bicomp root from the vertex total by subtracting 1)
+        totalVertexCount += numVerticesInBicomp - 1;
+        totalEdgeCount += numEdgesInBicomp;
+
+        // Get a first non-root vertex on the link[0] side of the pertinentRoot
+        W = gp_GetExtFaceVertex(theGraph, pertinentRoot, 0);
+        WPrevLink = gp_GetExtFaceVertex(theGraph, W, 1) == pertinentRoot ? 1 : 0;
+        while (W != pertinentRoot)
+        {
+            // Push all the pertinent child bicomps of W
+            pertinentRootListElem = gp_GetVertexFirstPertinentRootChild(theGraph, W);
+            while (gp_IsVertex(pertinentRootListElem))
+            {
+                sp_Push(theGraph->theStack, gp_GetRootFromDFSChild(theGraph, pertinentRootListElem));
+                pertinentRootListElem = LCGetNext(theGraph->BicompRootLists, gp_GetVertexPertinentRootsList(theGraph, W), pertinentRootListElem);
+            }
+
+            // We get the successor on the external face of the current
+            Wnext = gp_GetExtFaceVertex(theGraph, W, 1 ^ WPrevLink);
+            WPrevLink = gp_GetExtFaceVertex(theGraph, W, 1) == W ? 1 : 0;
+            W = Wnext;
+        }
+    }
+
+    // Provide output into the parameters and return successfully
+    if (pNumVerticesInSubgraph != NULL)
+        *pNumVerticesInSubgraph += totalVertexCount;
+    if (pNumEdgesInSubgraph != NULL)
+        *pNumEdgesInSubgraph += totalEdgeCount;
+
+    return OK;
 }
 
 /********************************************************************
