@@ -3090,8 +3090,13 @@ int _K33Search_CopyEdgesFromBicomp(graphP theGraph, K33SearchContext *context, i
         e = gp_GetFirstArc(theGraph, v);
         while (gp_IsArc(e))
         {
-            if (_K33Search_CopyEdgeToNewSubgraph(theGraph, context, e, newSubgraphForBridgeSet) != OK)
-                return NOTOK;
+            // Every edge will be visited twice by this loop construct,
+            // but we only want to add the edge once...
+            if (gp_GetNeighbor(theGraph, e) < gp_GetNeighbor(theGraph, gp_GetTwinArc(theGraph, e)))
+            {
+                if (_K33Search_CopyEdgeToNewSubgraph(theGraph, context, e, newSubgraphForBridgeSet) != OK)
+                    return NOTOK;
+            }
 
             if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_CHILD)
                 sp_Push(theGraph->theStack, gp_GetNeighbor(theGraph, e));
