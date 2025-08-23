@@ -740,7 +740,7 @@ int _K33Search_CheckEmbeddingIntegrity(graphP theGraph, graphP origGraph)
         K33SearchContext *context = NULL;
         gp_FindExtension(theGraph, K33SEARCH_ID, (void *)&context);
 
-        if (context != NULL && _K33Search_ValidateEmbeddingObstructionTree(context->associatedEONode, origGraph) == OK)
+        if (context != NULL && _K33Search_ValidateEmbeddingObstructionTree(theGraph, context->associatedEONode, origGraph) == OK)
             // K33CERT end
             return OK;
     }
