@@ -399,7 +399,7 @@ int _ReadLEDAGraph(graphP theGraph, strOrFileP inputContainer)
  Returns: OK, NOTOK on internal error, NONEMBEDDABLE if too many edges
  ********************************************************************/
 
-int gp_Read(graphP theGraph, char const*FileName)
+int gp_Read(graphP theGraph, char const *FileName)
 {
     strOrFileP inputContainer = sf_New(NULL, FileName, READTEXT);
     if (inputContainer == NULL)
@@ -835,8 +835,9 @@ int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer)
     {
         if (gp_EdgeInUse(theGraph, e))
         {
-            if (sprintf(lineBuf, "E[%3d] neighbor=%3d, type=%c, next arc=%3d, prev arc=%3d\n",
+            if (sprintf(lineBuf, "E[%3d] owner=%3d, neighbor=%3d, type=%c, next arc=%3d, prev arc=%3d\n",
                         e,
+                        gp_GetNeighbor(theGraph, gp_GetTwinArc(theGraph, e)),
                         gp_GetNeighbor(theGraph, e),
                         _GetEdgeTypeChar(theGraph, e),
                         gp_GetNextArc(theGraph, e),
@@ -861,7 +862,7 @@ int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer)
  Returns NOTOK on error, OK on success.
  ********************************************************************/
 
-int gp_Write(graphP theGraph, char const*FileName, int Mode)
+int gp_Write(graphP theGraph, char const *FileName, int Mode)
 {
     int RetVal;
 
@@ -1009,7 +1010,7 @@ int _WritePostprocess(graphP theGraph, char **pExtraData)
  Call this method with NULL to close the log file.
  ********************************************************************/
 
-void _Log(char const*Str)
+void _Log(char const *Str)
 {
     static FILE *logfile = NULL;
 
@@ -1028,7 +1029,7 @@ void _Log(char const*Str)
         fclose(logfile);
 }
 
-void _LogLine(char const*Str)
+void _LogLine(char const *Str)
 {
     _Log(Str);
     _Log("\n");

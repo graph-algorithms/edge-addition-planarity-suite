@@ -32,8 +32,8 @@ See the LICENSE.TXT file for licensing information.
 
 int SpecificGraph(
     char command,
-    char const*infileName, char*outfileName, char*outfile2Name,
-    char*inputStr, char **pOutputStr, char **pOutput2Str)
+    char const *infileName, char *outfileName, char *outfile2Name,
+    char *inputStr, char **pOutputStr, char **pOutput2Str)
 {
     graphP theGraph, origGraph;
     platform_time start, end;
@@ -107,10 +107,11 @@ int SpecificGraph(
             int embedFlags = GetEmbedFlags(command);
             platform_GetTime(start);
 
-            //          gp_CreateDFSTree(theGraph);
-            //          gp_SortVertices(theGraph);
-            //          gp_Write(theGraph, "debug.before.txt", WRITE_DEBUGINFO);
-            //          gp_SortVertices(theGraph);
+            // gp_CreateDFSTree(theGraph);
+            // gp_SortVertices(theGraph);
+            // gp_Write(theGraph, "random\\debug.before.txt", WRITE_DEBUGINFO);
+            // gp_Write(theGraph, "random\\adjlist.before.txt", WRITE_ADJLIST);
+            // gp_SortVertices(theGraph);
 
             Result = gp_Embed(theGraph, embedFlags);
             platform_GetTime(end);
@@ -225,9 +226,9 @@ int SpecificGraph(
  WriteAlgorithmResults()
  ****************************************************************************/
 
-void WriteAlgorithmResults(graphP theGraph, int Result, char command, platform_time start, platform_time end, char const*infileName)
+void WriteAlgorithmResults(graphP theGraph, int Result, char command, platform_time start, platform_time end, char const *infileName)
 {
-    char const*messageFormat = NULL;
+    char const *messageFormat = NULL;
     char messageContents[MAXLINE + 1];
     int charsAvailForStr = 0;
 

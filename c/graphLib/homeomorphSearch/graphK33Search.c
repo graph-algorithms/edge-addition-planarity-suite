@@ -2936,7 +2936,7 @@ int _K33Search_MapVerticesInBicomp(graphP theGraph, K33SearchContext *context, i
 int _K33Search_AddUnembeddedEdgesToSubgraph(graphP theGraph, K33SearchContext *context, int w, graphP newSubgraphForBridgeSet)
 {
     int stackBottom = sp_GetCurrentSize(theGraph->theStack);
-    int pertinentRootListElem, pertinentRoot, W, WPrevLink, Wnext;
+    int pertinentRootListElem, pertinentRoot, W, WPrevLink, Wnext, e;
 
     // For each pertinent-only child bicomp of w (in pertinentRoots),
     //    Push the root on the stack to initialize the loop
@@ -2964,10 +2964,16 @@ int _K33Search_AddUnembeddedEdgesToSubgraph(graphP theGraph, K33SearchContext *c
         while (W != pertinentRoot)
         {
             // Test for an unembedded back edge to v, and add the edge if needed
-            if (gp_IsArc(gp_GetVertexPertinentEdge(theGraph, W)))
+            e = gp_GetVertexPertinentEdge(theGraph, W);
+            if (gp_IsArc(e))
             {
                 if (_K33Search_AddNewEdgeToSubgraph(theGraph, context, theGraph->IC.v, W, newSubgraphForBridgeSet) != OK)
                     return NOTOK;
+
+                // Once the edge has been added to the subgraph, we need to mark it as virtual in the main graph
+                // so that it will be ignored when assembling the main planar embedding
+                gp_SetEdgeVirtual(theGraph, e);
+                gp_SetEdgeVirtual(theGraph, gp_GetTwinArc(theGraph, e));
             }
 
             // Push all the pertinent child bicomps of W
@@ -2987,10 +2993,16 @@ int _K33Search_AddUnembeddedEdgesToSubgraph(graphP theGraph, K33SearchContext *c
 
     // If w is also an unembedded back edge endpoint, then vertex map (v, w)
     // to the new subgraph and add the resulting edge
-    if (gp_IsArc(gp_GetVertexPertinentEdge(theGraph, w)))
+    e = gp_GetVertexPertinentEdge(theGraph, w);
+    if (gp_IsArc(e))
     {
         if (_K33Search_AddNewEdgeToSubgraph(theGraph, context, theGraph->IC.v, w, newSubgraphForBridgeSet) != OK)
             return NOTOK;
+
+        // Once the edge has been added to the subgraph, we need to mark it as virtual in the main graph
+        // so that it will be ignored when assembling the main planar embedding
+        gp_SetEdgeVirtual(theGraph, e);
+        gp_SetEdgeVirtual(theGraph, gp_GetTwinArc(theGraph, e));
     }
 
     return OK;
@@ -3432,6 +3444,9 @@ int _K33Search_ValidateEmbeddingObstructionTreeEdgeSet(graphP theGraph, K33Searc
 
     if (_TestSubgraph(origGraph, graphOfEmbedding) != TRUE)
     {
+        gp_Write(origGraph, "random\\origGraph.txt", WRITE_ADJLIST);
+        gp_Write(graphOfEmbedding, "random\\graphOfEmbedding.txt", WRITE_ADJLIST);
+
         gp_Free(&graphOfEmbedding);
         return NOTOK;
     }

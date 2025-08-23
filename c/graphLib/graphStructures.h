@@ -361,7 +361,7 @@ extern "C"
                     stored in this field.  During Walkdown, each vertex for which
                     this field is set will cause a back edge to be embedded.
                     Implicitly resets at each vertex step of the planarity method
-        pertinentRootsList: used by Walkup to store a list of child bicomp roots of
+        pertinentRoot: used by Walkup to store a list of child bicomp roots of
                     a vertex descendant of the current vertex that are pertinent
                     and must be merged by the Walkdown in order to embed the cycle
                     edges of the current vertex.  Future pertinent child bicomp roots
