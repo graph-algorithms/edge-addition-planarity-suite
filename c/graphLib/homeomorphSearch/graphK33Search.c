@@ -2519,7 +2519,7 @@ int _K33Search_AttachONodeAsChildOfRoot(graphP theGraph, K33Search_EONodeP newON
 int _K33Search_AttachENodeAsChildOfONode(K33Search_EONodeP theENode, int cutv1, int cutv2, K33Search_EONodeP theONode)
 {
     graphP theK5 = theONode->subgraph;
-    int e, EsizeOccupied, neighborIndex;
+    int e, EsizeOccupied, neighborIndex, neighborIndexTwin;
     K33SearchContext *context = NULL;
 
     // There are only 10 edges in the K5, which is a constant, so we just sequentially
@@ -2532,10 +2532,12 @@ int _K33Search_AttachENodeAsChildOfONode(K33Search_EONodeP theENode, int cutv1, 
             // The index field in each vertex of theK5 gives us the identity of the vertex
             // to which the K5 vertex maps in the originating graph...
             neighborIndex = theK5->V[gp_GetNeighbor(theK5, e)].index;
+            neighborIndexTwin = theK5->V[gp_GetNeighbor(theK5, gp_GetTwinArc(theK5, e))].index;
 
             // ... which we can then compare to the cut vertex indices in the original graph
             // from which the E-node's subgraph has been extracted.
-            if (neighborIndex == cutv1 || neighborIndex == cutv2)
+            if ((neighborIndex == cutv1 && neighborIndexTwin == cutv2) ||
+                (neighborIndex == cutv2 && neighborIndexTwin == cutv1))
             {
                 // And assign the E-node pointer to the EONode pointer in the extended
                 // edge records for the edge whose endpoint vertices have index values of
