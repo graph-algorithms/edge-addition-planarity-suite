@@ -112,6 +112,7 @@ extern int _getImageVertices(graphP theGraph, int *degrees, int maxDegree,
 extern int _TestForCompleteGraphObstruction(graphP theGraph, int numVerts,
                                             int *degrees, int *imageVerts);
 extern int _TestSubgraph(graphP theSubgraph, graphP theGraph);
+extern void _ClearVertexVisitedFlags(graphP theGraph, int includeVirtualVertices);
 
 int _K33Search_EONode_NewONode(graphP theGraph, K33Search_EONodeP *pNewONode);
 int _K33Search_ExtractEmbeddingSubgraphs(graphP theGraph, int R, K33Search_EONodeP newONode);
@@ -156,8 +157,13 @@ int _K33Search_CopyEdgeToNewSubgraph(graphP theGraph, K33SearchContext *context,
 // For validation with the data structure
 int _K33Search_ValidateENodeSubtree(K33Search_EONodeP theRootENode);
 int _K33Search_ValidateONodeSubtree(K33Search_EONodeP theRootONode);
+
 int _K33Search_ValidateEmbeddingObstructionTreeEdgeSet(graphP theGraph, K33Search_EONodeP EOTreeRoot, graphP origGraph);
 int _K33Search_CopyEmbeddingEdgesToGraph(graphP theMainGraph, K33Search_EONodeP EONode, graphP graphOfEmbedding);
+
+int _K33Search_ValidateEmbeddingObstructionTreeVertexSet(graphP theGraph, K33Search_EONodeP EOTreeRoot, graphP origGraph);
+int _K33Search_ValidateVerticesInENodeSubtree(graphP theGraph, K33Search_EONodeP theRootENode, int ignoreCutVertices, graphP origGraph);
+int _K33Search_ValidateVerticesInONodeSubtree(graphP theGraph, K33Search_EONodeP theRootENode, graphP origGraph);
 
 // K33CERT end
 
@@ -3272,16 +3278,9 @@ int _K33Search_TestForEOTreeChildren(K33Search_EONodeP EOTreeNode)
  _K33Search_AssembleMainPlanarEmbedding()
 
  This method makes a new subgraph consisting of all the non-virtual
- edges only, plus those edges needed to
- This method gives a consistent orientation to all vertices in the
- main planar embedding. Then, all edges in pathConnector paths
- are restored. They have been marked virtual, so they won't impact
- the test of the bijection of edges between the K_{3,3}-free embedding
- and the original graph, but they need to be restored so that the
- facial integrity check will have access to the all the edges
- that are still in theGraph data structure. Once the restorations
- have occurred, then we can join bicomps to get rid of the
- bicomp root vertices.
+ edges only, plus those edges needed to preserve the structure of
+ the EO tree. The new subgraph is made to resemble the descendant
+ subgraphs, such as by setting the subgraph to graph mapping.
  ********************************************************************/
 int _K33Search_AssembleMainPlanarEmbedding(K33Search_EONodeP EOTreeRoot)
 {
@@ -3315,6 +3314,15 @@ int _K33Search_AssembleMainPlanarEmbedding(K33Search_EONodeP EOTreeRoot)
         context->VI[v].graphToSubgraphIndex = v;
         context->VI[v].subgraphToGraphIndex = v;
         subgraphContext->VI[v].subgraphToGraphIndex = v;
+    }
+
+    // Preserve in the rootSubgraph the knowledge of the vertices that were
+    // made defunct in the main planar embedding during the embedding process
+    // (due to ReduceBicomp() operations).
+    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
+    {
+        if (gp_GetVertexDefunct(theGraph, v))
+            gp_SetVertexDefunct(rootSubgraph, v);
     }
 
     // Copy the non-virtual edges and any edges containing pointers to child O-nodes
@@ -3395,8 +3403,10 @@ int _K33Search_ValidateEmbeddingObstructionTree(graphP theGraph, K33Search_EONod
         return NOTOK;
 
     // 5. Test the bijection between the vertices of the original graph and the
-    //    vertices in the embedding that are (a) in E-nodes, (b) not 2-cuts in the
-    //    descendant E-node subgraphs, and (c) not defunct vertices.
+    //    vertices in the embedding that are (a) in E-nodes, (b) not the 2-cut
+    //    vertices in the descendant E-node subgraphs, and (c) not defunct vertices.
+    if (_K33Search_ValidateEmbeddingObstructionTreeVertexSet(theGraph, EOTreeRoot, origGraph) != OK)
+        return NOTOK;
 
     return OK;
 }
@@ -3590,6 +3600,104 @@ int _K33Search_CopyEmbeddingEdgesToGraph(graphP theMainGraph, K33Search_EONodeP 
         if (gp_EdgeInUse(theSubgraph, e) && subgraphContext->E[e].EONode != NULL)
         {
             if (_K33Search_CopyEmbeddingEdgesToGraph(theMainGraph, subgraphContext->E[e].EONode, graphOfEmbedding) != OK)
+                return NOTOK;
+        }
+    }
+
+    return OK;
+}
+
+/********************************************************************
+ _K33Search_ValidateEmbeddingObstructionTreeVertexSet()
+ ********************************************************************/
+int _K33Search_ValidateEmbeddingObstructionTreeVertexSet(graphP theGraph, K33Search_EONodeP EOTreeRoot, graphP origGraph)
+{
+    int v;
+
+    _ClearVertexVisitedFlags(origGraph, FALSE);
+
+    // Recursively descend into the EO-tree to mark visited the appropriate vertices in origGraph,
+    // returning NOTOK if any is ever marked visited more than once. The FALSE parameter is used
+    // to indicate that the main planar embedding (the root of the whole tree) is not separated
+    // from an ancestor by a 2-cut, so there are no vertices to ignore in the main planar embedding.
+    if (_K33Search_ValidateVerticesInENodeSubtree(theGraph, EOTreeRoot, FALSE, origGraph) != OK)
+        return NOTOK;
+
+    // Test that every vertex in origGraph was represented in the EO-tree embedding
+    for (v = gp_GetFirstVertex(origraph); gp_VertexInRange(origGraph, v); v++)
+        if (!gp_GetVertexVisited(origGraph, v))
+            return NOTOK;
+
+    // On success, put the origGraph vertices back to not visited and return a success result
+    _ClearVertexVisitedFlags(origGraph, FALSE);
+    return OK;
+}
+
+/********************************************************************
+ _K33Search_ValidateVerticesInENodeSubtree()
+ ********************************************************************/
+int _K33Search_ValidateVerticesInENodeSubtree(graphP theGraph, K33Search_EONodeP theRootENode, int ignoreCutVertices, graphP origGraph)
+{
+    int v, v_offset, vInGraph;
+    int e, EsizeOccupied;
+    graphP theSubgraph = theRootENode->subgraph;
+    K33SearchContext *subgraphContext = NULL;
+
+    gp_FindExtension(theSubgraph, K33SEARCH_ID, (void *)&subgraphContext);
+    if (subgraphContext == NULL)
+        return NOTOK;
+
+    // In this implementation, the cut vertices of a descendant E-node subgraph
+    // are stored  in the first two positions in the vertex array
+    v_offset = ignoreCutVertices ? 2 : 0;
+    for (v = gp_GetFirstVertex(theSubgraph) + v_offset; gp_VertexInRange(theSubgraph, v); v++)
+    {
+        // In the main planar embedding, vertices are marked defunct as they are sent off to
+        // be represented by a descendant E-node's subgraph; those are excluded from the
+        // visitation test-then-set logic
+        if (!gp_GetVertexDefunct(theSubgraph, v))
+        {
+            vInGraph = subgraphContext->VI[v].subgraphToGraphIndex;
+            if (gp_GetVertexVisited(origGraph, vInGraph))
+                return NOTOK;
+            gp_SetVertexVisited(origGraph, vInGraph);
+        }
+    }
+
+    // Find all the O-nodes and recursively descend to them
+    EsizeOccupied = gp_EdgeInUseIndexBound(theSubgraph);
+    for (e = gp_GetFirstEdge(theSubgraph); e < EsizeOccupied; e += 2)
+    {
+        if (gp_EdgeInUse(theSubgraph, e) && subgraphContext->E[e].EONode != NULL)
+        {
+            if (_K33Search_ValidateVerticesInONodeSubtree(theGraph, subgraphContext->E[e].EONode, origGraph) != OK)
+                return NOTOK;
+        }
+    }
+
+    return OK;
+}
+
+/********************************************************************
+ _K33Search_ValidateVerticesInONodeSubtree()
+ ********************************************************************/
+int _K33Search_ValidateVerticesInONodeSubtree(graphP theGraph, K33Search_EONodeP theRootENode, graphP origGraph)
+{
+    int e, EsizeOccupied;
+    graphP theSubgraph = theRootENode->subgraph;
+    K33SearchContext *subgraphContext = NULL;
+
+    gp_FindExtension(theSubgraph, K33SEARCH_ID, (void *)&subgraphContext);
+    if (subgraphContext == NULL)
+        return NOTOK;
+
+    // Find all the E-nodes and recursively descend to them
+    EsizeOccupied = gp_EdgeInUseIndexBound(theSubgraph);
+    for (e = gp_GetFirstEdge(theSubgraph); e < EsizeOccupied; e += 2)
+    {
+        if (gp_EdgeInUse(theSubgraph, e) && subgraphContext->E[e].EONode != NULL)
+        {
+            if (_K33Search_ValidateVerticesInENodeSubtree(theGraph, subgraphContext->E[e].EONode, TRUE, origGraph) != OK)
                 return NOTOK;
         }
     }
