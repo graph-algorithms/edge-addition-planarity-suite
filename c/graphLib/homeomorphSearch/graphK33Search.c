@@ -2687,7 +2687,7 @@ int _DeactivatePertinentOnlySubtrees(graphP theGraph, int w)
 
             // We get the successor on the external face of the current
             Wnext = gp_GetExtFaceVertex(theGraph, W, 1 ^ WPrevLink);
-            WPrevLink = gp_GetExtFaceVertex(theGraph, W, 1) == W ? 1 : 0;
+            WPrevLink = gp_GetExtFaceVertex(theGraph, Wnext, 1) == W ? 1 : 0;
             W = Wnext;
         }
     }
@@ -2747,7 +2747,7 @@ int _CountUnembeddedEdgesInPertinentOnlySubtrees(graphP theGraph, int w, int *pN
 
             // We get the successor on the external face of the current
             Wnext = gp_GetExtFaceVertex(theGraph, W, 1 ^ WPrevLink);
-            WPrevLink = gp_GetExtFaceVertex(theGraph, W, 1) == W ? 1 : 0;
+            WPrevLink = gp_GetExtFaceVertex(theGraph, Wnext, 1) == W ? 1 : 0;
             W = Wnext;
         }
     }
@@ -2823,7 +2823,7 @@ int _CountVerticesAndEdgesInPertinentOnlySubtrees(graphP theGraph, int w,
 
             // We get the successor on the external face of the current
             Wnext = gp_GetExtFaceVertex(theGraph, W, 1 ^ WPrevLink);
-            WPrevLink = gp_GetExtFaceVertex(theGraph, W, 1) == W ? 1 : 0;
+            WPrevLink = gp_GetExtFaceVertex(theGraph, Wnext, 1) == W ? 1 : 0;
             W = Wnext;
         }
     }
@@ -2888,7 +2888,7 @@ int _K33Search_MapVerticesInPertinentOnlySubtrees(graphP theGraph, K33SearchCont
 
             // We get the successor on the external face of the current
             Wnext = gp_GetExtFaceVertex(theGraph, W, 1 ^ WPrevLink);
-            WPrevLink = gp_GetExtFaceVertex(theGraph, W, 1) == W ? 1 : 0;
+            WPrevLink = gp_GetExtFaceVertex(theGraph, Wnext, 1) == W ? 1 : 0;
             W = Wnext;
         }
     }
@@ -2998,7 +2998,7 @@ int _K33Search_AddUnembeddedEdgesToSubgraph(graphP theGraph, K33SearchContext *c
 
             // We get the successor on the external face of the current
             Wnext = gp_GetExtFaceVertex(theGraph, W, 1 ^ WPrevLink);
-            WPrevLink = gp_GetExtFaceVertex(theGraph, W, 1) == W ? 1 : 0;
+            WPrevLink = gp_GetExtFaceVertex(theGraph, Wnext, 1) == W ? 1 : 0;
             W = Wnext;
         }
     }
@@ -3092,7 +3092,7 @@ int _K33Search_CopyEdgesFromPertinentOnlySubtrees(graphP theGraph, K33SearchCont
 
             // We get the successor on the external face of the current
             Wnext = gp_GetExtFaceVertex(theGraph, W, 1 ^ WPrevLink);
-            WPrevLink = gp_GetExtFaceVertex(theGraph, W, 1) == W ? 1 : 0;
+            WPrevLink = gp_GetExtFaceVertex(theGraph, Wnext, 1) == W ? 1 : 0;
             W = Wnext;
         }
     }
