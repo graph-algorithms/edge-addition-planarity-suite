@@ -107,6 +107,8 @@ int _IsolateMinorE7(graphP theGraph, K33SearchContext *context);
 
 // K33CERT begin: private and extern function headers for certification
 extern int _CheckEmbeddingFacialIntegrity(graphP theGraph);
+extern int _getImageVertices(graphP theGraph, int *degrees, int maxDegree,
+                             int *imageVerts, int maxNumImageVerts);
 extern int _TestForCompleteGraphObstruction(graphP theGraph, int numVerts,
                                             int *degrees, int *imageVerts);
 extern int _TestSubgraph(graphP theSubgraph, graphP theGraph);
@@ -152,6 +154,8 @@ int _K33Search_CopyEdgesFromBicomp(graphP theGraph, K33SearchContext *context, i
 int _K33Search_CopyEdgeToNewSubgraph(graphP theGraph, K33SearchContext *context, int e, graphP newSubgraphForBridgeSet);
 
 // For validation with the data structure
+int _K33Search_ValidateENodeSubtree(K33Search_EONodeP theRootENode);
+int _K33Search_ValidateONodeSubtree(K33Search_EONodeP theRootONode);
 int _K33Search_ValidateEmbeddingObstructionTreeEdgeSet(graphP theGraph, K33Search_EONodeP EOTreeRoot, graphP origGraph);
 int _K33Search_CopyEmbeddingEdgesToGraph(graphP theMainGraph, K33Search_EONodeP EONode, graphP graphOfEmbedding);
 
@@ -3382,6 +3386,8 @@ int _K33Search_ValidateEmbeddingObstructionTree(graphP theGraph, K33Search_EONod
     //    child E-nodes have the matching edge endpoints as their identified 2-cut
     //    (i.e., in first and second positions of the subgraph in this implementation)
     // 3. Validate that each E-node's subgraph is a planar embedding
+    if (_K33Search_ValidateENodeSubtree(EOTreeRoot) != OK)
+        return NOTOK;
 
     // 4. Test the bijection of the non-virtual edges of the embedding with the
     //    edges in the original graph (in linear time).
@@ -3391,6 +3397,82 @@ int _K33Search_ValidateEmbeddingObstructionTree(graphP theGraph, K33Search_EONod
     // 5. Test the bijection between the vertices of the original graph and the
     //    vertices in the embedding that are (a) in E-nodes, (b) not 2-cuts in the
     //    descendant E-node subgraphs, and (c) not defunct vertices.
+
+    return OK;
+}
+
+/********************************************************************
+ _K33Search_ValidateENodeSubtree()
+
+ Ensures that the node passed in asa  root ENode is an E-node and
+ that its subgraph passes the planar graph facial integrity check.
+ Then, the method to validate a subtree rooted by an O-node is called
+ for each edge having an EONode pointer in the E-node's subgraph.
+ ********************************************************************/
+int _K33Search_ValidateENodeSubtree(K33Search_EONodeP theRootENode)
+{
+    int e, EsizeOccupied;
+    graphP theSubgraph = theRootENode->subgraph;
+    K33SearchContext *subgraphContext = NULL;
+
+    gp_FindExtension(theSubgraph, K33SEARCH_ID, (void *)&subgraphContext);
+    if (subgraphContext == NULL)
+        return NOTOK;
+
+    if (theRootENode->EOType != K33SEARCH_EOTYPE_ENODE)
+        return NOTOK;
+
+    if (_CheckEmbeddingFacialIntegrity(theSubgraph) != OK)
+        return NOTOK;
+
+    EsizeOccupied = gp_EdgeInUseIndexBound(theSubgraph);
+    for (e = gp_GetFirstEdge(theSubgraph); e < EsizeOccupied; e += 2)
+    {
+        if (gp_EdgeInUse(theSubgraph, e) && subgraphContext->E[e].EONode != NULL)
+        {
+            if (_K33Search_ValidateONodeSubtree(subgraphContext->E[e].EONode) != OK)
+                return NOTOK;
+        }
+    }
+
+    return OK;
+}
+
+/********************************************************************
+ _K33Search_ValidateONodeSubtree()
+ ********************************************************************/
+int _K33Search_ValidateONodeSubtree(K33Search_EONodeP theRootONode)
+{
+    int e, EsizeOccupied;
+    int degrees[5], imageVerts[6];
+    graphP theSubgraph = theRootONode->subgraph;
+    K33SearchContext *subgraphContext = NULL;
+
+    gp_FindExtension(theSubgraph, K33SEARCH_ID, (void *)&subgraphContext);
+    if (subgraphContext == NULL)
+        return NOTOK;
+
+    if (theRootONode->EOType != K33SEARCH_EOTYPE_ONODE)
+        return NOTOK;
+
+    if (theSubgraph->N != 5 || theSubgraph->M != 10)
+        return NOTOK;
+
+    if (_getImageVertices(theSubgraph, degrees, 4, imageVerts, 6) != OK)
+        return NOTOK;
+
+    if (_TestForCompleteGraphObstruction(theSubgraph, 5, degrees, imageVerts) != TRUE)
+        return NOTOK;
+
+    EsizeOccupied = gp_EdgeInUseIndexBound(theSubgraph);
+    for (e = gp_GetFirstEdge(theSubgraph); e < EsizeOccupied; e += 2)
+    {
+        if (gp_EdgeInUse(theSubgraph, e) && subgraphContext->E[e].EONode != NULL)
+        {
+            if (_K33Search_ValidateENodeSubtree(subgraphContext->E[e].EONode) != OK)
+                return NOTOK;
+        }
+    }
 
     return OK;
 }
@@ -3513,22 +3595,6 @@ int _K33Search_CopyEmbeddingEdgesToGraph(graphP theMainGraph, K33Search_EONodeP 
     }
 
     return OK;
-}
-
-/********************************************************************
- ********************************************************************/
-int _K33Search_TestONodeIntegrity(K33Search_EONodeP ONode)
-{
-    // Every edge with a non-null EONode pointer should point to an E-node
-
-    //// Test an O-node for being a literal K5 structure
-    // if (theSubgraph->N != 5 || theSubgraph->M != 10)
-    //     return NOTOK;
-    // if (_TestForCompleteGraphObstruction(theSubgraph, 5, degrees, imageVerts) != TRUE)
-    //     return NOTOK;
-
-    // *** Change to return OK once this is implemented
-    return NOTOK;
 }
 
 // K33CERT end
