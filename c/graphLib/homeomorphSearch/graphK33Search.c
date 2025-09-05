@@ -164,6 +164,7 @@ int _K33Search_CopyEmbeddingEdgesToGraph(graphP theMainGraph, K33Search_EONodeP 
 int _K33Search_ValidateEmbeddingObstructionTreeVertexSet(graphP theGraph, K33Search_EONodeP EOTreeRoot, graphP origGraph);
 int _K33Search_ValidateVerticesInENodeSubtree(graphP theGraph, K33Search_EONodeP theRootENode, int ignoreCutVertices, graphP origGraph);
 int _K33Search_ValidateVerticesInONodeSubtree(graphP theGraph, K33Search_EONodeP theRootENode, graphP origGraph);
+int _K33Search_ValidateChildENodeConnection(graphP theK5, int e, K33Search_EONodeP theChildENode);
 
 // K33CERT end
 
@@ -3479,10 +3480,61 @@ int _K33Search_ValidateONodeSubtree(K33Search_EONodeP theRootONode)
     {
         if (gp_EdgeInUse(theSubgraph, e) && subgraphContext->E[e].EONode != NULL)
         {
+            if (_K33Search_ValidateChildENodeConnection(theSubgraph, e, subgraphContext->E[e].EONode) != OK)
+                return NOTOK;
+
             if (_K33Search_ValidateENodeSubtree(subgraphContext->E[e].EONode) != OK)
                 return NOTOK;
         }
     }
+
+    return OK;
+}
+
+/********************************************************************
+ _K33Search_ValidateChildENodeConnection()
+ ********************************************************************/
+int _K33Search_ValidateChildENodeConnection(graphP theK5, int e, K33Search_EONodeP theChildENode)
+{
+    K33SearchContext *childSubgraphContext = NULL;
+    int v, w, vInChild, wInChild, temp;
+
+    // Reality check that theChildENode is an E-node
+    if (theChildENode->EOType != K33SEARCH_EOTYPE_ENODE)
+        return NOTOK;
+
+    gp_FindExtension(theChildENode->subgraph, K33SEARCH_ID, (void *)&childSubgraphContext);
+    if (childSubgraphContext == NULL)
+        return NOTOK;
+
+    // Get the subgraph to graph mappings of the first two vertices in the child E-node's subgraph,
+    // as these are the vertices of the 2-cut that the E-node subgraph shares with the edge e
+    // in the O-node's K5.
+    vInChild = childSubgraphContext->VI[gp_GetFirstVertex(theChildENode->subgraph)].subgraphToGraphIndex;
+    wInChild = childSubgraphContext->VI[gp_GetFirstVertex(theChildENode->subgraph) + 1].subgraphToGraphIndex;
+    if (vInChild > wInChild)
+    {
+        temp = vInChild;
+        vInChild = wInChild;
+        wInChild = temp;
+    }
+
+    // Now get the two vertex endpoints for the edge in the O-node's K5,
+    // and then get their subgraph to graph mappings
+    v = gp_GetNeighbor(theK5, e);
+    w = gp_GetNeighbor(theK5, gp_GetTwinArc(theK5, e));
+    v = gp_GetVertexIndex(theK5, v);
+    w = gp_GetVertexIndex(theK5, w);
+    if (v > w)
+    {
+        temp = v;
+        v = w;
+        w = temp;
+    }
+
+    // Make sure the 2-cut matches in the O-node and E-node subgraphs
+    if (v != vInChild || w != wInChild)
+        return NOTOK;
 
     return OK;
 }
@@ -3538,9 +3590,6 @@ int _K33Search_ValidateEmbeddingObstructionTreeEdgeSet(graphP theGraph, K33Searc
 
     if (_TestSubgraph(origGraph, graphOfEmbedding) != TRUE)
     {
-        gp_Write(origGraph, "random\\origGraph.txt", WRITE_ADJLIST);
-        gp_Write(graphOfEmbedding, "random\\graphOfEmbedding.txt", WRITE_ADJLIST);
-
         gp_Free(&graphOfEmbedding);
         return NOTOK;
     }
