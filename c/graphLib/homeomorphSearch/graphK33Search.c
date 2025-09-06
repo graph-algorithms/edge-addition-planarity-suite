@@ -157,6 +157,7 @@ int _K33Search_CopyEdgeToNewSubgraph(graphP theGraph, K33SearchContext *context,
 // For validation with the data structure
 int _K33Search_ValidateENodeSubtree(K33Search_EONodeP theRootENode);
 int _K33Search_ValidateONodeSubtree(K33Search_EONodeP theRootONode);
+int _K33Search_ValidateChildENodeConnection(graphP theK5, int e, K33Search_EONodeP theChildENode);
 
 int _K33Search_ValidateEmbeddingObstructionTreeEdgeSet(graphP theGraph, K33Search_EONodeP EOTreeRoot, graphP origGraph);
 int _K33Search_CopyEmbeddingEdgesToGraph(graphP theMainGraph, K33Search_EONodeP EONode, graphP graphOfEmbedding);
@@ -164,7 +165,6 @@ int _K33Search_CopyEmbeddingEdgesToGraph(graphP theMainGraph, K33Search_EONodeP 
 int _K33Search_ValidateEmbeddingObstructionTreeVertexSet(graphP theGraph, K33Search_EONodeP EOTreeRoot, graphP origGraph);
 int _K33Search_ValidateVerticesInENodeSubtree(graphP theGraph, K33Search_EONodeP theRootENode, int ignoreCutVertices, graphP origGraph);
 int _K33Search_ValidateVerticesInONodeSubtree(graphP theGraph, K33Search_EONodeP theRootENode, graphP origGraph);
-int _K33Search_ValidateChildENodeConnection(graphP theK5, int e, K33Search_EONodeP theChildENode);
 
 // K33CERT end
 
@@ -1541,6 +1541,7 @@ K33Search_EONodeP _K33Search_EONode_New(int theEOType, graphP theSubgraph, int t
     theNewEONode->EOType = theEOType;
     theNewEONode->subgraph = theSubgraph;
     theNewEONode->subgraphOwner = theSubgraphOwner;
+    theNewEONode->visited = FALSE;
 
     return theNewEONode;
 }
@@ -3415,10 +3416,20 @@ int _K33Search_ValidateEmbeddingObstructionTree(graphP theGraph, K33Search_EONod
 /********************************************************************
  _K33Search_ValidateENodeSubtree()
 
- Ensures that the node passed in asa  root ENode is an E-node and
- that its subgraph passes the planar graph facial integrity check.
+ Ensures that the node passed in as theRootENode is an E-node that
+ has not been previously been visited and that its subgraph passes
+ the planar graph facial integrity check.
+
  Then, the method to validate a subtree rooted by an O-node is called
  for each edge having an EONode pointer in the E-node's subgraph.
+
+ The E-node type check combined with calling for O-node validation on
+ all children helps validate that the embedding obstruction tree has
+ alternating levels of E-nodes and O-nodes (because the O-node validation
+ performs the analogous operations).
+
+ The visitation test ensures that embedding-obstruction linked structure
+ is indeed a tree (acyclic).
  ********************************************************************/
 int _K33Search_ValidateENodeSubtree(K33Search_EONodeP theRootENode)
 {
@@ -3432,6 +3443,10 @@ int _K33Search_ValidateENodeSubtree(K33Search_EONodeP theRootENode)
 
     if (theRootENode->EOType != K33SEARCH_EOTYPE_ENODE)
         return NOTOK;
+
+    if (theRootENode->visited)
+        return NOTOK;
+    theRootENode->visited = TRUE;
 
     if (_CheckEmbeddingFacialIntegrity(theSubgraph) != OK)
         return NOTOK;
@@ -3451,6 +3466,25 @@ int _K33Search_ValidateENodeSubtree(K33Search_EONodeP theRootENode)
 
 /********************************************************************
  _K33Search_ValidateONodeSubtree()
+
+ Ensures that the node passed in as theRootONode is an O-node that
+ has not been previously been visited and that its subgraph passes
+ the test of being a K5.
+
+ Then, for each edge of the K5 having a non-NULL EONode pointer, two
+ validations are performed. First, we validate that the subgraph of
+ the child E-node pointed to by the edge's EONode pointer has its
+ first two vertices (i.e., its 2-cut) representing the same two
+ vertices as the edge in the K5 that points to it.  Second we
+ invoke the E-node subtree validation on the non-NULL EONode.
+
+ The O-node type check combined with calling for E-node validation on
+ all children helps validate that the embedding obstruction tree has
+ alternating levels of E-nodes and O-nodes (because the E-node validation
+ performs the analogous operations).
+
+ The visitation test ensures that embedding-obstruction linked structure
+ is indeed a tree (acyclic).
  ********************************************************************/
 int _K33Search_ValidateONodeSubtree(K33Search_EONodeP theRootONode)
 {
@@ -3465,6 +3499,10 @@ int _K33Search_ValidateONodeSubtree(K33Search_EONodeP theRootONode)
 
     if (theRootONode->EOType != K33SEARCH_EOTYPE_ONODE)
         return NOTOK;
+
+    if (theRootONode->visited)
+        return NOTOK;
+    theRootONode->visited = TRUE;
 
     if (theSubgraph->N != 5 || theSubgraph->M != 10)
         return NOTOK;
@@ -3730,10 +3768,10 @@ int _K33Search_ValidateVerticesInENodeSubtree(graphP theGraph, K33Search_EONodeP
 /********************************************************************
  _K33Search_ValidateVerticesInONodeSubtree()
  ********************************************************************/
-int _K33Search_ValidateVerticesInONodeSubtree(graphP theGraph, K33Search_EONodeP theRootENode, graphP origGraph)
+int _K33Search_ValidateVerticesInONodeSubtree(graphP theGraph, K33Search_EONodeP theRootONode, graphP origGraph)
 {
     int e, EsizeOccupied;
-    graphP theSubgraph = theRootENode->subgraph;
+    graphP theSubgraph = theRootONode->subgraph;
     K33SearchContext *subgraphContext = NULL;
 
     gp_FindExtension(theSubgraph, K33SEARCH_ID, (void *)&subgraphContext);

@@ -52,9 +52,10 @@ extern "C"
 #define K33SEARCH_EOTYPE_ONODE 1
     typedef struct
     {
-        int EOType;        // default EOTYPE_ENODE via memset 0 init
-        graphP subgraph;   // default NULL via memset 0 init
-        int subgraphOwner; // default FALSE via memset 0 init
+        int EOType;        // set by constructor parameter
+        graphP subgraph;   // set by constructor parameter
+        int subgraphOwner; // set by constructor parameter
+        int visited;       // default FALSE set by constructor
     } K33Search_EONode;
 
     typedef K33Search_EONode *K33Search_EONodeP;
