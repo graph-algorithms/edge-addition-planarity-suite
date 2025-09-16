@@ -286,7 +286,7 @@ void _InitVertices(graphP theGraph)
     memset(theGraph->extFace, NIL_CHAR, gp_VertexIndexBound(theGraph) * sizeof(extFaceLinkRec));
 
     for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
-        gp_InitVertexFlags(theGraph, v);    
+        gp_InitVertexFlags(theGraph, v);
 #endif
     // N.B. This is the legacy API-based approach to initializing the vertices
     // int v;
@@ -2560,4 +2560,18 @@ int debugNOTOK(void)
 {
     // exit(-1);
     return 0; // NOTOK is normally defined to be zero
+}
+
+/********************************************************************
+ gp_AtExit()
+
+ Cleanup global variables declared in graphLib layer upon program exit.
+
+ NOTE: Must be registered as a callback with atexit(), which comes
+ from stdlib.h. For example, c/planarityApp/planarity.c includes
+ c/planarityApp/planarity.h, which includes c/graphLib/graphLib.h,
+ which finally includes stdlib.h.
+ ********************************************************************/
+void gp_AtExit(void)
+{
 }

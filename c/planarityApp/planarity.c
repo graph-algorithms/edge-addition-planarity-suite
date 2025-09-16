@@ -14,7 +14,13 @@ int main(int argc, char *argv[])
 {
     int retVal = 0;
 
-    if (argc <= 1)
+    if (atexit(planarityAtExit) != 0 || atexit(gp_AtExit) != 0)
+    {
+        ErrorMessage("Unable to register cleanup functions.");
+        retVal = -1;
+    }
+
+    else if (argc <= 1)
         retVal = menu();
 
     else if (argv[1][0] == '-')
