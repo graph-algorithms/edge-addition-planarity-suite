@@ -566,7 +566,7 @@ int runGraphTransformationTest(char const *command, char const *infileName, int 
             int charsAvailForFilename = 0;
             if (Result == TRUE)
             {
-                messageFormat = "For the transformation %s on file \"%.*s\", actual output file matched expected output file.\n";
+                messageFormat = "For the transformation %s on file \"%.*s\", actual output matched expected output file.\n";
                 charsAvailForFilename = (int)(MAXLINE - strlen(messageFormat));
                 sprintf(messageContents, messageFormat, command, charsAvailForFilename, infileName);
                 Message(messageContents);
@@ -574,7 +574,7 @@ int runGraphTransformationTest(char const *command, char const *infileName, int 
             }
             else
             {
-                messageFormat = "For the transformation %s on file \"%.*s\", actual output file did not match expected output file.\n";
+                messageFormat = "For the transformation %s on file \"%.*s\", actual output did not match expected output file.\n";
                 charsAvailForFilename = (int)(MAXLINE - strlen(messageFormat));
                 sprintf(messageContents, messageFormat, command, charsAvailForFilename, infileName);
                 ErrorMessage(messageContents);
@@ -586,6 +586,9 @@ int runGraphTransformationTest(char const *command, char const *infileName, int 
                 free(expectedOutfileName);
                 expectedOutfileName = NULL;
             }
+
+            if (actualOutput != NULL)
+                free(actualOutput);
         }
     }
 

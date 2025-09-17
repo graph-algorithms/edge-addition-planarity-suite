@@ -175,7 +175,7 @@ int TextFileMatchesString(char const *theFilename, char const *theString)
     if (theFilename != NULL)
         infile = fopen(theFilename, "r");
 
-    if (infile == NULL)
+    if (infile == NULL || theString == NULL)
         Result = FALSE;
     else
     {
