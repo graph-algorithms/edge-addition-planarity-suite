@@ -677,4 +677,5 @@ int ConstructTransformationExpectedResultFilename(char const *infileName, char *
  ********************************************************************/
 void planarityAtExit(void)
 {
+    Message("Performing planarityApp cleanup with planarityAtExit().\n");
 }

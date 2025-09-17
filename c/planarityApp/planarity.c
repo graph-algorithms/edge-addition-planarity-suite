@@ -14,7 +14,7 @@ int main(int argc, char *argv[])
 {
     int retVal = 0;
 
-    if (atexit(planarityAtExit) != 0 || atexit(gp_AtExit) != 0)
+    if (atexit(gp_AtExit) != 0 || atexit(planarityAtExit) != 0)
     {
         ErrorMessage("Unable to register cleanup functions.");
         retVal = -1;

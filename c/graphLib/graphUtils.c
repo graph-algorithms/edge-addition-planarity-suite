@@ -2574,4 +2574,5 @@ int debugNOTOK(void)
  ********************************************************************/
 void gp_AtExit(void)
 {
+    Message("Performing graphLib cleanup with gp_AtExit().\n");
 }
