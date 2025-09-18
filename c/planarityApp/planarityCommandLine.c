@@ -496,6 +496,9 @@ int runSpecificGraphTest(char const *command, char const *infileName, int inputI
     // Cleanup and then return the command-line style result code
     Message("\n");
 
+    if (inputString != NULL)
+        free(inputString);
+
     if (actualOutput != NULL)
         free(actualOutput);
     if (actualOutput2 != NULL)
@@ -593,6 +596,9 @@ int runGraphTransformationTest(char const *command, char const *infileName, int 
     }
 
     Message("\n");
+
+    if (inputString != NULL)
+        free(inputString);
 
     return (Result == OK) ? 0 : -1;
 }
