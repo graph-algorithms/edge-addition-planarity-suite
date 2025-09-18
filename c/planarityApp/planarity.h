@@ -69,10 +69,6 @@ extern "C"
     int ConstructTransformationExpectedResultFilename(char const *infileName, char **outfileName, char command, int actualOrExpectedFlag);
     void WriteAlgorithmResults(graphP theGraph, int Result, char command, platform_time start, platform_time end, char const *infileName);
 
-    // NOTE: Cleanup functions registered to be run at exit() with atexit()
-    // should have no return value
-    void planarityAtExit(void);
-
 #ifdef __cplusplus
 }
 #endif

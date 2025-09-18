@@ -52,10 +52,6 @@ extern "C"
 
     char *gp_GetLibPlanarityVersionFull(void);
 
-    // NOTE: Cleanup functions registered to be run at exit() with atexit()
-    // should have no return value
-    void gp_AtExit();
-
 #ifdef __cplusplus
 }
 #endif

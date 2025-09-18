@@ -664,18 +664,3 @@ int ConstructTransformationExpectedResultFilename(char const *infileName, char *
 
     return Result;
 }
-
-/********************************************************************
- gp_AtExit()
-
- Cleanup global variables declared in planarityApp layer upon program exit.
-
- NOTE: Must be registered as a callback with atexit(), which comes
- from stdlib.h. For example, c/planarityApp/planarity.c includes
- c/planarityApp/planarity.h, which includes c/graphLib/graphLib.h,
- which finally includes stdlib.h.
- ********************************************************************/
-void planarityAtExit(void)
-{
-    Message("Performing planarityApp cleanup with planarityAtExit().\n");
-}
