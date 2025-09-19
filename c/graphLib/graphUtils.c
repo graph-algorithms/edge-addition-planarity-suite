@@ -286,7 +286,7 @@ void _InitVertices(graphP theGraph)
     memset(theGraph->extFace, NIL_CHAR, gp_VertexIndexBound(theGraph) * sizeof(extFaceLinkRec));
 
     for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
-        gp_InitVertexFlags(theGraph, v);    
+        gp_InitVertexFlags(theGraph, v);
 #endif
     // N.B. This is the legacy API-based approach to initializing the vertices
     // int v;
