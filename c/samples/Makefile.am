@@ -9,10 +9,16 @@ dist_samples_DATA = \
   drawExample.txt.ColorVertices.out.txt \
   drawExample.txt.DrawPlanar.out.txt \
   drawExample.txt.DrawPlanar.out.txt.render.txt \
+  K4-minus-edge.AdjList.txt\
+  K4.AdjList.txt\
   K10.g6 \
   K10.g6.0-based.AdjList.out.txt \
   K10.g6.0-based.AdjList.out.txt.0-based.G6.out.g6 \
   K10.g6.0-based.AdjMat.out.txt \
+  K23-minus-edge.AdjList.txt\
+  K23.AdjList.txt\
+  K33-minus-edge.AdjList.txt\
+  K33.AdjList.txt\
   maxPlanar5.0-based.txt \
   maxPlanar5.0-based.txt.ColorVertices.out.txt \
   maxPlanar5.0-based.txt.DrawPlanar.out.txt \
