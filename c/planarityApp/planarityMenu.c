@@ -154,6 +154,9 @@ void TransformGraphMenu(void)
     Result = TransformGraph(commandStr, infileName, NULL, NULL, outfileName, NULL);
     if (Result != OK)
         ErrorMessage("Failed to perform transformation.\n");
+
+    if (fileNameFormat != NULL)
+        free(fileNameFormat);
 }
 
 void TestAllGraphsMenu(void)
