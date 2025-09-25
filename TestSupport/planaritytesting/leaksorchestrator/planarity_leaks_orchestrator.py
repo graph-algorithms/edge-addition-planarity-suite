@@ -463,11 +463,6 @@ class PlanarityLeaksOrchestrator:
                 "Failed to determine input filetype of " f"'{infile_path}'."
             ) from input_filetype_error
 
-        if file_type != "G6":
-            raise PlanarityLeaksOrchestratorError(
-                f"Determined '{infile_path}' has filetype '{file_type}', "
-                "which is not supported; please supply a .g6 file."
-            )
         if not commands_to_run:
             commands_to_run = PLANARITY_ALGORITHM_SPECIFIERS()
         elif not self._valid_commands_to_run(commands_to_run):
