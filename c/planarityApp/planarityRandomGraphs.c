@@ -271,11 +271,19 @@ int RandomGraphs(char command, int NumGraphs, int SizeOfGraphs, char *outfileNam
 
     if (pG6WriteIterator != NULL)
     {
-        if (endG6WriteIteration(pG6WriteIterator) != OK && freeG6WriteIterator(&pG6WriteIterator) != OK)
+        if (endG6WriteIteration(pG6WriteIterator) != OK)
         {
-            ErrorMessage("Unable to properly terminate .g6 write iteration.\n");
+            ErrorMessage("Unable to end .g6 write iteration.\n");
+            Result = NOTOK;
+        }
+
+        if (freeG6WriteIterator(&pG6WriteIterator) != OK)
+        {
+            ErrorMessage("Unable to free .g6 write iterator.\n");
+            Result = NOTOK;
         }
     }
+
     // Free the graph structures created before the loop
     gp_Free(&theGraph);
     gp_Free(&origGraph);
