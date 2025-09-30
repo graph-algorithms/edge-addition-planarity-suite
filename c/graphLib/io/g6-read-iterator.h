@@ -30,17 +30,21 @@ extern "C"
         char *currGraphBuff;
 
         graphP currGraph;
-    } G6ReadIterator;
 
+        bool contentsExhausted;
+    } G6ReadIterator;
     typedef G6ReadIterator *G6ReadIteratorP;
 
     int allocateG6ReadIterator(G6ReadIteratorP *, graphP);
     bool _isG6ReadIteratorAllocated(G6ReadIteratorP);
+    bool contentsExhausted(G6ReadIteratorP pG6ReadIterator);
 
     int getNumGraphsRead(G6ReadIteratorP, int *);
     int getOrderOfGraphToRead(G6ReadIteratorP, int *);
     int getPointerToGraphReadIn(G6ReadIteratorP, graphP *);
 
+    int beginG6ReadIterationFromG6String(G6ReadIteratorP, char *);
+    int beginG6ReadIterationFromG6FilePath(G6ReadIteratorP, char *);
     int beginG6ReadIterationFromG6StrOrFile(G6ReadIteratorP, strOrFileP);
     int _beginG6ReadIteration(G6ReadIteratorP);
     int _processAndCheckHeader(strOrFileP);

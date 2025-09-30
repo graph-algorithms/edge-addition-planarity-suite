@@ -17,7 +17,7 @@ typedef struct
 
 typedef testAllStats *testAllStatsP;
 
-int testAllGraphs(graphP theGraph, char command, strOrFileP inputContainer, testAllStatsP stats);
+int testAllGraphs(graphP theGraph, char command, char *infileName, testAllStatsP stats);
 int outputTestAllGraphsResults(char command, testAllStatsP stats, char *infileName, char *outfileName, char **outputStr);
 
 /****************************************************************************
@@ -62,24 +62,11 @@ int TestAllGraphs(char *commandString, char *infileName, char *outfileName, char
                 // Start the timer
                 platform_GetTime(start);
 
-                strOrFileP inputContainer = sf_New(NULL, infileName, READTEXT);
-                if (inputContainer == NULL)
-                {
-                    messageFormat = "Unable to open file \"%.*s\" for input.\n";
-                    charsAvailForFilename = (int)(MAXLINE - strlen(messageFormat));
-                    sprintf(messageContents, messageFormat, charsAvailForFilename, infileName);
-                    ErrorMessage(messageContents);
-
-                    gp_Free(&theGraph);
-
-                    return NOTOK;
-                }
-
                 testAllStats stats;
                 memset(&stats, 0, sizeof(testAllStats));
 
                 char command = commandString[1];
-                Result = testAllGraphs(theGraph, command, inputContainer, &stats);
+                Result = testAllGraphs(theGraph, command, infileName, &stats);
 
                 // Stop the timer
                 platform_GetTime(end);
@@ -124,7 +111,7 @@ int TestAllGraphs(char *commandString, char *infileName, char *outfileName, char
     return Result;
 }
 
-int testAllGraphs(graphP theGraph, char command, strOrFileP inputContainer, testAllStatsP stats)
+int testAllGraphs(graphP theGraph, char command, char *infileName, testAllStatsP stats)
 {
     int Result = OK;
 
@@ -146,7 +133,7 @@ int testAllGraphs(graphP theGraph, char command, strOrFileP inputContainer, test
         return Result;
     }
 
-    Result = beginG6ReadIterationFromG6StrOrFile(pG6ReadIterator, inputContainer);
+    Result = beginG6ReadIterationFromG6FilePath(pG6ReadIterator, infileName);
 
     if (Result != OK)
     {
@@ -156,13 +143,13 @@ int testAllGraphs(graphP theGraph, char command, strOrFileP inputContainer, test
         return Result;
     }
 
-    int graphOrder = pG6ReadIterator->graphOrder;
+    int graphOrder = gp_getN(theGraph);
     // We have to set the maximum arc capacity (i.e. (N * (N - 1))) because some of the test files
     // can contain complete graphs, and the graph drawing, K_{3, 3} search, and K_4 search extensions
     // don't support expanding the arc capacity after being attached.
     if (strchr("d34", command) != NULL)
     {
-        Result = gp_EnsureArcCapacity(pG6ReadIterator->currGraph, (graphOrder * (graphOrder - 1)));
+        Result = gp_EnsureArcCapacity(theGraph, (graphOrder * (graphOrder - 1)));
         if (Result != OK)
         {
             ErrorMessage("Unable to maximize arc capacity of G6ReadIterator's graph struct.\n");
@@ -172,7 +159,7 @@ int testAllGraphs(graphP theGraph, char command, strOrFileP inputContainer, test
         }
     }
 
-    AttachAlgorithm(pG6ReadIterator->currGraph, command);
+    AttachAlgorithm(theGraph, command);
 
     copyOfOrigGraph = gp_New();
     if (copyOfOrigGraph == NULL)
@@ -192,19 +179,6 @@ int testAllGraphs(graphP theGraph, char command, strOrFileP inputContainer, test
         return Result;
     }
 
-    if (strchr("d34", command) != NULL)
-    {
-        Result = gp_EnsureArcCapacity(copyOfOrigGraph, (graphOrder * (graphOrder - 1)));
-        if (Result != OK)
-        {
-            ErrorMessage("Unable to maximize arc capacity of graph struct to contain copy of original graph.\n");
-            gp_Free(&copyOfOrigGraph);
-            freeG6ReadIterator(&pG6ReadIterator);
-            stats->errorFlag = TRUE;
-            return Result;
-        }
-    }
-
     while (true)
     {
         Result = readGraphUsingG6ReadIterator(pG6ReadIterator);
@@ -218,14 +192,14 @@ int testAllGraphs(graphP theGraph, char command, strOrFileP inputContainer, test
             break;
         }
 
-        if (pG6ReadIterator->currGraph == NULL)
+        if (contentsExhausted(pG6ReadIterator))
             break;
 
-        gp_CopyGraph(copyOfOrigGraph, pG6ReadIterator->currGraph);
+        gp_CopyGraph(copyOfOrigGraph, theGraph);
 
-        Result = gp_Embed(pG6ReadIterator->currGraph, embedFlags);
+        Result = gp_Embed(theGraph, embedFlags);
 
-        if (gp_TestEmbedResultIntegrity(pG6ReadIterator->currGraph, copyOfOrigGraph, Result) != Result)
+        if (gp_TestEmbedResultIntegrity(theGraph, copyOfOrigGraph, Result) != Result)
             Result = NOTOK;
 
         if (Result == OK)

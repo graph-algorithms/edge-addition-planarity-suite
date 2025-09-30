@@ -915,12 +915,13 @@ int gp_WriteToString(graphP theGraph, char **pOutputStr, int Mode)
     RetVal = _WriteGraph(theGraph, &outputContainer, pOutputStr, Mode);
 
     // N.B. Since we pass ownership of the outputContainer to the
-    // G6WriteIterator when we WRITE_G6, we make sure to take the string *before*
-    // we endG6WriteIteration(), since that calls sf_Free() on the g6Output
-    // (i.e. outputContainer) and therefore sb_Free() on theStr. This means
-    // that we need to make sure outputContainer and theStr it contains are
-    // both non-NULL before trying to take the string, as WRITE_ADJLIST,
-    // WRITE_ADJMATRIX, and WRITE_DEBUGINFO do *not* clean up the outputContainer.
+    // G6WriteIterator when we WRITE_G6, we make sure to take the string
+    // *before* we endG6WriteIteration(), since that calls sf_Free() on the
+    // g6Output (i.e. outputContainer) and therefore sb_Free() on theStr. This
+    // means that we need to make sure outputContainer and theStr it contains
+    // are both non-NULL before trying to take the string, as WRITE_ADJLIST,
+    // WRITE_ADJMATRIX, and WRITE_DEBUGINFO do *not* clean up the
+    // outputContainer.
     if (RetVal == OK && outputContainer != NULL)
     {
         (*pOutputStr) = sf_takeTheStr(outputContainer);
