@@ -244,7 +244,6 @@ int RandomGraphs(char command, int NumGraphs, int SizeOfGraphs, char *outfileNam
 
         // Reinitialize or recreate graphs for next iteration
         ReinitializeGraph(&theGraph, ReuseGraphs, command);
-        ReinitializeGraph(&origGraph, ReuseGraphs, command);
 
         // Show progress, but not so often that it bogs down progress
         if (!getQuietModeSetting() && (K + 1) % countUpdateFreq == 0)
