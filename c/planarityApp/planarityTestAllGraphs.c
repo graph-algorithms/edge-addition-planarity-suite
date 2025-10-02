@@ -214,8 +214,6 @@ int testAllGraphs(graphP theGraph, char command, char *infileName, testAllStatsP
             errorFlag = TRUE;
             break;
         }
-
-        gp_ReinitializeGraph(copyOfOrigGraph);
     }
 
     stats->numGraphsRead = pG6ReadIterator->numGraphsRead;
