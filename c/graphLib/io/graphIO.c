@@ -16,11 +16,31 @@ int _ReadGraph(graphP theGraph, strOrFileP inputContainer);
 int _ReadAdjMatrix(graphP theGraph, strOrFileP inputContainer);
 int _ReadAdjList(graphP theGraph, strOrFileP inputContainer);
 int _ReadLEDAGraph(graphP theGraph, strOrFileP inputContainer);
+int _ReadPostprocess(graphP theGraph, char *extraData);
 
 int _WriteGraph(graphP theGraph, strOrFileP *outputContainer, char **pOutputStr, int Mode);
 int _WriteAdjList(graphP theGraph, strOrFileP outputContainer);
 int _WriteAdjMatrix(graphP theGraph, strOrFileP outputContainer);
 int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer);
+int _WritePostprocess(graphP theGraph, char **pExtraData);
+
+// These prototypes are defined if LOGGING is defined, but
+// if LOGGING is not defined, then these declarations help
+// to get rid of missingprototype warnings.
+#ifndef LOGGING
+void _LogLine(const char *Line);
+void _Log(const char *Line);
+
+char *_MakeLogStr1(char *format, int);
+char *_MakeLogStr2(char *format, int, int);
+char *_MakeLogStr3(char *format, int, int, int);
+char *_MakeLogStr4(char *format, int, int, int, int);
+char *_MakeLogStr5(char *format, int, int, int, int, int);
+#endif
+
+/* Private functions */
+char _GetEdgeTypeChar(graphP theGraph, int e);
+char _GetVertexObstructionTypeChar(graphP theGraph, int v);
 
 /********************************************************************
  _ReadAdjMatrix()

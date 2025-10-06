@@ -8,6 +8,10 @@ See the LICENSE.TXT file for licensing information.
 
 #include "graph.h"
 
+// Private methods, except exported within library
+int _SortVertices(graphP theGraph);
+
+// Imported methods
 extern void _ClearVertexVisitedFlags(graphP theGraph, int);
 
 /********************************************************************
@@ -369,11 +373,6 @@ int gp_LowpointAndLeastAncestor(graphP theGraph)
 
  NOTE: This method is not called by gp_LowpointAndLeastAncestor(),
  which computes both values at the same time.
-
- NOTE: This method is useful in core planarity initialization when
- a graph has already been DFS numbered and sorted by DFI. For example,
- this allows the core planarity embedder to avoid perturbing unit test
- graphs that may be designed and stored in a DFI sorted format.
  ********************************************************************/
 
 int gp_LeastAncestor(graphP theGraph)

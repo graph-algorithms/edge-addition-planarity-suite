@@ -130,19 +130,6 @@ int getPointerToGraphToWrite(G6WriteIteratorP pG6WriteIterator, graphP *ppGraph)
     return OK;
 }
 
-int getGraphBuff(G6WriteIteratorP pG6WriteIterator, char **ppCurrGraphBuff)
-{
-    if (pG6WriteIterator == NULL)
-    {
-        ErrorMessage("G6WriteIterator is not allocated.\n");
-        return NOTOK;
-    }
-
-    (*ppCurrGraphBuff) = pG6WriteIterator->currGraphBuff;
-
-    return OK;
-}
-
 int beginG6WriteIterationToG6String(G6WriteIteratorP pG6WriteIterator)
 {
     return beginG6WriteIterationToG6StrOrFile(

@@ -11,7 +11,7 @@ See the LICENSE.TXT file for licensing information.
 
 extern void _ClearVertexVisitedFlags(graphP theGraph, int);
 
-/* Private function declarations */
+/* Private function declarations (some exported to system) */
 
 int _TestPath(graphP theGraph, int U, int V);
 int _TryPath(graphP theGraph, int e, int V);
@@ -21,6 +21,13 @@ int _TestSubgraph(graphP theSubgraph, graphP theGraph);
 int _CheckEmbeddingIntegrity(graphP theGraph, graphP origGraph);
 int _CheckEmbeddingFacialIntegrity(graphP theGraph);
 int _CheckObstructionIntegrity(graphP theGraph, graphP origGraph);
+
+int _getImageVertices(graphP theGraph, int *degrees, int maxDegree,
+                      int *imageVerts, int maxNumImageVerts);
+int _TestForCompleteGraphObstruction(graphP theGraph, int numVerts,
+                                     int *degrees, int *imageVerts);
+int _TestForK33GraphObstruction(graphP theGraph, int *degrees, int *imageVerts);
+int _TestForK23GraphObstruction(graphP theGraph, int *degrees, int *imageVerts);
 
 int _CheckKuratowskiSubgraphIntegrity(graphP theGraph);
 int _CheckOuterplanarObstructionIntegrity(graphP theGraph);
