@@ -51,12 +51,13 @@ int menu(void)
         {
             char *secondOutfile = NULL;
             if (Choice == 'p' || Choice == 'd' || Choice == 'o')
-                secondOutfile = (char*)"";
+                secondOutfile = (char *)"";
 
             if (!strchr(GetAlgorithmChoices(), Choice))
             {
                 Message("Invalid menu choice, please try again.");
             }
+
             else
             {
                 switch (tolower(Mode))
@@ -115,7 +116,7 @@ void TransformGraphMenu(void)
         return;
     }
 
-    char const*fileNameFormatFormat = " %%%d[^\r\n]";
+    char const *fileNameFormatFormat = " %%%d[^\r\n]";
     char *fileNameFormat = (char *)malloc((strlen(fileNameFormatFormat) + numCharsToReprMAXLINE + 1) * sizeof(char));
     sprintf(fileNameFormat, fileNameFormatFormat, MAXLINE);
 
@@ -153,6 +154,9 @@ void TransformGraphMenu(void)
     Result = TransformGraph(commandStr, infileName, NULL, NULL, outfileName, NULL);
     if (Result != OK)
         ErrorMessage("Failed to perform transformation.\n");
+
+    if (fileNameFormat != NULL)
+        free(fileNameFormat);
 }
 
 void TestAllGraphsMenu(void)
@@ -174,7 +178,7 @@ void TestAllGraphsMenu(void)
         return;
     }
 
-    char const*fileNameFormatFormat = " %%%d[^\r\n]";
+    char const *fileNameFormatFormat = " %%%d[^\r\n]";
     char *fileNameFormat = (char *)malloc((strlen(fileNameFormatFormat) + numCharsToReprMAXLINE + 1) * sizeof(char));
     sprintf(fileNameFormat, fileNameFormatFormat, MAXLINE);
 
@@ -213,4 +217,7 @@ void TestAllGraphsMenu(void)
     Result = TestAllGraphs(commandStr, infileName, outfileName, NULL);
     if (Result != OK)
         ErrorMessage("Algorithm test on all graphs in .g6 input file failed.\n");
+
+    if (fileNameFormat != NULL)
+        free(fileNameFormat);
 }
