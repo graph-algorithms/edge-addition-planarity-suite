@@ -118,13 +118,19 @@ void TransformGraphMenu(void)
 
     char const *fileNameFormatFormat = " %%%d[^\r\n]";
     char *fileNameFormat = (char *)malloc((strlen(fileNameFormatFormat) + numCharsToReprMAXLINE + 1) * sizeof(char));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
     sprintf(fileNameFormat, fileNameFormatFormat, MAXLINE);
+#pragma GCC diagnostic pop
 
     do
     {
         Prompt("Enter input filename:\n");
         fflush(stdin);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
         scanf(fileNameFormat, infileName);
+#pragma GCC diagnostic pop
 
         if (strncmp(infileName, "stdin", strlen("stdin")) == 0)
         {
@@ -137,7 +143,10 @@ void TransformGraphMenu(void)
     {
         Prompt("Enter output filename, or type \"stdout\" to output to console:\n");
         fflush(stdin);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
         scanf(fileNameFormat, outfileName);
+#pragma GCC diagnostic pop
     } while (strlen(outfileName) == 0);
 
     do
@@ -180,13 +189,19 @@ void TestAllGraphsMenu(void)
 
     char const *fileNameFormatFormat = " %%%d[^\r\n]";
     char *fileNameFormat = (char *)malloc((strlen(fileNameFormatFormat) + numCharsToReprMAXLINE + 1) * sizeof(char));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
     sprintf(fileNameFormat, fileNameFormatFormat, MAXLINE);
+#pragma GCC diagnostic pop
 
     do
     {
         Prompt("Enter input filename:\n");
         fflush(stdin);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
         scanf(fileNameFormat, infileName);
+#pragma GCC diagnostic pop
 
         if (strncmp(infileName, "stdin", strlen("stdin")) == 0)
         {
@@ -199,7 +214,10 @@ void TestAllGraphsMenu(void)
     {
         Prompt("Enter output filename, or type \"stdout\" to output to console:\n");
         fflush(stdin);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
         scanf(fileNameFormat, outfileName);
+#pragma GCC diagnostic pop
     } while (strlen(outfileName) == 0);
 
     do

@@ -105,7 +105,10 @@ int legacyCommandLine(int argc, char *argv[])
             char const *messageFormat = "Failed to read graph \"%.*s\"";
             char messageContents[MAXLINE + 1];
             int charsAvailForFilename = (int)(MAXLINE - strlen(messageFormat));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
             sprintf(messageContents, messageFormat, charsAvailForFilename, argv[1]);
+#pragma GCC diagnostic pop
             ErrorMessage(messageContents);
             return -2;
         }
@@ -571,7 +574,10 @@ int runGraphTransformationTest(char const *command, char const *infileName, int 
             {
                 messageFormat = "For the transformation %s on file \"%.*s\", actual output matched expected output file.\n";
                 charsAvailForFilename = (int)(MAXLINE - strlen(messageFormat));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
                 sprintf(messageContents, messageFormat, command, charsAvailForFilename, infileName);
+#pragma GCC diagnostic pop
                 Message(messageContents);
                 Result = OK;
             }
@@ -579,7 +585,10 @@ int runGraphTransformationTest(char const *command, char const *infileName, int 
             {
                 messageFormat = "For the transformation %s on file \"%.*s\", actual output did not match expected output file.\n";
                 charsAvailForFilename = (int)(MAXLINE - strlen(messageFormat));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
                 sprintf(messageContents, messageFormat, command, charsAvailForFilename, infileName);
+#pragma GCC diagnostic pop
                 ErrorMessage(messageContents);
                 Result = NOTOK;
             }

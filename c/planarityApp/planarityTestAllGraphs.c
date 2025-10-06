@@ -56,7 +56,10 @@ int TestAllGraphs(char *commandString, char *infileName, char *outfileName, char
             {
                 messageFormat = "Start testing all graphs in \"%.*s\".\n";
                 charsAvailForFilename = (int)(MAXLINE - strlen(messageFormat));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
                 sprintf(messageContents, messageFormat, charsAvailForFilename, infileName);
+#pragma GCC diagnostic pop
                 Message(messageContents);
 
                 // Start the timer
@@ -76,7 +79,10 @@ int TestAllGraphs(char *commandString, char *infileName, char *outfileName, char
                 {
                     messageFormat = "\nEncountered error while running command '%c' on all graphs in \"%.*s\".\n";
                     charsAvailForFilename = (int)(MAXLINE - strlen(messageFormat));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
                     sprintf(messageContents, messageFormat, command, charsAvailForFilename, infileName);
+#pragma GCC diagnostic pop
                     ErrorMessage(messageContents);
                 }
                 else
@@ -89,7 +95,10 @@ int TestAllGraphs(char *commandString, char *infileName, char *outfileName, char
                 {
                     messageFormat = "Error outputting results running command '%c' on all graphs in \"%.*s\".\n";
                     charsAvailForFilename = (int)(MAXLINE - strlen(messageFormat));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
                     sprintf(messageContents, messageFormat, command, charsAvailForFilename, infileName);
+#pragma GCC diagnostic pop
                     ErrorMessage(messageContents);
                     Result = NOTOK;
                 }
@@ -186,7 +195,10 @@ int testAllGraphs(graphP theGraph, char command, char *infileName, testAllStatsP
         if (Result != OK)
         {
             messageFormat = "Unable to read graph on line %d from .g6 read iterator.\n";
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
             sprintf(messageContents, messageFormat, pG6ReadIterator->numGraphsRead + 1);
+#pragma GCC diagnostic pop
             ErrorMessage(messageContents);
             errorFlag = TRUE;
             break;
@@ -209,7 +221,10 @@ int testAllGraphs(graphP theGraph, char command, char *infileName, testAllStatsP
         else
         {
             messageFormat = "Error applying algorithm '%c' to graph on line %d.\n";
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
             sprintf(messageContents, messageFormat, command, pG6ReadIterator->numGraphsRead + 1);
+#pragma GCC diagnostic pop
             ErrorMessage(messageContents);
             errorFlag = TRUE;
             break;
@@ -253,7 +268,10 @@ int outputTestAllGraphsResults(char command, testAllStatsP stats, char *infileNa
         return NOTOK;
     }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
     sprintf(headerStr, headerFormat, infileBasename, stats->duration);
+#pragma GCC diagnostic pop
     int numCharsToReprNumGraphsRead = 0, numCharsToReprNumOK = 0, numCharsToReprNumNONEMBEDDABLE = 0;
     if (GetNumCharsToReprInt(stats->numGraphsRead, &numCharsToReprNumGraphsRead) != OK ||
         GetNumCharsToReprInt(stats->numOK, &numCharsToReprNumOK) != OK ||

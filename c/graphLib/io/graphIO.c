@@ -1059,30 +1059,45 @@ static char LogStr[MAXLINE + 1];
 
 char *_MakeLogStr1(char *format, int one)
 {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
     sprintf(LogStr, format, one);
+#pragma GCC diagnostic pop
     return LogStr;
 }
 
 char *_MakeLogStr2(char *format, int one, int two)
 {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
     sprintf(LogStr, format, one, two);
+#pragma GCC diagnostic pop
     return LogStr;
 }
 
 char *_MakeLogStr3(char *format, int one, int two, int three)
 {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
     sprintf(LogStr, format, one, two, three);
+#pragma GCC diagnostic pop
     return LogStr;
 }
 
 char *_MakeLogStr4(char *format, int one, int two, int three, int four)
 {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
     sprintf(LogStr, format, one, two, three, four);
+#pragma GCC diagnostic pop
     return LogStr;
 }
 
 char *_MakeLogStr5(char *format, int one, int two, int three, int four, int five)
 {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
     sprintf(LogStr, format, one, two, three, four, five);
+#pragma GCC diagnostic pop
     return LogStr;
 }

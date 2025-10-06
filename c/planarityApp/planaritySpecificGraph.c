@@ -32,8 +32,8 @@ See the LICENSE.TXT file for licensing information.
 
 int SpecificGraph(
     char command,
-    char const*infileName, char*outfileName, char*outfile2Name,
-    char*inputStr, char **pOutputStr, char **pOutput2Str)
+    char const *infileName, char *outfileName, char *outfile2Name,
+    char *inputStr, char **pOutputStr, char **pOutput2Str)
 {
     graphP theGraph, origGraph;
     platform_time start, end;
@@ -225,9 +225,9 @@ int SpecificGraph(
  WriteAlgorithmResults()
  ****************************************************************************/
 
-void WriteAlgorithmResults(graphP theGraph, int Result, char command, platform_time start, platform_time end, char const*infileName)
+void WriteAlgorithmResults(graphP theGraph, int Result, char command, platform_time start, platform_time end, char const *infileName)
 {
-    char const*messageFormat = NULL;
+    char const *messageFormat = NULL;
     char messageContents[MAXLINE + 1];
     int charsAvailForStr = 0;
 
@@ -235,7 +235,10 @@ void WriteAlgorithmResults(graphP theGraph, int Result, char command, platform_t
     {
         messageFormat = "The graph \"%.*s\" ";
         charsAvailForStr = (int)(MAXLINE - strlen(messageFormat));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
         sprintf(messageContents, messageFormat, charsAvailForStr, infileName);
+#pragma GCC diagnostic pop
     }
     else
         sprintf(messageContents, "The graph ");

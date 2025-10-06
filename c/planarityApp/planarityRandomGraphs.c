@@ -74,7 +74,10 @@ int RandomGraphs(char command, int NumGraphs, int SizeOfGraphs, char *outfileNam
     {
         if (beginG6WriteIterationToG6FilePath(pG6WriteIterator, outfileName) != OK)
         {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
             sprintf(messageContents, messageFormat, charsAvailForStr, outfileName);
+#pragma GCC diagnostic pop
             ErrorMessage(messageContents);
 
             if (freeG6WriteIterator(&pG6WriteIterator) != OK)
@@ -93,7 +96,10 @@ int RandomGraphs(char command, int NumGraphs, int SizeOfGraphs, char *outfileNam
         sprintf(theFileName, "random%cn%d.k%d.g6", FILE_DELIMITER, SizeOfGraphs, NumGraphs);
         if (beginG6WriteIterationToG6FilePath(pG6WriteIterator, theFileName) != OK)
         {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
             sprintf(messageContents, messageFormat, charsAvailForStr, theFileName);
+#pragma GCC diagnostic pop
             ErrorMessage(messageContents);
 
             if (freeG6WriteIterator(&pG6WriteIterator) != OK)
@@ -146,7 +152,10 @@ int RandomGraphs(char command, int NumGraphs, int SizeOfGraphs, char *outfileNam
                 writeResult = gp_Write(theGraph, theFileName, WRITE_ADJLIST);
                 if (writeResult != OK && !writeErrorReported_Random)
                 {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
                     sprintf(messageContents, messageFormat, charsAvailForStr, theFileName);
+#pragma GCC diagnostic pop
                     ErrorMessage(messageContents);
                     writeErrorReported_Random = TRUE;
                 }
@@ -171,7 +180,10 @@ int RandomGraphs(char command, int NumGraphs, int SizeOfGraphs, char *outfileNam
                         writeResult = gp_Write(theGraph, theFileName, WRITE_ADJMATRIX);
                         if (writeResult != OK && !writeErrorReported_Embedded)
                         {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
                             sprintf(messageContents, messageFormat, charsAvailForStr, theFileName);
+#pragma GCC diagnostic pop
                             ErrorMessage(messageContents);
                             writeErrorReported_Embedded = TRUE;
                         }
@@ -183,7 +195,10 @@ int RandomGraphs(char command, int NumGraphs, int SizeOfGraphs, char *outfileNam
                         writeResult = gp_Write(theGraph, theFileName, WRITE_ADJLIST);
                         if (writeResult != OK && !writeErrorReported_AdjList)
                         {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
                             sprintf(messageContents, messageFormat, charsAvailForStr, theFileName);
+#pragma GCC diagnostic pop
                             ErrorMessage(messageContents);
                             writeErrorReported_AdjList = TRUE;
                         }
@@ -219,7 +234,10 @@ int RandomGraphs(char command, int NumGraphs, int SizeOfGraphs, char *outfileNam
                             writeResult = gp_Write(theGraph, theFileName, WRITE_ADJMATRIX);
                             if (writeResult != OK && !writeErrorReported_Obstructed)
                             {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
                                 sprintf(messageContents, messageFormat, charsAvailForStr, theFileName);
+#pragma GCC diagnostic pop
                                 ErrorMessage(messageContents);
                                 writeErrorReported_Obstructed = TRUE;
                             }
@@ -235,7 +253,10 @@ int RandomGraphs(char command, int NumGraphs, int SizeOfGraphs, char *outfileNam
                 writeResult = gp_Write(origGraph, theFileName, WRITE_ADJLIST);
                 if (writeResult != OK && !writeErrorReported_Error)
                 {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
                     sprintf(messageContents, messageFormat, charsAvailForStr, theFileName);
+#pragma GCC diagnostic pop
                     ErrorMessage(messageContents);
                     writeErrorReported_Error = TRUE;
                 }
@@ -532,14 +553,20 @@ int RandomGraph(char command, int extraEdges, int numVertices, char *outfileName
 
             messageFormat = "Saving edge list format of original graph to \"%.*s\"\n";
             charsAvailForStr = (int)(MAXLINE - strlen(messageFormat));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
             sprintf(messageContents, messageFormat, charsAvailForStr, theFileName);
+#pragma GCC diagnostic pop
             Message(messageContents);
             SaveAsciiGraph(origGraph, theFileName);
 
             strcat(theFileName, ".out.txt");
             messageFormat = "Saving edge list format of result to \"%.*s\"\n";
             charsAvailForStr = (int)(MAXLINE - strlen(messageFormat));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
             sprintf(messageContents, messageFormat, charsAvailForStr, theFileName);
+#pragma GCC diagnostic pop
             Message(messageContents);
             SaveAsciiGraph(theGraph, theFileName);
         }

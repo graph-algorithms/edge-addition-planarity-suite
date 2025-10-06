@@ -83,7 +83,10 @@ void SaveAsciiGraph(graphP theGraph, char *filename)
         char messageContents[MAXLINE + 1];
         char const *messageFormat = "Failed to write to \"%.*s\"\nMake the directory if not present\n";
         int charsAvailForStrToInclude = (int)(MAXLINE - strlen(messageFormat));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
         sprintf(messageContents, messageFormat, charsAvailForStrToInclude, filename);
+#pragma GCC diagnostic pop
         ErrorMessage(messageContents);
         return;
     }
@@ -603,7 +606,10 @@ char *ConstructPrimaryOutputFilename(char const *infileName, char const *outfile
             char messageContents[MAXLINE + 1];
             char const *messageFormat = "Outfile filename is too long. Result placed in \"%.*s\"";
             int charsAvailForStrToInclude = (int)(MAXLINE - strlen(messageFormat));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
             sprintf(messageContents, messageFormat, charsAvailForStrToInclude, theFileName);
+#pragma GCC diagnostic pop
             ErrorMessage(messageContents);
         }
         else

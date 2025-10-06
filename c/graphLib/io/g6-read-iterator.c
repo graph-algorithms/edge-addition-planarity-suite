@@ -701,7 +701,10 @@ int _ReadGraphFromG6FilePath(graphP pGraphToRead, char *pathToG6File)
     {
         messageFormat = "Unable to allocate strOrFile container for infile \"%.*s\".\n";
         charsAvailForStr = (int)(MAXLINE - strlen(messageFormat));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
         sprintf(messageContents, messageFormat, charsAvailForStr, pathToG6File);
+#pragma GCC diagnostic pop
         ErrorMessage(messageContents);
 
         return NOTOK;
