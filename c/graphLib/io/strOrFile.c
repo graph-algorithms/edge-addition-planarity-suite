@@ -29,7 +29,7 @@ strOrFileP sf_New(char const *theStr, char const *fileName, char const *ioMode)
     if ((fileName != NULL) && (theStr != NULL))
         return NULL;
 
-    theStrOrFile = (strOrFileP)calloc(sizeof(strOrFile), 1);
+    theStrOrFile = (strOrFileP)calloc(1, sizeof(strOrFile));
     if (theStrOrFile != NULL)
     {
         if (fileName != NULL)
