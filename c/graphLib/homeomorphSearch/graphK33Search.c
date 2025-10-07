@@ -79,7 +79,6 @@ int _FindExternalConnectionDescendantEndpoint(graphP theGraph, int ancestor,
 int _SearchForMergeBlocker(graphP theGraph, K33SearchContext *context, int v, int *pMergeBlocker);
 int _FindK33WithMergeBlocker(graphP theGraph, K33SearchContext *context, int v, int mergeBlocker);
 
-int _MarkLowestXYPath(graphP theGraph);
 int _TestForZtoWPath(graphP theGraph);
 int _TestForStraddlingBridge(graphP theGraph, K33SearchContext *context, int u_max);
 int _K33Search_DeleteUnmarkedEdgesInBicomp(graphP theGraph, K33SearchContext *context, int BicompRoot);
