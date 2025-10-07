@@ -209,7 +209,9 @@ char sf_getc(strOrFileP theStrOrFile)
         theChar = (char)getc(theStrOrFile->pFile);
     else if (theStrOrFile->theStr != NULL && sb_GetUnreadCharCount(theStrOrFile->theStr) > 0)
     {
-        theChar = sb_GetReadString(theStrOrFile->theStr)[0];
+        theChar = sb_GetReadString(theStrOrFile->theStr) != NULL
+                      ? sb_GetReadString(theStrOrFile->theStr)[0]
+                      : EOF;
         if (theChar != EOF)
             sb_ReadSkipChar(theStrOrFile->theStr);
     }

@@ -148,6 +148,12 @@ int beginG6WriteIterationToG6StrOrFile(G6WriteIteratorP pG6WriteIterator, strOrF
 {
     int exitCode = OK;
 
+    if (pG6WriteIterator == NULL)
+    {
+        ErrorMessage("Invalid parameter pG6WriteIterator.\n");
+        return NOTOK;
+    }
+
     if (sf_ValidateStrOrFile(outputContainer) != OK)
     {
         ErrorMessage("Invalid strOrFile output container provided.\n");
