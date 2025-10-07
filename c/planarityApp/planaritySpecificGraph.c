@@ -102,6 +102,8 @@ int SpecificGraph(
             case '4':
                 gp_AttachK4Search(theGraph);
                 break;
+            default:
+                break;
             }
 
             int embedFlags = GetEmbedFlags(command);

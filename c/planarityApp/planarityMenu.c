@@ -74,6 +74,8 @@ int menu(void)
                 case 'n':
                     RandomGraph(Choice, 1, 0, NULL, NULL);
                     break;
+                default:
+                    break;
                 }
             }
         }

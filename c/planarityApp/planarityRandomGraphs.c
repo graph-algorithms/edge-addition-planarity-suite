@@ -439,6 +439,8 @@ graphP MakeGraph(int Size, char command)
     case '4':
         gp_AttachK4Search(theGraph);
         break;
+    default:
+        break;
     }
 
     return theGraph;

@@ -398,6 +398,8 @@ int GetEmbedFlags(char command)
     case '4':
         embedFlags = EMBEDFLAGS_SEARCHFORK4;
         break;
+    default:
+        break;
     }
 
     return embedFlags;
@@ -430,6 +432,8 @@ char const *GetAlgorithmName(char command)
     case '4':
         algorithmName = K4SEARCH_NAME;
         break;
+    default:
+        break;
     }
 
     return algorithmName;
@@ -452,6 +456,8 @@ char const *GetTransformationName(char command)
         break;
     case 'm':
         transformationName = "AdjMat";
+        break;
+    default:
         break;
     }
 
@@ -498,6 +504,8 @@ void AttachAlgorithm(graphP theGraph, char command)
         break;
     case '4':
         gp_AttachK4Search(theGraph);
+        break;
+    default:
         break;
     }
 }
