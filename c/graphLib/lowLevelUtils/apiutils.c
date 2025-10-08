@@ -24,7 +24,7 @@ void setQuietModeSetting(int newQuietModeSetting)
     quietMode = newQuietModeSetting;
 }
 
-void Message(char const*message)
+void Message(char const *message)
 {
     if (!getQuietModeSetting())
     {
@@ -33,7 +33,7 @@ void Message(char const*message)
     }
 }
 
-void ErrorMessage(char const*message)
+void ErrorMessage(char const *message)
 {
     if (!getQuietModeSetting())
     {
@@ -44,10 +44,10 @@ void ErrorMessage(char const*message)
 
 int GetNumCharsToReprInt(int theNum, int *numCharsRequired)
 {
+    int charCount = 0;
+
     if (numCharsRequired == NULL)
         return NOTOK;
-
-    int charCount = 0;
 
     if (theNum < 0)
     {

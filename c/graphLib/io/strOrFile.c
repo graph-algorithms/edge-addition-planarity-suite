@@ -34,6 +34,8 @@ strOrFileP sf_New(char const *theStr, char const *fileName, char const *ioMode)
     {
         if (fileName != NULL)
         {
+            FILE *pFile = NULL;
+
             // N.B. If the ioMode is specified but is neither
             // READTEXT nor WRITETEXT, error out
             if (ioMode != NULL &&
@@ -43,8 +45,6 @@ strOrFileP sf_New(char const *theStr, char const *fileName, char const *ioMode)
                 sf_Free(&theStrOrFile);
                 return NULL;
             }
-
-            FILE *pFile;
 
             // N.B. If the fileName indicates a stream, then make sure
             // ioMode is correct. Since we previously made sure that
@@ -108,6 +108,8 @@ strOrFileP sf_New(char const *theStr, char const *fileName, char const *ioMode)
         }
         else
         {
+            strBufP strBufToAssign = NULL;
+
             if (strncmp(ioMode, READTEXT, strlen(READTEXT)) == 0)
                 containerType = INPUT_CONTAINER;
             else if (strncmp(ioMode, WRITETEXT, strlen(WRITETEXT)) == 0)
@@ -125,8 +127,7 @@ strOrFileP sf_New(char const *theStr, char const *fileName, char const *ioMode)
                 return NULL;
             }
 
-            strBufP strBufToAssign = sb_New(0);
-            if (strBufToAssign == NULL)
+            if ((strBufToAssign = sb_New(0)) == NULL)
             {
                 sf_Free(&theStrOrFile);
                 return NULL;
@@ -305,16 +306,16 @@ int sf_ReadInteger(int *intToRead, strOrFileP theStrOrFile)
 {
     int exitCode = OK;
 
+    int intCandidate = 0, intCandidateIndex = 0;
+    char currChar = '\0', nextChar = '\0';
+    bool startedReadingInt = FALSE, isNegative = FALSE;
+    char intCandidateStr[MAXCHARSFOR32BITINT + 1];
+    memset(intCandidateStr, '\0', (MAXCHARSFOR32BITINT + 1) * sizeof(char));
+
     if (sf_ValidateStrOrFile(theStrOrFile) != OK ||
         theStrOrFile->containerType != INPUT_CONTAINER)
         return NOTOK;
 
-    char intCandidateStr[MAXCHARSFOR32BITINT + 1];
-    memset(intCandidateStr, '\0', (MAXCHARSFOR32BITINT + 1) * sizeof(char));
-
-    int intCandidate = 0, intCandidateIndex = 0;
-    char currChar = '\0', nextChar = '\0';
-    bool startedReadingInt = FALSE, isNegative = FALSE;
     do
     {
         currChar = sf_getc(theStrOrFile);
@@ -511,21 +512,23 @@ int sf_ungets(char *strToUnget, strOrFileP theStrOrFile)
 
 char *sf_fgets(char *str, int count, strOrFileP theStrOrFile)
 {
+    int charsToReadFromUngetBuf = 0;
+    int charsToReadFromStrOrFile = count;
+
     if (str == NULL || count < 0 ||
         sf_ValidateStrOrFile(theStrOrFile) != OK ||
         theStrOrFile->containerType != INPUT_CONTAINER)
         return NULL;
 
-    int charsToReadFromUngetBuf = 0;
-    int charsToReadFromStrOrFile = count;
     if (theStrOrFile->ungetBuf != NULL)
     {
         int numCharsInUngetBuf = sp_GetCurrentSize(theStrOrFile->ungetBuf);
         if (numCharsInUngetBuf > 0)
         {
-            charsToReadFromUngetBuf = (count > numCharsInUngetBuf) ? numCharsInUngetBuf : count;
             char currChar = '\0';
             bool encounteredNewline = FALSE;
+
+            charsToReadFromUngetBuf = (count > numCharsInUngetBuf) ? numCharsInUngetBuf : count;
             for (int i = 0; i < charsToReadFromUngetBuf; i++)
             {
                 currChar = sf_getc(theStrOrFile);

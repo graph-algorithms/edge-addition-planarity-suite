@@ -244,31 +244,45 @@ int _encodeAdjMatAsG6(G6WriteIteratorP pG6WriteIterator)
 {
     int exitCode = OK;
 
+    char *g6Encoding = NULL;
+    int *columnOffsets = NULL;
+    graphP pGraph = NULL;
+
+    int graphOrder = 0;
+    int numCharsForGraphOrder = 0;
+    int numCharsForGraphEncoding = 0;
+    int totalNumCharsForOrderAndGraph = 0;
+
+    int u = NIL, v = NIL, e = NIL;
+    int charOffset = 0;
+    int bitPositionPower = 0;
+
     if (!_isG6WriteIteratorAllocated(pG6WriteIterator))
     {
         ErrorMessage("Unable to encode graph with invalid G6WriteIterator\n");
         return NOTOK;
     }
 
-    char *g6Encoding = pG6WriteIterator->currGraphBuff;
-    int *columnOffsets = pG6WriteIterator->columnOffsets;
-    graphP pGraph = pG6WriteIterator->currGraph;
+    g6Encoding = pG6WriteIterator->currGraphBuff;
+    columnOffsets = pG6WriteIterator->columnOffsets;
+    pGraph = pG6WriteIterator->currGraph;
 
     // memset ensures all bits are zero, which means we only need to set the bits
     // that correspond to an edge; this also takes care of padding zeroes for us
     memset(pG6WriteIterator->currGraphBuff, 0, (pG6WriteIterator->currGraphBuffSize) * sizeof(char));
 
-    int graphOrder = pG6WriteIterator->graphOrder;
-    int numCharsForGraphOrder = pG6WriteIterator->numCharsForGraphOrder;
-    int numCharsForGraphEncoding = pG6WriteIterator->numCharsForGraphEncoding;
-    int totalNumCharsForOrderAndGraph = numCharsForGraphOrder + numCharsForGraphEncoding;
+    graphOrder = pG6WriteIterator->graphOrder;
+    numCharsForGraphOrder = pG6WriteIterator->numCharsForGraphOrder;
+    numCharsForGraphEncoding = pG6WriteIterator->numCharsForGraphEncoding;
+    totalNumCharsForOrderAndGraph = numCharsForGraphOrder + numCharsForGraphEncoding;
 
     if (graphOrder > 62)
     {
+        int i, intermediate;
         g6Encoding[0] = 126;
         // bytes 1 through 3 will be populated with the 18-bit representation of the graph order
-        int intermediate = -1;
-        for (int i = 0; i < 3; i++)
+        intermediate = -1;
+        for (i = 0; i < 3; i++)
         {
             intermediate = graphOrder >> (6 * i);
             g6Encoding[3 - i] = intermediate & 63;
@@ -280,7 +294,7 @@ int _encodeAdjMatAsG6(G6WriteIteratorP pG6WriteIterator)
         g6Encoding[0] = (char)(graphOrder + 63);
     }
 
-    int u = NIL, v = NIL, e = NIL;
+    u = v = e = NIL;
     exitCode = _getFirstEdge(pGraph, &e, &u, &v);
 
     if (exitCode != OK)
@@ -289,8 +303,7 @@ int _encodeAdjMatAsG6(G6WriteIteratorP pG6WriteIterator)
         return exitCode;
     }
 
-    int charOffset = 0;
-    int bitPositionPower = 0;
+    charOffset = bitPositionPower = 0;
     while (u != NIL && v != NIL)
     {
         // The internal graph representation is usually 1-based, but may be 0-based, so
@@ -565,18 +578,16 @@ int _WriteGraphToG6StrOrFile(graphP pGraph, strOrFileP outputContainer, char **o
             (*outputStr) = sf_takeTheStr(pG6WriteIterator->g6Output);
     }
 
-    int endG6WriteIterationCode = endG6WriteIteration(pG6WriteIterator);
-    if (endG6WriteIterationCode != OK)
+    if (endG6WriteIteration(pG6WriteIterator) != OK)
     {
         ErrorMessage("Unable to end G6 write iteration.\n");
-        exitCode = endG6WriteIterationCode;
+        exitCode = NOTOK;
     }
 
-    int freeG6WriteIteratorCode = freeG6WriteIterator(&pG6WriteIterator);
-    if (freeG6WriteIteratorCode != OK)
+    if (freeG6WriteIterator(&pG6WriteIterator) != OK)
     {
         ErrorMessage("Unable to free G6Writer.\n");
-        exitCode = freeG6WriteIteratorCode;
+        exitCode = NOTOK;
     }
 
     return exitCode;

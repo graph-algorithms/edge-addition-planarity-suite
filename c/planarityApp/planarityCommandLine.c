@@ -513,6 +513,7 @@ int runSpecificGraphTest(char const *command, char const *infileName, int inputI
 int runGraphTransformationTest(char const *command, char const *infileName, int inputInMemFlag)
 {
     int Result = OK;
+    char *inputString = NULL;
 
     char transformationCode = '\0';
     // runGraphTransformationTest will not test performing an algorithm on a given
@@ -527,7 +528,6 @@ int runGraphTransformationTest(char const *command, char const *infileName, int 
 
     // SpecificGraph() can invoke gp_Read() if the graph is to be read from a file, or it can invoke
     // gp_ReadFromString() if the inputInMemFlag is set.
-    char *inputString = NULL;
     if (inputInMemFlag)
     {
         inputString = ReadTextFileIntoString(infileName);
@@ -555,8 +555,13 @@ int runGraphTransformationTest(char const *command, char const *infileName, int 
         }
         else
         {
-            // Final arg is baseFlag, which is dependent on whether the FLAGS_ZEROBASEDIO is set in a graphP's internalFlags
             char *expectedOutfileName = NULL;
+            char const *messageFormat = NULL;
+            int charsAvailForFilename = 0;
+            char messageContents[MAXLINE + 1];
+            messageContents[0] = '\0';
+
+            // Final arg is baseFlag, which is dependent on whether the FLAGS_ZEROBASEDIO is set in a graphP's internalFlags
             Result = ConstructTransformationExpectedResultFilename(infileName, &expectedOutfileName, transformationCode, zeroBasedOutputFlag ? 0 : 1);
 
             if (Result != OK || expectedOutfileName == NULL)
@@ -567,9 +572,6 @@ int runGraphTransformationTest(char const *command, char const *infileName, int 
 
             Result = TextFileMatchesString(expectedOutfileName, actualOutput);
 
-            char const *messageFormat = NULL;
-            char messageContents[MAXLINE + 1];
-            int charsAvailForFilename = 0;
             if (Result == TRUE)
             {
                 messageFormat = "For the transformation %s on file \"%.*s\", actual output matched expected output file.\n";

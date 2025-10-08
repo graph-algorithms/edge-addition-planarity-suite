@@ -103,23 +103,29 @@ void TransformGraphMenu(void)
 {
     int Result = OK;
 
+    int numCharsToReprMAXLINE = 0;
+    char const *fileNameFormatFormat = " %%%d[^\r\n]";
+    char *fileNameFormat = NULL;
     char infileName[MAXLINE + 1];
-    infileName[0] = '\0';
     char outfileName[MAXLINE + 1];
-    outfileName[0] = '\0';
     char outputFormat = '\0';
     char commandStr[4];
-    commandStr[0] = '\0';
 
-    int numCharsToReprMAXLINE = 0;
+    infileName[0] = outfileName[0] = commandStr[0] = '\0';
+
     if (GetNumCharsToReprInt(MAXLINE, &numCharsToReprMAXLINE) != OK)
     {
         ErrorMessage("Unable to determine number of characters required to represent MAXLINE.\n");
         return;
     }
 
-    char const *fileNameFormatFormat = " %%%d[^\r\n]";
-    char *fileNameFormat = (char *)malloc((strlen(fileNameFormatFormat) + numCharsToReprMAXLINE + 1) * sizeof(char));
+    fileNameFormat = (char *)malloc((strlen(fileNameFormatFormat) + numCharsToReprMAXLINE + 1) * sizeof(char));
+    if (fileNameFormat == NULL)
+    {
+        ErrorMessage("Unable to allocate memory.\n");
+        return;
+    }
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-nonliteral"
     sprintf(fileNameFormat, fileNameFormatFormat, MAXLINE);
@@ -174,23 +180,28 @@ void TestAllGraphsMenu(void)
 {
     int Result = OK;
 
+    int numCharsToReprMAXLINE = 0;
+    char const *fileNameFormatFormat = " %%%d[^\r\n]";
+    char *fileNameFormat = NULL;
     char infileName[MAXLINE + 1];
-    infileName[0] = '\0';
     char outfileName[MAXLINE + 1];
-    outfileName[0] = '\0';
     char algorithmSpecifier = '\0';
     char commandStr[3];
-    commandStr[0] = '\0';
 
-    int numCharsToReprMAXLINE = 0;
+    infileName[0] = outfileName[0] = commandStr[0] = '\0';
+
     if (GetNumCharsToReprInt(MAXLINE, &numCharsToReprMAXLINE) != OK)
     {
         ErrorMessage("Unable to determine number of characters required to represent MAXLINE.\n");
         return;
     }
 
-    char const *fileNameFormatFormat = " %%%d[^\r\n]";
-    char *fileNameFormat = (char *)malloc((strlen(fileNameFormatFormat) + numCharsToReprMAXLINE + 1) * sizeof(char));
+    fileNameFormat = (char *)malloc((strlen(fileNameFormatFormat) + numCharsToReprMAXLINE + 1) * sizeof(char));
+    if (fileNameFormat == NULL)
+    {
+        ErrorMessage("Unable to allocate memory.\n");
+        return;
+    }
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-nonliteral"
     sprintf(fileNameFormat, fileNameFormatFormat, MAXLINE);

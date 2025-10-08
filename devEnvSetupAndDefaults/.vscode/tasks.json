@@ -9,14 +9,12 @@
                 "-DDEBUG", // Added so that _DEBUG is defined; see appconst.h
                 //"-DUSE_0BASEDARRAYS", // Commented out to use faster 1-based array indexing
                 "-Wall",
-                // "-Wextra",
-                // Issue 147 - Explicit list of compiler-specific warning flags
                 "-fno-strict-aliasing",
                 "-pedantic",
                 "-Wall",
                 "-Warray-bounds",
                 "-Wcast-align",
-                // "-Wdeclaration-after-statement",
+                "-Wdeclaration-after-statement",
                 "-Wdouble-promotion",
                 "-Wduplicated-branches",
                 "-Wduplicated-cond",
@@ -113,14 +111,12 @@
                 "-O3",
                 //"-DUSE_0BASEDARRAYS", // Commented out to use faster 1-based array indexing
                 "-Wall",
-                // "-Wextra",
-                // Issue 147 - Explicit list of compiler-specific warning flags
                 "-fno-strict-aliasing",
                 "-pedantic",
                 "-Wall",
                 "-Warray-bounds",
                 "-Wcast-align",
-                // "-Wdeclaration-after-statement",
+                "-Wdeclaration-after-statement",
                 "-Wdouble-promotion",
                 "-Wduplicated-branches",
                 "-Wduplicated-cond",
@@ -218,14 +214,12 @@
                 "-DDEBUG", // Added so that _DEBUG is defined; see appconst.h
                 //"-DUSE_0BASEDARRAYS", // Commented out to use faster 1-based array indexing
                 "-Wall",
-                // "-Wextra",
-                // Issue 147 - Explicit list of compiler-specific warning flags
                 "-fno-strict-aliasing",
                 "-pedantic",
                 "-Wall",
                 "-Warray-bounds",
                 "-Wcast-align",
-                // "-Wdeclaration-after-statement",
+                "-Wdeclaration-after-statement",
                 "-Wdouble-promotion",
                 "-Wduplicated-branches",
                 "-Wduplicated-cond",
@@ -295,14 +289,12 @@
                 "-O3",
                 //"-DUSE_0BASEDARRAYS", // Commented out to use faster 1-based array indexing
                 "-Wall",
-                // "-Wextra",
-                // Issue 147 - Explicit list of compiler-specific warning flags
                 "-fno-strict-aliasing",
                 "-pedantic",
                 "-Wall",
                 "-Warray-bounds",
                 "-Wcast-align",
-                // "-Wdeclaration-after-statement",
+                "-Wdeclaration-after-statement",
                 "-Wdouble-promotion",
                 "-Wduplicated-branches",
                 "-Wduplicated-cond",
@@ -451,14 +443,12 @@
                 "-DDEBUG", // Added so that _DEBUG is defined; see appconst.h
                 //"-DUSE_0BASEDARRAYS", // Commented out to use faster 1-based array indexing
                 "-Wall",
-                // "-Wextra",
-                // Issue 147 - Explicit list of compiler-specific warning flags
                 "-fno-strict-aliasing",
                 "-pedantic",
                 "-Wall",
                 "-Warray-bounds",
                 "-Wcast-align",
-                // "-Wdeclaration-after-statement",
+                "-Wdeclaration-after-statement",
                 "-Wdouble-promotion",
                 "-Wduplicated-branches",
                 "-Wduplicated-cond",
@@ -528,14 +518,12 @@
                 "-O3",
                 //"-DUSE_0BASEDARRAYS", // Commented out to use faster 1-based array indexing
                 "-Wall",
-                // "-Wextra",
-                // Issue 147 - Explicit list of compiler-specific warning flags
                 "-fno-strict-aliasing",
                 "-pedantic",
                 "-Wall",
                 "-Warray-bounds",
                 "-Wcast-align",
-                // "-Wdeclaration-after-statement",
+                "-Wdeclaration-after-statement",
                 "-Wdouble-promotion",
                 "-Wduplicated-branches",
                 "-Wduplicated-cond",

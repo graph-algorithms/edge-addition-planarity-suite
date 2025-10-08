@@ -884,6 +884,7 @@ int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer)
 int gp_Write(graphP theGraph, char const *FileName, int Mode)
 {
     int RetVal;
+    strOrFileP outputContainer = NULL;
 
     if (theGraph == NULL || FileName == NULL)
         return NOTOK;
@@ -891,7 +892,7 @@ int gp_Write(graphP theGraph, char const *FileName, int Mode)
     if (strcmp(FileName, "nullwrite") == 0)
         return OK;
 
-    strOrFileP outputContainer = sf_New(NULL, FileName, WRITETEXT);
+    outputContainer = sf_New(NULL, FileName, WRITETEXT);
     if (outputContainer == NULL)
         return NOTOK;
 
@@ -923,11 +924,12 @@ int gp_Write(graphP theGraph, char const *FileName, int Mode)
 int gp_WriteToString(graphP theGraph, char **pOutputStr, int Mode)
 {
     int RetVal;
+    strOrFileP outputContainer = NULL;
 
     if (theGraph == NULL || pOutputStr == NULL)
         return NOTOK;
 
-    strOrFileP outputContainer = sf_New(NULL, NULL, WRITETEXT);
+    outputContainer = sf_New(NULL, NULL, WRITETEXT);
     if (outputContainer == NULL)
         return NOTOK;
 

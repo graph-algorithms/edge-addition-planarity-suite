@@ -82,6 +82,8 @@ int SpecificGraph(
     // Otherwise, call the correct algorithm on it
     else
     {
+        int embedFlags = GetEmbedFlags(command);
+
         // Copy the graph for integrity checking
         origGraph = gp_DupGraph(theGraph);
 
@@ -106,7 +108,6 @@ int SpecificGraph(
                 break;
             }
 
-            int embedFlags = GetEmbedFlags(command);
             platform_GetTime(start);
 
             //          gp_CreateDFSTree(theGraph);

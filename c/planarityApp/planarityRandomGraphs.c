@@ -23,9 +23,6 @@ graphP MakeGraph(int Size, char command);
 
 int RandomGraphs(char command, int NumGraphs, int SizeOfGraphs, char *outfileName)
 {
-    char theFileName[MAXLINE + 1];
-    theFileName[0] = '\0';
-
     int K, countUpdateFreq;
     int Result = OK, MainStatistic = 0;
     int ObstructionMinorFreqs[NUM_MINORS];
@@ -38,9 +35,12 @@ int RandomGraphs(char command, int NumGraphs, int SizeOfGraphs, char *outfileNam
         writeErrorReported_AdjList = FALSE, writeErrorReported_Obstructed = FALSE,
         writeErrorReported_Error = FALSE;
 
+    G6WriteIteratorP pG6WriteIterator = NULL;
+    int charsAvailForStr = 0;
     char const *messageFormat = NULL;
     char messageContents[MAXLINE + 1];
-    int charsAvailForStr = 0;
+    char theFileName[MAXLINE + 1];
+    messageContents[0] = theFileName[0] = '\0';
 
     GetNumberIfZero(&NumGraphs, "Enter number of graphs to generate:", 1, 1000000000);
     GetNumberIfZero(&SizeOfGraphs, "Enter size of graphs:", 1, 10000);
@@ -57,7 +57,6 @@ int RandomGraphs(char command, int NumGraphs, int SizeOfGraphs, char *outfileNam
     for (K = 0; K < NUM_MINORS; K++)
         ObstructionMinorFreqs[K] = 0;
 
-    G6WriteIteratorP pG6WriteIterator = NULL;
     if (outfileName != NULL || (tolower(OrigOut) == 'y' && tolower(OrigOutFormat) == 'g'))
     {
         if (allocateG6WriteIterator(&pG6WriteIterator, theGraph) != OK)
@@ -397,8 +396,9 @@ void GetNumberIfZero(int *pNum, char const *prompt, int min, int max)
 
     if (*pNum < min || *pNum > max)
     {
-        *pNum = (max + min) / 2;
         char messageContents[MAXLINE + 1];
+        messageContents[0] = '\0';
+        *pNum = (max + min) / 2;
         sprintf(messageContents, "Number out of range [%d, %d]; changed to %d\n", min, max, *pNum);
         ErrorMessage(messageContents);
     }

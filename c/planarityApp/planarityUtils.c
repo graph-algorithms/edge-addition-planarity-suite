@@ -601,6 +601,11 @@ char *ConstructPrimaryOutputFilename(char const *infileName, char const *outfile
     {
         if (strlen(outfileName) > FILENAMEMAXLENGTH)
         {
+            char const *messageFormat = "Outfile filename is too long. Result placed in \"%.*s\"";
+            int charsAvailForStrToInclude = (int)(MAXLINE - strlen(messageFormat));
+            char messageContents[MAXLINE + 1];
+            messageContents[0] = '\0';
+
             // The output filename is based on the input filename
             if (theFileName != infileName)
                 strcpy(theFileName, infileName);
@@ -611,9 +616,7 @@ char *ConstructPrimaryOutputFilename(char const *infileName, char const *outfile
                 strcat(theFileName, algorithmName);
             }
             strcat(theFileName, ".out.txt");
-            char messageContents[MAXLINE + 1];
-            char const *messageFormat = "Outfile filename is too long. Result placed in \"%.*s\"";
-            int charsAvailForStrToInclude = (int)(MAXLINE - strlen(messageFormat));
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-nonliteral"
             sprintf(messageContents, messageFormat, charsAvailForStrToInclude, theFileName);
