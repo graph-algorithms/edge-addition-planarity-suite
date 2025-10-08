@@ -6,12 +6,11 @@
             "command": "C:\\msys64\\ucrt64\\bin\\gcc.exe",
             "args": [
                 "-fdiagnostics-color=always",
+                "-fno-strict-aliasing",
                 "-DDEBUG", // Added so that _DEBUG is defined; see appconst.h
                 //"-DUSE_0BASEDARRAYS", // Commented out to use faster 1-based array indexing
                 "-Wall",
-                "-fno-strict-aliasing",
                 "-pedantic",
-                "-Wall",
                 "-Warray-bounds",
                 "-Wcast-align",
                 "-Wdeclaration-after-statement",
@@ -109,9 +108,8 @@
             "command": "C:\\msys64\\ucrt64\\bin\\gcc.exe",
             "args": [
                 "-O3",
-                //"-DUSE_0BASEDARRAYS", // Commented out to use faster 1-based array indexing
-                "-Wall",
                 "-fno-strict-aliasing",
+                //"-DUSE_0BASEDARRAYS", // Commented out to use faster 1-based array indexing
                 "-pedantic",
                 "-Wall",
                 "-Warray-bounds",
@@ -211,10 +209,9 @@
             "command": "/usr/bin/gcc",
             "args": [
                 "-fdiagnostics-color=always",
+                "-fno-strict-aliasing",
                 "-DDEBUG", // Added so that _DEBUG is defined; see appconst.h
                 //"-DUSE_0BASEDARRAYS", // Commented out to use faster 1-based array indexing
-                "-Wall",
-                "-fno-strict-aliasing",
                 "-pedantic",
                 "-Wall",
                 "-Warray-bounds",
@@ -287,9 +284,8 @@
             "command": "/usr/bin/gcc",
             "args": [
                 "-O3",
-                //"-DUSE_0BASEDARRAYS", // Commented out to use faster 1-based array indexing
-                "-Wall",
                 "-fno-strict-aliasing",
+                //"-DUSE_0BASEDARRAYS", // Commented out to use faster 1-based array indexing
                 "-pedantic",
                 "-Wall",
                 "-Warray-bounds",
@@ -440,19 +436,15 @@
             "args": [
                 "-fcolor-diagnostics",
                 "-fansi-escape-codes",
+                "-fno-strict-aliasing",
                 "-DDEBUG", // Added so that _DEBUG is defined; see appconst.h
                 //"-DUSE_0BASEDARRAYS", // Commented out to use faster 1-based array indexing
-                "-Wall",
-                "-fno-strict-aliasing",
                 "-pedantic",
                 "-Wall",
                 "-Warray-bounds",
                 "-Wcast-align",
                 "-Wdeclaration-after-statement",
                 "-Wdouble-promotion",
-                "-Wduplicated-branches",
-                "-Wduplicated-cond",
-                "-Werror",
                 "-Wextra",
                 "-Wformat-nonliteral",
                 "-Wformat-security",
@@ -460,8 +452,6 @@
                 "-Wimplicit-function-declaration",
                 "-Winit-self",
                 "-Winline",
-                "-Wjump-misses-init",
-                "-Wlogical-op",
                 "-Wmissing-declarations",
                 "-Wmissing-format-attribute",
                 "-Wmissing-include-dirs",
@@ -477,7 +467,6 @@
                 "-Wpacked",
                 "-Wpointer-arith",
                 "-Wredundant-decls",
-                "-Wrestrict",
                 "-Wreturn-type",
                 "-Wshadow",
                 "-Wsign-compare",
@@ -488,8 +477,9 @@
                 "-Wundef",
                 "-Wunused-but-set-variable",
                 "-Wwrite-strings",
-                "-Wdiscarded-qualifiers",
-                "-Wunused-result",
+                "-Wdeprecated-non-prototype",
+                "-Wincompatible-pointer-types-discards-qualifiers",
+                "-Wignored-qualifiers",
                 "-g", // Generate debug symbols
                 "${workspaceFolder}/c/planarityApp/**.c",
                 "${workspaceFolder}/c/graphLib/**.c",
@@ -516,18 +506,14 @@
             "command": "clang",
             "args": [
                 "-O3",
-                //"-DUSE_0BASEDARRAYS", // Commented out to use faster 1-based array indexing
-                "-Wall",
                 "-fno-strict-aliasing",
+                //"-DUSE_0BASEDARRAYS", // Commented out to use faster 1-based array indexing
                 "-pedantic",
                 "-Wall",
                 "-Warray-bounds",
                 "-Wcast-align",
                 "-Wdeclaration-after-statement",
                 "-Wdouble-promotion",
-                "-Wduplicated-branches",
-                "-Wduplicated-cond",
-                "-Werror",
                 "-Wextra",
                 "-Wformat-nonliteral",
                 "-Wformat-security",
@@ -535,8 +521,6 @@
                 "-Wimplicit-function-declaration",
                 "-Winit-self",
                 "-Winline",
-                "-Wjump-misses-init",
-                "-Wlogical-op",
                 "-Wmissing-declarations",
                 "-Wmissing-format-attribute",
                 "-Wmissing-include-dirs",
@@ -552,7 +536,6 @@
                 "-Wpacked",
                 "-Wpointer-arith",
                 "-Wredundant-decls",
-                "-Wrestrict",
                 "-Wreturn-type",
                 "-Wshadow",
                 "-Wsign-compare",
@@ -563,8 +546,9 @@
                 "-Wundef",
                 "-Wunused-but-set-variable",
                 "-Wwrite-strings",
-                "-Wdiscarded-qualifiers",
-                "-Wunused-result",
+                "-Wdeprecated-non-prototype",
+                "-Wincompatible-pointer-types-discards-qualifiers",
+                "-Wignored-qualifiers",
                 // "-g", // Uncomment to generate debug symbols for Release build and debug with VSCode
                 "${workspaceFolder}/c/planarityApp/**.c",
                 "${workspaceFolder}/c/graphLib/**.c",
