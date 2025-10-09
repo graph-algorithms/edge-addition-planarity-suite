@@ -1,0 +1,53 @@
+{
+  "name": "EAPS Dev (Ubuntu 24.04)",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": "..",
+    "args": {
+      "NEW_USER": "earthling",
+      "UID": "1000",
+      "GID": "1000"
+    }
+  },
+  "remoteUser": "earthling",
+  "containerUser": "earthling",
+  "features": {
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "installZsh": false,
+      "username": "earthling"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.cpptools-extension-pack",
+        "eamodio.gitlens",
+        "EditorConfig.EditorConfig",
+        "ms-python.python",
+        "ms-python.pylint",
+        "ms-python.black-formatter",
+      ],
+      "settings": {
+        "files.eol": "\n",
+        "python.defaultInterpreterPath": "/usr/bin/python3",
+        "python.testing.pytestEnabled": false,
+        "python.linting.enabled": true,
+        "python.linting.pylintEnabled": true,
+        "python.formatting.provider": "black",
+        "editor.formatOnSave": true,
+        "C_Cpp.default.intelliSenseMode": "gcc-x64",
+        "makefile.configureOnOpen": false
+      }
+    }
+  },
+  "remoteEnv": {
+    "PATH": "${containerEnv:PATH}:/home/earthling/.local/bin"
+  },
+  "postCreateCommand": "python3 -m pip install --break-system-packages --upgrade pip black pylint",
+  "postStartCommand": "git config --global --add safe.directory ${containerWorkspaceFolder}",
+  "runArgs": [
+    "--cap-add=SYS_PTRACE",
+    "--security-opt=seccomp=unconfined"
+  ],
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+}
