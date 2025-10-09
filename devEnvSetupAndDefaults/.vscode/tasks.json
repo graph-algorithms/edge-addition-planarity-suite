@@ -370,6 +370,9 @@
                 "/wd4774", // Ignore warnings about format string not being a string literal; requires developer caution!
                 "/wd4996", // Ignore safety warnings about sprintf, scanf, strcpy, strcat, fopen, etc.
                 "/wd5045", // Ignore Spectre mitigation warning
+                "/wd4068", // Ignore warnings about unrecognized pragmas (like the ones that suppress format-nonliteral warnings)
+                "/wd4100", // Ignore warnings about unused parameters (because they may be used by future function overloads or may help with programming consistency)
+                "/wd4820", // Ignore warnings from antediluvian compiler about padding, e.g., for normal use of bool type
                 "/external:anglebrackets",
                 "/external:W0", // Ignore warnings thrown by external headers
                 "/Fe${workspaceFolder}\\Debug\\planarity.exe",
@@ -407,6 +410,9 @@
                 "/wd4774", // Ignore warnings about format string not being a string literal; requires developer caution!
                 "/wd4996", // Ignore safety warnings about sprintf, scanf, strcpy, strcat, fopen, etc.
                 "/wd5045", // Ignore Spectre mitigation warning
+                "/wd4068", // Ignore warnings about unrecognized pragmas (like the ones that suppress format-nonliteral warnings)
+                "/wd4100", // Ignore warnings about unused parameters (because they may be used by future function overloads or may help with programming consistency)
+                "/wd4820", // Ignore warnings from antediluvian compiler about padding, e.g., for normal use of bool type
                 "/external:anglebrackets",
                 "/external:W0", // Ignore warnings thrown by external headers
                 "/Fe${workspaceFolder}\\Release\\planarity.exe",
@@ -439,8 +445,8 @@
                 "-fno-strict-aliasing",
                 "-DDEBUG", // Added so that _DEBUG is defined; see appconst.h
                 //"-DUSE_0BASEDARRAYS", // Commented out to use faster 1-based array indexing
-                "-pedantic",
                 "-Wall",
+                "-pedantic",
                 "-Warray-bounds",
                 "-Wcast-align",
                 "-Wdeclaration-after-statement",
@@ -508,8 +514,8 @@
                 "-O3",
                 "-fno-strict-aliasing",
                 //"-DUSE_0BASEDARRAYS", // Commented out to use faster 1-based array indexing
-                "-pedantic",
                 "-Wall",
+                "-pedantic",
                 "-Warray-bounds",
                 "-Wcast-align",
                 "-Wdeclaration-after-statement",

@@ -361,12 +361,11 @@ void *gp_GetExtension(graphP theGraph, int moduleID)
  ********************************************************************/
 int gp_RemoveExtension(graphP theGraph, int moduleID)
 {
-    graphExtensionP prev, curr, next;
+    graphExtensionP prev = NULL, curr = NULL, next = NULL;
 
     if (theGraph == NULL || moduleID == 0)
         return NOTOK;
 
-    prev = NULL;
     curr = theGraph->extensions;
 
     while (curr != NULL)

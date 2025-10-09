@@ -203,6 +203,8 @@ char sf_getc(strOrFileP theStrOrFile)
     if ((theStrOrFile->ungetBuf != NULL) && (sp_GetCurrentSize(theStrOrFile->ungetBuf) > 0))
     {
         int currChar = 0;
+        // Technically, this returns NOTOK on error, but the error is underflow, which is
+        // checked above and so cannot happen. Therefore, safe to use sp_Pop() here.
         sp_Pop(theStrOrFile->ungetBuf, currChar);
         theChar = (char)currChar;
     }

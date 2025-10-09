@@ -651,6 +651,7 @@ int _K33Search_HandleBlockedBicomp(graphP theGraph, int v, int RootVertex, int R
         return context->functions.fpHandleBlockedBicomp(theGraph, v, RootVertex, R);
     }
 
+    // No way to get here in current implementation, but this protects against future mistakes
     return NOTOK;
 }
 
