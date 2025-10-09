@@ -32,6 +32,7 @@ int _SetVertexTypesForMarkingXYPath(graphP theGraph);
 int _PopAndUnmarkVerticesAndEdges(graphP theGraph, int Z, int stackBottom);
 
 int _MarkHighestXYPath(graphP theGraph);
+int _MarkLowestXYPath(graphP theGraph);
 int _MarkClosestXYPath(graphP theGraph, int targetVertex);
 int _MarkZtoRPath(graphP theGraph);
 int _FindFuturePertinenceBelowXYPath(graphP theGraph);

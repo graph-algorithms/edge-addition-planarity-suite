@@ -38,7 +38,7 @@ extern "C"
 
     void gp_Free(graphP *pGraph);
 
-    int gp_Read(graphP theGraph, char const*FileName);
+    int gp_Read(graphP theGraph, char const *FileName);
     int gp_ReadFromString(graphP theGraph, char *inputStr);
 
 #define WRITE_ADJLIST 1
@@ -46,7 +46,7 @@ extern "C"
 #define WRITE_DEBUGINFO 3
 #define WRITE_G6 4
 
-    int gp_Write(graphP theGraph, char const*FileName, int Mode);
+    int gp_Write(graphP theGraph, char const *FileName, int Mode);
     int gp_WriteToString(graphP theGraph, char **pOutputStr, int Mode);
 
     int gp_IsNeighbor(graphP theGraph, int u, int v);
@@ -66,6 +66,7 @@ extern "C"
     void gp_HideEdge(graphP theGraph, int e);
     void gp_RestoreEdge(graphP theGraph, int e);
     int gp_HideVertex(graphP theGraph, int vertex);
+    int gp_RestoreVertex(graphP theGraph);
     int gp_DeleteEdge(graphP theGraph, int e, int nextLink);
 
     int gp_ContractEdge(graphP theGraph, int e);
@@ -75,6 +76,7 @@ extern "C"
     int gp_CreateDFSTree(graphP theGraph);
     int gp_SortVertices(graphP theGraph);
     int gp_LowpointAndLeastAncestor(graphP theGraph);
+    int gp_LeastAncestor(graphP theGraph);
     int gp_PreprocessForEmbedding(graphP theGraph);
 
     int gp_Embed(graphP theGraph, int embedFlags);
@@ -109,8 +111,8 @@ extern "C"
 #define gp_LogLine _LogLine
 #define gp_Log _Log
 
-    void _LogLine(char *Line);
-    void _Log(char *Line);
+    void _LogLine(const char *Line);
+    void _Log(const char *Line);
 
 #define gp_MakeLogStr1 _MakeLogStr1
 #define gp_MakeLogStr2 _MakeLogStr2

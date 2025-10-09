@@ -262,7 +262,7 @@ int gp_AddExtension(graphP theGraph,
 
 void _OverloadFunctions(graphP theGraph, graphFunctionTableP functions)
 {
-    void **graphFunctionTable = (void **)&theGraph->functions;
+    void **currFunctionTable = (void **)&theGraph->functions;
     void **newFunctionTable = (void **)functions;
     int numFunctions = sizeof(theGraph->functions) / sizeof(void *);
     int K;
@@ -271,8 +271,8 @@ void _OverloadFunctions(graphP theGraph, graphFunctionTableP functions)
     {
         if (newFunctionTable[K] != NULL)
         {
-            void *fp = graphFunctionTable[K];
-            graphFunctionTable[K] = newFunctionTable[K];
+            void *fp = currFunctionTable[K];
+            currFunctionTable[K] = newFunctionTable[K];
             newFunctionTable[K] = fp;
         }
     }
@@ -361,12 +361,11 @@ void *gp_GetExtension(graphP theGraph, int moduleID)
  ********************************************************************/
 int gp_RemoveExtension(graphP theGraph, int moduleID)
 {
-    graphExtensionP prev, curr, next;
+    graphExtensionP prev = NULL, curr = NULL, next = NULL;
 
     if (theGraph == NULL || moduleID == 0)
         return NOTOK;
 
-    prev = NULL;
     curr = theGraph->extensions;
 
     while (curr != NULL)

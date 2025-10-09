@@ -29,6 +29,7 @@ int _FindUnembeddedEdgeToSubtree(graphP theGraph, int ancestor,
                                  int SubtreeRoot, int *pDescendant);
 
 int _MarkPathAlongBicompExtFace(graphP theGraph, int startVert, int endVert);
+int _MarkDFSPath(graphP theGraph, int ancestor, int descendant);
 
 int _AddAndMarkEdge(graphP theGraph, int ancestor, int descendant);
 void _AddBackEdge(graphP theGraph, int ancestor, int descendant);

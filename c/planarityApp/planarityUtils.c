@@ -83,7 +83,10 @@ void SaveAsciiGraph(graphP theGraph, char *filename)
         char messageContents[MAXLINE + 1];
         char const *messageFormat = "Failed to write to \"%.*s\"\nMake the directory if not present\n";
         int charsAvailForStrToInclude = (int)(MAXLINE - strlen(messageFormat));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
         sprintf(messageContents, messageFormat, charsAvailForStrToInclude, filename);
+#pragma GCC diagnostic pop
         ErrorMessage(messageContents);
         return;
     }
@@ -395,6 +398,8 @@ int GetEmbedFlags(char command)
     case '4':
         embedFlags = EMBEDFLAGS_SEARCHFORK4;
         break;
+    default:
+        break;
     }
 
     return embedFlags;
@@ -427,6 +432,8 @@ char const *GetAlgorithmName(char command)
     case '4':
         algorithmName = K4SEARCH_NAME;
         break;
+    default:
+        break;
     }
 
     return algorithmName;
@@ -449,6 +456,8 @@ char const *GetTransformationName(char command)
         break;
     case 'm':
         transformationName = "AdjMat";
+        break;
+    default:
         break;
     }
 
@@ -495,6 +504,8 @@ void AttachAlgorithm(graphP theGraph, char command)
         break;
     case '4':
         gp_AttachK4Search(theGraph);
+        break;
+    default:
         break;
     }
 }
@@ -590,6 +601,11 @@ char *ConstructPrimaryOutputFilename(char const *infileName, char const *outfile
     {
         if (strlen(outfileName) > FILENAMEMAXLENGTH)
         {
+            char const *messageFormat = "Outfile filename is too long. Result placed in \"%.*s\"";
+            int charsAvailForStrToInclude = (int)(MAXLINE - strlen(messageFormat));
+            char messageContents[MAXLINE + 1];
+            messageContents[0] = '\0';
+
             // The output filename is based on the input filename
             if (theFileName != infileName)
                 strcpy(theFileName, infileName);
@@ -600,10 +616,11 @@ char *ConstructPrimaryOutputFilename(char const *infileName, char const *outfile
                 strcat(theFileName, algorithmName);
             }
             strcat(theFileName, ".out.txt");
-            char messageContents[MAXLINE + 1];
-            char const *messageFormat = "Outfile filename is too long. Result placed in \"%.*s\"";
-            int charsAvailForStrToInclude = (int)(MAXLINE - strlen(messageFormat));
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
             sprintf(messageContents, messageFormat, charsAvailForStrToInclude, theFileName);
+#pragma GCC diagnostic pop
             ErrorMessage(messageContents);
         }
         else

@@ -49,6 +49,12 @@ void _ClearVisitedFlagsInUnembeddedEdges(graphP theGraph);
 int _FillVertexVisitedInfoInBicomp(graphP theGraph, int BicompRoot, int FillValue);
 int _ClearVertexTypeInBicomp(graphP theGraph, int BicompRoot);
 
+int _ClearVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x);
+int _SetVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x);
+
+int _ComputeArcType(graphP theGraph, int a, int b, int edgeType);
+int _SetEdgeType(graphP theGraph, int u, int v);
+
 int _HideInternalEdges(graphP theGraph, int vertex);
 int _RestoreInternalEdges(graphP theGraph, int stackBottom);
 int _RestoreHiddenEdges(graphP theGraph, int stackBottom);
@@ -58,6 +64,11 @@ int _DeleteUnmarkedEdgesInBicomp(graphP theGraph, int BicompRoot);
 int _ClearInvertedFlagsInBicomp(graphP theGraph, int BicompRoot);
 
 void _InitFunctionTable(graphP theGraph);
+
+// Eliminates missingprototype warning
+#ifndef DEBUG
+int debugNOTOK(void);
+#endif
 
 /********************************************************************
  Private functions.
@@ -69,6 +80,11 @@ void _InitEdges(graphP theGraph);
 void _ClearGraph(graphP theGraph);
 
 int _GetRandomNumber(int NMin, int NMax);
+
+int _getUnprocessedChild(graphP theGraph, int parent);
+int _hasUnprocessedChild(graphP theGraph, int parent);
+
+void _RestoreArc(graphP theGraph, int arc);
 
 /* Private functions for which there are FUNCTION POINTERS */
 

@@ -77,6 +77,7 @@ int _K4_TestPathComponentForAncestor(graphP theGraph, int R, int prevLink, int A
 void _K4_ClearVisitedInPathComponent(graphP theGraph, int R, int prevLink, int A);
 int _K4_DeleteUnmarkedEdgesInPathComponent(graphP theGraph, int R, int prevLink, int A);
 int _K4_DeleteUnmarkedEdgesInBicomp(graphP theGraph, K4SearchContext *context, int BicompRoot);
+int _K4_DeleteEdge(graphP theGraph, K4SearchContext *context, int e, int nextLink);
 
 int _K4_RestoreReducedPath(graphP theGraph, K4SearchContext *context, int e);
 int _K4_RestoreAndOrientReducedPaths(graphP theGraph, K4SearchContext *context);
@@ -1011,22 +1012,6 @@ int _K4_ReducePathComponent(graphP theGraph, K4SearchContext *context, int R, in
 }
 
 /********************************************************************
- Edge deletion that occurs during a reduction or restoration of a
- reduction is augmented by clearing the K_4 search-specific
- data members.  This is augmentation is not needed in the delete edge
- operations that happen once a K_4 homeomorph has been found and
- marked for isolation.
- ********************************************************************/
-
-int _K4_DeleteEdge(graphP theGraph, K4SearchContext *context, int e, int nextLink)
-{
-    _K4Search_InitEdgeRec(context, e);
-    _K4Search_InitEdgeRec(context, gp_GetTwinArc(theGraph, e));
-
-    return gp_DeleteEdge(theGraph, e, nextLink);
-}
-
-/********************************************************************
  _K4_DeleteUnmarkedEdgesInBicomp()
 
  This function deletes from a given biconnected component all edges
@@ -1064,6 +1049,22 @@ int _K4_DeleteUnmarkedEdgesInBicomp(graphP theGraph, K4SearchContext *context, i
         }
     }
     return OK;
+}
+
+/********************************************************************
+ Edge deletion that occurs during a reduction or restoration of a
+ reduction is augmented by clearing the K_4 search-specific
+ data members.  This is augmentation is not needed in the delete edge
+ operations that happen once a K_4 homeomorph has been found and
+ marked for isolation.
+ ********************************************************************/
+
+int _K4_DeleteEdge(graphP theGraph, K4SearchContext *context, int e, int nextLink)
+{
+    _K4Search_InitEdgeRec(context, e);
+    _K4Search_InitEdgeRec(context, gp_GetTwinArc(theGraph, e));
+
+    return gp_DeleteEdge(theGraph, e, nextLink);
 }
 
 /****************************************************************************
