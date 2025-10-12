@@ -739,17 +739,6 @@ int _K33Search_EmbedPostprocess(graphP theGraph, int v, int edgeEmbeddingResult)
             }
         }
         // K33CERT end
-        if (edgeEmbeddingResult == OK)
-        {
-            // When a graph does not contain a K3,3 homeomorph, the embedding
-            // is meaningless, so we empty it out. We preserve the embedFlags
-            // to ensure post-processing continues as expected.
-            savedEmbedFlags = theGraph->embedFlags;
-            savedZEROBASEDIO = theGraph->internalFlags & FLAGS_ZEROBASEDIO;
-            gp_ReinitializeGraph(theGraph);
-            theGraph->embedFlags = savedEmbedFlags;
-            theGraph->internalFlags &= savedZEROBASEDIO;
-        }
 
         return edgeEmbeddingResult;
     }
