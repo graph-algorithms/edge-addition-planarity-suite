@@ -558,6 +558,8 @@ int _K33Search_ExtractEmbeddedBridgeSet(graphP theGraph, int R, int cutv1, int c
         oppositeOfCutv1 = R;
         oppositeOfCutv2 = IC->w;
     }
+    else
+        return NOTOK;
 
     if (gp_GetVertexVisited(theGraph, oppositeOfCutv1) || gp_GetVertexVisited(theGraph, oppositeOfCutv2))
         return NOTOK;
