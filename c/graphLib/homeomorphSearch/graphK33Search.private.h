@@ -60,11 +60,6 @@ extern "C"
 
     typedef K33Search_EONode *K33Search_EONodeP;
 
-    K33Search_EONodeP _K33Search_EONode_New(int theEOType, graphP theSubgraph, int theSubgraphOwner);
-    void _K33Search_EONode_Free(K33Search_EONodeP *pEONode);
-    int _K33Search_TestForEOTreeChildren(K33Search_EONodeP EOTreeNode);
-    int _K33Search_AssembleMainPlanarEmbedding(K33Search_EONodeP EOTreeRoot);
-    int _K33Search_ValidateEmbeddingObstructionTree(graphP theGraph, K33Search_EONodeP EOTreeRoot, graphP origGraph);
     // K33CERT end
 
     // Additional equipment for each EdgeRec

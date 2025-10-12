@@ -18,6 +18,15 @@ extern int _getImageVertices(graphP theGraph, int *degrees, int maxDegree,
                              int *imageVerts, int maxNumImageVerts);
 extern int _TestSubgraph(graphP theSubgraph, graphP theGraph);
 
+/* K33CERT: Imports for K_{3,3}-free embedding */
+
+extern K33Search_EONodeP _K33Search_EONode_New(int theEOType, graphP theSubgraph, int theSubgraphOwner);
+extern void _K33Search_EONode_Free(K33Search_EONodeP *pEONode);
+extern int _K33Search_TestForEOTreeChildren(K33Search_EONodeP EOTreeNode);
+
+extern int _K33Search_AssembleMainPlanarEmbedding(K33Search_EONodeP EOTreeRoot);
+extern int _K33Search_ValidateEmbeddingObstructionTree(graphP theGraph, K33Search_EONodeP EOTreeRoot, graphP origGraph);
+
 /* Forward declarations of local functions */
 
 void _K33Search_ClearStructures(K33SearchContext *context);
