@@ -112,6 +112,7 @@ int RandomGraphs(char command, int NumGraphs, int SizeOfGraphs, char *outfileNam
 
     // Seed the random number generator with "now". Do it after any prompting
     // to tie randomness to human process of answering the prompt.
+    // Acceptable downcast of time_t to unsigned int (seeding benefits from the lower bits of now)
     srand(time(NULL));
 
     // Select a counter update frequency that updates more frequently with larger graphs
@@ -484,6 +485,7 @@ int RandomGraph(char command, int extraEdges, int numVertices, char *outfileName
     if ((theGraph = MakeGraph(numVertices, command)) == NULL)
         return NOTOK;
 
+    // Acceptable downcast of time_t to unsigned int (seeding benefits from the lower bits of now)
     srand(time(NULL));
 
     Message("Creating the random graph...\n");

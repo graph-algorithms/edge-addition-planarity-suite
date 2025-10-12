@@ -466,7 +466,7 @@ char sf_ungetc(char theChar, strOrFileP theStrOrFile)
         sf_ValidateStrOrFile(theStrOrFile) != OK ||
         theStrOrFile->containerType != INPUT_CONTAINER ||
         sp_GetCurrentSize(theStrOrFile->ungetBuf) >= sp_GetCapacity(theStrOrFile->ungetBuf))
-        return EOF;
+        return EOF; // Acceptable downcast, allowing char rather than int return type
 
     sp_Push(theStrOrFile->ungetBuf, theChar);
     return theChar;

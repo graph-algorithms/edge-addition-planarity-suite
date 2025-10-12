@@ -287,6 +287,7 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
 
                     // Note that this call also sets OUTONLY on the twin arc
                     gp_SetDirection(theGraph, gp_GetFirstArc(theGraph, W), EDGEFLAG_DIRECTION_INONLY);
+                    // This macro expands to constant conditional expression, but it's the proper use of the API
                 }
             }
         }
@@ -310,6 +311,7 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
 
             gp_AttachFirstArc(theGraph, v, e);
             gp_SetDirection(theGraph, e, EDGEFLAG_DIRECTION_INONLY);
+            // This macro expands to constant conditional expression, but it's the proper use of the API
         }
     }
 
