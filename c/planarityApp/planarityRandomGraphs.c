@@ -23,9 +23,6 @@ graphP MakeGraph(int Size, char command);
 
 int RandomGraphs(char command, int NumGraphs, int SizeOfGraphs, char *outfileName)
 {
-    char theFileName[MAXLINE + 1];
-    theFileName[0] = '\0';
-
     int K, countUpdateFreq;
     int Result = OK, MainStatistic = 0;
     int ObstructionMinorFreqs[NUM_MINORS];
@@ -38,9 +35,12 @@ int RandomGraphs(char command, int NumGraphs, int SizeOfGraphs, char *outfileNam
         writeErrorReported_AdjList = FALSE, writeErrorReported_Obstructed = FALSE,
         writeErrorReported_Error = FALSE;
 
+    G6WriteIteratorP pG6WriteIterator = NULL;
+    int charsAvailForStr = 0;
     char const *messageFormat = NULL;
     char messageContents[MAXLINE + 1];
-    int charsAvailForStr = 0;
+    char theFileName[MAXLINE + 1];
+    messageContents[0] = theFileName[0] = '\0';
 
     GetNumberIfZero(&NumGraphs, "Enter number of graphs to generate:", 1, 1000000000);
     GetNumberIfZero(&SizeOfGraphs, "Enter size of graphs:", 1, 10000);
@@ -57,7 +57,6 @@ int RandomGraphs(char command, int NumGraphs, int SizeOfGraphs, char *outfileNam
     for (K = 0; K < NUM_MINORS; K++)
         ObstructionMinorFreqs[K] = 0;
 
-    G6WriteIteratorP pG6WriteIterator = NULL;
     if (outfileName != NULL || (tolower(OrigOut) == 'y' && tolower(OrigOutFormat) == 'g'))
     {
         if (allocateG6WriteIterator(&pG6WriteIterator, theGraph) != OK)
@@ -74,7 +73,10 @@ int RandomGraphs(char command, int NumGraphs, int SizeOfGraphs, char *outfileNam
     {
         if (beginG6WriteIterationToG6FilePath(pG6WriteIterator, outfileName) != OK)
         {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
             sprintf(messageContents, messageFormat, charsAvailForStr, outfileName);
+#pragma GCC diagnostic pop
             ErrorMessage(messageContents);
 
             if (freeG6WriteIterator(&pG6WriteIterator) != OK)
@@ -93,7 +95,10 @@ int RandomGraphs(char command, int NumGraphs, int SizeOfGraphs, char *outfileNam
         sprintf(theFileName, "random%cn%d.k%d.g6", FILE_DELIMITER, SizeOfGraphs, NumGraphs);
         if (beginG6WriteIterationToG6FilePath(pG6WriteIterator, theFileName) != OK)
         {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
             sprintf(messageContents, messageFormat, charsAvailForStr, theFileName);
+#pragma GCC diagnostic pop
             ErrorMessage(messageContents);
 
             if (freeG6WriteIterator(&pG6WriteIterator) != OK)
@@ -107,6 +112,7 @@ int RandomGraphs(char command, int NumGraphs, int SizeOfGraphs, char *outfileNam
 
     // Seed the random number generator with "now". Do it after any prompting
     // to tie randomness to human process of answering the prompt.
+    // Acceptable downcast of time_t to unsigned int (seeding benefits from the lower bits of now)
     srand(time(NULL));
 
     // Select a counter update frequency that updates more frequently with larger graphs
@@ -146,7 +152,10 @@ int RandomGraphs(char command, int NumGraphs, int SizeOfGraphs, char *outfileNam
                 writeResult = gp_Write(theGraph, theFileName, WRITE_ADJLIST);
                 if (writeResult != OK && !writeErrorReported_Random)
                 {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
                     sprintf(messageContents, messageFormat, charsAvailForStr, theFileName);
+#pragma GCC diagnostic pop
                     ErrorMessage(messageContents);
                     writeErrorReported_Random = TRUE;
                 }
@@ -171,7 +180,10 @@ int RandomGraphs(char command, int NumGraphs, int SizeOfGraphs, char *outfileNam
                         writeResult = gp_Write(theGraph, theFileName, WRITE_ADJMATRIX);
                         if (writeResult != OK && !writeErrorReported_Embedded)
                         {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
                             sprintf(messageContents, messageFormat, charsAvailForStr, theFileName);
+#pragma GCC diagnostic pop
                             ErrorMessage(messageContents);
                             writeErrorReported_Embedded = TRUE;
                         }
@@ -183,7 +195,10 @@ int RandomGraphs(char command, int NumGraphs, int SizeOfGraphs, char *outfileNam
                         writeResult = gp_Write(theGraph, theFileName, WRITE_ADJLIST);
                         if (writeResult != OK && !writeErrorReported_AdjList)
                         {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
                             sprintf(messageContents, messageFormat, charsAvailForStr, theFileName);
+#pragma GCC diagnostic pop
                             ErrorMessage(messageContents);
                             writeErrorReported_AdjList = TRUE;
                         }
@@ -219,7 +234,10 @@ int RandomGraphs(char command, int NumGraphs, int SizeOfGraphs, char *outfileNam
                             writeResult = gp_Write(theGraph, theFileName, WRITE_ADJMATRIX);
                             if (writeResult != OK && !writeErrorReported_Obstructed)
                             {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
                                 sprintf(messageContents, messageFormat, charsAvailForStr, theFileName);
+#pragma GCC diagnostic pop
                                 ErrorMessage(messageContents);
                                 writeErrorReported_Obstructed = TRUE;
                             }
@@ -235,7 +253,10 @@ int RandomGraphs(char command, int NumGraphs, int SizeOfGraphs, char *outfileNam
                 writeResult = gp_Write(origGraph, theFileName, WRITE_ADJLIST);
                 if (writeResult != OK && !writeErrorReported_Error)
                 {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
                     sprintf(messageContents, messageFormat, charsAvailForStr, theFileName);
+#pragma GCC diagnostic pop
                     ErrorMessage(messageContents);
                     writeErrorReported_Error = TRUE;
                 }
@@ -244,7 +265,6 @@ int RandomGraphs(char command, int NumGraphs, int SizeOfGraphs, char *outfileNam
 
         // Reinitialize or recreate graphs for next iteration
         ReinitializeGraph(&theGraph, ReuseGraphs, command);
-        ReinitializeGraph(&origGraph, ReuseGraphs, command);
 
         // Show progress, but not so often that it bogs down progress
         if (!getQuietModeSetting() && (K + 1) % countUpdateFreq == 0)
@@ -271,11 +291,19 @@ int RandomGraphs(char command, int NumGraphs, int SizeOfGraphs, char *outfileNam
 
     if (pG6WriteIterator != NULL)
     {
-        if (endG6WriteIteration(pG6WriteIterator) != OK && freeG6WriteIterator(&pG6WriteIterator) != OK)
+        if (endG6WriteIteration(pG6WriteIterator) != OK)
         {
-            ErrorMessage("Unable to properly terminate .g6 write iteration.\n");
+            ErrorMessage("Unable to end .g6 write iteration.\n");
+            Result = NOTOK;
+        }
+
+        if (freeG6WriteIterator(&pG6WriteIterator) != OK)
+        {
+            ErrorMessage("Unable to free .g6 write iterator.\n");
+            Result = NOTOK;
         }
     }
+
     // Free the graph structures created before the loop
     gp_Free(&theGraph);
     gp_Free(&origGraph);
@@ -369,8 +397,9 @@ void GetNumberIfZero(int *pNum, char const *prompt, int min, int max)
 
     if (*pNum < min || *pNum > max)
     {
-        *pNum = (max + min) / 2;
         char messageContents[MAXLINE + 1];
+        messageContents[0] = '\0';
+        *pNum = (max + min) / 2;
         sprintf(messageContents, "Number out of range [%d, %d]; changed to %d\n", min, max, *pNum);
         ErrorMessage(messageContents);
     }
@@ -410,6 +439,8 @@ graphP MakeGraph(int Size, char command)
         break;
     case '4':
         gp_AttachK4Search(theGraph);
+        break;
+    default:
         break;
     }
 
@@ -454,6 +485,7 @@ int RandomGraph(char command, int extraEdges, int numVertices, char *outfileName
     if ((theGraph = MakeGraph(numVertices, command)) == NULL)
         return NOTOK;
 
+    // Acceptable downcast of time_t to unsigned int (seeding benefits from the lower bits of now)
     srand(time(NULL));
 
     Message("Creating the random graph...\n");
@@ -525,14 +557,20 @@ int RandomGraph(char command, int extraEdges, int numVertices, char *outfileName
 
             messageFormat = "Saving edge list format of original graph to \"%.*s\"\n";
             charsAvailForStr = (int)(MAXLINE - strlen(messageFormat));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
             sprintf(messageContents, messageFormat, charsAvailForStr, theFileName);
+#pragma GCC diagnostic pop
             Message(messageContents);
             SaveAsciiGraph(origGraph, theFileName);
 
             strcat(theFileName, ".out.txt");
             messageFormat = "Saving edge list format of result to \"%.*s\"\n";
             charsAvailForStr = (int)(MAXLINE - strlen(messageFormat));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
             sprintf(messageContents, messageFormat, charsAvailForStr, theFileName);
+#pragma GCC diagnostic pop
             Message(messageContents);
             SaveAsciiGraph(theGraph, theFileName);
         }

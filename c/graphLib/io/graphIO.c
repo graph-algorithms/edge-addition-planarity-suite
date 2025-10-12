@@ -16,11 +16,31 @@ int _ReadGraph(graphP theGraph, strOrFileP inputContainer);
 int _ReadAdjMatrix(graphP theGraph, strOrFileP inputContainer);
 int _ReadAdjList(graphP theGraph, strOrFileP inputContainer);
 int _ReadLEDAGraph(graphP theGraph, strOrFileP inputContainer);
+int _ReadPostprocess(graphP theGraph, char *extraData);
 
 int _WriteGraph(graphP theGraph, strOrFileP *outputContainer, char **pOutputStr, int Mode);
 int _WriteAdjList(graphP theGraph, strOrFileP outputContainer);
 int _WriteAdjMatrix(graphP theGraph, strOrFileP outputContainer);
 int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer);
+int _WritePostprocess(graphP theGraph, char **pExtraData);
+
+// These prototypes are defined if LOGGING is defined, but
+// if LOGGING is not defined, then these declarations help
+// to get rid of missingprototype warnings.
+#ifndef LOGGING
+void _LogLine(const char *Line);
+void _Log(const char *Line);
+
+char *_MakeLogStr1(char *format, int);
+char *_MakeLogStr2(char *format, int, int);
+char *_MakeLogStr3(char *format, int, int, int);
+char *_MakeLogStr4(char *format, int, int, int, int);
+char *_MakeLogStr5(char *format, int, int, int, int, int);
+#endif
+
+/* Private functions */
+char _GetEdgeTypeChar(graphP theGraph, int e);
+char _GetVertexObstructionTypeChar(graphP theGraph, int v);
 
 /********************************************************************
  _ReadAdjMatrix()
@@ -267,6 +287,7 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
 
                     // Note that this call also sets OUTONLY on the twin arc
                     gp_SetDirection(theGraph, gp_GetFirstArc(theGraph, W), EDGEFLAG_DIRECTION_INONLY);
+                    // This macro expands to constant conditional expression, but it's the proper use of the API
                 }
             }
         }
@@ -290,6 +311,7 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
 
             gp_AttachFirstArc(theGraph, v, e);
             gp_SetDirection(theGraph, e, EDGEFLAG_DIRECTION_INONLY);
+            // This macro expands to constant conditional expression, but it's the proper use of the API
         }
     }
 
@@ -865,6 +887,7 @@ int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer)
 int gp_Write(graphP theGraph, char const *FileName, int Mode)
 {
     int RetVal;
+    strOrFileP outputContainer = NULL;
 
     if (theGraph == NULL || FileName == NULL)
         return NOTOK;
@@ -872,7 +895,7 @@ int gp_Write(graphP theGraph, char const *FileName, int Mode)
     if (strcmp(FileName, "nullwrite") == 0)
         return OK;
 
-    strOrFileP outputContainer = sf_New(NULL, FileName, WRITETEXT);
+    outputContainer = sf_New(NULL, FileName, WRITETEXT);
     if (outputContainer == NULL)
         return NOTOK;
 
@@ -904,11 +927,12 @@ int gp_Write(graphP theGraph, char const *FileName, int Mode)
 int gp_WriteToString(graphP theGraph, char **pOutputStr, int Mode)
 {
     int RetVal;
+    strOrFileP outputContainer = NULL;
 
     if (theGraph == NULL || pOutputStr == NULL)
         return NOTOK;
 
-    strOrFileP outputContainer = sf_New(NULL, NULL, WRITETEXT);
+    outputContainer = sf_New(NULL, NULL, WRITETEXT);
     if (outputContainer == NULL)
         return NOTOK;
 
@@ -1040,30 +1064,45 @@ static char LogStr[MAXLINE + 1];
 
 char *_MakeLogStr1(char *format, int one)
 {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
     sprintf(LogStr, format, one);
+#pragma GCC diagnostic pop
     return LogStr;
 }
 
 char *_MakeLogStr2(char *format, int one, int two)
 {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
     sprintf(LogStr, format, one, two);
+#pragma GCC diagnostic pop
     return LogStr;
 }
 
 char *_MakeLogStr3(char *format, int one, int two, int three)
 {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
     sprintf(LogStr, format, one, two, three);
+#pragma GCC diagnostic pop
     return LogStr;
 }
 
 char *_MakeLogStr4(char *format, int one, int two, int three, int four)
 {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
     sprintf(LogStr, format, one, two, three, four);
+#pragma GCC diagnostic pop
     return LogStr;
 }
 
 char *_MakeLogStr5(char *format, int one, int two, int three, int four, int five)
 {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
     sprintf(LogStr, format, one, two, three, four, five);
+#pragma GCC diagnostic pop
     return LogStr;
 }

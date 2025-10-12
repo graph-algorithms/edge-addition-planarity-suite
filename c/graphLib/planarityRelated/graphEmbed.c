@@ -30,12 +30,15 @@ int _MergeBicomps(graphP theGraph, int v, int RootVertex, int W, int WPrevLink);
 void _WalkUp(graphP theGraph, int v, int e);
 int _WalkDown(graphP theGraph, int v, int RootVertex);
 
+int _HandleInactiveVertex(graphP theGraph, int BicompRoot, int *pW, int *pWPrevLink);
+
 int _HandleBlockedBicomp(graphP theGraph, int v, int RootVertex, int R);
 void _AdvanceFwdArcList(graphP theGraph, int v, int child, int nextChild);
 
 int _EmbedPostprocess(graphP theGraph, int v, int edgeEmbeddingResult);
 int _OrientVerticesInEmbedding(graphP theGraph);
 int _OrientVerticesInBicomp(graphP theGraph, int BicompRoot, int PreserveSigns);
+int _OrientExternalFacePath(graphP theGraph, int u, int v, int w, int x);
 int _JoinBicomps(graphP theGraph);
 
 /********************************************************************

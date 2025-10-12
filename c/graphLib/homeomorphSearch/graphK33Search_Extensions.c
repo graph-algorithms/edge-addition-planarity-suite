@@ -691,6 +691,7 @@ int _K33Search_HandleBlockedBicomp(graphP theGraph, int v, int RootVertex, int R
         return context->functions.fpHandleBlockedBicomp(theGraph, v, RootVertex, R);
     }
 
+    // No way to get here in current implementation, but this protects against future mistakes
     return NOTOK;
 }
 
@@ -699,6 +700,8 @@ int _K33Search_HandleBlockedBicomp(graphP theGraph, int v, int RootVertex, int R
 
 int _K33Search_EmbedPostprocess(graphP theGraph, int v, int edgeEmbeddingResult)
 {
+    int savedEmbedFlags = 0, savedZEROBASEDIO = 0;
+
     // For K3,3 search, we just return the edge embedding result because the
     // search result has been obtained already.
     if (theGraph->embedFlags == EMBEDFLAGS_SEARCHFORK33)
@@ -707,16 +710,46 @@ int _K33Search_EmbedPostprocess(graphP theGraph, int v, int edgeEmbeddingResult)
         // If the result is K3,3-free, then we need to orient vertices and join bicomps in the main planar embedding
         if (edgeEmbeddingResult == OK)
         {
-            K33SearchContext *context = NULL;
-            gp_FindExtension(theGraph, K33SEARCH_ID, (void *)&context);
-
-            if (context == NULL || _K33Search_AssembleMainPlanarEmbedding(context->associatedEONode) != OK)
+            // This is currently a constant conditional TRUE, and will be changed to
+            // a variable conditional test once code is added to let the caller control
+            // whether or not to perform K_{3,3}-free embedding.
+            if (TRUE)
             {
-                ErrorMessage("_K33Search_EmbedPostporcess() failed to assemble main planar embedding");
-                return NOTOK;
+                K33SearchContext *context = NULL;
+                gp_FindExtension(theGraph, K33SEARCH_ID, (void *)&context);
+
+                if (context == NULL || _K33Search_AssembleMainPlanarEmbedding(context->associatedEONode) != OK)
+                {
+                    ErrorMessage("_K33Search_EmbedPostporcess() failed to assemble main planar embedding");
+                    return NOTOK;
+                }
+            }
+            // When not creating $K_{3,3}-free embeddings, we revert to the code that empties
+            // the graph for an empty $K_{3,3} homeomorph search result
+            else
+            {
+                // When a graph does not contain a K3,3 homeomorph, the embedding
+                // is meaningless, so we empty it out. We preserve the embedFlags
+                // to ensure post-processing continues as expected.
+                savedEmbedFlags = theGraph->embedFlags;
+                savedZEROBASEDIO = theGraph->internalFlags & FLAGS_ZEROBASEDIO;
+                gp_ReinitializeGraph(theGraph);
+                theGraph->embedFlags = savedEmbedFlags;
+                theGraph->internalFlags &= savedZEROBASEDIO;
             }
         }
         // K33CERT end
+        if (edgeEmbeddingResult == OK)
+        {
+            // When a graph does not contain a K3,3 homeomorph, the embedding
+            // is meaningless, so we empty it out. We preserve the embedFlags
+            // to ensure post-processing continues as expected.
+            savedEmbedFlags = theGraph->embedFlags;
+            savedZEROBASEDIO = theGraph->internalFlags & FLAGS_ZEROBASEDIO;
+            gp_ReinitializeGraph(theGraph);
+            theGraph->embedFlags = savedEmbedFlags;
+            theGraph->internalFlags &= savedZEROBASEDIO;
+        }
 
         return edgeEmbeddingResult;
     }

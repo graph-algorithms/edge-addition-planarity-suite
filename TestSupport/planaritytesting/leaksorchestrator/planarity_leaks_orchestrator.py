@@ -463,11 +463,6 @@ class PlanarityLeaksOrchestrator:
                 "Failed to determine input filetype of " f"'{infile_path}'."
             ) from input_filetype_error
 
-        if file_type != "G6":
-            raise PlanarityLeaksOrchestratorError(
-                f"Determined '{infile_path}' has filetype '{file_type}', "
-                "which is not supported; please supply a .g6 file."
-            )
         if not commands_to_run:
             commands_to_run = PLANARITY_ALGORITHM_SPECIFIERS()
         elif not self._valid_commands_to_run(commands_to_run):
@@ -919,7 +914,7 @@ if __name__ == "__main__":
                 section, "commands_to_run"
             )
             perform_full_analysis_from_config = config[section].getboolean(
-                "perform_full_analysis"
+                "perform_full_analysis", fallback=False
             )
 
             planarity_leaks_orchestrator.test_random_graphs(
@@ -931,7 +926,7 @@ if __name__ == "__main__":
         elif section == "RandomMaxPlanarGraphGenerator":
             order_from_config = int(config[section]["order"])
             perform_full_analysis_from_config = config[section].getboolean(
-                "perform_full_analysis"
+                "perform_full_analysis", fallback=False
             )
             planarity_leaks_orchestrator.test_random_max_planar_graph_generator(
                 order=order_from_config,
@@ -940,7 +935,7 @@ if __name__ == "__main__":
         elif section == "RandomNonplanarGraphGenerator":
             order_from_config = int(config[section]["order"])
             perform_full_analysis_from_config = config[section].getboolean(
-                "perform_full_analysis"
+                "perform_full_analysis", fallback=False
             )
             planarity_leaks_orchestrator.test_random_nonplanar_graph_generator(
                 order=order_from_config,
@@ -949,7 +944,7 @@ if __name__ == "__main__":
         elif section == "SpecificGraph":
             infile_path_from_config = Path(config[section]["infile_path"])
             perform_full_analysis_from_config = config[section].getboolean(
-                "perform_full_analysis"
+                "perform_full_analysis", fallback=False
             )
             commands_to_run_from_config = config.getlist(  # type: ignore
                 section, "commands_to_run"
@@ -962,7 +957,7 @@ if __name__ == "__main__":
         elif section == "TransformGraph":
             infile_path_from_config = Path(config[section]["infile_path"])
             perform_full_analysis_from_config = config[section].getboolean(
-                "perform_full_analysis"
+                "perform_full_analysis", fallback=False
             )
             output_formats_to_test_from_config = config.getlist(  # type: ignore
                 section, "output_formats_to_test"
@@ -975,7 +970,7 @@ if __name__ == "__main__":
         elif section == "TestAllGraphs":
             infile_path_from_config = Path(config[section]["infile_path"])
             perform_full_analysis_from_config = config[section].getboolean(
-                "perform_full_analysis"
+                "perform_full_analysis", fallback=False
             )
             commands_to_run_from_config = config.getlist(  # type: ignore
                 section, "commands_to_run"

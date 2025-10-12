@@ -100,6 +100,7 @@ int _ReduceExternalFacePathToEdge(graphP theGraph, K33SearchContext *context, in
 int _ReduceXYPathToEdge(graphP theGraph, K33SearchContext *context, int u, int x, int edgeType);
 int _RestoreReducedPath(graphP theGraph, K33SearchContext *context, int e);
 int _RestoreAndOrientReducedPaths(graphP theGraph, K33SearchContext *context);
+int _MarkStraddlingBridgePath(graphP theGraph, int u_min, int u_max, int u_d, int d);
 
 int _IsolateMinorE5(graphP theGraph);
 int _IsolateMinorE6(graphP theGraph, K33SearchContext *context);

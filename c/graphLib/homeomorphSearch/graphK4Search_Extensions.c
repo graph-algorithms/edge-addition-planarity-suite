@@ -399,6 +399,7 @@ int _K4Search_HandleBlockedBicomp(graphP theGraph, int v, int RootVertex, int R)
         return context->functions.fpHandleBlockedBicomp(theGraph, v, RootVertex, R);
     }
 
+    // No way to get here in current implementation, but this protects against future mistakes
     return NOTOK;
 }
 
@@ -407,10 +408,24 @@ int _K4Search_HandleBlockedBicomp(graphP theGraph, int v, int RootVertex, int R)
 
 int _K4Search_EmbedPostprocess(graphP theGraph, int v, int edgeEmbeddingResult)
 {
+    int savedEmbedFlags = 0, savedZEROBASEDIO = 0;
+
     // For K4 search, we just return the edge embedding result because the
     // search result has been obtained already.
     if (theGraph->embedFlags == EMBEDFLAGS_SEARCHFORK4)
     {
+        if (edgeEmbeddingResult == OK)
+        {
+            // When a graph does not contain a K4 homeomorph, the embedding
+            // is meaningless, so we empty it out. We preserve the embedFlags
+            // to ensure post-processing continues as expected.
+            savedEmbedFlags = theGraph->embedFlags;
+            savedZEROBASEDIO = theGraph->internalFlags & FLAGS_ZEROBASEDIO;
+            gp_ReinitializeGraph(theGraph);
+            theGraph->embedFlags = savedEmbedFlags;
+            theGraph->internalFlags &= savedZEROBASEDIO;
+        }
+
         return edgeEmbeddingResult;
     }
 

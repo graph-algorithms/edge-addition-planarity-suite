@@ -35,6 +35,8 @@ import multiprocessing
 import subprocess
 import argparse
 from pathlib import Path
+from typing import Optional
+
 
 from planaritytesting_utils import (
     PLANARITY_ALGORITHM_SPECIFIERS,
@@ -52,6 +54,7 @@ def call_planarity_testAllGraphs(
     num_edges: int,
     input_dir: Path,
     output_dir: Path,
+    log_root_path: Optional[Path] = None,
 ) -> None:
     """Call planarity as blocking process on multiprocessing thread
 
@@ -75,29 +78,48 @@ def call_planarity_testAllGraphs(
         output_dir: Directory to which you wish to write the output of applying
             the algorithm corresponding to the command to all graphs in the
             input .g6 file
+        log_root_path: Optional path to directory under which logs containing
+            output stream results shall be written
     """
     canonical_ext = ".canonical" if canonical_files else ""
     makeg_ext = ".makeg" if makeg_g6 else ""
+    stem = f"n{order}.m{num_edges}{makeg_ext}{canonical_ext}"
     infile_path = Path.joinpath(
-        input_dir, f"n{order}.m{num_edges}{makeg_ext}{canonical_ext}.g6"
+        input_dir, f"{stem}.g6"
     )
     outfile_path = Path.joinpath(
         output_dir,
         f"{command}",
-        f"n{order}.m{num_edges}{makeg_ext}{canonical_ext}.{command}.out.txt",
+        f"{stem}.{command}.out.txt",
     )
-    subprocess.run(
-        [
-            f"{planarity_path}",
-            "-t",
-            f"-{command}",
-            f"{infile_path}",
-            f"{outfile_path}",
-        ],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        check=False,
-    )
+    if log_root_path is not None:
+        logfile_path = Path.joinpath(log_root_path, f"{command}", f"{stem}.{command}.log")
+        with open(logfile_path, "w") as logfile:
+            subprocess.run(
+                [
+                    f"{planarity_path}",
+                    "-t",
+                    f"-{command}",
+                    f"{infile_path}",
+                    f"{outfile_path}",
+                ],
+                stdout=logfile,
+                stderr=subprocess.STDOUT,
+                check=False,
+            )
+    else:
+        subprocess.run(
+            [
+                f"{planarity_path}",
+                "-t",
+                f"-{command}",
+                f"{infile_path}",
+                f"{outfile_path}",
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
 
 
 def _validate_and_normalize_planarity_testAllGraphs_workload_args(  # pylint: disable=too-many-branches
@@ -215,6 +237,7 @@ def distribute_planarity_testAllGraphs_workload(  # pylint: disable=too-many-arg
     order: int,
     input_dir: Path,
     output_dir: Path,
+    log_output_streams: bool = False,
 ) -> None:
     """Use starmap_async on multiprocessing pool to _call_planarity
 
@@ -231,6 +254,8 @@ def distribute_planarity_testAllGraphs_workload(  # pylint: disable=too-many-arg
             graph algorithm command, where the results of executing planarity
             Test All Graphs for the respective command on each .g6 file will be
             written
+        log_output_streams: determines whether we throw away output streams or
+            write to file
     """
     planarity_path, order, input_dir, output_dir = (
         _validate_and_normalize_planarity_testAllGraphs_workload_args(
@@ -238,9 +263,14 @@ def distribute_planarity_testAllGraphs_workload(  # pylint: disable=too-many-arg
         )
     )
 
+    log_root_path = Path.joinpath(output_dir, "logs") if log_output_streams else None
+    
     for command in PLANARITY_ALGORITHM_SPECIFIERS():
         path_to_make = Path.joinpath(output_dir, f"{command}")
         Path.mkdir(path_to_make, parents=True, exist_ok=True)
+        if log_root_path is not None:
+            path_to_make = Path.joinpath(log_root_path, f"{command}")
+            Path.mkdir(path_to_make, parents=True, exist_ok=True)
 
     call_planarity_args = [
         (
@@ -252,6 +282,7 @@ def distribute_planarity_testAllGraphs_workload(  # pylint: disable=too-many-arg
             num_edges,
             input_dir,
             output_dir,
+            log_root_path,
         )
         for num_edges in range(max_num_edges_for_order(order) + 1)
         for command in PLANARITY_ALGORITHM_SPECIFIERS()
@@ -320,6 +351,14 @@ if __name__ == "__main__":
         "\tTestSupport/results/planarity_testAllGraphs_orchestrator/"
         "{order}",
     )
+    parser.add_argument(
+        "-w",
+        "--writestreams",
+        action="store_true",
+        help="Write stdout/stderr to logfile. Defaults to False, but if true,"
+        "writes to:"
+        "\tTestSupport/results/planarity_testAllGraphs_orchestrator/{order}/logs",
+    )
 
     args = parser.parse_args()
 
@@ -330,4 +369,5 @@ if __name__ == "__main__":
         order=args.order,
         input_dir=args.inputdir,
         output_dir=args.outputdir,
+        log_output_streams=args.writestreams,
     )

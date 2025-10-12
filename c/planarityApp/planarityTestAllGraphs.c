@@ -33,12 +33,11 @@ int TestAllGraphs(char *commandString, char *infileName, char *outfileName, char
     int Result = OK;
     platform_time start, end;
 
+    graphP theGraph = NULL;
     int charsAvailForFilename = 0;
     char const *messageFormat = NULL;
     char messageContents[MAXLINE + 1];
     messageContents[MAXLINE] = '\0';
-
-    graphP theGraph;
 
     // Create the graph and, if needed, attach the correct algorithm to it
     theGraph = gp_New();
@@ -54,18 +53,21 @@ int TestAllGraphs(char *commandString, char *infileName, char *outfileName, char
             }
             else
             {
+                char command = commandString[1];
+                testAllStats stats;
+                memset(&stats, 0, sizeof(testAllStats));
+
                 messageFormat = "Start testing all graphs in \"%.*s\".\n";
                 charsAvailForFilename = (int)(MAXLINE - strlen(messageFormat));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
                 sprintf(messageContents, messageFormat, charsAvailForFilename, infileName);
+#pragma GCC diagnostic pop
                 Message(messageContents);
 
                 // Start the timer
                 platform_GetTime(start);
 
-                testAllStats stats;
-                memset(&stats, 0, sizeof(testAllStats));
-
-                char command = commandString[1];
                 Result = testAllGraphs(theGraph, command, infileName, &stats);
 
                 // Stop the timer
@@ -76,7 +78,10 @@ int TestAllGraphs(char *commandString, char *infileName, char *outfileName, char
                 {
                     messageFormat = "\nEncountered error while running command '%c' on all graphs in \"%.*s\".\n";
                     charsAvailForFilename = (int)(MAXLINE - strlen(messageFormat));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
                     sprintf(messageContents, messageFormat, command, charsAvailForFilename, infileName);
+#pragma GCC diagnostic pop
                     ErrorMessage(messageContents);
                 }
                 else
@@ -89,7 +94,10 @@ int TestAllGraphs(char *commandString, char *infileName, char *outfileName, char
                 {
                     messageFormat = "Error outputting results running command '%c' on all graphs in \"%.*s\".\n";
                     charsAvailForFilename = (int)(MAXLINE - strlen(messageFormat));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
                     sprintf(messageContents, messageFormat, command, charsAvailForFilename, infileName);
+#pragma GCC diagnostic pop
                     ErrorMessage(messageContents);
                     Result = NOTOK;
                 }
@@ -115,15 +123,16 @@ int testAllGraphs(graphP theGraph, char command, char *infileName, testAllStatsP
 {
     int Result = OK;
 
-    char const *messageFormat = NULL;
-    char messageContents[MAXLINE + 1];
-    messageContents[MAXLINE] = '\0';
-
     graphP copyOfOrigGraph = NULL;
     int embedFlags = GetEmbedFlags(command);
     int numOK = 0, numNONEMBEDDABLE = 0, errorFlag = FALSE;
 
     G6ReadIteratorP pG6ReadIterator = NULL;
+    char const *messageFormat = NULL;
+    int graphOrder = 0;
+    char messageContents[MAXLINE + 1];
+    messageContents[MAXLINE] = '\0';
+
     Result = allocateG6ReadIterator(&pG6ReadIterator, theGraph);
 
     if (Result != OK)
@@ -143,7 +152,7 @@ int testAllGraphs(graphP theGraph, char command, char *infileName, testAllStatsP
         return Result;
     }
 
-    int graphOrder = gp_getN(theGraph);
+    graphOrder = gp_getN(theGraph);
     // We have to set the maximum arc capacity (i.e. (N * (N - 1))) because some of the test files
     // can contain complete graphs, and the graph drawing, K_{3, 3} search, and K_4 search extensions
     // don't support expanding the arc capacity after being attached.
@@ -186,7 +195,10 @@ int testAllGraphs(graphP theGraph, char command, char *infileName, testAllStatsP
         if (Result != OK)
         {
             messageFormat = "Unable to read graph on line %d from .g6 read iterator.\n";
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
             sprintf(messageContents, messageFormat, pG6ReadIterator->numGraphsRead + 1);
+#pragma GCC diagnostic pop
             ErrorMessage(messageContents);
             errorFlag = TRUE;
             break;
@@ -209,13 +221,14 @@ int testAllGraphs(graphP theGraph, char command, char *infileName, testAllStatsP
         else
         {
             messageFormat = "Error applying algorithm '%c' to graph on line %d.\n";
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
             sprintf(messageContents, messageFormat, command, pG6ReadIterator->numGraphsRead + 1);
+#pragma GCC diagnostic pop
             ErrorMessage(messageContents);
             errorFlag = TRUE;
             break;
         }
-
-        gp_ReinitializeGraph(copyOfOrigGraph);
     }
 
     stats->numGraphsRead = pG6ReadIterator->numGraphsRead;
@@ -242,7 +255,12 @@ int outputTestAllGraphsResults(char command, testAllStatsP stats, char *infileNa
     char *infileBasename = finalSlash ? (finalSlash + 1) : infileName;
 
     char const *headerFormat = "FILENAME=\"%s\" DURATION=\"%.3lf\"\n";
-    char *headerStr = (char *)malloc(
+    char *headerStr = NULL;
+    int numCharsToReprNumGraphsRead = 0, numCharsToReprNumOK = 0, numCharsToReprNumNONEMBEDDABLE = 0;
+    char *resultsStr = NULL;
+    strOrFileP testOutput = NULL;
+
+    headerStr = (char *)malloc(
         (
             strlen(headerFormat) +
             strlen(infileBasename) +
@@ -255,8 +273,10 @@ int outputTestAllGraphsResults(char command, testAllStatsP stats, char *infileNa
         return NOTOK;
     }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
     sprintf(headerStr, headerFormat, infileBasename, stats->duration);
-    int numCharsToReprNumGraphsRead = 0, numCharsToReprNumOK = 0, numCharsToReprNumNONEMBEDDABLE = 0;
+#pragma GCC diagnostic pop
     if (GetNumCharsToReprInt(stats->numGraphsRead, &numCharsToReprNumGraphsRead) != OK ||
         GetNumCharsToReprInt(stats->numOK, &numCharsToReprNumOK) != OK ||
         GetNumCharsToReprInt(stats->numNONEMBEDDABLE, &numCharsToReprNumNONEMBEDDABLE) != OK)
@@ -269,7 +289,7 @@ int outputTestAllGraphsResults(char command, testAllStatsP stats, char *infileNa
         return NOTOK;
     }
 
-    char *resultsStr = (char *)malloc(
+    resultsStr = (char *)malloc(
         (
             3 + numCharsToReprNumGraphsRead +
             1 + numCharsToReprNumOK +
@@ -289,8 +309,6 @@ int outputTestAllGraphsResults(char command, testAllStatsP stats, char *infileNa
 
     sprintf(resultsStr, "-%c %d %d %d %s\n",
             command, stats->numGraphsRead, stats->numOK, stats->numNONEMBEDDABLE, stats->errorFlag ? "ERROR" : "SUCCESS");
-
-    strOrFileP testOutput = NULL;
 
     if (outfileName != NULL)
     {

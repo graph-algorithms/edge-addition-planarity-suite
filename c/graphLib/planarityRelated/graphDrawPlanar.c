@@ -31,6 +31,8 @@ int _ComputeVertexPositionsInComponent(DrawPlanarContext *context, int root, int
 int _ComputeEdgePositions(DrawPlanarContext *context);
 int _ComputeVertexRanges(DrawPlanarContext *context);
 int _ComputeEdgeRanges(DrawPlanarContext *context);
+int _GetNextExternalFaceVertex(graphP theGraph, int curVertex, int *pPrevLink);
+char *_RenderToString(graphP theEmbedding);
 
 /********************************************************************
  _ComputeVisibilityRepresentation()

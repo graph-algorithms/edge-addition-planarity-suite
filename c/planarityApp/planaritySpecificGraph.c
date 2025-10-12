@@ -82,6 +82,8 @@ int SpecificGraph(
     // Otherwise, call the correct algorithm on it
     else
     {
+        int embedFlags = GetEmbedFlags(command);
+
         // Copy the graph for integrity checking
         origGraph = gp_DupGraph(theGraph);
 
@@ -102,9 +104,10 @@ int SpecificGraph(
             case '4':
                 gp_AttachK4Search(theGraph);
                 break;
+            default:
+                break;
             }
 
-            int embedFlags = GetEmbedFlags(command);
             platform_GetTime(start);
 
             // gp_CreateDFSTree(theGraph);
@@ -236,7 +239,10 @@ void WriteAlgorithmResults(graphP theGraph, int Result, char command, platform_t
     {
         messageFormat = "The graph \"%.*s\" ";
         charsAvailForStr = (int)(MAXLINE - strlen(messageFormat));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
         sprintf(messageContents, messageFormat, charsAvailForStr, infileName);
+#pragma GCC diagnostic pop
     }
     else
         sprintf(messageContents, "The graph ");
