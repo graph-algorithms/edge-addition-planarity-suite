@@ -17,6 +17,8 @@ Functions:
 
 __all__ = [
     "PLANARITY_ALGORITHM_SPECIFIERS",
+    "PLANARITY_ALGORITHM_MODIFIER_CORRESPONDENCE",
+    "PLANARITY_ALLOWED_COMMAND_STRINGS",
     "EDGE_DELETION_ANALYSIS_SPECIFIERS",
     "GRAPH_FORMAT_SPECIFIERS",
     "max_num_edges_for_order",
@@ -38,6 +40,30 @@ from typing import Any, Optional
 def PLANARITY_ALGORITHM_SPECIFIERS() -> tuple[str, ...]:
     """Returns immutable tuple containing algorithm command specifiers"""
     return ("p", "d", "o", "2", "3", "4")
+
+
+def PLANARITY_ALGORITHM_MODIFIER_CORRESPONDENCE() -> (
+    dict[str, tuple[str, ...]]
+):
+    """Returns dict mapping command specifiers to allowed modifier chars"""
+    return {
+        "3": ("e",),
+    }
+
+
+def PLANARITY_ALLOWED_COMMAND_STRINGS() -> tuple[str, ...]:
+    """Returns tuple of allowed planarity command strings"""
+    allowed_command_strings = []
+    allowed_command_strings.extend(PLANARITY_ALGORITHM_SPECIFIERS())
+    for (
+        command,
+        allowed_modifiers,
+    ) in PLANARITY_ALGORITHM_MODIFIER_CORRESPONDENCE().items():
+        allowed_command_strings.extend(
+            [f"{command}{modifier}" for modifier in allowed_modifiers]
+        )
+
+    return tuple(allowed_command_strings)
 
 
 def EDGE_DELETION_ANALYSIS_SPECIFIERS() -> tuple[str, ...]:

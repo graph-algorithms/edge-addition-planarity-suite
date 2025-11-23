@@ -84,12 +84,15 @@ int commandLine(int argc, char *argv[])
     // with the DDEBUG flag, this means that in appconst.h we #define DEBUG. That way,
     // this prompt will appear only for debug builds, and will ensure the console
     // window stays open until the user proceeds.
-    printf("\n\tPress return key to exit...\n");
-    fflush(stdout);
-    if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
+    if (!getQuietModeSetting())
     {
-        ErrorMessage("Unable to fetch from stdin; exiting.\n");
-        Result = NOTOK;
+        printf("\n\tPress return key to exit...\n");
+        fflush(stdout);
+        if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
+        {
+            ErrorMessage("Unable to fetch from stdin; exiting.\n");
+            Result = NOTOK;
+        }
     }
 #endif
 

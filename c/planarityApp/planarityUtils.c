@@ -504,23 +504,25 @@ int BinaryFilesEqual(char *file1Name, char *file2Name)
 char const *GetAlgorithmFlags(void)
 {
     return "C = command (algorithm implementation to run)\n"
-           "    -p = Planar embedding and Kuratowski subgraph isolation\n"
-           "    -d = Planar graph drawing by visibility representation\n"
-           "    -o = Outerplanar embedding and obstruction isolation\n"
-           "    -2 = Search for subgraph homeomorphic to K_{2,3}\n"
-           "    -3 = Search for subgraph homeomorphic to K_{3,3}\n"
-           "    -4 = Search for subgraph homeomorphic to K_4\n"
+           "    -p  = Planar embedding and Kuratowski subgraph isolation\n"
+           "    -d  = Planar graph drawing by visibility representation\n"
+           "    -o  = Outerplanar embedding and obstruction isolation\n"
+           "    -2  = Search for subgraph homeomorphic to K_{2,3}\n"
+           "    -3  = Search for subgraph homeomorphic to K_{3,3}\n"
+           "    -3e = Search for subgraph homeomorphic to K_{3,3} with embedder\n"
+           "    -4  = Search for subgraph homeomorphic to K_4\n"
            "\n";
 }
 
 char const *GetAlgorithmSpecifiers(void)
 {
-    return "P. Planar embedding and Kuratowski subgraph isolation\n"
-           "D. Planar graph drawing by visibility representation\n"
-           "O. Outerplanar embedding and obstruction isolation\n"
-           "2. Search for subgraph homeomorphic to K_{2,3}\n"
-           "3. Search for subgraph homeomorphic to K_{3,3}\n"
-           "4. Search for subgraph homeomorphic to K_4\n";
+    return "P.  Planar embedding and Kuratowski subgraph isolation\n"
+           "D.  Planar graph drawing by visibility representation\n"
+           "O.  Outerplanar embedding and obstruction isolation\n"
+           "2.  Search for subgraph homeomorphic to K_{2,3}\n"
+           "3.  Search for subgraph homeomorphic to K_{3,3}\n"
+           "3e. Search for subgraph homeomorphic to K_{3,3} with embedder\n"
+           "4.  Search for subgraph homeomorphic to K_4\n";
 }
 
 char const *GetAlgorithmChoices(void)
@@ -630,11 +632,21 @@ int GetEmbedFlags(char command, char modifier, int *pEmbedFlags)
 
     if (modifier != '\0')
     {
-        if (command == '3' && modifier == 'e')
-            (*pEmbedFlags) |= EMBEDFLAGS_SEARCHWITHEMBEDDER;
+        if (command == '3')
+        {
+            switch (modifier)
+            {
+            case 'e':
+                (*pEmbedFlags) |= EMBEDFLAGS_SEARCHWITHEMBEDDER;
+                break;
+            default:
+                ErrorMessage("Only allowed modifier for K_{3,3} search is 'e' (embedder).\n");
+                return NOTOK;
+            }
+        }
         else
         {
-            ErrorMessage("Algorithm modifiers currently not supported.\n");
+            ErrorMessage("Modifiers currently not supported for selected algorithm.\n");
             return NOTOK;
         }
     }

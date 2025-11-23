@@ -26,7 +26,7 @@ import re
 from typing import Optional
 
 from planaritytesting_utils import (
-    PLANARITY_ALGORITHM_SPECIFIERS,
+    PLANARITY_ALLOWED_COMMAND_STRINGS,
     max_num_edges_for_order,
 )
 
@@ -88,7 +88,7 @@ def validate_infile_name(
     infile_name = infile_path.parts[-1]
     match = re.match(
         r"n(?P<order>\d+)\.m(?P<num_edges>\d+)(?:\.makeg)?(?:\.canonical)?"
-        r"(?:\.g6)?\.(?P<command>[pdo234])\.out\.txt",
+        r"(?:\.g6)?\.(?P<command>[pdo234][e]?)\.out\.txt",
         infile_name,
     )
     if not match:
@@ -112,7 +112,7 @@ def validate_infile_name(
             " greater than possible for a simple graph."
         )
 
-    if command_from_filename not in PLANARITY_ALGORITHM_SPECIFIERS():
+    if command_from_filename not in PLANARITY_ALLOWED_COMMAND_STRINGS():
         raise TestAllGraphsPathError(
             f"Infile name '{infile_name}' contains invalid algorithm "
             f"command, '{command_from_filename}'."
@@ -199,7 +199,7 @@ def process_file_contents(
 
         line = infile.readline()
         match = re.match(
-            r"-(?P<command>\w) (?P<numGraphs>\d+) "
+            r"-(?P<command>[pdo234][e]?) (?P<numGraphs>\d+) "
             r"(?P<numOK>\d+) (?P<numNONEMBEDDABLE>\d+) "
             r"(?P<errorFlag>SUCCESS|ERROR)",
             line,
@@ -217,7 +217,7 @@ def process_file_contents(
                 f"given in input filename, '{command}'."
             )
 
-        if command_from_file not in PLANARITY_ALGORITHM_SPECIFIERS():
+        if command_from_file not in PLANARITY_ALLOWED_COMMAND_STRINGS():
             raise TestAllGraphsOutputFileContentsError(
                 f"Command specifier '{command_from_file}' in input file "
                 f"'{infile_path}' is not valid"

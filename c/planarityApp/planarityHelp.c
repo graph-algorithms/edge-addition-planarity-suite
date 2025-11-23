@@ -103,7 +103,7 @@ int helpMessage(char *param)
             "I = Input file (for work on a specific graph)\n"
             "O = Primary output file\n"
             "    For example, if C=-p then O receives the planar embedding\n"
-            "    If C=-3, then O receives a subgraph containing a K_{3,3}\n"
+            "    If C=-3, then O receives a K_{3,3}-homeomorph or an empty graph\n"
             "O2= Secondary output file\n"
             "    For -s, if C=-p or -o, then O2 receives the embedding obstruction\n"
             "    For -s, if C=-d, then O2 receives a drawing of the planar graph\n"

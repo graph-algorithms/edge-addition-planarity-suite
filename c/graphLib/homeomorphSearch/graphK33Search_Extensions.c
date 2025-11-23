@@ -724,12 +724,14 @@ int _K33Search_EmbedPostprocess(graphP theGraph, int v, int edgeEmbeddingResult)
         if (edgeEmbeddingResult == OK)
         {
 #ifdef INCLUDE_K33SEARCH_EMBEDDER
+            K33Search_EONodeP tempRoot = NULL;
+            int *vertexIndices = NULL;
+            K33SearchContext *context = NULL;
             // This is currently a constant conditional TRUE, and will be changed to
             // a variable conditional test once code is added to let the caller control
             // whether or not to perform K_{3,3}-free embedding.
             if (theGraph->embedFlags & EMBEDFLAGS_SEARCHWITHEMBEDDER)
             {
-                K33SearchContext *context = NULL;
                 gp_FindExtension(theGraph, K33SEARCH_ID, (void *)&context);
 
                 if (context == NULL || _K33Search_AssembleMainPlanarEmbedding(context->associatedEONode) != OK)
@@ -737,21 +739,49 @@ int _K33Search_EmbedPostprocess(graphP theGraph, int v, int edgeEmbeddingResult)
                     ErrorMessage("_K33Search_EmbedPostporcess() failed to assemble main planar embedding");
                     return NOTOK;
                 }
+
+                tempRoot = context->associatedEONode;
+                context->associatedEONode = NULL;
+
+                vertexIndices = (int *)malloc((theGraph->N + gp_GetFirstVertex(theGraph)) * sizeof(int));
+                if (vertexIndices == NULL)
+                {
+                    ErrorMessage("_K33Search_EmbedPostporcess() failed to allocate memory for array saving vertex DFI ordering.\n");
+                    return NOTOK;
+                }
+
+                for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
+                {
+                    vertexIndices[v] = gp_GetVertexIndex(theGraph, v);
+                }
             }
-            // When not creating $K_{3,3}-free embeddings, we revert to the code that empties
-            // the graph for an empty $K_{3,3} homeomorph search result
-            else
 #endif
+            // When a graph does not contain a K3,3 homeomorph, the embedding
+            // is meaningless, so we empty it out. We preserve the embedFlags
+            // to ensure post-processing continues as expected.
+            savedEmbedFlags = theGraph->embedFlags;
+            savedZEROBASEDIO = theGraph->internalFlags & FLAGS_ZEROBASEDIO;
+            gp_ReinitializeGraph(theGraph);
+            theGraph->embedFlags = savedEmbedFlags;
+            theGraph->internalFlags &= savedZEROBASEDIO;
+
+#ifdef INCLUDE_K33SEARCH_EMBEDDER
+            if (theGraph->embedFlags & EMBEDFLAGS_SEARCHWITHEMBEDDER)
             {
-                // When a graph does not contain a K3,3 homeomorph, the embedding
-                // is meaningless, so we empty it out. We preserve the embedFlags
-                // to ensure post-processing continues as expected.
-                savedEmbedFlags = theGraph->embedFlags;
-                savedZEROBASEDIO = theGraph->internalFlags & FLAGS_ZEROBASEDIO;
-                gp_ReinitializeGraph(theGraph);
-                theGraph->embedFlags = savedEmbedFlags;
-                theGraph->internalFlags &= savedZEROBASEDIO;
+                if (context->associatedEONode != NULL)
+                    _K33Search_EONode_Free(&context->associatedEONode);
+
+                context->associatedEONode = tempRoot;
+
+                for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
+                {
+                    gp_SetVertexIndex(theGraph, v, vertexIndices[v]);
+                }
+
+                free(vertexIndices);
+                vertexIndices = NULL;
             }
+#endif
         }
 
         return edgeEmbeddingResult;

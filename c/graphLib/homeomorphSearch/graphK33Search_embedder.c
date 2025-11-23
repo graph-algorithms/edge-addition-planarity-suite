@@ -251,8 +251,8 @@ int _K33Search_EONode_NewONode(graphP theGraph, K33Search_EONodeP *pNewONode)
                 gp_SetEdgeVirtual(theNewK5Graph, gp_GetTwinArc(theNewK5Graph, e));
             }
 
-    // Now we can contruct an embedding obstruction tree node to associate with theNewK5Graph
-    // and then tell it to be an O-node that owns theNewK5Graph.
+    // Now we can construct an embedding obstruction tree node to associate with
+    // theNewK5Graph and then tell it to be an O-node that owns theNewK5Graph.
     if ((theNewONode = _K33Search_EONode_New(K33SEARCH_EOTYPE_ONODE, theNewK5Graph, TRUE)) == NULL)
     {
         gp_Free(&theNewK5Graph);
@@ -669,8 +669,9 @@ int _K33Search_MarkBridgeSetToExtract(graphP theGraph, int R, int cutv1, int cut
         // Push a next vertex to visit
         sp_Push(theGraph->theStack, gp_GetNeighbor(theGraph, e));
 
-        // Go to the next edge in the rotation, but keep record of the edge just processed
-        // so we can deetect when we have finsished processing the lastStartingEdge
+        // Go to the next edge in the rotation, but keep record of the edge just
+        // processed so we can deetect when we have finished processing the
+        // lastStartingEdge
         ePrev = e;
         e = theGraph->E[e].link[linkDir];
 
@@ -825,7 +826,8 @@ int _K33Search_ExtractBridgeSet(graphP theGraph, int R, int cutv1, int cutv2, gr
         context->VI[v].subgraphToGraphIndex = NIL;
     }
 
-    // A planar embedding of the bridge set has been successfully extracted inot the subgraph
+    // A planar embedding of the bridge set has been successfully extracted into
+    // the subgraph
     return OK;
 }
 
@@ -1068,7 +1070,8 @@ int _K33Search_ExtractVWBridgeSet(graphP theGraph, int R, K33Search_EONodeP newO
     if (_CountUnembeddedEdgesInPertinentOnlySubtrees(theGraph, IC->w, &numEdgesInSubgraph) != OK)
         return NOTOK;
 
-    // We start out the numer of vertices in the subgraph at 2 to account for v and w.
+    // We start out the number of vertices in the subgraph at 2 to account for v
+    // and w.
     numVerticesInSubgraph = 2;
 
     // Now we add to those counts the number of vertices and edges in all of the
@@ -1088,13 +1091,14 @@ int _K33Search_ExtractVWBridgeSet(graphP theGraph, int R, K33Search_EONodeP newO
         return NOTOK;
     }
 
-    // Copy into the new subgraph all embedded edges in the pertinent-only subtrees rooted by w,
-    // all unembedded edges from v to vertices in the pertinent-only subtrees rooted by w, and
-    // add a virtual edge for (v, w) if it is not included in the unembedded edges that are added.
-    // Then, planarize the new subgraph and add the subgraph-to-graph mapping to the index
-    // members of its vertices.
-    // NOTE: Copying embedded edges includes transfering any EONode pointers from the
-    //       original edges in theGraph to the newly added edges
+    // Copy into the new subgraph all embedded edges in the pertinent-only
+    // subtrees rooted by w, all unembedded edges from v to vertices in the
+    // pertinent-only subtrees rooted by w, and add a virtual edge for (v, w) if
+    // it is not included in the unembedded edges that are added. Then,
+    // planarize the new subgraph and add the subgraph-to-graph mapping to the
+    // index members of its vertices.
+    // NOTE: Copying embedded edges includes transferring any EONode pointers
+    //       from the original edges in theGraph to the newly added edges
     if (_K33Search_ExtractBridgeSet(theGraph, R, IC->v, IC->w, newSubgraphForBridgeSet) != OK)
     {
         gp_Free(&newSubgraphForBridgeSet);
@@ -1144,7 +1148,7 @@ int _K33Search_ExtractVWBridgeSet(graphP theGraph, int R, K33Search_EONodeP newO
 
  While this could be an edge such as (u_{max}, w) or (u_{max}, x) or
  (u_{max}, y), those edges will not be able to be added until a
- future step u_max. The ReduceBicomp() invocation is occuring during
+ future step u_max. The ReduceBicomp() invocation is occurring during
  the step v processing, so we use one of the edges created by the
  ReduceBicomp() process instead.
  ********************************************************************/
