@@ -48,12 +48,14 @@ int TestAllGraphs(char const *const commandString, char const *const infileName,
     if (GetCommandAndOptionalModifier(commandString, &command, &modifier) != OK)
     {
         ErrorMessage("Unable to determine command (and optional modifier) from command string.\n");
+
         return NOTOK;
     }
 
     if (infileName == NULL)
     {
         ErrorMessage("No input file provided.\n");
+
         return NOTOK;
     }
 
@@ -129,6 +131,15 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
 
     theGraph = gp_New();
 
+    if (theGraph == NULL)
+    {
+        ErrorMessage("Unable to allocate graph.\n");
+
+        stats->errorFlag = TRUE;
+
+        return NOTOK;
+    }
+
     if ((Result = allocateG6ReadIterator(&pG6ReadIterator, theGraph)) != OK)
     {
         ErrorMessage("Unable to allocate G6ReadIterator.\n");
@@ -143,7 +154,9 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
     {
         ErrorMessage("Unable to begin .g6 read iteration.\n");
 
-        freeG6ReadIterator(&pG6ReadIterator);
+        if (freeG6ReadIterator(&pG6ReadIterator) != OK)
+            ErrorMessage("Unable to free G6ReadIterator.\n");
+
         gp_Free(&theGraph);
         stats->errorFlag = TRUE;
 
@@ -160,7 +173,9 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
         {
             ErrorMessage("Unable to maximize arc capacity of G6ReadIterator's graph struct.\n");
 
-            freeG6ReadIterator(&pG6ReadIterator);
+            if (freeG6ReadIterator(&pG6ReadIterator) != OK)
+                ErrorMessage("Unable to free G6ReadIterator.\n");
+
             gp_Free(&theGraph);
             stats->errorFlag = TRUE;
 
@@ -189,7 +204,9 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
 
         ErrorMessage(messageContents);
 
-        freeG6ReadIterator(&pG6ReadIterator);
+        if (freeG6ReadIterator(&pG6ReadIterator) != OK)
+            ErrorMessage("Unable to free G6ReadIterator.\n");
+
         gp_Free(&theGraph);
         stats->errorFlag = TRUE;
 
@@ -201,18 +218,22 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
     {
         ErrorMessage("Unable to allocate graph to store copy of original graph before embedding.\n");
 
-        freeG6ReadIterator(&pG6ReadIterator);
+        if (freeG6ReadIterator(&pG6ReadIterator) != OK)
+            ErrorMessage("Unable to free G6ReadIterator.\n");
+
         gp_Free(&theGraph);
         stats->errorFlag = TRUE;
 
         return NOTOK;
     }
 
-    if ((Result = gp_InitGraph(copyOfOrigGraph, graphOrder)) != OK)
+    if (gp_InitGraph(copyOfOrigGraph, graphOrder) != OK)
     {
         ErrorMessage("Unable to initialize graph datastructure to store copy of original graph before embedding.\n");
 
-        freeG6ReadIterator(&pG6ReadIterator);
+        if (freeG6ReadIterator(&pG6ReadIterator) != OK)
+            ErrorMessage("Unable to free G6ReadIterator.\n");
+
         gp_Free(&theGraph);
         gp_Free(&copyOfOrigGraph);
         stats->errorFlag = TRUE;
@@ -222,7 +243,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
 
     while (true)
     {
-        if ((Result = readGraphUsingG6ReadIterator(pG6ReadIterator)) != OK)
+        if (readGraphUsingG6ReadIterator(pG6ReadIterator) != OK)
         {
             messageFormat = "Unable to read graph on line %d from .g6 read iterator.\n";
 #pragma GCC diagnostic push
@@ -232,6 +253,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
             ErrorMessage(messageContents);
 
             errorFlag = TRUE;
+
             break;
         }
 
@@ -241,9 +263,34 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
         gp_CopyGraph(copyOfOrigGraph, theGraph);
 
         Result = gp_Embed(theGraph, embedFlags);
+        if (Result != OK && Result != NONEMBEDDABLE)
+        {
+            messageFormat = "Failed to embed graph on line %d for command '%c'.\n";
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
+            sprintf(messageContents, messageFormat, pG6ReadIterator->numGraphsRead + 1, command);
+#pragma GCC diagnostic pop
+            ErrorMessage(messageContents);
+
+            errorFlag = TRUE;
+
+            break;
+        }
 
         if (gp_TestEmbedResultIntegrity(theGraph, copyOfOrigGraph, Result) != Result)
+        {
+            messageFormat = "Embed integrity check failed for graph on line %d for command '%c'.\n";
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
+            sprintf(messageContents, messageFormat, pG6ReadIterator->numGraphsRead + 1, command);
+#pragma GCC diagnostic pop
+            ErrorMessage(messageContents);
+
+            errorFlag = TRUE;
+
             Result = NOTOK;
+            break;
+        }
 
         if (Result == OK)
             numOK++;
@@ -267,10 +314,10 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
                 sprintf(messageContents, messageFormat, command, modifier, pG6ReadIterator->numGraphsRead + 1);
 #pragma GCC diagnostic pop
             }
-
             ErrorMessage(messageContents);
 
             errorFlag = TRUE;
+
             break;
         }
     }
@@ -312,9 +359,11 @@ int outputTestAllGraphsResults(char command, char modifier, testAllStatsP stats,
             strlen("-1.7976931348623158e+308") + // -DBL_MAX from float.h
             3) *
         sizeof(char));
+
     if (headerStr == NULL)
     {
         ErrorMessage("Unable allocate memory for output file header.\n");
+
         return NOTOK;
     }
 
@@ -322,6 +371,7 @@ int outputTestAllGraphsResults(char command, char modifier, testAllStatsP stats,
 #pragma GCC diagnostic ignored "-Wformat-nonliteral"
     sprintf(headerStr, headerFormat, infileBasename, stats->duration);
 #pragma GCC diagnostic pop
+
     if (GetNumCharsToReprInt(stats->numGraphsRead, &numCharsToReprNumGraphsRead) != OK ||
         GetNumCharsToReprInt(stats->numOK, &numCharsToReprNumOK) != OK ||
         GetNumCharsToReprInt(stats->numNONEMBEDDABLE, &numCharsToReprNumNONEMBEDDABLE) != OK)
@@ -353,6 +403,7 @@ int outputTestAllGraphsResults(char command, char modifier, testAllStatsP stats,
             3   // (carriage return,) newline and null terminator
             ) *
         sizeof(char));
+
     if (resultsStr == NULL)
     {
         ErrorMessage("Unable allocate memory for results string.\n");
@@ -398,46 +449,33 @@ int outputTestAllGraphsResults(char command, char modifier, testAllStatsP stats,
     {
         ErrorMessage("Unable to set up string-or-file container for test output.\n");
 
-        if (headerStr != NULL)
-        {
-            free(headerStr);
-            headerStr = NULL;
-        }
-
-        if (resultsStr != NULL)
-        {
-            free(resultsStr);
-            resultsStr = NULL;
-        }
-
-        if (outputStr != NULL && (*outputStr) != NULL)
-        {
-            free((*outputStr));
-            (*outputStr) = NULL;
-        }
-
-        return NOTOK;
-    }
-
-    if (sf_fputs(headerStr, testOutput) < 0)
-    {
-        ErrorMessage("Unable to output headerStr to testOutput.\n");
         Result = NOTOK;
     }
 
-    if (Result == OK)
+    if (Result == OK || Result == NONEMBEDDABLE)
     {
-        if (sf_fputs(resultsStr, testOutput) < 0)
+        if (sf_fputs(headerStr, testOutput) < 0)
         {
-            ErrorMessage("Unable to output resultsStr to testOutput.\n");
+            ErrorMessage("Unable to output headerStr to testOutput.\n");
+
             Result = NOTOK;
         }
-    }
 
-    if (Result == OK)
-    {
-        if (outputStr != NULL)
-            (*outputStr) = sf_takeTheStr(testOutput);
+        if (Result == OK)
+        {
+            if (sf_fputs(resultsStr, testOutput) < 0)
+            {
+                ErrorMessage("Unable to output resultsStr to testOutput.\n");
+
+                Result = NOTOK;
+            }
+        }
+
+        if (Result == OK)
+        {
+            if (outputStr != NULL)
+                (*outputStr) = sf_takeTheStr(testOutput);
+        }
     }
 
     if (headerStr != NULL)

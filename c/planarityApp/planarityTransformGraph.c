@@ -23,11 +23,19 @@ int transformString(graphP theGraph, char *inputStr);
 int TransformGraph(char const *const commandString, char const *const infileName, char *inputStr, int *outputBase, char const *outfileName, char **outputStr)
 {
     int Result = OK;
+
     int outputFormat = -1;
 
     graphP theGraph = NULL;
 
     theGraph = gp_New();
+
+    if (theGraph == NULL)
+    {
+        ErrorMessage("Unable to allocate graphP for input graph transformation target.\n");
+
+        return NOTOK;
+    }
 
     if (commandString[0] == '-')
     {
@@ -40,6 +48,9 @@ int TransformGraph(char const *const commandString, char const *const infileName
         else
         {
             ErrorMessage("Invalid argument; only -(gam) is allowed.\n");
+
+            gp_Free(&theGraph);
+
             return NOTOK;
         }
 
@@ -75,6 +86,7 @@ int TransformGraph(char const *const commandString, char const *const infileName
     }
 
     gp_Free(&theGraph);
+
     return Result;
 }
 
@@ -83,7 +95,11 @@ int transformFile(graphP theGraph, char const *infileName)
     if (infileName == NULL)
     {
         if ((infileName = ConstructInputFilename(infileName)) == NULL)
+        {
+            ErrorMessage("Unable to construct input filename for graph to transform.\n");
+
             return NOTOK;
+        }
     }
 
     return gp_Read(theGraph, infileName);
@@ -94,6 +110,7 @@ int transformString(graphP theGraph, char *inputStr)
     if (inputStr == NULL || strlen(inputStr) == 0)
     {
         ErrorMessage("Input string is null or empty.\n");
+
         return NOTOK;
     }
 

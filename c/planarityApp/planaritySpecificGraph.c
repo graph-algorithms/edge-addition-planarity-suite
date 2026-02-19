@@ -46,6 +46,7 @@ int SpecificGraph(
     if (GetCommandAndOptionalModifier(commandString, &command, &modifier) != OK)
     {
         ErrorMessage("Unable to derive command and modifier from commandString.\n");
+
         return NOTOK;
     }
 
@@ -62,7 +63,11 @@ int SpecificGraph(
         if (infileName != NULL)
         {
             if ((infileName = ConstructInputFilename(infileName)) == NULL)
-                return NOTOK;
+            {
+                ErrorMessage("Error constructing input filename.\n");
+
+                Result = NOTOK;
+            }
         }
         else
         {
@@ -71,8 +76,10 @@ int SpecificGraph(
                 infileName = ConstructInputFilename(infileName);
                 if (infileName == NULL || strlen(infileName) == 0)
                 {
-                    ErrorMessage("Unrecoverable error while trying to ConstructInputFilename().\n");
+                    ErrorMessage("Error constructing input filename.\n");
+
                     Result = NOTOK;
+
                     break;
                 }
                 else if (strncmp(infileName, "stdin", strlen("stdin")) == 0)
@@ -83,6 +90,7 @@ int SpecificGraph(
                     // way you could have them enter stdin and reach this error
                     // from command-line
                     ErrorMessage("\n\tPlease choose an input file path: stdin not supported from menu.\n\n");
+
                     infileName = NULL;
                 }
                 else
@@ -94,7 +102,12 @@ int SpecificGraph(
     if (Result == OK)
     {
         // Create the graph and, if needed, attach the correct algorithm to it
-        theGraph = gp_New();
+        if ((theGraph = gp_New()) == NULL)
+        {
+            ErrorMessage("Unable to allocate graph.\n");
+
+            return NOTOK;
+        }
 
         // Read the graph into memory
         if (inputStr == NULL)
@@ -136,7 +149,19 @@ int SpecificGraph(
         //          gp_SortVertices(theGraph);
 
         Result = gp_Embed(theGraph, embedFlags);
+
         platform_GetTime(end);
+
+        if (Result != OK && Result != NONEMBEDDABLE)
+        {
+            ErrorMessage("Failed to embed graph.\n");
+
+            gp_Free(&theGraph);
+            gp_Free(&origGraph);
+
+            return NOTOK;
+        }
+
         Result = gp_TestEmbedResultIntegrity(theGraph, origGraph, Result);
     }
     else
@@ -164,8 +189,14 @@ int SpecificGraph(
     else
     {
         // Restore the vertex ordering of the original graph (undo DFS numbering)
-        if (strchr(GetAlgorithmChoices(), command))
-            gp_SortVertices(theGraph);
+        if (gp_SortVertices(theGraph) != OK)
+        {
+            ErrorMessage("Unable to restore original vertex ordering.\n");
+
+            gp_Free(&theGraph);
+
+            return NOTOK;
+        }
 
         // Determine the name of the primary output file
         outfileName = ConstructPrimaryOutputFilename(infileName, outfileName, command);
@@ -188,7 +219,11 @@ int SpecificGraph(
                 writeResult = gp_WriteToString(theGraph, pOutputStr, WRITE_ADJLIST);
 
             if (writeResult != OK)
+            {
+                ErrorMessage("Failed to write graph to primary output file.\n");
+
                 Result = NOTOK;
+            }
         }
 
         // NOW WE WANT TO WRITE THE SECONDARY OUTPUT to a FILE or STRING
@@ -231,7 +266,11 @@ int SpecificGraph(
             }
 
             if (writeResult != OK)
+            {
+                ErrorMessage("Failed to write secondary output file.\n");
+
                 Result = NOTOK;
+            }
         }
     }
 
@@ -240,5 +279,6 @@ int SpecificGraph(
 
     // Flush any remaining message content to the user, and return the result
     FlushConsole(stdout);
+
     return Result;
 }

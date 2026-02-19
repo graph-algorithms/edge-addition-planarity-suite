@@ -33,6 +33,7 @@ int menu(void)
     if (GetNumCharsToReprInt(COMMANDSTRINGMAXLENGTH, &numCharsToReprCOMMANDSTRINGMAXLENGTH) != OK)
     {
         ErrorMessage("Unable to determine number of characters required to represent COMMANDSTRINGMAXLENGTH.\n");
+
         Result = NOTOK;
     }
     else
@@ -41,6 +42,7 @@ int menu(void)
         if (choiceStringFormat == NULL)
         {
             ErrorMessage("Unable to allocate memory for choice string format string.\n");
+
             Result = NOTOK;
         }
     }
@@ -71,7 +73,9 @@ int menu(void)
             if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
             {
                 ErrorMessage("Unable to fetch menu choice from stdin; exiting.\n");
+
                 Result = NOTOK;
+
                 break;
             }
 
@@ -81,6 +85,7 @@ int menu(void)
                 sscanf(lineBuff, choiceStringFormat, choiceString) != 1)
             {
                 ErrorMessage("Invalid input; please retry.\n");
+
                 continue;
             }
 #pragma GCC diagnostic pop
@@ -96,7 +101,9 @@ int menu(void)
                 if (Reconfigure() != OK)
                 {
                     ErrorMessage("Encountered unrecoverable error when reconfiguring; exiting.\n");
+
                     Result = NOTOK;
+
                     break;
                 }
 
@@ -121,6 +128,7 @@ int menu(void)
                 if (GetCommandAndOptionalModifier(commandString, &command, NULL) != OK)
                 {
                     ErrorMessage("Unable to extract command from choice, please retry.\n");
+
                     commandString = NULL;
 
                     continue;
@@ -158,7 +166,9 @@ int menu(void)
             if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
             {
                 ErrorMessage("Unable to fetch from stdin; exiting.\n");
+
                 Result = NOTOK;
+
                 break;
             }
 
@@ -202,6 +212,7 @@ int TransformGraphMenu(void)
     if (GetNumCharsToReprInt(FILENAMEMAXLENGTH, &numCharsToReprFILENAMEMAXLENGTH) != OK)
     {
         ErrorMessage("Unable to determine number of characters required to represent FILENAMEMAXLENGTH.\n");
+
         return NOTOK;
     }
 
@@ -209,6 +220,7 @@ int TransformGraphMenu(void)
     if (fileNameFormat == NULL)
     {
         ErrorMessage("Unable to allocate memory for filename format string.\n");
+
         return NOTOK;
     }
 
@@ -223,7 +235,9 @@ int TransformGraphMenu(void)
         if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
         {
             ErrorMessage("Unable to read input filename from stdin.\n");
+
             Result = NOTOK;
+
             break;
         }
 
@@ -251,7 +265,9 @@ int TransformGraphMenu(void)
             if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
             {
                 ErrorMessage("Unable to read output filename from stdin.\n");
+
                 Result = NOTOK;
+
                 break;
             }
 
@@ -276,7 +292,9 @@ int TransformGraphMenu(void)
             if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
             {
                 ErrorMessage("Unable to read output format from stdin.\n");
+
                 Result = NOTOK;
+
                 break;
             }
 
@@ -289,6 +307,7 @@ int TransformGraphMenu(void)
                 if (sprintf(commandStr, "-%c", (char)tolower(outputFormat)) < 1)
                 {
                     ErrorMessage("Unable to construct commandStr.\n");
+
                     Result = NOTOK;
                 }
 
@@ -334,6 +353,7 @@ int TestAllGraphsMenu(void)
     if (GetNumCharsToReprInt(COMMANDSTRINGMAXLENGTH, &numCharsToReprCOMMANDSTRINGMAXLENGTH) != OK)
     {
         ErrorMessage("Unable to determine number of characters required to represent COMMANDSTRINGMAXLENGTH.\n");
+
         return NOTOK;
     }
 
@@ -341,6 +361,7 @@ int TestAllGraphsMenu(void)
     if (commandStringFormat == NULL)
     {
         ErrorMessage("Unable to allocate memory for command string format string.\n");
+
         return NOTOK;
     }
 
@@ -386,7 +407,9 @@ int TestAllGraphsMenu(void)
         if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
         {
             ErrorMessage("Unable to read input filename from stdin.\n");
+
             Result = NOTOK;
+
             break;
         }
 
@@ -414,7 +437,9 @@ int TestAllGraphsMenu(void)
             if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
             {
                 ErrorMessage("Unable to read output filename from stdin.\n");
+
                 Result = NOTOK;
+
                 break;
             }
 
@@ -439,7 +464,9 @@ int TestAllGraphsMenu(void)
             if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
             {
                 ErrorMessage("Unable to read command and optional modifier from stdin.\n");
+
                 Result = NOTOK;
+
                 break;
             }
 

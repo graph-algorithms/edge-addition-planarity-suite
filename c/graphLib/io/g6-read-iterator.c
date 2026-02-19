@@ -168,7 +168,7 @@ int _beginG6ReadIteration(G6ReadIteratorP pG6ReadIterator)
     char charConfirmation = EOF;
     int firstChar = '\0';
     int lineNum = 1;
-    int graphOrder = -1;
+    int graphOrder = NIL;
     strOrFileP g6Input = pG6ReadIterator->g6Input;
     char messageContents[MAXLINE + 1];
     messageContents[0] = '\0';
