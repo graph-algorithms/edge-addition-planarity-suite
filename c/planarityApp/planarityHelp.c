@@ -1,5 +1,5 @@
 /*
-Copyright (c) 1997-2025, John M. Boyer
+Copyright (c) 1997-2026, John M. Boyer
 All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
@@ -13,7 +13,7 @@ char const *GetProjectTitle(void)
             "\n==================================================="
             "\nThe Edge Addition Planarity Suite version %s"
             "\nbased on libPlanarity graph library version %s"
-            "\nCopyright (c) 1997-2025 by John M. Boyer"
+            "\nCopyright (c) 1997-2026 by John M. Boyer"
             "\nAll rights reserved."
             "\nSee the LICENSE.TXT file for licensing information."
             "\nContact info: jboyer at acm.org"
