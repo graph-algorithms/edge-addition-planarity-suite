@@ -10,7 +10,7 @@ The primary purpose of this repository is to provide implementations of the edge
 
 * [Simplified O(n) Algorithms for Planar Graph Embedding, Kuratowski Subgraph Isolation, and Related Problems](https://dspace.library.uvic.ca/handle/1828/9918)
 
-A secondary purpose of this repository is to provide a generalized graph API that enables implementation of a very wide range of in-memory graph algorithms including basic methods for reading, writing, depth first search, and lowpoint as well as advanced methods for solving planarity, outerplanarity, drawing, and selected subgraph homeomorphism problems. An extension mechanism is also provided to enable implementation of planarity-related algorithms by overriding and augmenting data structures and methods of the core planarity algorithm.
+A secondary purpose of this repository is to provide a generalized graph API that enables implementation of a very wide range of in-memory graph algorithms including basic methods for reading, writing, and manipulating graphs, intermediate methods such as for depth first search and lowpoint calculations, and advanced methods for solving planarity, outerplanarity, planar graph drawing, and selected subgraph homeomorphism problems. An extension mechanism is also provided to enable implementation of graph algorithms by overriding and augmenting data structures and methods of the core graph data structure.
 
 ## Getting Started
 
