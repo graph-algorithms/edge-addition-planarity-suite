@@ -802,7 +802,7 @@ void _AddBackEdge(graphP theGraph, int ancestor, int descendant)
 
 int _DeleteUnmarkedVerticesAndEdges(graphP theGraph)
 {
-    int v, e;
+    int v, e, eNext;
 
     /* All of the forward and back arcs of all of the edge records
        were removed from the adjacency lists in the planarity algorithm
@@ -823,10 +823,10 @@ int _DeleteUnmarkedVerticesAndEdges(graphP theGraph)
         e = gp_GetFirstArc(theGraph, v);
         while (gp_IsArc(e))
         {
-            if (gp_GetEdgeVisited(theGraph, e))
-                e = gp_GetNextArc(theGraph, e);
-            else
-                e = gp_DeleteEdge(theGraph, e, 0);
+            eNext = gp_GetNextArc(theGraph, e);
+            if (!gp_GetEdgeVisited(theGraph, e))
+                gp_DeleteEdge(theGraph, e);
+            e = eNext;
         }
     }
 

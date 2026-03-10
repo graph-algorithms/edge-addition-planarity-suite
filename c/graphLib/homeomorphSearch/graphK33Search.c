@@ -82,7 +82,7 @@ int _FindK33WithMergeBlocker(graphP theGraph, K33SearchContext *context, int v, 
 int _TestForZtoWPath(graphP theGraph);
 int _TestForStraddlingBridge(graphP theGraph, K33SearchContext *context, int u_max);
 int _K33Search_DeleteUnmarkedEdgesInBicomp(graphP theGraph, K33SearchContext *context, int BicompRoot);
-int _K33Search_DeleteEdge(graphP theGraph, K33SearchContext *context, int e, int nextLink);
+int _K33Search_DeleteEdge(graphP theGraph, K33SearchContext *context, int e);
 int _ReduceBicomp(graphP theGraph, K33SearchContext *context, int R);
 int _ReduceExternalFacePathToEdge(graphP theGraph, K33SearchContext *context, int u, int x, int edgeType);
 int _ReduceXYPathToEdge(graphP theGraph, K33SearchContext *context, int u, int x, int edgeType);
@@ -1420,12 +1420,12 @@ int _ReduceBicomp(graphP theGraph, K33SearchContext *context, int R)
  marked for isolation.
  ********************************************************************/
 
-int _K33Search_DeleteEdge(graphP theGraph, K33SearchContext *context, int e, int nextLink)
+int _K33Search_DeleteEdge(graphP theGraph, K33SearchContext *context, int e)
 {
     _K33Search_InitEdgeRec(context, e);
     _K33Search_InitEdgeRec(context, gp_GetTwinArc(theGraph, e));
 
-    return gp_DeleteEdge(theGraph, e, nextLink);
+    return gp_DeleteEdge(theGraph, e);
 }
 
 /********************************************************************
@@ -1446,7 +1446,7 @@ int _K33Search_DeleteEdge(graphP theGraph, K33SearchContext *context, int e, int
 
 int _K33Search_DeleteUnmarkedEdgesInBicomp(graphP theGraph, K33SearchContext *context, int BicompRoot)
 {
-    int V, e;
+    int V, e, eNext;
     int stackBottom = sp_GetCurrentSize(theGraph->theStack);
 
     sp_Push(theGraph->theStack, BicompRoot);
@@ -1460,9 +1460,10 @@ int _K33Search_DeleteUnmarkedEdgesInBicomp(graphP theGraph, K33SearchContext *co
             if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_CHILD)
                 sp_Push(theGraph->theStack, gp_GetNeighbor(theGraph, e));
 
-            e = gp_GetEdgeVisited(theGraph, e)
-                    ? gp_GetNextArc(theGraph, e)
-                    : _K33Search_DeleteEdge(theGraph, context, e, 0);
+            eNext = gp_GetNextArc(theGraph, e);
+            if (!gp_GetEdgeVisited(theGraph, e))
+                _K33Search_DeleteEdge(theGraph, context, e);
+            e = eNext;
         }
     }
     return OK;
@@ -1510,7 +1511,7 @@ int _ReduceExternalFacePathToEdge(graphP theGraph, K33SearchContext *context, in
         e = gp_GetFirstArc(theGraph, u);
         v = gp_GetNeighbor(theGraph, e);
     }
-    _K33Search_DeleteEdge(theGraph, context, e, 0);
+    _K33Search_DeleteEdge(theGraph, context, e);
 
     e = gp_GetLastArc(theGraph, x);
     if (gp_IsVertex(context->E[e].pathConnector))
@@ -1520,7 +1521,7 @@ int _ReduceExternalFacePathToEdge(graphP theGraph, K33SearchContext *context, in
         e = gp_GetLastArc(theGraph, x);
         w = gp_GetNeighbor(theGraph, e);
     }
-    _K33Search_DeleteEdge(theGraph, context, e, 0);
+    _K33Search_DeleteEdge(theGraph, context, e);
 
     /* Add the reduction edge, then set its path connectors so the original
        path can be recovered and set the edge type so the essential structure
@@ -1572,7 +1573,7 @@ int _ReduceXYPathToEdge(graphP theGraph, K33SearchContext *context, int u, int x
         e = gp_GetNextArc(theGraph, e);
         v = gp_GetNeighbor(theGraph, e);
     }
-    _K33Search_DeleteEdge(theGraph, context, e, 0);
+    _K33Search_DeleteEdge(theGraph, context, e);
 
     e = gp_GetFirstArc(theGraph, x);
     e = gp_GetNextArc(theGraph, e);
@@ -1585,7 +1586,7 @@ int _ReduceXYPathToEdge(graphP theGraph, K33SearchContext *context, int u, int x
         e = gp_GetNextArc(theGraph, e);
         w = gp_GetNeighbor(theGraph, e);
     }
-    _K33Search_DeleteEdge(theGraph, context, e, 0);
+    _K33Search_DeleteEdge(theGraph, context, e);
 
     /* Now add a single edge to represent the XY-path */
     gp_InsertEdge(theGraph, u, gp_GetFirstArc(theGraph, u), 0,
@@ -1644,7 +1645,7 @@ int _RestoreReducedPath(graphP theGraph, K33SearchContext *context, int e)
     /* We first delete the edge represented by e and eTwin. We do so before
        restoring the path to ensure we do not exceed the maximum arc capacity. */
 
-    _K33Search_DeleteEdge(theGraph, context, e, 0);
+    _K33Search_DeleteEdge(theGraph, context, e);
 
     /* Now we add the two edges to reconnect the reduced path represented
        by the edge [e, eTwin].  The edge record in u is added between e0 and e1.
@@ -1729,7 +1730,7 @@ int _RestoreAndOrientReducedPaths(graphP theGraph, K33SearchContext *context)
             /* We first delete the edge represented by e and eTwin. We do so before
                restoring the path to ensure we do not exceed the maximum arc capacity. */
 
-            _K33Search_DeleteEdge(theGraph, context, e, 0);
+            _K33Search_DeleteEdge(theGraph, context, e);
 
             /* Now we add the two edges to reconnect the reduced path represented
                by the edge [e, eTwin].  The edge record in u is added between e0 and e1.

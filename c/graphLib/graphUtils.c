@@ -988,9 +988,15 @@ int gp_CopyAdjacencyLists(graphP dstGraph, graphP srcGraph)
 
 /********************************************************************
  gp_CopyGraph()
- Copies the content of the srcGraph into the dstGraph.  The dstGraph
- must have been previously initialized with the same number of
- vertices as the srcGraph (e.g. gp_InitGraph(dstGraph, srcGraph->N).
+
+ Copies the content of the srcGraph into the dstGraph.
+
+ The dstGraph must have been previously initialized with the same
+ number of vertices as the srcGraph.
+
+ Also, if the dstGraph has a higher arc capacity than the srcGraph,
+ then this call will fail unless the caller first ensures that the
+ arc capacity of the srcGraph is increased to match the dstGraph.
 
  Returns OK for success, NOTOK for failure.
  ********************************************************************/
@@ -1015,6 +1021,20 @@ int gp_CopyGraph(graphP dstGraph, graphP srcGraph)
     // dstGraph if needed, but does not contract.  An error is only
     // returned if the expansion fails.
     if (gp_EnsureArcCapacity(dstGraph, srcGraph->arcCapacity) != OK)
+    {
+        return NOTOK;
+    }
+
+    // If the dstGraph has a larger arc capacity than the srcGraph
+    // then we report failure because the code below only gives
+    // valid values to arcs up to the arc capacity of the srcGraph
+    // It would be possible to invoke _InitEdgeRec() on the
+    // additional arcs in dstGraph, but we do not support this
+    // currently because we would need to have and currently do
+    // not have a way to reinitialize the edge record extensions
+    // (gp_CopyExtensions() only copies the content in extension
+    // content up to the size of data structures in srcGraph).
+    if (dstGraph->arcCapacity > srcGraph->arcCapacity)
     {
         return NOTOK;
     }
@@ -1664,6 +1684,7 @@ void gp_DetachArc(graphP theGraph, int arc)
 
 /********************************************************************
  gp_AddEdge()
+
  Adds the undirected edge (u,v) to the graph by placing edge records
  representing u into v's circular edge record list and v into u's
  circular edge record list.
@@ -1676,6 +1697,24 @@ void gp_DetachArc(graphP theGraph, int arc)
         become adjacent to u by its 0 or 1 link, i.e. u[ulink] == vpos.
  vlink (0|1) indicates whether the edge record to u in v's list should
         become adjacent to v by its 0 or 1 link, i.e. v[vlink] == upos.
+
+ NOTE: Only the neighbor and link pointer data members are modified in
+       the arc records. The arc records are otherwise assumed to be in
+       initial state, either from graph initialization/reinitialization,
+       or from edge record reinitialization during gp_DeleteEdge(), if
+       the new edge is filling an edge hole in the edge array.This
+       expectation of being in initial state includes data stored in
+       parallel edge record extension arrays.
+
+ NOTE: This method does not forbid the addition of duplicate and loop
+       edges. Use with care because other API endpoints do not all
+       support nor check for and eliminate duplicates and loops. The
+       caller can guard against these conditions by pre-testing that
+       u != v and that gp_GetNeighborEdgeRecord() returns NIL.
+
+ Returns OK on success, NOTOK on failure, NONEMBEDDABLE if adding the
+         edge would exceed the graph's arc capacity (the caller can
+         invoke gp_DynamicAddEdge() to avoid the NONEMBEDDABLE result).
 
  ********************************************************************/
 
@@ -1715,16 +1754,13 @@ int gp_AddEdge(graphP theGraph, int u, int ulink, int v, int vlink)
  Refer to documentation for gp_AddEdge for parameter description.
 
  Tries to call gp_AddEdge; if NONEMBEDDABLE, doubles the arc
- capacity (up to a max of (N * (N-1))) using gp_EnsureArcCapacity,
- then retries gp_AddEdge.
+ capacity using gp_EnsureArcCapacity, then retries gp_AddEdge.
+
+ Returns OK on success, NOTOK on failure.
  ********************************************************************/
 int gp_DynamicAddEdge(graphP theGraph, int u, int ulink, int v, int vlink)
 {
     int Result = OK;
-
-    if (theGraph == NULL || u < gp_GetFirstVertex(theGraph) || v < gp_GetFirstVertex(theGraph) ||
-        !gp_VirtualVertexInRange(theGraph, u) || !gp_VirtualVertexInRange(theGraph, v))
-        return NOTOK;
 
     Result = gp_AddEdge(theGraph, u, ulink, v, vlink);
 
@@ -1733,6 +1769,15 @@ int gp_DynamicAddEdge(graphP theGraph, int u, int ulink, int v, int vlink)
         int candidateArcCapacity = gp_GetArcCapacity(theGraph) * 2;
         int N = theGraph->N;
         int newArcCapacity = (candidateArcCapacity > (N * (N - 1))) ? (N * (N - 1)) : candidateArcCapacity;
+
+        // We first give it a try at the maximum arc capacity for a
+        // simple undirected graph. However, if the arc capacity is
+        // already at or above that limit, then we assume the caller
+        // knows what they are doing and double the arc capacity
+        // beyond the simple undirected graph limit.
+        if (newArcCapacity <= gp_GetArcCapacity(theGraph))
+            newArcCapacity = candidateArcCapacity;
+
         Result = gp_EnsureArcCapacity(theGraph, newArcCapacity);
 
         if (Result != OK)
@@ -1754,8 +1799,16 @@ int gp_DynamicAddEdge(graphP theGraph, int u, int ulink, int v, int vlink)
  for e_v. Specifically, the new edge will be comprised of two arcs,
  n_u and n_v.  In u's (v's) adjacency list, n_u (n_v) will be added
  so that it is indicated by e_u's (e_v's) e_ulink (e_vlink).
+
  If e_u (or e_v) is not an arc, then e_ulink (e_vlink) indicates
  whether to prepend or append to the adjacency list for u (v).
+
+ NOTE: See notes on gp_AddEdge().
+
+ Returns OK on success, NOTOK on failure, NONEMBEDDABLE if adding the
+         edge would exceed the graph's arc capacity (the caller can
+         invoke gp_EnsureArcCapacity() ahead of time to avoid the
+         NONEMBEDDABLE result).
  ********************************************************************/
 
 int gp_InsertEdge(graphP theGraph, int u, int e_u, int e_ulink,
@@ -1765,8 +1818,9 @@ int gp_InsertEdge(graphP theGraph, int u, int e_u, int e_ulink,
         edgeMax = gp_EdgeInUseIndexBound(theGraph) - 1,
         upos, vpos;
 
-    if (theGraph == NULL || u < gp_GetFirstVertex(theGraph) || v < gp_GetFirstVertex(theGraph) ||
-        u > vertMax || v > vertMax ||
+    if (theGraph == NULL ||
+        u < gp_GetFirstVertex(theGraph) || u > vertMax ||
+        v < gp_GetFirstVertex(theGraph) || v > vertMax ||
         e_u > edgeMax || (e_u < gp_GetFirstEdge(theGraph) && gp_IsArc(e_u)) ||
         e_v > edgeMax || (e_v < gp_GetFirstEdge(theGraph) && gp_IsArc(e_v)) ||
         e_ulink < 0 || e_ulink > 1 || e_vlink < 0 || e_vlink > 1)
@@ -1781,6 +1835,13 @@ int gp_InsertEdge(graphP theGraph, int u, int e_u, int e_ulink,
     }
     else
         vpos = gp_EdgeInUseIndexBound(theGraph);
+
+    // NOTE: We do not _InitEdgeRec() nor gp_InitFlags() here because
+    // the vpos edge location is expected to be in initialized state,
+    // either from graph initialization/reinitialization, or from
+    // edge record reinitialization during gp_DeleteEdge, if vpos was
+    // an edge hole. This expectation includes edge record extensions
+    // in graph extensions.
 
     upos = gp_GetTwinArc(theGraph, vpos);
 
@@ -1800,17 +1861,23 @@ int gp_InsertEdge(graphP theGraph, int u, int e_u, int e_ulink,
 
  This function deletes the given edge record e and its twin, reducing the
  number of edges M in the graph.
- Before the e^th record is deleted, its 'nextLink' adjacency list neighbor
- is collected as the return result.  This is useful when iterating through
- an edge list and making deletions because the nextLink arc is the 'next'
- arc in the iteration, but it is hard to obtain *after* deleting e.
+
+ NOTE: This method reinitializes the edge records for e and its twin arc
+       in the base graph data structure. Extensions having parallel
+       edge record extension data elements must implement and use their
+       own edge deletion methods, which must then call gp_DeleteEdge().
+       Calling gp_DeleteEdge() does not currently clear data in extension
+       data structures.
+
+ Returns OK on success, NOTOK on failure
  ****************************************************************************/
 
-int gp_DeleteEdge(graphP theGraph, int e, int nextLink)
+int gp_DeleteEdge(graphP theGraph, int e)
 {
-    // Calculate the nextArc after e so that, when e is deleted, the return result
-    // informs a calling loop of the next edge to be processed.
-    int nextArc = gp_GetAdjacentArc(theGraph, e, nextLink);
+    if (theGraph == NULL ||
+        e < gp_GetFirstEdge(theGraph) || e >= gp_EdgeInUseIndexBound(theGraph) ||
+        gp_EdgeNotInUse(theGraph, e))
+        return NOTOK;
 
     // Delete the edge records e and eTwin from their adjacency lists.
     gp_DetachArc(theGraph, e);
@@ -1832,11 +1899,14 @@ int gp_DeleteEdge(graphP theGraph, int e, int nextLink)
     // then record a new hole in the edge array. */
     if (e < gp_EdgeInUseIndexBound(theGraph))
     {
+        if (theGraph->edgeHoles->size + 1 >= theGraph->edgeHoles->capacity)
+            return NOTOK;
+
         sp_Push(theGraph->edgeHoles, e);
     }
 
     // Return the previously calculated successor of e.
-    return nextArc;
+    return OK;
 }
 
 /********************************************************************
@@ -1894,7 +1964,7 @@ void _HideEdge(graphP theGraph, int e)
 
 /********************************************************************
  gp_RestoreEdge()
- This routine reinserts two two arcs of an edge into the adjacency
+ This routine reinserts two arcs of an edge into the adjacency
  lists of the edge's endpoints, the arcs having been previously
  removed by gp_HideEdge().
 
@@ -2483,7 +2553,7 @@ int _SetEdgeType(graphP theGraph, int u, int v)
 
 int _DeleteUnmarkedEdgesInBicomp(graphP theGraph, int BicompRoot)
 {
-    int V, e;
+    int V, e, eNext;
     int stackBottom = sp_GetCurrentSize(theGraph->theStack);
 
     sp_Push(theGraph->theStack, BicompRoot);
@@ -2497,7 +2567,10 @@ int _DeleteUnmarkedEdgesInBicomp(graphP theGraph, int BicompRoot)
             if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_CHILD)
                 sp_Push(theGraph->theStack, gp_GetNeighbor(theGraph, e));
 
-            e = gp_GetEdgeVisited(theGraph, e) ? gp_GetNextArc(theGraph, e) : gp_DeleteEdge(theGraph, e, 0);
+            eNext = gp_GetNextArc(theGraph, e);
+            if (!gp_GetEdgeVisited(theGraph, e))
+                gp_DeleteEdge(theGraph, e);
+            e = eNext;
         }
     }
     return OK;
