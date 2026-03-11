@@ -1460,12 +1460,15 @@ int gp_GetNeighborEdgeRecord(graphP theGraph, int u, int v)
 {
     int e;
 
-#ifdef DEBUG
     if (theGraph == NULL ||
         u < gp_GetFirstVertex(theGraph) || u >= gp_VertexIndexBound(theGraph) ||
         v < gp_GetFirstVertex(theGraph) || v >= gp_VertexIndexBound(theGraph))
-        return NIL + NOTOK - NOTOK;
+    {
+#ifdef DEBUG
+        NOTOK;
 #endif
+        return NIL;
+    }
 
     e = gp_GetFirstArc(theGraph, u);
     while (gp_IsArc(e))
@@ -1498,11 +1501,14 @@ int gp_GetVertexDegree(graphP theGraph, int v)
 {
     int e, degree;
 
-#ifdef DEBUG
     if (theGraph == NULL ||
         v < gp_GetFirstVertex(theGraph) || v >= gp_VertexIndexBound(theGraph))
-        return 0 + NOTOK - NOTOK;
+    {
+#ifdef DEBUG
+        NOTOK;
 #endif
+        return 0;
+    }
 
     degree = 0;
 
@@ -1533,11 +1539,14 @@ int gp_GetVertexInDegree(graphP theGraph, int v)
 {
     int e, degree;
 
-#ifdef DEBUG
     if (theGraph == NULL ||
         v < gp_GetFirstVertex(theGraph) || v >= gp_VertexIndexBound(theGraph))
-        return 0 + NOTOK - NOTOK;
+    {
+#ifdef DEBUG
+        NOTOK;
 #endif
+        return 0;
+    }
 
     degree = 0;
 
@@ -1569,11 +1578,14 @@ int gp_GetVertexOutDegree(graphP theGraph, int v)
 {
     int e, degree;
 
-#ifdef DEBUG
     if (theGraph == NULL ||
         v < gp_GetFirstVertex(theGraph) || v >= gp_VertexIndexBound(theGraph))
-        return 0 + NOTOK - NOTOK;
+    {
+#ifdef DEBUG
+        NOTOK;
 #endif
+        return 0;
+    }
 
     degree = 0;
 
