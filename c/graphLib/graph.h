@@ -77,7 +77,6 @@ extern "C"
     int gp_SortVertices(graphP theGraph);
     int gp_LowpointAndLeastAncestor(graphP theGraph);
     int gp_LeastAncestor(graphP theGraph);
-    int gp_PreprocessForEmbedding(graphP theGraph);
 
     int gp_Embed(graphP theGraph, int embedFlags);
     int gp_TestEmbedResultIntegrity(graphP theGraph, graphP origGraph, int embedResult);

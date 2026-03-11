@@ -139,6 +139,9 @@ int gp_CreateDFSTree(graphP theGraph)
 
 int gp_SortVertices(graphP theGraph)
 {
+    if (theGraph == NULL)
+        return NOTOK;
+
     return theGraph->functions.fpSortVertices(theGraph);
 }
 
@@ -254,11 +257,13 @@ int _SortVertices(graphP theGraph)
 
 int gp_LowpointAndLeastAncestor(graphP theGraph)
 {
-    stackP theStack = theGraph->theStack;
+    stackP theStack = NULL;
     int v, u, uneighbor, e, L, leastAncestor;
 
     if (theGraph == NULL)
         return NOTOK;
+
+    theStack = theGraph->theStack;
 
     if (!(theGraph->internalFlags & FLAGS_DFSNUMBERED))
         if (gp_CreateDFSTree(theGraph) != OK)
@@ -377,11 +382,13 @@ int gp_LowpointAndLeastAncestor(graphP theGraph)
 
 int gp_LeastAncestor(graphP theGraph)
 {
-    stackP theStack = theGraph->theStack;
+    stackP theStack = NULL;
     int v, u, uneighbor, e, leastAncestor;
 
     if (theGraph == NULL)
         return NOTOK;
+
+    theStack = theGraph->theStack;
 
     if (!(theGraph->internalFlags & FLAGS_DFSNUMBERED))
         if (gp_CreateDFSTree(theGraph) != OK)

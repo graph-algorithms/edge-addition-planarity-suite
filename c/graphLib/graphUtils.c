@@ -385,7 +385,7 @@ void _ReinitializeGraph(graphP theGraph)
  ********************************************************************/
 int gp_GetArcCapacity(graphP theGraph)
 {
-    return theGraph->arcCapacity - gp_GetFirstEdge(theGraph);
+    return theGraph == NULL ? 0 : (theGraph->arcCapacity - gp_GetFirstEdge(theGraph));
 }
 
 /********************************************************************
@@ -1427,8 +1427,19 @@ int gp_CreateRandomGraphEx(graphP theGraph, int numEdges)
 
 int gp_IsNeighbor(graphP theGraph, int u, int v)
 {
-    int e = gp_GetFirstArc(theGraph, u);
+    int e = NIL;
 
+    if (theGraph == NULL ||
+        u < gp_GetFirstVertex(theGraph) || u >= gp_VertexIndexBound(theGraph) ||
+        v < gp_GetFirstVertex(theGraph) || v >= gp_VertexIndexBound(theGraph))
+    {
+#ifdef DEBUG
+        NOTOK;
+#endif
+        return FALSE;
+    }
+
+    e = gp_GetFirstArc(theGraph, u);
     while (gp_IsArc(e))
     {
         if (gp_GetNeighbor(theGraph, e) == v)
@@ -1458,7 +1469,7 @@ int gp_IsNeighbor(graphP theGraph, int u, int v)
 
 int gp_GetNeighborEdgeRecord(graphP theGraph, int u, int v)
 {
-    int e;
+    int e = NIL;
 
     if (theGraph == NULL ||
         u < gp_GetFirstVertex(theGraph) || u >= gp_VertexIndexBound(theGraph) ||
@@ -1826,12 +1837,15 @@ int gp_DynamicAddEdge(graphP theGraph, int u, int ulink, int v, int vlink)
 int gp_InsertEdge(graphP theGraph, int u, int e_u, int e_ulink,
                   int v, int e_v, int e_vlink)
 {
-    int vertMax = gp_GetLastVirtualVertex(theGraph),
-        edgeMax = gp_EdgeInUseIndexBound(theGraph) - 1,
-        upos, vpos;
+    int vertMax, edgeMax, upos, vpos;
 
-    if (theGraph == NULL ||
-        u < gp_GetFirstVertex(theGraph) || u > vertMax ||
+    if (theGraph == NULL)
+        return NOTOK;
+
+    vertMax = gp_GetLastVirtualVertex(theGraph);
+    edgeMax = gp_EdgeInUseIndexBound(theGraph) - 1;
+
+    if (u < gp_GetFirstVertex(theGraph) || u > vertMax ||
         v < gp_GetFirstVertex(theGraph) || v > vertMax ||
         e_u > edgeMax || (e_u < gp_GetFirstEdge(theGraph) && gp_IsArc(e_u)) ||
         e_v > edgeMax || (e_v < gp_GetFirstEdge(theGraph) && gp_IsArc(e_v)) ||
@@ -1965,6 +1979,16 @@ void _RestoreArc(graphP theGraph, int arc)
 
 void gp_HideEdge(graphP theGraph, int e)
 {
+    if (theGraph == NULL ||
+        e < gp_GetFirstEdge(theGraph) || e >= gp_EdgeInUseIndexBound(theGraph) ||
+        gp_EdgeNotInUse(theGraph, e))
+    {
+#ifdef DEBUG
+        NOTOK;
+#endif
+        return;
+    }
+
     theGraph->functions.fpHideEdge(theGraph, e);
 }
 
@@ -1993,6 +2017,16 @@ void _HideEdge(graphP theGraph, int e)
 
 void gp_RestoreEdge(graphP theGraph, int e)
 {
+    if (theGraph == NULL ||
+        e < gp_GetFirstEdge(theGraph) || e >= gp_EdgeInUseIndexBound(theGraph) ||
+        gp_EdgeNotInUse(theGraph, e))
+    {
+#ifdef DEBUG
+        NOTOK;
+#endif
+        return;
+    }
+
     theGraph->functions.fpRestoreEdge(theGraph, e);
 }
 
@@ -2089,8 +2123,11 @@ int _RestoreHiddenEdges(graphP theGraph, int stackBottom)
 
 int gp_HideVertex(graphP theGraph, int vertex)
 {
-    if (gp_IsNotVertex(vertex))
+    if (theGraph == NULL ||
+        vertex < gp_GetFirstVertex(theGraph) || vertex >= gp_VertexIndexBound(theGraph))
+    {
         return NOTOK;
+    }
 
     return theGraph->functions.fpHideVertex(theGraph, vertex);
 }
@@ -2132,8 +2169,12 @@ int _HideVertex(graphP theGraph, int vertex)
 
 int gp_ContractEdge(graphP theGraph, int e)
 {
-    if (gp_IsNotArc(e))
+    if (theGraph == NULL ||
+        e < gp_GetFirstEdge(theGraph) || e >= gp_EdgeInUseIndexBound(theGraph) ||
+        gp_EdgeNotInUse(theGraph, e))
+    {
         return NOTOK;
+    }
 
     return theGraph->functions.fpContractEdge(theGraph, e);
 }
@@ -2192,6 +2233,16 @@ int _ContractEdge(graphP theGraph, int e)
 
 int gp_IdentifyVertices(graphP theGraph, int u, int v, int eBefore)
 {
+    if (theGraph == NULL ||
+        u < gp_GetFirstVertex(theGraph) || u >= gp_VertexIndexBound(theGraph) ||
+        v < gp_GetFirstVertex(theGraph) || v >= gp_VertexIndexBound(theGraph) ||
+        (eBefore != NIL && eBefore < gp_GetFirstEdge(theGraph)) ||
+        eBefore >= gp_EdgeInUseIndexBound(theGraph) ||
+        (eBefore != NIL && gp_EdgeNotInUse(theGraph, eBefore)))
+    {
+        return NOTOK;
+    }
+
     return theGraph->functions.fpIdentifyVertices(theGraph, u, v, eBefore);
 }
 
@@ -2372,6 +2423,9 @@ int _IdentifyVertices(graphP theGraph, int u, int v, int eBefore)
 
 int gp_RestoreVertex(graphP theGraph)
 {
+    if (theGraph == NULL)
+        return NOTOK;
+
     return theGraph->functions.fpRestoreVertex(theGraph);
 }
 
@@ -2457,6 +2511,9 @@ int _RestoreVertex(graphP theGraph)
 
 int gp_RestoreVertices(graphP theGraph)
 {
+    if (theGraph == NULL)
+        return NOTOK;
+
     while (sp_NonEmpty(theGraph->theStack))
     {
         if (gp_RestoreVertex(theGraph) != OK)

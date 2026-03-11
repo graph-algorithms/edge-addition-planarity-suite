@@ -428,7 +428,12 @@ int _ReadLEDAGraph(graphP theGraph, strOrFileP inputContainer)
 
 int gp_Read(graphP theGraph, char const *FileName)
 {
-    strOrFileP inputContainer = sf_New(NULL, FileName, READTEXT);
+    strOrFileP inputContainer = NULL;
+
+    if (theGraph == NULL || FileName == NULL)
+        return NOTOK;
+
+    inputContainer = sf_New(NULL, FileName, READTEXT);
     if (inputContainer == NULL)
         return NOTOK;
 
@@ -449,7 +454,12 @@ int gp_Read(graphP theGraph, char const *FileName)
 
 int gp_ReadFromString(graphP theGraph, char *inputStr)
 {
-    strOrFileP inputContainer = sf_New(inputStr, NULL, READTEXT);
+    strOrFileP inputContainer = NULL;
+
+    if (theGraph == NULL || inputStr == NULL)
+        return NOTOK;
+
+    inputContainer = sf_New(inputStr, NULL, READTEXT);
     if (inputContainer == NULL)
         return NOTOK;
 
