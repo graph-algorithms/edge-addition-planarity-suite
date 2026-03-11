@@ -16,6 +16,9 @@ extern "C"
 {
 #endif
 
+// The "c" directory appears in this include directive because this
+// header file gets installed into the root of the planarity headers
+// directory, so the directive must first enter the "c" subdirectory.
 #include "c/graphLib/graphLib.h"
 
 #ifdef __cplusplus

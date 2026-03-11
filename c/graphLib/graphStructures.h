@@ -68,7 +68,8 @@ extern "C"
 #define gp_IsArc(e) (e)
 #define gp_IsNotArc(e) (!(e))
 #define gp_GetFirstEdge(theGraph) (2)
-#else
+
+#else  // Using Slower 0-based Arrays
 #define gp_IsArc(e) ((e) != NIL)
 #define gp_IsNotArc(e) ((e) == NIL)
 #define gp_GetFirstEdge(theGraph) (0)
@@ -237,7 +238,8 @@ extern "C"
 #define gp_GetFirstVirtualVertex(theGraph) (theGraph->N + 1)
 #define gp_GetLastVirtualVertex(theGraph) (theGraph->N + theGraph->NV)
 #define gp_VirtualVertexInRange(theGraph, v) ((v) <= theGraph->N + theGraph->NV)
-#else
+
+#else // Using Slower 0-based Arrays
 #define gp_IsVertex(v) ((v) != NIL)
 #define gp_IsNotVertex(v) ((v) == NIL)
 
