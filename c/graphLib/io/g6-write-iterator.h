@@ -23,8 +23,8 @@ extern "C"
         strOrFileP g6Output;
         int numGraphsWritten;
 
-        int graphOrder;
-        int numCharsForGraphOrder;
+        int order;
+        int numCharsForOrder;
         int numCharsForGraphEncoding;
         int currGraphBuffSize;
         char *currGraphBuff;
@@ -36,35 +36,20 @@ extern "C"
 
     typedef G6WriteIterator *G6WriteIteratorP;
 
-    int allocateG6WriteIterator(G6WriteIteratorP *, graphP);
-    bool _isG6WriteIteratorAllocated(G6WriteIteratorP);
+    int g6_NewWriter(G6WriteIteratorP *, graphP);
+    bool g6_IsWriterInitialized(G6WriteIteratorP);
 
-    int getNumGraphsWritten(G6WriteIteratorP, int *);
-    int getOrderOfGraphToWrite(G6WriteIteratorP, int *);
-    int getPointerToGraphToWrite(G6WriteIteratorP, graphP *);
+    int g6_GetNumGraphsWritten(G6WriteIteratorP, int *);
+    int g6_GetOrderFromWriter(G6WriteIteratorP, int *);
+    int g6_GetGraphFromWriter(G6WriteIteratorP, graphP *);
 
-    int beginG6WriteIterationToG6String(G6WriteIteratorP);
-    int beginG6WriteIterationToG6FilePath(G6WriteIteratorP, char *);
-    int beginG6WriteIterationToG6StrOrFile(G6WriteIteratorP, strOrFileP);
-    int _beginG6WriteIteration(G6WriteIteratorP);
-    void _precomputeColumnOffsets(int *, int);
+    int g6_InitWriterToString(G6WriteIteratorP);
+    int g6_InitWriterToFile(G6WriteIteratorP, char *);
+    int g6_InitWriterToStrOrFile(G6WriteIteratorP, strOrFileP);
 
-    int writeGraphUsingG6WriteIterator(G6WriteIteratorP);
+    int g6_WriteGraph(G6WriteIteratorP);
 
-    int _encodeAdjMatAsG6(G6WriteIteratorP);
-    int _getFirstEdge(graphP, int *, int *, int *);
-    int _getNextEdge(graphP, int *, int *, int *);
-    int _getNextInUseEdge(graphP, int *, int *, int *);
-
-    int _printEncodedGraph(G6WriteIteratorP);
-
-    int endG6WriteIteration(G6WriteIteratorP);
-
-    int freeG6WriteIterator(G6WriteIteratorP *);
-
-    int _WriteGraphToG6FilePath(graphP, char *);
-    int _WriteGraphToG6String(graphP, char **);
-    int _WriteGraphToG6StrOrFile(graphP, strOrFileP, char **);
+    void g6_FreeWriter(G6WriteIteratorP *);
 
 #ifdef __cplusplus
 }
