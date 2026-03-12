@@ -10,7 +10,21 @@ See the LICENSE.TXT file for licensing information.
 #include "g6-read-iterator.h"
 #include "g6-api-utilities.h"
 
-int allocateG6ReadIterator(G6ReadIteratorP *ppG6ReadIterator, graphP pGraph)
+/* Private function declarations (exported within system) */
+int _g6_ReadGraphFromFile(graphP, char *);
+int _g6_ReadGraphFromString(graphP, char *);
+int _g6_ReadGraphFromStrOrFile(graphP, strOrFileP);
+
+/* Private functions */
+int _g6_InitReader(G6ReadIteratorP);
+int _g6_ValidateHeader(strOrFileP);
+int _g6_ValidateFirstChar(char, const int);
+int _g6_DetermineOrderFromInput(strOrFileP, int *);
+int _g6_ValidateOrderOfEncodedGraph(char *, int);
+int _g6_ValidateGraphEncoding(char *, const int, const int);
+int _g6_DecodeGraph(char *, const int, const int, graphP);
+
+int g6_NewReader(G6ReadIteratorP *ppG6ReadIterator, graphP pGraph)
 {
     int exitCode = OK;
 
@@ -20,7 +34,7 @@ int allocateG6ReadIterator(G6ReadIteratorP *ppG6ReadIterator, graphP pGraph)
         return NOTOK;
     }
 
-    // numGraphsRead, graphOrder, numCharsForGraphOrder,
+    // numGraphsRead, order, numCharsForOrder,
     // numCharsForGraphEncoding, and currGraphBuffSize all set to 0
     (*ppG6ReadIterator) = (G6ReadIteratorP)calloc(1, sizeof(G6ReadIterator));
 
@@ -36,10 +50,7 @@ int allocateG6ReadIterator(G6ReadIteratorP *ppG6ReadIterator, graphP pGraph)
     {
         ErrorMessage("Must allocate graph to be used by G6ReadIterator.\n");
 
-        exitCode = freeG6ReadIterator(ppG6ReadIterator);
-
-        if (exitCode != OK)
-            ErrorMessage("Unable to free the G6ReadIterator.\n");
+        g6_FreeReader(ppG6ReadIterator);
     }
     else
     {
@@ -49,14 +60,14 @@ int allocateG6ReadIterator(G6ReadIteratorP *ppG6ReadIterator, graphP pGraph)
     return exitCode;
 }
 
-bool _isG6ReadIteratorAllocated(G6ReadIteratorP pG6ReadIterator)
+bool g6_IsReaderInitialized(G6ReadIteratorP pG6ReadIterator)
 {
-    bool g6ReadIteratorIsAllocated = true;
+    bool readerInitialized = true;
 
     if (pG6ReadIterator == NULL)
     {
         ErrorMessage("G6ReadIterator is NULL.\n");
-        g6ReadIteratorIsAllocated = false;
+        readerInitialized = false;
     }
     else
     {
@@ -64,37 +75,34 @@ bool _isG6ReadIteratorAllocated(G6ReadIteratorP pG6ReadIterator)
         {
             ErrorMessage("G6ReadIterator's g6Input string-or-file container "
                          "is not valid.\n");
-            g6ReadIteratorIsAllocated = false;
+            readerInitialized = false;
         }
         if (pG6ReadIterator->currGraphBuff == NULL)
         {
             ErrorMessage("G6ReadIterator's currGraphBuff is NULL.\n");
-            g6ReadIteratorIsAllocated = false;
+            readerInitialized = false;
         }
         if (pG6ReadIterator->currGraph == NULL)
         {
             ErrorMessage("G6ReadIterator's currGraph is NULL.\n");
-            g6ReadIteratorIsAllocated = false;
+            readerInitialized = false;
         }
     }
 
-    return g6ReadIteratorIsAllocated;
+    return readerInitialized;
 }
 
-bool contentsExhausted(G6ReadIteratorP pG6ReadIterator)
+bool g6_EndReached(G6ReadIteratorP pG6ReadIterator)
 {
-    if (pG6ReadIterator == NULL ||
-        pG6ReadIterator->currGraph == NULL ||
-        pG6ReadIterator->contentsExhausted)
-    {
+    if (pG6ReadIterator == NULL)
         return true;
-    }
-    return false;
+
+    return pG6ReadIterator->endReached;
 }
 
-int getNumGraphsRead(G6ReadIteratorP pG6ReadIterator, int *pNumGraphsRead)
+int g6_GetNumGraphsRead(G6ReadIteratorP pG6ReadIterator, int *pNumGraphsRead)
 {
-    if (_isG6ReadIteratorAllocated(pG6ReadIterator) == false)
+    if (g6_IsReaderInitialized(pG6ReadIterator) == false)
     {
         ErrorMessage("Unable to get numGraphsRead, as G6ReadIterator is not "
                      "allocated.\n");
@@ -107,7 +115,7 @@ int getNumGraphsRead(G6ReadIteratorP pG6ReadIterator, int *pNumGraphsRead)
     return OK;
 }
 
-int getOrderOfGraphToRead(G6ReadIteratorP pG6ReadIterator, int *pGraphOrder)
+int g6_GetOrderFromReader(G6ReadIteratorP pG6ReadIterator, int *pOrder)
 {
     if (pG6ReadIterator == NULL)
     {
@@ -115,12 +123,12 @@ int getOrderOfGraphToRead(G6ReadIteratorP pG6ReadIterator, int *pGraphOrder)
         return NOTOK;
     }
 
-    (*pGraphOrder) = pG6ReadIterator->graphOrder;
+    (*pOrder) = pG6ReadIterator->order;
 
     return OK;
 }
 
-int getPointerToGraphReadIn(G6ReadIteratorP pG6ReadIterator, graphP *ppGraph)
+int g6_GetReaderGraph(G6ReadIteratorP pG6ReadIterator, graphP *ppGraph)
 {
     if (pG6ReadIterator == NULL)
     {
@@ -133,21 +141,21 @@ int getPointerToGraphReadIn(G6ReadIteratorP pG6ReadIterator, graphP *ppGraph)
     return OK;
 }
 
-int beginG6ReadIterationFromG6String(G6ReadIteratorP pG6ReadIterator, char *inputString)
+int g6_InitReaderFromString(G6ReadIteratorP pG6ReadIterator, char *inputString)
 {
-    return beginG6ReadIterationFromG6StrOrFile(
+    return g6_InitReaderFromStrOrFile(
         pG6ReadIterator,
         sf_New(inputString, NULL, READTEXT));
 }
 
-int beginG6ReadIterationFromG6FilePath(G6ReadIteratorP pG6ReadIterator, char const *const infileName)
+int g6_InitReaderFromFile(G6ReadIteratorP pG6ReadIterator, char const *const infileName)
 {
-    return beginG6ReadIterationFromG6StrOrFile(
+    return g6_InitReaderFromStrOrFile(
         pG6ReadIterator,
         sf_New(NULL, infileName, READTEXT));
 }
 
-int beginG6ReadIterationFromG6StrOrFile(G6ReadIteratorP pG6ReadIterator, strOrFileP g6InputContainer)
+int g6_InitReaderFromStrOrFile(G6ReadIteratorP pG6ReadIterator, strOrFileP g6InputContainer)
 {
     if (
         sf_ValidateStrOrFile(g6InputContainer) != OK ||
@@ -159,16 +167,16 @@ int beginG6ReadIterationFromG6StrOrFile(G6ReadIteratorP pG6ReadIterator, strOrFi
 
     pG6ReadIterator->g6Input = g6InputContainer;
 
-    return _beginG6ReadIteration(pG6ReadIterator);
+    return _g6_InitReader(pG6ReadIterator);
 }
 
-int _beginG6ReadIteration(G6ReadIteratorP pG6ReadIterator)
+int _g6_InitReader(G6ReadIteratorP pG6ReadIterator)
 {
     int exitCode = OK;
     char charConfirmation = EOF;
     int firstChar = '\0';
     int lineNum = 1;
-    int graphOrder = NIL;
+    int order = NIL;
     strOrFileP g6Input = pG6ReadIterator->g6Input;
     char messageContents[MAXLINE + 1];
     messageContents[0] = '\0';
@@ -190,7 +198,7 @@ int _beginG6ReadIteration(G6ReadIteratorP pG6ReadIterator)
 
         if (firstChar == '>')
         {
-            exitCode = _processAndCheckHeader(g6Input);
+            exitCode = _g6_ValidateHeader(g6Input);
             if (exitCode != OK)
             {
                 ErrorMessage("Unable to process and check .g6 infile header.\n");
@@ -208,12 +216,12 @@ int _beginG6ReadIteration(G6ReadIteratorP pG6ReadIterator)
         return NOTOK;
     }
 
-    if (!_firstCharIsValid((char)firstChar, lineNum))
+    if (_g6_ValidateFirstChar((char)firstChar, lineNum) != OK)
         return NOTOK;
 
     // Despite the general specification indicating that n \in [0, 68,719,476,735],
     // in practice n will be limited such that an integer will suffice in storing it.
-    exitCode = _getGraphOrder(g6Input, &graphOrder);
+    exitCode = _g6_DetermineOrderFromInput(g6Input, &order);
 
     if (exitCode != OK)
     {
@@ -224,41 +232,41 @@ int _beginG6ReadIteration(G6ReadIteratorP pG6ReadIterator)
 
     if (gp_getN(pG6ReadIterator->currGraph) == 0)
     {
-        exitCode = gp_InitGraph(pG6ReadIterator->currGraph, graphOrder);
+        exitCode = gp_InitGraph(pG6ReadIterator->currGraph, order);
 
         if (exitCode != OK)
         {
-            sprintf(messageContents, "Unable to initialize graph datastructure with order %d for graph on line %d of the .g6 file.\n", graphOrder, lineNum);
+            sprintf(messageContents, "Unable to initialize graph datastructure with order %d for graph on line %d of the .g6 file.\n", order, lineNum);
             ErrorMessage(messageContents);
             return exitCode;
         }
 
-        pG6ReadIterator->graphOrder = graphOrder;
+        pG6ReadIterator->order = order;
     }
     else
     {
-        if (gp_getN(pG6ReadIterator->currGraph) != graphOrder)
+        if (gp_getN(pG6ReadIterator->currGraph) != order)
         {
             sprintf(messageContents, "Graph datastructure passed to G6ReadIterator already initialized with graph order %d,\n", gp_getN(pG6ReadIterator->currGraph));
             ErrorMessage(messageContents);
-            sprintf(messageContents, "\twhich doesn't match the graph order %d specified in the file.\n", graphOrder);
+            sprintf(messageContents, "\twhich doesn't match the graph order %d specified in the file.\n", order);
             ErrorMessage(messageContents);
             return NOTOK;
         }
         else
         {
             gp_ReinitializeGraph(pG6ReadIterator->currGraph);
-            pG6ReadIterator->graphOrder = graphOrder;
+            pG6ReadIterator->order = order;
         }
     }
 
     // Ensures zero-based flag is set regardless of whether the graph was initialized or reinitialized.
     pG6ReadIterator->currGraph->internalFlags |= FLAGS_ZEROBASEDIO;
 
-    pG6ReadIterator->numCharsForGraphOrder = _getNumCharsForGraphOrder(graphOrder);
-    pG6ReadIterator->numCharsForGraphEncoding = _getNumCharsForGraphEncoding(graphOrder);
+    pG6ReadIterator->numCharsForOrder = _getNumCharsForGraphOrder(order);
+    pG6ReadIterator->numCharsForGraphEncoding = _getNumCharsForGraphEncoding(order);
     // Must add 3 bytes for newline, possible carriage return, and null terminator
-    pG6ReadIterator->currGraphBuffSize = pG6ReadIterator->numCharsForGraphOrder + pG6ReadIterator->numCharsForGraphEncoding + 3;
+    pG6ReadIterator->currGraphBuffSize = pG6ReadIterator->numCharsForOrder + pG6ReadIterator->numCharsForGraphEncoding + 3;
     pG6ReadIterator->currGraphBuff = (char *)calloc(pG6ReadIterator->currGraphBuffSize, sizeof(char));
 
     if (pG6ReadIterator->currGraphBuff == NULL)
@@ -270,12 +278,12 @@ int _beginG6ReadIteration(G6ReadIteratorP pG6ReadIterator)
     return exitCode;
 }
 
-int _processAndCheckHeader(strOrFileP g6Input)
+int _g6_ValidateHeader(strOrFileP g6Input)
 {
-    int exitCode = OK;
-    char const *correctG6Header = ">>graph6<<";
+    char const *g6Header = ">>graph6<<";
     char const *sparse6Header = ">>sparse6<";
     char const *digraph6Header = ">>digraph6";
+
     char headerCandidateChars[11];
     headerCandidateChars[0] = '\0';
 
@@ -292,7 +300,7 @@ int _processAndCheckHeader(strOrFileP g6Input)
 
     headerCandidateChars[10] = '\0';
 
-    if (strcmp(correctG6Header, headerCandidateChars) != 0)
+    if (strcmp(g6Header, headerCandidateChars) != 0)
     {
         if (strcmp(sparse6Header, headerCandidateChars) == 0)
             ErrorMessage("Graph file is sparse6 format, which is not supported.\n");
@@ -301,31 +309,28 @@ int _processAndCheckHeader(strOrFileP g6Input)
         else
             ErrorMessage("Invalid header for .g6 file.\n");
 
-        exitCode = NOTOK;
+        return NOTOK;
     }
 
-    return exitCode;
+    return OK;
 }
 
-bool _firstCharIsValid(char c, const int lineNum)
+int _g6_ValidateFirstChar(char c, const int lineNum)
 {
-    bool isValidFirstChar = false;
-
     if (strchr(":;&", c) != NULL)
     {
         char messageContents[MAXLINE + 1];
         sprintf(messageContents, "Invalid first character on line %d, i.e. one of ':', ';', or '&'; aborting.\n", lineNum);
         ErrorMessage(messageContents);
-    }
-    else
-        isValidFirstChar = true;
 
-    return isValidFirstChar;
+        return NOTOK;
+    }
+
+    return OK;
 }
 
-int _getGraphOrder(strOrFileP g6Input, int *graphOrder)
+int _g6_DetermineOrderFromInput(strOrFileP g6Input, int *order)
 {
-    int exitCode = OK;
     int n = 0;
     int graphChar = '\0';
 
@@ -368,28 +373,29 @@ int _getGraphOrder(strOrFileP g6Input, int *graphOrder)
         return NOTOK;
     }
 
-    (*graphOrder) = n;
+    (*order) = n;
 
-    return exitCode;
+    return OK;
 }
 
-int readGraphUsingG6ReadIterator(G6ReadIteratorP pG6ReadIterator)
+int g6_ReadGraph(G6ReadIteratorP pG6ReadIterator)
 {
     int exitCode = OK;
+
     strOrFileP g6Input = NULL;
     int numGraphsRead = 0;
     char *currGraphBuff = NULL;
     char firstChar = '\0';
     char *graphEncodingChars = NULL;
     graphP currGraph = NULL;
-    const int graphOrder = pG6ReadIterator == NULL ? 0 : pG6ReadIterator->graphOrder;
-    const int numCharsForGraphOrder = pG6ReadIterator == NULL ? 0 : pG6ReadIterator->numCharsForGraphOrder;
+    const int order = pG6ReadIterator == NULL ? 0 : pG6ReadIterator->order;
+    const int numCharsForOrder = pG6ReadIterator == NULL ? 0 : pG6ReadIterator->numCharsForOrder;
     const int numCharsForGraphEncoding = pG6ReadIterator == NULL ? 0 : pG6ReadIterator->numCharsForGraphEncoding;
     const int currGraphBuffSize = pG6ReadIterator == NULL ? 0 : pG6ReadIterator->currGraphBuffSize;
     char messageContents[MAXLINE + 1];
     messageContents[0] = '\0';
 
-    if (!_isG6ReadIteratorAllocated(pG6ReadIterator))
+    if (!g6_IsReaderInitialized(pG6ReadIterator))
     {
         ErrorMessage("G6ReadIterator is not allocated.\n");
         return NOTOK;
@@ -416,7 +422,7 @@ int readGraphUsingG6ReadIterator(G6ReadIteratorP pG6ReadIterator)
         numGraphsRead++;
         firstChar = currGraphBuff[0];
 
-        if (!_firstCharIsValid(firstChar, numGraphsRead))
+        if (_g6_ValidateFirstChar(firstChar, numGraphsRead) != OK)
             return NOTOK;
 
         // From https://stackoverflow.com/a/28462221, strcspn finds the index of the first
@@ -426,7 +432,7 @@ int readGraphUsingG6ReadIterator(G6ReadIteratorP pG6ReadIterator)
         // If the line was too long, then we would have placed the null terminator at the final
         // index (where it already was; see strcpn docs), and the length of the string will be
         // longer than the line should have been, i.e. orderOffset + numCharsForGraphRepr
-        if ((int)strlen(currGraphBuff) != (((numGraphsRead == 1) ? 0 : numCharsForGraphOrder) + numCharsForGraphEncoding))
+        if ((int)strlen(currGraphBuff) != (((numGraphsRead == 1) ? 0 : numCharsForOrder) + numCharsForGraphEncoding))
         {
             sprintf(messageContents, "Invalid line length read on line %d\n", numGraphsRead);
             ErrorMessage(messageContents);
@@ -435,7 +441,7 @@ int readGraphUsingG6ReadIterator(G6ReadIteratorP pG6ReadIterator)
 
         if (numGraphsRead > 1)
         {
-            exitCode = _checkGraphOrder(currGraphBuff, graphOrder);
+            exitCode = _g6_ValidateOrderOfEncodedGraph(currGraphBuff, order);
 
             if (exitCode != OK)
             {
@@ -449,9 +455,9 @@ int readGraphUsingG6ReadIterator(G6ReadIteratorP pG6ReadIterator)
         // order, so there's no need to apply the offset. On subsequent lines, the orderOffset
         // must be applied so that we are only starting validation on the byte corresponding to
         // the encoding of the adjacency matrix.
-        graphEncodingChars = (numGraphsRead == 1) ? currGraphBuff : currGraphBuff + numCharsForGraphOrder;
+        graphEncodingChars = (numGraphsRead == 1) ? currGraphBuff : currGraphBuff + numCharsForOrder;
 
-        exitCode = _validateGraphEncoding(graphEncodingChars, graphOrder, numCharsForGraphEncoding);
+        exitCode = _g6_ValidateGraphEncoding(graphEncodingChars, order, numCharsForGraphEncoding);
 
         if (exitCode != OK)
         {
@@ -467,7 +473,7 @@ int readGraphUsingG6ReadIterator(G6ReadIteratorP pG6ReadIterator)
             currGraph->internalFlags |= FLAGS_ZEROBASEDIO;
         }
 
-        exitCode = _decodeGraph(graphEncodingChars, graphOrder, numCharsForGraphEncoding, currGraph);
+        exitCode = _g6_DecodeGraph(graphEncodingChars, order, numCharsForGraphEncoding, currGraph);
 
         if (exitCode != OK)
         {
@@ -481,15 +487,14 @@ int readGraphUsingG6ReadIterator(G6ReadIteratorP pG6ReadIterator)
     else
     {
         pG6ReadIterator->currGraph = NULL;
-        pG6ReadIterator->contentsExhausted = true;
+        pG6ReadIterator->endReached = true;
     }
 
     return exitCode;
 }
 
-int _checkGraphOrder(char *graphBuff, int graphOrder)
+int _g6_ValidateOrderOfEncodedGraph(char *graphBuff, int order)
 {
-    int exitCode = OK;
     int n = 0;
     char currChar = graphBuff[0];
 
@@ -520,35 +525,36 @@ int _checkGraphOrder(char *graphBuff, int graphOrder)
         return NOTOK;
     }
 
-    if (n != graphOrder)
+    if (n != order)
     {
         char messageContents[MAXLINE + 1];
-        sprintf(messageContents, "Graph order %d doesn't match expected graph order %d", n, graphOrder);
+        sprintf(messageContents, "Graph order %d doesn't match expected graph order %d", n, order);
         ErrorMessage(messageContents);
-        exitCode = NOTOK;
+        return NOTOK;
     }
 
-    return exitCode;
+    return OK;
 }
 
-int _validateGraphEncoding(char *graphBuff, const int graphOrder, const int numChars)
+int _g6_ValidateGraphEncoding(char *graphBuff, const int order, const int numChars)
 {
     int exitCode = OK;
-    int expectedNumPaddingZeroes = _getExpectedNumPaddingZeroes(graphOrder, numChars);
+
+    int expectedNumPaddingZeroes = _getExpectedNumPaddingZeroes(order, numChars);
     char finalByte = graphBuff[numChars - 1] - 63;
     int numPaddingZeroes = 0;
 
     // Num edges of the graph (and therefore the number of bits) is (n * (n-1))/2, and
     // since each resulting byte needs to correspond to an ascii character between 63 and 126,
     // each group is only comprised of 6 bits (to which we add 63 for the final byte value)
-    int expectedNumChars = _getNumCharsForGraphEncoding(graphOrder);
+    int expectedNumChars = _getNumCharsForGraphEncoding(order);
     int numCharsForGraphEncoding = strlen(graphBuff);
 
     if (expectedNumChars != numCharsForGraphEncoding)
     {
         char messageContents[MAXLINE + 1];
         messageContents[0] = '\0';
-        sprintf(messageContents, "Invalid number of bytes for graph of order %d; got %d but expected %d\n", graphOrder, numCharsForGraphEncoding, expectedNumChars);
+        sprintf(messageContents, "Invalid number of bytes for graph of order %d; got %d but expected %d\n", order, numCharsForGraphEncoding, expectedNumChars);
         ErrorMessage(messageContents);
         return NOTOK;
     }
@@ -588,18 +594,18 @@ int _validateGraphEncoding(char *graphBuff, const int graphOrder, const int numC
     return exitCode;
 }
 
-// Takes the character array graphBuff, the derived number of vertices graphOrder,
+// Takes the character array graphBuff, the derived number of vertices order,
 // and the numChars corresponding to the number of characters after the first byte
 // and performs the inverse transformation of the graph encoding: we subtract 63 from
 // each byte, then only process the 6 least significant bits of the resulting byte. For
 // the final byte, we determine how many padding zeroes to expect, and exclude them
 // from being processed. We index into the adjacency matrix by row and column, which
 // are incremented such that row ranges from 0 to one less than the column index.
-int _decodeGraph(char *graphBuff, const int graphOrder, const int numChars, graphP pGraph)
+int _g6_DecodeGraph(char *graphBuff, const int order, const int numChars, graphP pGraph)
 {
     int exitCode = OK;
 
-    int numPaddingZeroes = _getExpectedNumPaddingZeroes(graphOrder, numChars);
+    int numPaddingZeroes = _getExpectedNumPaddingZeroes(order, numChars);
 
     char currByte = '\0';
     int bitValue = 0;
@@ -608,7 +614,7 @@ int _decodeGraph(char *graphBuff, const int graphOrder, const int numChars, grap
 
     if (pGraph == NULL)
     {
-        ErrorMessage("Must initialize graph datastructure before invoking _decodeGraph.\n");
+        ErrorMessage("Must initialize graph datastructure before decoding the graph representation.\n");
         return NOTOK;
     }
 
@@ -646,36 +652,15 @@ int _decodeGraph(char *graphBuff, const int graphOrder, const int numChars, grap
     return exitCode;
 }
 
-int endG6ReadIteration(G6ReadIteratorP pG6ReadIterator)
+void g6_FreeReader(G6ReadIteratorP *ppG6ReadIterator)
 {
-    int exitCode = OK;
-
-    if (pG6ReadIterator != NULL)
-    {
-        if (pG6ReadIterator->g6Input != NULL)
-            sf_Free(&(pG6ReadIterator->g6Input));
-
-        if (pG6ReadIterator->currGraphBuff != NULL)
-        {
-            free(pG6ReadIterator->currGraphBuff);
-            pG6ReadIterator->currGraphBuff = NULL;
-        }
-    }
-
-    return exitCode;
-}
-
-int freeG6ReadIterator(G6ReadIteratorP *ppG6ReadIterator)
-{
-    int exitCode = OK;
-
     if (ppG6ReadIterator != NULL && (*ppG6ReadIterator) != NULL)
     {
         if ((*ppG6ReadIterator)->g6Input != NULL)
             sf_Free(&((*ppG6ReadIterator)->g6Input));
 
         (*ppG6ReadIterator)->numGraphsRead = 0;
-        (*ppG6ReadIterator)->graphOrder = 0;
+        (*ppG6ReadIterator)->order = 0;
 
         if ((*ppG6ReadIterator)->currGraphBuff != NULL)
         {
@@ -688,11 +673,9 @@ int freeG6ReadIterator(G6ReadIteratorP *ppG6ReadIterator)
         free((*ppG6ReadIterator));
         (*ppG6ReadIterator) = NULL;
     }
-
-    return exitCode;
 }
 
-int _ReadGraphFromG6FilePath(graphP pGraphToRead, char *pathToG6File)
+int _g6_ReadGraphFromFile(graphP pGraphToRead, char *pathToG6File)
 {
     char const *messageFormat = NULL;
     int charsAvailForStr = 0;
@@ -713,10 +696,10 @@ int _ReadGraphFromG6FilePath(graphP pGraphToRead, char *pathToG6File)
         return NOTOK;
     }
 
-    return _ReadGraphFromG6StrOrFile(pGraphToRead, inputContainer);
+    return _g6_ReadGraphFromStrOrFile(pGraphToRead, inputContainer);
 }
 
-int _ReadGraphFromG6String(graphP pGraphToRead, char *g6EncodedString)
+int _g6_ReadGraphFromString(graphP pGraphToRead, char *g6EncodedString)
 {
     strOrFileP inputContainer = NULL;
 
@@ -732,10 +715,10 @@ int _ReadGraphFromG6String(graphP pGraphToRead, char *g6EncodedString)
         return NOTOK;
     }
 
-    return _ReadGraphFromG6StrOrFile(pGraphToRead, inputContainer);
+    return _g6_ReadGraphFromStrOrFile(pGraphToRead, inputContainer);
 }
 
-int _ReadGraphFromG6StrOrFile(graphP pGraphToRead, strOrFileP g6InputContainer)
+int _g6_ReadGraphFromStrOrFile(graphP pGraphToRead, strOrFileP g6InputContainer)
 {
     int exitCode = OK;
 
@@ -747,37 +730,26 @@ int _ReadGraphFromG6StrOrFile(graphP pGraphToRead, strOrFileP g6InputContainer)
         return NOTOK;
     }
 
-    if (allocateG6ReadIterator(&pG6ReadIterator, pGraphToRead) != OK)
+    if (g6_NewReader(&pG6ReadIterator, pGraphToRead) != OK)
     {
         ErrorMessage("Unable to allocate G6ReadIterator.\n");
         return NOTOK;
     }
 
-    if (beginG6ReadIterationFromG6StrOrFile(pG6ReadIterator, g6InputContainer) != OK)
+    if (g6_InitReaderFromStrOrFile(pG6ReadIterator, g6InputContainer) != OK)
     {
         ErrorMessage("Unable to begin .g6 read iteration.\n");
 
-        if (freeG6ReadIterator(&pG6ReadIterator) != OK)
-            ErrorMessage("Unable to free G6ReadIterator.\n");
+        g6_FreeReader(&pG6ReadIterator);
 
         return NOTOK;
     }
 
-    exitCode = readGraphUsingG6ReadIterator(pG6ReadIterator);
+    exitCode = g6_ReadGraph(pG6ReadIterator);
     if (exitCode != OK)
         ErrorMessage("Unable to read graph from .g6 read iterator.\n");
 
-    if (endG6ReadIteration(pG6ReadIterator) != OK)
-    {
-        ErrorMessage("Unable to end G6ReadIterator.\n");
-        exitCode = NOTOK;
-    }
-
-    if (freeG6ReadIterator(&pG6ReadIterator) != OK)
-    {
-        ErrorMessage("Unable to free G6ReadIterator.\n");
-        exitCode = NOTOK;
-    }
+    g6_FreeReader(&pG6ReadIterator);
 
     return exitCode;
 }

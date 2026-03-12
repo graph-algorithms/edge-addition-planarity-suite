@@ -116,7 +116,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
 
     G6ReadIteratorP pG6ReadIterator = NULL;
     char const *messageFormat = NULL;
-    int graphOrder = 0;
+    int order = 0;
     char messageContents[MAXLINE + 1];
     messageContents[MAXLINE] = '\0';
 
@@ -140,7 +140,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
         return NOTOK;
     }
 
-    if ((Result = allocateG6ReadIterator(&pG6ReadIterator, theGraph)) != OK)
+    if ((Result = g6_NewReader(&pG6ReadIterator, theGraph)) != OK)
     {
         ErrorMessage("Unable to allocate G6ReadIterator.\n");
 
@@ -150,32 +150,28 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
         return Result;
     }
 
-    if ((Result = beginG6ReadIterationFromG6FilePath(pG6ReadIterator, infileName)) != OK)
+    if ((Result = g6_InitReaderFromFile(pG6ReadIterator, infileName)) != OK)
     {
         ErrorMessage("Unable to begin .g6 read iteration.\n");
 
-        if (freeG6ReadIterator(&pG6ReadIterator) != OK)
-            ErrorMessage("Unable to free G6ReadIterator.\n");
-
+        g6_FreeReader(&pG6ReadIterator);
         gp_Free(&theGraph);
         stats->errorFlag = TRUE;
 
         return Result;
     }
 
-    graphOrder = gp_getN(theGraph);
+    order = gp_getN(theGraph);
     // We have to set the maximum arc capacity (i.e. (N * (N - 1))) because some of the test files
     // can contain complete graphs, and the graph drawing, K_{3, 3} search, and K_4 search extensions
     // don't support expanding the arc capacity after being attached.
     if (strchr("d34", command) != NULL)
     {
-        if ((Result = gp_EnsureArcCapacity(theGraph, (graphOrder * (graphOrder - 1)))) != OK)
+        if ((Result = gp_EnsureArcCapacity(theGraph, (order * (order - 1)))) != OK)
         {
             ErrorMessage("Unable to maximize arc capacity of G6ReadIterator's graph struct.\n");
 
-            if (freeG6ReadIterator(&pG6ReadIterator) != OK)
-                ErrorMessage("Unable to free G6ReadIterator.\n");
-
+            g6_FreeReader(&pG6ReadIterator);
             gp_Free(&theGraph);
             stats->errorFlag = TRUE;
 
@@ -204,9 +200,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
 
         ErrorMessage(messageContents);
 
-        if (freeG6ReadIterator(&pG6ReadIterator) != OK)
-            ErrorMessage("Unable to free G6ReadIterator.\n");
-
+        g6_FreeReader(&pG6ReadIterator);
         gp_Free(&theGraph);
         stats->errorFlag = TRUE;
 
@@ -218,22 +212,18 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
     {
         ErrorMessage("Unable to allocate graph to store copy of original graph before embedding.\n");
 
-        if (freeG6ReadIterator(&pG6ReadIterator) != OK)
-            ErrorMessage("Unable to free G6ReadIterator.\n");
-
+        g6_FreeReader(&pG6ReadIterator);
         gp_Free(&theGraph);
         stats->errorFlag = TRUE;
 
         return NOTOK;
     }
 
-    if (gp_InitGraph(copyOfOrigGraph, graphOrder) != OK)
+    if (gp_InitGraph(copyOfOrigGraph, order) != OK)
     {
         ErrorMessage("Unable to initialize graph datastructure to store copy of original graph before embedding.\n");
 
-        if (freeG6ReadIterator(&pG6ReadIterator) != OK)
-            ErrorMessage("Unable to free G6ReadIterator.\n");
-
+        g6_FreeReader(&pG6ReadIterator);
         gp_Free(&theGraph);
         gp_Free(&copyOfOrigGraph);
         stats->errorFlag = TRUE;
@@ -243,7 +233,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
 
     while (true)
     {
-        if (readGraphUsingG6ReadIterator(pG6ReadIterator) != OK)
+        if (g6_ReadGraph(pG6ReadIterator) != OK)
         {
             messageFormat = "Unable to read graph on line %d from .g6 read iterator.\n";
 #pragma GCC diagnostic push
@@ -257,7 +247,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
             break;
         }
 
-        if (contentsExhausted(pG6ReadIterator))
+        if (g6_EndReached(pG6ReadIterator))
             break;
 
         gp_CopyGraph(copyOfOrigGraph, theGraph);
@@ -327,12 +317,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
     stats->numNONEMBEDDABLE = numNONEMBEDDABLE;
     stats->errorFlag = errorFlag;
 
-    if (endG6ReadIteration(pG6ReadIterator) != OK)
-        ErrorMessage("Unable to end G6ReadIterator.\n");
-
-    if (freeG6ReadIterator(&pG6ReadIterator) != OK)
-        ErrorMessage("Unable to free G6ReadIterator.\n");
-
+    g6_FreeReader(&pG6ReadIterator);
     gp_Free(&theGraph);
     gp_Free(&copyOfOrigGraph);
 

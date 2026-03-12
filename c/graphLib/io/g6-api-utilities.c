@@ -6,25 +6,25 @@ See the LICENSE.TXT file for licensing information.
 
 #include "g6-api-utilities.h"
 
-int _getMaxEdgeCount(int graphOrder)
+int _getMaxEdgeCount(int order)
 {
-    return (graphOrder * (graphOrder - 1)) / 2;
+    return (order * (order - 1)) / 2;
 }
 
-int _getNumCharsForGraphEncoding(int graphOrder)
+int _getNumCharsForGraphEncoding(int order)
 {
-    int maxNumEdges = _getMaxEdgeCount(graphOrder);
+    int maxNumEdges = _getMaxEdgeCount(order);
 
     return (maxNumEdges / 6) + (maxNumEdges % 6 ? 1 : 0);
 }
 
-int _getNumCharsForGraphOrder(int graphOrder)
+int _getNumCharsForGraphOrder(int order)
 {
-    if (graphOrder > 0 && graphOrder < 63)
+    if (order > 0 && order < 63)
     {
         return 1;
     }
-    else if (graphOrder >= 63 && graphOrder <= 100000)
+    else if (order >= 63 && order <= 100000)
     {
         return 4;
     }
@@ -32,9 +32,9 @@ int _getNumCharsForGraphOrder(int graphOrder)
     return -1;
 }
 
-int _getExpectedNumPaddingZeroes(const int graphOrder, const int numChars)
+int _getExpectedNumPaddingZeroes(const int order, const int numChars)
 {
-    int maxNumEdges = _getMaxEdgeCount(graphOrder);
+    int maxNumEdges = _getMaxEdgeCount(order);
     int expectedNumPaddingZeroes = numChars * 6 - maxNumEdges;
 
     return expectedNumPaddingZeroes;

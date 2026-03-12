@@ -10,6 +10,10 @@ See the LICENSE.TXT file for licensing information.
 
 #include "../graph.h"
 
+/* Imported functions */
+extern int _g6_ReadGraphFromStrOrFile(graphP, strOrFileP);
+extern int _g6_WriteGraphToStrOrFile(graphP, strOrFileP, char **);
+
 /* Private functions (exported to system) */
 
 int _ReadGraph(graphP theGraph, strOrFileP inputContainer);
@@ -55,8 +59,8 @@ char _GetObstructionMarkChar(graphP theGraph, int v);
 int _ReadAdjMatrix(graphP theGraph, strOrFileP inputContainer)
 
 {
-    int N = 0;
-    int v = NIL, w = NIL, Flag = NIL;
+    int N = -1;
+    int v, w, Flag;
 
     if (sf_ValidateStrOrFile(inputContainer) != OK)
         return NOTOK;
@@ -129,9 +133,8 @@ int _ReadAdjMatrix(graphP theGraph, strOrFileP inputContainer)
 
 int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
 {
-    int ErrorCode = OK;
-
-    int N = 0, v = NIL, W = NIL, adjList = NIL, e = NIL, indexValue = NIL;
+    int N = -1;
+    int v, W, adjList, e, indexValue, ErrorCode;
     int zeroBased = FALSE;
 
     if (sf_ValidateStrOrFile(inputContainer) != OK)
@@ -346,14 +349,10 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
 
 int _ReadLEDAGraph(graphP theGraph, strOrFileP inputContainer)
 {
-    int ErrorCode = OK;
-
-    int graphType = 0;
-    int N = 0, M = 0, u = NIL, v = NIL;
-    int zeroBasedOffset = gp_GetFirstVertex(theGraph) == 0 ? 1 : 0;
     char Line[MAXLINE + 1];
-
-    memset(Line, '\0', (MAXLINE + 1));
+    int N = -1;
+    int graphType, M, m, u, v, ErrorCode;
+    int zeroBasedOffset = gp_GetFirstVertex(theGraph) == 0 ? 1 : 0;
 
     if (sf_ValidateStrOrFile(inputContainer) != OK)
         return NOTOK;
@@ -401,7 +400,7 @@ int _ReadLEDAGraph(graphP theGraph, strOrFileP inputContainer)
         return NOTOK;
 
     /* Read and add each edge, omitting loops and parallel edges */
-    for (int m = 0; m < M; m++)
+    for (m = 0; m < M; m++)
     {
         if (sf_ReadSkipWhitespace(inputContainer) != OK)
             return NOTOK;
@@ -457,9 +456,10 @@ int gp_Read(graphP theGraph, char const *FileName)
 
  Populates theGraph using the information stored in inputStr.
 
- The caller owns the memory of inputStr, as the contents of inputStr are copied
- into the inputContainer's internal strBuf, and therefore is responsible for
- freeing the inputStr after gp_ReadFromString().
+ The ownership of inputStr is transferred from the caller; it is
+ assigned to a strOrFile container and ownership is transferred to
+ the internal helper function _ReadGraph(), which then handles
+ freeing this memory.
 
  Returns NOTOK for any error, or OK otherwise
  ********************************************************************/
@@ -473,7 +473,12 @@ int gp_ReadFromString(graphP theGraph, char *inputStr)
 
     inputContainer = sf_New(inputStr, NULL, READTEXT);
     if (inputContainer == NULL)
+    {
+        if (inputStr != NULL)
+            free(inputStr);
+        inputStr = NULL;
         return NOTOK;
+    }
 
     return _ReadGraph(theGraph, inputContainer);
 }
@@ -496,11 +501,8 @@ int gp_ReadFromString(graphP theGraph, char *inputStr)
 int _ReadGraph(graphP theGraph, strOrFileP inputContainer)
 {
     int RetVal = OK;
-
     bool extraDataAllowed = false;
     char lineBuff[MAXLINE + 1];
-
-    memset(lineBuff, '\0', (MAXLINE + 1));
 
     if (sf_ValidateStrOrFile(inputContainer) != OK)
         return NOTOK;
@@ -535,7 +537,7 @@ int _ReadGraph(graphP theGraph, strOrFileP inputContainer)
     }
     else
     {
-        RetVal = _ReadGraphFromG6StrOrFile(theGraph, inputContainer);
+        RetVal = _g6_ReadGraphFromStrOrFile(theGraph, inputContainer);
         // N.B. Unlike the other _Read functions, we are relinquishing
         // ownership of inputContainer to the G6ReadIterator, which
         // calls sf_Free() when ending iteration. This assignment
@@ -563,6 +565,7 @@ int _ReadGraph(graphP theGraph, strOrFileP inputContainer)
                     RetVal = NOTOK;
                 else
                 {
+                    // FIXME: how do I distinguish between "there's no more content on input stream" and "I've hit an error state"
                     while (sf_fgets(lineBuff, MAXLINE, inputContainer) != NULL)
                     {
                         if (sb_ConcatString(extraData, lineBuff) != OK)
@@ -607,8 +610,7 @@ int _ReadPostprocess(graphP theGraph, char *extraData)
 int _WriteAdjList(graphP theGraph, strOrFileP outputContainer)
 {
     int v = NIL, e = NIL;
-    int zeroBasedVertexOffset = 0;
-    int adjacencyListTerminator = NIL;
+    int zeroBasedOffset = (theGraph->internalFlags & FLAGS_ZEROBASEDIO) ? gp_GetFirstVertex(theGraph) : 0;
     char numberStr[MAXCHARSFOR32BITINT + 1];
 
     memset(numberStr, '\0', (MAXCHARSFOR32BITINT + 1) * sizeof(char));
@@ -679,10 +681,9 @@ int _WriteAdjList(graphP theGraph, strOrFileP outputContainer)
 
 int _WriteAdjMatrix(graphP theGraph, strOrFileP outputContainer)
 {
-    int v = NIL, e = NIL;
+    int v, e, K;
     char *Row = NULL;
     char numberStr[MAXCHARSFOR32BITINT + 1];
-
     memset(numberStr, '\0', (MAXCHARSFOR32BITINT + 1) * sizeof(char));
 
     if (theGraph == NULL || sf_ValidateStrOrFile(outputContainer) != OK)
@@ -729,8 +730,6 @@ int _WriteAdjMatrix(graphP theGraph, strOrFileP outputContainer)
     }
 
     free(Row);
-    Row = NULL;
-
     return OK;
 }
 
@@ -783,9 +782,8 @@ char _GetObstructionMarkChar(graphP theGraph, int v)
 
 int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer)
 {
-    int v = NIL, e = NIL, EsizeOccupied = 0;
+    int v, e, EsizeOccupied;
     char lineBuf[MAXLINE + 1];
-
     memset(lineBuf, '\0', (MAXLINE + 1) * sizeof(char));
 
     if (theGraph == NULL || sf_ValidateStrOrFile(outputContainer) != OK)
@@ -925,8 +923,7 @@ int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer)
 
 int gp_Write(graphP theGraph, char const *FileName, int Mode)
 {
-    int RetVal = OK;
-
+    int RetVal;
     strOrFileP outputContainer = NULL;
 
     if (theGraph == NULL || FileName == NULL)
@@ -941,7 +938,9 @@ int gp_Write(graphP theGraph, char const *FileName, int Mode)
 
     RetVal = _WriteGraph(theGraph, &outputContainer, NULL, Mode);
 
-    sf_Free(&outputContainer);
+    if (outputContainer != NULL)
+        sf_Free(&outputContainer);
+    outputContainer = NULL;
 
     return RetVal;
 }
@@ -964,8 +963,7 @@ int gp_Write(graphP theGraph, char const *FileName, int Mode)
  ********************************************************************/
 int gp_WriteToString(graphP theGraph, char **pOutputStr, int Mode)
 {
-    int RetVal = OK;
-
+    int RetVal;
     strOrFileP outputContainer = NULL;
 
     if (theGraph == NULL || pOutputStr == NULL)
@@ -979,7 +977,7 @@ int gp_WriteToString(graphP theGraph, char **pOutputStr, int Mode)
 
     // N.B. Since we pass ownership of the outputContainer to the
     // G6WriteIterator when we WRITE_G6, we make sure to take the string
-    // *before* we endG6WriteIteration(), since that calls sf_Free() on the
+    // *before* we gp_FreeWriter(), since that calls sf_Free() on the
     // g6Output (i.e. outputContainer) and therefore sb_Free() on theStr. This
     // means that we need to make sure outputContainer and theStr it contains
     // are both non-NULL before trying to take the string, as WRITE_ADJLIST,
@@ -993,7 +991,9 @@ int gp_WriteToString(graphP theGraph, char **pOutputStr, int Mode)
     if ((*pOutputStr) == NULL || strlen(*pOutputStr) == 0)
         RetVal = NOTOK;
 
-    sf_Free(&outputContainer);
+    if (outputContainer != NULL)
+        sf_Free(&outputContainer);
+    outputContainer = NULL;
 
     return RetVal;
 }
@@ -1016,7 +1016,7 @@ int _WriteGraph(graphP theGraph, strOrFileP *outputContainer, char **pOutputStr,
     switch (Mode)
     {
     case WRITE_G6:
-        RetVal = _WriteGraphToG6StrOrFile(theGraph, (*outputContainer), pOutputStr);
+        RetVal = _g6_WriteGraphToStrOrFile(theGraph, (*outputContainer), pOutputStr);
         // Since G6WriteIterator owns the outputContainer, it'll
         // free it, so don't want to try to double-free
         (*outputContainer) = NULL;
@@ -1045,9 +1045,7 @@ int _WriteGraph(graphP theGraph, strOrFileP *outputContainer, char **pOutputStr,
         {
             if (sf_fputs(extraData, (*outputContainer)) == EOF)
                 RetVal = NOTOK;
-
             free(extraData);
-            extraData = NULL;
         }
     }
 
