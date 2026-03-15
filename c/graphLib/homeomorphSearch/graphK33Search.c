@@ -414,7 +414,7 @@ int _RunExtraK33Tests(graphP theGraph, K33SearchContext *context)
 
     if (IC->uz < u_max)
     {
-        if (gp_IsVertex(_TestForStraddlingBridge(theGraph, context, u_max)))
+        if (gp_IsVertex(theGraph, _TestForStraddlingBridge(theGraph, context, u_max)))
         {
             if (_FinishIsolatorContextInitialization(theGraph, context) != OK ||
                 _IsolateMinorE6(theGraph, context) != OK)
@@ -433,7 +433,7 @@ int _RunExtraK33Tests(graphP theGraph, K33SearchContext *context)
 
     if (IC->ux < u_max || IC->uy < u_max)
     {
-        if (gp_IsVertex(_TestForStraddlingBridge(theGraph, context, u_max)))
+        if (gp_IsVertex(theGraph, _TestForStraddlingBridge(theGraph, context, u_max)))
         {
             if (_FinishIsolatorContextInitialization(theGraph, context) != OK ||
                 _IsolateMinorE7(theGraph, context) != OK)
@@ -582,7 +582,7 @@ int _Fast_GetLeastAncestorConnection(graphP theGraph, K33SearchContext *context,
     int ancestor = gp_GetVertexLeastAncestor(theGraph, cutVertex);
     int child = context->VI[cutVertex].separatedDFSChildList;
 
-    if (gp_IsVertex(child) && ancestor > gp_GetVertexLowpoint(theGraph, child))
+    if (gp_IsVertex(theGraph, child) && ancestor > gp_GetVertexLowpoint(theGraph, child))
         ancestor = gp_GetVertexLowpoint(theGraph, child);
 
     return ancestor;
@@ -630,7 +630,7 @@ int _SearchForDescendantExternalConnection(graphP theGraph, K33SearchContext *co
     int child, descendant;
 
     // Test cutVertex for an external connection to descendant of u_max via direct back edge
-    if (gp_IsVertex(u2))
+    if (gp_IsVertex(theGraph, u2))
         return u2;
 
     // If there is no direct back edge connection from the cut vertex
@@ -643,7 +643,7 @@ int _SearchForDescendantExternalConnection(graphP theGraph, K33SearchContext *co
     // lowpoints indicating connections to ancestors of the current vertex.
     sp_ClearStack(theGraph->theStack);
     child = gp_GetVertexSortedDFSChildList(theGraph, cutVertex);
-    while (gp_IsVertex(child))
+    while (gp_IsVertex(theGraph, child))
     {
         if (gp_GetVertexLowpoint(theGraph, child) < IC->v && gp_IsSeparatedDFSChild(theGraph, child))
             sp_Push(theGraph->theStack, child);
@@ -661,12 +661,12 @@ int _SearchForDescendantExternalConnection(graphP theGraph, K33SearchContext *co
         {
             // Check the subtree root for the desired connection.
             u2 = _GetAdjacentAncestorInRange(theGraph, context, descendant, IC->v, u_max);
-            if (gp_IsVertex(u2))
+            if (gp_IsVertex(theGraph, u2))
                 return u2;
 
             // Push each child as a new subtree root to be considered, except skip those whose lowpoint is too great.
             child = gp_GetVertexSortedDFSChildList(theGraph, descendant);
-            while (gp_IsVertex(child))
+            while (gp_IsVertex(theGraph, child))
             {
                 if (gp_GetVertexLowpoint(theGraph, child) < IC->v)
                     sp_Push(theGraph->theStack, child);
@@ -723,7 +723,7 @@ int _FindExternalConnectionDescendantEndpoint(graphP theGraph, int ancestor,
     // Now check the descendants of the cut vertex to see if any make
     // a connection to the ancestor.
     child = gp_GetVertexSortedDFSChildList(theGraph, cutVertex);
-    while (gp_IsVertex(child))
+    while (gp_IsVertex(theGraph, child))
     {
         if (gp_GetVertexLowpoint(theGraph, child) < theGraph->IC.v && gp_IsSeparatedDFSChild(theGraph, child))
         {
@@ -778,7 +778,7 @@ int _SearchForMergeBlocker(graphP theGraph, K33SearchContext *context, int v, in
         sp_Pop2_Discard(tempStack);     /* Move (R, Rout) out of the way */
         sp_Pop2_Discard1(tempStack, Z); /* Get Z, discard ZPrevLink */
 
-        if (gp_IsVertex(context->VI[Z].mergeBlocker) &&
+        if (gp_IsVertex(theGraph, context->VI[Z].mergeBlocker) &&
             context->VI[Z].mergeBlocker < v)
         {
             *pMergeBlocker = Z;
@@ -1136,7 +1136,7 @@ int _TestForStraddlingBridge(graphP theGraph, K33SearchContext *context, int u_m
         if (c == excludedChild)
             c = LCGetNext(context->separatedDFSChildLists, c, c);
 
-        if (gp_IsVertex(c) && gp_GetVertexLowpoint(theGraph, c) < u_max)
+        if (gp_IsVertex(theGraph, c) && gp_GetVertexLowpoint(theGraph, c) < u_max)
         {
             _FindUnembeddedEdgeToSubtree(theGraph, gp_GetVertexLowpoint(theGraph, c), c, &d);
             break;
@@ -1153,13 +1153,13 @@ int _TestForStraddlingBridge(graphP theGraph, K33SearchContext *context, int u_m
     }
 
     // If d is NIL, then no straddling bridge was found, so we do the noStraddle optimization.
-    if (gp_IsNotVertex(d))
+    if (gp_IsNotVertex(theGraph, d))
     {
         c = IC->v;
         while (c != p)
         {
             e = gp_GetFirstArc(theGraph, c);
-            if (gp_IsVertex(context->E[e].noStraddle))
+            if (gp_IsVertex(theGraph, context->E[e].noStraddle))
                 break;
 
             context->E[e].noStraddle = u_max;
@@ -1504,7 +1504,7 @@ int _ReduceExternalFacePathToEdge(graphP theGraph, K33SearchContext *context, in
        not a reduction edge. */
 
     e = gp_GetFirstArc(theGraph, u);
-    if (gp_IsVertex(context->E[e].pathConnector))
+    if (gp_IsAnyTypeVertex(theGraph, context->E[e].pathConnector))
     {
         if (_RestoreReducedPath(theGraph, context, e) != OK)
             return NOTOK;
@@ -1514,7 +1514,7 @@ int _ReduceExternalFacePathToEdge(graphP theGraph, K33SearchContext *context, in
     _K33Search_DeleteEdge(theGraph, context, e);
 
     e = gp_GetLastArc(theGraph, x);
-    if (gp_IsVertex(context->E[e].pathConnector))
+    if (gp_IsAnyTypeVertex(theGraph, context->E[e].pathConnector))
     {
         if (_RestoreReducedPath(theGraph, context, e) != OK)
             return NOTOK;
@@ -1565,7 +1565,7 @@ int _ReduceXYPathToEdge(graphP theGraph, K33SearchContext *context, int u, int x
 
     /* Otherwise, remove the two edges that join the XY-path to the bicomp */
 
-    if (gp_IsVertex(context->E[e].pathConnector))
+    if (gp_IsAnyTypeVertex(theGraph, context->E[e].pathConnector))
     {
         if (_RestoreReducedPath(theGraph, context, e) != OK)
             return NOTOK;
@@ -1578,7 +1578,7 @@ int _ReduceXYPathToEdge(graphP theGraph, K33SearchContext *context, int u, int x
     e = gp_GetFirstArc(theGraph, x);
     e = gp_GetNextArc(theGraph, e);
     w = gp_GetNeighbor(theGraph, e);
-    if (gp_IsVertex(context->E[e].pathConnector))
+    if (gp_IsAnyTypeVertex(theGraph, context->E[e].pathConnector))
     {
         if (_RestoreReducedPath(theGraph, context, e) != OK)
             return NOTOK;
@@ -1623,7 +1623,7 @@ int _RestoreReducedPath(graphP theGraph, K33SearchContext *context, int e)
     int eTwin, u, v, w, x;
     int e0, e1, eTwin0, eTwin1;
 
-    if (gp_IsNotVertex(context->E[e].pathConnector))
+    if (gp_IsNotAnyTypeVertex(theGraph, context->E[e].pathConnector))
         return OK;
 
     eTwin = gp_GetTwinArc(theGraph, e);
@@ -1706,7 +1706,7 @@ int _RestoreAndOrientReducedPaths(graphP theGraph, K33SearchContext *context)
     EsizeOccupied = gp_EdgeInUseIndexBound(theGraph);
     for (e = gp_GetFirstEdge(theGraph); e < EsizeOccupied;)
     {
-        if (gp_IsVertex(context->E[e].pathConnector))
+        if (gp_IsAnyTypeVertex(theGraph, context->E[e].pathConnector))
         {
             visited = gp_GetEdgeVisited(theGraph, e);
 

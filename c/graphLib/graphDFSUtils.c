@@ -73,7 +73,7 @@ int gp_CreateDFSTree(graphP theGraph)
         while (sp_NonEmpty(theStack))
         {
             sp_Pop2(theStack, uparent, e);
-            u = gp_IsNotVertex(uparent) ? v : gp_GetNeighbor(theGraph, e);
+            u = gp_IsNotVertex(theGraph, uparent) ? v : gp_GetNeighbor(theGraph, e);
 
             if (!gp_GetVertexVisited(theGraph, u))
             {

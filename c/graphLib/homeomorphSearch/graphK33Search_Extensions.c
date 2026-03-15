@@ -464,11 +464,11 @@ void _CreateSeparatedDFSChildLists(graphP theGraph, K33SearchContext *context)
         v = buckets[L];
 
         // Loop through all the vertices with lowpoint L, putting each in the list of its parent
-        while (gp_IsVertex(v))
+        while (gp_IsVertex(theGraph, v))
         {
             DFSParent = gp_GetVertexParent(theGraph, v);
 
-            if (gp_IsVertex(DFSParent) && DFSParent != v)
+            if (gp_IsVertex(theGraph, DFSParent) && DFSParent != v)
             {
                 theList = context->VI[DFSParent].separatedDFSChildList;
                 theList = LCAppend(context->separatedDFSChildLists, theList, v);
@@ -557,7 +557,7 @@ int _K33Search_MergeBicomps(graphP theGraph, int v, int RootVertex, int W, int W
             if (_SearchForMergeBlocker(theGraph, context, v, &mergeBlocker) != OK)
                 return NOTOK;
 
-            if (gp_IsVertex(mergeBlocker))
+            if (gp_IsVertex(theGraph, mergeBlocker))
             {
                 if (_FindK33WithMergeBlocker(theGraph, context, v, mergeBlocker) != OK)
                     return NOTOK;

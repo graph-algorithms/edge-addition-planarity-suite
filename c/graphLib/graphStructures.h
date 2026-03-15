@@ -69,14 +69,14 @@ extern "C"
 #define gp_IsNotArc(e) (!(e))
 #define gp_GetFirstEdge(theGraph) (2)
 
-#else  // Using Slower 0-based Arrays
+#else // Using Slower 0-based Arrays
 #define gp_IsArc(e) ((e) != NIL)
 #define gp_IsNotArc(e) ((e) == NIL)
 #define gp_GetFirstEdge(theGraph) (0)
 #endif
 
-#define gp_EdgeInUse(theGraph, e) (gp_IsVertex(gp_GetNeighbor(theGraph, e)))
-#define gp_EdgeNotInUse(theGraph, e) (gp_IsNotVertex(gp_GetNeighbor(theGraph, e)))
+#define gp_EdgeInUse(theGraph, e) (gp_IsAnyTypeVertex(theGraph, gp_GetNeighbor(theGraph, e)))
+#define gp_EdgeNotInUse(theGraph, e) (gp_IsNotAnyTypeVertex(theGraph, gp_GetNeighbor(theGraph, e)))
 #define gp_EdgeIndexBound(theGraph) (gp_GetFirstEdge(theGraph) + (theGraph)->arcCapacity)
 #define gp_EdgeInUseIndexBound(theGraph) (gp_GetFirstEdge(theGraph) + (((theGraph)->M + sp_GetCurrentSize((theGraph)->edgeHoles)) << 1))
 
@@ -209,7 +209,9 @@ extern "C"
 
     typedef vertexRec *vertexRecP;
 
+////////////////////////////////////////////
 // Accessors for vertex adjacency list links
+////////////////////////////////////////////
 #define gp_GetFirstArc(theGraph, v) (theGraph->V[v].link[0])
 #define gp_GetLastArc(theGraph, v) (theGraph->V[v].link[1])
 #define gp_GetArc(theGraph, v, theLink) (theGraph->V[v].link[theLink])
@@ -218,45 +220,103 @@ extern "C"
 #define gp_SetLastArc(theGraph, v, newLastArc) (theGraph->V[v].link[1] = newLastArc)
 #define gp_SetArc(theGraph, v, theLink, newArc) (theGraph->V[v].link[theLink] = newArc)
 
-// Vertex conversions and iteration
+///////////////////////////////////
+// Vertex iteration-related methods
+///////////////////////////////////
 #ifdef USE_FASTER_1BASEDARRAYS
-#define gp_IsVertex(v) (v)
-#define gp_IsNotVertex(v) (!(v))
+
+    // The use of *Vertex* alone consistently refers to the initial N vertices.
+    // The use of *VirtualVertex* refers to vertex array locations after the first N.
+    // The use of *AnyTypeVertex* refers to any non-virtual or virtual vertex
 
 #define gp_GetFirstVertex(theGraph) (1)
 #define gp_GetLastVertex(theGraph) ((theGraph)->N)
+
+#define gp_GetFirstVirtualVertex(theGraph) (theGraph->N + 1)
+#define gp_GetLastVirtualVertex(theGraph) (theGraph->N + theGraph->NV)
+
+#define gp_GetFirstAnyTypeVertex(theGraph) (gp_GetFirstVertex(theGraph))
+#define gp_GetLastAnyTypeVertex(theGraph) (gp_GetLastVirtualVertex(theGraph))
+
+#ifndef DEBUG
+#define gp_IsVertex(theGraph, v) (v)
+#define gp_IsVirtualVertex(theGraph, v) ((v) > theGraph->N)
+#define gp_IsAnyTypeVertex(theGraph, v) (v)
+#else
+#define gp_IsVertex(theGraph, v) \
+    ((v) == NIL ? 0 : ((v) < gp_GetFirstVertex(theGraph) ? (NOTOK, 0) : ((v) > gp_GetLastVertex(theGraph) ? (NOTOK, 0) : 1)))
+
+// NOTE: gp_IsVirtualVertex() is sometimes called to distinguish between
+// an existing non-virtual and a virtual
+#define gp_IsVirtualVertex(theGraph, v)                                \
+    ((v) == NIL                                                        \
+         ? 0                                                           \
+         : ((v) < gp_GetFirstVirtualVertex(theGraph)                   \
+                ? ((v) < gp_GetFirstVertex(theGraph) ? (NOTOK, 0) : 0) \
+                : ((v) > gp_GetLastVirtualVertex(theGraph) ? (NOTOK, 0) : 1)))
+
+#define gp_IsAnyTypeVertex(theGraph, v) \
+    ((v) == NIL ? 0 : ((v) < gp_GetFirstAnyTypeVertex(theGraph) ? (NOTOK, 0) : ((v) > gp_GetLastAnyTypeVertex(theGraph) ? (NOTOK, 0) : 1)))
+
+#endif
+
+#define gp_IsNotVertex(theGraph, v) (!(gp_IsVertex(theGraph, v)))
+#define gp_IsNotVirtualVertex(theGraph, v) (!(gp_IsVirtualVertex(theGraph, v)))
+#define gp_IsNotAnyTypeVertex(theGraph, v) (!(gp_IsAnyTypeVertex(theGraph, v)))
+
 #define gp_VertexInRange(theGraph, v) ((v) <= (theGraph)->N)
 #define gp_VertexInRangeDescending(theGraph, v) (v)
 
 #define gp_PrimaryVertexIndexBound(theGraph) (gp_GetFirstVertex(theGraph) + (theGraph)->N)
 #define gp_VertexIndexBound(theGraph) (gp_PrimaryVertexIndexBound(theGraph) + (theGraph)->N)
 
-#define gp_IsVirtualVertex(theGraph, v) ((v) > theGraph->N)
-#define gp_IsNotVirtualVertex(theGraph, v) ((v) <= theGraph->N)
 #define gp_VirtualVertexInUse(theGraph, virtualVertex) (gp_IsArc(gp_GetFirstArc(theGraph, virtualVertex)))
 #define gp_VirtualVertexNotInUse(theGraph, virtualVertex) (gp_IsNotArc(gp_GetFirstArc(theGraph, virtualVertex)))
-#define gp_GetFirstVirtualVertex(theGraph) (theGraph->N + 1)
-#define gp_GetLastVirtualVertex(theGraph) (theGraph->N + theGraph->NV)
+
 #define gp_VirtualVertexInRange(theGraph, v) ((v) <= theGraph->N + theGraph->NV)
 
 #else // Using Slower 0-based Arrays
-#define gp_IsVertex(v) ((v) != NIL)
-#define gp_IsNotVertex(v) ((v) == NIL)
 
 #define gp_GetFirstVertex(theGraph) (0)
 #define gp_GetLastVertex(theGraph) ((theGraph)->N - 1)
+
+#define gp_GetFirstVirtualVertex(theGraph) (theGraph->N)
+#define gp_GetLastVirtualVertex(theGraph) (theGraph->N + theGraph->NV - 1)
+
+#define gp_GetFirstAnyTypeVertex(theGraph) (gp_GetFirstVertex(theGraph))
+#define gp_GetLastAnyTypeVertex(theGraph) (gp_GetLastVirtualVertex(theGraph))
+
+#ifndef DEBUG
+#define gp_IsVertex(v) ((v) != NIL)
+#define gp_IsVirtualVertex(theGraph, v) ((v) >= theGraph->N)
+#define gp_IsAnyTypeVertex(v) ((v) != NIL)
+#else
+#define gp_IsVertex(theGraph, v) \
+    ((v) == NIL ? 0 : ((v) < gp_GetFirstVertex(theGraph) ? (NOTOK, 0) : ((v) > gp_GetLastVertex(theGraph) ? (NOTOK, 0) : 1)))
+
+#define gp_IsVirtualVertex(theGraph, v)                                \
+    ((v) == NIL                                                        \
+         ? 0                                                           \
+         : ((v) < gp_GetFirstVirtualVertex(theGraph)                   \
+                ? ((v) < gp_GetFirstVertex(theGraph) ? (NOTOK, 0) : 0) \
+                : ((v) > gp_GetLastVirtualVertex(theGraph) ? (NOTOK, 0) : 1)))
+
+#define gp_IsAnyTypeVertex(theGraph, v) \
+    ((v) == NIL ? 0 : ((v) < gp_GetFirstAnyTypeVertex(theGraph) ? (NOTOK, 0) : ((v) > gp_GetLastAnyTypeVertex(theGraph) ? (NOTOK, 0) : 1)))
+#endif
+
+#define gp_IsNotVertex(theGraph, v) (!(gp_IsVertex(theGraph, v)))
+#define gp_IsNotVirtualVertex(theGraph, v) (!(gp_IsVirtualVertex(theGraph, v)))
+#define gp_IsNotAnyTypeVertex(theGraph, v) (!(gp_IsAnyTypeVertex(theGraph, v)))
+
 #define gp_VertexInRange(theGraph, v) ((v) < (theGraph)->N)
 #define gp_VertexInRangeDescending(theGraph, v) ((v) >= 0)
 
 #define gp_PrimaryVertexIndexBound(theGraph) (gp_GetFirstVertex(theGraph) + (theGraph)->N)
 #define gp_VertexIndexBound(theGraph) (gp_PrimaryVertexIndexBound(theGraph) + (theGraph)->N)
 
-#define gp_IsVirtualVertex(theGraph, v) ((v) >= theGraph->N)
-#define gp_IsNotVirtualVertex(theGraph, v) ((v) < theGraph->N)
 #define gp_VirtualVertexInUse(theGraph, virtualVertex) (gp_IsArc(gp_GetFirstArc(theGraph, virtualVertex)))
 #define gp_VirtualVertexNotInUse(theGraph, virtualVertex) (gp_IsNotArc(gp_GetFirstArc(theGraph, virtualVertex)))
-#define gp_GetFirstVirtualVertex(theGraph) (theGraph->N)
-#define gp_GetLastVirtualVertex(theGraph) (theGraph->N + theGraph->NV - 1)
 #define gp_VirtualVertexInRange(theGraph, v) ((v) < theGraph->N + theGraph->NV)
 #endif
 
@@ -267,8 +327,8 @@ extern "C"
 #define gp_IsSeparatedDFSChild(theGraph, theChild) (gp_VirtualVertexInUse(theGraph, gp_GetRootFromDFSChild(theGraph, theChild)))
 #define gp_IsNotSeparatedDFSChild(theGraph, theChild) (gp_VirtualVertexNotInUse(theGraph, gp_GetRootFromDFSChild(theGraph, theChild)))
 
-#define gp_IsDFSTreeRoot(theGraph, v) gp_IsNotVertex(gp_GetVertexParent(theGraph, v))
-#define gp_IsNotDFSTreeRoot(theGraph, v) gp_IsVertex(gp_GetVertexParent(theGraph, v))
+#define gp_IsDFSTreeRoot(theGraph, v) gp_IsNotVertex(theGraph, gp_GetVertexParent(theGraph, v))
+#define gp_IsNotDFSTreeRoot(theGraph, v) gp_IsVertex(theGraph, gp_GetVertexParent(theGraph, v))
 
 // Accessors for vertex index
 #define gp_GetVertexIndex(theGraph, v) (theGraph->V[v].index)
@@ -444,9 +504,9 @@ extern "C"
 
 // Used to advance futurePertinentChild of w to the next separated DFS child with a lowpoint less than v
 // Once futurePertinentChild advances past a child, no future planarity operation could make that child
-// relevant to future pertinence
+// relevant to future pertinence.
 #define gp_UpdateVertexFuturePertinentChild(theGraph, w, v)                                             \
-    while (gp_IsVertex(theGraph->VI[w].futurePertinentChild))                                           \
+    while (gp_IsVertex(theGraph, theGraph->VI[w].futurePertinentChild))                                 \
     {                                                                                                   \
         /* Skip children that 1) aren't future pertinent, 2) have been merged into the bicomp with w */ \
         if (gp_GetVertexLowpoint(theGraph, theGraph->VI[w].futurePertinentChild) >= v ||                \
@@ -717,15 +777,18 @@ extern "C"
      Pertinence is a dynamic property that can change for a vertex after
      each edge addition.  In other words, a vertex can become non-pertinent
      during step v as more back edges to v are embedded.
+
+     NOTE: Pertinent roots are stored using the DFS children with which
+        they are associated, so we test 'is vertex' (rather than virtual).
      ********************************************************************/
 
 #define PERTINENT(theGraph, theVertex)                           \
     (gp_IsArc(gp_GetVertexPertinentEdge(theGraph, theVertex)) || \
-     gp_IsVertex(gp_GetVertexPertinentRootsList(theGraph, theVertex)))
+     gp_IsVertex(theGraph, gp_GetVertexPertinentRootsList(theGraph, theVertex)))
 
 #define NOTPERTINENT(theGraph, theVertex)                           \
     (gp_IsNotArc(gp_GetVertexPertinentEdge(theGraph, theVertex)) && \
-     gp_IsNotVertex(gp_GetVertexPertinentRootsList(theGraph, theVertex)))
+     gp_IsNotVertex(theGraph, gp_GetVertexPertinentRootsList(theGraph, theVertex)))
 
     /********************************************************************
      FUTUREPERTINENT()
@@ -758,14 +821,14 @@ extern "C"
      compiler extensions not assumed by this code).
      ********************************************************************/
 
-#define FUTUREPERTINENT(theGraph, theVertex, v)                    \
-    (theGraph->VI[theVertex].leastAncestor < v ||                  \
-     (gp_IsVertex(theGraph->VI[theVertex].futurePertinentChild) && \
+#define FUTUREPERTINENT(theGraph, theVertex, v)                              \
+    (theGraph->VI[theVertex].leastAncestor < v ||                            \
+     (gp_IsVertex(theGraph, theGraph->VI[theVertex].futurePertinentChild) && \
       theGraph->VI[theGraph->VI[theVertex].futurePertinentChild].lowpoint < v))
 
-#define NOTFUTUREPERTINENT(theGraph, theVertex, v)                    \
-    (theGraph->VI[theVertex].leastAncestor >= v &&                    \
-     (gp_IsNotVertex(theGraph->VI[theVertex].futurePertinentChild) || \
+#define NOTFUTUREPERTINENT(theGraph, theVertex, v)                              \
+    (theGraph->VI[theVertex].leastAncestor >= v &&                              \
+     (gp_IsNotVertex(theGraph, theGraph->VI[theVertex].futurePertinentChild) || \
       theGraph->VI[theGraph->VI[theVertex].futurePertinentChild].lowpoint >= v))
 
     // This is the definition that would be preferable if a while loop could be a void expression

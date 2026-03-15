@@ -116,9 +116,9 @@ int gp_Embed(graphP theGraph, int embedFlags)
         // Work systematically through the DFS children of vertex v, using Walkdown
         // to add the back edges from v to its descendants in each of the DFS subtrees
         c = gp_GetVertexSortedDFSChildList(theGraph, v);
-        while (gp_IsVertex(c))
+        while (gp_IsVertex(theGraph, c))
         {
-            if (gp_IsVertex(gp_GetVertexPertinentRootsList(theGraph, c)))
+            if (gp_IsVertex(theGraph, gp_GetVertexPertinentRootsList(theGraph, c)))
             {
                 RetVal = theGraph->functions.fpWalkDown(theGraph, v, gp_GetRootFromDFSChild(theGraph, c));
                 // If Walkdown returns OK, then it is OK to proceed with edge addition.
@@ -194,7 +194,7 @@ int _EmbeddingInitialize(graphP theGraph)
     {
         // Skip numbered vertices to cause the outerloop to find the
         // next DFS tree root in a disconnected graph
-        if (gp_IsVertex(gp_GetVertexParent(theGraph, v)))
+        if (gp_IsVertex(theGraph, gp_GetVertexParent(theGraph, v)))
             continue;
 
         // DFS a connected component
@@ -206,7 +206,7 @@ int _EmbeddingInitialize(graphP theGraph)
             // For vertex uparent and edge e, obtain the opposing endpoint u of e
             // If uparent is NIL, then e is also NIL and we have encountered the
             // false edge to the DFS tree root as pushed above.
-            u = gp_IsNotVertex(uparent) ? v : gp_GetNeighbor(theGraph, e);
+            u = gp_IsNotVertex(theGraph, uparent) ? v : gp_GetNeighbor(theGraph, e);
 
             // We popped an edge to an unvisited vertex, so it is either a DFS tree edge
             // or a false edge to the DFS tree root (u).
@@ -315,7 +315,7 @@ int _EmbeddingInitialize(graphP theGraph)
         child = gp_GetVertexSortedDFSChildList(theGraph, v);
         gp_SetVertexFuturePertinentChild(theGraph, v, child);
         leastValue = gp_GetVertexLeastAncestor(theGraph, v);
-        while (gp_IsVertex(child))
+        while (gp_IsVertex(theGraph, child))
         {
             if (leastValue > gp_GetVertexLowpoint(theGraph, child))
                 leastValue = gp_GetVertexLowpoint(theGraph, child);
@@ -738,7 +738,7 @@ void _WalkUp(graphP theGraph, int v, int e)
         gp_SetVertexVisitedInfo(theGraph, Zag, v);
 
         // If both directions found new non-root vertices, then proceed with parallel external face traversal
-        if (gp_IsNotVertex(R))
+        if (gp_IsNotVirtualVertex(theGraph, R))
         {
             ZigPrevLink = gp_GetExtFaceVertex(theGraph, nextZig, 0) == Zig ? 0 : 1;
             Zig = nextZig;
@@ -879,7 +879,9 @@ int _WalkDown(graphP theGraph, int v, int RootVertex)
             }
 
             // If W has a pertinent child bicomp, then we descend to the first one...
-            if (gp_IsVertex(gp_GetVertexPertinentRootsList(theGraph, W)))
+            // NOTE: Each pertinent root is stored as the DFS child with which it is
+            //       associated, so we test gp_IsVertex, not gp_IsVirtualVertex here.
+            if (gp_IsVertex(theGraph, gp_GetVertexPertinentRootsList(theGraph, W)))
             {
                 // Push the vertex W and the direction of entry, then descend to a root copy R of W
                 sp_Push2(theGraph->theStack, W, WPrevLink);
@@ -985,7 +987,7 @@ int _WalkDown(graphP theGraph, int v, int RootVertex)
         // The Walkdown was blocked from embedding all forward arcs into the RootEdgeChild subtree
         // if there the next child's DFI is greater than the descendant endpoint of the next forward arc,
         // or if there is no next child.
-        if (gp_IsNotVertex(nextChild) || nextChild > gp_GetNeighbor(theGraph, e))
+        if (gp_IsNotVertex(theGraph, nextChild) || nextChild > gp_GetNeighbor(theGraph, e))
         {
             // If an extension indicates it is OK to proceed despite the unembedded forward arcs, then
             // advance to the forward arcs for the next child, if any
@@ -1105,7 +1107,7 @@ void _AdvanceFwdArcList(graphP theGraph, int v, int child, int nextChild)
         }
 
         // 3) e finds an edge whose descendant endpoint is greater than the next child
-        else if (gp_IsVertex(nextChild) && nextChild < gp_GetNeighbor(theGraph, e))
+        else if (gp_IsVertex(theGraph, nextChild) && nextChild < gp_GetNeighbor(theGraph, e))
         {
             gp_SetVertexFwdArcList(theGraph, v, e);
             break;

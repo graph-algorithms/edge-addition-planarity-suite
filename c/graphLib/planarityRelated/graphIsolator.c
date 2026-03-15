@@ -418,7 +418,7 @@ int _GetLeastAncestorConnection(graphP theGraph, int cutVertex)
     int ancestor = gp_GetVertexLeastAncestor(theGraph, cutVertex);
 
     child = gp_GetVertexFuturePertinentChild(theGraph, cutVertex);
-    while (gp_IsVertex(child))
+    while (gp_IsVertex(theGraph, child))
     {
         if (gp_IsSeparatedDFSChild(theGraph, child) &&
             ancestor > gp_GetVertexLowpoint(theGraph, child))
@@ -453,7 +453,7 @@ int _FindUnembeddedEdgeToAncestor(graphP theGraph, int cutVertex,
 
     child = gp_GetVertexFuturePertinentChild(theGraph, cutVertex);
     foundChild = NIL;
-    while (gp_IsVertex(child))
+    while (gp_IsVertex(theGraph, child))
     {
         if (gp_IsSeparatedDFSChild(theGraph, child) &&
             ancestor > gp_GetVertexLowpoint(theGraph, child))
@@ -532,7 +532,7 @@ int _FindUnembeddedEdgeToSubtree(graphP theGraph, int ancestor,
     {
         if (gp_GetNeighbor(theGraph, e) >= SubtreeRoot)
         {
-            if (gp_IsNotVertex(*pDescendant) || *pDescendant > gp_GetNeighbor(theGraph, e))
+            if (gp_IsNotVertex(theGraph, *pDescendant) || *pDescendant > gp_GetNeighbor(theGraph, e))
                 *pDescendant = gp_GetNeighbor(theGraph, e);
         }
 
@@ -541,7 +541,7 @@ int _FindUnembeddedEdgeToSubtree(graphP theGraph, int ancestor,
             e = NIL;
     }
 
-    if (gp_IsNotVertex(*pDescendant))
+    if (gp_IsNotVertex(theGraph, *pDescendant))
         return FALSE;
 
     /* Make sure the identified descendant actually descends from the cut vertex */
@@ -550,7 +550,7 @@ int _FindUnembeddedEdgeToSubtree(graphP theGraph, int ancestor,
     while (Z != SubtreeRoot)
     {
         ZNew = gp_GetVertexParent(theGraph, Z);
-        if (gp_IsNotVertex(ZNew) || ZNew == Z)
+        if (gp_IsNotVertex(theGraph, ZNew) || ZNew == Z)
             return FALSE;
         Z = ZNew;
     }
@@ -614,8 +614,8 @@ int _MarkDFSPath(graphP theGraph, int ancestor, int descendant)
 {
     int e, parent;
 
-    // If we are marking from a root (virtual) vertex upward, then go up to the parent
-    // copy before starting the loop
+    // If we are marking from a root (virtual) vertex upward, then go up to the
+    // non-virtual parent copy before starting the loop
     if (gp_IsVirtualVertex(theGraph, descendant))
         descendant = gp_GetPrimaryVertexFromRoot(theGraph, descendant);
 
@@ -626,11 +626,13 @@ int _MarkDFSPath(graphP theGraph, int ancestor, int descendant)
     // them, up to the given ancestor vertex.
     while (descendant != ancestor)
     {
-        if (gp_IsNotVertex(descendant))
+        // This loop traverses all vertices from descendant to ancestor,
+        // including intervening bicomp roots (which are virtual vertices)
+        if (gp_IsNotAnyTypeVertex(theGraph, descendant))
             return NOTOK;
 
-        // If we are at a bicomp root, then ascend to its parent copy and
-        // mark it as visited.
+        // If we are at a bicomp root, then ascend to its non-virtual
+        // counterpart, so that can also be marked as visited.
         if (gp_IsVirtualVertex(theGraph, descendant))
         {
             parent = gp_GetPrimaryVertexFromRoot(theGraph, descendant);
@@ -654,7 +656,10 @@ int _MarkDFSPath(graphP theGraph, int ancestor, int descendant)
             }
 
             // Sanity check on the data structure integrity
-            if (gp_IsNotVertex(parent))
+            // The found parent may be a non-virtual or a virtual vertex.
+            // If the latter, then it will be marked visited, and then the
+            // next iteration of the loop will hop up to its non-virtual
+            if (gp_IsNotAnyTypeVertex(theGraph, parent))
                 return NOTOK;
 
             // Mark the edge
@@ -682,11 +687,11 @@ int _MarkDFSPathsToDescendants(graphP theGraph)
         theGraph->functions.fpMarkDFSPath(theGraph, IC->y, IC->dy) != OK)
         return NOTOK;
 
-    if (gp_IsVertex(IC->dw))
+    if (gp_IsVertex(theGraph, IC->dw))
         if (theGraph->functions.fpMarkDFSPath(theGraph, IC->w, IC->dw) != OK)
             return NOTOK;
 
-    if (gp_IsVertex(IC->dz))
+    if (gp_IsVertex(theGraph, IC->dz))
         if (theGraph->functions.fpMarkDFSPath(theGraph, IC->w, IC->dz) != OK)
             return NOTOK;
 
@@ -705,11 +710,11 @@ int _AddAndMarkUnembeddedEdges(graphP theGraph)
         _AddAndMarkEdge(theGraph, IC->uy, IC->dy) != OK)
         return NOTOK;
 
-    if (gp_IsVertex(IC->dw))
+    if (gp_IsVertex(theGraph, IC->dw))
         if (_AddAndMarkEdge(theGraph, IC->v, IC->dw) != OK)
             return NOTOK;
 
-    if (gp_IsVertex(IC->dz))
+    if (gp_IsVertex(theGraph, IC->dz))
         if (_AddAndMarkEdge(theGraph, IC->uz, IC->dz) != OK)
             return NOTOK;
 

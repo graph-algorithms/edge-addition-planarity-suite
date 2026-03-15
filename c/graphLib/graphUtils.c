@@ -1326,7 +1326,7 @@ int gp_CreateRandomGraphEx(graphP theGraph, int numEdges)
     {
         c = _getUnprocessedChild(theGraph, v);
 
-        if (gp_IsVertex(c))
+        if (gp_IsVertex(theGraph, c))
         {
             if (last != v)
             {
@@ -1343,18 +1343,18 @@ int gp_CreateRandomGraphEx(graphP theGraph, int numEdges)
         else
         {
             p = gp_GetVertexParent(theGraph, v);
-            while (gp_IsVertex(p) && gp_IsNotVertex(c = _getUnprocessedChild(theGraph, p)))
+            while (gp_IsVertex(theGraph, p) && gp_IsNotVertex(theGraph, (c = _getUnprocessedChild(theGraph, p))))
             {
                 v = p;
                 p = gp_GetVertexParent(theGraph, v);
-                if (gp_IsVertex(p) && p != root)
+                if (gp_IsVertex(theGraph, p) && p != root)
                 {
                     if (gp_AddEdge(theGraph, last, 1, p, 1) != OK)
                         return NOTOK;
                 }
             }
 
-            if (gp_IsVertex(p))
+            if (gp_IsVertex(theGraph, p))
             {
                 if (p == root)
                 {
@@ -2445,7 +2445,7 @@ int _RestoreVertex(graphP theGraph)
 
     // If u is not NIL, then vertex v was identified with u.  Otherwise, v was
     // simply hidden, so we skip to restoring the hidden edges.
-    if (gp_IsVertex(u))
+    if (gp_IsVertex(theGraph, u))
     {
         // Remove v's adjacency list from u, including accounting for degree 0 case
         if (gp_IsArc(e_u_pred))

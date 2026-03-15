@@ -370,7 +370,7 @@ int _DrawPlanar_SortVertices(graphP theGraph)
             // Relabel the context data members that indicate vertices
             for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
             {
-                if (gp_IsVertex(context->VI[v].ancestor))
+                if (gp_IsVertex(theGraph, context->VI[v].ancestor))
                 {
                     context->VI[v].ancestor = gp_GetVertexIndex(theGraph, context->VI[v].ancestor);
                     context->VI[v].ancestorChild = gp_GetVertexIndex(theGraph, context->VI[v].ancestorChild);

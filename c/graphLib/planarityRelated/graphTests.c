@@ -905,7 +905,7 @@ int _TestSubgraph(graphP theSubgraph, graphP theGraph)
         e = gp_GetFirstArc(theSubgraph, v);
         while (gp_IsArc(e))
         {
-            if (gp_IsNotVertex(gp_GetNeighbor(theSubgraph, e)))
+            if (gp_IsNotVertex(theSubgraph, gp_GetNeighbor(theSubgraph, e)))
             {
                 Result = FALSE;
                 break;
@@ -924,7 +924,7 @@ int _TestSubgraph(graphP theSubgraph, graphP theGraph)
         e = gp_GetFirstArc(theGraph, v);
         while (gp_IsArc(e))
         {
-            if (gp_IsNotVertex(gp_GetNeighbor(theGraph, e)))
+            if (gp_IsNotVertex(theGraph, gp_GetNeighbor(theGraph, e)))
             {
                 Result = FALSE;
                 break;

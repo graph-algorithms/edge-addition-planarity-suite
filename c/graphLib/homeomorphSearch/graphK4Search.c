@@ -459,7 +459,7 @@ int _K4_ChooseTypeOfNonOuterplanarityMinor(graphP theGraph, int v, int R)
         }
     }
 
-    if (gp_IsNotVertex(theGraph->IC.w))
+    if (gp_IsNotVertex(theGraph, theGraph->IC.w))
         return NOTOK;
 
     // If the root copy is not a root copy of the current vertex v,
@@ -470,7 +470,7 @@ int _K4_ChooseTypeOfNonOuterplanarityMinor(graphP theGraph, int v, int R)
     // If W has a pertinent child bicomp, then we've found Minor B.
     // Notice this is different from planarity, in which minor B is indicated
     // only if the pertinent child bicomp is also future pertinent.
-    else if (gp_IsVertex(gp_GetVertexPertinentRootsList(theGraph, theGraph->IC.w)))
+    else if (gp_IsVertex(theGraph, gp_GetVertexPertinentRootsList(theGraph, theGraph->IC.w)))
         theGraph->IC.minorType |= MINORTYPE_B;
 
     // The only other result is minor E (we will search for the X-Y path later)
@@ -649,7 +649,7 @@ int _K4_FindSeparatingInternalEdge(graphP theGraph, int R, int prevLink, int A, 
         }
 
         // If we found the separator edge, then we don't need to go on
-        if (gp_IsVertex(*pX))
+        if (gp_IsVertex(theGraph, *pX))
         {
             break;
         }
@@ -661,7 +661,7 @@ int _K4_FindSeparatingInternalEdge(graphP theGraph, int R, int prevLink, int A, 
     // Restore the unmarked obstruction type settings on the path [R ... A]
     _K4_UnmarkObstructionTypeOnExternalFacePath(theGraph, R, prevLink, A);
 
-    return gp_IsVertex(*pX) ? TRUE : FALSE;
+    return gp_IsVertex(theGraph, *pX) ? TRUE : FALSE;
 }
 
 /****************************************************************************
@@ -1084,7 +1084,7 @@ int _K4_GetCumulativeOrientationOnDFSPath(graphP theGraph, int ancestor, int des
 
     while (descendant != ancestor)
     {
-        if (gp_IsNotVertex(descendant))
+        if (gp_IsNotAnyTypeVertex(theGraph, descendant))
             return NOTOK;
 
         // If we are at a bicomp root, then ascend to its parent copy
@@ -1110,7 +1110,7 @@ int _K4_GetCumulativeOrientationOnDFSPath(graphP theGraph, int ancestor, int des
             }
 
             // If the edge to the parent vertex was not found, then the data structure is corrupt
-            if (gp_IsNotVertex(parent))
+            if (gp_IsNotAnyTypeVertex(theGraph, parent))
                 return NOTOK;
 
             // Add the inversion flag on the child arc to the cumulative result
@@ -1287,7 +1287,7 @@ int _K4_ReducePathToEdge(graphP theGraph, K4SearchContext *context, int edgeType
 
         // Prepare for removing each of the two edges that join the path to the bicomp by
         // restoring it if it is a reduction edge (a constant time operation)
-        if (gp_IsVertex(context->E[e_R].pathConnector))
+        if (gp_IsAnyTypeVertex(theGraph, context->E[e_R].pathConnector))
         {
             if (_K4_RestoreReducedPath(theGraph, context, e_R) != OK)
                 return NOTOK;
@@ -1295,7 +1295,7 @@ int _K4_ReducePathToEdge(graphP theGraph, K4SearchContext *context, int edgeType
             e_R = gp_GetArc(theGraph, R, Rlink);
         }
 
-        if (gp_IsVertex(context->E[e_A].pathConnector))
+        if (gp_IsAnyTypeVertex(theGraph, context->E[e_A].pathConnector))
         {
             if (_K4_RestoreReducedPath(theGraph, context, e_A) != OK)
                 return NOTOK;
@@ -1366,7 +1366,7 @@ int _K4_RestoreReducedPath(graphP theGraph, K4SearchContext *context, int e)
     int eTwin, u, v, w, x;
     int e0, e1, eTwin0, eTwin1;
 
-    if (gp_IsNotVertex(context->E[e].pathConnector))
+    if (gp_IsNotAnyTypeVertex(theGraph, context->E[e].pathConnector))
         return OK;
 
     eTwin = gp_GetTwinArc(theGraph, e);
@@ -1446,7 +1446,7 @@ int _K4_RestoreAndOrientReducedPaths(graphP theGraph, K4SearchContext *context)
     EsizeOccupied = gp_EdgeInUseIndexBound(theGraph);
     for (e = gp_GetFirstEdge(theGraph); e < EsizeOccupied;)
     {
-        if (gp_IsVertex(context->E[e].pathConnector))
+        if (gp_IsAnyTypeVertex(theGraph, context->E[e].pathConnector))
         {
             visited = gp_GetEdgeVisited(theGraph, e);
 

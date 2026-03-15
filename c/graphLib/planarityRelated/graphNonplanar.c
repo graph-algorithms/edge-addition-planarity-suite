@@ -64,8 +64,9 @@ int _ChooseTypeOfNonplanarityMinor(graphP theGraph, int v, int R)
     }
 
     /* If W has a pertinent and future pertinent child bicomp, then we've found Minor B */
-
-    if (gp_IsVertex(gp_GetVertexPertinentRootsList(theGraph, W)))
+    // NOTE: Each pertinent root is stored as the DFS child with which it is
+    //       associated, so we test gp_IsVertex, not gp_IsVirtualVertex here.
+    if (gp_IsVertex(theGraph, gp_GetVertexPertinentRootsList(theGraph, W)))
     {
         if (gp_GetVertexLowpoint(theGraph, gp_GetVertexLastPertinentRootChild(theGraph, W)) < v)
         {
@@ -99,7 +100,7 @@ int _ChooseTypeOfNonplanarityMinor(graphP theGraph, int v, int R)
     if (_MarkZtoRPath(theGraph) != OK)
         return NOTOK;
 
-    if (gp_IsVertex(theGraph->IC.z))
+    if (gp_IsVertex(theGraph, theGraph->IC.z))
     {
         theGraph->IC.minorType |= MINORTYPE_D;
         return OK;
@@ -109,7 +110,7 @@ int _ChooseTypeOfNonplanarityMinor(graphP theGraph, int v, int R)
          below the points of attachment of the X-Y path */
 
     Z = _FindFuturePertinenceBelowXYPath(theGraph);
-    if (gp_IsVertex(Z))
+    if (gp_IsVertex(theGraph, Z))
     {
         theGraph->IC.z = Z;
         theGraph->IC.minorType |= MINORTYPE_E;
@@ -184,8 +185,14 @@ int _InitializeNonplanarityContext(graphP theGraph, int v, int R)
 
     // Now we can classify the vertices along the external face of the bicomp
     // rooted at R as 'high RXW', 'low RXW', 'high RXY', 'low RXY'
+    // NOTE: We do not need to set up for xy path identification when we
+    //       have minor A, which occurs when the primary vertex associated
+    //       with the bicomp root R is a descendant of v (not v).
+    //    if (gp_GetPrimaryVertexFromRoot(theGraph, R) == v)
+    //    {
     if (_SetVertexTypesForMarkingXYPath(theGraph) != OK)
         return NOTOK;
+    //    }
 
     // All work is done, so return success
     return OK;
@@ -323,8 +330,11 @@ int _SetVertexTypesForMarkingXYPath(graphP theGraph)
     W = theGraph->IC.w;
 
     // Ensure basic preconditions of this routine are met
-    if (gp_IsNotVertex(R) || gp_IsNotVertex(X) || gp_IsNotVertex(Y) || gp_IsNotVertex(W))
+    if (gp_IsNotVirtualVertex(theGraph, R) || gp_IsNotVertex(theGraph, X) ||
+        gp_IsNotVertex(theGraph, Y) || gp_IsNotVertex(theGraph, W))
+    {
         return NOTOK;
+    }
 
     // Clear the type member of each vertex in the bicomp
     if (_ClearVertexTypeInBicomp(theGraph, R) != OK)
@@ -685,7 +695,7 @@ int _MarkClosestXYPath(graphP theGraph, int targetVertex)
 
     /* Return the result */
 
-    if (!gp_IsVertex(theGraph->IC.py))
+    if (!gp_IsVertex(theGraph, theGraph->IC.py))
         theGraph->IC.px = NIL;
 
     return OK;

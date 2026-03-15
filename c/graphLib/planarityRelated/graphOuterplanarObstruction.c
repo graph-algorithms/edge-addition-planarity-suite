@@ -67,7 +67,9 @@ int _ChooseTypeOfNonOuterplanarityMinor(graphP theGraph, int v, int R)
     // If W has a pertinent child bicomp, then we've found Minor B.
     // Notice this is different from planarity, in which minor B is indicated
     // only if the pertinent child bicomp is also future pertinent.
-    if (gp_IsVertex(gp_GetVertexPertinentRootsList(theGraph, W)))
+    // NOTE: Each pertinent root is stored as the DFS child with which it is
+    //       associated, so we test gp_IsVertex, not gp_IsVirtualVertex here.
+    if (gp_IsVertex(theGraph, gp_GetVertexPertinentRootsList(theGraph, W)))
     {
         theGraph->IC.minorType |= MINORTYPE_B;
         return OK;

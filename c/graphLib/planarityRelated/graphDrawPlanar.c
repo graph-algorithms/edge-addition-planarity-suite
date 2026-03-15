@@ -212,7 +212,7 @@ int _ComputeVertexPositionsInComponent(DrawPlanarContext *context, int root, int
 
         // For the special case that we just popped the DFS tree root,
         // we simply add the root to its own position.
-        if (gp_IsNotVertex(P))
+        if (gp_IsNotVertex(theEmbedding, P))
         {
             // Put the DFS root in the list by itself
             LCAppend(theOrder, NIL, W);
@@ -237,7 +237,7 @@ int _ComputeVertexPositionsInComponent(DrawPlanarContext *context, int root, int
             // which is equal to or descendant to C. If C below V, then P below V,
             // so interpret 'W between P and V' as 'W above P', and interpret
             // 'W beyond P relative to V' as 'W below P'.
-            if (gp_IsNotVertex(C) || context->VI[C].drawingFlag == DRAWINGFLAG_BELOW)
+            if (gp_IsNotVertex(theEmbedding, C) || context->VI[C].drawingFlag == DRAWINGFLAG_BELOW)
             {
                 if (context->VI[W].drawingFlag == DRAWINGFLAG_BETWEEN)
                     context->VI[W].drawingFlag = DRAWINGFLAG_ABOVE;
@@ -275,7 +275,7 @@ int _ComputeVertexPositionsInComponent(DrawPlanarContext *context, int root, int
 
     // Use the order to assign vertical positions
     V = root;
-    while (gp_IsVertex(V))
+    while (gp_IsVertex(theEmbedding, V))
     {
         context->VI[V].pos = *pVertpos;
         (*pVertpos)++;
@@ -741,7 +741,7 @@ int _BreakTie(DrawPlanarContext *context, int BicompRoot, int W, int WPrevLink)
         return NOTOK;
 
     /* If there is a tie, it can now be resolved. */
-    if (gp_IsVertex(context->VI[W].tie[WPrevLink]))
+    if (gp_IsVertex(theEmbedding, context->VI[W].tie[WPrevLink]))
     {
         int DFSChild = context->VI[W].tie[WPrevLink];
 
