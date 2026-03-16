@@ -1475,10 +1475,7 @@ int gp_GetNeighborEdgeRecord(graphP theGraph, int u, int v)
         u < gp_GetFirstVertex(theGraph) || u >= gp_VertexIndexBound(theGraph) ||
         v < gp_GetFirstVertex(theGraph) || v >= gp_VertexIndexBound(theGraph))
     {
-#ifdef DEBUG
-        NOTOK;
-#endif
-        return NIL;
+        return (NOTOK, NIL);
     }
 
     e = gp_GetFirstArc(theGraph, u);
@@ -1515,10 +1512,7 @@ int gp_GetVertexDegree(graphP theGraph, int v)
     if (theGraph == NULL ||
         v < gp_GetFirstVertex(theGraph) || v >= gp_VertexIndexBound(theGraph))
     {
-#ifdef DEBUG
-        NOTOK;
-#endif
-        return 0;
+        return (NOTOK, 0);
     }
 
     degree = 0;
@@ -1553,10 +1547,7 @@ int gp_GetVertexInDegree(graphP theGraph, int v)
     if (theGraph == NULL ||
         v < gp_GetFirstVertex(theGraph) || v >= gp_VertexIndexBound(theGraph))
     {
-#ifdef DEBUG
-        NOTOK;
-#endif
-        return 0;
+        return (NOTOK, 0);
     }
 
     degree = 0;
@@ -1592,10 +1583,7 @@ int gp_GetVertexOutDegree(graphP theGraph, int v)
     if (theGraph == NULL ||
         v < gp_GetFirstVertex(theGraph) || v >= gp_VertexIndexBound(theGraph))
     {
-#ifdef DEBUG
-        NOTOK;
-#endif
-        return 0;
+        return (NOTOK, 0);
     }
 
     degree = 0;
