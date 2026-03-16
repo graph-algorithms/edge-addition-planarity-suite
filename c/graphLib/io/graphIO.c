@@ -175,7 +175,13 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
 
         if (indexValue == 0 && v == gp_GetFirstVertex(theGraph))
             zeroBased = TRUE;
-        indexValue += zeroBased ? gp_GetFirstVertex(theGraph) : 0;
+
+        // If we are reading a zero-based input file, then we have to add to the
+        // indexValue for v the amount returned by gp_GetFirstVertex(),
+        // which is 1 if this library was compiled with USE_FASTER_1BASEDARRAYS
+        // or 0 if this library was compiled with USE_0BASEDARRAYS
+        if (zeroBased)
+            indexValue += gp_GetFirstVertex(theGraph);
 
         gp_SetVertexIndex(theGraph, v, indexValue);
 
@@ -231,9 +237,15 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
             if (sf_ReadSkipWhitespace(inputContainer) != OK)
                 return NOTOK;
 
-            W += zeroBased ? gp_GetFirstVertex(theGraph) : 0;
+            // If we are reading a zero-based input file, then we have to add to W
+            // the amount returned by gp_GetFirstVertex(), which is 1 if this library
+            // was compiled with USE_FASTER_1BASEDARRAYS or 0 if this library was
+            // compiled with USE_0BASEDARRAYS
+            if (zeroBased)
+                W += gp_GetFirstVertex(theGraph);
 
             // A value below the valid range indicates the adjacency list end
+            // This was written before gp_IsNotVertex() existed
             if (W < gp_GetFirstVertex(theGraph))
                 break;
 
@@ -595,7 +607,8 @@ int _ReadPostprocess(graphP theGraph, char *extraData)
 int _WriteAdjList(graphP theGraph, strOrFileP outputContainer)
 {
     int v = NIL, e = NIL;
-    int zeroBasedOffset = (theGraph->internalFlags & FLAGS_ZEROBASEDIO) ? gp_GetFirstVertex(theGraph) : 0;
+    int zeroBasedVertexOffset = 0;
+    int adjacencyListTerminator = NIL;
     char numberStr[MAXCHARSFOR32BITINT + 1];
 
     memset(numberStr, '\0', (MAXCHARSFOR32BITINT + 1) * sizeof(char));
@@ -609,10 +622,20 @@ int _WriteAdjList(graphP theGraph, strOrFileP outputContainer)
     if (sf_fputs(numberStr, outputContainer) == EOF)
         return NOTOK;
 
+    // If we are supposed to write 0-based output, then we have to adjust the vertex offset and the
+    // adjacency list terminator based on whether this library has been compiled with 0-based or
+    // 1-based array indexing for the in-memory data structure (i.e., compiled with
+    // USE_FASTER_1BASEDARRAYS USE_0BASEDARRAYS). The macro invoked is responsive to the difference.
+    if (theGraph->internalFlags & FLAGS_ZEROBASEDIO)
+    {
+        zeroBasedVertexOffset = gp_GetFirstVertex(theGraph);
+        adjacencyListTerminator = -1;
+    }
+
     // Write the adjacency list of each vertex
     for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
     {
-        if (sprintf(numberStr, "%d:", v - zeroBasedOffset) < 1)
+        if (sprintf(numberStr, "%d:", v - zeroBasedVertexOffset) < 1)
             return NOTOK;
         if (sf_fputs(numberStr, outputContainer) == EOF)
             return NOTOK;
@@ -622,7 +645,7 @@ int _WriteAdjList(graphP theGraph, strOrFileP outputContainer)
         {
             if (gp_GetDirection(theGraph, e) != EDGEFLAG_DIRECTION_INONLY)
             {
-                if (sprintf(numberStr, " %d", gp_GetNeighbor(theGraph, e) - zeroBasedOffset) < 1)
+                if (sprintf(numberStr, " %d", gp_GetNeighbor(theGraph, e) - zeroBasedVertexOffset) < 1)
                     return NOTOK;
                 if (sf_fputs(numberStr, outputContainer) == EOF)
                     return NOTOK;
@@ -632,7 +655,7 @@ int _WriteAdjList(graphP theGraph, strOrFileP outputContainer)
         }
 
         // Write NIL at the end of the adjacency list (in zero-based I/O, NIL was -1)
-        if (sprintf(numberStr, " %d\n", (theGraph->internalFlags & FLAGS_ZEROBASEDIO) ? -1 : NIL) < 1)
+        if (sprintf(numberStr, " %d\n", adjacencyListTerminator) < 1)
             return NOTOK;
         if (sf_fputs(numberStr, outputContainer) == EOF)
             return NOTOK;

@@ -633,11 +633,21 @@ int _DrawPlanar_WritePostprocess(graphP theGraph, char **pExtraData)
             char line[64];
             int maxLineSize = 64, extraDataPos = 0;
             char *extraData = (char *)calloc((1 + theGraph->N + 2 * theGraph->M + 1) * maxLineSize, sizeof(char));
-            int zeroBasedVertexOffset = (theGraph->internalFlags & FLAGS_ZEROBASEDIO) ? gp_GetFirstVertex(theGraph) : 0;
-            int zeroBasedEdgeOffset = (theGraph->internalFlags & FLAGS_ZEROBASEDIO) ? gp_GetFirstEdge(theGraph) : 0;
+            int zeroBasedVertexOffset = 0;
+            int zeroBasedEdgeOffset = 0;
 
             if (extraData == NULL)
                 return NOTOK;
+
+            // If we are supposed to write 0-based output, then we have to set these two variables to indicate
+            // how much to subtract from each vertex and edge index based on whether this library has been
+            // compiled with 0-based or 1-based array indexing for the in-memory data structure (i.e., compiled
+            // with USE_FASTER_1BASEDARRAYS USE_0BASEDARRAYS). The macros invoked are responsive to the difference.
+            if (theGraph->internalFlags & FLAGS_ZEROBASEDIO)
+            {
+                zeroBasedVertexOffset = gp_GetFirstVertex(theGraph);
+                zeroBasedEdgeOffset = gp_GetFirstEdge(theGraph);
+            }
 
             // Bit of an unlikely case, but for safety, a bigger maxLineSize
             // and line array size are needed to handle very large graphs

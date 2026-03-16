@@ -800,7 +800,7 @@ char *_RenderToString(graphP theEmbedding)
     {
         int N = theEmbedding->N;
         int M = theEmbedding->M;
-        int zeroBasedVertexOffset = (theEmbedding->internalFlags & FLAGS_ZEROBASEDIO) ? gp_GetFirstVertex(theEmbedding) : 0;
+        int zeroBasedVertexOffset = 0;
         int n, m, EsizeOccupied, v, vRange, e, eRange, Mid, Pos;
         char *visRep = (char *)malloc(sizeof(char) * ((M + 1) * 2 * N + 1));
         char numBuffer[32];
@@ -808,13 +808,25 @@ char *_RenderToString(graphP theEmbedding)
         if (visRep == NULL)
             return NULL;
 
-        if (sp_NonEmpty(context->theGraph->edgeHoles))
+        // If edges were deleted from the embedding, then the visibility representation is
+        // no longer valid. (This is a necessary condition but not sufficient to guarantee
+        // no embedding mutations, because adding edges uses the holes, and other APIs
+        // allow edge changes).
+        if (sp_NonEmpty(theEmbedding->edgeHoles))
         {
             free(visRep);
             visRep = NULL;
 
             return NULL;
         }
+
+        // If we are supposed to write 0-based output, then we have to set this variable to indicate
+        // how much to subtract from each vertex index based on whether this library has been
+        // compiled with 0-based or 1-based array indexing for the in-memory data structure (i.e.,
+        // compiled with USE_FASTER_1BASEDARRAYS USE_0BASEDARRAYS).
+        // The macro invoked is responsive to the compile-time difference.
+        if (theEmbedding->internalFlags & FLAGS_ZEROBASEDIO)
+            zeroBasedVertexOffset = gp_GetFirstVertex(theGraph);
 
         // Clear the space
         for (n = 0; n < N; n++)
