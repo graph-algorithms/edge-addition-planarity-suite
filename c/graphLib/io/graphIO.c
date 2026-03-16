@@ -74,10 +74,10 @@ int _ReadAdjMatrix(graphP theGraph, strOrFileP inputContainer)
 
     // Read an upper-triangular matrix row for each vertex
     // Note that for the last vertex, zero flags are read, per the upper triangular format
-    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
+    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
     {
         gp_SetVertexIndex(theGraph, v, v);
-        for (w = v + 1; gp_VertexInRange(theGraph, w); w++)
+        for (w = v + 1; gp_VertexInRangeAscending(theGraph, w); w++)
         {
             // Read each of v's w-neighbor flags
             if (sf_ReadSkipWhitespace(inputContainer) != OK)
@@ -159,11 +159,11 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
 
     // Clear the visited members of the vertices so they can be used
     // during the adjacency list read operation
-    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
+    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
         gp_SetVertexVisitedInfo(theGraph, v, NIL);
 
     // Do the adjacency list read operation for each vertex in order
-    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
+    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
     {
         // Read the vertex number
         if (sf_ReadSkipWhitespace(inputContainer) != OK)
@@ -388,7 +388,7 @@ int _ReadLEDAGraph(graphP theGraph, strOrFileP inputContainer)
     if (gp_InitGraph(theGraph, N) != OK)
         return NOTOK;
 
-    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
+    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
         if (sf_fgets(Line, MAXLINE, inputContainer) == NULL)
             return NOTOK;
 
@@ -633,7 +633,7 @@ int _WriteAdjList(graphP theGraph, strOrFileP outputContainer)
     }
 
     // Write the adjacency list of each vertex
-    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
+    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
     {
         if (sprintf(numberStr, "%d:", v - zeroBasedVertexOffset) < 1)
             return NOTOK;
@@ -700,12 +700,12 @@ int _WriteAdjMatrix(graphP theGraph, strOrFileP outputContainer)
         return NOTOK;
 
     // Construct the upper triangular matrix representation one row at a time
-    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
+    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
     {
         for (int i = gp_GetFirstVertex(theGraph); i <= v; i++)
             Row[i - gp_GetFirstVertex(theGraph)] = ' ';
 
-        for (int i = v + 1; gp_VertexInRange(theGraph, i); i++)
+        for (int i = v + 1; gp_VertexInRangeAscending(theGraph, i); i++)
             Row[i - gp_GetFirstVertex(theGraph)] = '0';
 
         e = gp_GetFirstArc(theGraph, v);
@@ -797,7 +797,7 @@ int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer)
     if (sf_fputs(lineBuf, outputContainer) == EOF)
         return NOTOK;
 
-    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
+    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
     {
         if (sprintf(lineBuf, "%d(P=%d,lA=%d,LowPt=%d,v=%d):",
                     v, gp_GetVertexParent(theGraph, v),
@@ -826,7 +826,7 @@ int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer)
 
     /* Print any root copy vertices and their adjacency lists */
 
-    for (v = gp_GetFirstVirtualVertex(theGraph); gp_VirtualVertexInRange(theGraph, v); v++)
+    for (v = gp_GetFirstVirtualVertex(theGraph); gp_VirtualVertexInRangeAscending(theGraph, v); v++)
     {
         if (!gp_VirtualVertexInUse(theGraph, v))
             continue;
@@ -859,7 +859,7 @@ int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer)
     if (sf_fputs("\nVERTEX INFORMATION\n", outputContainer) == EOF)
         return NOTOK;
 
-    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
+    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
     {
         if (sprintf(lineBuf, "V[%3d] index=%3d, type=%c, first arc=%3d, last arc=%3d\n",
                     v,
@@ -871,7 +871,7 @@ int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer)
         if (sf_fputs(lineBuf, outputContainer) == EOF)
             return NOTOK;
     }
-    for (v = gp_GetFirstVirtualVertex(theGraph); gp_VirtualVertexInRange(theGraph, v); v++)
+    for (v = gp_GetFirstVirtualVertex(theGraph); gp_VirtualVertexInRangeAscending(theGraph, v); v++)
     {
         if (gp_VirtualVertexNotInUse(theGraph, v))
             continue;

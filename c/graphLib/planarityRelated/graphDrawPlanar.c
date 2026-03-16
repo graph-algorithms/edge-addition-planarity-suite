@@ -81,7 +81,7 @@ int _ComputeVertexPositions(DrawPlanarContext *context)
     int v, vertpos;
 
     vertpos = 0;
-    for (v = gp_GetFirstVertex(theEmbedding); gp_VertexInRange(theEmbedding, v); v++)
+    for (v = gp_GetFirstVertex(theEmbedding); gp_VertexInRangeAscending(theEmbedding, v); v++)
     {
         // For each DFS tree root in the embedding, we
         // compute the vertex positions
@@ -350,7 +350,7 @@ int _ComputeEdgePositions(DrawPlanarContext *context)
         return NOTOK;
     }
 
-    for (v = gp_GetFirstVertex(theEmbedding); gp_VertexInRange(theEmbedding, v); v++)
+    for (v = gp_GetFirstVertex(theEmbedding); gp_VertexInRangeAscending(theEmbedding, v); v++)
         vertexOrder[context->VI[v].pos] = v;
 
     // Allocate the edge list of size M.
@@ -372,7 +372,7 @@ int _ComputeEdgePositions(DrawPlanarContext *context)
 
     // Each vertex starts out with a NIL generator edge.
 
-    for (v = gp_GetFirstVertex(theEmbedding); gp_VertexInRange(theEmbedding, v); v++)
+    for (v = gp_GetFirstVertex(theEmbedding); gp_VertexInRangeAscending(theEmbedding, v); v++)
         gp_SetVertexVisitedInfo(theEmbedding, v, NIL);
 
     // Perform the vertical sweep of the combinatorial embedding, using
@@ -517,7 +517,7 @@ int _ComputeVertexRanges(DrawPlanarContext *context)
     graphP theEmbedding = context->theGraph;
     int v = NIL, e = NIL, min = NIL, max = NIL;
 
-    for (v = gp_GetFirstVertex(theEmbedding); gp_VertexInRange(theEmbedding, v); v++)
+    for (v = gp_GetFirstVertex(theEmbedding); gp_VertexInRangeAscending(theEmbedding, v); v++)
     {
         min = theEmbedding->M + 1;
         max = NIL;
@@ -842,7 +842,7 @@ char *_RenderToString(graphP theEmbedding)
         }
 
         // Draw the vertices
-        for (v = gp_GetFirstVertex(theEmbedding); gp_VertexInRange(theEmbedding, v); v++)
+        for (v = gp_GetFirstVertex(theEmbedding); gp_VertexInRangeAscending(theEmbedding, v); v++)
         {
             Pos = context->VI[v].pos;
             for (vRange = context->VI[v].start; vRange <= context->VI[v].end; vRange++)
@@ -977,7 +977,7 @@ int _CheckVisibilityRepresentationIntegrity(DrawPlanarContext *context)
     /* Test whether the vertex values make sense and
             whether the vertex positions are unique. */
 
-    for (v = gp_GetFirstVertex(theEmbedding); gp_VertexInRange(theEmbedding, v); v++)
+    for (v = gp_GetFirstVertex(theEmbedding); gp_VertexInRangeAscending(theEmbedding, v); v++)
     {
         if (theEmbedding->M > 0)
         {
@@ -1046,7 +1046,7 @@ int _CheckVisibilityRepresentationIntegrity(DrawPlanarContext *context)
     {
         eTwin = gp_GetTwinArc(theEmbedding, e);
 
-        for (v = gp_GetFirstVertex(theEmbedding); gp_VertexInRange(theEmbedding, v); v++)
+        for (v = gp_GetFirstVertex(theEmbedding); gp_VertexInRangeAscending(theEmbedding, v); v++)
         {
             /* If the vertex is an endpoint of the edge, then... */
 

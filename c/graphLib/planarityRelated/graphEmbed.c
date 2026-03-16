@@ -190,7 +190,7 @@ int _EmbeddingInitialize(graphP theGraph)
     // This outer loop processes each connected component of a disconnected graph
     // No need to compare v < N since DFI will reach N when inner loop processes the
     // last connected component in the graph
-    for (DFI = v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, DFI); v++)
+    for (DFI = v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, DFI); v++)
     {
         // Skip numbered vertices to cause the outerloop to find the
         // next DFS tree root in a disconnected graph
@@ -1206,7 +1206,7 @@ int _OrientVerticesInEmbedding(graphP theGraph)
 
     // For each vertex, obtain the associated bicomp root location and,
     // if it is still in use as a bicomp root, orient the vertices in the bicomp
-    for (R = gp_GetFirstVirtualVertex(theGraph); gp_VirtualVertexInRange(theGraph, R); R++)
+    for (R = gp_GetFirstVirtualVertex(theGraph); gp_VirtualVertexInRangeAscending(theGraph, R); R++)
     {
         if (gp_VirtualVertexInUse(theGraph, R))
         {
@@ -1297,7 +1297,7 @@ int _JoinBicomps(graphP theGraph)
 {
     int R;
 
-    for (R = gp_GetFirstVirtualVertex(theGraph); gp_VirtualVertexInRange(theGraph, R); R++)
+    for (R = gp_GetFirstVirtualVertex(theGraph); gp_VirtualVertexInRangeAscending(theGraph, R); R++)
     {
         // If the root is still active (i.e. an in-use virtual vertex)
         // then merge it with its primary (non-virtual) counterpart

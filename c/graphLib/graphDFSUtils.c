@@ -64,7 +64,7 @@ int gp_CreateDFSTree(graphP theGraph)
     /* This outer loop causes the connected subgraphs of a disconnected
             graph to be numbered */
 
-    for (DFI = v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, DFI); v++)
+    for (DFI = v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, DFI); v++)
     {
         if (gp_IsNotDFSTreeRoot(theGraph, v))
             continue;
@@ -178,7 +178,7 @@ int _SortVertices(graphP theGraph)
 
     /* Convert DFSParent from v to DFI(v) or vice versa */
 
-    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
+    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
         if (gp_IsNotDFSTreeRoot(theGraph, v))
             gp_SetVertexParent(theGraph, v, gp_GetVertexIndex(theGraph, gp_GetVertexParent(theGraph, v)));
 
@@ -199,7 +199,7 @@ int _SortVertices(graphP theGraph)
        location as visited, then sets its index to be the location from
        whence we obtained the vertex record. */
 
-    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
+    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
     {
         srcPos = v;
         while (!gp_GetVertexVisited(theGraph, v))
@@ -290,7 +290,7 @@ int gp_LowpointAndLeastAncestor(graphP theGraph)
     _ClearVertexVisitedFlags(theGraph, FALSE);
 
     // This outer loop causes the connected subgraphs of a disconnected graph to be processed
-    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v);)
+    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v);)
     {
         if (gp_GetVertexVisited(theGraph, v))
         {
@@ -412,7 +412,7 @@ int gp_LeastAncestor(graphP theGraph)
     sp_ClearStack(theStack);
 
     // This outer loop causes the connected subgraphs of a disconnected graph to be processed
-    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v);)
+    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v);)
     {
         if (gp_GetVertexVisited(theGraph, v))
         {

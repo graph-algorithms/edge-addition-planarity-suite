@@ -231,7 +231,7 @@ int _DrawPlanar_InitStructures(DrawPlanarContext *context)
     if (theGraph->N <= 0)
         return NOTOK;
 
-    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
+    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
         _DrawPlanar_InitVertexInfo(context, v);
 
     Esize = gp_EdgeIndexBound(theGraph);
@@ -368,7 +368,7 @@ int _DrawPlanar_SortVertices(graphP theGraph)
             DrawPlanar_VertexInfo temp;
 
             // Relabel the context data members that indicate vertices
-            for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
+            for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
             {
                 if (gp_IsVertex(theGraph, context->VI[v].ancestor))
                 {
@@ -382,7 +382,7 @@ int _DrawPlanar_SortVertices(graphP theGraph)
             // which, for each v, newVI[index of v] = VI[v].  However, this loop avoids memory allocation
             // by performing the operation (almost) in-place, except for the pre-existing visitation flags.
             _ClearVertexVisitedFlags(theGraph, FALSE);
-            for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
+            for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
             {
                 // If the correct data has already been placed into position v
                 // by prior steps, then skip to the next vertex
@@ -576,7 +576,7 @@ int _DrawPlanar_ReadPostprocess(graphP theGraph, char *extraData)
             extraData = extraData + strlen(line) + 1;
 
             // Read the N lines of vertex information
-            for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
+            for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
             {
                 sscanf(extraData, " %d%c %d %d %d", &tempInt, &tempChar,
                        &context->VI[v].pos,
@@ -663,7 +663,7 @@ int _DrawPlanar_WritePostprocess(graphP theGraph, char **pExtraData)
             strcpy(extraData + extraDataPos, line);
             extraDataPos += (int)strlen(line);
 
-            for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
+            for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
             {
                 sprintf(line, "%d: %d %d %d\n", v - zeroBasedVertexOffset,
                         context->VI[v].pos,

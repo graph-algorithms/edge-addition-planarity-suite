@@ -264,7 +264,7 @@ extern "C"
 #define gp_IsNotVirtualVertex(theGraph, v) (!(gp_IsVirtualVertex(theGraph, v)))
 #define gp_IsNotAnyTypeVertex(theGraph, v) (!(gp_IsAnyTypeVertex(theGraph, v)))
 
-#define gp_VertexInRange(theGraph, v) ((v) <= (theGraph)->N)
+#define gp_VertexInRangeAscending(theGraph, v) ((v) <= (theGraph)->N)
 #define gp_VertexInRangeDescending(theGraph, v) (v)
 
 #define gp_PrimaryVertexIndexBound(theGraph) (gp_GetFirstVertex(theGraph) + (theGraph)->N)
@@ -273,7 +273,8 @@ extern "C"
 #define gp_VirtualVertexInUse(theGraph, virtualVertex) (gp_IsArc(gp_GetFirstArc(theGraph, virtualVertex)))
 #define gp_VirtualVertexNotInUse(theGraph, virtualVertex) (gp_IsNotArc(gp_GetFirstArc(theGraph, virtualVertex)))
 
-#define gp_VirtualVertexInRange(theGraph, v) ((v) <= theGraph->N + theGraph->NV)
+#define gp_VirtualVertexInRangeAscending(theGraph, v) ((v) <= theGraph->N + theGraph->NV)
+#define gp_VirtualVertexInRangeDescending(theGraph, v) ((v) > theGraph->N)
 
 #else // Using Slower 0-based Arrays
 
@@ -309,7 +310,7 @@ extern "C"
 #define gp_IsNotVirtualVertex(theGraph, v) (!(gp_IsVirtualVertex(theGraph, v)))
 #define gp_IsNotAnyTypeVertex(theGraph, v) (!(gp_IsAnyTypeVertex(theGraph, v)))
 
-#define gp_VertexInRange(theGraph, v) ((v) < (theGraph)->N)
+#define gp_VertexInRangeAscending(theGraph, v) ((v) < (theGraph)->N)
 #define gp_VertexInRangeDescending(theGraph, v) ((v) >= 0)
 
 #define gp_PrimaryVertexIndexBound(theGraph) (gp_GetFirstVertex(theGraph) + (theGraph)->N)
@@ -317,8 +318,14 @@ extern "C"
 
 #define gp_VirtualVertexInUse(theGraph, virtualVertex) (gp_IsArc(gp_GetFirstArc(theGraph, virtualVertex)))
 #define gp_VirtualVertexNotInUse(theGraph, virtualVertex) (gp_IsNotArc(gp_GetFirstArc(theGraph, virtualVertex)))
-#define gp_VirtualVertexInRange(theGraph, v) ((v) < theGraph->N + theGraph->NV)
+
+#define gp_VirtualVertexInRangeAscending(theGraph, v) ((v) < theGraph->N + theGraph->NV)
+#define gp_VirtualVertexInRangeDescending(theGraph, v) ((v) >= theGraph->N)
+
 #endif
+    ///////////////////////////////////////////
+    // End of Vertex iteration-related methods
+    //////////////////////////////////////////
 
 #define gp_GetRootFromDFSChild(theGraph, c) ((c) + theGraph->N)
 #define gp_GetDFSChildFromRoot(theGraph, R) ((R) - theGraph->N)

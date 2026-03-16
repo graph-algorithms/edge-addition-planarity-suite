@@ -301,14 +301,14 @@ void _InitVertices(graphP theGraph)
     memset(theGraph->VI, NIL_CHAR, gp_PrimaryVertexIndexBound(theGraph) * sizeof(vertexInfo));
     memset(theGraph->extFace, NIL_CHAR, gp_VertexIndexBound(theGraph) * sizeof(extFaceLinkRec));
 
-    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
+    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
         gp_InitVertexFlags(theGraph, v);
 #endif
     // N.B. This is the legacy API-based approach to initializing the vertices
     // int v;
 
     // // Initialize primary vertices
-    // for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
+    // for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
     // {
     //     _InitVertexRec(theGraph, v);
     //     _InitVertexInfo(theGraph, v);
@@ -317,7 +317,7 @@ void _InitVertices(graphP theGraph)
     // }
 
     // // Initialize virtual vertices
-    // for (v = gp_GetFirstVirtualVertex(theGraph); gp_VirtualVertexInRange(theGraph, v); v++)
+    // for (v = gp_GetFirstVirtualVertex(theGraph); gp_VirtualVertexInRangeAscending(theGraph, v); v++)
     // {
     //     _InitVertexRec(theGraph, v);
     //     gp_SetExtFaceVertex(theGraph, v, 0, NIL);
@@ -600,11 +600,11 @@ void _ClearVertexVisitedFlags(graphP theGraph, int includeVirtualVertices)
 {
     int v;
 
-    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
+    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
         gp_ClearVertexVisited(theGraph, v);
 
     if (includeVirtualVertices)
-        for (v = gp_GetFirstVirtualVertex(theGraph); gp_VirtualVertexInRange(theGraph, v); v++)
+        for (v = gp_GetFirstVirtualVertex(theGraph); gp_VirtualVertexInRangeAscending(theGraph, v); v++)
             gp_ClearVertexVisited(theGraph, v);
 }
 
@@ -676,7 +676,7 @@ int _ClearVisitedFlagsInOtherBicomps(graphP theGraph, int BicompRoot)
 {
     int R;
 
-    for (R = gp_GetFirstVirtualVertex(theGraph); gp_VirtualVertexInRange(theGraph, R); R++)
+    for (R = gp_GetFirstVirtualVertex(theGraph); gp_VirtualVertexInRangeAscending(theGraph, R); R++)
     {
         if (R != BicompRoot && gp_VirtualVertexInUse(theGraph, R))
         {
@@ -697,7 +697,7 @@ void _ClearVisitedFlagsInUnembeddedEdges(graphP theGraph)
 {
     int v, e;
 
-    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
+    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
     {
         e = gp_GetVertexFwdArcList(theGraph, v);
         while (gp_IsArc(e))
@@ -964,7 +964,7 @@ int gp_CopyAdjacencyLists(graphP dstGraph, graphP srcGraph)
         return NOTOK;
 
     // Copy the links that hook each owning vertex to its adjacency list
-    for (v = gp_GetFirstVertex(srcGraph); gp_VertexInRange(srcGraph, v); v++)
+    for (v = gp_GetFirstVertex(srcGraph); gp_VertexInRangeAscending(srcGraph, v); v++)
     {
         gp_SetFirstArc(dstGraph, v, gp_GetFirstArc(srcGraph, v));
         gp_SetLastArc(dstGraph, v, gp_GetLastArc(srcGraph, v));
@@ -1041,7 +1041,7 @@ int gp_CopyGraph(graphP dstGraph, graphP srcGraph)
 
     // Copy the primary vertices.  Augmentations to vertices created
     // by extensions are copied below by gp_CopyExtensions()
-    for (v = gp_GetFirstVertex(srcGraph); gp_VertexInRange(srcGraph, v); v++)
+    for (v = gp_GetFirstVertex(srcGraph); gp_VertexInRangeAscending(srcGraph, v); v++)
     {
         gp_CopyVertexRec(dstGraph, v, srcGraph, v);
         gp_CopyVertexInfo(dstGraph, v, srcGraph, v);
@@ -1051,7 +1051,7 @@ int gp_CopyGraph(graphP dstGraph, graphP srcGraph)
 
     // Copy the virtual vertices.  Augmentations to virtual vertices created
     // by extensions are copied below by gp_CopyExtensions()
-    for (v = gp_GetFirstVirtualVertex(srcGraph); gp_VirtualVertexInRange(srcGraph, v); v++)
+    for (v = gp_GetFirstVirtualVertex(srcGraph); gp_VirtualVertexInRangeAscending(srcGraph, v); v++)
     {
         gp_CopyVertexRec(dstGraph, v, srcGraph, v);
         gp_SetExtFaceVertex(dstGraph, v, 0, gp_GetExtFaceVertex(srcGraph, v, 0));
@@ -1145,7 +1145,7 @@ int gp_CreateRandomGraph(graphP theGraph)
             Also, we are not generating the DFS tree but rather a tree
             that simply ensures the resulting random graph is connected. */
 
-    for (v = gp_GetFirstVertex(theGraph) + 1; gp_VertexInRange(theGraph, v); v++)
+    for (v = gp_GetFirstVertex(theGraph) + 1; gp_VertexInRangeAscending(theGraph, v); v++)
     {
         u = _GetRandomNumber(gp_GetFirstVertex(theGraph), v - 1);
         if (gp_AddEdge(theGraph, u, 0, v, 0) != OK)
@@ -1299,7 +1299,7 @@ int gp_CreateRandomGraphEx(graphP theGraph, int numEdges)
 
     /* Generate a random tree. */
 
-    for (v = gp_GetFirstVertex(theGraph) + 1; gp_VertexInRange(theGraph, v); v++)
+    for (v = gp_GetFirstVertex(theGraph) + 1; gp_VertexInRangeAscending(theGraph, v); v++)
     {
         u = _GetRandomNumber(gp_GetFirstVertex(theGraph), v - 1);
         if (gp_AddEdge(theGraph, u, 0, v, 0) != OK)
@@ -1408,7 +1408,7 @@ int gp_CreateRandomGraphEx(graphP theGraph, int numEdges)
 
     /* Put all DFSParent indicators back to NIL */
 
-    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
+    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
         gp_SetVertexParent(theGraph, v, NIL);
 
     return OK;
@@ -1746,7 +1746,7 @@ int gp_AddEdge(graphP theGraph, int u, int ulink, int v, int vlink)
     int upos, vpos;
 
     if (theGraph == NULL || u < gp_GetFirstVertex(theGraph) || v < gp_GetFirstVertex(theGraph) ||
-        !gp_VirtualVertexInRange(theGraph, u) || !gp_VirtualVertexInRange(theGraph, v))
+        !gp_VirtualVertexInRangeAscending(theGraph, u) || !gp_VirtualVertexInRangeAscending(theGraph, v))
         return NOTOK;
 
     /* We enforce the edge limit */
