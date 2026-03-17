@@ -58,7 +58,7 @@ int _ChooseTypeOfNonOuterplanarityMinor(graphP theGraph, int v, int R)
 
     // If the root copy is not a root copy of the current vertex v,
     // then the Walkdown terminated on a descendant bicomp, which is Minor A.
-    if (gp_GetPrimaryVertexFromRoot(theGraph, R) != v)
+    if (gp_GetVertexFromBicompRoot(theGraph, R) != v)
     {
         theGraph->IC.minorType |= MINORTYPE_A;
         return OK;

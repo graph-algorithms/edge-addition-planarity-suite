@@ -108,10 +108,10 @@ static int moduleIDGenerator = 0;
         the graph, vertex or edge levels, then an overload of
         fpInitGraph() will be needed.
 
-     b) If any data must be associated with primary and virtual vertices,
+     b) If any data must be associated with vertices and virtual vertices,
         then an overload of fpInitVertexRec() is needed.  If data must be
-        associated only with primary vertices (0 to N-1), then one can
-        overload fpInitVertexInfo() instead.
+        associated only with vertices (and not virtual vertices), then
+        one can overload fpInitVertexInfo() instead.
         The overload function should be named _Feature_InitVertexRec()
         or _Feature_InitVertexInfo().
         It will invoke the base fpInitVertexRec() or fpInitVertexInfo()

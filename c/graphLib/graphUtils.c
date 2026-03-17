@@ -307,7 +307,7 @@ void _InitVertices(graphP theGraph)
     // N.B. This is the legacy API-based approach to initializing the vertices
     // int v;
 
-    // // Initialize primary vertices
+    // // Initialize the vertices (non-virtual vertices)
     // for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
     // {
     //     _InitVertexRec(theGraph, v);
@@ -1039,7 +1039,7 @@ int gp_CopyGraph(graphP dstGraph, graphP srcGraph)
         return NOTOK;
     }
 
-    // Copy the primary vertices.  Augmentations to vertices created
+    // Copy the vertices (non-virtual only).  Augmentations to vertices created
     // by extensions are copied below by gp_CopyExtensions()
     for (v = gp_GetFirstVertex(srcGraph); gp_VertexInRangeAscending(srcGraph, v); v++)
     {
@@ -2545,8 +2545,8 @@ int gp_RestoreVertices(graphP theGraph)
 
 int _ComputeArcType(graphP theGraph, int a, int b, int edgeType)
 {
-    a = gp_IsVirtualVertex(theGraph, a) ? gp_GetPrimaryVertexFromRoot(theGraph, a) : a;
-    b = gp_IsVirtualVertex(theGraph, b) ? gp_GetPrimaryVertexFromRoot(theGraph, b) : b;
+    a = gp_IsVirtualVertex(theGraph, a) ? gp_GetVertexFromBicompRoot(theGraph, a) : a;
+    b = gp_IsVirtualVertex(theGraph, b) ? gp_GetVertexFromBicompRoot(theGraph, b) : b;
 
     if (a < b)
         return edgeType == EDGE_TYPE_PARENT || edgeType == EDGE_TYPE_CHILD ? EDGE_TYPE_CHILD : EDGE_TYPE_FORWARD;
@@ -2568,8 +2568,8 @@ int _SetEdgeType(graphP theGraph, int u, int v)
     int e, eTwin, u_orig, v_orig;
 
     // If u or v is a virtual vertex (a root copy), then get the non-virtual counterpart.
-    u_orig = gp_IsVirtualVertex(theGraph, u) ? (gp_GetPrimaryVertexFromRoot(theGraph, u)) : u;
-    v_orig = gp_IsVirtualVertex(theGraph, v) ? (gp_GetPrimaryVertexFromRoot(theGraph, v)) : v;
+    u_orig = gp_IsVirtualVertex(theGraph, u) ? (gp_GetVertexFromBicompRoot(theGraph, u)) : u;
+    v_orig = gp_IsVirtualVertex(theGraph, v) ? (gp_GetVertexFromBicompRoot(theGraph, v)) : v;
 
     // Get the edge for which we will set the type
 

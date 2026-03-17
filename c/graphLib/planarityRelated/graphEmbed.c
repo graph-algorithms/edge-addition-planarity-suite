@@ -381,16 +381,16 @@ void _EmbedBackEdgeToDescendant(graphP theGraph, int RootSide, int RootVertex, i
 {
     int fwdArc, backArc, parentCopy;
 
-    /* We get the two edge records of the back edge to embed.
+    /* We get the two edge records of the back edge (v, W) to embed.
         The Walkup recorded in W's adjacentTo the index of the forward arc
-        from the root's parent copy to the descendant W. */
+        that goes from the root's parent copy, v, to the descendant W. */
 
     fwdArc = gp_GetVertexPertinentEdge(theGraph, W);
     backArc = gp_GetTwinArc(theGraph, fwdArc);
 
     /* The forward arc is removed from the fwdArcList of the root's parent copy. */
 
-    parentCopy = gp_GetPrimaryVertexFromRoot(theGraph, RootVertex);
+    parentCopy = gp_GetVertexFromBicompRoot(theGraph, RootVertex);
 
     gp_LogLine(gp_MakeLogStr5("graphEmbed.c/_EmbedBackEdgeToDescendant() V=%d, R=%d, R_out=%d, W=%d, W_in=%d",
                               parentCopy, RootVertex, RootSide, W, WPrevLink));
@@ -751,12 +751,14 @@ void _WalkUp(graphP theGraph, int v, int e)
         // so walk up to the parent bicomp and continue
         else
         {
-            // Step up from the root (virtual) vertex to the primary (non-virtual) vertex
-            Zig = Zag = gp_GetPrimaryVertexFromRoot(theGraph, R);
+            // Step up from the bicomp root vertex (virtual) to the parent copy of
+            // the vertex (non-virtual; called parent copy because it is the one that
+            // is in a bicomp with a virtual or non-virtual copy of its DFS parent)
+            Zig = Zag = gp_GetVertexFromBicompRoot(theGraph, R);
             ZigPrevLink = 1;
             ZagPrevLink = 0;
 
-            // Add the new root vertex to the list of pertinent bicomp roots of the primary vertex.
+            // Add the new bicomp root o the list of pertinent bicomp roots of the parent copy vertex.
             // The new root vertex is appended if future pertinent and prepended if only pertinent
             // so that, by virtue of storage, the Walkdown will process all pertinent bicomps that
             // are not future pertinent before any future pertinent bicomps.
@@ -1299,10 +1301,10 @@ int _JoinBicomps(graphP theGraph)
 
     for (R = gp_GetFirstVirtualVertex(theGraph); gp_VirtualVertexInRangeAscending(theGraph, R); R++)
     {
-        // If the root is still active (i.e. an in-use virtual vertex)
-        // then merge it with its primary (non-virtual) counterpart
+        // If the bicomp root is still active (i.e. an in-use virtual vertex)
+        // then merge it with its parent copy vertex (non-virtual)
         if (gp_VirtualVertexInUse(theGraph, R))
-            _MergeVertex(theGraph, gp_GetPrimaryVertexFromRoot(theGraph, R), 0, R);
+            _MergeVertex(theGraph, gp_GetVertexFromBicompRoot(theGraph, R), 0, R);
     }
 
     return OK;

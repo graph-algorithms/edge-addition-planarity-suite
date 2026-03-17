@@ -828,7 +828,7 @@ int _FindK33WithMergeBlocker(graphP theGraph, K33SearchContext *context, int v, 
     /* Switch the 'current step' variable v to be equal to the
       non-virtual counterpart of the bicomp root. */
 
-    IC->v = gp_GetPrimaryVertexFromRoot(theGraph, R);
+    IC->v = gp_GetVertexFromBicompRoot(theGraph, R);
 
     /* Reinitialize the visitation, pertinence and future pertinence settings from step u_max for step v */
 
@@ -1844,7 +1844,7 @@ int _MarkStraddlingBridgePath(graphP theGraph, int u_min, int u_max, int u_d, in
         if (gp_IsVirtualVertex(theGraph, p))
         {
             gp_SetVertexVisited(theGraph, p);
-            p = gp_GetPrimaryVertexFromRoot(theGraph, p);
+            p = gp_GetVertexFromBicompRoot(theGraph, p);
         }
     }
 
@@ -1876,7 +1876,7 @@ int _MarkStraddlingBridgePath(graphP theGraph, int u_min, int u_max, int u_d, in
 
         if (gp_IsVirtualVertex(theGraph, p))
         {
-            p = gp_GetPrimaryVertexFromRoot(theGraph, p);
+            p = gp_GetVertexFromBicompRoot(theGraph, p);
             gp_ClearVertexVisited(theGraph, p);
         }
     }

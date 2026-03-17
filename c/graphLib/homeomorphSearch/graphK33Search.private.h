@@ -22,7 +22,7 @@ extern "C"
 
     typedef K33Search_EdgeRec *K33Search_EdgeRecP;
 
-    // Additional equipment for each primary vertex
+    // Additional equipment for each vertex (non-virtual only)
     typedef struct
     {
         int separatedDFSChildList, backArcList, mergeBlocker;

@@ -617,7 +617,7 @@ int _MarkDFSPath(graphP theGraph, int ancestor, int descendant)
     // If we are marking from a root (virtual) vertex upward, then go up to the
     // non-virtual parent copy before starting the loop
     if (gp_IsVirtualVertex(theGraph, descendant))
-        descendant = gp_GetPrimaryVertexFromRoot(theGraph, descendant);
+        descendant = gp_GetVertexFromBicompRoot(theGraph, descendant);
 
     // Mark the lowest vertex (the one with the highest number).
     gp_SetVertexVisited(theGraph, descendant);
@@ -635,7 +635,7 @@ int _MarkDFSPath(graphP theGraph, int ancestor, int descendant)
         // counterpart, so that can also be marked as visited.
         if (gp_IsVirtualVertex(theGraph, descendant))
         {
-            parent = gp_GetPrimaryVertexFromRoot(theGraph, descendant);
+            parent = gp_GetVertexFromBicompRoot(theGraph, descendant);
         }
 
         // If we are on a regular, non-virtual vertex then get the edge to the parent,

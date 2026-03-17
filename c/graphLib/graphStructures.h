@@ -255,8 +255,12 @@ extern "C"
                 ? ((v) < gp_GetFirstVertex(theGraph) ? (NOTOK, 0) : 0) \
                 : ((v) > gp_GetLastVirtualVertex(theGraph) ? (NOTOK, 0) : 1)))
 
-#define gp_IsAnyTypeVertex(theGraph, v) \
-    ((v) == NIL ? 0 : ((v) < gp_GetFirstAnyTypeVertex(theGraph) ? (NOTOK, 0) : ((v) > gp_GetLastAnyTypeVertex(theGraph) ? (NOTOK, 0) : 1)))
+#define gp_IsAnyTypeVertex(theGraph, v)              \
+    ((v) == NIL                                      \
+         ? 0                                         \
+         : ((v) < gp_GetFirstAnyTypeVertex(theGraph) \
+                ? (NOTOK, 0)                         \
+                : ((v) > gp_GetLastAnyTypeVertex(theGraph) ? (NOTOK, 0) : 1)))
 
 #endif
 
@@ -335,7 +339,7 @@ extern "C"
 
 #define gp_GetRootFromDFSChild(theGraph, c) ((c) + theGraph->N)
 #define gp_GetDFSChildFromRoot(theGraph, R) ((R) - theGraph->N)
-#define gp_GetPrimaryVertexFromRoot(theGraph, R) gp_GetVertexParent(theGraph, gp_GetDFSChildFromRoot(theGraph, R))
+#define gp_GetVertexFromBicompRoot(theGraph, R) gp_GetVertexParent(theGraph, gp_GetDFSChildFromRoot(theGraph, R))
 
 #define gp_IsSeparatedDFSChild(theGraph, theChild) (gp_VirtualVertexInUse(theGraph, gp_GetRootFromDFSChild(theGraph, theChild)))
 #define gp_IsNotSeparatedDFSChild(theGraph, theChild) (gp_VirtualVertexNotInUse(theGraph, gp_GetRootFromDFSChild(theGraph, theChild)))
@@ -418,7 +422,7 @@ extern "C"
     /********************************************************************
      Vertex Info Structure Definition.
 
-     This structure equips the primary (non-virtual) vertices with additional
+     This structure equips the non-virtual vertices with additional
      information needed for lowpoint and planarity-related algorithms.
 
         parent: The DFI of the DFS tree parent of this vertex
@@ -500,17 +504,23 @@ extern "C"
 #define gp_GetVertexLastPertinentRoot(theGraph, v) gp_GetRootFromDFSChild(theGraph, LCGetPrev(theGraph->BicompRootLists, theGraph->VI[v].pertinentRoots, NIL))
 #define gp_GetVertexLastPertinentRootChild(theGraph, v) LCGetPrev(theGraph->BicompRootLists, theGraph->VI[v].pertinentRoots, NIL)
 
-#define gp_DeleteVertexPertinentRoot(theGraph, v, R) \
-    gp_SetVertexPertinentRootsList(theGraph, v,      \
-                                   LCDelete(theGraph->BicompRootLists, gp_GetVertexPertinentRootsList(theGraph, v), gp_GetDFSChildFromRoot(theGraph, R)))
+#define gp_DeleteVertexPertinentRoot(theGraph, v, R)                                     \
+    gp_SetVertexPertinentRootsList(theGraph, v,                                          \
+                                   LCDelete(theGraph->BicompRootLists,                   \
+                                            gp_GetVertexPertinentRootsList(theGraph, v), \
+                                            gp_GetDFSChildFromRoot(theGraph, R)))
 
-#define gp_PrependVertexPertinentRoot(theGraph, v, R) \
-    gp_SetVertexPertinentRootsList(theGraph, v,       \
-                                   LCPrepend(theGraph->BicompRootLists, gp_GetVertexPertinentRootsList(theGraph, v), gp_GetDFSChildFromRoot(theGraph, R)))
+#define gp_PrependVertexPertinentRoot(theGraph, v, R)                                     \
+    gp_SetVertexPertinentRootsList(theGraph, v,                                           \
+                                   LCPrepend(theGraph->BicompRootLists,                   \
+                                             gp_GetVertexPertinentRootsList(theGraph, v), \
+                                             gp_GetDFSChildFromRoot(theGraph, R)))
 
-#define gp_AppendVertexPertinentRoot(theGraph, v, R) \
-    gp_SetVertexPertinentRootsList(theGraph, v,      \
-                                   LCAppend(theGraph->BicompRootLists, gp_GetVertexPertinentRootsList(theGraph, v), gp_GetDFSChildFromRoot(theGraph, R)))
+#define gp_AppendVertexPertinentRoot(theGraph, v, R)                                     \
+    gp_SetVertexPertinentRootsList(theGraph, v,                                          \
+                                   LCAppend(theGraph->BicompRootLists,                   \
+                                            gp_GetVertexPertinentRootsList(theGraph, v), \
+                                            gp_GetDFSChildFromRoot(theGraph, R)))
 
 #define gp_GetVertexFuturePertinentChild(theGraph, v) (theGraph->VI[v].futurePertinentChild)
 #define gp_SetVertexFuturePertinentChild(theGraph, v, theFuturePertinentChild) (theGraph->VI[v].futurePertinentChild = theFuturePertinentChild)
@@ -598,7 +608,7 @@ extern "C"
      Graph structure definition
             V : Array of vertex records (allocated size N + NV)
             VI: Array of additional vertexInfo structures (allocated size N)
-            N : Number of primary vertices (the "order" of the graph)
+            N : Number of non-virtual vertices (the "order" of the graph)
             NV: Number of virtual vertices (currently always equal to N)
 
             E : Array of edge records (edge records come in pairs and represent half edges, or arcs)
@@ -673,10 +683,14 @@ extern "C"
 // as if the adjacency list were circular, i.e. that the
 // first arc and last arc were linked
 #define gp_GetNextArcCircular(theGraph, e) \
-    (gp_IsArc(gp_GetNextArc(theGraph, e)) ? gp_GetNextArc(theGraph, e) : gp_GetFirstArc(theGraph, theGraph->E[gp_GetTwinArc(theGraph, e)].neighbor))
+    (gp_IsArc(gp_GetNextArc(theGraph, e))  \
+         ? gp_GetNextArc(theGraph, e)      \
+         : gp_GetFirstArc(theGraph, theGraph->E[gp_GetTwinArc(theGraph, e)].neighbor))
 
 #define gp_GetPrevArcCircular(theGraph, e) \
-    (gp_IsArc(gp_GetPrevArc(theGraph, e)) ? gp_GetPrevArc(theGraph, e) : gp_GetLastArc(theGraph, theGraph->E[gp_GetTwinArc(theGraph, e)].neighbor))
+    (gp_IsArc(gp_GetPrevArc(theGraph, e))  \
+         ? gp_GetPrevArc(theGraph, e)      \
+         : gp_GetLastArc(theGraph, theGraph->E[gp_GetTwinArc(theGraph, e)].neighbor))
 
 // Definitions that make the cross-link binding between a vertex and an arc
 // The old first or last arc should be bound to this arc by separate calls,
