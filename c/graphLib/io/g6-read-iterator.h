@@ -35,19 +35,19 @@ extern "C"
     } G6ReadIterator;
     typedef G6ReadIterator *G6ReadIteratorP;
 
-    int g6_NewReader(G6ReadIteratorP *, graphP);
+    int g6_NewReader(G6ReadIteratorP *ppG6ReadIterator, graphP pGraph);
     bool g6_EndReached(G6ReadIteratorP pG6ReadIterator);
 
-    int g6_GetNumGraphsRead(G6ReadIteratorP, int *);
-    int g6_GetOrderFromReader(G6ReadIteratorP, int *);
-    int g6_GetGraphFromReader(G6ReadIteratorP, graphP *);
+    int g6_GetNumGraphsRead(G6ReadIteratorP pG6ReadIterator, int *pNumGraphsRead);
+    int g6_GetOrderFromReader(G6ReadIteratorP pG6ReadIterator, int *pOrder);
+    int g6_GetGraphFromReader(G6ReadIteratorP pG6ReadIterator, graphP *ppGraph);
 
-    int g6_InitReaderWithString(G6ReadIteratorP, char *);
-    int g6_InitReaderWithFileName(G6ReadIteratorP, char const *const);
+    int g6_InitReaderWithString(G6ReadIteratorP pG6ReadIterator, char *inputString);
+    int g6_InitReaderWithFileName(G6ReadIteratorP pG6ReadIterator, char const *const infileName);
 
-    int g6_ReadGraph(G6ReadIteratorP);
+    int g6_ReadGraph(G6ReadIteratorP pG6ReadIterator);
 
-    void g6_FreeReader(G6ReadIteratorP *);
+    void g6_FreeReader(G6ReadIteratorP *ppG6ReadIterator);
 
 #ifdef __cplusplus
 }
