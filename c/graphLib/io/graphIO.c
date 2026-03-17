@@ -11,8 +11,8 @@ See the LICENSE.TXT file for licensing information.
 #include "../graph.h"
 
 /* Imported functions */
-extern int _g6_ReadGraphFromStrOrFile(graphP, strOrFileP);
-extern int _g6_WriteGraphToStrOrFile(graphP, strOrFileP, char **);
+extern int _g6_ReadGraphFromStrOrFile(graphP theGraph, strOrFileP g6InputContainer);
+extern int _g6_WriteGraphToStrOrFile(graphP theGraph, strOrFileP outputContainer, char **outputStr);
 
 /* Private functions (exported to system) */
 
