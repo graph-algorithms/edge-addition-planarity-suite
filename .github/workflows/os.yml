@@ -42,7 +42,7 @@ jobs:
       - run: git config --global core.autocrlf input
         shell: pwsh -command ". '{0}'".
       - uses: actions/checkout@v4
-      - uses: cygwin/cygwin-install-action@v5
+      - uses: cygwin/cygwin-install-action@v6
         with:
           packages: gcc-core,automake,libtool,autoconf
       - name: Configure . . .

@@ -16,10 +16,17 @@ int _g6_ReadGraphFromString(graphP, char *);
 int _g6_ReadGraphFromStrOrFile(graphP, strOrFileP);
 
 /* Private functions */
+int _g6_InitReaderWithStrOrFile(G6ReadIteratorP, strOrFileP);
 int _g6_InitReader(G6ReadIteratorP);
+bool _g6_IsReaderInitialized(G6ReadIteratorP);
 int _g6_ValidateHeader(strOrFileP);
 int _g6_ValidateFirstChar(char, const int);
 int _g6_DetermineOrderFromInput(strOrFileP, int *);
+// NOTE: this method is used by g6_ReadGraph() to ensure that graphs after the
+// first one in the file have the same order. The G6 format specification does
+// not have this restriction, but the docs for Nauty's geng utility indicate
+// that its output files will only contain all graphs up to isomorphism for the
+// single graph order specified with the positional command line argument.
 int _g6_ValidateOrderOfEncodedGraph(char *, int);
 int _g6_ValidateGraphEncoding(char *, const int, const int);
 int _g6_DecodeGraph(char *, const int, const int, graphP);
@@ -60,7 +67,7 @@ int g6_NewReader(G6ReadIteratorP *ppG6ReadIterator, graphP pGraph)
     return exitCode;
 }
 
-bool g6_IsReaderInitialized(G6ReadIteratorP pG6ReadIterator)
+bool _g6_IsReaderInitialized(G6ReadIteratorP pG6ReadIterator)
 {
     bool readerInitialized = true;
 
@@ -102,11 +109,13 @@ bool g6_EndReached(G6ReadIteratorP pG6ReadIterator)
 
 int g6_GetNumGraphsRead(G6ReadIteratorP pG6ReadIterator, int *pNumGraphsRead)
 {
-    if (g6_IsReaderInitialized(pG6ReadIterator) == false)
+    if (_g6_IsReaderInitialized(pG6ReadIterator) == false)
     {
         ErrorMessage("Unable to get numGraphsRead, as G6ReadIterator is not "
                      "allocated.\n");
+
         (*pNumGraphsRead) = 0;
+
         return NOTOK;
     }
 
@@ -117,9 +126,13 @@ int g6_GetNumGraphsRead(G6ReadIteratorP pG6ReadIterator, int *pNumGraphsRead)
 
 int g6_GetOrderFromReader(G6ReadIteratorP pG6ReadIterator, int *pOrder)
 {
-    if (pG6ReadIterator == NULL)
+    if (_g6_IsReaderInitialized(pG6ReadIterator) == false)
     {
-        ErrorMessage("G6ReadIterator is not allocated.\n");
+        ErrorMessage("Unable to get order, as G6ReadIterator is not "
+                     "allocated.\n");
+
+        (*pOrder) = 0;
+
         return NOTOK;
     }
 
@@ -130,9 +143,13 @@ int g6_GetOrderFromReader(G6ReadIteratorP pG6ReadIterator, int *pOrder)
 
 int g6_GetReaderGraph(G6ReadIteratorP pG6ReadIterator, graphP *ppGraph)
 {
-    if (pG6ReadIterator == NULL)
+    if (_g6_IsReaderInitialized(pG6ReadIterator) == false)
     {
-        ErrorMessage("G6ReadIterator is not allocated.\n");
+        ErrorMessage("Unable to get currGraph from reader, as G6ReadIterator "
+                     "is not allocated.\n");
+
+        (*ppGraph) = pG6ReadIterator->currGraph;
+
         return NOTOK;
     }
 
@@ -141,21 +158,21 @@ int g6_GetReaderGraph(G6ReadIteratorP pG6ReadIterator, graphP *ppGraph)
     return OK;
 }
 
-int g6_InitReaderFromString(G6ReadIteratorP pG6ReadIterator, char *inputString)
+int g6_InitReaderWithString(G6ReadIteratorP pG6ReadIterator, char *inputString)
 {
-    return g6_InitReaderFromStrOrFile(
+    return _g6_InitReaderWithStrOrFile(
         pG6ReadIterator,
         sf_New(inputString, NULL, READTEXT));
 }
 
-int g6_InitReaderFromFile(G6ReadIteratorP pG6ReadIterator, char const *const infileName)
+int g6_InitReaderWithFileName(G6ReadIteratorP pG6ReadIterator, char const *const infileName)
 {
-    return g6_InitReaderFromStrOrFile(
+    return _g6_InitReaderWithStrOrFile(
         pG6ReadIterator,
         sf_New(NULL, infileName, READTEXT));
 }
 
-int g6_InitReaderFromStrOrFile(G6ReadIteratorP pG6ReadIterator, strOrFileP g6InputContainer)
+int _g6_InitReaderWithStrOrFile(G6ReadIteratorP pG6ReadIterator, strOrFileP g6InputContainer)
 {
     if (
         sf_ValidateStrOrFile(g6InputContainer) != OK ||
@@ -263,8 +280,8 @@ int _g6_InitReader(G6ReadIteratorP pG6ReadIterator)
     // Ensures zero-based flag is set regardless of whether the graph was initialized or reinitialized.
     pG6ReadIterator->currGraph->internalFlags |= FLAGS_ZEROBASEDIO;
 
-    pG6ReadIterator->numCharsForOrder = _getNumCharsForGraphOrder(order);
-    pG6ReadIterator->numCharsForGraphEncoding = _getNumCharsForGraphEncoding(order);
+    pG6ReadIterator->numCharsForOrder = _g6_GetNumCharsForOrder(order);
+    pG6ReadIterator->numCharsForGraphEncoding = _g6_GetNumCharsForEncoding(order);
     // Must add 3 bytes for newline, possible carriage return, and null terminator
     pG6ReadIterator->currGraphBuffSize = pG6ReadIterator->numCharsForOrder + pG6ReadIterator->numCharsForGraphEncoding + 3;
     pG6ReadIterator->currGraphBuff = (char *)calloc(pG6ReadIterator->currGraphBuffSize, sizeof(char));
@@ -395,7 +412,7 @@ int g6_ReadGraph(G6ReadIteratorP pG6ReadIterator)
     char messageContents[MAXLINE + 1];
     messageContents[0] = '\0';
 
-    if (!g6_IsReaderInitialized(pG6ReadIterator))
+    if (!_g6_IsReaderInitialized(pG6ReadIterator))
     {
         ErrorMessage("G6ReadIterator is not allocated.\n");
         return NOTOK;
@@ -540,14 +557,14 @@ int _g6_ValidateGraphEncoding(char *graphBuff, const int order, const int numCha
 {
     int exitCode = OK;
 
-    int expectedNumPaddingZeroes = _getExpectedNumPaddingZeroes(order, numChars);
+    int expectedNumPaddingZeroes = _g6_GetExpectedNumPaddingZeroes(order, numChars);
     char finalByte = graphBuff[numChars - 1] - 63;
     int numPaddingZeroes = 0;
 
     // Num edges of the graph (and therefore the number of bits) is (n * (n-1))/2, and
     // since each resulting byte needs to correspond to an ascii character between 63 and 126,
     // each group is only comprised of 6 bits (to which we add 63 for the final byte value)
-    int expectedNumChars = _getNumCharsForGraphEncoding(order);
+    int expectedNumChars = _g6_GetNumCharsForEncoding(order);
     int numCharsForGraphEncoding = strlen(graphBuff);
 
     if (expectedNumChars != numCharsForGraphEncoding)
@@ -605,7 +622,7 @@ int _g6_DecodeGraph(char *graphBuff, const int order, const int numChars, graphP
 {
     int exitCode = OK;
 
-    int numPaddingZeroes = _getExpectedNumPaddingZeroes(order, numChars);
+    int numPaddingZeroes = _g6_GetExpectedNumPaddingZeroes(order, numChars);
 
     char currByte = '\0';
     int bitValue = 0;
@@ -736,7 +753,7 @@ int _g6_ReadGraphFromStrOrFile(graphP pGraphToRead, strOrFileP g6InputContainer)
         return NOTOK;
     }
 
-    if (g6_InitReaderFromStrOrFile(pG6ReadIterator, g6InputContainer) != OK)
+    if (_g6_InitReaderWithStrOrFile(pG6ReadIterator, g6InputContainer) != OK)
     {
         ErrorMessage("Unable to begin .g6 read iteration.\n");
 

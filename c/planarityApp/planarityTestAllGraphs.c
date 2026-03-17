@@ -150,7 +150,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
         return Result;
     }
 
-    if ((Result = g6_InitReaderFromFile(pG6ReadIterator, infileName)) != OK)
+    if ((Result = g6_InitReaderWithFileName(pG6ReadIterator, infileName)) != OK)
     {
         ErrorMessage("Unable to begin .g6 read iteration.\n");
 

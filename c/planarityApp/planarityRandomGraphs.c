@@ -103,7 +103,7 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
     charsAvailForStr = (int)(MAXLINE - strlen(messageFormat));
     if (outfileName != NULL)
     {
-        if (g6_InitWriterToFile(pG6WriteIterator, outfileName) != OK)
+        if (g6_InitWriterWithFileName(pG6WriteIterator, outfileName) != OK)
         {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-nonliteral"
@@ -124,7 +124,7 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
         // output the generated random graphs to .g6 is if we Reconfigure() and
         // choose these options; in that case, need to set a default output filename.
         sprintf(theFileName, "random%cn%d.k%d.g6", FILE_DELIMITER, SizeOfGraphs, NumGraphs);
-        if (g6_InitWriterToFile(pG6WriteIterator, theFileName) != OK)
+        if (g6_InitWriterWithFileName(pG6WriteIterator, theFileName) != OK)
         {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-nonliteral"

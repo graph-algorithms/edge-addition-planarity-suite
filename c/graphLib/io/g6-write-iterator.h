@@ -37,15 +37,13 @@ extern "C"
     typedef G6WriteIterator *G6WriteIteratorP;
 
     int g6_NewWriter(G6WriteIteratorP *, graphP);
-    bool g6_IsWriterInitialized(G6WriteIteratorP);
 
     int g6_GetNumGraphsWritten(G6WriteIteratorP, int *);
     int g6_GetOrderFromWriter(G6WriteIteratorP, int *);
     int g6_GetGraphFromWriter(G6WriteIteratorP, graphP *);
 
-    int g6_InitWriterToString(G6WriteIteratorP);
-    int g6_InitWriterToFile(G6WriteIteratorP, char *);
-    int g6_InitWriterToStrOrFile(G6WriteIteratorP, strOrFileP);
+    int g6_InitWriterWithString(G6WriteIteratorP);
+    int g6_InitWriterWithFileName(G6WriteIteratorP, char *);
 
     int g6_WriteGraph(G6WriteIteratorP);
 
