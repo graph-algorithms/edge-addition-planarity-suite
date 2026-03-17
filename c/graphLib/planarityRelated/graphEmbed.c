@@ -120,7 +120,7 @@ int gp_Embed(graphP theGraph, int embedFlags)
         {
             if (gp_IsVertex(theGraph, gp_GetVertexPertinentRootsList(theGraph, c)))
             {
-                RetVal = theGraph->functions.fpWalkDown(theGraph, v, gp_GetRootFromDFSChild(theGraph, c));
+                RetVal = theGraph->functions.fpWalkDown(theGraph, v, gp_GetBicompRootFromDFSChild(theGraph, c));
                 // If Walkdown returns OK, then it is OK to proceed with edge addition.
                 // Otherwise, if Walkdown returns NONEMBEDDABLE then we stop edge addition.
                 if (RetVal != OK)
@@ -231,7 +231,7 @@ int _EmbeddingInitialize(graphP theGraph)
 
                     // (8) Record e as the first and last arc of the virtual vertex R,
                     //     a root copy of uparent uniquely associated with child u
-                    R = gp_GetRootFromDFSChild(theGraph, gp_GetVertexIndex(theGraph, u));
+                    R = gp_GetBicompRootFromDFSChild(theGraph, gp_GetVertexIndex(theGraph, u));
                     gp_SetFirstArc(theGraph, R, e);
                     gp_SetLastArc(theGraph, R, e);
                 }
@@ -334,7 +334,7 @@ int _EmbeddingInitialize(graphP theGraph)
         }
         else
         {
-            R = gp_GetRootFromDFSChild(theGraph, v);
+            R = gp_GetBicompRootFromDFSChild(theGraph, v);
 
             // Make the child edge the only edge in the virtual vertex adjacency list
             e = gp_GetFirstArc(theGraph, R);
@@ -624,7 +624,7 @@ int _MergeBicomps(graphP theGraph, int v, int RootVertex, int W, int WPrevLink)
 
         // If the merge will place the current future pertinence child into the same bicomp as Z,
         // then we advance to the next child (or NIL) because future pertinence is
-        if (gp_GetDFSChildFromRoot(theGraph, R) == gp_GetVertexFuturePertinentChild(theGraph, Z))
+        if (gp_GetDFSChildFromBicompRoot(theGraph, R) == gp_GetVertexFuturePertinentChild(theGraph, Z))
         {
             gp_SetVertexFuturePertinentChild(theGraph, Z,
                                              gp_GetVertexNextDFSChild(theGraph, Z, gp_GetVertexFuturePertinentChild(theGraph, Z)));
@@ -768,7 +768,7 @@ void _WalkUp(graphP theGraph, int v, int e)
             //       whether the DFS child or any of its descendants connect by a back edge to
             //       ancestors of v. If so, then the bicomp rooted at RootVertex must contain a
             //       future pertinent vertex that must be kept on the external face.
-            if (gp_GetVertexLowpoint(theGraph, gp_GetDFSChildFromRoot(theGraph, R)) < v)
+            if (gp_GetVertexLowpoint(theGraph, gp_GetDFSChildFromBicompRoot(theGraph, R)) < v)
                 gp_AppendVertexPertinentRoot(theGraph, Zig, R);
             else
                 gp_PrependVertexPertinentRoot(theGraph, Zag, R);
@@ -847,7 +847,7 @@ void _WalkUp(graphP theGraph, int v, int e)
 int _WalkDown(graphP theGraph, int v, int RootVertex)
 {
     int RetVal, W, WPrevLink, R, X, XPrevLink, Y, YPrevLink, RootSide, e;
-    int RootEdgeChild = gp_GetDFSChildFromRoot(theGraph, RootVertex);
+    int RootEdgeChild = gp_GetDFSChildFromBicompRoot(theGraph, RootVertex);
 
     sp_ClearStack(theGraph->theStack);
 

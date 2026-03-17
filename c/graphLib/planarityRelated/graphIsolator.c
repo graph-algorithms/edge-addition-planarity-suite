@@ -522,7 +522,7 @@ int _FindUnembeddedEdgeToSubtree(graphP theGraph, int ancestor,
             DFS tree root edge of the bicomp rooted by SubtreeRoot. */
 
     SubtreeRoot = gp_IsVirtualVertex(theGraph, SubtreeRoot)
-                      ? gp_GetDFSChildFromRoot(theGraph, SubtreeRoot)
+                      ? gp_GetDFSChildFromBicompRoot(theGraph, SubtreeRoot)
                       : SubtreeRoot;
 
     /* Find the least descendant of the cut vertex incident to the ancestor. */

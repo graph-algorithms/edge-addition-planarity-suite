@@ -833,7 +833,7 @@ int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer)
 
         if (sprintf(lineBuf, "%d(copy of=%d, DFS child=%d):",
                     v, gp_GetVertexIndex(theGraph, v),
-                    gp_GetDFSChildFromRoot(theGraph, v)) < 1)
+                    gp_GetDFSChildFromBicompRoot(theGraph, v)) < 1)
             return NOTOK;
         if (sf_fputs(lineBuf, outputContainer) == EOF)
             return NOTOK;

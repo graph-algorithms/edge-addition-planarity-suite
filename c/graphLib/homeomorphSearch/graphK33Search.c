@@ -1100,7 +1100,7 @@ int _TestForStraddlingBridge(graphP theGraph, K33SearchContext *context, int u_m
     int p, c, d, excludedChild, e;
 
     p = IC->v;
-    excludedChild = gp_GetDFSChildFromRoot(theGraph, IC->r);
+    excludedChild = gp_GetDFSChildFromBicompRoot(theGraph, IC->r);
     d = NIL;
 
     // Starting at V, traverse the ancestor path to u_max looking for a straddling bridge

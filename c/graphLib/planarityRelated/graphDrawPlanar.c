@@ -651,7 +651,7 @@ void _CollectDrawingData(DrawPlanarContext *context, int RootVertex, int W, int 
            the 4-tuple in the merge stack */
         Parent = theEmbedding->theStack->S[K];
         BicompRoot = theEmbedding->theStack->S[K + 2];
-        DFSChild = gp_GetDFSChildFromRoot(theEmbedding, BicompRoot);
+        DFSChild = gp_GetDFSChildFromBicompRoot(theEmbedding, BicompRoot);
 
         /* We get the active descendant vertex in the child bicomp that
            will be adjacent to the parent along the external face.
@@ -748,7 +748,7 @@ int _BreakTie(DrawPlanarContext *context, int BicompRoot, int W, int WPrevLink)
         /* Set the two ancestor variables that contextualize putting W 'between'
             or 'beyond' its parent relative to what. */
 
-        context->VI[DFSChild].ancestorChild = gp_GetDFSChildFromRoot(theEmbedding, BicompRoot);
+        context->VI[DFSChild].ancestorChild = gp_GetDFSChildFromBicompRoot(theEmbedding, BicompRoot);
         context->VI[DFSChild].ancestor = gp_GetVertexFromBicompRoot(theEmbedding, BicompRoot);
 
         gp_LogLine(gp_MakeLogStr4("V[child=%d]=.ancestorChild = %d, V[child=%d]=.ancestor = %d",

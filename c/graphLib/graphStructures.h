@@ -176,8 +176,8 @@ extern "C"
 
      The vertices of a graph are stored in the first N locations of array V.
      Virtual vertices are secondary vertices used to help represent the
-     main vertices in substructural components of a graph (e.g. biconnected
-     components).
+     main vertices in substructural components of a graph (such as in
+     biconnected components).
 
      link[2]: the first and last edge records (arcs) in the adjacency list
               of the vertex.
@@ -337,13 +337,33 @@ extern "C"
     // End of Vertex iteration-related methods
     //////////////////////////////////////////
 
-#define gp_GetRootFromDFSChild(theGraph, c) ((c) + theGraph->N)
-#define gp_GetDFSChildFromRoot(theGraph, R) ((R) - theGraph->N)
-#define gp_GetVertexFromBicompRoot(theGraph, R) gp_GetVertexParent(theGraph, gp_GetDFSChildFromRoot(theGraph, R))
+// Mapping between bicomp roots and virtual vertex locations used to store them.
+// A cut vertex v separates one or more of its DFS children, say c1 and c2, from
+// the DFS parent and ancesstors of v. Because a DFS tree contains only tree edges
+// and back edges, there are no cross edges connecting vertices in the DFS subtree
+// rooted by c1, T(c1), with vertices in the DFS subtree rooted by c2, T(c2).
+// We say that v is a cut vertex because the only paths that go from vertices in
+// T(c1) to vertices in T(c2) are paths that contain v.
+// Therefore, bicomp root copies of v, say R1 and R2, can be created at locations
+// c1 and c2 in virtual vertex space, in other words at locations N+c1 and N+c2.
+// The bicomps rooted by R1 and R2 are called child bicomps of v, and they contain,
+// respectively, c1 and c2 as well as possibly more vertices from, respectively,
+// T(c1) and T(c2), depending on what back edges may exist in the graph between
+// pairs of vertices in, respectively, T(c1) and T(c2).
+#define gp_GetBicompRootFromDFSChild(theGraph, c) ((c) + theGraph->N)
+#define gp_GetDFSChildFromBicompRoot(theGraph, R) ((R) - theGraph->N)
+#define gp_GetVertexFromBicompRoot(theGraph, R) gp_GetVertexParent(theGraph, gp_GetDFSChildFromBicompRoot(theGraph, R))
 
-#define gp_IsSeparatedDFSChild(theGraph, theChild) (gp_VirtualVertexInUse(theGraph, gp_GetRootFromDFSChild(theGraph, theChild)))
-#define gp_IsNotSeparatedDFSChild(theGraph, theChild) (gp_VirtualVertexNotInUse(theGraph, gp_GetRootFromDFSChild(theGraph, theChild)))
+// If a vertex v is a cut vertex that separates one of its DFS children, say c,
+// from the DFS ancestors and other children of v, then when the graph has been
+// separated into bicomps, there will be a root copy of v in virtual vertex space
+// at location c+N that will have at least one edge connecting it to c.
+// These macros detect whether or not that is the case for a given DFS child.
+#define gp_IsSeparatedDFSChild(theGraph, theChild) (gp_VirtualVertexInUse(theGraph, gp_GetBicompRootFromDFSChild(theGraph, theChild)))
+#define gp_IsNotSeparatedDFSChild(theGraph, theChild) (gp_VirtualVertexNotInUse(theGraph, gp_GetBicompRootFromDFSChild(theGraph, theChild)))
 
+// A DFS tree root is one that has no DFS parent. There is one DFS tree root
+// per connected component of a graph (connected, not biconnected; component, not bicomp)
 #define gp_IsDFSTreeRoot(theGraph, v) gp_IsNotVertex(theGraph, gp_GetVertexParent(theGraph, v))
 #define gp_IsNotDFSTreeRoot(theGraph, v) gp_IsVertex(theGraph, gp_GetVertexParent(theGraph, v))
 
@@ -499,28 +519,28 @@ extern "C"
 #define gp_GetVertexPertinentRootsList(theGraph, v) (theGraph->VI[v].pertinentRoots)
 #define gp_SetVertexPertinentRootsList(theGraph, v, pertinentRootsHead) (theGraph->VI[v].pertinentRoots = pertinentRootsHead)
 
-#define gp_GetVertexFirstPertinentRoot(theGraph, v) gp_GetRootFromDFSChild(theGraph, theGraph->VI[v].pertinentRoots)
+#define gp_GetVertexFirstPertinentRoot(theGraph, v) gp_GetBicompRootFromDFSChild(theGraph, theGraph->VI[v].pertinentRoots)
 #define gp_GetVertexFirstPertinentRootChild(theGraph, v) (theGraph->VI[v].pertinentRoots)
-#define gp_GetVertexLastPertinentRoot(theGraph, v) gp_GetRootFromDFSChild(theGraph, LCGetPrev(theGraph->BicompRootLists, theGraph->VI[v].pertinentRoots, NIL))
+#define gp_GetVertexLastPertinentRoot(theGraph, v) gp_GetBicompRootFromDFSChild(theGraph, LCGetPrev(theGraph->BicompRootLists, theGraph->VI[v].pertinentRoots, NIL))
 #define gp_GetVertexLastPertinentRootChild(theGraph, v) LCGetPrev(theGraph->BicompRootLists, theGraph->VI[v].pertinentRoots, NIL)
 
 #define gp_DeleteVertexPertinentRoot(theGraph, v, R)                                     \
     gp_SetVertexPertinentRootsList(theGraph, v,                                          \
                                    LCDelete(theGraph->BicompRootLists,                   \
                                             gp_GetVertexPertinentRootsList(theGraph, v), \
-                                            gp_GetDFSChildFromRoot(theGraph, R)))
+                                            gp_GetDFSChildFromBicompRoot(theGraph, R)))
 
 #define gp_PrependVertexPertinentRoot(theGraph, v, R)                                     \
     gp_SetVertexPertinentRootsList(theGraph, v,                                           \
                                    LCPrepend(theGraph->BicompRootLists,                   \
                                              gp_GetVertexPertinentRootsList(theGraph, v), \
-                                             gp_GetDFSChildFromRoot(theGraph, R)))
+                                             gp_GetDFSChildFromBicompRoot(theGraph, R)))
 
 #define gp_AppendVertexPertinentRoot(theGraph, v, R)                                     \
     gp_SetVertexPertinentRootsList(theGraph, v,                                          \
                                    LCAppend(theGraph->BicompRootLists,                   \
                                             gp_GetVertexPertinentRootsList(theGraph, v), \
-                                            gp_GetDFSChildFromRoot(theGraph, R)))
+                                            gp_GetDFSChildFromBicompRoot(theGraph, R)))
 
 #define gp_GetVertexFuturePertinentChild(theGraph, v) (theGraph->VI[v].futurePertinentChild)
 #define gp_SetVertexFuturePertinentChild(theGraph, v, theFuturePertinentChild) (theGraph->VI[v].futurePertinentChild = theFuturePertinentChild)
