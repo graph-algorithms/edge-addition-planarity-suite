@@ -232,15 +232,15 @@ extern "C"
 #define gp_GetFirstVertex(theGraph) (1)
 #define gp_GetLastVertex(theGraph) ((theGraph)->N)
 
-#define gp_GetFirstVirtualVertex(theGraph) (theGraph->N + 1)
-#define gp_GetLastVirtualVertex(theGraph) (theGraph->N + theGraph->NV)
+#define gp_GetFirstVirtualVertex(theGraph) ((theGraph)->N + 1)
+#define gp_GetLastVirtualVertex(theGraph) ((theGraph)->N + (theGraph)->NV)
 
 #define gp_GetFirstAnyTypeVertex(theGraph) (gp_GetFirstVertex(theGraph))
 #define gp_GetLastAnyTypeVertex(theGraph) (gp_GetLastVirtualVertex(theGraph))
 
 #ifndef DEBUG
 #define gp_IsVertex(theGraph, v) (v)
-#define gp_IsVirtualVertex(theGraph, v) ((v) > theGraph->N)
+#define gp_IsVirtualVertex(theGraph, v) ((v) > (theGraph)->N)
 #define gp_IsAnyTypeVertex(theGraph, v) (v)
 #else
 #define gp_IsVertex(theGraph, v) \
@@ -267,30 +267,33 @@ extern "C"
 #define gp_VertexInRangeAscending(theGraph, v) ((v) <= (theGraph)->N)
 #define gp_VertexInRangeDescending(theGraph, v) (v)
 
-#define gp_PrimaryVertexIndexBound(theGraph) (gp_GetFirstVertex(theGraph) + (theGraph)->N)
-#define gp_VertexIndexBound(theGraph) (gp_PrimaryVertexIndexBound(theGraph) + (theGraph)->N)
+#define gp_VirtualVertexInRangeAscending(theGraph, v) ((v) <= (theGraph)->N + (theGraph)->NV)
+#define gp_VirtualVertexInRangeDescending(theGraph, v) ((v) > (theGraph)->N)
+
+#define gp_AnyTypeVertexInRangeAscending(theGraph, v) (gp_VirtualVertexInRangeAscending(theGraph, v))
+#define gp_AnyTypeVertexInRangeDescending(theGraph, v) (gp_VirtualVertexInRangeDescending(theGraph, v))
+
+#define gp_VertexArraySize(theGraph) (gp_GetFirstVertex(theGraph) + (theGraph)->N)
+#define gp_AnyTypeVertexArraySize(theGraph) (gp_VertexArraySize(theGraph) + (theGraph)->NV)
 
 #define gp_VirtualVertexInUse(theGraph, virtualVertex) (gp_IsArc(gp_GetFirstArc(theGraph, virtualVertex)))
 #define gp_VirtualVertexNotInUse(theGraph, virtualVertex) (gp_IsNotArc(gp_GetFirstArc(theGraph, virtualVertex)))
-
-#define gp_VirtualVertexInRangeAscending(theGraph, v) ((v) <= theGraph->N + theGraph->NV)
-#define gp_VirtualVertexInRangeDescending(theGraph, v) ((v) > theGraph->N)
 
 #else // Using Slower 0-based Arrays
 
 #define gp_GetFirstVertex(theGraph) (0)
 #define gp_GetLastVertex(theGraph) ((theGraph)->N - 1)
 
-#define gp_GetFirstVirtualVertex(theGraph) (theGraph->N)
-#define gp_GetLastVirtualVertex(theGraph) (theGraph->N + theGraph->NV - 1)
+#define gp_GetFirstVirtualVertex(theGraph) ((theGraph)->N)
+#define gp_GetLastVirtualVertex(theGraph) ((theGraph)->N + (theGraph)->NV - 1)
 
 #define gp_GetFirstAnyTypeVertex(theGraph) (gp_GetFirstVertex(theGraph))
 #define gp_GetLastAnyTypeVertex(theGraph) (gp_GetLastVirtualVertex(theGraph))
 
 #ifndef DEBUG
-#define gp_IsVertex(v) ((v) != NIL)
-#define gp_IsVirtualVertex(theGraph, v) ((v) >= theGraph->N)
-#define gp_IsAnyTypeVertex(v) ((v) != NIL)
+#define gp_IsVertex(theGraph, v) ((v) != NIL)
+#define gp_IsVirtualVertex(theGraph, v) ((v) >= (theGraph)->N)
+#define gp_IsAnyTypeVertex(theGraph, v) ((v) != NIL)
 #else
 #define gp_IsVertex(theGraph, v) \
     ((v) == NIL ? 0 : ((v) < gp_GetFirstVertex(theGraph) ? (NOTOK, 0) : ((v) > gp_GetLastVertex(theGraph) ? (NOTOK, 0) : 1)))
@@ -313,14 +316,17 @@ extern "C"
 #define gp_VertexInRangeAscending(theGraph, v) ((v) < (theGraph)->N)
 #define gp_VertexInRangeDescending(theGraph, v) ((v) >= 0)
 
-#define gp_PrimaryVertexIndexBound(theGraph) (gp_GetFirstVertex(theGraph) + (theGraph)->N)
-#define gp_VertexIndexBound(theGraph) (gp_PrimaryVertexIndexBound(theGraph) + (theGraph)->N)
+#define gp_VirtualVertexInRangeAscending(theGraph, v) ((v) < (theGraph)->N + (theGraph)->NV)
+#define gp_VirtualVertexInRangeDescending(theGraph, v) ((v) >= (theGraph)->N)
+
+#define gp_AnyTypeVertexInRangeAscending(theGraph, v) (gp_VirtualVertexInRangeAscending(theGraph, v))
+#define gp_AnyTypeVertexInRangeDescending(theGraph, v) (gp_VirtualVertexInRangeDescending(theGraph, v))
+
+#define gp_VertexArraySize(theGraph) (gp_GetFirstVertex(theGraph) + (theGraph)->N)
+#define gp_AnyTypeVertexArraySize(theGraph) (gp_VertexArraySize(theGraph) + (theGraph)->NV)
 
 #define gp_VirtualVertexInUse(theGraph, virtualVertex) (gp_IsArc(gp_GetFirstArc(theGraph, virtualVertex)))
 #define gp_VirtualVertexNotInUse(theGraph, virtualVertex) (gp_IsNotArc(gp_GetFirstArc(theGraph, virtualVertex)))
-
-#define gp_VirtualVertexInRangeAscending(theGraph, v) ((v) < theGraph->N + theGraph->NV)
-#define gp_VirtualVertexInRangeDescending(theGraph, v) ((v) >= theGraph->N)
 
 #endif
     ///////////////////////////////////////////

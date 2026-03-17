@@ -191,7 +191,7 @@ int _ComputeVertexPositions(DrawPlanarContext *context)
 int _ComputeVertexPositionsInComponent(DrawPlanarContext *context, int root, int *pVertpos)
 {
     graphP theEmbedding = context->theGraph;
-    listCollectionP theOrder = LCNew(gp_PrimaryVertexIndexBound(theEmbedding));
+    listCollectionP theOrder = LCNew(gp_VertexArraySize(theEmbedding));
     int W, P, C, V, e;
 
     if (theOrder == NULL)

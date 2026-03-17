@@ -198,7 +198,7 @@ void _DrawPlanar_ClearStructures(DrawPlanarContext *context)
 int _DrawPlanar_CreateStructures(DrawPlanarContext *context)
 {
     graphP theGraph = context->theGraph;
-    int VIsize = gp_PrimaryVertexIndexBound(theGraph);
+    int VIsize = gp_VertexArraySize(theGraph);
     int Esize = gp_EdgeIndexBound(theGraph);
 
     if (theGraph->N <= 0)
@@ -222,7 +222,7 @@ int _DrawPlanar_CreateStructures(DrawPlanarContext *context)
 int _DrawPlanar_InitStructures(DrawPlanarContext *context)
 {
 #ifdef USE_FASTER_1BASEDARRAYS
-    memset(context->VI, NIL_CHAR, gp_PrimaryVertexIndexBound(context->theGraph) * sizeof(DrawPlanar_VertexInfo));
+    memset(context->VI, NIL_CHAR, gp_VertexArraySize(context->theGraph) * sizeof(DrawPlanar_VertexInfo));
     memset(context->E, NIL_CHAR, gp_EdgeIndexBound(context->theGraph) * sizeof(DrawPlanar_EdgeRec));
 #else
     int v, e, Esize;
@@ -253,7 +253,7 @@ void *_DrawPlanar_DupContext(void *pContext, void *theGraph)
 
     if (newContext != NULL)
     {
-        int VIsize = gp_PrimaryVertexIndexBound((graphP)theGraph);
+        int VIsize = gp_VertexArraySize((graphP)theGraph);
         int Esize = gp_EdgeIndexBound((graphP)theGraph);
 
         *newContext = *context;

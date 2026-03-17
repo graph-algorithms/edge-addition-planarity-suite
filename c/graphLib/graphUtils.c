@@ -254,8 +254,8 @@ int _InitGraph(graphP theGraph, int N)
     theGraph->N = N;
     theGraph->NV = N;
     theGraph->arcCapacity = theGraph->arcCapacity > 0 ? theGraph->arcCapacity : 2 * DEFAULT_EDGE_LIMIT * N;
-    VIsize = gp_PrimaryVertexIndexBound(theGraph);
-    Vsize = gp_VertexIndexBound(theGraph);
+    VIsize = gp_VertexArraySize(theGraph);
+    Vsize = gp_AnyTypeVertexArraySize(theGraph);
     Esize = gp_EdgeIndexBound(theGraph);
 
     // Stack size is 2 integers per arc, or 6 integers per vertex in case of small arcCapacity
@@ -291,15 +291,15 @@ int _InitGraph(graphP theGraph, int N)
 void _InitVertices(graphP theGraph)
 {
 #ifdef USE_FASTER_1BASEDARRAYS
-    memset(theGraph->V, NIL_CHAR, gp_VertexIndexBound(theGraph) * sizeof(vertexRec));
-    memset(theGraph->VI, NIL_CHAR, gp_PrimaryVertexIndexBound(theGraph) * sizeof(vertexInfo));
-    memset(theGraph->extFace, NIL_CHAR, gp_VertexIndexBound(theGraph) * sizeof(extFaceLinkRec));
+    memset(theGraph->V, NIL_CHAR, gp_AnyTypeVertexArraySize(theGraph) * sizeof(vertexRec));
+    memset(theGraph->VI, NIL_CHAR, gp_VertexArraySize(theGraph) * sizeof(vertexInfo));
+    memset(theGraph->extFace, NIL_CHAR, gp_AnyTypeVertexArraySize(theGraph) * sizeof(extFaceLinkRec));
 #else
     int v;
 
-    memset(theGraph->V, NIL_CHAR, gp_VertexIndexBound(theGraph) * sizeof(vertexRec));
-    memset(theGraph->VI, NIL_CHAR, gp_PrimaryVertexIndexBound(theGraph) * sizeof(vertexInfo));
-    memset(theGraph->extFace, NIL_CHAR, gp_VertexIndexBound(theGraph) * sizeof(extFaceLinkRec));
+    memset(theGraph->V, NIL_CHAR, gp_AnyTypeVertexArraySize(theGraph) * sizeof(vertexRec));
+    memset(theGraph->VI, NIL_CHAR, gp_VertexArraySize(theGraph) * sizeof(vertexInfo));
+    memset(theGraph->extFace, NIL_CHAR, gp_AnyTypeVertexArraySize(theGraph) * sizeof(extFaceLinkRec));
 
     for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
         gp_InitVertexFlags(theGraph, v);
@@ -1430,8 +1430,8 @@ int gp_IsNeighbor(graphP theGraph, int u, int v)
     int e = NIL;
 
     if (theGraph == NULL ||
-        u < gp_GetFirstVertex(theGraph) || u >= gp_VertexIndexBound(theGraph) ||
-        v < gp_GetFirstVertex(theGraph) || v >= gp_VertexIndexBound(theGraph))
+        u < gp_GetFirstVertex(theGraph) || u >= gp_AnyTypeVertexArraySize(theGraph) ||
+        v < gp_GetFirstVertex(theGraph) || v >= gp_AnyTypeVertexArraySize(theGraph))
     {
 #ifdef DEBUG
         NOTOK;
@@ -1472,10 +1472,14 @@ int gp_GetNeighborEdgeRecord(graphP theGraph, int u, int v)
     int e = NIL;
 
     if (theGraph == NULL ||
-        u < gp_GetFirstVertex(theGraph) || u >= gp_VertexIndexBound(theGraph) ||
-        v < gp_GetFirstVertex(theGraph) || v >= gp_VertexIndexBound(theGraph))
+        u < gp_GetFirstVertex(theGraph) || u >= gp_AnyTypeVertexArraySize(theGraph) ||
+        v < gp_GetFirstVertex(theGraph) || v >= gp_AnyTypeVertexArraySize(theGraph))
     {
-        return (NOTOK, NIL);
+#ifdef DEBUG
+        NOTOK;
+#endif
+
+        return NIL;
     }
 
     e = gp_GetFirstArc(theGraph, u);
@@ -1510,9 +1514,14 @@ int gp_GetVertexDegree(graphP theGraph, int v)
     int e, degree;
 
     if (theGraph == NULL ||
-        v < gp_GetFirstVertex(theGraph) || v >= gp_VertexIndexBound(theGraph))
+        v < gp_GetFirstVertex(theGraph) || v >= gp_AnyTypeVertexArraySize(theGraph))
     {
-        return (NOTOK, 0);
+#ifdef DEBUG
+        NOTOK;
+        ;
+#endif
+
+        return 0;
     }
 
     degree = 0;
@@ -1545,9 +1554,13 @@ int gp_GetVertexInDegree(graphP theGraph, int v)
     int e, degree;
 
     if (theGraph == NULL ||
-        v < gp_GetFirstVertex(theGraph) || v >= gp_VertexIndexBound(theGraph))
+        v < gp_GetFirstVertex(theGraph) || v >= gp_AnyTypeVertexArraySize(theGraph))
     {
-        return (NOTOK, 0);
+#ifdef DEBUG
+        NOTOK;
+#endif
+
+        return 0;
     }
 
     degree = 0;
@@ -1581,9 +1594,13 @@ int gp_GetVertexOutDegree(graphP theGraph, int v)
     int e, degree;
 
     if (theGraph == NULL ||
-        v < gp_GetFirstVertex(theGraph) || v >= gp_VertexIndexBound(theGraph))
+        v < gp_GetFirstVertex(theGraph) || v >= gp_AnyTypeVertexArraySize(theGraph))
     {
-        return (NOTOK, 0);
+#ifdef DEBUG
+        NOTOK;
+#endif
+
+        return 0;
     }
 
     degree = 0;
@@ -2112,7 +2129,7 @@ int _RestoreHiddenEdges(graphP theGraph, int stackBottom)
 int gp_HideVertex(graphP theGraph, int vertex)
 {
     if (theGraph == NULL ||
-        vertex < gp_GetFirstVertex(theGraph) || vertex >= gp_VertexIndexBound(theGraph))
+        vertex < gp_GetFirstVertex(theGraph) || vertex >= gp_AnyTypeVertexArraySize(theGraph))
     {
         return NOTOK;
     }
@@ -2222,8 +2239,8 @@ int _ContractEdge(graphP theGraph, int e)
 int gp_IdentifyVertices(graphP theGraph, int u, int v, int eBefore)
 {
     if (theGraph == NULL ||
-        u < gp_GetFirstVertex(theGraph) || u >= gp_VertexIndexBound(theGraph) ||
-        v < gp_GetFirstVertex(theGraph) || v >= gp_VertexIndexBound(theGraph) ||
+        u < gp_GetFirstVertex(theGraph) || u >= gp_AnyTypeVertexArraySize(theGraph) ||
+        v < gp_GetFirstVertex(theGraph) || v >= gp_AnyTypeVertexArraySize(theGraph) ||
         (eBefore != NIL && eBefore < gp_GetFirstEdge(theGraph)) ||
         eBefore >= gp_EdgeInUseIndexBound(theGraph) ||
         (eBefore != NIL && gp_EdgeNotInUse(theGraph, eBefore)))

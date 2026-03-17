@@ -200,7 +200,7 @@ void _K33Search_ClearStructures(K33SearchContext *context)
  ********************************************************************/
 int _K33Search_CreateStructures(K33SearchContext *context)
 {
-    int VIsize = gp_PrimaryVertexIndexBound(context->theGraph);
+    int VIsize = gp_VertexArraySize(context->theGraph);
     int Esize = gp_EdgeIndexBound(context->theGraph);
 
     if (context->theGraph->N <= 0)
@@ -223,7 +223,7 @@ int _K33Search_CreateStructures(K33SearchContext *context)
  ********************************************************************/
 int _K33Search_InitStructures(K33SearchContext *context)
 {
-    memset(context->VI, NIL_CHAR, gp_PrimaryVertexIndexBound(context->theGraph) * sizeof(K33Search_VertexInfo));
+    memset(context->VI, NIL_CHAR, gp_VertexArraySize(context->theGraph) * sizeof(K33Search_VertexInfo));
     memset(context->E, NIL_CHAR, gp_EdgeIndexBound(context->theGraph) * sizeof(K33Search_EdgeRec));
     // N.B. This is the legacy API-based approach to initializing the structures
     // required for the K_{3, 3} search graph algorithm extension.
@@ -315,7 +315,7 @@ void *_K33Search_DupContext(void *pContext, void *theGraph)
 
     if (newContext != NULL)
     {
-        int VIsize = gp_PrimaryVertexIndexBound((graphP)theGraph);
+        int VIsize = gp_VertexArraySize((graphP)theGraph);
         int Esize = gp_EdgeIndexBound((graphP)theGraph);
 
         *newContext = *context;
