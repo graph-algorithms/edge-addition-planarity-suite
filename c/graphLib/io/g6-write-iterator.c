@@ -205,7 +205,7 @@ int _g6_InitWriter(G6WriteIteratorP pG6WriteIterator)
 
     if (pG6WriteIterator->columnOffsets == NULL)
     {
-        ErrorMessage("Unable to initialize writer due to faiure to allocate "
+        ErrorMessage("Unable to initialize writer due to failure to allocate "
                      "memory for column offsets.\n");
         return NOTOK;
     }
