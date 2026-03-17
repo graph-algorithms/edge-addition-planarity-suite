@@ -152,7 +152,8 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
 
     if ((Result = g6_InitReaderWithFileName(pG6ReadIterator, infileName)) != OK)
     {
-        ErrorMessage("Unable to begin .g6 read iteration.\n");
+        ErrorMessage("Unable to test all graphs due to failure to initialize"
+                     "G6ReadIterator.\n");
 
         g6_FreeReader(&pG6ReadIterator);
         gp_Free(&theGraph);
@@ -161,7 +162,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
         return Result;
     }
 
-    order = gp_getN(theGraph);
+    order = gp_GetN(theGraph);
     // We have to set the maximum arc capacity (i.e. (N * (N - 1))) because some of the test files
     // can contain complete graphs, and the graph drawing, K_{3, 3} search, and K_4 search extensions
     // don't support expanding the arc capacity after being attached.

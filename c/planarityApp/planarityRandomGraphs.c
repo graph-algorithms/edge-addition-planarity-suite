@@ -99,7 +99,7 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
         }
     }
 
-    messageFormat = "Unable to begin writing random graphs to G6 outfile \"%.*s\".\n";
+    messageFormat = "Unable to write random graphs to G6 outfile \"%.*s\" due to failure initializing G6WriteIterator.\n";
     charsAvailForStr = (int)(MAXLINE - strlen(messageFormat));
     if (outfileName != NULL)
     {
@@ -160,7 +160,7 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
     // Start the timer
     platform_GetTime(start);
 
-    messageFormat = "Failed to write graph \"%.*s\"\nMake the directory if not present\n";
+    messageFormat = "Failed to write graph \"%.*s\".\nMake the directory if not present\n";
     charsAvailForStr = (int)(MAXLINE - strlen(messageFormat));
     // Generate and process the number of graphs requested
     for (K = 0; K < NumGraphs; K++)
