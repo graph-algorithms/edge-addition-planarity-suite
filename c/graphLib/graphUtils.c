@@ -301,7 +301,7 @@ void _InitVertices(graphP theGraph)
     memset(theGraph->VI, NIL_CHAR, gp_VertexArraySize(theGraph) * sizeof(vertexInfo));
     memset(theGraph->extFace, NIL_CHAR, gp_AnyTypeVertexArraySize(theGraph) * sizeof(extFaceLinkRec));
 
-    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
+    for (v = gp_GetFirstVertex(theGraph); gp_AnyTypeVertexInRangeAscending(theGraph, v); v++)
         gp_InitVertexFlags(theGraph, v);
 #endif
     // N.B. This is the legacy API-based approach to initializing the vertices
@@ -1867,7 +1867,7 @@ int gp_InsertEdge(graphP theGraph, int u, int e_u, int e_ulink,
     else
         vpos = gp_EdgeInUseIndexBound(theGraph);
 
-    // NOTE: We do not _InitEdgeRec() nor gp_InitFlags() here because
+    // NOTE: We do not _InitEdgeRec() nor gp_InitEdgeFlags() here because
     // the vpos edge location is expected to be in initialized state,
     // either from graph initialization/reinitialization, or from
     // edge record reinitialization during gp_DeleteEdge, if vpos was
