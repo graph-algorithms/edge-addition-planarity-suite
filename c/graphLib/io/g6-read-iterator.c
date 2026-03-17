@@ -141,14 +141,14 @@ int g6_GetOrderFromReader(G6ReadIteratorP pG6ReadIterator, int *pOrder)
     return OK;
 }
 
-int g6_GetReaderGraph(G6ReadIteratorP pG6ReadIterator, graphP *ppGraph)
+int g6_GetGraphFromReader(G6ReadIteratorP pG6ReadIterator, graphP *ppGraph)
 {
     if (_g6_IsReaderInitialized(pG6ReadIterator) == false)
     {
         ErrorMessage("Unable to get currGraph from reader, as G6ReadIterator "
                      "is not allocated.\n");
 
-        (*ppGraph) = pG6ReadIterator->currGraph;
+        (*ppGraph) = NULL;
 
         return NOTOK;
     }

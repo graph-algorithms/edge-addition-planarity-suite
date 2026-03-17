@@ -142,7 +142,7 @@ int g6_GetGraphFromWriter(G6WriteIteratorP pG6WriteIterator, graphP *ppGraph)
         ErrorMessage("Unable to get numGraphsWritten, as G6WriteIterator is "
                      "not allocated.\n");
 
-        (*ppGraph) = pG6WriteIterator->currGraph;
+        (*ppGraph) = NULL;
 
         return NOTOK;
     }

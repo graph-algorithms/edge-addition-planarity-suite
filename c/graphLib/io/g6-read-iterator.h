@@ -40,7 +40,7 @@ extern "C"
 
     int g6_GetNumGraphsRead(G6ReadIteratorP, int *);
     int g6_GetOrderFromReader(G6ReadIteratorP, int *);
-    int g6_GetReaderGraph(G6ReadIteratorP, graphP *);
+    int g6_GetGraphFromReader(G6ReadIteratorP, graphP *);
 
     int g6_InitReaderWithString(G6ReadIteratorP, char *);
     int g6_InitReaderWithFileName(G6ReadIteratorP, char const *const);
