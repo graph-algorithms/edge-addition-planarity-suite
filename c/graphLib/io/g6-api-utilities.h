@@ -12,10 +12,13 @@ extern "C"
 {
 #endif
 
-    int _getMaxEdgeCount(int);
-    int _getNumCharsForGraphEncoding(int);
-    int _getNumCharsForGraphOrder(int);
-    int _getExpectedNumPaddingZeroes(const int, const int);
+    // FIXME: Should these be declared in g6-api-utilities.c and then
+    // use extern at the top of g6-(read|write)-iterator.c source files to use
+    // them?
+    int _g6_GetMaxEdgeCount(int);
+    int _g6_GetNumCharsForEncoding(int);
+    int _g6_GetNumCharsForOrder(int);
+    int _g6_GetExpectedNumPaddingZeroes(const int, const int);
 
 #ifdef __cplusplus
 }

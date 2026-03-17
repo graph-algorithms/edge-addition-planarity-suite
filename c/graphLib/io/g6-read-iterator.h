@@ -37,15 +37,13 @@ extern "C"
 
     int g6_NewReader(G6ReadIteratorP *, graphP);
     bool g6_EndReached(G6ReadIteratorP pG6ReadIterator);
-    bool g6_IsReaderInitialized(G6ReadIteratorP);
 
     int g6_GetNumGraphsRead(G6ReadIteratorP, int *);
     int g6_GetOrderFromReader(G6ReadIteratorP, int *);
     int g6_GetReaderGraph(G6ReadIteratorP, graphP *);
 
-    int g6_InitReaderFromString(G6ReadIteratorP, char *);
-    int g6_InitReaderFromFile(G6ReadIteratorP, char const *const);
-    int g6_InitReaderFromStrOrFile(G6ReadIteratorP, strOrFileP);
+    int g6_InitReaderWithString(G6ReadIteratorP, char *);
+    int g6_InitReaderWithFileName(G6ReadIteratorP, char const *const);
 
     int g6_ReadGraph(G6ReadIteratorP);
 
