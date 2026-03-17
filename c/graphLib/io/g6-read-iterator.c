@@ -172,17 +172,24 @@ int g6_InitReaderWithFileName(G6ReadIteratorP pG6ReadIterator, char const *const
         sf_New(NULL, infileName, READTEXT));
 }
 
-int _g6_InitReaderWithStrOrFile(G6ReadIteratorP pG6ReadIterator, strOrFileP g6InputContainer)
+int _g6_InitReaderWithStrOrFile(G6ReadIteratorP pG6ReadIterator, strOrFileP inputContainer)
 {
-    if (
-        sf_ValidateStrOrFile(g6InputContainer) != OK ||
-        (g6InputContainer->theStr != NULL && sb_GetSize(g6InputContainer->theStr) == 0))
+    if (pG6ReadIterator == NULL)
     {
-        ErrorMessage("Invalid g6InputContainer; must contain either valid input stream or non-empty string.\n");
+        ErrorMessage("Unable to initialize reader, since pointer to "
+                     "pG6ReadIterator is NULL.\n");
+        return NOTOK;
+    }
+    if (
+        sf_ValidateStrOrFile(inputContainer) != OK ||
+        (inputContainer->theStr != NULL && sb_GetSize(inputContainer->theStr) == 0))
+    {
+        ErrorMessage("Unable to initialize reader with invalid strOrFile "
+                     "input container.\n");
         return NOTOK;
     }
 
-    pG6ReadIterator->g6Input = g6InputContainer;
+    pG6ReadIterator->g6Input = inputContainer;
 
     return _g6_InitReader(pG6ReadIterator);
 }
@@ -190,6 +197,7 @@ int _g6_InitReaderWithStrOrFile(G6ReadIteratorP pG6ReadIterator, strOrFileP g6In
 int _g6_InitReader(G6ReadIteratorP pG6ReadIterator)
 {
     int exitCode = OK;
+
     char charConfirmation = EOF;
     int firstChar = '\0';
     int lineNum = 1;
@@ -200,7 +208,7 @@ int _g6_InitReader(G6ReadIteratorP pG6ReadIterator)
 
     if ((firstChar = sf_getc(g6Input)) == EOF)
     {
-        ErrorMessage(".g6 infile is empty.\n");
+        ErrorMessage("Unable to initialize reader: .g6 infile is empty.\n");
         return NOTOK;
     }
     else
@@ -209,7 +217,8 @@ int _g6_InitReader(G6ReadIteratorP pG6ReadIterator)
 
         if (charConfirmation != firstChar)
         {
-            ErrorMessage("Unable to ungetc first character.\n");
+            ErrorMessage("Unable to initialize reader due to failure to ungetc "
+                         "first character.\n");
             return NOTOK;
         }
 
@@ -218,7 +227,8 @@ int _g6_InitReader(G6ReadIteratorP pG6ReadIterator)
             exitCode = _g6_ValidateHeader(g6Input);
             if (exitCode != OK)
             {
-                ErrorMessage("Unable to process and check .g6 infile header.\n");
+                ErrorMessage("Unable to initialize reader due to inability to "
+                             "process and check .g6 infile header.\n");
                 return exitCode;
             }
         }
@@ -229,7 +239,8 @@ int _g6_InitReader(G6ReadIteratorP pG6ReadIterator)
 
     if (charConfirmation != firstChar)
     {
-        ErrorMessage("Unable to ungetc first character.\n");
+        ErrorMessage("Unable to initialize reader due to failure to ungetc "
+                     "first character.\n");
         return NOTOK;
     }
 
@@ -242,18 +253,18 @@ int _g6_InitReader(G6ReadIteratorP pG6ReadIterator)
 
     if (exitCode != OK)
     {
-        sprintf(messageContents, "Invalid graph order on line %d of .g6 file.\n", lineNum);
+        sprintf(messageContents, "Unable to initialize reader due to invalid graph order on line %d of .g6 file.\n", lineNum);
         ErrorMessage(messageContents);
         return exitCode;
     }
 
-    if (gp_getN(pG6ReadIterator->currGraph) == 0)
+    if (gp_GetN(pG6ReadIterator->currGraph) == 0)
     {
         exitCode = gp_InitGraph(pG6ReadIterator->currGraph, order);
 
         if (exitCode != OK)
         {
-            sprintf(messageContents, "Unable to initialize graph datastructure with order %d for graph on line %d of the .g6 file.\n", order, lineNum);
+            sprintf(messageContents, "Unable to initialize reader due to failure initializing graph datastructure with order %d for graph on line %d of the .g6 file.\n", order, lineNum);
             ErrorMessage(messageContents);
             return exitCode;
         }
@@ -262,9 +273,11 @@ int _g6_InitReader(G6ReadIteratorP pG6ReadIterator)
     }
     else
     {
-        if (gp_getN(pG6ReadIterator->currGraph) != order)
+        if (gp_GetN(pG6ReadIterator->currGraph) != order)
         {
-            sprintf(messageContents, "Graph datastructure passed to G6ReadIterator already initialized with graph order %d,\n", gp_getN(pG6ReadIterator->currGraph));
+            ErrorMessage("Unable to initialize reader, as graph datastructure "
+                         "passed in was already initialized ");
+            sprintf(messageContents, "with graph order %d,\n", gp_GetN(pG6ReadIterator->currGraph));
             ErrorMessage(messageContents);
             sprintf(messageContents, "\twhich doesn't match the graph order %d specified in the file.\n", order);
             ErrorMessage(messageContents);
@@ -364,7 +377,8 @@ int _g6_DetermineOrderFromInput(strOrFileP g6Input, int *order)
     {
         if ((graphChar = sf_getc(g6Input)) == 126)
         {
-            ErrorMessage("Graph order is too large; format suggests that 258048 <= n <= 68719476735, but we only support n <= 100000.\n");
+            ErrorMessage("Graph order is too large; format suggests that "
+                         "258048 <= n <= 68719476735, but we only support n <= 100000.\n");
             return NOTOK;
         }
 
@@ -386,7 +400,8 @@ int _g6_DetermineOrderFromInput(strOrFileP g6Input, int *order)
         n = graphChar - 63;
     else
     {
-        ErrorMessage("Graph order is too small; character doesn't correspond to a printable ASCII character.\n");
+        ErrorMessage("Graph order is too small; character doesn't correspond "
+                     "to a printable ASCII character.\n");
         return NOTOK;
     }
 
@@ -755,7 +770,7 @@ int _g6_ReadGraphFromStrOrFile(graphP pGraphToRead, strOrFileP g6InputContainer)
 
     if (_g6_InitReaderWithStrOrFile(pG6ReadIterator, g6InputContainer) != OK)
     {
-        ErrorMessage("Unable to begin .g6 read iteration.\n");
+        ErrorMessage("Unable to initialize G6ReadIterator.\n");
 
         g6_FreeReader(&pG6ReadIterator);
 
