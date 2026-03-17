@@ -167,7 +167,7 @@ extern "C"
 #define gp_CopyEdgeRec(dstGraph, edst, srcGraph, esrc) (dstGraph->E[edst] = srcGraph->E[esrc])
 
     /********************************************************************
-     Vertex Record Definition
+     Vertex Record Definition (Any Type of Vertex)
 
      This record definition provides the data members needed for the
      core structural information for both vertices and virtual vertices.
@@ -205,9 +205,9 @@ extern "C"
         int link[2];
         int index;
         unsigned flags;
-    } vertexRec;
+    } anyTypeVertexRec;
 
-    typedef vertexRec *vertexRecP;
+    typedef anyTypeVertexRec *anyTypeVertexRecP;
 
 ////////////////////////////////////////////
 // Accessors for vertex adjacency list links
@@ -407,13 +407,13 @@ extern "C"
 #define gp_ResetVertexObstructionType(theGraph, v, type) \
     (theGraph->V[v].flags = (theGraph->V[v].flags & ~VERTEX_OBSTRUCTIONTYPE_MASK) | type)
 
-#define gp_CopyVertexRec(dstGraph, vdst, srcGraph, vsrc) (dstGraph->V[vdst] = srcGraph->V[vsrc])
+#define gp_CopyAnyTypeVertexRec(dstGraph, vdst, srcGraph, vsrc) (dstGraph->V[vdst] = srcGraph->V[vsrc])
 
-#define gp_SwapVertexRec(dstGraph, vdst, srcGraph, vsrc) \
-    {                                                    \
-        vertexRec tempV = dstGraph->V[vdst];             \
-        dstGraph->V[vdst] = srcGraph->V[vsrc];           \
-        srcGraph->V[vsrc] = tempV;                       \
+#define gp_SwapAnyTypeVertexRec(dstGraph, vdst, srcGraph, vsrc) \
+    {                                                           \
+        anyTypeVertexRec tempV = dstGraph->V[vdst];             \
+        dstGraph->V[vdst] = srcGraph->V[vsrc];                  \
+        srcGraph->V[vsrc] = tempV;                              \
     }
 
     /********************************************************************
@@ -653,7 +653,7 @@ extern "C"
 
     struct baseGraphStructure
     {
-        vertexRecP V;
+        anyTypeVertexRecP V;
         vertexInfoP VI;
         int N, NV;
 

@@ -206,7 +206,7 @@ int _SortVertices(graphP theGraph)
         {
             dstPos = gp_GetVertexIndex(theGraph, v);
 
-            gp_SwapVertexRec(theGraph, dstPos, theGraph, v);
+            gp_SwapAnyTypeVertexRec(theGraph, dstPos, theGraph, v);
             gp_SwapVertexInfo(theGraph, dstPos, theGraph, v);
 
             gp_SetVertexVisited(theGraph, dstPos);

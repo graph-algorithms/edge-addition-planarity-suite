@@ -15,7 +15,7 @@ extern void _ClearVertexVisitedFlags(graphP theGraph, int);
 extern int _IsolateKuratowskiSubgraph(graphP theGraph, int v, int R);
 extern int _IsolateOuterplanarObstruction(graphP theGraph, int v, int R);
 
-extern void _InitVertexRec(graphP theGraph, int v);
+extern void _InitAnyTypeVertexRec(graphP theGraph, int v);
 
 /* Private functions (some are exported to system only) */
 
@@ -540,7 +540,7 @@ void _MergeVertex(graphP theGraph, int W, int WPrevLink, int R)
     }
 
     // Erase the entries in R, which is a root copy that is no longer needed
-    _InitVertexRec(theGraph, R);
+    _InitAnyTypeVertexRec(theGraph, R);
 }
 
 /********************************************************************

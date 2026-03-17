@@ -88,7 +88,7 @@ void _RestoreArc(graphP theGraph, int arc);
 
 /* Private functions for which there are FUNCTION POINTERS */
 
-void _InitVertexRec(graphP theGraph, int v);
+void _InitAnyTypeVertexRec(graphP theGraph, int v);
 void _InitVertexInfo(graphP theGraph, int v);
 void _InitEdgeRec(graphP theGraph, int e);
 
@@ -263,7 +263,7 @@ int _InitGraph(graphP theGraph, int N)
     stackSize = stackSize < 6 * N ? 6 * N : stackSize;
 
     // Allocate memory as described above
-    if ((theGraph->V = (vertexRecP)calloc(Vsize, sizeof(vertexRec))) == NULL ||
+    if ((theGraph->V = (anyTypeVertexRecP)calloc(Vsize, sizeof(anyTypeVertexRec))) == NULL ||
         (theGraph->VI = (vertexInfoP)calloc(VIsize, sizeof(vertexInfo))) == NULL ||
         (theGraph->E = (edgeRecP)calloc(Esize, sizeof(edgeRec))) == NULL ||
         (theGraph->BicompRootLists = LCNew(VIsize)) == NULL ||
@@ -291,13 +291,13 @@ int _InitGraph(graphP theGraph, int N)
 void _InitVertices(graphP theGraph)
 {
 #ifdef USE_FASTER_1BASEDARRAYS
-    memset(theGraph->V, NIL_CHAR, gp_AnyTypeVertexArraySize(theGraph) * sizeof(vertexRec));
+    memset(theGraph->V, NIL_CHAR, gp_AnyTypeVertexArraySize(theGraph) * sizeof(anyTypeVertexRec));
     memset(theGraph->VI, NIL_CHAR, gp_VertexArraySize(theGraph) * sizeof(vertexInfo));
     memset(theGraph->extFace, NIL_CHAR, gp_AnyTypeVertexArraySize(theGraph) * sizeof(extFaceLinkRec));
 #else
     int v;
 
-    memset(theGraph->V, NIL_CHAR, gp_AnyTypeVertexArraySize(theGraph) * sizeof(vertexRec));
+    memset(theGraph->V, NIL_CHAR, gp_AnyTypeVertexArraySize(theGraph) * sizeof(anyTypeVertexRec));
     memset(theGraph->VI, NIL_CHAR, gp_VertexArraySize(theGraph) * sizeof(vertexInfo));
     memset(theGraph->extFace, NIL_CHAR, gp_AnyTypeVertexArraySize(theGraph) * sizeof(extFaceLinkRec));
 
@@ -310,7 +310,7 @@ void _InitVertices(graphP theGraph)
     // // Initialize the vertices (non-virtual vertices)
     // for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
     // {
-    //     _InitVertexRec(theGraph, v);
+    //     _InitAnyTypeVertexRec(theGraph, v);
     //     _InitVertexInfo(theGraph, v);
     //     gp_SetExtFaceVertex(theGraph, v, 0, NIL);
     //     gp_SetExtFaceVertex(theGraph, v, 1, NIL);
@@ -319,7 +319,7 @@ void _InitVertices(graphP theGraph)
     // // Initialize virtual vertices
     // for (v = gp_GetFirstVirtualVertex(theGraph); gp_VirtualVertexInRangeAscending(theGraph, v); v++)
     // {
-    //     _InitVertexRec(theGraph, v);
+    //     _InitAnyTypeVertexRec(theGraph, v);
     //     gp_SetExtFaceVertex(theGraph, v, 0, NIL);
     //     gp_SetExtFaceVertex(theGraph, v, 1, NIL);
     // }
@@ -525,11 +525,11 @@ int _EnsureArcCapacity(graphP theGraph, int requiredArcCapacity)
 }
 
 /********************************************************************
- _InitVertexRec()
+ _InitAnyTypeVertexRec()
  Sets the fields in a single vertex record to initial values
  ********************************************************************/
 
-void _InitVertexRec(graphP theGraph, int v)
+void _InitAnyTypeVertexRec(graphP theGraph, int v)
 {
     gp_SetFirstArc(theGraph, v, NIL);
     gp_SetLastArc(theGraph, v, NIL);
@@ -1043,7 +1043,7 @@ int gp_CopyGraph(graphP dstGraph, graphP srcGraph)
     // by extensions are copied below by gp_CopyExtensions()
     for (v = gp_GetFirstVertex(srcGraph); gp_VertexInRangeAscending(srcGraph, v); v++)
     {
-        gp_CopyVertexRec(dstGraph, v, srcGraph, v);
+        gp_CopyAnyTypeVertexRec(dstGraph, v, srcGraph, v);
         gp_CopyVertexInfo(dstGraph, v, srcGraph, v);
         gp_SetExtFaceVertex(dstGraph, v, 0, gp_GetExtFaceVertex(srcGraph, v, 0));
         gp_SetExtFaceVertex(dstGraph, v, 1, gp_GetExtFaceVertex(srcGraph, v, 1));
@@ -1053,7 +1053,7 @@ int gp_CopyGraph(graphP dstGraph, graphP srcGraph)
     // by extensions are copied below by gp_CopyExtensions()
     for (v = gp_GetFirstVirtualVertex(srcGraph); gp_VirtualVertexInRangeAscending(srcGraph, v); v++)
     {
-        gp_CopyVertexRec(dstGraph, v, srcGraph, v);
+        gp_CopyAnyTypeVertexRec(dstGraph, v, srcGraph, v);
         gp_SetExtFaceVertex(dstGraph, v, 0, gp_GetExtFaceVertex(srcGraph, v, 0));
         gp_SetExtFaceVertex(dstGraph, v, 1, gp_GetExtFaceVertex(srcGraph, v, 1));
     }
