@@ -11,27 +11,28 @@ See the LICENSE.TXT file for licensing information.
 #include "g6-api-utilities.h"
 
 /* Private function declarations (exported within system) */
-int _g6_ReadGraphFromFile(graphP, char *);
-int _g6_ReadGraphFromString(graphP, char *);
-int _g6_ReadGraphFromStrOrFile(graphP, strOrFileP);
+int _g6_ReadGraphFromStrOrFile(graphP theGraph, strOrFileP g6InputContainer);
 
 /* Private functions */
-int _g6_InitReaderWithStrOrFile(G6ReadIteratorP, strOrFileP);
-int _g6_InitReader(G6ReadIteratorP);
-bool _g6_IsReaderInitialized(G6ReadIteratorP);
-int _g6_ValidateHeader(strOrFileP);
-int _g6_ValidateFirstChar(char, const int);
-int _g6_DetermineOrderFromInput(strOrFileP, int *);
+int _g6_InitReaderWithStrOrFile(G6ReadIteratorP pG6ReadIterator, strOrFileP inputContainer);
+int _g6_InitReader(G6ReadIteratorP pG6ReadIterator);
+bool _g6_IsReaderInitialized(G6ReadIteratorP pG6ReadIterator);
+int _g6_ValidateHeader(strOrFileP g6Input);
+int _g6_ValidateFirstChar(char c, const int lineNum);
+int _g6_DetermineOrderFromInput(strOrFileP g6Input, int *order);
 // NOTE: this method is used by g6_ReadGraph() to ensure that graphs after the
 // first one in the file have the same order. The G6 format specification does
 // not have this restriction, but the docs for Nauty's geng utility indicate
 // that its output files will only contain all graphs up to isomorphism for the
 // single graph order specified with the positional command line argument.
-int _g6_ValidateOrderOfEncodedGraph(char *, int);
-int _g6_ValidateGraphEncoding(char *, const int, const int);
-int _g6_DecodeGraph(char *, const int, const int, graphP);
+int _g6_ValidateOrderOfEncodedGraph(char *graphBuff, int order);
+int _g6_ValidateGraphEncoding(char *graphBuff, const int order, const int numChars);
+int _g6_DecodeGraph(char *graphBuff, const int order, const int numChars, graphP theGraph);
 
-int g6_NewReader(G6ReadIteratorP *ppG6ReadIterator, graphP pGraph)
+int _g6_ReadGraphFromFile(graphP theGraph, char *pathToG6File);
+int _g6_ReadGraphFromString(graphP theGraph, char *g6EncodedString);
+
+int g6_NewReader(G6ReadIteratorP *ppG6ReadIterator, graphP theGraph)
 {
     int exitCode = OK;
 
@@ -53,7 +54,7 @@ int g6_NewReader(G6ReadIteratorP *ppG6ReadIterator, graphP pGraph)
 
     (*ppG6ReadIterator)->g6Input = NULL;
 
-    if (pGraph == NULL)
+    if (theGraph == NULL)
     {
         ErrorMessage("Must allocate graph to be used by G6ReadIterator.\n");
 
@@ -61,7 +62,7 @@ int g6_NewReader(G6ReadIteratorP *ppG6ReadIterator, graphP pGraph)
     }
     else
     {
-        (*ppG6ReadIterator)->currGraph = pGraph;
+        (*ppG6ReadIterator)->currGraph = theGraph;
     }
 
     return exitCode;
@@ -141,19 +142,19 @@ int g6_GetOrderFromReader(G6ReadIteratorP pG6ReadIterator, int *pOrder)
     return OK;
 }
 
-int g6_GetGraphFromReader(G6ReadIteratorP pG6ReadIterator, graphP *ppGraph)
+int g6_GetGraphFromReader(G6ReadIteratorP pG6ReadIterator, graphP *pTheGraph)
 {
     if (_g6_IsReaderInitialized(pG6ReadIterator) == false)
     {
         ErrorMessage("Unable to get currGraph from reader, as G6ReadIterator "
                      "is not allocated.\n");
 
-        (*ppGraph) = NULL;
+        (*pTheGraph) = NULL;
 
         return NOTOK;
     }
 
-    (*ppGraph) = pG6ReadIterator->currGraph;
+    (*pTheGraph) = pG6ReadIterator->currGraph;
 
     return OK;
 }
@@ -633,7 +634,7 @@ int _g6_ValidateGraphEncoding(char *graphBuff, const int order, const int numCha
 // the final byte, we determine how many padding zeroes to expect, and exclude them
 // from being processed. We index into the adjacency matrix by row and column, which
 // are incremented such that row ranges from 0 to one less than the column index.
-int _g6_DecodeGraph(char *graphBuff, const int order, const int numChars, graphP pGraph)
+int _g6_DecodeGraph(char *graphBuff, const int order, const int numChars, graphP theGraph)
 {
     int exitCode = OK;
 
@@ -644,7 +645,7 @@ int _g6_DecodeGraph(char *graphBuff, const int order, const int numChars, graphP
     int row = 0;
     int col = 1;
 
-    if (pGraph == NULL)
+    if (theGraph == NULL)
     {
         ErrorMessage("Must initialize graph datastructure before decoding the graph representation.\n");
         return NOTOK;
@@ -671,8 +672,8 @@ int _g6_DecodeGraph(char *graphBuff, const int order, const int numChars, graphP
             bitValue = ((currByte >> j) & 1u) ? 1 : 0;
             if (bitValue == 1)
             {
-                // Add gp_GetFirstVertex(pGraph), which is 1 if NIL == 0 (i.e. internal 1-based labelling) and 0 if NIL == -1 (internally 0-based)
-                exitCode = gp_DynamicAddEdge(pGraph, row + gp_GetFirstVertex(pGraph), 0, col + gp_GetFirstVertex(pGraph), 0);
+                // Add gp_GetFirstVertex(theGraph), which is 1 if NIL == 0 (i.e. internal 1-based labelling) and 0 if NIL == -1 (internally 0-based)
+                exitCode = gp_DynamicAddEdge(theGraph, row + gp_GetFirstVertex(theGraph), 0, col + gp_GetFirstVertex(theGraph), 0);
                 if (exitCode != OK)
                     return exitCode;
             }
@@ -707,7 +708,7 @@ void g6_FreeReader(G6ReadIteratorP *ppG6ReadIterator)
     }
 }
 
-int _g6_ReadGraphFromFile(graphP pGraphToRead, char *pathToG6File)
+int _g6_ReadGraphFromFile(graphP theGraph, char *pathToG6File)
 {
     char const *messageFormat = NULL;
     int charsAvailForStr = 0;
@@ -728,10 +729,10 @@ int _g6_ReadGraphFromFile(graphP pGraphToRead, char *pathToG6File)
         return NOTOK;
     }
 
-    return _g6_ReadGraphFromStrOrFile(pGraphToRead, inputContainer);
+    return _g6_ReadGraphFromStrOrFile(theGraph, inputContainer);
 }
 
-int _g6_ReadGraphFromString(graphP pGraphToRead, char *g6EncodedString)
+int _g6_ReadGraphFromString(graphP theGraph, char *g6EncodedString)
 {
     strOrFileP inputContainer = NULL;
 
@@ -747,10 +748,10 @@ int _g6_ReadGraphFromString(graphP pGraphToRead, char *g6EncodedString)
         return NOTOK;
     }
 
-    return _g6_ReadGraphFromStrOrFile(pGraphToRead, inputContainer);
+    return _g6_ReadGraphFromStrOrFile(theGraph, inputContainer);
 }
 
-int _g6_ReadGraphFromStrOrFile(graphP pGraphToRead, strOrFileP g6InputContainer)
+int _g6_ReadGraphFromStrOrFile(graphP theGraph, strOrFileP g6InputContainer)
 {
     int exitCode = OK;
 
@@ -762,7 +763,7 @@ int _g6_ReadGraphFromStrOrFile(graphP pGraphToRead, strOrFileP g6InputContainer)
         return NOTOK;
     }
 
-    if (g6_NewReader(&pG6ReadIterator, pGraphToRead) != OK)
+    if (g6_NewReader(&pG6ReadIterator, theGraph) != OK)
     {
         ErrorMessage("Unable to allocate G6ReadIterator.\n");
         return NOTOK;

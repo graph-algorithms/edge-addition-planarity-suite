@@ -35,12 +35,12 @@ extern "C"
     } G6ReadIterator;
     typedef G6ReadIterator *G6ReadIteratorP;
 
-    int g6_NewReader(G6ReadIteratorP *ppG6ReadIterator, graphP pGraph);
+    int g6_NewReader(G6ReadIteratorP *ppG6ReadIterator, graphP theGraph);
     bool g6_EndReached(G6ReadIteratorP pG6ReadIterator);
 
     int g6_GetNumGraphsRead(G6ReadIteratorP pG6ReadIterator, int *pNumGraphsRead);
     int g6_GetOrderFromReader(G6ReadIteratorP pG6ReadIterator, int *pOrder);
-    int g6_GetGraphFromReader(G6ReadIteratorP pG6ReadIterator, graphP *ppGraph);
+    int g6_GetGraphFromReader(G6ReadIteratorP pG6ReadIterator, graphP *pTheGraph);
 
     int g6_InitReaderWithString(G6ReadIteratorP pG6ReadIterator, char *inputString);
     int g6_InitReaderWithFileName(G6ReadIteratorP pG6ReadIterator, char const *const infileName);
