@@ -47,7 +47,7 @@ int _ClearAllVisitedFlagsInBicomp(graphP theGraph, int BicompRoot);
 int _ClearAllVisitedFlagsInOtherBicomps(graphP theGraph, int BicompRoot);
 void _ClearEdgeVisitedFlagsInUnembeddedEdges(graphP theGraph);
 int _FillVertexVisitedInfoInBicomp(graphP theGraph, int BicompRoot, int FillValue);
-int _ClearVertexObstructionTypeInBicomp(graphP theGraph, int BicompRoot);
+int _ClearObstructionMarkInBicomp(graphP theGraph, int BicompRoot);
 
 int _ClearAllVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x);
 int _SetAllVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x);
@@ -837,7 +837,7 @@ int _FillVertexVisitedInfoInBicomp(graphP theGraph, int BicompRoot, int FillValu
 }
 
 /********************************************************************
- _ClearVertexObstructionTypeInBicomp()
+ _ClearObstructionMarkInBicomp()
 
  Clears the 'obstruction type' bits for each vertex in the bicomp
  rooted by BicompRoot.
@@ -849,7 +849,7 @@ int _FillVertexVisitedInfoInBicomp(graphP theGraph, int BicompRoot, int FillValu
  Returns OK on success, NOTOK on implementation failure.
  ********************************************************************/
 
-int _ClearVertexObstructionTypeInBicomp(graphP theGraph, int BicompRoot)
+int _ClearObstructionMarkInBicomp(graphP theGraph, int BicompRoot)
 {
     int V, e;
     int stackBottom = sp_GetCurrentSize(theGraph->theStack);
@@ -858,7 +858,7 @@ int _ClearVertexObstructionTypeInBicomp(graphP theGraph, int BicompRoot)
     while (sp_GetCurrentSize(theGraph->theStack) > stackBottom)
     {
         sp_Pop(theGraph->theStack, V);
-        gp_ClearVertexObstructionType(theGraph, V);
+        gp_ClearObstructionMark(theGraph, V);
 
         e = gp_GetFirstArc(theGraph, V);
         while (gp_IsArc(e))

@@ -388,29 +388,32 @@ extern "C"
 #define gp_ClearMarked(theGraph, v) (theGraph->V[v].flags &= ~ANYTYPEVERTEX_MARKED_MASK)
 #define gp_SetMarked(theGraph, v) (theGraph->V[v].flags |= ANYTYPEVERTEX_MARKED_MASK)
 
-// The obstruction type is defined by bits 2-4, 4+8+16=28
-// Bit 2 - 4 if type set, 0 if not
-// Bit 3 - 8 if Y side, 0 if X side
-// Bit 4 - 16 if high, 0 if low
-#define VERTEX_OBSTRUCTIONTYPE_MASK 28
+// The ANYVERTEX_OBSTRUCTIONMARK_MASK bits are bits 2-4, 4+8+16=28
+// They are used by planarity-related algorithms to identify the four
+// regions of the external face cycle of a bicomp, relative to an
+// XY-path in the bicomp.
+// Bit 2 - 4 if the OBSTRUCTIONMARK is set, 0 if not
+// Bit 3 - 8 if the OBSTRUCTIONMARK indicates Y side, 0 if X side
+// Bit 4 - 16 if the OBSTRUCTIONMARK indicates high, 0 if low
+#define ANYVERTEX_OBSTRUCTIONMARK_MASK 28
 
-// Call gp_GetVertexObstructionType, then compare to one of these four possibilities
-// VERTEX_OBSTRUCTIONTYPE_HIGH_RXW - On the external face path between vertices R and X
-// VERTEX_OBSTRUCTIONTYPE_LOW_RXW  - X or on the external face path between vertices X and W
-// VERTEX_OBSTRUCTIONTYPE_HIGH_RYW - On the external face path between vertices R and Y
-// VERTEX_OBSTRUCTIONTYPE_LOW_RYW  - Y or on the external face path between vertices Y and W
-// VERTEX_OBSTRUCTIONTYPE_UNMARKED  - corresponds to all three bits off
-#define VERTEX_OBSTRUCTIONTYPE_HIGH_RXW 20
-#define VERTEX_OBSTRUCTIONTYPE_LOW_RXW 4
-#define VERTEX_OBSTRUCTIONTYPE_HIGH_RYW 28
-#define VERTEX_OBSTRUCTIONTYPE_LOW_RYW 12
-#define VERTEX_OBSTRUCTIONTYPE_UNMARKED 0
+// Call gp_GetObstructionMark, then compare to one of these four possibilities
+// ANYVERTEX_OBSTRUCTIONMARK_HIGH_RXW - On the external face path between vertices R and X
+// ANYVERTEX_OBSTRUCTIONMARK_LOW_RXW  - X or on the external face path between vertices X and W
+// ANYVERTEX_OBSTRUCTIONMARK_HIGH_RYW - On the external face path between vertices R and Y
+// ANYVERTEX_OBSTRUCTIONMARK_LOW_RYW  - Y or on the external face path between vertices Y and W
+// ANYVERTEX_OBSTRUCTIONMARK_UNMARKED  - corresponds to all three bits off
+#define ANYVERTEX_OBSTRUCTIONMARK_HIGH_RXW 20
+#define ANYVERTEX_OBSTRUCTIONMARK_LOW_RXW 4
+#define ANYVERTEX_OBSTRUCTIONMARK_HIGH_RYW 28
+#define ANYVERTEX_OBSTRUCTIONMARK_LOW_RYW 12
+#define ANYVERTEX_OBSTRUCTIONMARK_UNMARKED 0
 
-#define gp_GetVertexObstructionType(theGraph, v) (theGraph->V[v].flags & VERTEX_OBSTRUCTIONTYPE_MASK)
-#define gp_ClearVertexObstructionType(theGraph, v) (theGraph->V[v].flags &= ~VERTEX_OBSTRUCTIONTYPE_MASK)
-#define gp_SetVertexObstructionType(theGraph, v, type) (theGraph->V[v].flags |= type)
-#define gp_ResetVertexObstructionType(theGraph, v, type) \
-    (theGraph->V[v].flags = (theGraph->V[v].flags & ~VERTEX_OBSTRUCTIONTYPE_MASK) | type)
+#define gp_GetObstructionMark(theGraph, v) (theGraph->V[v].flags & ANYVERTEX_OBSTRUCTIONMARK_MASK)
+#define gp_ClearObstructionMark(theGraph, v) (theGraph->V[v].flags &= ~ANYVERTEX_OBSTRUCTIONMARK_MASK)
+#define gp_SetObstructionMark(theGraph, v, type) (theGraph->V[v].flags |= type)
+#define gp_ResetObstructionMark(theGraph, v, type) \
+    (theGraph->V[v].flags = (theGraph->V[v].flags & ~ANYVERTEX_OBSTRUCTIONMARK_MASK) | type)
 
 // Fast utility routines for "any type" vertex records
 #define gp_CopyAnyTypeVertexRec(dstGraph, vdst, srcGraph, vsrc) (dstGraph->V[vdst] = srcGraph->V[vsrc])

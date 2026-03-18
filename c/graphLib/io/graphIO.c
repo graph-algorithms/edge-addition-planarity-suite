@@ -40,7 +40,7 @@ char *_MakeLogStr5(char *format, int, int, int, int, int);
 
 /* Private functions */
 char _GetEdgeTypeChar(graphP theGraph, int e);
-char _GetVertexObstructionTypeChar(graphP theGraph, int v);
+char _GetObstructionMarkChar(graphP theGraph, int v);
 
 /********************************************************************
  _ReadAdjMatrix()
@@ -758,17 +758,17 @@ char _GetEdgeTypeChar(graphP theGraph, int e)
 /********************************************************************
  ********************************************************************/
 
-char _GetVertexObstructionTypeChar(graphP theGraph, int v)
+char _GetObstructionMarkChar(graphP theGraph, int v)
 {
     char type = 'U';
 
-    if (gp_GetVertexObstructionType(theGraph, v) == VERTEX_OBSTRUCTIONTYPE_HIGH_RXW)
+    if (gp_GetObstructionMark(theGraph, v) == ANYVERTEX_OBSTRUCTIONMARK_HIGH_RXW)
         type = 'X';
-    else if (gp_GetVertexObstructionType(theGraph, v) == VERTEX_OBSTRUCTIONTYPE_LOW_RXW)
+    else if (gp_GetObstructionMark(theGraph, v) == ANYVERTEX_OBSTRUCTIONMARK_LOW_RXW)
         type = 'x';
-    if (gp_GetVertexObstructionType(theGraph, v) == VERTEX_OBSTRUCTIONTYPE_HIGH_RYW)
+    if (gp_GetObstructionMark(theGraph, v) == ANYVERTEX_OBSTRUCTIONMARK_HIGH_RYW)
         type = 'Y';
-    else if (gp_GetVertexObstructionType(theGraph, v) == VERTEX_OBSTRUCTIONTYPE_LOW_RYW)
+    else if (gp_GetObstructionMark(theGraph, v) == ANYVERTEX_OBSTRUCTIONMARK_LOW_RYW)
         type = 'y';
 
     return type;
@@ -864,7 +864,7 @@ int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer)
         if (sprintf(lineBuf, "V[%3d] index=%3d, type=%c, first arc=%3d, last arc=%3d\n",
                     v,
                     gp_GetIndex(theGraph, v),
-                    (gp_IsVirtualVertex(theGraph, v) ? 'X' : _GetVertexObstructionTypeChar(theGraph, v)),
+                    (gp_IsVirtualVertex(theGraph, v) ? 'X' : _GetObstructionMarkChar(theGraph, v)),
                     gp_GetFirstArc(theGraph, v),
                     gp_GetLastArc(theGraph, v)) < 1)
             return NOTOK;
@@ -879,7 +879,7 @@ int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer)
         if (sprintf(lineBuf, "V[%3d] index=%3d, type=%c, first arc=%3d, last arc=%3d\n",
                     v,
                     gp_GetIndex(theGraph, v),
-                    (gp_IsVirtualVertex(theGraph, v) ? 'X' : _GetVertexObstructionTypeChar(theGraph, v)),
+                    (gp_IsVirtualVertex(theGraph, v) ? 'X' : _GetObstructionMarkChar(theGraph, v)),
                     gp_GetFirstArc(theGraph, v),
                     gp_GetLastArc(theGraph, v)) < 1)
             return NOTOK;

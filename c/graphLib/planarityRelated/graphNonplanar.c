@@ -12,7 +12,7 @@ See the LICENSE.TXT file for licensing information.
 
 extern void _InitIsolatorContext(graphP theGraph);
 extern int _ClearAllVisitedFlagsInBicomp(graphP theGraph, int BicompRoot);
-extern int _ClearVertexObstructionTypeInBicomp(graphP theGraph, int BicompRoot);
+extern int _ClearObstructionMarkInBicomp(graphP theGraph, int BicompRoot);
 extern int _HideInternalEdges(graphP theGraph, int vertex);
 extern int _RestoreInternalEdges(graphP theGraph, int stackBottom);
 
@@ -87,8 +87,8 @@ int _ChooseTypeOfNonplanarityMinor(graphP theGraph, int v, int R)
          or P_y closer to R than Y along external face), then we've
          matched Minor C. */
 
-    if (gp_GetVertexObstructionType(theGraph, Px) == VERTEX_OBSTRUCTIONTYPE_HIGH_RXW ||
-        gp_GetVertexObstructionType(theGraph, Py) == VERTEX_OBSTRUCTIONTYPE_HIGH_RYW)
+    if (gp_GetObstructionMark(theGraph, Px) == ANYVERTEX_OBSTRUCTIONMARK_HIGH_RXW ||
+        gp_GetObstructionMark(theGraph, Py) == ANYVERTEX_OBSTRUCTIONMARK_HIGH_RYW)
     {
         theGraph->IC.minorType |= MINORTYPE_C;
         return OK;
@@ -337,30 +337,30 @@ int _SetVertexTypesForMarkingXYPath(graphP theGraph)
     }
 
     // Clear the type member of each vertex in the bicomp
-    if (_ClearVertexObstructionTypeInBicomp(theGraph, R) != OK)
+    if (_ClearObstructionMarkInBicomp(theGraph, R) != OK)
         return NOTOK;
 
     // Traverse from R to W in the X direction
     ZPrevLink = 1;
     Z = _GetNeighborOnExtFace(theGraph, R, &ZPrevLink);
-    ZType = VERTEX_OBSTRUCTIONTYPE_HIGH_RXW;
+    ZType = ANYVERTEX_OBSTRUCTIONMARK_HIGH_RXW;
     while (Z != W)
     {
         if (Z == X)
-            ZType = VERTEX_OBSTRUCTIONTYPE_LOW_RXW;
-        gp_ResetVertexObstructionType(theGraph, Z, ZType);
+            ZType = ANYVERTEX_OBSTRUCTIONMARK_LOW_RXW;
+        gp_ResetObstructionMark(theGraph, Z, ZType);
         Z = _GetNeighborOnExtFace(theGraph, Z, &ZPrevLink);
     }
 
     // Traverse from R to W in the Y direction
     ZPrevLink = 0;
     Z = _GetNeighborOnExtFace(theGraph, R, &ZPrevLink);
-    ZType = VERTEX_OBSTRUCTIONTYPE_HIGH_RYW;
+    ZType = ANYVERTEX_OBSTRUCTIONMARK_HIGH_RYW;
     while (Z != W)
     {
         if (Z == Y)
-            ZType = VERTEX_OBSTRUCTIONTYPE_LOW_RYW;
-        gp_ResetVertexObstructionType(theGraph, Z, ZType);
+            ZType = ANYVERTEX_OBSTRUCTIONMARK_LOW_RYW;
+        gp_ResetObstructionMark(theGraph, Z, ZType);
         Z = _GetNeighborOnExtFace(theGraph, Z, &ZPrevLink);
     }
 
@@ -604,8 +604,8 @@ int _MarkClosestXYPath(graphP theGraph, int targetVertex)
     // the targetVertex on the RXW side of the bicomp)
     e = targetVertex == R ? gp_GetLastArc(theGraph, R) : gp_GetFirstArc(theGraph, W);
 
-    while (gp_GetVertexObstructionType(theGraph, Z) != VERTEX_OBSTRUCTIONTYPE_HIGH_RYW &&
-           gp_GetVertexObstructionType(theGraph, Z) != VERTEX_OBSTRUCTIONTYPE_LOW_RYW)
+    while (gp_GetObstructionMark(theGraph, Z) != ANYVERTEX_OBSTRUCTIONMARK_HIGH_RYW &&
+           gp_GetObstructionMark(theGraph, Z) != ANYVERTEX_OBSTRUCTIONMARK_LOW_RYW)
     {
         /* Advance e and Z along the proper face containing the targetVertex */
 
@@ -648,8 +648,8 @@ int _MarkClosestXYPath(graphP theGraph, int targetVertex)
                all the vertices we visited so far because they're not part of
                the obstructing path */
 
-            if (gp_GetVertexObstructionType(theGraph, Z) == VERTEX_OBSTRUCTIONTYPE_HIGH_RXW ||
-                gp_GetVertexObstructionType(theGraph, Z) == VERTEX_OBSTRUCTIONTYPE_LOW_RXW)
+            if (gp_GetObstructionMark(theGraph, Z) == ANYVERTEX_OBSTRUCTIONMARK_HIGH_RXW ||
+                gp_GetObstructionMark(theGraph, Z) == ANYVERTEX_OBSTRUCTIONMARK_LOW_RXW)
             {
                 theGraph->IC.px = Z;
                 if (_PopAndUnmarkVerticesAndEdges(theGraph, NIL, stackBottom2) != OK)
@@ -676,8 +676,8 @@ int _MarkClosestXYPath(graphP theGraph, int targetVertex)
                identifying the closest X-Y path, so we record the point of
                attachment and break the loop. */
 
-            if (gp_GetVertexObstructionType(theGraph, Z) == VERTEX_OBSTRUCTIONTYPE_HIGH_RYW ||
-                gp_GetVertexObstructionType(theGraph, Z) == VERTEX_OBSTRUCTIONTYPE_LOW_RYW)
+            if (gp_GetObstructionMark(theGraph, Z) == ANYVERTEX_OBSTRUCTIONMARK_HIGH_RYW ||
+                gp_GetObstructionMark(theGraph, Z) == ANYVERTEX_OBSTRUCTIONMARK_LOW_RYW)
             {
                 theGraph->IC.py = Z;
                 break;
@@ -786,7 +786,7 @@ int _MarkZtoRPath(graphP theGraph)
         /* If we ever encounter a non-internal vertex (other than the root R),
                 then corruption has occurred, so we return NOTOK */
 
-        if (gp_GetVertexObstructionType(theGraph, Z) != VERTEX_OBSTRUCTIONTYPE_UNMARKED)
+        if (gp_GetObstructionMark(theGraph, Z) != ANYVERTEX_OBSTRUCTIONMARK_UNMARKED)
             return NOTOK;
 
         /* Go to the next vertex indicated by ZNextArc */

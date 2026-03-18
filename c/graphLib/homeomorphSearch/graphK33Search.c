@@ -485,14 +485,14 @@ int _SearchForMinorE1(graphP theGraph)
                     RYW path. Otherwise, the order is (X, new Z, new W, Y), so the
                     new Z (old W with no type) is type changed to be on the RXW path.*/
 
-                if (gp_GetVertexObstructionType(theGraph, Z) == VERTEX_OBSTRUCTIONTYPE_LOW_RXW)
-                    gp_ResetVertexObstructionType(theGraph, theGraph->IC.z, VERTEX_OBSTRUCTIONTYPE_LOW_RYW);
+                if (gp_GetObstructionMark(theGraph, Z) == ANYVERTEX_OBSTRUCTIONMARK_LOW_RXW)
+                    gp_ResetObstructionMark(theGraph, theGraph->IC.z, ANYVERTEX_OBSTRUCTIONMARK_LOW_RYW);
                 else
-                    gp_ResetVertexObstructionType(theGraph, theGraph->IC.z, VERTEX_OBSTRUCTIONTYPE_LOW_RXW);
+                    gp_ResetObstructionMark(theGraph, theGraph->IC.z, ANYVERTEX_OBSTRUCTIONMARK_LOW_RXW);
 
                 /* For completeness, we change the new W to type unknown */
 
-                gp_ClearVertexObstructionType(theGraph, theGraph->IC.w);
+                gp_ClearObstructionMark(theGraph, theGraph->IC.w);
 
                 /* The external activity ancestor connection of the new Z must be obtained */
 
@@ -1026,7 +1026,7 @@ int _TestForZtoWPath(graphP theGraph)
             // but it can never happen due to the obstructing X-Y path.
             if (gp_IsNotVirtualVertex(theGraph, w) &&
                 gp_GetVertexVisitedInfo(theGraph, w) != -1 &&
-                gp_GetVertexObstructionType(theGraph, w) == VERTEX_OBSTRUCTIONTYPE_UNMARKED)
+                gp_GetObstructionMark(theGraph, w) == ANYVERTEX_OBSTRUCTIONMARK_UNMARKED)
             {
                 sp_Push2(theGraph->theStack, v, e);
                 sp_Push2(theGraph->theStack, w, NIL);

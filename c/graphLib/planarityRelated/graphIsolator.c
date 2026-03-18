@@ -190,9 +190,9 @@ int _IsolateMinorC(graphP theGraph)
 {
     isolatorContextP IC = &theGraph->IC;
 
-    if (gp_GetVertexObstructionType(theGraph, IC->px) == VERTEX_OBSTRUCTIONTYPE_HIGH_RXW)
+    if (gp_GetObstructionMark(theGraph, IC->px) == ANYVERTEX_OBSTRUCTIONMARK_HIGH_RXW)
     {
-        int highY = gp_GetVertexObstructionType(theGraph, IC->py) == VERTEX_OBSTRUCTIONTYPE_HIGH_RYW
+        int highY = gp_GetObstructionMark(theGraph, IC->py) == ANYVERTEX_OBSTRUCTIONMARK_HIGH_RYW
                         ? IC->py
                         : IC->y;
         if (_MarkPathAlongBicompExtFace(theGraph, IC->r, highY) != OK)
@@ -285,16 +285,16 @@ int _IsolateMinorE1(graphP theGraph)
 {
     isolatorContextP IC = &theGraph->IC;
 
-    if (gp_GetVertexObstructionType(theGraph, IC->z) == VERTEX_OBSTRUCTIONTYPE_LOW_RXW)
+    if (gp_GetObstructionMark(theGraph, IC->z) == ANYVERTEX_OBSTRUCTIONMARK_LOW_RXW)
     {
-        gp_ResetVertexObstructionType(theGraph, IC->px, VERTEX_OBSTRUCTIONTYPE_HIGH_RXW);
+        gp_ResetObstructionMark(theGraph, IC->px, ANYVERTEX_OBSTRUCTIONMARK_HIGH_RXW);
         IC->x = IC->z;
         IC->ux = IC->uz;
         IC->dx = IC->dz;
     }
-    else if (gp_GetVertexObstructionType(theGraph, IC->z) == VERTEX_OBSTRUCTIONTYPE_LOW_RYW)
+    else if (gp_GetObstructionMark(theGraph, IC->z) == ANYVERTEX_OBSTRUCTIONMARK_LOW_RYW)
     {
-        gp_ResetVertexObstructionType(theGraph, IC->py, VERTEX_OBSTRUCTIONTYPE_HIGH_RYW);
+        gp_ResetObstructionMark(theGraph, IC->py, ANYVERTEX_OBSTRUCTIONMARK_HIGH_RYW);
         IC->y = IC->z;
         IC->uy = IC->uz;
         IC->dy = IC->dz;
