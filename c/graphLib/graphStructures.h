@@ -65,20 +65,42 @@ extern "C"
     typedef edgeRec *edgeRecP;
 
 #ifdef USE_FASTER_1BASEDARRAYS
-#define gp_IsArc(e) (e)
-#define gp_IsNotArc(e) (!(e))
+
+#ifndef DEBUG
+#define gp_IsArc(theGraph, e) (e)
+#else
+#define gp_IsArc(theGraph, e)                                                    \
+    ((e) == NIL                                                                  \
+         ? 0                                                                     \
+         : ((e) < gp_GetFirstEdge(theGraph) || (e) >= gp_EdgeArraySize(theGraph) \
+                ? (NOTOK, 0)                                                     \
+                : 1))
+#endif
+
+#define gp_IsNotArc(theGraph, e) (!(e))
 #define gp_GetFirstEdge(theGraph) (2)
 
-#else // Using Slower 0-based Arrays
-#define gp_IsArc(e) ((e) != NIL)
-#define gp_IsNotArc(e) ((e) == NIL)
+#else // When using slower 0-based Arrays
+
+#ifndef DEBUG
+#define gp_IsArc(theGraph, e) ((e) != NIL)
+#else
+#define gp_IsArc(theGraph, e)                                                    \
+    ((e) == NIL                                                                  \
+         ? 0                                                                     \
+         : ((e) < gp_GetFirstEdge(theGraph) || (e) >= gp_EdgeArraySize(theGraph) \
+                ? (NOTOK, 0)                                                     \
+                : 1))
+#endif
+
+#define gp_IsNotArc(theGraph, e) ((e) == NIL)
 #define gp_GetFirstEdge(theGraph) (0)
 #endif
 
 #define gp_EdgeInUse(theGraph, e) (gp_IsAnyTypeVertex(theGraph, gp_GetNeighbor(theGraph, e)))
 #define gp_EdgeNotInUse(theGraph, e) (gp_IsNotAnyTypeVertex(theGraph, gp_GetNeighbor(theGraph, e)))
-#define gp_EdgeIndexBound(theGraph) (gp_GetFirstEdge(theGraph) + (theGraph)->arcCapacity)
-#define gp_EdgeInUseIndexBound(theGraph) (gp_GetFirstEdge(theGraph) + (((theGraph)->M + sp_GetCurrentSize((theGraph)->edgeHoles)) << 1))
+#define gp_EdgeArraySize(theGraph) (gp_GetFirstEdge(theGraph) + (theGraph)->arcCapacity)
+#define gp_EdgeInUseArraySize(theGraph) (gp_GetFirstEdge(theGraph) + (((theGraph)->M + sp_GetCurrentSize((theGraph)->edgeHoles)) << 1))
 
 // An edge is represented by two consecutive edge records (arcs) in the edge array E.
 // If an even number, xor 1 will add one; if an odd number, xor 1 will subtract 1
@@ -114,6 +136,7 @@ extern "C"
 // EDGE_TYPE_FORWARD - edge record is an arc to a DFS descendant, not a DFS child
 // EDGE_TYPE_PARENT - edge record is an arc to the DFS parent
 // EDGE_TYPE_BACK - edge record is an arc to a DFS ancestor, not the DFS parent
+// NOTE: A parent/child tree arcs have bit 2 (4) set, forward/back arcs do not
 #define EDGE_TYPE_CHILD 14
 #define EDGE_TYPE_FORWARD 10
 #define EDGE_TYPE_PARENT 6
@@ -164,6 +187,15 @@ extern "C"
         }                                                                                      \
     }
 
+// Definition and accessors for the edge marked flag
+// Essentially, this is a second visitation flag that can help applications that
+// must visit all edges to analyze and mark the ones important for some purpose.
+#define EDGE_MARKED_MASK 128
+#define gp_GetEdgeMarked(theGraph, e) (theGraph->E[e].flags & EDGE_MARKED_MASK)
+#define gp_ClearEdgeMarked(theGraph, e) (theGraph->E[e].flags &= ~EDGE_MARKED_MASK)
+#define gp_SetEdgeMarked(theGraph, e) (theGraph->E[e].flags |= EDGE_MARKED_MASK)
+
+// Fast utility routine for copying edge records
 #define gp_CopyEdgeRec(dstGraph, edst, srcGraph, esrc) (dstGraph->E[edst] = srcGraph->E[esrc])
 
     /********************************************************************
@@ -280,8 +312,8 @@ extern "C"
 #define gp_VertexArraySize(theGraph) (gp_GetFirstVertex(theGraph) + (theGraph)->N)
 #define gp_AnyTypeVertexArraySize(theGraph) (gp_VertexArraySize(theGraph) + (theGraph)->NV)
 
-#define gp_VirtualVertexInUse(theGraph, virtualVertex) (gp_IsArc(gp_GetFirstArc(theGraph, virtualVertex)))
-#define gp_VirtualVertexNotInUse(theGraph, virtualVertex) (gp_IsNotArc(gp_GetFirstArc(theGraph, virtualVertex)))
+#define gp_VirtualVertexInUse(theGraph, virtualVertex) (gp_IsArc(theGraph, gp_GetFirstArc(theGraph, virtualVertex)))
+#define gp_VirtualVertexNotInUse(theGraph, virtualVertex) (gp_IsNotArc(theGraph, gp_GetFirstArc(theGraph, virtualVertex)))
 
 #else // Using Slower 0-based Arrays
 
@@ -329,8 +361,8 @@ extern "C"
 #define gp_VertexArraySize(theGraph) (gp_GetFirstVertex(theGraph) + (theGraph)->N)
 #define gp_AnyTypeVertexArraySize(theGraph) (gp_VertexArraySize(theGraph) + (theGraph)->NV)
 
-#define gp_VirtualVertexInUse(theGraph, virtualVertex) (gp_IsArc(gp_GetFirstArc(theGraph, virtualVertex)))
-#define gp_VirtualVertexNotInUse(theGraph, virtualVertex) (gp_IsNotArc(gp_GetFirstArc(theGraph, virtualVertex)))
+#define gp_VirtualVertexInUse(theGraph, virtualVertex) (gp_IsArc(theGraph, gp_GetFirstArc(theGraph, virtualVertex)))
+#define gp_VirtualVertexNotInUse(theGraph, virtualVertex) (gp_IsNotArc(theGraph, gp_GetFirstArc(theGraph, virtualVertex)))
 
 #endif
     ///////////////////////////////////////////
@@ -711,14 +743,14 @@ extern "C"
 // Definitions that enable getting the next or previous arc
 // as if the adjacency list were circular, i.e. that the
 // first arc and last arc were linked
-#define gp_GetNextArcCircular(theGraph, e) \
-    (gp_IsArc(gp_GetNextArc(theGraph, e))  \
-         ? gp_GetNextArc(theGraph, e)      \
+#define gp_GetNextArcCircular(theGraph, e)          \
+    (gp_IsArc(theGraph, gp_GetNextArc(theGraph, e)) \
+         ? gp_GetNextArc(theGraph, e)               \
          : gp_GetFirstArc(theGraph, theGraph->E[gp_GetTwinArc(theGraph, e)].neighbor))
 
-#define gp_GetPrevArcCircular(theGraph, e) \
-    (gp_IsArc(gp_GetPrevArc(theGraph, e))  \
-         ? gp_GetPrevArc(theGraph, e)      \
+#define gp_GetPrevArcCircular(theGraph, e)          \
+    (gp_IsArc(theGraph, gp_GetPrevArc(theGraph, e)) \
+         ? gp_GetPrevArc(theGraph, e)               \
          : gp_GetLastArc(theGraph, theGraph->E[gp_GetTwinArc(theGraph, e)].neighbor))
 
 // Definitions that make the cross-link binding between a vertex and an arc
@@ -739,7 +771,7 @@ extern "C"
 // Attaches an arc between the current binding between a vertex and its first arc
 #define gp_AttachFirstArc(theGraph, v, arc)                            \
     {                                                                  \
-        if (gp_IsArc(gp_GetFirstArc(theGraph, v)))                     \
+        if (gp_IsArc(theGraph, gp_GetFirstArc(theGraph, v)))           \
         {                                                              \
             gp_SetNextArc(theGraph, arc, gp_GetFirstArc(theGraph, v)); \
             gp_SetPrevArc(theGraph, gp_GetFirstArc(theGraph, v), arc); \
@@ -752,7 +784,7 @@ extern "C"
 // Attaches an arc between the current binding between a vertex and its last arc
 #define gp_AttachLastArc(theGraph, v, arc)                            \
     {                                                                 \
-        if (gp_IsArc(gp_GetLastArc(theGraph, v)))                     \
+        if (gp_IsArc(theGraph, gp_GetLastArc(theGraph, v)))           \
         {                                                             \
             gp_SetPrevArc(theGraph, arc, gp_GetLastArc(theGraph, v)); \
             gp_SetNextArc(theGraph, gp_GetLastArc(theGraph, v), arc); \
@@ -838,12 +870,12 @@ extern "C"
         they are associated, so we test 'is vertex' (rather than virtual).
      ********************************************************************/
 
-#define PERTINENT(theGraph, theVertex)                           \
-    (gp_IsArc(gp_GetVertexPertinentEdge(theGraph, theVertex)) || \
+#define PERTINENT(theGraph, theVertex)                                     \
+    (gp_IsArc(theGraph, gp_GetVertexPertinentEdge(theGraph, theVertex)) || \
      gp_IsVertex(theGraph, gp_GetVertexPertinentRootsList(theGraph, theVertex)))
 
-#define NOTPERTINENT(theGraph, theVertex)                           \
-    (gp_IsNotArc(gp_GetVertexPertinentEdge(theGraph, theVertex)) && \
+#define NOTPERTINENT(theGraph, theVertex)                                     \
+    (gp_IsNotArc(theGraph, gp_GetVertexPertinentEdge(theGraph, theVertex)) && \
      gp_IsNotVertex(theGraph, gp_GetVertexPertinentRootsList(theGraph, theVertex)))
 
     /********************************************************************
@@ -891,7 +923,7 @@ extern "C"
     // #define FUTUREPERTINENT(theGraph, theVertex, v)
     //        (  theGraph->VI[theVertex].leastAncestor < v ||
     //           ((gp_UpdateVertexFuturePertinentChild(theGraph, theVertex, v),
-    //             gp_IsArc(theGraph->VI[theVertex].futurePertinentChild)) &&
+    //             gp_IsArc(theGraph, theGraph->VI[theVertex].futurePertinentChild)) &&
     //             theGraph->VI[theGraph->VI[theVertex].futurePertinentChild].lowpoint < v) )
 
     /********************************************************************

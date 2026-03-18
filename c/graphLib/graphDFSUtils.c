@@ -82,7 +82,7 @@ int gp_CreateDFSTree(graphP theGraph)
                 gp_SetVisited(theGraph, u);
                 gp_SetIndex(theGraph, u, DFI++);
                 gp_SetVertexParent(theGraph, u, uparent);
-                if (gp_IsArc(e))
+                if (gp_IsArc(theGraph, e))
                 {
                     gp_SetEdgeType(theGraph, e, EDGE_TYPE_CHILD);
                     gp_SetEdgeType(theGraph, gp_GetTwinArc(theGraph, e), EDGE_TYPE_PARENT);
@@ -92,7 +92,7 @@ int gp_CreateDFSTree(graphP theGraph)
                       tree edges to children or forward arcs of back edges */
 
                 e = gp_GetFirstArc(theGraph, u);
-                while (gp_IsArc(e))
+                while (gp_IsArc(theGraph, e))
                 {
                     if (!gp_GetVisited(theGraph, gp_GetNeighbor(theGraph, e)))
                         sp_Push2(theStack, u, e);
@@ -166,7 +166,7 @@ int _SortVertices(graphP theGraph)
        Also, if any links go back to locations 0 to n-1, then they
        need to be changed because we are reordering the vertices */
 
-    EsizeOccupied = gp_EdgeInUseIndexBound(theGraph);
+    EsizeOccupied = gp_EdgeInUseArraySize(theGraph);
     for (e = gp_GetFirstEdge(theGraph); e < EsizeOccupied; e += 2)
     {
         if (gp_EdgeInUse(theGraph, e))
@@ -313,7 +313,7 @@ int gp_LowpointAndLeastAncestor(graphP theGraph)
 
                 // Push the DFS children of u
                 e = gp_GetFirstArc(theGraph, u);
-                while (gp_IsArc(e))
+                while (gp_IsArc(theGraph, e))
                 {
                     if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_CHILD)
                     {
@@ -332,7 +332,7 @@ int gp_LowpointAndLeastAncestor(graphP theGraph)
 
                 // Compute leastAncestor and L, the least lowpoint from the DFS children
                 e = gp_GetFirstArc(theGraph, u);
-                while (gp_IsArc(e))
+                while (gp_IsArc(theGraph, e))
                 {
                     uneighbor = gp_GetNeighbor(theGraph, e);
                     if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_CHILD)
@@ -432,7 +432,7 @@ int gp_LeastAncestor(graphP theGraph)
                 leastAncestor = u;
 
                 e = gp_GetFirstArc(theGraph, u);
-                while (gp_IsArc(e))
+                while (gp_IsArc(theGraph, e))
                 {
                     uneighbor = gp_GetNeighbor(theGraph, e);
                     if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_CHILD)

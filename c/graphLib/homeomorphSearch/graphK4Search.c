@@ -635,7 +635,7 @@ int _K4_FindSeparatingInternalEdge(graphP theGraph, int R, int prevLink, int A, 
         // It is OK to not bother skipping the external face edges, since we
         // know they are marked visited and so are ignored
         e = gp_GetFirstArc(theGraph, Z);
-        while (gp_IsArc(e))
+        while (gp_IsArc(theGraph, e))
         {
             neighbor = gp_GetNeighbor(theGraph, e);
             if (!gp_GetMarked(theGraph, neighbor))
@@ -878,7 +878,7 @@ int _K4_ReduceBicompToEdge(graphP theGraph, K4SearchContext *context, int R, int
     // Now we have to reduce the path W -> R to the DFS tree edge (R, W)
     newEdge = _K4_ReducePathToEdge(theGraph, context, EDGE_TYPE_PARENT,
                                    R, gp_GetFirstArc(theGraph, R), W, gp_GetFirstArc(theGraph, W));
-    if (gp_IsNotArc(newEdge))
+    if (gp_IsNotArc(theGraph, newEdge))
         return NOTOK;
 
     // Finally, set the visited info state of W to unvisited so that
@@ -998,7 +998,7 @@ int _K4_ReducePathComponent(graphP theGraph, K4SearchContext *context, int R, in
 
     // Reduce the path (R ... A) to an edge
     e_R = _K4_ReducePathToEdge(theGraph, context, edgeType, R, e_R, A, e_A);
-    if (gp_IsNotArc(e_R))
+    if (gp_IsNotArc(theGraph, e_R))
         return NOTOK;
 
     // Preserve the net orientation along the DFS path in the case of a tree edge
@@ -1038,7 +1038,7 @@ int _K4_DeleteUnmarkedEdgesInBicomp(graphP theGraph, K4SearchContext *context, i
         sp_Pop(theGraph->theStack, V);
 
         e = gp_GetFirstArc(theGraph, V);
-        while (gp_IsArc(e))
+        while (gp_IsArc(theGraph, e))
         {
             if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_CHILD)
                 sp_Push(theGraph->theStack, gp_GetNeighbor(theGraph, e));
@@ -1099,7 +1099,7 @@ int _K4_GetCumulativeOrientationOnDFSPath(graphP theGraph, int ancestor, int des
             // Scan the edges for the one marked as the DFS parent
             parent = NIL;
             e = gp_GetFirstArc(theGraph, descendant);
-            while (gp_IsArc(e))
+            while (gp_IsArc(theGraph, e))
             {
                 if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_PARENT)
                 {
@@ -1177,7 +1177,7 @@ void _K4_ClearVisitedInPathComponent(graphP theGraph, int R, int prevLink, int A
     {
         gp_ClearVisited(theGraph, Z);
         e = gp_GetFirstArc(theGraph, Z);
-        while (gp_IsArc(e))
+        while (gp_IsArc(theGraph, e))
         {
             gp_ClearEdgeVisited(theGraph, e);
             gp_ClearEdgeVisited(theGraph, gp_GetTwinArc(theGraph, e));
@@ -1234,7 +1234,7 @@ int _K4_DeleteUnmarkedEdgesInPathComponent(graphP theGraph, int R, int prevLink,
     while (Z != A)
     {
         e = gp_GetFirstArc(theGraph, Z);
-        while (gp_IsArc(e))
+        while (gp_IsArc(theGraph, e))
         {
             // The comparison of e to its twin is a useful way of ensuring we
             // don't push the edge twice, which is of course only applicable
@@ -1390,7 +1390,7 @@ int _K4_RestoreReducedPath(graphP theGraph, K4SearchContext *context, int e)
     // Now we add the two edges to reconnect the reduced path represented
     // by the edge [e, eTwin].  The edge record in u is added between e0 and e1.
     // Likewise, the new edge record in x is added between eTwin0 and eTwin1.
-    if (gp_IsArc(e0))
+    if (gp_IsArc(theGraph, e0))
     {
         if (gp_InsertEdge(theGraph, u, e0, 1, v, NIL, 0) != OK)
             return NOTOK;
@@ -1401,7 +1401,7 @@ int _K4_RestoreReducedPath(graphP theGraph, K4SearchContext *context, int e)
             return NOTOK;
     }
 
-    if (gp_IsArc(eTwin0))
+    if (gp_IsArc(theGraph, eTwin0))
     {
         if (gp_InsertEdge(theGraph, x, eTwin0, 1, w, NIL, 0) != OK)
             return NOTOK;
@@ -1443,7 +1443,7 @@ int _K4_RestoreAndOrientReducedPaths(graphP theGraph, K4SearchContext *context)
 {
     int EsizeOccupied, e, eTwin, u, v, w, x, visited;
 
-    EsizeOccupied = gp_EdgeInUseIndexBound(theGraph);
+    EsizeOccupied = gp_EdgeInUseArraySize(theGraph);
     for (e = gp_GetFirstEdge(theGraph); e < EsizeOccupied;)
     {
         if (gp_IsAnyTypeVertex(theGraph, context->E[e].pathConnector))

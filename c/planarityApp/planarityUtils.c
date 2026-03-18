@@ -253,7 +253,7 @@ void SaveAsciiGraph(graphP theGraph, char *filename)
     vertexLabelFix = 1 - gp_GetFirstVertex(theGraph);
 
     // Iterate over the edges of the graph
-    EsizeOccupied = gp_EdgeInUseIndexBound(theGraph);
+    EsizeOccupied = gp_EdgeInUseArraySize(theGraph);
     for (e = gp_GetFirstEdge(theGraph); e < EsizeOccupied; e += 2)
     {
         // Only output edges that haven't been deleted (i.e. skip the edge holes)

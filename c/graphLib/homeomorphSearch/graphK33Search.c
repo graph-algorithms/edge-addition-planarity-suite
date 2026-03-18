@@ -601,7 +601,7 @@ int _GetAdjacentAncestorInRange(graphP theGraph, K33SearchContext *context, int 
 {
     int e = context->VI[theVertex].backArcList;
 
-    while (gp_IsArc(e))
+    while (gp_IsArc(theGraph, e))
     {
         if (gp_GetNeighbor(theGraph, e) < closerAncestor &&
             gp_GetNeighbor(theGraph, e) > fartherAncestor)
@@ -707,7 +707,7 @@ int _FindExternalConnectionDescendantEndpoint(graphP theGraph, int ancestor,
     // by an unembedded back edge.
 
     e = gp_GetVertexFwdArcList(theGraph, ancestor);
-    while (gp_IsArc(e))
+    while (gp_IsArc(theGraph, e))
     {
         if (gp_GetNeighbor(theGraph, e) == cutVertex)
         {
@@ -847,7 +847,7 @@ int _FindK33WithMergeBlocker(graphP theGraph, K33SearchContext *context, int v, 
        back edge that was not embedded when step v was originally performed. */
 
     e = gp_GetVertexFwdArcList(theGraph, IC->v);
-    while (gp_IsArc(e))
+    while (gp_IsArc(theGraph, e))
     {
         theGraph->functions.fpWalkUp(theGraph, IC->v, e);
 
@@ -996,7 +996,7 @@ int _TestForZtoWPath(graphP theGraph)
     {
         sp_Pop2(theGraph->theStack, v, e);
 
-        if (gp_IsNotArc(e))
+        if (gp_IsNotArc(theGraph, e))
         {
             // If the vertex is visited, then it is a member of the X-Y path
             // Because it is being popped, its obstruction type is unknown because
@@ -1018,7 +1018,7 @@ int _TestForZtoWPath(graphP theGraph)
         // pushed.  Once that happens, we break. The successive edges of a vertex are
         // only pushed (see the else clause above) once all paths extending from v
         // through e have been explored and found not to contain the desired path
-        while (gp_IsArc(e))
+        while (gp_IsArc(theGraph, e))
         {
             w = gp_GetNeighbor(theGraph, e);
 
@@ -1455,7 +1455,7 @@ int _K33Search_DeleteUnmarkedEdgesInBicomp(graphP theGraph, K33SearchContext *co
         sp_Pop(theGraph->theStack, V);
 
         e = gp_GetFirstArc(theGraph, V);
-        while (gp_IsArc(e))
+        while (gp_IsArc(theGraph, e))
         {
             if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_CHILD)
                 sp_Push(theGraph->theStack, gp_GetNeighbor(theGraph, e));
@@ -1651,7 +1651,7 @@ int _RestoreReducedPath(graphP theGraph, K33SearchContext *context, int e)
        by the edge [e, eTwin].  The edge record in u is added between e0 and e1.
        Likewise, the new edge record in x is added between eTwin0 and eTwin1. */
 
-    if (gp_IsArc(e0))
+    if (gp_IsArc(theGraph, e0))
     {
         if (gp_InsertEdge(theGraph, u, e0, 1, v, NIL, 0) != OK)
             return NOTOK;
@@ -1662,7 +1662,7 @@ int _RestoreReducedPath(graphP theGraph, K33SearchContext *context, int e)
             return NOTOK;
     }
 
-    if (gp_IsArc(eTwin0))
+    if (gp_IsArc(theGraph, eTwin0))
     {
         if (gp_InsertEdge(theGraph, x, eTwin0, 1, w, NIL, 0) != OK)
             return NOTOK;
@@ -1703,7 +1703,7 @@ int _RestoreAndOrientReducedPaths(graphP theGraph, K33SearchContext *context)
     int EsizeOccupied, e, eTwin, u, v, w, x, visited;
     int e0, eTwin0, e1, eTwin1;
 
-    EsizeOccupied = gp_EdgeInUseIndexBound(theGraph);
+    EsizeOccupied = gp_EdgeInUseArraySize(theGraph);
     for (e = gp_GetFirstEdge(theGraph); e < EsizeOccupied;)
     {
         if (gp_IsAnyTypeVertex(theGraph, context->E[e].pathConnector))
@@ -1736,7 +1736,7 @@ int _RestoreAndOrientReducedPaths(graphP theGraph, K33SearchContext *context)
                by the edge [e, eTwin].  The edge record in u is added between e0 and e1.
                Likewise, the new edge record in x is added between eTwin0 and eTwin1. */
 
-            if (gp_IsArc(e0))
+            if (gp_IsArc(theGraph, e0))
             {
                 if (gp_InsertEdge(theGraph, u, e0, 1, v, NIL, 0) != OK)
                     return NOTOK;
@@ -1747,7 +1747,7 @@ int _RestoreAndOrientReducedPaths(graphP theGraph, K33SearchContext *context)
                     return NOTOK;
             }
 
-            if (gp_IsArc(eTwin0))
+            if (gp_IsArc(theGraph, eTwin0))
             {
                 if (gp_InsertEdge(theGraph, x, eTwin0, 1, w, NIL, 0) != OK)
                     return NOTOK;
@@ -1775,7 +1775,7 @@ int _RestoreAndOrientReducedPaths(graphP theGraph, K33SearchContext *context)
                      and last edges of a vertex are the ones that hold it onto
                      the external face, if it is on the external face. */
 
-            if ((gp_IsNotArc(e0) && gp_IsNotArc(eTwin1)) || (gp_IsNotArc(e1) && gp_IsNotArc(eTwin0)))
+            if ((gp_IsNotArc(theGraph, e0) && gp_IsNotArc(theGraph, eTwin1)) || (gp_IsNotArc(theGraph, e1) && gp_IsNotArc(theGraph, eTwin0)))
             {
                 if (_OrientExternalFacePath(theGraph, u, v, w, x) != OK)
                     return NOTOK;
@@ -1827,7 +1827,7 @@ int _MarkStraddlingBridgePath(graphP theGraph, int u_min, int u_max, int u_d, in
         gp_SetVisited(theGraph, p);
 
         e = gp_GetFirstArc(theGraph, p);
-        while (gp_IsArc(e))
+        while (gp_IsArc(theGraph, e))
         {
             if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_PARENT)
                 break;
@@ -1857,7 +1857,7 @@ int _MarkStraddlingBridgePath(graphP theGraph, int u_min, int u_max, int u_d, in
     while (p != u_max)
     {
         e = gp_GetFirstArc(theGraph, p);
-        while (gp_IsArc(e))
+        while (gp_IsArc(theGraph, e))
         {
             if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_PARENT)
                 break;

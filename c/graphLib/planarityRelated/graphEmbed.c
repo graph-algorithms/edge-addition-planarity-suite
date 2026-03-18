@@ -103,7 +103,7 @@ int gp_Embed(graphP theGraph, int embedFlags)
         // Walkup calls establish Pertinence in Step v
         // Do the Walkup for each cycle edge from v to a DFS descendant W.
         e = gp_GetVertexFwdArcList(theGraph, v);
-        while (gp_IsArc(e))
+        while (gp_IsArc(theGraph, e))
         {
             theGraph->functions.fpWalkUp(theGraph, v, e);
 
@@ -219,7 +219,7 @@ int _EmbeddingInitialize(graphP theGraph)
                 gp_SetIndex(theGraph, u, DFI++);
                 gp_SetVertexParent(theGraph, u, uparent);
 
-                if (gp_IsArc(e))
+                if (gp_IsArc(theGraph, e))
                 {
                     // (2) Set the edge type values for tree edges
                     gp_SetEdgeType(theGraph, e, EDGE_TYPE_CHILD);
@@ -244,7 +244,7 @@ int _EmbeddingInitialize(graphP theGraph)
                 // Edges not pushed are marked as back edges here, except the
                 // edge leading back to the immediate DFS parent.
                 e = gp_GetFirstArc(theGraph, u);
-                while (gp_IsArc(e))
+                while (gp_IsArc(theGraph, e))
                 {
                     if (!gp_GetVisited(theGraph, gp_GetNeighbor(theGraph, e)))
                     {
@@ -262,16 +262,16 @@ int _EmbeddingInitialize(graphP theGraph)
                         ePrev = gp_GetPrevArc(theGraph, eTwin);
                         eNext = gp_GetNextArc(theGraph, eTwin);
 
-                        if (gp_IsArc(ePrev))
+                        if (gp_IsArc(theGraph, ePrev))
                             gp_SetNextArc(theGraph, ePrev, eNext);
                         else
                             gp_SetFirstArc(theGraph, uneighbor, eNext);
-                        if (gp_IsArc(eNext))
+                        if (gp_IsArc(theGraph, eNext))
                             gp_SetPrevArc(theGraph, eNext, ePrev);
                         else
                             gp_SetLastArc(theGraph, uneighbor, ePrev);
 
-                        if (gp_IsArc(f = gp_GetVertexFwdArcList(theGraph, uneighbor)))
+                        if (gp_IsArc(theGraph, f = gp_GetVertexFwdArcList(theGraph, uneighbor)))
                         {
                             ePrev = gp_GetPrevArc(theGraph, f);
                             gp_SetPrevArc(theGraph, eTwin, ePrev);
@@ -443,7 +443,7 @@ void _InvertVertex(graphP theGraph, int W)
 
     // Swap the links in all the arcs of the adjacency list
     e = gp_GetFirstArc(theGraph, W);
-    while (gp_IsArc(e))
+    while (gp_IsArc(theGraph, e))
     {
         temp = gp_GetNextArc(theGraph, e);
         gp_SetNextArc(theGraph, e, gp_GetPrevArc(theGraph, e));
@@ -498,7 +498,7 @@ void _MergeVertex(graphP theGraph, int W, int WPrevLink, int R)
     // All arcs leading into R from its neighbors must be changed
     // to say that they are leading into W
     e = gp_GetFirstArc(theGraph, R);
-    while (gp_IsArc(e))
+    while (gp_IsArc(theGraph, e))
     {
         eTwin = gp_GetTwinArc(theGraph, e);
         gp_GetNeighbor(theGraph, eTwin) = W;
@@ -512,7 +512,7 @@ void _MergeVertex(graphP theGraph, int W, int WPrevLink, int R)
     e_ext = gp_GetArc(theGraph, R, WPrevLink);
 
     // If W has any edges, then join the list with that of R
-    if (gp_IsArc(e_w))
+    if (gp_IsArc(theGraph, e_w))
     {
         // The WPrevLink arc of W is e_w, so the 1^WPrevLink arc in e_w leads back to W.
         // Now it must lead to e_r.  Likewise, e_r needs to lead back to e_w with the
@@ -599,7 +599,7 @@ int _MergeBicomps(graphP theGraph, int v, int RootVertex, int W, int WPrevLink)
                 _InvertVertex(theGraph, R);
 
             e = gp_GetFirstArc(theGraph, R);
-            while (gp_IsArc(e))
+            while (gp_IsArc(theGraph, e))
             {
                 if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_CHILD)
                 {
@@ -865,7 +865,7 @@ int _WalkDown(graphP theGraph, int v, int RootVertex)
         while (W != RootVertex)
         {
             // Detect unembedded back edge descendant endpoint W
-            if (gp_IsArc(gp_GetVertexPertinentEdge(theGraph, W)))
+            if (gp_IsArc(theGraph, gp_GetVertexPertinentEdge(theGraph, W)))
             {
                 // Merge any bicomps whose cut vertices were traversed to reach W, then add the
                 // edge to W to form a new proper face in the embedding.
@@ -982,7 +982,7 @@ int _WalkDown(graphP theGraph, int v, int RootVertex)
 
     // Detect and handle the case in which Walkdown was blocked from embedding all the back edges from v
     // to descendants in the subtree of the child of v associated with the bicomp RootVertex.
-    if (gp_IsArc(e = gp_GetVertexFwdArcList(theGraph, v)) && RootEdgeChild < gp_GetNeighbor(theGraph, e))
+    if (gp_IsArc(theGraph, e = gp_GetVertexFwdArcList(theGraph, v)) && RootEdgeChild < gp_GetNeighbor(theGraph, e))
     {
         int nextChild = gp_GetVertexNextDFSChild(theGraph, v, RootEdgeChild);
 
@@ -1099,7 +1099,7 @@ void _AdvanceFwdArcList(graphP theGraph, int v, int child, int nextChild)
 {
     int e = gp_GetVertexFwdArcList(theGraph, v);
 
-    while (gp_IsArc(e))
+    while (gp_IsArc(theGraph, e))
     {
         // 2) e finds an edge whose descendant endpoint is less than the child
         if (gp_GetNeighbor(theGraph, e) < child)
@@ -1269,7 +1269,7 @@ int _OrientVerticesInBicomp(graphP theGraph, int BicompRoot, int PreserveSigns)
 
         /* Push the vertex's DFS children that are in the bicomp */
         e = gp_GetFirstArc(theGraph, W);
-        while (gp_IsArc(e))
+        while (gp_IsArc(theGraph, e))
         {
             if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_CHILD)
             {

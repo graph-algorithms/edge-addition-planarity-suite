@@ -204,14 +204,14 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
         // read operation for a vertex v, any adjacency nodes left in the saved
         // list are converted to directed edges from the preceding vertex to v.
         adjList = gp_GetFirstArc(theGraph, v);
-        if (gp_IsArc(adjList))
+        if (gp_IsArc(theGraph, adjList))
         {
             // Store the adjacency node location in the visited member of each
             // of the preceding vertices to which v is adjacent so that we can
             // efficiently detect the adjacency during the read operation and
             // efficiently find the adjacency node.
             e = gp_GetFirstArc(theGraph, v);
-            while (gp_IsArc(e))
+            while (gp_IsArc(theGraph, e))
             {
                 gp_SetVertexVisitedInfo(theGraph, gp_GetNeighbor(theGraph, e), e);
                 e = gp_GetNextArc(theGraph, e);
@@ -272,7 +272,7 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
             {
                 // If the adjacency node (arc) already exists, then we add it
                 // as the new first arc of the vertex and delete it from adjList
-                if (gp_IsArc(gp_GetVertexVisitedInfo(theGraph, W)))
+                if (gp_IsArc(theGraph, gp_GetVertexVisitedInfo(theGraph, W)))
                 {
                     e = gp_GetVertexVisitedInfo(theGraph, W);
 
@@ -310,7 +310,7 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
         // Rather, they represent incoming directed arcs from other vertices
         // into vertex v. They need to be added back into v's adjacency list but
         // marked as "INONLY", while the twin is marked "OUTONLY" (by the same function).
-        while (gp_IsArc(adjList))
+        while (gp_IsArc(theGraph, adjList))
         {
             e = adjList;
 
@@ -641,7 +641,7 @@ int _WriteAdjList(graphP theGraph, strOrFileP outputContainer)
             return NOTOK;
 
         e = gp_GetLastArc(theGraph, v);
-        while (gp_IsArc(e))
+        while (gp_IsArc(theGraph, e))
         {
             if (gp_GetDirection(theGraph, e) != EDGEFLAG_DIRECTION_INONLY)
             {
@@ -709,7 +709,7 @@ int _WriteAdjMatrix(graphP theGraph, strOrFileP outputContainer)
             Row[i - gp_GetFirstVertex(theGraph)] = '0';
 
         e = gp_GetFirstArc(theGraph, v);
-        while (gp_IsArc(e))
+        while (gp_IsArc(theGraph, e))
         {
             if (gp_GetDirection(theGraph, e) == EDGEFLAG_DIRECTION_INONLY)
                 return NOTOK;
@@ -809,7 +809,7 @@ int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer)
             return NOTOK;
 
         e = gp_GetFirstArc(theGraph, v);
-        while (gp_IsArc(e))
+        while (gp_IsArc(theGraph, e))
         {
             if (sprintf(lineBuf, " %d(e=%d)", gp_GetNeighbor(theGraph, e), e) < 1)
                 return NOTOK;
@@ -839,7 +839,7 @@ int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer)
             return NOTOK;
 
         e = gp_GetFirstArc(theGraph, v);
-        while (gp_IsArc(e))
+        while (gp_IsArc(theGraph, e))
         {
             if (sprintf(lineBuf, " %d(e=%d)", gp_GetNeighbor(theGraph, e), e) < 1)
                 return NOTOK;
@@ -892,7 +892,7 @@ int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer)
     if (sf_fputs("\nEDGE INFORMATION\n", outputContainer) == EOF)
         return NOTOK;
 
-    EsizeOccupied = gp_EdgeInUseIndexBound(theGraph);
+    EsizeOccupied = gp_EdgeInUseArraySize(theGraph);
     for (e = gp_GetFirstEdge(theGraph); e < EsizeOccupied; e++)
     {
         if (gp_EdgeInUse(theGraph, e))

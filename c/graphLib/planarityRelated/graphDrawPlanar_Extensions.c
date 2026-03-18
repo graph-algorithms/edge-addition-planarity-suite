@@ -199,7 +199,7 @@ int _DrawPlanar_CreateStructures(DrawPlanarContext *context)
 {
     graphP theGraph = context->theGraph;
     int VIsize = gp_VertexArraySize(theGraph);
-    int Esize = gp_EdgeIndexBound(theGraph);
+    int Esize = gp_EdgeArraySize(theGraph);
 
     if (theGraph->N <= 0)
         return NOTOK;
@@ -223,7 +223,7 @@ int _DrawPlanar_InitStructures(DrawPlanarContext *context)
 {
 #ifdef USE_FASTER_1BASEDARRAYS
     memset(context->VI, NIL_CHAR, gp_VertexArraySize(context->theGraph) * sizeof(DrawPlanar_VertexInfo));
-    memset(context->E, NIL_CHAR, gp_EdgeIndexBound(context->theGraph) * sizeof(DrawPlanar_EdgeRec));
+    memset(context->E, NIL_CHAR, gp_EdgeArraySize(context->theGraph) * sizeof(DrawPlanar_EdgeRec));
 #else
     int v, e, Esize;
     graphP theGraph = context->theGraph;
@@ -234,7 +234,7 @@ int _DrawPlanar_InitStructures(DrawPlanarContext *context)
     for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
         _DrawPlanar_InitVertexInfo(context, v);
 
-    Esize = gp_EdgeIndexBound(theGraph);
+    Esize = gp_EdgeArraySize(theGraph);
     for (e = gp_GetFirstEdge(theGraph); e < Esize; e++)
         _DrawPlanar_InitEdgeRec(context, e);
 #endif
@@ -254,7 +254,7 @@ void *_DrawPlanar_DupContext(void *pContext, void *theGraph)
     if (newContext != NULL)
     {
         int VIsize = gp_VertexArraySize((graphP)theGraph);
-        int Esize = gp_EdgeIndexBound((graphP)theGraph);
+        int Esize = gp_EdgeArraySize((graphP)theGraph);
 
         *newContext = *context;
 
@@ -587,7 +587,7 @@ int _DrawPlanar_ReadPostprocess(graphP theGraph, char *extraData)
             }
 
             // Read the lines that contain edge information
-            EsizeOccupied = gp_EdgeInUseIndexBound(theGraph);
+            EsizeOccupied = gp_EdgeInUseArraySize(theGraph);
             for (e = gp_GetFirstEdge(theGraph); e < EsizeOccupied; e++)
             {
                 sscanf(extraData, " %d%c %d %d %d", &tempInt, &tempChar,
@@ -673,7 +673,7 @@ int _DrawPlanar_WritePostprocess(graphP theGraph, char **pExtraData)
                 extraDataPos += (int)strlen(line);
             }
 
-            EsizeOccupied = gp_EdgeInUseIndexBound(theGraph);
+            EsizeOccupied = gp_EdgeInUseArraySize(theGraph);
             for (e = gp_GetFirstEdge(theGraph); e < EsizeOccupied; e++)
             {
                 if (gp_EdgeInUse(theGraph, e))

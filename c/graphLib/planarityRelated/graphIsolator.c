@@ -488,7 +488,7 @@ int _FindUnembeddedEdgeToAncestor(graphP theGraph, int cutVertex,
 
 int _FindUnembeddedEdgeToCurVertex(graphP theGraph, int cutVertex, int *pDescendant)
 {
-    if (gp_IsArc(gp_GetVertexPertinentEdge(theGraph, cutVertex)))
+    if (gp_IsArc(theGraph, gp_GetVertexPertinentEdge(theGraph, cutVertex)))
     {
         *pDescendant = cutVertex;
         return TRUE;
@@ -528,7 +528,7 @@ int _FindUnembeddedEdgeToSubtree(graphP theGraph, int ancestor,
     /* Find the least descendant of the cut vertex incident to the ancestor. */
 
     e = gp_GetVertexFwdArcList(theGraph, ancestor);
-    while (gp_IsArc(e))
+    while (gp_IsArc(theGraph, e))
     {
         if (gp_GetNeighbor(theGraph, e) >= SubtreeRoot)
         {
@@ -645,7 +645,7 @@ int _MarkDFSPath(graphP theGraph, int ancestor, int descendant)
             // Scan the edges for the one marked as the DFS parent
             parent = NIL;
             e = gp_GetFirstArc(theGraph, descendant);
-            while (gp_IsArc(e))
+            while (gp_IsArc(theGraph, e))
             {
                 if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_PARENT)
                 {
@@ -757,7 +757,7 @@ void _AddBackEdge(graphP theGraph, int ancestor, int descendant)
     /* We get the two edge records of the back edge to embed. */
 
     fwdArc = gp_GetVertexFwdArcList(theGraph, ancestor);
-    while (gp_IsArc(fwdArc))
+    while (gp_IsArc(theGraph, fwdArc))
     {
         if (gp_GetNeighbor(theGraph, fwdArc) == descendant)
             break;
@@ -767,7 +767,7 @@ void _AddBackEdge(graphP theGraph, int ancestor, int descendant)
             fwdArc = NIL;
     }
 
-    if (gp_IsNotArc(fwdArc))
+    if (gp_IsNotArc(theGraph, fwdArc))
         return;
 
     backArc = gp_GetTwinArc(theGraph, fwdArc);
@@ -816,7 +816,7 @@ int _DeleteUnmarkedVerticesAndEdges(graphP theGraph)
 
     for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
     {
-        while (gp_IsArc(e = gp_GetVertexFwdArcList(theGraph, v)))
+        while (gp_IsArc(theGraph, e = gp_GetVertexFwdArcList(theGraph, v)))
             _AddBackEdge(theGraph, v, gp_GetNeighbor(theGraph, e));
     }
 
@@ -826,7 +826,7 @@ int _DeleteUnmarkedVerticesAndEdges(graphP theGraph)
     for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
     {
         e = gp_GetFirstArc(theGraph, v);
-        while (gp_IsArc(e))
+        while (gp_IsArc(theGraph, e))
         {
             eNext = gp_GetNextArc(theGraph, e);
             if (!gp_GetEdgeVisited(theGraph, e))

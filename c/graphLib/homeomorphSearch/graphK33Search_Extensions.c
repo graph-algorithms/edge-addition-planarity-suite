@@ -201,7 +201,7 @@ void _K33Search_ClearStructures(K33SearchContext *context)
 int _K33Search_CreateStructures(K33SearchContext *context)
 {
     int VIsize = gp_VertexArraySize(context->theGraph);
-    int Esize = gp_EdgeIndexBound(context->theGraph);
+    int Esize = gp_EdgeArraySize(context->theGraph);
 
     if (context->theGraph->N <= 0)
         return NOTOK;
@@ -224,7 +224,7 @@ int _K33Search_CreateStructures(K33SearchContext *context)
 int _K33Search_InitStructures(K33SearchContext *context)
 {
     memset(context->VI, NIL_CHAR, gp_VertexArraySize(context->theGraph) * sizeof(K33Search_VertexInfo));
-    memset(context->E, NIL_CHAR, gp_EdgeIndexBound(context->theGraph) * sizeof(K33Search_EdgeRec));
+    memset(context->E, NIL_CHAR, gp_EdgeArraySize(context->theGraph) * sizeof(K33Search_EdgeRec));
     // N.B. This is the legacy API-based approach to initializing the structures
     // required for the K_{3, 3} search graph algorithm extension.
     // graphP theGraph = context->theGraph;
@@ -236,7 +236,7 @@ int _K33Search_InitStructures(K33SearchContext *context)
     // for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
     //     _K33Search_InitVertexInfo(context, v);
 
-    // Esize = gp_EdgeIndexBound(theGraph);
+    // Esize = gp_EdgeArraySize(theGraph);
     // for (e = gp_GetFirstEdge(theGraph); e < Esize; e++)
     //     _K33Search_InitEdgeRec(context, e);
 
@@ -316,7 +316,7 @@ void *_K33Search_DupContext(void *pContext, void *theGraph)
     if (newContext != NULL)
     {
         int VIsize = gp_VertexArraySize((graphP)theGraph);
-        int Esize = gp_EdgeIndexBound((graphP)theGraph);
+        int Esize = gp_EdgeArraySize((graphP)theGraph);
 
         *newContext = *context;
 
@@ -396,14 +396,14 @@ void _CreateBackArcLists(graphP theGraph, K33SearchContext *context)
     for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
     {
         e = gp_GetVertexFwdArcList(theGraph, v);
-        while (gp_IsArc(e))
+        while (gp_IsArc(theGraph, e))
         {
             // Get the ancestor endpoint and the associated back arc
             ancestor = gp_GetNeighbor(theGraph, e);
             eTwin = gp_GetTwinArc(theGraph, e);
 
             // Put it into the back arc list of the ancestor
-            if (gp_IsNotArc(context->VI[ancestor].backArcList))
+            if (gp_IsNotArc(theGraph, context->VI[ancestor].backArcList))
             {
                 context->VI[ancestor].backArcList = eTwin;
                 gp_SetPrevArc(theGraph, eTwin, eTwin);
