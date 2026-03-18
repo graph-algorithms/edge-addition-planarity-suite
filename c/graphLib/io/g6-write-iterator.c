@@ -12,6 +12,7 @@ See the LICENSE.TXT file for licensing information.
 /* Imported functions */
 extern int _g6_GetNumCharsForEncoding(int);
 extern int _g6_GetNumCharsForOrder(int);
+extern int _g6_ValidateGraphEncoding(char *graphBuff, const int order, const int numChars);
 
 /* Private function declarations (exported within system) */
 int _g6_WriteGraphToStrOrFile(graphP theGraph, strOrFileP outputContainer, char **outputStr);
@@ -248,8 +249,7 @@ void _g6_PrecomputeColumnOffsets(int *columnOffsets, int order)
 
 int g6_WriteGraph(G6WriteIteratorP pG6WriteIterator)
 {
-    int exitCode = OK;
-
+    char *graphEncodingChars = NULL;
     if (!_g6_IsWriterInitialized(pG6WriteIterator))
     {
         ErrorMessage("Unable to write graph because G6WriteIterator is not initialized.\n");
@@ -258,16 +258,20 @@ int g6_WriteGraph(G6WriteIteratorP pG6WriteIterator)
 
     _g6_EncodeAdjMatAsG6(pG6WriteIterator);
 
-    if (pG6WriteIterator->currGraphBuff == NULL || strlen(pG6WriteIterator->currGraphBuff) == 0)
+    graphEncodingChars = pG6WriteIterator->currGraphBuff + pG6WriteIterator->numCharsForOrder;
+    if (_g6_ValidateGraphEncoding(graphEncodingChars, pG6WriteIterator->order, pG6WriteIterator->numCharsForGraphEncoding) != OK)
     {
-        ErrorMessage("Unable to write encoded graph: the currGraphBuff is empty.\n");
+        ErrorMessage("Unable to write graph, as constructed encoding is invalid.\n");
         return NOTOK;
     }
-    exitCode = _g6_WriteEncodedGraph(pG6WriteIterator);
-    if (exitCode != OK)
-        ErrorMessage("Unable to output g6 encoded graph to string-or-file container.\n");
 
-    return exitCode;
+    if (_g6_WriteEncodedGraph(pG6WriteIterator) != OK)
+    {
+        ErrorMessage("Unable to write g6 encoded graph to output container.\n");
+        return NOTOK;
+    }
+
+    return OK;
 }
 
 void _g6_EncodeAdjMatAsG6(G6WriteIteratorP pG6WriteIterator)
