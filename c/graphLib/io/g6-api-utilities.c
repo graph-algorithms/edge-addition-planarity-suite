@@ -12,10 +12,12 @@ int _g6_GetNumCharsForEncoding(int);
 int _g6_GetNumCharsForOrder(int);
 int _g6_GetExpectedNumPaddingZeroes(const int, const int);
 // NOTE: this method is used by g6_ReadGraph() to ensure that graphs after the
-// first one in the file have the same order. The G6 format specification does
-// not have this restriction, but the docs for Nauty's geng utility indicate
-// that its output files will only contain all graphs up to isomorphism for the
-// single graph order specified with the positional command line argument.
+// first one in the file have the same order, and by g6_WriteGraph() to ensure
+// that the encoding of the graph order at the beginning of the graph encoding
+// is correct. The G6 format specification does not have this restriction, but
+// the docs for Nauty's geng utility indicate that its output files will only
+// contain all graphs up to isomorphism for the single graph order specified
+// with the positional command line argument.
 int _g6_ValidateOrderOfEncodedGraph(char *graphBuff, int order);
 // NOTE: this method is now used to validate each graph we're reading in, as
 // well as to check the validity of the encoding produced before attempting to
