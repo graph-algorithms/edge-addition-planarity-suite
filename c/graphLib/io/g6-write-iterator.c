@@ -23,10 +23,9 @@ int _g6_InitWriterWithStrOrFile(G6WriteIteratorP pG6WriteIterator, strOrFileP ou
 int _g6_InitWriter(G6WriteIteratorP pG6WriteIterator);
 bool _g6_IsWriterInitialized(G6WriteIteratorP pG6WriteIterator);
 void _g6_PrecomputeColumnOffsets(int *columnOffsets, int order);
-int _g6_EncodeAdjMatAsG6(G6WriteIteratorP pG6WriteIterator);
-int _g6_GetFirstEdge(graphP theGraph, int *e, int *u, int *v);
-int _g6_GetNextEdge(graphP theGraph, int *e, int *u, int *v);
-int _g6_GetNextInUseEdge(graphP theGraph, int *e, int *u, int *v);
+void _g6_EncodeAdjMatAsG6(G6WriteIteratorP pG6WriteIterator);
+void _g6_GetFirstEdgeInUse(graphP theGraph, int *e, int *u, int *v);
+void _g6_GetNextEdgeInUse(graphP theGraph, int *e, int *u, int *v);
 int _g6_WriteEncodedGraph(G6WriteIteratorP pG6WriteIterator);
 
 int _g6_WriteGraphToFile(graphP theGraph, char *g6OutputFilename);
@@ -282,10 +281,8 @@ int g6_WriteGraph(G6WriteIteratorP pG6WriteIterator)
     return OK;
 }
 
-int _g6_EncodeAdjMatAsG6(G6WriteIteratorP pG6WriteIterator)
+void _g6_EncodeAdjMatAsG6(G6WriteIteratorP pG6WriteIterator)
 {
-    int exitCode = OK;
-
     char *g6Encoding = NULL;
     int *columnOffsets = NULL;
     graphP theGraph = NULL;
@@ -298,12 +295,6 @@ int _g6_EncodeAdjMatAsG6(G6WriteIteratorP pG6WriteIterator)
     int u = NIL, v = NIL, e = NIL;
     int charOffset = 0;
     int bitPositionPower = 0;
-
-    if (!_g6_IsWriterInitialized(pG6WriteIterator))
-    {
-        ErrorMessage("Unable to encode graph with invalid G6WriteIterator.\n");
-        return NOTOK;
-    }
 
     g6Encoding = pG6WriteIterator->currGraphBuff;
     columnOffsets = pG6WriteIterator->columnOffsets;
@@ -337,13 +328,7 @@ int _g6_EncodeAdjMatAsG6(G6WriteIteratorP pG6WriteIterator)
     }
 
     u = v = e = NIL;
-    exitCode = _g6_GetFirstEdge(theGraph, &e, &u, &v);
-
-    if (exitCode != OK)
-    {
-        ErrorMessage("Unable to fetch first edge in graph.\n");
-        return exitCode;
-    }
+    _g6_GetFirstEdgeInUse(theGraph, &e, &u, &v);
 
     charOffset = bitPositionPower = 0;
     while (u != NIL && v != NIL)
@@ -376,14 +361,7 @@ int _g6_EncodeAdjMatAsG6(G6WriteIteratorP pG6WriteIterator)
 
         g6Encoding[charOffset] |= (1u << bitPositionPower);
 
-        exitCode = _g6_GetNextEdge(theGraph, &e, &u, &v);
-
-        if (exitCode != OK)
-        {
-            ErrorMessage("Unable to fetch next edge in graph.\n");
-
-            return exitCode;
-        }
+        _g6_GetNextEdgeInUse(theGraph, &e, &u, &v);
     }
 
     // Bytes corresponding to graph order have already been modified to
@@ -391,45 +369,27 @@ int _g6_EncodeAdjMatAsG6(G6WriteIteratorP pG6WriteIterator)
     // now do the same for bytes corresponding to edge lists
     for (int i = numCharsForOrder; i < totalNumCharsForOrderAndGraph; i++)
         g6Encoding[i] += 63;
-
-    return exitCode;
 }
 
-int _g6_GetFirstEdge(graphP theGraph, int *e, int *u, int *v)
+void _g6_GetFirstEdgeInUse(graphP theGraph, int *e, int *u, int *v)
 {
-    if (theGraph == NULL)
-        return NOTOK;
+    (*e) = NIL;
 
-    if ((*e) >= gp_EdgeInUseArraySize(theGraph))
-    {
-        ErrorMessage("First edge is outside bounds.\n");
-        return NOTOK;
-    }
-
-    (*e) = gp_GetFirstEdge(theGraph);
-
-    return _g6_GetNextInUseEdge(theGraph, e, u, v);
+    _g6_GetNextEdgeInUse(theGraph, e, u, v);
 }
 
-int _g6_GetNextEdge(graphP theGraph, int *e, int *u, int *v)
-{
-    if (theGraph == NULL)
-        return NOTOK;
-
-    (*e) += 2;
-
-    return _g6_GetNextInUseEdge(theGraph, e, u, v);
-}
-
-// FIXME: Should the return type be changed to void since it doesn't do any
-// bounds checking and there's no function calls that might return NOTOK?
-int _g6_GetNextInUseEdge(graphP theGraph, int *e, int *u, int *v)
+void _g6_GetNextEdgeInUse(graphP theGraph, int *e, int *u, int *v)
 {
     int exitCode = OK;
     int EsizeOccupied = gp_EdgeInUseArraySize(theGraph);
 
     (*u) = NIL;
     (*v) = NIL;
+
+    if ((*e) == NIL)
+        (*e) = gp_GetFirstEdge(theGraph);
+    else
+        (*e) += 2;
 
     if ((*e) < EsizeOccupied)
     {
@@ -446,39 +406,23 @@ int _g6_GetNextInUseEdge(graphP theGraph, int *e, int *u, int *v)
             (*v) = gp_GetNeighbor(theGraph, gp_GetTwinArc(theGraph, (*e)));
         }
     }
-
-    return exitCode;
 }
 
 int _g6_WriteEncodedGraph(G6WriteIteratorP pG6WriteIterator)
 {
-    int exitCode = OK;
-
-    if (pG6WriteIterator->g6Output == NULL)
-    {
-        ErrorMessage("Unable to print to NULL string-or-file container.\n");
-        return NOTOK;
-    }
-
-    if (pG6WriteIterator->currGraphBuff == NULL || strlen(pG6WriteIterator->currGraphBuff) == 0)
-    {
-        ErrorMessage("Unable to print; g6 encoding is empty.\n");
-        return NOTOK;
-    }
-
     if (sf_fputs(pG6WriteIterator->currGraphBuff, pG6WriteIterator->g6Output) < 0)
     {
         ErrorMessage("Failed to output all characters of g6 encoding.\n");
-        exitCode = NOTOK;
+        return NOTOK;
     }
 
     if (sf_fputs("\n", pG6WriteIterator->g6Output) < 0)
     {
         ErrorMessage("Failed to put line terminator after g6 encoding.\n");
-        exitCode = NOTOK;
+        return NOTOK;
     }
 
-    return exitCode;
+    return OK;
 }
 
 void g6_FreeWriter(G6WriteIteratorP *ppG6WriteIterator)

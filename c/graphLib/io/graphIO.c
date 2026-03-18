@@ -567,7 +567,6 @@ int _ReadGraph(graphP theGraph, strOrFileP inputContainer)
                     RetVal = NOTOK;
                 else
                 {
-                    // FIXME: how do I distinguish between "there's no more content on input stream" and "I've hit an error state"
                     while (sf_fgets(lineBuff, MAXLINE, inputContainer) != NULL)
                     {
                         if (sb_ConcatString(extraData, lineBuff) != OK)
