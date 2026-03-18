@@ -12,6 +12,7 @@ See the LICENSE.TXT file for licensing information.
 /* Imported functions */
 extern int _g6_GetNumCharsForEncoding(int);
 extern int _g6_GetNumCharsForOrder(int);
+extern int _g6_ValidateOrderOfEncodedGraph(char *graphBuff, int order);
 extern int _g6_ValidateGraphEncoding(char *graphBuff, const int order, const int numChars);
 
 /* Private function declarations (exported within system) */
@@ -258,6 +259,12 @@ int g6_WriteGraph(G6WriteIteratorP pG6WriteIterator)
     }
 
     _g6_EncodeAdjMatAsG6(pG6WriteIterator);
+
+    if (_g6_ValidateOrderOfEncodedGraph(pG6WriteIterator->currGraphBuff, pG6WriteIterator->order) != OK)
+    {
+        ErrorMessage("Unable to write graph, as constructed encoding has incorrect order.\n");
+        return NOTOK;
+    }
 
     graphEncodingChars = pG6WriteIterator->currGraphBuff + pG6WriteIterator->numCharsForOrder;
     if (_g6_ValidateGraphEncoding(graphEncodingChars, pG6WriteIterator->order, pG6WriteIterator->numCharsForGraphEncoding) != OK)
