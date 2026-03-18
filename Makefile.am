@@ -56,7 +56,6 @@ nobase_pkginclude_HEADERS = \
 	c/graphLib/homeomorphSearch/graphK33Search.private.h \
 	c/graphLib/homeomorphSearch/graphK4Search.h \
 	c/graphLib/homeomorphSearch/graphK4Search.private.h \
-	c/graphLib/io/g6-api-utilities.h \
 	c/graphLib/io/g6-read-iterator.h \
 	c/graphLib/io/g6-write-iterator.h \
 	c/graphLib/io/strbuf.h \

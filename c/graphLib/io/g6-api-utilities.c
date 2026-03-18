@@ -4,7 +4,13 @@ All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
 
-#include "g6-api-utilities.h"
+/* Private function declarations (exported within system) */
+int _g6_GetNumCharsForEncoding(int);
+int _g6_GetNumCharsForOrder(int);
+int _g6_GetExpectedNumPaddingZeroes(const int, const int);
+
+/* Private functions */
+int _g6_GetMaxEdgeCount(int);
 
 int _g6_GetMaxEdgeCount(int order)
 {

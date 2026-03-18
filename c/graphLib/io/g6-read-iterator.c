@@ -8,7 +8,11 @@ See the LICENSE.TXT file for licensing information.
 #include <string.h>
 
 #include "g6-read-iterator.h"
-#include "g6-api-utilities.h"
+
+/* Imported functions */
+extern int _g6_GetNumCharsForEncoding(int);
+extern int _g6_GetNumCharsForOrder(int);
+extern int _g6_GetExpectedNumPaddingZeroes(const int, const int);
 
 /* Private function declarations (exported within system) */
 int _g6_ReadGraphFromStrOrFile(graphP theGraph, strOrFileP g6InputContainer);
