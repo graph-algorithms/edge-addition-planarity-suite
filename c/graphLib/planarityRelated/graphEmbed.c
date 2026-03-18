@@ -10,7 +10,7 @@ See the LICENSE.TXT file for licensing information.
 
 /* Imported functions */
 
-extern void _ClearVertexVisitedFlags(graphP theGraph, int);
+extern void _ClearAnyTypeVertexVisitedFlags(graphP theGraph, int);
 
 extern int _IsolateKuratowskiSubgraph(graphP theGraph, int v, int R);
 extern int _IsolateOuterplanarObstruction(graphP theGraph, int v, int R);
@@ -185,7 +185,7 @@ int _EmbeddingInitialize(graphP theGraph)
 
     sp_ClearStack(theStack);
 
-    _ClearVertexVisitedFlags(theGraph, FALSE);
+    _ClearAnyTypeVertexVisitedFlags(theGraph, FALSE);
 
     // This outer loop processes each connected component of a disconnected graph
     // No need to compare v < N since DFI will reach N when inner loop processes the
@@ -210,13 +210,13 @@ int _EmbeddingInitialize(graphP theGraph)
 
             // We popped an edge to an unvisited vertex, so it is either a DFS tree edge
             // or a false edge to the DFS tree root (u).
-            if (!gp_GetVertexVisited(theGraph, u))
+            if (!gp_GetVisited(theGraph, u))
             {
                 gp_LogLine(gp_MakeLogStr3("v=%d, DFI=%d, parent=%d", u, DFI, uparent));
 
                 // (1) Set the DFI and DFS parent
-                gp_SetVertexVisited(theGraph, u);
-                gp_SetVertexIndex(theGraph, u, DFI++);
+                gp_SetVisited(theGraph, u);
+                gp_SetIndex(theGraph, u, DFI++);
                 gp_SetVertexParent(theGraph, u, uparent);
 
                 if (gp_IsArc(e))
@@ -227,17 +227,17 @@ int _EmbeddingInitialize(graphP theGraph)
 
                     // (3) Record u in the sortedDFSChildList of uparent
                     gp_SetVertexSortedDFSChildList(theGraph, uparent,
-                                                   gp_AppendDFSChild(theGraph, uparent, gp_GetVertexIndex(theGraph, u)));
+                                                   gp_AppendDFSChild(theGraph, uparent, gp_GetIndex(theGraph, u)));
 
                     // (8) Record e as the first and last arc of the virtual vertex R,
                     //     a root copy of uparent uniquely associated with child u
-                    R = gp_GetBicompRootFromDFSChild(theGraph, gp_GetVertexIndex(theGraph, u));
+                    R = gp_GetBicompRootFromDFSChild(theGraph, gp_GetIndex(theGraph, u));
                     gp_SetFirstArc(theGraph, R, e);
                     gp_SetLastArc(theGraph, R, e);
                 }
 
                 // (5) Initialize the least ancestor value
-                gp_SetVertexLeastAncestor(theGraph, u, gp_GetVertexIndex(theGraph, u));
+                gp_SetVertexLeastAncestor(theGraph, u, gp_GetIndex(theGraph, u));
 
                 // Push edges to all unvisited neighbors. These will be either
                 // tree edges to children or forward arcs of back edges
@@ -246,7 +246,7 @@ int _EmbeddingInitialize(graphP theGraph)
                 e = gp_GetFirstArc(theGraph, u);
                 while (gp_IsArc(e))
                 {
-                    if (!gp_GetVertexVisited(theGraph, gp_GetNeighbor(theGraph, e)))
+                    if (!gp_GetVisited(theGraph, gp_GetNeighbor(theGraph, e)))
                     {
                         sp_Push2(theStack, u, e);
                     }
@@ -287,7 +287,7 @@ int _EmbeddingInitialize(graphP theGraph)
                         }
 
                         // (5) Update the leastAncestor value for the vertex u
-                        uneighbor = gp_GetVertexIndex(theGraph, uneighbor);
+                        uneighbor = gp_GetIndex(theGraph, uneighbor);
                         if (uneighbor < gp_GetVertexLeastAncestor(theGraph, u))
                             gp_SetVertexLeastAncestor(theGraph, u, uneighbor);
                     }

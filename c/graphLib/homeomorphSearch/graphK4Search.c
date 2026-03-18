@@ -14,11 +14,11 @@ extern int K4SEARCH_ID;
 /* Imported functions */
 
 extern void _InitIsolatorContext(graphP theGraph);
-extern void _ClearVisitedFlags(graphP);
-extern int _ClearVisitedFlagsInBicomp(graphP theGraph, int BicompRoot);
-// extern int  _ClearVisitedFlagsInOtherBicomps(graphP theGraph, int BicompRoot);
-// extern void _ClearVisitedFlagsInUnembeddedEdges(graphP theGraph);
-extern int _ClearVertexTypeInBicomp(graphP theGraph, int BicompRoot);
+extern void _ClearAllVisitedFlagsInGraph(graphP);
+extern int _ClearAllVisitedFlagsInBicomp(graphP theGraph, int BicompRoot);
+// extern int  _ClearAllVisitedFlagsInOtherBicomps(graphP theGraph, int BicompRoot);
+// extern void _ClearEdgeVisitedFlagsInUnembeddedEdges(graphP theGraph);
+extern int _ClearVertexObstructionTypeInBicomp(graphP theGraph, int BicompRoot);
 // extern int  _DeleteUnmarkedEdgesInBicomp(graphP theGraph, int BicompRoot);
 extern int _ComputeArcType(graphP theGraph, int a, int b, int edgeType);
 extern int _SetEdgeType(graphP theGraph, int u, int v);
@@ -29,8 +29,8 @@ extern int _JoinBicomps(graphP theGraph);
 extern int _OrientVerticesInBicomp(graphP theGraph, int BicompRoot, int PreserveSigns);
 extern int _OrientVerticesInEmbedding(graphP theGraph);
 // extern void _InvertVertex(graphP theGraph, int V);
-extern int _ClearVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x);
-extern int _SetVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x);
+extern int _ClearAllVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x);
+extern int _SetAllVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x);
 extern int _OrientExternalFacePath(graphP theGraph, int u, int v, int w, int x);
 
 extern int _FindUnembeddedEdgeToAncestor(graphP theGraph, int cutVertex, int *pAncestor, int *pDescendant);
@@ -141,7 +141,7 @@ int _SearchForK4InBicomp(graphP theGraph, K4SearchContext *context, int v, int R
                 return NOTOK;
 
             // Set up to isolate K4 homeomorph
-            _ClearVisitedFlags(theGraph);
+            _ClearAllVisitedFlagsInGraph(theGraph);
 
             if (_FindUnembeddedEdgeToCurVertex(theGraph, IC->w, &IC->dw) != TRUE)
                 return NOTOK;
@@ -175,7 +175,7 @@ int _SearchForK4InBicomp(graphP theGraph, K4SearchContext *context, int v, int R
             return NOTOK;
 
         // Marking the X-Y path relies on the bicomp visited flags being cleared
-        if (_ClearVisitedFlagsInBicomp(theGraph, R) != OK)
+        if (_ClearAllVisitedFlagsInBicomp(theGraph, R) != OK)
             return NOTOK;
 
         // Now Mark the X-Y path
@@ -201,7 +201,7 @@ int _SearchForK4InBicomp(graphP theGraph, K4SearchContext *context, int v, int R
                 return NOTOK;
 
             // Set up to isolate K4 homeomorph
-            _ClearVisitedFlags(theGraph);
+            _ClearAllVisitedFlagsInGraph(theGraph);
 
             if (_FindUnembeddedEdgeToCurVertex(theGraph, IC->w, &IC->dw) != TRUE)
             {
@@ -223,7 +223,7 @@ int _SearchForK4InBicomp(graphP theGraph, K4SearchContext *context, int v, int R
 
         // else if there was no X-Y path, then we restore the vertex types to
         // unknown (though it would suffice to do it just to R and W)
-        if (_ClearVertexTypeInBicomp(theGraph, R) != OK)
+        if (_ClearVertexObstructionTypeInBicomp(theGraph, R) != OK)
             return NOTOK;
 
         // Since neither A1 nor A2 is found, then we reduce the bicomp to the
@@ -270,7 +270,7 @@ int _SearchForK4InBicomp(graphP theGraph, K4SearchContext *context, int v, int R
                 return NOTOK;
 
             // Set up to isolate K4 homeomorph
-            _ClearVisitedFlags(theGraph);
+            _ClearAllVisitedFlagsInGraph(theGraph);
 
             IC->x = a_x;
             IC->y = a_y;
@@ -304,7 +304,7 @@ int _SearchForK4InBicomp(graphP theGraph, K4SearchContext *context, int v, int R
                 return NOTOK;
 
             // Set up to isolate K4 homeomorph
-            _ClearVisitedFlags(theGraph);
+            _ClearAllVisitedFlagsInGraph(theGraph);
 
             if (PERTINENT(theGraph, IC->w))
             {
@@ -370,7 +370,7 @@ int _SearchForK4InBicomp(graphP theGraph, K4SearchContext *context, int v, int R
             return NOTOK;
 
         // Set up to isolate minor E
-        _ClearVisitedFlags(theGraph);
+        _ClearAllVisitedFlagsInGraph(theGraph);
 
         if (_FindUnembeddedEdgeToCurVertex(theGraph, IC->w, &IC->dw) != TRUE)
             return NOTOK;
@@ -759,7 +759,7 @@ int _K4_IsolateMinorA2(graphP theGraph)
     isolatorContextP IC = &theGraph->IC;
 
     // We assume the X-Y path was already marked
-    if (!gp_GetVertexVisited(theGraph, IC->px) || !gp_GetVertexVisited(theGraph, IC->py))
+    if (!gp_GetVisited(theGraph, IC->px) || !gp_GetVisited(theGraph, IC->py))
         return NOTOK;
 
     return _IsolateOuterplanarityObstructionA(theGraph);
@@ -831,7 +831,7 @@ int _K4_IsolateMinorB2(graphP theGraph)
     if (PERTINENT(theGraph, IC->w))
     {
         // We assume the X-Y path was already marked
-        if (!gp_GetVertexVisited(theGraph, IC->px) || !gp_GetVertexVisited(theGraph, IC->py))
+        if (!gp_GetVisited(theGraph, IC->px) || !gp_GetVisited(theGraph, IC->py))
             return NOTOK;
 
         return _IsolateOuterplanarityObstructionE(theGraph);
@@ -868,7 +868,7 @@ int _K4_ReduceBicompToEdge(graphP theGraph, K4SearchContext *context, int R, int
     int newEdge;
 
     if (_OrientVerticesInBicomp(theGraph, R, 0) != OK ||
-        _ClearVisitedFlagsInBicomp(theGraph, R) != OK)
+        _ClearAllVisitedFlagsInBicomp(theGraph, R) != OK)
         return NOTOK;
     if (theGraph->functions.fpMarkDFSPath(theGraph, R, W) != OK)
         return NOTOK;
@@ -1175,13 +1175,13 @@ void _K4_ClearVisitedInPathComponent(graphP theGraph, int R, int prevLink, int A
     Z = _GetNeighborOnExtFace(theGraph, R, &ZPrevLink);
     while (Z != A)
     {
-        gp_ClearVertexVisited(theGraph, Z);
+        gp_ClearVisited(theGraph, Z);
         e = gp_GetFirstArc(theGraph, Z);
         while (gp_IsArc(e))
         {
             gp_ClearEdgeVisited(theGraph, e);
             gp_ClearEdgeVisited(theGraph, gp_GetTwinArc(theGraph, e));
-            gp_ClearVertexVisited(theGraph, gp_GetNeighbor(theGraph, e));
+            gp_ClearVisited(theGraph, gp_GetNeighbor(theGraph, e));
 
             e = gp_GetNextArc(theGraph, e);
         }
@@ -1475,12 +1475,12 @@ int _K4_RestoreAndOrientReducedPaths(graphP theGraph, K4SearchContext *context)
 
             if (visited)
             {
-                if (_SetVisitedFlagsOnPath(theGraph, u, v, w, x) != OK)
+                if (_SetAllVisitedFlagsOnPath(theGraph, u, v, w, x) != OK)
                     return NOTOK;
             }
             else
             {
-                if (_ClearVisitedFlagsOnPath(theGraph, u, v, w, x) != OK)
+                if (_ClearAllVisitedFlagsOnPath(theGraph, u, v, w, x) != OK)
                     return NOTOK;
             }
         }

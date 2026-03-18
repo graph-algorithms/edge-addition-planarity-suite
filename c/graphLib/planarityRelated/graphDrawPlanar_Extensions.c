@@ -9,7 +9,7 @@ See the LICENSE.TXT file for licensing information.
 #include "graphDrawPlanar.private.h"
 #include "graphDrawPlanar.h"
 
-extern void _ClearVertexVisitedFlags(graphP theGraph, int);
+extern void _ClearAnyTypeVertexVisitedFlags(graphP theGraph, int);
 
 extern void _CollectDrawingData(DrawPlanarContext *context, int RootVertex, int W, int WPrevLink);
 extern int _BreakTie(DrawPlanarContext *context, int BicompRoot, int W, int WPrevLink);
@@ -372,8 +372,8 @@ int _DrawPlanar_SortVertices(graphP theGraph)
             {
                 if (gp_IsVertex(theGraph, context->VI[v].ancestor))
                 {
-                    context->VI[v].ancestor = gp_GetVertexIndex(theGraph, context->VI[v].ancestor);
-                    context->VI[v].ancestorChild = gp_GetVertexIndex(theGraph, context->VI[v].ancestorChild);
+                    context->VI[v].ancestor = gp_GetIndex(theGraph, context->VI[v].ancestor);
+                    context->VI[v].ancestorChild = gp_GetIndex(theGraph, context->VI[v].ancestorChild);
                 }
             }
 
@@ -381,20 +381,20 @@ int _DrawPlanar_SortVertices(graphP theGraph)
             // to the index values of the vertices.  This could be done very easily with an extra array in
             // which, for each v, newVI[index of v] = VI[v].  However, this loop avoids memory allocation
             // by performing the operation (almost) in-place, except for the pre-existing visitation flags.
-            _ClearVertexVisitedFlags(theGraph, FALSE);
+            _ClearAnyTypeVertexVisitedFlags(theGraph, FALSE);
             for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
             {
                 // If the correct data has already been placed into position v
                 // by prior steps, then skip to the next vertex
-                if (gp_GetVertexVisited(theGraph, v))
+                if (gp_GetVisited(theGraph, v))
                     continue;
 
                 // At the beginning of processing position v, the data in position v
                 // corresponds to data that belongs at the index of v.
-                vIndex = gp_GetVertexIndex(theGraph, v);
+                vIndex = gp_GetIndex(theGraph, v);
 
                 // Iterate on position v until it receives the correct data
-                while (!gp_GetVertexVisited(theGraph, v))
+                while (!gp_GetVisited(theGraph, v))
                 {
                     // Place the data at position v into its proper location at position
                     // vIndex, and move vIndex's data into position v.
@@ -403,11 +403,11 @@ int _DrawPlanar_SortVertices(graphP theGraph)
                     context->VI[vIndex] = temp;
 
                     // The data at position vIndex is now marked as being correct.
-                    gp_SetVertexVisited(theGraph, vIndex);
+                    gp_SetVisited(theGraph, vIndex);
 
                     // The data now in position v is the data from position vIndex,
                     // whose index we now take as the new vIndex
-                    vIndex = gp_GetVertexIndex(theGraph, vIndex);
+                    vIndex = gp_GetIndex(theGraph, vIndex);
                 }
             }
         }

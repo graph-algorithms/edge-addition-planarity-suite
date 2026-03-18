@@ -40,17 +40,17 @@ int _RestoreVertex(graphP theGraph);
  ********************************************************************/
 
 void _InitIsolatorContext(graphP theGraph);
-void _ClearVisitedFlags(graphP theGraph);
-void _ClearVertexVisitedFlags(graphP theGraph, int);
+void _ClearAllVisitedFlagsInGraph(graphP theGraph);
+void _ClearAnyTypeVertexVisitedFlags(graphP theGraph, int includeVirtualVertices);
 void _ClearEdgeVisitedFlags(graphP theGraph);
-int _ClearVisitedFlagsInBicomp(graphP theGraph, int BicompRoot);
-int _ClearVisitedFlagsInOtherBicomps(graphP theGraph, int BicompRoot);
-void _ClearVisitedFlagsInUnembeddedEdges(graphP theGraph);
+int _ClearAllVisitedFlagsInBicomp(graphP theGraph, int BicompRoot);
+int _ClearAllVisitedFlagsInOtherBicomps(graphP theGraph, int BicompRoot);
+void _ClearEdgeVisitedFlagsInUnembeddedEdges(graphP theGraph);
 int _FillVertexVisitedInfoInBicomp(graphP theGraph, int BicompRoot, int FillValue);
-int _ClearVertexTypeInBicomp(graphP theGraph, int BicompRoot);
+int _ClearVertexObstructionTypeInBicomp(graphP theGraph, int BicompRoot);
 
-int _ClearVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x);
-int _SetVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x);
+int _ClearAllVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x);
+int _SetAllVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x);
 
 int _ComputeArcType(graphP theGraph, int a, int b, int edgeType);
 int _SetEdgeType(graphP theGraph, int u, int v);
@@ -302,7 +302,7 @@ void _InitVertices(graphP theGraph)
     memset(theGraph->extFace, NIL_CHAR, gp_AnyTypeVertexArraySize(theGraph) * sizeof(extFaceLinkRec));
 
     for (v = gp_GetFirstVertex(theGraph); gp_AnyTypeVertexInRangeAscending(theGraph, v); v++)
-        gp_InitVertexFlags(theGraph, v);
+        gp_InitFlags(theGraph, v);
 #endif
     // N.B. This is the legacy API-based approach to initializing the vertices
     // int v;
@@ -533,8 +533,8 @@ void _InitAnyTypeVertexRec(graphP theGraph, int v)
 {
     gp_SetFirstArc(theGraph, v, NIL);
     gp_SetLastArc(theGraph, v, NIL);
-    gp_SetVertexIndex(theGraph, v, NIL);
-    gp_InitVertexFlags(theGraph, v);
+    gp_SetIndex(theGraph, v, NIL);
+    gp_InitFlags(theGraph, v);
 }
 
 /********************************************************************
@@ -583,29 +583,31 @@ void _InitIsolatorContext(graphP theGraph)
 }
 
 /********************************************************************
- _ClearVisitedFlags()
+ _ClearAllVisitedFlagsInGraph()
  ********************************************************************/
 
-void _ClearVisitedFlags(graphP theGraph)
+void _ClearAllVisitedFlagsInGraph(graphP theGraph)
 {
-    _ClearVertexVisitedFlags(theGraph, TRUE);
+    _ClearAnyTypeVertexVisitedFlags(theGraph, TRUE);
     _ClearEdgeVisitedFlags(theGraph);
 }
 
 /********************************************************************
- _ClearVertexVisitedFlags()
+ _ClearAnyTypeVertexVisitedFlags()
+ Clears the visited flags of vertices, and if the second parameter
+ is truthy, also clears the visited flags of virtual vertices.
  ********************************************************************/
 
-void _ClearVertexVisitedFlags(graphP theGraph, int includeVirtualVertices)
+void _ClearAnyTypeVertexVisitedFlags(graphP theGraph, int includeVirtualVertices)
 {
     int v;
 
     for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
-        gp_ClearVertexVisited(theGraph, v);
+        gp_ClearVisited(theGraph, v);
 
     if (includeVirtualVertices)
         for (v = gp_GetFirstVirtualVertex(theGraph); gp_VirtualVertexInRangeAscending(theGraph, v); v++)
-            gp_ClearVertexVisited(theGraph, v);
+            gp_ClearVisited(theGraph, v);
 }
 
 /********************************************************************
@@ -622,7 +624,7 @@ void _ClearEdgeVisitedFlags(graphP theGraph)
 }
 
 /********************************************************************
- _ClearVisitedFlagsInBicomp()
+ _ClearAllVisitedFlagsInBicomp()
 
  Clears the visited flag of the vertices and arcs in the bicomp rooted
  by BicompRoot.
@@ -634,7 +636,7 @@ void _ClearEdgeVisitedFlags(graphP theGraph)
  Returns OK on success, NOTOK on implementation failure.
  ********************************************************************/
 
-int _ClearVisitedFlagsInBicomp(graphP theGraph, int BicompRoot)
+int _ClearAllVisitedFlagsInBicomp(graphP theGraph, int BicompRoot)
 {
     int stackBottom = sp_GetCurrentSize(theGraph->theStack);
     int v, e;
@@ -643,7 +645,7 @@ int _ClearVisitedFlagsInBicomp(graphP theGraph, int BicompRoot)
     while (sp_GetCurrentSize(theGraph->theStack) > stackBottom)
     {
         sp_Pop(theGraph->theStack, v);
-        gp_ClearVertexVisited(theGraph, v);
+        gp_ClearVisited(theGraph, v);
 
         e = gp_GetFirstArc(theGraph, v);
         while (gp_IsArc(e))
@@ -660,11 +662,11 @@ int _ClearVisitedFlagsInBicomp(graphP theGraph, int BicompRoot)
 }
 
 /********************************************************************
- _ClearVisitedFlagsInOtherBicomps()
+ _ClearAllVisitedFlagsInOtherBicomps()
  Typically, we want to clear all visited flags in the graph
  (see _ClearVisitedFlags).  However, in some algorithms this would be
  too costly, so it is necessary to clear the visited flags only
- in one bicomp (see _ClearVisitedFlagsInBicomp), then do some processing
+ in one bicomp (see _ClearAllVisitedFlagsInBicomp), then do some processing
  that sets some of the flags then performs some tests.  If the tests
  are positive, then we can clear all the visited flags in the
  other bicomps (the processing may have set the visited flags in the
@@ -672,7 +674,7 @@ int _ClearVisitedFlagsInBicomp(graphP theGraph, int BicompRoot)
  the given bicomp).
  ********************************************************************/
 
-int _ClearVisitedFlagsInOtherBicomps(graphP theGraph, int BicompRoot)
+int _ClearAllVisitedFlagsInOtherBicomps(graphP theGraph, int BicompRoot)
 {
     int R;
 
@@ -680,7 +682,7 @@ int _ClearVisitedFlagsInOtherBicomps(graphP theGraph, int BicompRoot)
     {
         if (R != BicompRoot && gp_VirtualVertexInUse(theGraph, R))
         {
-            if (_ClearVisitedFlagsInBicomp(theGraph, R) != OK)
+            if (_ClearAllVisitedFlagsInBicomp(theGraph, R) != OK)
                 return NOTOK;
         }
     }
@@ -688,12 +690,12 @@ int _ClearVisitedFlagsInOtherBicomps(graphP theGraph, int BicompRoot)
 }
 
 /********************************************************************
- _ClearVisitedFlagsInUnembeddedEdges()
+ _ClearEdgeVisitedFlagsInUnembeddedEdges()
  Unembedded edges aren't part of any bicomp yet, but it may be
  necessary to clear their visited flags.
  ********************************************************************/
 
-void _ClearVisitedFlagsInUnembeddedEdges(graphP theGraph)
+void _ClearEdgeVisitedFlagsInUnembeddedEdges(graphP theGraph)
 {
     int v, e;
 
@@ -713,7 +715,7 @@ void _ClearVisitedFlagsInUnembeddedEdges(graphP theGraph)
 }
 
 /****************************************************************************
- _ClearVisitedFlagsOnPath()
+ _ClearAllVisitedFlagsOnPath()
  This method clears the visited flags on the vertices and edges on the path
  (u, v, ..., w, x) in which all vertices except the endpoints u and x
  are degree 2.  This method avoids performing more than constant work at the
@@ -722,7 +724,7 @@ void _ClearVisitedFlagsInUnembeddedEdges(graphP theGraph)
  Returns OK on success, NOTOK on internal failure
  ****************************************************************************/
 
-int _ClearVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x)
+int _ClearAllVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x)
 {
     int e, eTwin;
 
@@ -738,7 +740,7 @@ int _ClearVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x)
     do
     {
         // Mark the vertex and the exiting edge
-        gp_ClearVertexVisited(theGraph, v);
+        gp_ClearVisited(theGraph, v);
         gp_ClearEdgeVisited(theGraph, e);
         gp_ClearEdgeVisited(theGraph, eTwin);
 
@@ -749,13 +751,13 @@ int _ClearVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x)
     } while (v != x);
 
     // Mark the last vertex with 'visited'
-    gp_ClearVertexVisited(theGraph, x);
+    gp_ClearVisited(theGraph, x);
 
     return OK;
 }
 
 /****************************************************************************
- _SetVisitedFlagsOnPath()
+ _SetAllVisitedFlagsOnPath()
  This method sets the visited flags on the vertices and edges on the path
  (u, v, ..., w, x) in which all vertices except the endpoints u and x
  are degree 2.  This method avoids performing more than constant work at the
@@ -764,7 +766,7 @@ int _ClearVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x)
  Returns OK on success, NOTOK on internal failure
  ****************************************************************************/
 
-int _SetVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x)
+int _SetAllVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x)
 {
     int e, eTwin;
 
@@ -780,7 +782,7 @@ int _SetVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x)
     do
     {
         // Mark the vertex and the exiting edge
-        gp_SetVertexVisited(theGraph, v);
+        gp_SetVisited(theGraph, v);
         gp_SetEdgeVisited(theGraph, e);
         gp_SetEdgeVisited(theGraph, eTwin);
 
@@ -791,7 +793,7 @@ int _SetVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x)
     } while (v != x);
 
     // Mark the last vertex with 'visited'
-    gp_SetVertexVisited(theGraph, x);
+    gp_SetVisited(theGraph, x);
 
     return OK;
 }
@@ -835,7 +837,7 @@ int _FillVertexVisitedInfoInBicomp(graphP theGraph, int BicompRoot, int FillValu
 }
 
 /********************************************************************
- _ClearVertexTypeInBicomp()
+ _ClearVertexObstructionTypeInBicomp()
 
  Clears the 'obstruction type' bits for each vertex in the bicomp
  rooted by BicompRoot.
@@ -847,7 +849,7 @@ int _FillVertexVisitedInfoInBicomp(graphP theGraph, int BicompRoot, int FillValu
  Returns OK on success, NOTOK on implementation failure.
  ********************************************************************/
 
-int _ClearVertexTypeInBicomp(graphP theGraph, int BicompRoot)
+int _ClearVertexObstructionTypeInBicomp(graphP theGraph, int BicompRoot)
 {
     int V, e;
     int stackBottom = sp_GetCurrentSize(theGraph->theStack);
@@ -921,8 +923,8 @@ void _ClearGraph(graphP theGraph)
 
 /********************************************************************
  gp_Free()
- Frees G and V, then the graph record.  Then sets your pointer to NULL
- (so you must pass the address of your pointer).
+ Frees G and V, then the graph record. Then sets the caller's graph
+ pointer to NULL (caller must pass the address of a graphP variable).
  ********************************************************************/
 
 void gp_Free(graphP *pGraph)
@@ -2290,10 +2292,10 @@ int _IdentifyVertices(graphP theGraph, int u, int v, int eBefore)
     e = gp_GetFirstArc(theGraph, u);
     while (gp_IsArc(e))
     {
-        if (gp_GetVertexVisited(theGraph, gp_GetNeighbor(theGraph, e)))
+        if (gp_GetVisited(theGraph, gp_GetNeighbor(theGraph, e)))
             return NOTOK;
 
-        gp_SetVertexVisited(theGraph, gp_GetNeighbor(theGraph, e));
+        gp_SetVisited(theGraph, gp_GetNeighbor(theGraph, e));
         e = gp_GetNextArc(theGraph, e);
     }
 
@@ -2302,7 +2304,7 @@ int _IdentifyVertices(graphP theGraph, int u, int v, int eBefore)
     e = gp_GetFirstArc(theGraph, v);
     while (gp_IsArc(e))
     {
-        if (gp_GetVertexVisited(theGraph, gp_GetNeighbor(theGraph, e)))
+        if (gp_GetVisited(theGraph, gp_GetNeighbor(theGraph, e)))
         {
             sp_Push(theGraph->theStack, e);
             gp_HideEdge(theGraph, e);
@@ -2314,7 +2316,7 @@ int _IdentifyVertices(graphP theGraph, int u, int v, int eBefore)
     e = gp_GetFirstArc(theGraph, u);
     while (gp_IsArc(e))
     {
-        gp_ClearVertexVisited(theGraph, gp_GetNeighbor(theGraph, e));
+        gp_ClearVisited(theGraph, gp_GetNeighbor(theGraph, e));
         e = gp_GetNextArc(theGraph, e);
     }
 

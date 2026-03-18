@@ -10,7 +10,7 @@ See the LICENSE.TXT file for licensing information.
 
 /* Imported functions */
 
-extern void _ClearVisitedFlags(graphP);
+extern void _ClearAllVisitedFlagsInGraph(graphP);
 
 extern int _GetNeighborOnExtFace(graphP theGraph, int curVertex, int *pPrevLink);
 extern int _JoinBicomps(graphP theGraph);
@@ -64,7 +64,7 @@ int _IsolateKuratowskiSubgraph(graphP theGraph, int v, int R)
        flags, set=keep edge/vertex and clear=omit. Here we initialize to omit all, then we
        subsequently set visited on all edges and vertices in the homeomorph. */
 
-    _ClearVisitedFlags(theGraph);
+    _ClearAllVisitedFlagsInGraph(theGraph);
 
     /* Next, we determine which of the non-planarity Minors was encountered
             and the principal bicomp on which the isolator will focus attention. */
@@ -325,7 +325,7 @@ int _IsolateMinorE2(graphP theGraph)
     // Note: The x-y path was already marked, due to identifying E as the type of non-planarity minor,
     // but we're reducing to Minor A, which does not include the x-y path, so the visited flags are
     // cleared as a convenient, if somewhat wasteful, way to clear the marking on the x-y path
-    _ClearVisitedFlags(theGraph);
+    _ClearAllVisitedFlagsInGraph(theGraph);
 
     IC->v = IC->uz;
     IC->dw = IC->dz;
@@ -574,7 +574,7 @@ int _MarkPathAlongBicompExtFace(graphP theGraph, int startVert, int endVert)
 
     /* Mark the start vertex (and if it is a root copy, mark the parent copy too. */
 
-    gp_SetVertexVisited(theGraph, startVert);
+    gp_SetVisited(theGraph, startVert);
 
     /* For each vertex visited after the start vertex, mark the vertex and the
             edge used to get there.  Stop after marking the ending vertex. */
@@ -589,7 +589,7 @@ int _MarkPathAlongBicompExtFace(graphP theGraph, int startVert, int endVert)
 
         gp_SetEdgeVisited(theGraph, ZPrevArc);
         gp_SetEdgeVisited(theGraph, gp_GetTwinArc(theGraph, ZPrevArc));
-        gp_SetVertexVisited(theGraph, Z);
+        gp_SetVisited(theGraph, Z);
 
     } while (Z != endVert);
 
@@ -620,7 +620,7 @@ int _MarkDFSPath(graphP theGraph, int ancestor, int descendant)
         descendant = gp_GetVertexFromBicompRoot(theGraph, descendant);
 
     // Mark the lowest vertex (the one with the highest number).
-    gp_SetVertexVisited(theGraph, descendant);
+    gp_SetVisited(theGraph, descendant);
 
     // Mark all ancestors of the lowest vertex, and the edges used to reach
     // them, up to the given ancestor vertex.
@@ -668,7 +668,7 @@ int _MarkDFSPath(graphP theGraph, int ancestor, int descendant)
         }
 
         // Mark the parent, then hop to the parent and reiterate
-        gp_SetVertexVisited(theGraph, parent);
+        gp_SetVisited(theGraph, parent);
         descendant = parent;
     }
 
@@ -734,10 +734,10 @@ int _AddAndMarkEdge(graphP theGraph, int ancestor, int descendant)
 
     /* Mark the edge so it is not deleted */
 
-    gp_SetVertexVisited(theGraph, ancestor);
+    gp_SetVisited(theGraph, ancestor);
     gp_SetEdgeVisited(theGraph, gp_GetFirstArc(theGraph, ancestor));
     gp_SetEdgeVisited(theGraph, gp_GetFirstArc(theGraph, descendant));
-    gp_SetVertexVisited(theGraph, descendant);
+    gp_SetVisited(theGraph, descendant);
 
     return OK;
 }

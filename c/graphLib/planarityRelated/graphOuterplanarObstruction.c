@@ -8,7 +8,7 @@ See the LICENSE.TXT file for licensing information.
 
 /* Imported functions */
 
-extern void _ClearVisitedFlags(graphP);
+extern void _ClearAllVisitedFlagsInGraph(graphP);
 
 extern int _JoinBicomps(graphP theGraph);
 
@@ -92,7 +92,7 @@ int _IsolateOuterplanarObstruction(graphP theGraph, int v, int R)
        flags, set=keep edge/vertex and clear=omit. Here we initialize to omit all, then we
        subsequently set visited on all edges and vertices in the homeomorph. */
 
-    _ClearVisitedFlags(theGraph);
+    _ClearAllVisitedFlagsInGraph(theGraph);
 
     /* Next we determineg which of the non-outerplanarity Minors was encountered
             and the principal bicomp on which the isolator will focus attention. */

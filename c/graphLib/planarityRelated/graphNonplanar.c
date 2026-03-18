@@ -11,8 +11,8 @@ See the LICENSE.TXT file for licensing information.
 /* Imported functions */
 
 extern void _InitIsolatorContext(graphP theGraph);
-extern int _ClearVisitedFlagsInBicomp(graphP theGraph, int BicompRoot);
-extern int _ClearVertexTypeInBicomp(graphP theGraph, int BicompRoot);
+extern int _ClearAllVisitedFlagsInBicomp(graphP theGraph, int BicompRoot);
+extern int _ClearVertexObstructionTypeInBicomp(graphP theGraph, int BicompRoot);
 extern int _HideInternalEdges(graphP theGraph, int vertex);
 extern int _RestoreInternalEdges(graphP theGraph, int stackBottom);
 
@@ -172,7 +172,7 @@ int _InitializeNonplanarityContext(graphP theGraph, int v, int R)
         return NOTOK;
     }
 
-    if (_ClearVisitedFlagsInBicomp(theGraph, R) != OK)
+    if (_ClearAllVisitedFlagsInBicomp(theGraph, R) != OK)
         return NOTOK;
 
     // Now we find the active vertices along both external face paths
@@ -337,7 +337,7 @@ int _SetVertexTypesForMarkingXYPath(graphP theGraph)
     }
 
     // Clear the type member of each vertex in the bicomp
-    if (_ClearVertexTypeInBicomp(theGraph, R) != OK)
+    if (_ClearVertexObstructionTypeInBicomp(theGraph, R) != OK)
         return NOTOK;
 
     // Traverse from R to W in the X direction
@@ -398,7 +398,7 @@ int _PopAndUnmarkVerticesAndEdges(graphP theGraph, int Z, int stackBottom)
         sp_Pop(theGraph->theStack, e);
 
         // Now unmark the vertex and edge (i.e. revert to "unvisited")
-        gp_ClearVertexVisited(theGraph, V);
+        gp_ClearVisited(theGraph, V);
         gp_ClearEdgeVisited(theGraph, e);
         gp_ClearEdgeVisited(theGraph, gp_GetTwinArc(theGraph, e));
     }
@@ -622,7 +622,7 @@ int _MarkClosestXYPath(graphP theGraph, int targetVertex)
         /* If Z is already visited, then pop everything since the last time
               we visited Z because its all part of a separable component. */
 
-        if (gp_GetVertexVisited(theGraph, Z))
+        if (gp_GetVisited(theGraph, Z))
         {
             if (_PopAndUnmarkVerticesAndEdges(theGraph, Z, stackBottom2) != OK)
                 return NOTOK;
@@ -665,7 +665,7 @@ int _MarkClosestXYPath(graphP theGraph, int targetVertex)
             /* Mark the vertex Z as visited as well as its edge of entry
                (except the entry edge for P_x).*/
 
-            gp_SetVertexVisited(theGraph, Z);
+            gp_SetVisited(theGraph, Z);
             if (Z != theGraph->IC.px)
             {
                 gp_SetEdgeVisited(theGraph, e);
@@ -797,7 +797,7 @@ int _MarkZtoRPath(graphP theGraph)
 
         gp_SetEdgeVisited(theGraph, ZNextArc);
         gp_SetEdgeVisited(theGraph, ZPrevArc);
-        gp_SetVertexVisited(theGraph, Z);
+        gp_SetVisited(theGraph, Z);
 
         /* Go to the next edge in the proper face */
 

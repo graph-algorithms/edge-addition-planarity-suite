@@ -15,7 +15,7 @@ extern int DRAWPLANAR_ID;
 #include <stdlib.h>
 #include <stdio.h>
 
-extern void _ClearVisitedFlags(graphP theGraph);
+extern void _ClearAllVisitedFlagsInGraph(graphP theGraph);
 
 /* Private functions exported to system */
 
@@ -305,8 +305,8 @@ void _LogEdgeList(graphP theEmbedding, listCollectionP edgeList, int edgeListHea
         eTwin = gp_GetTwinArc(theEmbedding, e);
 
         gp_Log(gp_MakeLogStr2("(%d, %d) ",
-                              gp_GetVertexIndex(theEmbedding, gp_GetNeighbor(theEmbedding, e)),
-                              gp_GetVertexIndex(theEmbedding, gp_GetNeighbor(theEmbedding, eTwin))));
+                              gp_GetIndex(theEmbedding, gp_GetNeighbor(theEmbedding, e)),
+                              gp_GetIndex(theEmbedding, gp_GetNeighbor(theEmbedding, eTwin))));
 
         eIndex = LCGetNext(edgeList, edgeListHead, eIndex);
     }
@@ -386,7 +386,7 @@ int _ComputeEdgePositions(DrawPlanarContext *context)
         // Get the vertex associated with the position
         v = vertexOrder[vpos];
         gp_LogLine(gp_MakeLogStr3("Processing vertex %d with DFI=%d at position=%d",
-                                  gp_GetVertexIndex(theEmbedding, v), v, vpos));
+                                  gp_GetIndex(theEmbedding, v), v, vpos));
 
         // The DFS tree root of a connected component is always the least
         // number vertex in the vertex ordering.  We have to give it a
@@ -410,7 +410,7 @@ int _ComputeEdgePositions(DrawPlanarContext *context)
 
                 edgeListHead = LCAppend(edgeList, edgeListHead, eIndex);
                 gp_LogLine(gp_MakeLogStr2("Append generator edge (%d, %d) to edgeList",
-                                          gp_GetVertexIndex(theEmbedding, v), gp_GetVertexIndex(theEmbedding, gp_GetNeighbor(theEmbedding, e))));
+                                          gp_GetIndex(theEmbedding, v), gp_GetIndex(theEmbedding, gp_GetNeighbor(theEmbedding, e))));
 
                 // Set the generator edge for the root's neighbor
                 gp_SetVertexVisitedInfo(theEmbedding, gp_GetNeighbor(theEmbedding, e), e);
@@ -449,10 +449,10 @@ int _ComputeEdgePositions(DrawPlanarContext *context)
                     LCInsertAfter(edgeList, edgeListInsertPoint, eIndex);
 
                     gp_LogLine(gp_MakeLogStr4("Insert (%d, %d) after (%d, %d)",
-                                              gp_GetVertexIndex(theEmbedding, v),
-                                              gp_GetVertexIndex(theEmbedding, gp_GetNeighbor(theEmbedding, eCur)),
-                                              gp_GetVertexIndex(theEmbedding, gp_GetNeighbor(theEmbedding, gp_GetTwinArc(theEmbedding, e))),
-                                              gp_GetVertexIndex(theEmbedding, gp_GetNeighbor(theEmbedding, e))));
+                                              gp_GetIndex(theEmbedding, v),
+                                              gp_GetIndex(theEmbedding, gp_GetNeighbor(theEmbedding, eCur)),
+                                              gp_GetIndex(theEmbedding, gp_GetNeighbor(theEmbedding, gp_GetTwinArc(theEmbedding, e))),
+                                              gp_GetIndex(theEmbedding, gp_GetNeighbor(theEmbedding, e))));
 
                     edgeListInsertPoint = eIndex;
 
@@ -463,8 +463,8 @@ int _ComputeEdgePositions(DrawPlanarContext *context)
                     {
                         gp_SetVertexVisitedInfo(theEmbedding, gp_GetNeighbor(theEmbedding, eCur), eCur);
                         gp_LogLine(gp_MakeLogStr2("Generator edge (%d, %d)",
-                                                  gp_GetVertexIndex(theEmbedding, gp_GetNeighbor(theEmbedding, gp_GetTwinArc(theEmbedding, e))),
-                                                  gp_GetVertexIndex(theEmbedding, gp_GetNeighbor(theEmbedding, eCur))));
+                                                  gp_GetIndex(theEmbedding, gp_GetNeighbor(theEmbedding, gp_GetTwinArc(theEmbedding, e))),
+                                                  gp_GetIndex(theEmbedding, gp_GetNeighbor(theEmbedding, eCur))));
                     }
                 }
 
@@ -972,7 +972,7 @@ int _CheckVisibilityRepresentationIntegrity(DrawPlanarContext *context)
     if (sp_NonEmpty(context->theGraph->edgeHoles))
         return NOTOK;
 
-    _ClearVisitedFlags(theEmbedding);
+    _ClearAllVisitedFlagsInGraph(theEmbedding);
 
     /* Test whether the vertex values make sense and
             whether the vertex positions are unique. */
@@ -990,14 +990,14 @@ int _CheckVisibilityRepresentationIntegrity(DrawPlanarContext *context)
         }
 
         // Has the vertex position been used by a vertex before vertex v?
-        if (gp_GetVertexVisited(theEmbedding, context->VI[v].pos + gp_GetFirstVertex(theEmbedding)))
+        if (gp_GetVisited(theEmbedding, context->VI[v].pos + gp_GetFirstVertex(theEmbedding)))
             return NOTOK;
 
         // Mark the vertex position as used by vertex v.
         // Note that this marking is made on some other vertex unrelated to v
         // We're just reusing the vertex visited array as cheap storage for a
         // detector of reusing vertex position integers.
-        gp_SetVertexVisited(theEmbedding, context->VI[v].pos + gp_GetFirstVertex(theEmbedding));
+        gp_SetVisited(theEmbedding, context->VI[v].pos + gp_GetFirstVertex(theEmbedding));
     }
 
     /* Test whether the edge values make sense and

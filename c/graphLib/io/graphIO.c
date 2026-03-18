@@ -76,7 +76,7 @@ int _ReadAdjMatrix(graphP theGraph, strOrFileP inputContainer)
     // Note that for the last vertex, zero flags are read, per the upper triangular format
     for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
     {
-        gp_SetVertexIndex(theGraph, v, v);
+        gp_SetIndex(theGraph, v, v);
         for (w = v + 1; gp_VertexInRangeAscending(theGraph, w); w++)
         {
             // Read each of v's w-neighbor flags
@@ -183,10 +183,10 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
         if (zeroBased)
             indexValue += gp_GetFirstVertex(theGraph);
 
-        gp_SetVertexIndex(theGraph, v, indexValue);
+        gp_SetIndex(theGraph, v, indexValue);
 
         // The vertices are expected to be in numeric ascending order
-        if (gp_GetVertexIndex(theGraph, v) != v)
+        if (gp_GetIndex(theGraph, v) != v)
             return NOTOK;
 
         // Skip the colon after the vertex number
@@ -803,7 +803,7 @@ int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer)
                     v, gp_GetVertexParent(theGraph, v),
                     gp_GetVertexLeastAncestor(theGraph, v),
                     gp_GetVertexLowpoint(theGraph, v),
-                    gp_GetVertexIndex(theGraph, v)) < 1)
+                    gp_GetIndex(theGraph, v)) < 1)
             return NOTOK;
         if (sf_fputs(lineBuf, outputContainer) == EOF)
             return NOTOK;
@@ -832,7 +832,7 @@ int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer)
             continue;
 
         if (sprintf(lineBuf, "%d(copy of=%d, DFS child=%d):",
-                    v, gp_GetVertexIndex(theGraph, v),
+                    v, gp_GetIndex(theGraph, v),
                     gp_GetDFSChildFromBicompRoot(theGraph, v)) < 1)
             return NOTOK;
         if (sf_fputs(lineBuf, outputContainer) == EOF)
@@ -863,7 +863,7 @@ int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer)
     {
         if (sprintf(lineBuf, "V[%3d] index=%3d, type=%c, first arc=%3d, last arc=%3d\n",
                     v,
-                    gp_GetVertexIndex(theGraph, v),
+                    gp_GetIndex(theGraph, v),
                     (gp_IsVirtualVertex(theGraph, v) ? 'X' : _GetVertexObstructionTypeChar(theGraph, v)),
                     gp_GetFirstArc(theGraph, v),
                     gp_GetLastArc(theGraph, v)) < 1)
@@ -878,7 +878,7 @@ int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer)
 
         if (sprintf(lineBuf, "V[%3d] index=%3d, type=%c, first arc=%3d, last arc=%3d\n",
                     v,
-                    gp_GetVertexIndex(theGraph, v),
+                    gp_GetIndex(theGraph, v),
                     (gp_IsVirtualVertex(theGraph, v) ? 'X' : _GetVertexObstructionTypeChar(theGraph, v)),
                     gp_GetFirstArc(theGraph, v),
                     gp_GetLastArc(theGraph, v)) < 1)

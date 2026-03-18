@@ -367,23 +367,24 @@ extern "C"
 #define gp_IsDFSTreeRoot(theGraph, v) gp_IsNotVertex(theGraph, gp_GetVertexParent(theGraph, v))
 #define gp_IsNotDFSTreeRoot(theGraph, v) gp_IsVertex(theGraph, gp_GetVertexParent(theGraph, v))
 
-// Accessors for vertex index
-#define gp_GetVertexIndex(theGraph, v) (theGraph->V[v].index)
-#define gp_SetVertexIndex(theGraph, v, theIndex) (theGraph->V[v].index = theIndex)
+// Accessors for "any type" vertex index
+#define gp_GetIndex(theGraph, v) (theGraph->V[v].index)
+#define gp_SetIndex(theGraph, v, theIndex) (theGraph->V[v].index = theIndex)
 
-// Initializer for vertex flags
-#define gp_InitVertexFlags(theGraph, v) (theGraph->V[v].flags = 0)
+// Initializer for "any type" vertex flags
+#define gp_InitFlags(theGraph, v) (theGraph->V[v].flags = 0)
 
-// Definitions and accessors for vertex flags
-#define VERTEX_VISITED_MASK 1
-#define gp_GetVertexVisited(theGraph, v) (theGraph->V[v].flags & VERTEX_VISITED_MASK)
-#define gp_ClearVertexVisited(theGraph, v) (theGraph->V[v].flags &= ~VERTEX_VISITED_MASK)
-#define gp_SetVertexVisited(theGraph, v) (theGraph->V[v].flags |= VERTEX_VISITED_MASK)
+// Definitions and accessors for the "any type" vertex flags
+#define ANYTYPEVERTEX_VISITED_MASK 1
+#define gp_GetVisited(theGraph, v) (theGraph->V[v].flags & ANYTYPEVERTEX_VISITED_MASK)
+#define gp_ClearVisited(theGraph, v) (theGraph->V[v].flags &= ~ANYTYPEVERTEX_VISITED_MASK)
+#define gp_SetVisited(theGraph, v) (theGraph->V[v].flags |= ANYTYPEVERTEX_VISITED_MASK)
 
-// The obstruction type is defined by bits 1-3, 2+4+8=14
-// Bit 1 - 2 if type set, 0 if not
-// Bit 2 - 4 if Y side, 0 if X side
-// Bit 3 - 8 if high, 0 if low
+    // The obstruction type is defined by bits 1-3, 2+4+8=14
+    // Bit 1 - 2 if type set, 0 if not
+    // Bit 2 - 4 if Y side, 0 if X side
+    // Bit 3 - 8 if high, 0 if low
+
 #define VERTEX_OBSTRUCTIONTYPE_MASK 14
 
 // Call gp_GetVertexObstructionType, then compare to one of these four possibilities
