@@ -374,32 +374,36 @@ extern "C"
 // Initializer for "any type" vertex flags
 #define gp_InitFlags(theGraph, v) (theGraph->V[v].flags = 0)
 
-// Definitions and accessors for the "any type" vertex flags
+// Definition and accessors for the "any type" vertex visited flag
 #define ANYTYPEVERTEX_VISITED_MASK 1
 #define gp_GetVisited(theGraph, v) (theGraph->V[v].flags & ANYTYPEVERTEX_VISITED_MASK)
 #define gp_ClearVisited(theGraph, v) (theGraph->V[v].flags &= ~ANYTYPEVERTEX_VISITED_MASK)
 #define gp_SetVisited(theGraph, v) (theGraph->V[v].flags |= ANYTYPEVERTEX_VISITED_MASK)
 
-    // The obstruction type is defined by bits 1-3, 2+4+8=14
-    // Bit 1 - 2 if type set, 0 if not
-    // Bit 2 - 4 if Y side, 0 if X side
-    // Bit 3 - 8 if high, 0 if low
+// Definition and accessors for the "any type" vertex marked flag
+// Essentially, this is a second visitation flag that can help applications that
+// must visit all vertices to analyze and mark the ones important for some purpose.
+#define ANYTYPEVERTEX_MARKED_MASK 2
+#define gp_GetMarked(theGraph, v) (theGraph->V[v].flags & ANYTYPEVERTEX_MARKED_MASK)
+#define gp_ClearMarked(theGraph, v) (theGraph->V[v].flags &= ~ANYTYPEVERTEX_MARKED_MASK)
+#define gp_SetMarked(theGraph, v) (theGraph->V[v].flags |= ANYTYPEVERTEX_MARKED_MASK)
 
-#define VERTEX_OBSTRUCTIONTYPE_MASK 14
+// The obstruction type is defined by bits 2-4, 4+8+16=28
+// Bit 2 - 4 if type set, 0 if not
+// Bit 3 - 8 if Y side, 0 if X side
+// Bit 4 - 16 if high, 0 if low
+#define VERTEX_OBSTRUCTIONTYPE_MASK 28
 
 // Call gp_GetVertexObstructionType, then compare to one of these four possibilities
 // VERTEX_OBSTRUCTIONTYPE_HIGH_RXW - On the external face path between vertices R and X
 // VERTEX_OBSTRUCTIONTYPE_LOW_RXW  - X or on the external face path between vertices X and W
 // VERTEX_OBSTRUCTIONTYPE_HIGH_RYW - On the external face path between vertices R and Y
 // VERTEX_OBSTRUCTIONTYPE_LOW_RYW  - Y or on the external face path between vertices Y and W
-// VERTEX_OBSTRUCTIONTYPE_UNKNOWN  - corresponds to all three bits off
-#define VERTEX_OBSTRUCTIONTYPE_HIGH_RXW 10
-#define VERTEX_OBSTRUCTIONTYPE_LOW_RXW 2
-#define VERTEX_OBSTRUCTIONTYPE_HIGH_RYW 14
-#define VERTEX_OBSTRUCTIONTYPE_LOW_RYW 6
-#define VERTEX_OBSTRUCTIONTYPE_UNKNOWN 0
-
-#define VERTEX_OBSTRUCTIONTYPE_MARKED 2
+// VERTEX_OBSTRUCTIONTYPE_UNMARKED  - corresponds to all three bits off
+#define VERTEX_OBSTRUCTIONTYPE_HIGH_RXW 20
+#define VERTEX_OBSTRUCTIONTYPE_LOW_RXW 4
+#define VERTEX_OBSTRUCTIONTYPE_HIGH_RYW 28
+#define VERTEX_OBSTRUCTIONTYPE_LOW_RYW 12
 #define VERTEX_OBSTRUCTIONTYPE_UNMARKED 0
 
 #define gp_GetVertexObstructionType(theGraph, v) (theGraph->V[v].flags & VERTEX_OBSTRUCTIONTYPE_MASK)
@@ -408,6 +412,7 @@ extern "C"
 #define gp_ResetVertexObstructionType(theGraph, v, type) \
     (theGraph->V[v].flags = (theGraph->V[v].flags & ~VERTEX_OBSTRUCTIONTYPE_MASK) | type)
 
+// Fast utility routines for "any type" vertex records
 #define gp_CopyAnyTypeVertexRec(dstGraph, vdst, srcGraph, vsrc) (dstGraph->V[vdst] = srcGraph->V[vsrc])
 
 #define gp_SwapAnyTypeVertexRec(dstGraph, vdst, srcGraph, vsrc) \

@@ -60,8 +60,8 @@ int _K4_ChooseTypeOfNonOuterplanarityMinor(graphP theGraph, int v, int R);
 int _K4_FindSecondActiveVertexOnLowExtFacePath(graphP theGraph);
 int _K4_FindPlanarityActiveVertex(graphP theGraph, int v, int R, int prevLink, int *pW);
 int _K4_FindSeparatingInternalEdge(graphP theGraph, int R, int prevLink, int A, int *pW, int *pX, int *pY);
-void _K4_MarkObstructionTypeOnExternalFacePath(graphP theGraph, int R, int prevLink, int A);
-void _K4_UnmarkObstructionTypeOnExternalFacePath(graphP theGraph, int R, int prevLink, int A);
+void _K4_SetMarksOnExternalFacePath(graphP theGraph, int R, int prevLink, int A);
+void _K4_ClearMarksOnExternalFacePath(graphP theGraph, int R, int prevLink, int A);
 
 int _K4_IsolateMinorA1(graphP theGraph);
 int _K4_IsolateMinorA2(graphP theGraph);
@@ -623,7 +623,7 @@ int _K4_FindSeparatingInternalEdge(graphP theGraph, int R, int prevLink, int A, 
     int Z, ZPrevLink, e, neighbor;
 
     // Mark the vertex obstruction type settings along the path [R ... A]
-    _K4_MarkObstructionTypeOnExternalFacePath(theGraph, R, prevLink, A);
+    _K4_SetMarksOnExternalFacePath(theGraph, R, prevLink, A);
 
     // Search each of the vertices in the range (R ... A)
     *pX = *pY = NIL;
@@ -638,7 +638,7 @@ int _K4_FindSeparatingInternalEdge(graphP theGraph, int R, int prevLink, int A, 
         while (gp_IsArc(e))
         {
             neighbor = gp_GetNeighbor(theGraph, e);
-            if (gp_GetVertexObstructionType(theGraph, neighbor) == VERTEX_OBSTRUCTIONTYPE_UNMARKED)
+            if (!gp_GetMarked(theGraph, neighbor))
             {
                 *pW = A;
                 *pX = Z;
@@ -659,52 +659,52 @@ int _K4_FindSeparatingInternalEdge(graphP theGraph, int R, int prevLink, int A, 
     }
 
     // Restore the unmarked obstruction type settings on the path [R ... A]
-    _K4_UnmarkObstructionTypeOnExternalFacePath(theGraph, R, prevLink, A);
+    _K4_ClearMarksOnExternalFacePath(theGraph, R, prevLink, A);
 
     return gp_IsVertex(theGraph, *pX) ? TRUE : FALSE;
 }
 
 /****************************************************************************
- _K4_MarkObstructionTypeOnExternalFacePath()
+ _K4_SetMarksOnExternalFacePath()
 
  Assumes A is a vertex along the external face of the bicomp rooted by R.
  Marks the obstruction type of vertices along the path (R ... A) that begins
  with R's link[1^prevLink] arc.
  ****************************************************************************/
 
-void _K4_MarkObstructionTypeOnExternalFacePath(graphP theGraph, int R, int prevLink, int A)
+void _K4_SetMarksOnExternalFacePath(graphP theGraph, int R, int prevLink, int A)
 {
     int Z, ZPrevLink;
 
-    gp_SetVertexObstructionType(theGraph, R, VERTEX_OBSTRUCTIONTYPE_MARKED);
+    gp_SetMarked(theGraph, R);
     ZPrevLink = prevLink;
     Z = R;
     while (Z != A)
     {
         Z = _GetNeighborOnExtFace(theGraph, Z, &ZPrevLink);
-        gp_SetVertexObstructionType(theGraph, Z, VERTEX_OBSTRUCTIONTYPE_MARKED);
+        gp_SetMarked(theGraph, Z);
     }
 }
 
 /****************************************************************************
- _K4_UnmarkObstructionTypeOnExternalFacePath()
+ _K4_ClearMarksOnExternalFacePath()
 
  Assumes A is a vertex along the external face of the bicomp rooted by R.
  Unmarks the obstruction type of vertices along the path (R ... A) that begins
  with R's link[1^prevLink] arc.
  ****************************************************************************/
 
-void _K4_UnmarkObstructionTypeOnExternalFacePath(graphP theGraph, int R, int prevLink, int A)
+void _K4_ClearMarksOnExternalFacePath(graphP theGraph, int R, int prevLink, int A)
 {
     int Z, ZPrevLink;
 
-    gp_ClearVertexObstructionType(theGraph, R);
+    gp_ClearMarked(theGraph, R);
     ZPrevLink = prevLink;
     Z = R;
     while (Z != A)
     {
         Z = _GetNeighborOnExtFace(theGraph, Z, &ZPrevLink);
-        gp_ClearVertexObstructionType(theGraph, Z);
+        gp_ClearMarked(theGraph, Z);
     }
 }
 

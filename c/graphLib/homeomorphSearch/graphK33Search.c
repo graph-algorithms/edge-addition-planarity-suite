@@ -1026,7 +1026,7 @@ int _TestForZtoWPath(graphP theGraph)
             // but it can never happen due to the obstructing X-Y path.
             if (gp_IsNotVirtualVertex(theGraph, w) &&
                 gp_GetVertexVisitedInfo(theGraph, w) != -1 &&
-                gp_GetVertexObstructionType(theGraph, w) == VERTEX_OBSTRUCTIONTYPE_UNKNOWN)
+                gp_GetVertexObstructionType(theGraph, w) == VERTEX_OBSTRUCTIONTYPE_UNMARKED)
             {
                 sp_Push2(theGraph->theStack, v, e);
                 sp_Push2(theGraph->theStack, w, NIL);

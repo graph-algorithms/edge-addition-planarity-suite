@@ -786,7 +786,7 @@ int _MarkZtoRPath(graphP theGraph)
         /* If we ever encounter a non-internal vertex (other than the root R),
                 then corruption has occurred, so we return NOTOK */
 
-        if (gp_GetVertexObstructionType(theGraph, Z) != VERTEX_OBSTRUCTIONTYPE_UNKNOWN)
+        if (gp_GetVertexObstructionType(theGraph, Z) != VERTEX_OBSTRUCTIONTYPE_UNMARKED)
             return NOTOK;
 
         /* Go to the next vertex indicated by ZNextArc */
