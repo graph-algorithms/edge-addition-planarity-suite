@@ -718,23 +718,18 @@ extern "C"
 
 #define gp_getN(theGraph) ((theGraph)->N)
 
-    /* Flags for graph:
+    /* Internal Flags for graph:
             FLAGS_DFSNUMBERED is set if DFSNumber() has succeeded for the graph
             FLAGS_SORTEDBYDFI records whether the graph is in original vertex
                     order or sorted by depth first index.  Successive calls to
                     SortVertices() toggle this bit.
-            FLAGS_OBSTRUCTIONFOUND is set by gp_Embed() if an embedding obstruction
-                    was isolated in the graph returned.  It is cleared by gp_Embed()
-                    if an obstruction was not found.  The flag is used by
-                    gp_TestEmbedResultIntegrity() to decide what integrity tests to run.
             FLAGS_ZEROBASEDIO is typically set by gp_Read() to indicate that the
                     adjacency list representation began with index 0.
     */
 
 #define FLAGS_DFSNUMBERED 1
 #define FLAGS_SORTEDBYDFI 2
-#define FLAGS_OBSTRUCTIONFOUND 4
-#define FLAGS_ZEROBASEDIO 8
+#define FLAGS_ZEROBASEDIO 4
 
 /********************************************************************
  More link structure accessors/manipulators

@@ -81,8 +81,9 @@ extern "C"
     int gp_Embed(graphP theGraph, int embedFlags);
     int gp_TestEmbedResultIntegrity(graphP theGraph, graphP origGraph, int embedResult);
 
-    /* Possible Flags for gp_Embed.  The planar and outerplanar settings are supported
-        natively.  The rest require extension modules. */
+    /* Possible graph embedFlags for gp_Embed.
+        The planar and outerplanar settings are supported natively
+        The rest are supported via  extension modules. */
 
 #define EMBEDFLAGS_PLANAR 1
 #define EMBEDFLAGS_OUTERPLANAR 2
@@ -93,8 +94,8 @@ extern "C"
 #define EMBEDFLAGS_SEARCHFORK4 (32 | EMBEDFLAGS_OUTERPLANAR)
 #define EMBEDFLAGS_SEARCHFORK33 (64 | EMBEDFLAGS_PLANAR)
 
+// Reserved for the future possible extension modules
 #define EMBEDFLAGS_SEARCHFORK5 (128 | EMBEDFLAGS_PLANAR)
-
 #define EMBEDFLAGS_MAXIMALPLANARSUBGRAPH 256
 #define EMBEDFLAGS_PROJECTIVEPLANAR 512
 #define EMBEDFLAGS_TOROIDAL 1024
