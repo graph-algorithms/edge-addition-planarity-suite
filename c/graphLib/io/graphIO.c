@@ -626,20 +626,10 @@ int _WriteAdjList(graphP theGraph, strOrFileP outputContainer)
     if (sf_fputs(numberStr, outputContainer) == EOF)
         return NOTOK;
 
-    // If we are supposed to write 0-based output, then we have to adjust the vertex offset and the
-    // adjacency list terminator based on whether this library has been compiled with 0-based or
-    // 1-based array indexing for the in-memory data structure (i.e., compiled with
-    // USE_FASTER_1BASEDARRAYS USE_0BASEDARRAYS). The macro invoked is responsive to the difference.
-    if (theGraph->internalFlags & FLAGS_ZEROBASEDIO)
-    {
-        zeroBasedVertexOffset = gp_GetFirstVertex(theGraph);
-        adjacencyListTerminator = -1;
-    }
-
     // Write the adjacency list of each vertex
     for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
     {
-        if (sprintf(numberStr, "%d:", v - zeroBasedVertexOffset) < 1)
+        if (sprintf(numberStr, "%d:", v - zeroBasedOffset) < 1)
             return NOTOK;
         if (sf_fputs(numberStr, outputContainer) == EOF)
             return NOTOK;
@@ -649,7 +639,7 @@ int _WriteAdjList(graphP theGraph, strOrFileP outputContainer)
         {
             if (gp_GetDirection(theGraph, e) != EDGEFLAG_DIRECTION_INONLY)
             {
-                if (sprintf(numberStr, " %d", gp_GetNeighbor(theGraph, e) - zeroBasedVertexOffset) < 1)
+                if (sprintf(numberStr, " %d", gp_GetNeighbor(theGraph, e) - zeroBasedOffset) < 1)
                     return NOTOK;
                 if (sf_fputs(numberStr, outputContainer) == EOF)
                     return NOTOK;
@@ -659,7 +649,7 @@ int _WriteAdjList(graphP theGraph, strOrFileP outputContainer)
         }
 
         // Write NIL at the end of the adjacency list (in zero-based I/O, NIL was -1)
-        if (sprintf(numberStr, " %d\n", adjacencyListTerminator) < 1)
+        if (sprintf(numberStr, " %d\n", NIL) < 1)
             return NOTOK;
         if (sf_fputs(numberStr, outputContainer) == EOF)
             return NOTOK;
