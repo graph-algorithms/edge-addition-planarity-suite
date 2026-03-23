@@ -20,7 +20,7 @@ extern int K33SEARCH_ID;
 
 /* Imported functions */
 
-extern int _ClearVisitedFlagsInBicomp(graphP theGraph, int BicompRoot);
+extern int _ClearAllVisitedFlagsInBicomp(graphP theGraph, int BicompRoot);
 extern int _MarkHighestXYPath(graphP theGraph);
 extern int _MarkLowestXYPath(graphP theGraph);
 extern int _CheckEmbeddingFacialIntegrity(graphP theGraph);
@@ -29,7 +29,7 @@ extern int _getImageVertices(graphP theGraph, int *degrees, int maxDegree,
 extern int _TestForCompleteGraphObstruction(graphP theGraph, int numVerts,
                                             int *degrees, int *imageVerts);
 extern int _TestSubgraph(graphP theSubgraph, graphP theGraph);
-extern void _ClearVertexVisitedFlags(graphP theGraph, int includeVirtualVertices);
+extern void _ClearAnyTypeVertexVisitedFlags(graphP theGraph, int includeVirtualVertices);
 
 /* Private functions for K_{3,3}-free graph embedding. */
 
@@ -137,7 +137,7 @@ void _K33Search_EONode_Free(K33Search_EONodeP *pEONode)
             if (context != NULL)
             {
                 int Esize, e;
-                Esize = gp_EdgeIndexBound(theGraph);
+                Esize = gp_EdgeArraySize(theGraph);
                 for (e = gp_GetFirstEdge(theGraph); e < Esize; e++)
                 {
                     if (e & 1)
@@ -184,7 +184,7 @@ int _K33Search_TestForEOTreeChildren(K33Search_EONodeP EOTreeNode)
     {
         int EsizeOccupied, e;
 
-        EsizeOccupied = gp_EdgeInUseIndexBound(theSubgraph);
+        EsizeOccupied = gp_EdgeInUseArraySize(theSubgraph);
         for (e = gp_GetFirstEdge(theSubgraph); e < EsizeOccupied; e += 2)
         {
             if (context->E[e].EONode != NULL)
@@ -235,8 +235,8 @@ int _K33Search_EONode_NewONode(graphP theGraph, K33Search_EONodeP *pNewONode)
     theNewK5Graph->V[gp_GetFirstVertex(theNewK5Graph) + 4].index = IC->y;
 
     // Need to add all 10 edges to theNewK5Graph so that it stores an actual K5
-    for (v = gp_GetFirstVertex(theNewK5Graph); gp_VertexInRange(theNewK5Graph, v); v++)
-        for (w = v + 1; gp_VertexInRange(theNewK5Graph, w); w++)
+    for (v = gp_GetFirstVertex(theNewK5Graph); gp_VertexInRangeAscending(theNewK5Graph, v); v++)
+        for (w = v + 1; gp_VertexInRangeAscending(theNewK5Graph, w); w++)
             if (gp_AddEdge(theNewK5Graph, v, 0, w, 0) != OK ||
                 gp_GetNeighbor(theNewK5Graph, e = theNewK5Graph->V[v].link[0]) != w)
             {
@@ -380,10 +380,10 @@ int _K33Search_ExtractEmbeddingSubgraphs(graphP theGraph, int R, K33Search_EONod
     // participate in K_{3,3}-free embedding integrity checks.
     // For w, x, and y, all three are cleared of defunct status because we are leaving the
     // embeddings of beta_w, beta_x, and beta_y in the main planar embedding.
-    gp_ClearVertexDefunct(theGraph, R);
-    gp_ClearVertexDefunct(theGraph, IC->w);
-    gp_ClearVertexDefunct(theGraph, IC->x);
-    gp_ClearVertexDefunct(theGraph, IC->y);
+    gp_ClearAnyTypeVertexDefunct(theGraph, R);
+    gp_ClearAnyTypeVertexDefunct(theGraph, IC->w);
+    gp_ClearAnyTypeVertexDefunct(theGraph, IC->x);
+    gp_ClearAnyTypeVertexDefunct(theGraph, IC->y);
 
     // The edges and vertices in the pertinent-only descendant bicomps of w must be
     // marked in a way which ensures they don't impact the result of K_{3,3}-free
@@ -421,7 +421,7 @@ int _K33Search_ExtractExternaFaceBridgeSet(graphP theGraph, int R, int poleVerte
     // We mark the highest or lowest xy path, depending on parameterization, because
     // the marking will help find the boundary edges of the bridget set to extract.
 
-    if (_ClearVisitedFlagsInBicomp(theGraph, R) != OK)
+    if (_ClearAllVisitedFlagsInBicomp(theGraph, R) != OK)
         return NOTOK;
 
     if ((poleVertex == IC->v ? _MarkHighestXYPath(theGraph) : _MarkLowestXYPath(theGraph)) != OK)
@@ -450,7 +450,7 @@ int _K33Search_ExtractExternaFaceBridgeSet(graphP theGraph, int R, int poleVerte
     // xy path will be the lastStartingEdge.
 
     lastStartingEdge = firstStartingEdge;
-    while (gp_IsArc(lastStartingEdge))
+    while (gp_IsArc(theGraph, lastStartingEdge))
     {
         e = theGraph->E[lastStartingEdge].link[linkDir];
         if (gp_GetEdgeVisited(theGraph, e))
@@ -458,7 +458,7 @@ int _K33Search_ExtractExternaFaceBridgeSet(graphP theGraph, int R, int poleVerte
         lastStartingEdge = e;
     }
 
-    if (gp_IsNotArc(lastStartingEdge))
+    if (gp_IsNotArc(theGraph, lastStartingEdge))
         return NOTOK;
 
     return _K33Search_ExtractEmbeddedBridgeSet(theGraph, R, poleVertex, equatorVertex, newONode,
@@ -488,36 +488,36 @@ int _K33Search_ExtractXYBridgeSet(graphP theGraph, int R, K33Search_EONodeP newO
     linkDir = 0;
 
     // We start with marking the highest xy path so we can find the firstStartingEdge
-    if (_ClearVisitedFlagsInBicomp(theGraph, R) != OK || _MarkHighestXYPath(theGraph) != OK)
+    if (_ClearAllVisitedFlagsInBicomp(theGraph, R) != OK || _MarkHighestXYPath(theGraph) != OK)
         return NOTOK;
 
     // Find the firstStartingEdge by iterating until the highest xy path edge
     // emanating from y is found
     firstStartingEdge = theGraph->V[theGraph->IC.y].link[linkDir];
-    while (gp_IsArc(firstStartingEdge))
+    while (gp_IsArc(theGraph, firstStartingEdge))
     {
         if (gp_GetEdgeVisited(theGraph, firstStartingEdge))
             break;
         firstStartingEdge = theGraph->E[firstStartingEdge].link[linkDir];
     }
 
-    if (gp_IsNotArc(firstStartingEdge))
+    if (gp_IsNotArc(theGraph, firstStartingEdge))
         return NOTOK;
 
     // Now we mark the lowest xy path so we can find the lastStartingEdge
-    if (_ClearVisitedFlagsInBicomp(theGraph, R) != OK || _MarkLowestXYPath(theGraph) != OK)
+    if (_ClearAllVisitedFlagsInBicomp(theGraph, R) != OK || _MarkLowestXYPath(theGraph) != OK)
         return NOTOK;
 
     // The lastStartingEdge is the lowest xy path edge emanating from y
     lastStartingEdge = firstStartingEdge;
-    while (gp_IsArc(lastStartingEdge))
+    while (gp_IsArc(theGraph, lastStartingEdge))
     {
         if (gp_GetEdgeVisited(theGraph, lastStartingEdge))
             break;
         lastStartingEdge = theGraph->E[lastStartingEdge].link[linkDir];
     }
 
-    if (gp_IsNotArc(lastStartingEdge))
+    if (gp_IsNotArc(theGraph, lastStartingEdge))
         return NOTOK;
 
     return _K33Search_ExtractEmbeddedBridgeSet(theGraph, R, theGraph->IC.x, theGraph->IC.y, newONode,
@@ -563,7 +563,7 @@ int _K33Search_ExtractEmbeddedBridgeSet(graphP theGraph, int R, int cutv1, int c
     else
         return NOTOK;
 
-    if (gp_GetVertexVisited(theGraph, oppositeOfCutv1) || gp_GetVertexVisited(theGraph, oppositeOfCutv2))
+    if (gp_GetVisited(theGraph, oppositeOfCutv1) || gp_GetVisited(theGraph, oppositeOfCutv2))
         return NOTOK;
 
     // Get the order and size of the subgraph to be created
@@ -647,7 +647,7 @@ int _K33Search_MarkBridgeSetToExtract(graphP theGraph, int R, int cutv1, int cut
     int v, e, ePrev;
 
     // Clear away markings such as the marked xy path
-    if (_ClearVisitedFlagsInBicomp(theGraph, R) != OK)
+    if (_ClearAllVisitedFlagsInBicomp(theGraph, R) != OK)
         return NOTOK;
 
     // The graph's stack will be used, so make sure it is empty first
@@ -656,7 +656,7 @@ int _K33Search_MarkBridgeSetToExtract(graphP theGraph, int R, int cutv1, int cut
 
     // A DFS exploration will be performed, starting with cutv2, but constrained to
     // only the neighbors indicated by the firstStartingEdge to lastStartingEdge
-    gp_SetVertexVisited(theGraph, cutv2);
+    gp_SetVisited(theGraph, cutv2);
 
     ePrev = NIL;
     e = firstStartingEdge;
@@ -688,7 +688,7 @@ int _K33Search_MarkBridgeSetToExtract(graphP theGraph, int R, int cutv1, int cut
     // mark it visited ahead of the main loop so that the DFS will not go beyond it.
     // If the poleVertex is v, then we need to use R because R is v's representative
     // virtual vertex in the bicomp being reduced.
-    gp_SetVertexVisited(theGraph, (cutv1 == theGraph->IC.v ? R : cutv1));
+    gp_SetVisited(theGraph, (cutv1 == theGraph->IC.v ? R : cutv1));
 
     // Perform the constrained DFS on the bridge set
     while (!sp_IsEmpty(theGraph->theStack))
@@ -699,9 +699,9 @@ int _K33Search_MarkBridgeSetToExtract(graphP theGraph, int R, int cutv1, int cut
         // and process its adjacency list. Note that this if test is the one that also
         // ensures that the DFS explores no farther than cutv1 nor any other edges
         // of cutv2.
-        if (!gp_GetVertexVisited(theGraph, v))
+        if (!gp_GetVisited(theGraph, v))
         {
-            gp_SetVertexVisited(theGraph, v);
+            gp_SetVisited(theGraph, v);
 
             e = gp_GetFirstArc(theGraph, v);
             while (e != NIL)
@@ -815,12 +815,12 @@ int _K33Search_ExtractBridgeSet(graphP theGraph, int R, int cutv1, int cutv2, gr
         return NOTOK;
 
     // Copy the subgraph-to-graph map into the index members of the vertices of the new subgraph
-    for (v = gp_GetFirstVertex(newSubgraphForBridgeSet); gp_VertexInRange(newSubgraphForBridgeSet, v); v++)
+    for (v = gp_GetFirstVertex(newSubgraphForBridgeSet); gp_VertexInRangeAscending(newSubgraphForBridgeSet, v); v++)
         subgraphContext->VI[v].subgraphToGraphIndex = context->VI[v].subgraphToGraphIndex;
 
     // For cleanliness, we NIL out the graph-to-subgraph and subgraph-to-graph map locations used
     // in this bridge set extraction.
-    for (v = gp_GetFirstVertex(newSubgraphForBridgeSet); gp_VertexInRange(newSubgraphForBridgeSet, v); v++)
+    for (v = gp_GetFirstVertex(newSubgraphForBridgeSet); gp_VertexInRangeAscending(newSubgraphForBridgeSet, v); v++)
     {
         context->VI[context->VI[v].subgraphToGraphIndex].graphToSubgraphIndex = NIL;
         context->VI[v].subgraphToGraphIndex = NIL;
@@ -896,11 +896,11 @@ int _K33Search_MakeGraphSubgraphVertexMaps(graphP theGraph, int R, int cutv1, in
     while (!sp_IsEmpty(theGraph->theStack))
     {
         sp_Pop(theGraph->theStack, v);
-        if (gp_GetVertexVisited(theGraph, v))
+        if (gp_GetVisited(theGraph, v))
         {
             // Every visited vertex will be temporarily marked unvisited here so that
             // we don't add vertices to the mapping multiple times.
-            gp_ClearVertexVisited(theGraph, v);
+            gp_ClearVisited(theGraph, v);
 
             // Add to the mapping only vertices other than cutv1 and cutv2 (and also
             // not R, which may be the representative of cutv1 in the bicomp)
@@ -927,9 +927,9 @@ int _K33Search_MakeGraphSubgraphVertexMaps(graphP theGraph, int R, int cutv1, in
             // remaining stack entries will be popped and ignored because they
             // will be changed to unvisited until after the outer loop ends.
             e = gp_GetFirstArc(theGraph, v);
-            while (gp_IsArc(e))
+            while (gp_IsArc(theGraph, e))
             {
-                if (gp_GetVertexVisited(theGraph, gp_GetNeighbor(theGraph, e)))
+                if (gp_GetVisited(theGraph, gp_GetNeighbor(theGraph, e)))
                     sp_Push(theGraph->theStack, gp_GetNeighbor(theGraph, e));
 
                 e = gp_GetNextArc(theGraph, e);
@@ -941,9 +941,9 @@ int _K33Search_MakeGraphSubgraphVertexMaps(graphP theGraph, int R, int cutv1, in
     // we restore their visited flags to raised. This has to be done specially
     // for the first vertex because cutv1 may be the non-virtual vertex of R,
     // but it is R that has to be marked visited again in that case.
-    gp_SetVertexVisited(theGraph, cutv1 == theGraph->IC.v ? R : cutv1);
-    for (v = gp_GetFirstVertex(newSubgraphForBridgeSet) + 1; gp_VertexInRange(newSubgraphForBridgeSet, v); v++)
-        gp_SetVertexVisited(theGraph, context->VI[v].subgraphToGraphIndex);
+    gp_SetVisited(theGraph, cutv1 == theGraph->IC.v ? R : cutv1);
+    for (v = gp_GetFirstVertex(newSubgraphForBridgeSet) + 1; gp_VertexInRangeAscending(newSubgraphForBridgeSet, v); v++)
+        gp_SetVisited(theGraph, context->VI[v].subgraphToGraphIndex);
 
     // The mapping has been successfully created.
     return OK;
@@ -990,13 +990,13 @@ int _K33Search_CopyEdgesToNewSubgraph(graphP theGraph, int R, int cutv1, int cut
     while (!sp_IsEmpty(theGraph->theStack))
     {
         sp_Pop(theGraph->theStack, v);
-        if (gp_GetVertexVisited(theGraph, v))
+        if (gp_GetVisited(theGraph, v))
         {
             // Need to avoid visiting visited vertices more than once
-            gp_ClearVertexVisited(theGraph, v);
+            gp_ClearVisited(theGraph, v);
 
             e = gp_GetFirstArc(theGraph, v);
-            while (gp_IsArc(e))
+            while (gp_IsArc(theGraph, e))
             {
                 // If the edge is visited, then it has to be copied to the subgraph
                 if (gp_GetEdgeVisited(theGraph, e))
@@ -1193,7 +1193,7 @@ int _K33Search_AttachENodeAsChildOfONode(K33Search_EONodeP theENode, int cutv1, 
 
     // There are only 10 edges in the K5, which is a constant, so we just sequentially
     // search through them to find the edge that should take the E-node pointer.
-    EsizeOccupied = gp_EdgeInUseIndexBound(theK5);
+    EsizeOccupied = gp_EdgeInUseArraySize(theK5);
     for (e = gp_GetFirstEdge(theK5); e < EsizeOccupied; e += 2)
     {
         if (gp_EdgeInUse(theK5, e))
@@ -1248,11 +1248,11 @@ int _CountVerticesAndEdgesInBicomp(graphP theGraph, int BicompRoot, int visitedO
     while (sp_GetCurrentSize(theGraph->theStack) > stackBottom)
     {
         sp_Pop(theGraph->theStack, v);
-        if (!visitedOnly || gp_GetVertexVisited(theGraph, v))
+        if (!visitedOnly || gp_GetVisited(theGraph, v))
             numVisitedVertices++;
 
         e = gp_GetFirstArc(theGraph, v);
-        while (gp_IsArc(e))
+        while (gp_IsArc(theGraph, e))
         {
             if (!visitedOnly || gp_GetEdgeVisited(theGraph, e))
                 numVisitedEdges++;
@@ -1285,10 +1285,10 @@ int _DeactivateBicomp(graphP theGraph, int R)
     while (sp_GetCurrentSize(theGraph->theStack) > stackBottom)
     {
         sp_Pop(theGraph->theStack, v);
-        gp_SetVertexDefunct(theGraph, v);
+        gp_SetAnyTypeVertexDefunct(theGraph, v);
 
         e = gp_GetFirstArc(theGraph, v);
-        while (gp_IsArc(e))
+        while (gp_IsArc(theGraph, e))
         {
             gp_SetEdgeVirtual(theGraph, e);
 
@@ -1315,9 +1315,9 @@ int _DeactivatePertinentOnlySubtrees(graphP theGraph, int w)
     // NOTE: We push all pertinent bicomp roots because we're in a pertinent-only subtree
     //       (so no need to test pertinent but not future pertinent here)
     pertinentRootListElem = gp_GetVertexFirstPertinentRootChild(theGraph, w);
-    while (gp_IsVertex(pertinentRootListElem))
+    while (gp_IsVertex(theGraph, pertinentRootListElem))
     {
-        pertinentRoot = gp_GetRootFromDFSChild(theGraph, pertinentRootListElem);
+        pertinentRoot = gp_GetBicompRootFromDFSChild(theGraph, pertinentRootListElem);
         sp_Push(theGraph->theStack, pertinentRoot);
         pertinentRootListElem = LCGetNext(theGraph->BicompRootLists, gp_GetVertexPertinentRootsList(theGraph, w), pertinentRootListElem);
     }
@@ -1338,9 +1338,9 @@ int _DeactivatePertinentOnlySubtrees(graphP theGraph, int w)
         while (W != pertinentRoot)
         {
             pertinentRootListElem = gp_GetVertexFirstPertinentRootChild(theGraph, W);
-            while (gp_IsVertex(pertinentRootListElem))
+            while (gp_IsVertex(theGraph, pertinentRootListElem))
             {
-                sp_Push(theGraph->theStack, gp_GetRootFromDFSChild(theGraph, pertinentRootListElem));
+                sp_Push(theGraph->theStack, gp_GetBicompRootFromDFSChild(theGraph, pertinentRootListElem));
                 pertinentRootListElem = LCGetNext(theGraph->BicompRootLists, gp_GetVertexPertinentRootsList(theGraph, W), pertinentRootListElem);
             }
 
@@ -1372,9 +1372,9 @@ int _CountUnembeddedEdgesInPertinentOnlySubtrees(graphP theGraph, int w, int *pN
     // NOTE: We push all pertinent bicomp roots because we're in a pertinent-only subtree
     //       (so no need to test pertinent but not future pertinent here)
     pertinentRootListElem = gp_GetVertexFirstPertinentRootChild(theGraph, w);
-    while (gp_IsVertex(pertinentRootListElem))
+    while (gp_IsVertex(theGraph, pertinentRootListElem))
     {
-        pertinentRoot = gp_GetRootFromDFSChild(theGraph, pertinentRootListElem);
+        pertinentRoot = gp_GetBicompRootFromDFSChild(theGraph, pertinentRootListElem);
         sp_Push(theGraph->theStack, pertinentRoot);
         pertinentRootListElem = LCGetNext(theGraph->BicompRootLists, gp_GetVertexPertinentRootsList(theGraph, w), pertinentRootListElem);
     }
@@ -1393,14 +1393,14 @@ int _CountUnembeddedEdgesInPertinentOnlySubtrees(graphP theGraph, int w, int *pN
         while (W != pertinentRoot)
         {
             // Test for an unembedded back edge to v
-            if (gp_IsArc(gp_GetVertexPertinentEdge(theGraph, W)))
+            if (gp_IsArc(theGraph, gp_GetVertexPertinentEdge(theGraph, W)))
                 edgeCount++;
 
             // Push all the pertinent child bicomps of W
             pertinentRootListElem = gp_GetVertexFirstPertinentRootChild(theGraph, W);
-            while (gp_IsVertex(pertinentRootListElem))
+            while (gp_IsVertex(theGraph, pertinentRootListElem))
             {
-                sp_Push(theGraph->theStack, gp_GetRootFromDFSChild(theGraph, pertinentRootListElem));
+                sp_Push(theGraph->theStack, gp_GetBicompRootFromDFSChild(theGraph, pertinentRootListElem));
                 pertinentRootListElem = LCGetNext(theGraph->BicompRootLists, gp_GetVertexPertinentRootsList(theGraph, W), pertinentRootListElem);
             }
 
@@ -1412,7 +1412,7 @@ int _CountUnembeddedEdgesInPertinentOnlySubtrees(graphP theGraph, int w, int *pN
     }
 
     // If w is also an unembedded back edge endpoint, then increment the counter
-    if (gp_IsArc(gp_GetVertexPertinentEdge(theGraph, w)))
+    if (gp_IsArc(theGraph, gp_GetVertexPertinentEdge(theGraph, w)))
         edgeCount++;
 
     // Increment the value of the output parameter and return successfully
@@ -1442,9 +1442,9 @@ int _CountVerticesAndEdgesInPertinentOnlySubtrees(graphP theGraph, int w,
     // NOTE: We push all pertinent bicomp roots because we're in a pertinent-only subtree
     //       (so no need to test pertinent but not future pertinent here)
     pertinentRootListElem = gp_GetVertexFirstPertinentRootChild(theGraph, w);
-    while (gp_IsVertex(pertinentRootListElem))
+    while (gp_IsVertex(theGraph, pertinentRootListElem))
     {
-        pertinentRoot = gp_GetRootFromDFSChild(theGraph, pertinentRootListElem);
+        pertinentRoot = gp_GetBicompRootFromDFSChild(theGraph, pertinentRootListElem);
         sp_Push(theGraph->theStack, pertinentRoot);
         pertinentRootListElem = LCGetNext(theGraph->BicompRootLists, gp_GetVertexPertinentRootsList(theGraph, w), pertinentRootListElem);
     }
@@ -1474,9 +1474,9 @@ int _CountVerticesAndEdgesInPertinentOnlySubtrees(graphP theGraph, int w,
         {
             // Push all the pertinent child bicomps of W
             pertinentRootListElem = gp_GetVertexFirstPertinentRootChild(theGraph, W);
-            while (gp_IsVertex(pertinentRootListElem))
+            while (gp_IsVertex(theGraph, pertinentRootListElem))
             {
-                sp_Push(theGraph->theStack, gp_GetRootFromDFSChild(theGraph, pertinentRootListElem));
+                sp_Push(theGraph->theStack, gp_GetBicompRootFromDFSChild(theGraph, pertinentRootListElem));
                 pertinentRootListElem = LCGetNext(theGraph->BicompRootLists, gp_GetVertexPertinentRootsList(theGraph, W), pertinentRootListElem);
             }
 
@@ -1513,9 +1513,9 @@ int _K33Search_MapVerticesInPertinentOnlySubtrees(graphP theGraph, K33SearchCont
     // NOTE: We push all pertinent bicomp roots because we're in a pertinent-only subtree
     //       (so no need to test pertinent but not future pertinent here)
     pertinentRootListElem = gp_GetVertexFirstPertinentRootChild(theGraph, w);
-    while (gp_IsVertex(pertinentRootListElem))
+    while (gp_IsVertex(theGraph, pertinentRootListElem))
     {
-        pertinentRoot = gp_GetRootFromDFSChild(theGraph, pertinentRootListElem);
+        pertinentRoot = gp_GetBicompRootFromDFSChild(theGraph, pertinentRootListElem);
         sp_Push(theGraph->theStack, pertinentRoot);
         pertinentRootListElem = LCGetNext(theGraph->BicompRootLists, gp_GetVertexPertinentRootsList(theGraph, w), pertinentRootListElem);
     }
@@ -1539,9 +1539,9 @@ int _K33Search_MapVerticesInPertinentOnlySubtrees(graphP theGraph, K33SearchCont
         {
             // Push all the pertinent child bicomps of W
             pertinentRootListElem = gp_GetVertexFirstPertinentRootChild(theGraph, W);
-            while (gp_IsVertex(pertinentRootListElem))
+            while (gp_IsVertex(theGraph, pertinentRootListElem))
             {
-                sp_Push(theGraph->theStack, gp_GetRootFromDFSChild(theGraph, pertinentRootListElem));
+                sp_Push(theGraph->theStack, gp_GetBicompRootFromDFSChild(theGraph, pertinentRootListElem));
                 pertinentRootListElem = LCGetNext(theGraph->BicompRootLists, gp_GetVertexPertinentRootsList(theGraph, W), pertinentRootListElem);
             }
 
@@ -1583,7 +1583,7 @@ int _K33Search_MapVerticesInBicomp(graphP theGraph, K33SearchContext *context, i
         // because an edge marked EDGE_TYPE_CHILD may in fact lead to a descendant
         // and not a direct child if there has been a ReduceBicomp).
         e = gp_GetFirstArc(theGraph, v);
-        while (gp_IsArc(e))
+        while (gp_IsArc(theGraph, e))
         {
             if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_CHILD)
                 sp_Push(theGraph->theStack, gp_GetNeighbor(theGraph, e));
@@ -1614,9 +1614,9 @@ int _K33Search_AddUnembeddedEdgesToSubgraph(graphP theGraph, K33SearchContext *c
     // NOTE: We push all pertinent bicomp roots because we're in a pertinent-only subtree
     //       (so no need to test pertinent but not future pertinent here)
     pertinentRootListElem = gp_GetVertexFirstPertinentRootChild(theGraph, w);
-    while (gp_IsVertex(pertinentRootListElem))
+    while (gp_IsVertex(theGraph, pertinentRootListElem))
     {
-        pertinentRoot = gp_GetRootFromDFSChild(theGraph, pertinentRootListElem);
+        pertinentRoot = gp_GetBicompRootFromDFSChild(theGraph, pertinentRootListElem);
         sp_Push(theGraph->theStack, pertinentRoot);
         pertinentRootListElem = LCGetNext(theGraph->BicompRootLists, gp_GetVertexPertinentRootsList(theGraph, w), pertinentRootListElem);
     }
@@ -1636,7 +1636,7 @@ int _K33Search_AddUnembeddedEdgesToSubgraph(graphP theGraph, K33SearchContext *c
         {
             // Test for an unembedded back edge to v, and add the edge if needed
             e = gp_GetVertexPertinentEdge(theGraph, W);
-            if (gp_IsArc(e))
+            if (gp_IsArc(theGraph, e))
             {
                 if (_K33Search_AddNewEdgeToSubgraph(theGraph, context, theGraph->IC.v, W, newSubgraphForBridgeSet) != OK)
                     return NOTOK;
@@ -1649,9 +1649,9 @@ int _K33Search_AddUnembeddedEdgesToSubgraph(graphP theGraph, K33SearchContext *c
 
             // Push all the pertinent child bicomps of W
             pertinentRootListElem = gp_GetVertexFirstPertinentRootChild(theGraph, W);
-            while (gp_IsVertex(pertinentRootListElem))
+            while (gp_IsVertex(theGraph, pertinentRootListElem))
             {
-                sp_Push(theGraph->theStack, gp_GetRootFromDFSChild(theGraph, pertinentRootListElem));
+                sp_Push(theGraph->theStack, gp_GetBicompRootFromDFSChild(theGraph, pertinentRootListElem));
                 pertinentRootListElem = LCGetNext(theGraph->BicompRootLists, gp_GetVertexPertinentRootsList(theGraph, W), pertinentRootListElem);
             }
 
@@ -1665,7 +1665,7 @@ int _K33Search_AddUnembeddedEdgesToSubgraph(graphP theGraph, K33SearchContext *c
     // If w is also an unembedded back edge endpoint, then vertex map (v, w)
     // to the new subgraph and add the resulting edge
     e = gp_GetVertexPertinentEdge(theGraph, w);
-    if (gp_IsArc(e))
+    if (gp_IsArc(theGraph, e))
     {
         if (_K33Search_AddNewEdgeToSubgraph(theGraph, context, theGraph->IC.v, w, newSubgraphForBridgeSet) != OK)
             return NOTOK;
@@ -1718,9 +1718,9 @@ int _K33Search_CopyEdgesFromPertinentOnlySubtrees(graphP theGraph, K33SearchCont
     // NOTE: We push all pertinent bicomp roots because we're in a pertinent-only subtree
     //       (so no need to test pertinent but not future pertinent here)
     pertinentRootListElem = gp_GetVertexFirstPertinentRootChild(theGraph, w);
-    while (gp_IsVertex(pertinentRootListElem))
+    while (gp_IsVertex(theGraph, pertinentRootListElem))
     {
-        pertinentRoot = gp_GetRootFromDFSChild(theGraph, pertinentRootListElem);
+        pertinentRoot = gp_GetBicompRootFromDFSChild(theGraph, pertinentRootListElem);
         sp_Push(theGraph->theStack, pertinentRoot);
         pertinentRootListElem = LCGetNext(theGraph->BicompRootLists, gp_GetVertexPertinentRootsList(theGraph, w), pertinentRootListElem);
     }
@@ -1743,9 +1743,9 @@ int _K33Search_CopyEdgesFromPertinentOnlySubtrees(graphP theGraph, K33SearchCont
         {
             // Push all the pertinent child bicomps of W
             pertinentRootListElem = gp_GetVertexFirstPertinentRootChild(theGraph, W);
-            while (gp_IsVertex(pertinentRootListElem))
+            while (gp_IsVertex(theGraph, pertinentRootListElem))
             {
-                sp_Push(theGraph->theStack, gp_GetRootFromDFSChild(theGraph, pertinentRootListElem));
+                sp_Push(theGraph->theStack, gp_GetBicompRootFromDFSChild(theGraph, pertinentRootListElem));
                 pertinentRootListElem = LCGetNext(theGraph->BicompRootLists, gp_GetVertexPertinentRootsList(theGraph, W), pertinentRootListElem);
             }
 
@@ -1773,7 +1773,7 @@ int _K33Search_CopyEdgesFromBicomp(graphP theGraph, K33SearchContext *context, i
         sp_Pop(theGraph->theStack, v);
 
         e = gp_GetFirstArc(theGraph, v);
-        while (gp_IsArc(e))
+        while (gp_IsArc(theGraph, e))
         {
             // Every edge will be visited twice by this loop construct,
             // but we only want to add the edge once...
@@ -1810,8 +1810,8 @@ int _K33Search_CopyEdgeToNewSubgraph(graphP theGraph, K33SearchContext *context,
     // Get the two vertices associated with edge e
     v = gp_GetNeighbor(theGraph, gp_GetTwinArc(theGraph, e));
     w = gp_GetNeighbor(theGraph, e);
-    v = gp_IsBicompRoot(theGraph, v) ? gp_GetPrimaryVertexFromRoot(theGraph, v) : v;
-    w = gp_IsBicompRoot(theGraph, w) ? gp_GetPrimaryVertexFromRoot(theGraph, w) : w;
+    v = gp_IsBicompRoot(theGraph, v) ? gp_GetVertexFromBicompRoot(theGraph, v) : v;
+    w = gp_IsBicompRoot(theGraph, w) ? gp_GetVertexFromBicompRoot(theGraph, w) : w;
 
     // Use the mapping to generate the edge in the subgraph
     vInSubgraph = context->VI[v].graphToSubgraphIndex;
@@ -1889,7 +1889,7 @@ int _K33Search_AssembleMainPlanarEmbedding(K33Search_EONodeP EOTreeRoot)
         return NOTOK;
 
     // Set up the graph-to-subgraph mapping
-    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
+    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
     {
         context->VI[v].graphToSubgraphIndex = v;
         context->VI[v].subgraphToGraphIndex = v;
@@ -1899,14 +1899,14 @@ int _K33Search_AssembleMainPlanarEmbedding(K33Search_EONodeP EOTreeRoot)
     // Preserve in the rootSubgraph the knowledge of the vertices that were
     // made defunct in the main planar embedding during the embedding process
     // (due to ReduceBicomp() operations).
-    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
+    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
     {
-        if (gp_GetVertexDefunct(theGraph, v))
-            gp_SetVertexDefunct(rootSubgraph, v);
+        if (gp_GetAnyTypeVertexDefunct(theGraph, v))
+            gp_SetAnyTypeVertexDefunct(rootSubgraph, v);
     }
 
     // Copy the non-virtual edges and any edges containing pointers to child O-nodes
-    EsizeOccupied = gp_EdgeInUseIndexBound(theGraph);
+    EsizeOccupied = gp_EdgeInUseArraySize(theGraph);
     for (e = gp_GetFirstEdge(theGraph); e < EsizeOccupied; e += 2)
     {
         if (gp_EdgeInUse(theGraph, e))
@@ -1991,7 +1991,7 @@ int _K33Search_ValidateENodeSubtree(K33Search_EONodeP theRootENode)
     if (_CheckEmbeddingFacialIntegrity(theSubgraph) != OK)
         return NOTOK;
 
-    EsizeOccupied = gp_EdgeInUseIndexBound(theSubgraph);
+    EsizeOccupied = gp_EdgeInUseArraySize(theSubgraph);
     for (e = gp_GetFirstEdge(theSubgraph); e < EsizeOccupied; e += 2)
     {
         if (gp_EdgeInUse(theSubgraph, e) && subgraphContext->E[e].EONode != NULL)
@@ -2053,7 +2053,7 @@ int _K33Search_ValidateONodeSubtree(K33Search_EONodeP theRootONode)
     if (_TestForCompleteGraphObstruction(theSubgraph, 5, degrees, imageVerts) != TRUE)
         return NOTOK;
 
-    EsizeOccupied = gp_EdgeInUseIndexBound(theSubgraph);
+    EsizeOccupied = gp_EdgeInUseArraySize(theSubgraph);
     for (e = gp_GetFirstEdge(theSubgraph); e < EsizeOccupied; e += 2)
     {
         if (gp_EdgeInUse(theSubgraph, e) && subgraphContext->E[e].EONode != NULL)
@@ -2101,8 +2101,8 @@ int _K33Search_ValidateChildENodeConnection(graphP theK5, int e, K33Search_EONod
     // and then get their subgraph to graph mappings
     v = gp_GetNeighbor(theK5, e);
     w = gp_GetNeighbor(theK5, gp_GetTwinArc(theK5, e));
-    v = gp_GetVertexIndex(theK5, v);
-    w = gp_GetVertexIndex(theK5, w);
+    v = gp_GetIndex(theK5, v);
+    w = gp_GetIndex(theK5, w);
     if (v > w)
     {
         temp = v;
@@ -2143,9 +2143,9 @@ int _K33Search_ValidateEmbeddingObstructionTreeEdgeSet(graphP theGraph, K33Searc
     // EOTreeRoot to the original indexing in origGraph.
 
     // First, we copy the original non-DFI numbering from theGraph into the graphOfEmbedding
-    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
+    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
     {
-        gp_SetVertexIndex(graphOfEmbedding, v, gp_GetVertexIndex(theGraph, v));
+        gp_SetIndex(graphOfEmbedding, v, gp_GetIndex(theGraph, v));
     }
     // Then we tell the graphOfEmbedding that it is DFSNUMBERED and SORTEDBYDFI so that the
     // vertex index values will be interpreted as the original non-DFI numbering by gp_SortVertices()
@@ -2193,7 +2193,7 @@ int _K33Search_CopyEmbeddingEdgesToGraph(graphP theMainGraph, K33Search_EONodeP 
     // NOTE: We could add a condition to only run this loop on E-node subgraphs because
     //       all edges in O-node subgraphs are marked virtual, but running this loop anyway
     //       does not affect the performance bound and makes sure the flags are set correctly
-    EsizeOccupied = gp_EdgeInUseIndexBound(theSubgraph);
+    EsizeOccupied = gp_EdgeInUseArraySize(theSubgraph);
     for (e = gp_GetFirstEdge(theSubgraph); e < EsizeOccupied; e += 2)
     {
         // In the main embedding, edges are sometimes deleted, so we only process
@@ -2219,7 +2219,7 @@ int _K33Search_CopyEmbeddingEdgesToGraph(graphP theMainGraph, K33Search_EONodeP 
     // EONode pointer are pointing to child EONodes to which we descend.
     // NOTE: In this implementation, it is not necessary and therefore not done to have
     //       an edge whose EONode points to the EONode parent of the current EONode.
-    EsizeOccupied = gp_EdgeInUseIndexBound(theSubgraph);
+    EsizeOccupied = gp_EdgeInUseArraySize(theSubgraph);
     for (e = gp_GetFirstEdge(theSubgraph); e < EsizeOccupied; e += 2)
     {
         // In the main embedding, edges are sometimes deleted, so we only process
@@ -2241,7 +2241,7 @@ int _K33Search_ValidateEmbeddingObstructionTreeVertexSet(graphP theGraph, K33Sea
 {
     int v;
 
-    _ClearVertexVisitedFlags(origGraph, FALSE);
+    _ClearAnyTypeVertexVisitedFlags(origGraph, FALSE);
 
     // Recursively descend into the EO-tree to mark visited the appropriate vertices in origGraph,
     // returning NOTOK if any is ever marked visited more than once. The FALSE parameter is used
@@ -2251,12 +2251,12 @@ int _K33Search_ValidateEmbeddingObstructionTreeVertexSet(graphP theGraph, K33Sea
         return NOTOK;
 
     // Test that every vertex in origGraph was represented in the EO-tree embedding
-    for (v = gp_GetFirstVertex(origraph); gp_VertexInRange(origGraph, v); v++)
-        if (!gp_GetVertexVisited(origGraph, v))
+    for (v = gp_GetFirstVertex(origraph); gp_VertexInRangeAscending(origGraph, v); v++)
+        if (!gp_GetVisited(origGraph, v))
             return NOTOK;
 
     // On success, put the origGraph vertices back to not visited and return a success result
-    _ClearVertexVisitedFlags(origGraph, FALSE);
+    _ClearAnyTypeVertexVisitedFlags(origGraph, FALSE);
     return OK;
 }
 
@@ -2277,22 +2277,22 @@ int _K33Search_ValidateVerticesInENodeSubtree(graphP theGraph, K33Search_EONodeP
     // In this implementation, the cut vertices of a descendant E-node subgraph
     // are stored  in the first two positions in the vertex array
     v_offset = ignoreCutVertices ? 2 : 0;
-    for (v = gp_GetFirstVertex(theSubgraph) + v_offset; gp_VertexInRange(theSubgraph, v); v++)
+    for (v = gp_GetFirstVertex(theSubgraph) + v_offset; gp_VertexInRangeAscending(theSubgraph, v); v++)
     {
         // In the main planar embedding, vertices are marked defunct as they are sent off to
         // be represented by a descendant E-node's subgraph; those are excluded from the
         // visitation test-then-set logic
-        if (!gp_GetVertexDefunct(theSubgraph, v))
+        if (!gp_GetAnyTypeVertexDefunct(theSubgraph, v))
         {
             vInGraph = subgraphContext->VI[v].subgraphToGraphIndex;
-            if (gp_GetVertexVisited(origGraph, vInGraph))
+            if (gp_GetVisited(origGraph, vInGraph))
                 return NOTOK;
-            gp_SetVertexVisited(origGraph, vInGraph);
+            gp_SetVisited(origGraph, vInGraph);
         }
     }
 
     // Find all the O-nodes and recursively descend to them
-    EsizeOccupied = gp_EdgeInUseIndexBound(theSubgraph);
+    EsizeOccupied = gp_EdgeInUseArraySize(theSubgraph);
     for (e = gp_GetFirstEdge(theSubgraph); e < EsizeOccupied; e += 2)
     {
         if (gp_EdgeInUse(theSubgraph, e) && subgraphContext->E[e].EONode != NULL)
@@ -2319,7 +2319,7 @@ int _K33Search_ValidateVerticesInONodeSubtree(graphP theGraph, K33Search_EONodeP
         return NOTOK;
 
     // Find all the E-nodes and recursively descend to them
-    EsizeOccupied = gp_EdgeInUseIndexBound(theSubgraph);
+    EsizeOccupied = gp_EdgeInUseArraySize(theSubgraph);
     for (e = gp_GetFirstEdge(theSubgraph); e < EsizeOccupied; e += 2)
     {
         if (gp_EdgeInUse(theSubgraph, e) && subgraphContext->E[e].EONode != NULL)

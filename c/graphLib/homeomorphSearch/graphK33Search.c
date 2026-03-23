@@ -1270,7 +1270,7 @@ int _ReduceBicomp(graphP theGraph, K33SearchContext *context, int R)
         // Once we finish constructing the O-node and E-nodes, and their representative subgraphs, we
         // must clear the visited flags and re-mark the highest xy path as this is a precondition of
         // the code below that performs the bicomp reduction
-        if (_ClearVisitedFlagsInBicomp(theGraph, R) != OK || _MarkHighestXYPath(theGraph) != OK)
+        if (_ClearAllVisitedFlagsInBicomp(theGraph, R) != OK || _MarkHighestXYPath(theGraph) != OK)
             return NOTOK;
     }
 #endif

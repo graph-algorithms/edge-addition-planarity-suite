@@ -408,7 +408,7 @@ extern "C"
 #define gp_GetVertexFromBicompRoot(theGraph, R) gp_GetVertexParent(theGraph, gp_GetDFSChildFromBicompRoot(theGraph, R))
 
 #ifdef INCLUDE_K33SEARCH_EMBEDDER
-#define gp_IsBicompRoot(theGraph, v) (!gp_VertexInRangeAscending(theGraph->N, v))
+#define gp_IsBicompRoot(theGraph, v) (!gp_VertexInRangeAscending(theGraph, v))
 #endif
 
 // If a vertex v is a cut vertex that separates one of its DFS children, say c,

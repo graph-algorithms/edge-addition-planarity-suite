@@ -733,9 +733,7 @@ int _K33Search_EmbedPostprocess(graphP theGraph, int v, int edgeEmbeddingResult)
             K33Search_EONodeP tempRoot = NULL;
             int *vertexIndices = NULL;
             K33SearchContext *context = NULL;
-            // This is currently a constant conditional TRUE, and will be changed to
-            // a variable conditional test once code is added to let the caller control
-            // whether or not to perform K_{3,3}-free embedding.
+
             if (theGraph->embedFlags & EMBEDFLAGS_SEARCHWITHEMBEDDER)
             {
                 gp_FindExtension(theGraph, K33SEARCH_ID, (void *)&context);
@@ -756,9 +754,9 @@ int _K33Search_EmbedPostprocess(graphP theGraph, int v, int edgeEmbeddingResult)
                     return NOTOK;
                 }
 
-                for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
+                for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
                 {
-                    vertexIndices[v] = gp_GetVertexIndex(theGraph, v);
+                    vertexIndices[v] = gp_GetIndex(theGraph, v);
                 }
             }
 #endif
@@ -779,9 +777,9 @@ int _K33Search_EmbedPostprocess(graphP theGraph, int v, int edgeEmbeddingResult)
 
                 context->associatedEONode = tempRoot;
 
-                for (v = gp_GetFirstVertex(theGraph); gp_VertexInRange(theGraph, v); v++)
+                for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
                 {
-                    gp_SetVertexIndex(theGraph, v, vertexIndices[v]);
+                    gp_SetIndex(theGraph, v, vertexIndices[v]);
                 }
 
                 free(vertexIndices);
