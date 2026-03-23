@@ -1,5 +1,5 @@
 /*
-Copyright (c) 1997-2025, John M. Boyer
+Copyright (c) 1997-2026, John M. Boyer
 All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
@@ -352,7 +352,7 @@ int _getFirstEdge(graphP theGraph, int *e, int *u, int *v)
     if (theGraph == NULL)
         return NOTOK;
 
-    if ((*e) >= gp_EdgeInUseIndexBound(theGraph))
+    if ((*e) >= gp_EdgeInUseArraySize(theGraph))
     {
         ErrorMessage("First edge is outside bounds.\n");
         return NOTOK;
@@ -376,7 +376,7 @@ int _getNextEdge(graphP theGraph, int *e, int *u, int *v)
 int _getNextInUseEdge(graphP theGraph, int *e, int *u, int *v)
 {
     int exitCode = OK;
-    int EsizeOccupied = gp_EdgeInUseIndexBound(theGraph);
+    int EsizeOccupied = gp_EdgeInUseArraySize(theGraph);
 
     (*u) = NIL;
     (*v) = NIL;

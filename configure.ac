@@ -12,6 +12,12 @@ AC_CONFIG_SRCDIR([c/])
 # The version number in the following line must be synchronized with 
 # the LibPlanarity version numbers in graphLib.h 
 #
+# The meanings of the three vesrion number components are
+#    current : Most recent interface number that the library implements
+#    revision: The implementation number of the current interface
+#    age     : The number of previous interfaces that this version
+#              backwards compatibly supports
+# 
 # When doing a release, they should be updated like this:
 # 1. If no interfaces changed, only implementations: just increment
 # revision.
@@ -19,8 +25,8 @@ AC_CONFIG_SRCDIR([c/])
 # revision to zero and increment age.
 # 3. If interfaces were removed (breaks backward compatibility): increment
 # current, and set both revision and age to zero.
-LT_CURRENT=3
-LT_REVISION=1
+LT_CURRENT=5
+LT_REVISION=0
 LT_AGE=1
 AC_SUBST(LT_CURRENT)
 AC_SUBST(LT_REVISION)

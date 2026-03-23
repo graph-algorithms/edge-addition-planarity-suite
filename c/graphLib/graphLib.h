@@ -2,7 +2,7 @@
 #define GRAPHLIB_H
 
 /*
-Copyright (c) 1997-2025, John M. Boyer
+Copyright (c) 1997-2026, John M. Boyer
 All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
@@ -45,10 +45,9 @@ extern "C"
 // Changes to code in the graphLib subdirectory should affect the project version numbers above as well as
 // the libPlanarity shared library version numbers below.
 //
-// See configure.ac for how to update these version numbers, and ensure that the changes made to
-// LT_CURRENT, LT_REVISION, and LT_AGE in configure.ac are also reflected in the following three:
-#define GP_LIBPLANARITYVERSION_CURRENT 3
-#define GP_LIBPLANARITYVERSION_REVISION 1
+// See configure.ac for how to update these version numbers
+#define GP_LIBPLANARITYVERSION_CURRENT 5
+#define GP_LIBPLANARITYVERSION_REVISION 0
 #define GP_LIBPLANARITYVERSION_AGE 1
 
     char *gp_GetLibPlanarityVersionFull(void);
