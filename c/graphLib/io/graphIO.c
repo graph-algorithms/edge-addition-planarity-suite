@@ -632,7 +632,10 @@ int _WriteAdjList(graphP theGraph, strOrFileP outputContainer)
     if (theGraph->internalFlags & FLAGS_ZEROBASEDIO)
     {
         zeroBasedVertexOffset = gp_GetFirstVertex(theGraph);
-        adjacencyListTerminator = NIL;
+        // If the graph must be written 0-based, then the adjacency list terminator must be -1,
+        // even if the internal representation is 1-based (i.e. when USE_FASTER_1BASEDARRAYS, NIL == 0,
+        // but the output needs to be -1 for 0-based output)
+        adjacencyListTerminator = -1;
     }
 
     // Write the adjacency list of each vertex
