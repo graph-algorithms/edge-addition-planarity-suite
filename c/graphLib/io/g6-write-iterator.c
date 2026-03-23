@@ -380,7 +380,6 @@ void _g6_GetFirstEdgeInUse(graphP theGraph, int *e, int *u, int *v)
 
 void _g6_GetNextEdgeInUse(graphP theGraph, int *e, int *u, int *v)
 {
-    int exitCode = OK;
     int EsizeOccupied = gp_EdgeInUseArraySize(theGraph);
 
     (*u) = NIL;
