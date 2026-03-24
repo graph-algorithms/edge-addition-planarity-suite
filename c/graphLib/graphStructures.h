@@ -245,6 +245,16 @@ extern "C"
 
     typedef anyTypeVertexRec *anyTypeVertexRecP;
 
+// Fast utility routines for copying and swapping "any type" vertex records
+#define gp_CopyAnyTypeVertexRec(dstGraph, vdst, srcGraph, vsrc) (dstGraph->V[vdst] = srcGraph->V[vsrc])
+
+#define gp_SwapAnyTypeVertexRec(dstGraph, vdst, srcGraph, vsrc) \
+    {                                                           \
+        anyTypeVertexRec tempV = dstGraph->V[vdst];             \
+        dstGraph->V[vdst] = srcGraph->V[vsrc];                  \
+        srcGraph->V[vsrc] = tempV;                              \
+    }
+
 ////////////////////////////////////////////
 // Accessors for vertex adjacency list links
 ////////////////////////////////////////////
@@ -373,32 +383,7 @@ extern "C"
     // End of Vertex iteration-related methods
     //////////////////////////////////////////
 
-// Mapping between bicomp roots and virtual vertex locations used to store them.
-// A cut vertex v separates one or more of its DFS children, say c1 and c2, from
-// the DFS parent and ancesstors of v. Because a DFS tree contains only tree edges
-// and back edges, there are no cross edges connecting vertices in the DFS subtree
-// rooted by c1, T(c1), with vertices in the DFS subtree rooted by c2, T(c2).
-// We say that v is a cut vertex because the only paths that go from vertices in
-// T(c1) to vertices in T(c2) are paths that contain v.
-// Therefore, bicomp root copies of v, say R1 and R2, can be created at locations
-// c1 and c2 in virtual vertex space, in other words at locations N+c1 and N+c2.
-// The bicomps rooted by R1 and R2 are called child bicomps of v, and they contain,
-// respectively, c1 and c2 as well as possibly more vertices from, respectively,
-// T(c1) and T(c2), depending on what back edges may exist in the graph between
-// pairs of vertices in, respectively, T(c1) and T(c2).
-#define gp_GetBicompRootFromDFSChild(theGraph, c) ((c) + theGraph->N)
-#define gp_GetDFSChildFromBicompRoot(theGraph, R) ((R) - theGraph->N)
-#define gp_GetVertexFromBicompRoot(theGraph, R) gp_GetVertexParent(theGraph, gp_GetDFSChildFromBicompRoot(theGraph, R))
-
-// If a vertex v is a cut vertex that separates one of its DFS children, say c,
-// from the DFS ancestors and other children of v, then when the graph has been
-// separated into bicomps, there will be a root copy of v in virtual vertex space
-// at location c+N that will have at least one edge connecting it to c.
-// These macros detect whether or not that is the case for a given DFS child.
-#define gp_IsSeparatedDFSChild(theGraph, theChild) (gp_VirtualVertexInUse(theGraph, gp_GetBicompRootFromDFSChild(theGraph, theChild)))
-#define gp_IsNotSeparatedDFSChild(theGraph, theChild) (gp_VirtualVertexNotInUse(theGraph, gp_GetBicompRootFromDFSChild(theGraph, theChild)))
-
-// A DFS tree root is one that has no DFS parent. There is one DFS tree root
+    // A DFS tree root is one that has no DFS parent. There is one DFS tree root
 // per connected component of a graph (connected, not biconnected; component, not bicomp)
 #define gp_IsDFSTreeRoot(theGraph, v) gp_IsNotVertex(theGraph, gp_GetVertexParent(theGraph, v))
 #define gp_IsNotDFSTreeRoot(theGraph, v) gp_IsVertex(theGraph, gp_GetVertexParent(theGraph, v))
@@ -424,6 +409,8 @@ extern "C"
 #define gp_ClearMarked(theGraph, v) (theGraph->V[v].flags &= ~ANYTYPEVERTEX_MARKED_MASK)
 #define gp_SetMarked(theGraph, v) (theGraph->V[v].flags |= ANYTYPEVERTEX_MARKED_MASK)
 
+// PLANARITY-RELATED ONLY
+//
 // The ANYVERTEX_OBSTRUCTIONMARK_MASK bits are bits 2-4, 4+8+16=28
 // They are used by planarity-related algorithms to identify the four
 // regions of the external face cycle of a bicomp, relative to an
@@ -451,26 +438,48 @@ extern "C"
 #define gp_ResetObstructionMark(theGraph, v, type) \
     (theGraph->V[v].flags = (theGraph->V[v].flags & ~ANYVERTEX_OBSTRUCTIONMARK_MASK) | type)
 
-// Fast utility routines for "any type" vertex records
-#define gp_CopyAnyTypeVertexRec(dstGraph, vdst, srcGraph, vsrc) (dstGraph->V[vdst] = srcGraph->V[vsrc])
+// PLANARITY-RELATED ONLY
+//
+// Mapping between bicomp roots and virtual vertex locations used to store them.
+// A cut vertex v separates one or more of its DFS children, say c1 and c2, from
+// the DFS parent and ancesstors of v. Because a DFS tree contains only tree edges
+// and back edges, there are no cross edges connecting vertices in the DFS subtree
+// rooted by c1, T(c1), with vertices in the DFS subtree rooted by c2, T(c2).
+// We say that v is a cut vertex because the only paths that go from vertices in
+// T(c1) to vertices in T(c2) are paths that contain v.
+// Therefore, bicomp root copies of v, say R1 and R2, can be created at locations
+// c1 and c2 in virtual vertex space, in other words at locations N+c1 and N+c2.
+// The bicomps rooted by R1 and R2 are called child bicomps of v, and they contain,
+// respectively, c1 and c2 as well as possibly more vertices from, respectively,
+// T(c1) and T(c2), depending on what back edges may exist in the graph between
+// pairs of vertices in, respectively, T(c1) and T(c2).
+#define gp_GetBicompRootFromDFSChild(theGraph, c) ((c) + theGraph->N)
+#define gp_GetDFSChildFromBicompRoot(theGraph, R) ((R) - theGraph->N)
+#define gp_GetVertexFromBicompRoot(theGraph, R) gp_GetVertexParent(theGraph, gp_GetDFSChildFromBicompRoot(theGraph, R))
+#define gp_IsBicompRoot(theGraph, v) (!gp_VertexInRangeAscending(theGraph, v))
 
-#define gp_SwapAnyTypeVertexRec(dstGraph, vdst, srcGraph, vsrc) \
-    {                                                           \
-        anyTypeVertexRec tempV = dstGraph->V[vdst];             \
-        dstGraph->V[vdst] = srcGraph->V[vsrc];                  \
-        srcGraph->V[vsrc] = tempV;                              \
-    }
+// PLANARITY-RELATED ONLY
+//
+// If a vertex v is a cut vertex that separates one of its DFS children, say c,
+// from the DFS ancestors and other children of v, then when the graph has been
+// separated into bicomps, there will be a root copy of v in virtual vertex space
+// at location c+N that will have at least one edge connecting it to c.
+// These macros detect whether or not that is the case for a given DFS child.
+#define gp_IsSeparatedDFSChild(theGraph, theChild) (gp_VirtualVertexInUse(theGraph, gp_GetBicompRootFromDFSChild(theGraph, theChild)))
+#define gp_IsNotSeparatedDFSChild(theGraph, theChild) (gp_VirtualVertexNotInUse(theGraph, gp_GetBicompRootFromDFSChild(theGraph, theChild)))
 
     /********************************************************************
+    // PLANARITY-RELATED ONLY
+    //
      This structure defines a pair of links used by each vertex and virtual vertex
-     to create "short circuit" paths that eliminate unimportant vertices from
-     the external face, enabling more efficient traversal of the external face.
+        to create "short circuit" paths that eliminate unimportant vertices from
+        the external face, enabling more efficient traversal of the external face.
 
-     It is also possible to embed the "short circuit" edges, but this approach
-     creates a better separation of concerns, imparts greater clarity, and
-     removes exceptionalities for handling additional fake "short circuit" edges.
+        It is also possible to embed the "short circuit" edges, but this approach
+        creates a better separation of concerns, imparts greater clarity, and
+        removes exceptionalities for handling additional fake "short circuit" edges.
 
-     vertex[2]: The two adjacent vertices along the external face, possibly
+        vertex[2]: The two adjacent vertices along the external face, possibly
                 short-circuiting paths of inactive vertices.
     */
 
@@ -485,6 +494,9 @@ extern "C"
 #define gp_SetExtFaceVertex(theGraph, v, link, theVertex) (theGraph->extFace[v].vertex[link] = theVertex)
 
     /********************************************************************
+    // PLANARITY-RELATED ONLY
+    //
+
      Vertex Info Structure Definition.
 
      This structure equips the non-virtual vertices with additional
@@ -628,6 +640,8 @@ extern "C"
     }
 
     /********************************************************************
+    // PLANARITY-RELATED ONLY
+    //
      Variables needed in embedding by Kuratowski subgraph isolator:
             minorType: the type of planarity obstruction found.
             v: the current vertex being processed
@@ -850,6 +864,8 @@ extern "C"
     void gp_DetachArc(graphP theGraph, int arc);
 
     /********************************************************************
+    // PLANARITY-RELATED ONLY
+    //
      PERTINENT()
      A vertex is pertinent in a partially processed graph if there is an
      unprocessed back edge between the vertex v whose edges are currently
@@ -878,6 +894,8 @@ extern "C"
      gp_IsNotVertex(theGraph, gp_GetVertexPertinentRootsList(theGraph, theVertex)))
 
     /********************************************************************
+    // PLANARITY-RELATED ONLY
+    //
      FUTUREPERTINENT()
      A vertex is future-pertinent in a partially processed graph if
      there is an unprocessed back edge between a DFS ancestor A of the
@@ -926,6 +944,8 @@ extern "C"
     //             theGraph->VI[theGraph->VI[theVertex].futurePertinentChild].lowpoint < v) )
 
     /********************************************************************
+    // PLANARITY-RELATED ONLY
+    //
      INACTIVE()
      For planarity algorithms, a vertex is inactive if it is neither pertinent
      nor future pertinent.
