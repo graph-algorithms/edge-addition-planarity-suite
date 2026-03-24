@@ -428,7 +428,7 @@ int g6_ReadGraph(G6ReadIteratorP pG6ReadIterator)
     char messageContents[MAXLINE + 1];
     messageContents[0] = '\0';
 
-    if (!_g6_IsReaderInitialized(pG6ReadIterator))
+    if (_g6_IsReaderInitialized(pG6ReadIterator) == false)
     {
         ErrorMessage("G6ReadIterator is not allocated.\n");
         return NOTOK;
