@@ -47,12 +47,13 @@ extern "C"
 
      flags: Bits 0-15 reserved for library; bits 16 and higher for apps
             Bit 0: Visited
-            Bit 1: DFS type has been set, versus not set
-            Bit 2: DFS tree edge, versus cycle edge (co-tree edge, etc.)
-            Bit 3: DFS arc to descendant, versus arc to ancestor
-            Bit 4: Inverted (same as marking an edge with a "sign" of -1)
-            Bit 5: Arc is directed into the containing vertex only
-            Bit 6: Arc is directed from the containing vertex only
+            Bit 1: Marked (2nd visited flag, for while visiting all)
+            Bit 2: DFS type has been set, versus not set
+            Bit 3: DFS tree edge, versus cycle edge (co-tree edge, etc.)
+            Bit 4: DFS arc to descendant, versus arc to ancestor
+            Bit 5: Inverted (same as marking an edge with a "sign" of -1)
+            Bit 6: Arc is directed into the containing vertex only
+            Bit 7: Arc is directed from the containing vertex only
      ********************************************************************/
 
     typedef struct
@@ -128,24 +129,33 @@ extern "C"
 #define gp_ClearEdgeVisited(theGraph, e) (theGraph->E[e].flags &= ~EDGE_VISITED_MASK)
 #define gp_SetEdgeVisited(theGraph, e) (theGraph->E[e].flags |= EDGE_VISITED_MASK)
 
-// The edge type is defined by bits 1-3, 2+4+8=14
-#define EDGE_TYPE_MASK 14
+// Definition and accessors for the edge marked flag
+// Essentially, this is a second visitation flag that can help applications that
+// must visit all edges to analyze and mark the ones important for some purpose.
+#define EDGE_MARKED_MASK 128
+#define gp_GetEdgeMarked(theGraph, e) (theGraph->E[e].flags & EDGE_MARKED_MASK)
+#define gp_ClearEdgeMarked(theGraph, e) (theGraph->E[e].flags &= ~EDGE_MARKED_MASK)
+#define gp_SetEdgeMarked(theGraph, e) (theGraph->E[e].flags |= EDGE_MARKED_MASK)
+
+// The edge type is defined by bits 2-4, 4+8+16=28
+#define EDGE_TYPE_MASK 28
 
 // Call gp_GetEdgeType(), then compare to one of these four possibilities
 // EDGE_TYPE_CHILD - edge record is an arc to a DFS child
 // EDGE_TYPE_FORWARD - edge record is an arc to a DFS descendant, not a DFS child
 // EDGE_TYPE_PARENT - edge record is an arc to the DFS parent
 // EDGE_TYPE_BACK - edge record is an arc to a DFS ancestor, not the DFS parent
-// NOTE: A parent/child tree arcs have bit 2 (4) set, forward/back arcs do not
-#define EDGE_TYPE_CHILD 14
-#define EDGE_TYPE_FORWARD 10
-#define EDGE_TYPE_PARENT 6
-#define EDGE_TYPE_BACK 2
+// NOTE: A parent/child tree arcs have bit 3 (4) set, forward/back arcs do not
+#define EDGE_TYPE_CHILD 28
+#define EDGE_TYPE_FORWARD 20
+#define EDGE_TYPE_PARENT 12
+#define EDGE_TYPE_BACK 4
 
 // EDGE_TYPE_NOTDEFINED - the edge record type has not been defined
 // EDGE_TYPE_RANDOMTREE - edge record is part of a randomly generated tree
+// NOTE: RANDOMTREE uses the same bit 3 as DFS tree edges above
 #define EDGE_TYPE_NOTDEFINED 0
-#define EDGE_TYPE_RANDOMTREE 4
+#define EDGE_TYPE_RANDOMTREE 8
 
 #define gp_GetEdgeType(theGraph, e) (theGraph->E[e].flags & EDGE_TYPE_MASK)
 #define gp_ClearEdgeType(theGraph, e) (theGraph->E[e].flags &= ~EDGE_TYPE_MASK)
@@ -153,15 +163,15 @@ extern "C"
 #define gp_ResetEdgeType(theGraph, e, type) \
     (theGraph->E[e].flags = (theGraph->E[e].flags & ~EDGE_TYPE_MASK) | type)
 
-#define EDGEFLAG_INVERTED_MASK 16
+#define EDGEFLAG_INVERTED_MASK 32
 #define gp_GetEdgeFlagInverted(theGraph, e) (theGraph->E[e].flags & EDGEFLAG_INVERTED_MASK)
 #define gp_SetEdgeFlagInverted(theGraph, e) (theGraph->E[e].flags |= EDGEFLAG_INVERTED_MASK)
 #define gp_ClearEdgeFlagInverted(theGraph, e) (theGraph->E[e].flags &= (~EDGEFLAG_INVERTED_MASK))
 #define gp_XorEdgeFlagInverted(theGraph, e) (theGraph->E[e].flags ^= EDGEFLAG_INVERTED_MASK)
 
-#define EDGEFLAG_DIRECTION_INONLY 32
-#define EDGEFLAG_DIRECTION_OUTONLY 64
-#define EDGEFLAG_DIRECTION_MASK 96
+#define EDGEFLAG_DIRECTION_INONLY 64
+#define EDGEFLAG_DIRECTION_OUTONLY 128
+#define EDGEFLAG_DIRECTION_MASK 192
 
 // Returns the direction, if any, of the edge record
 #define gp_GetDirection(theGraph, e) (theGraph->E[e].flags & EDGEFLAG_DIRECTION_MASK)
@@ -186,14 +196,6 @@ extern "C"
             theGraph->E[gp_GetTwinArc(theGraph, e)].flags &= ~EDGEFLAG_DIRECTION_MASK;         \
         }                                                                                      \
     }
-
-// Definition and accessors for the edge marked flag
-// Essentially, this is a second visitation flag that can help applications that
-// must visit all edges to analyze and mark the ones important for some purpose.
-#define EDGE_MARKED_MASK 128
-#define gp_GetEdgeMarked(theGraph, e) (theGraph->E[e].flags & EDGE_MARKED_MASK)
-#define gp_ClearEdgeMarked(theGraph, e) (theGraph->E[e].flags &= ~EDGE_MARKED_MASK)
-#define gp_SetEdgeMarked(theGraph, e) (theGraph->E[e].flags |= EDGE_MARKED_MASK)
 
 // Fast utility routine for copying edge records
 #define gp_CopyEdgeRec(dstGraph, edst, srcGraph, esrc) (dstGraph->E[edst] = srcGraph->E[esrc])
@@ -226,10 +228,12 @@ extern "C"
 
      flags: Bits 0-15 reserved for library; bits 16 and higher for apps
             Bit 0: visited, for vertices and virtual vertices
-                    Use in lieu of TYPE_VERTEX_VISITED in K4 algorithm
-            Bit 1: Obstruction type VERTEX_TYPE_SET (versus not set, i.e. VERTEX_TYPE_UNKNOWN)
-            Bit 2: Obstruction type qualifier RYW (set) versus RXW (clear)
-            Bit 3: Obstruction type qualifier high (set) versus low (clear)
+            Bit 1: marked, 2nd visited flag, for while visiting all
+                    Used in K4 homeomorph search algorithm
+            Bit 2: Obstruction type VERTEX_TYPE_SET (versus not set, i.e. VERTEX_TYPE_UNKNOWN)
+            Bit 3: Obstruction type qualifier RYW (set) versus RXW (clear)
+            Bit 4: Obstruction type qualifier high (set) versus low (clear)
+                    Bits 2-4 used in planarity-related algorithms
      ********************************************************************/
 
     typedef struct
