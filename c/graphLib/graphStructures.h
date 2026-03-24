@@ -60,7 +60,7 @@ extern "C"
      ********************************************************************/
 
 #ifdef INCLUDE_K33SEARCH_EMBEDDER
-//          Bit 7: Arc is virtual (caller should ensure the twin arc is also set or cleared)
+//          Bit 8: Arc is virtual (caller should ensure the twin arc is also set or cleared)
 #endif
 
     typedef struct
@@ -249,7 +249,7 @@ extern "C"
      ********************************************************************/
 
 #ifdef INCLUDE_K33SEARCH_EMBEDDER
-//            Bit 4: Indicates whether a vertex has been made defunct, such as
+//            Bit 5: Indicates whether a vertex has been made defunct, such as
 //                   due to being transferred to another graph.
 #endif
 
