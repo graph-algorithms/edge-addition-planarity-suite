@@ -251,7 +251,7 @@ void _g6_PrecomputeColumnOffsets(int *columnOffsets, int order)
 int g6_WriteGraph(G6WriteIteratorP pG6WriteIterator)
 {
     char *graphEncodingChars = NULL;
-    if (!_g6_IsWriterInitialized(pG6WriteIterator))
+    if (_g6_IsWriterInitialized(pG6WriteIterator) == false)
     {
         ErrorMessage("Unable to write graph because G6WriteIterator is not initialized.\n");
         return NOTOK;
