@@ -17,6 +17,8 @@ extern int _IsolateOuterplanarObstruction(graphP theGraph, int v, int R);
 
 extern void _InitAnyTypeVertexRec(graphP theGraph, int v);
 
+extern int _gp_FindArc(graphP theGraph, int u, int v);
+
 /* Private functions (some are exported to system only) */
 
 int _EmbeddingInitialize(graphP theGraph);
@@ -1329,7 +1331,7 @@ int _OrientExternalFacePath(graphP theGraph, int u, int v, int w, int x)
     // Get the edge record in u that indicates v; uses the twinarc method to
     // ensure the cost is dominated by the degree of v (which is 2), not u
     // (which can be any degree).
-    e_u = gp_GetTwinArc(theGraph, gp_GetNeighborEdgeRecord(theGraph, v, u));
+    e_u = gp_GetTwinArc(theGraph, _gp_FindArc(theGraph, v, u));
 
     do
     {

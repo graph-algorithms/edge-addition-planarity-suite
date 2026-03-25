@@ -49,6 +49,8 @@ void _ClearEdgeVisitedFlagsInUnembeddedEdges(graphP theGraph);
 int _FillVertexVisitedInfoInBicomp(graphP theGraph, int BicompRoot, int FillValue);
 int _ClearObstructionMarksInBicomp(graphP theGraph, int BicompRoot);
 
+int _gp_FindArc(graphP theGraph, int u, int v);
+
 int _ClearAllVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x);
 int _SetAllVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x);
 
@@ -730,7 +732,7 @@ int _ClearAllVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x)
 
     // We want to exit u from e, but we get eTwin first here in order to avoid
     // work, in case the degree of u is greater than 2.
-    eTwin = gp_GetNeighborEdgeRecord(theGraph, v, u);
+    eTwin = _gp_FindArc(theGraph, v, u);
     if (gp_IsNotArc(theGraph, eTwin))
         return NOTOK;
     e = gp_GetTwinArc(theGraph, eTwin);
@@ -772,7 +774,7 @@ int _SetAllVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x)
 
     // We want to exit u from e, but we get eTwin first here in order to avoid
     // work, in case the degree of u is greater than 2.
-    eTwin = gp_GetNeighborEdgeRecord(theGraph, v, u);
+    eTwin = _gp_FindArc(theGraph, v, u);
     if (gp_IsNotArc(theGraph, eTwin))
         return NOTOK;
     e = gp_GetTwinArc(theGraph, eTwin);
@@ -1309,7 +1311,7 @@ int gp_CreateRandomGraphEx(graphP theGraph, int numEdges)
 
         else
         {
-            arc = gp_GetNeighborEdgeRecord(theGraph, u, v);
+            arc = _gp_FindArc(theGraph, u, v);
             gp_SetEdgeType(theGraph, arc, EDGE_TYPE_RANDOMTREE);
             gp_SetEdgeType(theGraph, gp_GetTwinArc(theGraph, arc), EDGE_TYPE_RANDOMTREE);
             gp_ClearEdgeVisited(theGraph, arc);
@@ -1455,24 +1457,22 @@ int gp_IsNeighbor(graphP theGraph, int u, int v)
 }
 
 /********************************************************************
- gp_GetNeighborEdgeRecord()
- Searches the adjacency list of u to obtains the edge record for v.
+ gp_FindArc()
 
- NOTE: The caller should check whether the edge record is INONLY;
-       This method returns any edge record representing a connection
-       between vertices u and v, so this method can return an
-       edge record even if gp_IsNeighbor(theGraph, u, v) is false (0).
-       To filter out INONLY edge records, use gp_GetDirection() on
-       the edge record returned by this method.
+ Searches the adjacency list of any type of vertex u to obtain an arc
+ with v in the neighbor field.
 
- Returns NIL if there is no edge record indicating v in u's adjacency
-         list, or the edge record location otherwise.
+ Returns the arc's index location, or NIL if there is no such arc.
+
+ NOTE: The returned arc may be undirected, INONLY or OUTONLY.
+       This method is intended for when a graph is undirected or
+       when an application must treat a directed graph as if it
+       is undirected. To obtain a result for INONLY or OUTONLY
+       arcs, use gp_FindDirectedArc() instead.
  ********************************************************************/
 
-int gp_GetNeighborEdgeRecord(graphP theGraph, int u, int v)
+int gp_FindArc(graphP theGraph, int u, int v)
 {
-    int e = NIL;
-
     if (theGraph == NULL ||
         u < gp_GetFirstVertex(theGraph) || u >= gp_AnyTypeVertexArraySize(theGraph) ||
         v < gp_GetFirstVertex(theGraph) || v >= gp_AnyTypeVertexArraySize(theGraph))
@@ -1484,7 +1484,21 @@ int gp_GetNeighborEdgeRecord(graphP theGraph, int u, int v)
         return NIL;
     }
 
-    e = gp_GetFirstArc(theGraph, u);
+    return _gp_FindArc(theGraph, u, v);
+}
+
+/*****************************************************************
+ * _gp_FindArc()
+ *
+ * Private version of the public method that performs the search
+ * without preceding parameter validation checks. This is called
+ * from other private methods of the graph library, to avoid
+ * duplication of the effort of the checks performed by invoking
+ * public methods.
+ */
+int _gp_FindArc(graphP theGraph, int u, int v)
+{
+    int e = gp_GetFirstArc(theGraph, u);
     while (gp_IsArc(theGraph, e))
     {
         if (gp_GetNeighbor(theGraph, e) == v)
@@ -1496,20 +1510,64 @@ int gp_GetNeighborEdgeRecord(graphP theGraph, int u, int v)
 }
 
 /********************************************************************
+ gp_FindDirectedArc()
+
+ Searches the adjacency list of any type of vertex u to obtain an arc
+ that matches the direction flag and that has v in the neighbor field.
+
+ Returns the arc's index location, or NIL if there is no such arc.
+
+ NOTE: The valid direction flag value are 0 for any direction,
+       EDGEFLAG_DIRECTION_INONLY, or EDGEFLAG_DIRECTION_OUTONLY.
+ ********************************************************************/
+int gp_FindDirectedArc(graphP theGraph, int u, int v, unsigned direction)
+{
+    int e = NIL;
+
+    if (theGraph == NULL ||
+        u < gp_GetFirstVertex(theGraph) || u >= gp_AnyTypeVertexArraySize(theGraph) ||
+        v < gp_GetFirstVertex(theGraph) || v >= gp_AnyTypeVertexArraySize(theGraph) ||
+        (direction != 0 && direction != EDGEFLAG_DIRECTION_INONLY && direction != EDGEFLAG_DIRECTION_OUTONLY))
+    {
+#ifdef DEBUG
+        NOTOK;
+#endif
+
+        return NIL;
+    }
+
+    // If undirected, call the undirected version
+    if (direction == 0)
+        return _gp_FindArc(theGraph, u, v);
+
+    // If a direction was given, then use it
+    e = gp_GetFirstArc(theGraph, u);
+    while (gp_IsArc(theGraph, e))
+    {
+        if (gp_GetNeighbor(theGraph, e) == v &&
+            gp_GetDirection(theGraph, e) == direction)
+            return e;
+
+        e = gp_GetNextArc(theGraph, e);
+    }
+    return NIL;
+}
+
+/********************************************************************
  gp_GetVertexDegree()
 
- Counts the number of edge records in the adjacency list of a given
- vertex V.
+    Counts the number of edge records in the adjacency list of a given
+    vertex V.
 
- Note: For digraphs, this method returns the total degree of the
-       vertex, including outward arcs (undirected and OUTONLY)
-       as well as INONLY arcs.  Other functions are defined to get
-       the in-degree or out-degree of the vertex.
+    Note: For digraphs, this method returns the total degree of the
+        vertex, including outward arcs (undirected and OUTONLY)
+        as well as INONLY arcs.  Other functions are defined to get
+        the in-degree or out-degree of the vertex.
 
- Note: This function determines the degree by counting.  An extension
-       could cache the degree value of each vertex and update the
-       cached value as edges are added and deleted.
- ********************************************************************/
+    Note: This function determines the degree by counting.  An extension
+        could cache the degree value of each vertex and update the
+        cached value as edges are added and deleted.
+    ********************************************************************/
 
 int gp_GetVertexDegree(graphP theGraph, int v)
 {
@@ -1740,7 +1798,7 @@ void gp_DetachArc(graphP theGraph, int arc)
        edges. Use with care because other API endpoints do not all
        support nor check for and eliminate duplicates and loops. The
        caller can guard against these conditions by pre-testing that
-       u != v and that gp_GetNeighborEdgeRecord() returns NIL.
+       u != v and that gp_FindArc() returns NIL.
 
  Returns OK on success, NOTOK on failure, NONEMBEDDABLE if adding the
          edge would exceed the graph's arc capacity (the caller can
@@ -2255,7 +2313,7 @@ int gp_IdentifyVertices(graphP theGraph, int u, int v, int eBefore)
 
 int _IdentifyVertices(graphP theGraph, int u, int v, int eBefore)
 {
-    int e = gp_GetNeighborEdgeRecord(theGraph, u, v);
+    int e = _gp_FindArc(theGraph, u, v);
     int hiddenEdgeStackBottom, eBeforePred;
 
     // If the vertices are adjacent, then the identification is
@@ -2575,7 +2633,7 @@ int _SetEdgeType(graphP theGraph, int u, int v)
 
     // Get the edge for which we will set the type
 
-    e = gp_GetNeighborEdgeRecord(theGraph, u, v);
+    e = _gp_FindArc(theGraph, u, v);
     eTwin = gp_GetTwinArc(theGraph, e);
 
     // If u_orig is the parent of v_orig, or vice versa, then the edge is a tree edge

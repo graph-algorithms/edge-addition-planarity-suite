@@ -33,7 +33,7 @@ extern "C"
 #define DEFAULT_EDGE_LIMIT 3
 
     /********************************************************************
-     Edge Record Definition
+     Edge Record (Arc) Definition
 
      An edge is defined by a pair of edge records, or arcs, allocated in
      array E of a graph.  An edge record represents the edge in the

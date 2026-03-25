@@ -50,7 +50,9 @@ extern "C"
     int gp_WriteToString(graphP theGraph, char **pOutputStr, int Mode);
 
     int gp_IsNeighbor(graphP theGraph, int u, int v);
-    int gp_GetNeighborEdgeRecord(graphP theGraph, int u, int v);
+    int gp_FindArc(graphP theGraph, int u, int v);
+    int gp_FindDirectedArc(graphP theGraph, int u, int v, unsigned direction);
+
     int gp_GetVertexDegree(graphP theGraph, int v);
     int gp_GetVertexInDegree(graphP theGraph, int v);
     int gp_GetVertexOutDegree(graphP theGraph, int v);
