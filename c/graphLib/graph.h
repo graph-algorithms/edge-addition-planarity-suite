@@ -50,6 +50,7 @@ extern "C"
     int gp_WriteToString(graphP theGraph, char **pOutputStr, int Mode);
 
     int gp_IsNeighbor(graphP theGraph, int u, int v);
+    int gp_IsNeighborDirected(graphP theGraph, int u, int v, unsigned direction);
     int gp_FindArc(graphP theGraph, int u, int v);
     int gp_FindDirectedArc(graphP theGraph, int u, int v, unsigned direction);
 

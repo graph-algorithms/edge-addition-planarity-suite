@@ -1421,12 +1421,14 @@ int gp_CreateRandomGraphEx(graphP theGraph, int numEdges)
 /********************************************************************
  gp_IsNeighbor()
 
- Checks whether v is already in u's adjacency list, i.e. does the arc
- u -> v exist.
- If there is an edge record for v in u's list, but it is marked INONLY,
- then it represents the arc v->u but not u->v, so it is ignored.
+ Checks whether any type vertex u has an arc with a neighbor field
+ indicating v.
 
  Returns TRUE or FALSE.
+
+ NOTE: The arc may be undirected, INONLY or OUTONLY. To test if
+       v is an in-neighbor or out-neighbor of u, use the directed
+       method gp_IsNeighborDirected() instead.
  ********************************************************************/
 
 int gp_IsNeighbor(graphP theGraph, int u, int v)
@@ -1447,8 +1449,46 @@ int gp_IsNeighbor(graphP theGraph, int u, int v)
     while (gp_IsArc(theGraph, e))
     {
         if (gp_GetNeighbor(theGraph, e) == v)
+            return TRUE;
+
+        e = gp_GetNextArc(theGraph, e);
+    }
+    return FALSE;
+}
+
+/********************************************************************
+ gp_IsNeighborDirected()
+
+ Checks whether any type of vertex u has an arc with a neighbor field
+ indicating v and a direction flag matching the direction parameter.
+
+ Returns TRUE or FALSE.
+
+ NOTE: The valid direction flag values are 0 to match any arc, or
+       EDGEFLAG_DIRECTION_INONLY to test if v is an in-neighbor of u, or
+       EDGEFLAG_DIRECTION_OUTONLY to test if v is an out-neighbor of u.
+ ********************************************************************/
+int gp_IsNeighborDirected(graphP theGraph, int u, int v, unsigned direction)
+{
+    int e = NIL;
+
+    if (theGraph == NULL ||
+        u < gp_GetFirstVertex(theGraph) || u >= gp_AnyTypeVertexArraySize(theGraph) ||
+        v < gp_GetFirstVertex(theGraph) || v >= gp_AnyTypeVertexArraySize(theGraph) ||
+        (direction != 0 && direction != EDGEFLAG_DIRECTION_INONLY && direction != EDGEFLAG_DIRECTION_OUTONLY))
+    {
+#ifdef DEBUG
+        NOTOK;
+#endif
+        return FALSE;
+    }
+
+    e = gp_GetFirstArc(theGraph, u);
+    while (gp_IsArc(theGraph, e))
+    {
+        if (gp_GetNeighbor(theGraph, e) == v)
         {
-            if (gp_GetDirection(theGraph, e) != EDGEFLAG_DIRECTION_INONLY)
+            if (direction == 0 || direction == gp_GetDirection(theGraph, e))
                 return TRUE;
         }
         e = gp_GetNextArc(theGraph, e);
@@ -1556,18 +1596,18 @@ int gp_FindDirectedArc(graphP theGraph, int u, int v, unsigned direction)
 /********************************************************************
  gp_GetVertexDegree()
 
-    Counts the number of edge records in the adjacency list of a given
-    vertex V.
+Counts the number of edge records in the adjacency list of a given
+vertex V.
 
-    Note: For digraphs, this method returns the total degree of the
-        vertex, including outward arcs (undirected and OUTONLY)
-        as well as INONLY arcs.  Other functions are defined to get
-        the in-degree or out-degree of the vertex.
+NOTE: For digraphs, this method returns the total degree of the
+    vertex, including outward arcs (undirected and OUTONLY)
+    as well as INONLY arcs.  Other functions are defined to get
+    the in-degree or out-degree of the vertex.
 
-    Note: This function determines the degree by counting.  An extension
-        could cache the degree value of each vertex and update the
-        cached value as edges are added and deleted.
-    ********************************************************************/
+NOTE: This function determines the degree by counting. An extension
+    could cache the degree value of each vertex and update the
+    cached value as edges are added and deleted.
+********************************************************************/
 
 int gp_GetVertexDegree(graphP theGraph, int v)
 {
@@ -1604,7 +1644,7 @@ int gp_GetVertexDegree(graphP theGraph, int v)
  This includes undirected edges and INONLY arcs, so it only excludes
  edges records that are marked as OUTONLY arcs.
 
- Note: This function determines the in-degree by counting.  An extension
+ NOTE: This function determines the in-degree by counting. An extension
        could cache the in-degree value of each vertex and update the
        cached value as edges are added and deleted.
  ********************************************************************/
@@ -1644,7 +1684,7 @@ int gp_GetVertexInDegree(graphP theGraph, int v)
  This includes undirected edges and OUTONLY arcs, so it only excludes
  edges records that are marked as INONLY arcs.
 
- Note: This function determines the out-degree by counting.  An extension
+ NOTE: This function determines the out-degree by counting. An extension
        could cache the out-degree value of each vertex and update the
        cached value as edges are added and deleted.
  ********************************************************************/

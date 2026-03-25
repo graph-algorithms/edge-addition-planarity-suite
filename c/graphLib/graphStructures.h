@@ -177,24 +177,24 @@ extern "C"
 #define gp_GetDirection(theGraph, e) (theGraph->E[e].flags & EDGEFLAG_DIRECTION_MASK)
 
 // A direction of 0 clears directedness. Otherwise, edge record e is set
-// to edgeFlag_Direction and e's twin arc is set to the opposing setting.
-#define gp_SetDirection(theGraph, e, edgeFlag_Direction)                                       \
-    {                                                                                          \
-        if (edgeFlag_Direction == EDGEFLAG_DIRECTION_INONLY)                                   \
-        {                                                                                      \
-            theGraph->E[e].flags |= EDGEFLAG_DIRECTION_INONLY;                                 \
-            theGraph->E[gp_GetTwinArc(theGraph, e)].flags |= EDGEFLAG_DIRECTION_OUTONLY;       \
-        }                                                                                      \
-        else if (edgeFlag_Direction == EDGEFLAG_DIRECTION_OUTONLY)                             \
-        {                                                                                      \
-            theGraph->E[e].flags |= EDGEFLAG_DIRECTION_OUTONLY;                                \
-            theGraph->E[gp_GetTwinArc(theGraph, e)].flags |= EDGEFLAG_DIRECTION_INONLY;        \
-        }                                                                                      \
-        else                                                                                   \
-        {                                                                                      \
-            theGraph->E[e].flags &= ~(EDGEFLAG_DIRECTION_INONLY | EDGEFLAG_DIRECTION_OUTONLY); \
-            theGraph->E[gp_GetTwinArc(theGraph, e)].flags &= ~EDGEFLAG_DIRECTION_MASK;         \
-        }                                                                                      \
+// to direction and e's twin arc is set to the opposing setting.
+#define gp_SetDirection(theGraph, e, direction)                                          \
+    {                                                                                    \
+        if (direction == EDGEFLAG_DIRECTION_INONLY)                                      \
+        {                                                                                \
+            theGraph->E[e].flags |= EDGEFLAG_DIRECTION_INONLY;                           \
+            theGraph->E[gp_GetTwinArc(theGraph, e)].flags |= EDGEFLAG_DIRECTION_OUTONLY; \
+        }                                                                                \
+        else if (direction == EDGEFLAG_DIRECTION_OUTONLY)                                \
+        {                                                                                \
+            theGraph->E[e].flags |= EDGEFLAG_DIRECTION_OUTONLY;                          \
+            theGraph->E[gp_GetTwinArc(theGraph, e)].flags |= EDGEFLAG_DIRECTION_INONLY;  \
+        }                                                                                \
+        else                                                                             \
+        {                                                                                \
+            theGraph->E[e].flags &= ~EDGEFLAG_DIRECTION_MASK;                            \
+            theGraph->E[gp_GetTwinArc(theGraph, e)].flags &= ~EDGEFLAG_DIRECTION_MASK;   \
+        }                                                                                \
     }
 
 // Fast utility routine for copying edge records
