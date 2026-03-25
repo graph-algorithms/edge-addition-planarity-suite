@@ -231,11 +231,14 @@ int _SortVertices(graphP theGraph)
 }
 
 /********************************************************************
- gp_LowpointAndLeastAncestor()
+ gp_ComputeLowpoints()
         leastAncestor(v): min(v, ancestor neighbors of v, excluding parent)
         Lowpoint(v): min(leastAncestor(v), Lowpoint of DFS children of v)
 
- Lowpoint is computed via a post-order traversal of the DFS tree.
+ The Lowpoint of each vertex is computed via a post-order traversal of the
+ DFS tree. Lowpoint calculations require leastAncestor calculations, so
+ both are computed by this method.
+
  We push the root of the DFS tree, then we loop while the stack is not empty.
  We pop a vertex; if it is not marked, then we are on our way down the DFS
  tree, so we mark it and push it back on, followed by pushing its
@@ -250,12 +253,12 @@ int _SortVertices(graphP theGraph)
  sorted state on completion of this method.
 
  NOTE: This is a utility function provided for general use of the graph
- library. The core planarity algorithm computes leastAncestor during its
- initial DFS, and it computes the lowpoint of a vertex as it embeds the
- tree edges to its children.
+       library. The core planarity algorithm computes leastAncestor during
+       its initial DFS, and it computes the lowpoint of each a vertex as
+       it embeds the tree edges to its children.
  ********************************************************************/
 
-int gp_LowpointAndLeastAncestor(graphP theGraph)
+int gp_ComputeLowpoints(graphP theGraph)
 {
     stackP theStack = NULL;
     int v, u, uneighbor, e, L, leastAncestor;
@@ -278,7 +281,7 @@ int gp_LowpointAndLeastAncestor(graphP theGraph)
     platform_GetTime(start);
 #endif
 
-    _gp_LogLine("\ngraphDFSUtils.c/gp_LowpointAndLeastAncestor() start");
+    _gp_LogLine("\ngraphDFSUtils.c/gp_ComputeLowpoints() start");
 
     // A stack of size N suffices because at maximum every vertex is pushed only once
     // However, since a larger stack is needed for the main DFS, this is mainly documentation
@@ -356,7 +359,7 @@ int gp_LowpointAndLeastAncestor(graphP theGraph)
         }
     }
 
-    _gp_LogLine("graphDFSUtils.c/gp_LowpointAndLeastAncestor() end\n");
+    _gp_LogLine("graphDFSUtils.c/gp_ComputeLowpoints() end\n");
 
 #ifdef PROFILE
     platform_GetTime(end);
@@ -367,7 +370,7 @@ int gp_LowpointAndLeastAncestor(graphP theGraph)
 }
 
 /********************************************************************
- gp_LeastAncestor()
+ gp_ComputeLeastAncestors()
 
  By simple pre-order visitation, compute the least ancestor of each
  vertex that is directly adjacent to the vertex by a back edge.
@@ -376,11 +379,11 @@ int gp_LowpointAndLeastAncestor(graphP theGraph)
  gp_SortVertices() are invoked on the graph, and it is left in the
  sorted state on completion of this method.
 
- NOTE: This method is not called by gp_LowpointAndLeastAncestor(),
- which computes both values at the same time.
+ NOTE: This method is not called by gp_ComputeLowpoints(),
+       which computes both values at the same time.
  ********************************************************************/
 
-int gp_LeastAncestor(graphP theGraph)
+int gp_ComputeLeastAncestors(graphP theGraph)
 {
     stackP theStack = NULL;
     int v, u, uneighbor, e, leastAncestor;
@@ -403,7 +406,7 @@ int gp_LeastAncestor(graphP theGraph)
     platform_GetTime(start);
 #endif
 
-    _gp_LogLine("\ngraphDFSUtils.c/gp_LeastAncestor() start");
+    _gp_LogLine("\ngraphDFSUtils.c/gp_ComputeLeastAncestors() start");
 
     // A stack of size N suffices because at maximum every vertex is pushed only once
     if (sp_GetCapacity(theStack) < theGraph->N)
@@ -452,7 +455,7 @@ int gp_LeastAncestor(graphP theGraph)
         }
     }
 
-    _gp_LogLine("graphDFSUtils.c/gp_LeastAncestor() end\n");
+    _gp_LogLine("graphDFSUtils.c/gp_ComputeLeastAncestors() end\n");
 
 #ifdef PROFILE
     platform_GetTime(end);
