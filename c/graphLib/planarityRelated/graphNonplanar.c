@@ -12,7 +12,7 @@ See the LICENSE.TXT file for licensing information.
 
 extern void _InitIsolatorContext(graphP theGraph);
 extern int _ClearAllVisitedFlagsInBicomp(graphP theGraph, int BicompRoot);
-extern int _ClearObstructionMarkInBicomp(graphP theGraph, int BicompRoot);
+extern int _ClearObstructionMarksInBicomp(graphP theGraph, int BicompRoot);
 extern int _HideInternalEdges(graphP theGraph, int vertex);
 extern int _RestoreInternalEdges(graphP theGraph, int stackBottom);
 
@@ -337,7 +337,7 @@ int _SetVertexTypesForMarkingXYPath(graphP theGraph)
     }
 
     // Clear the type member of each vertex in the bicomp
-    if (_ClearObstructionMarkInBicomp(theGraph, R) != OK)
+    if (_ClearObstructionMarksInBicomp(theGraph, R) != OK)
         return NOTOK;
 
     // Traverse from R to W in the X direction

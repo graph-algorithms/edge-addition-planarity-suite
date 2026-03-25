@@ -18,7 +18,7 @@ extern void _ClearAllVisitedFlagsInGraph(graphP);
 extern int _ClearAllVisitedFlagsInBicomp(graphP theGraph, int BicompRoot);
 // extern int  _ClearAllVisitedFlagsInOtherBicomps(graphP theGraph, int BicompRoot);
 // extern void _ClearEdgeVisitedFlagsInUnembeddedEdges(graphP theGraph);
-extern int _ClearObstructionMarkInBicomp(graphP theGraph, int BicompRoot);
+extern int _ClearObstructionMarksInBicomp(graphP theGraph, int BicompRoot);
 // extern int  _DeleteUnmarkedEdgesInBicomp(graphP theGraph, int BicompRoot);
 extern int _ComputeArcType(graphP theGraph, int a, int b, int edgeType);
 extern int _SetEdgeType(graphP theGraph, int u, int v);
@@ -223,7 +223,7 @@ int _SearchForK4InBicomp(graphP theGraph, K4SearchContext *context, int v, int R
 
         // else if there was no X-Y path, then we restore the vertex types to
         // unknown (though it would suffice to do it just to R and W)
-        if (_ClearObstructionMarkInBicomp(theGraph, R) != OK)
+        if (_ClearObstructionMarksInBicomp(theGraph, R) != OK)
             return NOTOK;
 
         // Since neither A1 nor A2 is found, then we reduce the bicomp to the
