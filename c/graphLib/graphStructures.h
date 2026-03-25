@@ -955,6 +955,46 @@ extern "C"
     (NOTPERTINENT(theGraph, theVertex) && \
      NOTFUTUREPERTINENT(theGraph, theVertex, v))
 
+/* PRIVATE FUNCTIONS FOR ADDITIONAL INFORMATIONAL LOGGING.
+
+   If LOGGING is defined by uncommenting it below, then log-related lines
+   write to the log, and otherwise they no-op.
+
+   By default, neither release nor DEBUG builds including LOGGING.
+   Logging is used to see more details of how various algorithms
+   handle a particular graph. */
+
+// #define LOGGING
+#ifdef LOGGING
+
+#define _gp_LogLine _LogLine
+#define _gp_Log _Log
+
+    void _LogLine(const char *Line);
+    void _Log(const char *Line);
+
+#define _gp_MakeLogStr1 _MakeLogStr1
+#define _gp_MakeLogStr2 _MakeLogStr2
+#define _gp_MakeLogStr3 _MakeLogStr3
+#define _gp_MakeLogStr4 _MakeLogStr4
+#define _gp_MakeLogStr5 _MakeLogStr5
+
+    char *_MakeLogStr1(char *format, int);
+    char *_MakeLogStr2(char *format, int, int);
+    char *_MakeLogStr3(char *format, int, int, int);
+    char *_MakeLogStr4(char *format, int, int, int, int);
+    char *_MakeLogStr5(char *format, int, int, int, int, int);
+
+#else
+#define _gp_LogLine(Line)
+#define _gp_Log(Line)
+#define _gp_MakeLogStr1(format, one)
+#define _gp_MakeLogStr2(format, one, two)
+#define _gp_MakeLogStr3(format, one, two, three)
+#define _gp_MakeLogStr4(format, one, two, three, four)
+#define _gp_MakeLogStr5(format, one, two, three, four, five)
+#endif
+
 #ifdef __cplusplus
 }
 #endif

@@ -45,7 +45,7 @@ int gp_CreateDFSTree(graphP theGraph)
     if (theGraph->internalFlags & FLAGS_DFSNUMBERED)
         return OK;
 
-    gp_LogLine("\ngraphDFSUtils.c/gp_CreateDFSTree() start");
+    _gp_LogLine("\ngraphDFSUtils.c/gp_CreateDFSTree() start");
 
     theStack = theGraph->theStack;
 
@@ -77,7 +77,7 @@ int gp_CreateDFSTree(graphP theGraph)
 
             if (!gp_GetVisited(theGraph, u))
             {
-                gp_LogLine(gp_MakeLogStr3("V=%d, DFI=%d, Parent=%d", u, DFI, uparent));
+                _gp_LogLine(_gp_MakeLogStr3("V=%d, DFI=%d, Parent=%d", u, DFI, uparent));
 
                 gp_SetVisited(theGraph, u);
                 gp_SetIndex(theGraph, u, DFI++);
@@ -109,7 +109,7 @@ int gp_CreateDFSTree(graphP theGraph)
         }
     }
 
-    gp_LogLine("graphDFSUtils.c/gp_CreateDFSTree() end\n");
+    _gp_LogLine("graphDFSUtils.c/gp_CreateDFSTree() end\n");
 
     theGraph->internalFlags |= FLAGS_DFSNUMBERED;
 
@@ -160,7 +160,7 @@ int _SortVertices(graphP theGraph)
         if (gp_CreateDFSTree(theGraph) != OK)
             return NOTOK;
 
-    gp_LogLine("\ngraphDFSUtils.c/_SortVertices() start");
+    _gp_LogLine("\ngraphDFSUtils.c/_SortVertices() start");
 
     /* Change labels of edges from v to DFI(v)-- or vice versa
        Also, if any links go back to locations 0 to n-1, then they
@@ -220,7 +220,7 @@ int _SortVertices(graphP theGraph)
 
     theGraph->internalFlags ^= FLAGS_SORTEDBYDFI;
 
-    gp_LogLine("graphDFSUtils.c/_SortVertices() end\n");
+    _gp_LogLine("graphDFSUtils.c/_SortVertices() end\n");
 
 #ifdef PROFILE
     platform_GetTime(end);
@@ -278,7 +278,7 @@ int gp_LowpointAndLeastAncestor(graphP theGraph)
     platform_GetTime(start);
 #endif
 
-    gp_LogLine("\ngraphDFSUtils.c/gp_LowpointAndLeastAncestor() start");
+    _gp_LogLine("\ngraphDFSUtils.c/gp_LowpointAndLeastAncestor() start");
 
     // A stack of size N suffices because at maximum every vertex is pushed only once
     // However, since a larger stack is needed for the main DFS, this is mainly documentation
@@ -356,7 +356,7 @@ int gp_LowpointAndLeastAncestor(graphP theGraph)
         }
     }
 
-    gp_LogLine("graphDFSUtils.c/gp_LowpointAndLeastAncestor() end\n");
+    _gp_LogLine("graphDFSUtils.c/gp_LowpointAndLeastAncestor() end\n");
 
 #ifdef PROFILE
     platform_GetTime(end);
@@ -403,7 +403,7 @@ int gp_LeastAncestor(graphP theGraph)
     platform_GetTime(start);
 #endif
 
-    gp_LogLine("\ngraphDFSUtils.c/gp_LeastAncestor() start");
+    _gp_LogLine("\ngraphDFSUtils.c/gp_LeastAncestor() start");
 
     // A stack of size N suffices because at maximum every vertex is pushed only once
     if (sp_GetCapacity(theStack) < theGraph->N)
@@ -452,7 +452,7 @@ int gp_LeastAncestor(graphP theGraph)
         }
     }
 
-    gp_LogLine("graphDFSUtils.c/gp_LeastAncestor() end\n");
+    _gp_LogLine("graphDFSUtils.c/gp_LeastAncestor() end\n");
 
 #ifdef PROFILE
     platform_GetTime(end);

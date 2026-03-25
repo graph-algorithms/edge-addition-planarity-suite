@@ -172,7 +172,7 @@ int _EmbeddingInitialize(graphP theGraph)
     platform_GetTime(start);
 #endif
 
-    gp_LogLine("graphEmbed.c/_EmbeddingInitialize() start\n");
+    _gp_LogLine("graphEmbed.c/_EmbeddingInitialize() start\n");
 
     theStack = theGraph->theStack;
 
@@ -214,7 +214,7 @@ int _EmbeddingInitialize(graphP theGraph)
             // or a false edge to the DFS tree root (u).
             if (!gp_GetVisited(theGraph, u))
             {
-                gp_LogLine(gp_MakeLogStr3("v=%d, DFI=%d, parent=%d", u, DFI, uparent));
+                _gp_LogLine(_gp_MakeLogStr3("v=%d, DFI=%d, parent=%d", u, DFI, uparent));
 
                 // (1) Set the DFI and DFS parent
                 gp_SetVisited(theGraph, u);
@@ -361,7 +361,7 @@ int _EmbeddingInitialize(graphP theGraph)
         }
     }
 
-    gp_LogLine("graphEmbed.c/_EmbeddingInitialize() end\n");
+    _gp_LogLine("graphEmbed.c/_EmbeddingInitialize() end\n");
 
 #ifdef PROFILE
     platform_GetTime(end);
@@ -394,8 +394,8 @@ void _EmbedBackEdgeToDescendant(graphP theGraph, int RootSide, int RootVertex, i
 
     parentCopy = gp_GetVertexFromBicompRoot(theGraph, RootVertex);
 
-    gp_LogLine(gp_MakeLogStr5("graphEmbed.c/_EmbedBackEdgeToDescendant() V=%d, R=%d, R_out=%d, W=%d, W_in=%d",
-                              parentCopy, RootVertex, RootSide, W, WPrevLink));
+    _gp_LogLine(_gp_MakeLogStr5("graphEmbed.c/_EmbedBackEdgeToDescendant() V=%d, R=%d, R_out=%d, W=%d, W_in=%d",
+                                parentCopy, RootVertex, RootSide, W, WPrevLink));
 
     if (gp_GetVertexFwdArcList(theGraph, parentCopy) == fwdArc)
     {
@@ -441,7 +441,7 @@ void _InvertVertex(graphP theGraph, int W)
 {
     int e, temp;
 
-    gp_LogLine(gp_MakeLogStr1("graphEmbed.c/_InvertVertex() W=%d", W));
+    _gp_LogLine(_gp_MakeLogStr1("graphEmbed.c/_InvertVertex() W=%d", W));
 
     // Swap the links in all the arcs of the adjacency list
     e = gp_GetFirstArc(theGraph, W);
@@ -494,8 +494,8 @@ void _MergeVertex(graphP theGraph, int W, int WPrevLink, int R)
 {
     int e, eTwin, e_w, e_r, e_ext;
 
-    gp_LogLine(gp_MakeLogStr4("graphEmbed.c/_MergeVertex() W=%d, W_in=%d, R=%d, R_out=%d",
-                              W, WPrevLink, R, 1 ^ WPrevLink));
+    _gp_LogLine(_gp_MakeLogStr4("graphEmbed.c/_MergeVertex() W=%d, W_in=%d, R=%d, R_out=%d",
+                                W, WPrevLink, R, 1 ^ WPrevLink));
 
     // All arcs leading into R from its neighbors must be changed
     // to say that they are leading into W

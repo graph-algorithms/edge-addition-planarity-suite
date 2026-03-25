@@ -297,21 +297,21 @@ void _LogEdgeList(graphP theEmbedding, listCollectionP edgeList, int edgeListHea
 {
     int eIndex = edgeListHead, e, eTwin;
 
-    gp_Log("EdgeList: [ ");
+    _gp_Log("EdgeList: [ ");
 
     while (gp_IsArc(theGraph, eIndex))
     {
         e = (eIndex << 1);
         eTwin = gp_GetTwinArc(theEmbedding, e);
 
-        gp_Log(gp_MakeLogStr2("(%d, %d) ",
-                              gp_GetIndex(theEmbedding, gp_GetNeighbor(theEmbedding, e)),
-                              gp_GetIndex(theEmbedding, gp_GetNeighbor(theEmbedding, eTwin))));
+        _gp_Log(_gp_MakeLogStr2("(%d, %d) ",
+                                gp_GetIndex(theEmbedding, gp_GetNeighbor(theEmbedding, e)),
+                                gp_GetIndex(theEmbedding, gp_GetNeighbor(theEmbedding, eTwin))));
 
         eIndex = LCGetNext(edgeList, edgeListHead, eIndex);
     }
 
-    gp_LogLine("]");
+    _gp_LogLine("]");
 }
 #endif
 
@@ -341,7 +341,7 @@ int _ComputeEdgePositions(DrawPlanarContext *context)
     int edgeListHead, edgeListInsertPoint;
     int e, eTwin, eCur, v, vpos, epos, eIndex;
 
-    gp_LogLine("\ngraphDrawPlanar.c/_ComputeEdgePositions() start");
+    _gp_LogLine("\ngraphDrawPlanar.c/_ComputeEdgePositions() start");
 
     // Sort the vertices by vertical position (in linear time)
 
@@ -385,8 +385,8 @@ int _ComputeEdgePositions(DrawPlanarContext *context)
     {
         // Get the vertex associated with the position
         v = vertexOrder[vpos];
-        gp_LogLine(gp_MakeLogStr3("Processing vertex %d with DFI=%d at position=%d",
-                                  gp_GetIndex(theEmbedding, v), v, vpos));
+        _gp_LogLine(_gp_MakeLogStr3("Processing vertex %d with DFI=%d at position=%d",
+                                    gp_GetIndex(theEmbedding, v), v, vpos));
 
         // The DFS tree root of a connected component is always the least
         // number vertex in the vertex ordering.  We have to give it a
@@ -409,8 +409,8 @@ int _ComputeEdgePositions(DrawPlanarContext *context)
                 eIndex = (e >> 1); // div by 2 since each edge is a pair of arcs
 
                 edgeListHead = LCAppend(edgeList, edgeListHead, eIndex);
-                gp_LogLine(gp_MakeLogStr2("Append generator edge (%d, %d) to edgeList",
-                                          gp_GetIndex(theEmbedding, v), gp_GetIndex(theEmbedding, gp_GetNeighbor(theEmbedding, e))));
+                _gp_LogLine(_gp_MakeLogStr2("Append generator edge (%d, %d) to edgeList",
+                                            gp_GetIndex(theEmbedding, v), gp_GetIndex(theEmbedding, gp_GetNeighbor(theEmbedding, e))));
 
                 // Set the generator edge for the root's neighbor
                 gp_SetVertexVisitedInfo(theEmbedding, gp_GetNeighbor(theEmbedding, e), e);
@@ -448,11 +448,11 @@ int _ComputeEdgePositions(DrawPlanarContext *context)
                     eIndex = eCur >> 1;
                     LCInsertAfter(edgeList, edgeListInsertPoint, eIndex);
 
-                    gp_LogLine(gp_MakeLogStr4("Insert (%d, %d) after (%d, %d)",
-                                              gp_GetIndex(theEmbedding, v),
-                                              gp_GetIndex(theEmbedding, gp_GetNeighbor(theEmbedding, eCur)),
-                                              gp_GetIndex(theEmbedding, gp_GetNeighbor(theEmbedding, gp_GetTwinArc(theEmbedding, e))),
-                                              gp_GetIndex(theEmbedding, gp_GetNeighbor(theEmbedding, e))));
+                    _gp_LogLine(_gp_MakeLogStr4("Insert (%d, %d) after (%d, %d)",
+                                                gp_GetIndex(theEmbedding, v),
+                                                gp_GetIndex(theEmbedding, gp_GetNeighbor(theEmbedding, eCur)),
+                                                gp_GetIndex(theEmbedding, gp_GetNeighbor(theEmbedding, gp_GetTwinArc(theEmbedding, e))),
+                                                gp_GetIndex(theEmbedding, gp_GetNeighbor(theEmbedding, e))));
 
                     edgeListInsertPoint = eIndex;
 
@@ -462,9 +462,9 @@ int _ComputeEdgePositions(DrawPlanarContext *context)
                     if (gp_IsNotArc(theEmbedding, gp_GetVertexVisitedInfo(theEmbedding, gp_GetNeighbor(theEmbedding, eCur))))
                     {
                         gp_SetVertexVisitedInfo(theEmbedding, gp_GetNeighbor(theEmbedding, eCur), eCur);
-                        gp_LogLine(gp_MakeLogStr2("Generator edge (%d, %d)",
-                                                  gp_GetIndex(theEmbedding, gp_GetNeighbor(theEmbedding, gp_GetTwinArc(theEmbedding, e))),
-                                                  gp_GetIndex(theEmbedding, gp_GetNeighbor(theEmbedding, eCur))));
+                        _gp_LogLine(_gp_MakeLogStr2("Generator edge (%d, %d)",
+                                                    gp_GetIndex(theEmbedding, gp_GetNeighbor(theEmbedding, gp_GetTwinArc(theEmbedding, e))),
+                                                    gp_GetIndex(theEmbedding, gp_GetNeighbor(theEmbedding, eCur))));
                     }
                 }
 
@@ -501,7 +501,7 @@ int _ComputeEdgePositions(DrawPlanarContext *context)
     free(vertexOrder);
     vertexOrder = NULL;
 
-    gp_LogLine("graphDrawPlanar.c/_ComputeEdgePositions() end\n");
+    _gp_LogLine("graphDrawPlanar.c/_ComputeEdgePositions() end\n");
 
     return OK;
 }
@@ -641,9 +641,9 @@ void _CollectDrawingData(DrawPlanarContext *context, int RootVertex, int W, int 
     graphP theEmbedding = context->theGraph;
     int K, Parent, BicompRoot, DFSChild, direction, descendant;
 
-    gp_LogLine("\ngraphDrawPlanar.c/_CollectDrawingData() start");
-    gp_LogLine(gp_MakeLogStr3("_CollectDrawingData(RootVertex=%d, W=%d, W_in=%d)",
-                              RootVertex, W, WPrevLink));
+    _gp_LogLine("\ngraphDrawPlanar.c/_CollectDrawingData() start");
+    _gp_LogLine(_gp_MakeLogStr3("_CollectDrawingData(RootVertex=%d, W=%d, W_in=%d)",
+                                RootVertex, W, WPrevLink));
 
     /* Process all of the merge points to set their drawing flags. */
 
@@ -679,11 +679,11 @@ void _CollectDrawingData(DrawPlanarContext *context, int RootVertex, int W, int 
         direction = theEmbedding->theStack->S[K + 1];
         context->VI[Parent].tie[direction] = DFSChild;
 
-        gp_LogLine(gp_MakeLogStr5("V[Parent=%d]=.tie[%d] = V[descendant=%d].tie[%d] = (child=%d)",
-                                  Parent, direction, descendant, theEmbedding->theStack->S[K + 3], DFSChild));
+        _gp_LogLine(_gp_MakeLogStr5("V[Parent=%d]=.tie[%d] = V[descendant=%d].tie[%d] = (child=%d)",
+                                    Parent, direction, descendant, theEmbedding->theStack->S[K + 3], DFSChild));
     }
 
-    gp_LogLine("graphDrawPlanar.c/_CollectDrawingData() end\n");
+    _gp_LogLine("graphDrawPlanar.c/_CollectDrawingData() end\n");
 }
 
 /********************************************************************
@@ -725,14 +725,14 @@ int _BreakTie(DrawPlanarContext *context, int BicompRoot, int W, int WPrevLink)
     int WPredNextLink = 1 ^ WPrevLink,
         WPred = _GetNextExternalFaceVertex(theEmbedding, W, &WPredNextLink);
 
-    gp_LogLine("\ngraphDrawPlanar.c/::_BreakTie() start");
-    gp_LogLine(gp_MakeLogStr4("_BreakTie(BicompRoot=%d, W=%d, W_in=%d) WPred=%d",
-                              BicompRoot, W, WPrevLink, WPred));
+    _gp_LogLine("\ngraphDrawPlanar.c/::_BreakTie() start");
+    _gp_LogLine(_gp_MakeLogStr4("_BreakTie(BicompRoot=%d, W=%d, W_in=%d) WPred=%d",
+                                BicompRoot, W, WPrevLink, WPred));
 
     /* Ties happen only within a bicomp (i.e. between two non-root vertices) */
     if (gp_IsVirtualVertex(theEmbedding, W) || gp_IsVirtualVertex(theEmbedding, WPred))
     {
-        gp_LogLine("graphDrawPlanar.c/_BreakTie() end\n");
+        _gp_LogLine("graphDrawPlanar.c/_BreakTie() end\n");
         return OK;
     }
 
@@ -753,16 +753,16 @@ int _BreakTie(DrawPlanarContext *context, int BicompRoot, int W, int WPrevLink)
         context->VI[DFSChild].ancestorChild = gp_GetDFSChildFromBicompRoot(theEmbedding, BicompRoot);
         context->VI[DFSChild].ancestor = gp_GetVertexFromBicompRoot(theEmbedding, BicompRoot);
 
-        gp_LogLine(gp_MakeLogStr4("V[child=%d]=.ancestorChild = %d, V[child=%d]=.ancestor = %d",
-                                  DFSChild, context->VI[DFSChild].ancestorChild, DFSChild, context->VI[DFSChild].ancestor));
+        _gp_LogLine(_gp_MakeLogStr4("V[child=%d]=.ancestorChild = %d, V[child=%d]=.ancestor = %d",
+                                    DFSChild, context->VI[DFSChild].ancestorChild, DFSChild, context->VI[DFSChild].ancestor));
 
         /* If W is the ancestor of WPred, then the DFSChild subtree contains
             WPred, and so must go between W and some ancestor. */
         if (W < WPred)
         {
             context->VI[DFSChild].drawingFlag = DRAWINGFLAG_BETWEEN;
-            gp_LogLine(gp_MakeLogStr3("Child=%d is 'between' ancestorChild=%d and ancestor=%d",
-                                      DFSChild, context->VI[DFSChild].ancestorChild, context->VI[DFSChild].ancestor));
+            _gp_LogLine(_gp_MakeLogStr3("Child=%d is 'between' ancestorChild=%d and ancestor=%d",
+                                        DFSChild, context->VI[DFSChild].ancestorChild, context->VI[DFSChild].ancestor));
         }
 
         /* If W is the descendant, so we achieve the effect of putting WPred
@@ -770,8 +770,8 @@ int _BreakTie(DrawPlanarContext *context, int BicompRoot, int W, int WPrevLink)
         else
         {
             context->VI[DFSChild].drawingFlag = DRAWINGFLAG_BEYOND;
-            gp_LogLine(gp_MakeLogStr3("Child=%d is 'beyond' ancestorChild=%d relative to ancestor=%d",
-                                      DFSChild, context->VI[DFSChild].ancestorChild, context->VI[DFSChild].ancestor));
+            _gp_LogLine(_gp_MakeLogStr3("Child=%d is 'beyond' ancestorChild=%d relative to ancestor=%d",
+                                        DFSChild, context->VI[DFSChild].ancestorChild, context->VI[DFSChild].ancestor));
         }
 
         /* The tie is resolved so clear the flags*/
@@ -779,7 +779,7 @@ int _BreakTie(DrawPlanarContext *context, int BicompRoot, int W, int WPrevLink)
         context->VI[WPred].tie[WPredNextLink] = NIL;
     }
 
-    gp_LogLine("graphDrawPlanar.c/_BreakTie() end\n");
+    _gp_LogLine("graphDrawPlanar.c/_BreakTie() end\n");
     return OK;
 }
 
