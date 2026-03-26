@@ -77,7 +77,7 @@ bool _g6_IsWriterInitialized(G6WriteIteratorP pG6WriteIterator, bool reportUnini
     }
     else
     {
-        if (sf_ValidateStrOrFile(pG6WriteIterator->g6Output) != OK)
+        if (!sf_IsValidStrOrFile(pG6WriteIterator->g6Output))
         {
             if (reportUninitializedParts)
                 ErrorMessage("G6WriteIterator's g6Output is not valid.\n");
@@ -166,6 +166,19 @@ int g6_GetGraphFromWriter(G6WriteIteratorP pG6WriteIterator, graphP *pTheGraph)
 
 int g6_InitWriterWithString(G6WriteIteratorP pG6WriteIterator)
 {
+    if (pG6WriteIterator == NULL)
+    {
+        ErrorMessage("Unable to initialize writer, since pointer to "
+                     "pG6WriteIterator is NULL.\n");
+        return NOTOK;
+    }
+
+    if (_g6_IsWriterInitialized(pG6WriteIterator, false))
+    {
+        ErrorMessage("Unable to initialize writer, as it was already previously initialized.\n");
+        return NOTOK;
+    }
+
     return _g6_InitWriterWithStrOrFile(
         pG6WriteIterator,
         sf_New(NULL, NULL, WRITETEXT));
@@ -173,6 +186,19 @@ int g6_InitWriterWithString(G6WriteIteratorP pG6WriteIterator)
 
 int g6_InitWriterWithFileName(G6WriteIteratorP pG6WriteIterator, char *outputFileName)
 {
+    if (pG6WriteIterator == NULL)
+    {
+        ErrorMessage("Unable to initialize writer, since pointer to "
+                     "pG6WriteIterator is NULL.\n");
+        return NOTOK;
+    }
+
+    if (_g6_IsWriterInitialized(pG6WriteIterator, false))
+    {
+        ErrorMessage("Unable to initialize writer, as it was already previously initialized.\n");
+        return NOTOK;
+    }
+
     if (outputFileName == NULL || strlen(outputFileName) == 0)
     {
         ErrorMessage("Unable to initialize writer with NULL or empty output file name.\n");
@@ -186,14 +212,7 @@ int g6_InitWriterWithFileName(G6WriteIteratorP pG6WriteIterator, char *outputFil
 
 int _g6_InitWriterWithStrOrFile(G6WriteIteratorP pG6WriteIterator, strOrFileP outputContainer)
 {
-    if (pG6WriteIterator == NULL)
-    {
-        ErrorMessage("Unable to initialize writer, since pointer to "
-                     "pG6WriteIterator is NULL.\n");
-        return NOTOK;
-    }
-
-    if (sf_ValidateStrOrFile(outputContainer) != OK)
+    if (!sf_IsValidStrOrFile(outputContainer))
     {
         ErrorMessage("Unable to initialize writer with invalid strOrFile "
                      "output container.\n");
@@ -208,12 +227,6 @@ int _g6_InitWriterWithStrOrFile(G6WriteIteratorP pG6WriteIterator, strOrFileP ou
 int _g6_InitWriter(G6WriteIteratorP pG6WriteIterator)
 {
     char const *g6Header = ">>graph6<<";
-
-    if (_g6_IsWriterInitialized(pG6WriteIterator, false))
-    {
-        ErrorMessage("Unable to initialize writer, as it was already previously initialized.\n");
-        return NOTOK;
-    }
 
     if (sf_fputs(g6Header, pG6WriteIterator->g6Output) < 0)
     {
@@ -504,11 +517,9 @@ int _g6_WriteGraphToString(graphP theGraph, char **g6OutputStr)
 
 int _g6_WriteGraphToStrOrFile(graphP theGraph, strOrFileP outputContainer, char **outputStr)
 {
-    int exitCode = OK;
-
     G6WriteIteratorP pG6WriteIterator = NULL;
 
-    if (sf_ValidateStrOrFile(outputContainer) != OK)
+    if (!sf_IsValidStrOrFile(outputContainer))
     {
         ErrorMessage("Invalid G6 output container.\n");
         return NOTOK;
@@ -542,16 +553,25 @@ int _g6_WriteGraphToStrOrFile(graphP theGraph, strOrFileP outputContainer, char 
         return NOTOK;
     }
 
-    exitCode = g6_WriteGraph(pG6WriteIterator);
-    if (exitCode != OK)
-        ErrorMessage("Unable to write graph using G6WriteIterator.\n");
-    else
+    if (g6_WriteGraph(pG6WriteIterator) != OK)
     {
-        if (outputStr != NULL && pG6WriteIterator->g6Output->theStr != NULL)
-            (*outputStr) = sf_takeTheStr(pG6WriteIterator->g6Output);
+        ErrorMessage("Unable to write graph using G6WriteIterator.\n");
+        g6_FreeWriter(&pG6WriteIterator);
+        return NOTOK;
+    }
+
+    if (outputStr != NULL && pG6WriteIterator->g6Output != NULL)
+    {
+        (*outputStr) = sf_takeTheStr(pG6WriteIterator->g6Output);
+        if ((*outputStr) == NULL || strlen((*outputStr)) == 0)
+        {
+            ErrorMessage("Failed to transfer ownership of string contained by output container.\n");
+            g6_FreeWriter(&pG6WriteIterator);
+            return NOTOK;
+        }
     }
 
     g6_FreeWriter(&pG6WriteIterator);
 
-    return exitCode;
+    return OK;
 }

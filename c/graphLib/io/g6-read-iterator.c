@@ -80,7 +80,7 @@ bool _g6_IsReaderInitialized(G6ReadIteratorP pG6ReadIterator, bool reportUniniti
     }
     else
     {
-        if (sf_ValidateStrOrFile(pG6ReadIterator->g6Input) != OK)
+        if (!sf_IsValidStrOrFile(pG6ReadIterator->g6Input))
         {
             if (reportUninitializedParts)
                 ErrorMessage("G6ReadIterator's g6Input string-or-file container "
@@ -165,6 +165,19 @@ int g6_GetGraphFromReader(G6ReadIteratorP pG6ReadIterator, graphP *pTheGraph)
 
 int g6_InitReaderWithString(G6ReadIteratorP pG6ReadIterator, char *inputString)
 {
+    if (pG6ReadIterator == NULL)
+    {
+        ErrorMessage("Unable to initialize reader, since pointer to "
+                     "pG6ReadIterator is NULL.\n");
+        return NOTOK;
+    }
+
+    if (_g6_IsReaderInitialized(pG6ReadIterator, false))
+    {
+        ErrorMessage("Unable to initialize reader, as it was already previously initialized.\n");
+        return NOTOK;
+    }
+
     if (inputString == NULL || strlen(inputString) == 0)
     {
         ErrorMessage("Unable to initialize reader with empty input string.\n");
@@ -178,6 +191,19 @@ int g6_InitReaderWithString(G6ReadIteratorP pG6ReadIterator, char *inputString)
 
 int g6_InitReaderWithFileName(G6ReadIteratorP pG6ReadIterator, char const *const infileName)
 {
+    if (pG6ReadIterator == NULL)
+    {
+        ErrorMessage("Unable to initialize reader, since pointer to "
+                     "pG6ReadIterator is NULL.\n");
+        return NOTOK;
+    }
+
+    if (_g6_IsReaderInitialized(pG6ReadIterator, false))
+    {
+        ErrorMessage("Unable to initialize reader, as it was already previously initialized.\n");
+        return NOTOK;
+    }
+
     if (infileName == NULL || strlen(infileName) == 0)
     {
         ErrorMessage("Unable to initialize reader with empty infile name.\n");
@@ -191,14 +217,8 @@ int g6_InitReaderWithFileName(G6ReadIteratorP pG6ReadIterator, char const *const
 
 int _g6_InitReaderWithStrOrFile(G6ReadIteratorP pG6ReadIterator, strOrFileP inputContainer)
 {
-    if (pG6ReadIterator == NULL)
-    {
-        ErrorMessage("Unable to initialize reader, since pointer to "
-                     "pG6ReadIterator is NULL.\n");
-        return NOTOK;
-    }
     if (
-        sf_ValidateStrOrFile(inputContainer) != OK ||
+        !sf_IsValidStrOrFile(inputContainer) ||
         (inputContainer->theStr != NULL && sb_GetSize(inputContainer->theStr) == 0))
     {
         ErrorMessage("Unable to initialize reader with invalid strOrFile "
@@ -220,12 +240,6 @@ int _g6_InitReader(G6ReadIteratorP pG6ReadIterator)
     strOrFileP g6Input = pG6ReadIterator->g6Input;
     char messageContents[MAXLINE + 1];
     messageContents[0] = '\0';
-
-    if (_g6_IsReaderInitialized(pG6ReadIterator, false))
-    {
-        ErrorMessage("Unable to initialize reader, as it was already previously initialized.\n");
-        return NOTOK;
-    }
 
     if ((firstChar = sf_getc(g6Input)) == EOF)
     {
@@ -648,7 +662,7 @@ int _g6_ReadGraphFromStrOrFile(graphP theGraph, strOrFileP g6InputContainer)
 {
     G6ReadIteratorP pG6ReadIterator = NULL;
 
-    if (sf_ValidateStrOrFile(g6InputContainer) != OK)
+    if (!sf_IsValidStrOrFile(g6InputContainer))
     {
         ErrorMessage("Invalid G6 output container.\n");
         return NOTOK;

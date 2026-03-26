@@ -62,7 +62,7 @@ int _ReadAdjMatrix(graphP theGraph, strOrFileP inputContainer)
     int N = 0;
     int v = NIL, w = NIL, Flag = NIL;
 
-    if (sf_ValidateStrOrFile(inputContainer) != OK)
+    if (!sf_IsValidStrOrFile(inputContainer))
         return NOTOK;
 
     // Read the number of vertices from the first line of the file
@@ -138,7 +138,7 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
     int N = 0, v = NIL, W = NIL, adjList = NIL, e = NIL, indexValue = NIL;
     int zeroBased = FALSE;
 
-    if (sf_ValidateStrOrFile(inputContainer) != OK)
+    if (!sf_IsValidStrOrFile(inputContainer))
         return NOTOK;
 
     // Skip the "N=" and then read the N value for number of vertices
@@ -359,7 +359,7 @@ int _ReadLEDAGraph(graphP theGraph, strOrFileP inputContainer)
 
     memset(Line, '\0', (MAXLINE + 1));
 
-    if (sf_ValidateStrOrFile(inputContainer) != OK)
+    if (!sf_IsValidStrOrFile(inputContainer))
         return NOTOK;
 
     /*
@@ -506,7 +506,7 @@ int _ReadGraph(graphP theGraph, strOrFileP inputContainer)
 
     memset(lineBuff, '\0', (MAXLINE + 1));
 
-    if (sf_ValidateStrOrFile(inputContainer) != OK)
+    if (!sf_IsValidStrOrFile(inputContainer))
         return NOTOK;
 
     if (sf_fgets(lineBuff, MAXLINE, inputContainer) == NULL)
@@ -616,7 +616,7 @@ int _WriteAdjList(graphP theGraph, strOrFileP outputContainer)
 
     memset(numberStr, '\0', (MAXCHARSFOR32BITINT + 1) * sizeof(char));
 
-    if (theGraph == NULL || sf_ValidateStrOrFile(outputContainer) != OK)
+    if (theGraph == NULL || !sf_IsValidStrOrFile(outputContainer))
         return NOTOK;
 
     // Write the number of vertices of the graph to the file or string buffer
@@ -690,7 +690,7 @@ int _WriteAdjMatrix(graphP theGraph, strOrFileP outputContainer)
     char numberStr[MAXCHARSFOR32BITINT + 1];
     memset(numberStr, '\0', (MAXCHARSFOR32BITINT + 1) * sizeof(char));
 
-    if (theGraph == NULL || sf_ValidateStrOrFile(outputContainer) != OK)
+    if (theGraph == NULL || !sf_IsValidStrOrFile(outputContainer))
         return NOTOK;
 
     // Write the number of vertices in the graph to the file or string buffer
@@ -793,7 +793,7 @@ int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer)
 
     memset(lineBuf, '\0', (MAXLINE + 1) * sizeof(char));
 
-    if (theGraph == NULL || sf_ValidateStrOrFile(outputContainer) != OK)
+    if (theGraph == NULL || !sf_IsValidStrOrFile(outputContainer))
         return NOTOK;
 
     /* Print parent copy vertices and their adjacency lists */
