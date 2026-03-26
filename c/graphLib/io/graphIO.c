@@ -10,6 +10,10 @@ See the LICENSE.TXT file for licensing information.
 
 #include "../graph.h"
 
+/* Imported functions */
+extern int _g6_ReadGraphFromStrOrFile(graphP theGraph, strOrFileP g6InputContainer);
+extern int _g6_WriteGraphToStrOrFile(graphP theGraph, strOrFileP outputContainer, char **outputStr);
+
 /* Private functions (exported to system) */
 
 int _ReadGraph(graphP theGraph, strOrFileP inputContainer);
@@ -58,7 +62,7 @@ int _ReadAdjMatrix(graphP theGraph, strOrFileP inputContainer)
     int N = 0;
     int v = NIL, w = NIL, Flag = NIL;
 
-    if (sf_ValidateStrOrFile(inputContainer) != OK)
+    if (!sf_IsValidStrOrFile(inputContainer))
         return NOTOK;
 
     // Read the number of vertices from the first line of the file
@@ -134,7 +138,7 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
     int N = 0, v = NIL, W = NIL, adjList = NIL, e = NIL, indexValue = NIL;
     int zeroBased = FALSE;
 
-    if (sf_ValidateStrOrFile(inputContainer) != OK)
+    if (!sf_IsValidStrOrFile(inputContainer))
         return NOTOK;
 
     // Skip the "N=" and then read the N value for number of vertices
@@ -355,7 +359,7 @@ int _ReadLEDAGraph(graphP theGraph, strOrFileP inputContainer)
 
     memset(Line, '\0', (MAXLINE + 1));
 
-    if (sf_ValidateStrOrFile(inputContainer) != OK)
+    if (!sf_IsValidStrOrFile(inputContainer))
         return NOTOK;
 
     /*
@@ -502,7 +506,7 @@ int _ReadGraph(graphP theGraph, strOrFileP inputContainer)
 
     memset(lineBuff, '\0', (MAXLINE + 1));
 
-    if (sf_ValidateStrOrFile(inputContainer) != OK)
+    if (!sf_IsValidStrOrFile(inputContainer))
         return NOTOK;
 
     if (sf_fgets(lineBuff, MAXLINE, inputContainer) == NULL)
@@ -535,7 +539,7 @@ int _ReadGraph(graphP theGraph, strOrFileP inputContainer)
     }
     else
     {
-        RetVal = _ReadGraphFromG6StrOrFile(theGraph, inputContainer);
+        RetVal = _g6_ReadGraphFromStrOrFile(theGraph, inputContainer);
         // N.B. Unlike the other _Read functions, we are relinquishing
         // ownership of inputContainer to the G6ReadIterator, which
         // calls sf_Free() when ending iteration. This assignment
@@ -607,13 +611,12 @@ int _ReadPostprocess(graphP theGraph, char *extraData)
 int _WriteAdjList(graphP theGraph, strOrFileP outputContainer)
 {
     int v = NIL, e = NIL;
-    int zeroBasedVertexOffset = 0;
-    int adjacencyListTerminator = NIL;
+    int zeroBasedVertexOffset = 0, adjacencyListTerminator = NIL;
     char numberStr[MAXCHARSFOR32BITINT + 1];
 
     memset(numberStr, '\0', (MAXCHARSFOR32BITINT + 1) * sizeof(char));
 
-    if (theGraph == NULL || sf_ValidateStrOrFile(outputContainer) != OK)
+    if (theGraph == NULL || !sf_IsValidStrOrFile(outputContainer))
         return NOTOK;
 
     // Write the number of vertices of the graph to the file or string buffer
@@ -629,6 +632,9 @@ int _WriteAdjList(graphP theGraph, strOrFileP outputContainer)
     if (theGraph->internalFlags & FLAGS_ZEROBASEDIO)
     {
         zeroBasedVertexOffset = gp_GetFirstVertex(theGraph);
+        // If the graph must be written 0-based, then the adjacency list terminator must be -1,
+        // even if the internal representation is 1-based (i.e. when USE_FASTER_1BASEDARRAYS, NIL == 0,
+        // but the output needs to be -1 for 0-based output)
         adjacencyListTerminator = -1;
     }
 
@@ -682,10 +688,9 @@ int _WriteAdjMatrix(graphP theGraph, strOrFileP outputContainer)
     int v = NIL, e = NIL;
     char *Row = NULL;
     char numberStr[MAXCHARSFOR32BITINT + 1];
-
     memset(numberStr, '\0', (MAXCHARSFOR32BITINT + 1) * sizeof(char));
 
-    if (theGraph == NULL || sf_ValidateStrOrFile(outputContainer) != OK)
+    if (theGraph == NULL || !sf_IsValidStrOrFile(outputContainer))
         return NOTOK;
 
     // Write the number of vertices in the graph to the file or string buffer
@@ -788,7 +793,7 @@ int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer)
 
     memset(lineBuf, '\0', (MAXLINE + 1) * sizeof(char));
 
-    if (theGraph == NULL || sf_ValidateStrOrFile(outputContainer) != OK)
+    if (theGraph == NULL || !sf_IsValidStrOrFile(outputContainer))
         return NOTOK;
 
     /* Print parent copy vertices and their adjacency lists */
@@ -926,7 +931,6 @@ int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer)
 int gp_Write(graphP theGraph, char const *FileName, int Mode)
 {
     int RetVal = OK;
-
     strOrFileP outputContainer = NULL;
 
     if (theGraph == NULL || FileName == NULL)
@@ -979,7 +983,7 @@ int gp_WriteToString(graphP theGraph, char **pOutputStr, int Mode)
 
     // N.B. Since we pass ownership of the outputContainer to the
     // G6WriteIterator when we WRITE_G6, we make sure to take the string
-    // *before* we endG6WriteIteration(), since that calls sf_Free() on the
+    // *before* we gp_FreeWriter(), since that calls sf_Free() on the
     // g6Output (i.e. outputContainer) and therefore sb_Free() on theStr. This
     // means that we need to make sure outputContainer and theStr it contains
     // are both non-NULL before trying to take the string, as WRITE_ADJLIST,
@@ -1016,7 +1020,7 @@ int _WriteGraph(graphP theGraph, strOrFileP *outputContainer, char **pOutputStr,
     switch (Mode)
     {
     case WRITE_G6:
-        RetVal = _WriteGraphToG6StrOrFile(theGraph, (*outputContainer), pOutputStr);
+        RetVal = _g6_WriteGraphToStrOrFile(theGraph, (*outputContainer), pOutputStr);
         // Since G6WriteIterator owns the outputContainer, it'll
         // free it, so don't want to try to double-free
         (*outputContainer) = NULL;

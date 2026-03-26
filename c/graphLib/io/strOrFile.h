@@ -12,6 +12,7 @@ extern "C"
 {
 #endif
 
+#include <stdbool.h>
 #include <stdio.h>
 
 #include "../lowLevelUtils/stack.h"
@@ -31,7 +32,7 @@ extern "C"
     typedef strOrFile *strOrFileP;
 
     strOrFileP sf_New(char const *const theStr, char const *const fileName, char const *ioMode);
-    int sf_ValidateStrOrFile(strOrFileP theStrOrFile);
+    bool sf_IsValidStrOrFile(strOrFileP theStrOrFile);
 
     char sf_getc(strOrFileP theStrOrFile);
     int sf_ReadSkipChar(strOrFileP theStrOrFile);
