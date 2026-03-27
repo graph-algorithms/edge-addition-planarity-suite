@@ -934,7 +934,7 @@ class EdgeDeletionAnalyzer:
                     by planarity when NIL is set to 0 rather than -1, causing
                     gp_GetFirstVertex(theGraph) to return 1 and line
                     terminators to be set to 0 because
-                    theGraph->internalFlags & FLAGS_ZEROBASEDIO is falsy
+                    gp_GetGraphFlags(theGraph) & FLAGS_ZEROBASEDIO is falsy
                 - Deleting an edge from the copied graph fails
                 - Running planarity on the original-graph-minus-one-edge fails
                 - Determining the type of obstruction found fails

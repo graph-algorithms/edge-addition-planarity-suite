@@ -138,7 +138,7 @@ int gp_AttachDrawPlanar(graphP theGraph)
     // occur when N==0 in the case of gp_Read().
     // But if a feature is attached after gp_InitGraph(), then N > 0 and so we
     // need to create and initialize all the custom data structures
-    if (theGraph->N > 0)
+    if (gp_GetN(theGraph) > 0)
     {
         if (_DrawPlanar_CreateStructures(context) != OK ||
             _DrawPlanar_InitStructures(context) != OK)
@@ -201,7 +201,7 @@ int _DrawPlanar_CreateStructures(DrawPlanarContext *context)
     int VIsize = gp_VertexArraySize(theGraph);
     int Esize = gp_EdgeArraySize(theGraph);
 
-    if (theGraph->N <= 0)
+    if (gp_GetN(theGraph) <= 0)
         return NOTOK;
 
     if ((context->E = (DrawPlanar_EdgeRecP)malloc(Esize * sizeof(DrawPlanar_EdgeRec))) == NULL ||
@@ -228,7 +228,7 @@ int _DrawPlanar_InitStructures(DrawPlanarContext *context)
     int v, e, Esize;
     graphP theGraph = context->theGraph;
 
-    if (theGraph->N <= 0)
+    if (gp_GetN(theGraph) <= 0)
         return NOTOK;
 
     for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
@@ -362,7 +362,7 @@ int _DrawPlanar_SortVertices(graphP theGraph)
     {
         // If this is a planarity-based algorithm to which graph drawing has been attached,
         // and if the embedding process has already been completed
-        if (theGraph->embedFlags == EMBEDFLAGS_DRAWPLANAR)
+        if (gp_GetEmbedFlags(theGraph) == EMBEDFLAGS_DRAWPLANAR)
         {
             int v, vIndex;
             DrawPlanar_VertexInfo temp;
@@ -433,7 +433,7 @@ int _DrawPlanar_MergeBicomps(graphP theGraph, int v, int RootVertex, int W, int 
 
     if (context != NULL)
     {
-        if (theGraph->embedFlags == EMBEDFLAGS_DRAWPLANAR)
+        if (gp_GetEmbedFlags(theGraph) == EMBEDFLAGS_DRAWPLANAR)
         {
             _CollectDrawingData(context, RootVertex, W, WPrevLink);
         }
@@ -456,7 +456,7 @@ int _DrawPlanar_HandleInactiveVertex(graphP theGraph, int BicompRoot, int *pW, i
     {
         int RetVal = context->functions.fpHandleInactiveVertex(theGraph, BicompRoot, pW, pWPrevLink);
 
-        if (theGraph->embedFlags == EMBEDFLAGS_DRAWPLANAR)
+        if (gp_GetEmbedFlags(theGraph) == EMBEDFLAGS_DRAWPLANAR)
         {
             if (_BreakTie(context, BicompRoot, *pW, *pWPrevLink) != OK)
                 return NOTOK;
@@ -506,7 +506,7 @@ int _DrawPlanar_EmbedPostprocess(graphP theGraph, int v, int edgeEmbeddingResult
     {
         int RetVal = context->functions.fpEmbedPostprocess(theGraph, v, edgeEmbeddingResult);
 
-        if (theGraph->embedFlags == EMBEDFLAGS_DRAWPLANAR)
+        if (gp_GetEmbedFlags(theGraph) == EMBEDFLAGS_DRAWPLANAR)
         {
             if (RetVal == OK)
             {
@@ -632,7 +632,7 @@ int _DrawPlanar_WritePostprocess(graphP theGraph, char **pExtraData)
             int v, e, EsizeOccupied;
             char line[64];
             int maxLineSize = 64, extraDataPos = 0;
-            char *extraData = (char *)calloc((1 + theGraph->N + 2 * theGraph->M + 1) * maxLineSize, sizeof(char));
+            char *extraData = (char *)calloc((1 + gp_GetN(theGraph) + 2 * gp_GetM(theGraph) + 1) * maxLineSize, sizeof(char));
             int zeroBasedVertexOffset = 0;
             int zeroBasedEdgeOffset = 0;
 
@@ -643,7 +643,7 @@ int _DrawPlanar_WritePostprocess(graphP theGraph, char **pExtraData)
             // how much to subtract from each vertex and edge index based on whether this library has been
             // compiled with 0-based or 1-based array indexing for the in-memory data structure (i.e., compiled
             // with USE_FASTER_1BASEDARRAYS USE_0BASEDARRAYS). The macros invoked are responsive to the difference.
-            if (theGraph->internalFlags & FLAGS_ZEROBASEDIO)
+            if (gp_GetGraphFlags(theGraph) & FLAGS_ZEROBASEDIO)
             {
                 zeroBasedVertexOffset = gp_GetFirstVertex(theGraph);
                 zeroBasedEdgeOffset = gp_GetFirstEdge(theGraph);
@@ -651,7 +651,7 @@ int _DrawPlanar_WritePostprocess(graphP theGraph, char **pExtraData)
 
             // Bit of an unlikely case, but for safety, a bigger maxLineSize
             // and line array size are needed to handle very large graphs
-            if (theGraph->N > 2000000000)
+            if (gp_GetN(theGraph) > 2000000000)
             {
                 free(extraData);
                 extraData = NULL;

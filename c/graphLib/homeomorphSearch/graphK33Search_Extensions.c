@@ -127,7 +127,7 @@ int gp_AttachK33Search(graphP theGraph)
     // also happens before gp_InitGraph(), which means N==0.
     // However, sometimes a feature is attached after gp_InitGraph(), in
     // which case N > 0
-    if (theGraph->N > 0)
+    if (gp_GetN(theGraph) > 0)
     {
         if (_K33Search_CreateStructures(context) != OK ||
             _K33Search_InitStructures(context) != OK)
@@ -203,7 +203,7 @@ int _K33Search_CreateStructures(K33SearchContext *context)
     int VIsize = gp_VertexArraySize(context->theGraph);
     int Esize = gp_EdgeArraySize(context->theGraph);
 
-    if (context->theGraph->N <= 0)
+    if (gp_GetN(context->theGraph) <= 0)
         return NOTOK;
 
     if ((context->E = (K33Search_EdgeRecP)malloc(Esize * sizeof(K33Search_EdgeRec))) == NULL ||
@@ -230,7 +230,7 @@ int _K33Search_InitStructures(K33SearchContext *context)
     // graphP theGraph = context->theGraph;
     // int v, e, Esize;
 
-    // if (theGraph->N <= 0)
+    // if (gp_GetN(theGraph) <= 0)
     //     return OK;
 
     // for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
@@ -374,7 +374,7 @@ int _K33Search_EmbeddingInitialize(graphP theGraph)
         if (context->functions.fpEmbeddingInitialize(theGraph) != OK)
             return NOTOK;
 
-        if (theGraph->embedFlags == EMBEDFLAGS_SEARCHFORK33)
+        if (gp_GetEmbedFlags(theGraph) == EMBEDFLAGS_SEARCHFORK33)
         {
             _CreateBackArcLists(theGraph, context);
             _CreateSeparatedDFSChildLists(theGraph, context);
@@ -498,7 +498,7 @@ void _K33Search_EmbedBackEdgeToDescendant(graphP theGraph, int RootSide, int Roo
     if (context != NULL)
     {
         // K33 search may have been attached, but not enabled
-        if (theGraph->embedFlags == EMBEDFLAGS_SEARCHFORK33)
+        if (gp_GetEmbedFlags(theGraph) == EMBEDFLAGS_SEARCHFORK33)
         {
             // Get the fwdArc from the adjacentTo field, and use it to get the backArc
             int backArc = gp_GetTwinArc(theGraph, gp_GetVertexPertinentEdge(theGraph, W));
@@ -544,7 +544,7 @@ int _K33Search_MergeBicomps(graphP theGraph, int v, int RootVertex, int W, int W
         /* If the merge is blocked, then a K_{3,3} homeomorph is isolated,
            and NONEMBEDDABLE is returned so that the Walkdown terminates */
 
-        if (theGraph->embedFlags == EMBEDFLAGS_SEARCHFORK33)
+        if (gp_GetEmbedFlags(theGraph) == EMBEDFLAGS_SEARCHFORK33)
         {
             int mergeBlocker;
 
@@ -596,7 +596,7 @@ void _K33Search_MergeVertex(graphP theGraph, int W, int WPrevLink, int R)
 
     if (context != NULL)
     {
-        if (theGraph->embedFlags == EMBEDFLAGS_SEARCHFORK33)
+        if (gp_GetEmbedFlags(theGraph) == EMBEDFLAGS_SEARCHFORK33)
         {
             int theList = context->VI[W].separatedDFSChildList;
             theList = LCDelete(context->separatedDFSChildLists, theList, gp_GetDFSChildFromBicompRoot(theGraph, R));
@@ -637,7 +637,7 @@ int _K33Search_HandleBlockedBicomp(graphP theGraph, int v, int RootVertex, int R
     if (context == NULL)
         return NOTOK;
 
-    if (theGraph->embedFlags == EMBEDFLAGS_SEARCHFORK33)
+    if (gp_GetEmbedFlags(theGraph) == EMBEDFLAGS_SEARCHFORK33)
     {
         // If R is the root of a descendant bicomp of v, we push it, but then we know the search for K3,3
         // will be successful and return NONEMBEDDABLE because this condition corresponds to minor A, which
@@ -670,18 +670,18 @@ int _K33Search_EmbedPostprocess(graphP theGraph, int v, int edgeEmbeddingResult)
 
     // For K3,3 search, we just return the edge embedding result because the
     // search result has been obtained already.
-    if (theGraph->embedFlags == EMBEDFLAGS_SEARCHFORK33)
+    if (gp_GetEmbedFlags(theGraph) == EMBEDFLAGS_SEARCHFORK33)
     {
         if (edgeEmbeddingResult == OK)
         {
             // When a graph does not contain a K3,3 homeomorph, the embedding
             // is meaningless, so we empty it out. We preserve the embedFlags
             // to ensure post-processing continues as expected.
-            savedEmbedFlags = theGraph->embedFlags;
-            savedZEROBASEDIO = theGraph->internalFlags & FLAGS_ZEROBASEDIO;
+            savedEmbedFlags = gp_GetEmbedFlags(theGraph);
+            savedZEROBASEDIO = gp_GetGraphFlags(theGraph) & FLAGS_ZEROBASEDIO;
             gp_ReinitializeGraph(theGraph);
             theGraph->embedFlags = savedEmbedFlags;
-            theGraph->internalFlags &= savedZEROBASEDIO;
+            theGraph->graphFlags &= savedZEROBASEDIO;
         }
 
         return edgeEmbeddingResult;
@@ -707,7 +707,7 @@ int _K33Search_EmbedPostprocess(graphP theGraph, int v, int edgeEmbeddingResult)
 
 int _K33Search_CheckEmbeddingIntegrity(graphP theGraph, graphP origGraph)
 {
-    if (theGraph->embedFlags == EMBEDFLAGS_SEARCHFORK33)
+    if (gp_GetEmbedFlags(theGraph) == EMBEDFLAGS_SEARCHFORK33)
     {
         return OK;
     }
@@ -734,7 +734,7 @@ int _K33Search_CheckObstructionIntegrity(graphP theGraph, graphP origGraph)
 {
     // When searching for K3,3, we ensure that theGraph is a subgraph of
     // the original graph and that it contains a K3,3 homeomorph
-    if (theGraph->embedFlags == EMBEDFLAGS_SEARCHFORK33)
+    if (gp_GetEmbedFlags(theGraph) == EMBEDFLAGS_SEARCHFORK33)
     {
         int degrees[5], imageVerts[6];
 

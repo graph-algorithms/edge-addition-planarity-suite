@@ -345,7 +345,7 @@ int _ComputeEdgePositions(DrawPlanarContext *context)
 
     // Sort the vertices by vertical position (in linear time)
 
-    if ((vertexOrder = (int *)malloc(theEmbedding->N * sizeof(int))) == NULL)
+    if ((vertexOrder = (int *)malloc(gp_GetN(theEmbedding) * sizeof(int))) == NULL)
     {
         return NOTOK;
     }
@@ -360,7 +360,7 @@ int _ComputeEdgePositions(DrawPlanarContext *context)
     //    represented by a pair of adjacent edge records
     //    at index 2X.
 
-    if (theEmbedding->M > 0 && (edgeList = LCNew(gp_GetFirstEdge(theEmbedding) / 2 + theEmbedding->M)) == NULL)
+    if (gp_GetM(theEmbedding) > 0 && (edgeList = LCNew(gp_GetFirstEdge(theEmbedding) / 2 + gp_GetM(theEmbedding))) == NULL)
     {
         free(vertexOrder);
         vertexOrder = NULL;
@@ -381,7 +381,7 @@ int _ComputeEdgePositions(DrawPlanarContext *context)
     // the vertex order is recorded as the "generator edge", or the edge of
     // first discovery of that higher numbered vertex, unless the vertex already has
     // a recorded generator edge
-    for (vpos = 0; vpos < theEmbedding->N; vpos++)
+    for (vpos = 0; vpos < gp_GetN(theEmbedding); vpos++)
     {
         // Get the vertex associated with the position
         v = vertexOrder[vpos];
@@ -521,7 +521,7 @@ int _ComputeVertexRanges(DrawPlanarContext *context)
 
     for (v = gp_GetFirstVertex(theEmbedding); gp_VertexInRangeAscending(theEmbedding, v); v++)
     {
-        min = theEmbedding->M + 1;
+        min = gp_GetM(theEmbedding) + 1;
         max = NIL;
 
         // Iterate the edges, except in the isolated vertex case we just
@@ -659,10 +659,7 @@ void _CollectDrawingData(DrawPlanarContext *context, int RootVertex, int W, int 
            will be adjacent to the parent along the external face.
            This vertex is guaranteed to be found in one step
            due to external face 'short-circuiting' that was done in
-           step 'Parent' of the planarity algorithm.
-           We pass theEmbedding->N for the second parameter because
-           of this; we use this function to signify need of extFace
-           links in the other implementation.*/
+           step 'Parent' of the planarity algorithm. */
 
         direction = theEmbedding->theStack->S[K + 3];
         descendant = _GetNextExternalFaceVertex(theEmbedding, BicompRoot, &direction);
@@ -800,8 +797,8 @@ char *_RenderToString(graphP theEmbedding)
 
     if (context != NULL)
     {
-        int N = theEmbedding->N;
-        int M = theEmbedding->M;
+        int N = gp_GetN(theEmbedding);
+        int M = gp_GetM(theEmbedding);
         int zeroBasedVertexOffset = 0;
         int n, m, EsizeOccupied, v, vRange, e, eRange, Mid, Pos;
         char *visRep = (char *)malloc(sizeof(char) * ((M + 1) * 2 * N + 1));
@@ -827,7 +824,7 @@ char *_RenderToString(graphP theEmbedding)
         // compiled with 0-based or 1-based array indexing for the in-memory data structure (i.e.,
         // compiled with USE_FASTER_1BASEDARRAYS USE_0BASEDARRAYS).
         // The macro invoked is responsive to the compile-time difference.
-        if (theEmbedding->internalFlags & FLAGS_ZEROBASEDIO)
+        if (gp_GetGraphFlags(theEmbedding) & FLAGS_ZEROBASEDIO)
             zeroBasedVertexOffset = gp_GetFirstVertex(theGraph);
 
         // Clear the space
@@ -981,13 +978,13 @@ int _CheckVisibilityRepresentationIntegrity(DrawPlanarContext *context)
 
     for (v = gp_GetFirstVertex(theEmbedding); gp_VertexInRangeAscending(theEmbedding, v); v++)
     {
-        if (theEmbedding->M > 0)
+        if (gp_GetM(theEmbedding) > 0)
         {
             if (context->VI[v].pos < 0 ||
-                context->VI[v].pos >= theEmbedding->N ||
+                context->VI[v].pos >= gp_GetN(theEmbedding) ||
                 context->VI[v].start < 0 ||
                 context->VI[v].start > context->VI[v].end ||
-                context->VI[v].end >= theEmbedding->M)
+                context->VI[v].end >= gp_GetM(theEmbedding))
                 return NOTOK;
         }
 
@@ -1015,10 +1012,10 @@ int _CheckVisibilityRepresentationIntegrity(DrawPlanarContext *context)
             context->E[e].start != context->E[eTwin].start ||
             context->E[e].end != context->E[eTwin].end ||
             context->E[e].pos < 0 ||
-            context->E[e].pos >= theEmbedding->M ||
+            context->E[e].pos >= gp_GetM(theEmbedding) ||
             context->E[e].start < 0 ||
             context->E[e].start > context->E[e].end ||
-            context->E[e].end >= theEmbedding->N)
+            context->E[e].end >= gp_GetN(theEmbedding))
             return NOTOK;
 
         /* Get the recorded horizontal position of that edge,

@@ -130,7 +130,7 @@ int _CheckEmbeddingIntegrity(graphP theGraph, graphP origGraph)
     if (_CheckEmbeddingFacialIntegrity(theGraph) != OK)
         return NOTOK;
 
-    if (theGraph->embedFlags == EMBEDFLAGS_OUTERPLANAR)
+    if (gp_GetEmbedFlags(theGraph) == EMBEDFLAGS_OUTERPLANAR)
     {
         if (_CheckAllVerticesOnExternalFace(theGraph) != OK)
             return NOTOK;
@@ -198,7 +198,7 @@ int _CheckEmbeddingFacialIntegrity(graphP theGraph)
 
     // There are M edges, so we better have pushed 2M arcs just now
     // i.e. testing that the continue above skipped only edge holes
-    if (sp_GetCurrentSize(theStack) != 2 * theGraph->M)
+    if (sp_GetCurrentSize(theStack) != 2 * gp_GetM(theGraph))
         return NOTOK;
 
     /* Read faces until every arc is used */
@@ -247,7 +247,7 @@ int _CheckEmbeddingFacialIntegrity(graphP theGraph)
          for disconnected graphs it is extended to f=m-n+1+c where
          c is the number of connected components.*/
 
-    return NumFaces == theGraph->M - theGraph->N + 1 + connectedComponents
+    return NumFaces == gp_GetM(theGraph) - gp_GetN(theGraph) + 1 + connectedComponents
                ? OK
                : NOTOK;
 }
@@ -383,10 +383,10 @@ int _CheckObstructionIntegrity(graphP theGraph, graphP origGraph)
         return NOTOK;
     }
 
-    if (theGraph->embedFlags == EMBEDFLAGS_PLANAR)
+    if (gp_GetEmbedFlags(theGraph) == EMBEDFLAGS_PLANAR)
         return _CheckKuratowskiSubgraphIntegrity(theGraph);
 
-    else if (theGraph->embedFlags == EMBEDFLAGS_OUTERPLANAR)
+    else if (gp_GetEmbedFlags(theGraph) == EMBEDFLAGS_OUTERPLANAR)
         return _CheckOuterplanarObstructionIntegrity(theGraph);
 
     return NOTOK;
@@ -477,7 +477,7 @@ int _TestForCompleteGraphObstruction(graphP theGraph, int numVerts,
         return FALSE;
 
     // All vertices need to be degree 0, degree 2 or degree numVerts-1
-    if (degrees[0] + degrees[2] + degrees[numVerts - 1] != theGraph->N)
+    if (degrees[0] + degrees[2] + degrees[numVerts - 1] != gp_GetN(theGraph))
         return FALSE;
 
     // We clear all the vertex visited flags
@@ -876,8 +876,8 @@ int _TestSubgraph(graphP theSubgraph, graphP theGraph)
 
     // If the graph is not sorted by DFI, but the alleged subgraph is,
     // then "unsort" the alleged subgraph so both have the same vertex order
-    if (!(theGraph->internalFlags & FLAGS_SORTEDBYDFI) &&
-        (theSubgraph->internalFlags & FLAGS_SORTEDBYDFI))
+    if (!(gp_GetGraphFlags(theGraph) & FLAGS_SORTEDBYDFI) &&
+        (gp_GetGraphFlags(theSubgraph) & FLAGS_SORTEDBYDFI))
     {
         invokeSortOnSubgraph = TRUE;
         gp_SortVertices(theSubgraph);
@@ -885,8 +885,8 @@ int _TestSubgraph(graphP theSubgraph, graphP theGraph)
 
     // If the graph is not sorted by DFI, but the alleged subgraph is,
     // then "unsort" the alleged subgraph so both have the same vertex order
-    if (!(theSubgraph->internalFlags & FLAGS_SORTEDBYDFI) &&
-        (theGraph->internalFlags & FLAGS_SORTEDBYDFI))
+    if (!(gp_GetGraphFlags(theSubgraph) & FLAGS_SORTEDBYDFI) &&
+        (gp_GetGraphFlags(theGraph) & FLAGS_SORTEDBYDFI))
     {
         invokeSortOnGraph = TRUE;
         gp_SortVertices(theGraph);
@@ -967,7 +967,7 @@ int _TestSubgraph(graphP theSubgraph, graphP theGraph)
     {
         // If the edge count is wrong, we fail the subgraph test in a way that invokes
         // the name NOTOK so that in debug mode there is more trace on the failure.
-        if (degreeCount != 2 * theSubgraph->M)
+        if (degreeCount != 2 * gp_GetM(theSubgraph))
             Result = NOTOK == FALSE ? NOTOK : FALSE;
     }
 

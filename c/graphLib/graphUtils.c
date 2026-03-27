@@ -242,7 +242,7 @@ int gp_InitGraph(graphP theGraph, int N)
         return NOTOK;
 
     // Should not call init a second time; use reinit
-    if (theGraph->N)
+    if (gp_GetN(theGraph) > 0)
         return NOTOK;
 
     return theGraph->functions.fpInitGraph(theGraph, N);
@@ -359,7 +359,7 @@ void _InitEdges(graphP theGraph)
 
 void gp_ReinitializeGraph(graphP theGraph)
 {
-    if (theGraph == NULL || theGraph->N <= 0)
+    if (theGraph == NULL || gp_GetN(theGraph) <= 0)
         return;
 
     theGraph->functions.fpReinitializeGraph(theGraph);
@@ -368,7 +368,7 @@ void gp_ReinitializeGraph(graphP theGraph)
 void _ReinitializeGraph(graphP theGraph)
 {
     theGraph->M = 0;
-    theGraph->internalFlags = theGraph->embedFlags = 0;
+    theGraph->graphFlags = theGraph->embedFlags = 0;
 
     _InitVertices(theGraph);
     _InitEdges(theGraph);
@@ -457,7 +457,7 @@ int gp_EnsureArcCapacity(graphP theGraph, int requiredArcCapacity)
     // In the special case where gp_InitGraph() has not yet been called,
     // we can simply set the higher arcCapacity since normal initialization
     // will then allocate the correct number of edge records.
-    if (theGraph->N == 0)
+    if (gp_GetN(theGraph) == 0)
     {
         theGraph->arcCapacity = requiredArcCapacity;
         return OK;
@@ -483,7 +483,7 @@ int _EnsureArcCapacity(graphP theGraph, int requiredArcCapacity)
     {
         int stackSize = 2 * requiredArcCapacity;
 
-        if (stackSize < 6 * theGraph->N)
+        if (stackSize < 6 * gp_GetN(theGraph))
         {
             // NOTE: Since this routine only makes the stack bigger, this
             //       calculation is not needed here because we already ensured
@@ -491,7 +491,7 @@ int _EnsureArcCapacity(graphP theGraph, int requiredArcCapacity)
             //       But we do it for clarity and consistency (e.g. so this rule
             //       is not forgotten whenever a "SetArcCapacity" method or a
             //       "reduceArcCapacity" method is added)
-            stackSize = 6 * theGraph->N;
+            stackSize = 6 * gp_GetN(theGraph);
         }
 
         if ((newStack = sp_New(stackSize)) == NULL)
@@ -902,7 +902,7 @@ void _ClearGraph(graphP theGraph)
     theGraph->NV = 0;
     theGraph->M = 0;
     theGraph->arcCapacity = 0;
-    theGraph->internalFlags = 0;
+    theGraph->graphFlags = 0;
     theGraph->embedFlags = 0;
 
     _InitIsolatorContext(theGraph);
@@ -961,7 +961,7 @@ int gp_CopyAdjacencyLists(graphP dstGraph, graphP srcGraph)
     if (dstGraph == NULL || srcGraph == NULL)
         return NOTOK;
 
-    if (dstGraph->N != srcGraph->N || dstGraph->N == 0)
+    if (gp_GetN(dstGraph) != gp_GetN(srcGraph) || gp_GetN(dstGraph) == 0)
         return NOTOK;
 
     if (gp_EnsureArcCapacity(dstGraph, srcGraph->arcCapacity) != OK)
@@ -984,7 +984,7 @@ int gp_CopyAdjacencyLists(graphP dstGraph, graphP srcGraph)
     }
 
     // Tell the dstGraph how many edges it now has and where the edge holes are
-    dstGraph->M = srcGraph->M;
+    dstGraph->M = gp_GetM(srcGraph);
     sp_Copy(dstGraph->edgeHoles, srcGraph->edgeHoles);
 
     return OK;
@@ -1016,7 +1016,7 @@ int gp_CopyGraph(graphP dstGraph, graphP srcGraph)
     }
 
     // The graphs need to be the same order and initialized
-    if (dstGraph->N != srcGraph->N || dstGraph->N == 0)
+    if (gp_GetN(dstGraph) != gp_GetN(srcGraph) || gp_GetN(dstGraph) == 0)
     {
         return NOTOK;
     }
@@ -1069,11 +1069,11 @@ int gp_CopyGraph(graphP dstGraph, graphP srcGraph)
         gp_CopyEdgeRec(dstGraph, e, srcGraph, e);
 
     // Give the dstGraph the same size and intrinsic properties
-    dstGraph->N = srcGraph->N;
-    dstGraph->NV = srcGraph->NV;
-    dstGraph->M = srcGraph->M;
-    dstGraph->internalFlags = srcGraph->internalFlags;
-    dstGraph->embedFlags = srcGraph->embedFlags;
+    dstGraph->N = gp_GetN(srcGraph);
+    dstGraph->NV = gp_GetNV(srcGraph);
+    dstGraph->M = gp_GetM(srcGraph);
+    dstGraph->graphFlags = gp_GetGraphFlags(srcGraph);
+    dstGraph->embedFlags = gp_GetEmbedFlags(srcGraph);
 
     dstGraph->IC = srcGraph->IC;
 
@@ -1115,7 +1115,7 @@ graphP gp_DupGraph(graphP theGraph)
     if ((result = gp_New()) == NULL)
         return NULL;
 
-    if (gp_InitGraph(result, theGraph->N) != OK ||
+    if (gp_InitGraph(result, gp_GetN(theGraph)) != OK ||
         gp_CopyGraph(result, theGraph) != OK)
     {
         gp_Free(&result);
@@ -1142,7 +1142,7 @@ int gp_CreateRandomGraph(graphP theGraph)
 {
     int N, M, u, v, m;
 
-    N = theGraph->N;
+    N = gp_GetN(theGraph);
 
     /* Generate a random tree; note that this method virtually guarantees
             that the graph will be renumbered, but it is linear time.
@@ -1296,7 +1296,7 @@ int gp_CreateRandomGraphEx(graphP theGraph, int numEdges)
 {
     int N, arc, M, root, v, c, p, last, u, e, EsizeOccupied;
 
-    N = theGraph->N;
+    N = gp_GetN(theGraph);
 
     if (numEdges > theGraph->arcCapacity / 2)
         numEdges = theGraph->arcCapacity / 2;
@@ -1326,7 +1326,7 @@ int gp_CreateRandomGraphEx(graphP theGraph, int numEdges)
     root = gp_GetFirstVertex(theGraph);
     v = last = _getUnprocessedChild(theGraph, root);
 
-    while (v != root && theGraph->M < M)
+    while (v != root && gp_GetM(theGraph) < M)
     {
         c = _getUnprocessedChild(theGraph, v);
 
@@ -1391,7 +1391,7 @@ int gp_CreateRandomGraphEx(graphP theGraph, int numEdges)
 
     /* Add additional edges if the limit has not yet been reached. */
 
-    while (theGraph->M < numEdges)
+    while (gp_GetM(theGraph) < numEdges)
     {
         u = _GetRandomNumber(gp_GetFirstVertex(theGraph), gp_GetLastVertex(theGraph));
         v = _GetRandomNumber(gp_GetFirstVertex(theGraph), gp_GetLastVertex(theGraph));
@@ -1856,7 +1856,7 @@ int gp_AddEdge(graphP theGraph, int u, int ulink, int v, int vlink)
 
     /* We enforce the edge limit */
 
-    if (theGraph->M >= theGraph->arcCapacity / 2)
+    if (gp_GetM(theGraph) >= theGraph->arcCapacity / 2)
         return NONEMBEDDABLE;
 
     if (sp_NonEmpty(theGraph->edgeHoles))
@@ -1895,7 +1895,7 @@ int gp_DynamicAddEdge(graphP theGraph, int u, int ulink, int v, int vlink)
     if (Result == NONEMBEDDABLE)
     {
         int candidateArcCapacity = gp_GetArcCapacity(theGraph) * 2;
-        int N = theGraph->N;
+        int N = gp_GetN(theGraph);
         int newArcCapacity = (candidateArcCapacity > (N * (N - 1))) ? (N * (N - 1)) : candidateArcCapacity;
 
         // We first give it a try at the maximum arc capacity for a
@@ -1957,7 +1957,7 @@ int gp_InsertEdge(graphP theGraph, int u, int e_u, int e_ulink,
         e_ulink < 0 || e_ulink > 1 || e_vlink < 0 || e_vlink > 1)
         return NOTOK;
 
-    if (theGraph->M >= theGraph->arcCapacity / 2)
+    if (gp_GetM(theGraph) >= theGraph->arcCapacity / 2)
         return NONEMBEDDABLE;
 
     if (sp_NonEmpty(theGraph->edgeHoles))

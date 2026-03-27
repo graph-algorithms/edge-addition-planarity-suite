@@ -115,7 +115,7 @@ int gp_AttachK4Search(graphP theGraph)
     // also happens before gp_InitGraph(), which means N==0.
     // However, sometimes a feature is attached after gp_InitGraph(), in
     // which case N > 0
-    if (theGraph->N > 0)
+    if (gp_GetN(theGraph) > 0)
     {
         if (_K4Search_CreateStructures(context) != OK ||
             _K4Search_InitStructures(context) != OK)
@@ -175,7 +175,7 @@ int _K4Search_CreateStructures(K4SearchContext *context)
 {
     int Esize = gp_EdgeArraySize(context->theGraph);
 
-    if (context->theGraph->N <= 0)
+    if (gp_GetN(context->theGraph) <= 0)
         return NOTOK;
 
     if ((context->E = (K4Search_EdgeRecP)malloc(Esize * sizeof(K4Search_EdgeRec))) == NULL ||
@@ -334,7 +334,7 @@ int _K4Search_HandleBlockedBicomp(graphP theGraph, int v, int RootVertex, int R)
     if (context == NULL)
         return NOTOK;
 
-    if (theGraph->embedFlags == EMBEDFLAGS_SEARCHFORK4)
+    if (gp_GetEmbedFlags(theGraph) == EMBEDFLAGS_SEARCHFORK4)
     {
         int RetVal = OK;
 
@@ -418,18 +418,18 @@ int _K4Search_EmbedPostprocess(graphP theGraph, int v, int edgeEmbeddingResult)
 
     // For K4 search, we just return the edge embedding result because the
     // search result has been obtained already.
-    if (theGraph->embedFlags == EMBEDFLAGS_SEARCHFORK4)
+    if (gp_GetEmbedFlags(theGraph) == EMBEDFLAGS_SEARCHFORK4)
     {
         if (edgeEmbeddingResult == OK)
         {
             // When a graph does not contain a K4 homeomorph, the embedding
             // is meaningless, so we empty it out. We preserve the embedFlags
             // to ensure post-processing continues as expected.
-            savedEmbedFlags = theGraph->embedFlags;
-            savedZEROBASEDIO = theGraph->internalFlags & FLAGS_ZEROBASEDIO;
+            savedEmbedFlags = gp_GetEmbedFlags(theGraph);
+            savedZEROBASEDIO = gp_GetGraphFlags(theGraph) & FLAGS_ZEROBASEDIO;
             gp_ReinitializeGraph(theGraph);
             theGraph->embedFlags = savedEmbedFlags;
-            theGraph->internalFlags &= savedZEROBASEDIO;
+            theGraph->graphFlags &= savedZEROBASEDIO;
         }
 
         return edgeEmbeddingResult;
@@ -455,7 +455,7 @@ int _K4Search_EmbedPostprocess(graphP theGraph, int v, int edgeEmbeddingResult)
 
 int _K4Search_CheckEmbeddingIntegrity(graphP theGraph, graphP origGraph)
 {
-    if (theGraph->embedFlags == EMBEDFLAGS_SEARCHFORK4)
+    if (gp_GetEmbedFlags(theGraph) == EMBEDFLAGS_SEARCHFORK4)
     {
         return OK;
     }
@@ -482,7 +482,7 @@ int _K4Search_CheckObstructionIntegrity(graphP theGraph, graphP origGraph)
 {
     // When searching for K4, we ensure that theGraph is a subgraph of
     // the original graph and that it contains a K4 homeomorph
-    if (theGraph->embedFlags == EMBEDFLAGS_SEARCHFORK4)
+    if (gp_GetEmbedFlags(theGraph) == EMBEDFLAGS_SEARCHFORK4)
     {
         int degrees[4], imageVerts[4];
 

@@ -301,7 +301,7 @@ int _EmbeddingInitialize(graphP theGraph)
     }
 
     // The graph is now DFS numbered
-    theGraph->internalFlags |= FLAGS_DFSNUMBERED;
+    theGraph->graphFlags |= FLAGS_DFSNUMBERED;
 
     // (6) Now that all vertices have a DFI in the index member, we can sort vertices
     if (gp_SortVertices(theGraph) != OK)
@@ -311,7 +311,7 @@ int _EmbeddingInitialize(graphP theGraph)
     for (v = gp_GetLastVertex(theGraph); gp_VertexInRangeDescending(theGraph, v); v--)
     {
         // (7) Initialize for pertinence management
-        gp_SetVertexVisitedInfo(theGraph, v, theGraph->N);
+        gp_SetVertexVisitedInfo(theGraph, v, gp_GetN(theGraph));
 
         // (7) Initialize for future pertinence management
         child = gp_GetVertexSortedDFSChildList(theGraph, v);
@@ -946,7 +946,7 @@ int _WalkDown(graphP theGraph, int v, int RootVertex)
                 // (or if the algorithm is based on outerplanarity), then the vertex is
                 // a stopping vertex for the Walkdown traversal.
                 gp_UpdateVertexFuturePertinentChild(theGraph, W, v);
-                if (FUTUREPERTINENT(theGraph, W, v) || (theGraph->embedFlags & EMBEDFLAGS_OUTERPLANAR))
+                if (FUTUREPERTINENT(theGraph, W, v) || (gp_GetEmbedFlags(theGraph) & EMBEDFLAGS_OUTERPLANAR))
                 {
                     // Create an external face short-circuit between RootVertex and the stopping vertex W
                     // so that future steps do not walk down a long path of inactive vertices between them.
@@ -1033,12 +1033,12 @@ int _HandleBlockedBicomp(graphP theGraph, int v, int RootVertex, int R)
     if (R != RootVertex)
         sp_Push2(theGraph->theStack, R, 0);
 
-    if (theGraph->embedFlags == EMBEDFLAGS_PLANAR)
+    if (gp_GetEmbedFlags(theGraph) == EMBEDFLAGS_PLANAR)
     {
         if (_IsolateKuratowskiSubgraph(theGraph, v, RootVertex) != OK)
             RetVal = NOTOK;
     }
-    else if (theGraph->embedFlags == EMBEDFLAGS_OUTERPLANAR)
+    else if (gp_GetEmbedFlags(theGraph) == EMBEDFLAGS_OUTERPLANAR)
     {
         if (_IsolateOuterplanarObstruction(theGraph, v, RootVertex) != OK)
             RetVal = NOTOK;

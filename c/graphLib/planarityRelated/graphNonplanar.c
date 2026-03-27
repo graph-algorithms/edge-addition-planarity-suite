@@ -268,7 +268,7 @@ void _FindActiveVertices(graphP theGraph, int R, int *pX, int *pY)
     // For planarity algorithms, advance past inactive vertices
     // For outerplanarity algorithms, ignore the notion of inactive vertices
     // since all vertices must remain on the external face.
-    if (!(theGraph->embedFlags & EMBEDFLAGS_OUTERPLANAR))
+    if (!(gp_GetEmbedFlags(theGraph) & EMBEDFLAGS_OUTERPLANAR))
     {
         gp_UpdateVertexFuturePertinentChild(theGraph, *pX, v);
         while (INACTIVE(theGraph, *pX, v))

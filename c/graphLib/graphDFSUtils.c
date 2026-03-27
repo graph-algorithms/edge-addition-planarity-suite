@@ -42,7 +42,7 @@ int gp_CreateDFSTree(graphP theGraph)
 
     if (theGraph == NULL)
         return NOTOK;
-    if (theGraph->internalFlags & FLAGS_DFSNUMBERED)
+    if (gp_GetGraphFlags(theGraph) & FLAGS_DFSNUMBERED)
         return OK;
 
     _gp_LogLine("\ngraphDFSUtils.c/gp_CreateDFSTree() start");
@@ -111,7 +111,7 @@ int gp_CreateDFSTree(graphP theGraph)
 
     _gp_LogLine("graphDFSUtils.c/gp_CreateDFSTree() end\n");
 
-    theGraph->internalFlags |= FLAGS_DFSNUMBERED;
+    theGraph->graphFlags |= FLAGS_DFSNUMBERED;
 
 #ifdef PROFILE
     platform_GetTime(end);
@@ -156,7 +156,7 @@ int _SortVertices(graphP theGraph)
 
     if (theGraph == NULL)
         return NOTOK;
-    if (!(theGraph->internalFlags & FLAGS_DFSNUMBERED))
+    if (!(gp_GetGraphFlags(theGraph) & FLAGS_DFSNUMBERED))
         if (gp_CreateDFSTree(theGraph) != OK)
             return NOTOK;
 
@@ -218,7 +218,7 @@ int _SortVertices(graphP theGraph)
 
     /* Invert the bit that records the sort order of the graph */
 
-    theGraph->internalFlags ^= FLAGS_SORTEDBYDFI;
+    theGraph->graphFlags ^= FLAGS_SORTEDBYDFI;
 
     _gp_LogLine("graphDFSUtils.c/_SortVertices() end\n");
 
@@ -268,11 +268,11 @@ int gp_ComputeLowpoints(graphP theGraph)
 
     theStack = theGraph->theStack;
 
-    if (!(theGraph->internalFlags & FLAGS_DFSNUMBERED))
+    if (!(gp_GetGraphFlags(theGraph) & FLAGS_DFSNUMBERED))
         if (gp_CreateDFSTree(theGraph) != OK)
             return NOTOK;
 
-    if (!(theGraph->internalFlags & FLAGS_SORTEDBYDFI))
+    if (!(gp_GetGraphFlags(theGraph) & FLAGS_SORTEDBYDFI))
         if (gp_SortVertices(theGraph) != OK)
             return NOTOK;
 
@@ -285,7 +285,7 @@ int gp_ComputeLowpoints(graphP theGraph)
 
     // A stack of size N suffices because at maximum every vertex is pushed only once
     // However, since a larger stack is needed for the main DFS, this is mainly documentation
-    if (sp_GetCapacity(theStack) < theGraph->N)
+    if (sp_GetCapacity(theStack) < gp_GetN(theGraph))
         return NOTOK;
 
     sp_ClearStack(theStack);
@@ -393,11 +393,11 @@ int gp_ComputeLeastAncestors(graphP theGraph)
 
     theStack = theGraph->theStack;
 
-    if (!(theGraph->internalFlags & FLAGS_DFSNUMBERED))
+    if (!(gp_GetGraphFlags(theGraph) & FLAGS_DFSNUMBERED))
         if (gp_CreateDFSTree(theGraph) != OK)
             return NOTOK;
 
-    if (!(theGraph->internalFlags & FLAGS_SORTEDBYDFI))
+    if (!(gp_GetGraphFlags(theGraph) & FLAGS_SORTEDBYDFI))
         if (gp_SortVertices(theGraph) != OK)
             return NOTOK;
 
@@ -409,7 +409,7 @@ int gp_ComputeLeastAncestors(graphP theGraph)
     _gp_LogLine("\ngraphDFSUtils.c/gp_ComputeLeastAncestors() start");
 
     // A stack of size N suffices because at maximum every vertex is pushed only once
-    if (sp_GetCapacity(theStack) < theGraph->N)
+    if (sp_GetCapacity(theStack) < gp_GetN(theGraph))
         return NOTOK;
 
     sp_ClearStack(theStack);

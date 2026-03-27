@@ -333,7 +333,7 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
     }
 
     if (zeroBased)
-        theGraph->internalFlags |= FLAGS_ZEROBASEDIO;
+        theGraph->graphFlags |= FLAGS_ZEROBASEDIO;
 
     return OK;
 }
@@ -426,7 +426,7 @@ int _ReadLEDAGraph(graphP theGraph, strOrFileP inputContainer)
     }
 
     if (zeroBasedOffset)
-        theGraph->internalFlags |= FLAGS_ZEROBASEDIO;
+        theGraph->graphFlags |= FLAGS_ZEROBASEDIO;
 
     return OK;
 }
@@ -620,7 +620,7 @@ int _WriteAdjList(graphP theGraph, strOrFileP outputContainer)
         return NOTOK;
 
     // Write the number of vertices of the graph to the file or string buffer
-    if (sprintf(numberStr, "N=%d\n", theGraph->N) < 1)
+    if (sprintf(numberStr, "N=%d\n", gp_GetN(theGraph)) < 1)
         return NOTOK;
     if (sf_fputs(numberStr, outputContainer) == EOF)
         return NOTOK;
@@ -629,7 +629,7 @@ int _WriteAdjList(graphP theGraph, strOrFileP outputContainer)
     // adjacency list terminator based on whether this library has been compiled with 0-based or
     // 1-based array indexing for the in-memory data structure (i.e., compiled with
     // USE_FASTER_1BASEDARRAYS USE_0BASEDARRAYS). The macro invoked is responsive to the difference.
-    if (theGraph->internalFlags & FLAGS_ZEROBASEDIO)
+    if (gp_GetGraphFlags(theGraph) & FLAGS_ZEROBASEDIO)
     {
         zeroBasedVertexOffset = gp_GetFirstVertex(theGraph);
         // If the graph must be written 0-based, then the adjacency list terminator must be -1,
@@ -694,13 +694,13 @@ int _WriteAdjMatrix(graphP theGraph, strOrFileP outputContainer)
         return NOTOK;
 
     // Write the number of vertices in the graph to the file or string buffer
-    if (sprintf(numberStr, "%d\n", theGraph->N) < 1)
+    if (sprintf(numberStr, "%d\n", gp_GetN(theGraph)) < 1)
         return NOTOK;
     if (sf_fputs(numberStr, outputContainer) == EOF)
         return NOTOK;
 
     // Allocate memory for storing a string expression of one row at a time
-    Row = (char *)malloc((theGraph->N + 2) * sizeof(char));
+    Row = (char *)malloc((gp_GetN(theGraph) + 2) * sizeof(char));
     if (Row == NULL)
         return NOTOK;
 
@@ -725,8 +725,8 @@ int _WriteAdjMatrix(graphP theGraph, strOrFileP outputContainer)
             e = gp_GetNextArc(theGraph, e);
         }
 
-        Row[theGraph->N] = '\n';
-        Row[theGraph->N + 1] = '\0';
+        Row[gp_GetN(theGraph)] = '\n';
+        Row[gp_GetN(theGraph) + 1] = '\0';
 
         // Write the row to the file or string buffer
         if (sf_fputs(Row, outputContainer) == EOF)
@@ -797,7 +797,7 @@ int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer)
         return NOTOK;
 
     /* Print parent copy vertices and their adjacency lists */
-    if (sprintf(lineBuf, "DEBUG N=%d M=%d\n", theGraph->N, theGraph->M) < 1)
+    if (sprintf(lineBuf, "DEBUG N=%d M=%d\n", gp_GetN(theGraph), gp_GetM(theGraph)) < 1)
         return NOTOK;
     if (sf_fputs(lineBuf, outputContainer) == EOF)
         return NOTOK;

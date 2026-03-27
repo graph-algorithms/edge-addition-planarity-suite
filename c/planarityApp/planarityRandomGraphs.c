@@ -567,7 +567,7 @@ int RandomGraph(char const *const commandString, int extraEdges, int numVertices
     }
     platform_GetTime(end);
 
-    sprintf(messageContents, "Created random graph with %d edges in %.3lf seconds. ", theGraph->M, platform_GetDuration(start, end));
+    sprintf(messageContents, "Created random graph with %d edges in %.3lf seconds. ", gp_GetM(theGraph), platform_GetDuration(start, end));
     Message(messageContents);
     FlushConsole(stdout);
 

@@ -749,7 +749,7 @@ char const *GetBaseName(int baseFlag)
 
 int AttachAlgorithm(graphP theGraph, char command)
 {
-    if (theGraph == NULL || theGraph->N <= 0)
+    if (theGraph == NULL || gp_GetN(theGraph) <= 0)
     {
         ErrorMessage("Unable to attach graph algorithm extension to NULL or uninitialized graphP.\n");
         return NOTOK;

@@ -212,7 +212,7 @@ int _SearchForK33InBicomp(graphP theGraph, K33SearchContext *context, int v, int
     /* Set visitedInfo values in the bicomp to the initialized state so the planarity
         algorithm can properly do the Walkup procedure in future steps */
 
-    if (_FillVertexVisitedInfoInBicomp(theGraph, IC->r, theGraph->N) != OK)
+    if (_FillVertexVisitedInfoInBicomp(theGraph, IC->r, gp_GetN(theGraph)) != OK)
         return NOTOK;
 
     /* We now intend to ignore the pertinence of W (conceptually eliminating
@@ -834,7 +834,7 @@ int _FindK33WithMergeBlocker(graphP theGraph, K33SearchContext *context, int v, 
 
     for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
     {
-        gp_SetVertexVisitedInfo(theGraph, v, theGraph->N);
+        gp_SetVertexVisitedInfo(theGraph, v, gp_GetN(theGraph));
         gp_SetVertexPertinentEdge(theGraph, v, NIL);
         gp_SetVertexPertinentRootsList(theGraph, v, NIL);
 

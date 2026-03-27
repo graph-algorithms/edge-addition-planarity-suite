@@ -101,7 +101,7 @@ extern "C"
 #define gp_EdgeInUse(theGraph, e) (gp_IsAnyTypeVertex(theGraph, gp_GetNeighbor(theGraph, e)))
 #define gp_EdgeNotInUse(theGraph, e) (gp_IsNotAnyTypeVertex(theGraph, gp_GetNeighbor(theGraph, e)))
 #define gp_EdgeArraySize(theGraph) (gp_GetFirstEdge(theGraph) + (theGraph)->arcCapacity)
-#define gp_EdgeInUseArraySize(theGraph) (gp_GetFirstEdge(theGraph) + (((theGraph)->M + sp_GetCurrentSize((theGraph)->edgeHoles)) << 1))
+#define gp_EdgeInUseArraySize(theGraph) (gp_GetFirstEdge(theGraph) + ((gp_GetM(theGraph) + sp_GetCurrentSize((theGraph)->edgeHoles)) << 1))
 
 // An edge is represented by two consecutive edge records (arcs) in the edge array E.
 // If an even number, xor 1 will add one; if an odd number, xor 1 will subtract 1
@@ -276,17 +276,17 @@ extern "C"
     // The use of *AnyTypeVertex* refers to any non-virtual or virtual vertex
 
 #define gp_GetFirstVertex(theGraph) (1)
-#define gp_GetLastVertex(theGraph) ((theGraph)->N)
+#define gp_GetLastVertex(theGraph) (gp_GetN(theGraph))
 
-#define gp_GetFirstVirtualVertex(theGraph) ((theGraph)->N + 1)
-#define gp_GetLastVirtualVertex(theGraph) ((theGraph)->N + (theGraph)->NV)
+#define gp_GetFirstVirtualVertex(theGraph) (gp_GetN(theGraph) + 1)
+#define gp_GetLastVirtualVertex(theGraph) (gp_GetN(theGraph) + gp_GetNV(theGraph))
 
 #define gp_GetFirstAnyTypeVertex(theGraph) (gp_GetFirstVertex(theGraph))
 #define gp_GetLastAnyTypeVertex(theGraph) (gp_GetLastVirtualVertex(theGraph))
 
 #ifndef DEBUG
 #define gp_IsVertex(theGraph, v) (v)
-#define gp_IsVirtualVertex(theGraph, v) ((v) > (theGraph)->N)
+#define gp_IsVirtualVertex(theGraph, v) ((v) > gp_GetN(theGraph))
 #define gp_IsAnyTypeVertex(theGraph, v) (v)
 #else
 #define gp_IsVertex(theGraph, v) \
@@ -314,17 +314,17 @@ extern "C"
 #define gp_IsNotVirtualVertex(theGraph, v) (!(gp_IsVirtualVertex(theGraph, v)))
 #define gp_IsNotAnyTypeVertex(theGraph, v) (!(gp_IsAnyTypeVertex(theGraph, v)))
 
-#define gp_VertexInRangeAscending(theGraph, v) ((v) <= (theGraph)->N)
+#define gp_VertexInRangeAscending(theGraph, v) ((v) <= gp_GetN(theGraph))
 #define gp_VertexInRangeDescending(theGraph, v) (v)
 
-#define gp_VirtualVertexInRangeAscending(theGraph, v) ((v) <= (theGraph)->N + (theGraph)->NV)
-#define gp_VirtualVertexInRangeDescending(theGraph, v) ((v) > (theGraph)->N)
+#define gp_VirtualVertexInRangeAscending(theGraph, v) ((v) <= gp_GetN(theGraph) + gp_GetNV(theGraph))
+#define gp_VirtualVertexInRangeDescending(theGraph, v) ((v) > gp_GetN(theGraph))
 
 #define gp_AnyTypeVertexInRangeAscending(theGraph, v) (gp_VirtualVertexInRangeAscending(theGraph, v))
 #define gp_AnyTypeVertexInRangeDescending(theGraph, v) (gp_VirtualVertexInRangeDescending(theGraph, v))
 
-#define gp_VertexArraySize(theGraph) (gp_GetFirstVertex(theGraph) + (theGraph)->N)
-#define gp_AnyTypeVertexArraySize(theGraph) (gp_VertexArraySize(theGraph) + (theGraph)->NV)
+#define gp_VertexArraySize(theGraph) (gp_GetFirstVertex(theGraph) + gp_GetN(theGraph))
+#define gp_AnyTypeVertexArraySize(theGraph) (gp_VertexArraySize(theGraph) + gp_GetNV(theGraph))
 
 #define gp_VirtualVertexInUse(theGraph, virtualVertex) (gp_IsArc(theGraph, gp_GetFirstArc(theGraph, virtualVertex)))
 #define gp_VirtualVertexNotInUse(theGraph, virtualVertex) (gp_IsNotArc(theGraph, gp_GetFirstArc(theGraph, virtualVertex)))
@@ -332,17 +332,17 @@ extern "C"
 #else // Using Slower 0-based Arrays
 
 #define gp_GetFirstVertex(theGraph) (0)
-#define gp_GetLastVertex(theGraph) ((theGraph)->N - 1)
+#define gp_GetLastVertex(theGraph) (gp_GetN(theGraph) - 1)
 
-#define gp_GetFirstVirtualVertex(theGraph) ((theGraph)->N)
-#define gp_GetLastVirtualVertex(theGraph) ((theGraph)->N + (theGraph)->NV - 1)
+#define gp_GetFirstVirtualVertex(theGraph) (gp_GetN(theGraph))
+#define gp_GetLastVirtualVertex(theGraph) (gp_GetN(theGraph) + gp_GetNV(theGraph) - 1)
 
 #define gp_GetFirstAnyTypeVertex(theGraph) (gp_GetFirstVertex(theGraph))
 #define gp_GetLastAnyTypeVertex(theGraph) (gp_GetLastVirtualVertex(theGraph))
 
 #ifndef DEBUG
 #define gp_IsVertex(theGraph, v) ((v) != NIL)
-#define gp_IsVirtualVertex(theGraph, v) ((v) >= (theGraph)->N)
+#define gp_IsVirtualVertex(theGraph, v) ((v) >= gp_GetN(theGraph))
 #define gp_IsAnyTypeVertex(theGraph, v) ((v) != NIL)
 #else
 #define gp_IsVertex(theGraph, v) \
@@ -363,17 +363,17 @@ extern "C"
 #define gp_IsNotVirtualVertex(theGraph, v) (!(gp_IsVirtualVertex(theGraph, v)))
 #define gp_IsNotAnyTypeVertex(theGraph, v) (!(gp_IsAnyTypeVertex(theGraph, v)))
 
-#define gp_VertexInRangeAscending(theGraph, v) ((v) < (theGraph)->N)
+#define gp_VertexInRangeAscending(theGraph, v) ((v) < gp_GetN(theGraph))
 #define gp_VertexInRangeDescending(theGraph, v) ((v) >= 0)
 
-#define gp_VirtualVertexInRangeAscending(theGraph, v) ((v) < (theGraph)->N + (theGraph)->NV)
-#define gp_VirtualVertexInRangeDescending(theGraph, v) ((v) >= (theGraph)->N)
+#define gp_VirtualVertexInRangeAscending(theGraph, v) ((v) < gp_GetN(theGraph) + gp_GetNV(theGraph))
+#define gp_VirtualVertexInRangeDescending(theGraph, v) ((v) >= gp_GetN(theGraph))
 
 #define gp_AnyTypeVertexInRangeAscending(theGraph, v) (gp_VirtualVertexInRangeAscending(theGraph, v))
 #define gp_AnyTypeVertexInRangeDescending(theGraph, v) (gp_VirtualVertexInRangeDescending(theGraph, v))
 
-#define gp_VertexArraySize(theGraph) (gp_GetFirstVertex(theGraph) + (theGraph)->N)
-#define gp_AnyTypeVertexArraySize(theGraph) (gp_VertexArraySize(theGraph) + (theGraph)->NV)
+#define gp_VertexArraySize(theGraph) (gp_GetFirstVertex(theGraph) + gp_GetN(theGraph))
+#define gp_AnyTypeVertexArraySize(theGraph) (gp_VertexArraySize(theGraph) + gp_GetNV(theGraph))
 
 #define gp_VirtualVertexInUse(theGraph, virtualVertex) (gp_IsArc(theGraph, gp_GetFirstArc(theGraph, virtualVertex)))
 #define gp_VirtualVertexNotInUse(theGraph, virtualVertex) (gp_IsNotArc(theGraph, gp_GetFirstArc(theGraph, virtualVertex)))
@@ -453,8 +453,8 @@ extern "C"
 // respectively, c1 and c2 as well as possibly more vertices from, respectively,
 // T(c1) and T(c2), depending on what back edges may exist in the graph between
 // pairs of vertices in, respectively, T(c1) and T(c2).
-#define gp_GetBicompRootFromDFSChild(theGraph, c) ((c) + theGraph->N)
-#define gp_GetDFSChildFromBicompRoot(theGraph, R) ((R) - theGraph->N)
+#define gp_GetBicompRootFromDFSChild(theGraph, c) ((c) + gp_GetN(theGraph))
+#define gp_GetDFSChildFromBicompRoot(theGraph, R) ((R) - gp_GetN(theGraph))
 #define gp_GetVertexFromBicompRoot(theGraph, R) gp_GetVertexParent(theGraph, gp_GetDFSChildFromBicompRoot(theGraph, R))
 #define gp_IsBicompRoot(theGraph, v) (!gp_VertexInRangeAscending(theGraph, v))
 
@@ -696,7 +696,7 @@ extern "C"
             edgeHoles: free locations in E where edges have been deleted
 
             theStack: Used by various graph routines needing a stack
-            internalFlags: Additional state information about the graph
+            graphFlags: Additional state information about the graph
             embedFlags: controls type of embedding (e.g. planar)
 
             IC: contains additional useful variables for Kuratowski subgraph isolation.
@@ -721,7 +721,7 @@ extern "C"
         stackP edgeHoles;
 
         stackP theStack;
-        int internalFlags, embedFlags;
+        int graphFlags, embedFlags;
 
         isolatorContext IC;
         listCollectionP BicompRootLists, sortedDFSChildLists;
@@ -734,15 +734,20 @@ extern "C"
     typedef struct baseGraphStructure baseGraphStructure;
     typedef baseGraphStructure *graphP;
 
+// Fast macros intended for read-only access to selected graph structure data members
 #define gp_GetN(theGraph) ((theGraph)->N)
+#define gp_GetNV(theGraph) ((theGraph)->NV)
+#define gp_GetM(theGraph) ((theGraph)->M)
+#define gp_GetGraphFlags(theGraph) ((theGraph)->graphFlags)
+#define gp_GetEmbedFlags(theGraph) ((theGraph)->embedFlags)
 
-    /* Internal Flags for graph:
-            FLAGS_DFSNUMBERED is set if DFSNumber() has succeeded for the graph
-            FLAGS_SORTEDBYDFI records whether the graph is in original vertex
-                    order or sorted by depth first index.  Successive calls to
-                    SortVertices() toggle this bit.
+    /* Graph Flags:
+            FLAGS_DFSNUMBERED is set if DFS numbering has been performed on the graph
+            FLAGS_SORTEDBYDFI records whether the graph is in original vertex order
+                    or sorted by depth first index. Successive calls to SortVertices()
+                    toggle this bit.
             FLAGS_ZEROBASEDIO is typically set by gp_Read() to indicate that the
-                    adjacency list representation began with index 0.
+                    adjacency list representation in a file began with index 0.
     */
 
 #define FLAGS_DFSNUMBERED 1
