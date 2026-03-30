@@ -197,9 +197,6 @@ extern "C"
         }                                                                                \
     }
 
-// Fast utility routine for copying edge records
-#define gp_CopyEdgeRec(dstGraph, edst, srcGraph, esrc) (dstGraph->E[edst] = srcGraph->E[esrc])
-
     /********************************************************************
      Vertex Record Definition (Any Type of Vertex)
 
@@ -244,16 +241,6 @@ extern "C"
     } anyTypeVertexRec;
 
     typedef anyTypeVertexRec *anyTypeVertexRecP;
-
-// Fast utility routines for copying and swapping "any type" vertex records
-#define gp_CopyAnyTypeVertexRec(dstGraph, vdst, srcGraph, vsrc) (dstGraph->V[vdst] = srcGraph->V[vsrc])
-
-#define gp_SwapAnyTypeVertexRec(dstGraph, vdst, srcGraph, vsrc) \
-    {                                                           \
-        anyTypeVertexRec tempV = dstGraph->V[vdst];             \
-        dstGraph->V[vdst] = srcGraph->V[vsrc];                  \
-        srcGraph->V[vsrc] = tempV;                              \
-    }
 
 ////////////////////////////////////////////
 // Accessors for vertex adjacency list links
@@ -629,15 +616,6 @@ extern "C"
 
 #define gp_GetVertexFwdArcList(theGraph, v) (theGraph->VI[v].fwdArcList)
 #define gp_SetVertexFwdArcList(theGraph, v, theFwdArcList) (theGraph->VI[v].fwdArcList = theFwdArcList)
-
-#define gp_CopyVertexInfo(dstGraph, dstI, srcGraph, srcI) (dstGraph->VI[dstI] = srcGraph->VI[srcI])
-
-#define gp_SwapVertexInfo(dstGraph, dstPos, srcGraph, srcPos) \
-    {                                                         \
-        vertexInfo tempVI = dstGraph->VI[dstPos];             \
-        dstGraph->VI[dstPos] = srcGraph->VI[srcPos];          \
-        srcGraph->VI[srcPos] = tempVI;                        \
-    }
 
     /********************************************************************
     // PLANARITY-RELATED ONLY

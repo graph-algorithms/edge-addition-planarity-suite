@@ -998,12 +998,17 @@ int gp_CopyAdjacencyLists(graphP dstGraph, graphP srcGraph)
  The dstGraph must have been previously initialized with the same
  number of vertices as the srcGraph.
 
- Also, if the dstGraph has a higher arc capacity than the srcGraph,
+ NOTE: If the dstGraph has a higher arc capacity than the srcGraph,
  then this call will fail unless the caller first ensures that the
  arc capacity of the srcGraph is increased to match the dstGraph.
 
  Returns OK for success, NOTOK for failure.
  ********************************************************************/
+
+// Give macro names to three copy operations
+#define _gp_CopyAnyTypeVertexRec(dstGraph, vdst, srcGraph, vsrc) (dstGraph->V[vdst] = srcGraph->V[vsrc])
+#define _gp_CopyVertexInfo(dstGraph, dstI, srcGraph, srcI) (dstGraph->VI[dstI] = srcGraph->VI[srcI])
+#define _gp_CopyEdgeRec(dstGraph, edst, srcGraph, esrc) (dstGraph->E[edst] = srcGraph->E[esrc])
 
 int gp_CopyGraph(graphP dstGraph, graphP srcGraph)
 {
@@ -1047,8 +1052,8 @@ int gp_CopyGraph(graphP dstGraph, graphP srcGraph)
     // by extensions are copied below by gp_CopyExtensions()
     for (v = gp_GetFirstVertex(srcGraph); gp_VertexInRangeAscending(srcGraph, v); v++)
     {
-        gp_CopyAnyTypeVertexRec(dstGraph, v, srcGraph, v);
-        gp_CopyVertexInfo(dstGraph, v, srcGraph, v);
+        _gp_CopyAnyTypeVertexRec(dstGraph, v, srcGraph, v);
+        _gp_CopyVertexInfo(dstGraph, v, srcGraph, v);
         gp_SetExtFaceVertex(dstGraph, v, 0, gp_GetExtFaceVertex(srcGraph, v, 0));
         gp_SetExtFaceVertex(dstGraph, v, 1, gp_GetExtFaceVertex(srcGraph, v, 1));
     }
@@ -1057,7 +1062,7 @@ int gp_CopyGraph(graphP dstGraph, graphP srcGraph)
     // by extensions are copied below by gp_CopyExtensions()
     for (v = gp_GetFirstVirtualVertex(srcGraph); gp_VirtualVertexInRangeAscending(srcGraph, v); v++)
     {
-        gp_CopyAnyTypeVertexRec(dstGraph, v, srcGraph, v);
+        _gp_CopyAnyTypeVertexRec(dstGraph, v, srcGraph, v);
         gp_SetExtFaceVertex(dstGraph, v, 0, gp_GetExtFaceVertex(srcGraph, v, 0));
         gp_SetExtFaceVertex(dstGraph, v, 1, gp_GetExtFaceVertex(srcGraph, v, 1));
     }
@@ -1066,7 +1071,7 @@ int gp_CopyGraph(graphP dstGraph, graphP srcGraph)
     // created by extensions are copied below by gp_CopyExtensions()
     Esize = gp_EdgeArraySize(srcGraph);
     for (e = gp_GetFirstEdge(theGraph); e < Esize; e++)
-        gp_CopyEdgeRec(dstGraph, e, srcGraph, e);
+        _gp_CopyEdgeRec(dstGraph, e, srcGraph, e);
 
     // Give the dstGraph the same size and intrinsic properties
     dstGraph->N = gp_GetN(srcGraph);

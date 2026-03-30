@@ -145,6 +145,28 @@ int gp_SortVertices(graphP theGraph)
     return theGraph->functions.fpSortVertices(theGraph);
 }
 
+// Give macro names to swap operations used when sorting vertices
+// These are macros and hence not overloadable. If an extension
+// needs to reorder parallel vertex data, then this must be done
+// by a post-processing step in an overload of gp_SortVertices().
+// The index values of the first N vertices are changed to hold
+// the prior locations of vertices when they are rearranged to
+// or from DFI order.
+#define _gp_SwapAnyTypeVertexRec(dstGraph, vdst, srcGraph, vsrc) \
+    {                                                            \
+        anyTypeVertexRec tempV = dstGraph->V[vdst];              \
+        dstGraph->V[vdst] = srcGraph->V[vsrc];                   \
+        srcGraph->V[vsrc] = tempV;                               \
+    }
+#define _gp_SwapVertexInfo(dstGraph, dstPos, srcGraph, srcPos) \
+    {                                                          \
+        vertexInfo tempVI = dstGraph->VI[dstPos];              \
+        dstGraph->VI[dstPos] = srcGraph->VI[srcPos];           \
+        srcGraph->VI[srcPos] = tempVI;                         \
+    }
+
+// This is teh default method for sorting vertices into and back
+// out of DFI order.
 int _SortVertices(graphP theGraph)
 {
     int v, EsizeOccupied, e, srcPos, dstPos;
@@ -206,8 +228,8 @@ int _SortVertices(graphP theGraph)
         {
             dstPos = gp_GetIndex(theGraph, v);
 
-            gp_SwapAnyTypeVertexRec(theGraph, dstPos, theGraph, v);
-            gp_SwapVertexInfo(theGraph, dstPos, theGraph, v);
+            _gp_SwapAnyTypeVertexRec(theGraph, dstPos, theGraph, v);
+            _gp_SwapVertexInfo(theGraph, dstPos, theGraph, v);
 
             gp_SetVisited(theGraph, dstPos);
             gp_SetIndex(theGraph, dstPos, srcPos);
