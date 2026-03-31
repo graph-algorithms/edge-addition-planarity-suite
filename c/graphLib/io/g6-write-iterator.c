@@ -16,7 +16,7 @@ extern int _g6_ValidateOrderOfEncodedGraph(char *graphBuff, int order);
 extern int _g6_ValidateGraphEncoding(char *graphBuff, const int order, const int numChars);
 
 /* Private function declarations (exported within system) */
-int _g6_WriteGraphToStrOrFile(graphP theGraph, strOrFileP outputContainer, char **outputStr);
+int _g6_WriteGraphToStrOrFile(graphP theGraph, strOrFileP outputContainer);
 
 /* Private functions */
 int _g6_InitWriterWithStrOrFile(G6WriteIteratorP pG6WriteIterator, strOrFileP outputContainer);
@@ -29,7 +29,7 @@ void _g6_GetNextEdgeInUse(graphP theGraph, int *e, int *u, int *v);
 int _g6_WriteEncodedGraph(G6WriteIteratorP pG6WriteIterator);
 
 int _g6_WriteGraphToFile(graphP theGraph, char *g6OutputFileName);
-int _g6_WriteGraphToString(graphP theGraph, char **g6OutputStr);
+int _g6_WriteGraphToString(graphP theGraph, char **pOutputStr);
 
 int g6_NewWriter(G6WriteIteratorP *ppG6WriteIterator, graphP theGraph)
 {
@@ -164,7 +164,7 @@ int g6_GetGraphFromWriter(G6WriteIteratorP pG6WriteIterator, graphP *pTheGraph)
     return OK;
 }
 
-int g6_InitWriterWithString(G6WriteIteratorP pG6WriteIterator)
+int g6_InitWriterWithString(G6WriteIteratorP pG6WriteIterator, char **pOutputString)
 {
     if (pG6WriteIterator == NULL)
     {
@@ -179,35 +179,56 @@ int g6_InitWriterWithString(G6WriteIteratorP pG6WriteIterator)
         return NOTOK;
     }
 
+    if (pOutputString == NULL)
+    {
+        ErrorMessage(
+            "Unable to initialize writer with string, as pointer to which to "
+            "assign address of output string is NULL.\n");
+        return NOTOK;
+    }
+
+    if ((*pOutputString) != NULL)
+    {
+        ErrorMessage(
+            "Unable to initialize writer with string, as pointer to which to "
+            "assign address of output string points to allocated memory.\n");
+        return NOTOK;
+    }
+
     return _g6_InitWriterWithStrOrFile(
         pG6WriteIterator,
-        sf_New(NULL, NULL, WRITETEXT));
+        sf_NewOutputContainer(pOutputString, NULL));
 }
 
 int g6_InitWriterWithFileName(G6WriteIteratorP pG6WriteIterator, char *outputFileName)
 {
     if (pG6WriteIterator == NULL)
     {
-        ErrorMessage("Unable to initialize writer, since pointer to "
-                     "pG6WriteIterator is NULL.\n");
+        ErrorMessage(
+            "Unable to initialize writer, since pointer to pG6WriteIterator "
+            "is NULL.\n");
         return NOTOK;
     }
 
     if (_g6_IsWriterInitialized(pG6WriteIterator, false))
     {
-        ErrorMessage("Unable to initialize writer, as it was already previously initialized.\n");
+        ErrorMessage(
+            "Unable to initialize writer, as it was already previously "
+            "initialized.\n");
         return NOTOK;
     }
 
     if (outputFileName == NULL || strlen(outputFileName) == 0)
     {
-        ErrorMessage("Unable to initialize writer with NULL or empty output file name.\n");
+        ErrorMessage(
+            "Unable to initialize writer with NULL or empty output file "
+            "name.\n");
         return NOTOK;
     }
 
     return _g6_InitWriterWithStrOrFile(
         pG6WriteIterator,
-        sf_New(NULL, outputFileName, WRITETEXT));
+        sf_NewOutputContainer(NULL, outputFileName));
 }
 
 int _g6_InitWriterWithStrOrFile(G6WriteIteratorP pG6WriteIterator, strOrFileP outputContainer)
@@ -487,55 +508,61 @@ void g6_FreeWriter(G6WriteIteratorP *ppG6WriteIterator)
 
 int _g6_WriteGraphToFile(graphP theGraph, char *g6OutputFileName)
 {
-    strOrFileP outputContainer = sf_New(NULL, g6OutputFileName, WRITETEXT);
-    if (outputContainer == NULL)
+    strOrFileP outputContainer = NULL;
+
+    if (g6OutputFileName == NULL || strlen(g6OutputFileName) == 0)
+    {
+        ErrorMessage(
+            "Unable to write graph to file, as output filename supplied is "
+            "NULL or empty.\n");
+        return NOTOK;
+    }
+    if ((outputContainer = sf_NewOutputContainer(NULL, g6OutputFileName)) == NULL)
     {
         ErrorMessage("Unable to allocate outputContainer to which to write.\n");
         return NOTOK;
     }
 
-    return _g6_WriteGraphToStrOrFile(theGraph, outputContainer, NULL);
+    return _g6_WriteGraphToStrOrFile(theGraph, outputContainer);
 }
 
-int _g6_WriteGraphToString(graphP theGraph, char **g6OutputStr)
+int _g6_WriteGraphToString(graphP theGraph, char **pOutputStr)
 {
-    strOrFileP outputContainer = sf_New(NULL, NULL, WRITETEXT);
-    if (outputContainer == NULL)
+    strOrFileP outputContainer = NULL;
+
+    if (pOutputStr == NULL)
+    {
+        ErrorMessage("If writing G6 to string, must provide pointer-pointer "
+                     "to allow _g6_WriteGraphToString() to assign the "
+                     "address of the output string.\n");
+        return NOTOK;
+    }
+
+    if ((*pOutputStr) != NULL)
+    {
+        ErrorMessage("(*pOutputStr) should not point to allocated memory.");
+        return NOTOK;
+    }
+
+    if ((outputContainer = sf_NewOutputContainer(pOutputStr, NULL)) == NULL)
     {
         ErrorMessage("Unable to allocate outputContainer to which to write.\n");
         return NOTOK;
     }
 
-    // N.B. If g6OutputStr is a pointer to a pointer to a block of memory that
-    // has been allocated, i.e. if g6OutputStr != NULL && (*g6OutputStr) != NULL
-    // then an error will be emitted by _g6_WriteGraphToStrOrFile().
     // N.B. Once the graph is successfully written, the string is taken from
-    // the G6WriteIterator's outputContainer and assigned to (*g6OutputStr)
+    // the G6WriteIterator's outputContainer and assigned to (*pOutputStr)
     // before freeing the G6 write iterator.
-    return _g6_WriteGraphToStrOrFile(theGraph, outputContainer, g6OutputStr);
+    return _g6_WriteGraphToStrOrFile(theGraph, outputContainer);
 }
 
-int _g6_WriteGraphToStrOrFile(graphP theGraph, strOrFileP outputContainer, char **outputStr)
+int _g6_WriteGraphToStrOrFile(graphP theGraph, strOrFileP outputContainer)
 {
     G6WriteIteratorP pG6WriteIterator = NULL;
 
     if (!sf_IsValidStrOrFile(outputContainer))
     {
         ErrorMessage("Invalid G6 output container.\n");
-        return NOTOK;
-    }
-
-    if (outputContainer->theStr != NULL && (outputStr == NULL))
-    {
-        ErrorMessage("If writing G6 to string, must provide pointer-pointer "
-                     "to allow _g6_WriteGraphToStrOrFile() to assign the "
-                     "address of the output string.\n");
-        return NOTOK;
-    }
-
-    if (outputStr != NULL && (*outputStr) != NULL)
-    {
-        ErrorMessage("(*outputStr) should not point to allocated memory.");
         return NOTOK;
     }
 
@@ -546,6 +573,13 @@ int _g6_WriteGraphToStrOrFile(graphP theGraph, strOrFileP outputContainer, char 
         return NOTOK;
     }
 
+    // FIXME: the problem I'm observing is that when we free the write iterator
+    // it doesn't actually clean up fully... We don't actually pass ownership
+    // of the outputContainer to the write iterator, and so the outputContainer
+    // pointer at *this* layer is now pointing to garbage. Do I need to refactor
+    // thsi so that I'm passing a *pointer* to an output container, so that I
+    // set the *caller's* pointer to NULL once I've assigned the outputContainer
+    // to g6Output?????
     if (_g6_InitWriterWithStrOrFile(pG6WriteIterator, outputContainer) != OK)
     {
         ErrorMessage("Unable to initialize G6WriteIterator.\n");
@@ -556,19 +590,36 @@ int _g6_WriteGraphToStrOrFile(graphP theGraph, strOrFileP outputContainer, char 
     if (g6_WriteGraph(pG6WriteIterator) != OK)
     {
         ErrorMessage("Unable to write graph using G6WriteIterator.\n");
-        g6_FreeWriter(&pG6WriteIterator);
-        return NOTOK;
-    }
 
-    if (outputStr != NULL && pG6WriteIterator->g6Output != NULL)
-    {
-        (*outputStr) = sf_takeTheStr(pG6WriteIterator->g6Output);
-        if ((*outputStr) == NULL || strlen((*outputStr)) == 0)
+        // NOTE: When we free the write iterator, we free the output container;
+        // if writing to string, one of the steps in freeing the output
+        // container takes the string from the internal theStrBuf and assigns it
+        // to the container's pointer-pointer pOutputStr for output before
+        // setting the container's pointer to that pointer to NULL (returning
+        // ownership of that string to the caller). Then, we set the writer's
+        // pointer to the output container to NULL........ UGH However, if an error was
+        // encountered during g6_WriteGraph(), we want to clean up the string so
+        // no invalid or incomplete results are returned to the caller. This
+        // means we have to free the strBufP so that we won't try to
+        // sb_TakeString() and assign that to the output container's pOutputStr
+        
+        //, so we must free the string and set the pointer-pointer. This
+        // must be done *before* freeing the write iterator, because we
+        // effectively pass ownership of the outputContainer to the iterator,
+        // and so it will be freed (and we therefore would lose the pointer to
+        // the pOutputStr).
+
+        if (
+            pG6WriteIterator->g6Output->pOutputStr != NULL &&
+            (*(pG6WriteIterator->g6Output->pOutputStr)) != NULL)
         {
-            ErrorMessage("Failed to transfer ownership of string contained by output container.\n");
-            g6_FreeWriter(&pG6WriteIterator);
-            return NOTOK;
+            free((*(pG6WriteIterator->g6Output->pOutputStr)));
+            pG6WriteIterator->g6Output->pOutputStr = NULL;
         }
+
+        g6_FreeWriter(&pG6WriteIterator);
+
+        return NOTOK;
     }
 
     g6_FreeWriter(&pG6WriteIterator);

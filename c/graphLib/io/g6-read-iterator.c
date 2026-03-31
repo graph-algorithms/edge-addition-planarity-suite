@@ -186,7 +186,7 @@ int g6_InitReaderWithString(G6ReadIteratorP pG6ReadIterator, char *inputString)
 
     return _g6_InitReaderWithStrOrFile(
         pG6ReadIterator,
-        sf_New(inputString, NULL, READTEXT));
+        sf_NewInputContainer(inputString, NULL));
 }
 
 int g6_InitReaderWithFileName(G6ReadIteratorP pG6ReadIterator, char const *const infileName)
@@ -212,14 +212,14 @@ int g6_InitReaderWithFileName(G6ReadIteratorP pG6ReadIterator, char const *const
 
     return _g6_InitReaderWithStrOrFile(
         pG6ReadIterator,
-        sf_New(NULL, infileName, READTEXT));
+        sf_NewInputContainer(NULL, infileName));
 }
 
 int _g6_InitReaderWithStrOrFile(G6ReadIteratorP pG6ReadIterator, strOrFileP inputContainer)
 {
     if (
         !sf_IsValidStrOrFile(inputContainer) ||
-        (inputContainer->theStr != NULL && sb_GetSize(inputContainer->theStr) == 0))
+        (inputContainer->theStrBuf != NULL && sb_GetSize(inputContainer->theStrBuf) == 0))
     {
         ErrorMessage("Unable to initialize reader with invalid strOrFile "
                      "input container.\n");
@@ -620,8 +620,17 @@ int _g6_ReadGraphFromFile(graphP theGraph, char *pathToG6File)
     char const *messageFormat = NULL;
     int charsAvailForStr = 0;
 
-    strOrFileP inputContainer = sf_New(NULL, pathToG6File, READTEXT);
-    if (inputContainer == NULL)
+    strOrFileP inputContainer = NULL;
+
+    if (pathToG6File == NULL || strlen(pathToG6File) == 0)
+    {
+        ErrorMessage(
+            "Unable to read graph from file, as pathToG6File is NULL "
+            "or empty string.\n");
+        return NOTOK;
+    }
+
+    if ((inputContainer = sf_NewInputContainer(NULL, pathToG6File)) == NULL)
     {
         char messageContents[MAXLINE + 1];
         messageContents[0] = '\0';
@@ -649,9 +658,10 @@ int _g6_ReadGraphFromString(graphP theGraph, char *g6EncodedString)
         return NOTOK;
     }
 
-    if ((inputContainer = sf_New(g6EncodedString, NULL, READTEXT)) == NULL)
+    if ((inputContainer = sf_NewInputContainer(g6EncodedString, NULL)) == NULL)
     {
-        ErrorMessage("Unable to allocate strOrFile container for .g6 input string.\n");
+        ErrorMessage(
+            "Unable to allocate strOrFile container for .g6 input string.\n");
         return NOTOK;
     }
 

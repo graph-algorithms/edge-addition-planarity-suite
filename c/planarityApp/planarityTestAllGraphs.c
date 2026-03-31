@@ -18,7 +18,7 @@ typedef struct
 typedef testAllStats *testAllStatsP;
 
 int testAllGraphs(char command, char modifier, char const *const infileName, testAllStatsP stats);
-int outputTestAllGraphsResults(char command, char modifier, testAllStatsP stats, char const *const infileName, char *outfileName, char **outputStr);
+int outputTestAllGraphsResults(char command, char modifier, testAllStatsP stats, char const *const infileName, char *outfileName, char **pOutputStr);
 
 /****************************************************************************
  TestAllGraphs()
@@ -26,10 +26,10 @@ int outputTestAllGraphsResults(char command, char modifier, testAllStatsP stats,
     character) to perform the corresponding algorithm on each graph in .g6 file
  infileName - non-NULL and nonempty string containing name of .g6 input file
  outfileName - name of primary output file, or NULL
- outputStr - pointer to string which we wish to use to store the result of
+ pOutputStr - pointer to string which we wish to use to store the result of
     applying the chosen graph algorithm extension to all graphs in the .g6 file
  ****************************************************************************/
-int TestAllGraphs(char const *const commandString, char const *const infileName, char *outfileName, char **outputStr)
+int TestAllGraphs(char const *const commandString, char const *const infileName, char *outfileName, char **pOutputStr)
 {
     int Result = OK;
 
@@ -92,7 +92,7 @@ int TestAllGraphs(char const *const commandString, char const *const infileName,
         Message(messageContents);
     }
 
-    if (outputTestAllGraphsResults(command, modifier, &stats, infileName, outfileName, outputStr) != OK)
+    if (outputTestAllGraphsResults(command, modifier, &stats, infileName, outfileName, pOutputStr) != OK)
     {
         messageFormat = "Error outputting results running command '%c' on all graphs in \"%.*s\".\n";
         charsAvailForFilename = (int)(MAXLINE - strlen(messageFormat));
@@ -325,7 +325,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
     return Result;
 }
 
-int outputTestAllGraphsResults(char command, char modifier, testAllStatsP stats, char const *const infileName, char *outfileName, char **outputStr)
+int outputTestAllGraphsResults(char command, char modifier, testAllStatsP stats, char const *const infileName, char *outfileName, char **pOutputStr)
 {
     int Result = OK;
 
@@ -412,28 +412,35 @@ int outputTestAllGraphsResults(char command, char modifier, testAllStatsP stats,
 
     if (outfileName != NULL)
     {
-        testOutput = sf_New(NULL, outfileName, WRITETEXT);
+        testOutput = sf_NewOutputContainer(NULL, outfileName);
     }
     else
     {
-        if (outputStr == NULL)
+        if (pOutputStr == NULL)
         {
-            ErrorMessage("Both outfileName and pointer to outputStr are NULL.\n");
+            ErrorMessage(
+                "Unable to create output container for TestAllGraphs output, "
+                "as both output filename and pointer to output string are "
+                "NULL.\n");
         }
         else
         {
-            if ((*outputStr) != NULL)
-                ErrorMessage("Expected memory to which outputStr points to be NULL.\n");
+            if ((*pOutputStr) != NULL)
+                ErrorMessage(
+                    "Unable to create output container for TestAllGraphs "
+                    "output, since the memory to which pOutputStr points is "
+                    "not NULL.\n");
             else
             {
-                testOutput = sf_New(NULL, NULL, WRITETEXT);
+                testOutput = sf_NewOutputContainer(pOutputStr, NULL);
             }
         }
     }
 
     if (testOutput == NULL)
     {
-        ErrorMessage("Unable to set up string-or-file container for test output.\n");
+        ErrorMessage(
+            "Unable to set up output container for TestAllGraphs output.\n");
 
         Result = NOTOK;
     }
@@ -442,7 +449,7 @@ int outputTestAllGraphsResults(char command, char modifier, testAllStatsP stats,
     {
         if (sf_fputs(headerStr, testOutput) < 0)
         {
-            ErrorMessage("Unable to output headerStr to testOutput.\n");
+            ErrorMessage("Unable to write headerStr to output container.\n");
 
             Result = NOTOK;
         }
@@ -451,16 +458,11 @@ int outputTestAllGraphsResults(char command, char modifier, testAllStatsP stats,
         {
             if (sf_fputs(resultsStr, testOutput) < 0)
             {
-                ErrorMessage("Unable to output resultsStr to testOutput.\n");
+                ErrorMessage(
+                    "Unable to write resultsStr to output container.\n");
 
                 Result = NOTOK;
             }
-        }
-
-        if (Result == OK)
-        {
-            if (outputStr != NULL)
-                (*outputStr) = sf_takeTheStr(testOutput);
         }
     }
 
@@ -477,6 +479,19 @@ int outputTestAllGraphsResults(char command, char modifier, testAllStatsP stats,
     }
 
     sf_Free(&testOutput);
+
+    // NOTE: Since sf_Free() will always take the string from the internal
+    // theStrBuf and assign to its pointer-pointer pOutputStr for output
+    // containers when writing to string, we must free the string here in the
+    // caller and set the pointer-pointer to NULL in the case of an error.
+    if (Result != OK)
+    {
+        if (pOutputStr != NULL && (*pOutputStr) != NULL)
+        {
+            free((*pOutputStr));
+            pOutputStr = NULL;
+        }
+    }
 
     return Result;
 }

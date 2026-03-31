@@ -42,7 +42,7 @@ extern "C"
     int g6_GetOrderFromWriter(G6WriteIteratorP pG6WriteIterator, int *pOrder);
     int g6_GetGraphFromWriter(G6WriteIteratorP pG6WriteIterator, graphP *pTheGraph);
 
-    int g6_InitWriterWithString(G6WriteIteratorP pG6WriteIterator);
+    int g6_InitWriterWithString(G6WriteIteratorP pG6WriteIterator, char **pOutputString);
     int g6_InitWriterWithFileName(G6WriteIteratorP pG6WriteIterator, char *outputFileName);
 
     int g6_WriteGraph(G6WriteIteratorP pG6WriteIterator);
