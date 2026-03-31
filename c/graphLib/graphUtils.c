@@ -86,6 +86,8 @@ int _GetRandomNumber(int NMin, int NMax);
 int _getUnprocessedChild(graphP theGraph, int parent);
 int _hasUnprocessedChild(graphP theGraph, int parent);
 
+void _AttachArc(graphP theGraph, int v, int e, int link, int newArc);
+void _DetachArc(graphP theGraph, int arc);
 void _RestoreArc(graphP theGraph, int arc);
 
 /* Private functions for which there are FUNCTION POINTERS */
@@ -1722,7 +1724,7 @@ int gp_GetVertexOutDegree(graphP theGraph, int v)
 }
 
 /********************************************************************
- gp_AttachArc()
+ _AttachArc()
 
  This routine adds newArc into v's adjacency list at a position
  adjacent to the edge record for e, either before or after e,
@@ -1738,10 +1740,10 @@ int gp_GetVertexOutDegree(graphP theGraph, int v)
  inserted into or deleted from the data structure.  Hence there is
  no such thing as gp_InsertArc() or gp_DeleteArc().
 
- See also gp_DetachArc(), gp_InsertEdge() and gp_DeleteEdge()
+ See also _RestoreArc()
  ********************************************************************/
 
-void gp_AttachArc(graphP theGraph, int v, int e, int link, int newArc)
+void _AttachArc(graphP theGraph, int v, int e, int link, int newArc)
 {
     if (gp_IsArc(theGraph, e))
     {
@@ -1780,7 +1782,7 @@ void gp_AttachArc(graphP theGraph, int v, int e, int link, int newArc)
 }
 
 /****************************************************************************
- gp_DetachArc()
+ _DetachArc()
 
  This routine detaches arc from its adjacency list, but it does not delete
  it from the data structure (only a whole edge can be deleted).
@@ -1789,17 +1791,20 @@ void gp_AttachArc(graphP theGraph, int v, int e, int link, int newArc)
  and eventually put the edge back. This routine supports that operation.
  The neighboring adjacency list nodes are cross-linked, but the two link
  members of the arc are retained, so the arc can be reattached later by
- invoking _RestoreArc().  A sequence of detached arcs can only be restored
- in the exact opposite order of their detachment.  Thus, algorithms do not
- directly use this method to implement the temporary detach/restore method.
- Instead, gp_HideEdge() and gp_RestoreEdge are used, and algorithms push
- edge hidden edge onto the stack.  One example of this stack usage is
- provided by detaching edges with gp_ContractEdge() or gp_IdentifyVertices(),
- and reattaching with gp_RestoreIdentifications(), which unwinds the stack
+ invoking _RestoreArc().
+
+ A sequence of detached arcs can only be restored in the exact opposite order
+ of their detachment.  Thus, algorithms do not directly use this method to
+ implement the temporary detach/restore method.
+
+ Instead, gp_HideEdge() and gp_RestoreEdge() are used, and algorithms push
+ and pop hidden edges onto and from a stack. A example of this is shown by
+ detaching edges with gp_ContractEdge() or gp_IdentifyVertices(), and then
+ reattaching them with gp_RestoreIdentifications(), which unwinds the stack
  by invoking gp_RestoreVertex().
  ****************************************************************************/
 
-void gp_DetachArc(graphP theGraph, int arc)
+void _DetachArc(graphP theGraph, int arc)
 {
     int nextArc = gp_GetNextArc(theGraph, arc),
         prevArc = gp_GetPrevArc(theGraph, arc);
@@ -1874,9 +1879,9 @@ int gp_AddEdge(graphP theGraph, int u, int ulink, int v, int vlink)
     upos = gp_GetTwinArc(theGraph, vpos);
 
     gp_SetNeighbor(theGraph, upos, v);
-    gp_AttachArc(theGraph, u, NIL, ulink, upos);
+    _AttachArc(theGraph, u, NIL, ulink, upos);
     gp_SetNeighbor(theGraph, vpos, u);
-    gp_AttachArc(theGraph, v, NIL, vlink, vpos);
+    _AttachArc(theGraph, v, NIL, vlink, vpos);
 
     theGraph->M++;
     return OK;
@@ -1982,10 +1987,10 @@ int gp_InsertEdge(graphP theGraph, int u, int e_u, int e_ulink,
     upos = gp_GetTwinArc(theGraph, vpos);
 
     gp_SetNeighbor(theGraph, upos, v);
-    gp_AttachArc(theGraph, u, e_u, e_ulink, upos);
+    _AttachArc(theGraph, u, e_u, e_ulink, upos);
 
     gp_SetNeighbor(theGraph, vpos, u);
-    gp_AttachArc(theGraph, v, e_v, e_vlink, vpos);
+    _AttachArc(theGraph, v, e_v, e_vlink, vpos);
 
     theGraph->M++;
 
@@ -2016,8 +2021,8 @@ int gp_DeleteEdge(graphP theGraph, int e)
         return NOTOK;
 
     // Delete the edge records e and eTwin from their adjacency lists.
-    gp_DetachArc(theGraph, e);
-    gp_DetachArc(theGraph, gp_GetTwinArc(theGraph, e));
+    _DetachArc(theGraph, e);
+    _DetachArc(theGraph, gp_GetTwinArc(theGraph, e));
 
     // Clear the two edge records
     // (the bit twiddle (e & ~1) chooses the lesser of e and its twin arc)
@@ -2048,7 +2053,7 @@ int gp_DeleteEdge(graphP theGraph, int e)
 /********************************************************************
  _RestoreArc()
  This routine reinserts an arc into the edge list from which it
- was previously removed by gp_DetachArc().
+ was previously removed by _DetachArc().
 
  The assumed processing model is that arcs will be restored in reverse
  of the order in which they were hidden, i.e. it is assumed that the
@@ -2104,8 +2109,8 @@ void gp_HideEdge(graphP theGraph, int e)
 
 void _HideEdge(graphP theGraph, int e)
 {
-    gp_DetachArc(theGraph, e);
-    gp_DetachArc(theGraph, gp_GetTwinArc(theGraph, e));
+    _DetachArc(theGraph, e);
+    _DetachArc(theGraph, gp_GetTwinArc(theGraph, e));
 }
 
 /********************************************************************

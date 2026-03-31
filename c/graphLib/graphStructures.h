@@ -840,12 +840,6 @@ extern "C"
         gp_BindLastArc(theGraph, v, arc);                                                        \
     }
 
-    // Methods for attaching an arc into the adjacency list or detaching an arc from it.
-    // The terms AddArc, InsertArc and DeleteArc are not used because the arcs are not
-    // inserted or added to or deleted from storage (only whole edges are inserted or deleted)
-    void gp_AttachArc(graphP theGraph, int v, int e, int link, int newArc);
-    void gp_DetachArc(graphP theGraph, int arc);
-
     /********************************************************************
     // PLANARITY-RELATED ONLY
     //
