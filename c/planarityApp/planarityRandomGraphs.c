@@ -39,7 +39,7 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
 
     platform_time start, end;
 
-    G6WriteIteratorP pG6WriteIterator = NULL;
+    G6WriteIteratorP theG6WriteIterator = NULL;
 
     int charsAvailForStr = 0;
     char const *messageFormat = NULL;
@@ -88,7 +88,7 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
 
     if (outfileName != NULL || (tolower(OrigOut) == 'y' && tolower(OrigOutFormat) == 'g'))
     {
-        if (g6_NewWriter(&pG6WriteIterator, theGraph) != OK)
+        if (g6_NewWriter((&theG6WriteIterator), theGraph) != OK)
         {
             ErrorMessage("Unable to allocate G6WriteIterator.\n");
 
@@ -103,7 +103,7 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
     charsAvailForStr = (int)(MAXLINE - strlen(messageFormat));
     if (outfileName != NULL)
     {
-        if (g6_InitWriterWithFileName(pG6WriteIterator, outfileName) != OK)
+        if (g6_InitWriterWithFileName(theG6WriteIterator, outfileName) != OK)
         {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-nonliteral"
@@ -111,7 +111,7 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
 #pragma GCC diagnostic pop
             ErrorMessage(messageContents);
 
-            g6_FreeWriter(&pG6WriteIterator);
+            g6_FreeWriter((&theG6WriteIterator));
             gp_Free(&theGraph);
             gp_Free(&origGraph);
 
@@ -124,7 +124,7 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
         // output the generated random graphs to .g6 is if we Reconfigure() and
         // choose these options; in that case, need to set a default output filename.
         sprintf(theFileName, "random%cn%d.k%d.g6", FILE_DELIMITER, SizeOfGraphs, NumGraphs);
-        if (g6_InitWriterWithFileName(pG6WriteIterator, theFileName) != OK)
+        if (g6_InitWriterWithFileName(theG6WriteIterator, theFileName) != OK)
         {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-nonliteral"
@@ -132,7 +132,7 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
 #pragma GCC diagnostic pop
             ErrorMessage(messageContents);
 
-            g6_FreeWriter(&pG6WriteIterator);
+            g6_FreeWriter((&theG6WriteIterator));
             gp_Free(&theGraph);
             gp_Free(&origGraph);
 
@@ -167,9 +167,9 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
     {
         if ((Result = gp_CreateRandomGraph(theGraph)) == OK)
         {
-            if (pG6WriteIterator != NULL)
+            if (theG6WriteIterator != NULL)
             {
-                if ((writeResult = g6_WriteGraph(pG6WriteIterator)) != OK)
+                if ((writeResult = g6_WriteGraph(theG6WriteIterator)) != OK)
                 {
                     sprintf(messageContents, "Unable to write graph number %d using G6WriteIterator.\n", K);
                     ErrorMessage(messageContents);
@@ -203,7 +203,7 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
 
                 gp_Free(&theGraph);
                 gp_Free(&origGraph);
-                g6_FreeWriter(&pG6WriteIterator);
+                g6_FreeWriter((&theG6WriteIterator));
 
                 return Result;
             }
@@ -399,7 +399,7 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
 
     FlushConsole(stdout);
 
-    g6_FreeWriter(&pG6WriteIterator);
+    g6_FreeWriter((&theG6WriteIterator));
 
     // Free the graph structures created before the loop
     gp_Free(&theGraph);

@@ -711,6 +711,8 @@ void sf_Free(strOrFileP *pStrOrFile)
     {
         if ((*pStrOrFile)->theStrBuf != NULL)
         {
+            // TODO: (#56) If in an error state, just don't sb_TakeString()
+            // before freeing it
             if ((*pStrOrFile)->pOutputStr != NULL)
             {
                 (*((*pStrOrFile)->pOutputStr)) = sb_TakeString((*pStrOrFile)->theStrBuf);

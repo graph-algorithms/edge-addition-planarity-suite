@@ -114,7 +114,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
     graphP copyOfOrigGraph = NULL;
     int embedFlags = 0, numOK = 0, numNONEMBEDDABLE = 0, errorFlag = FALSE;
 
-    G6ReadIteratorP pG6ReadIterator = NULL;
+    G6ReadIteratorP theG6ReadIterator = NULL;
     char const *messageFormat = NULL;
     int order = 0;
     char messageContents[MAXLINE + 1];
@@ -140,7 +140,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
         return NOTOK;
     }
 
-    if ((Result = g6_NewReader(&pG6ReadIterator, theGraph)) != OK)
+    if ((Result = g6_NewReader((&theG6ReadIterator), theGraph)) != OK)
     {
         ErrorMessage("Unable to allocate G6ReadIterator.\n");
 
@@ -150,12 +150,12 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
         return Result;
     }
 
-    if ((Result = g6_InitReaderWithFileName(pG6ReadIterator, infileName)) != OK)
+    if ((Result = g6_InitReaderWithFileName(theG6ReadIterator, infileName)) != OK)
     {
         ErrorMessage("Unable to test all graphs due to failure to initialize"
                      "G6ReadIterator.\n");
 
-        g6_FreeReader(&pG6ReadIterator);
+        g6_FreeReader((&theG6ReadIterator));
         gp_Free(&theGraph);
         stats->errorFlag = TRUE;
 
@@ -172,7 +172,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
         {
             ErrorMessage("Unable to maximize arc capacity of G6ReadIterator's graph struct.\n");
 
-            g6_FreeReader(&pG6ReadIterator);
+            g6_FreeReader((&theG6ReadIterator));
             gp_Free(&theGraph);
             stats->errorFlag = TRUE;
 
@@ -201,7 +201,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
 
         ErrorMessage(messageContents);
 
-        g6_FreeReader(&pG6ReadIterator);
+        g6_FreeReader((&theG6ReadIterator));
         gp_Free(&theGraph);
         stats->errorFlag = TRUE;
 
@@ -213,7 +213,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
     {
         ErrorMessage("Unable to allocate graph to store copy of original graph before embedding.\n");
 
-        g6_FreeReader(&pG6ReadIterator);
+        g6_FreeReader((&theG6ReadIterator));
         gp_Free(&theGraph);
         stats->errorFlag = TRUE;
 
@@ -224,7 +224,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
     {
         ErrorMessage("Unable to initialize graph datastructure to store copy of original graph before embedding.\n");
 
-        g6_FreeReader(&pG6ReadIterator);
+        g6_FreeReader((&theG6ReadIterator));
         gp_Free(&theGraph);
         gp_Free(&copyOfOrigGraph);
         stats->errorFlag = TRUE;
@@ -234,12 +234,12 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
 
     while (true)
     {
-        if (g6_ReadGraph(pG6ReadIterator) != OK)
+        if (g6_ReadGraph(theG6ReadIterator) != OK)
         {
             messageFormat = "Unable to read graph on line %d from .g6 read iterator.\n";
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-nonliteral"
-            sprintf(messageContents, messageFormat, pG6ReadIterator->numGraphsRead + 1);
+            sprintf(messageContents, messageFormat, theG6ReadIterator->numGraphsRead + 1);
 #pragma GCC diagnostic pop
             ErrorMessage(messageContents);
 
@@ -248,7 +248,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
             break;
         }
 
-        if (g6_EndReached(pG6ReadIterator))
+        if (g6_EndReached(theG6ReadIterator))
             break;
 
         gp_CopyGraph(copyOfOrigGraph, theGraph);
@@ -259,7 +259,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
             messageFormat = "Failed to embed graph on line %d for command '%c'.\n";
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-nonliteral"
-            sprintf(messageContents, messageFormat, pG6ReadIterator->numGraphsRead + 1, command);
+            sprintf(messageContents, messageFormat, theG6ReadIterator->numGraphsRead + 1, command);
 #pragma GCC diagnostic pop
             ErrorMessage(messageContents);
 
@@ -273,7 +273,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
             messageFormat = "Embed integrity check failed for graph on line %d for command '%c'.\n";
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-nonliteral"
-            sprintf(messageContents, messageFormat, pG6ReadIterator->numGraphsRead + 1, command);
+            sprintf(messageContents, messageFormat, theG6ReadIterator->numGraphsRead + 1, command);
 #pragma GCC diagnostic pop
             ErrorMessage(messageContents);
 
@@ -294,7 +294,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
                 messageFormat = "Error applying algorithm '%c' to graph on line %d.\n";
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-nonliteral"
-                sprintf(messageContents, messageFormat, command, pG6ReadIterator->numGraphsRead + 1);
+                sprintf(messageContents, messageFormat, command, theG6ReadIterator->numGraphsRead + 1);
 #pragma GCC diagnostic pop
             }
             else
@@ -302,7 +302,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
                 messageFormat = "Error applying algorithm '%c' with modifier '%c' to graph on line %d.\n";
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-nonliteral"
-                sprintf(messageContents, messageFormat, command, modifier, pG6ReadIterator->numGraphsRead + 1);
+                sprintf(messageContents, messageFormat, command, modifier, theG6ReadIterator->numGraphsRead + 1);
 #pragma GCC diagnostic pop
             }
             ErrorMessage(messageContents);
@@ -313,12 +313,12 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
         }
     }
 
-    stats->numGraphsRead = pG6ReadIterator->numGraphsRead;
+    stats->numGraphsRead = theG6ReadIterator->numGraphsRead;
     stats->numOK = numOK;
     stats->numNONEMBEDDABLE = numNONEMBEDDABLE;
     stats->errorFlag = errorFlag;
 
-    g6_FreeReader(&pG6ReadIterator);
+    g6_FreeReader((&theG6ReadIterator));
     gp_Free(&theGraph);
     gp_Free(&copyOfOrigGraph);
 
