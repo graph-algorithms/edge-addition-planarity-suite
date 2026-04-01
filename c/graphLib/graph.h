@@ -115,6 +115,9 @@ extern "C"
 #define FLAGS_ZEROBASEDIO 4
 
     // Graph embedding and result validation methods
+    // The embedResult output by gp_Embed() and input to gp_TestEmbedResultIntegrity()
+    // can be OK if the graph is embedded or embeddable, NONEMBEDDABLE if a minimal
+    // subgraph obstructing embedding has been isolated, or NOTOK on error
     int gp_Embed(graphP theGraph, int embedFlags);
     int gp_TestEmbedResultIntegrity(graphP theGraph, graphP origGraph, int embedResult);
 
@@ -135,9 +138,10 @@ extern "C"
 
 // Reserved for the future possible extension modules
 #define EMBEDFLAGS_SEARCHFORK5 (128 | EMBEDFLAGS_PLANAR)
-#define EMBEDFLAGS_MAXIMALPLANARSUBGRAPH 256
-#define EMBEDFLAGS_PROJECTIVEPLANAR 512
-#define EMBEDFLAGS_TOROIDAL 1024
+#define EMBEDFLAGS_SEARCHFORK5MINOR (256 | EMBEDFLAGS_PLANAR)
+#define EMBEDFLAGS_MAXIMALPLANARSUBGRAPH 512
+#define EMBEDFLAGS_PROJECTIVEPLANAR 1024
+#define EMBEDFLAGS_TOROIDAL 2048
 
 #ifdef __cplusplus
 }
