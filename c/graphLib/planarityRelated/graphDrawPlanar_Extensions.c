@@ -36,7 +36,7 @@ int _DrawPlanar_CheckObstructionIntegrity(graphP theGraph, graphP origGraph);
 
 int _DrawPlanar_InitGraph(graphP theGraph, int N);
 void _DrawPlanar_ReinitializeGraph(graphP theGraph);
-int _DrawPlanar_EnsureArcCapacity(graphP theGraph, int requiredArcCapacity);
+int _DrawPlanar_EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity);
 int _DrawPlanar_SortVertices(graphP theGraph);
 
 int _DrawPlanar_ReadPostprocess(graphP theGraph, char *extraData);
@@ -112,7 +112,7 @@ int gp_AttachDrawPlanar(graphP theGraph)
 
     context->functions.fpInitGraph = _DrawPlanar_InitGraph;
     context->functions.fpReinitializeGraph = _DrawPlanar_ReinitializeGraph;
-    context->functions.fpEnsureArcCapacity = _DrawPlanar_EnsureArcCapacity;
+    context->functions.fpEnsureEdgeCapacity = _DrawPlanar_EnsureEdgeCapacity;
     context->functions.fpSortVertices = _DrawPlanar_SortVertices;
 
     context->functions.fpReadPostprocess = _DrawPlanar_ReadPostprocess;
@@ -306,8 +306,8 @@ int _DrawPlanar_InitGraph(graphP theGraph, int N)
 
     theGraph->N = N;
     theGraph->NV = N;
-    if (theGraph->arcCapacity == 0)
-        theGraph->arcCapacity = 2 * DEFAULT_EDGE_LIMIT * N;
+    if (theGraph->edgeCapacity == 0)
+        theGraph->edgeCapacity = DEFAULT_EDGE_LIMIT * N;
 
     if (_DrawPlanar_CreateStructures(context) != OK ||
         _DrawPlanar_InitStructures(context) != OK)
@@ -337,15 +337,16 @@ void _DrawPlanar_ReinitializeGraph(graphP theGraph)
 }
 
 /********************************************************************
- The current implementation does not support an increase of arc
- (edge record) capacity once the extension is attached to the graph
- data structure.  This is only due to not being necessary to support.
+ The current implementation does not support an increase of edge
+ capacity once the extension is attached to the graph data structure.
+ This is only due to not being necessary to support.
+
  For now, it is easy to ensure the correct capacity before attaching
  the extension, but support could be added later if there is some
  reason to do so.
  ********************************************************************/
 
-int _DrawPlanar_EnsureArcCapacity(graphP theGraph, int requiredArcCapacity)
+int _DrawPlanar_EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity)
 {
     return NOTOK;
 }

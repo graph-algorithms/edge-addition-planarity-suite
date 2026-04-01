@@ -17,7 +17,7 @@ extern int _IsolateOuterplanarObstruction(graphP theGraph, int v, int R);
 
 extern void _InitAnyTypeVertexRec(graphP theGraph, int v);
 
-extern int _gp_FindArc(graphP theGraph, int u, int v);
+extern int _gp_FindEdge(graphP theGraph, int u, int v);
 
 /* Private functions (some are exported to system only) */
 
@@ -177,16 +177,17 @@ int _EmbeddingInitialize(graphP theGraph)
     theStack = theGraph->theStack;
 
     // At most we push 2 integers per edge from a vertex to each *unvisited* neighbor
-    // plus one additional integer to help detect post-processing.  This is less
-    // than the 2 * arcCapacity integer stack that is already in theGraph structure,
-    // so we make sure it's still there and cleared, then we clear all vertex
-    // visited flags in prep for the Depth first search operation. */
+    // plus one extra (NIL, NIL) at the beginning to represent arriving at a DFS tree
+    // root. We ensure that theGraph's stack has this capacity and, if so, we clear
+    // the stack for use in the depth-first search (DFS).
 
-    if (sp_GetCapacity(theStack) < 2 * gp_GetArcCapacity(theGraph))
+    if (sp_GetCapacity(theStack) < 2 * 2 * gp_GetM(theGraph) + 2)
         return NOTOK;
 
     sp_ClearStack(theStack);
 
+    // We clear the visited flags of vertices because they are used to determine
+    // which vertices have already been visited as the DFS traverses theGraph.
     _ClearAnyTypeVertexVisitedFlags(theGraph, FALSE);
 
     // This outer loop processes each connected component of a disconnected graph
@@ -1331,7 +1332,7 @@ int _OrientExternalFacePath(graphP theGraph, int u, int v, int w, int x)
     // Get the edge record in u that indicates v; uses the twinarc method to
     // ensure the cost is dominated by the degree of v (which is 2), not u
     // (which can be any degree).
-    e_u = gp_GetTwinArc(theGraph, _gp_FindArc(theGraph, v, u));
+    e_u = gp_GetTwinArc(theGraph, _gp_FindEdge(theGraph, v, u));
 
     do
     {

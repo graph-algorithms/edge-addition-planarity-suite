@@ -35,7 +35,7 @@ int _K4Search_CheckObstructionIntegrity(graphP theGraph, graphP origGraph);
 
 int _K4Search_InitGraph(graphP theGraph, int N);
 void _K4Search_ReinitializeGraph(graphP theGraph);
-int _K4Search_EnsureArcCapacity(graphP theGraph, int requiredArcCapacity);
+int _K4Search_EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity);
 
 /* Forward declarations of functions used by the extension system */
 
@@ -93,7 +93,7 @@ int gp_AttachK4Search(graphP theGraph)
 
     context->functions.fpInitGraph = _K4Search_InitGraph;
     context->functions.fpReinitializeGraph = _K4Search_ReinitializeGraph;
-    context->functions.fpEnsureArcCapacity = _K4Search_EnsureArcCapacity;
+    context->functions.fpEnsureEdgeCapacity = _K4Search_EnsureEdgeCapacity;
 
     _K4Search_ClearStructures(context);
 
@@ -217,8 +217,8 @@ int _K4Search_InitGraph(graphP theGraph, int N)
 
     theGraph->N = N;
     theGraph->NV = N;
-    if (theGraph->arcCapacity == 0)
-        theGraph->arcCapacity = 2 * DEFAULT_EDGE_LIMIT * N;
+    if (theGraph->edgeCapacity == 0)
+        theGraph->edgeCapacity = DEFAULT_EDGE_LIMIT * N;
 
     if (_K4Search_CreateStructures(context) != OK ||
         _K4Search_InitStructures(context) != OK)
@@ -248,15 +248,16 @@ void _K4Search_ReinitializeGraph(graphP theGraph)
 }
 
 /********************************************************************
- The current implementation does not support an increase of arc
- (edge record) capacity once the extension is attached to the graph
- data structure.  This is only due to not being necessary to support.
+ The current implementation does not support an increase of edge
+ capacity once the extension is attached to the graph data structure.
+ This is only due to not being necessary to support.
+
  For now, it is easy to ensure the correct capacity before attaching
  the extension, but support could be added later if there is some
  reason to do so.
  ********************************************************************/
 
-int _K4Search_EnsureArcCapacity(graphP theGraph, int requiredArcCapacity)
+int _K4Search_EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity)
 {
     return NOTOK;
 }

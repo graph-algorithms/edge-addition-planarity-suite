@@ -35,14 +35,15 @@ extern "C"
 
     void gp_Free(graphP *pGraph);
 
-    int gp_GetArcCapacity(graphP theGraph);
-    int gp_EnsureArcCapacity(graphP theGraph, int requiredArcCapacity);
+    int gp_EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity);
 
 // Basic graph structure interrogators
 // N=# of vertices; NV=# of virtual vertices; M=# of edges
 #define gp_GetN(theGraph) ((theGraph)->N)
 #define gp_GetNV(theGraph) ((theGraph)->NV)
 #define gp_GetM(theGraph) ((theGraph)->M)
+
+#define gp_GetEdgeCapacity(theGraph) ((theGraph)->edgeCapacity)
 
     // Basic graph utility methods
     int gp_CopyGraph(graphP dstGraph, graphP srcGraph);
@@ -67,13 +68,13 @@ extern "C"
 
     // Basic vertex interrogators
     int gp_IsNeighbor(graphP theGraph, int u, int v);
-    int gp_FindArc(graphP theGraph, int u, int v);
+    int gp_FindEdge(graphP theGraph, int u, int v);
     int gp_GetVertexDegree(graphP theGraph, int v);
 
     // Basic interrogators for directed graphs
     // The direction can be EDGEFLAG_DIRECTION_INONLY or EDGEFLAG_DIRECTION_OUTONLY
     int gp_IsNeighborDirected(graphP theGraph, int u, int v, unsigned direction);
-    int gp_FindDirectedArc(graphP theGraph, int u, int v, unsigned direction);
+    int gp_FindDirectedEdge(graphP theGraph, int u, int v, unsigned direction);
     int gp_GetVertexInDegree(graphP theGraph, int v);
     int gp_GetVertexOutDegree(graphP theGraph, int v);
 

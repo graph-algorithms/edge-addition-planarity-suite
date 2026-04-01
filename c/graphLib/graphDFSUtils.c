@@ -49,16 +49,20 @@ int gp_CreateDFSTree(graphP theGraph)
 
     theStack = theGraph->theStack;
 
-    /* There are 2M edge records (arcs) and for each we can push 2 integers,
-            so a stack of 2 * arcCapacity integers suffices.
-            This is already in theGraph structure, so we make sure it's empty,
-            then clear all visited flags in prep for the Depth first search. */
+    /* There are 2M edge records and for each we can push 2 integers,
+        plus one extra (NIL, NIL) at the beginning to represent
+        arriving at a DFS tree root. So, a stack of 2 * 2 * (1+M)
+        integers suffices.
+        This stack is already in theGraph structure, so we make sure
+        it has the capacity and, if so, that it's empty. */
 
-    if (sp_GetCapacity(theStack) < 2 * gp_GetArcCapacity(theGraph))
+    if (sp_GetCapacity(theStack) < 2 * 2 * gp_GetM(theGraph) + 2)
         return NOTOK;
 
     sp_ClearStack(theStack);
 
+    /* Clear the visited flags because they are used to detect what has
+        been visited as the DFS traverses the graph. */
     _ClearAnyTypeVertexVisitedFlags(theGraph, FALSE);
 
     /* This outer loop causes the connected subgraphs of a disconnected
@@ -306,7 +310,8 @@ int gp_ComputeLowpoints(graphP theGraph)
     _gp_LogLine("\ngraphDFSUtils.c/gp_ComputeLowpoints() start");
 
     // A stack of size N suffices because at maximum every vertex is pushed only once
-    // However, since a larger stack is needed for the main DFS, this is mainly documentation
+    // However, since a larger stack is needed for the main DFS, this is really
+    // just 'documentation' of the requirement
     if (sp_GetCapacity(theStack) < gp_GetN(theGraph))
         return NOTOK;
 

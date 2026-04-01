@@ -1643,7 +1643,7 @@ int _RestoreReducedPath(graphP theGraph, K33SearchContext *context, int e)
     eTwin1 = gp_GetPrevArc(theGraph, eTwin);
 
     /* We first delete the edge represented by e and eTwin. We do so before
-       restoring the path to ensure we do not exceed the maximum arc capacity. */
+       restoring the path to ensure we do not exceed the maximum edge capacity. */
 
     _K33Search_DeleteEdge(theGraph, context, e);
 
@@ -1728,7 +1728,7 @@ int _RestoreAndOrientReducedPaths(graphP theGraph, K33SearchContext *context)
             eTwin1 = gp_GetPrevArc(theGraph, eTwin);
 
             /* We first delete the edge represented by e and eTwin. We do so before
-               restoring the path to ensure we do not exceed the maximum arc capacity. */
+               restoring the path to ensure we do not exceed the maximum edge capacity. */
 
             _K33Search_DeleteEdge(theGraph, context, e);
 

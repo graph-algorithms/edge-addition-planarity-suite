@@ -163,14 +163,14 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
     }
 
     order = gp_GetN(theGraph);
-    // We have to set the maximum arc capacity (i.e. (N * (N - 1))) because some of the test files
+    // We have to set the maximum edge capacity (i.e. (N * (N - 1) / 2)) because some of the test files
     // can contain complete graphs, and the graph drawing, K_{3, 3} search, and K_4 search extensions
-    // don't support expanding the arc capacity after being attached.
+    // don't support expanding the edge capacity after being attached.
     if (strchr("d34", command) != NULL)
     {
-        if ((Result = gp_EnsureArcCapacity(theGraph, (order * (order - 1)))) != OK)
+        if ((Result = gp_EnsureEdgeCapacity(theGraph, (order * (order - 1) / 2))) != OK)
         {
-            ErrorMessage("Unable to maximize arc capacity of G6ReadIterator's graph struct.\n");
+            ErrorMessage("Unable to ensure sufficient edge capacity of the G6ReadIterator's graph struct.\n");
 
             g6_FreeReader(&pG6ReadIterator);
             gp_Free(&theGraph);

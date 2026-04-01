@@ -1384,7 +1384,7 @@ int _K4_RestoreReducedPath(graphP theGraph, K4SearchContext *context, int e)
     eTwin1 = gp_GetPrevArc(theGraph, eTwin);
 
     // We first delete the edge represented by e and eTwin. We do so before
-    // restoring the path to ensure we do not exceed the maximum arc capacity.
+    // restoring the path to ensure we do not exceed the maximum edge capacity.
     _K4_DeleteEdge(theGraph, context, e);
 
     // Now we add the two edges to reconnect the reduced path represented

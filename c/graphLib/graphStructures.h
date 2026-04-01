@@ -27,19 +27,19 @@ extern "C"
 
 // The initial setting for the edge storage capacity expressed as a constant factor of N,
 // which is the number of vertices in the graph. By default, array E is allocated enough
-// space to contain 3N edges, which is 6N arcs (half edges), but this initial setting
-// can be overridden using gp_EnsureArcCapacity(), which is especially efficient if done
-// before calling gp_InitGraph() or gp_Read().
+// space to contain 3N edges, which is 6N edge records, but this initial setting
+// can be overridden using gp_EnsureEdgeCapacity(). It is especially efficient to change
+// to ensure a higher edge capacity if done before calling gp_InitGraph() or gp_Read().
 #define DEFAULT_EDGE_LIMIT 3
 
     /********************************************************************
-     Edge Record (Arc) Definition
+     Edge Record Definition
 
-     An edge is defined by a pair of edge records, or arcs, allocated in
-     array E of a graph.  An edge record represents the edge in the
-     adjacency list of each vertex to which the edge is incident.
+     An edge is defined by a pair of edge records allocated in array E
+     of a graph. A pair of edge records represents the edge in the 
+     adjacency lists of each vertex to which the edge is incident.
 
-     link[2]: the next and previous edge records (arcs) in the adjacency
+     link[2]: the next and previous edge records in the adjacency
               list that contains this edge record.
 
      v: The vertex neighbor of the vertex whose adjacency list contains
@@ -52,8 +52,8 @@ extern "C"
             Bit 3: DFS tree edge, versus cycle edge (co-tree edge, etc.)
             Bit 4: DFS arc to descendant, versus arc to ancestor
             Bit 5: Inverted (same as marking an edge with a "sign" of -1)
-            Bit 6: Arc is directed into the containing vertex only
-            Bit 7: Arc is directed from the containing vertex only
+            Bit 6: Edge record is directed into the containing vertex only
+            Bit 7: Edge record is directed from the containing vertex only
      ********************************************************************/
 
     typedef struct
@@ -100,7 +100,7 @@ extern "C"
 
 #define gp_EdgeInUse(theGraph, e) (gp_IsAnyTypeVertex(theGraph, gp_GetNeighbor(theGraph, e)))
 #define gp_EdgeNotInUse(theGraph, e) (gp_IsNotAnyTypeVertex(theGraph, gp_GetNeighbor(theGraph, e)))
-#define gp_EdgeArraySize(theGraph) (gp_GetFirstEdge(theGraph) + (theGraph)->arcCapacity)
+#define gp_EdgeArraySize(theGraph) (gp_GetFirstEdge(theGraph) + ( (theGraph)->edgeCapacity << 1))
 #define gp_EdgeInUseArraySize(theGraph) (gp_GetFirstEdge(theGraph) + ((gp_GetM(theGraph) + sp_GetCurrentSize((theGraph)->edgeHoles)) << 1))
 
 // An edge is represented by two consecutive edge records (arcs) in the edge array E.
@@ -670,7 +670,7 @@ extern "C"
 
             E : Array of edge records (edge records come in pairs and represent half edges, or arcs)
             M: Number of edges (the "size" of the graph)
-            arcCapacity: the maximum number of edge records allowed in E (the size of E)
+            edgeCapacity: the maximum number of edge records allowed in E (the size of E)
             edgeHoles: free locations in E where edges have been deleted
 
             theStack: Used by various graph routines needing a stack
@@ -695,7 +695,7 @@ extern "C"
         int N, NV;
 
         edgeRecP E;
-        int M, arcCapacity;
+        int M, edgeCapacity;
         stackP edgeHoles;
 
         stackP theStack;
