@@ -33,6 +33,14 @@ int _g6_WriteGraphToString(graphP theGraph, char **pOutputStr);
 
 int g6_NewWriter(G6WriteIteratorP *ppG6WriteIterator, graphP theGraph)
 {
+    if (ppG6WriteIterator == NULL)
+    {
+        ErrorMessage(
+            "Unable to allocate G6WriteIterator, as pointer to which to assign "
+            "address of memory allocated for G6WriteIterator is NULL.\n");
+        return NOTOK;
+    }
+
     if (ppG6WriteIterator != NULL && (*ppG6WriteIterator) != NULL)
     {
         ErrorMessage("G6WriteIterator is not NULL and therefore can't be allocated.\n");
@@ -101,12 +109,16 @@ bool _g6_IsWriterInitialized(G6WriteIteratorP pG6WriteIterator, bool reportUnini
                 ErrorMessage("G6WriteIterator's currGraph is NULL.\n");
             writerIsInitialized = false;
         }
-        if (gp_GetN(pG6WriteIterator->currGraph) == 0)
+        else
         {
-            if (reportUninitializedParts)
-                ErrorMessage("G6WriteIterator's currGraph does not contain a valid "
-                             "graph.\n");
-            writerIsInitialized = false;
+            if (gp_GetN(pG6WriteIterator->currGraph) == 0)
+            {
+                if (reportUninitializedParts)
+                    ErrorMessage(
+                        "G6WriteIterator's currGraph does not contain a valid "
+                        "graph.\n");
+                writerIsInitialized = false;
+            }
         }
     }
 
@@ -115,6 +127,14 @@ bool _g6_IsWriterInitialized(G6WriteIteratorP pG6WriteIterator, bool reportUnini
 
 int g6_GetNumGraphsWritten(G6WriteIteratorP pG6WriteIterator, int *pNumGraphsWritten)
 {
+    if (pNumGraphsWritten == NULL)
+    {
+        ErrorMessage(
+            "Unable to get numGraphsWritten from G6WriteIterator, as output "
+            "parameter pNumGraphsWritten is NULL.\n");
+        return NOTOK;
+    }
+
     if (!_g6_IsWriterInitialized(pG6WriteIterator, true))
     {
         ErrorMessage("Unable to get numGraphsWritten, as G6WriteIterator is "
@@ -132,6 +152,14 @@ int g6_GetNumGraphsWritten(G6WriteIteratorP pG6WriteIterator, int *pNumGraphsWri
 
 int g6_GetOrderFromWriter(G6WriteIteratorP pG6WriteIterator, int *pOrder)
 {
+    if (pOrder == NULL)
+    {
+        ErrorMessage(
+            "Unable to get order from G6WriteIterator, as output parameter "
+            "pOrder is NULL.\n");
+        return NOTOK;
+    }
+
     if (!_g6_IsWriterInitialized(pG6WriteIterator, true))
     {
         ErrorMessage("Unable to get order, as G6WriteIterator is not "
@@ -149,6 +177,14 @@ int g6_GetOrderFromWriter(G6WriteIteratorP pG6WriteIterator, int *pOrder)
 
 int g6_GetGraphFromWriter(G6WriteIteratorP pG6WriteIterator, graphP *pTheGraph)
 {
+    if (pTheGraph == NULL)
+    {
+        ErrorMessage(
+            "Unable to get graph from G6WriteIterator, as output parameter "
+            "pTheGraph is NULL.\n");
+        return NOTOK;
+    }
+
     if (!_g6_IsWriterInitialized(pG6WriteIterator, true))
     {
         ErrorMessage("Unable to get numGraphsWritten, as G6WriteIterator is "
@@ -168,14 +204,17 @@ int g6_InitWriterWithString(G6WriteIteratorP pG6WriteIterator, char **pOutputStr
 {
     if (pG6WriteIterator == NULL)
     {
-        ErrorMessage("Unable to initialize writer, since pointer to "
-                     "pG6WriteIterator is NULL.\n");
+        ErrorMessage(
+            "Unable to initialize writer, since pointer pG6WriteIterator is "
+            "NULL.\n");
         return NOTOK;
     }
 
     if (_g6_IsWriterInitialized(pG6WriteIterator, false))
     {
-        ErrorMessage("Unable to initialize writer, as it was already previously initialized.\n");
+        ErrorMessage(
+            "Unable to initialize writer, as it was already previously "
+            "initialized.\n");
         return NOTOK;
     }
 
@@ -205,8 +244,8 @@ int g6_InitWriterWithFileName(G6WriteIteratorP pG6WriteIterator, char *outputFil
     if (pG6WriteIterator == NULL)
     {
         ErrorMessage(
-            "Unable to initialize writer, since pointer to pG6WriteIterator "
-            "is NULL.\n");
+            "Unable to initialize writer, since pointer pG6WriteIterator is "
+            "NULL.\n");
         return NOTOK;
     }
 
@@ -233,6 +272,22 @@ int g6_InitWriterWithFileName(G6WriteIteratorP pG6WriteIterator, char *outputFil
 
 int _g6_InitWriterWithStrOrFile(G6WriteIteratorP pG6WriteIterator, strOrFileP outputContainer)
 {
+    if (pG6WriteIterator == NULL)
+    {
+        ErrorMessage(
+            "Unable to initialize writer, since pointer pG6WriteIterator is "
+            "NULL.\n");
+        return NOTOK;
+    }
+
+    if (_g6_IsWriterInitialized(pG6WriteIterator, false))
+    {
+        ErrorMessage(
+            "Unable to initialize writer, as it was already previously "
+            "initialized.\n");
+        return NOTOK;
+    }
+
     if (!sf_IsValidStrOrFile(outputContainer))
     {
         ErrorMessage("Unable to initialize writer with invalid strOrFile "
@@ -251,8 +306,9 @@ int _g6_InitWriter(G6WriteIteratorP pG6WriteIterator)
 
     if (sf_fputs(g6Header, pG6WriteIterator->g6Output) < 0)
     {
-        ErrorMessage("Unable to initialize writer due to failure to fputs "
-                     "header to g6Output.\n");
+        ErrorMessage(
+            "Unable to initialize writer due to failure to fputs header to "
+            "g6Output.\n");
         return NOTOK;
     }
 
@@ -602,7 +658,7 @@ int _g6_WriteGraphToStrOrFile(graphP theGraph, strOrFileP outputContainer)
         // no invalid or incomplete results are returned to the caller. This
         // means we have to free the strBufP so that we won't try to
         // sb_TakeString() and assign that to the output container's pOutputStr
-        
+
         //, so we must free the string and set the pointer-pointer. This
         // must be done *before* freeing the write iterator, because we
         // effectively pass ownership of the outputContainer to the iterator,

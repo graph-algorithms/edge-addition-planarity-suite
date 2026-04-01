@@ -36,9 +36,18 @@ int g6_NewReader(G6ReadIteratorP *ppG6ReadIterator, graphP theGraph)
 {
     int exitCode = OK;
 
+    if (ppG6ReadIterator == NULL)
+    {
+        ErrorMessage(
+            "Unable to allocate G6ReadIterator, as pointer to which to assign "
+            "address of memory allocated for G6ReadIterator is NULL.\n");
+        return NOTOK;
+    }
+
     if (ppG6ReadIterator != NULL && (*ppG6ReadIterator) != NULL)
     {
-        ErrorMessage("G6ReadIterator is not NULL and therefore can't be allocated.\n");
+        ErrorMessage(
+            "G6ReadIterator is not NULL and therefore can't be allocated.\n");
         return NOTOK;
     }
 
@@ -114,6 +123,14 @@ bool g6_EndReached(G6ReadIteratorP pG6ReadIterator)
 
 int g6_GetNumGraphsRead(G6ReadIteratorP pG6ReadIterator, int *pNumGraphsRead)
 {
+    if (pNumGraphsRead == NULL)
+    {
+        ErrorMessage(
+            "Unable to get numGraphsRead from G6ReadIterator, as output "
+            "parameter pNumGraphsRead is NULL.\n");
+        return NOTOK;
+    }
+
     if (!_g6_IsReaderInitialized(pG6ReadIterator, true))
     {
         ErrorMessage("Unable to get numGraphsRead, as G6ReadIterator is not "
@@ -131,6 +148,14 @@ int g6_GetNumGraphsRead(G6ReadIteratorP pG6ReadIterator, int *pNumGraphsRead)
 
 int g6_GetOrderFromReader(G6ReadIteratorP pG6ReadIterator, int *pOrder)
 {
+    if (pOrder == NULL)
+    {
+        ErrorMessage(
+            "Unable to get order from G6ReadIterator, as output parameter "
+            "pOrder is NULL.\n");
+        return NOTOK;
+    }
+
     if (!_g6_IsReaderInitialized(pG6ReadIterator, true))
     {
         ErrorMessage("Unable to get order, as G6ReadIterator is not "
@@ -148,10 +173,19 @@ int g6_GetOrderFromReader(G6ReadIteratorP pG6ReadIterator, int *pOrder)
 
 int g6_GetGraphFromReader(G6ReadIteratorP pG6ReadIterator, graphP *pTheGraph)
 {
+    if (pTheGraph == NULL)
+    {
+        ErrorMessage(
+            "Unable to get graph from G6ReadIterator, as output parameter "
+            "pTheGraph is NULL.\n");
+        return NOTOK;
+    }
+
     if (!_g6_IsReaderInitialized(pG6ReadIterator, true))
     {
-        ErrorMessage("Unable to get currGraph from reader, as G6ReadIterator "
-                     "is not initialized.\n");
+        ErrorMessage(
+            "Unable to get graph from reader, as G6ReadIterator is not "
+            "initialized.\n");
 
         (*pTheGraph) = NULL;
 
@@ -167,14 +201,17 @@ int g6_InitReaderWithString(G6ReadIteratorP pG6ReadIterator, char *inputString)
 {
     if (pG6ReadIterator == NULL)
     {
-        ErrorMessage("Unable to initialize reader, since pointer to "
-                     "pG6ReadIterator is NULL.\n");
+        ErrorMessage(
+            "Unable to initialize reader, since pointer pG6ReadIterator is "
+            "NULL.\n");
         return NOTOK;
     }
 
     if (_g6_IsReaderInitialized(pG6ReadIterator, false))
     {
-        ErrorMessage("Unable to initialize reader, as it was already previously initialized.\n");
+        ErrorMessage(
+            "Unable to initialize reader, as it was already previously "
+            "initialized.\n");
         return NOTOK;
     }
 
@@ -193,14 +230,17 @@ int g6_InitReaderWithFileName(G6ReadIteratorP pG6ReadIterator, char const *const
 {
     if (pG6ReadIterator == NULL)
     {
-        ErrorMessage("Unable to initialize reader, since pointer to "
-                     "pG6ReadIterator is NULL.\n");
+        ErrorMessage(
+            "Unable to initialize reader, since pointer pG6ReadIterator is "
+            "NULL.\n");
         return NOTOK;
     }
 
     if (_g6_IsReaderInitialized(pG6ReadIterator, false))
     {
-        ErrorMessage("Unable to initialize reader, as it was already previously initialized.\n");
+        ErrorMessage(
+            "Unable to initialize reader, as it was already previously "
+            "initialized.\n");
         return NOTOK;
     }
 
