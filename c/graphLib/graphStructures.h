@@ -712,26 +712,6 @@ extern "C"
     typedef struct baseGraphStructure baseGraphStructure;
     typedef baseGraphStructure *graphP;
 
-// Fast macros intended for read-only access to selected graph structure data members
-#define gp_GetN(theGraph) ((theGraph)->N)
-#define gp_GetNV(theGraph) ((theGraph)->NV)
-#define gp_GetM(theGraph) ((theGraph)->M)
-#define gp_GetGraphFlags(theGraph) ((theGraph)->graphFlags)
-#define gp_GetEmbedFlags(theGraph) ((theGraph)->embedFlags)
-
-    /* Graph Flags:
-            FLAGS_DFSNUMBERED is set if DFS numbering has been performed on the graph
-            FLAGS_SORTEDBYDFI records whether the graph is in original vertex order
-                    or sorted by depth first index. Successive calls to SortVertices()
-                    toggle this bit.
-            FLAGS_ZEROBASEDIO is typically set by gp_Read() to indicate that the
-                    adjacency list representation in a file began with index 0.
-    */
-
-#define FLAGS_DFSNUMBERED 1
-#define FLAGS_SORTEDBYDFI 2
-#define FLAGS_ZEROBASEDIO 4
-
 /********************************************************************
  More link structure accessors/manipulators
  ********************************************************************/
