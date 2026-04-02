@@ -601,13 +601,13 @@ int _GetAdjacentAncestorInRange(graphP theGraph, K33SearchContext *context, int 
 {
     int e = context->VI[theVertex].backArcList;
 
-    while (gp_IsArc(theGraph, e))
+    while (gp_IsEdge(theGraph, e))
     {
         if (gp_GetNeighbor(theGraph, e) < closerAncestor &&
             gp_GetNeighbor(theGraph, e) > fartherAncestor)
             return gp_GetNeighbor(theGraph, e);
 
-        e = gp_GetNextArc(theGraph, e);
+        e = gp_GetNextEdge(theGraph, e);
         if (e == context->VI[theVertex].backArcList)
             e = NIL;
     }
@@ -707,7 +707,7 @@ int _FindExternalConnectionDescendantEndpoint(graphP theGraph, int ancestor,
     // by an unembedded back edge.
 
     e = gp_GetVertexFwdArcList(theGraph, ancestor);
-    while (gp_IsArc(theGraph, e))
+    while (gp_IsEdge(theGraph, e))
     {
         if (gp_GetNeighbor(theGraph, e) == cutVertex)
         {
@@ -715,7 +715,7 @@ int _FindExternalConnectionDescendantEndpoint(graphP theGraph, int ancestor,
             return OK;
         }
 
-        e = gp_GetNextArc(theGraph, e);
+        e = gp_GetNextEdge(theGraph, e);
         if (e == gp_GetVertexFwdArcList(theGraph, ancestor))
             e = NIL;
     }
@@ -847,11 +847,11 @@ int _FindK33WithMergeBlocker(graphP theGraph, K33SearchContext *context, int v, 
        back edge that was not embedded when step v was originally performed. */
 
     e = gp_GetVertexFwdArcList(theGraph, IC->v);
-    while (gp_IsArc(theGraph, e))
+    while (gp_IsEdge(theGraph, e))
     {
         theGraph->functions.fpWalkUp(theGraph, IC->v, e);
 
-        e = gp_GetNextArc(theGraph, e);
+        e = gp_GetNextEdge(theGraph, e);
         if (e == gp_GetVertexFwdArcList(theGraph, IC->v))
             e = NIL;
     }
@@ -996,7 +996,7 @@ int _TestForZtoWPath(graphP theGraph)
     {
         sp_Pop2(theGraph->theStack, v, e);
 
-        if (gp_IsNotArc(theGraph, e))
+        if (gp_IsNotEdge(theGraph, e))
         {
             // If the vertex is visited, then it is a member of the X-Y path
             // Because it is being popped, its obstruction type is unknown because
@@ -1009,16 +1009,16 @@ int _TestForZtoWPath(graphP theGraph)
             // to have processing started on it again)
             gp_SetVertexVisitedInfo(theGraph, v, -1);
 
-            e = gp_GetFirstArc(theGraph, v);
+            e = gp_GetFirstEdge(theGraph, v);
         }
         else
-            e = gp_GetNextArc(theGraph, e);
+            e = gp_GetNextEdge(theGraph, e);
 
         // This while loop breaks on the first edge it finds that is eligible to be
         // pushed.  Once that happens, we break. The successive edges of a vertex are
         // only pushed (see the else clause above) once all paths extending from v
         // through e have been explored and found not to contain the desired path
-        while (gp_IsArc(theGraph, e))
+        while (gp_IsEdge(theGraph, e))
         {
             w = gp_GetNeighbor(theGraph, e);
 
@@ -1034,7 +1034,7 @@ int _TestForZtoWPath(graphP theGraph)
                 break;
             }
 
-            e = gp_GetNextArc(theGraph, e);
+            e = gp_GetNextEdge(theGraph, e);
         }
     }
 
@@ -1043,7 +1043,7 @@ int _TestForZtoWPath(graphP theGraph)
         sp_Pop2(theGraph->theStack, v, e);
         gp_SetVisited(theGraph, v);
         gp_SetEdgeVisited(theGraph, e);
-        gp_SetEdgeVisited(theGraph, gp_GetTwinArc(theGraph, e));
+        gp_SetEdgeVisited(theGraph, gp_GetTwin(theGraph, e));
     }
 
     return OK;
@@ -1143,7 +1143,7 @@ int _TestForStraddlingBridge(graphP theGraph, K33SearchContext *context, int u_m
         }
 
         // Check for noStraddle of u_max, break if found
-        e = gp_GetFirstArc(theGraph, p);
+        e = gp_GetFirstEdge(theGraph, p);
         if (context->E[e].noStraddle == u_max)
             break;
 
@@ -1158,7 +1158,7 @@ int _TestForStraddlingBridge(graphP theGraph, K33SearchContext *context, int u_m
         c = IC->v;
         while (c != p)
         {
-            e = gp_GetFirstArc(theGraph, c);
+            e = gp_GetFirstEdge(theGraph, c);
             if (gp_IsVertex(theGraph, context->E[e].noStraddle))
                 break;
 
@@ -1247,7 +1247,7 @@ int _ReduceBicomp(graphP theGraph, K33SearchContext *context, int R)
            cycle edge to form the path that will be reduced to the
            external face cycle edge (V, max). */
 
-        A_edge = gp_GetLastArc(theGraph, IC->r);
+        A_edge = gp_GetLastEdge(theGraph, IC->r);
         A = gp_GetNeighbor(theGraph, A_edge);
         yrType = EDGE_TYPE_BACK;
 
@@ -1259,12 +1259,12 @@ int _ReduceBicomp(graphP theGraph, K33SearchContext *context, int R)
 
         if (max == IC->y)
         {
-            B_edge = gp_GetLastArc(theGraph, IC->x);
-            while (B_edge != gp_GetFirstArc(theGraph, IC->x))
+            B_edge = gp_GetLastEdge(theGraph, IC->x);
+            while (B_edge != gp_GetFirstEdge(theGraph, IC->x))
             {
                 if (gp_GetEdgeVisited(theGraph, B_edge))
                     break;
-                B_edge = gp_GetPrevArc(theGraph, B_edge);
+                B_edge = gp_GetPrevEdge(theGraph, B_edge);
             }
 
             if (!gp_GetEdgeVisited(theGraph, B_edge))
@@ -1281,7 +1281,7 @@ int _ReduceBicomp(graphP theGraph, K33SearchContext *context, int R)
 
         else if (max == IC->w)
         {
-            B_edge = gp_GetFirstArc(theGraph, IC->x);
+            B_edge = gp_GetFirstEdge(theGraph, IC->x);
             B = gp_GetNeighbor(theGraph, B_edge);
             xwType = EDGE_TYPE_BACK;
         }
@@ -1295,18 +1295,18 @@ int _ReduceBicomp(graphP theGraph, K33SearchContext *context, int R)
 
     else
     {
-        A_edge = gp_GetFirstArc(theGraph, IC->r);
+        A_edge = gp_GetFirstEdge(theGraph, IC->r);
         A = gp_GetNeighbor(theGraph, A_edge);
         rxType = EDGE_TYPE_BACK;
 
         if (max == IC->x)
         {
-            B_edge = gp_GetFirstArc(theGraph, IC->y);
-            while (B_edge != gp_GetLastArc(theGraph, IC->y))
+            B_edge = gp_GetFirstEdge(theGraph, IC->y);
+            while (B_edge != gp_GetLastEdge(theGraph, IC->y))
             {
                 if (gp_GetEdgeVisited(theGraph, B_edge))
                     break;
-                B_edge = gp_GetNextArc(theGraph, B_edge);
+                B_edge = gp_GetNextEdge(theGraph, B_edge);
             }
 
             if (!gp_GetEdgeVisited(theGraph, B_edge))
@@ -1318,7 +1318,7 @@ int _ReduceBicomp(graphP theGraph, K33SearchContext *context, int R)
 
         else if (max == IC->w)
         {
-            B_edge = gp_GetLastArc(theGraph, IC->y);
+            B_edge = gp_GetLastEdge(theGraph, IC->y);
             B = gp_GetNeighbor(theGraph, B_edge);
             wyType = EDGE_TYPE_BACK;
         }
@@ -1355,7 +1355,7 @@ int _ReduceBicomp(graphP theGraph, K33SearchContext *context, int R)
         return NOTOK;
 
     gp_SetEdgeVisited(theGraph, A_edge);
-    gp_SetEdgeVisited(theGraph, gp_GetTwinArc(theGraph, A_edge));
+    gp_SetEdgeVisited(theGraph, gp_GetTwin(theGraph, A_edge));
 
     /* Now we use B to mark either an X-Y path or a path of the external face
           corresponding to:
@@ -1368,7 +1368,7 @@ int _ReduceBicomp(graphP theGraph, K33SearchContext *context, int R)
         return NOTOK;
 
     gp_SetEdgeVisited(theGraph, B_edge);
-    gp_SetEdgeVisited(theGraph, gp_GetTwinArc(theGraph, B_edge));
+    gp_SetEdgeVisited(theGraph, gp_GetTwin(theGraph, B_edge));
 
     /* Delete the unmarked edges in the bicomp. Note that if an unmarked edge
      * represents a reduced path, then only the reduction edge is deleted here.
@@ -1423,7 +1423,7 @@ int _ReduceBicomp(graphP theGraph, K33SearchContext *context, int R)
 int _K33Search_DeleteEdge(graphP theGraph, K33SearchContext *context, int e)
 {
     _K33Search_InitEdgeRec(context, e);
-    _K33Search_InitEdgeRec(context, gp_GetTwinArc(theGraph, e));
+    _K33Search_InitEdgeRec(context, gp_GetTwin(theGraph, e));
 
     return gp_DeleteEdge(theGraph, e);
 }
@@ -1454,13 +1454,13 @@ int _K33Search_DeleteUnmarkedEdgesInBicomp(graphP theGraph, K33SearchContext *co
     {
         sp_Pop(theGraph->theStack, V);
 
-        e = gp_GetFirstArc(theGraph, V);
-        while (gp_IsArc(theGraph, e))
+        e = gp_GetFirstEdge(theGraph, V);
+        while (gp_IsEdge(theGraph, e))
         {
             if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_CHILD)
                 sp_Push(theGraph->theStack, gp_GetNeighbor(theGraph, e));
 
-            eNext = gp_GetNextArc(theGraph, e);
+            eNext = gp_GetNextEdge(theGraph, e);
             if (!gp_GetEdgeVisited(theGraph, e))
                 _K33Search_DeleteEdge(theGraph, context, e);
             e = eNext;
@@ -1503,22 +1503,22 @@ int _ReduceExternalFacePathToEdge(graphP theGraph, K33SearchContext *context, in
        endpoint of the original path is a newly added edge,
        not a reduction edge. */
 
-    e = gp_GetFirstArc(theGraph, u);
+    e = gp_GetFirstEdge(theGraph, u);
     if (gp_IsAnyTypeVertex(theGraph, context->E[e].pathConnector))
     {
         if (_RestoreReducedPath(theGraph, context, e) != OK)
             return NOTOK;
-        e = gp_GetFirstArc(theGraph, u);
+        e = gp_GetFirstEdge(theGraph, u);
         v = gp_GetNeighbor(theGraph, e);
     }
     _K33Search_DeleteEdge(theGraph, context, e);
 
-    e = gp_GetLastArc(theGraph, x);
+    e = gp_GetLastEdge(theGraph, x);
     if (gp_IsAnyTypeVertex(theGraph, context->E[e].pathConnector))
     {
         if (_RestoreReducedPath(theGraph, context, e) != OK)
             return NOTOK;
-        e = gp_GetLastArc(theGraph, x);
+        e = gp_GetLastEdge(theGraph, x);
         w = gp_GetNeighbor(theGraph, e);
     }
     _K33Search_DeleteEdge(theGraph, context, e);
@@ -1530,11 +1530,11 @@ int _ReduceExternalFacePathToEdge(graphP theGraph, K33SearchContext *context, in
 
     gp_AddEdge(theGraph, u, 0, x, 1);
 
-    e = gp_GetFirstArc(theGraph, u);
+    e = gp_GetFirstEdge(theGraph, u);
     context->E[e].pathConnector = v;
     gp_SetEdgeType(theGraph, e, _ComputeArcType(theGraph, u, x, edgeType));
 
-    e = gp_GetLastArc(theGraph, x);
+    e = gp_GetLastEdge(theGraph, x);
     context->E[e].pathConnector = w;
     gp_SetEdgeType(theGraph, e, _ComputeArcType(theGraph, x, u, edgeType));
 
@@ -1554,8 +1554,8 @@ int _ReduceXYPathToEdge(graphP theGraph, K33SearchContext *context, int u, int x
 {
     int e, v, w;
 
-    e = gp_GetFirstArc(theGraph, u);
-    e = gp_GetNextArc(theGraph, e);
+    e = gp_GetFirstEdge(theGraph, u);
+    e = gp_GetNextEdge(theGraph, e);
     v = gp_GetNeighbor(theGraph, e);
 
     /* If the XY-path is a single edge, then no reduction is needed */
@@ -1569,39 +1569,39 @@ int _ReduceXYPathToEdge(graphP theGraph, K33SearchContext *context, int u, int x
     {
         if (_RestoreReducedPath(theGraph, context, e) != OK)
             return NOTOK;
-        e = gp_GetFirstArc(theGraph, u);
-        e = gp_GetNextArc(theGraph, e);
+        e = gp_GetFirstEdge(theGraph, u);
+        e = gp_GetNextEdge(theGraph, e);
         v = gp_GetNeighbor(theGraph, e);
     }
     _K33Search_DeleteEdge(theGraph, context, e);
 
-    e = gp_GetFirstArc(theGraph, x);
-    e = gp_GetNextArc(theGraph, e);
+    e = gp_GetFirstEdge(theGraph, x);
+    e = gp_GetNextEdge(theGraph, e);
     w = gp_GetNeighbor(theGraph, e);
     if (gp_IsAnyTypeVertex(theGraph, context->E[e].pathConnector))
     {
         if (_RestoreReducedPath(theGraph, context, e) != OK)
             return NOTOK;
-        e = gp_GetFirstArc(theGraph, x);
-        e = gp_GetNextArc(theGraph, e);
+        e = gp_GetFirstEdge(theGraph, x);
+        e = gp_GetNextEdge(theGraph, e);
         w = gp_GetNeighbor(theGraph, e);
     }
     _K33Search_DeleteEdge(theGraph, context, e);
 
     /* Now add a single edge to represent the XY-path */
-    gp_InsertEdge(theGraph, u, gp_GetFirstArc(theGraph, u), 0,
-                  x, gp_GetFirstArc(theGraph, x), 0);
+    gp_InsertEdge(theGraph, u, gp_GetFirstEdge(theGraph, u), 0,
+                  x, gp_GetFirstEdge(theGraph, x), 0);
 
     /* Now set up the path connectors so the original XY-path can be recovered if needed.
        Also, set the reduction edge's type to preserve the DFS tree structure */
 
-    e = gp_GetFirstArc(theGraph, u);
-    e = gp_GetNextArc(theGraph, e);
+    e = gp_GetFirstEdge(theGraph, u);
+    e = gp_GetNextEdge(theGraph, e);
     context->E[e].pathConnector = v;
     gp_SetEdgeType(theGraph, e, _ComputeArcType(theGraph, u, x, edgeType));
 
-    e = gp_GetFirstArc(theGraph, x);
-    e = gp_GetNextArc(theGraph, e);
+    e = gp_GetFirstEdge(theGraph, x);
+    e = gp_GetNextEdge(theGraph, e);
     context->E[e].pathConnector = w;
     gp_SetEdgeType(theGraph, e, _ComputeArcType(theGraph, x, u, edgeType));
 
@@ -1626,7 +1626,7 @@ int _RestoreReducedPath(graphP theGraph, K33SearchContext *context, int e)
     if (gp_IsNotAnyTypeVertex(theGraph, context->E[e].pathConnector))
         return OK;
 
-    eTwin = gp_GetTwinArc(theGraph, e);
+    eTwin = gp_GetTwin(theGraph, e);
 
     u = gp_GetNeighbor(theGraph, eTwin);
     v = context->E[e].pathConnector;
@@ -1637,10 +1637,10 @@ int _RestoreReducedPath(graphP theGraph, K33SearchContext *context, int e)
        edge records must be added in order to reconnect the path
        parallel to the edge. */
 
-    e0 = gp_GetNextArc(theGraph, e);
-    e1 = gp_GetPrevArc(theGraph, e);
-    eTwin0 = gp_GetNextArc(theGraph, eTwin);
-    eTwin1 = gp_GetPrevArc(theGraph, eTwin);
+    e0 = gp_GetNextEdge(theGraph, e);
+    e1 = gp_GetPrevEdge(theGraph, e);
+    eTwin0 = gp_GetNextEdge(theGraph, eTwin);
+    eTwin1 = gp_GetPrevEdge(theGraph, eTwin);
 
     /* We first delete the edge represented by e and eTwin. We do so before
        restoring the path to ensure we do not exceed the maximum edge capacity. */
@@ -1651,7 +1651,7 @@ int _RestoreReducedPath(graphP theGraph, K33SearchContext *context, int e)
        by the edge [e, eTwin].  The edge record in u is added between e0 and e1.
        Likewise, the new edge record in x is added between eTwin0 and eTwin1. */
 
-    if (gp_IsArc(theGraph, e0))
+    if (gp_IsEdge(theGraph, e0))
     {
         if (gp_InsertEdge(theGraph, u, e0, 1, v, NIL, 0) != OK)
             return NOTOK;
@@ -1662,7 +1662,7 @@ int _RestoreReducedPath(graphP theGraph, K33SearchContext *context, int e)
             return NOTOK;
     }
 
-    if (gp_IsArc(theGraph, eTwin0))
+    if (gp_IsEdge(theGraph, eTwin0))
     {
         if (gp_InsertEdge(theGraph, x, eTwin0, 1, w, NIL, 0) != OK)
             return NOTOK;
@@ -1710,7 +1710,7 @@ int _RestoreAndOrientReducedPaths(graphP theGraph, K33SearchContext *context)
         {
             visited = gp_GetEdgeVisited(theGraph, e);
 
-            eTwin = gp_GetTwinArc(theGraph, e);
+            eTwin = gp_GetTwin(theGraph, e);
             u = gp_GetNeighbor(theGraph, eTwin);
             v = context->E[e].pathConnector;
             w = context->E[eTwin].pathConnector;
@@ -1722,10 +1722,10 @@ int _RestoreAndOrientReducedPaths(graphP theGraph, K33SearchContext *context)
                will be between e0 and e1.  Likewise, the edge record
                (x -> w) will be placed between eTwin0 and eTwin1. */
 
-            e0 = gp_GetNextArc(theGraph, e);
-            e1 = gp_GetPrevArc(theGraph, e);
-            eTwin0 = gp_GetNextArc(theGraph, eTwin);
-            eTwin1 = gp_GetPrevArc(theGraph, eTwin);
+            e0 = gp_GetNextEdge(theGraph, e);
+            e1 = gp_GetPrevEdge(theGraph, e);
+            eTwin0 = gp_GetNextEdge(theGraph, eTwin);
+            eTwin1 = gp_GetPrevEdge(theGraph, eTwin);
 
             /* We first delete the edge represented by e and eTwin. We do so before
                restoring the path to ensure we do not exceed the maximum edge capacity. */
@@ -1736,7 +1736,7 @@ int _RestoreAndOrientReducedPaths(graphP theGraph, K33SearchContext *context)
                by the edge [e, eTwin].  The edge record in u is added between e0 and e1.
                Likewise, the new edge record in x is added between eTwin0 and eTwin1. */
 
-            if (gp_IsArc(theGraph, e0))
+            if (gp_IsEdge(theGraph, e0))
             {
                 if (gp_InsertEdge(theGraph, u, e0, 1, v, NIL, 0) != OK)
                     return NOTOK;
@@ -1747,7 +1747,7 @@ int _RestoreAndOrientReducedPaths(graphP theGraph, K33SearchContext *context)
                     return NOTOK;
             }
 
-            if (gp_IsArc(theGraph, eTwin0))
+            if (gp_IsEdge(theGraph, eTwin0))
             {
                 if (gp_InsertEdge(theGraph, x, eTwin0, 1, w, NIL, 0) != OK)
                     return NOTOK;
@@ -1775,7 +1775,7 @@ int _RestoreAndOrientReducedPaths(graphP theGraph, K33SearchContext *context)
                      and last edges of a vertex are the ones that hold it onto
                      the external face, if it is on the external face. */
 
-            if ((gp_IsNotArc(theGraph, e0) && gp_IsNotArc(theGraph, eTwin1)) || (gp_IsNotArc(theGraph, e1) && gp_IsNotArc(theGraph, eTwin0)))
+            if ((gp_IsNotEdge(theGraph, e0) && gp_IsNotEdge(theGraph, eTwin1)) || (gp_IsNotEdge(theGraph, e1) && gp_IsNotEdge(theGraph, eTwin0)))
             {
                 if (_OrientExternalFacePath(theGraph, u, v, w, x) != OK)
                     return NOTOK;
@@ -1826,17 +1826,17 @@ int _MarkStraddlingBridgePath(graphP theGraph, int u_min, int u_max, int u_d, in
     {
         gp_SetVisited(theGraph, p);
 
-        e = gp_GetFirstArc(theGraph, p);
-        while (gp_IsArc(theGraph, e))
+        e = gp_GetFirstEdge(theGraph, p);
+        while (gp_IsEdge(theGraph, e))
         {
             if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_PARENT)
                 break;
 
-            e = gp_GetNextArc(theGraph, e);
+            e = gp_GetNextEdge(theGraph, e);
         }
 
         gp_SetEdgeVisited(theGraph, e);
-        gp_SetEdgeVisited(theGraph, gp_GetTwinArc(theGraph, e));
+        gp_SetEdgeVisited(theGraph, gp_GetTwin(theGraph, e));
 
         p = gp_GetNeighbor(theGraph, e);
 
@@ -1856,17 +1856,17 @@ int _MarkStraddlingBridgePath(graphP theGraph, int u_min, int u_max, int u_d, in
 
     while (p != u_max)
     {
-        e = gp_GetFirstArc(theGraph, p);
-        while (gp_IsArc(theGraph, e))
+        e = gp_GetFirstEdge(theGraph, p);
+        while (gp_IsEdge(theGraph, e))
         {
             if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_PARENT)
                 break;
 
-            e = gp_GetNextArc(theGraph, e);
+            e = gp_GetNextEdge(theGraph, e);
         }
 
         gp_ClearEdgeVisited(theGraph, e);
-        gp_ClearEdgeVisited(theGraph, gp_GetTwinArc(theGraph, e));
+        gp_ClearEdgeVisited(theGraph, gp_GetTwin(theGraph, e));
 
         p = gp_GetNeighbor(theGraph, e);
         gp_ClearVisited(theGraph, p);

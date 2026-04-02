@@ -263,13 +263,13 @@ int _ComputeVertexPositionsInComponent(DrawPlanarContext *context, int root, int
         }
 
         // Push DFS children
-        e = gp_GetFirstArc(theEmbedding, W);
-        while (gp_IsArc(theEmbedding, e))
+        e = gp_GetFirstEdge(theEmbedding, W);
+        while (gp_IsEdge(theEmbedding, e))
         {
             if (gp_GetEdgeType(theEmbedding, e) == EDGE_TYPE_CHILD)
                 sp_Push(theEmbedding->theStack, gp_GetNeighbor(theEmbedding, e));
 
-            e = gp_GetNextArc(theEmbedding, e);
+            e = gp_GetNextEdge(theEmbedding, e);
         }
     }
 
@@ -299,10 +299,10 @@ void _LogEdgeList(graphP theEmbedding, listCollectionP edgeList, int edgeListHea
 
     _gp_Log("EdgeList: [ ");
 
-    while (gp_IsArc(theGraph, eIndex))
+    while (gp_IsEdge(theGraph, eIndex))
     {
         e = (eIndex << 1);
-        eTwin = gp_GetTwinArc(theEmbedding, e);
+        eTwin = gp_GetTwin(theEmbedding, e);
 
         _gp_Log(_gp_MakeLogStr2("(%d, %d) ",
                                 gp_GetIndex(theEmbedding, gp_GetNeighbor(theEmbedding, e)),
@@ -403,8 +403,8 @@ int _ComputeEdgePositions(DrawPlanarContext *context)
 
             // Now we traverse the adjacency list of the DFS tree root and
             // record each edge as the generator edge of the neighbors
-            e = gp_GetFirstArc(theEmbedding, v);
-            while (gp_IsArc(theEmbedding, e))
+            e = gp_GetFirstEdge(theEmbedding, v);
+            while (gp_IsEdge(theEmbedding, e))
             {
                 eIndex = (e >> 1); // div by 2 since each edge is a pair of arcs
 
@@ -416,7 +416,7 @@ int _ComputeEdgePositions(DrawPlanarContext *context)
                 gp_SetVertexVisitedInfo(theEmbedding, gp_GetNeighbor(theEmbedding, e), e);
 
                 // Go to the next node of the root's adj list
-                e = gp_GetNextArc(theEmbedding, e);
+                e = gp_GetNextEdge(theEmbedding, e);
             }
         }
 
@@ -426,9 +426,9 @@ int _ComputeEdgePositions(DrawPlanarContext *context)
             // Get the generator edge of the vertex
             // Note that this never gets the false generator edge of a DFS tree root
             eTwin = gp_GetVertexVisitedInfo(theEmbedding, v);
-            if (gp_IsNotArc(theEmbedding, eTwin))
+            if (gp_IsNotEdge(theEmbedding, eTwin))
                 return NOTOK;
-            e = gp_GetTwinArc(theEmbedding, eTwin);
+            e = gp_GetTwin(theEmbedding, eTwin);
 
             // Traverse the edges of the vertex, starting
             // from the generator edge and going counterclockwise...
@@ -436,7 +436,7 @@ int _ComputeEdgePositions(DrawPlanarContext *context)
             eIndex = (e >> 1);
             edgeListInsertPoint = eIndex;
 
-            eCur = gp_GetNextArcCircular(theEmbedding, e);
+            eCur = gp_GetNextEdgeCircular(theEmbedding, e);
             while (eCur != e)
             {
                 // If the neighboring vertex's position is greater
@@ -451,7 +451,7 @@ int _ComputeEdgePositions(DrawPlanarContext *context)
                     _gp_LogLine(_gp_MakeLogStr4("Insert (%d, %d) after (%d, %d)",
                                                 gp_GetIndex(theEmbedding, v),
                                                 gp_GetIndex(theEmbedding, gp_GetNeighbor(theEmbedding, eCur)),
-                                                gp_GetIndex(theEmbedding, gp_GetNeighbor(theEmbedding, gp_GetTwinArc(theEmbedding, e))),
+                                                gp_GetIndex(theEmbedding, gp_GetNeighbor(theEmbedding, gp_GetTwin(theEmbedding, e))),
                                                 gp_GetIndex(theEmbedding, gp_GetNeighbor(theEmbedding, e))));
 
                     edgeListInsertPoint = eIndex;
@@ -459,17 +459,17 @@ int _ComputeEdgePositions(DrawPlanarContext *context)
                     // If the vertex does not yet have a generator edge, then set it.
                     // Note that a DFS tree root has a false generator edge, so this if
                     // test avoids setting a generator edge for a DFS tree root
-                    if (gp_IsNotArc(theEmbedding, gp_GetVertexVisitedInfo(theEmbedding, gp_GetNeighbor(theEmbedding, eCur))))
+                    if (gp_IsNotEdge(theEmbedding, gp_GetVertexVisitedInfo(theEmbedding, gp_GetNeighbor(theEmbedding, eCur))))
                     {
                         gp_SetVertexVisitedInfo(theEmbedding, gp_GetNeighbor(theEmbedding, eCur), eCur);
                         _gp_LogLine(_gp_MakeLogStr2("Generator edge (%d, %d)",
-                                                    gp_GetIndex(theEmbedding, gp_GetNeighbor(theEmbedding, gp_GetTwinArc(theEmbedding, e))),
+                                                    gp_GetIndex(theEmbedding, gp_GetNeighbor(theEmbedding, gp_GetTwin(theEmbedding, e))),
                                                     gp_GetIndex(theEmbedding, gp_GetNeighbor(theEmbedding, eCur))));
                     }
                 }
 
                 // Go to the next node in v's adjacency list
-                eCur = gp_GetNextArcCircular(theEmbedding, eCur);
+                eCur = gp_GetNextEdgeCircular(theEmbedding, eCur);
             }
         }
 
@@ -483,9 +483,9 @@ int _ComputeEdgePositions(DrawPlanarContext *context)
     eIndex = edgeListHead;
     e = eIndex == NIL ? NIL : (eIndex << 1);
 
-    while (gp_IsArc(theEmbedding, e))
+    while (gp_IsEdge(theEmbedding, e))
     {
-        eTwin = gp_GetTwinArc(theEmbedding, e);
+        eTwin = gp_GetTwin(theEmbedding, e);
 
         context->E[e].pos = context->E[eTwin].pos = epos;
 
@@ -527,14 +527,14 @@ int _ComputeVertexRanges(DrawPlanarContext *context)
         // Iterate the edges, except in the isolated vertex case we just
         // set the min and max to 1 since there no edges controlling where
         // it gets drawn.
-        e = gp_GetFirstArc(theEmbedding, v);
-        if (gp_IsNotArc(theEmbedding, e))
+        e = gp_GetFirstEdge(theEmbedding, v);
+        if (gp_IsNotEdge(theEmbedding, e))
         {
             min = max = 0;
         }
         else
         {
-            while (gp_IsArc(theEmbedding, e))
+            while (gp_IsEdge(theEmbedding, e))
             {
                 if (min > context->E[e].pos)
                     min = context->E[e].pos;
@@ -542,7 +542,7 @@ int _ComputeVertexRanges(DrawPlanarContext *context)
                 if (max < context->E[e].pos)
                     max = context->E[e].pos;
 
-                e = gp_GetNextArc(theEmbedding, e);
+                e = gp_GetNextEdge(theEmbedding, e);
             }
         }
 
@@ -573,7 +573,7 @@ int _ComputeEdgeRanges(DrawPlanarContext *context)
     EsizeOccupied = gp_EdgeInUseArraySize(theEmbedding);
     for (e = gp_EdgeArrayStart(theEmbedding); e < EsizeOccupied; e += 2)
     {
-        eTwin = gp_GetTwinArc(theEmbedding, e);
+        eTwin = gp_GetTwin(theEmbedding, e);
 
         v1 = gp_GetNeighbor(theEmbedding, e);
         v2 = gp_GetNeighbor(theEmbedding, eTwin);
@@ -1006,7 +1006,7 @@ int _CheckVisibilityRepresentationIntegrity(DrawPlanarContext *context)
     for (e = gp_EdgeArrayStart(theEmbedding); e < EsizeOccupied; e += 2)
     {
         /* Each edge has two index locations in the edge information array */
-        eTwin = gp_GetTwinArc(theEmbedding, e);
+        eTwin = gp_GetTwin(theEmbedding, e);
 
         if (context->E[e].pos != context->E[eTwin].pos ||
             context->E[e].start != context->E[eTwin].start ||
@@ -1028,7 +1028,7 @@ int _CheckVisibilityRepresentationIntegrity(DrawPlanarContext *context)
             tell us whether the positions are being reused. */
 
         eposIndex = (epos << 1) + gp_EdgeArrayStart(theEmbedding);
-        eTwin = gp_GetTwinArc(theEmbedding, eposIndex);
+        eTwin = gp_GetTwin(theEmbedding, eposIndex);
 
         if (gp_GetEdgeVisited(theEmbedding, eposIndex) || gp_GetEdgeVisited(theEmbedding, eTwin))
             return NOTOK;
@@ -1043,7 +1043,7 @@ int _CheckVisibilityRepresentationIntegrity(DrawPlanarContext *context)
     EsizeOccupied = gp_EdgeInUseArraySize(theEmbedding);
     for (e = gp_EdgeArrayStart(theEmbedding); e < EsizeOccupied; e += 2)
     {
-        eTwin = gp_GetTwinArc(theEmbedding, e);
+        eTwin = gp_GetTwin(theEmbedding, e);
 
         for (v = gp_GetFirstVertex(theEmbedding); gp_VertexInRangeAscending(theEmbedding, v); v++)
         {

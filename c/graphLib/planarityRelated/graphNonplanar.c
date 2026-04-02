@@ -228,7 +228,7 @@ int _GetNeighborOnExtFace(graphP theGraph, int curVertex, int *pPrevLink)
 {
     /* Exit curVertex from whichever link was not previously used to enter it */
 
-    int arc = gp_GetArc(theGraph, curVertex, 1 ^ (*pPrevLink));
+    int arc = gp_GetEdgeByLink(theGraph, curVertex, 1 ^ (*pPrevLink));
     int nextVertex = gp_GetNeighbor(theGraph, arc);
 
     /* This if stmt assigns the new prev link that tells us which edge
@@ -244,8 +244,8 @@ int _GetNeighborOnExtFace(graphP theGraph, int curVertex, int *pPrevLink)
        face) was used to enter nextVertex so we can exit from the other one
        as traversal of the external face continues later. */
 
-    if (gp_GetFirstArc(theGraph, nextVertex) != gp_GetLastArc(theGraph, nextVertex))
-        *pPrevLink = gp_GetTwinArc(theGraph, arc) == gp_GetFirstArc(theGraph, nextVertex) ? 0 : 1;
+    if (gp_GetFirstEdge(theGraph, nextVertex) != gp_GetLastEdge(theGraph, nextVertex))
+        *pPrevLink = gp_GetTwin(theGraph, arc) == gp_GetFirstEdge(theGraph, nextVertex) ? 0 : 1;
 
     return nextVertex;
 }
@@ -400,7 +400,7 @@ int _PopAndUnmarkVerticesAndEdges(graphP theGraph, int Z, int stackBottom)
         // Now unmark the vertex and edge (i.e. revert to "unvisited")
         gp_ClearVisited(theGraph, V);
         gp_ClearEdgeVisited(theGraph, e);
-        gp_ClearEdgeVisited(theGraph, gp_GetTwinArc(theGraph, e));
+        gp_ClearEdgeVisited(theGraph, gp_GetTwin(theGraph, e));
     }
 
     return OK;
@@ -602,7 +602,7 @@ int _MarkClosestXYPath(graphP theGraph, int targetVertex)
     // the targetVertex (which will be an edge on the RYW side, and the
     // first line of the loop code will get the previous or next arc to exit
     // the targetVertex on the RXW side of the bicomp)
-    e = targetVertex == R ? gp_GetLastArc(theGraph, R) : gp_GetFirstArc(theGraph, W);
+    e = targetVertex == R ? gp_GetLastEdge(theGraph, R) : gp_GetFirstEdge(theGraph, W);
 
     while (gp_GetObstructionMark(theGraph, Z) != ANYVERTEX_OBSTRUCTIONMARK_HIGH_RYW &&
            gp_GetObstructionMark(theGraph, Z) != ANYVERTEX_OBSTRUCTIONMARK_LOW_RYW)
@@ -610,14 +610,14 @@ int _MarkClosestXYPath(graphP theGraph, int targetVertex)
         /* Advance e and Z along the proper face containing the targetVertex */
 
         // Get the opposing arc of the corner at vertex Z, as the arc to exit Z
-        e = targetVertex == R ? gp_GetPrevArcCircular(theGraph, e)
-                              : gp_GetNextArcCircular(theGraph, e);
+        e = targetVertex == R ? gp_GetPrevEdgeCircular(theGraph, e)
+                              : gp_GetNextEdgeCircular(theGraph, e);
 
         // Now use the exit arc to get the next Z to visit
         Z = gp_GetNeighbor(theGraph, e);
 
         // And get the entry arc of the new Z being visited
-        e = gp_GetTwinArc(theGraph, e);
+        e = gp_GetTwin(theGraph, e);
 
         /* If Z is already visited, then pop everything since the last time
               we visited Z because its all part of a separable component. */
@@ -669,7 +669,7 @@ int _MarkClosestXYPath(graphP theGraph, int targetVertex)
             if (Z != theGraph->IC.px)
             {
                 gp_SetEdgeVisited(theGraph, e);
-                gp_SetEdgeVisited(theGraph, gp_GetTwinArc(theGraph, e));
+                gp_SetEdgeVisited(theGraph, gp_GetTwin(theGraph, e));
             }
 
             /* If we found an RYW vertex, then we have successfully finished
@@ -746,13 +746,13 @@ int _MarkZtoRPath(graphP theGraph)
        the first internal vertex of the X-Y path. */
 
     Z = Px;
-    ZNextArc = gp_GetLastArc(theGraph, Z);
-    while (ZNextArc != gp_GetFirstArc(theGraph, Z))
+    ZNextArc = gp_GetLastEdge(theGraph, Z);
+    while (ZNextArc != gp_GetFirstEdge(theGraph, Z))
     {
         if (gp_GetEdgeVisited(theGraph, ZNextArc))
             break;
 
-        ZNextArc = gp_GetPrevArc(theGraph, ZNextArc);
+        ZNextArc = gp_GetPrevEdge(theGraph, ZNextArc);
     }
 
     if (!gp_GetEdgeVisited(theGraph, ZNextArc))
@@ -762,11 +762,11 @@ int _MarkZtoRPath(graphP theGraph)
 
     while (gp_GetEdgeVisited(theGraph, ZNextArc))
     {
-        ZPrevArc = gp_GetTwinArc(theGraph, ZNextArc);
-        ZNextArc = gp_GetPrevArcCircular(theGraph, ZPrevArc);
+        ZPrevArc = gp_GetTwin(theGraph, ZNextArc);
+        ZNextArc = gp_GetPrevEdgeCircular(theGraph, ZPrevArc);
     }
 
-    ZPrevArc = gp_GetTwinArc(theGraph, ZNextArc);
+    ZPrevArc = gp_GetTwin(theGraph, ZNextArc);
     Z = gp_GetNeighbor(theGraph, ZPrevArc);
 
     /* If there is no Z to R path, return */
@@ -801,8 +801,8 @@ int _MarkZtoRPath(graphP theGraph)
 
         /* Go to the next edge in the proper face */
 
-        ZNextArc = gp_GetPrevArcCircular(theGraph, ZPrevArc);
-        ZPrevArc = gp_GetTwinArc(theGraph, ZNextArc);
+        ZNextArc = gp_GetPrevEdgeCircular(theGraph, ZPrevArc);
+        ZPrevArc = gp_GetTwin(theGraph, ZNextArc);
     }
 
     /* Found Z to R path, so indicate as much to caller */

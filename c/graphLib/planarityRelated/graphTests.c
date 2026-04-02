@@ -190,7 +190,7 @@ int _CheckEmbeddingFacialIntegrity(graphP theGraph)
         {
             sp_Push(theStack, e);
             gp_ClearEdgeVisited(theGraph, e);
-            eTwin = gp_GetTwinArc(theGraph, e);
+            eTwin = gp_GetTwin(theGraph, e);
             sp_Push(theStack, eTwin);
             gp_ClearEdgeVisited(theGraph, eTwin);
         }
@@ -215,7 +215,7 @@ int _CheckEmbeddingFacialIntegrity(graphP theGraph)
         e = eStart;
         do
         {
-            eNext = gp_GetNextArcCircular(theGraph, gp_GetTwinArc(theGraph, e));
+            eNext = gp_GetNextEdgeCircular(theGraph, gp_GetTwin(theGraph, e));
             if (gp_GetEdgeVisited(theGraph, eNext))
                 return NOTOK;
             gp_SetEdgeVisited(theGraph, eNext);
@@ -306,11 +306,11 @@ int _CheckAllVerticesOnExternalFace(graphP theGraph)
 void _MarkExternalFaceVertices(graphP theGraph, int startVertex)
 {
     int nextVertex = startVertex;
-    int e = gp_GetFirstArc(theGraph, nextVertex);
+    int e = gp_GetFirstEdge(theGraph, nextVertex);
     int eTwin;
 
     // Handle the case of an isolated vertex
-    if (gp_IsNotArc(theGraph, e))
+    if (gp_IsNotEdge(theGraph, e))
     {
         gp_SetVisited(theGraph, startVertex);
         return;
@@ -331,7 +331,7 @@ void _MarkExternalFaceVertices(graphP theGraph, int startVertex)
         //       But _JoinBicomps() has already occurred, so cut vertices
         //       will have external face edges other than the first and last arcs
         //       Hence we need this more sophisticated traversal method
-        eTwin = gp_GetTwinArc(theGraph, e);
+        eTwin = gp_GetTwin(theGraph, e);
 
         // Now we get the next arc in rotation order as the new arc out to the
         // vertex after nextVertex.  This sets us up for the next iteration.
@@ -344,7 +344,7 @@ void _MarkExternalFaceVertices(graphP theGraph, int startVertex)
         //       and last arcs.  We will visit those vertices multiple times,
         //       which is OK (just that we have to explain why we're calculating
         //       jout in this way).
-        e = gp_GetNextArcCircular(theGraph, eTwin);
+        e = gp_GetNextEdgeCircular(theGraph, eTwin);
 
         // Now things get really interesting.  The DFS root (startVertex) may
         // itself be a cut vertex to which multiple bicomps have been joined.
@@ -357,7 +357,7 @@ void _MarkExternalFaceVertices(graphP theGraph, int startVertex)
         // of startVertex, we need to proceed until we reenter startVertex
         // using its last arc.
 
-    } while (eTwin != gp_GetLastArc(theGraph, startVertex));
+    } while (eTwin != gp_GetLastEdge(theGraph, startVertex));
 }
 
 /********************************************************************
@@ -673,14 +673,14 @@ int _TestForK23GraphObstruction(graphP theGraph, int *degrees, int *imageVerts)
     // the two degree 3 image vertices are in the same partition
     // and hence must not be adjacent.
 
-    e = gp_GetFirstArc(theGraph, imageVerts[0]);
-    while (gp_IsArc(theGraph, e))
+    e = gp_GetFirstEdge(theGraph, imageVerts[0]);
+    while (gp_IsEdge(theGraph, e))
     {
         imageVerts[imageVertPos] = gp_GetNeighbor(theGraph, e);
         if (imageVerts[imageVertPos] == imageVerts[1])
             return FALSE;
         imageVertPos++;
-        e = gp_GetNextArc(theGraph, e);
+        e = gp_GetNextEdge(theGraph, e);
     }
 
     /* The paths from imageVerts[0] to each of the new degree 2
@@ -775,9 +775,9 @@ int _CheckOuterplanarObstructionIntegrity(graphP theGraph)
 
 int _TestPath(graphP theGraph, int U, int V)
 {
-    int e = gp_GetFirstArc(theGraph, U);
+    int e = gp_GetFirstEdge(theGraph, U);
 
-    while (gp_IsArc(theGraph, e))
+    while (gp_IsEdge(theGraph, e))
     {
         if (_TryPath(theGraph, e, V) == OK)
         {
@@ -785,7 +785,7 @@ int _TestPath(graphP theGraph, int U, int V)
             return TRUE;
         }
 
-        e = gp_GetNextArc(theGraph, e);
+        e = gp_GetNextEdge(theGraph, e);
     }
 
     return FALSE;
@@ -809,14 +809,14 @@ int _TryPath(graphP theGraph, int e, int V)
     nextVertex = gp_GetNeighbor(theGraph, e);
 
     // while nextVertex is strictly degree 2
-    while (gp_IsArc(theGraph, gp_GetFirstArc(theGraph, nextVertex)) &&
-           gp_IsArc(theGraph, gp_GetLastArc(theGraph, nextVertex)) &&
-           gp_GetNextArc(theGraph, gp_GetFirstArc(theGraph, nextVertex)) == gp_GetLastArc(theGraph, nextVertex))
+    while (gp_IsEdge(theGraph, gp_GetFirstEdge(theGraph, nextVertex)) &&
+           gp_IsEdge(theGraph, gp_GetLastEdge(theGraph, nextVertex)) &&
+           gp_GetNextEdge(theGraph, gp_GetFirstEdge(theGraph, nextVertex)) == gp_GetLastEdge(theGraph, nextVertex))
     {
-        eTwin = gp_GetTwinArc(theGraph, e);
-        e = gp_GetFirstArc(theGraph, nextVertex);
+        eTwin = gp_GetTwin(theGraph, e);
+        e = gp_GetFirstEdge(theGraph, nextVertex);
         if (e == eTwin)
-            e = gp_GetLastArc(theGraph, nextVertex);
+            e = gp_GetLastEdge(theGraph, nextVertex);
 
         nextVertex = gp_GetNeighbor(theGraph, e);
     }
@@ -838,16 +838,16 @@ void _MarkPath(graphP theGraph, int e)
 
     nextVertex = gp_GetNeighbor(theGraph, e);
     // while nextVertex is strictly degree 2
-    while (gp_IsArc(theGraph, gp_GetFirstArc(theGraph, nextVertex)) &&
-           gp_IsArc(theGraph, gp_GetLastArc(theGraph, nextVertex)) &&
-           gp_GetNextArc(theGraph, gp_GetFirstArc(theGraph, nextVertex)) == gp_GetLastArc(theGraph, nextVertex))
+    while (gp_IsEdge(theGraph, gp_GetFirstEdge(theGraph, nextVertex)) &&
+           gp_IsEdge(theGraph, gp_GetLastEdge(theGraph, nextVertex)) &&
+           gp_GetNextEdge(theGraph, gp_GetFirstEdge(theGraph, nextVertex)) == gp_GetLastEdge(theGraph, nextVertex))
     {
         gp_SetVisited(theGraph, nextVertex);
 
-        eTwin = gp_GetTwinArc(theGraph, e);
-        e = gp_GetFirstArc(theGraph, nextVertex);
+        eTwin = gp_GetTwin(theGraph, e);
+        e = gp_GetFirstEdge(theGraph, nextVertex);
         if (e == eTwin)
-            e = gp_GetLastArc(theGraph, nextVertex);
+            e = gp_GetLastEdge(theGraph, nextVertex);
 
         nextVertex = gp_GetNeighbor(theGraph, e);
     }
@@ -902,8 +902,8 @@ int _TestSubgraph(graphP theSubgraph, graphP theGraph)
         /* For each neighbor w in the adjacency list of vertex v in the
               subgraph, set the visited flag in w in the graph */
 
-        e = gp_GetFirstArc(theSubgraph, v);
-        while (gp_IsArc(theGraph, e))
+        e = gp_GetFirstEdge(theSubgraph, v);
+        while (gp_IsEdge(theGraph, e))
         {
             if (gp_IsNotVertex(theSubgraph, gp_GetNeighbor(theSubgraph, e)))
             {
@@ -912,7 +912,7 @@ int _TestSubgraph(graphP theSubgraph, graphP theGraph)
             }
             degreeCount++;
             gp_SetVisited(theGraph, gp_GetNeighbor(theSubgraph, e));
-            e = gp_GetNextArc(theSubgraph, e);
+            e = gp_GetNextEdge(theSubgraph, e);
         }
 
         if (Result != TRUE)
@@ -921,8 +921,8 @@ int _TestSubgraph(graphP theSubgraph, graphP theGraph)
         /* For each neighbor w in the adjacency list of vertex v in the graph,
               clear the visited flag in w in the graph */
 
-        e = gp_GetFirstArc(theGraph, v);
-        while (gp_IsArc(theGraph, e))
+        e = gp_GetFirstEdge(theGraph, v);
+        while (gp_IsEdge(theGraph, e))
         {
             if (gp_IsNotVertex(theGraph, gp_GetNeighbor(theGraph, e)))
             {
@@ -930,7 +930,7 @@ int _TestSubgraph(graphP theSubgraph, graphP theGraph)
                 break;
             }
             gp_ClearVisited(theGraph, gp_GetNeighbor(theGraph, e));
-            e = gp_GetNextArc(theGraph, e);
+            e = gp_GetNextEdge(theGraph, e);
         }
 
         if (Result != TRUE)
@@ -940,15 +940,15 @@ int _TestSubgraph(graphP theSubgraph, graphP theGraph)
            ensure that the visited flag in w was cleared (otherwise, the "subgraph"
            would incorrectly contain an adjacency not contained in the ("super") graph) */
 
-        e = gp_GetFirstArc(theSubgraph, v);
-        while (gp_IsArc(theGraph, e))
+        e = gp_GetFirstEdge(theSubgraph, v);
+        while (gp_IsEdge(theGraph, e))
         {
             if (gp_GetVisited(theGraph, gp_GetNeighbor(theSubgraph, e)))
             {
                 Result = FALSE;
                 break;
             }
-            e = gp_GetNextArc(theSubgraph, e);
+            e = gp_GetNextEdge(theSubgraph, e);
         }
 
         if (Result != TRUE)

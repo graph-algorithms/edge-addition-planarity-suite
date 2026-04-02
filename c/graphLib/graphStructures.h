@@ -68,9 +68,9 @@ extern "C"
 #ifdef USE_FASTER_1BASEDARRAYS
 
 #ifndef DEBUG
-#define gp_IsArc(theGraph, e) (e)
+#define gp_IsEdge(theGraph, e) (e)
 #else
-#define gp_IsArc(theGraph, e)                                                      \
+#define gp_IsEdge(theGraph, e)                                                     \
     ((e) == NIL                                                                    \
          ? 0                                                                       \
          : ((e) < gp_EdgeArrayStart(theGraph) || (e) >= gp_EdgeArraySize(theGraph) \
@@ -78,15 +78,15 @@ extern "C"
                 : 1))
 #endif
 
-#define gp_IsNotArc(theGraph, e) (!(e))
+#define gp_IsNotEdge(theGraph, e) (!(e))
 #define gp_EdgeArrayStart(theGraph) (2)
 
 #else // When using slower 0-based Arrays
 
 #ifndef DEBUG
-#define gp_IsArc(theGraph, e) ((e) != NIL)
+#define gp_IsEdge(theGraph, e) ((e) != NIL)
 #else
-#define gp_IsArc(theGraph, e)                                                      \
+#define gp_IsEdge(theGraph, e)                                                     \
     ((e) == NIL                                                                    \
          ? 0                                                                       \
          : ((e) < gp_EdgeArrayStart(theGraph) || (e) >= gp_EdgeArraySize(theGraph) \
@@ -94,7 +94,7 @@ extern "C"
                 : 1))
 #endif
 
-#define gp_IsNotArc(theGraph, e) ((e) == NIL)
+#define gp_IsNotEdge(theGraph, e) ((e) == NIL)
 #define gp_EdgeArrayStart(theGraph) (0)
 #endif
 
@@ -103,18 +103,18 @@ extern "C"
 #define gp_EdgeArraySize(theGraph) (gp_EdgeArrayStart(theGraph) + ((theGraph)->edgeCapacity << 1))
 #define gp_EdgeInUseArraySize(theGraph) (gp_EdgeArrayStart(theGraph) + ((gp_GetM(theGraph) + sp_GetCurrentSize((theGraph)->edgeHoles)) << 1))
 
-// An edge is represented by two consecutive edge records (arcs) in the edge array E.
+// An edge is represented by two consecutive edge records in the edge array E.
 // If an even number, xor 1 will add one; if an odd number, xor 1 will subtract 1
-#define gp_GetTwinArc(theGraph, Arc) ((Arc) ^ 1)
+#define gp_GetTwin(theGraph, e) ((e) ^ 1)
 
 // Access to adjacency list pointers
-#define gp_GetNextArc(theGraph, e) (theGraph->E[e].link[0])
-#define gp_GetPrevArc(theGraph, e) (theGraph->E[e].link[1])
-#define gp_GetAdjacentArc(theGraph, e, theLink) (theGraph->E[e].link[theLink])
+#define gp_GetNextEdge(theGraph, e) (theGraph->E[e].link[0])
+#define gp_GetPrevEdge(theGraph, e) (theGraph->E[e].link[1])
+#define gp_GetAdjacentEdge(theGraph, e, theLink) (theGraph->E[e].link[theLink])
 
-#define gp_SetNextArc(theGraph, e, newNextArc) (theGraph->E[e].link[0] = newNextArc)
-#define gp_SetPrevArc(theGraph, e, newPrevArc) (theGraph->E[e].link[1] = newPrevArc)
-#define gp_SetAdjacentArc(theGraph, e, theLink, newArc) (theGraph->E[e].link[theLink] = newArc)
+#define gp_SetNextEdge(theGraph, e, newNextArc) (theGraph->E[e].link[0] = newNextArc)
+#define gp_SetPrevEdge(theGraph, e, newPrevArc) (theGraph->E[e].link[1] = newPrevArc)
+#define gp_SetAdjacentEdge(theGraph, e, theLink, newArc) (theGraph->E[e].link[theLink] = newArc)
 
 // Access to vertex 'neighbor' member indicated by arc
 #define gp_GetNeighbor(theGraph, e) (theGraph->E[e].neighbor)
@@ -178,23 +178,23 @@ extern "C"
 
 // A direction of 0 clears directedness. Otherwise, edge record e is set
 // to direction and e's twin arc is set to the opposing setting.
-#define gp_SetDirection(theGraph, e, direction)                                          \
-    {                                                                                    \
-        if (direction == EDGEFLAG_DIRECTION_INONLY)                                      \
-        {                                                                                \
-            theGraph->E[e].flags |= EDGEFLAG_DIRECTION_INONLY;                           \
-            theGraph->E[gp_GetTwinArc(theGraph, e)].flags |= EDGEFLAG_DIRECTION_OUTONLY; \
-        }                                                                                \
-        else if (direction == EDGEFLAG_DIRECTION_OUTONLY)                                \
-        {                                                                                \
-            theGraph->E[e].flags |= EDGEFLAG_DIRECTION_OUTONLY;                          \
-            theGraph->E[gp_GetTwinArc(theGraph, e)].flags |= EDGEFLAG_DIRECTION_INONLY;  \
-        }                                                                                \
-        else                                                                             \
-        {                                                                                \
-            theGraph->E[e].flags &= ~EDGEFLAG_DIRECTION_MASK;                            \
-            theGraph->E[gp_GetTwinArc(theGraph, e)].flags &= ~EDGEFLAG_DIRECTION_MASK;   \
-        }                                                                                \
+#define gp_SetDirection(theGraph, e, direction)                                       \
+    {                                                                                 \
+        if (direction == EDGEFLAG_DIRECTION_INONLY)                                   \
+        {                                                                             \
+            theGraph->E[e].flags |= EDGEFLAG_DIRECTION_INONLY;                        \
+            theGraph->E[gp_GetTwin(theGraph, e)].flags |= EDGEFLAG_DIRECTION_OUTONLY; \
+        }                                                                             \
+        else if (direction == EDGEFLAG_DIRECTION_OUTONLY)                             \
+        {                                                                             \
+            theGraph->E[e].flags |= EDGEFLAG_DIRECTION_OUTONLY;                       \
+            theGraph->E[gp_GetTwin(theGraph, e)].flags |= EDGEFLAG_DIRECTION_INONLY;  \
+        }                                                                             \
+        else                                                                          \
+        {                                                                             \
+            theGraph->E[e].flags &= ~EDGEFLAG_DIRECTION_MASK;                         \
+            theGraph->E[gp_GetTwin(theGraph, e)].flags &= ~EDGEFLAG_DIRECTION_MASK;   \
+        }                                                                             \
     }
 
     /********************************************************************
@@ -210,7 +210,7 @@ extern "C"
      main vertices in substructural components of a graph (such as in
      biconnected components).
 
-     link[2]: the first and last edge records (arcs) in the adjacency list
+     link[2]: the first and last edge records in the adjacency list
               of the vertex.
 
      index: In vertices, stores either the depth first index of a vertex or
@@ -245,13 +245,13 @@ extern "C"
 ////////////////////////////////////////////
 // Accessors for vertex adjacency list links
 ////////////////////////////////////////////
-#define gp_GetFirstArc(theGraph, v) (theGraph->V[v].link[0])
-#define gp_GetLastArc(theGraph, v) (theGraph->V[v].link[1])
-#define gp_GetArc(theGraph, v, theLink) (theGraph->V[v].link[theLink])
+#define gp_GetFirstEdge(theGraph, v) (theGraph->V[v].link[0])
+#define gp_GetLastEdge(theGraph, v) (theGraph->V[v].link[1])
+#define gp_GetEdgeByLink(theGraph, v, theLink) (theGraph->V[v].link[theLink])
 
-#define gp_SetFirstArc(theGraph, v, newFirstArc) (theGraph->V[v].link[0] = newFirstArc)
-#define gp_SetLastArc(theGraph, v, newLastArc) (theGraph->V[v].link[1] = newLastArc)
-#define gp_SetArc(theGraph, v, theLink, newArc) (theGraph->V[v].link[theLink] = newArc)
+#define gp_SetFirstEdge(theGraph, v, newFirstEdge) (theGraph->V[v].link[0] = newFirstEdge)
+#define gp_SetLastEdge(theGraph, v, newLastEdge) (theGraph->V[v].link[1] = newLastEdge)
+#define gp_SetEdgeByLink(theGraph, v, theLink, newEdge) (theGraph->V[v].link[theLink] = newEdge)
 
 ///////////////////////////////////
 // Vertex iteration-related methods
@@ -313,8 +313,8 @@ extern "C"
 #define gp_VertexArraySize(theGraph) (gp_GetFirstVertex(theGraph) + gp_GetN(theGraph))
 #define gp_AnyTypeVertexArraySize(theGraph) (gp_VertexArraySize(theGraph) + gp_GetNV(theGraph))
 
-#define gp_VirtualVertexInUse(theGraph, virtualVertex) (gp_IsArc(theGraph, gp_GetFirstArc(theGraph, virtualVertex)))
-#define gp_VirtualVertexNotInUse(theGraph, virtualVertex) (gp_IsNotArc(theGraph, gp_GetFirstArc(theGraph, virtualVertex)))
+#define gp_VirtualVertexInUse(theGraph, virtualVertex) (gp_IsEdge(theGraph, gp_GetFirstEdge(theGraph, virtualVertex)))
+#define gp_VirtualVertexNotInUse(theGraph, virtualVertex) (gp_IsNotEdge(theGraph, gp_GetFirstEdge(theGraph, virtualVertex)))
 
 #else // Using Slower 0-based Arrays
 
@@ -362,8 +362,8 @@ extern "C"
 #define gp_VertexArraySize(theGraph) (gp_GetFirstVertex(theGraph) + gp_GetN(theGraph))
 #define gp_AnyTypeVertexArraySize(theGraph) (gp_VertexArraySize(theGraph) + gp_GetNV(theGraph))
 
-#define gp_VirtualVertexInUse(theGraph, virtualVertex) (gp_IsArc(theGraph, gp_GetFirstArc(theGraph, virtualVertex)))
-#define gp_VirtualVertexNotInUse(theGraph, virtualVertex) (gp_IsNotArc(theGraph, gp_GetFirstArc(theGraph, virtualVertex)))
+#define gp_VirtualVertexInUse(theGraph, virtualVertex) (gp_IsEdge(theGraph, gp_GetFirstEdge(theGraph, virtualVertex)))
+#define gp_VirtualVertexNotInUse(theGraph, virtualVertex) (gp_IsNotEdge(theGraph, gp_GetFirstEdge(theGraph, virtualVertex)))
 
 #endif
     ///////////////////////////////////////////
@@ -668,9 +668,10 @@ extern "C"
             N : Number of non-virtual vertices (the "order" of the graph)
             NV: Number of virtual vertices (currently always equal to N)
 
-            E : Array of edge records (edge records come in pairs and represent half edges, or arcs)
+            E : Array of edge records (edge records come in pairs and represent
+                an edge in each of the two vertex endpoints of the edge)
             M: Number of edges (the "size" of the graph)
-            edgeCapacity: the maximum number of edge records allowed in E (the size of E)
+            edgeCapacity: the maximum number of edges allowed in E
             edgeHoles: free locations in E where edges have been deleted
 
             theStack: Used by various graph routines needing a stack
@@ -716,108 +717,109 @@ extern "C"
  More link structure accessors/manipulators
  ********************************************************************/
 
-// Definitions that enable getting the next or previous arc
-// as if the adjacency list were circular, i.e. that the
-// first arc and last arc were linked
-#define gp_GetNextArcCircular(theGraph, e)          \
-    (gp_IsArc(theGraph, gp_GetNextArc(theGraph, e)) \
-         ? gp_GetNextArc(theGraph, e)               \
-         : gp_GetFirstArc(theGraph, theGraph->E[gp_GetTwinArc(theGraph, e)].neighbor))
+// Methods that enable getting the next or previous edge as if
+// the adjacency list of the containing vertex were circular,
+// i.e. that the first and last edge records were linked
+#define gp_GetNextEdgeCircular(theGraph, e)           \
+    (gp_IsEdge(theGraph, gp_GetNextEdge(theGraph, e)) \
+         ? gp_GetNextEdge(theGraph, e)                \
+         : gp_GetFirstEdge(theGraph, theGraph->E[gp_GetTwin(theGraph, e)].neighbor))
 
-#define gp_GetPrevArcCircular(theGraph, e)          \
-    (gp_IsArc(theGraph, gp_GetPrevArc(theGraph, e)) \
-         ? gp_GetPrevArc(theGraph, e)               \
-         : gp_GetLastArc(theGraph, theGraph->E[gp_GetTwinArc(theGraph, e)].neighbor))
+#define gp_GetPrevEdgeCircular(theGraph, e)           \
+    (gp_IsEdge(theGraph, gp_GetPrevEdge(theGraph, e)) \
+         ? gp_GetPrevEdge(theGraph, e)                \
+         : gp_GetLastEdge(theGraph, theGraph->E[gp_GetTwin(theGraph, e)].neighbor))
 
-// Definitions that make the cross-link binding between a vertex and an arc
-// The old first or last arc should be bound to this arc by separate calls,
-// e.g. see gp_AttachFirstArc() and gp_AttachLastArc()
-#define gp_BindFirstArc(theGraph, v, arc)  \
-    {                                      \
-        gp_SetPrevArc(theGraph, arc, NIL); \
-        gp_SetFirstArc(theGraph, v, arc);  \
+// Methods that make the cross-link binding between a vertex and an
+// edge record. The old first or last edge record should be bound to
+// this new first or last edge record, e, by separate calls,
+// e.g. see gp_AttachFirstEdge() and gp_AttachLastEdge()
+#define gp_BindFirstEdge(theGraph, v, e)  \
+    {                                     \
+        gp_SetPrevEdge(theGraph, e, NIL); \
+        gp_SetFirstEdge(theGraph, v, e);  \
     }
 
-#define gp_BindLastArc(theGraph, v, arc)   \
-    {                                      \
-        gp_SetNextArc(theGraph, arc, NIL); \
-        gp_SetLastArc(theGraph, v, arc);   \
+#define gp_BindLastEdge(theGraph, v, e)   \
+    {                                     \
+        gp_SetNextEdge(theGraph, e, NIL); \
+        gp_SetLastEdge(theGraph, v, e);   \
     }
 
-// Attaches an arc between the current binding between a vertex and its first arc
-#define gp_AttachFirstArc(theGraph, v, arc)                            \
+// Attaches edge e between the current binding between v and its first edge
+#define gp_AttachFirstEdge(theGraph, v, e)                             \
     {                                                                  \
-        if (gp_IsArc(theGraph, gp_GetFirstArc(theGraph, v)))           \
+        if (gp_IsEdge(theGraph, gp_GetFirstEdge(theGraph, v)))         \
         {                                                              \
-            gp_SetNextArc(theGraph, arc, gp_GetFirstArc(theGraph, v)); \
-            gp_SetPrevArc(theGraph, gp_GetFirstArc(theGraph, v), arc); \
+            gp_SetNextEdge(theGraph, e, gp_GetFirstEdge(theGraph, v)); \
+            gp_SetPrevEdge(theGraph, gp_GetFirstEdge(theGraph, v), e); \
         }                                                              \
         else                                                           \
-            gp_BindLastArc(theGraph, v, arc);                          \
-        gp_BindFirstArc(theGraph, v, arc);                             \
+            gp_BindLastEdge(theGraph, v, e);                           \
+        gp_BindFirstEdge(theGraph, v, e);                              \
     }
 
-// Attaches an arc between the current binding between a vertex and its last arc
-#define gp_AttachLastArc(theGraph, v, arc)                            \
+// Attaches edge e between the current binding between v and its last edge
+#define gp_AttachLastEdge(theGraph, v, e)                             \
     {                                                                 \
-        if (gp_IsArc(theGraph, gp_GetLastArc(theGraph, v)))           \
+        if (gp_IsEdge(theGraph, gp_GetLastEdge(theGraph, v)))         \
         {                                                             \
-            gp_SetPrevArc(theGraph, arc, gp_GetLastArc(theGraph, v)); \
-            gp_SetNextArc(theGraph, gp_GetLastArc(theGraph, v), arc); \
+            gp_SetPrevEdge(theGraph, e, gp_GetLastEdge(theGraph, v)); \
+            gp_SetNextEdge(theGraph, gp_GetLastEdge(theGraph, v), e); \
         }                                                             \
         else                                                          \
-            gp_BindFirstArc(theGraph, v, arc);                        \
-        gp_BindLastArc(theGraph, v, arc);                             \
+            gp_BindFirstEdge(theGraph, v, e);                         \
+        gp_BindLastEdge(theGraph, v, e);                              \
     }
 
-// Moves an arc that is in the adjacency list of v to the start of the adjacency list
-#define gp_MoveArcToFirst(theGraph, v, arc)                                                      \
-    if (arc != gp_GetFirstArc(theGraph, v))                                                      \
-    {                                                                                            \
-        /* If the arc is last in the adjacency list of uparent,                                  \
-           then we delete it by adjacency list end management */                                 \
-        if (arc == gp_GetLastArc(theGraph, v))                                                   \
-        {                                                                                        \
-            gp_SetNextArc(theGraph, gp_GetPrevArc(theGraph, arc), NIL);                          \
-            gp_SetLastArc(theGraph, v, gp_GetPrevArc(theGraph, arc));                            \
-        }                                                                                        \
-        /* Otherwise, we delete the arc from the middle of the list */                           \
-        else                                                                                     \
-        {                                                                                        \
-            gp_SetNextArc(theGraph, gp_GetPrevArc(theGraph, arc), gp_GetNextArc(theGraph, arc)); \
-            gp_SetPrevArc(theGraph, gp_GetNextArc(theGraph, arc), gp_GetPrevArc(theGraph, arc)); \
-        }                                                                                        \
-                                                                                                 \
-        /* Now add arc e as the new first arc of uparent.                                        \
-           Note that the adjacency list is non-empty at this time */                             \
-        gp_SetNextArc(theGraph, arc, gp_GetFirstArc(theGraph, v));                               \
-        gp_SetPrevArc(theGraph, gp_GetFirstArc(theGraph, v), arc);                               \
-        gp_BindFirstArc(theGraph, v, arc);                                                       \
+// Moves an edge e that is in the adjacency list of v to the start of the adjacency list
+#define gp_MoveEdgeToFirst(theGraph, v, e)                                                      \
+    if (e != gp_GetFirstEdge(theGraph, v))                                                      \
+    {                                                                                           \
+        /* If e is last in the adjacency list of v, then we                                     \
+           detach it by adjacency list end management */                                        \
+        if (arc == gp_GetLastEdge(theGraph, v))                                                 \
+        {                                                                                       \
+            gp_SetNextEdge(theGraph, gp_GetPrevEdge(theGraph, e), NIL);                         \
+            gp_SetLastEdge(theGraph, v, gp_GetPrevEdge(theGraph, e));                           \
+        }                                                                                       \
+        /* Otherwise, we detach e from the middle of the list */                                \
+        else                                                                                    \
+        {                                                                                       \
+            gp_SetNextEdge(theGraph, gp_GetPrevEdge(theGraph, e), gp_GetNextEdge(theGraph, e)); \
+            gp_SetPrevEdge(theGraph, gp_GetNextEdge(theGraph, e), gp_GetPrevEdge(theGraph, e)); \
+        }                                                                                       \
+                                                                                                \
+        /* Now add e as the new first edge of v.                                                \
+           Note that the adjacency list is non-empty at this time */                            \
+        gp_SetNextEdge(theGraph, e, gp_GetFirstEdge(theGraph, v));                              \
+        gp_SetPrevEdge(theGraph, gp_GetFirstEdge(theGraph, v), e);                              \
+        gp_BindFirstEdge(theGraph, v, e);                                                       \
     }
 
-// Moves an arc that is in the adjacency list of v to the end of the adjacency list
-#define gp_MoveArcToLast(theGraph, v, arc)                                                       \
-    if (arc != gp_GetLastArc(theGraph, v))                                                       \
-    {                                                                                            \
-        /* If the arc is first in the adjacency list of vertex v,                                \
-           then we delete it by adjacency list end management */                                 \
-        if (arc == gp_GetFirstArc(theGraph, v))                                                  \
-        {                                                                                        \
-            gp_SetPrevArc(theGraph, gp_GetNextArc(theGraph, arc), NIL);                          \
-            gp_SetFirstArc(theGraph, v, gp_GetNextArc(theGraph, arc));                           \
-        }                                                                                        \
-        /* Otherwise, we delete the arc from the middle of the list */                           \
-        else                                                                                     \
-        {                                                                                        \
-            gp_SetNextArc(theGraph, gp_GetPrevArc(theGraph, arc), gp_GetNextArc(theGraph, arc)); \
-            gp_SetPrevArc(theGraph, gp_GetNextArc(theGraph, arc), gp_GetPrevArc(theGraph, arc)); \
-        }                                                                                        \
-                                                                                                 \
-        /* Now add the arc as the new last arc of v.                                             \
-           Note that the adjacency list is non-empty at this time */                             \
-        gp_SetPrevArc(theGraph, arc, gp_GetLastArc(theGraph, v));                                \
-        gp_SetNextArc(theGraph, gp_GetLastArc(theGraph, v), arc);                                \
-        gp_BindLastArc(theGraph, v, arc);                                                        \
+// Moves an edge e that is in the adjacency list of v to the end of the adjacency list
+#define gp_MoveEdgeToLast(theGraph, v, e)                                                       \
+    if (e != gp_GetLastEdge(theGraph, v))                                                       \
+    {                                                                                           \
+        /* If e is first in the adjacency list of vertex v, then we                             \
+           detach it by adjacency list beginning management */                                  \
+        if (e == gp_GetFirstEdge(theGraph, v))                                                  \
+        {                                                                                       \
+            gp_SetPrevEdge(theGraph, gp_GetNextEdge(theGraph, e), NIL);                         \
+            gp_SetFirstEdge(theGraph, v, gp_GetNextEdge(theGraph, e));                          \
+        }                                                                                       \
+        /* Otherwise, we detach e from the middle of the list */                                \
+        else                                                                                    \
+        {                                                                                       \
+            gp_SetNextEdge(theGraph, gp_GetPrevEdge(theGraph, e), gp_GetNextEdge(theGraph, e)); \
+            gp_SetPrevEdge(theGraph, gp_GetNextEdge(theGraph, e), gp_GetPrevEdge(theGraph, e)); \
+        }                                                                                       \
+                                                                                                \
+        /* Now we add e as the new last edge of v.                                              \
+           Note that the adjacency list is non-empty at this time */                            \
+        gp_SetPrevEdge(theGraph, e, gp_GetLastEdge(theGraph, v));                               \
+        gp_SetNextEdge(theGraph, gp_GetLastEdge(theGraph, v), e);                               \
+        gp_BindLastEdge(theGraph, v, e);                                                        \
     }
 
     /********************************************************************
@@ -842,12 +844,12 @@ extern "C"
         they are associated, so we test 'is vertex' (rather than virtual).
      ********************************************************************/
 
-#define PERTINENT(theGraph, theVertex)                                     \
-    (gp_IsArc(theGraph, gp_GetVertexPertinentEdge(theGraph, theVertex)) || \
+#define PERTINENT(theGraph, theVertex)                                      \
+    (gp_IsEdge(theGraph, gp_GetVertexPertinentEdge(theGraph, theVertex)) || \
      gp_IsVertex(theGraph, gp_GetVertexPertinentRootsList(theGraph, theVertex)))
 
-#define NOTPERTINENT(theGraph, theVertex)                                     \
-    (gp_IsNotArc(theGraph, gp_GetVertexPertinentEdge(theGraph, theVertex)) && \
+#define NOTPERTINENT(theGraph, theVertex)                                      \
+    (gp_IsNotEdge(theGraph, gp_GetVertexPertinentEdge(theGraph, theVertex)) && \
      gp_IsNotVertex(theGraph, gp_GetVertexPertinentRootsList(theGraph, theVertex)))
 
     /********************************************************************
@@ -897,7 +899,7 @@ extern "C"
     // #define FUTUREPERTINENT(theGraph, theVertex, v)
     //        (  theGraph->VI[theVertex].leastAncestor < v ||
     //           ((gp_UpdateVertexFuturePertinentChild(theGraph, theVertex, v),
-    //             gp_IsArc(theGraph, theGraph->VI[theVertex].futurePertinentChild)) &&
+    //             gp_IsEdge(theGraph, theGraph->VI[theVertex].futurePertinentChild)) &&
     //             theGraph->VI[theGraph->VI[theVertex].futurePertinentChild].lowpoint < v) )
 
     /********************************************************************

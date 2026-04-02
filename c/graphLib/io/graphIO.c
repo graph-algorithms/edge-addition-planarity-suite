@@ -207,27 +207,27 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
         // have the matching adjacency using the following mechanism.  After the
         // read operation for a vertex v, any adjacency nodes left in the saved
         // list are converted to directed edges from the preceding vertex to v.
-        adjList = gp_GetFirstArc(theGraph, v);
-        if (gp_IsArc(theGraph, adjList))
+        adjList = gp_GetFirstEdge(theGraph, v);
+        if (gp_IsEdge(theGraph, adjList))
         {
             // Store the adjacency node location in the visited member of each
             // of the preceding vertices to which v is adjacent so that we can
             // efficiently detect the adjacency during the read operation and
             // efficiently find the adjacency node.
-            e = gp_GetFirstArc(theGraph, v);
-            while (gp_IsArc(theGraph, e))
+            e = gp_GetFirstEdge(theGraph, v);
+            while (gp_IsEdge(theGraph, e))
             {
                 gp_SetVertexVisitedInfo(theGraph, gp_GetNeighbor(theGraph, e), e);
-                e = gp_GetNextArc(theGraph, e);
+                e = gp_GetNextEdge(theGraph, e);
             }
 
             // Make the adjacency list circular, for later ease of processing
-            gp_SetPrevArc(theGraph, adjList, gp_GetLastArc(theGraph, v));
-            gp_SetNextArc(theGraph, gp_GetLastArc(theGraph, v), adjList);
+            gp_SetPrevEdge(theGraph, adjList, gp_GetLastEdge(theGraph, v));
+            gp_SetNextEdge(theGraph, gp_GetLastEdge(theGraph, v), adjList);
 
             // Remove the list from the vertex
-            gp_SetFirstArc(theGraph, v, NIL);
-            gp_SetLastArc(theGraph, v, NIL);
+            gp_SetFirstEdge(theGraph, v, NIL);
+            gp_SetLastEdge(theGraph, v, NIL);
         }
 
         // Read the adjacency list.
@@ -276,7 +276,7 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
             {
                 // If the adjacency node (arc) already exists, then we add it
                 // as the new first arc of the vertex and delete it from adjList
-                if (gp_IsArc(theGraph, gp_GetVertexVisitedInfo(theGraph, W)))
+                if (gp_IsEdge(theGraph, gp_GetVertexVisitedInfo(theGraph, W)))
                 {
                     e = gp_GetVertexVisitedInfo(theGraph, W);
 
@@ -284,13 +284,13 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
                     gp_SetVertexVisitedInfo(theGraph, W, NIL);
                     if (adjList == e)
                     {
-                        if ((adjList = gp_GetNextArc(theGraph, e)) == e)
+                        if ((adjList = gp_GetNextEdge(theGraph, e)) == e)
                             adjList = NIL;
                     }
-                    gp_SetPrevArc(theGraph, gp_GetNextArc(theGraph, e), gp_GetPrevArc(theGraph, e));
-                    gp_SetNextArc(theGraph, gp_GetPrevArc(theGraph, e), gp_GetNextArc(theGraph, e));
+                    gp_SetPrevEdge(theGraph, gp_GetNextEdge(theGraph, e), gp_GetPrevEdge(theGraph, e));
+                    gp_SetNextEdge(theGraph, gp_GetPrevEdge(theGraph, e), gp_GetNextEdge(theGraph, e));
 
-                    gp_AttachFirstArc(theGraph, v, e);
+                    gp_AttachFirstEdge(theGraph, v, e);
                 }
 
                 // If an adjacency node to the lower numbered vertex W does not
@@ -303,7 +303,7 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
                         return ErrorCode;
 
                     // Note that this call also sets OUTONLY on the twin arc
-                    gp_SetDirection(theGraph, gp_GetFirstArc(theGraph, W), EDGEFLAG_DIRECTION_INONLY);
+                    gp_SetDirection(theGraph, gp_GetFirstEdge(theGraph, W), EDGEFLAG_DIRECTION_INONLY);
                     // This macro expands to constant conditional expression, but it's the proper use of the API
                 }
             }
@@ -314,19 +314,19 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
         // Rather, they represent incoming directed arcs from other vertices
         // into vertex v. They need to be added back into v's adjacency list but
         // marked as "INONLY", while the twin is marked "OUTONLY" (by the same function).
-        while (gp_IsArc(theGraph, adjList))
+        while (gp_IsEdge(theGraph, adjList))
         {
             e = adjList;
 
             gp_SetVertexVisitedInfo(theGraph, gp_GetNeighbor(theGraph, e), NIL);
 
-            if ((adjList = gp_GetNextArc(theGraph, e)) == e)
+            if ((adjList = gp_GetNextEdge(theGraph, e)) == e)
                 adjList = NIL;
 
-            gp_SetPrevArc(theGraph, gp_GetNextArc(theGraph, e), gp_GetPrevArc(theGraph, e));
-            gp_SetNextArc(theGraph, gp_GetPrevArc(theGraph, e), gp_GetNextArc(theGraph, e));
+            gp_SetPrevEdge(theGraph, gp_GetNextEdge(theGraph, e), gp_GetPrevEdge(theGraph, e));
+            gp_SetNextEdge(theGraph, gp_GetPrevEdge(theGraph, e), gp_GetNextEdge(theGraph, e));
 
-            gp_AttachFirstArc(theGraph, v, e);
+            gp_AttachFirstEdge(theGraph, v, e);
             gp_SetDirection(theGraph, e, EDGEFLAG_DIRECTION_INONLY);
             // This macro expands to constant conditional expression, but it's the proper use of the API
         }
@@ -646,8 +646,8 @@ int _WriteAdjList(graphP theGraph, strOrFileP outputContainer)
         if (sf_fputs(numberStr, outputContainer) == EOF)
             return NOTOK;
 
-        e = gp_GetLastArc(theGraph, v);
-        while (gp_IsArc(theGraph, e))
+        e = gp_GetLastEdge(theGraph, v);
+        while (gp_IsEdge(theGraph, e))
         {
             if (gp_GetDirection(theGraph, e) != EDGEFLAG_DIRECTION_INONLY)
             {
@@ -657,7 +657,7 @@ int _WriteAdjList(graphP theGraph, strOrFileP outputContainer)
                     return NOTOK;
             }
 
-            e = gp_GetPrevArc(theGraph, e);
+            e = gp_GetPrevEdge(theGraph, e);
         }
 
         // Write NIL at the end of the adjacency list (in zero-based I/O, NIL was -1)
@@ -713,8 +713,8 @@ int _WriteAdjMatrix(graphP theGraph, strOrFileP outputContainer)
         for (int i = v + 1; gp_VertexInRangeAscending(theGraph, i); i++)
             Row[i - gp_GetFirstVertex(theGraph)] = '0';
 
-        e = gp_GetFirstArc(theGraph, v);
-        while (gp_IsArc(theGraph, e))
+        e = gp_GetFirstEdge(theGraph, v);
+        while (gp_IsEdge(theGraph, e))
         {
             if (gp_GetDirection(theGraph, e) == EDGEFLAG_DIRECTION_INONLY)
                 return NOTOK;
@@ -722,7 +722,7 @@ int _WriteAdjMatrix(graphP theGraph, strOrFileP outputContainer)
             if (gp_GetNeighbor(theGraph, e) > v)
                 Row[gp_GetNeighbor(theGraph, e) - gp_GetFirstVertex(theGraph)] = '1';
 
-            e = gp_GetNextArc(theGraph, e);
+            e = gp_GetNextEdge(theGraph, e);
         }
 
         Row[gp_GetN(theGraph)] = '\n';
@@ -813,14 +813,14 @@ int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer)
         if (sf_fputs(lineBuf, outputContainer) == EOF)
             return NOTOK;
 
-        e = gp_GetFirstArc(theGraph, v);
-        while (gp_IsArc(theGraph, e))
+        e = gp_GetFirstEdge(theGraph, v);
+        while (gp_IsEdge(theGraph, e))
         {
             if (sprintf(lineBuf, " %d(e=%d)", gp_GetNeighbor(theGraph, e), e) < 1)
                 return NOTOK;
             if (sf_fputs(lineBuf, outputContainer) == EOF)
                 return NOTOK;
-            e = gp_GetNextArc(theGraph, e);
+            e = gp_GetNextEdge(theGraph, e);
         }
 
         if (sprintf(lineBuf, " %d\n", NIL) < 1)
@@ -843,15 +843,15 @@ int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer)
         if (sf_fputs(lineBuf, outputContainer) == EOF)
             return NOTOK;
 
-        e = gp_GetFirstArc(theGraph, v);
-        while (gp_IsArc(theGraph, e))
+        e = gp_GetFirstEdge(theGraph, v);
+        while (gp_IsEdge(theGraph, e))
         {
             if (sprintf(lineBuf, " %d(e=%d)", gp_GetNeighbor(theGraph, e), e) < 1)
                 return NOTOK;
             if (sf_fputs(lineBuf, outputContainer) == EOF)
                 return NOTOK;
 
-            e = gp_GetNextArc(theGraph, e);
+            e = gp_GetNextEdge(theGraph, e);
         }
 
         if (sprintf(lineBuf, " %d\n", NIL) < 1)
@@ -870,8 +870,8 @@ int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer)
                     v,
                     gp_GetIndex(theGraph, v),
                     (gp_IsVirtualVertex(theGraph, v) ? 'X' : _GetObstructionMarkChar(theGraph, v)),
-                    gp_GetFirstArc(theGraph, v),
-                    gp_GetLastArc(theGraph, v)) < 1)
+                    gp_GetFirstEdge(theGraph, v),
+                    gp_GetLastEdge(theGraph, v)) < 1)
             return NOTOK;
         if (sf_fputs(lineBuf, outputContainer) == EOF)
             return NOTOK;
@@ -885,8 +885,8 @@ int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer)
                     v,
                     gp_GetIndex(theGraph, v),
                     (gp_IsVirtualVertex(theGraph, v) ? 'X' : _GetObstructionMarkChar(theGraph, v)),
-                    gp_GetFirstArc(theGraph, v),
-                    gp_GetLastArc(theGraph, v)) < 1)
+                    gp_GetFirstEdge(theGraph, v),
+                    gp_GetLastEdge(theGraph, v)) < 1)
             return NOTOK;
         if (sf_fputs(lineBuf, outputContainer) == EOF)
             return NOTOK;
@@ -906,8 +906,8 @@ int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer)
                         e,
                         gp_GetNeighbor(theGraph, e),
                         _GetEdgeTypeChar(theGraph, e),
-                        gp_GetNextArc(theGraph, e),
-                        gp_GetPrevArc(theGraph, e)) < 1)
+                        gp_GetNextEdge(theGraph, e),
+                        gp_GetPrevEdge(theGraph, e)) < 1)
                 return NOTOK;
             if (sf_fputs(lineBuf, outputContainer) == EOF)
                 return NOTOK;

@@ -397,31 +397,31 @@ void _CreateBackArcLists(graphP theGraph, K33SearchContext *context)
     for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
     {
         e = gp_GetVertexFwdArcList(theGraph, v);
-        while (gp_IsArc(theGraph, e))
+        while (gp_IsEdge(theGraph, e))
         {
             // Get the ancestor endpoint and the associated back arc
             ancestor = gp_GetNeighbor(theGraph, e);
-            eTwin = gp_GetTwinArc(theGraph, e);
+            eTwin = gp_GetTwin(theGraph, e);
 
             // Put it into the back arc list of the ancestor
-            if (gp_IsNotArc(theGraph, context->VI[ancestor].backArcList))
+            if (gp_IsNotEdge(theGraph, context->VI[ancestor].backArcList))
             {
                 context->VI[ancestor].backArcList = eTwin;
-                gp_SetPrevArc(theGraph, eTwin, eTwin);
-                gp_SetNextArc(theGraph, eTwin, eTwin);
+                gp_SetPrevEdge(theGraph, eTwin, eTwin);
+                gp_SetNextEdge(theGraph, eTwin, eTwin);
             }
             else
             {
                 int eHead = context->VI[ancestor].backArcList;
-                int eTail = gp_GetPrevArc(theGraph, eHead);
-                gp_SetPrevArc(theGraph, eTwin, eTail);
-                gp_SetNextArc(theGraph, eTwin, eHead);
-                gp_SetPrevArc(theGraph, eHead, eTwin);
-                gp_SetNextArc(theGraph, eTail, eTwin);
+                int eTail = gp_GetPrevEdge(theGraph, eHead);
+                gp_SetPrevEdge(theGraph, eTwin, eTail);
+                gp_SetNextEdge(theGraph, eTwin, eHead);
+                gp_SetPrevEdge(theGraph, eHead, eTwin);
+                gp_SetNextEdge(theGraph, eTail, eTwin);
             }
 
             // Advance to the next forward edge
-            e = gp_GetNextArc(theGraph, e);
+            e = gp_GetNextEdge(theGraph, e);
             if (e == gp_GetVertexFwdArcList(theGraph, v))
                 e = NIL;
         }
@@ -502,19 +502,19 @@ void _K33Search_EmbedBackEdgeToDescendant(graphP theGraph, int RootSide, int Roo
         if (gp_GetEmbedFlags(theGraph) == EMBEDFLAGS_SEARCHFORK33)
         {
             // Get the fwdArc from the adjacentTo field, and use it to get the backArc
-            int backArc = gp_GetTwinArc(theGraph, gp_GetVertexPertinentEdge(theGraph, W));
+            int backArc = gp_GetTwin(theGraph, gp_GetVertexPertinentEdge(theGraph, W));
 
             // Remove the backArc from the backArcList
             if (context->VI[W].backArcList == backArc)
             {
-                if (gp_GetNextArc(theGraph, backArc) == backArc)
+                if (gp_GetNextEdge(theGraph, backArc) == backArc)
                     context->VI[W].backArcList = NIL;
                 else
-                    context->VI[W].backArcList = gp_GetNextArc(theGraph, backArc);
+                    context->VI[W].backArcList = gp_GetNextEdge(theGraph, backArc);
             }
 
-            gp_SetNextArc(theGraph, gp_GetPrevArc(theGraph, backArc), gp_GetNextArc(theGraph, backArc));
-            gp_SetPrevArc(theGraph, gp_GetNextArc(theGraph, backArc), gp_GetPrevArc(theGraph, backArc));
+            gp_SetNextEdge(theGraph, gp_GetPrevEdge(theGraph, backArc), gp_GetNextEdge(theGraph, backArc));
+            gp_SetPrevEdge(theGraph, gp_GetNextEdge(theGraph, backArc), gp_GetPrevEdge(theGraph, backArc));
         }
 
         // Invoke the superclass version of the function

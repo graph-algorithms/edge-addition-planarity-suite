@@ -86,21 +86,21 @@ int gp_CreateDFSTree(graphP theGraph)
                 gp_SetVisited(theGraph, u);
                 gp_SetIndex(theGraph, u, DFI++);
                 gp_SetVertexParent(theGraph, u, uparent);
-                if (gp_IsArc(theGraph, e))
+                if (gp_IsEdge(theGraph, e))
                 {
                     gp_SetEdgeType(theGraph, e, EDGE_TYPE_CHILD);
-                    gp_SetEdgeType(theGraph, gp_GetTwinArc(theGraph, e), EDGE_TYPE_PARENT);
+                    gp_SetEdgeType(theGraph, gp_GetTwin(theGraph, e), EDGE_TYPE_PARENT);
                 }
 
                 /* Push edges to all unvisited neighbors. These will be either
                       tree edges to children or forward arcs of back edges */
 
-                e = gp_GetFirstArc(theGraph, u);
-                while (gp_IsArc(theGraph, e))
+                e = gp_GetFirstEdge(theGraph, u);
+                while (gp_IsEdge(theGraph, e))
                 {
                     if (!gp_GetVisited(theGraph, gp_GetNeighbor(theGraph, e)))
                         sp_Push2(theStack, u, e);
-                    e = gp_GetNextArc(theGraph, e);
+                    e = gp_GetNextEdge(theGraph, e);
                 }
             }
             else
@@ -108,7 +108,7 @@ int gp_CreateDFSTree(graphP theGraph)
                 // If the edge leads to a visited vertex, then it is
                 // the forward arc of a back edge.
                 gp_SetEdgeType(theGraph, e, EDGE_TYPE_FORWARD);
-                gp_SetEdgeType(theGraph, gp_GetTwinArc(theGraph, e), EDGE_TYPE_BACK);
+                gp_SetEdgeType(theGraph, gp_GetTwin(theGraph, e), EDGE_TYPE_BACK);
             }
         }
     }
@@ -342,15 +342,15 @@ int gp_ComputeLowpoints(graphP theGraph)
                 sp_Push(theStack, u);
 
                 // Push the DFS children of u
-                e = gp_GetFirstArc(theGraph, u);
-                while (gp_IsArc(theGraph, e))
+                e = gp_GetFirstEdge(theGraph, u);
+                while (gp_IsEdge(theGraph, e))
                 {
                     if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_CHILD)
                     {
                         sp_Push(theStack, gp_GetNeighbor(theGraph, e));
                     }
 
-                    e = gp_GetNextArc(theGraph, e);
+                    e = gp_GetNextEdge(theGraph, e);
                 }
             }
 
@@ -361,8 +361,8 @@ int gp_ComputeLowpoints(graphP theGraph)
                 leastAncestor = L = u;
 
                 // Compute leastAncestor and L, the least lowpoint from the DFS children
-                e = gp_GetFirstArc(theGraph, u);
-                while (gp_IsArc(theGraph, e))
+                e = gp_GetFirstEdge(theGraph, u);
+                while (gp_IsEdge(theGraph, e))
                 {
                     uneighbor = gp_GetNeighbor(theGraph, e);
                     if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_CHILD)
@@ -376,7 +376,7 @@ int gp_ComputeLowpoints(graphP theGraph)
                             leastAncestor = uneighbor;
                     }
 
-                    e = gp_GetNextArc(theGraph, e);
+                    e = gp_GetNextEdge(theGraph, e);
                 }
 
                 /* Assign leastAncestor and Lowpoint to the vertex */
@@ -461,8 +461,8 @@ int gp_ComputeLeastAncestors(graphP theGraph)
                 ++v;
                 leastAncestor = u;
 
-                e = gp_GetFirstArc(theGraph, u);
-                while (gp_IsArc(theGraph, e))
+                e = gp_GetFirstEdge(theGraph, u);
+                while (gp_IsEdge(theGraph, e))
                 {
                     uneighbor = gp_GetNeighbor(theGraph, e);
                     if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_CHILD)
@@ -475,7 +475,7 @@ int gp_ComputeLeastAncestors(graphP theGraph)
                             leastAncestor = uneighbor;
                     }
 
-                    e = gp_GetNextArc(theGraph, e);
+                    e = gp_GetNextEdge(theGraph, e);
                 }
                 gp_SetVertexLeastAncestor(theGraph, u, leastAncestor);
             }

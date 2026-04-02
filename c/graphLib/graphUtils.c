@@ -516,8 +516,8 @@ int _EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity)
 
 void _InitAnyTypeVertexRec(graphP theGraph, int v)
 {
-    gp_SetFirstArc(theGraph, v, NIL);
-    gp_SetLastArc(theGraph, v, NIL);
+    gp_SetFirstEdge(theGraph, v, NIL);
+    gp_SetLastEdge(theGraph, v, NIL);
     gp_SetIndex(theGraph, v, NIL);
     gp_InitFlags(theGraph, v);
 }
@@ -549,8 +549,8 @@ void _InitVertexInfo(graphP theGraph, int v)
 void _InitEdgeRec(graphP theGraph, int e)
 {
     gp_SetNeighbor(theGraph, e, NIL);
-    gp_SetPrevArc(theGraph, e, NIL);
-    gp_SetNextArc(theGraph, e, NIL);
+    gp_SetPrevEdge(theGraph, e, NIL);
+    gp_SetNextEdge(theGraph, e, NIL);
     gp_InitEdgeFlags(theGraph, e);
 }
 
@@ -632,15 +632,15 @@ int _ClearAllVisitedFlagsInBicomp(graphP theGraph, int BicompRoot)
         sp_Pop(theGraph->theStack, v);
         gp_ClearVisited(theGraph, v);
 
-        e = gp_GetFirstArc(theGraph, v);
-        while (gp_IsArc(theGraph, e))
+        e = gp_GetFirstEdge(theGraph, v);
+        while (gp_IsEdge(theGraph, e))
         {
             gp_ClearEdgeVisited(theGraph, e);
 
             if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_CHILD)
                 sp_Push(theGraph->theStack, gp_GetNeighbor(theGraph, e));
 
-            e = gp_GetNextArc(theGraph, e);
+            e = gp_GetNextEdge(theGraph, e);
         }
     }
     return OK;
@@ -687,12 +687,12 @@ void _ClearEdgeVisitedFlagsInUnembeddedEdges(graphP theGraph)
     for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
     {
         e = gp_GetVertexFwdArcList(theGraph, v);
-        while (gp_IsArc(theGraph, e))
+        while (gp_IsEdge(theGraph, e))
         {
             gp_ClearEdgeVisited(theGraph, e);
-            gp_ClearEdgeVisited(theGraph, gp_GetTwinArc(theGraph, e));
+            gp_ClearEdgeVisited(theGraph, gp_GetTwin(theGraph, e));
 
-            e = gp_GetNextArc(theGraph, e);
+            e = gp_GetNextEdge(theGraph, e);
             if (e == gp_GetVertexFwdArcList(theGraph, v))
                 e = NIL;
         }
@@ -716,9 +716,9 @@ int _ClearAllVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x)
     // We want to exit u from e, but we get eTwin first here in order to avoid
     // work, in case the degree of u is greater than 2.
     eTwin = _gp_FindEdge(theGraph, v, u);
-    if (gp_IsNotArc(theGraph, eTwin))
+    if (gp_IsNotEdge(theGraph, eTwin))
         return NOTOK;
-    e = gp_GetTwinArc(theGraph, eTwin);
+    e = gp_GetTwin(theGraph, eTwin);
 
     v = u;
 
@@ -731,8 +731,8 @@ int _ClearAllVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x)
 
         // Get the next vertex
         v = gp_GetNeighbor(theGraph, e);
-        e = gp_GetNextArcCircular(theGraph, eTwin);
-        eTwin = gp_GetTwinArc(theGraph, e);
+        e = gp_GetNextEdgeCircular(theGraph, eTwin);
+        eTwin = gp_GetTwin(theGraph, e);
     } while (v != x);
 
     // Mark the last vertex with 'visited'
@@ -758,9 +758,9 @@ int _SetAllVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x)
     // We want to exit u from e, but we get eTwin first here in order to avoid
     // work, in case the degree of u is greater than 2.
     eTwin = _gp_FindEdge(theGraph, v, u);
-    if (gp_IsNotArc(theGraph, eTwin))
+    if (gp_IsNotEdge(theGraph, eTwin))
         return NOTOK;
-    e = gp_GetTwinArc(theGraph, eTwin);
+    e = gp_GetTwin(theGraph, eTwin);
 
     v = u;
 
@@ -773,8 +773,8 @@ int _SetAllVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x)
 
         // Get the next vertex
         v = gp_GetNeighbor(theGraph, e);
-        e = gp_GetNextArcCircular(theGraph, eTwin);
-        eTwin = gp_GetTwinArc(theGraph, e);
+        e = gp_GetNextEdgeCircular(theGraph, eTwin);
+        eTwin = gp_GetTwin(theGraph, e);
     } while (v != x);
 
     // Mark the last vertex with 'visited'
@@ -809,13 +809,13 @@ int _FillVertexVisitedInfoInBicomp(graphP theGraph, int BicompRoot, int FillValu
         if (gp_IsNotVirtualVertex(theGraph, v))
             gp_SetVertexVisitedInfo(theGraph, v, FillValue);
 
-        e = gp_GetFirstArc(theGraph, v);
-        while (gp_IsArc(theGraph, e))
+        e = gp_GetFirstEdge(theGraph, v);
+        while (gp_IsEdge(theGraph, e))
         {
             if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_CHILD)
                 sp_Push(theGraph->theStack, gp_GetNeighbor(theGraph, e));
 
-            e = gp_GetNextArc(theGraph, e);
+            e = gp_GetNextEdge(theGraph, e);
         }
     }
     return OK;
@@ -845,13 +845,13 @@ int _ClearObstructionMarksInBicomp(graphP theGraph, int BicompRoot)
         sp_Pop(theGraph->theStack, V);
         gp_ClearObstructionMark(theGraph, V);
 
-        e = gp_GetFirstArc(theGraph, V);
-        while (gp_IsArc(theGraph, e))
+        e = gp_GetFirstEdge(theGraph, V);
+        while (gp_IsEdge(theGraph, e))
         {
             if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_CHILD)
                 sp_Push(theGraph->theStack, gp_GetNeighbor(theGraph, e));
 
-            e = gp_GetNextArc(theGraph, e);
+            e = gp_GetNextEdge(theGraph, e);
         }
     }
     return OK;
@@ -953,8 +953,8 @@ int gp_CopyAdjacencyLists(graphP dstGraph, graphP srcGraph)
     // Copy the links that hook each owning vertex to its adjacency list
     for (v = gp_GetFirstVertex(srcGraph); gp_VertexInRangeAscending(srcGraph, v); v++)
     {
-        gp_SetFirstArc(dstGraph, v, gp_GetFirstArc(srcGraph, v));
-        gp_SetLastArc(dstGraph, v, gp_GetLastArc(srcGraph, v));
+        gp_SetFirstEdge(dstGraph, v, gp_GetFirstEdge(srcGraph, v));
+        gp_SetLastEdge(dstGraph, v, gp_GetLastEdge(srcGraph, v));
     }
 
     // Copy the adjacency links and neighbor pointers for each edge record
@@ -962,8 +962,8 @@ int gp_CopyAdjacencyLists(graphP dstGraph, graphP srcGraph)
     for (e = gp_EdgeArrayStart(theGraph); e < EsizeOccupied; e++)
     {
         gp_SetNeighbor(dstGraph, e, gp_GetNeighbor(srcGraph, e));
-        gp_SetNextArc(dstGraph, e, gp_GetNextArc(srcGraph, e));
-        gp_SetPrevArc(dstGraph, e, gp_GetPrevArc(srcGraph, e));
+        gp_SetNextEdge(dstGraph, e, gp_GetNextEdge(srcGraph, e));
+        gp_SetPrevEdge(dstGraph, e, gp_GetPrevEdge(srcGraph, e));
     }
 
     // Tell the dstGraph how many edges it now has and where the edge holes are
@@ -1208,8 +1208,8 @@ int _GetRandomNumber(int NMin, int NMax)
 
 int _getUnprocessedChild(graphP theGraph, int parent)
 {
-    int e = gp_GetFirstArc(theGraph, parent);
-    int eTwin = gp_GetTwinArc(theGraph, e);
+    int e = gp_GetFirstEdge(theGraph, parent);
+    int eTwin = gp_GetTwin(theGraph, e);
     int child = gp_GetNeighbor(theGraph, e);
 
     // The tree edges were added to the beginning of the adjacency list,
@@ -1235,11 +1235,11 @@ int _getUnprocessedChild(graphP theGraph, int parent)
 
     // Now we move the edge record in the parent vertex to the end
     // of the adjacency list of that vertex.
-    gp_MoveArcToLast(theGraph, parent, e);
+    gp_MoveEdgeToLast(theGraph, parent, e);
 
     // Now we move the edge record in the child vertex to the
     // end of the adjacency list of the child.
-    gp_MoveArcToLast(theGraph, child, eTwin);
+    gp_MoveEdgeToLast(theGraph, child, eTwin);
 
     // Now we set the child's parent and return the child.
     gp_SetVertexParent(theGraph, child, parent);
@@ -1257,7 +1257,7 @@ int _getUnprocessedChild(graphP theGraph, int parent)
 
 int _hasUnprocessedChild(graphP theGraph, int parent)
 {
-    int e = gp_GetFirstArc(theGraph, parent);
+    int e = gp_GetFirstEdge(theGraph, parent);
 
     if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_NOTDEFINED)
         return 0;
@@ -1301,9 +1301,9 @@ int gp_CreateRandomGraphEx(graphP theGraph, int numEdges)
         {
             arc = _gp_FindEdge(theGraph, u, v);
             gp_SetEdgeType(theGraph, arc, EDGE_TYPE_RANDOMTREE);
-            gp_SetEdgeType(theGraph, gp_GetTwinArc(theGraph, arc), EDGE_TYPE_RANDOMTREE);
+            gp_SetEdgeType(theGraph, gp_GetTwin(theGraph, arc), EDGE_TYPE_RANDOMTREE);
             gp_ClearEdgeVisited(theGraph, arc);
-            gp_ClearEdgeVisited(theGraph, gp_GetTwinArc(theGraph, arc));
+            gp_ClearEdgeVisited(theGraph, gp_GetTwin(theGraph, arc));
         }
     }
 
@@ -1433,13 +1433,13 @@ int gp_IsNeighbor(graphP theGraph, int u, int v)
         return FALSE;
     }
 
-    e = gp_GetFirstArc(theGraph, u);
-    while (gp_IsArc(theGraph, e))
+    e = gp_GetFirstEdge(theGraph, u);
+    while (gp_IsEdge(theGraph, e))
     {
         if (gp_GetNeighbor(theGraph, e) == v)
             return TRUE;
 
-        e = gp_GetNextArc(theGraph, e);
+        e = gp_GetNextEdge(theGraph, e);
     }
     return FALSE;
 }
@@ -1471,15 +1471,15 @@ int gp_IsNeighborDirected(graphP theGraph, int u, int v, unsigned direction)
         return FALSE;
     }
 
-    e = gp_GetFirstArc(theGraph, u);
-    while (gp_IsArc(theGraph, e))
+    e = gp_GetFirstEdge(theGraph, u);
+    while (gp_IsEdge(theGraph, e))
     {
         if (gp_GetNeighbor(theGraph, e) == v)
         {
             if (direction == 0 || direction == gp_GetDirection(theGraph, e))
                 return TRUE;
         }
-        e = gp_GetNextArc(theGraph, e);
+        e = gp_GetNextEdge(theGraph, e);
     }
     return FALSE;
 }
@@ -1526,13 +1526,13 @@ int gp_FindEdge(graphP theGraph, int u, int v)
  */
 int _gp_FindEdge(graphP theGraph, int u, int v)
 {
-    int e = gp_GetFirstArc(theGraph, u);
-    while (gp_IsArc(theGraph, e))
+    int e = gp_GetFirstEdge(theGraph, u);
+    while (gp_IsEdge(theGraph, e))
     {
         if (gp_GetNeighbor(theGraph, e) == v)
             return e;
 
-        e = gp_GetNextArc(theGraph, e);
+        e = gp_GetNextEdge(theGraph, e);
     }
     return NIL;
 }
@@ -1570,14 +1570,14 @@ int gp_FindDirectedEdge(graphP theGraph, int u, int v, unsigned direction)
         return _gp_FindEdge(theGraph, u, v);
 
     // If a direction was given, then use it
-    e = gp_GetFirstArc(theGraph, u);
-    while (gp_IsArc(theGraph, e))
+    e = gp_GetFirstEdge(theGraph, u);
+    while (gp_IsEdge(theGraph, e))
     {
         if (gp_GetNeighbor(theGraph, e) == v &&
             gp_GetDirection(theGraph, e) == direction)
             return e;
 
-        e = gp_GetNextArc(theGraph, e);
+        e = gp_GetNextEdge(theGraph, e);
     }
     return NIL;
 }
@@ -1615,11 +1615,11 @@ int gp_GetVertexDegree(graphP theGraph, int v)
 
     degree = 0;
 
-    e = gp_GetFirstArc(theGraph, v);
-    while (gp_IsArc(theGraph, e))
+    e = gp_GetFirstEdge(theGraph, v);
+    while (gp_IsEdge(theGraph, e))
     {
         degree++;
-        e = gp_GetNextArc(theGraph, e);
+        e = gp_GetNextEdge(theGraph, e);
     }
 
     return degree;
@@ -1654,12 +1654,12 @@ int gp_GetVertexInDegree(graphP theGraph, int v)
 
     degree = 0;
 
-    e = gp_GetFirstArc(theGraph, v);
-    while (gp_IsArc(theGraph, e))
+    e = gp_GetFirstEdge(theGraph, v);
+    while (gp_IsEdge(theGraph, e))
     {
         if (gp_GetDirection(theGraph, e) != EDGEFLAG_DIRECTION_OUTONLY)
             degree++;
-        e = gp_GetNextArc(theGraph, e);
+        e = gp_GetNextEdge(theGraph, e);
     }
 
     return degree;
@@ -1694,12 +1694,12 @@ int gp_GetVertexOutDegree(graphP theGraph, int v)
 
     degree = 0;
 
-    e = gp_GetFirstArc(theGraph, v);
-    while (gp_IsArc(theGraph, e))
+    e = gp_GetFirstEdge(theGraph, v);
+    while (gp_IsEdge(theGraph, e))
     {
         if (gp_GetDirection(theGraph, e) != EDGEFLAG_DIRECTION_INONLY)
             degree++;
-        e = gp_GetNextArc(theGraph, e);
+        e = gp_GetNextEdge(theGraph, e);
     }
 
     return degree;
@@ -1727,39 +1727,39 @@ int gp_GetVertexOutDegree(graphP theGraph, int v)
 
 void _AttachArc(graphP theGraph, int v, int e, int link, int newArc)
 {
-    if (gp_IsArc(theGraph, e))
+    if (gp_IsEdge(theGraph, e))
     {
-        int e2 = gp_GetAdjacentArc(theGraph, e, link);
+        int e2 = gp_GetAdjacentEdge(theGraph, e, link);
 
         // e's link is newArc, and newArc's 1^link is e
-        gp_SetAdjacentArc(theGraph, e, link, newArc);
-        gp_SetAdjacentArc(theGraph, newArc, 1 ^ link, e);
+        gp_SetAdjacentEdge(theGraph, e, link, newArc);
+        gp_SetAdjacentEdge(theGraph, newArc, 1 ^ link, e);
 
         // newArcs's link is e2
-        gp_SetAdjacentArc(theGraph, newArc, link, e2);
+        gp_SetAdjacentEdge(theGraph, newArc, link, e2);
 
         // if e2 is an arc, then e2's 1^link is newArc, else v's 1^link is newArc
-        if (gp_IsArc(theGraph, e2))
-            gp_SetAdjacentArc(theGraph, e2, 1 ^ link, newArc);
+        if (gp_IsEdge(theGraph, e2))
+            gp_SetAdjacentEdge(theGraph, e2, 1 ^ link, newArc);
         else
-            gp_SetArc(theGraph, v, 1 ^ link, newArc);
+            gp_SetEdgeByLink(theGraph, v, 1 ^ link, newArc);
     }
     else
     {
-        int e2 = gp_GetArc(theGraph, v, link);
+        int e2 = gp_GetEdgeByLink(theGraph, v, link);
 
         // v's link is newArc, and newArc's 1^link is NIL
-        gp_SetArc(theGraph, v, link, newArc);
-        gp_SetAdjacentArc(theGraph, newArc, 1 ^ link, NIL);
+        gp_SetEdgeByLink(theGraph, v, link, newArc);
+        gp_SetAdjacentEdge(theGraph, newArc, 1 ^ link, NIL);
 
         // newArcs's elink is e2
-        gp_SetAdjacentArc(theGraph, newArc, link, e2);
+        gp_SetAdjacentEdge(theGraph, newArc, link, e2);
 
         // if e2 is an arc, then e2's 1^link is newArc, else v's 1^link is newArc
-        if (gp_IsArc(theGraph, e2))
-            gp_SetAdjacentArc(theGraph, e2, 1 ^ link, newArc);
+        if (gp_IsEdge(theGraph, e2))
+            gp_SetAdjacentEdge(theGraph, e2, 1 ^ link, newArc);
         else
-            gp_SetArc(theGraph, v, 1 ^ link, newArc);
+            gp_SetEdgeByLink(theGraph, v, 1 ^ link, newArc);
     }
 }
 
@@ -1788,18 +1788,18 @@ void _AttachArc(graphP theGraph, int v, int e, int link, int newArc)
 
 void _DetachArc(graphP theGraph, int arc)
 {
-    int nextArc = gp_GetNextArc(theGraph, arc),
-        prevArc = gp_GetPrevArc(theGraph, arc);
+    int nextArc = gp_GetNextEdge(theGraph, arc),
+        prevArc = gp_GetPrevEdge(theGraph, arc);
 
-    if (gp_IsArc(theGraph, nextArc))
-        gp_SetPrevArc(theGraph, nextArc, prevArc);
+    if (gp_IsEdge(theGraph, nextArc))
+        gp_SetPrevEdge(theGraph, nextArc, prevArc);
     else
-        gp_SetLastArc(theGraph, gp_GetNeighbor(theGraph, gp_GetTwinArc(theGraph, arc)), prevArc);
+        gp_SetLastEdge(theGraph, gp_GetNeighbor(theGraph, gp_GetTwin(theGraph, arc)), prevArc);
 
-    if (gp_IsArc(theGraph, prevArc))
-        gp_SetNextArc(theGraph, prevArc, nextArc);
+    if (gp_IsEdge(theGraph, prevArc))
+        gp_SetNextEdge(theGraph, prevArc, nextArc);
     else
-        gp_SetFirstArc(theGraph, gp_GetNeighbor(theGraph, gp_GetTwinArc(theGraph, arc)), nextArc);
+        gp_SetFirstEdge(theGraph, gp_GetNeighbor(theGraph, gp_GetTwin(theGraph, arc)), nextArc);
 }
 
 /********************************************************************
@@ -1858,7 +1858,7 @@ int gp_AddEdge(graphP theGraph, int u, int ulink, int v, int vlink)
     else
         vpos = gp_EdgeInUseArraySize(theGraph);
 
-    upos = gp_GetTwinArc(theGraph, vpos);
+    upos = gp_GetTwin(theGraph, vpos);
 
     gp_SetNeighbor(theGraph, upos, v);
     _AttachArc(theGraph, u, NIL, ulink, upos);
@@ -1950,8 +1950,8 @@ int gp_InsertEdge(graphP theGraph, int u, int e_u, int e_ulink,
 
     if (u < gp_GetFirstVertex(theGraph) || u > vertMax ||
         v < gp_GetFirstVertex(theGraph) || v > vertMax ||
-        e_u > edgeMax || (e_u < gp_EdgeArrayStart(theGraph) && gp_IsArc(theGraph, e_u)) ||
-        e_v > edgeMax || (e_v < gp_EdgeArrayStart(theGraph) && gp_IsArc(theGraph, e_v)) ||
+        e_u > edgeMax || (e_u < gp_EdgeArrayStart(theGraph) && gp_IsEdge(theGraph, e_u)) ||
+        e_v > edgeMax || (e_v < gp_EdgeArrayStart(theGraph) && gp_IsEdge(theGraph, e_v)) ||
         e_ulink < 0 || e_ulink > 1 || e_vlink < 0 || e_vlink > 1)
         return NOTOK;
 
@@ -1972,7 +1972,7 @@ int gp_InsertEdge(graphP theGraph, int u, int e_u, int e_ulink,
     // an edge hole. This expectation includes edge record extensions
     // in graph extensions.
 
-    upos = gp_GetTwinArc(theGraph, vpos);
+    upos = gp_GetTwin(theGraph, vpos);
 
     gp_SetNeighbor(theGraph, upos, v);
     _AttachArc(theGraph, u, e_u, e_ulink, upos);
@@ -2010,7 +2010,7 @@ int gp_DeleteEdge(graphP theGraph, int e)
 
     // Delete the edge records e and eTwin from their adjacency lists.
     _DetachArc(theGraph, e);
-    _DetachArc(theGraph, gp_GetTwinArc(theGraph, e));
+    _DetachArc(theGraph, gp_GetTwin(theGraph, e));
 
     // Clear the two edge records
     // (the bit twiddle (e & ~1) chooses the lesser of e and its twin)
@@ -2018,7 +2018,7 @@ int gp_DeleteEdge(graphP theGraph, int e)
     memset(theGraph->E + (e & ~1), NIL_CHAR, sizeof(edgeRec) << 1);
 #else
     _InitEdgeRec(theGraph, e);
-    _InitEdgeRec(theGraph, gp_GetTwinArc(theGraph, e));
+    _InitEdgeRec(theGraph, gp_GetTwin(theGraph, e));
 #endif
 
     // Now we reduce the number of edges in the data structure
@@ -2051,18 +2051,18 @@ int gp_DeleteEdge(graphP theGraph, int e)
 
 void _RestoreArc(graphP theGraph, int arc)
 {
-    int nextArc = gp_GetNextArc(theGraph, arc),
-        prevArc = gp_GetPrevArc(theGraph, arc);
+    int nextArc = gp_GetNextEdge(theGraph, arc),
+        prevArc = gp_GetPrevEdge(theGraph, arc);
 
-    if (gp_IsArc(theGraph, nextArc))
-        gp_SetPrevArc(theGraph, nextArc, arc);
+    if (gp_IsEdge(theGraph, nextArc))
+        gp_SetPrevEdge(theGraph, nextArc, arc);
     else
-        gp_SetLastArc(theGraph, gp_GetNeighbor(theGraph, gp_GetTwinArc(theGraph, arc)), arc);
+        gp_SetLastEdge(theGraph, gp_GetNeighbor(theGraph, gp_GetTwin(theGraph, arc)), arc);
 
-    if (gp_IsArc(theGraph, prevArc))
-        gp_SetNextArc(theGraph, prevArc, arc);
+    if (gp_IsEdge(theGraph, prevArc))
+        gp_SetNextEdge(theGraph, prevArc, arc);
     else
-        gp_SetFirstArc(theGraph, gp_GetNeighbor(theGraph, gp_GetTwinArc(theGraph, arc)), arc);
+        gp_SetFirstEdge(theGraph, gp_GetNeighbor(theGraph, gp_GetTwin(theGraph, arc)), arc);
 }
 
 /********************************************************************
@@ -2098,7 +2098,7 @@ void gp_HideEdge(graphP theGraph, int e)
 void _HideEdge(graphP theGraph, int e)
 {
     _DetachArc(theGraph, e);
-    _DetachArc(theGraph, gp_GetTwinArc(theGraph, e));
+    _DetachArc(theGraph, gp_GetTwin(theGraph, e));
 }
 
 /********************************************************************
@@ -2135,7 +2135,7 @@ void gp_RestoreEdge(graphP theGraph, int e)
 
 void _RestoreEdge(graphP theGraph, int e)
 {
-    _RestoreArc(theGraph, gp_GetTwinArc(theGraph, e));
+    _RestoreArc(theGraph, gp_GetTwin(theGraph, e));
     _RestoreArc(theGraph, e);
 }
 
@@ -2155,23 +2155,23 @@ void _RestoreEdge(graphP theGraph, int e)
 
 int _HideInternalEdges(graphP theGraph, int vertex)
 {
-    int e = gp_GetFirstArc(theGraph, vertex);
+    int e = gp_GetFirstEdge(theGraph, vertex);
 
     // If the vertex adjacency list is empty or if it contains
     // only one edge, then there are no *internal* edges to hide
-    if (e == gp_GetLastArc(theGraph, vertex))
+    if (e == gp_GetLastEdge(theGraph, vertex))
         return OK;
 
     // Start with the first internal edge
-    e = gp_GetNextArc(theGraph, e);
+    e = gp_GetNextEdge(theGraph, e);
 
     // Cycle through all the edges, pushing each except stop
     // before pushing the last edge, which is not internal
-    while (e != gp_GetLastArc(theGraph, vertex))
+    while (e != gp_GetLastEdge(theGraph, vertex))
     {
         sp_Push(theGraph->theStack, e);
         gp_HideEdge(theGraph, e);
-        e = gp_GetNextArc(theGraph, e);
+        e = gp_GetNextEdge(theGraph, e);
     }
 
     return OK;
@@ -2205,7 +2205,7 @@ int _RestoreHiddenEdges(graphP theGraph, int stackBottom)
     while (sp_GetCurrentSize(theGraph->theStack) > stackBottom)
     {
         sp_Pop(theGraph->theStack, e);
-        if (gp_IsNotArc(theGraph, e))
+        if (gp_IsNotEdge(theGraph, e))
             return NOTOK;
         gp_RestoreEdge(theGraph, e);
     }
@@ -2238,14 +2238,14 @@ int gp_HideVertex(graphP theGraph, int vertex)
 int _HideVertex(graphP theGraph, int vertex)
 {
     int hiddenEdgeStackBottom = sp_GetCurrentSize(theGraph->theStack);
-    int e = gp_GetFirstArc(theGraph, vertex);
+    int e = gp_GetFirstEdge(theGraph, vertex);
 
     // Cycle through all the edges, pushing and hiding each
-    while (gp_IsArc(theGraph, e))
+    while (gp_IsEdge(theGraph, e))
     {
         sp_Push(theGraph->theStack, e);
         gp_HideEdge(theGraph, e);
-        e = gp_GetNextArc(theGraph, e);
+        e = gp_GetNextEdge(theGraph, e);
     }
 
     // Push the additional integers needed by gp_RestoreVertex()
@@ -2286,13 +2286,13 @@ int _ContractEdge(graphP theGraph, int e)
 {
     int eBefore, u, v;
 
-    if (gp_IsNotArc(theGraph, e))
+    if (gp_IsNotEdge(theGraph, e))
         return NOTOK;
 
-    u = gp_GetNeighbor(theGraph, gp_GetTwinArc(theGraph, e));
+    u = gp_GetNeighbor(theGraph, gp_GetTwin(theGraph, e));
     v = gp_GetNeighbor(theGraph, e);
 
-    eBefore = gp_GetNextArc(theGraph, e);
+    eBefore = gp_GetNextEdge(theGraph, e);
     sp_Push(theGraph->theStack, e);
     gp_HideEdge(theGraph, e);
 
@@ -2356,7 +2356,7 @@ int _IdentifyVertices(graphP theGraph, int u, int v, int eBefore)
 
     // If the vertices are adjacent, then the identification is
     // essentially an edge contraction with a bit of fixup.
-    if (gp_IsArc(theGraph, e))
+    if (gp_IsEdge(theGraph, e))
     {
         int result = gp_ContractEdge(theGraph, e);
 
@@ -2385,35 +2385,35 @@ int _IdentifyVertices(graphP theGraph, int u, int v, int eBefore)
     hiddenEdgeStackBottom = sp_GetCurrentSize(theGraph->theStack);
 
     // Mark as visited all neighbors of u
-    e = gp_GetFirstArc(theGraph, u);
-    while (gp_IsArc(theGraph, e))
+    e = gp_GetFirstEdge(theGraph, u);
+    while (gp_IsEdge(theGraph, e))
     {
         if (gp_GetVisited(theGraph, gp_GetNeighbor(theGraph, e)))
             return NOTOK;
 
         gp_SetVisited(theGraph, gp_GetNeighbor(theGraph, e));
-        e = gp_GetNextArc(theGraph, e);
+        e = gp_GetNextEdge(theGraph, e);
     }
 
     // For each edge record of v, if the neighbor is visited, then
     // push and hide the edge.
-    e = gp_GetFirstArc(theGraph, v);
-    while (gp_IsArc(theGraph, e))
+    e = gp_GetFirstEdge(theGraph, v);
+    while (gp_IsEdge(theGraph, e))
     {
         if (gp_GetVisited(theGraph, gp_GetNeighbor(theGraph, e)))
         {
             sp_Push(theGraph->theStack, e);
             gp_HideEdge(theGraph, e);
         }
-        e = gp_GetNextArc(theGraph, e);
+        e = gp_GetNextEdge(theGraph, e);
     }
 
     // Mark as unvisited all neighbors of u
-    e = gp_GetFirstArc(theGraph, u);
-    while (gp_IsArc(theGraph, e))
+    e = gp_GetFirstEdge(theGraph, u);
+    while (gp_IsEdge(theGraph, e))
     {
         gp_ClearVisited(theGraph, gp_GetNeighbor(theGraph, e));
-        e = gp_GetNextArc(theGraph, e);
+        e = gp_GetNextEdge(theGraph, e);
     }
 
     // Push the hiddenEdgeStackBottom as a record of how many hidden
@@ -2423,60 +2423,60 @@ int _IdentifyVertices(graphP theGraph, int u, int v, int eBefore)
     // Moving v's adjacency list to u is aided by knowing the predecessor
     // of u's eBefore (the edge record in u's list before which the
     // edge records of v will be added).
-    eBeforePred = gp_IsArc(theGraph, eBefore)
-                      ? gp_GetPrevArc(theGraph, eBefore)
-                      : gp_GetLastArc(theGraph, u);
+    eBeforePred = gp_IsEdge(theGraph, eBefore)
+                      ? gp_GetPrevEdge(theGraph, eBefore)
+                      : gp_GetLastEdge(theGraph, u);
 
     // Turns out we only need to record six integers related to the edges
     // being moved in order to easily restore them later.
     sp_Push(theGraph->theStack, eBefore);
-    sp_Push(theGraph->theStack, gp_GetLastArc(theGraph, v));
-    sp_Push(theGraph->theStack, gp_GetFirstArc(theGraph, v));
+    sp_Push(theGraph->theStack, gp_GetLastEdge(theGraph, v));
+    sp_Push(theGraph->theStack, gp_GetFirstEdge(theGraph, v));
     sp_Push(theGraph->theStack, eBeforePred);
     sp_Push(theGraph->theStack, u);
     sp_Push(theGraph->theStack, v);
 
     // For the remaining edge records of v, reassign the 'v' member
     //    of each twin arc to indicate u rather than v.
-    e = gp_GetFirstArc(theGraph, v);
-    while (gp_IsArc(theGraph, e))
+    e = gp_GetFirstEdge(theGraph, v);
+    while (gp_IsEdge(theGraph, e))
     {
-        gp_SetNeighbor(theGraph, gp_GetTwinArc(theGraph, e), u);
-        e = gp_GetNextArc(theGraph, e);
+        gp_SetNeighbor(theGraph, gp_GetTwin(theGraph, e), u);
+        e = gp_GetNextEdge(theGraph, e);
     }
 
     // If v has any edges left after hiding edges, indicating common neighbors with u, ...
-    if (gp_IsArc(theGraph, gp_GetFirstArc(theGraph, v)))
+    if (gp_IsEdge(theGraph, gp_GetFirstEdge(theGraph, v)))
     {
         // Then perform the list union of v into u between eBeforePred and eBefore
-        if (gp_IsArc(theGraph, eBeforePred))
+        if (gp_IsEdge(theGraph, eBeforePred))
         {
-            if (gp_IsArc(theGraph, gp_GetFirstArc(theGraph, v)))
+            if (gp_IsEdge(theGraph, gp_GetFirstEdge(theGraph, v)))
             {
-                gp_SetNextArc(theGraph, eBeforePred, gp_GetFirstArc(theGraph, v));
-                gp_SetPrevArc(theGraph, gp_GetFirstArc(theGraph, v), eBeforePred);
+                gp_SetNextEdge(theGraph, eBeforePred, gp_GetFirstEdge(theGraph, v));
+                gp_SetPrevEdge(theGraph, gp_GetFirstEdge(theGraph, v), eBeforePred);
             }
         }
         else
         {
-            gp_SetFirstArc(theGraph, u, gp_GetFirstArc(theGraph, v));
+            gp_SetFirstEdge(theGraph, u, gp_GetFirstEdge(theGraph, v));
         }
 
-        if (gp_IsArc(theGraph, eBefore))
+        if (gp_IsEdge(theGraph, eBefore))
         {
-            if (gp_IsArc(theGraph, gp_GetLastArc(theGraph, v)))
+            if (gp_IsEdge(theGraph, gp_GetLastEdge(theGraph, v)))
             {
-                gp_SetNextArc(theGraph, gp_GetLastArc(theGraph, v), eBefore);
-                gp_SetPrevArc(theGraph, eBefore, gp_GetLastArc(theGraph, v));
+                gp_SetNextEdge(theGraph, gp_GetLastEdge(theGraph, v), eBefore);
+                gp_SetPrevEdge(theGraph, eBefore, gp_GetLastEdge(theGraph, v));
             }
         }
         else
         {
-            gp_SetLastArc(theGraph, u, gp_GetLastArc(theGraph, v));
+            gp_SetLastEdge(theGraph, u, gp_GetLastEdge(theGraph, v));
         }
 
-        gp_SetFirstArc(theGraph, v, NIL);
-        gp_SetLastArc(theGraph, v, NIL);
+        gp_SetFirstEdge(theGraph, v, NIL);
+        gp_SetLastEdge(theGraph, v, NIL);
     }
 
     return OK;
@@ -2551,45 +2551,45 @@ int _RestoreVertex(graphP theGraph)
     if (gp_IsVertex(theGraph, u))
     {
         // Remove v's adjacency list from u, including accounting for degree 0 case
-        if (gp_IsArc(theGraph, e_u_pred))
+        if (gp_IsEdge(theGraph, e_u_pred))
         {
-            gp_SetNextArc(theGraph, e_u_pred, e_u_succ);
+            gp_SetNextEdge(theGraph, e_u_pred, e_u_succ);
             // If the successor edge exists, link it to the predecessor,
             // otherwise the predecessor is the new last arc
-            if (gp_IsArc(theGraph, e_u_succ))
-                gp_SetPrevArc(theGraph, e_u_succ, e_u_pred);
+            if (gp_IsEdge(theGraph, e_u_succ))
+                gp_SetPrevEdge(theGraph, e_u_succ, e_u_pred);
             else
-                gp_SetLastArc(theGraph, u, e_u_pred);
+                gp_SetLastEdge(theGraph, u, e_u_pred);
         }
-        else if (gp_IsArc(theGraph, e_u_succ))
+        else if (gp_IsEdge(theGraph, e_u_succ))
         {
             // The successor arc exists, but not the predecessor,
             // so the successor is the new first arc
-            gp_SetPrevArc(theGraph, e_u_succ, NIL);
-            gp_SetFirstArc(theGraph, u, e_u_succ);
+            gp_SetPrevEdge(theGraph, e_u_succ, NIL);
+            gp_SetFirstEdge(theGraph, u, e_u_succ);
         }
         else
         {
             // Just in case u was degree zero
-            gp_SetFirstArc(theGraph, u, NIL);
-            gp_SetLastArc(theGraph, u, NIL);
+            gp_SetFirstEdge(theGraph, u, NIL);
+            gp_SetLastEdge(theGraph, u, NIL);
         }
 
         // Place v's adjacency list into v, including accounting for degree 0 case
-        gp_SetFirstArc(theGraph, v, e_v_first);
-        gp_SetLastArc(theGraph, v, e_v_last);
-        if (gp_IsArc(theGraph, e_v_first))
-            gp_SetPrevArc(theGraph, e_v_first, NIL);
-        if (gp_IsArc(theGraph, e_v_last))
-            gp_SetPrevArc(theGraph, e_v_last, NIL);
+        gp_SetFirstEdge(theGraph, v, e_v_first);
+        gp_SetLastEdge(theGraph, v, e_v_last);
+        if (gp_IsEdge(theGraph, e_v_first))
+            gp_SetPrevEdge(theGraph, e_v_first, NIL);
+        if (gp_IsEdge(theGraph, e_v_last))
+            gp_SetPrevEdge(theGraph, e_v_last, NIL);
 
         // For each edge record restored to v's adjacency list, reassign the 'v' member
         //    of each twin arc to indicate v rather than u.
         e = e_v_first;
-        while (gp_IsArc(theGraph, e))
+        while (gp_IsEdge(theGraph, e))
         {
-            gp_SetNeighbor(theGraph, gp_GetTwinArc(theGraph, e), v);
-            e = (e == e_v_last ? NIL : gp_GetNextArc(theGraph, e));
+            gp_SetNeighbor(theGraph, gp_GetTwin(theGraph, e), v);
+            e = (e == e_v_last ? NIL : gp_GetNextEdge(theGraph, e));
         }
     }
 
@@ -2672,7 +2672,7 @@ int _SetEdgeType(graphP theGraph, int u, int v)
     // Get the edge for which we will set the type
 
     e = _gp_FindEdge(theGraph, u, v);
-    eTwin = gp_GetTwinArc(theGraph, e);
+    eTwin = gp_GetTwin(theGraph, e);
 
     // If u_orig is the parent of v_orig, or vice versa, then the edge is a tree edge
 
@@ -2733,13 +2733,13 @@ int _DeleteUnmarkedEdgesInBicomp(graphP theGraph, int BicompRoot)
     {
         sp_Pop(theGraph->theStack, V);
 
-        e = gp_GetFirstArc(theGraph, V);
-        while (gp_IsArc(theGraph, e))
+        e = gp_GetFirstEdge(theGraph, V);
+        while (gp_IsEdge(theGraph, e))
         {
             if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_CHILD)
                 sp_Push(theGraph->theStack, gp_GetNeighbor(theGraph, e));
 
-            eNext = gp_GetNextArc(theGraph, e);
+            eNext = gp_GetNextEdge(theGraph, e);
             if (!gp_GetEdgeVisited(theGraph, e))
                 gp_DeleteEdge(theGraph, e);
             e = eNext;
@@ -2771,8 +2771,8 @@ int _ClearInvertedFlagsInBicomp(graphP theGraph, int BicompRoot)
     {
         sp_Pop(theGraph->theStack, V);
 
-        e = gp_GetFirstArc(theGraph, V);
-        while (gp_IsArc(theGraph, e))
+        e = gp_GetFirstEdge(theGraph, V);
+        while (gp_IsEdge(theGraph, e))
         {
             if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_CHILD)
             {
@@ -2780,7 +2780,7 @@ int _ClearInvertedFlagsInBicomp(graphP theGraph, int BicompRoot)
                 gp_ClearEdgeFlagInverted(theGraph, e);
             }
 
-            e = gp_GetNextArc(theGraph, e);
+            e = gp_GetNextEdge(theGraph, e);
         }
     }
     return OK;
@@ -2809,13 +2809,13 @@ int _GetBicompSize(graphP theGraph, int BicompRoot)
     {
         sp_Pop(theGraph->theStack, V);
         theSize++;
-        e = gp_GetFirstArc(theGraph, V);
-        while (gp_IsArc(theGraph, e))
+        e = gp_GetFirstEdge(theGraph, V);
+        while (gp_IsEdge(theGraph, e))
         {
             if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_CHILD)
                 sp_Push(theGraph->theStack, gp_GetNeighbor(theGraph, e));
 
-            e = gp_GetNextArc(theGraph, e);
+            e = gp_GetNextEdge(theGraph, e);
         }
     }
     return theSize;

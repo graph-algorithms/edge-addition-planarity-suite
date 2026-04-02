@@ -433,7 +433,7 @@ void _g6_GetNextEdgeInUse(graphP theGraph, int *e, int *u, int *v)
         if ((*e) < EsizeOccupied && gp_EdgeInUse(theGraph, (*e)))
         {
             (*u) = gp_GetNeighbor(theGraph, (*e));
-            (*v) = gp_GetNeighbor(theGraph, gp_GetTwinArc(theGraph, (*e)));
+            (*v) = gp_GetNeighbor(theGraph, gp_GetTwin(theGraph, (*e)));
         }
     }
 }
