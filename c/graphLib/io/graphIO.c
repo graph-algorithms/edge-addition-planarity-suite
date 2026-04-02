@@ -539,8 +539,8 @@ int _ReadGraph(graphP theGraph, strOrFileP *pInputContainer)
     {
         // N.B. Unlike the other _Read functions, we are relinquishing
         // ownership of inputContainer to the G6ReadIterator, which
-        // calls sf_Free() when ending iteration. This assignment
-        // prevents calling free on alread-freed memory.
+        // calls sf_Free() when ending iteration. This will mean that
+        // (*pInputContainer) is NULL after we return from this call.
         RetVal = _g6_ReadGraphFromStrOrFile(theGraph, pInputContainer);
     }
 
@@ -976,11 +976,11 @@ int gp_WriteToString(graphP theGraph, char **pOutputStr, int Mode)
 
     sf_Free(&outputContainer);
 
-    // NOTE: If an error was encountered when we _WriteGraph(), we do not want
-    // to return garbage to the caller. When we free the output container, if
-    // writing to string, this means that we will have taken the string
-    // from the internal theStrBuf and have assigned it to the container's
-    // pointer-pointer pOutputStr for output, so if the RetVal is not OK, we
+    // NOTE: (#56) If an error was encountered when we _WriteGraph(), we do not
+    // want to return garbage to the caller. When we free the output container,
+    // if writing to string, this means that we will have taken the string from
+    // the internal theStrBuf and have assigned it to the container's
+    // pointer-pointer pOutputStr for output; if the RetVal is not OK, we
     // must free the string and set the pointer-pointer to NULL.
     if (RetVal != OK)
     {
@@ -1022,7 +1022,7 @@ int _WriteGraph(graphP theGraph, strOrFileP *pOutputContainer, int Mode)
     switch (Mode)
     {
     case WRITE_G6:
-        // This call takes ownership of the outputContainer, so this pointer
+        // This call takes ownership of the outputContainer, so (*pOutputContainer)
         // will be NULL upon return from this function.
         RetVal = _g6_WriteGraphToStrOrFile(theGraph, pOutputContainer);
         break;

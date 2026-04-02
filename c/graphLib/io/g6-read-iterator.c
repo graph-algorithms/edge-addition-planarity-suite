@@ -223,7 +223,14 @@ int g6_InitReaderWithString(G6ReadIteratorP theG6ReadIterator, char *inputString
         return NOTOK;
     }
 
-    inputContainer = sf_NewInputContainer(inputString, NULL);
+    if ((inputContainer = sf_NewInputContainer(inputString, NULL)) == NULL)
+    {
+        ErrorMessage(
+            "Unable to initialize reader with string, as we failed to allocate "
+            "the inputContainer.\n");
+        return NOTOK;
+    }
+
     return _g6_InitReaderWithStrOrFile(
         theG6ReadIterator,
         (&inputContainer));
@@ -255,7 +262,14 @@ int g6_InitReaderWithFileName(G6ReadIteratorP theG6ReadIterator, char const *con
         return NOTOK;
     }
 
-    inputContainer = sf_NewInputContainer(NULL, infileName);
+    if ((inputContainer = sf_NewInputContainer(NULL, infileName)) == NULL)
+    {
+        ErrorMessage(
+            "Unable to initialize reader with filename, as we failed to "
+            "allocate the inputContainer.\n");
+        return NOTOK;
+    }
+
     return _g6_InitReaderWithStrOrFile(
         theG6ReadIterator,
         (&inputContainer));

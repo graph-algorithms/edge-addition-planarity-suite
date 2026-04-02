@@ -236,7 +236,14 @@ int g6_InitWriterWithString(G6WriteIteratorP theG6WriteIterator, char **pOutputS
         return NOTOK;
     }
 
-    outputContainer = sf_NewOutputContainer(pOutputString, NULL);
+    if ((outputContainer = sf_NewOutputContainer(pOutputString, NULL)) == NULL)
+    {
+        ErrorMessage(
+            "Unable to initialize writer with string, as we failed to allocate "
+            "the outputContainer.\n");
+        return NOTOK;
+    }
+
     return _g6_InitWriterWithStrOrFile(
         theG6WriteIterator,
         (&outputContainer));
@@ -270,7 +277,14 @@ int g6_InitWriterWithFileName(G6WriteIteratorP theG6WriteIterator, char *outputF
         return NOTOK;
     }
 
-    outputContainer = sf_NewOutputContainer(NULL, outputFileName);
+    if ((outputContainer = sf_NewOutputContainer(NULL, outputFileName)) == NULL)
+    {
+        ErrorMessage(
+            "Unable to initialize writer with filename, as we failed to "
+            "allocate the outputContainer.\n");
+        return NOTOK;
+    }
+
     return _g6_InitWriterWithStrOrFile(
         theG6WriteIterator,
         (&outputContainer));
