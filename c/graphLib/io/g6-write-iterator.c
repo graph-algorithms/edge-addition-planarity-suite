@@ -417,7 +417,7 @@ void _g6_GetNextEdgeInUse(graphP theGraph, int *e, int *u, int *v)
     (*v) = NIL;
 
     if ((*e) == NIL)
-        (*e) = gp_GetFirstEdge(theGraph);
+        (*e) = gp_EdgeArrayStart(theGraph);
     else
         (*e) += 2;
 

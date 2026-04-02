@@ -344,14 +344,14 @@ void _InitEdges(graphP theGraph)
     memset(theGraph->E, NIL_CHAR, gp_EdgeArraySize(theGraph) * sizeof(edgeRec));
 
     Esize = gp_EdgeArraySize(theGraph);
-    for (e = gp_GetFirstEdge(theGraph); e < Esize; e++)
+    for (e = gp_EdgeArrayStart(theGraph); e < Esize; e++)
         gp_InitEdgeFlags(theGraph, e);
 #endif
     // N.B. This is the legacy API-based approach to initializing the edges
     // int e, Esize;
 
     // Esize = gp_EdgeArraySize(theGraph);
-    // for (e = gp_GetFirstEdge(theGraph); e < Esize; e++)
+    // for (e = gp_EdgeArrayStart(theGraph); e < Esize; e++)
     //     _InitEdgeRec(theGraph, e);
 }
 
@@ -452,7 +452,7 @@ int _EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity)
 {
     stackP newStack = NULL;
     int e, Esize = gp_EdgeArraySize(theGraph),
-           newEsize = gp_GetFirstEdge(theGraph) + (requiredEdgeCapacity << 1);
+           newEsize = gp_EdgeArrayStart(theGraph) + (requiredEdgeCapacity << 1);
 
     // If the new size is less than or equal to the old size, then
     // the graph already has the required edge capacity
@@ -604,7 +604,7 @@ void _ClearEdgeVisitedFlags(graphP theGraph)
     int e, EsizeOccupied;
 
     EsizeOccupied = gp_EdgeInUseArraySize(theGraph);
-    for (e = gp_GetFirstEdge(theGraph); e < EsizeOccupied; e++)
+    for (e = gp_EdgeArrayStart(theGraph); e < EsizeOccupied; e++)
         gp_ClearEdgeVisited(theGraph, e);
 }
 
@@ -959,7 +959,7 @@ int gp_CopyAdjacencyLists(graphP dstGraph, graphP srcGraph)
 
     // Copy the adjacency links and neighbor pointers for each edge record
     EsizeOccupied = gp_EdgeInUseArraySize(srcGraph);
-    for (e = gp_GetFirstEdge(theGraph); e < EsizeOccupied; e++)
+    for (e = gp_EdgeArrayStart(theGraph); e < EsizeOccupied; e++)
     {
         gp_SetNeighbor(dstGraph, e, gp_GetNeighbor(srcGraph, e));
         gp_SetNextArc(dstGraph, e, gp_GetNextArc(srcGraph, e));
@@ -1053,7 +1053,7 @@ int gp_CopyGraph(graphP dstGraph, graphP srcGraph)
     // Copy the basic EdgeRec structures.  Augmentations to the edgeRec structure
     // created by extensions are copied below by gp_CopyExtensions()
     Esize = gp_EdgeArraySize(srcGraph);
-    for (e = gp_GetFirstEdge(theGraph); e < Esize; e++)
+    for (e = gp_EdgeArrayStart(theGraph); e < Esize; e++)
         _gp_CopyEdgeRec(dstGraph, e, srcGraph, e);
 
     // Give the dstGraph the same size and intrinsic properties
@@ -1950,8 +1950,8 @@ int gp_InsertEdge(graphP theGraph, int u, int e_u, int e_ulink,
 
     if (u < gp_GetFirstVertex(theGraph) || u > vertMax ||
         v < gp_GetFirstVertex(theGraph) || v > vertMax ||
-        e_u > edgeMax || (e_u < gp_GetFirstEdge(theGraph) && gp_IsArc(theGraph, e_u)) ||
-        e_v > edgeMax || (e_v < gp_GetFirstEdge(theGraph) && gp_IsArc(theGraph, e_v)) ||
+        e_u > edgeMax || (e_u < gp_EdgeArrayStart(theGraph) && gp_IsArc(theGraph, e_u)) ||
+        e_v > edgeMax || (e_v < gp_EdgeArrayStart(theGraph) && gp_IsArc(theGraph, e_v)) ||
         e_ulink < 0 || e_ulink > 1 || e_vlink < 0 || e_vlink > 1)
         return NOTOK;
 
@@ -2004,7 +2004,7 @@ int gp_InsertEdge(graphP theGraph, int u, int e_u, int e_ulink,
 int gp_DeleteEdge(graphP theGraph, int e)
 {
     if (theGraph == NULL ||
-        e < gp_GetFirstEdge(theGraph) || e >= gp_EdgeInUseArraySize(theGraph) ||
+        e < gp_EdgeArrayStart(theGraph) || e >= gp_EdgeInUseArraySize(theGraph) ||
         gp_EdgeNotInUse(theGraph, e))
         return NOTOK;
 
@@ -2083,7 +2083,7 @@ void _RestoreArc(graphP theGraph, int arc)
 void gp_HideEdge(graphP theGraph, int e)
 {
     if (theGraph == NULL ||
-        e < gp_GetFirstEdge(theGraph) || e >= gp_EdgeInUseArraySize(theGraph) ||
+        e < gp_EdgeArrayStart(theGraph) || e >= gp_EdgeInUseArraySize(theGraph) ||
         gp_EdgeNotInUse(theGraph, e))
     {
 #ifdef DEBUG
@@ -2121,7 +2121,7 @@ void _HideEdge(graphP theGraph, int e)
 void gp_RestoreEdge(graphP theGraph, int e)
 {
     if (theGraph == NULL ||
-        e < gp_GetFirstEdge(theGraph) || e >= gp_EdgeInUseArraySize(theGraph) ||
+        e < gp_EdgeArrayStart(theGraph) || e >= gp_EdgeInUseArraySize(theGraph) ||
         gp_EdgeNotInUse(theGraph, e))
     {
 #ifdef DEBUG
@@ -2273,7 +2273,7 @@ int _HideVertex(graphP theGraph, int vertex)
 int gp_ContractEdge(graphP theGraph, int e)
 {
     if (theGraph == NULL ||
-        e < gp_GetFirstEdge(theGraph) || e >= gp_EdgeInUseArraySize(theGraph) ||
+        e < gp_EdgeArrayStart(theGraph) || e >= gp_EdgeInUseArraySize(theGraph) ||
         gp_EdgeNotInUse(theGraph, e))
     {
         return NOTOK;
@@ -2339,7 +2339,7 @@ int gp_IdentifyVertices(graphP theGraph, int u, int v, int eBefore)
     if (theGraph == NULL ||
         u < gp_GetFirstVertex(theGraph) || u >= gp_AnyTypeVertexArraySize(theGraph) ||
         v < gp_GetFirstVertex(theGraph) || v >= gp_AnyTypeVertexArraySize(theGraph) ||
-        (eBefore != NIL && eBefore < gp_GetFirstEdge(theGraph)) ||
+        (eBefore != NIL && eBefore < gp_EdgeArrayStart(theGraph)) ||
         eBefore >= gp_EdgeInUseArraySize(theGraph) ||
         (eBefore != NIL && gp_EdgeNotInUse(theGraph, eBefore)))
     {

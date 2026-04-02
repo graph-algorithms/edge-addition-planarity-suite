@@ -198,7 +198,7 @@ int _K4Search_InitStructures(K4SearchContext *context)
     // int e, Esize;
 
     // Esize = gp_EdgeArraySize(context->theGraph);
-    // for (e = gp_GetFirstEdge(context->theGraph); e < Esize; e++)
+    // for (e = gp_EdgeArrayStart(context->theGraph); e < Esize; e++)
     //     _K4Search_InitEdgeRec(context, e);
 
     return OK;

@@ -360,7 +360,7 @@ int _ComputeEdgePositions(DrawPlanarContext *context)
     //    represented by a pair of adjacent edge records
     //    at index 2X.
 
-    if (gp_GetM(theEmbedding) > 0 && (edgeList = LCNew(gp_GetFirstEdge(theEmbedding) / 2 + gp_GetM(theEmbedding))) == NULL)
+    if (gp_GetM(theEmbedding) > 0 && (edgeList = LCNew(gp_EdgeArrayStart(theEmbedding) / 2 + gp_GetM(theEmbedding))) == NULL)
     {
         free(vertexOrder);
         vertexOrder = NULL;
@@ -571,7 +571,7 @@ int _ComputeEdgeRanges(DrawPlanarContext *context)
         return NOTOK;
 
     EsizeOccupied = gp_EdgeInUseArraySize(theEmbedding);
-    for (e = gp_GetFirstEdge(theEmbedding); e < EsizeOccupied; e += 2)
+    for (e = gp_EdgeArrayStart(theEmbedding); e < EsizeOccupied; e += 2)
     {
         eTwin = gp_GetTwinArc(theEmbedding, e);
 
@@ -868,7 +868,7 @@ char *_RenderToString(graphP theEmbedding)
 
         // Draw the edges
         EsizeOccupied = gp_EdgeInUseArraySize(theEmbedding);
-        for (e = gp_GetFirstEdge(theEmbedding); e < EsizeOccupied; e += 2)
+        for (e = gp_EdgeArrayStart(theEmbedding); e < EsizeOccupied; e += 2)
         {
             Pos = context->E[e].pos;
             for (eRange = context->E[e].start; eRange < context->E[e].end; eRange++)
@@ -1003,7 +1003,7 @@ int _CheckVisibilityRepresentationIntegrity(DrawPlanarContext *context)
             whether the edge positions are unique */
 
     EsizeOccupied = gp_EdgeInUseArraySize(theEmbedding);
-    for (e = gp_GetFirstEdge(theEmbedding); e < EsizeOccupied; e += 2)
+    for (e = gp_EdgeArrayStart(theEmbedding); e < EsizeOccupied; e += 2)
     {
         /* Each edge has two index locations in the edge information array */
         eTwin = gp_GetTwinArc(theEmbedding, e);
@@ -1027,7 +1027,7 @@ int _CheckVisibilityRepresentationIntegrity(DrawPlanarContext *context)
             can use the visited flags in the graph's edges to
             tell us whether the positions are being reused. */
 
-        eposIndex = (epos << 1) + gp_GetFirstEdge(theEmbedding);
+        eposIndex = (epos << 1) + gp_EdgeArrayStart(theEmbedding);
         eTwin = gp_GetTwinArc(theEmbedding, eposIndex);
 
         if (gp_GetEdgeVisited(theEmbedding, eposIndex) || gp_GetEdgeVisited(theEmbedding, eTwin))
@@ -1041,7 +1041,7 @@ int _CheckVisibilityRepresentationIntegrity(DrawPlanarContext *context)
         for a vertex that is not an endpoint of the edge. */
 
     EsizeOccupied = gp_EdgeInUseArraySize(theEmbedding);
-    for (e = gp_GetFirstEdge(theEmbedding); e < EsizeOccupied; e += 2)
+    for (e = gp_EdgeArrayStart(theEmbedding); e < EsizeOccupied; e += 2)
     {
         eTwin = gp_GetTwinArc(theEmbedding, e);
 

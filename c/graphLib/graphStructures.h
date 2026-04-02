@@ -36,7 +36,7 @@ extern "C"
      Edge Record Definition
 
      An edge is defined by a pair of edge records allocated in array E
-     of a graph. A pair of edge records represents the edge in the 
+     of a graph. A pair of edge records represents the edge in the
      adjacency lists of each vertex to which the edge is incident.
 
      link[2]: the next and previous edge records in the adjacency
@@ -70,38 +70,38 @@ extern "C"
 #ifndef DEBUG
 #define gp_IsArc(theGraph, e) (e)
 #else
-#define gp_IsArc(theGraph, e)                                                    \
-    ((e) == NIL                                                                  \
-         ? 0                                                                     \
-         : ((e) < gp_GetFirstEdge(theGraph) || (e) >= gp_EdgeArraySize(theGraph) \
-                ? (NOTOK, 0)                                                     \
+#define gp_IsArc(theGraph, e)                                                      \
+    ((e) == NIL                                                                    \
+         ? 0                                                                       \
+         : ((e) < gp_EdgeArrayStart(theGraph) || (e) >= gp_EdgeArraySize(theGraph) \
+                ? (NOTOK, 0)                                                       \
                 : 1))
 #endif
 
 #define gp_IsNotArc(theGraph, e) (!(e))
-#define gp_GetFirstEdge(theGraph) (2)
+#define gp_EdgeArrayStart(theGraph) (2)
 
 #else // When using slower 0-based Arrays
 
 #ifndef DEBUG
 #define gp_IsArc(theGraph, e) ((e) != NIL)
 #else
-#define gp_IsArc(theGraph, e)                                                    \
-    ((e) == NIL                                                                  \
-         ? 0                                                                     \
-         : ((e) < gp_GetFirstEdge(theGraph) || (e) >= gp_EdgeArraySize(theGraph) \
-                ? (NOTOK, 0)                                                     \
+#define gp_IsArc(theGraph, e)                                                      \
+    ((e) == NIL                                                                    \
+         ? 0                                                                       \
+         : ((e) < gp_EdgeArrayStart(theGraph) || (e) >= gp_EdgeArraySize(theGraph) \
+                ? (NOTOK, 0)                                                       \
                 : 1))
 #endif
 
 #define gp_IsNotArc(theGraph, e) ((e) == NIL)
-#define gp_GetFirstEdge(theGraph) (0)
+#define gp_EdgeArrayStart(theGraph) (0)
 #endif
 
 #define gp_EdgeInUse(theGraph, e) (gp_IsAnyTypeVertex(theGraph, gp_GetNeighbor(theGraph, e)))
 #define gp_EdgeNotInUse(theGraph, e) (gp_IsNotAnyTypeVertex(theGraph, gp_GetNeighbor(theGraph, e)))
-#define gp_EdgeArraySize(theGraph) (gp_GetFirstEdge(theGraph) + ( (theGraph)->edgeCapacity << 1))
-#define gp_EdgeInUseArraySize(theGraph) (gp_GetFirstEdge(theGraph) + ((gp_GetM(theGraph) + sp_GetCurrentSize((theGraph)->edgeHoles)) << 1))
+#define gp_EdgeArraySize(theGraph) (gp_EdgeArrayStart(theGraph) + ((theGraph)->edgeCapacity << 1))
+#define gp_EdgeInUseArraySize(theGraph) (gp_EdgeArrayStart(theGraph) + ((gp_GetM(theGraph) + sp_GetCurrentSize((theGraph)->edgeHoles)) << 1))
 
 // An edge is represented by two consecutive edge records (arcs) in the edge array E.
 // If an even number, xor 1 will add one; if an odd number, xor 1 will subtract 1

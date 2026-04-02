@@ -235,7 +235,7 @@ int _DrawPlanar_InitStructures(DrawPlanarContext *context)
         _DrawPlanar_InitVertexInfo(context, v);
 
     Esize = gp_EdgeArraySize(theGraph);
-    for (e = gp_GetFirstEdge(theGraph); e < Esize; e++)
+    for (e = gp_EdgeArrayStart(theGraph); e < Esize; e++)
         _DrawPlanar_InitEdgeRec(context, e);
 #endif
 
@@ -589,7 +589,7 @@ int _DrawPlanar_ReadPostprocess(graphP theGraph, char *extraData)
 
             // Read the lines that contain edge information
             EsizeOccupied = gp_EdgeInUseArraySize(theGraph);
-            for (e = gp_GetFirstEdge(theGraph); e < EsizeOccupied; e++)
+            for (e = gp_EdgeArrayStart(theGraph); e < EsizeOccupied; e++)
             {
                 sscanf(extraData, " %d%c %d %d %d", &tempInt, &tempChar,
                        &context->E[e].pos,
@@ -647,7 +647,7 @@ int _DrawPlanar_WritePostprocess(graphP theGraph, char **pExtraData)
             if (gp_GetGraphFlags(theGraph) & FLAGS_ZEROBASEDIO)
             {
                 zeroBasedVertexOffset = gp_GetFirstVertex(theGraph);
-                zeroBasedEdgeOffset = gp_GetFirstEdge(theGraph);
+                zeroBasedEdgeOffset = gp_EdgeArrayStart(theGraph);
             }
 
             // Bit of an unlikely case, but for safety, a bigger maxLineSize
@@ -675,7 +675,7 @@ int _DrawPlanar_WritePostprocess(graphP theGraph, char **pExtraData)
             }
 
             EsizeOccupied = gp_EdgeInUseArraySize(theGraph);
-            for (e = gp_GetFirstEdge(theGraph); e < EsizeOccupied; e++)
+            for (e = gp_EdgeArrayStart(theGraph); e < EsizeOccupied; e++)
             {
                 if (gp_EdgeInUse(theGraph, e))
                 {

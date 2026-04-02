@@ -254,7 +254,7 @@ void SaveAsciiGraph(graphP theGraph, char *filename)
 
     // Iterate over the edges of the graph
     EsizeOccupied = gp_EdgeInUseArraySize(theGraph);
-    for (e = gp_GetFirstEdge(theGraph); e < EsizeOccupied; e += 2)
+    for (e = gp_EdgeArrayStart(theGraph); e < EsizeOccupied; e += 2)
     {
         // Only output edges that haven't been deleted (i.e. skip the edge holes)
         if (gp_EdgeInUse(theGraph, e))

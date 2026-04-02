@@ -193,7 +193,7 @@ int _SortVertices(graphP theGraph)
        need to be changed because we are reordering the vertices */
 
     EsizeOccupied = gp_EdgeInUseArraySize(theGraph);
-    for (e = gp_GetFirstEdge(theGraph); e < EsizeOccupied; e += 2)
+    for (e = gp_EdgeArrayStart(theGraph); e < EsizeOccupied; e += 2)
     {
         if (gp_EdgeInUse(theGraph, e))
         {

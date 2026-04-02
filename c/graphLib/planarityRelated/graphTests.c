@@ -183,7 +183,7 @@ int _CheckEmbeddingFacialIntegrity(graphP theGraph)
     /* Push all arcs and set them to unvisited */
 
     EsizeOccupied = gp_EdgeInUseArraySize(theGraph);
-    for (e = gp_GetFirstEdge(theGraph); e < EsizeOccupied; e += 2)
+    for (e = gp_EdgeArrayStart(theGraph); e < EsizeOccupied; e += 2)
     {
         // Except skip edge holes
         if (gp_EdgeInUse(theGraph, e))

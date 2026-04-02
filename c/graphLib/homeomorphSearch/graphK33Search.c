@@ -1704,7 +1704,7 @@ int _RestoreAndOrientReducedPaths(graphP theGraph, K33SearchContext *context)
     int e0, eTwin0, e1, eTwin1;
 
     EsizeOccupied = gp_EdgeInUseArraySize(theGraph);
-    for (e = gp_GetFirstEdge(theGraph); e < EsizeOccupied;)
+    for (e = gp_EdgeArrayStart(theGraph); e < EsizeOccupied;)
     {
         if (gp_IsAnyTypeVertex(theGraph, context->E[e].pathConnector))
         {

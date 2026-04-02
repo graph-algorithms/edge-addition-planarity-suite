@@ -898,7 +898,7 @@ int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer)
         return NOTOK;
 
     EsizeOccupied = gp_EdgeInUseArraySize(theGraph);
-    for (e = gp_GetFirstEdge(theGraph); e < EsizeOccupied; e++)
+    for (e = gp_EdgeArrayStart(theGraph); e < EsizeOccupied; e++)
     {
         if (gp_EdgeInUse(theGraph, e))
         {

@@ -237,7 +237,7 @@ int _K33Search_InitStructures(K33SearchContext *context)
     //     _K33Search_InitVertexInfo(context, v);
 
     // Esize = gp_EdgeArraySize(theGraph);
-    // for (e = gp_GetFirstEdge(theGraph); e < Esize; e++)
+    // for (e = gp_EdgeArrayStart(theGraph); e < Esize; e++)
     //     _K33Search_InitEdgeRec(context, e);
 
     return OK;
