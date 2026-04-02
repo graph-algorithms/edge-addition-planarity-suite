@@ -104,13 +104,13 @@ int gp_Embed(graphP theGraph, int embedFlags)
 
         // Walkup calls establish Pertinence in Step v
         // Do the Walkup for each cycle edge from v to a DFS descendant W.
-        e = gp_GetVertexFwdArcList(theGraph, v);
+        e = gp_GetVertexFwdEdgeList(theGraph, v);
         while (gp_IsEdge(theGraph, e))
         {
             theGraph->functions.fpWalkUp(theGraph, v, e);
 
             e = gp_GetNextEdge(theGraph, e);
-            if (e == gp_GetVertexFwdArcList(theGraph, v))
+            if (e == gp_GetVertexFwdEdgeList(theGraph, v))
                 e = NIL;
         }
         gp_SetVertexPertinentRootsList(theGraph, v, NIL);
@@ -274,7 +274,7 @@ int _EmbeddingInitialize(graphP theGraph)
                         else
                             gp_SetLastEdge(theGraph, uneighbor, ePrev);
 
-                        if (gp_IsEdge(theGraph, f = gp_GetVertexFwdArcList(theGraph, uneighbor)))
+                        if (gp_IsEdge(theGraph, f = gp_GetVertexFwdEdgeList(theGraph, uneighbor)))
                         {
                             ePrev = gp_GetPrevEdge(theGraph, f);
                             gp_SetPrevEdge(theGraph, eTwin, ePrev);
@@ -284,7 +284,7 @@ int _EmbeddingInitialize(graphP theGraph)
                         }
                         else
                         {
-                            gp_SetVertexFwdArcList(theGraph, uneighbor, eTwin);
+                            gp_SetVertexFwdEdgeList(theGraph, uneighbor, eTwin);
                             gp_SetPrevEdge(theGraph, eTwin, eTwin);
                             gp_SetNextEdge(theGraph, eTwin, eTwin);
                         }
@@ -391,18 +391,18 @@ void _EmbedBackEdgeToDescendant(graphP theGraph, int RootSide, int RootVertex, i
     fwdArc = gp_GetVertexPertinentEdge(theGraph, W);
     backArc = gp_GetTwin(theGraph, fwdArc);
 
-    /* The forward arc is removed from the fwdArcList of the root's parent copy. */
+    /* The forward edge record is removed from the fwdEdgeList of the root's parent copy. */
 
     parentCopy = gp_GetVertexFromBicompRoot(theGraph, RootVertex);
 
     _gp_LogLine(_gp_MakeLogStr5("graphEmbed.c/_EmbedBackEdgeToDescendant() V=%d, R=%d, R_out=%d, W=%d, W_in=%d",
                                 parentCopy, RootVertex, RootSide, W, WPrevLink));
 
-    if (gp_GetVertexFwdArcList(theGraph, parentCopy) == fwdArc)
+    if (gp_GetVertexFwdEdgeList(theGraph, parentCopy) == fwdArc)
     {
-        gp_SetVertexFwdArcList(theGraph, parentCopy, gp_GetNextEdge(theGraph, fwdArc));
-        if (gp_GetVertexFwdArcList(theGraph, parentCopy) == fwdArc)
-            gp_SetVertexFwdArcList(theGraph, parentCopy, NIL);
+        gp_SetVertexFwdEdgeList(theGraph, parentCopy, gp_GetNextEdge(theGraph, fwdArc));
+        if (gp_GetVertexFwdEdgeList(theGraph, parentCopy) == fwdArc)
+            gp_SetVertexFwdEdgeList(theGraph, parentCopy, NIL);
     }
 
     gp_SetNextEdge(theGraph, gp_GetPrevEdge(theGraph, fwdArc), gp_GetNextEdge(theGraph, fwdArc));
@@ -985,7 +985,7 @@ int _WalkDown(graphP theGraph, int v, int RootVertex)
 
     // Detect and handle the case in which Walkdown was blocked from embedding all the back edges from v
     // to descendants in the subtree of the child of v associated with the bicomp RootVertex.
-    if (gp_IsEdge(theGraph, e = gp_GetVertexFwdArcList(theGraph, v)) && RootEdgeChild < gp_GetNeighbor(theGraph, e))
+    if (gp_IsEdge(theGraph, e = gp_GetVertexFwdEdgeList(theGraph, v)) && RootEdgeChild < gp_GetNeighbor(theGraph, e))
     {
         int nextChild = gp_GetVertexNextDFSChild(theGraph, v, RootEdgeChild);
 
@@ -1100,27 +1100,27 @@ int _HandleBlockedBicomp(graphP theGraph, int v, int RootVertex, int R)
 
 void _AdvanceFwdArcList(graphP theGraph, int v, int child, int nextChild)
 {
-    int e = gp_GetVertexFwdArcList(theGraph, v);
+    int e = gp_GetVertexFwdEdgeList(theGraph, v);
 
     while (gp_IsEdge(theGraph, e))
     {
         // 2) e finds an edge whose descendant endpoint is less than the child
         if (gp_GetNeighbor(theGraph, e) < child)
         {
-            gp_SetVertexFwdArcList(theGraph, v, e);
+            gp_SetVertexFwdEdgeList(theGraph, v, e);
             break;
         }
 
         // 3) e finds an edge whose descendant endpoint is greater than the next child
         else if (gp_IsVertex(theGraph, nextChild) && nextChild < gp_GetNeighbor(theGraph, e))
         {
-            gp_SetVertexFwdArcList(theGraph, v, e);
+            gp_SetVertexFwdEdgeList(theGraph, v, e);
             break;
         }
 
         e = gp_GetNextEdge(theGraph, e);
         // 1) e gets all the way around to the forward arc list head
-        if (e == gp_GetVertexFwdArcList(theGraph, v))
+        if (e == gp_GetVertexFwdEdgeList(theGraph, v))
             e = NIL;
     }
 }

@@ -396,7 +396,7 @@ void _CreateBackArcLists(graphP theGraph, K33SearchContext *context)
 
     for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
     {
-        e = gp_GetVertexFwdArcList(theGraph, v);
+        e = gp_GetVertexFwdEdgeList(theGraph, v);
         while (gp_IsEdge(theGraph, e))
         {
             // Get the ancestor endpoint and the associated back arc
@@ -422,7 +422,7 @@ void _CreateBackArcLists(graphP theGraph, K33SearchContext *context)
 
             // Advance to the next forward edge
             e = gp_GetNextEdge(theGraph, e);
-            if (e == gp_GetVertexFwdArcList(theGraph, v))
+            if (e == gp_GetVertexFwdEdgeList(theGraph, v))
                 e = NIL;
         }
     }

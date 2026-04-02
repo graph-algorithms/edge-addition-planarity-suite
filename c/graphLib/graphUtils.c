@@ -538,7 +538,7 @@ void _InitVertexInfo(graphP theGraph, int v)
     gp_SetVertexPertinentRootsList(theGraph, v, NIL);
     gp_SetVertexFuturePertinentChild(theGraph, v, NIL);
     gp_SetVertexSortedDFSChildList(theGraph, v, NIL);
-    gp_SetVertexFwdArcList(theGraph, v, NIL);
+    gp_SetVertexFwdEdgeList(theGraph, v, NIL);
 }
 
 /********************************************************************
@@ -686,14 +686,14 @@ void _ClearEdgeVisitedFlagsInUnembeddedEdges(graphP theGraph)
 
     for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
     {
-        e = gp_GetVertexFwdArcList(theGraph, v);
+        e = gp_GetVertexFwdEdgeList(theGraph, v);
         while (gp_IsEdge(theGraph, e))
         {
             gp_ClearEdgeVisited(theGraph, e);
             gp_ClearEdgeVisited(theGraph, gp_GetTwin(theGraph, e));
 
             e = gp_GetNextEdge(theGraph, e);
-            if (e == gp_GetVertexFwdArcList(theGraph, v))
+            if (e == gp_GetVertexFwdEdgeList(theGraph, v))
                 e = NIL;
         }
     }

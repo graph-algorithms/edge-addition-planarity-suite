@@ -706,7 +706,7 @@ int _FindExternalConnectionDescendantEndpoint(graphP theGraph, int ancestor,
     // Check whether the cutVertex is directly adjacent to the ancestor
     // by an unembedded back edge.
 
-    e = gp_GetVertexFwdArcList(theGraph, ancestor);
+    e = gp_GetVertexFwdEdgeList(theGraph, ancestor);
     while (gp_IsEdge(theGraph, e))
     {
         if (gp_GetNeighbor(theGraph, e) == cutVertex)
@@ -716,7 +716,7 @@ int _FindExternalConnectionDescendantEndpoint(graphP theGraph, int ancestor,
         }
 
         e = gp_GetNextEdge(theGraph, e);
-        if (e == gp_GetVertexFwdArcList(theGraph, ancestor))
+        if (e == gp_GetVertexFwdEdgeList(theGraph, ancestor))
             e = NIL;
     }
 
@@ -846,13 +846,13 @@ int _FindK33WithMergeBlocker(graphP theGraph, K33SearchContext *context, int v, 
     /* Restore the pertinence settings of step v by doing the Walkup for each
        back edge that was not embedded when step v was originally performed. */
 
-    e = gp_GetVertexFwdArcList(theGraph, IC->v);
+    e = gp_GetVertexFwdEdgeList(theGraph, IC->v);
     while (gp_IsEdge(theGraph, e))
     {
         theGraph->functions.fpWalkUp(theGraph, IC->v, e);
 
         e = gp_GetNextEdge(theGraph, e);
-        if (e == gp_GetVertexFwdArcList(theGraph, IC->v))
+        if (e == gp_GetVertexFwdEdgeList(theGraph, IC->v))
             e = NIL;
     }
 

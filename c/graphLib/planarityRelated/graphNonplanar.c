@@ -128,7 +128,7 @@ int _ChooseTypeOfNonplanarityMinor(graphP theGraph, int v, int R)
 
  If R is NIL, the routine first determines which bicomp produced non-planarity
  condition.  If the stack is non-empty, then R is on the top of the stack.
- Otherwise, an unembedded fwdArc from the fwdArcList of vertex v is used in
+ Otherwise, an unembedded edge from the fwdEdgeList of vertex v is used in
  combination with the sortedDFSChildList of v to determine R.
 
  If the parameter R was not NIL, then this method assumes it must operate

@@ -50,7 +50,7 @@ extern "C"
             Bit 1: Marked (2nd visited flag, for while visiting all)
             Bit 2: DFS type has been set, versus not set
             Bit 3: DFS tree edge, versus cycle edge (co-tree edge, etc.)
-            Bit 4: DFS arc to descendant, versus arc to ancestor
+            Bit 4: DFS edge pointing to descendant, versus to ancestor
             Bit 5: Inverted (same as marking an edge with a "sign" of -1)
             Bit 6: Edge record is directed into the containing vertex only
             Bit 7: Edge record is directed from the containing vertex only
@@ -116,7 +116,7 @@ extern "C"
 #define gp_SetPrevEdge(theGraph, e, newPrevArc) (theGraph->E[e].link[1] = newPrevArc)
 #define gp_SetAdjacentEdge(theGraph, e, theLink, newArc) (theGraph->E[e].link[theLink] = newArc)
 
-// Access to vertex 'neighbor' member indicated by arc
+// Get/set 'neighbor' member indicated by edge record e
 #define gp_GetNeighbor(theGraph, e) (theGraph->E[e].neighbor)
 #define gp_SetNeighbor(theGraph, e, v) (theGraph->E[e].neighbor = v)
 
@@ -141,11 +141,11 @@ extern "C"
 #define EDGE_TYPE_MASK 28
 
 // Call gp_GetEdgeType(), then compare to one of these four possibilities
-// EDGE_TYPE_CHILD - edge record is an arc to a DFS child
-// EDGE_TYPE_FORWARD - edge record is an arc to a DFS descendant, not a DFS child
-// EDGE_TYPE_PARENT - edge record is an arc to the DFS parent
-// EDGE_TYPE_BACK - edge record is an arc to a DFS ancestor, not the DFS parent
-// NOTE: A parent/child tree arcs have bit 3 (4) set, forward/back arcs do not
+// EDGE_TYPE_CHILD - edge record points to a neighboring DFS child
+// EDGE_TYPE_FORWARD - edge record points to a DFS descendant, not a DFS child
+// EDGE_TYPE_PARENT - edge record points to the DFS parent
+// EDGE_TYPE_BACK - edge record points to a DFS ancestor, not the DFS parent
+// NOTE: A parent/child tree edge has bit 3 (4) set, forward/back edges do not
 #define EDGE_TYPE_CHILD 28
 #define EDGE_TYPE_FORWARD 20
 #define EDGE_TYPE_PARENT 12
@@ -177,7 +177,7 @@ extern "C"
 #define gp_GetDirection(theGraph, e) (theGraph->E[e].flags & EDGEFLAG_DIRECTION_MASK)
 
 // A direction of 0 clears directedness. Otherwise, edge record e is set
-// to direction and e's twin arc is set to the opposing setting.
+// to direction and e's twin edge record is set to the opposing setting.
 #define gp_SetDirection(theGraph, e, direction)                                       \
     {                                                                                 \
         if (direction == EDGEFLAG_DIRECTION_INONLY)                                   \
@@ -494,10 +494,10 @@ extern "C"
         lowpoint: min(leastAncestor, min(lowpoint of DFS Children))
 
         visitedInfo: enables algorithms to manage vertex visitation with more than
-                     just a flag.  For example, the planarity test flags visitation
-                     as a step number that implicitly resets on each step, whereas
-                     part of the planar drawing method signifies a first visitation
-                     by storing the index of the first edge used to reach a vertex
+                    just a flag.  For example, the planarity test flags visitation
+                    as a step number that implicitly resets on each step, whereas
+                    part of the planar drawing method signifies a first visitation
+                    by storing the index of the first edge used to reach a vertex
         pertinentEdge: Used by the planarity method; during Walkup, each vertex
                     that is directly adjacent via a back edge to the vertex v
                     currently being embedded will have the forward edge's index
@@ -522,12 +522,12 @@ extern "C"
                     future pertinence management when processing the ancestors of
                     the vertex. When a child C is merged into the same bicomp as
                     the vertex, it is removed from the list.
-        fwdArcList: at the start of embedding, the "back" edges from a vertex to
-                    its DFS *descendants* (i.e. the forward arcs of the back edges)
-                    are separated from the main adjacency list and placed in a
+        fwdEdgeList: at the start of embedding, the "back" edges from a vertex to
+                    its DFS *descendants* (i.e. the forward edge records) are
+                    separated from the main adjacency list and placed in a
                     circular list until they are embedded. The list is sorted in
                     ascending DFI order of the descendants (in linear time).
-                    This member indicates a node in that list.
+                    This member indicates (by index) a node in that list.
     */
 
     typedef struct
@@ -540,7 +540,7 @@ extern "C"
             pertinentRoots,
             futurePertinentChild,
             sortedDFSChildList,
-            fwdArcList;
+            fwdEdgeList;
     } vertexInfo;
 
     typedef vertexInfo *vertexInfoP;
@@ -614,8 +614,8 @@ extern "C"
 #define gp_AppendDFSChild(theGraph, v, c) \
     LCAppend(theGraph->sortedDFSChildLists, gp_GetVertexSortedDFSChildList(theGraph, v), c)
 
-#define gp_GetVertexFwdArcList(theGraph, v) (theGraph->VI[v].fwdArcList)
-#define gp_SetVertexFwdArcList(theGraph, v, theFwdArcList) (theGraph->VI[v].fwdArcList = theFwdArcList)
+#define gp_GetVertexFwdEdgeList(theGraph, v) (theGraph->VI[v].fwdEdgeList)
+#define gp_SetVertexFwdEdgeList(theGraph, v, theFwdEdgeList) (theGraph->VI[v].fwdEdgeList = theFwdEdgeList)
 
     /********************************************************************
     // PLANARITY-RELATED ONLY
@@ -778,7 +778,7 @@ extern "C"
     {                                                                                           \
         /* If e is last in the adjacency list of v, then we                                     \
            detach it by adjacency list end management */                                        \
-        if (arc == gp_GetLastEdge(theGraph, v))                                                 \
+        if (e == gp_GetLastEdge(theGraph, v))                                                   \
         {                                                                                       \
             gp_SetNextEdge(theGraph, gp_GetPrevEdge(theGraph, e), NIL);                         \
             gp_SetLastEdge(theGraph, v, gp_GetPrevEdge(theGraph, e));                           \

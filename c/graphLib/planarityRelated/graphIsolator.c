@@ -527,7 +527,7 @@ int _FindUnembeddedEdgeToSubtree(graphP theGraph, int ancestor,
 
     /* Find the least descendant of the cut vertex incident to the ancestor. */
 
-    e = gp_GetVertexFwdArcList(theGraph, ancestor);
+    e = gp_GetVertexFwdEdgeList(theGraph, ancestor);
     while (gp_IsEdge(theGraph, e))
     {
         if (gp_GetNeighbor(theGraph, e) >= SubtreeRoot)
@@ -537,7 +537,7 @@ int _FindUnembeddedEdgeToSubtree(graphP theGraph, int ancestor,
         }
 
         e = gp_GetNextEdge(theGraph, e);
-        if (e == gp_GetVertexFwdArcList(theGraph, ancestor))
+        if (e == gp_GetVertexFwdEdgeList(theGraph, ancestor))
             e = NIL;
     }
 
@@ -756,14 +756,14 @@ void _AddBackEdge(graphP theGraph, int ancestor, int descendant)
 
     /* We get the two edge records of the back edge to embed. */
 
-    fwdArc = gp_GetVertexFwdArcList(theGraph, ancestor);
+    fwdArc = gp_GetVertexFwdEdgeList(theGraph, ancestor);
     while (gp_IsEdge(theGraph, fwdArc))
     {
         if (gp_GetNeighbor(theGraph, fwdArc) == descendant)
             break;
 
         fwdArc = gp_GetNextEdge(theGraph, fwdArc);
-        if (fwdArc == gp_GetVertexFwdArcList(theGraph, ancestor))
+        if (fwdArc == gp_GetVertexFwdEdgeList(theGraph, ancestor))
             fwdArc = NIL;
     }
 
@@ -772,19 +772,19 @@ void _AddBackEdge(graphP theGraph, int ancestor, int descendant)
 
     backArc = gp_GetTwin(theGraph, fwdArc);
 
-    /* The forward arc is removed from the fwdArcList of the ancestor. */
-    if (gp_GetVertexFwdArcList(theGraph, ancestor) == fwdArc)
+    /* The forward edge record is removed from the fwdEdgeList of the ancestor. */
+    if (gp_GetVertexFwdEdgeList(theGraph, ancestor) == fwdArc)
     {
         if (gp_GetNextEdge(theGraph, fwdArc) == fwdArc)
-            gp_SetVertexFwdArcList(theGraph, ancestor, NIL);
+            gp_SetVertexFwdEdgeList(theGraph, ancestor, NIL);
         else
-            gp_SetVertexFwdArcList(theGraph, ancestor, gp_GetNextEdge(theGraph, fwdArc));
+            gp_SetVertexFwdEdgeList(theGraph, ancestor, gp_GetNextEdge(theGraph, fwdArc));
     }
 
     gp_SetNextEdge(theGraph, gp_GetPrevEdge(theGraph, fwdArc), gp_GetNextEdge(theGraph, fwdArc));
     gp_SetPrevEdge(theGraph, gp_GetNextEdge(theGraph, fwdArc), gp_GetPrevEdge(theGraph, fwdArc));
 
-    /* The forward arc is added to the adjacency list of the ancestor. */
+    /* The forward edge record is added to the adjacency list of the ancestor. */
     gp_SetPrevEdge(theGraph, fwdArc, NIL);
     gp_SetNextEdge(theGraph, fwdArc, gp_GetFirstEdge(theGraph, ancestor));
     gp_SetPrevEdge(theGraph, gp_GetFirstEdge(theGraph, ancestor), fwdArc);
@@ -816,7 +816,7 @@ int _DeleteUnmarkedVerticesAndEdges(graphP theGraph)
 
     for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
     {
-        while (gp_IsEdge(theGraph, e = gp_GetVertexFwdArcList(theGraph, v)))
+        while (gp_IsEdge(theGraph, e = gp_GetVertexFwdEdgeList(theGraph, v)))
             _AddBackEdge(theGraph, v, gp_GetNeighbor(theGraph, e));
     }
 
