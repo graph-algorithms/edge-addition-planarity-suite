@@ -497,5 +497,5 @@ int TestAllGraphsMenu(void)
         fileNameFormat = NULL;
     }
 
-    return Result;
+    return OK ? (Result == OK || Result == NONEMBEDDABLE) : NOTOK;
 }
