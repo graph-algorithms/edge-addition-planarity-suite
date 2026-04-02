@@ -85,6 +85,8 @@ int TestAllGraphs(char const *const commandString, char const *const infileName,
         sprintf(messageContents, messageFormat, command, charsAvailForFilename, infileName);
 #pragma GCC diagnostic pop
         ErrorMessage(messageContents);
+
+        Result = NOTOK;
     }
     else
     {
@@ -101,6 +103,7 @@ int TestAllGraphs(char const *const commandString, char const *const infileName,
         sprintf(messageContents, messageFormat, command, charsAvailForFilename, infileName);
 #pragma GCC diagnostic pop
         ErrorMessage(messageContents);
+
         Result = NOTOK;
     }
 

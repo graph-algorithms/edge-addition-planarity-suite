@@ -171,13 +171,13 @@ int g6_GetOrderFromReader(G6ReadIteratorP theG6ReadIterator, int *pOrder)
     return OK;
 }
 
-int g6_GetGraphFromReader(G6ReadIteratorP theG6ReadIterator, graphP *pTheGraph)
+int g6_GetGraphFromReader(G6ReadIteratorP theG6ReadIterator, graphP *pGraph)
 {
-    if (pTheGraph == NULL)
+    if (pGraph == NULL)
     {
         ErrorMessage(
             "Unable to get graph from G6ReadIterator, as output parameter "
-            "pTheGraph is NULL.\n");
+            "pGraph is NULL.\n");
         return NOTOK;
     }
 
@@ -187,12 +187,12 @@ int g6_GetGraphFromReader(G6ReadIteratorP theG6ReadIterator, graphP *pTheGraph)
             "Unable to get graph from reader, as G6ReadIterator is not "
             "initialized.\n");
 
-        (*pTheGraph) = NULL;
+        (*pGraph) = NULL;
 
         return NOTOK;
     }
 
-    (*pTheGraph) = theG6ReadIterator->currGraph;
+    (*pGraph) = theG6ReadIterator->currGraph;
 
     return OK;
 }
@@ -277,6 +277,7 @@ int g6_InitReaderWithFileName(G6ReadIteratorP theG6ReadIterator, char const *con
 
 int _g6_InitReaderWithStrOrFile(G6ReadIteratorP theG6ReadIterator, strOrFileP *pInputContainer)
 {
+    // FIXME: add this check to sf_IsValidStrOrFile() for inputcontainer
     if (
         !sf_IsValidStrOrFile((*pInputContainer)) ||
         ((*pInputContainer)->theStrBuf != NULL && sb_GetSize((*pInputContainer)->theStrBuf) == 0))

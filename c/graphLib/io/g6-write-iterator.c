@@ -175,13 +175,13 @@ int g6_GetOrderFromWriter(G6WriteIteratorP theG6WriteIterator, int *pOrder)
     return OK;
 }
 
-int g6_GetGraphFromWriter(G6WriteIteratorP theG6WriteIterator, graphP *pTheGraph)
+int g6_GetGraphFromWriter(G6WriteIteratorP theG6WriteIterator, graphP *pGraph)
 {
-    if (pTheGraph == NULL)
+    if (pGraph == NULL)
     {
         ErrorMessage(
             "Unable to get graph from G6WriteIterator, as output parameter "
-            "pTheGraph is NULL.\n");
+            "pGraph is NULL.\n");
         return NOTOK;
     }
 
@@ -190,12 +190,12 @@ int g6_GetGraphFromWriter(G6WriteIteratorP theG6WriteIterator, graphP *pTheGraph
         ErrorMessage("Unable to get numGraphsWritten, as G6WriteIterator is "
                      "not initialized.\n");
 
-        (*pTheGraph) = NULL;
+        (*pGraph) = NULL;
 
         return NOTOK;
     }
 
-    (*pTheGraph) = theG6WriteIterator->currGraph;
+    (*pGraph) = theG6WriteIterator->currGraph;
 
     return OK;
 }
