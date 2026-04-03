@@ -54,7 +54,7 @@ int _gp_FindEdge(graphP theGraph, int u, int v);
 int _ClearAllVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x);
 int _SetAllVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x);
 
-int _ComputeArcType(graphP theGraph, int a, int b, int edgeType);
+int _ComputeEdgeRecordType(graphP theGraph, int a, int b, int edgeType);
 int _SetEdgeType(graphP theGraph, int u, int v);
 
 int _HideInternalEdges(graphP theGraph, int vertex);
@@ -86,9 +86,9 @@ int _GetRandomNumber(int NMin, int NMax);
 int _getUnprocessedChild(graphP theGraph, int parent);
 int _hasUnprocessedChild(graphP theGraph, int parent);
 
-void _AttachArc(graphP theGraph, int v, int e, int link, int newArc);
-void _DetachArc(graphP theGraph, int arc);
-void _RestoreArc(graphP theGraph, int arc);
+void _AttachEdgeRecord(graphP theGraph, int v, int e, int link, int newEdge);
+void _DetachEdgeRecord(graphP theGraph, int e);
+void _RestoreEdgeRecord(graphP theGraph, int e);
 
 /* Private functions for which there are FUNCTION POINTERS */
 
@@ -1213,10 +1213,9 @@ int _getUnprocessedChild(graphP theGraph, int parent)
     int child = gp_GetNeighbor(theGraph, e);
 
     // The tree edges were added to the beginning of the adjacency list,
-    // and we move processed tree edge records to the end of the list,
-    // so if the immediate next arc (edge record) is not a tree edge
-    // then we return NIL because the vertex has no remaining
-    // unprocessed children
+    // and we move processed tree edge records to the end of the list, so
+    // if the immediate next edge record is not a tree edge, then we
+    // return NIL because the vertex has no remaining unprocessed children
     if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_NOTDEFINED)
         return NIL;
 
@@ -1270,19 +1269,20 @@ int _hasUnprocessedChild(graphP theGraph, int parent)
 
 /********************************************************************
  gp_CreateRandomGraphEx()
+
  Given a graph structure with a pre-specified number of vertices N,
  this function creates a graph with the specified number of edges.
 
  If numEdges <= 3N-6, then the graph generated is planar.  If
  numEdges is larger, then a maximal planar graph is generated, then
- (numEdges - 3N + 6) additional random edges are added.
+ (numEdges - (3N - 6)) additional random edges are added.
 
  This function assumes the caller has already called srand().
  ********************************************************************/
 
 int gp_CreateRandomGraphEx(graphP theGraph, int numEdges)
 {
-    int N, arc, M, root, v, c, p, last, u, e, EsizeOccupied;
+    int N, M, root, v, c, p, last, u, e, EsizeOccupied;
 
     N = gp_GetN(theGraph);
 
@@ -1299,11 +1299,11 @@ int gp_CreateRandomGraphEx(graphP theGraph, int numEdges)
 
         else
         {
-            arc = _gp_FindEdge(theGraph, u, v);
-            gp_SetEdgeType(theGraph, arc, EDGE_TYPE_RANDOMTREE);
-            gp_SetEdgeType(theGraph, gp_GetTwin(theGraph, arc), EDGE_TYPE_RANDOMTREE);
-            gp_ClearEdgeVisited(theGraph, arc);
-            gp_ClearEdgeVisited(theGraph, gp_GetTwin(theGraph, arc));
+            e = _gp_FindEdge(theGraph, u, v);
+            gp_SetEdgeType(theGraph, e, EDGE_TYPE_RANDOMTREE);
+            gp_SetEdgeType(theGraph, gp_GetTwin(theGraph, e), EDGE_TYPE_RANDOMTREE);
+            gp_ClearEdgeVisited(theGraph, e);
+            gp_ClearEdgeVisited(theGraph, gp_GetTwin(theGraph, e));
         }
     }
 
@@ -1409,12 +1409,12 @@ int gp_CreateRandomGraphEx(graphP theGraph, int numEdges)
 /********************************************************************
  gp_IsNeighbor()
 
- Checks whether any type vertex u has an arc with a neighbor field
- indicating v.
+ Checks whether the adjacency list of an any-type vertex u contains an
+ edge record with a neighbor field indicating v.
 
  Returns TRUE or FALSE.
 
- NOTE: The arc may be undirected, INONLY or OUTONLY. To test if
+ NOTE: The edge may be undirected, INONLY or OUTONLY. To test if
        v is an in-neighbor or out-neighbor of u, use the directed
        method gp_IsNeighborDirected() instead.
  ********************************************************************/
@@ -1447,14 +1447,15 @@ int gp_IsNeighbor(graphP theGraph, int u, int v)
 /********************************************************************
  gp_IsNeighborDirected()
 
- Checks whether any type of vertex u has an arc with a neighbor field
- indicating v and a direction flag matching the direction parameter.
+ Checks whether the adjacency list of an any-type vertex u contains an
+ edge record with a neighbor field indicating v and a direction flag
+ matching the direction parameter.
 
  Returns TRUE or FALSE.
 
- NOTE: The valid direction flag values are 0 to match any arc, or
-       EDGEFLAG_DIRECTION_INONLY to test if v is an in-neighbor of u, or
-       EDGEFLAG_DIRECTION_OUTONLY to test if v is an out-neighbor of u.
+ NOTE: The valid direction flag values are 0 to match any edge record,
+       or EDGEFLAG_DIRECTION_INONLY to test if v is an in-neighbor of u,
+       or EDGEFLAG_DIRECTION_OUTONLY to test if v is an out-neighbor of u.
  ********************************************************************/
 int gp_IsNeighborDirected(graphP theGraph, int u, int v, unsigned direction)
 {
@@ -1487,7 +1488,7 @@ int gp_IsNeighborDirected(graphP theGraph, int u, int v, unsigned direction)
 /********************************************************************
  gp_FindEdge()
 
- Searches the adjacency list of any type of vertex u to obtain an
+ Searches the adjacency list of an any-type of vertex u to obtain an
  edge record with v in the neighbor field.
 
  Returns the edge record's location, or NIL if there is no such edge.
@@ -1540,7 +1541,7 @@ int _gp_FindEdge(graphP theGraph, int u, int v)
 /********************************************************************
  gp_FindDirectedEdge()
 
- Searches the adjacency list of any type of vertex u to obtain an
+ Searches the adjacency list of an any-type of vertex u to obtain an
  edge record that matches the direction flag and that has v in the
  neighbor field.
 
@@ -1589,9 +1590,9 @@ Counts the number of edge records in the adjacency list of a given
 vertex V.
 
 NOTE: For digraphs, this method returns the total degree of the
-    vertex, including outward arcs (undirected and OUTONLY)
-    as well as INONLY arcs.  Other functions are defined to get
-    the in-degree or out-degree of the vertex.
+    vertex, including undirected, OUTONLY and INONLY edge records.
+    Other functions are defined to get the in-degree or out-degree
+    of a vertex.
 
 NOTE: This function determines the degree by counting. An extension
     could cache the degree value of each vertex and update the
@@ -1629,9 +1630,9 @@ int gp_GetVertexDegree(graphP theGraph, int v)
  gp_GetVertexInDegree()
 
  Counts the number of edge records in the adjacency list of a given
- vertex V that represent arcs from another vertex into V.
- This includes undirected edges and INONLY arcs, so it only excludes
- edges records that are marked as OUTONLY arcs.
+ vertex v that represent edge records from another vertex into v.
+ This includes undirected edges and INONLY edge records, so it only
+ excludes edges records that are marked as OUTONLY.
 
  NOTE: This function determines the in-degree by counting. An extension
        could cache the in-degree value of each vertex and update the
@@ -1706,100 +1707,99 @@ int gp_GetVertexOutDegree(graphP theGraph, int v)
 }
 
 /********************************************************************
- _AttachArc()
+ _AttachEdgeRecord()
 
- This routine adds newArc into v's adjacency list at a position
+ This routine adds newEdge into v's adjacency list at a position
  adjacent to the edge record for e, either before or after e,
- depending on link.  If e is not an arc (e.g. if e is NIL),
- then link is assumed to indicate whether the new arc is to be
+ depending on link.  If e is not an edge (e.g. if e is NIL),
+ then link is assumed to indicate whether the newEdge is to be
  placed at the beginning or end of v's adjacency list.
 
  NOTE: The caller can pass NIL for v if e is not NIL, since the
        vertex is implied (gp_GetNeighbor(theGraph, eTwin))
 
- The arc is assumed to already exist in the data structure (i.e.
- the storage of edges), as only a whole edge (two arcs) can be
- inserted into or deleted from the data structure.  Hence there is
- no such thing as gp_InsertArc() or gp_DeleteArc().
+ The newEdge is assumed to already exist in the data structure (i.e.
+ the storage of edges), as only a whole edge (both edge records) can
+ be inserted into or deleted from the data structure.
 
- See also _RestoreArc()
+ See also _RestoreEdgeRecord()
  ********************************************************************/
 
-void _AttachArc(graphP theGraph, int v, int e, int link, int newArc)
+void _AttachEdgeRecord(graphP theGraph, int v, int e, int link, int newEdge)
 {
     if (gp_IsEdge(theGraph, e))
     {
         int e2 = gp_GetAdjacentEdge(theGraph, e, link);
 
-        // e's link is newArc, and newArc's 1^link is e
-        gp_SetAdjacentEdge(theGraph, e, link, newArc);
-        gp_SetAdjacentEdge(theGraph, newArc, 1 ^ link, e);
+        // e's link is newEdge, and newArc's 1^link is e
+        gp_SetAdjacentEdge(theGraph, e, link, newEdge);
+        gp_SetAdjacentEdge(theGraph, newEdge, 1 ^ link, e);
 
-        // newArcs's link is e2
-        gp_SetAdjacentEdge(theGraph, newArc, link, e2);
+        // newEdge's link is e2
+        gp_SetAdjacentEdge(theGraph, newEdge, link, e2);
 
-        // if e2 is an arc, then e2's 1^link is newArc, else v's 1^link is newArc
+        // if e2 is an edge, then e2's 1^link is newEdge,
+        // else v's 1^link is newEdge
         if (gp_IsEdge(theGraph, e2))
-            gp_SetAdjacentEdge(theGraph, e2, 1 ^ link, newArc);
+            gp_SetAdjacentEdge(theGraph, e2, 1 ^ link, newEdge);
         else
-            gp_SetEdgeByLink(theGraph, v, 1 ^ link, newArc);
+            gp_SetEdgeByLink(theGraph, v, 1 ^ link, newEdge);
     }
     else
     {
         int e2 = gp_GetEdgeByLink(theGraph, v, link);
 
-        // v's link is newArc, and newArc's 1^link is NIL
-        gp_SetEdgeByLink(theGraph, v, link, newArc);
-        gp_SetAdjacentEdge(theGraph, newArc, 1 ^ link, NIL);
+        // v's link is newEdge, and newEdge's 1^link is NIL
+        gp_SetEdgeByLink(theGraph, v, link, newEdge);
+        gp_SetAdjacentEdge(theGraph, newEdge, 1 ^ link, NIL);
 
-        // newArcs's elink is e2
-        gp_SetAdjacentEdge(theGraph, newArc, link, e2);
+        // newEdge's elink is e2
+        gp_SetAdjacentEdge(theGraph, newEdge, link, e2);
 
-        // if e2 is an arc, then e2's 1^link is newArc, else v's 1^link is newArc
+        // if e2 is an edge, then e2's 1^link is newEdge,
+        // else v's 1^link is newEdge
         if (gp_IsEdge(theGraph, e2))
-            gp_SetAdjacentEdge(theGraph, e2, 1 ^ link, newArc);
+            gp_SetAdjacentEdge(theGraph, e2, 1 ^ link, newEdge);
         else
-            gp_SetEdgeByLink(theGraph, v, 1 ^ link, newArc);
+            gp_SetEdgeByLink(theGraph, v, 1 ^ link, newEdge);
     }
 }
 
 /****************************************************************************
- _DetachArc()
+ _DetachEdge()
 
- This routine detaches arc from its adjacency list, but it does not delete
- it from the data structure (only a whole edge can be deleted).
+ This routine detaches edge record e from its adjacency list, but it does not
+ delete it from the data structure (only a whole edge can be deleted).
 
  Some algorithms must temporarily detach an edge, perform some calculation,
  and eventually put the edge back. This routine supports that operation.
  The neighboring adjacency list nodes are cross-linked, but the two link
- members of the arc are retained, so the arc can be reattached later by
- invoking _RestoreArc().
+ members of edge record e are retained, so edge record e can be reattached
+ later by invoking _RestoreEdgeRecord().
 
- A sequence of detached arcs can only be restored in the exact opposite order
- of their detachment.  Thus, algorithms do not directly use this method to
- implement the temporary detach/restore method.
-
- Instead, gp_HideEdge() and gp_RestoreEdge() are used, and algorithms push
- and pop hidden edges onto and from a stack. A example of this is shown by
- detaching edges with gp_ContractEdge() or gp_IdentifyVertices(), and then
- reattaching them with gp_RestoreIdentifications(), which unwinds the stack
- by invoking gp_RestoreVertex().
+ A sequence of detached edge records can only be restored in the exact opposite
+ order of their detachment. Thus, algorithms do not directly use this method to
+ implement the temporary detach/restore method. Instead, gp_HideEdge() and
+ gp_RestoreEdge() are used, and algorithms push and pop hidden edges onto and
+ from a stack. A example of this is shown by detaching edges with
+ gp_ContractEdge() or gp_IdentifyVertices(), and then reattaching them with
+ gp_RestoreIdentifications(), which unwinds the stack with gp_RestoreVertex().
  ****************************************************************************/
 
-void _DetachArc(graphP theGraph, int arc)
+void _DetachEdgeRecord(graphP theGraph, int e)
 {
-    int nextArc = gp_GetNextEdge(theGraph, arc),
-        prevArc = gp_GetPrevEdge(theGraph, arc);
+    int nextEdge = gp_GetNextEdge(theGraph, e),
+        prevEdge = gp_GetPrevEdge(theGraph, e);
 
-    if (gp_IsEdge(theGraph, nextArc))
-        gp_SetPrevEdge(theGraph, nextArc, prevArc);
+    if (gp_IsEdge(theGraph, nextEdge))
+        gp_SetPrevEdge(theGraph, nextEdge, prevEdge);
     else
-        gp_SetLastEdge(theGraph, gp_GetNeighbor(theGraph, gp_GetTwin(theGraph, arc)), prevArc);
+        gp_SetLastEdge(theGraph, gp_GetNeighbor(theGraph, gp_GetTwin(theGraph, e)), prevEdge);
 
-    if (gp_IsEdge(theGraph, prevArc))
-        gp_SetNextEdge(theGraph, prevArc, nextArc);
+    if (gp_IsEdge(theGraph, prevEdge))
+        gp_SetNextEdge(theGraph, prevEdge, nextEdge);
     else
-        gp_SetFirstEdge(theGraph, gp_GetNeighbor(theGraph, gp_GetTwin(theGraph, arc)), nextArc);
+        gp_SetFirstEdge(theGraph, gp_GetNeighbor(theGraph, gp_GetTwin(theGraph, e)), nextEdge);
 }
 
 /********************************************************************
@@ -1819,7 +1819,7 @@ void _DetachArc(graphP theGraph, int arc)
         become adjacent to v by its 0 or 1 link, i.e. v[vlink] == upos.
 
  NOTE: Only the neighbor and link pointer data members are modified in
-       the arc records. The arc records are otherwise assumed to be in
+       the edge records. The edge records are otherwise assumed to be in
        initial state, either from graph initialization/reinitialization,
        or from edge record reinitialization during gp_DeleteEdge(), if
        the new edge is filling an edge hole in the edge array.This
@@ -1861,9 +1861,9 @@ int gp_AddEdge(graphP theGraph, int u, int ulink, int v, int vlink)
     upos = gp_GetTwin(theGraph, vpos);
 
     gp_SetNeighbor(theGraph, upos, v);
-    _AttachArc(theGraph, u, NIL, ulink, upos);
+    _AttachEdgeRecord(theGraph, u, NIL, ulink, upos);
     gp_SetNeighbor(theGraph, vpos, u);
-    _AttachArc(theGraph, v, NIL, vlink, vpos);
+    _AttachEdgeRecord(theGraph, v, NIL, vlink, vpos);
 
     theGraph->M++;
     return OK;
@@ -1926,7 +1926,7 @@ int gp_DynamicAddEdge(graphP theGraph, int u, int ulink, int v, int vlink)
  n_u and n_v.  In u's (v's) adjacency list, n_u (n_v) will be added
  so that it is indicated by e_u's (e_v's) e_ulink (e_vlink).
 
- If e_u (or e_v) is not an arc, then e_ulink (e_vlink) indicates
+ If e_u (or e_v) is not an edge, then e_ulink (e_vlink) indicates
  whether to prepend or append to the adjacency list for u (v).
 
  NOTE: See notes on gp_AddEdge().
@@ -1975,10 +1975,10 @@ int gp_InsertEdge(graphP theGraph, int u, int e_u, int e_ulink,
     upos = gp_GetTwin(theGraph, vpos);
 
     gp_SetNeighbor(theGraph, upos, v);
-    _AttachArc(theGraph, u, e_u, e_ulink, upos);
+    _AttachEdgeRecord(theGraph, u, e_u, e_ulink, upos);
 
     gp_SetNeighbor(theGraph, vpos, u);
-    _AttachArc(theGraph, v, e_v, e_vlink, vpos);
+    _AttachEdgeRecord(theGraph, v, e_v, e_vlink, vpos);
 
     theGraph->M++;
 
@@ -2009,8 +2009,8 @@ int gp_DeleteEdge(graphP theGraph, int e)
         return NOTOK;
 
     // Delete the edge records e and eTwin from their adjacency lists.
-    _DetachArc(theGraph, e);
-    _DetachArc(theGraph, gp_GetTwin(theGraph, e));
+    _DetachEdgeRecord(theGraph, e);
+    _DetachEdgeRecord(theGraph, gp_GetTwin(theGraph, e));
 
     // Clear the two edge records
     // (the bit twiddle (e & ~1) chooses the lesser of e and its twin)
@@ -2039,45 +2039,46 @@ int gp_DeleteEdge(graphP theGraph, int e)
 }
 
 /********************************************************************
- _RestoreArc()
- This routine reinserts an arc into the edge list from which it
- was previously removed by _DetachArc().
+ _RestoreEdgeRecord()
 
- The assumed processing model is that arcs will be restored in reverse
- of the order in which they were hidden, i.e. it is assumed that the
- hidden arcs will be pushed on a stack and the arcs will be popped
- from the stack for restoration.
+ This routine reinserts an edge record e into the adjacency list from
+ which it was previously removed by _DetachEdgeRecord().
+
+ The assumed processing model is that edge records will be restored in
+ reverse of the order in which they were hidden, i.e. it is assumed
+ that the hidden edges will be pushed on a stack from which they will
+ be popped during restoration.
  ********************************************************************/
-
-void _RestoreArc(graphP theGraph, int arc)
+void _RestoreEdgeRecord(graphP theGraph, int e)
 {
-    int nextArc = gp_GetNextEdge(theGraph, arc),
-        prevArc = gp_GetPrevEdge(theGraph, arc);
+    int nextEdge = gp_GetNextEdge(theGraph, e),
+        prevEdge = gp_GetPrevEdge(theGraph, e);
 
-    if (gp_IsEdge(theGraph, nextArc))
-        gp_SetPrevEdge(theGraph, nextArc, arc);
+    if (gp_IsEdge(theGraph, nextEdge))
+        gp_SetPrevEdge(theGraph, nextEdge, e);
     else
-        gp_SetLastEdge(theGraph, gp_GetNeighbor(theGraph, gp_GetTwin(theGraph, arc)), arc);
+        gp_SetLastEdge(theGraph, gp_GetNeighbor(theGraph, gp_GetTwin(theGraph, e)), e);
 
-    if (gp_IsEdge(theGraph, prevArc))
-        gp_SetNextEdge(theGraph, prevArc, arc);
+    if (gp_IsEdge(theGraph, prevEdge))
+        gp_SetNextEdge(theGraph, prevEdge, e);
     else
-        gp_SetFirstEdge(theGraph, gp_GetNeighbor(theGraph, gp_GetTwin(theGraph, arc)), arc);
+        gp_SetFirstEdge(theGraph, gp_GetNeighbor(theGraph, gp_GetTwin(theGraph, e)), e);
 }
 
 /********************************************************************
  gp_HideEdge()
- This routine removes the two arcs of an edge from the adjacency lists
- of its endpoint vertices, but does not delete them from the storage
- data structure.
+ This routine removes the two edge records of an edge from the
+ adjacency lists of its endpoint vertices, but it does not delete them
+ from the storage data structure.
 
  Many algorithms must temporarily remove an edge, perform some
  calculation, and eventually put the edge back. This routine supports
  that operation.
 
- For each arc, the neighboring adjacency list nodes are cross-linked,
- but the links in the arc are retained because they indicate the
- neighbor arcs to which the arc can be reattached by gp_RestoreEdge().
+ For each edge record of e, the neighboring adjacency list nodes are
+ cross-linked, but the links in the edge record are retained because
+ they indicate the neighbor edge records to which the edge record can
+ be reattached by gp_RestoreEdge().
  ********************************************************************/
 
 void gp_HideEdge(graphP theGraph, int e)
@@ -2097,8 +2098,8 @@ void gp_HideEdge(graphP theGraph, int e)
 
 void _HideEdge(graphP theGraph, int e)
 {
-    _DetachArc(theGraph, e);
-    _DetachArc(theGraph, gp_GetTwin(theGraph, e));
+    _DetachEdgeRecord(theGraph, e);
+    _DetachEdgeRecord(theGraph, gp_GetTwin(theGraph, e));
 }
 
 /********************************************************************
@@ -2112,10 +2113,10 @@ void _HideEdge(graphP theGraph, int e)
  that the hidden edges will be pushed on a stack and the edges will
  be popped from the stack for restoration.
 
- Note: Since both arcs of an edge are restored, only one arc need
-        be pushed on the stack for restoration.  This routine
-        restores the two arcs in the opposite order from the order
-        in which they are hidden by gp_HideEdge().
+ NOTE: Since both edge records of an edge are restored, only one
+       edge record needs to be  pushed on the stack for restoration.
+       This routine restores the two edge records in the opposite order
+       from the order in which they are hidden by gp_HideEdge().
  ********************************************************************/
 
 void gp_RestoreEdge(graphP theGraph, int e)
@@ -2135,18 +2136,19 @@ void gp_RestoreEdge(graphP theGraph, int e)
 
 void _RestoreEdge(graphP theGraph, int e)
 {
-    _RestoreArc(theGraph, gp_GetTwin(theGraph, e));
-    _RestoreArc(theGraph, e);
+    _RestoreEdgeRecord(theGraph, gp_GetTwin(theGraph, e));
+    _RestoreEdgeRecord(theGraph, e);
 }
 
 /********************************************************************
  _HideInternalEdges()
- Pushes onto the graph's stack and hides all arc nodes of the vertex
- except the first and last arcs in the adjacency list of the vertex.
+ Pushes onto the graph's stack and hides all edge records of the given
+ vertex's adjacency list except the first and last.
+
  This method is typically called on a vertex that is on the external
- face of a biconnected component, because the first and last arcs are
- the ones that attach the vertex to the external face cycle, and any
- other arcs in the adjacency list are inside that cycle.
+ face of a bicomp, where the first and last edge records are the ones
+ that attach the vertex to the external face cycle, and any other
+ edge records in the adjacency list are inside of that cycle.
 
  This method uses the stack. The caller is expected to clear the stack
  or save the stack size before invocation, since the stack size is
@@ -2179,6 +2181,7 @@ int _HideInternalEdges(graphP theGraph, int vertex)
 
 /********************************************************************
  _RestoreInternalEdges()
+
  Reverses the effects of _HideInternalEdges()
  ********************************************************************/
 
@@ -2191,9 +2194,9 @@ int _RestoreInternalEdges(graphP theGraph, int stackBottom)
  _RestoreHiddenEdges()
 
  Each entry on the stack, down to stackBottom, is assumed to be an
- edge record (arc) pushed in concert with invoking gp_HideEdge().
+ edge record pushed in concert with invoking gp_HideEdge().
  Each edge is restored using gp_RestoreEdge() in exact reverse of the
- hiding order.  The stack is reduced in size to stackBottom.
+ hiding order. The stack is reduced in content size to stackBottom.
 
  Returns OK on success, NOTOK on internal failure.
  ********************************************************************/
@@ -2216,10 +2219,10 @@ int _RestoreHiddenEdges(graphP theGraph, int stackBottom)
 /********************************************************************
  gp_HideVertex()
 
- Pushes onto the graph's stack and hides all arc nodes of the vertex.
- Additional integers are then pushed so that the result is reversible
- by gp_RestoreVertex().  See that method for details on the expected
- stack segment.
+ Pushes onto the graph's stack and hides all edge records of the
+ vertex's adjacency list. Additional integers are then pushed so that
+ the result is reversible by gp_RestoreVertex(). See that method for d
+ etails on the expected stack segment.
 
  Returns OK for success, NOTOK for internal failure.
  ********************************************************************/
@@ -2264,7 +2267,7 @@ int _HideVertex(graphP theGraph, int vertex)
  gp_ContractEdge()
 
  Contracts the edge e=(u,v).  This hides the edge (both e and its
- twin arc), and it also identifies vertex v with u.
+ twin edge record), and it also identifies vertex v with u.
  See gp_IdentifyVertices() for further details.
 
  Returns OK for success, NOTOK for internal failure.
@@ -2315,8 +2318,8 @@ int _ContractEdge(graphP theGraph, int e)
  u's neighbors, then traversing the adjacency list of v.  For each
  visited neighbor of v, the edge is hidden because it would duplicate
  an adjacency already expressed in u's list. Finally, the remaining
- edges of v are moved to u's list, and each twin arc is adjusted
- to indicate u as a neighbor rather than v.
+ edges of v are moved to u's list, and each twin edge record is
+ adjusted to indicate u as a neighbor rather than v.
 
  This routine assumes that the visited flags are clear beforehand,
  and visited flag settings made herein are cleared before returning.
@@ -2437,7 +2440,7 @@ int _IdentifyVertices(graphP theGraph, int u, int v, int eBefore)
     sp_Push(theGraph->theStack, v);
 
     // For the remaining edge records of v, reassign the 'v' member
-    //    of each twin arc to indicate u rather than v.
+    //    of each twin edge record to indicate u rather than v.
     e = gp_GetFirstEdge(theGraph, v);
     while (gp_IsEdge(theGraph, e))
     {
@@ -2555,7 +2558,7 @@ int _RestoreVertex(graphP theGraph)
         {
             gp_SetNextEdge(theGraph, e_u_pred, e_u_succ);
             // If the successor edge exists, link it to the predecessor,
-            // otherwise the predecessor is the new last arc
+            // otherwise the predecessor is the new last edge
             if (gp_IsEdge(theGraph, e_u_succ))
                 gp_SetPrevEdge(theGraph, e_u_succ, e_u_pred);
             else
@@ -2563,8 +2566,8 @@ int _RestoreVertex(graphP theGraph)
         }
         else if (gp_IsEdge(theGraph, e_u_succ))
         {
-            // The successor arc exists, but not the predecessor,
-            // so the successor is the new first arc
+            // The successor edge exists, but not the predecessor,
+            // so the successor is the new first edge
             gp_SetPrevEdge(theGraph, e_u_succ, NIL);
             gp_SetFirstEdge(theGraph, u, e_u_succ);
         }
@@ -2584,7 +2587,7 @@ int _RestoreVertex(graphP theGraph)
             gp_SetPrevEdge(theGraph, e_v_last, NIL);
 
         // For each edge record restored to v's adjacency list, reassign the 'v' member
-        //    of each twin arc to indicate v rather than u.
+        //    of each twin edge record to indicate v rather than u.
         e = e_v_first;
         while (gp_IsEdge(theGraph, e))
         {
@@ -2627,7 +2630,8 @@ int gp_RestoreVertices(graphP theGraph)
 }
 
 /****************************************************************************
- _ComputeArcType()
+ _ComputeEdgeRecordType()
+
  This is just a little helper function that automates a sequence of decisions
  that has to be made a number of times.
  An edge record is being added to the adjacency list of a; it indicates that
@@ -2641,7 +2645,7 @@ int gp_RestoreVertices(graphP theGraph)
  Symmetric conditions define the types for a > b.
  ****************************************************************************/
 
-int _ComputeArcType(graphP theGraph, int a, int b, int edgeType)
+int _ComputeEdgeRecordType(graphP theGraph, int a, int b, int edgeType)
 {
     a = gp_IsVirtualVertex(theGraph, a) ? gp_GetVertexFromBicompRoot(theGraph, a) : a;
     b = gp_IsVirtualVertex(theGraph, b) ? gp_GetVertexFromBicompRoot(theGraph, b) : b;
@@ -2654,11 +2658,12 @@ int _ComputeArcType(graphP theGraph, int a, int b, int edgeType)
 
 /****************************************************************************
  _SetEdgeType()
+
  When we are restoring an edge, we must restore its type (tree edge or cycle edge).
- We can deduce what the type was based on other information in the graph. Each
- arc of the edge gets the appropriate type setting (parent/child or back/forward).
- This method runs in constant time plus the degree of vertex u, or constant
- time if u is known to have a degree bound by a constant.
+ We can deduce what the type was based on other information in the graph.
+ Each edge record of the edge gets the appropriate type setting (parent/child or
+ back/forward). This method runs in constant time plus the degree of vertex u, or
+ constant time if u is known to have a degree bound by a constant.
  ****************************************************************************/
 
 int _SetEdgeType(graphP theGraph, int u, int v)
@@ -2823,11 +2828,19 @@ int _GetBicompSize(graphP theGraph, int BicompRoot)
 
 /********************************************************************
  debugNOTOK()
- This function provides a non-void wrapper for exit().
- This is useful for debugging as it allows compilation of an exit
- command in places where NOTOK is returned.
- In exhaustive testing, we want to bail on the first NOTOK that occurs.
- Comment out the exit() call to get a stack trace.
+
+ This function returns the literal value of NOTOK. In debug mode,
+ NOTOK is redefined to first use printf() to emit information about
+ where in the code a NOTOK has occurred. Then, this method is invoked
+ so that the debug version of NOTOK still returns the NOTOK value.
+
+ Rather than just returning 0 in the debug-mode NOTOK macro, we
+ invoke this method because it gives the option (with recompilation)
+ of having the program exit on the first NOTOK occurrence. That
+ option is off by default, so we normally get a stack trace of the
+ NOTOK occcurences, but on an exhaustive, long-run test, it can be
+ handy to stop on the first error since otherwise the error message
+ might not be seen.
  ********************************************************************/
 
 int debugNOTOK(void)

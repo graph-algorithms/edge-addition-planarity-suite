@@ -564,8 +564,8 @@ int _FindUnembeddedEdgeToSubtree(graphP theGraph, int ancestor,
  _MarkPathAlongBicompExtFace()
 
  Sets the visited flags of vertices and edges on the external face of a
- bicomp from startVert to endVert, inclusive, by following the 'first' arc
- link out of each visited vertex.
+ bicomp from startVert to endVert, inclusive, by following the 'first'
+ edge link out of each visited vertex.
  ****************************************************************************/
 
 int _MarkPathAlongBicompExtFace(graphP theGraph, int startVert, int endVert)
@@ -790,7 +790,7 @@ void _AddBackEdge(graphP theGraph, int ancestor, int descendant)
     gp_SetPrevEdge(theGraph, gp_GetFirstEdge(theGraph, ancestor), fwdArc);
     gp_SetFirstEdge(theGraph, ancestor, fwdArc);
 
-    /* The back arc is added to the adjacency list of the descendant. */
+    /* The back edge record is added to the adjacency list of the descendant. */
     gp_SetPrevEdge(theGraph, backArc, NIL);
     gp_SetNextEdge(theGraph, backArc, gp_GetFirstEdge(theGraph, descendant));
     gp_SetPrevEdge(theGraph, gp_GetFirstEdge(theGraph, descendant), backArc);

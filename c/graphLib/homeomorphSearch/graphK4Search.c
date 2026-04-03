@@ -20,7 +20,7 @@ extern int _ClearAllVisitedFlagsInBicomp(graphP theGraph, int BicompRoot);
 // extern void _ClearEdgeVisitedFlagsInUnembeddedEdges(graphP theGraph);
 extern int _ClearObstructionMarksInBicomp(graphP theGraph, int BicompRoot);
 // extern int  _DeleteUnmarkedEdgesInBicomp(graphP theGraph, int BicompRoot);
-extern int _ComputeArcType(graphP theGraph, int a, int b, int edgeType);
+extern int _ComputeEdgeRecordType(graphP theGraph, int a, int b, int edgeType);
 extern int _SetEdgeType(graphP theGraph, int u, int v);
 
 extern int _GetNeighborOnExtFace(graphP theGraph, int curVertex, int *pPrevLink);
@@ -669,7 +669,7 @@ int _K4_FindSeparatingInternalEdge(graphP theGraph, int R, int prevLink, int A, 
 
  Assumes A is a vertex along the external face of the bicomp rooted by R.
  Marks the obstruction type of vertices along the path (R ... A) that begins
- with R's link[1^prevLink] arc.
+ with R's link[1^prevLink] edge record.
  ****************************************************************************/
 
 void _K4_SetMarksOnExternalFacePath(graphP theGraph, int R, int prevLink, int A)
@@ -691,7 +691,7 @@ void _K4_SetMarksOnExternalFacePath(graphP theGraph, int R, int prevLink, int A)
 
  Assumes A is a vertex along the external face of the bicomp rooted by R.
  Unmarks the obstruction type of vertices along the path (R ... A) that begins
- with R's link[1^prevLink] arc.
+ with R's link[1^prevLink] edge record.
  ****************************************************************************/
 
 void _K4_ClearMarksOnExternalFacePath(graphP theGraph, int R, int prevLink, int A)
@@ -1113,7 +1113,7 @@ int _K4_GetCumulativeOrientationOnDFSPath(graphP theGraph, int ancestor, int des
             if (gp_IsNotAnyTypeVertex(theGraph, parent))
                 return NOTOK;
 
-            // Add the inversion flag on the child arc to the cumulative result
+            // Add the inversion flag on the child edge record to the cumulative result
             e = gp_GetTwin(theGraph, e);
             if (gp_GetEdgeType(theGraph, e) != EDGE_TYPE_CHILD || gp_GetNeighbor(theGraph, e) != descendant)
                 return NOTOK;
@@ -1153,10 +1153,12 @@ int _K4_TestPathComponentForAncestor(graphP theGraph, int R, int prevLink, int A
 
  There is a subcomponent of the bicomp rooted by R that is separable by the
  2-cut (R, A). The component contains the external face path from R to A.
- The 1^prevLink arc of R is contained in that path (i.e. the first arc if
- prevLink indicates the last, or the last arc if prevLink indicates the first).
- The prevLink is passed because _GetNeighborOnExtFace() uses the
- opposing link to traverse to the "next" vertex.
+ The 1^prevLink edge record of R is contained in that path (i.e. the first
+ edge record if prevLink indicates the last, or the last edge record if
+ prevLink indicates the first).
+
+ The prevLink is passed because _GetNeighborOnExtFace() uses the opposing
+ link to traverse to the "next" vertex.
 
  All vertices in this desired component are along the external face, so we
  traverse along the external face vertices strictly between R and A and
@@ -1195,8 +1197,8 @@ void _K4_ClearVisitedInPathComponent(graphP theGraph, int R, int prevLink, int A
 
  There is a subcomponent of the bicomp rooted by R that is separable by the
  2-cut (R, A) and contains the external face path from R to A that includes
- the arc gp_GetEdgeByLink(theGraph, R, 1^prevLink), which is the first arc traversed
- by _GetNeighborOnExtFace(..., &prevLink).
+ the gp_GetEdgeByLink(theGraph, R, 1^prevLink) edge record, which is the
+ first edge record traversed by _GetNeighborOnExtFace(..., &prevLink).
 
  The edges in the component have been marked unvisited except for a path we
  intend to preserve. This routine deletes the unvisited edges.
@@ -1266,9 +1268,10 @@ int _K4_DeleteUnmarkedEdgesInPathComponent(graphP theGraph, int R, int prevLink,
 /****************************************************************************
  _K4_ReducePathToEdge()
 
- Returns an arc of the edge created on success, a non-arc (NOTOK) on failure
- On success, the arc is in the adjacency list of R. The result can be tested
- for success or failure using comparison with NIL (non-NIL being success)
+ Returns an edge record of the edge created on success, or NIL on failure
+
+ On success, the edge record returned is in the adjacency list of R. The result
+ can be tested for success or failure using gp_IsEdge() or gp_IsNotEdge()
  ****************************************************************************/
 
 int _K4_ReducePathToEdge(graphP theGraph, K4SearchContext *context, int edgeType, int R, int e_R, int A, int e_A)
@@ -1290,7 +1293,12 @@ int _K4_ReducePathToEdge(graphP theGraph, K4SearchContext *context, int edgeType
         if (gp_IsAnyTypeVertex(theGraph, context->E[e_R].pathConnector))
         {
             if (_K4_RestoreReducedPath(theGraph, context, e_R) != OK)
-                return NOTOK;
+            {
+#ifdef DEBUG
+                NOTOK;
+#endif
+                return NIL;
+            }
 
             e_R = gp_GetEdgeByLink(theGraph, R, Rlink);
         }
@@ -1298,7 +1306,12 @@ int _K4_ReducePathToEdge(graphP theGraph, K4SearchContext *context, int edgeType
         if (gp_IsAnyTypeVertex(theGraph, context->E[e_A].pathConnector))
         {
             if (_K4_RestoreReducedPath(theGraph, context, e_A) != OK)
-                return NOTOK;
+            {
+#ifdef DEBUG
+                NOTOK;
+#endif
+                return NIL;
+            }
             e_A = gp_GetEdgeByLink(theGraph, A, Alink);
         }
 
@@ -1313,8 +1326,9 @@ int _K4_ReducePathToEdge(graphP theGraph, K4SearchContext *context, int edgeType
 
         // Now add a single edge to represent the path
         // We use 1^Rlink, for example, because Rlink was the link from R that indicated e_R,
-        // so 1^Rlink is the link that indicated e_R in the other arc that was adjacent to e_R.
-        // We want gp_InsertEdge to place the new arc where e_R was in R's adjacency list
+        // so 1^Rlink is the link that indicated e_R in the other edge record that was
+        // adjacent to e_R. We want gp_InsertEdge to place the new edge record where e_R was
+        // in R's adjacency list
         gp_InsertEdge(theGraph, R, gp_GetEdgeByLink(theGraph, R, Rlink), 1 ^ Rlink,
                       A, gp_GetEdgeByLink(theGraph, A, Alink), 1 ^ Alink);
 
@@ -1326,8 +1340,8 @@ int _K4_ReducePathToEdge(graphP theGraph, K4SearchContext *context, int edgeType
         context->E[e_A].pathConnector = v_A;
 
         // Also, set the reduction edge's type to preserve the DFS tree structure
-        gp_SetEdgeType(theGraph, e_R, _ComputeArcType(theGraph, R, A, edgeType));
-        gp_SetEdgeType(theGraph, e_A, _ComputeArcType(theGraph, A, R, edgeType));
+        gp_SetEdgeType(theGraph, e_R, _ComputeEdgeRecordType(theGraph, R, A, edgeType));
+        gp_SetEdgeType(theGraph, e_A, _ComputeEdgeRecordType(theGraph, A, R, edgeType));
     }
 
     // Set the external face data structure

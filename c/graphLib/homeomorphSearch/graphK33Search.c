@@ -23,7 +23,7 @@ extern int _FillVertexVisitedInfoInBicomp(graphP theGraph, int BicompRoot, int F
 extern int _HideInternalEdges(graphP theGraph, int vertex);
 extern int _RestoreInternalEdges(graphP theGraph, int stackBottom);
 extern int _ClearInvertedFlagsInBicomp(graphP theGraph, int BicompRoot);
-extern int _ComputeArcType(graphP theGraph, int a, int b, int edgeType);
+extern int _ComputeEdgeRecordType(graphP theGraph, int a, int b, int edgeType);
 extern int _SetEdgeType(graphP theGraph, int u, int v);
 
 extern int _GetNeighborOnExtFace(graphP theGraph, int curVertex, int *pPrevLink);
@@ -1532,11 +1532,11 @@ int _ReduceExternalFacePathToEdge(graphP theGraph, K33SearchContext *context, in
 
     e = gp_GetFirstEdge(theGraph, u);
     context->E[e].pathConnector = v;
-    gp_SetEdgeType(theGraph, e, _ComputeArcType(theGraph, u, x, edgeType));
+    gp_SetEdgeType(theGraph, e, _ComputeEdgeRecordType(theGraph, u, x, edgeType));
 
     e = gp_GetLastEdge(theGraph, x);
     context->E[e].pathConnector = w;
-    gp_SetEdgeType(theGraph, e, _ComputeArcType(theGraph, x, u, edgeType));
+    gp_SetEdgeType(theGraph, e, _ComputeEdgeRecordType(theGraph, x, u, edgeType));
 
     /* Set the external face info */
 
@@ -1598,12 +1598,12 @@ int _ReduceXYPathToEdge(graphP theGraph, K33SearchContext *context, int u, int x
     e = gp_GetFirstEdge(theGraph, u);
     e = gp_GetNextEdge(theGraph, e);
     context->E[e].pathConnector = v;
-    gp_SetEdgeType(theGraph, e, _ComputeArcType(theGraph, u, x, edgeType));
+    gp_SetEdgeType(theGraph, e, _ComputeEdgeRecordType(theGraph, u, x, edgeType));
 
     e = gp_GetFirstEdge(theGraph, x);
     e = gp_GetNextEdge(theGraph, e);
     context->E[e].pathConnector = w;
-    gp_SetEdgeType(theGraph, e, _ComputeArcType(theGraph, x, u, edgeType));
+    gp_SetEdgeType(theGraph, e, _ComputeEdgeRecordType(theGraph, x, u, edgeType));
 
     return OK;
 }

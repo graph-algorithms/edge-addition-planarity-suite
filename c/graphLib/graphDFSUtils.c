@@ -17,15 +17,15 @@ extern void _ClearAnyTypeVertexVisitedFlags(graphP theGraph, int);
 /********************************************************************
  gp_CreateDFSTree
  Assigns Depth First Index (DFI) to each vertex.  Also records parent
- of each vertex in the DFS tree, and marks DFS tree edges that go from
- parent to child.  Forward arc cycle edges are also distinguished from
- edges leading from a DFS tree descendant to an ancestor-- both DFS tree
- edges and back arcs.  The forward arcs are moved to the end of the
- adjacency list to make the set easier to find and process.
+ of each vertex in the DFS tree, and marks DFS tree edges that connect
+ parent and child. Forward edge records are also distinguished from
+ edges leading from a DFS tree descendant back to an ancestor.
+ The forward edge records are moved to the end of the adjacency list
+ to make the set easier to find and process.
 
- NOTE: This is a utility function provided for general use of the graph
- library. The core planarity algorithm uses its own DFS in order to build
- up related data structures at the same time as the DFS tree is created.
+ NOTE: This is a utility function provided for general use. The core
+        planarity algorithm uses its own DFS so it can build related
+        data structures at the same time as the DFS tree is created.
  ********************************************************************/
 
 #include "lowLevelUtils/platformTime.h"
@@ -106,7 +106,7 @@ int gp_CreateDFSTree(graphP theGraph)
             else
             {
                 // If the edge leads to a visited vertex, then it is
-                // the forward arc of a back edge.
+                // the forward component of a back edge.
                 gp_SetEdgeType(theGraph, e, EDGE_TYPE_FORWARD);
                 gp_SetEdgeType(theGraph, gp_GetTwin(theGraph, e), EDGE_TYPE_BACK);
             }

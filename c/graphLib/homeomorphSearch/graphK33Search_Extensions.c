@@ -399,11 +399,11 @@ void _CreateBackArcLists(graphP theGraph, K33SearchContext *context)
         e = gp_GetVertexFwdEdgeList(theGraph, v);
         while (gp_IsEdge(theGraph, e))
         {
-            // Get the ancestor endpoint and the associated back arc
+            // Get the ancestor endpoint and the associated back edge record
             ancestor = gp_GetNeighbor(theGraph, e);
             eTwin = gp_GetTwin(theGraph, e);
 
-            // Put it into the back arc list of the ancestor
+            // Put it into the back edge list of the ancestor
             if (gp_IsNotEdge(theGraph, context->VI[ancestor].backArcList))
             {
                 context->VI[ancestor].backArcList = eTwin;
@@ -484,10 +484,10 @@ void _CreateSeparatedDFSChildLists(graphP theGraph, K33SearchContext *context)
 /********************************************************************
  _K33Search_EmbedBackEdgeToDescendant()
 
- The forward and back arcs of the cycle edge are embedded by the planarity
- version of this function.
- However, for K_{3,3} subgraph homeomorphism, we also maintain the
- list of unembedded back arcs, so we need to remove the back arc from
+ The forward and back edge records of a back edge (cycle edge, co-tree
+ edge, etc.) are embedded by the planarity version of this function.
+ For K_{3,3} subgraph homeomorphism, we also maintain the list of
+ unembedded back edges, so we need to remove the back edge from
  that list since it is now being put back into the adjacency list.
  ********************************************************************/
 
@@ -501,7 +501,8 @@ void _K33Search_EmbedBackEdgeToDescendant(graphP theGraph, int RootSide, int Roo
         // K33 search may have been attached, but not enabled
         if (gp_GetEmbedFlags(theGraph) == EMBEDFLAGS_SEARCHFORK33)
         {
-            // Get the fwdArc from the adjacentTo field, and use it to get the backArc
+            // Get the forward edge record from the adjacentTo field, and
+            // use it to get the back edge record
             int backArc = gp_GetTwin(theGraph, gp_GetVertexPertinentEdge(theGraph, W));
 
             // Remove the backArc from the backArcList
