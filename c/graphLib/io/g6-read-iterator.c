@@ -277,10 +277,7 @@ int g6_InitReaderWithFileName(G6ReadIteratorP theG6ReadIterator, char const *con
 
 int _g6_InitReaderWithStrOrFile(G6ReadIteratorP theG6ReadIterator, strOrFileP *pInputContainer)
 {
-    // FIXME: add this check to sf_IsValidStrOrFile() for inputcontainer
-    if (
-        !sf_IsValidStrOrFile((*pInputContainer)) ||
-        ((*pInputContainer)->theStrBuf != NULL && sb_GetSize((*pInputContainer)->theStrBuf) == 0))
+    if (!sf_IsValidStrOrFile((*pInputContainer)))
     {
         ErrorMessage("Unable to initialize reader with invalid strOrFile "
                      "input container.\n");

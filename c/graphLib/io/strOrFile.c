@@ -196,7 +196,10 @@ bool sf_IsValidStrOrFile(strOrFileP theStrOrFile)
 
     if (theStrOrFile->containerType == INPUT_CONTAINER)
     {
-        if (theStrOrFile->ungetBuf == NULL)
+        if (
+            (theStrOrFile->ungetBuf == NULL) ||
+            (theStrOrFile->theStrBuf != NULL && sb_GetSize(theStrOrFile->theStrBuf) == 0))
+
         {
             return false;
         }
