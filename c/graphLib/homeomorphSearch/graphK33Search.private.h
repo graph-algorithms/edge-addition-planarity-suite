@@ -25,7 +25,7 @@ extern "C"
     // Additional equipment for each vertex (non-virtual only)
     typedef struct
     {
-        int separatedDFSChildList, backArcList, mergeBlocker;
+        int separatedDFSChildList, backEdgeList, mergeBlocker;
     } K33Search_VertexInfo;
 
     typedef K33Search_VertexInfo *K33Search_VertexInfoP;

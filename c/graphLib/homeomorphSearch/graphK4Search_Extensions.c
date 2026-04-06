@@ -362,8 +362,8 @@ int _K4Search_HandleBlockedBicomp(graphP theGraph, int v, int RootVertex, int R)
         // then we search for a K4 homeomorph, and if OK is returned, then that indicates
         // the blockage has been cleared and it is OK to Walkdown the bicomp.
         // But the Walkdown finished, already, so we launch it again.
-        // If the Walkdown returns OK then all forward arcs were embedded.  If NONEMBEDDABLE
-        // is returned, then the bicomp got blocked again, so we have to reiterate the K4 search
+        // If the Walkdown returns OK then all forward edge records of "back" edges were embedded.
+        // If NONEMBEDDABLE is returned, then the bicomp got blocked again, so we have to reiterate the K4 search
         else
         {
             // If Walkdown has recursively called this handler on the bicomp rooted by RootVertex,

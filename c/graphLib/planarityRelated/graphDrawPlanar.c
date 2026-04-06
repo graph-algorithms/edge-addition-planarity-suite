@@ -406,7 +406,7 @@ int _ComputeEdgePositions(DrawPlanarContext *context)
             e = gp_GetFirstEdge(theEmbedding, v);
             while (gp_IsEdge(theEmbedding, e))
             {
-                eIndex = (e >> 1); // div by 2 since each edge is a pair of arcs
+                eIndex = (e >> 1); // div by 2 since each edge is a pair of edge records
 
                 edgeListHead = LCAppend(edgeList, edgeListHead, eIndex);
                 _gp_LogLine(_gp_MakeLogStr2("Append generator edge (%d, %d) to edgeList",

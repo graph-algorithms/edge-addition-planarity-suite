@@ -570,7 +570,7 @@ int _FindUnembeddedEdgeToSubtree(graphP theGraph, int ancestor,
 
 int _MarkPathAlongBicompExtFace(graphP theGraph, int startVert, int endVert)
 {
-    int Z, ZPrevLink, ZPrevArc;
+    int Z, ZPrevLink, ZPrevEdge;
 
     /* Mark the start vertex (and if it is a root copy, mark the parent copy too. */
 
@@ -585,10 +585,10 @@ int _MarkPathAlongBicompExtFace(graphP theGraph, int startVert, int endVert)
     {
         Z = _GetNeighborOnExtFace(theGraph, Z, &ZPrevLink);
 
-        ZPrevArc = gp_GetEdgeByLink(theGraph, Z, ZPrevLink);
+        ZPrevEdge = gp_GetEdgeByLink(theGraph, Z, ZPrevLink);
 
-        gp_SetEdgeVisited(theGraph, ZPrevArc);
-        gp_SetEdgeVisited(theGraph, gp_GetTwin(theGraph, ZPrevArc));
+        gp_SetEdgeVisited(theGraph, ZPrevEdge);
+        gp_SetEdgeVisited(theGraph, gp_GetTwin(theGraph, ZPrevEdge));
         gp_SetVisited(theGraph, Z);
 
     } while (Z != endVert);
@@ -752,51 +752,56 @@ int _AddAndMarkEdge(graphP theGraph, int ancestor, int descendant)
 
 void _AddBackEdge(graphP theGraph, int ancestor, int descendant)
 {
-    int fwdArc, backArc;
+    int fwdEdgeRec, backEdgeRec;
 
     /* We get the two edge records of the back edge to embed. */
 
-    fwdArc = gp_GetVertexFwdEdgeList(theGraph, ancestor);
-    while (gp_IsEdge(theGraph, fwdArc))
+    fwdEdgeRec = gp_GetVertexFwdEdgeList(theGraph, ancestor);
+    while (gp_IsEdge(theGraph, fwdEdgeRec))
     {
-        if (gp_GetNeighbor(theGraph, fwdArc) == descendant)
+        if (gp_GetNeighbor(theGraph, fwdEdgeRec) == descendant)
             break;
 
-        fwdArc = gp_GetNextEdge(theGraph, fwdArc);
-        if (fwdArc == gp_GetVertexFwdEdgeList(theGraph, ancestor))
-            fwdArc = NIL;
+        fwdEdgeRec = gp_GetNextEdge(theGraph, fwdEdgeRec);
+        if (fwdEdgeRec == gp_GetVertexFwdEdgeList(theGraph, ancestor))
+            fwdEdgeRec = NIL;
     }
 
-    if (gp_IsNotEdge(theGraph, fwdArc))
+    if (gp_IsNotEdge(theGraph, fwdEdgeRec))
+    {
+#ifdef DEBUG
+        NOTOK;
+#endif
         return;
+    }
 
-    backArc = gp_GetTwin(theGraph, fwdArc);
+    backEdgeRec = gp_GetTwin(theGraph, fwdEdgeRec);
 
     /* The forward edge record is removed from the fwdEdgeList of the ancestor. */
-    if (gp_GetVertexFwdEdgeList(theGraph, ancestor) == fwdArc)
+    if (gp_GetVertexFwdEdgeList(theGraph, ancestor) == fwdEdgeRec)
     {
-        if (gp_GetNextEdge(theGraph, fwdArc) == fwdArc)
+        if (gp_GetNextEdge(theGraph, fwdEdgeRec) == fwdEdgeRec)
             gp_SetVertexFwdEdgeList(theGraph, ancestor, NIL);
         else
-            gp_SetVertexFwdEdgeList(theGraph, ancestor, gp_GetNextEdge(theGraph, fwdArc));
+            gp_SetVertexFwdEdgeList(theGraph, ancestor, gp_GetNextEdge(theGraph, fwdEdgeRec));
     }
 
-    gp_SetNextEdge(theGraph, gp_GetPrevEdge(theGraph, fwdArc), gp_GetNextEdge(theGraph, fwdArc));
-    gp_SetPrevEdge(theGraph, gp_GetNextEdge(theGraph, fwdArc), gp_GetPrevEdge(theGraph, fwdArc));
+    gp_SetNextEdge(theGraph, gp_GetPrevEdge(theGraph, fwdEdgeRec), gp_GetNextEdge(theGraph, fwdEdgeRec));
+    gp_SetPrevEdge(theGraph, gp_GetNextEdge(theGraph, fwdEdgeRec), gp_GetPrevEdge(theGraph, fwdEdgeRec));
 
     /* The forward edge record is added to the adjacency list of the ancestor. */
-    gp_SetPrevEdge(theGraph, fwdArc, NIL);
-    gp_SetNextEdge(theGraph, fwdArc, gp_GetFirstEdge(theGraph, ancestor));
-    gp_SetPrevEdge(theGraph, gp_GetFirstEdge(theGraph, ancestor), fwdArc);
-    gp_SetFirstEdge(theGraph, ancestor, fwdArc);
+    gp_SetPrevEdge(theGraph, fwdEdgeRec, NIL);
+    gp_SetNextEdge(theGraph, fwdEdgeRec, gp_GetFirstEdge(theGraph, ancestor));
+    gp_SetPrevEdge(theGraph, gp_GetFirstEdge(theGraph, ancestor), fwdEdgeRec);
+    gp_SetFirstEdge(theGraph, ancestor, fwdEdgeRec);
 
     /* The back edge record is added to the adjacency list of the descendant. */
-    gp_SetPrevEdge(theGraph, backArc, NIL);
-    gp_SetNextEdge(theGraph, backArc, gp_GetFirstEdge(theGraph, descendant));
-    gp_SetPrevEdge(theGraph, gp_GetFirstEdge(theGraph, descendant), backArc);
-    gp_SetFirstEdge(theGraph, descendant, backArc);
+    gp_SetPrevEdge(theGraph, backEdgeRec, NIL);
+    gp_SetNextEdge(theGraph, backEdgeRec, gp_GetFirstEdge(theGraph, descendant));
+    gp_SetPrevEdge(theGraph, gp_GetFirstEdge(theGraph, descendant), backEdgeRec);
+    gp_SetFirstEdge(theGraph, descendant, backEdgeRec);
 
-    gp_SetNeighbor(theGraph, backArc, ancestor);
+    gp_SetNeighbor(theGraph, backEdgeRec, ancestor);
 }
 
 /****************************************************************************
@@ -809,7 +814,7 @@ int _DeleteUnmarkedVerticesAndEdges(graphP theGraph)
 {
     int v, e, eNext;
 
-    /* All of the forward and back arcs of all of the edge records
+    /* All of the forward and back edge records of all of the "back" edges
        were removed from the adjacency lists in the planarity algorithm
        preprocessing.  We now put them back into the adjacency lists
        (and we do not mark them), so they can be properly deleted below. */

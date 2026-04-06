@@ -112,9 +112,9 @@ extern "C"
 #define gp_GetPrevEdge(theGraph, e) (theGraph->E[e].link[1])
 #define gp_GetAdjacentEdge(theGraph, e, theLink) (theGraph->E[e].link[theLink])
 
-#define gp_SetNextEdge(theGraph, e, newNextArc) (theGraph->E[e].link[0] = newNextArc)
-#define gp_SetPrevEdge(theGraph, e, newPrevArc) (theGraph->E[e].link[1] = newPrevArc)
-#define gp_SetAdjacentEdge(theGraph, e, theLink, newArc) (theGraph->E[e].link[theLink] = newArc)
+#define gp_SetNextEdge(theGraph, e, newNextEdge) (theGraph->E[e].link[0] = newNextEdge)
+#define gp_SetPrevEdge(theGraph, e, newPrevEdge) (theGraph->E[e].link[1] = newPrevEdge)
+#define gp_SetAdjacentEdge(theGraph, e, theLink, newEdge) (theGraph->E[e].link[theLink] = newEdge)
 
 // Get/set 'neighbor' member indicated by edge record e
 #define gp_GetNeighbor(theGraph, e) (theGraph->E[e].neighbor)

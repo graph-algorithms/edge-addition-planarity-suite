@@ -144,25 +144,26 @@ int _CheckEmbeddingIntegrity(graphP theGraph, graphP origGraph)
 
  This function traverses all faces of a graph structure containing
  the planar embedding that results from gp_Embed().  The algorithm
- begins by placing all of the graph's arcs onto a stack and marking
- all of them as unvisited.  For each arc popped, if it is visited,
- it is immediately discarded and the next arc is popped.  Popping an
- unvisited arc e begins a face traversal.  We move to the true twin
- arc of e, and obtain its successor arc.  This amounts to always
- going clockwise or counterclockwise (depending on how the graph is
- drawn on the plane, or alternately whether one is above or below
- the plane).  This traversal continues until we make it back to the
- original arc e. Each arc along the way is marked as visited.  Further,
- if the successor arc has been visited, then there is an error since
- an arc can only appear in one face (the twin arc appears in a separate
- face, which is traversed in the opposing direction).
- If this algorithm succeeds without double visiting any arcs, and it
- produces the correct face count according to Euler's formula, then
- the embedding has all vertices oriented the same way.
- NOTE:  In disconnected graphs, the face reader counts the external
-        face of each connected component.  So, we adjust the face
-        count by subtracting one for each component, then we add one
-        to count the external face shared by all components.
+ begins by placing all of the graph's edge records onto a stack and
+ marking all of them as unvisited. For each edge record popped, if it
+ is visited, it is discarded and the next edge record is popped.
+ Popping an unvisited edge record e begins a face traversal.  We move
+ to the true twin edge record of e, and obtain its adjacency list
+ successor. This amounts to always going clockwise or counterclockwise
+ (depending on how the graph is drawn on the plane, or alternately
+ whether one is above or below the plane). This traversal continues
+ until we make it back to the original edge record e. Each edge record
+ along the way is marked as visited. Further, if the successor edge
+ record has been visited, then there is an error since an edge record
+ can only appear in one face (the twin edge record in an edge appears
+ in a separate face, which is traversed in the opposing direction).
+ If this algorithm succeeds without doubly visiting any edge records,
+ and it produces the correct face count according to Euler's formula,
+ then the embedding has all vertices oriented the same way.
+ NOTE: In disconnected graphs, the face reader counts the external
+       face of each connected component.  So, we adjust the face
+       count by subtracting one for each component, then we add one
+       to count the external face shared by all components.
  ********************************************************************/
 
 int _CheckEmbeddingFacialIntegrity(graphP theGraph)
@@ -180,7 +181,7 @@ int _CheckEmbeddingFacialIntegrity(graphP theGraph)
 
     sp_ClearStack(theStack);
 
-    /* Push all arcs and set them to unvisited */
+    /* Push all edge records (both parts of each edge) and set them all to unvisited */
 
     EsizeOccupied = gp_EdgeInUseArraySize(theGraph);
     for (e = gp_EdgeArrayStart(theGraph); e < EsizeOccupied; e += 2)
@@ -196,18 +197,19 @@ int _CheckEmbeddingFacialIntegrity(graphP theGraph)
         }
     }
 
-    // There are M edges, so we better have pushed 2M arcs just now
-    // i.e. testing that the continue above skipped only edge holes
+    // There are M edges, so we better have pushed 2M edge records,
+    // i.e., we test that the continue above skipped edge holes and
+    // didn't push edge records beyond the boundary of those in use.
     if (sp_GetCurrentSize(theStack) != 2 * gp_GetM(theGraph))
         return NOTOK;
 
-    /* Read faces until every arc is used */
+    /* Read faces until every edge record is popped */
 
     NumFaces = 0;
     while (sp_NonEmpty(theStack))
     {
-        /* Get an arc; if it has already been used by a face, then
-            don't use it to traverse a new face */
+        /* Get an edge record; if it has already been used by a face,
+            then don't use it to traverse a new face */
         sp_Pop(theStack, eStart);
         if (gp_GetEdgeVisited(theGraph, eStart))
             continue;
@@ -321,41 +323,41 @@ void _MarkExternalFaceVertices(graphP theGraph, int startVertex)
     {
         gp_SetVisited(theGraph, nextVertex);
 
-        // The arc out of the vertex just visited points to the next vertex
+        // The edge record out of the vertex just visited points to the next vertex
         nextVertex = gp_GetNeighbor(theGraph, e);
 
-        // Arc used to enter the next vertex is needed so we can get the
-        // next edge in rotation order.
-        // Note: for bicomps, first and last arcs of all external face vertices
+        // The edge record used to enter the next vertex is needed so we can get
+        // the next edge in rotation order.
+        // Note: for bicomps, first and last edges of all external face vertices
         //       indicate the edges that hold them to the external face
         //       But _JoinBicomps() has already occurred, so cut vertices
-        //       will have external face edges other than the first and last arcs
-        //       Hence we need this more sophisticated traversal method
+        //       will have external face edges other than their first and last
+        //       edge records, so we need this more sophisticated traversal method.
         eTwin = gp_GetTwin(theGraph, e);
 
-        // Now we get the next arc in rotation order as the new arc out to the
+        // Now we get the next edge in rotation order as the new edge out to the
         // vertex after nextVertex.  This sets us up for the next iteration.
-        // Note: We cannot simply follow the chain of nextVertex first arcs
+        // NOTE: We cannot simply follow the chain of nextVertex first edges
         //       as we started out doing at the top of this method.  This is
         //       because we are no longer dealing with bicomps only.
         //       Since _JoinBicomps() has already been invoked, there may now
         //       be cut vertices on the external face whose adjacency lists
-        //       contain external face arcs in positions other than the first and
-        //       and last arcs.  We will visit those vertices multiple times,
+        //       contain external face edges in positions other than their first
+        //       and last edges.  We will visit those vertices multiple times,
         //       which is OK (just that we have to explain why we're calculating
-        //       jout in this way).
+        //       the out edge to exit a vertex in this way).
         e = gp_GetNextEdgeCircular(theGraph, eTwin);
 
         // Now things get really interesting.  The DFS root (startVertex) may
         // itself be a cut vertex to which multiple bicomps have been joined.
         // So we cannot simply stop when the external face walk gets back to
         // startVertex.  We must actually get back to startVertex using its
-        // last arc.  This ensures that we've looped down into all the DFS
+        // last edge. This ensures that we've looped down into all the DFS
         // subtrees rooted at startVertex and walked their external faces.
 
-        // Since we started the whole external face walk with the first arc
+        // Since we started the whole external face walk with the first edge
         // of startVertex, we need to proceed until we reenter startVertex
-        // using its last arc.
+        // using its last edge.
 
     } while (eTwin != gp_GetLastEdge(theGraph, startVertex));
 }

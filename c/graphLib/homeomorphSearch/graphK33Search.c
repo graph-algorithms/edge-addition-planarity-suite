@@ -599,7 +599,7 @@ int _Fast_GetLeastAncestorConnection(graphP theGraph, K33SearchContext *context,
 int _GetAdjacentAncestorInRange(graphP theGraph, K33SearchContext *context, int theVertex,
                                 int closerAncestor, int fartherAncestor)
 {
-    int e = context->VI[theVertex].backArcList;
+    int e = context->VI[theVertex].backEdgeList;
 
     while (gp_IsEdge(theGraph, e))
     {
@@ -608,7 +608,7 @@ int _GetAdjacentAncestorInRange(graphP theGraph, K33SearchContext *context, int 
             return gp_GetNeighbor(theGraph, e);
 
         e = gp_GetNextEdge(theGraph, e);
-        if (e == context->VI[theVertex].backArcList)
+        if (e == context->VI[theVertex].backEdgeList)
             e = NIL;
     }
     return NIL;
@@ -1691,7 +1691,7 @@ int _RestoreReducedPath(graphP theGraph, K33SearchContext *context, int e)
  Note that the new path may contain more reduction edges, and these will be
  iteratively expanded by the outer for loop.
 
- If the edge records of an edge being expanded are the first or last arcs
+ If the edge records of an edge being expanded are the first or last edges
  of the edge's vertex endpoints, then the edge may be along the external face.
  If so, then the vertices along the path being restored must be given a
  consistent orientation with the endpoints.  It is expected that the embedding

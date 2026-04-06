@@ -93,7 +93,7 @@ int gp_CreateDFSTree(graphP theGraph)
                 }
 
                 /* Push edges to all unvisited neighbors. These will be either
-                      tree edges to children or forward arcs of back edges */
+                      tree edges to children or forward edge records of back edges */
 
                 e = gp_GetFirstEdge(theGraph, u);
                 while (gp_IsEdge(theGraph, e))

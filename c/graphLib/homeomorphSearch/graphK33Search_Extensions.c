@@ -30,7 +30,7 @@ void _K33Search_InitVertexInfo(K33SearchContext *context, int v);
 /* Forward declarations of overloading functions */
 
 int _K33Search_EmbeddingInitialize(graphP theGraph);
-void _CreateBackArcLists(graphP theGraph, K33SearchContext *context);
+void _CreateBackEdgeLists(graphP theGraph, K33SearchContext *context);
 void _CreateSeparatedDFSChildLists(graphP theGraph, K33SearchContext *context);
 void _K33Search_EmbedBackEdgeToDescendant(graphP theGraph, int RootSide, int RootVertex, int W, int WPrevLink);
 int _K33Search_MergeBicomps(graphP theGraph, int v, int RootVertex, int W, int WPrevLink);
@@ -361,7 +361,7 @@ void _K33Search_FreeContext(void *pContext)
 
  This method overloads the embedding initialization phase of the
  core planarity algorithm to provide post-processing that creates
- the back arcs list and separated DFS child list (sorted by
+ the back edges list and separated DFS child list (sorted by
  lowpoint) for each vertex.
  ********************************************************************/
 
@@ -377,7 +377,7 @@ int _K33Search_EmbeddingInitialize(graphP theGraph)
 
         if (gp_GetEmbedFlags(theGraph) == EMBEDFLAGS_SEARCHFORK33)
         {
-            _CreateBackArcLists(theGraph, context);
+            _CreateBackEdgeLists(theGraph, context);
             _CreateSeparatedDFSChildLists(theGraph, context);
         }
 
@@ -388,9 +388,9 @@ int _K33Search_EmbeddingInitialize(graphP theGraph)
 }
 
 /********************************************************************
- _CreateBackArcLists()
+ _CreateBackEdgeLists()
  ********************************************************************/
-void _CreateBackArcLists(graphP theGraph, K33SearchContext *context)
+void _CreateBackEdgeLists(graphP theGraph, K33SearchContext *context)
 {
     int v, e, eTwin, ancestor;
 
@@ -404,15 +404,15 @@ void _CreateBackArcLists(graphP theGraph, K33SearchContext *context)
             eTwin = gp_GetTwin(theGraph, e);
 
             // Put it into the back edge list of the ancestor
-            if (gp_IsNotEdge(theGraph, context->VI[ancestor].backArcList))
+            if (gp_IsNotEdge(theGraph, context->VI[ancestor].backEdgeList))
             {
-                context->VI[ancestor].backArcList = eTwin;
+                context->VI[ancestor].backEdgeList = eTwin;
                 gp_SetPrevEdge(theGraph, eTwin, eTwin);
                 gp_SetNextEdge(theGraph, eTwin, eTwin);
             }
             else
             {
-                int eHead = context->VI[ancestor].backArcList;
+                int eHead = context->VI[ancestor].backEdgeList;
                 int eTail = gp_GetPrevEdge(theGraph, eHead);
                 gp_SetPrevEdge(theGraph, eTwin, eTail);
                 gp_SetNextEdge(theGraph, eTwin, eHead);
@@ -420,7 +420,7 @@ void _CreateBackArcLists(graphP theGraph, K33SearchContext *context)
                 gp_SetNextEdge(theGraph, eTail, eTwin);
             }
 
-            // Advance to the next forward edge
+            // Advance to the next forward edge record of v (or NIL if done)
             e = gp_GetNextEdge(theGraph, e);
             if (e == gp_GetVertexFwdEdgeList(theGraph, v))
                 e = NIL;
@@ -503,19 +503,19 @@ void _K33Search_EmbedBackEdgeToDescendant(graphP theGraph, int RootSide, int Roo
         {
             // Get the forward edge record from the adjacentTo field, and
             // use it to get the back edge record
-            int backArc = gp_GetTwin(theGraph, gp_GetVertexPertinentEdge(theGraph, W));
+            int backEdgeRec = gp_GetTwin(theGraph, gp_GetVertexPertinentEdge(theGraph, W));
 
-            // Remove the backArc from the backArcList
-            if (context->VI[W].backArcList == backArc)
+            // Remove the backEdgeRecfrom the backEdgeList
+            if (context->VI[W].backEdgeList == backEdgeRec)
             {
-                if (gp_GetNextEdge(theGraph, backArc) == backArc)
-                    context->VI[W].backArcList = NIL;
+                if (gp_GetNextEdge(theGraph, backEdgeRec) == backEdgeRec)
+                    context->VI[W].backEdgeList = NIL;
                 else
-                    context->VI[W].backArcList = gp_GetNextEdge(theGraph, backArc);
+                    context->VI[W].backEdgeList = gp_GetNextEdge(theGraph, backEdgeRec);
             }
 
-            gp_SetNextEdge(theGraph, gp_GetPrevEdge(theGraph, backArc), gp_GetNextEdge(theGraph, backArc));
-            gp_SetPrevEdge(theGraph, gp_GetNextEdge(theGraph, backArc), gp_GetPrevEdge(theGraph, backArc));
+            gp_SetNextEdge(theGraph, gp_GetPrevEdge(theGraph, backEdgeRec), gp_GetNextEdge(theGraph, backEdgeRec));
+            gp_SetPrevEdge(theGraph, gp_GetNextEdge(theGraph, backEdgeRec), gp_GetPrevEdge(theGraph, backEdgeRec));
         }
 
         // Invoke the superclass version of the function
@@ -624,7 +624,7 @@ void _K33Search_InitEdgeRec(K33SearchContext *context, int e)
 void _K33Search_InitVertexInfo(K33SearchContext *context, int v)
 {
     context->VI[v].separatedDFSChildList = NIL;
-    context->VI[v].backArcList = NIL;
+    context->VI[v].backEdgeList = NIL;
     context->VI[v].mergeBlocker = NIL;
 }
 

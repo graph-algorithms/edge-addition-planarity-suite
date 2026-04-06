@@ -29,8 +29,8 @@ extern int _WritePostprocess(graphP theGraph, char **pExtraData);
 /* Internal util functions for FUNCTION POINTERS */
 
 int _HideVertex(graphP theGraph, int vertex);
-void _HideEdge(graphP theGraph, int arcPos);
-void _RestoreEdge(graphP theGraph, int arcPos);
+void _HideEdge(graphP theGraph, int e);
+void _RestoreEdge(graphP theGraph, int e);
 int _ContractEdge(graphP theGraph, int e);
 int _IdentifyVertices(graphP theGraph, int u, int v, int eBefore);
 int _RestoreVertex(graphP theGraph);
@@ -98,7 +98,7 @@ void _InitEdgeRec(graphP theGraph, int e);
 
 int _InitGraph(graphP theGraph, int N);
 void _ReinitializeGraph(graphP theGraph);
-int _EnsureEdgeCapacity(graphP theGraph, int requiredArcCapacity);
+int _EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity);
 
 /********************************************************************
  gp_GetProjectVersionFull()
@@ -386,8 +386,9 @@ void _ReinitializeGraph(graphP theGraph)
 
 /********************************************************************
  gp_EnsureEdgeCapacity()
+
  This method ensures that theGraph is or will be capable of storing
- at least requiredArcCapacity edge records.  Two edge records are
+ at least requiredEdgeCapacity edge records.  Two edge records are
  needed per edge.
 
  This method is most performant when invoked immediately after
@@ -611,8 +612,8 @@ void _ClearEdgeVisitedFlags(graphP theGraph)
 /********************************************************************
  _ClearAllVisitedFlagsInBicomp()
 
- Clears the visited flag of the vertices and arcs in the bicomp rooted
- by BicompRoot.
+ Clears the visited flag of the vertices and edge records in the
+ bicomp rooted by BicompRoot.
 
  This method uses the stack but preserves whatever may have been
  on it.  In debug mode, it will return NOTOK if the stack overflows.
@@ -1497,7 +1498,7 @@ int gp_IsNeighborDirected(graphP theGraph, int u, int v, unsigned direction)
        This method is intended for when a graph is undirected or
        when an application must treat a directed graph as if it
        is undirected. To obtain a result for INONLY or OUTONLY
-       arcs, use gp_FindDirectedEdge() instead.
+       edges, use gp_FindDirectedEdge() instead.
  ********************************************************************/
 
 int gp_FindEdge(graphP theGraph, int u, int v)
@@ -1670,9 +1671,9 @@ int gp_GetVertexInDegree(graphP theGraph, int v)
  gp_GetVertexOutDegree()
 
  Counts the number of edge records in the adjacency list of a given
- vertex V that represent arcs from V to another vertex.
- This includes undirected edges and OUTONLY arcs, so it only excludes
- edges records that are marked as INONLY arcs.
+ vertex V that represent edges from V to another vertex.
+ This includes undirected edges and OUTONLY edges, so it only excludes
+ edges records that are marked as INONLY edges.
 
  NOTE: This function determines the out-degree by counting. An extension
        could cache the out-degree value of each vertex and update the
@@ -1731,7 +1732,7 @@ void _AttachEdgeRecord(graphP theGraph, int v, int e, int link, int newEdge)
     {
         int e2 = gp_GetAdjacentEdge(theGraph, e, link);
 
-        // e's link is newEdge, and newArc's 1^link is e
+        // e's link is newEdge, and newEdge's 1^link is e
         gp_SetAdjacentEdge(theGraph, e, link, newEdge);
         gp_SetAdjacentEdge(theGraph, newEdge, 1 ^ link, e);
 
@@ -1922,9 +1923,9 @@ int gp_DynamicAddEdge(graphP theGraph, int u, int ulink, int v, int vlink)
  to the adjacency list of u is adjacent to e_u and the edge record
  added to the adjacency list of v is adjacent to e_v.
  The direction of adjacency is given by e_ulink for e_u and e_vlink
- for e_v. Specifically, the new edge will be comprised of two arcs,
- n_u and n_v.  In u's (v's) adjacency list, n_u (n_v) will be added
- so that it is indicated by e_u's (e_v's) e_ulink (e_vlink).
+ for e_v. Specifically, the new edge will be comprised of two edge
+ records, n_u and n_v.  In u's (v's) adjacency list, n_u (n_v) will
+ be added so that it is indicated by e_u's (e_v's) e_ulink (e_vlink).
 
  If e_u (or e_v) is not an edge, then e_ulink (e_vlink) indicates
  whether to prepend or append to the adjacency list for u (v).
@@ -2104,8 +2105,8 @@ void _HideEdge(graphP theGraph, int e)
 
 /********************************************************************
  gp_RestoreEdge()
- This routine reinserts two arcs of an edge into the adjacency
- lists of the edge's endpoints, the arcs having been previously
+ This routine reinserts two edge records of an edge into the adjacency
+ lists of the edge's endpoints, the edge records having been previously
  removed by gp_HideEdge().
 
  The assumed processing model is that edges will be restored in
@@ -2116,7 +2117,7 @@ void _HideEdge(graphP theGraph, int e)
  NOTE: Since both edge records of an edge are restored, only one
        edge record needs to be  pushed on the stack for restoration.
        This routine restores the two edge records in the opposite order
-       from the order in which they are hidden by gp_HideEdge().
+       from the order in which they were hidden by gp_HideEdge().
  ********************************************************************/
 
 void gp_RestoreEdge(graphP theGraph, int e)
