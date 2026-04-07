@@ -676,7 +676,7 @@ extern "C"
 
             theStack: Used by various graph routines needing a stack
             graphFlags: Additional state information about the graph
-            embedFlags: controls type of embedding (e.g. planar)
+            embedFlags: records the type of embedding requested (uses EMBEDFLAGS)
 
             IC: contains additional useful variables for Kuratowski subgraph isolation.
             BicompRootLists: storage space for pertinent bicomp root lists that develop

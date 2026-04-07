@@ -74,8 +74,6 @@ extern "C"
     char const *GetTransformationName(char command);
     char const *GetBaseName(int baseFlag);
 
-    int AttachAlgorithm(graphP theGraph, char command);
-
     char *ConstructInputFilename(char const *infileName);
 
     char *ConstructPrimaryOutputFilename(char const *infileName, char const *outfileName, char command);

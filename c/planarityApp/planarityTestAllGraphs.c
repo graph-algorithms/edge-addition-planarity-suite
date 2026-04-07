@@ -180,34 +180,6 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
         }
     }
 
-    if ((Result = AttachAlgorithm(theGraph, command)) != OK)
-    {
-        if (modifier == '\0')
-        {
-            messageFormat = "Unable to attach graph algorithm extension corresponding to command specifier '%c' to graphP.\n";
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-nonliteral"
-            sprintf(messageContents, messageFormat, command);
-#pragma GCC diagnostic pop
-        }
-        else
-        {
-            messageFormat = "Unable to attach graph algorithm extension corresponding to command specifier '%c' with modifier '%c' to graphP.\n";
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-nonliteral"
-            sprintf(messageContents, messageFormat, command, modifier);
-#pragma GCC diagnostic pop
-        }
-
-        ErrorMessage(messageContents);
-
-        g6_FreeReader(&pG6ReadIterator);
-        gp_Free(&theGraph);
-        stats->errorFlag = TRUE;
-
-        return Result;
-    }
-
     copyOfOrigGraph = gp_New();
     if (copyOfOrigGraph == NULL)
     {

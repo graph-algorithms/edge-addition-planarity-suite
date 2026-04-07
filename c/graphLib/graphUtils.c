@@ -1843,7 +1843,8 @@ int gp_AddEdge(graphP theGraph, int u, int ulink, int v, int vlink)
 {
     int upos, vpos;
 
-    if (theGraph == NULL || u < gp_GetFirstVertex(theGraph) || v < gp_GetFirstVertex(theGraph) ||
+    if (theGraph == NULL ||
+        u < gp_GetFirstVertex(theGraph) || v < gp_GetFirstVertex(theGraph) ||
         !gp_VirtualVertexInRangeAscending(theGraph, u) || !gp_VirtualVertexInRangeAscending(theGraph, v))
         return NOTOK;
 
@@ -1908,12 +1909,12 @@ int gp_DynamicAddEdge(graphP theGraph, int u, int ulink, int v, int vlink)
         Result = gp_EnsureEdgeCapacity(theGraph, newEdgeCapacity);
 
         if (Result != OK)
-            return Result;
+            return NOTOK;
 
         Result = gp_AddEdge(theGraph, u, ulink, v, vlink);
     }
 
-    return Result;
+    return Result != OK ? NOTOK : Result;
 }
 
 /********************************************************************

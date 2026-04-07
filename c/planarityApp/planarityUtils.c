@@ -734,51 +734,6 @@ char const *GetBaseName(int baseFlag)
 }
 
 /****************************************************************************
- * AttachAlgorithm()
- *
- * Determines the main graph algorithm command indicated by the command char
- * and attaches the corresponding graph algorithm extension. The modifier is not
- * required to determine which graph algorithm extension to attach, and is only
- * used to signal that the behaviour of the main extension should be modified.
- *
- * Returns OK if graph algorithm extension corresponding to the command char
- * was successfully attached. Returns NOTOK if theGraph is not properly
- * initialized, if attaching the graph algorithm extension failed, or if an
- * invalid command char was supplied.
- ****************************************************************************/
-
-int AttachAlgorithm(graphP theGraph, char command)
-{
-    if (theGraph == NULL || gp_GetN(theGraph) <= 0)
-    {
-        ErrorMessage("Unable to attach graph algorithm extension to NULL or uninitialized graphP.\n");
-        return NOTOK;
-    }
-
-    switch (command)
-    {
-    case 'p':
-        // Planarity is attached by default
-        return OK;
-    case 'd':
-        return gp_AttachDrawPlanar(theGraph);
-    case 'o':
-        // Outerplanarity is attached by default
-        return OK;
-    case '2':
-        return gp_AttachK23Search(theGraph);
-    case '3':
-        return gp_AttachK33Search(theGraph);
-    case '4':
-        return gp_AttachK4Search(theGraph);
-    default:
-        break;
-    }
-
-    return NOTOK;
-}
-
-/****************************************************************************
  A string used to construct input and output filenames.
 
  The SUFFIXMAXLENGTH is 32 to accommodate ".out.txt" + ".render.txt" + ".test.txt"

@@ -139,37 +139,28 @@ int SpecificGraph(
     }
 
     // Run the algorithm
-    if (AttachAlgorithm(theGraph, command) == OK)
+    platform_GetTime(start);
+
+    //          gp_CreateDFSTree(theGraph);
+    //          gp_SortVertices(theGraph);
+    //          gp_Write(theGraph, "debug.before.txt", WRITE_DEBUGINFO);
+    //          gp_SortVertices(theGraph);
+
+    Result = gp_Embed(theGraph, embedFlags);
+
+    platform_GetTime(end);
+
+    if (Result != OK && Result != NONEMBEDDABLE)
     {
-        platform_GetTime(start);
+        ErrorMessage("Failed to embed graph.\n");
 
-        //          gp_CreateDFSTree(theGraph);
-        //          gp_SortVertices(theGraph);
-        //          gp_Write(theGraph, "debug.before.txt", WRITE_DEBUGINFO);
-        //          gp_SortVertices(theGraph);
+        gp_Free(&theGraph);
+        gp_Free(&origGraph);
 
-        Result = gp_Embed(theGraph, embedFlags);
-
-        platform_GetTime(end);
-
-        if (Result != OK && Result != NONEMBEDDABLE)
-        {
-            ErrorMessage("Failed to embed graph.\n");
-
-            gp_Free(&theGraph);
-            gp_Free(&origGraph);
-
-            return NOTOK;
-        }
-
-        Result = gp_TestEmbedResultIntegrity(theGraph, origGraph, Result);
+        return NOTOK;
     }
-    else
-    {
-        platform_GetTime(start);
-        Result = NOTOK;
-        platform_GetTime(end);
-    }
+
+    Result = gp_TestEmbedResultIntegrity(theGraph, origGraph, Result);
 
     // Write what the algorithm determined and how long it took
     WriteAlgorithmResults(theGraph, Result, command, start, end, infileName);

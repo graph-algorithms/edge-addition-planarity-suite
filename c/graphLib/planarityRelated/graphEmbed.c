@@ -6,7 +6,7 @@ See the LICENSE.TXT file for licensing information.
 
 #include <stdlib.h>
 
-#include "../graph.h"
+#include "../graphLib.h"
 
 /* Imported functions */
 
@@ -21,6 +21,7 @@ extern int _gp_FindEdge(graphP theGraph, int u, int v);
 
 /* Private functions (some are exported to system only) */
 
+int _ProcessEmbedFlags(graphP theGraph, int embedFlags);
 int _EmbeddingInitialize(graphP theGraph);
 
 void _EmbedBackEdgeToDescendant(graphP theGraph, int RootSide, int RootVertex, int W, int WPrevLink);
@@ -57,7 +58,8 @@ int _JoinBicomps(graphP theGraph);
  return OK if the embedding was successfully created or no subgraph
             homeomorphic to a topological obstruction was found.
 
-        NOTOK on internal failure
+        NOTOK on failure (e.g., NULL graph, gp_Embed already called,
+                          failure to attach algorithm extension)
 
         NONEMBEDDABLE if the embedding couldn't be created due to
                 the existence of a subgraph homeomorphic to a
@@ -86,14 +88,18 @@ int gp_Embed(graphP theGraph, int embedFlags)
     int v, e, c;
     int RetVal = OK;
 
-    // Basic parameter checks
-    if (theGraph == NULL)
+    // Basic safety checks
+    if (theGraph == NULL || embedFlags == 0 || gp_GetEmbedFlags(theGraph) != 0)
         return NOTOK;
 
     // Preprocessing
+    if (_ProcessEmbedFlags(theGraph, embedFlags) != OK)
+        return NOTOK;
+
     theGraph->embedFlags = embedFlags;
 
-    // Allow extension algorithms to postprocess the DFS
+    // Initialize embedding data structures and allow extension algorithms
+    // that overload the function to postprocess the DFS
     if (theGraph->functions.fpEmbeddingInitialize(theGraph) != OK)
         return NOTOK;
 
@@ -141,6 +147,47 @@ int gp_Embed(graphP theGraph, int embedFlags)
     // Some extension algorithms may overload this function, e.g. to do nothing if they
     // have no need of an embedding.
     return theGraph->functions.fpEmbedPostprocess(theGraph, v, RetVal);
+}
+
+/********************************************************************
+ _ProcessEmbedFlags()
+ ********************************************************************/
+
+int _ProcessEmbedFlags(graphP theGraph, int embedFlags)
+{
+    // Currently, planar and outerplanar graph embedding and obstruction
+    // isolation do not require an explicit extension.
+    if (embedFlags == EMBEDFLAGS_PLANAR || embedFlags == EMBEDFLAGS_OUTERPLANAR)
+        return OK;
+
+    // For other algorithms that are supported by explicit extensions, we
+    // ensure they are attached (the attach methods exit early if it has
+    // already been done).
+    else if (embedFlags == EMBEDFLAGS_DRAWPLANAR)
+    {
+        if (gp_AttachDrawPlanar(theGraph) == OK)
+            return OK;
+    }
+    else if (embedFlags == EMBEDFLAGS_SEARCHFORK23)
+    {
+        if (gp_AttachK23Search(theGraph) == OK)
+            return OK;
+    }
+    else if (embedFlags == EMBEDFLAGS_SEARCHFORK33)
+    {
+        if (gp_AttachK33Search(theGraph) == OK)
+            return OK;
+    }
+    else if (embedFlags == EMBEDFLAGS_SEARCHFORK4)
+    {
+        if (gp_AttachK4Search(theGraph) == OK)
+            return OK;
+    }
+
+    // It is an error if the embedflags indicate anything other than a supported
+    // algorithm with the proper extension attached to the graph, or even if the
+    // embedFlags indicate multiple supported algorithms at the same time.
+    return NOTOK;
 }
 
 /********************************************************************

@@ -489,13 +489,6 @@ graphP MakeGraph(int Size, char command)
         return NULL;
     }
 
-    if (AttachAlgorithm(theGraph, command) != OK)
-    {
-        sprintf(messageContents, "Unable to attach graph algorithm extension corresponding to command '%c'\n", command);
-        ErrorMessage(messageContents);
-        gp_Free(&theGraph);
-    }
-
     return theGraph;
 }
 
