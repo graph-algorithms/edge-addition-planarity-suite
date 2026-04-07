@@ -18,7 +18,7 @@ typedef struct
 typedef testAllStats *testAllStatsP;
 
 int testAllGraphs(char command, char modifier, char const *const infileName, testAllStatsP stats);
-int outputTestAllGraphsResults(char command, char modifier, testAllStatsP stats, char const *const infileName, char *outfileName, char **outputStr);
+int outputTestAllGraphsResults(char command, char modifier, testAllStatsP stats, char const *const infileName, char *outfileName, char **pOutputStr);
 
 /****************************************************************************
  TestAllGraphs()
@@ -26,10 +26,10 @@ int outputTestAllGraphsResults(char command, char modifier, testAllStatsP stats,
     character) to perform the corresponding algorithm on each graph in .g6 file
  infileName - non-NULL and nonempty string containing name of .g6 input file
  outfileName - name of primary output file, or NULL
- outputStr - pointer to string which we wish to use to store the result of
+ pOutputStr - pointer to string which we wish to use to store the result of
     applying the chosen graph algorithm extension to all graphs in the .g6 file
  ****************************************************************************/
-int TestAllGraphs(char const *const commandString, char const *const infileName, char *outfileName, char **outputStr)
+int TestAllGraphs(char const *const commandString, char const *const infileName, char *outfileName, char **pOutputStr)
 {
     int Result = OK;
 
@@ -85,6 +85,8 @@ int TestAllGraphs(char const *const commandString, char const *const infileName,
         sprintf(messageContents, messageFormat, command, charsAvailForFilename, infileName);
 #pragma GCC diagnostic pop
         ErrorMessage(messageContents);
+
+        Result = NOTOK;
     }
     else
     {
@@ -92,7 +94,7 @@ int TestAllGraphs(char const *const commandString, char const *const infileName,
         Message(messageContents);
     }
 
-    if (outputTestAllGraphsResults(command, modifier, &stats, infileName, outfileName, outputStr) != OK)
+    if (outputTestAllGraphsResults(command, modifier, &stats, infileName, outfileName, pOutputStr) != OK)
     {
         messageFormat = "Error outputting results running command '%c' on all graphs in \"%.*s\".\n";
         charsAvailForFilename = (int)(MAXLINE - strlen(messageFormat));
@@ -101,6 +103,7 @@ int TestAllGraphs(char const *const commandString, char const *const infileName,
         sprintf(messageContents, messageFormat, command, charsAvailForFilename, infileName);
 #pragma GCC diagnostic pop
         ErrorMessage(messageContents);
+
         Result = NOTOK;
     }
 
@@ -114,7 +117,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
     graphP copyOfOrigGraph = NULL;
     int embedFlags = 0, numOK = 0, numNONEMBEDDABLE = 0, errorFlag = FALSE;
 
-    G6ReadIteratorP pG6ReadIterator = NULL;
+    G6ReadIteratorP theG6ReadIterator = NULL;
     char const *messageFormat = NULL;
     int order = 0;
     char messageContents[MAXLINE + 1];
@@ -140,7 +143,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
         return NOTOK;
     }
 
-    if ((Result = g6_NewReader(&pG6ReadIterator, theGraph)) != OK)
+    if ((Result = g6_NewReader((&theG6ReadIterator), theGraph)) != OK)
     {
         ErrorMessage("Unable to allocate G6ReadIterator.\n");
 
@@ -150,12 +153,12 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
         return Result;
     }
 
-    if ((Result = g6_InitReaderWithFileName(pG6ReadIterator, infileName)) != OK)
+    if ((Result = g6_InitReaderWithFileName(theG6ReadIterator, infileName)) != OK)
     {
         ErrorMessage("Unable to test all graphs due to failure to initialize"
                      "G6ReadIterator.\n");
 
-        g6_FreeReader(&pG6ReadIterator);
+        g6_FreeReader((&theG6ReadIterator));
         gp_Free(&theGraph);
         stats->errorFlag = TRUE;
 
@@ -172,7 +175,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
         {
             ErrorMessage("Unable to maximize arc capacity of G6ReadIterator's graph struct.\n");
 
-            g6_FreeReader(&pG6ReadIterator);
+            g6_FreeReader((&theG6ReadIterator));
             gp_Free(&theGraph);
             stats->errorFlag = TRUE;
 
@@ -201,7 +204,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
 
         ErrorMessage(messageContents);
 
-        g6_FreeReader(&pG6ReadIterator);
+        g6_FreeReader((&theG6ReadIterator));
         gp_Free(&theGraph);
         stats->errorFlag = TRUE;
 
@@ -213,7 +216,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
     {
         ErrorMessage("Unable to allocate graph to store copy of original graph before embedding.\n");
 
-        g6_FreeReader(&pG6ReadIterator);
+        g6_FreeReader((&theG6ReadIterator));
         gp_Free(&theGraph);
         stats->errorFlag = TRUE;
 
@@ -224,7 +227,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
     {
         ErrorMessage("Unable to initialize graph datastructure to store copy of original graph before embedding.\n");
 
-        g6_FreeReader(&pG6ReadIterator);
+        g6_FreeReader((&theG6ReadIterator));
         gp_Free(&theGraph);
         gp_Free(&copyOfOrigGraph);
         stats->errorFlag = TRUE;
@@ -234,12 +237,12 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
 
     while (true)
     {
-        if (g6_ReadGraph(pG6ReadIterator) != OK)
+        if (g6_ReadGraph(theG6ReadIterator) != OK)
         {
             messageFormat = "Unable to read graph on line %d from .g6 read iterator.\n";
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-nonliteral"
-            sprintf(messageContents, messageFormat, pG6ReadIterator->numGraphsRead + 1);
+            sprintf(messageContents, messageFormat, theG6ReadIterator->numGraphsRead + 1);
 #pragma GCC diagnostic pop
             ErrorMessage(messageContents);
 
@@ -248,7 +251,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
             break;
         }
 
-        if (g6_EndReached(pG6ReadIterator))
+        if (g6_EndReached(theG6ReadIterator))
             break;
 
         gp_CopyGraph(copyOfOrigGraph, theGraph);
@@ -259,7 +262,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
             messageFormat = "Failed to embed graph on line %d for command '%c'.\n";
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-nonliteral"
-            sprintf(messageContents, messageFormat, pG6ReadIterator->numGraphsRead + 1, command);
+            sprintf(messageContents, messageFormat, theG6ReadIterator->numGraphsRead + 1, command);
 #pragma GCC diagnostic pop
             ErrorMessage(messageContents);
 
@@ -273,7 +276,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
             messageFormat = "Embed integrity check failed for graph on line %d for command '%c'.\n";
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-nonliteral"
-            sprintf(messageContents, messageFormat, pG6ReadIterator->numGraphsRead + 1, command);
+            sprintf(messageContents, messageFormat, theG6ReadIterator->numGraphsRead + 1, command);
 #pragma GCC diagnostic pop
             ErrorMessage(messageContents);
 
@@ -294,7 +297,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
                 messageFormat = "Error applying algorithm '%c' to graph on line %d.\n";
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-nonliteral"
-                sprintf(messageContents, messageFormat, command, pG6ReadIterator->numGraphsRead + 1);
+                sprintf(messageContents, messageFormat, command, theG6ReadIterator->numGraphsRead + 1);
 #pragma GCC diagnostic pop
             }
             else
@@ -302,7 +305,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
                 messageFormat = "Error applying algorithm '%c' with modifier '%c' to graph on line %d.\n";
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-nonliteral"
-                sprintf(messageContents, messageFormat, command, modifier, pG6ReadIterator->numGraphsRead + 1);
+                sprintf(messageContents, messageFormat, command, modifier, theG6ReadIterator->numGraphsRead + 1);
 #pragma GCC diagnostic pop
             }
             ErrorMessage(messageContents);
@@ -313,19 +316,19 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
         }
     }
 
-    stats->numGraphsRead = pG6ReadIterator->numGraphsRead;
+    stats->numGraphsRead = theG6ReadIterator->numGraphsRead;
     stats->numOK = numOK;
     stats->numNONEMBEDDABLE = numNONEMBEDDABLE;
     stats->errorFlag = errorFlag;
 
-    g6_FreeReader(&pG6ReadIterator);
+    g6_FreeReader((&theG6ReadIterator));
     gp_Free(&theGraph);
     gp_Free(&copyOfOrigGraph);
 
     return Result;
 }
 
-int outputTestAllGraphsResults(char command, char modifier, testAllStatsP stats, char const *const infileName, char *outfileName, char **outputStr)
+int outputTestAllGraphsResults(char command, char modifier, testAllStatsP stats, char const *const infileName, char *outfileName, char **pOutputStr)
 {
     int Result = OK;
 
@@ -412,28 +415,35 @@ int outputTestAllGraphsResults(char command, char modifier, testAllStatsP stats,
 
     if (outfileName != NULL)
     {
-        testOutput = sf_New(NULL, outfileName, WRITETEXT);
+        testOutput = sf_NewOutputContainer(NULL, outfileName);
     }
     else
     {
-        if (outputStr == NULL)
+        if (pOutputStr == NULL)
         {
-            ErrorMessage("Both outfileName and pointer to outputStr are NULL.\n");
+            ErrorMessage(
+                "Unable to create output container for TestAllGraphs output, "
+                "as both output filename and pointer to output string are "
+                "NULL.\n");
         }
         else
         {
-            if ((*outputStr) != NULL)
-                ErrorMessage("Expected memory to which outputStr points to be NULL.\n");
+            if ((*pOutputStr) != NULL)
+                ErrorMessage(
+                    "Unable to create output container for TestAllGraphs "
+                    "output, since the memory to which pOutputStr points is "
+                    "not NULL.\n");
             else
             {
-                testOutput = sf_New(NULL, NULL, WRITETEXT);
+                testOutput = sf_NewOutputContainer(pOutputStr, NULL);
             }
         }
     }
 
     if (testOutput == NULL)
     {
-        ErrorMessage("Unable to set up string-or-file container for test output.\n");
+        ErrorMessage(
+            "Unable to set up output container for TestAllGraphs output.\n");
 
         Result = NOTOK;
     }
@@ -442,7 +452,7 @@ int outputTestAllGraphsResults(char command, char modifier, testAllStatsP stats,
     {
         if (sf_fputs(headerStr, testOutput) < 0)
         {
-            ErrorMessage("Unable to output headerStr to testOutput.\n");
+            ErrorMessage("Unable to write headerStr to output container.\n");
 
             Result = NOTOK;
         }
@@ -451,16 +461,11 @@ int outputTestAllGraphsResults(char command, char modifier, testAllStatsP stats,
         {
             if (sf_fputs(resultsStr, testOutput) < 0)
             {
-                ErrorMessage("Unable to output resultsStr to testOutput.\n");
+                ErrorMessage(
+                    "Unable to write resultsStr to output container.\n");
 
                 Result = NOTOK;
             }
-        }
-
-        if (Result == OK)
-        {
-            if (outputStr != NULL)
-                (*outputStr) = sf_takeTheStr(testOutput);
         }
     }
 
@@ -477,6 +482,19 @@ int outputTestAllGraphsResults(char command, char modifier, testAllStatsP stats,
     }
 
     sf_Free(&testOutput);
+
+    // NOTE: Since sf_Free() will always take the string from the internal
+    // theStrBuf and assign to its pointer-pointer pOutputStr for output
+    // containers when writing to string, we must free the string here in the
+    // caller and set the pointer-pointer to NULL in the case of an error.
+    if (Result != OK)
+    {
+        if (pOutputStr != NULL && (*pOutputStr) != NULL)
+        {
+            free((*pOutputStr));
+            pOutputStr = NULL;
+        }
+    }
 
     return Result;
 }

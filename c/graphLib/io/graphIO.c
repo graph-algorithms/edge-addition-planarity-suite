@@ -11,18 +11,18 @@ See the LICENSE.TXT file for licensing information.
 #include "../graph.h"
 
 /* Imported functions */
-extern int _g6_ReadGraphFromStrOrFile(graphP theGraph, strOrFileP g6InputContainer);
-extern int _g6_WriteGraphToStrOrFile(graphP theGraph, strOrFileP outputContainer, char **outputStr);
+extern int _g6_ReadGraphFromStrOrFile(graphP theGraph, strOrFileP *pG6InputContainer);
+extern int _g6_WriteGraphToStrOrFile(graphP theGraph, strOrFileP *pOutputContainer);
 
 /* Private functions (exported to system) */
 
-int _ReadGraph(graphP theGraph, strOrFileP inputContainer);
+int _ReadGraph(graphP theGraph, strOrFileP *pInputContainer);
 int _ReadAdjMatrix(graphP theGraph, strOrFileP inputContainer);
 int _ReadAdjList(graphP theGraph, strOrFileP inputContainer);
 int _ReadLEDAGraph(graphP theGraph, strOrFileP inputContainer);
 int _ReadPostprocess(graphP theGraph, char *extraData);
 
-int _WriteGraph(graphP theGraph, strOrFileP *outputContainer, char **pOutputStr, int Mode);
+int _WriteGraph(graphP theGraph, strOrFileP *outputContainer, int Mode);
 int _WriteAdjList(graphP theGraph, strOrFileP outputContainer);
 int _WriteAdjMatrix(graphP theGraph, strOrFileP outputContainer);
 int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer);
@@ -446,14 +446,13 @@ int gp_Read(graphP theGraph, char const *FileName)
 {
     strOrFileP inputContainer = NULL;
 
-    if (theGraph == NULL || FileName == NULL)
+    if (theGraph == NULL || FileName == NULL || strlen(FileName) == 0)
         return NOTOK;
 
-    inputContainer = sf_New(NULL, FileName, READTEXT);
-    if (inputContainer == NULL)
+    if ((inputContainer = sf_NewInputContainer(NULL, FileName)) == NULL)
         return NOTOK;
 
-    return _ReadGraph(theGraph, inputContainer);
+    return _ReadGraph(theGraph, (&inputContainer));
 }
 
 /********************************************************************
@@ -472,14 +471,13 @@ int gp_ReadFromString(graphP theGraph, char *inputStr)
 {
     strOrFileP inputContainer = NULL;
 
-    if (theGraph == NULL || inputStr == NULL)
+    if (theGraph == NULL || inputStr == NULL || strlen(inputStr) == 0)
         return NOTOK;
 
-    inputContainer = sf_New(inputStr, NULL, READTEXT);
-    if (inputContainer == NULL)
+    if ((inputContainer = sf_NewInputContainer(inputStr, NULL)) == NULL)
         return NOTOK;
 
-    return _ReadGraph(theGraph, inputContainer);
+    return _ReadGraph(theGraph, (&inputContainer));
 }
 
 /********************************************************************
@@ -497,7 +495,7 @@ int gp_ReadFromString(graphP theGraph, char *inputStr)
  ignored without producing an error.
  ********************************************************************/
 
-int _ReadGraph(graphP theGraph, strOrFileP inputContainer)
+int _ReadGraph(graphP theGraph, strOrFileP *pInputContainer)
 {
     int RetVal = OK;
 
@@ -506,45 +504,44 @@ int _ReadGraph(graphP theGraph, strOrFileP inputContainer)
 
     memset(lineBuff, '\0', (MAXLINE + 1));
 
-    if (!sf_IsValidStrOrFile(inputContainer))
+    if (!sf_IsValidStrOrFile((*pInputContainer)))
         return NOTOK;
 
-    if (sf_fgets(lineBuff, MAXLINE, inputContainer) == NULL)
+    if (sf_fgets(lineBuff, MAXLINE, (*pInputContainer)) == NULL)
     {
-        sf_Free(&inputContainer);
+        sf_Free(pInputContainer);
         return NOTOK;
     }
 
-    if (sf_ungets(lineBuff, inputContainer) != OK)
+    if (sf_ungets(lineBuff, (*pInputContainer)) != OK)
     {
-        sf_Free(&inputContainer);
+        sf_Free(pInputContainer);
         return NOTOK;
     }
 
     if (strncmp(lineBuff, "LEDA.GRAPH", strlen("LEDA.GRAPH")) == 0)
     {
-        RetVal = _ReadLEDAGraph(theGraph, inputContainer);
+        RetVal = _ReadLEDAGraph(theGraph, (*pInputContainer));
     }
     else if (strncmp(lineBuff, "N=", strlen("N=")) == 0)
     {
-        RetVal = _ReadAdjList(theGraph, inputContainer);
+        RetVal = _ReadAdjList(theGraph, (*pInputContainer));
         if (RetVal == OK)
             extraDataAllowed = true;
     }
     else if (isdigit(lineBuff[0]))
     {
-        RetVal = _ReadAdjMatrix(theGraph, inputContainer);
+        RetVal = _ReadAdjMatrix(theGraph, (*pInputContainer));
         if (RetVal == OK)
             extraDataAllowed = true;
     }
     else
     {
-        RetVal = _g6_ReadGraphFromStrOrFile(theGraph, inputContainer);
         // N.B. Unlike the other _Read functions, we are relinquishing
         // ownership of inputContainer to the G6ReadIterator, which
-        // calls sf_Free() when ending iteration. This assignment
-        // prevents calling free on alread-freed memory.
-        inputContainer = NULL;
+        // calls sf_Free() when ending iteration. This will mean that
+        // (*pInputContainer) is NULL after we return from this call.
+        RetVal = _g6_ReadGraphFromStrOrFile(theGraph, pInputContainer);
     }
 
     // The possibility of "extra data" is not allowed for .g6 format:
@@ -556,9 +553,9 @@ int _ReadGraph(graphP theGraph, strOrFileP inputContainer)
     if (extraDataAllowed)
     {
         char charAfterGraphRead = EOF;
-        if ((charAfterGraphRead = sf_getc(inputContainer)) != EOF)
+        if ((charAfterGraphRead = sf_getc((*pInputContainer))) != EOF)
         {
-            if (sf_ungetc(charAfterGraphRead, inputContainer) != charAfterGraphRead)
+            if (sf_ungetc(charAfterGraphRead, (*pInputContainer)) != charAfterGraphRead)
                 RetVal = NOTOK;
             else
             {
@@ -567,7 +564,7 @@ int _ReadGraph(graphP theGraph, strOrFileP inputContainer)
                     RetVal = NOTOK;
                 else
                 {
-                    while (sf_fgets(lineBuff, MAXLINE, inputContainer) != NULL)
+                    while (sf_fgets(lineBuff, MAXLINE, (*pInputContainer)) != NULL)
                     {
                         if (sb_ConcatString(extraData, lineBuff) != OK)
                         {
@@ -586,9 +583,7 @@ int _ReadGraph(graphP theGraph, strOrFileP inputContainer)
         }
     }
 
-    if (inputContainer != NULL)
-        sf_Free(&inputContainer);
-    inputContainer = NULL;
+    sf_Free(pInputContainer);
 
     return RetVal;
 }
@@ -933,17 +928,16 @@ int gp_Write(graphP theGraph, char const *FileName, int Mode)
     int RetVal = OK;
     strOrFileP outputContainer = NULL;
 
-    if (theGraph == NULL || FileName == NULL)
+    if (theGraph == NULL || FileName == NULL || strlen(FileName) == 0)
         return NOTOK;
 
     if (strcmp(FileName, "nullwrite") == 0)
         return OK;
 
-    outputContainer = sf_New(NULL, FileName, WRITETEXT);
-    if (outputContainer == NULL)
+    if ((outputContainer = sf_NewOutputContainer(NULL, FileName)) == NULL)
         return NOTOK;
 
-    RetVal = _WriteGraph(theGraph, &outputContainer, NULL, Mode);
+    RetVal = _WriteGraph(theGraph, &outputContainer, Mode);
 
     sf_Free(&outputContainer);
 
@@ -972,32 +966,40 @@ int gp_WriteToString(graphP theGraph, char **pOutputStr, int Mode)
 
     strOrFileP outputContainer = NULL;
 
-    if (theGraph == NULL || pOutputStr == NULL)
+    if (theGraph == NULL || pOutputStr == NULL || (*pOutputStr) != NULL)
         return NOTOK;
 
-    outputContainer = sf_New(NULL, NULL, WRITETEXT);
-    if (outputContainer == NULL)
+    if ((outputContainer = sf_NewOutputContainer(pOutputStr, NULL)) == NULL)
         return NOTOK;
 
-    RetVal = _WriteGraph(theGraph, &outputContainer, pOutputStr, Mode);
-
-    // N.B. Since we pass ownership of the outputContainer to the
-    // G6WriteIterator when we WRITE_G6, we make sure to take the string
-    // *before* we gp_FreeWriter(), since that calls sf_Free() on the
-    // g6Output (i.e. outputContainer) and therefore sb_Free() on theStr. This
-    // means that we need to make sure outputContainer and theStr it contains
-    // are both non-NULL before trying to take the string, as WRITE_ADJLIST,
-    // WRITE_ADJMATRIX, and WRITE_DEBUGINFO do *not* clean up the
-    // outputContainer.
-    if (RetVal == OK && outputContainer != NULL)
-    {
-        (*pOutputStr) = sf_takeTheStr(outputContainer);
-    }
-
-    if ((*pOutputStr) == NULL || strlen(*pOutputStr) == 0)
-        RetVal = NOTOK;
+    RetVal = _WriteGraph(theGraph, &outputContainer, Mode);
 
     sf_Free(&outputContainer);
+
+    // NOTE: (#56) If an error was encountered when we _WriteGraph(), we do not
+    // want to return garbage to the caller. When we free the output container,
+    // if writing to string, this means that we will have taken the string from
+    // the internal theStrBuf and have assigned it to the container's
+    // pointer-pointer pOutputStr for output; if the RetVal is not OK, we
+    // must free the string and set the pointer-pointer to NULL.
+    if (RetVal != OK)
+    {
+        if (pOutputStr != NULL && (*pOutputStr) != NULL)
+        {
+            free((*pOutputStr));
+            pOutputStr = NULL;
+        }
+    }
+
+    // NOTE: If the output string is NULL or empty, need to report NOTOK
+    if ((*pOutputStr) == NULL)
+        RetVal = NOTOK;
+    else if (strlen(*pOutputStr) == 0)
+    {
+        free((*pOutputStr));
+        pOutputStr = NULL;
+        RetVal = NOTOK;
+    }
 
     return RetVal;
 }
@@ -1013,26 +1015,25 @@ int gp_WriteToString(graphP theGraph, char **pOutputStr, int Mode)
  Returns NOTOK on error, OK on success.
  ********************************************************************/
 
-int _WriteGraph(graphP theGraph, strOrFileP *outputContainer, char **pOutputStr, int Mode)
+int _WriteGraph(graphP theGraph, strOrFileP *pOutputContainer, int Mode)
 {
     int RetVal = OK;
 
     switch (Mode)
     {
     case WRITE_G6:
-        RetVal = _g6_WriteGraphToStrOrFile(theGraph, (*outputContainer), pOutputStr);
-        // Since G6WriteIterator owns the outputContainer, it'll
-        // free it, so don't want to try to double-free
-        (*outputContainer) = NULL;
+        // This call takes ownership of the outputContainer, so (*pOutputContainer)
+        // will be NULL upon return from this function.
+        RetVal = _g6_WriteGraphToStrOrFile(theGraph, pOutputContainer);
         break;
     case WRITE_ADJLIST:
-        RetVal = _WriteAdjList(theGraph, (*outputContainer));
+        RetVal = _WriteAdjList(theGraph, (*pOutputContainer));
         break;
     case WRITE_ADJMATRIX:
-        RetVal = _WriteAdjMatrix(theGraph, (*outputContainer));
+        RetVal = _WriteAdjMatrix(theGraph, (*pOutputContainer));
         break;
     case WRITE_DEBUGINFO:
-        RetVal = _WriteDebugInfo(theGraph, (*outputContainer));
+        RetVal = _WriteDebugInfo(theGraph, (*pOutputContainer));
         break;
     default:
         RetVal = NOTOK;
@@ -1047,7 +1048,7 @@ int _WriteGraph(graphP theGraph, strOrFileP *outputContainer, char **pOutputStr,
 
         if (extraData != NULL)
         {
-            if (sf_fputs(extraData, (*outputContainer)) == EOF)
+            if (sf_fputs(extraData, (*pOutputContainer)) == EOF)
                 RetVal = NOTOK;
 
             free(extraData);
