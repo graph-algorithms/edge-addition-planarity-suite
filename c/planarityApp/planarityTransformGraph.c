@@ -18,9 +18,9 @@ int transformString(graphP theGraph, char *inputStr);
  outputBase - pointer to the flag set for whether output is 0- or 1-based
  outputFormat - output format
  outfileName - name of primary output file, or NULL to construct an output filename based on the input
- outputStr - pointer to string which we wish to use to store the transformation output
+ pOutputStr - pointer to string which we wish to use to store the transformation output
  ****************************************************************************/
-int TransformGraph(char const *const commandString, char const *const infileName, char *inputStr, int *outputBase, char const *outfileName, char **outputStr)
+int TransformGraph(char const *const commandString, char const *const infileName, char *inputStr, int *outputBase, char const *outfileName, char **pOutputStr)
 {
     int Result = OK;
 
@@ -70,8 +70,8 @@ int TransformGraph(char const *const commandString, char const *const infileName
             if (outputBase != NULL)
                 (*outputBase) = (gp_GetGraphFlags(theGraph) & FLAGS_ZEROBASEDIO) ? 1 : 0;
 
-            if (outputStr != NULL)
-                Result = gp_WriteToString(theGraph, outputStr, outputFormat);
+            if (pOutputStr != NULL)
+                Result = gp_WriteToString(theGraph, pOutputStr, outputFormat);
             else
                 Result = gp_Write(theGraph, outfileName, outputFormat);
 
