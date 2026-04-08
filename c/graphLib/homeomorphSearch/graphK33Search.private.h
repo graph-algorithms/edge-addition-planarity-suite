@@ -55,6 +55,8 @@ extern "C"
 
     } K33SearchContext;
 
+    extern int K33SEARCH_ID;
+
 #ifdef __cplusplus
 }
 #endif

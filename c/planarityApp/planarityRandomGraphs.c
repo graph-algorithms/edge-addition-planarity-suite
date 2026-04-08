@@ -489,6 +489,13 @@ graphP MakeGraph(int Size, char command)
         return NULL;
     }
 
+    if (ExtendGraph(theGraph, command) != OK)
+    {
+        sprintf(messageContents, "Unable to extend graph based on command '%c'\n", command);
+        ErrorMessage(messageContents);
+        gp_Free(&theGraph);
+    }
+
     return theGraph;
 }
 

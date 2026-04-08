@@ -7,8 +7,6 @@ See the LICENSE.TXT file for licensing information.
 #include "graphK4Search.h"
 #include "graphK4Search.private.h"
 
-extern int K4SEARCH_ID;
-
 #include "../graph.h"
 
 /* Imported functions */

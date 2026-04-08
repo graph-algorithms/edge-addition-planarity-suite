@@ -713,6 +713,16 @@ extern "C"
     typedef struct baseGraphStructure baseGraphStructure;
     typedef baseGraphStructure *graphP;
 
+// The current implementation extends the base graph with planarity and outerplanarity
+// by default, but a future version may separate these into a "subclass" (extension).
+#define gp_ExtendWith_Planarity(theGraph) (OK)
+#define gp_ExtendWith_Outerplanarity(theGraph) (OK)
+
+// While the graph is extended with planarity and outerplanarity by default,
+// the extensions are not removable.
+#define gp_Detach_Planarity(theGraph) (NOTOK)
+#define gp_Detach_Outerplanarity(theGraph) (NOTOK)
+
 /********************************************************************
  More link structure accessors/manipulators
  ********************************************************************/

@@ -734,6 +734,53 @@ char const *GetBaseName(int baseFlag)
 }
 
 /****************************************************************************
+ * ExtendGraph()
+ *
+ * The graphLib provides a run-time inheritance method so that the base
+ * graph structure and methods can be extended with new and modified
+ * capabilities. This method subclasses the graph with an extension selected
+ * based on the command-line received by the planarity wrapper application
+ * for the graphLib.
+ *
+ * The command-line may include an extension modifier, but it is not passed
+ * as a parameter here because it is not needed to determine which extension
+ * the graph is to inherit
+ *
+ * Returns OK if the graph was successfully extended
+ * Returns NOTOK if theGraph is not properly initialized, if the operation to
+ *      extend the graph failed, or if an invalid command char was supplied.
+ ****************************************************************************/
+
+int ExtendGraph(graphP theGraph, char command)
+{
+    if (theGraph == NULL || theGraph->N <= 0)
+    {
+        ErrorMessage("Unable to extend graph with algorithm extension due to NULL or uninitialized graph.\n");
+        return NOTOK;
+    }
+
+    switch (command)
+    {
+    case 'p':
+        return gp_ExtendWith_Planarity(theGraph);
+    case 'd':
+        return gp_ExtendWith_DrawPlanar(theGraph);
+    case 'o':
+        return gp_ExtendWith_Outerplanarity(theGraph);
+    case '2':
+        return gp_ExtendWith_K23Search(theGraph);
+    case '3':
+        return gp_ExtendWith_K33Search(theGraph);
+    case '4':
+        return gp_ExtendWith_K4Search(theGraph);
+    default:
+        break;
+    }
+
+    return NOTOK;
+}
+
+/****************************************************************************
  A string used to construct input and output filenames.
 
  The SUFFIXMAXLENGTH is 32 to accommodate ".out.txt" + ".render.txt" + ".test.txt"

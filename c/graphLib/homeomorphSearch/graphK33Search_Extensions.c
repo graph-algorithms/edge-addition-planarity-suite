@@ -58,13 +58,13 @@ void _K33Search_FreeContext(void *);
 int K33SEARCH_ID = 0;
 
 /****************************************************************************
- gp_AttachK33Search()
+ gp_ExtendWith_K33Search()
 
  This function adjusts the graph data structure to attach the K3,3 search
  feature.
  ****************************************************************************/
 
-int gp_AttachK33Search(graphP theGraph)
+int gp_ExtendWith_K33Search(graphP theGraph)
 {
     K33SearchContext *context = NULL;
 
@@ -143,10 +143,10 @@ int gp_AttachK33Search(graphP theGraph)
 }
 
 /********************************************************************
- gp_DetachK33Search()
+ gp_Detach_K33Search()
  ********************************************************************/
 
-int gp_DetachK33Search(graphP theGraph)
+int gp_Detach_K33Search(graphP theGraph)
 {
     return gp_RemoveExtension(theGraph, K33SEARCH_ID);
 }

@@ -6,7 +6,13 @@ See the LICENSE.TXT file for licensing information.
 
 #include <stdlib.h>
 
-#include "../graphLib.h"
+#include "../graph.h"
+
+// Includes needed by _gp_EmbedFlagsValid(), until it become overloadable
+#include "graphDrawPlanar.private.h"
+#include "../homeomorphSearch/graphK23Search.private.h"
+#include "../homeomorphSearch/graphK33Search.private.h"
+#include "../homeomorphSearch/graphK4Search.private.h"
 
 /* Imported functions */
 
@@ -21,7 +27,7 @@ extern int _gp_FindEdge(graphP theGraph, int u, int v);
 
 /* Private functions (some are exported to system only) */
 
-int _ProcessEmbedFlags(graphP theGraph, int embedFlags);
+int _gp_EmbedFlagsValid(graphP theGraph, int embedFlags);
 int _EmbeddingInitialize(graphP theGraph);
 
 void _EmbedBackEdgeToDescendant(graphP theGraph, int RootSide, int RootVertex, int W, int WPrevLink);
@@ -93,7 +99,7 @@ int gp_Embed(graphP theGraph, int embedFlags)
         return NOTOK;
 
     // Preprocessing
-    if (_ProcessEmbedFlags(theGraph, embedFlags) != OK)
+    if (!_gp_EmbedFlagsValid(theGraph, embedFlags))
         return NOTOK;
 
     theGraph->embedFlags = embedFlags;
@@ -150,44 +156,61 @@ int gp_Embed(graphP theGraph, int embedFlags)
 }
 
 /********************************************************************
- _ProcessEmbedFlags()
+ _gp_EmbedFlagsValid()
+
+ Returns TRUE the theGraph has been extended to a subclass that
+ supports the value in embedFlags and if embedFlags has a value
+ that is supportable by extensions available in the graphLib.
+ Returns FALSE otherwise.
+
+ NOTE: Returns TRUE/FALSE rather than OK/NOTOK so the caller can
+       decide if it is an error or if they want to try to take
+       corrective actions on theGraph.
  ********************************************************************/
 
-int _ProcessEmbedFlags(graphP theGraph, int embedFlags)
+int _gp_EmbedFlagsValid(graphP theGraph, int embedFlags)
 {
     // Currently, planar and outerplanar graph embedding and obstruction
     // isolation do not require an explicit extension.
     if (embedFlags == EMBEDFLAGS_PLANAR || embedFlags == EMBEDFLAGS_OUTERPLANAR)
-        return OK;
+        return TRUE;
 
     // For other algorithms that are supported by explicit extensions, we
     // ensure they are attached (the attach methods exit early if it has
     // already been done).
     else if (embedFlags == EMBEDFLAGS_DRAWPLANAR)
     {
-        if (gp_AttachDrawPlanar(theGraph) == OK)
-            return OK;
+        DrawPlanarContext *context = NULL;
+        gp_FindExtension(theGraph, DRAWPLANAR_ID, (void *)&context);
+        if (context != NULL)
+            return TRUE;
     }
     else if (embedFlags == EMBEDFLAGS_SEARCHFORK23)
     {
-        if (gp_AttachK23Search(theGraph) == OK)
-            return OK;
+        K23SearchContext *context = NULL;
+        gp_FindExtension(theGraph, K23SEARCH_ID, (void *)&context);
+        if (context != NULL)
+            return TRUE;
     }
     else if (embedFlags == EMBEDFLAGS_SEARCHFORK33)
     {
-        if (gp_AttachK33Search(theGraph) == OK)
-            return OK;
+        K33SearchContext *context = NULL;
+        gp_FindExtension(theGraph, K33SEARCH_ID, (void *)&context);
+        if (context != NULL)
+            return TRUE;
     }
     else if (embedFlags == EMBEDFLAGS_SEARCHFORK4)
     {
-        if (gp_AttachK4Search(theGraph) == OK)
-            return OK;
+        K4SearchContext *context = NULL;
+        gp_FindExtension(theGraph, K4SEARCH_ID, (void *)&context);
+        if (context != NULL)
+            return TRUE;
     }
 
-    // It is an error if the embedflags indicate anything other than a supported
-    // algorithm with the proper extension attached to the graph, or even if the
-    // embedFlags indicate multiple supported algorithms at the same time.
-    return NOTOK;
+    // The embedFlags are not valid if they indicate an algorithm for
+    // which there is no graph extension, or even if they indicate
+    // multiple supported algorithm extensions at the same time.
+    return FALSE;
 }
 
 /********************************************************************

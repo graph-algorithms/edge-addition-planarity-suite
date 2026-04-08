@@ -7,8 +7,6 @@ See the LICENSE.TXT file for licensing information.
 #include "graphDrawPlanar.h"
 #include "graphDrawPlanar.private.h"
 
-extern int DRAWPLANAR_ID;
-
 #include "../graph.h"
 
 #include <string.h>

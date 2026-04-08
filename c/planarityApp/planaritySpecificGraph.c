@@ -138,29 +138,40 @@ int SpecificGraph(
         return NOTOK;
     }
 
-    // Run the algorithm
-    platform_GetTime(start);
-
-    //          gp_CreateDFSTree(theGraph);
-    //          gp_SortVertices(theGraph);
-    //          gp_Write(theGraph, "debug.before.txt", WRITE_DEBUGINFO);
-    //          gp_SortVertices(theGraph);
-
-    Result = gp_Embed(theGraph, embedFlags);
-
-    platform_GetTime(end);
-
-    if (Result != OK && Result != NONEMBEDDABLE)
+    // Extend theGraph so that it is equivalent to having created a new instance
+    // of a graph subclass that supports the desired algorithm
+    if (ExtendGraph(theGraph, command) == OK)
     {
-        ErrorMessage("Failed to embed graph.\n");
+        // Run the algorithm
+        platform_GetTime(start);
 
-        gp_Free(&theGraph);
-        gp_Free(&origGraph);
+        //          gp_CreateDFSTree(theGraph);
+        //          gp_SortVertices(theGraph);
+        //          gp_Write(theGraph, "debug.before.txt", WRITE_DEBUGINFO);
+        //          gp_SortVertices(theGraph);
 
-        return NOTOK;
+        Result = gp_Embed(theGraph, embedFlags);
+
+        platform_GetTime(end);
+
+        if (Result != OK && Result != NONEMBEDDABLE)
+        {
+            ErrorMessage("Failed to embed graph.\n");
+
+            gp_Free(&theGraph);
+            gp_Free(&origGraph);
+
+            return NOTOK;
+        }
+
+        Result = gp_TestEmbedResultIntegrity(theGraph, origGraph, Result);
     }
-
-    Result = gp_TestEmbedResultIntegrity(theGraph, origGraph, Result);
+    else
+    {
+        platform_GetTime(start);
+        Result = NOTOK;
+        platform_GetTime(end);
+    }
 
     // Write what the algorithm determined and how long it took
     WriteAlgorithmResults(theGraph, Result, command, start, end, infileName);

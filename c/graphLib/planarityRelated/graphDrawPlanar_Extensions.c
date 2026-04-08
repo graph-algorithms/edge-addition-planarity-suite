@@ -56,7 +56,7 @@ void _DrawPlanar_FreeContext(void *);
 int DRAWPLANAR_ID = 0;
 
 /****************************************************************************
- gp_AttachDrawPlanar()
+ gp_ExtendWith_DrawPlanar()
 
  This function adjusts the graph data structure to attach the planar graph
  drawing feature.
@@ -74,7 +74,7 @@ int DRAWPLANAR_ID = 0;
  Returns OK for success, NOTOK for failure.
  ****************************************************************************/
 
-int gp_AttachDrawPlanar(graphP theGraph)
+int gp_ExtendWith_DrawPlanar(graphP theGraph)
 {
     DrawPlanarContext *context = NULL;
 
@@ -152,10 +152,10 @@ int gp_AttachDrawPlanar(graphP theGraph)
 }
 
 /********************************************************************
- gp_DetachDrawPlanar()
+ gp_Detach_DrawPlanar()
  ********************************************************************/
 
-int gp_DetachDrawPlanar(graphP theGraph)
+int gp_Detach_DrawPlanar(graphP theGraph)
 {
     return gp_RemoveExtension(theGraph, DRAWPLANAR_ID);
 }

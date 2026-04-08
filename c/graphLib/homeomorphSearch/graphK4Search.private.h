@@ -54,6 +54,8 @@ extern "C"
 
     } K4SearchContext;
 
+    extern int K4SEARCH_ID;
+
 #ifdef __cplusplus
 }
 #endif

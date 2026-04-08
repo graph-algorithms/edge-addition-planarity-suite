@@ -51,13 +51,13 @@ void _K4Search_FreeContext(void *);
 int K4SEARCH_ID = 0;
 
 /****************************************************************************
- gp_AttachK4Search()
+ gp_ExtendWith_K4Search()
 
  This function adjusts the graph data structure to attach the K4 search
  feature.
  ****************************************************************************/
 
-int gp_AttachK4Search(graphP theGraph)
+int gp_ExtendWith_K4Search(graphP theGraph)
 {
     K4SearchContext *context = NULL;
 
@@ -131,10 +131,10 @@ int gp_AttachK4Search(graphP theGraph)
 }
 
 /********************************************************************
- gp_DetachK4Search()
+ gp_Detach_K4Search()
  ********************************************************************/
 
-int gp_DetachK4Search(graphP theGraph)
+int gp_Detach_K4Search(graphP theGraph)
 {
     return gp_RemoveExtension(theGraph, K4SEARCH_ID);
 }

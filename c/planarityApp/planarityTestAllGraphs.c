@@ -183,6 +183,28 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
         }
     }
 
+    if ((Result = ExtendGraph(theGraph, command)) != OK)
+    {
+        char commandStr[3];
+        commandStr[0] = command;
+        commandStr[1] = modifier;
+        commandStr[2] = '\0';
+
+        messageFormat = "Unable to extend graph with command %s\n";
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
+        sprintf(messageContents, messageFormat, commandStr);
+#pragma GCC diagnostic pop
+
+        ErrorMessage(messageContents);
+
+        g6_FreeReader(&theG6ReadIterator);
+        gp_Free(&theGraph);
+        stats->errorFlag = TRUE;
+
+        return Result;
+    }
+
     copyOfOrigGraph = gp_New();
     if (copyOfOrigGraph == NULL)
     {

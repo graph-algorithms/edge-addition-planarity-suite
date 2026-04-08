@@ -7,8 +7,6 @@ See the LICENSE.TXT file for licensing information.
 #include "graphK33Search.h"
 #include "graphK33Search.private.h"
 
-// extern int K33SEARCH_ID;
-
 #include "../graph.h"
 
 /* Imported functions */
