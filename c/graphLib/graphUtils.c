@@ -471,7 +471,7 @@ int _EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity)
         {
             // NOTE: We enforce a minimum stack based on number of vertices
             //       if edgeCapacity is small. Currently, this will not
-            //       happpen because we only 'ensure' edge capacity, i.e.,
+            //       happen because we only 'ensure' edge capacity, i.e.,
             //       the capacity can only ever get bigger. However, this
             //       rule is enforced in case future methods are added
             //       that reduce edge capacity

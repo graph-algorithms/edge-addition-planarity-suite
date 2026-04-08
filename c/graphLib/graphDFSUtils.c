@@ -169,7 +169,7 @@ int gp_SortVertices(graphP theGraph)
         srcGraph->VI[srcPos] = tempVI;                         \
     }
 
-// This is teh default method for sorting vertices into and back
+// This is the default method for sorting vertices into and back
 // out of DFI order.
 int _SortVertices(graphP theGraph)
 {
