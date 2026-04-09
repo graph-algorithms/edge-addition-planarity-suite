@@ -489,9 +489,9 @@ graphP MakeGraph(int Size, char command)
         return NULL;
     }
 
-    if (AttachAlgorithm(theGraph, command) != OK)
+    if (ExtendGraph(theGraph, command) != OK)
     {
-        sprintf(messageContents, "Unable to attach graph algorithm extension corresponding to command '%c'\n", command);
+        sprintf(messageContents, "Unable to extend graph based on command '%c'\n", command);
         ErrorMessage(messageContents);
         gp_Free(&theGraph);
     }
@@ -567,7 +567,7 @@ int RandomGraph(char const *const commandString, int extraEdges, int numVertices
     }
     platform_GetTime(end);
 
-    sprintf(messageContents, "Created random graph with %d edges in %.3lf seconds. ", theGraph->M, platform_GetDuration(start, end));
+    sprintf(messageContents, "Created random graph with %d edges in %.3lf seconds. ", gp_GetM(theGraph), platform_GetDuration(start, end));
     Message(messageContents);
     FlushConsole(stdout);
 

@@ -166,14 +166,14 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
     }
 
     order = gp_GetN(theGraph);
-    // We have to set the maximum arc capacity (i.e. (N * (N - 1))) because some of the test files
+    // We have to set the maximum edge capacity (i.e. (N * (N - 1) / 2)) because some of the test files
     // can contain complete graphs, and the graph drawing, K_{3, 3} search, and K_4 search extensions
-    // don't support expanding the arc capacity after being attached.
+    // don't support expanding the edge capacity after being attached.
     if (strchr("d34", command) != NULL)
     {
-        if ((Result = gp_EnsureArcCapacity(theGraph, (order * (order - 1)))) != OK)
+        if ((Result = gp_EnsureEdgeCapacity(theGraph, (order * (order - 1) / 2))) != OK)
         {
-            ErrorMessage("Unable to maximize arc capacity of G6ReadIterator's graph struct.\n");
+            ErrorMessage("Unable to ensure sufficient edge capacity of the G6ReadIterator's graph struct.\n");
 
             g6_FreeReader((&theG6ReadIterator));
             gp_Free(&theGraph);
@@ -183,28 +183,22 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
         }
     }
 
-    if ((Result = AttachAlgorithm(theGraph, command)) != OK)
+    if ((Result = ExtendGraph(theGraph, command)) != OK)
     {
-        if (modifier == '\0')
-        {
-            messageFormat = "Unable to attach graph algorithm extension corresponding to command specifier '%c' to graphP.\n";
+        char commandStr[3];
+        commandStr[0] = command;
+        commandStr[1] = modifier;
+        commandStr[2] = '\0';
+
+        messageFormat = "Unable to extend graph with command %s\n";
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-nonliteral"
-            sprintf(messageContents, messageFormat, command);
+        sprintf(messageContents, messageFormat, commandStr);
 #pragma GCC diagnostic pop
-        }
-        else
-        {
-            messageFormat = "Unable to attach graph algorithm extension corresponding to command specifier '%c' with modifier '%c' to graphP.\n";
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-nonliteral"
-            sprintf(messageContents, messageFormat, command, modifier);
-#pragma GCC diagnostic pop
-        }
 
         ErrorMessage(messageContents);
 
-        g6_FreeReader((&theG6ReadIterator));
+        g6_FreeReader(&theG6ReadIterator);
         gp_Free(&theGraph);
         stats->errorFlag = TRUE;
 

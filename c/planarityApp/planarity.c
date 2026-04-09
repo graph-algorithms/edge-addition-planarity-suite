@@ -24,7 +24,7 @@ int main(int argc, char *argv[])
         retVal = legacyCommandLine(argc, argv);
 
     // Close the log file if logging
-    gp_Log(NULL);
+    _gp_Log(NULL);
 
     return retVal;
 }

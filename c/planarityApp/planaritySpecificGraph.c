@@ -138,9 +138,11 @@ int SpecificGraph(
         return NOTOK;
     }
 
-    // Run the algorithm
-    if (AttachAlgorithm(theGraph, command) == OK)
+    // Extend theGraph so that it is equivalent to having created a new instance
+    // of a graph subclass that supports the desired algorithm
+    if (ExtendGraph(theGraph, command) == OK)
     {
+        // Run the algorithm
         platform_GetTime(start);
 
         //          gp_CreateDFSTree(theGraph);

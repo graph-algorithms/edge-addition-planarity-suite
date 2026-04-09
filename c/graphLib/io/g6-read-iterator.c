@@ -123,6 +123,12 @@ bool g6_EndReached(G6ReadIteratorP theG6ReadIterator)
 
 int g6_GetNumGraphsRead(G6ReadIteratorP theG6ReadIterator, int *pNumGraphsRead)
 {
+    if (theG6ReadIterator == NULL)
+    {
+        ErrorMessage("Invalid parameter: theG6ReadIterator must be non-NULL.\n");
+        return NOTOK;
+    }
+
     if (pNumGraphsRead == NULL)
     {
         ErrorMessage(
@@ -148,6 +154,12 @@ int g6_GetNumGraphsRead(G6ReadIteratorP theG6ReadIterator, int *pNumGraphsRead)
 
 int g6_GetOrderFromReader(G6ReadIteratorP theG6ReadIterator, int *pOrder)
 {
+    if (theG6ReadIterator == NULL)
+    {
+        ErrorMessage("Invalid parameter: theG6ReadIterator must be non-NULL.\n");
+        return NOTOK;
+    }
+
     if (pOrder == NULL)
     {
         ErrorMessage(
@@ -173,6 +185,12 @@ int g6_GetOrderFromReader(G6ReadIteratorP theG6ReadIterator, int *pOrder)
 
 int g6_GetGraphFromReader(G6ReadIteratorP theG6ReadIterator, graphP *pGraph)
 {
+    if (theG6ReadIterator == NULL)
+    {
+        ErrorMessage("Invalid parameter: theG6ReadIterator must be non-NULL.\n");
+        return NOTOK;
+    }
+
     if (pGraph == NULL)
     {
         ErrorMessage(
@@ -203,9 +221,7 @@ int g6_InitReaderWithString(G6ReadIteratorP theG6ReadIterator, char *inputString
 
     if (theG6ReadIterator == NULL)
     {
-        ErrorMessage(
-            "Unable to initialize reader, since pointer theG6ReadIterator is "
-            "NULL.\n");
+        ErrorMessage("Invalid parameter: theG6ReadIterator must be non-NULL.\n");
         return NOTOK;
     }
 
@@ -242,9 +258,7 @@ int g6_InitReaderWithFileName(G6ReadIteratorP theG6ReadIterator, char const *con
 
     if (theG6ReadIterator == NULL)
     {
-        ErrorMessage(
-            "Unable to initialize reader, since pointer theG6ReadIterator is "
-            "NULL.\n");
+        ErrorMessage("Invalid parameter: theG6ReadIterator must be non-NULL.\n");
         return NOTOK;
     }
 
@@ -277,7 +291,13 @@ int g6_InitReaderWithFileName(G6ReadIteratorP theG6ReadIterator, char const *con
 
 int _g6_InitReaderWithStrOrFile(G6ReadIteratorP theG6ReadIterator, strOrFileP *pInputContainer)
 {
-    if (!sf_IsValidStrOrFile((*pInputContainer)))
+    if (theG6ReadIterator == NULL)
+    {
+        ErrorMessage("Invalid parameter: theG6ReadIterator must be non-NULL.\n");
+        return NOTOK;
+    }
+
+    if (pInputContainer == NULL || !sf_IsValidStrOrFile((*pInputContainer)))
     {
         ErrorMessage("Unable to initialize reader with invalid strOrFile "
                      "input container.\n");
@@ -383,7 +403,7 @@ int _g6_InitReader(G6ReadIteratorP theG6ReadIterator)
     }
 
     // Ensures zero-based flag is set regardless of whether the graph was initialized or reinitialized.
-    theG6ReadIterator->currGraph->internalFlags |= FLAGS_ZEROBASEDIO;
+    theG6ReadIterator->currGraph->graphFlags |= FLAGS_ZEROBASEDIO;
 
     theG6ReadIterator->numCharsForOrder = _g6_GetNumCharsForOrder(order);
     theG6ReadIterator->numCharsForGraphEncoding = _g6_GetNumCharsForEncoding(order);
@@ -578,7 +598,7 @@ int g6_ReadGraph(G6ReadIteratorP theG6ReadIterator)
         {
             gp_ReinitializeGraph(currGraph);
             // Ensures zero-based flag is set after reinitializing graph.
-            currGraph->internalFlags |= FLAGS_ZEROBASEDIO;
+            currGraph->graphFlags |= FLAGS_ZEROBASEDIO;
         }
 
         if (_g6_DecodeGraph(graphEncodingChars, order, numCharsForGraphEncoding, currGraph) != OK)

@@ -127,6 +127,12 @@ bool _g6_IsWriterInitialized(G6WriteIteratorP theG6WriteIterator, bool reportUni
 
 int g6_GetNumGraphsWritten(G6WriteIteratorP theG6WriteIterator, int *pNumGraphsWritten)
 {
+    if (theG6WriteIterator == NULL)
+    {
+        ErrorMessage("Invalid parameter: theG6WriteIterator must be non-NULL.\n");
+        return NOTOK;
+    }
+
     if (pNumGraphsWritten == NULL)
     {
         ErrorMessage(
@@ -152,6 +158,12 @@ int g6_GetNumGraphsWritten(G6WriteIteratorP theG6WriteIterator, int *pNumGraphsW
 
 int g6_GetOrderFromWriter(G6WriteIteratorP theG6WriteIterator, int *pOrder)
 {
+    if (theG6WriteIterator == NULL)
+    {
+        ErrorMessage("Invalid parameter: theG6WriteIterator must be non-NULL.\n");
+        return NOTOK;
+    }
+
     if (pOrder == NULL)
     {
         ErrorMessage(
@@ -177,6 +189,12 @@ int g6_GetOrderFromWriter(G6WriteIteratorP theG6WriteIterator, int *pOrder)
 
 int g6_GetGraphFromWriter(G6WriteIteratorP theG6WriteIterator, graphP *pGraph)
 {
+    if (theG6WriteIterator == NULL)
+    {
+        ErrorMessage("Invalid parameter: theG6WriteIterator must be non-NULL.\n");
+        return NOTOK;
+    }
+
     if (pGraph == NULL)
     {
         ErrorMessage(
@@ -206,9 +224,7 @@ int g6_InitWriterWithString(G6WriteIteratorP theG6WriteIterator, char **pOutputS
 
     if (theG6WriteIterator == NULL)
     {
-        ErrorMessage(
-            "Unable to initialize writer, since pointer theG6WriteIterator is "
-            "NULL.\n");
+        ErrorMessage("Invalid parameter: theG6WriteIterator must be non-NULL.\n");
         return NOTOK;
     }
 
@@ -255,9 +271,7 @@ int g6_InitWriterWithFileName(G6WriteIteratorP theG6WriteIterator, char *outputF
 
     if (theG6WriteIterator == NULL)
     {
-        ErrorMessage(
-            "Unable to initialize writer, since pointer theG6WriteIterator is "
-            "NULL.\n");
+        ErrorMessage("Invalid parameter: theG6WriteIterator must be non-NULL.\n");
         return NOTOK;
     }
 
@@ -294,9 +308,7 @@ int _g6_InitWriterWithStrOrFile(G6WriteIteratorP theG6WriteIterator, strOrFileP 
 {
     if (theG6WriteIterator == NULL)
     {
-        ErrorMessage(
-            "Unable to initialize writer, since pointer theG6WriteIterator is "
-            "NULL.\n");
+        ErrorMessage("Invalid parameter: theG6WriteIterator must be non-NULL.\n");
         return NOTOK;
     }
 
@@ -518,7 +530,7 @@ void _g6_GetNextEdgeInUse(graphP theGraph, int *e, int *u, int *v)
     (*v) = NIL;
 
     if ((*e) == NIL)
-        (*e) = gp_GetFirstEdge(theGraph);
+        (*e) = gp_EdgeArrayStart(theGraph);
     else
         (*e) += 2;
 
@@ -534,7 +546,7 @@ void _g6_GetNextEdgeInUse(graphP theGraph, int *e, int *u, int *v)
         if ((*e) < EsizeOccupied && gp_EdgeInUse(theGraph, (*e)))
         {
             (*u) = gp_GetNeighbor(theGraph, (*e));
-            (*v) = gp_GetNeighbor(theGraph, gp_GetTwinArc(theGraph, (*e)));
+            (*v) = gp_GetNeighbor(theGraph, gp_GetTwin(theGraph, (*e)));
         }
     }
 }

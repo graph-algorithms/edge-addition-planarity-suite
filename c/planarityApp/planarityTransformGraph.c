@@ -68,7 +68,7 @@ int TransformGraph(char const *const commandString, char const *const infileName
             // Want to know whether the output is 0- or 1-based; will always be
             // 0-based for transformations of .g6 input
             if (outputBase != NULL)
-                (*outputBase) = (theGraph->internalFlags & FLAGS_ZEROBASEDIO) ? 1 : 0;
+                (*outputBase) = (gp_GetGraphFlags(theGraph) & FLAGS_ZEROBASEDIO) ? 1 : 0;
 
             if (pOutputStr != NULL)
                 Result = gp_WriteToString(theGraph, pOutputStr, outputFormat);
