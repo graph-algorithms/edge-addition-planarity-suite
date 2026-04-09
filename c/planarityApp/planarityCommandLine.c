@@ -279,6 +279,13 @@ int runSpecificGraphTests(char const *samplesDir)
         retVal = NOTOK;
     }
 
+    if (runSpecificGraphTest("-3e", "Petersen.txt", TRUE) != OK)
+    {
+        ErrorMessage("K_{3,3} search with embedder on Petersen.txt failed.\n");
+
+        retVal = NOTOK;
+    }
+
     if (runSpecificGraphTest("-4", "Petersen.txt", FALSE) != OK)
     {
         ErrorMessage("K_4 search on Petersen.txt failed.\n");
@@ -649,7 +656,7 @@ int runGraphTransformationTest(char const *command, char const *infileName, int 
             char messageContents[MAXLINE + 1];
             messageContents[0] = '\0';
 
-            // Final arg is baseFlag, which is dependent on whether the FLAGS_ZEROBASEDIO is set in a graphP's internalFlags
+            // Final arg is baseFlag, which is dependent on whether the FLAGS_ZEROBASEDIO is set in a graph's graphFlags
             Result = ConstructTransformationExpectedResultFilename(infileName, &expectedOutfileName, transformationCode, zeroBasedOutputFlag ? 0 : 1);
 
             if (Result != OK || expectedOutfileName == NULL)
@@ -881,7 +888,7 @@ int callTransformGraph(int argc, char *argv[])
     outfileName = argv[4 + offset];
 
     // We don't want to read from string, so inputStr is NULL
-    // We don't want to write to string, so outputStr is NULL
+    // We don't want to write to string, so pOutputStr is NULL
     // We don't need to capture whether output is 0- or 1-based, so zeroBasedOutputFlag arg is NULL
     return TransformGraph(commandString, infileName, NULL, NULL, outfileName, NULL);
 }
@@ -920,6 +927,6 @@ int callTestAllGraphs(int argc, char *argv[])
     infileName = argv[3 + offset];
     outfileName = argv[4 + offset];
 
-    // NOTE: We don't want to write to string, so outputStr is NULL
+    // NOTE: We don't want to write to string, so pOutputStr is NULL
     return TestAllGraphs(commandString, infileName, outfileName, NULL);
 }

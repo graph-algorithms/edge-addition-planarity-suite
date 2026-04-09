@@ -254,7 +254,7 @@ void SaveAsciiGraph(graphP theGraph, char *filename)
 
     // Iterate over the edges of the graph
     EsizeOccupied = gp_EdgeInUseArraySize(theGraph);
-    for (e = gp_GetFirstEdge(theGraph); e < EsizeOccupied; e += 2)
+    for (e = gp_EdgeArrayStart(theGraph); e < EsizeOccupied; e += 2)
     {
         // Only output edges that haven't been deleted (i.e. skip the edge holes)
         if (gp_EdgeInUse(theGraph, e))
@@ -743,43 +743,45 @@ char const *GetBaseName(int baseFlag)
 }
 
 /****************************************************************************
- * AttachAlgorithm()
+ * ExtendGraph()
  *
- * Determines the main graph algorithm command indicated by the command char
- * and attaches the corresponding graph algorithm extension. The modifier is not
- * required to determine which graph algorithm extension to attach, and is only
- * used to signal that the behaviour of the main extension should be modified.
+ * The graphLib provides a run-time inheritance method so that the base
+ * graph structure and methods can be extended with new and modified
+ * capabilities. This method subclasses the graph with an extension selected
+ * based on the command-line received by the planarity wrapper application
+ * for the graphLib.
  *
- * Returns OK if graph algorithm extension corresponding to the command char
- * was successfully attached. Returns NOTOK if theGraph is not properly
- * initialized, if attaching the graph algorithm extension failed, or if an
- * invalid command char was supplied.
+ * The command-line may include an extension modifier, but it is not passed
+ * as a parameter here because it is not needed to determine which extension
+ * the graph is to inherit
+ *
+ * Returns OK if the graph was successfully extended
+ * Returns NOTOK if theGraph is not properly initialized, if the operation to
+ *      extend the graph failed, or if an invalid command char was supplied.
  ****************************************************************************/
 
-int AttachAlgorithm(graphP theGraph, char command)
+int ExtendGraph(graphP theGraph, char command)
 {
     if (theGraph == NULL || theGraph->N <= 0)
     {
-        ErrorMessage("Unable to attach graph algorithm extension to NULL or uninitialized graphP.\n");
+        ErrorMessage("Unable to extend graph with algorithm extension due to NULL or uninitialized graph.\n");
         return NOTOK;
     }
 
     switch (command)
     {
     case 'p':
-        // Planarity is attached by default
-        return OK;
+        return gp_ExtendWith_Planarity(theGraph);
     case 'd':
-        return gp_AttachDrawPlanar(theGraph);
+        return gp_ExtendWith_DrawPlanar(theGraph);
     case 'o':
-        // Outerplanarity is attached by default
-        return OK;
+        return gp_ExtendWith_Outerplanarity(theGraph);
     case '2':
-        return gp_AttachK23Search(theGraph);
+        return gp_ExtendWith_K23Search(theGraph);
     case '3':
-        return gp_AttachK33Search(theGraph);
+        return gp_ExtendWith_K33Search(theGraph);
     case '4':
-        return gp_AttachK4Search(theGraph);
+        return gp_ExtendWith_K4Search(theGraph);
     default:
         break;
     }

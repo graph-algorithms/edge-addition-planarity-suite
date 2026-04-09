@@ -37,8 +37,8 @@ extern "C"
         char *inputStr, char **pOutputStr, char **pOutput2Str);
     int RandomGraph(char const *const commandString, int extraEdges, int numVertices, char *outfileName, char *outfile2Name);
     int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraphs, char *outfileName);
-    int TransformGraph(char const *const commandString, char const *const infileName, char *inputStr, int *outputBase, char const *outfileName, char **outputStr);
-    int TestAllGraphs(char const *const commandString, char const *const infileName, char *outfileName, char **outputStr);
+    int TransformGraph(char const *const commandString, char const *const infileName, char *inputStr, int *outputBase, char const *outfileName, char **pOutputStr);
+    int TestAllGraphs(char const *const commandString, char const *const infileName, char *outfileName, char **pOutputStr);
 
     /* Command line, Menu, and Configuration */
     int menu(void);
@@ -74,7 +74,7 @@ extern "C"
     char const *GetTransformationName(char command);
     char const *GetBaseName(int baseFlag);
 
-    int AttachAlgorithm(graphP theGraph, char command);
+    int ExtendGraph(graphP theGraph, char command);
 
     char *ConstructInputFilename(char const *infileName);
 

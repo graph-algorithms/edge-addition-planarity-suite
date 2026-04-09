@@ -1,5 +1,10 @@
 name: OS
-on: [pull_request, workflow_dispatch]
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [ '**' ]
+    paths-ignore:
+      - '**/*.md'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -42,7 +47,7 @@ jobs:
       - run: git config --global core.autocrlf input
         shell: pwsh -command ". '{0}'".
       - uses: actions/checkout@v4
-      - uses: cygwin/cygwin-install-action@v5
+      - uses: cygwin/cygwin-install-action@v6
         with:
           packages: gcc-core,automake,libtool,autoconf
       - name: Configure . . .

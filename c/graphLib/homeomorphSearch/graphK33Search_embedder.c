@@ -10,10 +10,6 @@ See the LICENSE.TXT file for licensing information.
 #include "graphK33Search.h"
 #include "graphK33Search.private.h"
 
-// The embedding obstruction tree implementation must be able to get the
-// K3,3 Search extension context from the subgraph of an EONode
-extern int K33SEARCH_ID;
-
 #include "../graph.h"
 
 #ifdef INCLUDE_K33SEARCH_EMBEDDER
@@ -21,6 +17,8 @@ extern int K33SEARCH_ID;
 /* Imported functions */
 
 extern int _ClearAllVisitedFlagsInBicomp(graphP theGraph, int BicompRoot);
+extern int _gp_FindEdge(graphP theGraph, int u, int v);
+
 extern int _MarkHighestXYPath(graphP theGraph);
 extern int _MarkLowestXYPath(graphP theGraph);
 extern int _CheckEmbeddingFacialIntegrity(graphP theGraph);
@@ -138,7 +136,7 @@ void _K33Search_EONode_Free(K33Search_EONodeP *pEONode)
             {
                 int Esize, e;
                 Esize = gp_EdgeArraySize(theGraph);
-                for (e = gp_GetFirstEdge(theGraph); e < Esize; e++)
+                for (e = gp_EdgeArrayStart(theGraph); e < Esize; e++)
                 {
                     if (e & 1)
                     {
@@ -185,7 +183,7 @@ int _K33Search_TestForEOTreeChildren(K33Search_EONodeP EOTreeNode)
         int EsizeOccupied, e;
 
         EsizeOccupied = gp_EdgeInUseArraySize(theSubgraph);
-        for (e = gp_GetFirstEdge(theSubgraph); e < EsizeOccupied; e += 2)
+        for (e = gp_EdgeArrayStart(theSubgraph); e < EsizeOccupied; e += 2)
         {
             if (context->E[e].EONode != NULL)
                 return TRUE;
@@ -220,7 +218,7 @@ int _K33Search_EONode_NewONode(graphP theGraph, K33Search_EONodeP *pNewONode)
         return NOTOK;
 
     if (gp_InitGraph(theNewK5Graph, 5) != OK ||
-        gp_AttachK33Search(theNewK5Graph) != OK)
+        gp_ExtendWith_K33Search(theNewK5Graph) != OK)
     {
         gp_Free(&theNewK5Graph);
         return NOTOK;
@@ -248,7 +246,7 @@ int _K33Search_EONode_NewONode(graphP theGraph, K33Search_EONodeP *pNewONode)
                 // We _know_ that the edges of the K5 associated with an O-node are all virtual,
                 // but we take the extra step of marking them virtual anyway.
                 gp_SetEdgeVirtual(theNewK5Graph, e);
-                gp_SetEdgeVirtual(theNewK5Graph, gp_GetTwinArc(theNewK5Graph, e));
+                gp_SetEdgeVirtual(theNewK5Graph, gp_GetTwin(theNewK5Graph, e));
             }
 
     // Now we can construct an embedding obstruction tree node to associate with
@@ -450,7 +448,7 @@ int _K33Search_ExtractExternaFaceBridgeSet(graphP theGraph, int R, int poleVerte
     // xy path will be the lastStartingEdge.
 
     lastStartingEdge = firstStartingEdge;
-    while (gp_IsArc(theGraph, lastStartingEdge))
+    while (gp_IsEdge(theGraph, lastStartingEdge))
     {
         e = theGraph->E[lastStartingEdge].link[linkDir];
         if (gp_GetEdgeVisited(theGraph, e))
@@ -458,7 +456,7 @@ int _K33Search_ExtractExternaFaceBridgeSet(graphP theGraph, int R, int poleVerte
         lastStartingEdge = e;
     }
 
-    if (gp_IsNotArc(theGraph, lastStartingEdge))
+    if (gp_IsNotEdge(theGraph, lastStartingEdge))
         return NOTOK;
 
     return _K33Search_ExtractEmbeddedBridgeSet(theGraph, R, poleVertex, equatorVertex, newONode,
@@ -494,14 +492,14 @@ int _K33Search_ExtractXYBridgeSet(graphP theGraph, int R, K33Search_EONodeP newO
     // Find the firstStartingEdge by iterating until the highest xy path edge
     // emanating from y is found
     firstStartingEdge = theGraph->V[theGraph->IC.y].link[linkDir];
-    while (gp_IsArc(theGraph, firstStartingEdge))
+    while (gp_IsEdge(theGraph, firstStartingEdge))
     {
         if (gp_GetEdgeVisited(theGraph, firstStartingEdge))
             break;
         firstStartingEdge = theGraph->E[firstStartingEdge].link[linkDir];
     }
 
-    if (gp_IsNotArc(theGraph, firstStartingEdge))
+    if (gp_IsNotEdge(theGraph, firstStartingEdge))
         return NOTOK;
 
     // Now we mark the lowest xy path so we can find the lastStartingEdge
@@ -510,14 +508,14 @@ int _K33Search_ExtractXYBridgeSet(graphP theGraph, int R, K33Search_EONodeP newO
 
     // The lastStartingEdge is the lowest xy path edge emanating from y
     lastStartingEdge = firstStartingEdge;
-    while (gp_IsArc(theGraph, lastStartingEdge))
+    while (gp_IsEdge(theGraph, lastStartingEdge))
     {
         if (gp_GetEdgeVisited(theGraph, lastStartingEdge))
             break;
         lastStartingEdge = theGraph->E[lastStartingEdge].link[linkDir];
     }
 
-    if (gp_IsNotArc(theGraph, lastStartingEdge))
+    if (gp_IsNotEdge(theGraph, lastStartingEdge))
         return NOTOK;
 
     return _K33Search_ExtractEmbeddedBridgeSet(theGraph, R, theGraph->IC.x, theGraph->IC.y, newONode,
@@ -575,7 +573,7 @@ int _K33Search_ExtractEmbeddedBridgeSet(graphP theGraph, int R, int cutv1, int c
         return NOTOK;
 
     if (gp_InitGraph(newSubgraphForBridgeSet, numVerticesInSubgraph) != OK ||
-        gp_AttachK33Search(newSubgraphForBridgeSet) != OK)
+        gp_ExtendWith_K33Search(newSubgraphForBridgeSet) != OK)
     {
         gp_Free(&newSubgraphForBridgeSet);
         return NOTOK;
@@ -596,9 +594,9 @@ int _K33Search_ExtractEmbeddedBridgeSet(graphP theGraph, int R, int cutv1, int c
     // the subgraph.
     // NOTE: We only add one to the edge count if the virtual edge between the 2-cut endpoints
     //       was added, which we only did if it was not going to be a duplicate edge.
-    e = gp_GetNeighborEdgeRecord(newSubgraphForBridgeSet,
-                                 gp_GetFirstVertex(newSubgraphForBridgeSet),
-                                 gp_GetFirstVertex(newSubgraphForBridgeSet) + 1);
+    e = _gp_FindEdge(newSubgraphForBridgeSet,
+                     gp_GetFirstVertex(newSubgraphForBridgeSet),
+                     gp_GetFirstVertex(newSubgraphForBridgeSet) + 1);
 
     if (newSubgraphForBridgeSet->M != numEdgesInSubgraph + (gp_GetEdgeVirtual(newSubgraphForBridgeSet, e) ? 1 : 0))
     {
@@ -664,7 +662,7 @@ int _K33Search_MarkBridgeSetToExtract(graphP theGraph, int R, int cutv1, int cut
     {
         // Mark the edge as visited
         gp_SetEdgeVisited(theGraph, e);
-        gp_SetEdgeVisited(theGraph, gp_GetTwinArc(theGraph, e));
+        gp_SetEdgeVisited(theGraph, gp_GetTwin(theGraph, e));
 
         // Push a next vertex to visit
         sp_Push(theGraph->theStack, gp_GetNeighbor(theGraph, e));
@@ -703,17 +701,17 @@ int _K33Search_MarkBridgeSetToExtract(graphP theGraph, int R, int cutv1, int cut
         {
             gp_SetVisited(theGraph, v);
 
-            e = gp_GetFirstArc(theGraph, v);
+            e = gp_GetFirstEdge(theGraph, v);
             while (e != NIL)
             {
                 if (!gp_GetEdgeVisited(theGraph, e))
                 {
                     gp_SetEdgeVisited(theGraph, e);
-                    gp_SetEdgeVisited(theGraph, gp_GetTwinArc(theGraph, e));
+                    gp_SetEdgeVisited(theGraph, gp_GetTwin(theGraph, e));
 
                     sp_Push(theGraph->theStack, gp_GetNeighbor(theGraph, e));
                 }
-                e = gp_GetNextArc(theGraph, e);
+                e = gp_GetNextEdge(theGraph, e);
             }
         }
     }
@@ -792,11 +790,11 @@ int _K33Search_ExtractBridgeSet(graphP theGraph, int R, int cutv1, int cutv2, gr
 
         // The new edge is marked virtual because it is added in addition to the edges that are actually
         // in the bridge set being extracted.
-        e = gp_GetFirstArc(newSubgraphForBridgeSet, gp_GetFirstVertex(newSubgraphForBridgeSet));
+        e = gp_GetFirstEdge(newSubgraphForBridgeSet, gp_GetFirstVertex(newSubgraphForBridgeSet));
         if (gp_GetNeighbor(newSubgraphForBridgeSet, e) != gp_GetFirstVertex(newSubgraphForBridgeSet) + 1)
             return NOTOK;
         gp_SetEdgeVirtual(newSubgraphForBridgeSet, e);
-        gp_SetEdgeVirtual(newSubgraphForBridgeSet, gp_GetTwinArc(newSubgraphForBridgeSet, e));
+        gp_SetEdgeVirtual(newSubgraphForBridgeSet, gp_GetTwin(newSubgraphForBridgeSet, e));
     }
 
     // Now we call the planarity algorithm so that the new subgraph contains a planar embedding of
@@ -926,13 +924,13 @@ int _K33Search_MakeGraphSubgraphVertexMaps(graphP theGraph, int R, int cutv1, in
             // get popped for the first time, added to the mapping, and then their
             // remaining stack entries will be popped and ignored because they
             // will be changed to unvisited until after the outer loop ends.
-            e = gp_GetFirstArc(theGraph, v);
-            while (gp_IsArc(theGraph, e))
+            e = gp_GetFirstEdge(theGraph, v);
+            while (gp_IsEdge(theGraph, e))
             {
                 if (gp_GetVisited(theGraph, gp_GetNeighbor(theGraph, e)))
                     sp_Push(theGraph->theStack, gp_GetNeighbor(theGraph, e));
 
-                e = gp_GetNextArc(theGraph, e);
+                e = gp_GetNextEdge(theGraph, e);
             }
         }
     }
@@ -995,15 +993,15 @@ int _K33Search_CopyEdgesToNewSubgraph(graphP theGraph, int R, int cutv1, int cut
             // Need to avoid visiting visited vertices more than once
             gp_ClearVisited(theGraph, v);
 
-            e = gp_GetFirstArc(theGraph, v);
-            while (gp_IsArc(theGraph, e))
+            e = gp_GetFirstEdge(theGraph, v);
+            while (gp_IsEdge(theGraph, e))
             {
                 // If the edge is visited, then it has to be copied to the subgraph
                 if (gp_GetEdgeVisited(theGraph, e))
                 {
                     // First make sure we won't copy the edge twice
                     gp_ClearEdgeVisited(theGraph, e);
-                    gp_ClearEdgeVisited(theGraph, gp_GetTwinArc(theGraph, e));
+                    gp_ClearEdgeVisited(theGraph, gp_GetTwin(theGraph, e));
 
                     if (_K33Search_CopyEdgeToNewSubgraph(theGraph, context, e, newSubgraphForBridgeSet) != OK)
                         return NOTOK;
@@ -1013,7 +1011,7 @@ int _K33Search_CopyEdgesToNewSubgraph(graphP theGraph, int R, int cutv1, int cut
                     sp_Push(theGraph->theStack, gp_GetNeighbor(theGraph, e));
                 }
 
-                e = gp_GetNextArc(theGraph, e);
+                e = gp_GetNextEdge(theGraph, e);
             }
         }
     }
@@ -1085,7 +1083,7 @@ int _K33Search_ExtractVWBridgeSet(graphP theGraph, int R, K33Search_EONodeP newO
         return NOTOK;
 
     if (gp_InitGraph(newSubgraphForBridgeSet, numVerticesInSubgraph) != OK ||
-        gp_AttachK33Search(newSubgraphForBridgeSet) != OK)
+        gp_ExtendWith_K33Search(newSubgraphForBridgeSet) != OK)
     {
         gp_Free(&newSubgraphForBridgeSet);
         return NOTOK;
@@ -1110,9 +1108,9 @@ int _K33Search_ExtractVWBridgeSet(graphP theGraph, int R, K33Search_EONodeP newO
     // in the subgraph.
     // NOTE: We only add one to the edge count if the virtual edge between the 2-cut endpoints
     //       was added, which we only do if it is not going to be a duplicate edge.
-    e = gp_GetNeighborEdgeRecord(newSubgraphForBridgeSet,
-                                 gp_GetFirstVertex(newSubgraphForBridgeSet),
-                                 gp_GetFirstVertex(newSubgraphForBridgeSet) + 1);
+    e = _gp_FindEdge(newSubgraphForBridgeSet,
+                     gp_GetFirstVertex(newSubgraphForBridgeSet),
+                     gp_GetFirstVertex(newSubgraphForBridgeSet) + 1);
 
     if (newSubgraphForBridgeSet->M != numEdgesInSubgraph + (gp_GetEdgeVirtual(newSubgraphForBridgeSet, e) ? 1 : 0))
     {
@@ -1159,8 +1157,8 @@ int _K33Search_AttachONodeAsChildOfRoot(graphP theGraph, K33Search_EONodeP newON
 
     // Get the second edge in the adjacency list of x (the first one should be an
     // external face edge leading to  the bicomp root or to w).
-    e = gp_GetFirstArc(theGraph, theGraph->IC.x);
-    e = gp_GetNextArc(theGraph, e);
+    e = gp_GetFirstEdge(theGraph, theGraph->IC.x);
+    e = gp_GetNextEdge(theGraph, e);
 
     // Ensure that the second edge in the adjacency list of x does in fact lead to y
     // (in other words, that it is the stand-in for the xy path)
@@ -1175,7 +1173,7 @@ int _K33Search_AttachONodeAsChildOfRoot(graphP theGraph, K33Search_EONodeP newON
     // Make the xy path edge point to the new O-node, thereby making it a child
     // of the root E-node associated with the main planar embedding that contains
     // the xy path edge.
-    context->E[e].EONode = context->E[gp_GetTwinArc(theGraph, e)].EONode = newONode;
+    context->E[e].EONode = context->E[gp_GetTwin(theGraph, e)].EONode = newONode;
     return OK;
 }
 
@@ -1194,14 +1192,14 @@ int _K33Search_AttachENodeAsChildOfONode(K33Search_EONodeP theENode, int cutv1, 
     // There are only 10 edges in the K5, which is a constant, so we just sequentially
     // search through them to find the edge that should take the E-node pointer.
     EsizeOccupied = gp_EdgeInUseArraySize(theK5);
-    for (e = gp_GetFirstEdge(theK5); e < EsizeOccupied; e += 2)
+    for (e = gp_EdgeArrayStart(theK5); e < EsizeOccupied; e += 2)
     {
         if (gp_EdgeInUse(theK5, e))
         {
             // The index field in each vertex of theK5 gives us the identity of the vertex
             // to which the K5 vertex maps in the originating graph...
             neighborIndex = theK5->V[gp_GetNeighbor(theK5, e)].index;
-            neighborIndexTwin = theK5->V[gp_GetNeighbor(theK5, gp_GetTwinArc(theK5, e))].index;
+            neighborIndexTwin = theK5->V[gp_GetNeighbor(theK5, gp_GetTwin(theK5, e))].index;
 
             // ... which we can then compare to the cut vertex indices in the original graph
             // from which the E-node's subgraph has been extracted.
@@ -1214,7 +1212,7 @@ int _K33Search_AttachENodeAsChildOfONode(K33Search_EONodeP theENode, int cutv1, 
                 gp_FindExtension(theK5, K33SEARCH_ID, (void *)&context);
                 if (context == NULL)
                     return NOTOK;
-                context->E[e].EONode = context->E[gp_GetTwinArc(theK5, e)].EONode = theENode;
+                context->E[e].EONode = context->E[gp_GetTwin(theK5, e)].EONode = theENode;
                 break;
             }
         }
@@ -1251,8 +1249,8 @@ int _CountVerticesAndEdgesInBicomp(graphP theGraph, int BicompRoot, int visitedO
         if (!visitedOnly || gp_GetVisited(theGraph, v))
             numVisitedVertices++;
 
-        e = gp_GetFirstArc(theGraph, v);
-        while (gp_IsArc(theGraph, e))
+        e = gp_GetFirstEdge(theGraph, v);
+        while (gp_IsEdge(theGraph, e))
         {
             if (!visitedOnly || gp_GetEdgeVisited(theGraph, e))
                 numVisitedEdges++;
@@ -1260,7 +1258,7 @@ int _CountVerticesAndEdgesInBicomp(graphP theGraph, int BicompRoot, int visitedO
             if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_CHILD)
                 sp_Push(theGraph->theStack, gp_GetNeighbor(theGraph, e));
 
-            e = gp_GetNextArc(theGraph, e);
+            e = gp_GetNextEdge(theGraph, e);
         }
     }
 
@@ -1287,15 +1285,15 @@ int _DeactivateBicomp(graphP theGraph, int R)
         sp_Pop(theGraph->theStack, v);
         gp_SetAnyTypeVertexDefunct(theGraph, v);
 
-        e = gp_GetFirstArc(theGraph, v);
-        while (gp_IsArc(theGraph, e))
+        e = gp_GetFirstEdge(theGraph, v);
+        while (gp_IsEdge(theGraph, e))
         {
             gp_SetEdgeVirtual(theGraph, e);
 
             if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_CHILD)
                 sp_Push(theGraph->theStack, gp_GetNeighbor(theGraph, e));
 
-            e = gp_GetNextArc(theGraph, e);
+            e = gp_GetNextEdge(theGraph, e);
         }
     }
 
@@ -1393,7 +1391,7 @@ int _CountUnembeddedEdgesInPertinentOnlySubtrees(graphP theGraph, int w, int *pN
         while (W != pertinentRoot)
         {
             // Test for an unembedded back edge to v
-            if (gp_IsArc(theGraph, gp_GetVertexPertinentEdge(theGraph, W)))
+            if (gp_IsEdge(theGraph, gp_GetVertexPertinentEdge(theGraph, W)))
                 edgeCount++;
 
             // Push all the pertinent child bicomps of W
@@ -1412,7 +1410,7 @@ int _CountUnembeddedEdgesInPertinentOnlySubtrees(graphP theGraph, int w, int *pN
     }
 
     // If w is also an unembedded back edge endpoint, then increment the counter
-    if (gp_IsArc(theGraph, gp_GetVertexPertinentEdge(theGraph, w)))
+    if (gp_IsEdge(theGraph, gp_GetVertexPertinentEdge(theGraph, w)))
         edgeCount++;
 
     // Increment the value of the output parameter and return successfully
@@ -1582,13 +1580,13 @@ int _K33Search_MapVerticesInBicomp(graphP theGraph, K33SearchContext *context, i
         // Push the direct "child" nodes of v (The quotes are around the word child
         // because an edge marked EDGE_TYPE_CHILD may in fact lead to a descendant
         // and not a direct child if there has been a ReduceBicomp).
-        e = gp_GetFirstArc(theGraph, v);
-        while (gp_IsArc(theGraph, e))
+        e = gp_GetFirstEdge(theGraph, v);
+        while (gp_IsEdge(theGraph, e))
         {
             if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_CHILD)
                 sp_Push(theGraph->theStack, gp_GetNeighbor(theGraph, e));
 
-            e = gp_GetNextArc(theGraph, e);
+            e = gp_GetNextEdge(theGraph, e);
         }
     }
 
@@ -1636,7 +1634,7 @@ int _K33Search_AddUnembeddedEdgesToSubgraph(graphP theGraph, K33SearchContext *c
         {
             // Test for an unembedded back edge to v, and add the edge if needed
             e = gp_GetVertexPertinentEdge(theGraph, W);
-            if (gp_IsArc(theGraph, e))
+            if (gp_IsEdge(theGraph, e))
             {
                 if (_K33Search_AddNewEdgeToSubgraph(theGraph, context, theGraph->IC.v, W, newSubgraphForBridgeSet) != OK)
                     return NOTOK;
@@ -1644,7 +1642,7 @@ int _K33Search_AddUnembeddedEdgesToSubgraph(graphP theGraph, K33SearchContext *c
                 // Once the edge has been added to the subgraph, we need to mark it as virtual in the main graph
                 // so that it will be ignored when assembling the main planar embedding
                 gp_SetEdgeVirtual(theGraph, e);
-                gp_SetEdgeVirtual(theGraph, gp_GetTwinArc(theGraph, e));
+                gp_SetEdgeVirtual(theGraph, gp_GetTwin(theGraph, e));
             }
 
             // Push all the pertinent child bicomps of W
@@ -1665,7 +1663,7 @@ int _K33Search_AddUnembeddedEdgesToSubgraph(graphP theGraph, K33SearchContext *c
     // If w is also an unembedded back edge endpoint, then vertex map (v, w)
     // to the new subgraph and add the resulting edge
     e = gp_GetVertexPertinentEdge(theGraph, w);
-    if (gp_IsArc(theGraph, e))
+    if (gp_IsEdge(theGraph, e))
     {
         if (_K33Search_AddNewEdgeToSubgraph(theGraph, context, theGraph->IC.v, w, newSubgraphForBridgeSet) != OK)
             return NOTOK;
@@ -1673,7 +1671,7 @@ int _K33Search_AddUnembeddedEdgesToSubgraph(graphP theGraph, K33SearchContext *c
         // Once the edge has been added to the subgraph, we need to mark it as virtual in the main graph
         // so that it will be ignored when assembling the main planar embedding
         gp_SetEdgeVirtual(theGraph, e);
-        gp_SetEdgeVirtual(theGraph, gp_GetTwinArc(theGraph, e));
+        gp_SetEdgeVirtual(theGraph, gp_GetTwin(theGraph, e));
     }
 
     return OK;
@@ -1772,12 +1770,12 @@ int _K33Search_CopyEdgesFromBicomp(graphP theGraph, K33SearchContext *context, i
     {
         sp_Pop(theGraph->theStack, v);
 
-        e = gp_GetFirstArc(theGraph, v);
-        while (gp_IsArc(theGraph, e))
+        e = gp_GetFirstEdge(theGraph, v);
+        while (gp_IsEdge(theGraph, e))
         {
             // Every edge will be visited twice by this loop construct,
             // but we only want to add the edge once...
-            if (gp_GetNeighbor(theGraph, e) < gp_GetNeighbor(theGraph, gp_GetTwinArc(theGraph, e)))
+            if (gp_GetNeighbor(theGraph, e) < gp_GetNeighbor(theGraph, gp_GetTwin(theGraph, e)))
             {
                 if (_K33Search_CopyEdgeToNewSubgraph(theGraph, context, e, newSubgraphForBridgeSet) != OK)
                     return NOTOK;
@@ -1786,7 +1784,7 @@ int _K33Search_CopyEdgesFromBicomp(graphP theGraph, K33SearchContext *context, i
             if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_CHILD)
                 sp_Push(theGraph->theStack, gp_GetNeighbor(theGraph, e));
 
-            e = gp_GetNextArc(theGraph, e);
+            e = gp_GetNextEdge(theGraph, e);
         }
     }
 
@@ -1808,7 +1806,7 @@ int _K33Search_CopyEdgeToNewSubgraph(graphP theGraph, K33SearchContext *context,
     int v, w, vInSubgraph, wInSubgraph, eInSubgraph;
 
     // Get the two vertices associated with edge e
-    v = gp_GetNeighbor(theGraph, gp_GetTwinArc(theGraph, e));
+    v = gp_GetNeighbor(theGraph, gp_GetTwin(theGraph, e));
     w = gp_GetNeighbor(theGraph, e);
     v = gp_IsBicompRoot(theGraph, v) ? gp_GetVertexFromBicompRoot(theGraph, v) : v;
     w = gp_IsBicompRoot(theGraph, w) ? gp_GetVertexFromBicompRoot(theGraph, w) : w;
@@ -1829,7 +1827,7 @@ int _K33Search_CopyEdgeToNewSubgraph(graphP theGraph, K33SearchContext *context,
     if (gp_GetEdgeVirtual(theGraph, e))
     {
         gp_SetEdgeVirtual(newSubgraphForBridgeSet, eInSubgraph);
-        gp_SetEdgeVirtual(newSubgraphForBridgeSet, gp_GetTwinArc(newSubgraphForBridgeSet, eInSubgraph));
+        gp_SetEdgeVirtual(newSubgraphForBridgeSet, gp_GetTwin(newSubgraphForBridgeSet, eInSubgraph));
     }
 
     // Transfer ownership of an EONode pointer, if one is there
@@ -1840,9 +1838,9 @@ int _K33Search_CopyEdgeToNewSubgraph(graphP theGraph, K33SearchContext *context,
             return NOTOK;
 
         contextSubgraph->E[eInSubgraph].EONode = context->E[e].EONode;
-        contextSubgraph->E[gp_GetTwinArc(newSubgraphForBridgeSet, eInSubgraph)].EONode = context->E[e].EONode;
+        contextSubgraph->E[gp_GetTwin(newSubgraphForBridgeSet, eInSubgraph)].EONode = context->E[e].EONode;
 
-        context->E[e].EONode = context->E[gp_GetTwinArc(theGraph, e)].EONode = NULL;
+        context->E[e].EONode = context->E[gp_GetTwin(theGraph, e)].EONode = NULL;
     }
 
     return OK;
@@ -1881,7 +1879,7 @@ int _K33Search_AssembleMainPlanarEmbedding(K33Search_EONodeP EOTreeRoot)
     EOTreeRoot->subgraphOwner = TRUE;
 
     // Fully initialize the root subgraph and get its K_{3,3} search extension object
-    if (gp_InitGraph(rootSubgraph, theGraph->N) != OK || gp_AttachK33Search(rootSubgraph) != OK)
+    if (gp_InitGraph(rootSubgraph, theGraph->N) != OK || gp_ExtendWith_K33Search(rootSubgraph) != OK)
         return NOTOK;
 
     gp_FindExtension(rootSubgraph, K33SEARCH_ID, (void *)&subgraphContext);
@@ -1907,7 +1905,7 @@ int _K33Search_AssembleMainPlanarEmbedding(K33Search_EONodeP EOTreeRoot)
 
     // Copy the non-virtual edges and any edges containing pointers to child O-nodes
     EsizeOccupied = gp_EdgeInUseArraySize(theGraph);
-    for (e = gp_GetFirstEdge(theGraph); e < EsizeOccupied; e += 2)
+    for (e = gp_EdgeArrayStart(theGraph); e < EsizeOccupied; e += 2)
     {
         if (gp_EdgeInUse(theGraph, e))
         {
@@ -1992,7 +1990,7 @@ int _K33Search_ValidateENodeSubtree(K33Search_EONodeP theRootENode)
         return NOTOK;
 
     EsizeOccupied = gp_EdgeInUseArraySize(theSubgraph);
-    for (e = gp_GetFirstEdge(theSubgraph); e < EsizeOccupied; e += 2)
+    for (e = gp_EdgeArrayStart(theSubgraph); e < EsizeOccupied; e += 2)
     {
         if (gp_EdgeInUse(theSubgraph, e) && subgraphContext->E[e].EONode != NULL)
         {
@@ -2054,7 +2052,7 @@ int _K33Search_ValidateONodeSubtree(K33Search_EONodeP theRootONode)
         return NOTOK;
 
     EsizeOccupied = gp_EdgeInUseArraySize(theSubgraph);
-    for (e = gp_GetFirstEdge(theSubgraph); e < EsizeOccupied; e += 2)
+    for (e = gp_EdgeArrayStart(theSubgraph); e < EsizeOccupied; e += 2)
     {
         if (gp_EdgeInUse(theSubgraph, e) && subgraphContext->E[e].EONode != NULL)
         {
@@ -2100,7 +2098,7 @@ int _K33Search_ValidateChildENodeConnection(graphP theK5, int e, K33Search_EONod
     // Now get the two vertex endpoints for the edge in the O-node's K5,
     // and then get their subgraph to graph mappings
     v = gp_GetNeighbor(theK5, e);
-    w = gp_GetNeighbor(theK5, gp_GetTwinArc(theK5, e));
+    w = gp_GetNeighbor(theK5, gp_GetTwin(theK5, e));
     v = gp_GetIndex(theK5, v);
     w = gp_GetIndex(theK5, w);
     if (v > w)
@@ -2149,7 +2147,7 @@ int _K33Search_ValidateEmbeddingObstructionTreeEdgeSet(graphP theGraph, K33Searc
     }
     // Then we tell the graphOfEmbedding that it is DFSNUMBERED and SORTEDBYDFI so that the
     // vertex index values will be interpreted as the original non-DFI numbering by gp_SortVertices()
-    graphOfEmbedding->internalFlags |= (FLAGS_DFSNUMBERED | FLAGS_SORTEDBYDFI);
+    graphOfEmbedding->graphFlags |= (FLAGS_DFSNUMBERED | FLAGS_SORTEDBYDFI);
 
     // Sort the graph of the embedding back to non-DFI order
     if (gp_SortVertices(graphOfEmbedding) != OK)
@@ -2194,14 +2192,14 @@ int _K33Search_CopyEmbeddingEdgesToGraph(graphP theMainGraph, K33Search_EONodeP 
     //       all edges in O-node subgraphs are marked virtual, but running this loop anyway
     //       does not affect the performance bound and makes sure the flags are set correctly
     EsizeOccupied = gp_EdgeInUseArraySize(theSubgraph);
-    for (e = gp_GetFirstEdge(theSubgraph); e < EsizeOccupied; e += 2)
+    for (e = gp_EdgeArrayStart(theSubgraph); e < EsizeOccupied; e += 2)
     {
         // In the main embedding, edges are sometimes deleted, so we only process
         // the non-virtual edges that are in-use (not deleted)
         if (gp_EdgeInUse(theSubgraph, e) && !gp_GetEdgeVirtual(theSubgraph, e))
         {
             v = gp_GetNeighbor(theSubgraph, e);
-            w = gp_GetNeighbor(theSubgraph, gp_GetTwinArc(theSubgraph, e));
+            w = gp_GetNeighbor(theSubgraph, gp_GetTwin(theSubgraph, e));
             vInGraph = subgraphContext->VI[v].subgraphToGraphIndex;
             wInGraph = subgraphContext->VI[w].subgraphToGraphIndex;
 
@@ -2220,7 +2218,7 @@ int _K33Search_CopyEmbeddingEdgesToGraph(graphP theMainGraph, K33Search_EONodeP 
     // NOTE: In this implementation, it is not necessary and therefore not done to have
     //       an edge whose EONode points to the EONode parent of the current EONode.
     EsizeOccupied = gp_EdgeInUseArraySize(theSubgraph);
-    for (e = gp_GetFirstEdge(theSubgraph); e < EsizeOccupied; e += 2)
+    for (e = gp_EdgeArrayStart(theSubgraph); e < EsizeOccupied; e += 2)
     {
         // In the main embedding, edges are sometimes deleted, so we only process
         // the non-virtual edges that are in-use (not deleted)
@@ -2293,7 +2291,7 @@ int _K33Search_ValidateVerticesInENodeSubtree(graphP theGraph, K33Search_EONodeP
 
     // Find all the O-nodes and recursively descend to them
     EsizeOccupied = gp_EdgeInUseArraySize(theSubgraph);
-    for (e = gp_GetFirstEdge(theSubgraph); e < EsizeOccupied; e += 2)
+    for (e = gp_EdgeArrayStart(theSubgraph); e < EsizeOccupied; e += 2)
     {
         if (gp_EdgeInUse(theSubgraph, e) && subgraphContext->E[e].EONode != NULL)
         {
@@ -2320,7 +2318,7 @@ int _K33Search_ValidateVerticesInONodeSubtree(graphP theGraph, K33Search_EONodeP
 
     // Find all the E-nodes and recursively descend to them
     EsizeOccupied = gp_EdgeInUseArraySize(theSubgraph);
-    for (e = gp_GetFirstEdge(theSubgraph); e < EsizeOccupied; e += 2)
+    for (e = gp_EdgeArrayStart(theSubgraph); e < EsizeOccupied; e += 2)
     {
         if (gp_EdgeInUse(theSubgraph, e) && subgraphContext->E[e].EONode != NULL)
         {
