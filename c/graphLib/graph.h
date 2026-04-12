@@ -17,10 +17,6 @@ extern "C"
 #include "io/g6-read-iterator.h"
 #include "io/g6-write-iterator.h"
 
-// Headers needed within library but not part of public API
-#include "io/strbuf.h"
-#include "io/strOrFile.h"
-
 #include "extensionSystem/graphExtensions.h"
 
     ///////////////////////////////////////////////////////////////////////////////
