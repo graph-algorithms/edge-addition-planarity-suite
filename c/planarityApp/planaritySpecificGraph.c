@@ -145,10 +145,13 @@ int SpecificGraph(
         // Run the algorithm
         platform_GetTime(start);
 
-        //          gp_CreateDFSTree(theGraph);
-        //          gp_SortVertices(theGraph);
-        //          gp_Write(theGraph, "debug.before.txt", WRITE_DEBUGINFO);
-        //          gp_SortVertices(theGraph);
+        // Useful for more surgical debugging situations
+        // #ifdef DEBUG
+        //        gp_CreateDFSTree(theGraph);
+        //        gp_SortVertices(theGraph);
+        //        gp_Write(theGraph, "debug.before.txt", WRITE_DEBUGINFO);
+        //        gp_SortVertices(theGraph);
+        // #endif
 
         Result = gp_Embed(theGraph, embedFlags);
 
@@ -184,7 +187,15 @@ int SpecificGraph(
     {
         ErrorMessage("AN ERROR HAS BEEN DETECTED\n");
         Result = NOTOK;
-        //      gp_Write(theGraph, "debug.after.txt", WRITE_DEBUGINFO);
+
+        // Useful for more surgical debugging situations
+        // #ifdef DEBUG
+        //        gp_Write(theGraph, "debug.after.txt", WRITE_DEBUGINFO);
+        //
+        //        gp_SortVertices(theGraph);
+        //        outfileName = ConstructPrimaryOutputFilename(infileName, outfileName, command);
+        //        gp_Write(theGraph, outfileName, WRITE_ADJLIST);
+        // #endif
     }
 
     // Provide the output file(s)

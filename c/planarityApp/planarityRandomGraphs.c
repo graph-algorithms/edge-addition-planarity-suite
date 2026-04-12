@@ -385,7 +385,7 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
             sprintf(messageContents, "Of the generated graphs, %d did not contain a K_{2,3} homeomorph as a subgraph.\n", MainStatistic);
             Message(messageContents);
         }
-        else if (embedFlags == EMBEDFLAGS_SEARCHFORK33)
+        else if ((embedFlags & EMBEDFLAGS_SEARCHFORK33) == EMBEDFLAGS_SEARCHFORK33)
         {
             sprintf(messageContents, "Of the generated graphs, %d did not contain a K_{3,3} homeomorph as a subgraph.\n", MainStatistic);
             Message(messageContents);

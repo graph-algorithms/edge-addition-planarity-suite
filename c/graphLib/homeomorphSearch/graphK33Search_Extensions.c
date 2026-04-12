@@ -423,7 +423,7 @@ int _K33Search_EmbeddingInitialize(graphP theGraph)
 
         // If the graph is not only extended with K33 Search ability
         // but also it is selected as the "embedding" process, then...
-        if (gp_GetEmbedFlags(theGraph) == EMBEDFLAGS_SEARCHFORK33)
+        if ((gp_GetEmbedFlags(theGraph) & EMBEDFLAGS_SEARCHFORK33) == EMBEDFLAGS_SEARCHFORK33)
         {
             _CreateBackEdgeLists(theGraph, context);
             _CreateSeparatedDFSChildLists(theGraph, context);
@@ -548,7 +548,7 @@ void _K33Search_EmbedBackEdgeToDescendant(graphP theGraph, int RootSide, int Roo
     {
         // If the graph is not only extended with K33 Search ability
         // but also it is selected as the "embedding" process, then...
-        if (gp_GetEmbedFlags(theGraph) == EMBEDFLAGS_SEARCHFORK33)
+        if ((gp_GetEmbedFlags(theGraph) & EMBEDFLAGS_SEARCHFORK33) == EMBEDFLAGS_SEARCHFORK33)
         {
             // Get the forward edge record from the adjacentTo field, and
             // use it to get the back edge record
@@ -597,7 +597,7 @@ int _K33Search_MergeBicomps(graphP theGraph, int v, int RootVertex, int W, int W
 
         // If the graph is not only extended with K33 Search ability
         // but also it is selected as the "embedding" process, then...
-        if (gp_GetEmbedFlags(theGraph) == EMBEDFLAGS_SEARCHFORK33)
+        if ((gp_GetEmbedFlags(theGraph) & EMBEDFLAGS_SEARCHFORK33) == EMBEDFLAGS_SEARCHFORK33)
         {
             int mergeBlocker;
 
@@ -651,7 +651,7 @@ void _K33Search_MergeVertex(graphP theGraph, int W, int WPrevLink, int R)
     {
         // If the graph is not only extended with K33 Search ability
         // but also it is selected as the "embedding" process, then...
-        if (gp_GetEmbedFlags(theGraph) == EMBEDFLAGS_SEARCHFORK33)
+        if ((gp_GetEmbedFlags(theGraph) & EMBEDFLAGS_SEARCHFORK33) == EMBEDFLAGS_SEARCHFORK33)
         {
             int theList = context->VI[W].separatedDFSChildList;
             theList = LCDelete(context->separatedDFSChildLists, theList, gp_GetDFSChildFromBicompRoot(theGraph, R));
@@ -697,7 +697,7 @@ int _K33Search_HandleBlockedBicomp(graphP theGraph, int v, int RootVertex, int R
 
     // If the graph is not only extended with K33 Search ability
     // but also it is selected as the "embedding" process, then...
-    if (gp_GetEmbedFlags(theGraph) == EMBEDFLAGS_SEARCHFORK33)
+    if ((gp_GetEmbedFlags(theGraph) & EMBEDFLAGS_SEARCHFORK33) == EMBEDFLAGS_SEARCHFORK33)
     {
         // If R is the root of a descendant bicomp of v, we push it, but then we know the search for K3,3
         // will be successful and return NONEMBEDDABLE because this condition corresponds to minor A, which
@@ -730,7 +730,7 @@ int _K33Search_EmbedPostprocess(graphP theGraph, int v, int edgeEmbeddingResult)
 
     // If the graph is not only extended with K33 Search ability
     // but also it is selected as the "embedding" process, then...
-    if (gp_GetEmbedFlags(theGraph) == EMBEDFLAGS_SEARCHFORK33)
+    if ((gp_GetEmbedFlags(theGraph) & EMBEDFLAGS_SEARCHFORK33) == EMBEDFLAGS_SEARCHFORK33)
     {
         // If the result is K3,3-free, then we need to assemble the main planar embedding,
         // which is a planar subgraph to associate with the root E-node.
@@ -821,7 +821,7 @@ int _K33Search_CheckEmbeddingIntegrity(graphP theGraph, graphP origGraph)
 {
     // If the graph has not only been extended with K33 Search ability but
     // also K33 Search has been selected as the "embedding" process, then...
-    if (gp_GetEmbedFlags(theGraph) == EMBEDFLAGS_SEARCHFORK33)
+    if ((gp_GetEmbedFlags(theGraph) & EMBEDFLAGS_SEARCHFORK33) == EMBEDFLAGS_SEARCHFORK33)
     {
 #ifdef INCLUDE_K33SEARCH_EMBEDDER
         // Given an embedding obstruction tree, we only return OK on the condition that the
@@ -863,7 +863,7 @@ int _K33Search_CheckObstructionIntegrity(graphP theGraph, graphP origGraph)
 {
     // When searching for K3,3, we ensure that theGraph is a subgraph of
     // the original graph and that it contains a K3,3 homeomorph
-    if (gp_GetEmbedFlags(theGraph) == EMBEDFLAGS_SEARCHFORK33)
+    if ((gp_GetEmbedFlags(theGraph) & EMBEDFLAGS_SEARCHFORK33) == EMBEDFLAGS_SEARCHFORK33)
     {
         int degrees[5], imageVerts[6];
 
