@@ -132,7 +132,7 @@ extern "C"
 // Definition and accessors for the edge marked flag
 // Essentially, this is a second visitation flag that can help applications that
 // must visit all edges to analyze and mark the ones important for some purpose.
-#define EDGE_MARKED_MASK 128
+#define EDGE_MARKED_MASK 2
 #define gp_GetEdgeMarked(theGraph, e) (theGraph->E[e].flags & EDGE_MARKED_MASK)
 #define gp_ClearEdgeMarked(theGraph, e) (theGraph->E[e].flags &= ~EDGE_MARKED_MASK)
 #define gp_SetEdgeMarked(theGraph, e) (theGraph->E[e].flags |= EDGE_MARKED_MASK)
