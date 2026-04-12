@@ -7,8 +7,6 @@ All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
 
-// NOTE: Since platformTime.h is only #include'd by appconst.h, and since appconst.h
-// #define's WINDOWS before including platformTime.h, we condition on WINDOWS being defined.
 #ifdef WINDOWS
 
 #include <windows.h>

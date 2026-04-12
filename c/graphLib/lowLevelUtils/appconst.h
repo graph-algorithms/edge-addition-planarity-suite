@@ -27,14 +27,6 @@ See the LICENSE.TXT file for licensing information.
 #define FILE_DELIMITER '/'
 #endif
 
-// When PROFILE is defined, prints out run-time stats on a number of subordinate
-// routines in the embedder
-
-// #define PROFILE
-#ifdef PROFILE
-#include "platformTime.h"
-#endif
-
 /* Define DEBUG to get additional debugging. The default is to define it when MSC does */
 
 #ifdef _DEBUG

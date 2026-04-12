@@ -14,6 +14,8 @@ extern "C"
 
 #include "../graphLib/graphLib.h"
 
+#include "platformTime.h"
+
 #define FILENAMEMAXLENGTH 128
 #define ALGORITHMNAMEMAXLENGTH 32
 #define SUFFIXMAXLENGTH 32

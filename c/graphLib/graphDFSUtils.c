@@ -28,17 +28,10 @@ extern void _ClearAnyTypeVertexVisitedFlags(graphP theGraph, int);
         data structures at the same time as the DFS tree is created.
  ********************************************************************/
 
-#include "lowLevelUtils/platformTime.h"
-
 int gp_CreateDFSTree(graphP theGraph)
 {
     stackP theStack;
     int DFI, v, uparent, u, e;
-
-#ifdef PROFILE
-    platform_time start, end;
-    platform_GetTime(start);
-#endif
 
     if (theGraph == NULL)
         return NOTOK;
@@ -117,11 +110,6 @@ int gp_CreateDFSTree(graphP theGraph)
 
     theGraph->graphFlags |= FLAGS_DFSNUMBERED;
 
-#ifdef PROFILE
-    platform_GetTime(end);
-    printf("DFS in %.3lf seconds.\n", platform_GetDuration(start, end));
-#endif
-
     return OK;
 }
 
@@ -174,11 +162,6 @@ int gp_SortVertices(graphP theGraph)
 int _SortVertices(graphP theGraph)
 {
     int v, EsizeOccupied, e, srcPos, dstPos;
-
-#ifdef PROFILE
-    platform_time start, end;
-    platform_GetTime(start);
-#endif
 
     if (theGraph == NULL)
         return NOTOK;
@@ -248,11 +231,6 @@ int _SortVertices(graphP theGraph)
 
     _gp_LogLine("graphDFSUtils.c/_SortVertices() end\n");
 
-#ifdef PROFILE
-    platform_GetTime(end);
-    printf("SortVertices in %.3lf seconds.\n", platform_GetDuration(start, end));
-#endif
-
     return OK;
 }
 
@@ -301,11 +279,6 @@ int gp_ComputeLowpoints(graphP theGraph)
     if (!(gp_GetGraphFlags(theGraph) & FLAGS_SORTEDBYDFI))
         if (gp_SortVertices(theGraph) != OK)
             return NOTOK;
-
-#ifdef PROFILE
-    platform_time start, end;
-    platform_GetTime(start);
-#endif
 
     _gp_LogLine("\ngraphDFSUtils.c/gp_ComputeLowpoints() start");
 
@@ -388,11 +361,6 @@ int gp_ComputeLowpoints(graphP theGraph)
 
     _gp_LogLine("graphDFSUtils.c/gp_ComputeLowpoints() end\n");
 
-#ifdef PROFILE
-    platform_GetTime(end);
-    printf("Lowpoint in %.3lf seconds.\n", platform_GetDuration(start, end));
-#endif
-
     return OK;
 }
 
@@ -427,11 +395,6 @@ int gp_ComputeLeastAncestors(graphP theGraph)
     if (!(gp_GetGraphFlags(theGraph) & FLAGS_SORTEDBYDFI))
         if (gp_SortVertices(theGraph) != OK)
             return NOTOK;
-
-#ifdef PROFILE
-    platform_time start, end;
-    platform_GetTime(start);
-#endif
 
     _gp_LogLine("\ngraphDFSUtils.c/gp_ComputeLeastAncestors() start");
 
@@ -483,11 +446,6 @@ int gp_ComputeLeastAncestors(graphP theGraph)
     }
 
     _gp_LogLine("graphDFSUtils.c/gp_ComputeLeastAncestors() end\n");
-
-#ifdef PROFILE
-    platform_GetTime(end);
-    printf("LeastAncestor in %.3lf seconds.\n", platform_GetDuration(start, end));
-#endif
 
     return OK;
 }

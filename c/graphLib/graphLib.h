@@ -19,12 +19,10 @@ extern "C"
 
 #include "graph.h"
 
-#include "lowLevelUtils/platformTime.h"
-
+#include "planarityRelated/graphDrawPlanar.h"
 #include "homeomorphSearch/graphK23Search.h"
 #include "homeomorphSearch/graphK33Search.h"
 #include "homeomorphSearch/graphK4Search.h"
-#include "planarityRelated/graphDrawPlanar.h"
 
     // This is the main location for the project and shared library version numbering.
     // Changes here must be mirrored in configure.ac

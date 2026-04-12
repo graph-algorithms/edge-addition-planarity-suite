@@ -237,11 +237,6 @@ int _EmbeddingInitialize(graphP theGraph)
     int DFI, v, R, uparent, u, uneighbor, e, f, eTwin, ePrev, eNext;
     int leastValue, child;
 
-#ifdef PROFILE
-    platform_time start, end;
-    platform_GetTime(start);
-#endif
-
     _gp_LogLine("graphEmbed.c/_EmbeddingInitialize() start\n");
 
     theStack = theGraph->theStack;
@@ -433,11 +428,6 @@ int _EmbeddingInitialize(graphP theGraph)
     }
 
     _gp_LogLine("graphEmbed.c/_EmbeddingInitialize() end\n");
-
-#ifdef PROFILE
-    platform_GetTime(end);
-    printf("Initialize embedding in %.3lf seconds.\n", platform_GetDuration(start, end));
-#endif
 
     return OK;
 }
