@@ -35,9 +35,9 @@ extern "C"
     // Maintenance is for functional revision (e.g. bug fix to existing algorithm implementation)
     // Tweak is for a non-functional revision (e.g. change of build scripts or testing code, user-facing string changes)
 
-#define GP_PROJECTVERSION_MAJOR 4
+#define GP_PROJECTVERSION_MAJOR 5
 #define GP_PROJECTVERSION_MINOR 0
-#define GP_PROJECTVERSION_MAINT 2
+#define GP_PROJECTVERSION_MAINT 0
 #define GP_PROJECTVERSION_TWEAK 0
 
     char *gp_GetProjectVersionFull(void);
