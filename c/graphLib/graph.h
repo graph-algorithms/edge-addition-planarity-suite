@@ -115,7 +115,7 @@ extern "C"
     // The embedResult output by gp_Embed() and input to gp_TestEmbedResultIntegrity()
     // can be OK if the graph is embedded or embeddable, NONEMBEDDABLE if a minimal
     // subgraph obstructing embedding has been isolated, or NOTOK on error
-    int gp_Embed(graphP theGraph, int embedFlags);
+    int gp_Embed(graphP theGraph, unsigned embedFlags);
     int gp_TestEmbedResultIntegrity(graphP theGraph, graphP origGraph, int embedResult);
 
 /* Possible graph embedFlags for gp_Embed().

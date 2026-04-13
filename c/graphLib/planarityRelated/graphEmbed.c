@@ -89,7 +89,7 @@ int _JoinBicomps(graphP theGraph);
   module that defines the embedding flag.
  ********************************************************************/
 
-int gp_Embed(graphP theGraph, int embedFlags)
+int gp_Embed(graphP theGraph, unsigned embedFlags)
 {
     int v, e, c;
     int RetVal = OK;

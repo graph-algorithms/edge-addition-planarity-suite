@@ -700,7 +700,7 @@ extern "C"
         stackP edgeHoles;
 
         stackP theStack;
-        int graphFlags, embedFlags;
+        unsigned graphFlags, embedFlags;
 
         isolatorContext IC;
         listCollectionP BicompRootLists, sortedDFSChildLists;
