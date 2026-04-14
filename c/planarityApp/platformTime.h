@@ -11,6 +11,7 @@ See the LICENSE.TXT file for licensing information.
 
 #include <windows.h>
 #include <winbase.h>
+#include <time.h>
 
 #define platform_time DWORD
 #define platform_GetTime(timeVar) (timeVar = GetTickCount())
