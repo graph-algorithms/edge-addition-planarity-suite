@@ -335,7 +335,7 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
     }
 
     if (zeroBased)
-        theGraph->graphFlags |= FLAGS_ZEROBASEDIO;
+        theGraph->graphFlags |= GRAPHFLAGS_ZEROBASEDIO;
 
     return OK;
 }
@@ -428,7 +428,7 @@ int _ReadLEDAGraph(graphP theGraph, strOrFileP inputContainer)
     }
 
     if (zeroBasedOffset)
-        theGraph->graphFlags |= FLAGS_ZEROBASEDIO;
+        theGraph->graphFlags |= GRAPHFLAGS_ZEROBASEDIO;
 
     return OK;
 }
@@ -629,7 +629,7 @@ int _WriteAdjList(graphP theGraph, strOrFileP outputContainer)
     // adjacency list terminator based on whether this library has been compiled with 0-based or
     // 1-based array indexing for the in-memory data structure (i.e., compiled with
     // USE_FASTER_1BASEDARRAYS USE_0BASEDARRAYS). The macro invoked is responsive to the difference.
-    if (gp_GetGraphFlags(theGraph) & FLAGS_ZEROBASEDIO)
+    if (gp_GetGraphFlags(theGraph) & GRAPHFLAGS_ZEROBASEDIO)
     {
         zeroBasedVertexOffset = gp_GetFirstVertex(theGraph);
         // If the graph must be written 0-based, then the adjacency list terminator must be -1,

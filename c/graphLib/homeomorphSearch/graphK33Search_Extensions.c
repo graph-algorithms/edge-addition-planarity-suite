@@ -680,7 +680,7 @@ int _K33Search_EmbedPostprocess(graphP theGraph, int v, int edgeEmbeddingResult)
             // is meaningless, so we empty it out. We preserve the embedFlags
             // to ensure post-processing continues as expected.
             savedEmbedFlags = gp_GetEmbedFlags(theGraph);
-            savedZEROBASEDIO = gp_GetGraphFlags(theGraph) & FLAGS_ZEROBASEDIO;
+            savedZEROBASEDIO = gp_GetGraphFlags(theGraph) & GRAPHFLAGS_ZEROBASEDIO;
             gp_ReinitializeGraph(theGraph);
             theGraph->embedFlags = savedEmbedFlags;
             theGraph->graphFlags &= savedZEROBASEDIO;

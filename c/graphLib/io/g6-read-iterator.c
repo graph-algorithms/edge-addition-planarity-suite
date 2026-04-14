@@ -403,7 +403,7 @@ int _g6_InitReader(G6ReadIteratorP theG6ReadIterator)
     }
 
     // Ensures zero-based flag is set regardless of whether the graph was initialized or reinitialized.
-    theG6ReadIterator->currGraph->graphFlags |= FLAGS_ZEROBASEDIO;
+    theG6ReadIterator->currGraph->graphFlags |= GRAPHFLAGS_ZEROBASEDIO;
 
     theG6ReadIterator->numCharsForOrder = _g6_GetNumCharsForOrder(order);
     theG6ReadIterator->numCharsForGraphEncoding = _g6_GetNumCharsForEncoding(order);
@@ -598,7 +598,7 @@ int g6_ReadGraph(G6ReadIteratorP theG6ReadIterator)
         {
             gp_ReinitializeGraph(currGraph);
             // Ensures zero-based flag is set after reinitializing graph.
-            currGraph->graphFlags |= FLAGS_ZEROBASEDIO;
+            currGraph->graphFlags |= GRAPHFLAGS_ZEROBASEDIO;
         }
 
         if (_g6_DecodeGraph(graphEncodingChars, order, numCharsForGraphEncoding, currGraph) != OK)

@@ -822,7 +822,7 @@ char *_RenderToString(graphP theEmbedding)
         // compiled with 0-based or 1-based array indexing for the in-memory data structure (i.e.,
         // compiled with USE_FASTER_1BASEDARRAYS USE_0BASEDARRAYS).
         // The macro invoked is responsive to the compile-time difference.
-        if (gp_GetGraphFlags(theEmbedding) & FLAGS_ZEROBASEDIO)
+        if (gp_GetGraphFlags(theEmbedding) & GRAPHFLAGS_ZEROBASEDIO)
             zeroBasedVertexOffset = gp_GetFirstVertex(theGraph);
 
         // Clear the space

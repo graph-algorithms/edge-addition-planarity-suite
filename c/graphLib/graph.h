@@ -99,17 +99,17 @@ extern "C"
     int gp_ComputeLeastAncestors(graphP theGraph);
 
 /* Graph Flags:
-        FLAGS_DFSNUMBERED is set if DFS numbering has been performed on the graph
-        FLAGS_SORTEDBYDFI records whether the graph is in original vertex order
+        GRAPHFLAGS_DFSNUMBERED is set if DFS numbering has been performed on the graph
+        GRAPHFLAGS_SORTEDBYDFI records whether the graph is in original vertex order
                 or sorted by depth first index. Successive calls to SortVertices()
                 toggle this bit.
-        FLAGS_ZEROBASEDIO is typically set by gp_Read() to indicate that the
+        GRAPHFLAGS_ZEROBASEDIO is typically set by gp_Read() to indicate that the
                 adjacency list representation in a file began with index 0.
 */
 #define gp_GetGraphFlags(theGraph) ((theGraph)->graphFlags)
-#define FLAGS_DFSNUMBERED 1
-#define FLAGS_SORTEDBYDFI 2
-#define FLAGS_ZEROBASEDIO 4
+#define GRAPHFLAGS_DFSNUMBERED 1
+#define GRAPHFLAGS_SORTEDBYDFI 2
+#define GRAPHFLAGS_ZEROBASEDIO 4
 
     // Graph embedding and result validation methods
     // The embedResult output by gp_Embed() and input to gp_TestEmbedResultIntegrity()

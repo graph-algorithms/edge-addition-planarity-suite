@@ -37,7 +37,7 @@ int gp_CreateDFSTree(graphP theGraph)
 
     if (theGraph == NULL)
         return NOTOK;
-    if (gp_GetGraphFlags(theGraph) & FLAGS_DFSNUMBERED)
+    if (gp_GetGraphFlags(theGraph) & GRAPHFLAGS_DFSNUMBERED)
         return OK;
 
     _gp_LogLine("\ngraphDFSUtils.c/gp_CreateDFSTree() start");
@@ -110,7 +110,7 @@ int gp_CreateDFSTree(graphP theGraph)
 
     _gp_LogLine("graphDFSUtils.c/gp_CreateDFSTree() end\n");
 
-    theGraph->graphFlags |= FLAGS_DFSNUMBERED;
+    theGraph->graphFlags |= GRAPHFLAGS_DFSNUMBERED;
 
     return OK;
 }
@@ -167,7 +167,7 @@ int _SortVertices(graphP theGraph)
 
     if (theGraph == NULL)
         return NOTOK;
-    if (!(gp_GetGraphFlags(theGraph) & FLAGS_DFSNUMBERED))
+    if (!(gp_GetGraphFlags(theGraph) & GRAPHFLAGS_DFSNUMBERED))
         if (gp_CreateDFSTree(theGraph) != OK)
             return NOTOK;
 
@@ -229,7 +229,7 @@ int _SortVertices(graphP theGraph)
 
     /* Invert the bit that records the sort order of the graph */
 
-    theGraph->graphFlags ^= FLAGS_SORTEDBYDFI;
+    theGraph->graphFlags ^= GRAPHFLAGS_SORTEDBYDFI;
 
     _gp_LogLine("graphDFSUtils.c/_SortVertices() end\n");
 
@@ -274,11 +274,11 @@ int gp_ComputeLowpoints(graphP theGraph)
 
     theStack = theGraph->theStack;
 
-    if (!(gp_GetGraphFlags(theGraph) & FLAGS_DFSNUMBERED))
+    if (!(gp_GetGraphFlags(theGraph) & GRAPHFLAGS_DFSNUMBERED))
         if (gp_CreateDFSTree(theGraph) != OK)
             return NOTOK;
 
-    if (!(gp_GetGraphFlags(theGraph) & FLAGS_SORTEDBYDFI))
+    if (!(gp_GetGraphFlags(theGraph) & GRAPHFLAGS_SORTEDBYDFI))
         if (gp_SortVertices(theGraph) != OK)
             return NOTOK;
 
@@ -390,11 +390,11 @@ int gp_ComputeLeastAncestors(graphP theGraph)
 
     theStack = theGraph->theStack;
 
-    if (!(gp_GetGraphFlags(theGraph) & FLAGS_DFSNUMBERED))
+    if (!(gp_GetGraphFlags(theGraph) & GRAPHFLAGS_DFSNUMBERED))
         if (gp_CreateDFSTree(theGraph) != OK)
             return NOTOK;
 
-    if (!(gp_GetGraphFlags(theGraph) & FLAGS_SORTEDBYDFI))
+    if (!(gp_GetGraphFlags(theGraph) & GRAPHFLAGS_SORTEDBYDFI))
         if (gp_SortVertices(theGraph) != OK)
             return NOTOK;
 

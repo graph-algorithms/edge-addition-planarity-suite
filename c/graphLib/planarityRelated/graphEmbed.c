@@ -369,7 +369,7 @@ int _EmbeddingInitialize(graphP theGraph)
     }
 
     // The graph is now DFS numbered
-    theGraph->graphFlags |= FLAGS_DFSNUMBERED;
+    theGraph->graphFlags |= GRAPHFLAGS_DFSNUMBERED;
 
     // (6) Now that all vertices have a DFI in the index member, we can sort vertices
     if (gp_SortVertices(theGraph) != OK)

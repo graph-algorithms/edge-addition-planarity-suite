@@ -644,7 +644,7 @@ int _DrawPlanar_WritePostprocess(graphP theGraph, char **pExtraData)
             // how much to subtract from each vertex and edge index based on whether this library has been
             // compiled with 0-based or 1-based array indexing for the in-memory data structure (i.e., compiled
             // with USE_FASTER_1BASEDARRAYS USE_0BASEDARRAYS). The macros invoked are responsive to the difference.
-            if (gp_GetGraphFlags(theGraph) & FLAGS_ZEROBASEDIO)
+            if (gp_GetGraphFlags(theGraph) & GRAPHFLAGS_ZEROBASEDIO)
             {
                 zeroBasedVertexOffset = gp_GetFirstVertex(theGraph);
                 zeroBasedEdgeOffset = gp_EdgeArrayStart(theGraph);

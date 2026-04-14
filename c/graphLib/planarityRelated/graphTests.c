@@ -880,8 +880,8 @@ int _TestSubgraph(graphP theSubgraph, graphP theGraph)
 
     // If the graph is not sorted by DFI, but the alleged subgraph is,
     // then "unsort" the alleged subgraph so both have the same vertex order
-    if (!(gp_GetGraphFlags(theGraph) & FLAGS_SORTEDBYDFI) &&
-        (gp_GetGraphFlags(theSubgraph) & FLAGS_SORTEDBYDFI))
+    if (!(gp_GetGraphFlags(theGraph) & GRAPHFLAGS_SORTEDBYDFI) &&
+        (gp_GetGraphFlags(theSubgraph) & GRAPHFLAGS_SORTEDBYDFI))
     {
         invokeSortOnSubgraph = TRUE;
         gp_SortVertices(theSubgraph);
@@ -889,8 +889,8 @@ int _TestSubgraph(graphP theSubgraph, graphP theGraph)
 
     // If the graph is not sorted by DFI, but the alleged subgraph is,
     // then "unsort" the alleged subgraph so both have the same vertex order
-    if (!(gp_GetGraphFlags(theSubgraph) & FLAGS_SORTEDBYDFI) &&
-        (gp_GetGraphFlags(theGraph) & FLAGS_SORTEDBYDFI))
+    if (!(gp_GetGraphFlags(theSubgraph) & GRAPHFLAGS_SORTEDBYDFI) &&
+        (gp_GetGraphFlags(theGraph) & GRAPHFLAGS_SORTEDBYDFI))
     {
         invokeSortOnGraph = TRUE;
         gp_SortVertices(theGraph);

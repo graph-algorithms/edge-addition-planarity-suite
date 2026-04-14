@@ -646,7 +646,7 @@ int runGraphTransformationTest(char const *command, char const *infileName, int 
             char messageContents[MAXLINE + 1];
             messageContents[0] = '\0';
 
-            // Final arg is baseFlag, which is dependent on whether the FLAGS_ZEROBASEDIO is set in a graph's graphFlags
+            // Final arg is baseFlag, which is dependent on whether the GRAPHFLAGS_ZEROBASEDIO is set in a graph's graphFlags
             Result = ConstructTransformationExpectedResultFilename(infileName, &expectedOutfileName, transformationCode, zeroBasedOutputFlag ? 0 : 1);
 
             if (Result != OK || expectedOutfileName == NULL)
