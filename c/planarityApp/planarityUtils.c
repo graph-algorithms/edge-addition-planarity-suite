@@ -662,13 +662,13 @@ char const *GetAlgorithmName(char command)
     switch (command)
     {
     case 'p':
-        algorithmName = "PlanarEmbed";
+        algorithmName = PLANARITY_NAME;
         break;
     case 'd':
         algorithmName = DRAWPLANAR_NAME;
         break;
     case 'o':
-        algorithmName = "OuterplanarEmbed";
+        algorithmName = OUTERPLANARITY_NAME;
         break;
     case '2':
         algorithmName = K23SEARCH_NAME;

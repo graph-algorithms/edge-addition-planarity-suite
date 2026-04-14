@@ -19,6 +19,8 @@ extern "C"
 
 #include "graph.h"
 
+#include "planarityRelated/graphPlanarity.h"
+#include "planarityRelated/graphOuterplanarity.h"
 #include "planarityRelated/graphDrawPlanar.h"
 #include "homeomorphSearch/graphK23Search.h"
 #include "homeomorphSearch/graphK33Search.h"

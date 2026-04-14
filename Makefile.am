@@ -27,6 +27,8 @@ libplanarity_la_SOURCES = \
 	c/graphLib/lowLevelUtils/stack.c \
 	c/graphLib/planarityRelated/graphDrawPlanar.c \
 	c/graphLib/planarityRelated/graphDrawPlanar_Extensions.c \
+	c/graphLib/planarityRelated/graphPlanarity_Extensions.c \
+	c/graphLib/planarityRelated/graphOuterplanarity_Extensions.c \
 	c/graphLib/planarityRelated/graphEmbed.c \
 	c/graphLib/planarityRelated/graphIsolator.c \
 	c/graphLib/planarityRelated/graphNonplanar.c \
@@ -65,7 +67,9 @@ nobase_pkginclude_HEADERS = \
 	c/graphLib/lowLevelUtils/listcoll.h \
 	c/graphLib/lowLevelUtils/stack.h \
 	c/graphLib/planarityRelated/graphDrawPlanar.h \
-	c/graphLib/planarityRelated/graphDrawPlanar.private.h
+	c/graphLib/planarityRelated/graphDrawPlanar.private.h \
+	c/graphLib/planarityRelated/graphPlanarity.h \
+	c/graphLib/planarityRelated/graphOuterplanarity.h 
 
 bin_PROGRAMS = planarity
 planarity_LDADD  = libplanarity.la
