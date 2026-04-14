@@ -9,6 +9,7 @@ See the LICENSE.TXT file for licensing information.
 
 #include "../graph.h"
 
+#include "../extensionSystem/graphExtensions.h"
 #include "../extensionSystem/graphExtensions.private.h"
 
 #ifdef __cplusplus

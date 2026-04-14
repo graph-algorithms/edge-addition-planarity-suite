@@ -14,10 +14,8 @@ extern "C"
 
 #include "graphStructures.h"
 
-#include "extensionSystem/graphExtensions.h"
-
     ///////////////////////////////////////////////////////////////////////////////
-    // Definitions for higher-order operations at the vertex, edge and graph levels
+    // The top-level operations at the graph, vertex, and edge levels
     ///////////////////////////////////////////////////////////////////////////////
 
     // Methods related to graph allocation, initialization, and destruction
@@ -78,7 +76,7 @@ extern "C"
     int gp_IdentifyVertices(graphP theGraph, int u, int v, int eBefore);
     int gp_RestoreVertices(graphP theGraph);
 
-    // Methods and declarations related to depth-first search (DFS): see graphDFSUtils.h
+    // For methods and declarations related to depth-first search (DFS), see graphDFSUtils.h
 
 /* Graph Flags (set by some public APIs):
         GRAPHFLAGS_DFSNUMBERED is set if DFS numbering has been performed on the graph
@@ -90,7 +88,7 @@ extern "C"
 */
 #define gp_GetGraphFlags(theGraph) ((theGraph)->graphFlags)
 
-    // Graph embedding methods and declarations: see graphPlanarity.h
+    // For graph embedding methods and declarations, see graphPlanarity.h
 
 #ifdef __cplusplus
 }

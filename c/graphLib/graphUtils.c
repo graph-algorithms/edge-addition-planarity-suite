@@ -8,6 +8,7 @@ See the LICENSE.TXT file for licensing information.
 
 #include "graphLib.h"
 
+#include "extensionSystem/graphExtensions.h"
 #include "extensionSystem/graphExtensions.private.h"
 
 /* Imported functions for FUNCTION POINTERS */
