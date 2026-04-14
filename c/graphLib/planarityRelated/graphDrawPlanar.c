@@ -9,6 +9,9 @@ See the LICENSE.TXT file for licensing information.
 #include "graphDrawPlanar.h"
 #include "graphDrawPlanar.private.h"
 
+// For definition of zero-based IO flag
+#include "../io/graphIO.h"
+
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>

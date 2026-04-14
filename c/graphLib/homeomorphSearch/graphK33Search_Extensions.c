@@ -9,6 +9,12 @@ See the LICENSE.TXT file for licensing information.
 #include "graphK33Search.private.h"
 #include "graphK33Search.h"
 
+// A graph extended with planarity is the "base class" of a graph extended with K3,3 Search
+#include "../planarityRelated/graphPlanarity.h"
+
+// Need to save and restore a graph flag related to IO
+#include "../io/graphIO.h"
+
 extern int _SearchForMergeBlocker(graphP theGraph, K33SearchContext *context, int v, int *pMergeBlocker);
 extern int _FindK33WithMergeBlocker(graphP theGraph, K33SearchContext *context, int v, int mergeBlocker);
 extern int _SearchForK33InBicomp(graphP theGraph, K33SearchContext *context, int v, int R);

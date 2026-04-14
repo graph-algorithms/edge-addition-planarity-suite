@@ -8,6 +8,8 @@ See the LICENSE.TXT file for licensing information.
 
 #include "graph.h"
 
+#include "graphDFSUtils.h"
+
 #include "extensionSystem/graphExtensions.private.h"
 
 // Private methods, except exported within library

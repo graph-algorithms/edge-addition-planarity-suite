@@ -9,6 +9,12 @@ See the LICENSE.TXT file for licensing information.
 #include "graphK23Search.private.h"
 #include "graphK23Search.h"
 
+// A graph extended with planarity is the "base class" of a graph extended with K2,3 Search
+#include "../planarityRelated/graphPlanarity.h"
+
+// Need to save and restore a graph flag related to IO
+#include "../io/graphIO.h"
+
 extern int _SearchForK23InBicomp(graphP theGraph, int v, int R);
 
 extern int _TestForK23GraphObstruction(graphP theGraph, int *degrees, int *imageVerts);

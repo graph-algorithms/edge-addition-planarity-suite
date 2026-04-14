@@ -9,6 +9,12 @@ See the LICENSE.TXT file for licensing information.
 #include "graphDrawPlanar.private.h"
 #include "graphDrawPlanar.h"
 
+// A graph extended with planarity is the "base class" of a graph extended with K3,3 Search
+#include "../planarityRelated/graphPlanarity.h"
+
+// Need to save and restore a graph flag related to IO
+#include "../io/graphIO.h"
+
 extern void _ClearAnyTypeVertexVisitedFlags(graphP theGraph, int);
 
 extern void _CollectDrawingData(DrawPlanarContext *context, int RootVertex, int W, int WPrevLink);

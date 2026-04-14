@@ -22,7 +22,10 @@ extern "C"
 #include "io/g6-read-iterator.h"
 #include "io/g6-write-iterator.h"
 
+#include "graphDFSUtils.h"
+
 #include "planarityRelated/graphPlanarity.h"
+
 #include "planarityRelated/graphOuterplanarity.h"
 #include "planarityRelated/graphDrawPlanar.h"
 #include "homeomorphSearch/graphK23Search.h"

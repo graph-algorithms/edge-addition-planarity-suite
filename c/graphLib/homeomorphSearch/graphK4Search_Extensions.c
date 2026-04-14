@@ -9,6 +9,12 @@ See the LICENSE.TXT file for licensing information.
 #include "graphK4Search.private.h"
 #include "graphK4Search.h"
 
+// A graph extended with planarity is the "base class" of a graph extended with K4 Search
+#include "../planarityRelated/graphPlanarity.h"
+
+// Need to save and restore a graph flag related to IO
+#include "../io/graphIO.h"
+
 extern int _SearchForK4InBicomp(graphP theGraph, K4SearchContext *context, int v, int R);
 
 extern int _TestForCompleteGraphObstruction(graphP theGraph, int numVerts,

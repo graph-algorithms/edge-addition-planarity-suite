@@ -78,13 +78,9 @@ extern "C"
     int gp_IdentifyVertices(graphP theGraph, int u, int v, int eBefore);
     int gp_RestoreVertices(graphP theGraph);
 
-    // DFS-related methods
-    int gp_CreateDFSTree(graphP theGraph);
-    int gp_SortVertices(graphP theGraph);
-    int gp_ComputeLowpoints(graphP theGraph);
-    int gp_ComputeLeastAncestors(graphP theGraph);
+    // Methods and declarations related to depth-first search (DFS): see graphDFSUtils.h
 
-/* Graph Flags:
+/* Graph Flags (set by some public APIs):
         GRAPHFLAGS_DFSNUMBERED is set if DFS numbering has been performed on the graph
         GRAPHFLAGS_SORTEDBYDFI records whether the graph is in original vertex order
                 or sorted by depth first index. Successive calls to SortVertices()
@@ -93,38 +89,8 @@ extern "C"
                 adjacency list representation in a file began with index 0.
 */
 #define gp_GetGraphFlags(theGraph) ((theGraph)->graphFlags)
-#define GRAPHFLAGS_DFSNUMBERED 1
-#define GRAPHFLAGS_SORTEDBYDFI 2
-#define GRAPHFLAGS_ZEROBASEDIO 4
 
-    // Graph embedding and result validation methods
-    // The embedResult output by gp_Embed() and input to gp_TestEmbedResultIntegrity()
-    // can be OK if the graph is embedded or embeddable, NONEMBEDDABLE if a minimal
-    // subgraph obstructing embedding has been isolated, or NOTOK on error
-    int gp_Embed(graphP theGraph, unsigned embedFlags);
-    int gp_TestEmbedResultIntegrity(graphP theGraph, graphP origGraph, int embedResult);
-
-/* Possible graph embedFlags for gp_Embed().
-    The planar and outerplanar settings are supported natively;
-    The rest are supported via  extension modules.
-*/
-#define gp_GetEmbedFlags(theGraph) ((theGraph)->embedFlags)
-
-#define EMBEDFLAGS_PLANAR 1
-#define EMBEDFLAGS_OUTERPLANAR 2
-
-#define EMBEDFLAGS_DRAWPLANAR (4 | EMBEDFLAGS_PLANAR)
-
-#define EMBEDFLAGS_SEARCHFORK23 (8 | EMBEDFLAGS_OUTERPLANAR)
-#define EMBEDFLAGS_SEARCHFORK33 (16 | EMBEDFLAGS_PLANAR)
-#define EMBEDFLAGS_SEARCHFORK4 (32 | EMBEDFLAGS_OUTERPLANAR)
-
-// Reserve flag bits for possible future embedding-related extension modules
-#define EMBEDFLAGS_SEARCHFORK5 (64 | EMBEDFLAGS_PLANAR)
-#define EMBEDFLAGS_SEARCHFORK5MINOR (128 | EMBEDFLAGS_PLANAR)
-#define EMBEDFLAGS_MAXIMALPLANARSUBGRAPH (256 | EMBEDFLAGS_PLANAR)
-#define EMBEDFLAGS_PROJECTIVEPLANAR 512
-#define EMBEDFLAGS_TOROIDAL 1024
+    // Graph embedding methods and declarations: see graphPlanarity.h
 
 #ifdef __cplusplus
 }

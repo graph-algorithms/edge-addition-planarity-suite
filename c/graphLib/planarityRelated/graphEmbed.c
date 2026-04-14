@@ -8,6 +8,13 @@ See the LICENSE.TXT file for licensing information.
 
 #include "../graph.h"
 
+// This source file has its own versions of some DFS methods, for efficiency,
+// so it has to set some of the same graph flags
+#include "../graphDFSUtils.h"
+
+// This source file implements the main graph planarity method, gp_Embed()
+#include "graphPlanarity.h"
+
 #include "../extensionSystem/graphExtensions.private.h"
 
 // Includes needed by _gp_EmbedFlagsValid(), until it become overloadable

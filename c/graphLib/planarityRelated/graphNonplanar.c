@@ -8,6 +8,9 @@ See the LICENSE.TXT file for licensing information.
 
 #include "../graph.h"
 
+// This source file implements subroutines of the main graph planarity method, gp_Embed()
+#include "graphPlanarity.h"
+
 /* Imported functions */
 
 extern void _InitIsolatorContext(graphP theGraph);

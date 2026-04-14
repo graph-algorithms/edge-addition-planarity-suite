@@ -9,6 +9,9 @@ See the LICENSE.TXT file for licensing information.
 
 #include "g6-read-iterator.h"
 
+// For definition of zero-based IO flag
+#include "graphIO.h"
+
 /* Imported functions */
 extern int _g6_GetNumCharsForEncoding(int);
 extern int _g6_GetNumCharsForOrder(int);
