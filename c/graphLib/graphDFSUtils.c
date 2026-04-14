@@ -8,6 +8,8 @@ See the LICENSE.TXT file for licensing information.
 
 #include "graph.h"
 
+#include "extensionSystem/graphExtensions.private.h"
+
 // Private methods, except exported within library
 int _SortVertices(graphP theGraph);
 
@@ -134,7 +136,7 @@ int gp_SortVertices(graphP theGraph)
     if (theGraph == NULL)
         return NOTOK;
 
-    return theGraph->functions.fpSortVertices(theGraph);
+    return theGraph->functions->fpSortVertices(theGraph);
 }
 
 // Give macro names to swap operations used when sorting vertices

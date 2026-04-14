@@ -4,10 +4,10 @@ All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
 
+#include "../graph.h"
+
 #include "graphDrawPlanar.h"
 #include "graphDrawPlanar.private.h"
-
-#include "../graph.h"
 
 #include <string.h>
 #include <stdlib.h>

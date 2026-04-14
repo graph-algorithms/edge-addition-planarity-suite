@@ -19,7 +19,7 @@ extern "C"
     typedef struct baseGraphStructure baseGraphStructure;
     typedef baseGraphStructure *graphP;
 
-    typedef struct
+    struct graphFunctionTable
     {
         // These function pointers allow extension modules to overload some of
         // the behaviors of protected functions.  Only advanced applications
@@ -54,9 +54,9 @@ extern "C"
         int (*fpRestoreVertex)(graphP);
         int (*fpContractEdge)(graphP, int);
         int (*fpIdentifyVertices)(graphP, int, int, int);
+    };
 
-    } graphFunctionTable;
-
+    typedef struct graphFunctionTable graphFunctionTable;
     typedef graphFunctionTable *graphFunctionTableP;
 
 #ifdef __cplusplus

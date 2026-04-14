@@ -6,6 +6,9 @@ See the LICENSE.TXT file for licensing information.
 
 #include "../graph.h"
 
+#include "graphK23Search.h"
+#include "graphK33Search.private.h"
+
 /* Imported functions */
 
 extern void _ClearAllVisitedFlagsInGraph(graphP);
@@ -189,7 +192,7 @@ int _IsolateOuterplanarityObstructionE1orE2(graphP theGraph)
     /* Final bits are in common */
 
     if (_FindUnembeddedEdgeToCurVertex(theGraph, IC->w, &IC->dw) != TRUE ||
-        theGraph->functions.fpMarkDFSPath(theGraph, IC->w, IC->dw) != OK ||
+        theGraph->functions->fpMarkDFSPath(theGraph, IC->w, IC->dw) != OK ||
         _JoinBicomps(theGraph) != OK ||
         _AddAndMarkEdge(theGraph, IC->v, IC->dw) != OK)
         return NOTOK;
@@ -244,9 +247,9 @@ int _IsolateOuterplanarityObstructionE3orE4(graphP theGraph)
         if (_FindUnembeddedEdgeToAncestor(theGraph, XorY, &u, &d) != TRUE)
             return NOTOK;
 
-        if (theGraph->functions.fpMarkDFSPath(theGraph, u, IC->v) != OK ||
-            theGraph->functions.fpMarkDFSPath(theGraph, XorY, d) != OK ||
-            theGraph->functions.fpMarkDFSPath(theGraph, IC->w, IC->dw) != OK ||
+        if (theGraph->functions->fpMarkDFSPath(theGraph, u, IC->v) != OK ||
+            theGraph->functions->fpMarkDFSPath(theGraph, XorY, d) != OK ||
+            theGraph->functions->fpMarkDFSPath(theGraph, IC->w, IC->dw) != OK ||
             _JoinBicomps(theGraph) != OK ||
             _AddAndMarkEdge(theGraph, u, d) != OK ||
             _AddAndMarkEdge(theGraph, IC->v, IC->dw) != OK)

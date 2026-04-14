@@ -9,6 +9,8 @@ See the LICENSE.TXT file for licensing information.
 
 #include "../graph.h"
 
+#include "../extensionSystem/graphExtensions.private.h"
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -21,7 +23,7 @@ extern "C"
 
     } K23SearchContext;
 
-extern int K23SEARCH_ID;
+    extern int K23SEARCH_ID;
 
 #ifdef __cplusplus
 }

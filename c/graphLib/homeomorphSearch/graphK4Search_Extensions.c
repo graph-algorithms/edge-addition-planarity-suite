@@ -387,7 +387,7 @@ int _K4Search_HandleBlockedBicomp(graphP theGraph, int v, int RootVertex, int R)
                 // root edge child, then Walkdown calls this routine again, and the above non-reentrancy
                 // code returns NONEMBEDDABLE, causing this loop to search again for a K4.
                 theGraph->IC.minorType = 0;
-                RetVal = theGraph->functions.fpWalkDown(theGraph, v, RootVertex);
+                RetVal = theGraph->functions->fpWalkDown(theGraph, v, RootVertex);
 
                 // Except if the Walkdown returns NONEMBEDDABLE due to finding a K4 homeomorph entangled
                 // with a descendant bicomp (the R != RootVertex case above), then it was found

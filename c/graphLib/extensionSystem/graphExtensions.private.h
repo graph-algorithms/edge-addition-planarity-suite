@@ -14,7 +14,7 @@ extern "C"
 {
 #endif
 
-    typedef struct
+    struct graphExtension
     {
         int moduleID;
         void *context;
@@ -24,8 +24,9 @@ extern "C"
         graphFunctionTableP functions;
 
         struct graphExtension *next;
-    } graphExtension;
+    };
 
+    typedef struct graphExtension graphExtension;
     typedef graphExtension *graphExtensionP;
 
 #ifdef __cplusplus

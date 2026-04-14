@@ -10,6 +10,8 @@ See the LICENSE.TXT file for licensing information.
 
 #include "../graph.h"
 
+#include "../extensionSystem/graphExtensions.private.h"
+
 /* Imported functions */
 extern int _g6_ReadGraphFromStrOrFile(graphP theGraph, strOrFileP *pG6InputContainer);
 extern int _g6_WriteGraphToStrOrFile(graphP theGraph, strOrFileP *pOutputContainer);
@@ -574,7 +576,7 @@ int _ReadGraph(graphP theGraph, strOrFileP *pInputContainer)
                     }
 
                     if (sb_GetSize(extraData) > 0)
-                        RetVal = theGraph->functions.fpReadPostprocess(theGraph, sb_GetReadString(extraData));
+                        RetVal = theGraph->functions->fpReadPostprocess(theGraph, sb_GetReadString(extraData));
 
                     sb_Free(&extraData);
                     extraData = NULL;
@@ -1047,7 +1049,7 @@ int _WriteGraph(graphP theGraph, strOrFileP *pOutputContainer, int Mode)
     {
         char *extraData = NULL;
 
-        RetVal = theGraph->functions.fpWritePostprocess(theGraph, &extraData);
+        RetVal = theGraph->functions->fpWritePostprocess(theGraph, &extraData);
 
         if (extraData != NULL)
         {

@@ -7,7 +7,9 @@ See the LICENSE.TXT file for licensing information.
 #define GRAPHTEST_C
 
 #include "../graph.h"
+
 #include "../lowLevelUtils/stack.h"
+#include "../extensionSystem/graphExtensions.private.h"
 
 extern void _ClearAnyTypeVertexVisitedFlags(graphP theGraph, int);
 
@@ -89,11 +91,11 @@ int gp_TestEmbedResultIntegrity(graphP theGraph, graphP origGraph, int embedResu
 
     if (embedResult == OK)
     {
-        RetVal = theGraph->functions.fpCheckEmbeddingIntegrity(theGraph, origGraph);
+        RetVal = theGraph->functions->fpCheckEmbeddingIntegrity(theGraph, origGraph);
     }
     else if (embedResult == NONEMBEDDABLE)
     {
-        RetVal = theGraph->functions.fpCheckObstructionIntegrity(theGraph, origGraph);
+        RetVal = theGraph->functions->fpCheckObstructionIntegrity(theGraph, origGraph);
     }
 
     if (RetVal == OK)

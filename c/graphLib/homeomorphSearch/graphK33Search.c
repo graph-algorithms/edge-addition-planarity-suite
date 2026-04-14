@@ -4,10 +4,10 @@ All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
 
+#include "../graph.h"
+
 #include "graphK33Search.h"
 #include "graphK33Search.private.h"
-
-#include "../graph.h"
 
 /* Imported functions */
 
@@ -847,7 +847,7 @@ int _FindK33WithMergeBlocker(graphP theGraph, K33SearchContext *context, int v, 
     e = gp_GetVertexFwdEdgeList(theGraph, IC->v);
     while (gp_IsEdge(theGraph, e))
     {
-        theGraph->functions.fpWalkUp(theGraph, IC->v, e);
+        theGraph->functions->fpWalkUp(theGraph, IC->v, e);
 
         e = gp_GetNextEdge(theGraph, e);
         if (e == gp_GetVertexFwdEdgeList(theGraph, IC->v))
@@ -1340,7 +1340,7 @@ int _ReduceBicomp(graphP theGraph, K33SearchContext *context, int R)
           Case 3. (V, ..., Y=min, ..., W=mid, ..., X=max)
           Case 4. (V, ..., Y=min, ..., X=mid, ..., W=max) */
 
-    if (theGraph->functions.fpMarkDFSPath(theGraph, R, max) != OK)
+    if (theGraph->functions->fpMarkDFSPath(theGraph, R, max) != OK)
         return NOTOK;
 
     /* Now we use A to mark a path on the external face corresponding to:
@@ -1349,7 +1349,7 @@ int _ReduceBicomp(graphP theGraph, K33SearchContext *context, int R)
           Case 3. (V, ..., X=max)
           Case 4. (V, ..., X=mid) */
 
-    if (theGraph->functions.fpMarkDFSPath(theGraph, min == IC->x ? IC->y : IC->x, A) != OK)
+    if (theGraph->functions->fpMarkDFSPath(theGraph, min == IC->x ? IC->y : IC->x, A) != OK)
         return NOTOK;
 
     gp_SetEdgeVisited(theGraph, A_edge);
@@ -1362,7 +1362,7 @@ int _ReduceBicomp(graphP theGraph, K33SearchContext *context, int R)
           Case 3. (Y=min, ..., B, ..., X=max)
           Case 4. (Y=min, ..., B, ..., W=max) */
 
-    if (theGraph->functions.fpMarkDFSPath(theGraph, max, B) != OK)
+    if (theGraph->functions->fpMarkDFSPath(theGraph, max, B) != OK)
         return NOTOK;
 
     gp_SetEdgeVisited(theGraph, B_edge);
@@ -1816,7 +1816,7 @@ int _MarkStraddlingBridgePath(graphP theGraph, int u_min, int u_max, int u_d, in
     /* Find the point of intersection p between the path (v ... u_max)
            and the path (d ... u_max). */
 
-    if (theGraph->functions.fpMarkDFSPath(theGraph, u_max, IC->r) != OK)
+    if (theGraph->functions->fpMarkDFSPath(theGraph, u_max, IC->r) != OK)
         return NOTOK;
 
     p = d;
@@ -1883,7 +1883,7 @@ int _MarkStraddlingBridgePath(graphP theGraph, int u_min, int u_max, int u_d, in
         ancestor of u_min, then mark the path that joins u_d to u_min. */
 
     if (u_d < u_min)
-        if (theGraph->functions.fpMarkDFSPath(theGraph, u_d, u_min) != OK)
+        if (theGraph->functions->fpMarkDFSPath(theGraph, u_d, u_min) != OK)
             return NOTOK;
 
     return OK;
@@ -1901,8 +1901,8 @@ int _IsolateMinorE5(graphP theGraph)
 
     if (_MarkPathAlongBicompExtFace(theGraph, IC->r, IC->x) != OK ||
         _MarkPathAlongBicompExtFace(theGraph, IC->y, IC->r) != OK ||
-        theGraph->functions.fpMarkDFSPath(theGraph, MIN3(IC->ux, IC->uy, IC->uz),
-                                          MAX3(IC->ux, IC->uy, IC->uz)) != OK ||
+        theGraph->functions->fpMarkDFSPath(theGraph, MIN3(IC->ux, IC->uy, IC->uz),
+                                           MAX3(IC->ux, IC->uy, IC->uz)) != OK ||
         _MarkDFSPathsToDescendants(theGraph) != OK ||
         _JoinBicomps(theGraph) != OK ||
         _AddAndMarkUnembeddedEdges(theGraph) != OK)
@@ -1951,7 +1951,7 @@ int _IsolateMinorE6(graphP theGraph, K33SearchContext *context)
 
     /* Make the final markings and edge additions */
 
-    if (theGraph->functions.fpMarkDFSPath(theGraph, u_min, u_max) != OK ||
+    if (theGraph->functions->fpMarkDFSPath(theGraph, u_min, u_max) != OK ||
         _MarkDFSPathsToDescendants(theGraph) != OK ||
         _JoinBicomps(theGraph) != OK ||
         _AddAndMarkUnembeddedEdges(theGraph) != OK ||
@@ -1999,7 +1999,7 @@ int _IsolateMinorE7(graphP theGraph, K33SearchContext *context)
 
     /* Make the final markings and edge additions */
 
-    if (theGraph->functions.fpMarkDFSPath(theGraph, u_min, u_max) != OK ||
+    if (theGraph->functions->fpMarkDFSPath(theGraph, u_min, u_max) != OK ||
         _MarkDFSPathsToDescendants(theGraph) != OK ||
         _JoinBicomps(theGraph) != OK ||
         _AddAndMarkUnembeddedEdges(theGraph) != OK ||

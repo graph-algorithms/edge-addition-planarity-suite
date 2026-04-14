@@ -4,10 +4,10 @@ All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
 
+#include "../graph.h"
+
 #include "graphK4Search.h"
 #include "graphK4Search.private.h"
-
-#include "../graph.h"
 
 /* Imported functions */
 
@@ -721,11 +721,11 @@ int _K4_IsolateMinorA1(graphP theGraph)
 
     if (IC->uz < IC->v)
     {
-        if (theGraph->functions.fpMarkDFSPath(theGraph, IC->uz, IC->v) != OK)
+        if (theGraph->functions->fpMarkDFSPath(theGraph, IC->uz, IC->v) != OK)
             return NOTOK;
     }
 
-    if (theGraph->functions.fpMarkDFSPath(theGraph, IC->z, IC->dz) != OK)
+    if (theGraph->functions->fpMarkDFSPath(theGraph, IC->z, IC->dz) != OK)
         return NOTOK;
 
     if (_IsolateOuterplanarityObstructionA(theGraph) != OK)
@@ -783,16 +783,16 @@ int _K4_IsolateMinorB1(graphP theGraph)
 {
     isolatorContextP IC = &theGraph->IC;
 
-    if (theGraph->functions.fpMarkDFSPath(theGraph, IC->x, IC->dx) != OK)
+    if (theGraph->functions->fpMarkDFSPath(theGraph, IC->x, IC->dx) != OK)
         return NOTOK;
 
-    if (theGraph->functions.fpMarkDFSPath(theGraph, IC->y, IC->dy) != OK)
+    if (theGraph->functions->fpMarkDFSPath(theGraph, IC->y, IC->dy) != OK)
         return NOTOK;
 
     // The path from the bicomp root to MIN(ux,uy) is marked to ensure the
     // connection from the image vertices v and MAX(ux,uy) as well as the
     // connection from MAX(ux,uy) through MIN(ux,uy) to (ux==MIN(ux,uy)?x:y)
-    if (theGraph->functions.fpMarkDFSPath(theGraph, MIN(IC->ux, IC->uy), IC->r) != OK)
+    if (theGraph->functions->fpMarkDFSPath(theGraph, MIN(IC->ux, IC->uy), IC->r) != OK)
         return NOTOK;
 
     // This makes the following connections (a_x ... v), (a_y ... v), and
@@ -868,7 +868,7 @@ int _K4_ReduceBicompToEdge(graphP theGraph, K4SearchContext *context, int R, int
     if (_OrientVerticesInBicomp(theGraph, R, 0) != OK ||
         _ClearAllVisitedFlagsInBicomp(theGraph, R) != OK)
         return NOTOK;
-    if (theGraph->functions.fpMarkDFSPath(theGraph, R, W) != OK)
+    if (theGraph->functions->fpMarkDFSPath(theGraph, R, W) != OK)
         return NOTOK;
     if (_K4_DeleteUnmarkedEdgesInBicomp(theGraph, context, R) != OK)
         return NOTOK;
@@ -953,7 +953,7 @@ int _K4_ReducePathComponent(graphP theGraph, K4SearchContext *context, int R, in
     if (_K4_TestPathComponentForAncestor(theGraph, R, prevLink, A))
     {
         _K4_ClearVisitedInPathComponent(theGraph, R, prevLink, A);
-        if (theGraph->functions.fpMarkDFSPath(theGraph, R, A) != OK)
+        if (theGraph->functions->fpMarkDFSPath(theGraph, R, A) != OK)
             return NOTOK;
         edgeType = EDGE_TYPE_PARENT;
 
@@ -967,7 +967,7 @@ int _K4_ReducePathComponent(graphP theGraph, K4SearchContext *context, int R, in
         Z = gp_GetNeighbor(theGraph, e_R);
         gp_SetEdgeVisited(theGraph, e_R);
         gp_SetEdgeVisited(theGraph, gp_GetTwin(theGraph, e_R));
-        if (theGraph->functions.fpMarkDFSPath(theGraph, A, Z) != OK)
+        if (theGraph->functions->fpMarkDFSPath(theGraph, A, Z) != OK)
         {
             return NOTOK;
         }

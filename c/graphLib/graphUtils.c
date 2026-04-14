@@ -8,6 +8,8 @@ See the LICENSE.TXT file for licensing information.
 
 #include "graphLib.h"
 
+#include "extensionSystem/graphExtensions.private.h"
+
 /* Imported functions for FUNCTION POINTERS */
 
 extern int _EmbeddingInitialize(graphP theGraph);
@@ -140,8 +142,9 @@ char *gp_GetLibPlanarityVersionFull(void)
 graphP gp_New(void)
 {
     graphP theGraph = (graphP)malloc(sizeof(baseGraphStructure));
+    graphFunctionTableP functionTable = (graphFunctionTableP)calloc(1, sizeof(graphFunctionTable));
 
-    if (theGraph != NULL)
+    if (theGraph != NULL && functionTable != NULL)
     {
         theGraph->E = NULL;
         theGraph->V = NULL;
@@ -157,9 +160,23 @@ graphP gp_New(void)
 
         theGraph->extensions = NULL;
 
+        theGraph->functions = functionTable;
         _InitFunctionTable(theGraph);
 
         _ClearGraph(theGraph);
+    }
+    else
+    {
+        if (theGraph != NULL)
+        {
+            free(theGraph);
+            theGraph = NULL;
+        }
+        if (functionTable != NULL)
+        {
+            free(functionTable);
+            functionTable = NULL;
+        }
     }
 
     return theGraph;
@@ -181,33 +198,36 @@ graphP gp_New(void)
 
 void _InitFunctionTable(graphP theGraph)
 {
-    theGraph->functions.fpEmbeddingInitialize = _EmbeddingInitialize;
-    theGraph->functions.fpEmbedBackEdgeToDescendant = _EmbedBackEdgeToDescendant;
-    theGraph->functions.fpWalkUp = _WalkUp;
-    theGraph->functions.fpWalkDown = _WalkDown;
-    theGraph->functions.fpMergeBicomps = _MergeBicomps;
-    theGraph->functions.fpMergeVertex = _MergeVertex;
-    theGraph->functions.fpHandleBlockedBicomp = _HandleBlockedBicomp;
-    theGraph->functions.fpHandleInactiveVertex = _HandleInactiveVertex;
-    theGraph->functions.fpEmbedPostprocess = _EmbedPostprocess;
-    theGraph->functions.fpMarkDFSPath = _MarkDFSPath;
-    theGraph->functions.fpCheckEmbeddingIntegrity = _CheckEmbeddingIntegrity;
-    theGraph->functions.fpCheckObstructionIntegrity = _CheckObstructionIntegrity;
+    if (theGraph != NULL && theGraph->functions != NULL)
+    {
+        theGraph->functions->fpEmbeddingInitialize = _EmbeddingInitialize;
+        theGraph->functions->fpEmbedBackEdgeToDescendant = _EmbedBackEdgeToDescendant;
+        theGraph->functions->fpWalkUp = _WalkUp;
+        theGraph->functions->fpWalkDown = _WalkDown;
+        theGraph->functions->fpMergeBicomps = _MergeBicomps;
+        theGraph->functions->fpMergeVertex = _MergeVertex;
+        theGraph->functions->fpHandleBlockedBicomp = _HandleBlockedBicomp;
+        theGraph->functions->fpHandleInactiveVertex = _HandleInactiveVertex;
+        theGraph->functions->fpEmbedPostprocess = _EmbedPostprocess;
+        theGraph->functions->fpMarkDFSPath = _MarkDFSPath;
+        theGraph->functions->fpCheckEmbeddingIntegrity = _CheckEmbeddingIntegrity;
+        theGraph->functions->fpCheckObstructionIntegrity = _CheckObstructionIntegrity;
 
-    theGraph->functions.fpInitGraph = _InitGraph;
-    theGraph->functions.fpReinitializeGraph = _ReinitializeGraph;
-    theGraph->functions.fpEnsureEdgeCapacity = _EnsureEdgeCapacity;
-    theGraph->functions.fpSortVertices = _SortVertices;
+        theGraph->functions->fpInitGraph = _InitGraph;
+        theGraph->functions->fpReinitializeGraph = _ReinitializeGraph;
+        theGraph->functions->fpEnsureEdgeCapacity = _EnsureEdgeCapacity;
+        theGraph->functions->fpSortVertices = _SortVertices;
 
-    theGraph->functions.fpReadPostprocess = _ReadPostprocess;
-    theGraph->functions.fpWritePostprocess = _WritePostprocess;
+        theGraph->functions->fpReadPostprocess = _ReadPostprocess;
+        theGraph->functions->fpWritePostprocess = _WritePostprocess;
 
-    theGraph->functions.fpHideEdge = _HideEdge;
-    theGraph->functions.fpRestoreEdge = _RestoreEdge;
-    theGraph->functions.fpHideVertex = _HideVertex;
-    theGraph->functions.fpRestoreVertex = _RestoreVertex;
-    theGraph->functions.fpContractEdge = _ContractEdge;
-    theGraph->functions.fpIdentifyVertices = _IdentifyVertices;
+        theGraph->functions->fpHideEdge = _HideEdge;
+        theGraph->functions->fpRestoreEdge = _RestoreEdge;
+        theGraph->functions->fpHideVertex = _HideVertex;
+        theGraph->functions->fpRestoreVertex = _RestoreVertex;
+        theGraph->functions->fpContractEdge = _ContractEdge;
+        theGraph->functions->fpIdentifyVertices = _IdentifyVertices;
+    }
 }
 
 /********************************************************************
@@ -248,7 +268,7 @@ int gp_InitGraph(graphP theGraph, int N)
     if (gp_GetN(theGraph) > 0)
         return NOTOK;
 
-    return theGraph->functions.fpInitGraph(theGraph, N);
+    return theGraph->functions->fpInitGraph(theGraph, N);
 }
 
 int _InitGraph(graphP theGraph, int N)
@@ -366,7 +386,7 @@ void gp_ReinitializeGraph(graphP theGraph)
     if (theGraph == NULL || gp_GetN(theGraph) <= 0)
         return;
 
-    theGraph->functions.fpReinitializeGraph(theGraph);
+    theGraph->functions->fpReinitializeGraph(theGraph);
 }
 
 void _ReinitializeGraph(graphP theGraph)
@@ -446,7 +466,7 @@ int gp_EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity)
     }
 
     // Try to expand the edge capacity
-    return theGraph->functions.fpEnsureEdgeCapacity(theGraph, requiredEdgeCapacity);
+    return theGraph->functions->fpEnsureEdgeCapacity(theGraph, requiredEdgeCapacity);
 }
 
 int _EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity)
@@ -922,6 +942,12 @@ void gp_Free(graphP *pGraph)
 
     _ClearGraph(*pGraph);
 
+    if ((*pGraph)->functions != NULL)
+    {
+        free((*pGraph)->functions);
+        (*pGraph)->functions = NULL;
+    }
+
     free(*pGraph);
     *pGraph = NULL;
 }
@@ -1080,15 +1106,16 @@ int gp_CopyGraph(graphP dstGraph, graphP srcGraph)
     // the most recent extension overloads of each function (or
     // the original function pointer if a particular function has
     // not been overloaded).
+    //
     // This must be done after copying the extension because the
-    // first step of copying the extensions is to delete the
-    // dstGraph extensions, which clears its function table.
-    // Therefore, no good to assign the srcGraph functions *before*
-    // copying the extensions because the assignment would be wiped out
-    // This, in turn, means that the DupContext function of an extension
-    // *cannot* depend on any extension function overloads; the extension
-    // must directly invoke extension functions only.
-    dstGraph->functions = srcGraph->functions;
+    // first step of copying the extensions is to free the extensions
+    // of the dstGraph, which performes _InitFunctionTable() on dstGraph.
+    // Therefore, assigning the srcGraph functions to dstGraph *before*
+    // copying the extensions doesn't work because the assignment would be
+    // wiped out. This, in turn, means that the DupContext function of an
+    // extension *cannot* depend on any extension function overloads;
+    // the extension must directly invoke extension functions only.
+    *(dstGraph->functions) = *(srcGraph->functions);
 
     return OK;
 }
@@ -2095,7 +2122,7 @@ void gp_HideEdge(graphP theGraph, int e)
         return;
     }
 
-    theGraph->functions.fpHideEdge(theGraph, e);
+    theGraph->functions->fpHideEdge(theGraph, e);
 }
 
 void _HideEdge(graphP theGraph, int e)
@@ -2133,7 +2160,7 @@ void gp_RestoreEdge(graphP theGraph, int e)
         return;
     }
 
-    theGraph->functions.fpRestoreEdge(theGraph, e);
+    theGraph->functions->fpRestoreEdge(theGraph, e);
 }
 
 void _RestoreEdge(graphP theGraph, int e)
@@ -2237,7 +2264,7 @@ int gp_HideVertex(graphP theGraph, int vertex)
         return NOTOK;
     }
 
-    return theGraph->functions.fpHideVertex(theGraph, vertex);
+    return theGraph->functions->fpHideVertex(theGraph, vertex);
 }
 
 int _HideVertex(graphP theGraph, int vertex)
@@ -2284,7 +2311,7 @@ int gp_ContractEdge(graphP theGraph, int e)
         return NOTOK;
     }
 
-    return theGraph->functions.fpContractEdge(theGraph, e);
+    return theGraph->functions->fpContractEdge(theGraph, e);
 }
 
 int _ContractEdge(graphP theGraph, int e)
@@ -2351,7 +2378,7 @@ int gp_IdentifyVertices(graphP theGraph, int u, int v, int eBefore)
         return NOTOK;
     }
 
-    return theGraph->functions.fpIdentifyVertices(theGraph, u, v, eBefore);
+    return theGraph->functions->fpIdentifyVertices(theGraph, u, v, eBefore);
 }
 
 int _IdentifyVertices(graphP theGraph, int u, int v, int eBefore)
@@ -2534,7 +2561,7 @@ int gp_RestoreVertex(graphP theGraph)
     if (theGraph == NULL)
         return NOTOK;
 
-    return theGraph->functions.fpRestoreVertex(theGraph);
+    return theGraph->functions->fpRestoreVertex(theGraph);
 }
 
 int _RestoreVertex(graphP theGraph)

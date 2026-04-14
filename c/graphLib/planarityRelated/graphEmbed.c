@@ -8,6 +8,8 @@ See the LICENSE.TXT file for licensing information.
 
 #include "../graph.h"
 
+#include "../extensionSystem/graphExtensions.private.h"
+
 // Includes needed by _gp_EmbedFlagsValid(), until it become overloadable
 #include "graphDrawPlanar.private.h"
 #include "../homeomorphSearch/graphK23Search.private.h"
@@ -106,7 +108,7 @@ int gp_Embed(graphP theGraph, unsigned embedFlags)
 
     // Initialize embedding data structures and allow extension algorithms
     // that overload the function to postprocess the DFS
-    if (theGraph->functions.fpEmbeddingInitialize(theGraph) != OK)
+    if (theGraph->functions->fpEmbeddingInitialize(theGraph) != OK)
         return NOTOK;
 
     // In reverse DFI order, embed the back edges from each vertex to its DFS descendants.
@@ -119,7 +121,7 @@ int gp_Embed(graphP theGraph, unsigned embedFlags)
         e = gp_GetVertexFwdEdgeList(theGraph, v);
         while (gp_IsEdge(theGraph, e))
         {
-            theGraph->functions.fpWalkUp(theGraph, v, e);
+            theGraph->functions->fpWalkUp(theGraph, v, e);
 
             e = gp_GetNextEdge(theGraph, e);
             if (e == gp_GetVertexFwdEdgeList(theGraph, v))
@@ -134,7 +136,7 @@ int gp_Embed(graphP theGraph, unsigned embedFlags)
         {
             if (gp_IsVertex(theGraph, gp_GetVertexPertinentRootsList(theGraph, c)))
             {
-                RetVal = theGraph->functions.fpWalkDown(theGraph, v, gp_GetBicompRootFromDFSChild(theGraph, c));
+                RetVal = theGraph->functions->fpWalkDown(theGraph, v, gp_GetBicompRootFromDFSChild(theGraph, c));
                 // If Walkdown returns OK, then it is OK to proceed with edge addition.
                 // Otherwise, if Walkdown returns NONEMBEDDABLE then we stop edge addition.
                 if (RetVal != OK)
@@ -152,7 +154,7 @@ int gp_Embed(graphP theGraph, unsigned embedFlags)
     // Postprocessing to orient the embedding and merge any remaining separated bicomps.
     // Some extension algorithms may overload this function, e.g. to do nothing if they
     // have no need of an embedding.
-    return theGraph->functions.fpEmbedPostprocess(theGraph, v, RetVal);
+    return theGraph->functions->fpEmbedPostprocess(theGraph, v, RetVal);
 }
 
 /********************************************************************
@@ -694,7 +696,7 @@ int _MergeBicomps(graphP theGraph, int v, int RootVertex, int W, int WPrevLink)
         }
 
         // Now we push R into Z, eliminating R
-        theGraph->functions.fpMergeVertex(theGraph, Z, ZPrevLink, R);
+        theGraph->functions->fpMergeVertex(theGraph, Z, ZPrevLink, R);
     }
 
     return OK;
@@ -935,10 +937,10 @@ int _WalkDown(graphP theGraph, int v, int RootVertex)
                 // edge to W to form a new proper face in the embedding.
                 if (sp_NonEmpty(theGraph->theStack))
                 {
-                    if ((RetVal = theGraph->functions.fpMergeBicomps(theGraph, v, RootVertex, W, WPrevLink)) != OK)
+                    if ((RetVal = theGraph->functions->fpMergeBicomps(theGraph, v, RootVertex, W, WPrevLink)) != OK)
                         return RetVal;
                 }
-                theGraph->functions.fpEmbedBackEdgeToDescendant(theGraph, RootSide, RootVertex, W, WPrevLink);
+                theGraph->functions->fpEmbedBackEdgeToDescendant(theGraph, RootSide, RootVertex, W, WPrevLink);
 
                 // Clear W's pertinentEdge since the forward edge record it contained has been embedded
                 gp_SetVertexPertinentEdge(theGraph, W, NIL);
@@ -994,7 +996,7 @@ int _WalkDown(graphP theGraph, int v, int RootVertex)
                     // Let the application decide whether it can unblock the bicomp.
                     // The core planarity/outerplanarity embedder simply isolates a
                     // planarity/outerplanary obstruction and returns NONEMBEDDABLE
-                    if ((RetVal = theGraph->functions.fpHandleBlockedBicomp(theGraph, v, RootVertex, R)) != OK)
+                    if ((RetVal = theGraph->functions->fpHandleBlockedBicomp(theGraph, v, RootVertex, R)) != OK)
                         return RetVal;
 
                     // If an extension algorithm cleared the blockage, then we pop W and WPrevLink
@@ -1037,7 +1039,7 @@ int _WalkDown(graphP theGraph, int v, int RootVertex)
                 // inactive vertices, but the extFace links above achieve the same result with less work.
                 else
                 {
-                    if (theGraph->functions.fpHandleInactiveVertex(theGraph, RootVertex, &W, &WPrevLink) != OK)
+                    if (theGraph->functions->fpHandleInactiveVertex(theGraph, RootVertex, &W, &WPrevLink) != OK)
                         return NOTOK;
                 }
             }
@@ -1057,7 +1059,7 @@ int _WalkDown(graphP theGraph, int v, int RootVertex)
         {
             // If an extension to core planarity indicates it is OK to proceed despite having detected
             // unembedded forward edges, then advance to the forward edges for the next child, if any
-            if ((RetVal = theGraph->functions.fpHandleBlockedBicomp(theGraph, v, RootVertex, RootVertex)) == OK)
+            if ((RetVal = theGraph->functions->fpHandleBlockedBicomp(theGraph, v, RootVertex, RootVertex)) == OK)
                 _AdvanceFwdEdgeList(theGraph, v, RootEdgeChild, nextChild);
 
             return RetVal;

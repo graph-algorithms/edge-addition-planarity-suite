@@ -8,6 +8,8 @@ See the LICENSE.TXT file for licensing information.
 
 #include "../graph.h"
 
+#include "../extensionSystem/graphExtensions.private.h"
+
 /* Imported functions */
 
 extern void _ClearAllVisitedFlagsInGraph(graphP);
@@ -154,7 +156,7 @@ int _IsolateMinorA(graphP theGraph)
     isolatorContextP IC = &theGraph->IC;
 
     if (_MarkPathAlongBicompExtFace(theGraph, IC->r, IC->r) != OK ||
-        theGraph->functions.fpMarkDFSPath(theGraph, MIN(IC->ux, IC->uy), IC->r) != OK ||
+        theGraph->functions->fpMarkDFSPath(theGraph, MIN(IC->ux, IC->uy), IC->r) != OK ||
         _MarkDFSPathsToDescendants(theGraph) != OK ||
         _JoinBicomps(theGraph) != OK ||
         _AddAndMarkUnembeddedEdges(theGraph) != OK)
@@ -172,8 +174,8 @@ int _IsolateMinorB(graphP theGraph)
     isolatorContextP IC = &theGraph->IC;
 
     if (_MarkPathAlongBicompExtFace(theGraph, IC->r, IC->r) != OK ||
-        theGraph->functions.fpMarkDFSPath(theGraph, MIN3(IC->ux, IC->uy, IC->uz),
-                                          MAX3(IC->ux, IC->uy, IC->uz)) != OK ||
+        theGraph->functions->fpMarkDFSPath(theGraph, MIN3(IC->ux, IC->uy, IC->uz),
+                                           MAX3(IC->ux, IC->uy, IC->uz)) != OK ||
         _MarkDFSPathsToDescendants(theGraph) != OK ||
         _JoinBicomps(theGraph) != OK ||
         _AddAndMarkUnembeddedEdges(theGraph) != OK)
@@ -206,7 +208,7 @@ int _IsolateMinorC(graphP theGraph)
 
     // Note: The x-y path is already marked, due to identifying the type of non-planarity minor
     if (_MarkDFSPathsToDescendants(theGraph) != OK ||
-        theGraph->functions.fpMarkDFSPath(theGraph, MIN(IC->ux, IC->uy), IC->r) != OK ||
+        theGraph->functions->fpMarkDFSPath(theGraph, MIN(IC->ux, IC->uy), IC->r) != OK ||
         _JoinBicomps(theGraph) != OK ||
         _AddAndMarkUnembeddedEdges(theGraph) != OK)
         return NOTOK;
@@ -224,7 +226,7 @@ int _IsolateMinorD(graphP theGraph)
 
     // Note: The x-y and v-z paths are already marked, due to identifying the type of non-planarity minor
     if (_MarkPathAlongBicompExtFace(theGraph, IC->x, IC->y) != OK ||
-        theGraph->functions.fpMarkDFSPath(theGraph, MIN(IC->ux, IC->uy), IC->r) != OK ||
+        theGraph->functions->fpMarkDFSPath(theGraph, MIN(IC->ux, IC->uy), IC->r) != OK ||
         _MarkDFSPathsToDescendants(theGraph) != OK ||
         _JoinBicomps(theGraph) != OK ||
         _AddAndMarkUnembeddedEdges(theGraph) != OK)
@@ -265,7 +267,7 @@ int _IsolateMinorE(graphP theGraph)
 
     // Note: The x-y path is already marked, due to identifying the type of non-planarity minor
     if (_MarkPathAlongBicompExtFace(theGraph, IC->r, IC->r) != OK ||
-        theGraph->functions.fpMarkDFSPath(theGraph, MIN3(IC->ux, IC->uy, IC->uz), IC->r) != OK ||
+        theGraph->functions->fpMarkDFSPath(theGraph, MIN3(IC->ux, IC->uy, IC->uz), IC->r) != OK ||
         _MarkDFSPathsToDescendants(theGraph) != OK ||
         _JoinBicomps(theGraph) != OK ||
         _AddAndMarkUnembeddedEdges(theGraph) != OK)
@@ -358,7 +360,7 @@ int _IsolateMinorE3(graphP theGraph)
     }
 
     // Note: The x-y path is already marked, due to identifying E as the type of non-planarity minor
-    if (theGraph->functions.fpMarkDFSPath(theGraph, MIN3(IC->ux, IC->uy, IC->uz), IC->r) != OK ||
+    if (theGraph->functions->fpMarkDFSPath(theGraph, MIN3(IC->ux, IC->uy, IC->uz), IC->r) != OK ||
         _MarkDFSPathsToDescendants(theGraph) != OK ||
         _JoinBicomps(theGraph) != OK ||
         _AddAndMarkUnembeddedEdges(theGraph) != OK)
@@ -390,8 +392,8 @@ int _IsolateMinorE4(graphP theGraph)
     }
 
     // Note: The x-y path is already marked, due to identifying E as the type of non-planarity minor
-    if (theGraph->functions.fpMarkDFSPath(theGraph, MIN3(IC->ux, IC->uy, IC->uz),
-                                          MAX3(IC->ux, IC->uy, IC->uz)) != OK ||
+    if (theGraph->functions->fpMarkDFSPath(theGraph, MIN3(IC->ux, IC->uy, IC->uz),
+                                           MAX3(IC->ux, IC->uy, IC->uz)) != OK ||
         _MarkDFSPathsToDescendants(theGraph) != OK ||
         _JoinBicomps(theGraph) != OK ||
         _AddAndMarkUnembeddedEdges(theGraph) != OK)
@@ -683,16 +685,16 @@ int _MarkDFSPathsToDescendants(graphP theGraph)
 {
     isolatorContextP IC = &theGraph->IC;
 
-    if (theGraph->functions.fpMarkDFSPath(theGraph, IC->x, IC->dx) != OK ||
-        theGraph->functions.fpMarkDFSPath(theGraph, IC->y, IC->dy) != OK)
+    if (theGraph->functions->fpMarkDFSPath(theGraph, IC->x, IC->dx) != OK ||
+        theGraph->functions->fpMarkDFSPath(theGraph, IC->y, IC->dy) != OK)
         return NOTOK;
 
     if (gp_IsVertex(theGraph, IC->dw))
-        if (theGraph->functions.fpMarkDFSPath(theGraph, IC->w, IC->dw) != OK)
+        if (theGraph->functions->fpMarkDFSPath(theGraph, IC->w, IC->dw) != OK)
             return NOTOK;
 
     if (gp_IsVertex(theGraph, IC->dz))
-        if (theGraph->functions.fpMarkDFSPath(theGraph, IC->w, IC->dz) != OK)
+        if (theGraph->functions->fpMarkDFSPath(theGraph, IC->w, IC->dz) != OK)
             return NOTOK;
 
     return OK;

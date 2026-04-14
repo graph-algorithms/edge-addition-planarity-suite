@@ -13,9 +13,6 @@ See the LICENSE.TXT file for licensing information.
 #include "lowLevelUtils/listcoll.h"
 #include "lowLevelUtils/stack.h"
 
-#include "extensionSystem/graphExtensions.private.h"
-#include "extensionSystem/graphFunctionTable.h"
-
 #ifdef __cplusplus
 extern "C"
 {
@@ -689,6 +686,12 @@ extern "C"
                        extension behaviors to the graph
     */
 
+    typedef struct graphExtension graphExtension;
+    typedef graphExtension *graphExtensionP;
+
+    typedef struct graphFunctionTable graphFunctionTable;
+    typedef graphFunctionTable *graphFunctionTableP;
+
     struct baseGraphStructure
     {
         anyTypeVertexRecP V;
@@ -707,7 +710,7 @@ extern "C"
         extFaceLinkRecP extFace;
 
         graphExtensionP extensions;
-        graphFunctionTable functions;
+        graphFunctionTableP functions;
     };
 
     typedef struct baseGraphStructure baseGraphStructure;

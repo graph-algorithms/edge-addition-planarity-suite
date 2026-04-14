@@ -6,6 +6,8 @@ See the LICENSE.TXT file for licensing information.
 
 #include "../graph.h"
 
+#include "../extensionSystem/graphExtensions.private.h"
+
 /* Imported functions */
 
 extern void _ClearAllVisitedFlagsInGraph(graphP);
@@ -154,8 +156,8 @@ int _IsolateOuterplanarityObstructionA(graphP theGraph)
     isolatorContextP IC = &theGraph->IC;
 
     if (_MarkPathAlongBicompExtFace(theGraph, IC->r, IC->r) != OK ||
-        theGraph->functions.fpMarkDFSPath(theGraph, IC->v, IC->r) != OK ||
-        theGraph->functions.fpMarkDFSPath(theGraph, IC->w, IC->dw) != OK ||
+        theGraph->functions->fpMarkDFSPath(theGraph, IC->v, IC->r) != OK ||
+        theGraph->functions->fpMarkDFSPath(theGraph, IC->w, IC->dw) != OK ||
         _JoinBicomps(theGraph) != OK ||
         _AddAndMarkEdge(theGraph, IC->v, IC->dw) != OK)
         return NOTOK;
@@ -172,7 +174,7 @@ int _IsolateOuterplanarityObstructionB(graphP theGraph)
     isolatorContextP IC = &theGraph->IC;
 
     if (_MarkPathAlongBicompExtFace(theGraph, IC->r, IC->r) != OK ||
-        theGraph->functions.fpMarkDFSPath(theGraph, IC->w, IC->dw) != OK ||
+        theGraph->functions->fpMarkDFSPath(theGraph, IC->w, IC->dw) != OK ||
         _JoinBicomps(theGraph) != OK ||
         _AddAndMarkEdge(theGraph, IC->v, IC->dw) != OK)
         return NOTOK;
@@ -189,7 +191,7 @@ int _IsolateOuterplanarityObstructionE(graphP theGraph)
     isolatorContextP IC = &theGraph->IC;
 
     if (_MarkPathAlongBicompExtFace(theGraph, IC->r, IC->r) != OK ||
-        theGraph->functions.fpMarkDFSPath(theGraph, IC->w, IC->dw) != OK ||
+        theGraph->functions->fpMarkDFSPath(theGraph, IC->w, IC->dw) != OK ||
         _JoinBicomps(theGraph) != OK ||
         _AddAndMarkEdge(theGraph, IC->v, IC->dw) != OK)
         return NOTOK;
