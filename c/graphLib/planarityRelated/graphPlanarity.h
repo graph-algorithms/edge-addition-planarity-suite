@@ -14,7 +14,7 @@ extern "C"
 {
 #endif
 
-#define PLANARITY_NAME "PlanarEmbed"
+#define PLANARITY_NAME "Planarity"
 
     int gp_ExtendWith_Planarity(graphP theGraph);
     int gp_Detach_Planarity(graphP theGraph);
