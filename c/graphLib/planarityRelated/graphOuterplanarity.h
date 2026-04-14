@@ -14,7 +14,7 @@ extern "C"
 {
 #endif
 
-#define OUTERPLANARITY_NAME "Outerplanarity"
+#define OUTERPLANARITY_NAME "OuterplanarEmbed"
 
     int gp_ExtendWith_Outerplanarity(graphP theGraph);
     int gp_Detach_Outerplanarity(graphP theGraph);
