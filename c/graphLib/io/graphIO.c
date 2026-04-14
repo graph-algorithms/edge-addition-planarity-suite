@@ -8,7 +8,9 @@ See the LICENSE.TXT file for licensing information.
 #include <string.h>
 #include <ctype.h>
 
-#include "../graph.h"
+#include "graphIO.h"
+
+#include "strOrFile.h"
 
 #include "../extensionSystem/graphExtensions.private.h"
 

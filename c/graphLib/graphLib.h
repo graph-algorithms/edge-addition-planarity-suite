@@ -18,6 +18,10 @@ extern "C"
 
 #include "graph.h"
 
+#include "io/graphIO.h"
+#include "io/g6-read-iterator.h"
+#include "io/g6-write-iterator.h"
+
 #include "planarityRelated/graphPlanarity.h"
 #include "planarityRelated/graphOuterplanarity.h"
 #include "planarityRelated/graphDrawPlanar.h"

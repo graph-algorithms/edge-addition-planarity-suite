@@ -14,9 +14,6 @@ extern "C"
 
 #include "graphStructures.h"
 
-#include "io/g6-read-iterator.h"
-#include "io/g6-write-iterator.h"
-
 #include "extensionSystem/graphExtensions.h"
 
     ///////////////////////////////////////////////////////////////////////////////
@@ -49,18 +46,7 @@ extern "C"
     int gp_CreateRandomGraph(graphP theGraph);
     int gp_CreateRandomGraphEx(graphP theGraph, int numEdges);
 
-    // Basic graph I/O methods
-    int gp_Read(graphP theGraph, char const *FileName);
-    int gp_ReadFromString(graphP theGraph, char *inputStr);
-
-    int gp_Write(graphP theGraph, char const *FileName, int Mode);
-    int gp_WriteToString(graphP theGraph, char **pOutputStr, int Mode);
-
-// Mode values for gp_Write() and gp_WriteToString()
-#define WRITE_ADJLIST 1
-#define WRITE_ADJMATRIX 2
-#define WRITE_DEBUGINFO 3
-#define WRITE_G6 4
+    // Basic graph I/O methods: see graphIO.h
 
     // Basic vertex interrogators
     int gp_IsNeighbor(graphP theGraph, int u, int v);
