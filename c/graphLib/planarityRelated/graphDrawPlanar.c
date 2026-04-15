@@ -13,6 +13,8 @@ See the LICENSE.TXT file for licensing information.
 #include "../planarityRelated/graphPlanarity.h"
 #include "../planarityRelated/graphPlanarity.private.h"
 
+#include "../graphUtils.private.h"
+
 // For definition of zero-based IO flag
 #include "../io/graphIO.h"
 

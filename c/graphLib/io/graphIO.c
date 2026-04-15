@@ -17,6 +17,9 @@ See the LICENSE.TXT file for licensing information.
 // To help with writing debug info
 #include "../planarityRelated/graphPlanarity.private.h"
 
+// To help with graph construction
+#include "../graphUtils.private.h"
+
 /* Imported functions */
 extern int _g6_ReadGraphFromStrOrFile(graphP theGraph, strOrFileP *pG6InputContainer);
 extern int _g6_WriteGraphToStrOrFile(graphP theGraph, strOrFileP *pOutputContainer);

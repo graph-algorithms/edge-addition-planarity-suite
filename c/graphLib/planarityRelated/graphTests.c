@@ -8,13 +8,15 @@ See the LICENSE.TXT file for licensing information.
 
 #include "../graph.h"
 
-#include "../lowLevelUtils/stack.h"
-#include "../extensionSystem/graphExtensions.private.h"
+// This source file implements the main graph planarity result integrity check method
+#include "graphPlanarity.h"
 
 #include "../graphDFSUtils.h"
 
-// This source file implements the main graph planarity result integrity check method
-#include "graphPlanarity.h"
+#include "../graphUtils.private.h"
+
+#include "../lowLevelUtils/stack.h"
+#include "../extensionSystem/graphExtensions.private.h"
 
 extern void _ClearAnyTypeVertexVisitedFlags(graphP theGraph, int);
 

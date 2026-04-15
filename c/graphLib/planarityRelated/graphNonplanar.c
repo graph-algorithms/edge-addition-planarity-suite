@@ -12,6 +12,8 @@ See the LICENSE.TXT file for licensing information.
 #include "../planarityRelated/graphPlanarity.h"
 #include "../planarityRelated/graphPlanarity.private.h"
 
+#include "../graphUtils.private.h"
+
 /* Imported functions */
 
 extern void _InitIsolatorContext(graphP theGraph);

@@ -8,6 +8,8 @@ See the LICENSE.TXT file for licensing information.
 
 #include "graphLib.h"
 
+#include "graphUtils.private.h"
+
 #include "extensionSystem/graphExtensions.h"
 #include "extensionSystem/graphExtensions.private.h"
 
