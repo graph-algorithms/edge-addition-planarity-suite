@@ -144,7 +144,7 @@ char *gp_GetLibPlanarityVersionFull(void)
 
 graphP gp_New(void)
 {
-    graphP theGraph = (graphP)malloc(sizeof(baseGraphStructure));
+    graphP theGraph = (graphP)calloc(1, sizeof(baseGraphStructure));
     graphFunctionTableP functionTable = (graphFunctionTableP)calloc(1, sizeof(graphFunctionTable));
 
     if (theGraph != NULL && functionTable != NULL)
@@ -153,6 +153,7 @@ graphP gp_New(void)
         theGraph->V = NULL;
         theGraph->VI = NULL;
 
+        theGraph->IC = NULL;
         theGraph->BicompRootLists = NULL;
         theGraph->sortedDFSChildLists = NULL;
         theGraph->theStack = NULL;
@@ -295,6 +296,7 @@ int _InitGraph(graphP theGraph, int N)
     if ((theGraph->V = (anyTypeVertexRecP)calloc(Vsize, sizeof(anyTypeVertexRec))) == NULL ||
         (theGraph->VI = (vertexInfoP)calloc(VIsize, sizeof(vertexInfo))) == NULL ||
         (theGraph->E = (edgeRecP)calloc(Esize, sizeof(edgeRec))) == NULL ||
+        (theGraph->IC = (isolatorContextP)calloc(1, sizeof(isolatorContext))) == NULL ||
         (theGraph->BicompRootLists = LCNew(VIsize)) == NULL ||
         (theGraph->sortedDFSChildLists = LCNew(VIsize)) == NULL ||
         (theGraph->theStack = sp_New(stackSize)) == NULL ||
@@ -584,11 +586,14 @@ void _InitEdgeRec(graphP theGraph, int e)
 
 void _InitIsolatorContext(graphP theGraph)
 {
-    isolatorContextP IC = &theGraph->IC;
+    isolatorContextP IC = theGraph->IC;
 
-    IC->minorType = 0;
-    IC->v = IC->r = IC->x = IC->y = IC->w = IC->px = IC->py = IC->z =
-        IC->ux = IC->dx = IC->uy = IC->dy = IC->dw = IC->uz = IC->dz = NIL;
+    if (IC != NULL)
+    {
+        IC->minorType = MINORTYPE_NONE;
+        IC->v = IC->r = IC->x = IC->y = IC->w = IC->px = IC->py = IC->z =
+            IC->ux = IC->dx = IC->uy = IC->dy = IC->dw = IC->uz = IC->dz = NIL;
+    }
 }
 
 /********************************************************************
@@ -912,7 +917,11 @@ void _ClearGraph(graphP theGraph)
     theGraph->graphFlags = 0;
     theGraph->embedFlags = 0;
 
-    _InitIsolatorContext(theGraph);
+    if (theGraph->IC != NULL)
+    {
+        free(theGraph->IC);
+        theGraph->IC = NULL;
+    }
 
     LCFree(&theGraph->BicompRootLists);
     LCFree(&theGraph->sortedDFSChildLists);
@@ -1093,7 +1102,8 @@ int gp_CopyGraph(graphP dstGraph, graphP srcGraph)
     dstGraph->graphFlags = gp_GetGraphFlags(srcGraph);
     dstGraph->embedFlags = gp_GetEmbedFlags(srcGraph);
 
-    dstGraph->IC = srcGraph->IC;
+    if (dstGraph->IC != NULL && srcGraph->IC != NULL)
+        *(dstGraph->IC) = *(srcGraph->IC);
 
     LCCopy(dstGraph->BicompRootLists, srcGraph->BicompRootLists);
     LCCopy(dstGraph->sortedDFSChildLists, srcGraph->sortedDFSChildLists);

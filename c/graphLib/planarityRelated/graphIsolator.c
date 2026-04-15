@@ -9,6 +9,8 @@ See the LICENSE.TXT file for licensing information.
 #include "../graph.h"
 
 #include "../extensionSystem/graphExtensions.private.h"
+
+#include "../planarityRelated/graphPlanarity.h"
 #include "../planarityRelated/graphPlanarity.private.h"
 
 /* Imported functions */
@@ -80,15 +82,15 @@ int _IsolateKuratowskiSubgraph(graphP theGraph, int v, int R)
 
     /* Call the appropriate isolator */
 
-    if (theGraph->IC.minorType & MINORTYPE_A)
+    if (theGraph->IC->minorType & MINORTYPE_A)
         RetVal = _IsolateMinorA(theGraph);
-    else if (theGraph->IC.minorType & MINORTYPE_B)
+    else if (theGraph->IC->minorType & MINORTYPE_B)
         RetVal = _IsolateMinorB(theGraph);
-    else if (theGraph->IC.minorType & MINORTYPE_C)
+    else if (theGraph->IC->minorType & MINORTYPE_C)
         RetVal = _IsolateMinorC(theGraph);
-    else if (theGraph->IC.minorType & MINORTYPE_D)
+    else if (theGraph->IC->minorType & MINORTYPE_D)
         RetVal = _IsolateMinorD(theGraph);
-    else if (theGraph->IC.minorType & MINORTYPE_E)
+    else if (theGraph->IC->minorType & MINORTYPE_E)
         RetVal = _IsolateMinorE(theGraph);
     else
         RetVal = NOTOK;
@@ -107,7 +109,7 @@ int _IsolateKuratowskiSubgraph(graphP theGraph, int v, int R)
 
 int _InitializeIsolatorContext(graphP theGraph)
 {
-    isolatorContextP IC = &theGraph->IC;
+    isolatorContextP IC = theGraph->IC;
 
     /* Obtains the edges connecting X and Y to ancestors of the current vertex */
 
@@ -120,7 +122,7 @@ int _InitializeIsolatorContext(graphP theGraph)
          This child is the subtree root containing vertices with connections to
          both the current vertex and an ancestor of the current vertex. */
 
-    if (theGraph->IC.minorType & MINORTYPE_B)
+    if (theGraph->IC->minorType & MINORTYPE_B)
     {
         int SubtreeRoot = gp_GetVertexLastPertinentRootChild(theGraph, IC->w);
 
@@ -140,7 +142,7 @@ int _InitializeIsolatorContext(graphP theGraph)
         if (_FindUnembeddedEdgeToCurVertex(theGraph, IC->w, &IC->dw) != TRUE)
             return NOTOK;
 
-        if (theGraph->IC.minorType & MINORTYPE_E)
+        if (theGraph->IC->minorType & MINORTYPE_E)
             if (_FindUnembeddedEdgeToAncestor(theGraph, IC->z, &IC->uz, &IC->dz) != TRUE)
                 return NOTOK;
     }
@@ -154,7 +156,7 @@ int _InitializeIsolatorContext(graphP theGraph)
 
 int _IsolateMinorA(graphP theGraph)
 {
-    isolatorContextP IC = &theGraph->IC;
+    isolatorContextP IC = theGraph->IC;
 
     if (_MarkPathAlongBicompExtFace(theGraph, IC->r, IC->r) != OK ||
         theGraph->functions->fpMarkDFSPath(theGraph, MIN(IC->ux, IC->uy), IC->r) != OK ||
@@ -172,7 +174,7 @@ int _IsolateMinorA(graphP theGraph)
 
 int _IsolateMinorB(graphP theGraph)
 {
-    isolatorContextP IC = &theGraph->IC;
+    isolatorContextP IC = theGraph->IC;
 
     if (_MarkPathAlongBicompExtFace(theGraph, IC->r, IC->r) != OK ||
         theGraph->functions->fpMarkDFSPath(theGraph, MIN3(IC->ux, IC->uy, IC->uz),
@@ -191,7 +193,7 @@ int _IsolateMinorB(graphP theGraph)
 
 int _IsolateMinorC(graphP theGraph)
 {
-    isolatorContextP IC = &theGraph->IC;
+    isolatorContextP IC = theGraph->IC;
 
     if (gp_GetObstructionMark(theGraph, IC->px) == ANYVERTEX_OBSTRUCTIONMARK_HIGH_RXW)
     {
@@ -223,7 +225,7 @@ int _IsolateMinorC(graphP theGraph)
 
 int _IsolateMinorD(graphP theGraph)
 {
-    isolatorContextP IC = &theGraph->IC;
+    isolatorContextP IC = theGraph->IC;
 
     // Note: The x-y and v-z paths are already marked, due to identifying the type of non-planarity minor
     if (_MarkPathAlongBicompExtFace(theGraph, IC->x, IC->y) != OK ||
@@ -242,7 +244,7 @@ int _IsolateMinorD(graphP theGraph)
 
 int _IsolateMinorE(graphP theGraph)
 {
-    isolatorContextP IC = &theGraph->IC;
+    isolatorContextP IC = theGraph->IC;
 
     /* Minor E1: Isolate a K3,3 homeomorph */
 
@@ -286,7 +288,7 @@ int _IsolateMinorE(graphP theGraph)
 
 int _IsolateMinorE1(graphP theGraph)
 {
-    isolatorContextP IC = &theGraph->IC;
+    isolatorContextP IC = theGraph->IC;
 
     if (gp_GetObstructionMark(theGraph, IC->z) == ANYVERTEX_OBSTRUCTIONMARK_LOW_RXW)
     {
@@ -309,8 +311,8 @@ int _IsolateMinorE1(graphP theGraph)
     // but the x-y path is also included in minor C, so we let it stay marked since the minor C
     // isolator also assumes the x-y path has been marked by non-planarity minor type identification
     IC->z = IC->uz = IC->dz = NIL;
-    theGraph->IC.minorType ^= MINORTYPE_E;
-    theGraph->IC.minorType |= (MINORTYPE_C | MINORTYPE_E1);
+    theGraph->IC->minorType ^= MINORTYPE_E;
+    theGraph->IC->minorType |= (MINORTYPE_C | MINORTYPE_E1);
     return _IsolateMinorC(theGraph);
 }
 
@@ -323,7 +325,7 @@ int _IsolateMinorE1(graphP theGraph)
 
 int _IsolateMinorE2(graphP theGraph)
 {
-    isolatorContextP IC = &theGraph->IC;
+    isolatorContextP IC = theGraph->IC;
 
     // Note: The x-y path was already marked, due to identifying E as the type of non-planarity minor,
     // but we're reducing to Minor A, which does not include the x-y path, so the visited flags are
@@ -334,8 +336,8 @@ int _IsolateMinorE2(graphP theGraph)
     IC->dw = IC->dz;
     IC->z = IC->uz = IC->dz = NIL;
 
-    theGraph->IC.minorType ^= MINORTYPE_E;
-    theGraph->IC.minorType |= (MINORTYPE_A | MINORTYPE_E2);
+    theGraph->IC->minorType ^= MINORTYPE_E;
+    theGraph->IC->minorType |= (MINORTYPE_A | MINORTYPE_E2);
     return _IsolateMinorA(theGraph);
 }
 
@@ -345,7 +347,7 @@ int _IsolateMinorE2(graphP theGraph)
 
 int _IsolateMinorE3(graphP theGraph)
 {
-    isolatorContextP IC = &theGraph->IC;
+    isolatorContextP IC = theGraph->IC;
 
     if (IC->ux < IC->uy)
     {
@@ -367,7 +369,7 @@ int _IsolateMinorE3(graphP theGraph)
         _AddAndMarkUnembeddedEdges(theGraph) != OK)
         return NOTOK;
 
-    theGraph->IC.minorType |= MINORTYPE_E3;
+    theGraph->IC->minorType |= MINORTYPE_E3;
     return OK;
 }
 
@@ -377,7 +379,7 @@ int _IsolateMinorE3(graphP theGraph)
 
 int _IsolateMinorE4(graphP theGraph)
 {
-    isolatorContextP IC = &theGraph->IC;
+    isolatorContextP IC = theGraph->IC;
 
     if (IC->px != IC->x)
     {
@@ -400,7 +402,7 @@ int _IsolateMinorE4(graphP theGraph)
         _AddAndMarkUnembeddedEdges(theGraph) != OK)
         return NOTOK;
 
-    theGraph->IC.minorType |= MINORTYPE_E4;
+    theGraph->IC->minorType |= MINORTYPE_E4;
     return OK;
 }
 
@@ -500,7 +502,7 @@ int _FindUnembeddedEdgeToCurVertex(graphP theGraph, int cutVertex, int *pDescend
     {
         int subtreeRoot = gp_GetVertexFirstPertinentRootChild(theGraph, cutVertex);
 
-        return _FindUnembeddedEdgeToSubtree(theGraph, theGraph->IC.v,
+        return _FindUnembeddedEdgeToSubtree(theGraph, theGraph->IC->v,
                                             subtreeRoot, pDescendant);
     }
 }
@@ -684,7 +686,7 @@ int _MarkDFSPath(graphP theGraph, int ancestor, int descendant)
 
 int _MarkDFSPathsToDescendants(graphP theGraph)
 {
-    isolatorContextP IC = &theGraph->IC;
+    isolatorContextP IC = theGraph->IC;
 
     if (theGraph->functions->fpMarkDFSPath(theGraph, IC->x, IC->dx) != OK ||
         theGraph->functions->fpMarkDFSPath(theGraph, IC->y, IC->dy) != OK)
@@ -707,7 +709,7 @@ int _MarkDFSPathsToDescendants(graphP theGraph)
 
 int _AddAndMarkUnembeddedEdges(graphP theGraph)
 {
-    isolatorContextP IC = &theGraph->IC;
+    isolatorContextP IC = theGraph->IC;
 
     if (_AddAndMarkEdge(theGraph, IC->ux, IC->dx) != OK ||
         _AddAndMarkEdge(theGraph, IC->uy, IC->dy) != OK)

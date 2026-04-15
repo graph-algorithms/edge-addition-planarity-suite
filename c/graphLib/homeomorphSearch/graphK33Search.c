@@ -10,6 +10,7 @@ See the LICENSE.TXT file for licensing information.
 #include "graphK33Search.private.h"
 
 // A graph extended with planarity is the "base class" of a graph extended with K3,3 Search
+#include "../planarityRelated/graphPlanarity.h"
 #include "../planarityRelated/graphPlanarity.private.h"
 
 /* Imported functions */
@@ -101,7 +102,7 @@ int _IsolateMinorE7(graphP theGraph, K33SearchContext *context);
 
 int _SearchForK33InBicomp(graphP theGraph, K33SearchContext *context, int v, int R)
 {
-    isolatorContextP IC = &theGraph->IC;
+    isolatorContextP IC = theGraph->IC;
     int tempResult;
 
     /* Begin by determining which non-planarity minor is detected */
@@ -117,7 +118,7 @@ int _SearchForK33InBicomp(graphP theGraph, K33SearchContext *context, int v, int
     /* Minors A to D result in the desired K_{3,3} homeomorph,
         so we isolate it and return NONEMBEDDABLE. */
 
-    if (theGraph->IC.minorType & (MINORTYPE_A | MINORTYPE_B | MINORTYPE_C | MINORTYPE_D))
+    if (theGraph->IC->minorType & (MINORTYPE_A | MINORTYPE_B | MINORTYPE_C | MINORTYPE_D))
     {
         /* First we restore the orientations of the vertices in the
             one bicomp we have messed with so that there is no confusion. */
@@ -139,7 +140,7 @@ int _SearchForK33InBicomp(graphP theGraph, K33SearchContext *context, int v, int
             For minor A, we need to set up the stack that would be
             available immediately after a Walkdown failure. */
 
-        if (theGraph->IC.minorType & MINORTYPE_A)
+        if (theGraph->IC->minorType & MINORTYPE_A)
         {
             sp_ClearStack(theGraph->theStack);
             sp_Push2(theGraph->theStack, R, NIL);
@@ -239,7 +240,7 @@ int _SearchForK33InBicomp(graphP theGraph, K33SearchContext *context, int v, int
 
 int _RunExtraK33Tests(graphP theGraph, K33SearchContext *context)
 {
-    isolatorContextP IC = &theGraph->IC;
+    isolatorContextP IC = theGraph->IC;
     int u_max = MAX3(IC->ux, IC->uy, IC->uz);
 
 #ifndef USE_MERGEBLOCKER
@@ -458,27 +459,27 @@ int _RunExtraK33Tests(graphP theGraph, K33SearchContext *context)
 
 int _SearchForMinorE1(graphP theGraph)
 {
-    int Z = theGraph->IC.px, ZPrevLink = 1;
+    int Z = theGraph->IC->px, ZPrevLink = 1;
 
     Z = _GetNeighborOnExtFace(theGraph, Z, &ZPrevLink);
 
-    while (Z != theGraph->IC.py)
+    while (Z != theGraph->IC->py)
     {
-        if (Z != theGraph->IC.w)
+        if (Z != theGraph->IC->w)
         {
-            gp_UpdateVertexFuturePertinentChild(theGraph, Z, theGraph->IC.v);
-            if (FUTUREPERTINENT(theGraph, Z, theGraph->IC.v))
+            gp_UpdateVertexFuturePertinentChild(theGraph, Z, theGraph->IC->v);
+            if (FUTUREPERTINENT(theGraph, Z, theGraph->IC->v))
             {
-                theGraph->IC.z = Z;
-                theGraph->IC.uz = _GetLeastAncestorConnection(theGraph, Z);
+                theGraph->IC->z = Z;
+                theGraph->IC->uz = _GetLeastAncestorConnection(theGraph, Z);
                 return OK;
             }
             else if (PERTINENT(theGraph, Z))
             {
                 /* Swap the roles of W and Z */
 
-                theGraph->IC.z = theGraph->IC.w;
-                theGraph->IC.w = Z;
+                theGraph->IC->z = theGraph->IC->w;
+                theGraph->IC->w = Z;
 
                 /* If the new W (indicated by Z) was on the path (R, X, old W) then
                     the new Z (the old W, which has no type mark) is on the path
@@ -487,17 +488,17 @@ int _SearchForMinorE1(graphP theGraph)
                     new Z (old W with no type) is type changed to be on the RXW path.*/
 
                 if (gp_GetObstructionMark(theGraph, Z) == ANYVERTEX_OBSTRUCTIONMARK_LOW_RXW)
-                    gp_ResetObstructionMark(theGraph, theGraph->IC.z, ANYVERTEX_OBSTRUCTIONMARK_LOW_RYW);
+                    gp_ResetObstructionMark(theGraph, theGraph->IC->z, ANYVERTEX_OBSTRUCTIONMARK_LOW_RYW);
                 else
-                    gp_ResetObstructionMark(theGraph, theGraph->IC.z, ANYVERTEX_OBSTRUCTIONMARK_LOW_RXW);
+                    gp_ResetObstructionMark(theGraph, theGraph->IC->z, ANYVERTEX_OBSTRUCTIONMARK_LOW_RXW);
 
                 /* For completeness, we change the new W to type unknown */
 
-                gp_ClearObstructionMark(theGraph, theGraph->IC.w);
+                gp_ClearObstructionMark(theGraph, theGraph->IC->w);
 
                 /* The external activity ancestor connection of the new Z must be obtained */
 
-                theGraph->IC.uz = _GetLeastAncestorConnection(theGraph, theGraph->IC.z);
+                theGraph->IC->uz = _GetLeastAncestorConnection(theGraph, theGraph->IC->z);
 
                 return OK;
             }
@@ -517,7 +518,7 @@ int _SearchForMinorE1(graphP theGraph)
 
 int _FinishIsolatorContextInitialization(graphP theGraph, K33SearchContext *context)
 {
-    isolatorContextP IC = &theGraph->IC;
+    isolatorContextP IC = theGraph->IC;
 
     /* Restore the orientation of the bicomp on which we're working, then
         perform orientation of all vertices in graph. (An unnecessary but
@@ -626,7 +627,7 @@ int _GetAdjacentAncestorInRange(graphP theGraph, K33SearchContext *context, int 
 
 int _SearchForDescendantExternalConnection(graphP theGraph, K33SearchContext *context, int cutVertex, int u_max)
 {
-    isolatorContextP IC = &theGraph->IC;
+    isolatorContextP IC = theGraph->IC;
     int u2 = _GetAdjacentAncestorInRange(theGraph, context, cutVertex, IC->v, u_max);
     int child, descendant;
 
@@ -726,7 +727,7 @@ int _FindExternalConnectionDescendantEndpoint(graphP theGraph, int ancestor,
     child = gp_GetVertexSortedDFSChildList(theGraph, cutVertex);
     while (gp_IsVertex(theGraph, child))
     {
-        if (gp_GetVertexLowpoint(theGraph, child) < theGraph->IC.v && gp_IsSeparatedDFSChild(theGraph, child))
+        if (gp_GetVertexLowpoint(theGraph, child) < theGraph->IC->v && gp_IsSeparatedDFSChild(theGraph, child))
         {
             if (_FindUnembeddedEdgeToSubtree(theGraph, ancestor, child, pDescendant) == TRUE)
                 return OK;
@@ -803,7 +804,7 @@ int _SearchForMergeBlocker(graphP theGraph, K33SearchContext *context, int v, in
 int _FindK33WithMergeBlocker(graphP theGraph, K33SearchContext *context, int v, int mergeBlocker)
 {
     int R, RPrevLink, u_max, u, e;
-    isolatorContextP IC = &theGraph->IC;
+    isolatorContextP IC = theGraph->IC;
 
     /* First, we orient the vertices so we can successfully restore all of the
         reduced paths.  This needs to be done before reconstructing the context
@@ -987,7 +988,7 @@ int _FindK33WithMergeBlocker(graphP theGraph, K33SearchContext *context, int v, 
 
 int _TestForZtoWPath(graphP theGraph)
 {
-    isolatorContextP IC = &theGraph->IC;
+    isolatorContextP IC = theGraph->IC;
     int v, e, w;
 
     sp_ClearStack(theGraph->theStack);
@@ -1097,7 +1098,7 @@ int _TestForZtoWPath(graphP theGraph)
 
 int _TestForStraddlingBridge(graphP theGraph, K33SearchContext *context, int u_max)
 {
-    isolatorContextP IC = &theGraph->IC;
+    isolatorContextP IC = theGraph->IC;
     int p, c, d, excludedChild, e;
 
     p = IC->v;
@@ -1214,7 +1215,7 @@ int _TestForStraddlingBridge(graphP theGraph, K33SearchContext *context, int u_m
 
 int _ReduceBicomp(graphP theGraph, K33SearchContext *context, int R)
 {
-    isolatorContextP IC = &theGraph->IC;
+    isolatorContextP IC = theGraph->IC;
     int min, max, A, A_edge, B, B_edge;
     int rxType, xwType, wyType, yrType, xyType;
 
@@ -1813,7 +1814,7 @@ int _RestoreAndOrientReducedPaths(graphP theGraph, K33SearchContext *context)
 
 int _MarkStraddlingBridgePath(graphP theGraph, int u_min, int u_max, int u_d, int d)
 {
-    isolatorContextP IC = &theGraph->IC;
+    isolatorContextP IC = theGraph->IC;
     int p, e;
 
     /* Find the point of intersection p between the path (v ... u_max)
@@ -1900,7 +1901,7 @@ int _MarkStraddlingBridgePath(graphP theGraph, int u_min, int u_max, int u_d, in
 
 int _IsolateMinorE5(graphP theGraph)
 {
-    isolatorContextP IC = &theGraph->IC;
+    isolatorContextP IC = theGraph->IC;
 
     if (_MarkPathAlongBicompExtFace(theGraph, IC->r, IC->x) != OK ||
         _MarkPathAlongBicompExtFace(theGraph, IC->y, IC->r) != OK ||
@@ -1924,7 +1925,7 @@ int _IsolateMinorE5(graphP theGraph)
 
 int _IsolateMinorE6(graphP theGraph, K33SearchContext *context)
 {
-    isolatorContextP IC = &theGraph->IC;
+    isolatorContextP IC = theGraph->IC;
     int u_min, u_max, d, u_d;
 
     /* Clear the previously marked x-y path */
@@ -1970,7 +1971,7 @@ int _IsolateMinorE6(graphP theGraph, K33SearchContext *context)
 
 int _IsolateMinorE7(graphP theGraph, K33SearchContext *context)
 {
-    isolatorContextP IC = &theGraph->IC;
+    isolatorContextP IC = theGraph->IC;
     int u_min, u_max, d, u_d;
 
     /* Mark the appropriate two portions of the external face depending on

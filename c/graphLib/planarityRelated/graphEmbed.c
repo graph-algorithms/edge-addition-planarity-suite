@@ -13,8 +13,8 @@ See the LICENSE.TXT file for licensing information.
 #include "../graphDFSUtils.h"
 
 // This source file implements the main graph planarity method, gp_Embed()
-#include "graphPlanarity.h"
-#include "graphPlanarity.private.h"
+#include "../planarityRelated/graphPlanarity.h"
+#include "../planarityRelated/graphPlanarity.private.h"
 
 #include "../extensionSystem/graphExtensions.private.h"
 

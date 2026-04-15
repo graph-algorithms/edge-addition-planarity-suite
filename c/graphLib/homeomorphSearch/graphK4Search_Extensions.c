@@ -11,6 +11,7 @@ See the LICENSE.TXT file for licensing information.
 
 // A graph extended with planarity is the "base class" of a graph extended with K4 Search
 #include "../planarityRelated/graphPlanarity.h"
+#include "../planarityRelated/graphPlanarity.private.h"
 
 // Need to save and restore a graph flag related to IO
 #include "../io/graphIO.h"
@@ -360,7 +361,7 @@ int _K4Search_HandleBlockedBicomp(graphP theGraph, int v, int RootVertex, int R)
                 sp_Pop2_Discard1(theGraph->theStack, R);
 
                 // And we have to clear the indicator of the minor A that was reduced, since it was eliminated.
-                theGraph->IC.minorType = 0;
+                theGraph->IC->minorType = MINORTYPE_NONE;
             }
         }
 
@@ -392,13 +393,13 @@ int _K4Search_HandleBlockedBicomp(graphP theGraph, int v, int RootVertex, int R)
                 // detects that it still has not embedded all the edges to descendants of the bicomp's
                 // root edge child, then Walkdown calls this routine again, and the above non-reentrancy
                 // code returns NONEMBEDDABLE, causing this loop to search again for a K4.
-                theGraph->IC.minorType = 0;
+                theGraph->IC->minorType = MINORTYPE_NONE;
                 RetVal = theGraph->functions->fpWalkDown(theGraph, v, RootVertex);
 
                 // Except if the Walkdown returns NONEMBEDDABLE due to finding a K4 homeomorph entangled
                 // with a descendant bicomp (the R != RootVertex case above), then it was found
                 // entangled with Minor A, so we can stop the search if minor A is detected
-                if (theGraph->IC.minorType & MINORTYPE_A)
+                if (theGraph->IC->minorType & MINORTYPE_A)
                     break;
 
             } while (RetVal == NONEMBEDDABLE);

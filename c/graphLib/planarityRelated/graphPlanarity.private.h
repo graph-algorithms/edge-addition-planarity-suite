@@ -69,6 +69,37 @@ extern "C"
 #define gp_GetExtFaceVertex(theGraph, v, link) (theGraph->extFace[v].vertex[link])
 #define gp_SetExtFaceVertex(theGraph, v, link, theVertex) (theGraph->extFace[v].vertex[link] = theVertex)
 
+    /********************************************************************
+    // PLANARITY-RELATED ONLY
+    //
+     Variables needed in embedding by Kuratowski subgraph isolator:
+            minorType: the type of planarity obstruction found.
+            v: the current vertex being processed
+            r: the root of the bicomp on which the Walkdown failed
+            x,y: stopping vertices on bicomp rooted by r
+            w: pertinent vertex on ext. face path below x and y
+            px, py: attachment points of x-y path,
+            z: Unused except in minors D and E (not needed in A, B, C).
+
+            ux,dx: endpoints of unembedded edge that helps connext x with
+                    ancestor of v
+            uy,dy: endpoints of unembedded edge that helps connext y with
+                    ancestor of v
+            dw: descendant endpoint in unembedded edge to v
+            uz,dz: endpoints of unembedded edge that helps connext z with
+                    ancestor of v (for minors B and E, not A, C, D).
+    */
+
+    struct isolatorContext
+    {
+        int minorType;
+        int v, r, x, y, w, px, py, z;
+        int ux, dx, uy, dy, dw, uz, dz;
+    };
+
+    typedef struct isolatorContext isolatorContext;
+    typedef isolatorContext *isolatorContextP;
+
 #ifdef __cplusplus
 }
 #endif

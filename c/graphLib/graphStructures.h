@@ -18,10 +18,6 @@ extern "C"
 {
 #endif
 
-// A return value to indicate success prior to completely processing a graph, whereas
-// OK signifies EMBEDDABLE (no unreducible obstructions) and NOTOK signifies an exception.
-#define NONEMBEDDABLE -1
-
 // The initial setting for the edge storage capacity expressed as a constant factor of N,
 // which is the number of vertices in the graph. By default, array E is allocated enough
 // space to contain 3N edges, which is 6N edge records, but this initial setting
@@ -560,50 +556,20 @@ extern "C"
     typedef struct extFaceLinkRec extFaceLinkRec;
     typedef extFaceLinkRec *extFaceLinkRecP;
 
-    /********************************************************************
     // PLANARITY-RELATED ONLY
-    //
-     Variables needed in embedding by Kuratowski subgraph isolator:
-            minorType: the type of planarity obstruction found.
-            v: the current vertex being processed
-            r: the root of the bicomp on which the Walkdown failed
-            x,y: stopping vertices on bicomp rooted by r
-            w: pertinent vertex on ext. face path below x and y
-            px, py: attachment points of x-y path,
-            z: Unused except in minors D and E (not needed in A, B, C).
-
-            ux,dx: endpoints of unembedded edge that helps connext x with
-                    ancestor of v
-            uy,dy: endpoints of unembedded edge that helps connext y with
-                    ancestor of v
-            dw: descendant endpoint in unembedded edge to v
-            uz,dz: endpoints of unembedded edge that helps connext z with
-                    ancestor of v (for minors B and E, not A, C, D).
-    */
-
-    struct isolatorContext
-    {
-        int minorType;
-        int v, r, x, y, w, px, py, z;
-        int ux, dx, uy, dy, dw, uz, dz;
-    };
-
+    // Declaration of package private data type for isolating
+    // minimal subgraphs obstructing planarity-related embedding
     typedef struct isolatorContext isolatorContext;
     typedef isolatorContext *isolatorContextP;
 
-#define MINORTYPE_A 1
-#define MINORTYPE_B 2
-#define MINORTYPE_C 4
-#define MINORTYPE_D 8
-#define MINORTYPE_E 16
-#define MINORTYPE_E1 32
-#define MINORTYPE_E2 64
-#define MINORTYPE_E3 128
-#define MINORTYPE_E4 256
+    // PLANARITY-RELATED ONLY
+    // Declaration of package private data types for extending the
+    // planarity algorithm to implement planarity-related algorithms
+    typedef struct graphExtension graphExtension;
+    typedef graphExtension *graphExtensionP;
 
-#define MINORTYPE_E5 512
-#define MINORTYPE_E6 1024
-#define MINORTYPE_E7 2048
+    typedef struct graphFunctionTable graphFunctionTable;
+    typedef graphFunctionTable *graphFunctionTableP;
 
     /********************************************************************
          Graph structure definition
@@ -633,14 +599,6 @@ extern "C"
                            extension behaviors to the graph
         */
 
-    typedef struct graphExtension graphExtension;
-    typedef graphExtension *graphExtensionP;
-
-    typedef struct graphFunctionTable graphFunctionTable;
-    typedef graphFunctionTable *graphFunctionTableP;
-
-    typedef struct isolatorContext isolatorContext;
-
     struct baseGraphStructure
     {
         anyTypeVertexRecP V;
@@ -654,7 +612,7 @@ extern "C"
         stackP theStack;
         unsigned graphFlags, embedFlags;
 
-        isolatorContext IC;
+        isolatorContextP IC;
         listCollectionP BicompRootLists, sortedDFSChildLists;
         extFaceLinkRecP extFace;
 

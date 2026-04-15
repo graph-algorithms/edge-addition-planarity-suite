@@ -253,24 +253,24 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
             {
                 if (embedFlags == EMBEDFLAGS_PLANAR || embedFlags == EMBEDFLAGS_OUTERPLANAR)
                 {
-                    if (theGraph->IC.minorType & MINORTYPE_A)
+                    if (gp_GetObstructionMinorType(theGraph) & MINORTYPE_A)
                         ObstructionMinorFreqs[0]++;
-                    else if (theGraph->IC.minorType & MINORTYPE_B)
+                    else if (gp_GetObstructionMinorType(theGraph) & MINORTYPE_B)
                         ObstructionMinorFreqs[1]++;
-                    else if (theGraph->IC.minorType & MINORTYPE_C)
+                    else if (gp_GetObstructionMinorType(theGraph) & MINORTYPE_C)
                         ObstructionMinorFreqs[2]++;
-                    else if (theGraph->IC.minorType & MINORTYPE_D)
+                    else if (gp_GetObstructionMinorType(theGraph) & MINORTYPE_D)
                         ObstructionMinorFreqs[3]++;
-                    else if (theGraph->IC.minorType & MINORTYPE_E)
+                    else if (gp_GetObstructionMinorType(theGraph) & MINORTYPE_E)
                         ObstructionMinorFreqs[4]++;
 
-                    if (theGraph->IC.minorType & MINORTYPE_E1)
+                    if (gp_GetObstructionMinorType(theGraph) & MINORTYPE_E1)
                         ObstructionMinorFreqs[5]++;
-                    else if (theGraph->IC.minorType & MINORTYPE_E2)
+                    else if (gp_GetObstructionMinorType(theGraph) & MINORTYPE_E2)
                         ObstructionMinorFreqs[6]++;
-                    else if (theGraph->IC.minorType & MINORTYPE_E3)
+                    else if (gp_GetObstructionMinorType(theGraph) & MINORTYPE_E3)
                         ObstructionMinorFreqs[7]++;
-                    else if (theGraph->IC.minorType & MINORTYPE_E4)
+                    else if (gp_GetObstructionMinorType(theGraph) & MINORTYPE_E4)
                         ObstructionMinorFreqs[8]++;
 
                     if (tolower(ObstructedOut) == 'y')
