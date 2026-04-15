@@ -109,6 +109,82 @@ extern "C"
 #define MIN3(x, y, z) MIN(MIN((x), (y)), MIN((y), (z)))
 #define MAX3(x, y, z) MAX(MAX((x), (y)), MAX((y), (z)))
 
+/********************************************************************
+ PERTINENT()
+    A vertex is pertinent in a partially processed graph if there is an
+    unprocessed back edge between the vertex v whose edges are currently
+    being processed and either the vertex or a DFS descendant D of the
+    vertex not in the same bicomp as the vertex.
+
+    The vertex is either directly adjacent to v by an unembedded back edge
+    or there is an unembedded back edge (v, D) and the vertex is a cut
+    vertex in the partially processed graph along the DFS tree path from
+    D to v.
+
+    Pertinence is a dynamic property that can change for a vertex after
+    each edge addition.  In other words, a vertex can become non-pertinent
+    during step v as more back edges to v are embedded.
+
+    NOTE: Pertinent roots are stored using the DFS children with which
+    they are associated, so we test 'is vertex' (rather than virtual).
+    ********************************************************************/
+#define PERTINENT(theGraph, theVertex)                                      \
+    (gp_IsEdge(theGraph, gp_GetVertexPertinentEdge(theGraph, theVertex)) || \
+     gp_IsVertex(theGraph, gp_GetVertexPertinentRootsList(theGraph, theVertex)))
+
+#define NOTPERTINENT(theGraph, theVertex)                                      \
+    (gp_IsNotEdge(theGraph, gp_GetVertexPertinentEdge(theGraph, theVertex)) && \
+     gp_IsNotVertex(theGraph, gp_GetVertexPertinentRootsList(theGraph, theVertex)))
+
+/********************************************************************
+ FUTUREPERTINENT()
+    A vertex is future-pertinent in a partially processed graph if
+    there is an unprocessed back edge between a DFS ancestor A of the
+    vertex v whose edges are currently being processed and either
+    theVertex or a DFS descendant D of theVertex not in the same bicomp
+    as theVertex.
+
+    Either theVertex is directly adjacent to A by an unembedded back edge
+    or there is an unembedded back edge (A, D) and theVertex is a cut
+    vertex in the partially processed graph along the DFS tree path from
+    D to A.
+
+    If no more edges are added to the partially processed graph prior to
+    processing the edges of A, then the vertex would be pertinent.
+    The addition of edges to the partially processed graph can alter
+    both the pertinence and future pertinence of a vertex.  For example,
+    if the vertex is pertinent due to an unprocessed back edge (v, D1) and
+    future pertinent due to an unprocessed back edge (A, D2), then the
+    vertex may lose both its pertinence and future pertinence when edge
+    (v, D1) is added if D2 is in the same subtree as D1.
+
+    Generally, pertinence and future pertinence are dynamic properties
+    that can change for a vertex after each edge addition.
+
+    Note that gp_UpdateVertexFuturePertinentChild() must be called before
+    this macro. Since it is a statement and not a void expression, the
+    desired commented out version does not compile (except with special
+    compiler extensions not assumed by this code).
+    ********************************************************************/
+#define FUTUREPERTINENT(theGraph, theVertex, v)                              \
+    (theGraph->VI[theVertex].leastAncestor < v ||                            \
+     (gp_IsVertex(theGraph, theGraph->VI[theVertex].futurePertinentChild) && \
+      theGraph->VI[theGraph->VI[theVertex].futurePertinentChild].lowpoint < v))
+
+#define NOTFUTUREPERTINENT(theGraph, theVertex, v)                              \
+    (theGraph->VI[theVertex].leastAncestor >= v &&                              \
+     (gp_IsNotVertex(theGraph, theGraph->VI[theVertex].futurePertinentChild) || \
+      theGraph->VI[theGraph->VI[theVertex].futurePertinentChild].lowpoint >= v))
+
+/********************************************************************
+ INACTIVE()
+    For planarity algorithms, a vertex is inactive if it is neither pertinent
+    nor future pertinent.
+    ********************************************************************/
+#define INACTIVE(theGraph, theVertex, v)  \
+    (NOTPERTINENT(theGraph, theVertex) && \
+     NOTFUTUREPERTINENT(theGraph, theVertex, v))
+
 #ifdef __cplusplus
 }
 #endif
