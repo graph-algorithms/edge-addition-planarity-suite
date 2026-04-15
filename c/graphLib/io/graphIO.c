@@ -759,7 +759,7 @@ char _GetEdgeTypeChar(graphP theGraph, int e)
         type = 'P';
     else if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_BACK)
         type = 'B';
-    else if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_RANDOMTREE)
+    else if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_TREE)
         type = 'T';
 
     return type;

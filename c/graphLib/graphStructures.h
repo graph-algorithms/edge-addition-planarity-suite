@@ -138,17 +138,17 @@ extern "C"
 // EDGE_TYPE_FORWARD - edge record points to a DFS descendant, not a DFS child
 // EDGE_TYPE_PARENT - edge record points to the DFS parent
 // EDGE_TYPE_BACK - edge record points to a DFS ancestor, not the DFS parent
-// NOTE: A parent/child tree edge has bit 3 (4) set, forward/back edges do not
+// NOTE: A parent/child tree edge has bit 3 (8) set, forward/back edges do not
 #define EDGE_TYPE_CHILD 28
 #define EDGE_TYPE_FORWARD 20
 #define EDGE_TYPE_PARENT 12
 #define EDGE_TYPE_BACK 4
 
 // EDGE_TYPE_NOTDEFINED - the edge record type has not been defined
-// EDGE_TYPE_RANDOMTREE - edge record is part of a randomly generated tree
-// NOTE: RANDOMTREE uses the same bit 3 as DFS tree edges above
+// EDGE_TYPE_TREE - edge record is part of a randomly generated tree
+// NOTE: EDGE_TYPE_TREE uses the same bit 3 as DFS parent and child edges above
 #define EDGE_TYPE_NOTDEFINED 0
-#define EDGE_TYPE_RANDOMTREE 8
+#define EDGE_TYPE_TREE 8
 
 #define gp_GetEdgeType(theGraph, e) (theGraph->E[e].flags & EDGE_TYPE_MASK)
 #define gp_ClearEdgeType(theGraph, e) (theGraph->E[e].flags &= ~EDGE_TYPE_MASK)

@@ -1341,8 +1341,8 @@ int gp_CreateRandomGraphEx(graphP theGraph, int numEdges)
         else
         {
             e = _gp_FindEdge(theGraph, u, v);
-            gp_SetEdgeType(theGraph, e, EDGE_TYPE_RANDOMTREE);
-            gp_SetEdgeType(theGraph, gp_GetTwin(theGraph, e), EDGE_TYPE_RANDOMTREE);
+            gp_SetEdgeType(theGraph, e, EDGE_TYPE_TREE);
+            gp_SetEdgeType(theGraph, gp_GetTwin(theGraph, e), EDGE_TYPE_TREE);
             gp_ClearEdgeVisited(theGraph, e);
             gp_ClearEdgeVisited(theGraph, gp_GetTwin(theGraph, e));
         }
