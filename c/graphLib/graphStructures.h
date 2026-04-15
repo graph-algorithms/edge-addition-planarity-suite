@@ -367,11 +367,6 @@ extern "C"
     // End of Vertex iteration-related methods
     //////////////////////////////////////////
 
-    // A DFS tree root is one that has no DFS parent. There is one DFS tree root
-// per connected component of a graph (connected, not biconnected; component, not bicomp)
-#define gp_IsDFSTreeRoot(theGraph, v) gp_IsNotVertex(theGraph, gp_GetVertexParent(theGraph, v))
-#define gp_IsNotDFSTreeRoot(theGraph, v) gp_IsVertex(theGraph, gp_GetVertexParent(theGraph, v))
-
 // Accessors for "any type" vertex index
 #define gp_GetIndex(theGraph, v) (theGraph->V[v].index)
 #define gp_SetIndex(theGraph, v, theIndex) (theGraph->V[v].index = theIndex)
@@ -393,37 +388,11 @@ extern "C"
 #define gp_ClearMarked(theGraph, v) (theGraph->V[v].flags &= ~ANYTYPEVERTEX_MARKED_MASK)
 #define gp_SetMarked(theGraph, v) (theGraph->V[v].flags |= ANYTYPEVERTEX_MARKED_MASK)
 
-// PLANARITY-RELATED ONLY
-//
-// The ANYVERTEX_OBSTRUCTIONMARK_MASK bits are bits 2-4, 4+8+16=28
-// They are used by planarity-related algorithms to identify the four
-// regions of the external face cycle of a bicomp, relative to an
-// XY-path in the bicomp.
-// Bit 2 - 4 if the OBSTRUCTIONMARK is set, 0 if not
-// Bit 3 - 8 if the OBSTRUCTIONMARK indicates Y side, 0 if X side
-// Bit 4 - 16 if the OBSTRUCTIONMARK indicates high, 0 if low
-#define ANYVERTEX_OBSTRUCTIONMARK_MASK 28
+// A DFS tree root is one that has no DFS parent. There is one DFS tree root
+// per connected component of a graph (connected, not biconnected; component, not bicomp)
+#define gp_IsDFSTreeRoot(theGraph, v) gp_IsNotVertex(theGraph, gp_GetVertexParent(theGraph, v))
+#define gp_IsNotDFSTreeRoot(theGraph, v) gp_IsVertex(theGraph, gp_GetVertexParent(theGraph, v))
 
-// Call gp_GetObstructionMark, then compare to one of these four possibilities
-// ANYVERTEX_OBSTRUCTIONMARK_HIGH_RXW - On the external face path between vertices R and X
-// ANYVERTEX_OBSTRUCTIONMARK_LOW_RXW  - X or on the external face path between vertices X and W
-// ANYVERTEX_OBSTRUCTIONMARK_HIGH_RYW - On the external face path between vertices R and Y
-// ANYVERTEX_OBSTRUCTIONMARK_LOW_RYW  - Y or on the external face path between vertices Y and W
-// ANYVERTEX_OBSTRUCTIONMARK_UNMARKED  - corresponds to all three bits off
-#define ANYVERTEX_OBSTRUCTIONMARK_HIGH_RXW 20
-#define ANYVERTEX_OBSTRUCTIONMARK_LOW_RXW 4
-#define ANYVERTEX_OBSTRUCTIONMARK_HIGH_RYW 28
-#define ANYVERTEX_OBSTRUCTIONMARK_LOW_RYW 12
-#define ANYVERTEX_OBSTRUCTIONMARK_UNMARKED 0
-
-#define gp_GetObstructionMark(theGraph, v) (theGraph->V[v].flags & ANYVERTEX_OBSTRUCTIONMARK_MASK)
-#define gp_ClearObstructionMark(theGraph, v) (theGraph->V[v].flags &= ~ANYVERTEX_OBSTRUCTIONMARK_MASK)
-#define gp_SetObstructionMark(theGraph, v, type) (theGraph->V[v].flags |= type)
-#define gp_ResetObstructionMark(theGraph, v, type) \
-    (theGraph->V[v].flags = (theGraph->V[v].flags & ~ANYVERTEX_OBSTRUCTIONMARK_MASK) | type)
-
-// PLANARITY-RELATED ONLY
-//
 // Mapping between bicomp roots and virtual vertex locations used to store them.
 // A cut vertex v separates one or more of its DFS children, say c1 and c2, from
 // the DFS parent and ancesstors of v. Because a DFS tree contains only tree edges
@@ -431,6 +400,7 @@ extern "C"
 // rooted by c1, T(c1), with vertices in the DFS subtree rooted by c2, T(c2).
 // We say that v is a cut vertex because the only paths that go from vertices in
 // T(c1) to vertices in T(c2) are paths that contain v.
+//
 // Therefore, bicomp root copies of v, say R1 and R2, can be created at locations
 // c1 and c2 in virtual vertex space, in other words at locations N+c1 and N+c2.
 // The bicomps rooted by R1 and R2 are called child bicomps of v, and they contain,
@@ -442,8 +412,6 @@ extern "C"
 #define gp_GetVertexFromBicompRoot(theGraph, R) gp_GetVertexParent(theGraph, gp_GetDFSChildFromBicompRoot(theGraph, R))
 #define gp_IsBicompRoot(theGraph, v) (!gp_VertexInRangeAscending(theGraph, v))
 
-// PLANARITY-RELATED ONLY
-//
 // If a vertex v is a cut vertex that separates one of its DFS children, say c,
 // from the DFS ancestors and other children of v, then when the graph has been
 // separated into bicomps, there will be a root copy of v in virtual vertex space
@@ -453,34 +421,6 @@ extern "C"
 #define gp_IsNotSeparatedDFSChild(theGraph, theChild) (gp_VirtualVertexNotInUse(theGraph, gp_GetBicompRootFromDFSChild(theGraph, theChild)))
 
     /********************************************************************
-    // PLANARITY-RELATED ONLY
-    //
-     This structure defines a pair of links used by each vertex and virtual vertex
-        to create "short circuit" paths that eliminate unimportant vertices from
-        the external face, enabling more efficient traversal of the external face.
-
-        It is also possible to embed the "short circuit" edges, but this approach
-        creates a better separation of concerns, imparts greater clarity, and
-        removes exceptionalities for handling additional fake "short circuit" edges.
-
-        vertex[2]: The two adjacent vertices along the external face, possibly
-                short-circuiting paths of inactive vertices.
-    */
-
-    typedef struct
-    {
-        int vertex[2];
-    } extFaceLinkRec;
-
-    typedef extFaceLinkRec *extFaceLinkRecP;
-
-#define gp_GetExtFaceVertex(theGraph, v, link) (theGraph->extFace[v].vertex[link])
-#define gp_SetExtFaceVertex(theGraph, v, link, theVertex) (theGraph->extFace[v].vertex[link] = theVertex)
-
-    /********************************************************************
-    // PLANARITY-RELATED ONLY
-    //
-
      Vertex Info Structure Definition.
 
      This structure equips the non-virtual vertices with additional
@@ -614,6 +554,12 @@ extern "C"
 #define gp_GetVertexFwdEdgeList(theGraph, v) (theGraph->VI[v].fwdEdgeList)
 #define gp_SetVertexFwdEdgeList(theGraph, v, theFwdEdgeList) (theGraph->VI[v].fwdEdgeList = theFwdEdgeList)
 
+    // PLANARITY-RELATED ONLY
+    // Declaration of package private data type for optimizing management of
+    // the external face of a planar embedding as it is being built
+    typedef struct extFaceLinkRec extFaceLinkRec;
+    typedef extFaceLinkRec *extFaceLinkRecP;
+
     /********************************************************************
     // PLANARITY-RELATED ONLY
     //
@@ -635,13 +581,14 @@ extern "C"
                     ancestor of v (for minors B and E, not A, C, D).
     */
 
-    typedef struct
+    struct isolatorContext
     {
         int minorType;
         int v, r, x, y, w, px, py, z;
         int ux, dx, uy, dy, dw, uz, dz;
-    } isolatorContext;
+    };
 
+    typedef struct isolatorContext isolatorContext;
     typedef isolatorContext *isolatorContextP;
 
 #define MINORTYPE_A 1
@@ -659,38 +606,40 @@ extern "C"
 #define MINORTYPE_E7 2048
 
     /********************************************************************
-     Graph structure definition
-            V : Array of vertex records (allocated size N + NV)
-            VI: Array of additional vertexInfo structures (allocated size N)
-            N : Number of non-virtual vertices (the "order" of the graph)
-            NV: Number of virtual vertices (currently always equal to N)
+         Graph structure definition
+                V : Array of vertex records (allocated size N + NV)
+                VI: Array of additional vertexInfo structures (allocated size N)
+                N : Number of non-virtual vertices (the "order" of the graph)
+                NV: Number of virtual vertices (currently always equal to N)
 
-            E : Array of edge records (edge records come in pairs and represent
-                an edge in each of the two vertex endpoints of the edge)
-            M: Number of edges (the "size" of the graph)
-            edgeCapacity: the maximum number of edges allowed in E
-            edgeHoles: free locations in E where edges have been deleted
+                E : Array of edge records (edge records come in pairs and represent
+                    an edge in each of the two vertex endpoints of the edge)
+                M: Number of edges (the "size" of the graph)
+                edgeCapacity: the maximum number of edges allowed in E
+                edgeHoles: free locations in E where edges have been deleted
 
-            theStack: Used by various graph routines needing a stack
-            graphFlags: Additional state information about the graph
-            embedFlags: records the type of embedding requested (uses EMBEDFLAGS)
+                theStack: Used by various graph routines needing a stack
+                graphFlags: Additional state information about the graph
+                embedFlags: records the type of embedding requested (uses EMBEDFLAGS)
 
-            IC: contains additional useful variables for Kuratowski subgraph isolation.
-            BicompRootLists: storage space for pertinent bicomp root lists that develop
-                            during embedding
-            sortedDFSChildLists: storage for the sorted DFS child lists of each vertex
-            extFace: Array of (N + NV) external face short circuit records
+                IC: contains additional useful variables for Kuratowski subgraph isolation.
+                BicompRootLists: storage space for pertinent bicomp root lists that develop
+                                during embedding
+                sortedDFSChildLists: storage for the sorted DFS child lists of each vertex
+                extFace: Array of (N + NV) external face short circuit records
 
-            extensions: a list of extension data structures
-            functions: a table of function pointers that can be overloaded to provide
-                       extension behaviors to the graph
-    */
+                extensions: a list of extension data structures
+                functions: a table of function pointers that can be overloaded to provide
+                           extension behaviors to the graph
+        */
 
     typedef struct graphExtension graphExtension;
     typedef graphExtension *graphExtensionP;
 
     typedef struct graphFunctionTable graphFunctionTable;
     typedef graphFunctionTable *graphFunctionTableP;
+
+    typedef struct isolatorContext isolatorContext;
 
     struct baseGraphStructure
     {

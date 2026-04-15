@@ -71,6 +71,7 @@ nobase_pkginclude_HEADERS = \
 	c/graphLib/planarityRelated/graphDrawPlanar.h \
 	c/graphLib/planarityRelated/graphDrawPlanar.private.h \
 	c/graphLib/planarityRelated/graphPlanarity.h \
+	c/graphLib/planarityRelated/graphPlanarity.private.h \
 	c/graphLib/planarityRelated/graphOuterplanarity.h 
 
 bin_PROGRAMS = planarity

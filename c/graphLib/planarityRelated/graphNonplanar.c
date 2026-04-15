@@ -10,6 +10,7 @@ See the LICENSE.TXT file for licensing information.
 
 // This source file implements subroutines of the main graph planarity method, gp_Embed()
 #include "graphPlanarity.h"
+#include "../planarityRelated/graphPlanarity.private.h"
 
 /* Imported functions */
 

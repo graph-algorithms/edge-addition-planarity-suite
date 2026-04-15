@@ -9,6 +9,9 @@ See the LICENSE.TXT file for licensing information.
 #include "graphK4Search.h"
 #include "graphK4Search.private.h"
 
+// A graph extended with planarity is the "base class" of a graph extended with K4 Search
+#include "../planarityRelated/graphPlanarity.private.h"
+
 /* Imported functions */
 
 extern void _InitIsolatorContext(graphP theGraph);

@@ -11,6 +11,8 @@ See the LICENSE.TXT file for licensing information.
 #include "extensionSystem/graphExtensions.h"
 #include "extensionSystem/graphExtensions.private.h"
 
+#include "planarityRelated/graphPlanarity.private.h"
+
 /* Imported functions for FUNCTION POINTERS */
 
 extern int _EmbeddingInitialize(graphP theGraph);

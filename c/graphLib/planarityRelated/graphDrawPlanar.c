@@ -9,6 +9,9 @@ See the LICENSE.TXT file for licensing information.
 #include "graphDrawPlanar.h"
 #include "graphDrawPlanar.private.h"
 
+// A graph extended with planarity is the "base class" of a graph extended with DrawPlanar
+#include "../planarityRelated/graphPlanarity.private.h"
+
 // For definition of zero-based IO flag
 #include "../io/graphIO.h"
 

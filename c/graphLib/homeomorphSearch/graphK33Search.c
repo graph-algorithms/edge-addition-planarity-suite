@@ -9,6 +9,9 @@ See the LICENSE.TXT file for licensing information.
 #include "graphK33Search.h"
 #include "graphK33Search.private.h"
 
+// A graph extended with planarity is the "base class" of a graph extended with K3,3 Search
+#include "../planarityRelated/graphPlanarity.private.h"
+
 /* Imported functions */
 
 // extern void _ClearAllVisitedFlagsInGraph(graphP);
