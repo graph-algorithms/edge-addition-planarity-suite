@@ -38,20 +38,6 @@ int _WriteAdjMatrix(graphP theGraph, strOrFileP outputContainer);
 int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer);
 int _WritePostprocess(graphP theGraph, char **pExtraData);
 
-// These prototypes are defined if LOGGING is defined, but
-// if LOGGING is not defined, then these declarations help
-// to get rid of missingprototype warnings.
-#ifndef LOGGING
-void _LogLine(const char *Line);
-void _Log(const char *Line);
-
-char *_MakeLogStr1(char *format, int);
-char *_MakeLogStr2(char *format, int, int);
-char *_MakeLogStr3(char *format, int, int, int);
-char *_MakeLogStr4(char *format, int, int, int, int);
-char *_MakeLogStr5(char *format, int, int, int, int, int);
-#endif
-
 /* Private functions */
 char _GetEdgeTypeChar(graphP theGraph, int e);
 char _GetObstructionMarkChar(graphP theGraph, int v);
@@ -1081,85 +1067,4 @@ int _WriteGraph(graphP theGraph, strOrFileP *pOutputContainer, int Mode)
 int _WritePostprocess(graphP theGraph, char **pExtraData)
 {
     return OK;
-}
-
-/********************************************************************
- _Log()
-
- When the project is compiled with LOGGING enabled, this method writes
- a string to the file PLANARITY.LOG in the current working directory.
- On first write, the file is created or cleared.
- Call this method with NULL to close the log file.
- ********************************************************************/
-
-void _Log(char const *Str)
-{
-    static FILE *logfile = NULL;
-
-    if (logfile == NULL)
-    {
-        if ((logfile = fopen("PLANARITY.LOG", WRITETEXT)) == NULL)
-            return;
-    }
-
-    if (Str != NULL)
-    {
-        fprintf(logfile, "%s", Str);
-        fflush(logfile);
-    }
-    else
-        fclose(logfile);
-}
-
-void _LogLine(char const *Str)
-{
-    _Log(Str);
-    _Log("\n");
-}
-
-static char LogStr[MAXLINE + 1];
-
-char *_MakeLogStr1(char *format, int one)
-{
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-nonliteral"
-    sprintf(LogStr, format, one);
-#pragma GCC diagnostic pop
-    return LogStr;
-}
-
-char *_MakeLogStr2(char *format, int one, int two)
-{
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-nonliteral"
-    sprintf(LogStr, format, one, two);
-#pragma GCC diagnostic pop
-    return LogStr;
-}
-
-char *_MakeLogStr3(char *format, int one, int two, int three)
-{
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-nonliteral"
-    sprintf(LogStr, format, one, two, three);
-#pragma GCC diagnostic pop
-    return LogStr;
-}
-
-char *_MakeLogStr4(char *format, int one, int two, int three, int four)
-{
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-nonliteral"
-    sprintf(LogStr, format, one, two, three, four);
-#pragma GCC diagnostic pop
-    return LogStr;
-}
-
-char *_MakeLogStr5(char *format, int one, int two, int three, int four, int five)
-{
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-nonliteral"
-    sprintf(LogStr, format, one, two, three, four, five);
-#pragma GCC diagnostic pop
-    return LogStr;
 }

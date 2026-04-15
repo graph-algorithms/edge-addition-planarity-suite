@@ -18,6 +18,9 @@ See the LICENSE.TXT file for licensing information.
 // For definition of zero-based IO flag
 #include "../io/graphIO.h"
 
+// For LOGGING-related declarations
+#include "../lowLevelUtils/apiutils.private.h"
+
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -40,6 +43,10 @@ int _ComputeVertexRanges(DrawPlanarContext *context);
 int _ComputeEdgeRanges(DrawPlanarContext *context);
 int _GetNextExternalFaceVertex(graphP theGraph, int curVertex, int *pPrevLink);
 char *_RenderToString(graphP theEmbedding);
+
+#ifdef LOGGING
+void _LogEdgeList(graphP theEmbedding, listCollectionP edgeList, int edgeListHead);
+#endif
 
 /********************************************************************
  _ComputeVisibilityRepresentation()
@@ -306,7 +313,7 @@ void _LogEdgeList(graphP theEmbedding, listCollectionP edgeList, int edgeListHea
 
     _gp_Log("EdgeList: [ ");
 
-    while (gp_IsEdge(theGraph, eIndex))
+    while (gp_IsEdge(theEmbedding, eIndex))
     {
         e = (eIndex << 1);
         eTwin = gp_GetTwin(theEmbedding, e);

@@ -24,6 +24,9 @@ See the LICENSE.TXT file for licensing information.
 #include "../homeomorphSearch/graphK33Search.private.h"
 #include "../homeomorphSearch/graphK4Search.private.h"
 
+// For LOGGING-related declarations
+#include "../lowLevelUtils/apiutils.private.h"
+
 /* Imported functions */
 
 extern void _ClearAnyTypeVertexVisitedFlags(graphP theGraph, int);

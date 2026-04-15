@@ -6,11 +6,12 @@ See the LICENSE.TXT file for licensing information.
 
 #include <limits.h>
 #include <stdarg.h>
-#include <stdint.h>
 #include <stdlib.h>
 
-#include "apiutils.h"
 #include "appconst.h"
+
+#include "apiutils.h"
+#include "apiutils.private.h"
 
 int quietMode = FALSE;
 
@@ -42,32 +43,107 @@ void ErrorMessage(char const *message)
     }
 }
 
-int GetNumCharsToReprInt(int theNum, int *numCharsRequired)
+#ifdef LOGGING
+
+/********************************************************************
+ _Log()
+
+ When the project is compiled with LOGGING enabled, this method writes
+ a string to the file PLANARITY.LOG in the current working directory.
+ On first write, the file is created or cleared.
+ Call this method with NULL to close the log file.
+ ********************************************************************/
+
+void closeLogFileAtExit(void);
+
+void _Log(char const *Str)
 {
-    int charCount = 0;
+    static FILE *logfile = NULL;
+    static int triedlogfile = FALSE;
 
-    if (numCharsRequired == NULL)
-        return NOTOK;
-
-    if (theNum < 0)
+    if (logfile == NULL && !triedlogfile)
     {
-        charCount++;
-        // N.B. since 32-bit signed integers are represented using twos-complement,
-        // the absolute value of INT_MIN is not defined; however, adding 1 to this
-        // min value before taking the absolute value will still require the same
-        // number of digits.
-        if ((theNum == INT_MIN) || (theNum == INT8_MAX) || (theNum == INT16_MIN) || (theNum == INT32_MIN))
-            theNum++;
-        theNum = abs(theNum);
+        triedlogfile = TRUE;
+        if (atexit(closeLogFileAtExit) != 0)
+            ErrorMessage("Unable to set up atexit() to close Edge_Addition_Planarity_Suite log file on exit");
+        else
+        {
+            if ((logfile = fopen("Edge_Addition_Planarity_Suite.LOG", WRITETEXT)) == NULL)
+                ErrorMessage("Unable to open the Edge_Addition_Planarity_Suite log file");
+        }
     }
 
-    while (theNum > 0)
+    if (logfile != NULL)
     {
-        theNum /= 10;
-        charCount++;
+        if (Str != NULL)
+        {
+            fprintf(logfile, "%s", Str);
+            fflush(logfile);
+        }
+        else
+        {
+            fclose(logfile);
+            logfile = NULL;
+        }
     }
-
-    (*numCharsRequired) = charCount;
-
-    return OK;
 }
+
+void _LogLine(char const *Str)
+{
+    _Log(Str);
+    _Log("\n");
+}
+
+void closeLogFileAtExit(void)
+{
+    _gp_Log(NULL);
+}
+
+static char LogStr[MAXLINE + 1];
+
+char *_MakeLogStr1(const char *format, int one)
+{
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
+    sprintf(LogStr, format, one);
+#pragma GCC diagnostic pop
+    return LogStr;
+}
+
+char *_MakeLogStr2(const char *format, int one, int two)
+{
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
+    sprintf(LogStr, format, one, two);
+#pragma GCC diagnostic pop
+    return LogStr;
+}
+
+char *_MakeLogStr3(const char *format, int one, int two, int three)
+{
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
+    sprintf(LogStr, format, one, two, three);
+#pragma GCC diagnostic pop
+    return LogStr;
+}
+
+char *_MakeLogStr4(const char *format, int one, int two, int three, int four)
+{
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
+    sprintf(LogStr, format, one, two, three, four);
+#pragma GCC diagnostic pop
+    return LogStr;
+}
+
+char *_MakeLogStr5(const char *format, int one, int two, int three, int four, int five)
+{
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
+    sprintf(LogStr, format, one, two, three, four, five);
+#pragma GCC diagnostic pop
+    return LogStr;
+}
+
+#endif // LOGGING

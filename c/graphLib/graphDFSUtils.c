@@ -12,6 +12,9 @@ See the LICENSE.TXT file for licensing information.
 
 #include "extensionSystem/graphExtensions.private.h"
 
+// For LOGGING-related declarations
+#include "lowLevelUtils/apiutils.private.h"
+
 // Private methods, except exported within library
 int _SortVertices(graphP theGraph);
 

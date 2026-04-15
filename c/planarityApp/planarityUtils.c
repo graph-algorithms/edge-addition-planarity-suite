@@ -6,6 +6,8 @@ See the LICENSE.TXT file for licensing information.
 
 #include "planarity.h"
 
+#include <stdint.h>
+
 /****************************************************************************
  Configuration
  ****************************************************************************/
@@ -1077,4 +1079,38 @@ void WriteAlgorithmResults(graphP theGraph, int Result, char command, platform_t
     sprintf(messageContents, "Algorithm '%s' executed in %.3lf seconds.\n",
             GetAlgorithmName(command), platform_GetDuration(start, end));
     Message(messageContents);
+}
+
+/****************************************************************************
+ * GetNumCharsToReprInt()
+ ****************************************************************************/
+
+int GetNumCharsToReprInt(int theNum, int *numCharsRequired)
+{
+    int charCount = 0;
+
+    if (numCharsRequired == NULL)
+        return NOTOK;
+
+    if (theNum < 0)
+    {
+        charCount++;
+        // N.B. since 32-bit signed integers are represented using twos-complement,
+        // the absolute value of INT_MIN is not defined; however, adding 1 to this
+        // min value before taking the absolute value will still require the same
+        // number of digits.
+        if ((theNum == INT_MIN) || (theNum == INT8_MAX) || (theNum == INT16_MIN) || (theNum == INT32_MIN))
+            theNum++;
+        theNum = abs(theNum);
+    }
+
+    while (theNum > 0)
+    {
+        theNum /= 10;
+        charCount++;
+    }
+
+    (*numCharsRequired) = charCount;
+
+    return OK;
 }

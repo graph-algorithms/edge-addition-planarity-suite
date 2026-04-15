@@ -66,6 +66,7 @@ nobase_pkginclude_HEADERS = \
 	c/graphLib/io/strbuf.h \
 	c/graphLib/io/strOrFile.h \
 	c/graphLib/lowLevelUtils/apiutils.h \
+	c/graphLib/lowLevelUtils/apiutils.private.h \
 	c/graphLib/lowLevelUtils/appconst.h \
 	c/graphLib/lowLevelUtils/listcoll.h \
 	c/graphLib/lowLevelUtils/stack.h \
