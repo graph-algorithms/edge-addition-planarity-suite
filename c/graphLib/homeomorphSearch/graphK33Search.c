@@ -9,7 +9,9 @@ See the LICENSE.TXT file for licensing information.
 #include "graphK33Search.h"
 #include "graphK33Search.private.h"
 
-// A graph extended with planarity is the "base class" of a graph extended with K3,3 Search
+// A graph, extended with DFS and Planarity, is the "base class"
+// of a graph extended with K3,3 Search
+#include "../graphDFSUtils.h"
 #include "../planarityRelated/graphPlanarity.h"
 #include "../planarityRelated/graphPlanarity.private.h"
 

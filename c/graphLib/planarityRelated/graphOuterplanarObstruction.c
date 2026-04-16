@@ -8,7 +8,9 @@ See the LICENSE.TXT file for licensing information.
 
 #include "../extensionSystem/graphExtensions.private.h"
 
-// A graph extended with planarity is the "base class" of a graph extended with outerplanarity
+// A graph, extended with DFS and Planarity, is the "base class"
+// of a graph extended with Outerplanarity
+#include "../graphDFSUtils.h"
 #include "../planarityRelated/graphPlanarity.h"
 #include "../planarityRelated/graphPlanarity.private.h"
 

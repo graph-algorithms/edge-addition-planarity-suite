@@ -8,7 +8,11 @@ See the LICENSE.TXT file for licensing information.
 
 #include "../graph.h"
 
-// This source file implements subroutines of the main graph planarity method, gp_Embed()
+// A graph, extended with DFS, is the "base class"
+// of a graph extended with Planarity
+#include "../graphDFSUtils.h"
+
+// This source file implements subroutines of the main graph planarity method
 #include "../planarityRelated/graphPlanarity.h"
 #include "../planarityRelated/graphPlanarity.private.h"
 

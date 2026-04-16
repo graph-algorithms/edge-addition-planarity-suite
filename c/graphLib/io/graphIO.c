@@ -16,6 +16,7 @@ See the LICENSE.TXT file for licensing information.
 
 // To help with writing debug info
 #include "../planarityRelated/graphPlanarity.private.h"
+#include "../graphDFSUtils.h"
 
 // To help with graph construction
 #include "../graphUtils.private.h"

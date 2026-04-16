@@ -384,38 +384,6 @@ extern "C"
 #define gp_ClearMarked(theGraph, v) (theGraph->V[v].flags &= ~ANYTYPEVERTEX_MARKED_MASK)
 #define gp_SetMarked(theGraph, v) (theGraph->V[v].flags |= ANYTYPEVERTEX_MARKED_MASK)
 
-// A DFS tree root is one that has no DFS parent. There is one DFS tree root
-// per connected component of a graph (connected, not biconnected; component, not bicomp)
-#define gp_IsDFSTreeRoot(theGraph, v) gp_IsNotVertex(theGraph, gp_GetVertexParent(theGraph, v))
-#define gp_IsNotDFSTreeRoot(theGraph, v) gp_IsVertex(theGraph, gp_GetVertexParent(theGraph, v))
-
-// Mapping between bicomp roots and virtual vertex locations used to store them.
-// A cut vertex v separates one or more of its DFS children, say c1 and c2, from
-// the DFS parent and ancesstors of v. Because a DFS tree contains only tree edges
-// and back edges, there are no cross edges connecting vertices in the DFS subtree
-// rooted by c1, T(c1), with vertices in the DFS subtree rooted by c2, T(c2).
-// We say that v is a cut vertex because the only paths that go from vertices in
-// T(c1) to vertices in T(c2) are paths that contain v.
-//
-// Therefore, bicomp root copies of v, say R1 and R2, can be created at locations
-// c1 and c2 in virtual vertex space, in other words at locations N+c1 and N+c2.
-// The bicomps rooted by R1 and R2 are called child bicomps of v, and they contain,
-// respectively, c1 and c2 as well as possibly more vertices from, respectively,
-// T(c1) and T(c2), depending on what back edges may exist in the graph between
-// pairs of vertices in, respectively, T(c1) and T(c2).
-#define gp_GetBicompRootFromDFSChild(theGraph, c) ((c) + gp_GetN(theGraph))
-#define gp_GetDFSChildFromBicompRoot(theGraph, R) ((R) - gp_GetN(theGraph))
-#define gp_GetVertexFromBicompRoot(theGraph, R) gp_GetVertexParent(theGraph, gp_GetDFSChildFromBicompRoot(theGraph, R))
-#define gp_IsBicompRoot(theGraph, v) (!gp_VertexInRangeAscending(theGraph, v))
-
-// If a vertex v is a cut vertex that separates one of its DFS children, say c,
-// from the DFS ancestors and other children of v, then when the graph has been
-// separated into bicomps, there will be a root copy of v in virtual vertex space
-// at location c+N that will have at least one edge connecting it to c.
-// These macros detect whether or not that is the case for a given DFS child.
-#define gp_IsSeparatedDFSChild(theGraph, theChild) (gp_VirtualVertexInUse(theGraph, gp_GetBicompRootFromDFSChild(theGraph, theChild)))
-#define gp_IsNotSeparatedDFSChild(theGraph, theChild) (gp_VirtualVertexNotInUse(theGraph, gp_GetBicompRootFromDFSChild(theGraph, theChild)))
-
     /********************************************************************
      Vertex Info Structure Definition.
 
