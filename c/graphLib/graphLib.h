@@ -16,16 +16,25 @@ extern "C"
 #include <stdlib.h>
 #include <ctype.h>
 
+// Basic public API declarations, such as for OK, NOTOK, and NIL
+#include "lowLevelUtils/appconst.h"
+#include "lowLevelUtils/apiutils.h"
+
+// Graph structure and public API methods
 #include "graph.h"
 
+// Graph I/O public API methods and definitions
 #include "io/graphIO.h"
 #include "io/g6-read-iterator.h"
 #include "io/g6-write-iterator.h"
 
+// Depth-first search public API methods and definitions
 #include "graphDFSUtils.h"
 
+// Planarity-specific public API methods and definitions
 #include "planarityRelated/graphPlanarity.h"
 
+// Public APIs for extensions to the edge addition planarity algorithm
 #include "planarityRelated/graphOuterplanarity.h"
 #include "planarityRelated/graphDrawPlanar.h"
 #include "homeomorphSearch/graphK23Search.h"

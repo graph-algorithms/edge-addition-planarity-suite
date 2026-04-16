@@ -12,6 +12,9 @@ extern "C"
 {
 #endif
 
+// Basic declarations, such as for OK, NOTOK, and NIL
+#include "lowLevelUtils/appconst.h"
+
 #include "graphStructures.h"
 
     ///////////////////////////////////////////////////////////////////////////////
