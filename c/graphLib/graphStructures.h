@@ -599,7 +599,7 @@ extern "C"
                            extension behaviors to the graph
         */
 
-    struct baseGraphStructure
+    struct graphStructure
     {
         anyTypeVertexRecP V;
         vertexInfoP VI;
@@ -620,8 +620,8 @@ extern "C"
         graphFunctionTableP functions;
     };
 
-    typedef struct baseGraphStructure baseGraphStructure;
-    typedef baseGraphStructure *graphP;
+    typedef struct graphStructure graphStructure;
+    typedef graphStructure *graphP;
 
 #ifdef __cplusplus
 }

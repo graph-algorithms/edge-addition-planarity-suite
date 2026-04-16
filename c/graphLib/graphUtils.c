@@ -146,7 +146,7 @@ char *gp_GetLibPlanarityVersionFull(void)
 
 graphP gp_New(void)
 {
-    graphP theGraph = (graphP)calloc(1, sizeof(baseGraphStructure));
+    graphP theGraph = (graphP)calloc(1, sizeof(graphStructure));
     graphFunctionTableP functionTable = (graphFunctionTableP)calloc(1, sizeof(graphFunctionTable));
 
     if (theGraph != NULL && functionTable != NULL)
