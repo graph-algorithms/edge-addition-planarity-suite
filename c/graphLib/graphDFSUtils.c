@@ -10,6 +10,8 @@ See the LICENSE.TXT file for licensing information.
 
 #include "graphDFSUtils.h"
 
+#include "graphUtils.private.h"
+
 #include "extensionSystem/graphExtensions.private.h"
 
 // For LOGGING-related declarations
@@ -159,7 +161,7 @@ int gp_SortVertices(graphP theGraph)
     }
 #define _gp_SwapVertexInfo(dstGraph, dstPos, srcGraph, srcPos) \
     {                                                          \
-        vertexInfo tempVI = dstGraph->VI[dstPos];              \
+        vertexInfoRec tempVI = dstGraph->VI[dstPos];           \
         dstGraph->VI[dstPos] = srcGraph->VI[srcPos];           \
         srcGraph->VI[srcPos] = tempVI;                         \
     }
@@ -455,4 +457,73 @@ int gp_ComputeLeastAncestors(graphP theGraph)
     _gp_LogLine("graphDFSUtils.c/gp_ComputeLeastAncestors() end\n");
 
     return OK;
+}
+
+/********************************************************************
+ gp_GetParent()
+
+ Once the DFS tree has been created in theGraph, this method returns
+ the DFS parent of the given vertex v. This includes returning NIL
+ for a DFS tree root, which has no DFS parent. Also returns NIL on
+ error, such as invalid parameters or DFS tree not created yet.
+ ********************************************************************/
+int gp_GetParent(graphP theGraph, int v)
+{
+    if (theGraph == NULL ||
+        v < gp_GetFirstVertex(theGraph) || v >= gp_VertexArraySize(theGraph))
+    {
+#ifdef DEBUG
+        NOTOK;
+        ;
+#endif
+        return NIL;
+    }
+
+    return gp_GetVertexParent(theGraph, v);
+}
+
+/********************************************************************
+ gp_GetLeastAncestor()
+
+ Once the least ancestors have been computed in the graph, which
+ includes when they are implicitly calculated as part of computing
+ lowpoints, this method returns the least ancestor value for the
+ given vertex v. Returns NIL on error, such as invalid parameters
+ or least ancestor values not computed yet.
+ ********************************************************************/
+int gp_GetLeastAncestor(graphP theGraph, int v)
+{
+    if (theGraph == NULL ||
+        v < gp_GetFirstVertex(theGraph) || v >= gp_VertexArraySize(theGraph))
+    {
+#ifdef DEBUG
+        NOTOK;
+        ;
+#endif
+        return NIL;
+    }
+
+    return gp_GetVertexLeastAncestor(theGraph, v);
+}
+
+/********************************************************************
+ gp_GetLowpoint()
+
+ Once the lowpoints have been computed in the graph, this method
+ returns the lowpoint value for the given vertex v. Returns NIL on
+ error, such as invalid parameters or lowpoints not computed yet.
+ ********************************************************************/
+int gp_GetLowpoint(graphP theGraph, int v)
+{
+    if (theGraph == NULL ||
+        v < gp_GetFirstVertex(theGraph) || v >= gp_VertexArraySize(theGraph))
+    {
+#ifdef DEBUG
+        NOTOK;
+        ;
+#endif
+        return NIL;
+    }
+
+    return gp_GetVertexLowpoint(theGraph, v);
 }

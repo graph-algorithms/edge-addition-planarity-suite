@@ -146,7 +146,7 @@ char *gp_GetLibPlanarityVersionFull(void)
 
 graphP gp_New(void)
 {
-    graphP theGraph = (graphP)calloc(1, sizeof(graphStructure));
+    graphP theGraph = (graphP)calloc(1, sizeof(graphStruct));
     graphFunctionTableP functionTable = (graphFunctionTableP)calloc(1, sizeof(graphFunctionTable));
 
     if (theGraph != NULL && functionTable != NULL)
@@ -244,7 +244,7 @@ void _InitFunctionTable(graphP theGraph)
 
  For V, we need 2N vertex records, N for vertices and N for virtual vertices (root copies).
 
- For VI, we need N vertexInfo records.
+ For VI, we need N vertexInfoRec records.
 
  For E, we need 2*edgeCapacity edge records (plus 2 for default of using faster 1-based arrays).
 
@@ -296,7 +296,7 @@ int _InitGraph(graphP theGraph, int N)
 
     // Allocate memory as described above
     if ((theGraph->V = (anyTypeVertexRecP)calloc(Vsize, sizeof(anyTypeVertexRec))) == NULL ||
-        (theGraph->VI = (vertexInfoP)calloc(VIsize, sizeof(vertexInfo))) == NULL ||
+        (theGraph->VI = (vertexInfoP)calloc(VIsize, sizeof(vertexInfoRec))) == NULL ||
         (theGraph->E = (edgeRecP)calloc(Esize, sizeof(edgeRec))) == NULL ||
         (theGraph->IC = (isolatorContextP)calloc(1, sizeof(isolatorContext))) == NULL ||
         (theGraph->BicompRootLists = LCNew(VIsize)) == NULL ||
@@ -325,13 +325,13 @@ void _InitVertices(graphP theGraph)
 {
 #ifdef USE_FASTER_1BASEDARRAYS
     memset(theGraph->V, NIL_CHAR, gp_AnyTypeVertexArraySize(theGraph) * sizeof(anyTypeVertexRec));
-    memset(theGraph->VI, NIL_CHAR, gp_VertexArraySize(theGraph) * sizeof(vertexInfo));
+    memset(theGraph->VI, NIL_CHAR, gp_VertexArraySize(theGraph) * sizeof(vertexInfoRec));
     memset(theGraph->extFace, NIL_CHAR, gp_AnyTypeVertexArraySize(theGraph) * sizeof(extFaceLinkRec));
 #else
     int v;
 
     memset(theGraph->V, NIL_CHAR, gp_AnyTypeVertexArraySize(theGraph) * sizeof(anyTypeVertexRec));
-    memset(theGraph->VI, NIL_CHAR, gp_VertexArraySize(theGraph) * sizeof(vertexInfo));
+    memset(theGraph->VI, NIL_CHAR, gp_VertexArraySize(theGraph) * sizeof(vertexInfoRec));
     memset(theGraph->extFace, NIL_CHAR, gp_AnyTypeVertexArraySize(theGraph) * sizeof(extFaceLinkRec));
 
     for (v = gp_GetFirstVertex(theGraph); gp_AnyTypeVertexInRangeAscending(theGraph, v); v++)
@@ -2080,6 +2080,24 @@ int gp_DeleteEdge(graphP theGraph, int e)
 
     // Return the previously calculated successor of e.
     return OK;
+}
+
+/****************************************************************************
+ gp_EdgeInUseArraySize()
+
+ Returns the array index just after the last edge record that is in use.
+ This is the number of edges plus the number of edge holes created by
+ prior edge deletion and not filled by prior edge additions/insertions.
+ If theGraph is NULL, 0 is returned.
+
+ NOTE: This was a macro that has been converted to a function as part of
+       hiding the stack data structure from the public API.
+ ****************************************************************************/
+int gp_EdgeInUseArraySize(graphP theGraph)
+{
+    return theGraph == NULL
+               ? 0
+               : (gp_EdgeArrayStart(theGraph) + ((gp_GetM(theGraph) + sp_GetCurrentSize((theGraph)->edgeHoles)) << 1));
 }
 
 /********************************************************************

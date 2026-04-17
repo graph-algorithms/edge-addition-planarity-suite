@@ -12,6 +12,10 @@ extern "C"
 {
 #endif
 
+#include "lowLevelUtils/listcoll.h"
+#include "lowLevelUtils/stack.h"
+#include "graphVertexInfo.private.h"
+
 /********************************************************************
  Additional edge link accessors and manipulators
  ********************************************************************/

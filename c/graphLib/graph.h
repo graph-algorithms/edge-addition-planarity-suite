@@ -15,16 +15,14 @@ extern "C"
 // Basic declarations, such as for OK, NOTOK, and NIL
 #include "lowLevelUtils/appconst.h"
 
-#include "graphStructures.h"
-
     ///////////////////////////////////////////////////////////////////////////////
     // The top-level operations at the graph, vertex, and edge levels
     ///////////////////////////////////////////////////////////////////////////////
 
     // Forward declaration of graph structure and graph pointer type definitions
     // (see the end of this header file).
-    typedef struct graphStructure graphStructure;
-    typedef graphStructure *graphP;
+    typedef struct graphStruct graphStruct;
+    typedef graphStruct *graphP;
 
     // Methods related to graph allocation, initialization, and destruction
     graphP gp_New(void);
@@ -174,7 +172,7 @@ extern "C"
 #define gp_EdgeInUse(theGraph, e) (gp_IsAnyTypeVertex(theGraph, gp_GetNeighbor(theGraph, e)))
 #define gp_EdgeNotInUse(theGraph, e) (gp_IsNotAnyTypeVertex(theGraph, gp_GetNeighbor(theGraph, e)))
 #define gp_EdgeArraySize(theGraph) (gp_EdgeArrayStart(theGraph) + ((theGraph)->edgeCapacity << 1))
-#define gp_EdgeInUseArraySize(theGraph) (gp_EdgeArrayStart(theGraph) + ((gp_GetM(theGraph) + sp_GetCurrentSize((theGraph)->edgeHoles)) << 1))
+int gp_EdgeInUseArraySize(graphP theGraph);
 
 // An edge is represented by two consecutive edge records in the edge array E.
 // If an even number, xor 1 will add one; if an odd number, xor 1 will subtract 1
@@ -464,17 +462,35 @@ extern "C"
 #define gp_ClearMarked(theGraph, v) (theGraph->V[v].flags &= ~ANYTYPEVERTEX_MARKED_MASK)
 #define gp_SetMarked(theGraph, v) (theGraph->V[v].flags |= ANYTYPEVERTEX_MARKED_MASK)
 
+    // DFS-RELATED and PLANARITY-RELATED ONLY
+    // Declaration of package-private data type for managing additonal DFS-
+    // and planarity-related information associated with each non-virtual vertex
+    typedef struct vertexInfoRec vertexInfoRec;
+    typedef vertexInfoRec *vertexInfoP;
+
     // PLANARITY-RELATED ONLY
     // Declaration of package private data type for optimizing management of
     // the external face of a planar embedding as it is being built
     typedef struct extFaceLinkRec extFaceLinkRec;
     typedef extFaceLinkRec *extFaceLinkRecP;
 
+    // DFS-RELATED and PLANARITY-RELATED ONLY
+    // Declaration of package-private data type for managing a
+    // stack of integers
+    typedef struct stackStruct stackStruct;
+    typedef stackStruct *stackP;
+
     // PLANARITY-RELATED ONLY
     // Declaration of package private data type for isolating
     // minimal subgraphs obstructing planarity-related embedding
     typedef struct isolatorContext isolatorContext;
     typedef isolatorContext *isolatorContextP;
+
+    // DFS-RELATED and PLANARITY-RELATED ONLY
+    // Declaration of package-private data type for managing a
+    // collection of lists of integers
+    typedef struct listCollectionStruct listCollectionStruct;
+    typedef listCollectionStruct *listCollectionP;
 
     // PLANARITY-RELATED ONLY
     // Declaration of package private data types for extending the
@@ -488,7 +504,7 @@ extern "C"
     /********************************************************************
          Graph structure definition
                 V : Array of vertex records (allocated size N + NV)
-                VI: Array of additional vertexInfo structures (allocated size N)
+                VI: Array of additional vertexInfoRec structures (allocated size N)
                 N : Number of non-virtual vertices (the "order" of the graph)
                 NV: Number of virtual vertices (currently always equal to N)
 
@@ -513,7 +529,7 @@ extern "C"
                            extension behaviors to the graph
         */
 
-    struct graphStructure
+    struct graphStruct
     {
         anyTypeVertexRecP V;
         vertexInfoP VI;
@@ -534,8 +550,8 @@ extern "C"
         graphFunctionTableP functions;
     };
 
-    typedef struct graphStructure graphStructure;
-    typedef graphStructure *graphP;
+    typedef struct graphStruct graphStruct;
+    typedef graphStruct *graphP;
 
 #ifdef __cplusplus
 }

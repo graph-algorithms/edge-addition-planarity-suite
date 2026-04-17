@@ -1,5 +1,5 @@
-#ifndef GRAPHSTRUCTURE_H
-#define GRAPHSTRUCTURE_H
+#ifndef GRAPHVERTEXINFO_PRIVATE_H
+#define GRAPHVERTEXINFO_PRIVATE_H
 
 /*
 Copyright (c) 1997-2026, John M. Boyer
@@ -8,9 +8,6 @@ See the LICENSE.TXT file for licensing information.
 */
 
 #include <stdio.h>
-
-#include "lowLevelUtils/listcoll.h"
-#include "lowLevelUtils/stack.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -21,7 +18,7 @@ extern "C"
      Vertex Info Structure Definition.
 
      This structure equips the non-virtual vertices with additional
-     information needed for lowpoint and planarity-related algorithms.
+     information needed for DFS-related and planarity-related algorithms.
 
         parent: The DFI of the DFS tree parent of this vertex
         leastAncestor: min(DFI of neighbors connected by backedge)
@@ -64,7 +61,7 @@ extern "C"
                     This member indicates (by index) a node in that list.
     */
 
-    typedef struct
+    struct vertexInfoRec
     {
         int parent, leastAncestor, lowpoint;
 
@@ -75,9 +72,10 @@ extern "C"
             futurePertinentChild,
             sortedDFSChildList,
             fwdEdgeList;
-    } vertexInfo;
+    };
 
-    typedef vertexInfo *vertexInfoP;
+    typedef struct vertexInfoRec vertexInfoRec;
+    typedef vertexInfoRec *vertexInfoP;
 
 #define gp_GetVertexVisitedInfo(theGraph, v) (theGraph->VI[v].visitedInfo)
 #define gp_SetVertexVisitedInfo(theGraph, v, theVisitedInfo) (theGraph->VI[v].visitedInfo = theVisitedInfo)

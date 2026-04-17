@@ -19,6 +19,10 @@ extern "C"
     int gp_ComputeLowpoints(graphP theGraph);
     int gp_ComputeLeastAncestors(graphP theGraph);
 
+    int gp_GetParent(graphP theGraph, int v);
+    int gp_GetLeastAncestor(graphP theGraph, int v);
+    int gp_GetLowpoint(graphP theGraph, int v);
+
 /* Graph Flags: see gp_GetGraphFlags()
         GRAPHFLAGS_DFSNUMBERED is set if DFS numbering has been performed on the graph
         GRAPHFLAGS_SORTEDBYDFI records whether the graph is in original vertex order

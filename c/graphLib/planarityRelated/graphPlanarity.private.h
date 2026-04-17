@@ -12,6 +12,7 @@ extern "C"
 {
 #endif
 
+#include "../graphUtils.private.h"
 #include "../graph.h"
 
 // PLANARITY-RELATED ONLY VERTEX FLAGS
