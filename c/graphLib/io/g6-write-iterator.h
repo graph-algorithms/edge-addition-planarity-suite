@@ -16,7 +16,9 @@ extern "C"
 #include <stdbool.h>
 
 #include "../graph.h"
-#include "strOrFile.h"
+
+    typedef struct strOrFileStruct strOrFileStruct;
+    typedef strOrFileStruct *strOrFileP;
 
     typedef struct
     {

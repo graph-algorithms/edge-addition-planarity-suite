@@ -6,6 +6,10 @@ See the LICENSE.TXT file for licensing information.
 
 #include "planarity.h"
 
+// FIXME: This is a package private include that needs to be removed
+//        by refactoring outputTestAllGraphsResults()
+#include "../graphLib/io/strOrFile.h"
+
 typedef struct
 {
     double duration;

@@ -16,7 +16,11 @@ extern "C"
 #include <stdbool.h>
 
 #include "../graph.h"
-#include "strOrFile.h"
+
+    // Declaration of package private structure for I/O
+    // from/to a string or file.
+    typedef struct strOrFileStruct strOrFileStruct;
+    typedef strOrFileStruct *strOrFileP;
 
     typedef struct
     {

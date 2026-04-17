@@ -7,6 +7,8 @@ See the LICENSE.TXT file for licensing information.
 #include <stdlib.h>
 #include <string.h>
 
+#include "strOrFile.h"
+
 #include "g6-write-iterator.h"
 
 /* Imported functions */
