@@ -7,6 +7,21 @@ lib_LTLIBRARIES = libplanarity.la
 AM_CFLAGS = $(WARNING_CFLAGS)
 
 libplanarity_la_SOURCES = \
+	c/graphLib/graphUtils.private.h \
+	c/graphLib/graphVertexInfo.private.h \
+	c/graphLib/lowLevelUtils/apiutils.private.h \
+	c/graphLib/lowLevelUtils/listcoll.h \
+	c/graphLib/lowLevelUtils/stack.h \
+	c/graphLib/io/strbuf.h \
+	c/graphLib/io/strOrFile.h \
+	c/graphLib/extensionSystem/graphExtensions.h \
+	c/graphLib/extensionSystem/graphExtensions.private.h \
+	c/graphLib/extensionSystem/graphFunctionTable.h \
+	c/graphLib/planarityRelated/graphPlanarity.private.h \
+	c/graphLib/planarityRelated/graphDrawPlanar.private.h \
+	c/graphLib/homeomorphSearch/graphK23Search.private.h \
+	c/graphLib/homeomorphSearch/graphK33Search.private.h \
+	c/graphLib/homeomorphSearch/graphK4Search.private.h \
 	c/graphLib/graphDFSUtils.c \
 	c/graphLib/graphUtils.c \
 	c/graphLib/extensionSystem/graphExtensions.c \
@@ -40,41 +55,25 @@ libplanarity_la_LDFLAGS = -no-undefined $(AM_LDFLAGS) -version-info @LT_CURRENT@
 # These pkgincludes are added without "nobase_" so that the files will be copied to the
 # root of the planarity project includedir (i.e. excluding the c subdirectory)
 pkginclude_HEADERS = \
-	c/graph.h \
 	c/graphLib.h
 
 # This is the full set of pkgincludes for which "nobase_" has been used to ensure that
 # the directory structure is retained when installing the planarity headers.
 nobase_pkginclude_HEADERS = \
 	c/graphLib/graphLib.h \
+	c/graphLib/lowLevelUtils/appconst.h \
+	c/graphLib/lowLevelUtils/apiutils.h \
 	c/graphLib/graph.h \
-	c/graphLib/graphDFSUtils.h \
-	c/graphLib/graphUtils.private.h \
-	c/graphLib/graphVertexInfo.private.h \
-	c/graphLib/extensionSystem/graphExtensions.h \
-	c/graphLib/extensionSystem/graphExtensions.private.h \
-	c/graphLib/extensionSystem/graphFunctionTable.h \
-	c/graphLib/homeomorphSearch/graphK23Search.h \
-	c/graphLib/homeomorphSearch/graphK23Search.private.h \
-	c/graphLib/homeomorphSearch/graphK33Search.h \
-	c/graphLib/homeomorphSearch/graphK33Search.private.h \
-	c/graphLib/homeomorphSearch/graphK4Search.h \
-	c/graphLib/homeomorphSearch/graphK4Search.private.h \
 	c/graphLib/io/graphIO.h \
 	c/graphLib/io/g6-read-iterator.h \
 	c/graphLib/io/g6-write-iterator.h \
-	c/graphLib/io/strbuf.h \
-	c/graphLib/io/strOrFile.h \
-	c/graphLib/lowLevelUtils/apiutils.h \
-	c/graphLib/lowLevelUtils/apiutils.private.h \
-	c/graphLib/lowLevelUtils/appconst.h \
-	c/graphLib/lowLevelUtils/listcoll.h \
-	c/graphLib/lowLevelUtils/stack.h \
-	c/graphLib/planarityRelated/graphDrawPlanar.h \
-	c/graphLib/planarityRelated/graphDrawPlanar.private.h \
+	c/graphLib/graphDFSUtils.h \
 	c/graphLib/planarityRelated/graphPlanarity.h \
-	c/graphLib/planarityRelated/graphPlanarity.private.h \
-	c/graphLib/planarityRelated/graphOuterplanarity.h 
+	c/graphLib/planarityRelated/graphOuterplanarity.h \
+	c/graphLib/planarityRelated/graphDrawPlanar.h \
+	c/graphLib/homeomorphSearch/graphK23Search.h \
+	c/graphLib/homeomorphSearch/graphK33Search.h \
+	c/graphLib/homeomorphSearch/graphK4Search.h
 
 bin_PROGRAMS = planarity
 planarity_LDADD  = libplanarity.la
