@@ -25,9 +25,9 @@ extern "C"
     void Message(char const *message);
 
     // These methods control whether ErrorMessage() and Message() calls
-    // emit output or skip producing output
-    int getQuietModeSetting(void);
-    void setQuietModeSetting(int);
+    // emit output or skip producing output (the default)
+    int getQuietModeFlag(void);
+    void setQuietModeFlag(int newQuietModeFlag);
 
 #ifdef __cplusplus
 }

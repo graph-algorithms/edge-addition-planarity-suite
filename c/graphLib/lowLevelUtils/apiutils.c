@@ -13,21 +13,23 @@ See the LICENSE.TXT file for licensing information.
 #include "apiutils.h"
 #include "apiutils.private.h"
 
-int quietMode = FALSE;
+// The graphLib ErrorMessage() and Message() calls are suppressed by
+// default, but an application can turn them on if desired.
+int quietModeFlag = TRUE;
 
-int getQuietModeSetting(void)
+int getQuietModeFlag(void)
 {
-    return quietMode;
+    return quietModeFlag;
 }
 
-void setQuietModeSetting(int newQuietModeSetting)
+void setQuietModeFlag(int newQuietModeFlag)
 {
-    quietMode = newQuietModeSetting;
+    quietModeFlag = newQuietModeFlag;
 }
 
 void Message(char const *message)
 {
-    if (!getQuietModeSetting())
+    if (!getQuietModeFlag())
     {
         fprintf(stdout, "%s", message);
         fflush(stdout);
@@ -36,13 +38,15 @@ void Message(char const *message)
 
 void ErrorMessage(char const *message)
 {
-    if (!getQuietModeSetting())
+    if (!getQuietModeFlag())
     {
         fprintf(stderr, "%s", message);
         fflush(stderr);
     }
 }
 
+// LOGGING is not defined in the standard compile configuration.
+// A graphLib developer can uncomment LOGGING in apiutils.private.h
 #ifdef LOGGING
 
 /********************************************************************

@@ -36,7 +36,7 @@ int commandLine(int argc, char *argv[])
 #endif
 
     if (argc >= 3 && strcmp(argv[2], "-q") == 0)
-        setQuietModeSetting(TRUE);
+        setQuietModeFlag(TRUE);
 
     if (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "-help") == 0)
     {

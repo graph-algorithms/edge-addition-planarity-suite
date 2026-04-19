@@ -322,7 +322,7 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
         ReinitializeGraph(&theGraph, ReuseGraphs, command);
 
         // Show progress, but not so often that it bogs down progress
-        if (!getQuietModeSetting() && (K + 1) % countUpdateFreq == 0)
+        if (!getQuietModeFlag() && (K + 1) % countUpdateFreq == 0)
         {
             fprintf(stdout, "%d\r", K + 1);
             fflush(stdout);
@@ -633,7 +633,7 @@ int RandomGraph(char const *const commandString, int extraEdges, int numVertices
             Result = NOTOK;
         }
 
-        if (Result == OK && !getQuietModeSetting() && WriteEdgeListFormat(theGraph, origGraph, extraEdges) != OK)
+        if (Result == OK && !getQuietModeFlag() && WriteEdgeListFormat(theGraph, origGraph, extraEdges) != OK)
         {
             ErrorMessage("Encountered an error when attempting to write graph to edge list format.\n");
             Result = NOTOK;
