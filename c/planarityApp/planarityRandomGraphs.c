@@ -9,7 +9,7 @@ See the LICENSE.TXT file for licensing information.
 int GetNumberIfZero(int *pNum, char const *prompt, int min, int max);
 void ReinitializeGraph(graphP *pGraph, int ReuseGraphs, char command);
 graphP MakeGraph(int Size, char command);
-int WriteEdgeListFormat(graphP theGraph, graphP origGraph, int extraEdges);
+int PromptSaveGraph(graphP theGraph, graphP origGraph, int extraEdges, int saveMode);
 
 /****************************************************************************
  * RandomGraphs()
@@ -599,7 +599,7 @@ int RandomGraph(char const *const commandString, int extraEdges, int numVertices
 
     if (Result != OK && Result != NONEMBEDDABLE)
     {
-        ErrorMessage("Failed to embed randomly generated graph\n");
+        ErrorMessage("Failed to embed or find embedding obstruction in randomly generated graph\n");
 
         gp_Free(&theGraph);
         gp_Free(&origGraph);
@@ -609,7 +609,7 @@ int RandomGraph(char const *const commandString, int extraEdges, int numVertices
 
     if (gp_SortVertices(theGraph) != OK)
     {
-        ErrorMessage("Unable to sort vertices of generated random graph\n");
+        ErrorMessage("Unable to sort vertices of graph after processing\n");
 
         gp_Free(&theGraph);
         gp_Free(&origGraph);
@@ -633,9 +633,20 @@ int RandomGraph(char const *const commandString, int extraEdges, int numVertices
             Result = NOTOK;
         }
 
-        if (Result == OK && !getQuietModeFlag() && WriteEdgeListFormat(theGraph, origGraph, extraEdges) != OK)
+        if (Result == OK && !getQuietModeFlag() && PromptSaveGraph(theGraph, origGraph, extraEdges, 0) != OK)
         {
-            ErrorMessage("Encountered an error when attempting to write graph to edge list format.\n");
+            ErrorMessage("Encountered an error when attempting to save graph in edge list format.\n");
+            Result = NOTOK;
+        }
+
+        if (Result == OK && !getQuietModeFlag() && PromptSaveGraph(theGraph, origGraph, extraEdges, WRITE_ADJLIST) != OK)
+        {
+            ErrorMessage("Encountered an error when attempting to save graph in adjacency list format.\n");
+            Result = NOTOK;
+        }
+        if (Result == OK && !getQuietModeFlag() && PromptSaveGraph(theGraph, origGraph, extraEdges, WRITE_G6) != OK)
+        {
+            ErrorMessage("Encountered an error when attempting to save graph in G6 format.\n");
             Result = NOTOK;
         }
     }
@@ -650,9 +661,10 @@ int RandomGraph(char const *const commandString, int extraEdges, int numVertices
     return Result;
 }
 
-int WriteEdgeListFormat(graphP theGraph, graphP origGraph, int extraEdges)
+int PromptSaveGraph(graphP theGraph, graphP origGraph, int extraEdges, int saveMode)
 {
-    char saveEdgeListFormat = '\0';
+    const char *promptStr = NULL;
+    char saveGraph = '\0';
     int charsAvailForStr = 0;
     char const *messageFormat = NULL;
     char messageContents[MAXLINE + 1];
@@ -663,49 +675,113 @@ int WriteEdgeListFormat(graphP theGraph, graphP origGraph, int extraEdges)
     memset(theFileName, '\0', (MAXLINE + 1));
     memset(lineBuff, '\0', (MAXLINE + 1));
 
+    // Select the prompt string
+    switch (saveMode)
+    {
+    case WRITE_ADJLIST:
+        promptStr = "Do you want to save the generated graph in adjacency list format (y/n)? ";
+        break;
+    case WRITE_ADJMATRIX:
+        promptStr = "Do you want to save the generated graph in adjacency matrix format (y/n)? ";
+        break;
+    case WRITE_G6:
+        promptStr = "Do you want to save the generated graph in G6 format (y/n)? ";
+        break;
+    default:
+        promptStr = "Do you want to save the generated graph in edge list format (y/n)? ";
+        break;
+    }
+    // Prompt the user
     while (1)
     {
-        Prompt("Do you want to save the generated graph in edge list format (y/n)? ");
+        Prompt(promptStr);
         if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
         {
-            ErrorMessage("Unable to read user input to indicate whether to save edge list format from stdin.\n");
+            ErrorMessage("Unable to read user input to indicate whether to save graph to file.\n");
             return NOTOK;
         }
 
         if (strlen(lineBuff) != 1 ||
-            sscanf(lineBuff, " %c", &saveEdgeListFormat) != 1 ||
-            !strchr(YESNOCHOICECHARS, saveEdgeListFormat))
-            ErrorMessage("Invalid choice whether to save graph in edge list format.\n");
+            sscanf(lineBuff, " %c", &saveGraph) != 1 ||
+            !strchr(YESNOCHOICECHARS, saveGraph))
+            ErrorMessage("Invalid choice for whether to save graph to file (enter y/n).\n");
         else
         {
-            saveEdgeListFormat = (char)tolower(saveEdgeListFormat);
+            saveGraph = (char)tolower(lineBuff[0]);
+
+            // If no, then bail out, reporting function success
+            if (saveGraph == 'n')
+                return OK;
+
+            // Otherwise proceed to the file save logic
             break;
         }
     }
 
+    // Construct theFileName for saving
     if (extraEdges > 0)
-        strcpy(theFileName, "nonPlanarEdgeList.txt");
+        strcpy(theFileName, "nonPlanar");
     else
-        strcpy(theFileName, "maxPlanarEdgeList.txt");
+        strcpy(theFileName, "maxPlanar");
 
-    messageFormat = "Saving edge list format of original graph to \"%.*s\"\n";
+    switch (saveMode)
+    {
+    case WRITE_ADJLIST:
+        strcat(theFileName, "AdjList.txt");
+        break;
+    case WRITE_ADJMATRIX:
+        strcat(theFileName, "AdjMatrix.txt");
+        break;
+    case WRITE_G6:
+        strcat(theFileName, ".g6");
+        break;
+    default:
+        strcat(theFileName, "EdgeList.txt");
+        break;
+    }
+
+    // Save the original graph
+    messageFormat = "Saving original graph to \"%.*s\"\n";
     charsAvailForStr = (int)(MAXLINE - strlen(messageFormat));
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-nonliteral"
     sprintf(messageContents, messageFormat, charsAvailForStr, theFileName);
 #pragma GCC diagnostic pop
     Message(messageContents);
-    SaveAsciiGraph(origGraph, theFileName);
+    if (saveMode)
+    {
+        if (gp_Write(origGraph, theFileName, saveMode) != OK)
+        {
+            ErrorMessage("Failed to save original graph.\n");
+            return NOTOK;
+        }
+    }
+    else
+        SaveAsciiGraph(origGraph, theFileName);
 
-    strcat(theFileName, ".out.txt");
-    messageFormat = "Saving edge list format of result to \"%.*s\"\n";
+    // Save the result graph
+    if (saveMode == WRITE_G6)
+        strcat(theFileName, ".out.g6");
+    else
+        strcat(theFileName, ".out.txt");
+
+    messageFormat = "Saving result graph to \"%.*s\"\n";
     charsAvailForStr = (int)(MAXLINE - strlen(messageFormat));
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-nonliteral"
     sprintf(messageContents, messageFormat, charsAvailForStr, theFileName);
 #pragma GCC diagnostic pop
     Message(messageContents);
-    SaveAsciiGraph(theGraph, theFileName);
+    if (saveMode)
+    {
+        if (gp_Write(theGraph, theFileName, saveMode) != OK)
+        {
+            ErrorMessage("Failed to save result graph.\n");
+            return NOTOK;
+        }
+    }
+    else
+        SaveAsciiGraph(theGraph, theFileName);
 
     return OK;
 }
