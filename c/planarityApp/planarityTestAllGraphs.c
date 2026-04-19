@@ -6,10 +6,6 @@ See the LICENSE.TXT file for licensing information.
 
 #include "planarity.h"
 
-// FIXME: This is a package private include that needs to be removed
-//        by refactoring outputTestAllGraphsResults()
-#include "../graphLib/io/strOrFile.h"
-
 typedef struct
 {
     double duration;
@@ -334,75 +330,60 @@ int outputTestAllGraphsResults(char command, char modifier, testAllStatsP stats,
     char const *infileBasename = finalSlash ? (finalSlash + 1) : infileName;
 
     char const *headerFormat = "FILENAME=\"%s\" DURATION=\"%.3lf\"\n";
-    char *headerStr = NULL;
     int numCharsToReprNumGraphsRead = 0, numCharsToReprNumOK = 0, numCharsToReprNumNONEMBEDDABLE = 0;
+
+    char *theOutputStr = NULL;
+    int headerStrLen = 0, resultStrLen = 0;
     char *resultsStr = NULL;
-    strOrFileP testOutput = NULL;
 
-    headerStr = (char *)malloc(
-        (
-            strlen(headerFormat) +
-            strlen(infileBasename) +
-            strlen("-1.7976931348623158e+308") + // -DBL_MAX from float.h
-            3) *
-        sizeof(char));
-
-    if (headerStr == NULL)
+    if (outfileName == NULL && (pOutputStr == NULL || *pOutputStr == NULL))
     {
-        ErrorMessage("Unable allocate memory for output file header.\n");
-
+        ErrorMessage("Invalid parameters: Must be able to output to file or memory.");
         return NOTOK;
     }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-nonliteral"
-    sprintf(headerStr, headerFormat, infileBasename, stats->duration);
-#pragma GCC diagnostic pop
+    headerStrLen =
+        strlen(headerFormat) +
+        strlen(infileBasename) +
+        strlen("-1.7976931348623158e+308") + // -DBL_MAX from float.h
+        3;
 
     if (GetNumCharsToReprInt(stats->numGraphsRead, &numCharsToReprNumGraphsRead) != OK ||
         GetNumCharsToReprInt(stats->numOK, &numCharsToReprNumOK) != OK ||
         GetNumCharsToReprInt(stats->numNONEMBEDDABLE, &numCharsToReprNumNONEMBEDDABLE) != OK)
     {
         ErrorMessage("Unable to determine the number of characters required to represent testAllGraphs stat values.\n");
-
-        if (headerStr != NULL)
-        {
-            free(headerStr);
-            headerStr = NULL;
-        }
-
         return NOTOK;
     }
 
-    resultsStr = (char *)malloc(
-        (
-            1 + // - char
-            1 + // command char
-            1 + // optional modifier char
-            1 + // space char
-            numCharsToReprNumGraphsRead +
-            1 + // space char
-            numCharsToReprNumOK +
-            1 + // space char
-            numCharsToReprNumNONEMBEDDABLE +
-            1 + // space char
-            7 + // either ERROR or SUCCESS, so the longer of which is 7 chars
-            3   // (carriage return,) newline and null terminator
-            ) *
-        sizeof(char));
+    resultStrLen =
+        1 + // - char
+        1 + // command char
+        1 + // optional modifier char
+        1 + // space char
+        numCharsToReprNumGraphsRead +
+        1 + // space char
+        numCharsToReprNumOK +
+        1 + // space char
+        numCharsToReprNumNONEMBEDDABLE +
+        1 + // space char
+        7 + // either ERROR or SUCCESS, so the longer of which is 7 chars
+        3   // (carriage return,) newline and null terminator;
+        ;
 
-    if (resultsStr == NULL)
+    theOutputStr = (char *)malloc((headerStrLen + resultStrLen + 1) * sizeof(char));
+    if (theOutputStr == NULL)
     {
-        ErrorMessage("Unable allocate memory for results string.\n");
-
-        if (headerStr != NULL)
-        {
-            free(headerStr);
-            headerStr = NULL;
-        }
-
+        ErrorMessage("Unable allocate memory for the output.\n");
         return NOTOK;
     }
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
+    sprintf(theOutputStr, headerFormat, infileBasename, stats->duration);
+#pragma GCC diagnostic pop
+
+    resultsStr = theOutputStr + strlen(theOutputStr);
 
     if (modifier == '\0')
         sprintf(resultsStr, "-%c %d %d %d %s\n",
@@ -413,85 +394,26 @@ int outputTestAllGraphsResults(char command, char modifier, testAllStatsP stats,
 
     if (outfileName != NULL)
     {
-        testOutput = sf_NewOutputContainer(NULL, outfileName);
+        FILE *outfile = strcmp(outfileName, "stdout") == 0 ? stdout : fopen(outfileName, WRITETEXT);
+        if (outfile != NULL)
+        {
+            fprintf(outfile, "%s", theOutputStr);
+            if (strcmp(outfileName, "stdout") != 0)
+                fclose(outfile);
+            outfile = NULL;
+            Result = OK;
+        }
+        else
+            Result = NOTOK;
+
+        free(theOutputStr);
+        theOutputStr = NULL;
     }
     else
     {
-        if (pOutputStr == NULL)
-        {
-            ErrorMessage(
-                "Unable to create output container for TestAllGraphs output, "
-                "as both output filename and pointer to output string are "
-                "NULL.\n");
-        }
-        else
-        {
-            if ((*pOutputStr) != NULL)
-                ErrorMessage(
-                    "Unable to create output container for TestAllGraphs "
-                    "output, since the memory to which pOutputStr points is "
-                    "not NULL.\n");
-            else
-            {
-                testOutput = sf_NewOutputContainer(pOutputStr, NULL);
-            }
-        }
-    }
-
-    if (testOutput == NULL)
-    {
-        ErrorMessage(
-            "Unable to set up output container for TestAllGraphs output.\n");
-
-        Result = NOTOK;
-    }
-
-    if (Result == OK || Result == NONEMBEDDABLE)
-    {
-        if (sf_fputs(headerStr, testOutput) < 0)
-        {
-            ErrorMessage("Unable to write headerStr to output container.\n");
-
-            Result = NOTOK;
-        }
-
-        if (Result == OK)
-        {
-            if (sf_fputs(resultsStr, testOutput) < 0)
-            {
-                ErrorMessage(
-                    "Unable to write resultsStr to output container.\n");
-
-                Result = NOTOK;
-            }
-        }
-    }
-
-    if (headerStr != NULL)
-    {
-        free(headerStr);
-        headerStr = NULL;
-    }
-
-    if (resultsStr != NULL)
-    {
-        free(resultsStr);
-        resultsStr = NULL;
-    }
-
-    sf_Free(&testOutput);
-
-    // NOTE: Since sf_Free() will always take the string from the internal
-    // theStrBuf and assign to its pointer-pointer pOutputStr for output
-    // containers when writing to string, we must free the string here in the
-    // caller and set the pointer-pointer to NULL in the case of an error.
-    if (Result != OK)
-    {
-        if (pOutputStr != NULL && (*pOutputStr) != NULL)
-        {
-            free((*pOutputStr));
-            pOutputStr = NULL;
-        }
+        *pOutputStr = theOutputStr;
+        theOutputStr = NULL;
+        Result = OK;
     }
 
     return Result;
