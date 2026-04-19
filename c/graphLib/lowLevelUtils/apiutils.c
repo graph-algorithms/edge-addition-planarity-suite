@@ -53,7 +53,9 @@ void ErrorMessage(char const *message)
  _Log()
 
  When the project is compiled with LOGGING enabled, this method writes
- a string to the file PLANARITY.LOG in the current working directory.
+ a string to the file Edge_Addition_Planarity_Suite.LOG in the current
+ working directory.
+
  On first write, the file is created or cleared.
  Call this method with NULL to close the log file.
  ********************************************************************/

@@ -1378,7 +1378,10 @@ int gp_CreateRandomGraphEx(graphP theGraph, int numEdges)
         else
         {
             p = gp_GetVertexParent(theGraph, v);
-            while (gp_IsVertex(theGraph, p) && gp_IsNotVertex(theGraph, (c = _getUnprocessedChild(theGraph, p))))
+            if (gp_IsVertex(theGraph, p))
+                c = _getUnprocessedChild(theGraph, p);
+
+            while (gp_IsVertex(theGraph, p) && gp_IsNotVertex(theGraph, (c)))
             {
                 v = p;
                 p = gp_GetVertexParent(theGraph, v);
@@ -1387,6 +1390,9 @@ int gp_CreateRandomGraphEx(graphP theGraph, int numEdges)
                     if (gp_AddEdge(theGraph, last, 1, p, 1) != OK)
                         return NOTOK;
                 }
+
+                if (gp_IsVertex(theGraph, p))
+                    c = _getUnprocessedChild(theGraph, p);
             }
 
             if (gp_IsVertex(theGraph, p))

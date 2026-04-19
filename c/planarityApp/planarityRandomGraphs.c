@@ -68,7 +68,7 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
         return Result;
     }
 
-    if ((Result = GetNumberIfZero(&SizeOfGraphs, "Enter size of graphs:", 1, 10000)) != OK)
+    if ((Result = GetNumberIfZero(&SizeOfGraphs, "Enter size of graphs:", 1, 10000000)) != OK)
     {
         ErrorMessage("Encountered unrecoverable error when prompting for SizeOfGraphs.\n");
         return Result;
@@ -545,7 +545,7 @@ int RandomGraph(char const *const commandString, int extraEdges, int numVertices
         return Result;
     }
 
-    if ((Result = GetNumberIfZero(&numVertices, "Enter number of vertices:", 1, 1000000) != OK))
+    if ((Result = GetNumberIfZero(&numVertices, "Enter number of vertices:", 1, 10000000) != OK))
     {
         ErrorMessage("Encountered unrecoverable error when prompting for numVertices.\n");
         return Result;
@@ -754,6 +754,16 @@ int PromptSaveGraph(graphP theGraph, graphP origGraph, int extraEdges, int saveM
         {
             ErrorMessage("Failed to save original graph.\n");
             return NOTOK;
+        }
+
+        if (saveMode == WRITE_ADJLIST)
+        {
+            char zeroBasedFileName[MAXLINE + 1];
+            strcpy(zeroBasedFileName, theFileName);
+            strcat(zeroBasedFileName, ".0-based.txt");
+            origGraph->graphFlags |= GRAPHFLAGS_ZEROBASEDIO;
+            gp_Write(origGraph, zeroBasedFileName, saveMode);
+            origGraph->graphFlags &= ~GRAPHFLAGS_ZEROBASEDIO;
         }
     }
     else
