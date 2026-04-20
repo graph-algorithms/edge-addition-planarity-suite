@@ -43,9 +43,6 @@ int SpecificGraph(
     char command = '\0', modifier = '\0';
     int embedFlags = 0;
 
-    platform_time start_beforeDup;
-    char lineBuff[MAXLINE + 1];
-
     if (GetCommandAndOptionalModifier(commandString, &command, &modifier) != OK)
     {
         ErrorMessage("Unable to derive command and modifier from commandString.\n");
@@ -129,20 +126,6 @@ int SpecificGraph(
         return NOTOK;
     }
 
-    // // These next few lines can be uncommented to provide a pause after reading
-    // // and before processing, when trying to use manual menu mode.
-    // // These can't be left in normally because SpecificGraph() is called by
-    // // other methods that shouldn't stop for a user input.
-    //
-    // Prompt("\nPress return key to start processing...");
-    // if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
-    // {
-    //     ErrorMessage("Error, but going forward anyway...");
-    // }
-    // Message("\nProcessing started now...\n");
-    //
-    platform_GetTime(start_beforeDup);
-
     // Copy the graph for integrity checking
     origGraph = gp_DupGraph(theGraph);
 
@@ -192,10 +175,6 @@ int SpecificGraph(
 
     // Write what the algorithm determined and how long it took
     WriteAlgorithmResults(theGraph, Result, command, start, end, infileName);
-
-    sprintf(lineBuff, "Graph duplication plus algorithm executed in %.3lf seconds.\n",
-            platform_GetDuration(start_beforeDup, end));
-    Message(lineBuff);
 
     // Free the graph obtained for integrity checking.
     gp_Free(&origGraph);
