@@ -15,11 +15,11 @@ See the LICENSE.TXT file for licensing information.
 #include "graphIO.h"
 
 /* Imported functions */
-extern int _g6_GetNumCharsForEncoding(int);
-extern int _g6_GetNumCharsForOrder(int);
-extern int _g6_GetExpectedNumPaddingZeroes(const int, const int);
+extern size_t _g6_GetNumCharsForEncoding(int order);
+extern int _g6_GetNumCharsForOrder(int order);
+extern size_t _g6_GetExpectedNumPaddingZeroes(const int order, const size_t numChars);
 extern int _g6_ValidateOrderOfEncodedGraph(char *graphBuff, int order);
-extern int _g6_ValidateGraphEncoding(char *graphBuff, const int order, const int numChars);
+extern int _g6_ValidateGraphEncoding(char *graphBuff, const int order, const size_t numChars);
 
 /* Private function declarations (exported within system) */
 int _g6_ReadGraphFromStrOrFile(graphP theGraph, strOrFileP *pInputContainer);
@@ -494,9 +494,8 @@ int _g6_DetermineOrderFromInput(strOrFileP inputContainer, int *order)
     {
         if ((graphChar = sf_getc(inputContainer)) == 126)
         {
-            ErrorMessage("Graph order is too large; format suggests that "
-                         "258048 <= n <= 68719476735, but only n <= 100000 is "
-                         "supported.\n");
+            ErrorMessage("Graphs of order n > 100000 are not supported at this "
+                         "time.\n");
             return NOTOK;
         }
 
@@ -510,7 +509,8 @@ int _g6_DetermineOrderFromInput(strOrFileP inputContainer, int *order)
 
         if (n > 100000)
         {
-            ErrorMessage("Graph order is too large; we only support n <= 100000.\n");
+            ErrorMessage("Graphs of order n > 100000 are not supported at this "
+                         "time.\n");
             return NOTOK;
         }
     }

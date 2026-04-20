@@ -29,8 +29,8 @@ extern "C"
 
         int order;
         int numCharsForOrder;
-        int numCharsForGraphEncoding;
-        int currGraphBuffSize;
+        size_t numCharsForGraphEncoding;
+        size_t currGraphBuffSize;
         char *currGraphBuff;
 
         graphP currGraph;

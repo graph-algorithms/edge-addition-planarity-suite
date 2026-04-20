@@ -12,10 +12,10 @@ See the LICENSE.TXT file for licensing information.
 #include "g6-write-iterator.h"
 
 /* Imported functions */
-extern int _g6_GetNumCharsForEncoding(int);
-extern int _g6_GetNumCharsForOrder(int);
+extern size_t _g6_GetNumCharsForEncoding(int order);
+extern int _g6_GetNumCharsForOrder(int order);
 extern int _g6_ValidateOrderOfEncodedGraph(char *graphBuff, int order);
-extern int _g6_ValidateGraphEncoding(char *graphBuff, const int order, const int numChars);
+extern int _g6_ValidateGraphEncoding(char *graphBuff, const int order, const size_t numChars);
 
 /* Private function declarations (exported within system) */
 int _g6_WriteGraphToStrOrFile(graphP theGraph, strOrFileP *pOutputContainer);
@@ -24,7 +24,7 @@ int _g6_WriteGraphToStrOrFile(graphP theGraph, strOrFileP *pOutputContainer);
 int _g6_InitWriterWithStrOrFile(G6WriteIteratorP theG6WriteIterator, strOrFileP *pOutputContainer);
 int _g6_InitWriter(G6WriteIteratorP theG6WriteIterator);
 bool _g6_IsWriterInitialized(G6WriteIteratorP theG6WriteIterator, bool reportUninitializedParts);
-void _g6_PrecomputeColumnOffsets(int *columnOffsets, int order);
+void _g6_PrecomputeColumnOffsets(size_t *columnOffsets, int order);
 void _g6_EncodeAdjMatAsG6(G6WriteIteratorP theG6WriteIterator);
 void _g6_GetFirstEdgeInUse(graphP theGraph, int *e, int *u, int *v);
 void _g6_GetNextEdgeInUse(graphP theGraph, int *e, int *u, int *v);
@@ -342,6 +342,15 @@ int _g6_InitWriter(G6WriteIteratorP theG6WriteIterator)
 {
     char const *g6Header = ">>graph6<<";
 
+    theG6WriteIterator->order = gp_GetN(theG6WriteIterator->currGraph);
+
+    if (theG6WriteIterator->order > 100000)
+    {
+        ErrorMessage("Graphs of order n > 100000 are not supported at this "
+                     "time.\n");
+        return NOTOK;
+    }
+
     if (sf_fputs(g6Header, theG6WriteIterator->outputContainer) < 0)
     {
         ErrorMessage(
@@ -350,9 +359,7 @@ int _g6_InitWriter(G6WriteIteratorP theG6WriteIterator)
         return NOTOK;
     }
 
-    theG6WriteIterator->order = gp_GetN(theG6WriteIterator->currGraph);
-
-    theG6WriteIterator->columnOffsets = (int *)calloc(theG6WriteIterator->order + 1, sizeof(int));
+    theG6WriteIterator->columnOffsets = (size_t *)calloc(theG6WriteIterator->order + 1, sizeof(size_t));
 
     if (theG6WriteIterator->columnOffsets == NULL)
     {
@@ -380,7 +387,12 @@ int _g6_InitWriter(G6WriteIteratorP theG6WriteIterator)
     return OK;
 }
 
-void _g6_PrecomputeColumnOffsets(int *columnOffsets, int order)
+/*
+ * NOTE: columnOffsets is an array of size_t rathern than of int, because for a
+ * graph with N <= 100000, the index for an edge can be as large as
+ * (100000 * 99999) / 2, which overflows the size of a signed integer.
+ */
+void _g6_PrecomputeColumnOffsets(size_t *columnOffsets, int order)
 {
     if (columnOffsets == NULL)
     {
@@ -430,17 +442,18 @@ int g6_WriteGraph(G6WriteIteratorP theG6WriteIterator)
 void _g6_EncodeAdjMatAsG6(G6WriteIteratorP theG6WriteIterator)
 {
     char *g6Encoding = NULL;
-    int *columnOffsets = NULL;
+    size_t *columnOffsets = NULL;
     graphP theGraph = NULL;
 
     int order = 0;
     int numCharsForOrder = 0;
-    int numCharsForGraphEncoding = 0;
-    int totalNumCharsForOrderAndGraph = 0;
+    size_t numCharsForGraphEncoding = 0;
+    size_t totalNumCharsForOrderAndGraph = 0;
 
     int u = NIL, v = NIL, e = NIL;
-    int charOffset = 0;
+    size_t charOffset = 0;
     int bitPositionPower = 0;
+    int bitPosition = 0;
 
     g6Encoding = theG6WriteIterator->currGraphBuff;
     columnOffsets = theG6WriteIterator->columnOffsets;
@@ -502,10 +515,14 @@ void _g6_EncodeAdjMatAsG6(G6WriteIteratorP theG6WriteIterator)
         // bit to set in that byte by left-shifting 1 by (5 - ((columnOffsets[v] + u) % 6))
         // (transforming the ((columnOffsets[v] + u) % 6)th bit from the left to the
         // (5 - ((columnOffsets[v] + u) % 6))th bit from the right)
+        // NOTE: We've made columnOffsets an array of size_t because as N approaches
+        // 100000, the size of this calculation can exceed the limit of a signed
+        // integer
         charOffset = numCharsForOrder + ((columnOffsets[v] + u) / 6);
         bitPositionPower = 5 - ((columnOffsets[v] + u) % 6);
 
-        g6Encoding[charOffset] |= (1u << bitPositionPower);
+        bitPosition = (1u << bitPositionPower);
+        g6Encoding[charOffset] |= bitPosition;
 
         _g6_GetNextEdgeInUse(theGraph, &e, &u, &v);
     }
@@ -513,7 +530,7 @@ void _g6_EncodeAdjMatAsG6(G6WriteIteratorP theG6WriteIterator)
     // Bytes corresponding to graph order have already been modified to
     // correspond to printable ascii character (i.e. by adding 63); must
     // now do the same for bytes corresponding to edge lists
-    for (int i = numCharsForOrder; i < totalNumCharsForOrderAndGraph; i++)
+    for (size_t i = numCharsForOrder; i < totalNumCharsForOrderAndGraph; i++)
         g6Encoding[i] += 63;
 }
 
