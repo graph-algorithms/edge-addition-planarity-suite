@@ -59,7 +59,7 @@ int g6_NewWriter(G6WriteIteratorP *pG6WriteIterator, graphP theGraph)
 
     // numGraphsWritten, order, numCharsForOrder,
     // numCharsForGraphEncoding, and currGraphBuffSize all set to 0
-    (*pG6WriteIterator) = (G6WriteIteratorP)calloc(1, sizeof(G6WriteIterator));
+    (*pG6WriteIterator) = (G6WriteIteratorP)calloc(1, sizeof(G6WriteIteratorStruct));
 
     if ((*pG6WriteIterator) == NULL)
     {

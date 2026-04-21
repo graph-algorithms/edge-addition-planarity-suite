@@ -147,7 +147,7 @@ char *gp_GetLibPlanarityVersionFull(void)
 graphP gp_New(void)
 {
     graphP theGraph = (graphP)calloc(1, sizeof(graphStruct));
-    graphFunctionTableP functionTable = (graphFunctionTableP)calloc(1, sizeof(graphFunctionTable));
+    graphFunctionTableP functionTable = (graphFunctionTableP)calloc(1, sizeof(graphFunctionTableStruct));
 
     if (theGraph != NULL && functionTable != NULL)
     {
@@ -193,7 +193,7 @@ graphP gp_New(void)
 
  If you add functions to the function table, then they must be
  initialized here, but you must also add the new function pointer
- to the definition of the graphFunctionTable in graphFunctionTable.h
+ to the definition of the graphFunctionTableStruct in graphFunctionTable.h
 
  Function headers for the functions used to initialize the table are
  classified at the top of this file as either imported from other
@@ -298,7 +298,7 @@ int _InitGraph(graphP theGraph, int N)
     if ((theGraph->V = (anyTypeVertexRecP)calloc(Vsize, sizeof(anyTypeVertexRec))) == NULL ||
         (theGraph->VI = (vertexInfoP)calloc(VIsize, sizeof(vertexInfoRec))) == NULL ||
         (theGraph->E = (edgeRecP)calloc(Esize, sizeof(edgeRec))) == NULL ||
-        (theGraph->IC = (isolatorContextP)calloc(1, sizeof(isolatorContext))) == NULL ||
+        (theGraph->IC = (isolatorContextP)calloc(1, sizeof(isolatorContextStruct))) == NULL ||
         (theGraph->BicompRootLists = LCNew(VIsize)) == NULL ||
         (theGraph->sortedDFSChildLists = LCNew(VIsize)) == NULL ||
         (theGraph->theStack = sp_New(stackSize)) == NULL ||

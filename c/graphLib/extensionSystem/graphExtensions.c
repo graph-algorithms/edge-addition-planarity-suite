@@ -49,7 +49,7 @@ static int moduleIDGenerator = 0;
 
   2) Define an extension context structure to contain all of the data
      and function pointers that extend the graph.  The context must
-     include a graphFunctionTable to allow overloading of functions.
+     include a graphFunctionTableStruct to allow overloading of functions.
      An instance of this context structure is passed to the "context"
      parameter of gp_AddExtension().
 
@@ -217,7 +217,7 @@ int gp_AddExtension(graphP theGraph,
     }
 
     // Allocate the new extension
-    if ((newExtension = (graphExtensionP)malloc(sizeof(graphExtension))) == NULL)
+    if ((newExtension = (graphExtensionP)malloc(sizeof(graphExtensionStruct))) == NULL)
     {
         return NOTOK;
     }
@@ -232,7 +232,7 @@ int gp_AddExtension(graphP theGraph,
     _OverloadFunctions(theGraph, functions);
 
     // Make the new linkages
-    newExtension->next = (struct graphExtension *)theGraph->extensions;
+    newExtension->next = (struct graphExtensionStruct *)theGraph->extensions;
     theGraph->extensions = newExtension;
 
     // The new extension was successfully added
@@ -259,7 +259,7 @@ void _OverloadFunctions(graphP theGraph, graphFunctionTableP functions)
 {
     void **currFunctionTable = (void **)theGraph->functions;
     void **newFunctionTable = (void **)functions;
-    int numFunctions = sizeof(graphFunctionTable) / sizeof(void *);
+    int numFunctions = sizeof(graphFunctionTableStruct) / sizeof(void *);
     int K;
 
     for (K = 0; K < numFunctions; K++)
@@ -383,7 +383,7 @@ int gp_RemoveExtension(graphP theGraph, int moduleID)
 
         // Unhook the curr extension
         if (prev != NULL)
-            prev->next = (struct graphExtension *)next;
+            prev->next = (struct graphExtensionStruct *)next;
         else
             theGraph->extensions = next;
 
@@ -473,7 +473,7 @@ int gp_CopyExtensions(graphP dstGraph, graphP srcGraph)
 
     while (next != NULL)
     {
-        if ((newNext = (graphExtensionP)malloc(sizeof(graphExtension))) == NULL)
+        if ((newNext = (graphExtensionP)malloc(sizeof(graphExtensionStruct))) == NULL)
         {
             gp_FreeExtensions(dstGraph);
             return NOTOK;
@@ -487,7 +487,7 @@ int gp_CopyExtensions(graphP dstGraph, graphP srcGraph)
         newNext->next = NULL;
 
         if (newLast != NULL)
-            newLast->next = (struct graphExtension *)newNext;
+            newLast->next = (struct graphExtensionStruct *)newNext;
         else
             dstGraph->extensions = newNext;
 

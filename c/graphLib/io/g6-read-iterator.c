@@ -58,7 +58,7 @@ int g6_NewReader(G6ReadIteratorP *pG6ReadIterator, graphP theGraph)
 
     // numGraphsRead, order, numCharsForOrder,
     // numCharsForGraphEncoding, and currGraphBuffSize all set to 0
-    (*pG6ReadIterator) = (G6ReadIteratorP)calloc(1, sizeof(G6ReadIterator));
+    (*pG6ReadIterator) = (G6ReadIteratorP)calloc(1, sizeof(G6ReadIteratorStruct));
 
     if ((*pG6ReadIterator) == NULL)
     {

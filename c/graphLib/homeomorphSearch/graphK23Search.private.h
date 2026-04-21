@@ -20,7 +20,7 @@ extern "C"
     typedef struct
     {
         // Overloaded function pointers
-        graphFunctionTable functions;
+        graphFunctionTableStruct functions;
 
     } K23SearchContext;
 

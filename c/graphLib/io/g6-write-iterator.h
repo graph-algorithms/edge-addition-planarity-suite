@@ -20,7 +20,7 @@ extern "C"
     typedef struct strOrFileStruct strOrFileStruct;
     typedef strOrFileStruct *strOrFileP;
 
-    typedef struct
+    struct G6WriteIteratorStruct
     {
         strOrFileP outputContainer;
         int numGraphsWritten;
@@ -34,9 +34,10 @@ extern "C"
         size_t *columnOffsets;
 
         graphP currGraph;
-    } G6WriteIterator;
+    };
 
-    typedef G6WriteIterator *G6WriteIteratorP;
+    typedef struct G6WriteIteratorStruct G6WriteIteratorStruct;
+    typedef G6WriteIteratorStruct *G6WriteIteratorP;
 
     int g6_NewWriter(G6WriteIteratorP *pG6WriteIterator, graphP theGraph);
 

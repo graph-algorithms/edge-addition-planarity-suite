@@ -101,7 +101,7 @@ int gp_ExtendWith_K33Search(graphP theGraph)
     // Put the overload functions into the context function table.
     // gp_AddExtension will overload the graph's functions with these, and
     // return the base function pointers in the context function table
-    memset(&context->functions, 0, sizeof(graphFunctionTable));
+    memset(&context->functions, 0, sizeof(graphFunctionTableStruct));
 
     context->functions.fpEmbeddingInitialize = _K33Search_EmbeddingInitialize;
     context->functions.fpEmbedBackEdgeToDescendant = _K33Search_EmbedBackEdgeToDescendant;

@@ -50,7 +50,7 @@ extern "C"
         K4Search_EdgeRecP E;
 
         // Overloaded function pointers
-        graphFunctionTable functions;
+        graphFunctionTableStruct functions;
 
         // Internal variable for converting a tail recursion into a simple loop
         int handlingBlockedBicomp;

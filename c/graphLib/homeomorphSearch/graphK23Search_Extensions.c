@@ -74,7 +74,7 @@ int gp_ExtendWith_K23Search(graphP theGraph)
     // Put the overload functions into the context function table.
     // gp_AddExtension will overload the graph's functions with these, and
     // return the base function pointers in the context function table
-    memset(&context->functions, 0, sizeof(graphFunctionTable));
+    memset(&context->functions, 0, sizeof(graphFunctionTableStruct));
 
     context->functions.fpHandleBlockedBicomp = _K23Search_HandleBlockedBicomp;
     context->functions.fpEmbedPostprocess = _K23Search_EmbedPostprocess;

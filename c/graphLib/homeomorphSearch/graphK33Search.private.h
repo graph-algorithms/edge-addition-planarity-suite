@@ -54,7 +54,7 @@ extern "C"
         listCollectionP bin;
 
         // Overloaded function pointers
-        graphFunctionTable functions;
+        graphFunctionTableStruct functions;
 
     } K33SearchContext;
 

@@ -91,15 +91,15 @@ extern "C"
                     ancestor of v (for minors B and E, not A, C, D).
     */
 
-    struct isolatorContext
+    struct isolatorContextStruct
     {
         int minorType;
         int v, r, x, y, w, px, py, z;
         int ux, dx, uy, dy, dw, uz, dz;
     };
 
-    typedef struct isolatorContext isolatorContext;
-    typedef isolatorContext *isolatorContextP;
+    typedef struct isolatorContextStruct isolatorContextStruct;
+    typedef isolatorContextStruct *isolatorContextP;
 
 //********************************************************************
 // A few simple integer selection macros for obstruction isolation

@@ -22,7 +22,7 @@ extern "C"
     typedef struct strOrFileStruct strOrFileStruct;
     typedef strOrFileStruct *strOrFileP;
 
-    typedef struct
+    struct G6ReadIteratorStruct
     {
         strOrFileP inputContainer;
         int numGraphsRead;
@@ -36,8 +36,10 @@ extern "C"
         graphP currGraph;
 
         bool endReached;
-    } G6ReadIterator;
-    typedef G6ReadIterator *G6ReadIteratorP;
+    };
+
+    typedef struct G6ReadIteratorStruct G6ReadIteratorStruct;
+    typedef G6ReadIteratorStruct *G6ReadIteratorP;
 
     int g6_NewReader(G6ReadIteratorP *pG6ReadIterator, graphP theGraph);
     bool g6_EndReached(G6ReadIteratorP theG6ReadIterator);

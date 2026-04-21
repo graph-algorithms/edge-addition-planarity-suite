@@ -483,8 +483,8 @@ extern "C"
     // PLANARITY-RELATED ONLY
     // Declaration of package private data type for isolating
     // minimal subgraphs obstructing planarity-related embedding
-    typedef struct isolatorContext isolatorContext;
-    typedef isolatorContext *isolatorContextP;
+    typedef struct isolatorContextStruct isolatorContextStruct;
+    typedef isolatorContextStruct *isolatorContextP;
 
     // DFS-RELATED and PLANARITY-RELATED ONLY
     // Declaration of package-private data type for managing a
@@ -495,11 +495,11 @@ extern "C"
     // PLANARITY-RELATED ONLY
     // Declaration of package private data types for extending the
     // planarity algorithm to implement planarity-related algorithms
-    typedef struct graphExtension graphExtension;
-    typedef graphExtension *graphExtensionP;
+    typedef struct graphExtensionStruct graphExtensionStruct;
+    typedef graphExtensionStruct *graphExtensionP;
 
-    typedef struct graphFunctionTable graphFunctionTable;
-    typedef graphFunctionTable *graphFunctionTableP;
+    typedef struct graphFunctionTableStruct graphFunctionTableStruct;
+    typedef graphFunctionTableStruct *graphFunctionTableP;
 
     /********************************************************************
          Graph structure definition
