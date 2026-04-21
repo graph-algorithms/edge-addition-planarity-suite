@@ -246,7 +246,7 @@ void _InitFunctionTable(graphP theGraph)
 
  For VI, we need N vertexInfoRec records.
 
- For E, we need 2*edgeCapacity edge records (plus 2 for default of using faster 1-based arrays).
+ For E, we need 2*edgeCapacity edge records (plus 2 for default of using 1-based arrays).
 
  The BicompRootLists and sortedDFSChildLists are of size N and start out empty.
 
@@ -323,7 +323,7 @@ int _InitGraph(graphP theGraph, int N)
  ********************************************************************/
 void _InitVertices(graphP theGraph)
 {
-#ifdef USE_FASTER_1BASEDARRAYS
+#ifdef USE_1BASEDARRAYS
     memset(theGraph->V, NIL_CHAR, gp_AnyTypeVertexArraySize(theGraph) * sizeof(anyTypeVertexRec));
     memset(theGraph->VI, NIL_CHAR, gp_VertexArraySize(theGraph) * sizeof(vertexInfoRec));
     memset(theGraph->extFace, NIL_CHAR, gp_AnyTypeVertexArraySize(theGraph) * sizeof(extFaceLinkRec));
@@ -363,7 +363,7 @@ void _InitVertices(graphP theGraph)
  ********************************************************************/
 void _InitEdges(graphP theGraph)
 {
-#ifdef USE_FASTER_1BASEDARRAYS
+#ifdef USE_1BASEDARRAYS
     memset(theGraph->E, NIL_CHAR, gp_EdgeArraySize(theGraph) * sizeof(edgeRec));
 #else
     int e, Esize;
@@ -2160,7 +2160,7 @@ int gp_DeleteEdge(graphP theGraph, int e)
 
     // Clear the two edge records
     // (the bit twiddle (e & ~1) chooses the lesser of e and its twin)
-#ifdef USE_FASTER_1BASEDARRAYS
+#ifdef USE_1BASEDARRAYS
     memset(theGraph->E + (e & ~1), NIL_CHAR, sizeof(edgeRec) << 1);
 #else
     _InitEdgeRec(theGraph, e);

@@ -224,7 +224,7 @@ int runSpecificGraphTests(char const *samplesDir)
         }
     }
 
-#ifdef USE_FASTER_1BASEDARRAYS
+#ifdef USE_1BASEDARRAYS
     Message("\n\tStarting 1-based Array Index Tests\n\n");
 
     if (runSpecificGraphTest("-p", "maxPlanar5.txt", TRUE) != OK)

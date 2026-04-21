@@ -179,7 +179,7 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
 
         // If we are reading a zero-based input file, then we have to add to the
         // indexValue for v the amount returned by gp_GetFirstVertex(),
-        // which is 1 if this library was compiled with USE_FASTER_1BASEDARRAYS
+        // which is 1 if this library was compiled with USE_1BASEDARRAYS
         // or 0 if this library was compiled with USE_0BASEDARRAYS
         if (zeroBased)
             indexValue += gp_GetFirstVertex(theGraph);
@@ -240,7 +240,7 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
 
             // If we are reading a zero-based input file, then we have to add to W
             // the amount returned by gp_GetFirstVertex(), which is 1 if this library
-            // was compiled with USE_FASTER_1BASEDARRAYS or 0 if this library was
+            // was compiled with USE_1BASEDARRAYS or 0 if this library was
             // compiled with USE_0BASEDARRAYS
             if (zeroBased)
                 W += gp_GetFirstVertex(theGraph);
@@ -623,12 +623,12 @@ int _WriteAdjList(graphP theGraph, strOrFileP outputContainer)
     // If we are supposed to write 0-based output, then we have to adjust the vertex offset and the
     // adjacency list terminator based on whether this library has been compiled with 0-based or
     // 1-based array indexing for the in-memory data structure (i.e., compiled with
-    // USE_FASTER_1BASEDARRAYS USE_0BASEDARRAYS). The macro invoked is responsive to the difference.
+    // USE_1BASEDARRAYS USE_0BASEDARRAYS). The macro invoked is responsive to the difference.
     if (gp_GetGraphFlags(theGraph) & GRAPHFLAGS_ZEROBASEDIO)
     {
         zeroBasedVertexOffset = gp_GetFirstVertex(theGraph);
         // If the graph must be written 0-based, then the adjacency list terminator must be -1,
-        // even if the internal representation is 1-based (i.e. when USE_FASTER_1BASEDARRAYS, NIL == 0,
+        // even if the internal representation is 1-based (i.e. when USE_1BASEDARRAYS, NIL == 0,
         // but the output needs to be -1 for 0-based output)
         adjacencyListTerminator = -1;
     }

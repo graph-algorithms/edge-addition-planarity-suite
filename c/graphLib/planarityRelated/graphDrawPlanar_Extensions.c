@@ -228,7 +228,7 @@ int _DrawPlanar_CreateStructures(DrawPlanarContext *context)
  ********************************************************************/
 int _DrawPlanar_InitStructures(DrawPlanarContext *context)
 {
-#ifdef USE_FASTER_1BASEDARRAYS
+#ifdef USE_1BASEDARRAYS
     memset(context->VI, NIL_CHAR, gp_VertexArraySize(context->theGraph) * sizeof(DrawPlanar_VertexInfo));
     memset(context->E, NIL_CHAR, gp_EdgeArraySize(context->theGraph) * sizeof(DrawPlanar_EdgeRec));
 #else
@@ -650,7 +650,7 @@ int _DrawPlanar_WritePostprocess(graphP theGraph, char **pExtraData)
             // If we are supposed to write 0-based output, then we have to set these two variables to indicate
             // how much to subtract from each vertex and edge index based on whether this library has been
             // compiled with 0-based or 1-based array indexing for the in-memory data structure (i.e., compiled
-            // with USE_FASTER_1BASEDARRAYS USE_0BASEDARRAYS). The macros invoked are responsive to the difference.
+            // with USE_1BASEDARRAYS USE_0BASEDARRAYS). The macros invoked are responsive to the difference.
             if (gp_GetGraphFlags(theGraph) & GRAPHFLAGS_ZEROBASEDIO)
             {
                 zeroBasedVertexOffset = gp_GetFirstVertex(theGraph);

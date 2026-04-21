@@ -8,7 +8,7 @@
                 "-fdiagnostics-color=always",
                 "-fno-strict-aliasing",
                 "-DDEBUG", // Added so that _DEBUG is defined; see appconst.h
-                //"-DUSE_0BASEDARRAYS", // Commented out to use faster 1-based array indexing
+                //"-DUSE_0BASEDARRAYS", // Commented out to use default of 1-based array indexing
                 "-Wall",
                 "-pedantic",
                 "-Warray-bounds",
@@ -82,7 +82,7 @@
             "args": [
                 "-O3",
                 "-fno-strict-aliasing",
-                //"-DUSE_0BASEDARRAYS", // Commented out to use faster 1-based array indexing
+                //"-DUSE_0BASEDARRAYS", // Commented out to use default of 1-based array indexing
                 "-pedantic",
                 "-Wall",
                 "-Warray-bounds",
@@ -157,7 +157,7 @@
                 "-fdiagnostics-color=always",
                 "-fno-strict-aliasing",
                 "-DDEBUG", // Added so that _DEBUG is defined; see appconst.h
-                //"-DUSE_0BASEDARRAYS", // Commented out to use faster 1-based array indexing
+                //"-DUSE_0BASEDARRAYS", // Commented out to use default of 1-based array indexing
                 "-pedantic",
                 "-Wall",
                 "-Warray-bounds",
@@ -231,7 +231,7 @@
             "args": [
                 "-O3",
                 "-fno-strict-aliasing",
-                //"-DUSE_0BASEDARRAYS", // Commented out to use faster 1-based array indexing
+                //"-DUSE_0BASEDARRAYS", // Commented out to use default of 1-based array indexing
                 "-pedantic",
                 "-Wall",
                 "-Warray-bounds",
@@ -308,7 +308,7 @@
                 "/EHsc",
                 "/nologo",
                 "/DDEBUG", // Added so that _DEBUG is defined; see appconst.h
-                //"/DUSE_0BASEDARRAYS", // Commented out to use faster 1-based array indexing
+                //"/DUSE_0BASEDARRAYS", // Commented out to use default of 1-based array indexing
                 "/Wall",
                 "/wd4464", // Ignore warnings about relative paths
                 "/wd4710", // Ignore warnings about not inlining scanf, sprintf, printf, fprintf, etc.
@@ -348,7 +348,7 @@
             "args": [
                 "/O2", // This is the maximum optimization level available for MSVC cl
                 "/nologo",
-                //"/DUSE_0BASEDARRAYS", // Commented out to use faster 1-based array indexing
+                //"/DUSE_0BASEDARRAYS", // Commented out to use default of 1-based array indexing
                 "/Wall",
                 "/wd4464", // Ignore warnings about relative paths
                 "/wd4710", // Ignore warnings about not inlining scanf, sprintf, printf, fprintf, etc.
@@ -390,7 +390,7 @@
                 "-fansi-escape-codes",
                 "-fno-strict-aliasing",
                 "-DDEBUG", // Added so that _DEBUG is defined; see appconst.h
-                //"-DUSE_0BASEDARRAYS", // Commented out to use faster 1-based array indexing
+                //"-DUSE_0BASEDARRAYS", // Commented out to use default of 1-based array indexing
                 "-Wall",
                 "-pedantic",
                 "-Warray-bounds",
@@ -459,7 +459,7 @@
             "args": [
                 "-O3",
                 "-fno-strict-aliasing",
-                //"-DUSE_0BASEDARRAYS", // Commented out to use faster 1-based array indexing
+                //"-DUSE_0BASEDARRAYS", // Commented out to use default of 1-based array indexing
                 "-Wall",
                 "-pedantic",
                 "-Warray-bounds",

@@ -136,7 +136,7 @@ extern "C"
 
     typedef edgeRec *edgeRecP;
 
-#ifdef USE_FASTER_1BASEDARRAYS
+#ifdef USE_1BASEDARRAYS
 
 #ifndef DEBUG
 #define gp_IsEdge(theGraph, e) (e)
@@ -172,7 +172,7 @@ extern "C"
 #define gp_EdgeInUse(theGraph, e) (gp_IsAnyTypeVertex(theGraph, gp_GetNeighbor(theGraph, e)))
 #define gp_EdgeNotInUse(theGraph, e) (gp_IsNotAnyTypeVertex(theGraph, gp_GetNeighbor(theGraph, e)))
 #define gp_EdgeArraySize(theGraph) (gp_EdgeArrayStart(theGraph) + ((theGraph)->edgeCapacity << 1))
-int gp_EdgeInUseArraySize(graphP theGraph);
+    int gp_EdgeInUseArraySize(graphP theGraph);
 
 // An edge is represented by two consecutive edge records in the edge array E.
 // If an even number, xor 1 will add one; if an odd number, xor 1 will subtract 1
@@ -327,7 +327,7 @@ int gp_EdgeInUseArraySize(graphP theGraph);
 ///////////////////////////////////
 // Vertex iteration-related methods
 ///////////////////////////////////
-#ifdef USE_FASTER_1BASEDARRAYS
+#ifdef USE_1BASEDARRAYS
 
     // The use of *Vertex* alone consistently refers to the initial N vertices.
     // The use of *VirtualVertex* refers to vertex array locations after the first N.
