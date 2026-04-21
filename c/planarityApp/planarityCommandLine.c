@@ -36,7 +36,7 @@ int commandLine(int argc, char *argv[])
 #endif
 
     if (argc >= 3 && strcmp(argv[2], "-q") == 0)
-        setQuietModeFlag(TRUE);
+        gp_SetQuietModeFlag(TRUE);
 
     if (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "-help") == 0)
     {
@@ -71,7 +71,7 @@ int commandLine(int argc, char *argv[])
 
     else
     {
-        ErrorMessage("Unsupported command line.  Here is the help for this program.\n");
+        gp_ErrorMessage("Unsupported command line.  Here is the help for this program.\n");
         helpMessage(NULL);
         Result = NOTOK;
     }
@@ -79,16 +79,16 @@ int commandLine(int argc, char *argv[])
 #ifdef DEBUG
     // When one builds and runs the executable in an external console from an IDE
     // such as VSCode, the external console window will close immediately upon
-    // exit 0 being returned. This means that one may miss Messages and
-    // ErrorMessages that are crucial to the debugging process. Hence, if we compile
-    // with the DDEBUG flag, this means that in appconst.h we #define DEBUG. That way,
-    // this prompt will appear only for debug builds, and will ensure the console
-    // window stays open until the user proceeds.
+    // exit 0 being returned. This means that one may miss gp_Message() and
+    // gp_ErrorMessage() outputs that are crucial to the debugging process.
+    // Hence, if we compile with the DDEBUG flag, this means that in appconst.h
+    // we #define DEBUG. That way, this prompt will appear only for debug builds,
+    // and will ensure the console window stays open until the user proceeds.
     printf("\n\tPress return key to exit...\n");
     fflush(stdout);
     if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
     {
-        ErrorMessage("Unable to fetch from stdin; exiting.\n");
+        gp_ErrorMessage("Unable to fetch from stdin; exiting.\n");
         Result = NOTOK;
     }
 #endif
@@ -109,7 +109,7 @@ int legacyCommandLine(int argc, char *argv[])
 
     if (theGraph == NULL)
     {
-        ErrorMessage("Unable to allocate memory for theGraph.\n");
+        gp_ErrorMessage("Unable to allocate memory for theGraph.\n");
         Result = NOTOK;
     }
 
@@ -125,7 +125,7 @@ int legacyCommandLine(int argc, char *argv[])
 #pragma GCC diagnostic ignored "-Wformat-nonliteral"
             sprintf(messageContents, messageFormat, charsAvailForFilename, argv[1]);
 #pragma GCC diagnostic pop
-            ErrorMessage(messageContents);
+            gp_ErrorMessage(messageContents);
 
             Result = NOTOK;
         }
@@ -137,10 +137,10 @@ int legacyCommandLine(int argc, char *argv[])
         if (Result == OK)
         {
             if ((Result = gp_SortVertices(theGraph)) != OK)
-                ErrorMessage("Failed to restore original vertex labelling.\n");
+                gp_ErrorMessage("Failed to restore original vertex labelling.\n");
 
             if (Result == OK && (Result = gp_Write(theGraph, argv[2], WRITE_ADJLIST)) != OK)
-                ErrorMessage("Failed to write embedding.\n");
+                gp_ErrorMessage("Failed to write embedding.\n");
         }
 
         else if (Result == NONEMBEDDABLE)
@@ -148,10 +148,10 @@ int legacyCommandLine(int argc, char *argv[])
             if (argc >= 5 && strcmp(argv[3], "-n") == 0)
             {
                 if ((Result = gp_SortVertices(theGraph)) != OK)
-                    ErrorMessage("Failed to restore original vertex labelling.\n");
+                    gp_ErrorMessage("Failed to restore original vertex labelling.\n");
 
                 if (Result == OK && (Result = gp_Write(theGraph, argv[4], WRITE_ADJLIST)) != OK)
-                    ErrorMessage("Failed to write obstruction.\n");
+                    gp_ErrorMessage("Failed to write obstruction.\n");
             }
         }
         else
@@ -207,7 +207,7 @@ int runSpecificGraphTests(char const *samplesDir)
             if (chdir("..") != 0 || chdir(samplesDir) != 0)
             {
                 // Give success result, but Warn if no samples (except no warning if in quiet mode)
-                Message("WARNING: Unable to change to samples directory to run tests on samples.\n");
+                gp_Message("WARNING: Unable to change to samples directory to run tests on samples.\n");
 
                 return OK;
             }
@@ -218,126 +218,126 @@ int runSpecificGraphTests(char const *samplesDir)
         // New behavior if samplesDir command-line parameter was specified
         if (chdir(samplesDir) != 0)
         {
-            Message("WARNING: Unable to change to samples directory to run tests on samples.\n");
+            gp_Message("WARNING: Unable to change to samples directory to run tests on samples.\n");
 
             return OK;
         }
     }
 
 #ifdef USE_1BASEDARRAYS
-    Message("\n\tStarting 1-based Array Index Tests\n\n");
+    gp_Message("\n\tStarting 1-based Array Index Tests\n\n");
 
     if (runSpecificGraphTest("-p", "maxPlanar5.txt", TRUE) != OK)
     {
-        ErrorMessage("Planarity test on maxPlanar5.txt failed.\n");
+        gp_ErrorMessage("Planarity test on maxPlanar5.txt failed.\n");
 
         retVal = NOTOK;
     }
 
     if (runSpecificGraphTest("-d", "maxPlanar5.txt", FALSE) != OK)
     {
-        ErrorMessage("Graph drawing test maxPlanar5.txt failed.\n");
+        gp_ErrorMessage("Graph drawing test maxPlanar5.txt failed.\n");
 
         retVal = NOTOK;
     }
 
     if (runSpecificGraphTest("-d", "drawExample.txt", TRUE) != OK)
     {
-        ErrorMessage("Graph drawing on drawExample.txt failed.\n");
+        gp_ErrorMessage("Graph drawing on drawExample.txt failed.\n");
 
         retVal = NOTOK;
     }
 
     if (runSpecificGraphTest("-p", "Petersen.txt", FALSE) != OK)
     {
-        ErrorMessage("Planarity test on Petersen.txt failed.\n");
+        gp_ErrorMessage("Planarity test on Petersen.txt failed.\n");
 
         retVal = NOTOK;
     }
 
     if (runSpecificGraphTest("-o", "Petersen.txt", TRUE) != OK)
     {
-        ErrorMessage("Outerplanarity test on Petersen.txt failed.\n");
+        gp_ErrorMessage("Outerplanarity test on Petersen.txt failed.\n");
 
         retVal = NOTOK;
     }
 
     if (runSpecificGraphTest("-2", "Petersen.txt", FALSE) != OK)
     {
-        ErrorMessage("K_{2,3} search on Petersen.txt failed.\n");
+        gp_ErrorMessage("K_{2,3} search on Petersen.txt failed.\n");
 
         retVal = NOTOK;
     }
 
     if (runSpecificGraphTest("-3", "Petersen.txt", TRUE) != OK)
     {
-        ErrorMessage("K_{3,3} search on Petersen.txt failed.\n");
+        gp_ErrorMessage("K_{3,3} search on Petersen.txt failed.\n");
 
         retVal = NOTOK;
     }
 
     if (runSpecificGraphTest("-4", "Petersen.txt", FALSE) != OK)
     {
-        ErrorMessage("K_4 search on Petersen.txt failed.\n");
+        gp_ErrorMessage("K_4 search on Petersen.txt failed.\n");
 
         retVal = NOTOK;
     }
 
-    Message("\tFinished 1-based Array Index Tests.\n\n");
+    gp_Message("\tFinished 1-based Array Index Tests.\n\n");
 #endif
 
     if (runSpecificGraphTest("-p", "maxPlanar5.0-based.txt", FALSE) != OK)
     {
-        ErrorMessage("Planarity test on maxPlanar5.0-based.txt failed.\n");
+        gp_ErrorMessage("Planarity test on maxPlanar5.0-based.txt failed.\n");
 
         retVal = NOTOK;
     }
 
     if (runSpecificGraphTest("-d", "maxPlanar5.0-based.txt", TRUE) != OK)
     {
-        ErrorMessage("Graph drawing test maxPlanar5.0-based.txt failed.\n");
+        gp_ErrorMessage("Graph drawing test maxPlanar5.0-based.txt failed.\n");
 
         retVal = NOTOK;
     }
 
     if (runSpecificGraphTest("-d", "drawExample.0-based.txt", FALSE) != OK)
     {
-        ErrorMessage("Graph drawing on drawExample.0-based.txt failed.\n");
+        gp_ErrorMessage("Graph drawing on drawExample.0-based.txt failed.\n");
 
         retVal = NOTOK;
     }
 
     if (runSpecificGraphTest("-p", "Petersen.0-based.txt", TRUE) != OK)
     {
-        ErrorMessage("Planarity test on Petersen.0-based.txt failed.\n");
+        gp_ErrorMessage("Planarity test on Petersen.0-based.txt failed.\n");
 
         retVal = NOTOK;
     }
 
     if (runSpecificGraphTest("-o", "Petersen.0-based.txt", FALSE) != OK)
     {
-        ErrorMessage("Outerplanarity test on Petersen.0-based.txt failed.\n");
+        gp_ErrorMessage("Outerplanarity test on Petersen.0-based.txt failed.\n");
 
         retVal = NOTOK;
     }
 
     if (runSpecificGraphTest("-2", "Petersen.0-based.txt", TRUE) != OK)
     {
-        ErrorMessage("K_{2,3} search on Petersen.0-based.txt failed.\n");
+        gp_ErrorMessage("K_{2,3} search on Petersen.0-based.txt failed.\n");
 
         retVal = NOTOK;
     }
 
     if (runSpecificGraphTest("-3", "Petersen.0-based.txt", FALSE) != OK)
     {
-        ErrorMessage("K_{3,3} search on Petersen.0-based.txt failed.\n");
+        gp_ErrorMessage("K_{3,3} search on Petersen.0-based.txt failed.\n");
 
         retVal = NOTOK;
     }
 
     if (runSpecificGraphTest("-4", "Petersen.0-based.txt", TRUE) != OK)
     {
-        ErrorMessage("K_4 search on Petersen.0-based.txt failed.\n");
+        gp_ErrorMessage("K_4 search on Petersen.0-based.txt failed.\n");
 
         retVal = NOTOK;
     }
@@ -350,7 +350,7 @@ int runSpecificGraphTests(char const *samplesDir)
     // runGraphTransformationTest by reading file contents into string
     if (runGraphTransformationTest("-a", "nauty_example.g6", TRUE) != OK)
     {
-        ErrorMessage("Transforming nauty_example.g6 file contents as string to adjacency list failed.\n");
+        gp_ErrorMessage("Transforming nauty_example.g6 file contents as string to adjacency list failed.\n");
 
         retVal = NOTOK;
     }
@@ -358,7 +358,7 @@ int runSpecificGraphTests(char const *samplesDir)
     // runGraphTransformationTest by reading from file
     if (runGraphTransformationTest("-a", "nauty_example.g6", FALSE) != OK)
     {
-        ErrorMessage("Transforming nauty_example.g6 using file pointer to adjacency list failed.\n");
+        gp_ErrorMessage("Transforming nauty_example.g6 using file pointer to adjacency list failed.\n");
 
         retVal = NOTOK;
     }
@@ -366,7 +366,7 @@ int runSpecificGraphTests(char const *samplesDir)
     // runGraphTransformationTest by reading first graph from file into string
     if (runGraphTransformationTest("-a", "N5-all.g6", TRUE) != OK)
     {
-        ErrorMessage("Transforming first graph in N5-all.g6 (read as string) to adjacency list failed.\n");
+        gp_ErrorMessage("Transforming first graph in N5-all.g6 (read as string) to adjacency list failed.\n");
 
         retVal = NOTOK;
     }
@@ -374,7 +374,7 @@ int runSpecificGraphTests(char const *samplesDir)
     // runGraphTransformationTest by reading first graph from file pointer
     if (runGraphTransformationTest("-a", "N5-all.g6", FALSE) != OK)
     {
-        ErrorMessage("Transforming first graph in N5-all.g6 (read from file pointer) to adjacency list failed.\n");
+        gp_ErrorMessage("Transforming first graph in N5-all.g6 (read from file pointer) to adjacency list failed.\n");
 
         retVal = NOTOK;
     }
@@ -382,7 +382,7 @@ int runSpecificGraphTests(char const *samplesDir)
     // runGraphTransformationTest by reading file contents corresponding to dense graph into string
     if (runGraphTransformationTest("-a", "K10.g6", TRUE) != OK)
     {
-        ErrorMessage("Transforming K10.g6 file contents as string to adjacency list failed.\n");
+        gp_ErrorMessage("Transforming K10.g6 file contents as string to adjacency list failed.\n");
 
         retVal = NOTOK;
     }
@@ -390,7 +390,7 @@ int runSpecificGraphTests(char const *samplesDir)
     // runGraphTransformationTest by reading dense graph from file
     if (runGraphTransformationTest("-a", "K10.g6", FALSE) != OK)
     {
-        ErrorMessage("Transforming K10.g6 using file pointer to adjacency list failed.\n");
+        gp_ErrorMessage("Transforming K10.g6 using file pointer to adjacency list failed.\n");
 
         retVal = NOTOK;
     }
@@ -400,7 +400,7 @@ int runSpecificGraphTests(char const *samplesDir)
     // runGraphTransformationTest by reading file contents into string
     if (runGraphTransformationTest("-m", "nauty_example.g6", TRUE) != OK)
     {
-        ErrorMessage("Transforming nauty_example.g6 file contents as string to adjacency matrix failed.\n");
+        gp_ErrorMessage("Transforming nauty_example.g6 file contents as string to adjacency matrix failed.\n");
 
         retVal = NOTOK;
     }
@@ -408,7 +408,7 @@ int runSpecificGraphTests(char const *samplesDir)
     // runGraphTransformationTest by reading from file
     if (runGraphTransformationTest("-m", "nauty_example.g6", FALSE) != OK)
     {
-        ErrorMessage("Transforming nauty_example.g6 using file pointer to adjacency matrix failed.\n");
+        gp_ErrorMessage("Transforming nauty_example.g6 using file pointer to adjacency matrix failed.\n");
 
         retVal = NOTOK;
     }
@@ -416,7 +416,7 @@ int runSpecificGraphTests(char const *samplesDir)
     // runGraphTransformationTest by reading first graph from file into string
     if (runGraphTransformationTest("-m", "N5-all.g6", TRUE) != OK)
     {
-        ErrorMessage("Transforming first graph in N5-all.g6 (read as string) to adjacency matrix failed.\n");
+        gp_ErrorMessage("Transforming first graph in N5-all.g6 (read as string) to adjacency matrix failed.\n");
 
         retVal = NOTOK;
     }
@@ -424,7 +424,7 @@ int runSpecificGraphTests(char const *samplesDir)
     // runGraphTransformationTest by reading first graph from file pointer
     if (runGraphTransformationTest("-m", "N5-all.g6", FALSE) != OK)
     {
-        ErrorMessage("Transforming first graph in N5-all.g6 (read from file pointer) to adjacency matrix failed.\n");
+        gp_ErrorMessage("Transforming first graph in N5-all.g6 (read from file pointer) to adjacency matrix failed.\n");
 
         retVal = NOTOK;
     }
@@ -432,7 +432,7 @@ int runSpecificGraphTests(char const *samplesDir)
     // runGraphTransformationTest by reading file contents corresponding to dense graph into string
     if (runGraphTransformationTest("-m", "K10.g6", TRUE) != OK)
     {
-        ErrorMessage("Transforming K10.g6 file contents as string to adjacency matrix failed.\n");
+        gp_ErrorMessage("Transforming K10.g6 file contents as string to adjacency matrix failed.\n");
 
         retVal = NOTOK;
     }
@@ -440,7 +440,7 @@ int runSpecificGraphTests(char const *samplesDir)
     // runGraphTransformationTest by reading dense graph from file
     if (runGraphTransformationTest("-m", "K10.g6", FALSE) != OK)
     {
-        ErrorMessage("Transforming K10.g6 using file pointer to adjacency matrix failed.\n");
+        gp_ErrorMessage("Transforming K10.g6 using file pointer to adjacency matrix failed.\n");
 
         retVal = NOTOK;
     }
@@ -450,7 +450,7 @@ int runSpecificGraphTests(char const *samplesDir)
     // runGraphTransformationTest by reading from file
     if (runGraphTransformationTest("-g", "nauty_example.g6.0-based.AdjList.out.txt", TRUE) != OK)
     {
-        ErrorMessage("Transforming nauty_example.g6.0-based.AdjList.out.txt using file pointer to .g6 failed.\n");
+        gp_ErrorMessage("Transforming nauty_example.g6.0-based.AdjList.out.txt using file pointer to .g6 failed.\n");
 
         retVal = NOTOK;
     }
@@ -458,15 +458,15 @@ int runSpecificGraphTests(char const *samplesDir)
     // runGraphTransformationTest by reading from file
     if (runGraphTransformationTest("-g", "K10.g6.0-based.AdjList.out.txt", TRUE) != OK)
     {
-        ErrorMessage("Transforming K10.g6.0-based.AdjList.out.txt using file pointer to .g6 failed.\n");
+        gp_ErrorMessage("Transforming K10.g6.0-based.AdjList.out.txt using file pointer to .g6 failed.\n");
 
         retVal = NOTOK;
     }
 
     if (retVal == OK)
-        Message("Tests of all specific graphs succeeded.\n");
+        gp_Message("Tests of all specific graphs succeeded.\n");
     else
-        Message("One or more specific graph tests FAILED.\n");
+        gp_Message("One or more specific graph tests FAILED.\n");
 
     chdir(origDir);
     FlushConsole(stdout);
@@ -485,7 +485,7 @@ int runSpecificGraphTest(char const *commandString, char const *infileName, int 
 
     if (GetCommandAndOptionalModifier(commandString, &command, &modifier) != OK)
     {
-        ErrorMessage("Unable to extract command (and optionally modifier) from command string.\n");
+        gp_ErrorMessage("Unable to extract command (and optionally modifier) from command string.\n");
 
         return NOTOK;
     }
@@ -501,7 +501,7 @@ int runSpecificGraphTest(char const *commandString, char const *infileName, int 
         inputString = ReadTextFileIntoString(infileName);
         if (inputString == NULL)
         {
-            ErrorMessage("Failed to read input file into string.\n");
+            gp_ErrorMessage("Failed to read input file into string.\n");
 
             Result = NOTOK;
         }
@@ -517,17 +517,17 @@ int runSpecificGraphTest(char const *commandString, char const *infileName, int 
 
     if (Result != OK && Result != NONEMBEDDABLE)
     {
-        ErrorMessage("Test failed (graph processor returned failure result).\n");
+        gp_ErrorMessage("Test failed (graph processor returned failure result).\n");
         Result = NOTOK;
     }
     else
     {
         // Test that the primary actual output matches the primary expected output
         if (TextFileMatchesString(expectedPrimaryResultFileName, actualOutput) == TRUE)
-            Message("Test succeeded (result equal to exemplar).\n");
+            gp_Message("Test succeeded (result equal to exemplar).\n");
         else
         {
-            ErrorMessage("Test failed (result not equal to exemplar).\n");
+            gp_ErrorMessage("Test failed (result not equal to exemplar).\n");
 
             Result = NOTOK;
         }
@@ -540,7 +540,7 @@ int runSpecificGraphTest(char const *commandString, char const *infileName, int 
 
         if (expectedSecondaryResultFileName == NULL)
         {
-            ErrorMessage("Unable to allocate memory for expected secondary output filename.\n");
+            gp_ErrorMessage("Unable to allocate memory for expected secondary output filename.\n");
 
             Result = NOTOK;
         }
@@ -549,10 +549,10 @@ int runSpecificGraphTest(char const *commandString, char const *infileName, int 
             sprintf(expectedSecondaryResultFileName, "%s%s", expectedPrimaryResultFileName, ".render.txt");
 
             if (TextFileMatchesString(expectedSecondaryResultFileName, actualOutput2) == TRUE)
-                Message("Test succeeded (secondary result equal to exemplar).\n");
+                gp_Message("Test succeeded (secondary result equal to exemplar).\n");
             else
             {
-                ErrorMessage("Test failed (secondary result not equal to exemplar).\n");
+                gp_ErrorMessage("Test failed (secondary result not equal to exemplar).\n");
 
                 Result = NOTOK;
             }
@@ -565,7 +565,7 @@ int runSpecificGraphTest(char const *commandString, char const *infileName, int 
         }
     }
 
-    Message("\n");
+    gp_Message("\n");
 
     if (inputString != NULL)
     {
@@ -602,7 +602,7 @@ int runGraphTransformationTest(char const *command, char const *infileName, int 
     // input graph; it will only support "-(gam)"
     if (command == NULL || strlen(command) < 2)
     {
-        ErrorMessage("runGraphTransformationTest only supports -(gam).\n");
+        gp_ErrorMessage("runGraphTransformationTest only supports -(gam).\n");
 
         return NOTOK;
     }
@@ -616,7 +616,7 @@ int runGraphTransformationTest(char const *command, char const *infileName, int 
         inputString = ReadTextFileIntoString(infileName);
         if (inputString == NULL)
         {
-            ErrorMessage("Failed to read input file into string.\n");
+            gp_ErrorMessage("Failed to read input file into string.\n");
 
             Result = NOTOK;
         }
@@ -634,7 +634,7 @@ int runGraphTransformationTest(char const *command, char const *infileName, int 
 
         if (Result != OK || actualOutput == NULL)
         {
-            ErrorMessage("Failed to perform transformation.\n");
+            gp_ErrorMessage("Failed to perform transformation.\n");
 
             Result = NOTOK;
         }
@@ -651,7 +651,7 @@ int runGraphTransformationTest(char const *command, char const *infileName, int 
 
             if (Result != OK || expectedOutfileName == NULL)
             {
-                ErrorMessage("Unable to construct output filename for expected transformation output.\n");
+                gp_ErrorMessage("Unable to construct output filename for expected transformation output.\n");
 
                 Result = NOTOK;
             }
@@ -667,7 +667,7 @@ int runGraphTransformationTest(char const *command, char const *infileName, int 
 #pragma GCC diagnostic ignored "-Wformat-nonliteral"
                     sprintf(messageContents, messageFormat, command, charsAvailForFilename, infileName);
 #pragma GCC diagnostic pop
-                    Message(messageContents);
+                    gp_Message(messageContents);
 
                     Result = OK;
                 }
@@ -679,7 +679,7 @@ int runGraphTransformationTest(char const *command, char const *infileName, int 
 #pragma GCC diagnostic ignored "-Wformat-nonliteral"
                     sprintf(messageContents, messageFormat, command, charsAvailForFilename, infileName);
 #pragma GCC diagnostic pop
-                    ErrorMessage(messageContents);
+                    gp_ErrorMessage(messageContents);
 
                     Result = NOTOK;
                 }
@@ -699,7 +699,7 @@ int runGraphTransformationTest(char const *command, char const *infileName, int 
         }
     }
 
-    Message("\n");
+    gp_Message("\n");
 
     if (inputString != NULL)
     {

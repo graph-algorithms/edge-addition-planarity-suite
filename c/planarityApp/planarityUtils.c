@@ -38,7 +38,7 @@ int Reconfigure(void)
 
         if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
         {
-            ErrorMessage("Unable to fetch reconfigure choice from stdin.\n");
+            gp_ErrorMessage("Unable to fetch reconfigure choice from stdin.\n");
             Result = NOTOK;
             break;
         }
@@ -46,7 +46,7 @@ int Reconfigure(void)
         if (strlen(lineBuff) != 1 ||
             sscanf(lineBuff, " %c", &Mode) != 1 ||
             !strchr("rsmn", tolower(Mode)))
-            ErrorMessage("Invalid choice for Mode.\n");
+            gp_ErrorMessage("Invalid choice for Mode.\n");
         else
         {
             Mode = (char)tolower(Mode);
@@ -56,14 +56,14 @@ int Reconfigure(void)
 
     if (Result == OK && Mode == 'r')
     {
-        Message("\nNOTE: The directories for the graphs you want must exist.\n\n");
+        gp_Message("\nNOTE: The directories for the graphs you want must exist.\n\n");
 
         while (1)
         {
             Prompt("Do you want original graphs in directory 'random'? (y/n) ");
             if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
             {
-                ErrorMessage("Unable to fetch choice from stdin.\n");
+                gp_ErrorMessage("Unable to fetch choice from stdin.\n");
                 Result = NOTOK;
                 break;
             }
@@ -71,7 +71,7 @@ int Reconfigure(void)
             if (strlen(lineBuff) != 1 ||
                 sscanf(lineBuff, " %c", &OrigOut) != 1 ||
                 !strchr(YESNOCHOICECHARS, OrigOut))
-                ErrorMessage("Invalid choice.\n");
+                gp_ErrorMessage("Invalid choice.\n");
             else
             {
                 OrigOut = (char)tolower(OrigOut);
@@ -86,7 +86,7 @@ int Reconfigure(void)
                 Prompt("Do you want to output generated graphs to Adjacency List (last 10 only) or to G6 (all)? (a/g) ");
                 if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
                 {
-                    ErrorMessage("Unable to fetch choice from stdin.\n");
+                    gp_ErrorMessage("Unable to fetch choice from stdin.\n");
                     Result = NOTOK;
                     break;
                 }
@@ -94,7 +94,7 @@ int Reconfigure(void)
                 if (strlen(lineBuff) != 1 ||
                     sscanf(lineBuff, " %c", &OrigOutFormat) != 1 ||
                     !strchr("aAgG", OrigOutFormat))
-                    ErrorMessage("Invalid choice.\n");
+                    gp_ErrorMessage("Invalid choice.\n");
                 else
                 {
                     OrigOutFormat = (char)tolower(OrigOutFormat);
@@ -110,14 +110,14 @@ int Reconfigure(void)
                 Prompt("Do you want adj. matrix of embeddable graphs in directory 'embedded' (last 10 max))? (y/n) ");
                 if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
                 {
-                    ErrorMessage("Unable to fetch choice from stdin.\n");
+                    gp_ErrorMessage("Unable to fetch choice from stdin.\n");
                     Result = NOTOK;
                     break;
                 }
                 if (strlen(lineBuff) != 1 ||
                     sscanf(lineBuff, " %c", &EmbeddableOut) != 1 ||
                     !strchr(YESNOCHOICECHARS, EmbeddableOut))
-                    ErrorMessage("Invalid choice.\n");
+                    gp_ErrorMessage("Invalid choice.\n");
                 else
                 {
                     EmbeddableOut = (char)tolower(EmbeddableOut);
@@ -133,7 +133,7 @@ int Reconfigure(void)
                 Prompt("Do you want adj. matrix of obstructed graphs in directory 'obstructed' (last 10 max)? (y/n) ");
                 if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
                 {
-                    ErrorMessage("Unable to fetch choice from stdin.\n");
+                    gp_ErrorMessage("Unable to fetch choice from stdin.\n");
                     Result = NOTOK;
                     break;
                 }
@@ -141,7 +141,7 @@ int Reconfigure(void)
                 if (strlen(lineBuff) != 1 ||
                     sscanf(lineBuff, " %c", &ObstructedOut) != 1 ||
                     !strchr(YESNOCHOICECHARS, ObstructedOut))
-                    ErrorMessage("Invalid choice.\n");
+                    gp_ErrorMessage("Invalid choice.\n");
                 else
                 {
                     ObstructedOut = (char)tolower(ObstructedOut);
@@ -157,7 +157,7 @@ int Reconfigure(void)
                 Prompt("Do you want adjacency list format of embeddings in directory 'adjlist' (last 10 max)? (y/n) ");
                 if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
                 {
-                    ErrorMessage("Unable to fetch choice from stdin.\n");
+                    gp_ErrorMessage("Unable to fetch choice from stdin.\n");
                     Result = NOTOK;
                     break;
                 }
@@ -165,7 +165,7 @@ int Reconfigure(void)
                 if (strlen(lineBuff) != 1 ||
                     sscanf(lineBuff, " %c", &AdjListsForEmbeddingsOut) != 1 ||
                     !strchr(YESNOCHOICECHARS, AdjListsForEmbeddingsOut))
-                    ErrorMessage("Invalid choice.\n");
+                    gp_ErrorMessage("Invalid choice.\n");
                 else
                 {
                     AdjListsForEmbeddingsOut = (char)tolower(AdjListsForEmbeddingsOut);
@@ -184,7 +184,7 @@ int GetLineFromStdin(char *lineBuff, int lineBuffSize)
 {
     if (lineBuff == NULL)
     {
-        ErrorMessage("Line buffer to populate is NULL.\n");
+        gp_ErrorMessage("Line buffer to populate is NULL.\n");
         return NOTOK;
     }
 
@@ -192,7 +192,7 @@ int GetLineFromStdin(char *lineBuff, int lineBuffSize)
 
     if (fgets(lineBuff, lineBuffSize, stdin) == NULL && ferror(stdin))
     {
-        ErrorMessage("Call to fgets() from stdin failed.\n");
+        gp_ErrorMessage("Call to fgets() from stdin failed.\n");
         return NOTOK;
     }
 
@@ -217,7 +217,7 @@ void FlushConsole(FILE *f)
 
 void Prompt(char const *message)
 {
-    Message(message);
+    gp_Message(message);
     FlushConsole(stdout);
 }
 
@@ -239,7 +239,7 @@ void SaveAsciiGraph(graphP theGraph, char *filename)
 #pragma GCC diagnostic ignored "-Wformat-nonliteral"
         sprintf(messageContents, messageFormat, charsAvailForStrToInclude, filename);
 #pragma GCC diagnostic pop
-        ErrorMessage(messageContents);
+        gp_ErrorMessage(messageContents);
         return;
     }
 
@@ -288,9 +288,9 @@ char *ReadTextFileIntoString(char const *infileName)
     char *inputString = NULL;
 
     if (infileName == NULL || strlen(infileName) == 0)
-        ErrorMessage("Unable to fopen() with NULL or empty infileName.\n");
+        gp_ErrorMessage("Unable to fopen() with NULL or empty infileName.\n");
     else if ((infile = fopen(infileName, "r")) == NULL)
-        ErrorMessage("fopen() failed.\n");
+        gp_ErrorMessage("fopen() failed.\n");
     else
     {
         long filePos = ftell(infile);
@@ -560,13 +560,13 @@ int GetCommandAndOptionalModifier(const char *commandString, char *command, char
 
     if (commandString == NULL || strlen(commandString) == 0)
     {
-        ErrorMessage("Cannot get embed flags for empty command string.\n");
+        gp_ErrorMessage("Cannot get embed flags for empty command string.\n");
         return NOTOK;
     }
 
     if (command == NULL)
     {
-        ErrorMessage("Pointer to character to which to write command is NULL.\n");
+        gp_ErrorMessage("Pointer to character to which to write command is NULL.\n");
         return NOTOK;
     }
 
@@ -604,7 +604,7 @@ int GetEmbedFlags(char command, char modifier, int *embedFlagsP)
 {
     if (embedFlagsP == NULL)
     {
-        ErrorMessage("Pointer to embedFlags int is NULL.\n");
+        gp_ErrorMessage("Pointer to embedFlags int is NULL.\n");
         return NOTOK;
     }
 
@@ -632,7 +632,7 @@ int GetEmbedFlags(char command, char modifier, int *embedFlagsP)
         (*embedFlagsP) = EMBEDFLAGS_SEARCHFORK4;
         break;
     default:
-        ErrorMessage("Unrecognized algorithm command specifier.\n");
+        gp_ErrorMessage("Unrecognized algorithm command specifier.\n");
         return NOTOK;
     }
 
@@ -643,7 +643,7 @@ int GetEmbedFlags(char command, char modifier, int *embedFlagsP)
     // specified modifier character, this check should be removed.
     if (modifier != '\0')
     {
-        ErrorMessage("Algorithm modifiers currently not supported.\n");
+        gp_ErrorMessage("Algorithm modifiers currently not supported.\n");
         return NOTOK;
     }
 
@@ -758,7 +758,7 @@ int ExtendGraph(graphP theGraph, char command)
 {
     if (theGraph == NULL || theGraph->N <= 0)
     {
-        ErrorMessage("Unable to extend graph with algorithm extension due to NULL or uninitialized graph.\n");
+        gp_ErrorMessage("Unable to extend graph with algorithm extension due to NULL or uninitialized graph.\n");
         return NOTOK;
     }
 
@@ -812,7 +812,7 @@ char *ConstructInputFilename(char const *infileName)
 
     if (GetNumCharsToReprInt(FILENAMEMAXLENGTH, &numCharsToReprFILENAMEMAXLENGTH) != OK)
     {
-        ErrorMessage("Unable to determine number of characters required to represent FILENAMEMAXLENGTH.\n");
+        gp_ErrorMessage("Unable to determine number of characters required to represent FILENAMEMAXLENGTH.\n");
 
         return NULL;
     }
@@ -820,7 +820,7 @@ char *ConstructInputFilename(char const *infileName)
     fileNameFormat = (char *)malloc((strlen(fileNameFormatFormat) + numCharsToReprFILENAMEMAXLENGTH + 1) * sizeof(char));
     if (fileNameFormat == NULL)
     {
-        ErrorMessage("Unable to allocate memory for filename format string.\n");
+        gp_ErrorMessage("Unable to allocate memory for filename format string.\n");
 
         return NULL;
     }
@@ -836,7 +836,7 @@ char *ConstructInputFilename(char const *infileName)
             Prompt("Enter graph file name: ");
             if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
             {
-                ErrorMessage("Unable to read graph file name from stdin.\n");
+                gp_ErrorMessage("Unable to read graph file name from stdin.\n");
 
                 Result = NOTOK;
 
@@ -847,15 +847,15 @@ char *ConstructInputFilename(char const *infileName)
 #pragma GCC diagnostic ignored "-Wformat-nonliteral"
             if (strlen(lineBuff) == 0 || strlen(lineBuff) > FILENAMEMAXLENGTH ||
                 sscanf(lineBuff, fileNameFormat, theFileName) != 1)
-                ErrorMessage("Invalid input filename.\n");
+                gp_ErrorMessage("Invalid input filename.\n");
             else
             {
                 if (strncmp(theFileName, "stdin", strlen("stdin")) != 0 && !strchr(theFileName, '.'))
                 {
-                    Message("Graph file name does not have extension; automatically appending \".txt\".\n");
+                    gp_Message("Graph file name does not have extension; automatically appending \".txt\".\n");
                     if (strcat(theFileName, ".txt") == NULL)
                     {
-                        ErrorMessage("Appending \".txt\" extension to theFileName using strcat() failed.\n");
+                        gp_ErrorMessage("Appending \".txt\" extension to theFileName using strcat() failed.\n");
 
                         Result = NOTOK;
                     }
@@ -869,13 +869,13 @@ char *ConstructInputFilename(char const *infileName)
     {
         if (strlen(infileName) > FILENAMEMAXLENGTH)
         {
-            ErrorMessage("Filename is too long.\n");
+            gp_ErrorMessage("Filename is too long.\n");
 
             Result = NOTOK;
         }
         else if (strlen(infileName) == 0)
         {
-            ErrorMessage("Filename is empty.\n");
+            gp_ErrorMessage("Filename is empty.\n");
 
             Result = NOTOK;
         }
@@ -884,7 +884,7 @@ char *ConstructInputFilename(char const *infileName)
         {
             if (strcpy(theFileName, infileName) == NULL)
             {
-                ErrorMessage("Copying infileName into theFileName using strcpy() failed.\n");
+                gp_ErrorMessage("Copying infileName into theFileName using strcpy() failed.\n");
 
                 Result = NOTOK;
             }
@@ -930,7 +930,7 @@ char *ConstructPrimaryOutputFilename(char const *infileName, char const *outfile
             strcat(theFileName, algorithmName);
         }
         else
-            ErrorMessage("Algorithm Name is too long, so it will not be used in output filename.\n");
+            gp_ErrorMessage("Algorithm Name is too long, so it will not be used in output filename.\n");
 
         strcat(theFileName, ".out.txt");
     }
@@ -958,7 +958,7 @@ char *ConstructPrimaryOutputFilename(char const *infileName, char const *outfile
 #pragma GCC diagnostic ignored "-Wformat-nonliteral"
             sprintf(messageContents, messageFormat, charsAvailForStrToInclude, theFileName);
 #pragma GCC diagnostic pop
-            ErrorMessage(messageContents);
+            gp_ErrorMessage(messageContents);
         }
         else
         {
@@ -993,7 +993,7 @@ int ConstructTransformationExpectedResultFilename(char const *infileName, char *
 
     if (infileName == NULL || (infileNameLen = strlen(infileName)) < 1)
     {
-        ErrorMessage("Cannot construct transformation output filename for empty infileName.\n");
+        gp_ErrorMessage("Cannot construct transformation output filename for empty infileName.\n");
         return NOTOK;
     }
 
@@ -1006,7 +1006,7 @@ int ConstructTransformationExpectedResultFilename(char const *infileName, char *
 
         if ((*outfileName) == NULL)
         {
-            ErrorMessage("Unable to allocate memory for output filename.\n");
+            gp_ErrorMessage("Unable to allocate memory for output filename.\n");
             return NOTOK;
         }
 
@@ -1019,7 +1019,7 @@ int ConstructTransformationExpectedResultFilename(char const *infileName, char *
     }
     else
     {
-        ErrorMessage("outfileName already allocated.\n");
+        gp_ErrorMessage("outfileName already allocated.\n");
         Result = NOTOK;
     }
 
@@ -1049,7 +1049,7 @@ void WriteAlgorithmResults(graphP theGraph, int Result, char command, platform_t
     }
     else
         sprintf(messageContents, "The graph ");
-    Message(messageContents);
+    gp_Message(messageContents);
 
     switch (command)
     {
@@ -1075,11 +1075,11 @@ void WriteAlgorithmResults(graphP theGraph, int Result, char command, platform_t
         sprintf(messageContents, "has not been processed due to unrecognized command.\n");
         break;
     }
-    Message(messageContents);
+    gp_Message(messageContents);
 
     sprintf(messageContents, "Algorithm '%s' executed in %.3lf seconds.\n",
             GetAlgorithmName(command), platform_GetDuration(start, end));
-    Message(messageContents);
+    gp_Message(messageContents);
 }
 
 /****************************************************************************

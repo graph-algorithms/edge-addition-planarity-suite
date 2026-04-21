@@ -21,13 +21,13 @@ extern "C"
 
     // Used within the graphLib and also usable by graph applications to
     // emit error messages and informational messages.
-    void ErrorMessage(char const *message);
-    void Message(char const *message);
+    void gp_ErrorMessage(char const *message);
+    void gp_Message(char const *message);
 
-    // These methods control whether ErrorMessage() and Message() calls
+    // These methods control whether gp_ErrorMessage() and gp_Message() calls
     // emit output or skip producing output (the default)
-    int getQuietModeFlag(void);
-    void setQuietModeFlag(int newQuietModeFlag);
+    int gp_GetQuietModeFlag(void);
+    void gp_SetQuietModeFlag(int newQuietModeFlag);
 
 #ifdef __cplusplus
 }

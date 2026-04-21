@@ -32,7 +32,7 @@ int TransformGraph(char const *const commandString, char const *const infileName
 
     if (theGraph == NULL)
     {
-        ErrorMessage("Unable to allocate graphP for input graph transformation target.\n");
+        gp_ErrorMessage("Unable to allocate graphP for input graph transformation target.\n");
 
         return NOTOK;
     }
@@ -47,7 +47,7 @@ int TransformGraph(char const *const commandString, char const *const infileName
             outputFormat = WRITE_ADJMATRIX;
         else
         {
-            ErrorMessage("Invalid argument; only -(gam) is allowed.\n");
+            gp_ErrorMessage("Invalid argument; only -(gam) is allowed.\n");
 
             gp_Free(&theGraph);
 
@@ -61,7 +61,7 @@ int TransformGraph(char const *const commandString, char const *const infileName
 
         if (Result != OK)
         {
-            ErrorMessage("Unable to transform input graph.\n");
+            gp_ErrorMessage("Unable to transform input graph.\n");
         }
         else
         {
@@ -76,12 +76,12 @@ int TransformGraph(char const *const commandString, char const *const infileName
                 Result = gp_Write(theGraph, outfileName, outputFormat);
 
             if (Result != OK)
-                ErrorMessage("Unable to write graph.\n");
+                gp_ErrorMessage("Unable to write graph.\n");
         }
     }
     else
     {
-        ErrorMessage("Invalid argument; must start with '-'.\n");
+        gp_ErrorMessage("Invalid argument; must start with '-'.\n");
         Result = NOTOK;
     }
 
@@ -96,7 +96,7 @@ int transformFile(graphP theGraph, char const *infileName)
     {
         if ((infileName = ConstructInputFilename(infileName)) == NULL)
         {
-            ErrorMessage("Unable to construct input filename for graph to transform.\n");
+            gp_ErrorMessage("Unable to construct input filename for graph to transform.\n");
 
             return NOTOK;
         }
@@ -109,7 +109,7 @@ int transformString(graphP theGraph, char *inputStr)
 {
     if (inputStr == NULL || strlen(inputStr) == 0)
     {
-        ErrorMessage("Input string is null or empty.\n");
+        gp_ErrorMessage("Input string is null or empty.\n");
 
         return NOTOK;
     }

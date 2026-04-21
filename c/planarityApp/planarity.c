@@ -16,7 +16,7 @@ int main(int argc, char *argv[])
 
     // Although the graphLib is quiet by default, this planarity app is only quiet if
     // the user requests quiet mode on the command line
-    setQuietModeFlag(FALSE);
+    gp_SetQuietModeFlag(FALSE);
 
     // If there are no command-line arguments, then the planarity app enters menu mode
     if (argc <= 1)
