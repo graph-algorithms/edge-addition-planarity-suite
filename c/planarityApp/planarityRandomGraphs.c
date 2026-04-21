@@ -627,27 +627,35 @@ int RandomGraph(char const *const commandString, int extraEdges, int numVertices
     // user wants the edge list formatted file.
     if (Result == OK || Result == NONEMBEDDABLE)
     {
-        if (outfileName != NULL && gp_Write(theGraph, outfileName, WRITE_ADJLIST) != OK)
+        // If an outfileName was given on the command-line, then we write only to it.
+        if (outfileName != NULL)
         {
-            ErrorMessage("Unable to write graph as adjacency list after successful gp_Embed() and gp_TestEmbedResultIntegrity().\n");
-            Result = NOTOK;
+            if (gp_Write(theGraph, outfileName, WRITE_ADJLIST) != OK)
+            {
+                ErrorMessage("Unable to write graph as adjacency list after successful gp_Embed() and gp_TestEmbedResultIntegrity().\n");
+                Result = NOTOK;
+            }
         }
 
-        if (Result == OK && !getQuietModeFlag() && PromptSaveGraph(theGraph, origGraph, extraEdges, 0) != OK)
+        // If no outfileName was given and not quiet mode (i.e., if in menu mode),
+        // then we ask the user if they want to save in various formats.
+        else if (!getQuietModeFlag())
         {
-            ErrorMessage("Encountered an error when attempting to save graph in edge list format.\n");
-            Result = NOTOK;
-        }
-
-        if (Result == OK && !getQuietModeFlag() && PromptSaveGraph(theGraph, origGraph, extraEdges, WRITE_ADJLIST) != OK)
-        {
-            ErrorMessage("Encountered an error when attempting to save graph in adjacency list format.\n");
-            Result = NOTOK;
-        }
-        if (Result == OK && !getQuietModeFlag() && PromptSaveGraph(theGraph, origGraph, extraEdges, WRITE_G6) != OK)
-        {
-            ErrorMessage("Encountered an error when attempting to save graph in G6 format.\n");
-            Result = NOTOK;
+            if (PromptSaveGraph(theGraph, origGraph, extraEdges, 0) != OK)
+            {
+                ErrorMessage("Encountered an error when attempting to save graph in edge list format.\n");
+                Result = NOTOK;
+            }
+            if (PromptSaveGraph(theGraph, origGraph, extraEdges, WRITE_ADJLIST) != OK)
+            {
+                ErrorMessage("Encountered an error when attempting to save graph in adjacency list format.\n");
+                Result = NOTOK;
+            }
+            if (PromptSaveGraph(theGraph, origGraph, extraEdges, WRITE_G6) != OK)
+            {
+                ErrorMessage("Encountered an error when attempting to save graph in G6 format.\n");
+                Result = NOTOK;
+            }
         }
     }
     else
@@ -679,16 +687,16 @@ int PromptSaveGraph(graphP theGraph, graphP origGraph, int extraEdges, int saveM
     switch (saveMode)
     {
     case WRITE_ADJLIST:
-        promptStr = "Do you want to save the generated graph in adjacency list format (y/n)? ";
+        promptStr = "\nDo you want to save the generated graph in adjacency list format (y/n)? ";
         break;
     case WRITE_ADJMATRIX:
-        promptStr = "Do you want to save the generated graph in adjacency matrix format (y/n)? ";
+        promptStr = "\nDo you want to save the generated graph in adjacency matrix format (y/n)? ";
         break;
     case WRITE_G6:
-        promptStr = "Do you want to save the generated graph in G6 format (y/n)? ";
+        promptStr = "\nDo you want to save the generated graph in G6 format (y/n)? ";
         break;
     default:
-        promptStr = "Do you want to save the generated graph in edge list format (y/n)? ";
+        promptStr = "\nDo you want to save the generated graph in edge list format (y/n)? ";
         break;
     }
     // Prompt the user
@@ -762,6 +770,7 @@ int PromptSaveGraph(graphP theGraph, graphP origGraph, int extraEdges, int saveM
             strcpy(zeroBasedFileName, theFileName);
             strcat(zeroBasedFileName, ".0-based.txt");
             origGraph->graphFlags |= GRAPHFLAGS_ZEROBASEDIO;
+            Message("    Also saving original graph in 0-based adjacency list format.\n");
             gp_Write(origGraph, zeroBasedFileName, saveMode);
             origGraph->graphFlags &= ~GRAPHFLAGS_ZEROBASEDIO;
         }
