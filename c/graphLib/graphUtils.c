@@ -1316,9 +1316,16 @@ int _hasUnprocessedChild(graphP theGraph, int parent)
  Given a graph structure with a pre-specified number of vertices N,
  this function creates a graph with the specified number of edges.
 
- If numEdges <= 3N-6, then the graph generated is planar.  If
- numEdges is larger, then a maximal planar graph is generated, then
- (numEdges - (3N - 6)) additional random edges are added.
+ The primary use case for this method is to generate either a
+ maximal planar graph, or a maximal planar graph plus a number
+ of random additional edges. These cases correspond to the
+ numEdges being equal to 3N-6 or greater than 3N-6, respectively.
+
+ If numEdges < 3N-6, then the graph generated is a random tree plus
+ edges added systematically to the tree while maintaining planarity.
+ The output graph will have at least numEdges edges, but it may have
+ a few more since more than one edge is added per iteration of the
+ loop that adds the extra edges to the random tree.
 
  This function assumes the caller has already called srand().
  ********************************************************************/
@@ -1326,6 +1333,11 @@ int _hasUnprocessedChild(graphP theGraph, int parent)
 int gp_CreateRandomGraphEx(graphP theGraph, int numEdges)
 {
     int N, M, root, v, c, p, last, u, e, EsizeOccupied;
+
+    // Parameter checks: Must have a graph of at least three vertices, and the
+    // number of edges must be at least enough to support making a random tree.
+    if (theGraph == NULL || gp_GetN(theGraph) < 3 || numEdges < (gp_GetN(theGraph) - 1))
+        return NOTOK;
 
     N = gp_GetN(theGraph);
 
@@ -1350,77 +1362,161 @@ int gp_CreateRandomGraphEx(graphP theGraph, int numEdges)
         }
     }
 
-    /* Add edges up to the limit or until the graph is maximal planar. */
+    // Start with generating a maxplanar graph on the random tree
+    // (or adding edges up to numEdges in the fashion of generating a maxplanar graph)
 
     M = numEdges <= 3 * N - 6 ? numEdges : 3 * N - 6;
 
     root = gp_GetFirstVertex(theGraph);
+
+    // Generally, we use v keep track of a traversal down and up all the random tree edges
+    // The last variable marks the location of the last vertex that was an endpoint of the
+    // most recently added edge.
     v = last = _getUnprocessedChild(theGraph, root);
 
+    // Just a safety check (all children of root are initially unprocessed)
+    if (gp_IsNotVertex(theGraph, v))
+        return NOTOK;
+
+    // Vertex v starts at the first unprocessed child of root and traverses around both sides
+    // of the edges of the random tree until it gets back to the root... except,
+    // The original version of this method generated a maxplanar graph only, but it was
+    // refactored to give greater control of the number of edges. After the refactor, this
+    // loop now stops when the edge count reaches M. Even for a maxplanar graph, that will
+    // happen when v reaches the last unprocessed child of the last unprocessed child of root.
+    // Still, we test for v != root for greater understanding of the idea of this method.
     while (v != root && gp_GetM(theGraph) < M)
     {
+        // Get the next unprocessed child of v, if any. This method has the side effect
+        // that it marks the edge (v, c) and hence c as being processed. This method
+        // returns NIL (which not a vertex) if v has no _unprocessed_ chidren left.
         c = _getUnprocessedChild(theGraph, v);
 
+        // If v did have an unprocessed child...
         if (gp_IsVertex(theGraph, c))
         {
+            // FORWARD_LABEL_0 (see below)
             if (last != v)
             {
                 if (gp_AddEdge(theGraph, last, 1, c, 1) != OK)
                     return NOTOK;
             }
 
+            // Add an edge to create a new triangular face with root, v, and the child c
+            // FORWARD_LABEL_1 (see below)
             if (gp_AddEdge(theGraph, root, 1, c, 1) != OK)
                 return NOTOK;
 
+            // Advance the traversal of v to the child c, and also assign c to last because
+            // (root, c) is the last non-tree edge added.
             v = last = c;
         }
 
+        // If v did not have any more unprocessed children, then we have to back up to
+        // the nearest of its tree ancestors that does have an unprocessed child
         else
         {
+            // Get the parent of v and get its next unprocessed child, if any
             p = gp_GetVertexParent(theGraph, v);
             if (gp_IsVertex(theGraph, p))
                 c = _getUnprocessedChild(theGraph, p);
 
+            // Loop until we find an ancestor (p) of v that does have an unprocessed child
+            // This loop also creates more triangular faces as it traverses back up along
+            // the child-to-parent sides of edges to the successive ancestors of v.
+            // FORWARD_LABEL_2 (see below)
             while (gp_IsVertex(theGraph, p) && gp_IsNotVertex(theGraph, (c)))
             {
+                // Since we are in this loop, the parent p did not have
+                // an unprocessed child, so we advance both p and v to
+                // enable checking the next higher ancestor
                 v = p;
                 p = gp_GetVertexParent(theGraph, v);
-                if (gp_IsVertex(theGraph, p) && p != root)
+
+                // Now that we have advanced upward, there is now a triangular face
+                // we can create between the original v (denoted last) and the new
+                // parent, which is a grandparent or higher of last.
+                // This ensures that we triangulate along the path leading back
+                // up to the next vertex with an unprocessed child.
+                if (gp_IsVertex(theGraph, p))
                 {
-                    if (gp_AddEdge(theGraph, last, 1, p, 1) != OK)
-                        return NOTOK;
+                    // We exclude adding an edge between last and p in the special case
+                    // that p has ascended back up to the root because adding the edge
+                    // would create a duplicate of the edge added at FORWARD_LABEL_1
+                    if (p != root)
+                    {
+                        if (gp_AddEdge(theGraph, last, 1, p, 1) != OK)
+                            return NOTOK;
+                    }
                 }
 
+                // Now that we have dealt with triangulation of that path up to the new p,
+                // we obtain its next unprocessed child, if any to see if we have gone
+                // to a high enough ancestor that we have an unprocessed child to deal with.
+                // NOTE: At the very least, there will still be an unprocessed child by the
+                //       time p gets to the tree root because we haven't yet reached the
+                //       edge limit in the outer loop condition.
                 if (gp_IsVertex(theGraph, p))
                     c = _getUnprocessedChild(theGraph, p);
             }
 
+            // Back when v != root was the outer loop condition, it was possible for v to
+            // go to the root, and for p to become NIL (not a vertex). Now, that the outer
+            // loop ends as soon as enough edges are added, p is always a vertex.
+            // Still, we do the test here.
             if (gp_IsVertex(theGraph, p))
             {
                 if (p == root)
                 {
+                    // If p is the root, then we create a triangular face containing
+                    // v, p==root, and c, where v is the last vertex visited in one
+                    // of subtree of p==root, and c is the first vertex visited in the
+                    // next subtree of p== root.
+                    // NOTE: This is a special kind of edge called a "cross edge" that
+                    //       joins two vertices that do not have the ancestor-descendant
+                    //       relationship (i.e., it is not a "back edge" and so the tree
+                    //       is not a DFS tree).
                     if (gp_AddEdge(theGraph, v, 1, c, 1) != OK)
                         return NOTOK;
 
+                    // If v advanced upward to a higher ancestor than the parent of last,
+                    // then we entered the loop at FORWARD_LABEL_2, which triangulated
+                    // on the way up, except now we must add an edge that creates a
+                    // triangular face with last, v, and c.
                     if (v != last)
                     {
                         if (gp_AddEdge(theGraph, last, 1, c, 1) != OK)
                             return NOTOK;
                     }
-                }
-                else
-                {
-                    if (gp_AddEdge(theGraph, last, 1, c, 1) != OK)
-                        return NOTOK;
+
+                    // NOTE: Because p is the root, we do not advance 'last' to c quite yet
+                    //       because v will advance to c below and the next iteration of
+                    //       the outer loop will get _its_ next unprocessed child, say c2.
+                    //       Only once we know the identity of c2 can we add the extra edge
+                    //       needed to create a triagular face with last, c, and c2.
+                    //       This occurs at FORWARD_LABEL_0 above, with v=c and c=c2,
+                    //       after which last is assigned the value c2.
+                    //       Perhaps one day enough guilt will accrue to foster doing what
+                    //       is needed here to allow c to be assigned to last.
                 }
 
-                if (p != root)
+                // In case p is not the root, then we have already triangulated along the
+                // path up from last to p, so...
+                else
                 {
+                    // We add an edge that creates a triangular face with last, p, and c.
+                    if (gp_AddEdge(theGraph, last, 1, c, 1) != OK)
+                        return NOTOK;
+
+                    // And then an edge that creates a triangular face with root, last, and c.
                     if (gp_AddEdge(theGraph, root, 1, c, 1) != OK)
                         return NOTOK;
+
+                    // At which point, last can advance to c
                     last = c;
                 }
 
+                // The main traversal tracking variable v can now advance to c
                 v = c;
             }
         }
