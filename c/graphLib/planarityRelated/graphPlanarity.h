@@ -9,15 +9,25 @@ See the LICENSE.TXT file for licensing information.
 
 #include "../graph.h"
 
+#include "../graphDFSUtils.h"
+
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
+// Create a Planarity Graph, i.e., subclass a DFSUtils Graph by extending it with
+// the ability to perform planar graph embedding and obstruction isolation.
 #define PLANARITY_NAME "Planarity"
 
     int gp_ExtendWith_Planarity(graphP theGraph);
     int gp_Detach_Planarity(graphP theGraph);
+
+/* Graph Flags: see gp_GetGraphFlags()
+        GRAPHFLAGS_EXTENDEDWITH_PLANARITY is set by calling gp_ExtendWith_Planarity()
+                This is automatically by gp_Embed() if not already done.
+*/
+#define GRAPHFLAGS_EXTENDEDWITH_PLANARITY 65536
 
     // Graph embedding and result validation methods
     // The embedResult output by gp_Embed() and input to gp_TestEmbedResultIntegrity()

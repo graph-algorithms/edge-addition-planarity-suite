@@ -14,23 +14,40 @@ extern "C"
 
 #include "graph.h"
 
+// Create a DFSUtils Graph, i.e., subclass a Graph by extending it with the
+// ability to perform the depth-first search (DFS) utility methods below.
+#define DFSUTILS_NAME "DFSUtils"
+
+    int gp_ExtendWith_DFSUtils(graphP theGraph);
+    int gp_Detach_DFSUtils(graphP theGraph);
+
+/* Graph Flags: see gp_GetGraphFlags()
+        GRAPHFLAGS_EXTENDEDWITH_DFSUTILS is set by calling gp_ExtendWith_DFSUtils()
+                This is automatically called by the utility methods below that create
+                a DFS tree, sort vertices, and compute least ancestors and lowpoints
+        GRAPHFLAGS_DFSNUMBERED is set if DFS numbering has been performed on the graph,
+                such as by calling the gp_CreateDFSTree() utility method below
+        GRAPHFLAGS_SORTEDBYDFI records whether the graph is in original vertex order
+                or sorted by depth first index. Successive calls to the
+                gp_SortVertices() utility method below toggle this bit.
+*/
+#define GRAPHFLAGS_EXTENDEDWITH_DFSUTILS 256
+#define GRAPHFLAGS_DFSNUMBERED 512
+#define GRAPHFLAGS_SORTEDBYDFI 1024
+
+    // DFS-related utility methods that create a DFS tree, sort vertices and
+    // compute least ancestor and lowpoint values
     int gp_CreateDFSTree(graphP theGraph);
     int gp_SortVertices(graphP theGraph);
     int gp_ComputeLowpoints(graphP theGraph);
     int gp_ComputeLeastAncestors(graphP theGraph);
 
+    // Additional DFS-related uitility methods (functions and macros) that assume
+    // one or more of the above methods have been called to create a DFS tree,
+    // sort vertices and/or compute least ancestor and lowpoint values
     int gp_GetParent(graphP theGraph, int v);
     int gp_GetLeastAncestor(graphP theGraph, int v);
     int gp_GetLowpoint(graphP theGraph, int v);
-
-/* Graph Flags: see gp_GetGraphFlags()
-        GRAPHFLAGS_DFSNUMBERED is set if DFS numbering has been performed on the graph
-        GRAPHFLAGS_SORTEDBYDFI records whether the graph is in original vertex order
-                or sorted by depth first index. Successive calls to SortVertices()
-                toggle this bit.
-*/
-#define GRAPHFLAGS_DFSNUMBERED 1
-#define GRAPHFLAGS_SORTEDBYDFI 2
 
 // A DFS tree root is one that has no DFS parent. There is one DFS tree root
 // per connected component of a graph (connected, not biconnected; component, not bicomp)

@@ -11,35 +11,55 @@ See the LICENSE.TXT file for licensing information.
 /****************************************************************************
  gp_ExtendWith_Outerplanarity()
 
- This function is intended to extend the graph data structure by attaching
- the outerplanar graph embedding and obstruction isolation feature.
+ This function is intended to subclass a Planarity Graph by extending it with
+ the outerplanar graph embedding and obstruction isolation capabilities.
+ If the given graph has not already been extended with Planarity, then
+ gp_ExtendWith_Planarity() is called.
 
- To activate this feature during gp_Embed(), use EMBEDFLAGS_OUTERPLANAR.
-
- In the current implementation, outerplanarity is automatically available,
- so the method succeeds without doing work, other than returning.
+ To use Outerplanarity during gp_Embed(), use EMBEDFLAGS_OUTERPLANAR.
 
  Returns OK for success, NOTOK for failure.
  ****************************************************************************/
 
 int gp_ExtendWith_Outerplanarity(graphP theGraph)
 {
+    if (theGraph == NULL || gp_GetN(theGraph) <= 0)
+        return NOTOK;
+
+    // If the Graph has already been extended with Outerplanarity,
+    // then just return successfully
+    if (gp_GetGraphFlags(theGraph) & GRAPHFLAGS_EXTENDEDWITH_OUTERPLANARITY)
+        return OK;
+
+    // Ensure theGraph is a Planarity Graph
+    if (gp_ExtendWith_Planarity(theGraph) != OK)
+        return NOTOK;
+
+    // Allocate supporting data strucures as needed
+
+    // Perform "on success" operations
+    theGraph->graphFlags |= GRAPHFLAGS_EXTENDEDWITH_OUTERPLANARITY;
     return OK;
 }
 
 /********************************************************************
- gp_Detach_Ouerplanarity()
+ gp_Detach_Outerplanarity()
 
  This function is intended to disinherit the outerplanar graph embedding
- and obstruction isolation feature by remove the extension from the graph.
+ and obstruction isolation feature by removing the extension from the
+ graph, which also frees any outerplanarity-specific data structures.
 
- In the current implementation, outerplanarity is automatically available,
- and it cannot be removed, so this method fails without doing work.
+ Clears GRAPHFLAGS_EXTENDEDWITH_OUTERPLANARITY after detaching support
+ for Outerplanarity.
 
  Returns OK on success, NOTOK on failure
  ********************************************************************/
 
 int gp_Detach_Outerplanarity(graphP theGraph)
 {
-    return NOTOK;
+    // Free any data structures allocated by the ExtendWith function
+
+    // Indicate successful detachment of Outerplanarity
+    theGraph->graphFlags &= ~GRAPHFLAGS_EXTENDEDWITH_OUTERPLANARITY;
+    return OK;
 }

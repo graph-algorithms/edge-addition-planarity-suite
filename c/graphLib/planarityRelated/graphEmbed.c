@@ -15,6 +15,7 @@ See the LICENSE.TXT file for licensing information.
 // This source file implements the main graph planarity method, gp_Embed()
 #include "../planarityRelated/graphPlanarity.h"
 #include "../planarityRelated/graphPlanarity.private.h"
+#include "../planarityRelated/graphOuterplanarity.h"
 
 #include "../extensionSystem/graphExtensions.private.h"
 
@@ -113,7 +114,25 @@ int gp_Embed(graphP theGraph, unsigned embedFlags)
 
     // Preprocessing
     if (!_gp_EmbedFlagsValid(theGraph, embedFlags))
-        return NOTOK;
+    {
+        // For historical reasons, the graph will be automatically extended with
+        // Planarity or Outerplanarity if not already done.
+        if (embedFlags == EMBEDFLAGS_PLANAR)
+        {
+            if (gp_ExtendWith_Planarity(theGraph) != OK)
+                return NOTOK;
+        }
+        else if (embedFlags == EMBEDFLAGS_OUTERPLANAR)
+        {
+            if (gp_ExtendWith_Outerplanarity(theGraph) != OK)
+                return NOTOK;
+        }
+
+        // For other Graph subclasses, the calller must have invoked their
+        // ExtendWith method prior to calling gp_Embed()
+        else
+            return NOTOK;
+    }
 
     theGraph->embedFlags = embedFlags;
 
@@ -185,8 +204,16 @@ int _gp_EmbedFlagsValid(graphP theGraph, int embedFlags)
 {
     // Currently, planar and outerplanar graph embedding and obstruction
     // isolation do not require an explicit extension.
-    if (embedFlags == EMBEDFLAGS_PLANAR || embedFlags == EMBEDFLAGS_OUTERPLANAR)
-        return TRUE;
+    if (embedFlags == EMBEDFLAGS_PLANAR)
+    {
+        if (gp_GetGraphFlags(theGraph) & GRAPHFLAGS_EXTENDEDWITH_PLANARITY)
+            return TRUE;
+    }
+    else if (embedFlags == EMBEDFLAGS_OUTERPLANAR)
+    {
+        if (gp_GetGraphFlags(theGraph) & GRAPHFLAGS_EXTENDEDWITH_OUTERPLANARITY)
+            return TRUE;
+    }
 
     // For other algorithms that are supported by explicit extensions, we
     // ensure they are attached (the attach methods exit early if it has

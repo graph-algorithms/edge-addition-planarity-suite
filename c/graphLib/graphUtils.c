@@ -399,7 +399,10 @@ void gp_ReinitializeGraph(graphP theGraph)
 void _ReinitializeGraph(graphP theGraph)
 {
     theGraph->M = 0;
-    theGraph->graphFlags = theGraph->embedFlags = 0;
+    theGraph->embedFlags = 0;
+
+    theGraph->graphFlags &= ~GRAPHFLAGS_DFSNUMBERED;
+    theGraph->graphFlags &= ~GRAPHFLAGS_SORTEDBYDFI;
 
     _InitVertices(theGraph);
     _InitEdges(theGraph);
@@ -916,7 +919,6 @@ void _ClearGraph(graphP theGraph)
     theGraph->NV = 0;
     theGraph->M = 0;
     theGraph->edgeCapacity = 0;
-    theGraph->graphFlags = 0;
     theGraph->embedFlags = 0;
 
     if (theGraph->IC != NULL)
@@ -939,6 +941,18 @@ void _ClearGraph(graphP theGraph)
     sp_Free(&theGraph->edgeHoles);
 
     gp_FreeExtensions(theGraph);
+
+    // Free the pseudo-extensions
+    if (gp_GetGraphFlags(theGraph) & GRAPHFLAGS_EXTENDEDWITH_OUTERPLANARITY)
+        gp_Detach_Outerplanarity(theGraph);
+
+    if (gp_GetGraphFlags(theGraph) & GRAPHFLAGS_EXTENDEDWITH_PLANARITY)
+        gp_Detach_Planarity(theGraph);
+
+    if (gp_GetGraphFlags(theGraph) & GRAPHFLAGS_EXTENDEDWITH_DFSUTILS)
+        gp_Detach_DFSUtils(theGraph);
+
+    theGraph->graphFlags = 0;
 }
 
 /********************************************************************
@@ -1101,11 +1115,9 @@ int gp_CopyGraph(graphP dstGraph, graphP srcGraph)
     dstGraph->N = gp_GetN(srcGraph);
     dstGraph->NV = gp_GetNV(srcGraph);
     dstGraph->M = gp_GetM(srcGraph);
-    dstGraph->graphFlags = gp_GetGraphFlags(srcGraph);
     dstGraph->embedFlags = gp_GetEmbedFlags(srcGraph);
 
-    if (dstGraph->IC != NULL && srcGraph->IC != NULL)
-        *(dstGraph->IC) = *(srcGraph->IC);
+    dstGraph->graphFlags = gp_GetGraphFlags(srcGraph);
 
     LCCopy(dstGraph->BicompRootLists, srcGraph->BicompRootLists);
     LCCopy(dstGraph->sortedDFSChildLists, srcGraph->sortedDFSChildLists);

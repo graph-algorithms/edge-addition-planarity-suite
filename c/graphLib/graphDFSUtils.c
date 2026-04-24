@@ -24,6 +24,62 @@ int _SortVertices(graphP theGraph);
 extern void _ClearAnyTypeVertexVisitedFlags(graphP theGraph, int);
 
 /********************************************************************
+ gp_ExtendWith_DFSUtils
+
+ Makes any necessary preparations for supporting DFS utility methods
+ that create a DFS tree, sort vertices, and compute least ancestor.
+ and lowpoint values. Those four utility methods automatically call
+ this method to extend the graph, though this method can also be
+ called beforehand.
+
+ This method should be called after gp_InitGraph() or gp_Read()
+ because the number of vertices must be known.
+
+ On success, sets GRAPHFLAGS_EXTENDEDWITH_DFSUTILS.
+
+ Returns OK on success, NOTOK on failure.
+ ********************************************************************/
+
+int gp_ExtendWith_DFSUtils(graphP theGraph)
+{
+    if (theGraph == NULL || gp_GetN(theGraph) <= 0)
+        return NOTOK;
+
+    // if the Graph has already been extended with DFS Utils,
+    // then just return successfully
+    if (gp_GetGraphFlags(theGraph) & GRAPHFLAGS_EXTENDEDWITH_DFSUTILS)
+        return OK;
+
+    // Allocate supporting data strucures as needed
+
+    // Perform "on success" operations
+    theGraph->graphFlags |= GRAPHFLAGS_EXTENDEDWITH_DFSUTILS;
+    return OK;
+}
+
+/********************************************************************
+ gp_Detach_DFSUtils
+
+ This function is intended to disinherit the DFS Utils feature by
+ removing the extension from the graph, which also frees any
+ DFS-specific data structures.
+
+ Clears GRAPHFLAGS_EXTENDEDWITH_DFSUTILS after detaching support for
+ the DFS utility methods.
+
+ Returns OK for success, NOTOK for failure
+ ********************************************************************/
+
+int gp_Detach_DFSUtils(graphP theGraph)
+{
+    // Free any data structures allocated by the ExtendWith function
+
+    // Indicate successful detachment of DFSUtils
+    theGraph->graphFlags &= ~GRAPHFLAGS_EXTENDEDWITH_DFSUTILS;
+    return OK;
+}
+
+/********************************************************************
  gp_CreateDFSTree
  Assigns Depth First Index (DFI) to each vertex.  Also records parent
  of each vertex in the DFS tree, and marks DFS tree edges that connect
@@ -44,8 +100,12 @@ int gp_CreateDFSTree(graphP theGraph)
 
     if (theGraph == NULL)
         return NOTOK;
+
     if (gp_GetGraphFlags(theGraph) & GRAPHFLAGS_DFSNUMBERED)
         return OK;
+
+    if (gp_ExtendWith_DFSUtils(theGraph) != OK)
+        return NOTOK;
 
     _gp_LogLine("\ngraphDFSUtils.c/gp_CreateDFSTree() start");
 
@@ -141,6 +201,9 @@ int gp_CreateDFSTree(graphP theGraph)
 int gp_SortVertices(graphP theGraph)
 {
     if (theGraph == NULL)
+        return NOTOK;
+
+    if (gp_ExtendWith_DFSUtils(theGraph) != OK)
         return NOTOK;
 
     return theGraph->functions->fpSortVertices(theGraph);
@@ -279,6 +342,9 @@ int gp_ComputeLowpoints(graphP theGraph)
     if (theGraph == NULL)
         return NOTOK;
 
+    if (gp_ExtendWith_DFSUtils(theGraph) != OK)
+        return NOTOK;
+
     theStack = theGraph->theStack;
 
     if (!(gp_GetGraphFlags(theGraph) & GRAPHFLAGS_DFSNUMBERED))
@@ -393,6 +459,9 @@ int gp_ComputeLeastAncestors(graphP theGraph)
     int v, u, uneighbor, e, leastAncestor;
 
     if (theGraph == NULL)
+        return NOTOK;
+
+    if (gp_ExtendWith_DFSUtils(theGraph) != OK)
         return NOTOK;
 
     theStack = theGraph->theStack;

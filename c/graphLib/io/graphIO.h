@@ -29,7 +29,7 @@ extern "C"
 // Graph Flags: see gp_GetGraphFlags()
 //       GRAPHFLAGS_ZEROBASEDIO is typically set by gp_Read() to indicate that the
 //                  adjacency list representation in a file began with index 0.
-#define GRAPHFLAGS_ZEROBASEDIO 4
+#define GRAPHFLAGS_ZEROBASEDIO 16
 
 #ifdef __cplusplus
 }

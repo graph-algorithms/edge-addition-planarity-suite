@@ -84,13 +84,12 @@ extern "C"
 
     // For methods and declarations related to depth-first search (DFS), see graphDFSUtils.h
 
-/* Graph Flags (set by some public APIs):
-        GRAPHFLAGS_DFSNUMBERED is set if DFS numbering has been performed on the graph
-        GRAPHFLAGS_SORTEDBYDFI records whether the graph is in original vertex order
-                or sorted by depth first index. Successive calls to SortVertices()
-                toggle this bit.
-        GRAPHFLAGS_ZEROBASEDIO is typically set by gp_Read() to indicate that the
-                adjacency list representation in a file began with index 0.
+/* Graph Flags (bit flags set by various public graphLib APIs):
+        Bits 0-3 reserved for base graph class
+        Bits 4-7 reserved for graph I/O
+        Bits 8-15 reserved for DFS Utils
+        Bits 16-23 reserved for Planarity-Related
+        bits 24-31 reserved for future expansion
 */
 #define gp_GetGraphFlags(theGraph) ((theGraph)->graphFlags)
 
