@@ -113,8 +113,9 @@ int TestAllGraphs(char const *const commandString, char const *const infileName,
 int testAllGraphs(char command, char modifier, char const *const infileName, testAllStatsP stats)
 {
     int Result = OK;
-    graphP theGraph = NULL;
-    graphP copyOfOrigGraph = NULL;
+
+    graphP origGraphRead = NULL;
+    graphP graphForEmbedding = NULL;
     int embedFlags = 0, numOK = 0, numNONEMBEDDABLE = 0, errorFlag = FALSE;
 
     G6ReadIteratorP theG6ReadIterator = NULL;
@@ -132,9 +133,9 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
         return Result;
     }
 
-    theGraph = gp_New();
+    origGraphRead = gp_New();
 
-    if (theGraph == NULL)
+    if (origGraphRead == NULL)
     {
         ErrorMessage("Unable to allocate graph.\n");
 
@@ -143,11 +144,11 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
         return NOTOK;
     }
 
-    if ((Result = g6_NewReader((&theG6ReadIterator), theGraph)) != OK)
+    if ((Result = g6_NewReader((&theG6ReadIterator), origGraphRead)) != OK)
     {
         ErrorMessage("Unable to allocate G6ReadIterator.\n");
 
-        gp_Free(&theGraph);
+        gp_Free(&origGraphRead);
         stats->errorFlag = TRUE;
 
         return Result;
@@ -159,38 +160,77 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
                      "G6ReadIterator.\n");
 
         g6_FreeReader((&theG6ReadIterator));
-        gp_Free(&theGraph);
+        gp_Free(&origGraphRead);
         stats->errorFlag = TRUE;
 
         return Result;
     }
 
-    order = gp_GetN(theGraph);
+    order = gp_GetN(origGraphRead);
+
+    graphForEmbedding = gp_New();
+    if (graphForEmbedding == NULL)
+    {
+        ErrorMessage("Unable to allocate graph to store copy of original graph before embedding.\n");
+
+        g6_FreeReader((&theG6ReadIterator));
+        gp_Free(&origGraphRead);
+        stats->errorFlag = TRUE;
+
+        return NOTOK;
+    }
+
+    if (gp_InitGraph(graphForEmbedding, order) != OK)
+    {
+        ErrorMessage("Unable to initialize graph datastructure to store copy of original graph before embedding.\n");
+
+        g6_FreeReader((&theG6ReadIterator));
+        gp_Free(&origGraphRead);
+        gp_Free(&graphForEmbedding);
+        stats->errorFlag = TRUE;
+
+        return Result;
+    }
+
     // We have to set the maximum edge capacity (i.e. (N * (N - 1) / 2)) because some of the test files
     // can contain complete graphs, and the graph drawing, K_{3, 3} search, and K_4 search extensions
     // don't support expanding the edge capacity after being attached.
-    if (strchr("d34", command) != NULL)
+    if ((Result = gp_EnsureEdgeCapacity(graphForEmbedding, (order * (order - 1) / 2))) != OK)
     {
-        if ((Result = gp_EnsureEdgeCapacity(theGraph, (order * (order - 1) / 2))) != OK)
-        {
-            ErrorMessage("Unable to ensure sufficient edge capacity of the G6ReadIterator's graph struct.\n");
+        ErrorMessage("Unable to ensure sufficient edge capacity of the graph for embedding.\n");
 
-            g6_FreeReader((&theG6ReadIterator));
-            gp_Free(&theGraph);
-            stats->errorFlag = TRUE;
+        g6_FreeReader((&theG6ReadIterator));
+        gp_Free(&origGraphRead);
+        gp_Free(&graphForEmbedding);
+        stats->errorFlag = TRUE;
 
-            return Result;
-        }
+        return Result;
+    }
+    // We have to set the maximum edge capacity because otherwise gp_CopyGraph()
+    // will fail due to the destination graph (graphForEmbedding) having a greater
+    // edge capacity than the source graph (origGraphRead)
+    if ((Result = gp_EnsureEdgeCapacity(origGraphRead, (order * (order - 1) / 2))) != OK)
+    {
+        ErrorMessage("Unable to ensure sufficient edge capacity of the original graph read.\n");
+
+        g6_FreeReader((&theG6ReadIterator));
+        gp_Free(&origGraphRead);
+        gp_Free(&graphForEmbedding);
+        stats->errorFlag = TRUE;
+
+        return Result;
     }
 
-    if ((Result = ExtendGraph(theGraph, command)) != OK)
+    // We must extend the original graph so that in the loop body when we
+    // gp_CopyGraph(), the extension structures will be copied over.
+    if ((Result = ExtendGraph(origGraphRead, command)) != OK)
     {
         char commandStr[3];
         commandStr[0] = command;
         commandStr[1] = modifier;
         commandStr[2] = '\0';
 
-        messageFormat = "Unable to extend graph with command %s\n";
+        messageFormat = "Unable to extend graph for embedding with command %s\n";
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-nonliteral"
         sprintf(messageContents, messageFormat, commandStr);
@@ -199,31 +239,8 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
         ErrorMessage(messageContents);
 
         g6_FreeReader(&theG6ReadIterator);
-        gp_Free(&theGraph);
-        stats->errorFlag = TRUE;
-
-        return Result;
-    }
-
-    copyOfOrigGraph = gp_New();
-    if (copyOfOrigGraph == NULL)
-    {
-        ErrorMessage("Unable to allocate graph to store copy of original graph before embedding.\n");
-
-        g6_FreeReader((&theG6ReadIterator));
-        gp_Free(&theGraph);
-        stats->errorFlag = TRUE;
-
-        return NOTOK;
-    }
-
-    if (gp_InitGraph(copyOfOrigGraph, order) != OK)
-    {
-        ErrorMessage("Unable to initialize graph datastructure to store copy of original graph before embedding.\n");
-
-        g6_FreeReader((&theG6ReadIterator));
-        gp_Free(&theGraph);
-        gp_Free(&copyOfOrigGraph);
+        gp_Free(&origGraphRead);
+        gp_Free(&graphForEmbedding);
         stats->errorFlag = TRUE;
 
         return Result;
@@ -248,9 +265,13 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
         if (g6_EndReached(theG6ReadIterator))
             break;
 
-        gp_CopyGraph(copyOfOrigGraph, theGraph);
+        // NOTE: This will gp_CopyExtensions() from the origGraphRead to the
+        // graphForEmbedding, which will free any existing extensions on the
+        // graphForEmbedding before malloc and populating with the extensions
+        // from the origGraphRead
+        gp_CopyGraph(graphForEmbedding, origGraphRead);
 
-        Result = gp_Embed(theGraph, embedFlags);
+        Result = gp_Embed(graphForEmbedding, embedFlags);
         if (Result != OK && Result != NONEMBEDDABLE)
         {
             messageFormat = "Failed to embed graph on line %d for command '%c'.\n";
@@ -265,7 +286,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
             break;
         }
 
-        if (gp_TestEmbedResultIntegrity(theGraph, copyOfOrigGraph, Result) != Result)
+        if (gp_TestEmbedResultIntegrity(graphForEmbedding, origGraphRead, Result) != Result)
         {
             messageFormat = "Embed integrity check failed for graph on line %d for command '%c'.\n";
 #pragma GCC diagnostic push
@@ -316,8 +337,8 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
     stats->errorFlag = errorFlag;
 
     g6_FreeReader((&theG6ReadIterator));
-    gp_Free(&theGraph);
-    gp_Free(&copyOfOrigGraph);
+    gp_Free(&origGraphRead);
+    gp_Free(&graphForEmbedding);
 
     return Result;
 }
