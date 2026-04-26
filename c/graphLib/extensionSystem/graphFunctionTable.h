@@ -14,7 +14,7 @@ extern "C"
 
     /*
      NOTE: If you add any FUNCTION POINTERS to this function table, then you must
-           also initialize them in _InitFunctionTable() in graphUtils.c.
+           also initialize them in _InitFunctionTable() in graph.c.
     */
     typedef struct graphStruct graphStruct;
     typedef graphStruct *graphP;

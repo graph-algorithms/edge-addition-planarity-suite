@@ -102,6 +102,11 @@ extern "C"
 // to ensure a higher edge capacity if done before calling gp_InitGraph() or gp_Read().
 #define DEFAULT_EDGE_LIMIT 3
 
+// This value is returned by gp_AddEdge() and gp_InsertEdge() if adding or inserting
+// the edge would exceed the edge capacity limit. The limit can be increased by
+// calling gp_EnsureEdgeCapacity(), or by calling gp_DynamicAddEdge().
+#define AT_EDGE_CAPACITY_LIMIT -1
+
     /********************************************************************
      Edge Record Definition
 

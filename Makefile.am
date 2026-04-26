@@ -24,33 +24,35 @@ libplanarity_la_SOURCES = \
 	c/graphLib/homeomorphSearch/graphK23Search.private.h \
 	c/graphLib/homeomorphSearch/graphK33Search.private.h \
 	c/graphLib/homeomorphSearch/graphK4Search.private.h \
-	c/graphLib/graphDFSUtils.c \
-	c/graphLib/graphUtils.c \
+	c/graphLib/graphLib.c \
+	c/graphLib/lowLevelUtils/apiutils.c \
 	c/graphLib/extensionSystem/graphExtensions.c \
-	c/graphLib/homeomorphSearch/graphK23Search.c \
-	c/graphLib/homeomorphSearch/graphK23Search_Extensions.c \
-	c/graphLib/homeomorphSearch/graphK33Search.c \
-	c/graphLib/homeomorphSearch/graphK33Search_Extensions.c \
-	c/graphLib/homeomorphSearch/graphK4Search.c \
-	c/graphLib/homeomorphSearch/graphK4Search_Extensions.c \
+	c/graphLib/graph.c \
 	c/graphLib/io/g6-api-utilities.c \
 	c/graphLib/io/g6-read-iterator.c \
 	c/graphLib/io/g6-write-iterator.c \
 	c/graphLib/io/graphIO.c \
 	c/graphLib/io/strbuf.c \
 	c/graphLib/io/strOrFile.c \
-	c/graphLib/lowLevelUtils/apiutils.c \
 	c/graphLib/lowLevelUtils/listcoll.c \
 	c/graphLib/lowLevelUtils/stack.c \
-	c/graphLib/planarityRelated/graphDrawPlanar.c \
-	c/graphLib/planarityRelated/graphDrawPlanar_Extensions.c \
+	c/graphLib/graphDFSUtils.c \
 	c/graphLib/planarityRelated/graphPlanarity_Extensions.c \
-	c/graphLib/planarityRelated/graphOuterplanarity_Extensions.c \
 	c/graphLib/planarityRelated/graphEmbed.c \
 	c/graphLib/planarityRelated/graphIsolator.c \
 	c/graphLib/planarityRelated/graphNonplanar.c \
+	c/graphLib/planarityRelated/graphTests.c \
+	c/graphLib/planarityRelated/graphOuterplanarity_Extensions.c \
 	c/graphLib/planarityRelated/graphOuterplanarObstruction.c \
-	c/graphLib/planarityRelated/graphTests.c
+	c/graphLib/planarityRelated/graphDrawPlanar_Extensions.c \
+	c/graphLib/planarityRelated/graphDrawPlanar.c \
+	c/graphLib/homeomorphSearch/graphK23Search_Extensions.c \
+	c/graphLib/homeomorphSearch/graphK23Search.c \
+	c/graphLib/homeomorphSearch/graphK33Search_Extensions.c \
+	c/graphLib/homeomorphSearch/graphK33Search.c \
+	c/graphLib/homeomorphSearch/graphK4Search_Extensions.c \ 
+	c/graphLib/homeomorphSearch/graphK4Search.c 
+
 
 libplanarity_la_LDFLAGS = -no-undefined $(AM_LDFLAGS) -version-info @LT_CURRENT@:@LT_REVISION@:@LT_AGE@
 

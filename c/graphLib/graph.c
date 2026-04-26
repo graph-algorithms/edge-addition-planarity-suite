@@ -4,13 +4,16 @@ All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
 
-#include <stdlib.h>
-
-#include "graphLib.h"
-
+#include "graph.h"
 #include "graph.private.h"
 
+// To enable performing of certain initialization calls for the
+// DFSUtils, Planarity, and Outerplanarity pseudo-extensions.
+#include "planarityRelated/graphPlanarity.h"
 #include "planarityRelated/graphPlanarity.private.h"
+#include "planarityRelated/graphOuterplanarity.h"
+
+#include <stdlib.h>
 
 /* Imported functions for FUNCTION POINTERS */
 
@@ -103,37 +106,6 @@ void _InitEdgeRec(graphP theGraph, int e);
 int _InitGraph(graphP theGraph, int N);
 void _ReinitializeGraph(graphP theGraph);
 int _EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity);
-
-/********************************************************************
- gp_GetProjectVersionFull()
- Return full major.minor.maint.tweak version string for the graph planarity project
- ********************************************************************/
-
-char *gp_GetProjectVersionFull(void)
-{
-    static char projectVersionStr[MAXLINE + 1];
-    sprintf(projectVersionStr, "%d.%d.%d.%d",
-            GP_PROJECTVERSION_MAJOR,
-            GP_PROJECTVERSION_MINOR,
-            GP_PROJECTVERSION_MAINT,
-            GP_PROJECTVERSION_TWEAK);
-    return projectVersionStr;
-}
-
-/********************************************************************
- gp_GetLibPlanarityVersionFull()
- Returns full current:revision:age version string for the graph planarity shared library
- ********************************************************************/
-
-char *gp_GetLibPlanarityVersionFull(void)
-{
-    static char libPlanarityVersionStr[MAXLINE + 1];
-    sprintf(libPlanarityVersionStr, "%d:%d:%d",
-            GP_LIBPLANARITYVERSION_CURRENT,
-            GP_LIBPLANARITYVERSION_REVISION,
-            GP_LIBPLANARITYVERSION_AGE);
-    return libPlanarityVersionStr;
-}
 
 /********************************************************************
  gp_New()
@@ -1986,10 +1958,9 @@ void _DetachEdgeRecord(graphP theGraph, int e)
        caller can guard against these conditions by pre-testing that
        u != v and that gp_FindEdge() returns NIL.
 
- Returns OK on success, NOTOK on failure, NONEMBEDDABLE if adding the
-         edge would exceed the graph's edge capacity (the caller can
-         invoke gp_DynamicAddEdge() to avoid the NONEMBEDDABLE result).
-
+ Returns OK on success, NOTOK on failure, or AT_EDGE_CAPACITY_LIMIT if
+         adding the edge would exceed the graph's edge capacity (the
+         caller can use gp_DynamicAddEdge()).
  ********************************************************************/
 
 int gp_AddEdge(graphP theGraph, int u, int ulink, int v, int vlink)
@@ -2004,7 +1975,7 @@ int gp_AddEdge(graphP theGraph, int u, int ulink, int v, int vlink)
     /* We enforce the edge limit */
 
     if (gp_GetM(theGraph) >= theGraph->edgeCapacity)
-        return NONEMBEDDABLE;
+        return AT_EDGE_CAPACITY_LIMIT;
 
     if (sp_NonEmpty(theGraph->edgeHoles))
     {
@@ -2026,10 +1997,10 @@ int gp_AddEdge(graphP theGraph, int u, int ulink, int v, int vlink)
 
 /********************************************************************
  gp_DynamicAddEdge()
- Refer to documentation for gp_AddEdge for parameter description.
+ Refer to documentation for gp_AddEdge() for parameter description.
 
- Tries to call gp_AddEdge; if NONEMBEDDABLE, doubles the edge
- capacity using gp_EnsureEdgeCapacity, then retries gp_AddEdge.
+ Calls gp_AddEdge(); if AT_EDGE_CAPACITY_LIMIT, doubles the edge
+ capacity using gp_EnsureEdgeCapacity(), then retries gp_AddEdge().
 
  Returns OK on success, NOTOK on failure.
  ********************************************************************/
@@ -2039,7 +2010,7 @@ int gp_DynamicAddEdge(graphP theGraph, int u, int ulink, int v, int vlink)
 
     Result = gp_AddEdge(theGraph, u, ulink, v, vlink);
 
-    if (Result == NONEMBEDDABLE)
+    if (Result == AT_EDGE_CAPACITY_LIMIT)
     {
         // The candidate edge capacity is double the current capacity
         int candidateEdgeCapacity = gp_GetEdgeCapacity(theGraph) << 1;
@@ -2086,10 +2057,10 @@ int gp_DynamicAddEdge(graphP theGraph, int u, int ulink, int v, int vlink)
 
  NOTE: See notes on gp_AddEdge().
 
- Returns OK on success, NOTOK on failure, NONEMBEDDABLE if adding the
-         edge would exceed the graph's edge capacity (the caller can
-         invoke gp_EnsureEdgeCapacity() ahead of time to avoid the
-         NONEMBEDDABLE result).
+ Returns OK on success, NOTOK on failure, or AT_EDGE_CAPACITY_LIMIT if
+         adding the edge would exceed the graph's edge capacity (the
+         caller can invoke gp_EnsureEdgeCapacity() beforehand to avoid
+         an AT_EDGE_CAPACITY_LIMIT result).
  ********************************************************************/
 
 int gp_InsertEdge(graphP theGraph, int u, int e_u, int e_ulink,
@@ -2111,7 +2082,7 @@ int gp_InsertEdge(graphP theGraph, int u, int e_u, int e_ulink,
         return NOTOK;
 
     if (gp_GetM(theGraph) >= theGraph->edgeCapacity)
-        return NONEMBEDDABLE;
+        return AT_EDGE_CAPACITY_LIMIT;
 
     if (sp_NonEmpty(theGraph->edgeHoles))
     {
