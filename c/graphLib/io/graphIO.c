@@ -19,7 +19,7 @@ See the LICENSE.TXT file for licensing information.
 #include "../graphDFSUtils.h"
 
 // To help with graph construction
-#include "../graphUtils.private.h"
+#include "../graph.private.h"
 
 /* Imported functions */
 extern int _g6_ReadGraphFromStrOrFile(graphP theGraph, strOrFileP *pG6InputContainer);

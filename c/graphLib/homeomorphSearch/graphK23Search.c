@@ -4,16 +4,8 @@ All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
 
-#include "../graph.h"
-
 #include "graphK23Search.h"
-#include "graphK33Search.private.h"
-
-// A graph, extended with DFS and Planarity, is the "base class"
-// of a graph extended with K2,3 Search
-#include "../graphDFSUtils.h"
-#include "../planarityRelated/graphPlanarity.h"
-#include "../planarityRelated/graphPlanarity.private.h"
+#include "graphK23Search.private.h"
 
 /* Imported functions */
 

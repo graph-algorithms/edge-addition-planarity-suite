@@ -7,14 +7,17 @@ See the LICENSE.TXT file for licensing information.
 #ifndef GRAPHUTILS_PRIVATE_H
 #define GRAPHUTILS_PRIVATE_H
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
+#include "extensionSystem/graphExtensions.h"
+#include "extensionSystem/graphExtensions.private.h"
 
 #include "lowLevelUtils/listcoll.h"
 #include "lowLevelUtils/stack.h"
 #include "graphVertexInfo.private.h"
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 
 /********************************************************************
  Additional edge link accessors and manipulators

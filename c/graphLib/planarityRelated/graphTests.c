@@ -6,17 +6,12 @@ See the LICENSE.TXT file for licensing information.
 
 #define GRAPHTEST_C
 
-#include "../graph.h"
-
 // This source file implements the main graph planarity result integrity check method
+// NOTE: Integrity checks for subclasses of Planarity Graph that are extended with
+//       extensions for advanced algorithms are performed by overloads of the
+//       integrity check function in those extensions, e.g., K33Search and DrawPlanar.
 #include "graphPlanarity.h"
-
-#include "../graphDFSUtils.h"
-
-#include "../graphUtils.private.h"
-
-#include "../lowLevelUtils/stack.h"
-#include "../extensionSystem/graphExtensions.private.h"
+#include "graphPlanarity.private.h"
 
 extern void _ClearAnyTypeVertexVisitedFlags(graphP theGraph, int);
 

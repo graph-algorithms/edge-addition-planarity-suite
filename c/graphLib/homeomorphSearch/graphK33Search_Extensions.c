@@ -6,14 +6,8 @@ See the LICENSE.TXT file for licensing information.
 
 #include <stdlib.h>
 
-#include "graphK33Search.private.h"
 #include "graphK33Search.h"
-
-// A graph, extended with DFS and Planarity, is the "base class"
-// of a graph extended with K3,3 Search
-#include "../graphDFSUtils.h"
-#include "../planarityRelated/graphPlanarity.h"
-#include "../planarityRelated/graphPlanarity.private.h"
+#include "graphK33Search.private.h"
 
 // Need to save and restore a graph flag related to IO
 #include "../io/graphIO.h"
@@ -77,6 +71,9 @@ int gp_ExtendWith_K33Search(graphP theGraph)
 {
     K33SearchContext *context = NULL;
 
+    if (theGraph == NULL || gp_GetN(theGraph) <= 0)
+        return NOTOK;
+
     // If the K3,3 search feature has already been attached to the graph,
     // then there is no need to attach it again
     gp_FindExtension(theGraph, K33SEARCH_ID, (void *)&context);
@@ -84,6 +81,10 @@ int gp_ExtendWith_K33Search(graphP theGraph)
     {
         return OK;
     }
+
+    // Ensure theGraph is a Planarity Graph
+    if (gp_ExtendWith_Planarity(theGraph) != OK)
+        return NOTOK;
 
     // Allocate a new extension context
     context = (K33SearchContext *)malloc(sizeof(K33SearchContext));

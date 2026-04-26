@@ -6,17 +6,9 @@ See the LICENSE.TXT file for licensing information.
 
 #define GRAPHNONPLANAR_C
 
-#include "../graph.h"
-
-// A graph, extended with DFS, is the "base class"
-// of a graph extended with Planarity
-#include "../graphDFSUtils.h"
-
 // This source file implements subroutines of the main graph planarity method
 #include "../planarityRelated/graphPlanarity.h"
 #include "../planarityRelated/graphPlanarity.private.h"
-
-#include "../graphUtils.private.h"
 
 /* Imported functions */
 

@@ -7,8 +7,6 @@ lib_LTLIBRARIES = libplanarity.la
 AM_CFLAGS = $(WARNING_CFLAGS)
 
 libplanarity_la_SOURCES = \
-	c/graphLib/graphUtils.private.h \
-	c/graphLib/graphVertexInfo.private.h \
 	c/graphLib/lowLevelUtils/apiutils.private.h \
 	c/graphLib/lowLevelUtils/listcoll.h \
 	c/graphLib/lowLevelUtils/stack.h \
@@ -17,7 +15,11 @@ libplanarity_la_SOURCES = \
 	c/graphLib/extensionSystem/graphExtensions.h \
 	c/graphLib/extensionSystem/graphExtensions.private.h \
 	c/graphLib/extensionSystem/graphFunctionTable.h \
+	c/graphLib/graph.private.h \
+	c/graphLib/graphVertexInfo.private.h \
+	c/graphLib/graphDFSUtils.private.h \
 	c/graphLib/planarityRelated/graphPlanarity.private.h \
+	c/graphLib/planarityRelated/graphOuterplanarity.private.h \
 	c/graphLib/planarityRelated/graphDrawPlanar.private.h \
 	c/graphLib/homeomorphSearch/graphK23Search.private.h \
 	c/graphLib/homeomorphSearch/graphK33Search.private.h \

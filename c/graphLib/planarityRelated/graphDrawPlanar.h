@@ -7,7 +7,7 @@ All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
 
-#include "../graph.h"
+#include "graphPlanarity.h"
 
 #ifdef __cplusplus
 extern "C"

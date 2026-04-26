@@ -6,14 +6,8 @@ See the LICENSE.TXT file for licensing information.
 
 #include <stdlib.h>
 
-#include "graphK4Search.private.h"
 #include "graphK4Search.h"
-
-// A graph, extended with DFS and Planarity, is the "base class"
-// of a graph extended with K4 Search
-#include "../graphDFSUtils.h"
-#include "../planarityRelated/graphPlanarity.h"
-#include "../planarityRelated/graphPlanarity.private.h"
+#include "graphK4Search.private.h"
 
 // Need to save and restore a graph flag related to IO
 #include "../io/graphIO.h"
@@ -70,6 +64,9 @@ int gp_ExtendWith_K4Search(graphP theGraph)
 {
     K4SearchContext *context = NULL;
 
+    if (theGraph == NULL || gp_GetN(theGraph) <= 0)
+        return NOTOK;
+
     // If the K4 search feature has already been attached to the graph,
     // then there is no need to attach it again
     gp_FindExtension(theGraph, K4SEARCH_ID, (void *)&context);
@@ -77,6 +74,10 @@ int gp_ExtendWith_K4Search(graphP theGraph)
     {
         return OK;
     }
+
+    // Ensure theGraph is an Outerplanarity Graph
+    if (gp_ExtendWith_Outerplanarity(theGraph) != OK)
+        return NOTOK;
 
     // Allocate a new extension context
     context = (K4SearchContext *)malloc(sizeof(K4SearchContext));

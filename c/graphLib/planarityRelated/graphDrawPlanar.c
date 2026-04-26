@@ -4,17 +4,8 @@ All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
 
-#include "../graph.h"
-
 #include "graphDrawPlanar.h"
 #include "graphDrawPlanar.private.h"
-
-// A graph, extended with DFS and Planarity, is the "base class"
-// of a graph extended with DrawPlanar
-#include "../graphDFSUtils.h"
-#include "../planarityRelated/graphPlanarity.h"
-#include "../planarityRelated/graphPlanarity.private.h"
-#include "../graphUtils.private.h"
 
 // For definition of zero-based IO flag
 #include "../io/graphIO.h"

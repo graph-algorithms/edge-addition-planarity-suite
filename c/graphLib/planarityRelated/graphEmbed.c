@@ -6,20 +6,13 @@ See the LICENSE.TXT file for licensing information.
 
 #include <stdlib.h>
 
-#include "../graph.h"
-
-// This source file has its own versions of some DFS methods, for efficiency,
-// so it has to set some of the same graph flags
-#include "../graphDFSUtils.h"
-
-// This source file implements the main graph planarity method, gp_Embed()
+// This source file implements the main graph planarity/outerplanarity method, gp_Embed()
 #include "../planarityRelated/graphPlanarity.h"
 #include "../planarityRelated/graphPlanarity.private.h"
 #include "../planarityRelated/graphOuterplanarity.h"
+#include "../planarityRelated/graphOuterplanarity.private.h"
 
-#include "../extensionSystem/graphExtensions.private.h"
-
-// Includes needed by _gp_EmbedFlagsValid(), until it become overloadable
+// Includes needed by _gp_EmbedFlagsValid()
 #include "graphDrawPlanar.private.h"
 #include "../homeomorphSearch/graphK23Search.private.h"
 #include "../homeomorphSearch/graphK33Search.private.h"

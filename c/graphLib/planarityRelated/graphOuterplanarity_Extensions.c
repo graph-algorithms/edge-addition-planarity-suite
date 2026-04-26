@@ -4,9 +4,10 @@ All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
 
-#include <stdlib.h>
-
 #include "graphOuterplanarity.h"
+#include "graphOuterplanarity.private.h"
+
+#include <stdlib.h>
 
 /****************************************************************************
  gp_ExtendWith_Outerplanarity()

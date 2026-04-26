@@ -6,13 +6,8 @@ See the LICENSE.TXT file for licensing information.
 
 #define GRAPHDFSUTILS_C
 
-#include "graph.h"
-
 #include "graphDFSUtils.h"
-
-#include "graphUtils.private.h"
-
-#include "extensionSystem/graphExtensions.private.h"
+#include "graphDFSUtils.private.h"
 
 // For LOGGING-related declarations
 #include "lowLevelUtils/apiutils.private.h"

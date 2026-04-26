@@ -4,15 +4,8 @@ All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
 
-#include "../graph.h"
-
-#include "../extensionSystem/graphExtensions.private.h"
-
-// A graph, extended with DFS and Planarity, is the "base class"
-// of a graph extended with Outerplanarity
-#include "../graphDFSUtils.h"
-#include "../planarityRelated/graphPlanarity.h"
-#include "../planarityRelated/graphPlanarity.private.h"
+#include "graphOuterplanarity.h"
+#include "graphOuterplanarity.private.h"
 
 /* Imported functions */
 

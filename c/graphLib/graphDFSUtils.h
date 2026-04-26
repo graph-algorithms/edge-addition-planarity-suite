@@ -7,19 +7,19 @@ See the LICENSE.TXT file for licensing information.
 #ifndef GRAPHDFSUTILS_H
 #define GRAPHDFSUTILS_H
 
+#include "graph.h"
+
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
-#include "graph.h"
-
 // Create a DFSUtils Graph, i.e., subclass a Graph by extending it with the
 // ability to perform the depth-first search (DFS) utility methods below.
 #define DFSUTILS_NAME "DFSUtils"
 
-    int gp_ExtendWith_DFSUtils(graphP theGraph);
-    int gp_Detach_DFSUtils(graphP theGraph);
+        int gp_ExtendWith_DFSUtils(graphP theGraph);
+        int gp_Detach_DFSUtils(graphP theGraph);
 
 /* Graph Flags: see gp_GetGraphFlags()
         GRAPHFLAGS_EXTENDEDWITH_DFSUTILS is set by calling gp_ExtendWith_DFSUtils()
@@ -35,19 +35,19 @@ extern "C"
 #define GRAPHFLAGS_DFSNUMBERED 512
 #define GRAPHFLAGS_SORTEDBYDFI 1024
 
-    // DFS-related utility methods that create a DFS tree, sort vertices and
-    // compute least ancestor and lowpoint values
-    int gp_CreateDFSTree(graphP theGraph);
-    int gp_SortVertices(graphP theGraph);
-    int gp_ComputeLowpoints(graphP theGraph);
-    int gp_ComputeLeastAncestors(graphP theGraph);
+        // DFS-related utility methods that create a DFS tree, sort vertices and
+        // compute least ancestor and lowpoint values
+        int gp_CreateDFSTree(graphP theGraph);
+        int gp_SortVertices(graphP theGraph);
+        int gp_ComputeLowpoints(graphP theGraph);
+        int gp_ComputeLeastAncestors(graphP theGraph);
 
-    // Additional DFS-related uitility methods (functions and macros) that assume
-    // one or more of the above methods have been called to create a DFS tree,
-    // sort vertices and/or compute least ancestor and lowpoint values
-    int gp_GetParent(graphP theGraph, int v);
-    int gp_GetLeastAncestor(graphP theGraph, int v);
-    int gp_GetLowpoint(graphP theGraph, int v);
+        // Additional DFS-related uitility methods (functions and macros) that assume
+        // one or more of the above methods have been called to create a DFS tree,
+        // sort vertices and/or compute least ancestor and lowpoint values
+        int gp_GetParent(graphP theGraph, int v);
+        int gp_GetLeastAncestor(graphP theGraph, int v);
+        int gp_GetLowpoint(graphP theGraph, int v);
 
 // A DFS tree root is one that has no DFS parent. There is one DFS tree root
 // per connected component of a graph (connected, not biconnected; component, not bicomp)

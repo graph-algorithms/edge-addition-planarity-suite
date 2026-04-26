@@ -4,17 +4,13 @@ All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
 
-#include <stdlib.h>
-
-#include "graphDrawPlanar.private.h"
 #include "graphDrawPlanar.h"
-
-// A graph extended with planarity is the "base class" of a graph extended with K3,3 Search
-#include "../planarityRelated/graphPlanarity.h"
-#include "../planarityRelated/graphPlanarity.private.h"
+#include "graphDrawPlanar.private.h"
 
 // Need to save and restore a graph flag related to IO
 #include "../io/graphIO.h"
+
+#include <stdlib.h>
 
 extern void _ClearAnyTypeVertexVisitedFlags(graphP theGraph, int);
 
@@ -85,6 +81,9 @@ int gp_ExtendWith_DrawPlanar(graphP theGraph)
 {
     DrawPlanarContext *context = NULL;
 
+    if (theGraph == NULL || gp_GetN(theGraph) <= 0)
+        return NOTOK;
+
     // If the drawing feature has already been attached to the graph,
     // then there is no need to attach it again
     gp_FindExtension(theGraph, DRAWPLANAR_ID, (void *)&context);
@@ -92,6 +91,10 @@ int gp_ExtendWith_DrawPlanar(graphP theGraph)
     {
         return OK;
     }
+
+    // Ensure theGraph is a Planarity Graph
+    if (gp_ExtendWith_Planarity(theGraph) != OK)
+        return NOTOK;
 
     // Allocate a new extension context
     context = (DrawPlanarContext *)malloc(sizeof(DrawPlanarContext));

@@ -7,13 +7,12 @@ See the LICENSE.TXT file for licensing information.
 #ifndef GRAPHPLANARITY_PRIVATE_H
 #define GRAPHPLANARITY_PRIVATE_H
 
+#include "../graphDFSUtils.private.h"
+
 #ifdef __cplusplus
 extern "C"
 {
 #endif
-
-#include "../graphUtils.private.h"
-#include "../graph.h"
 
 // PLANARITY-RELATED ONLY VERTEX FLAGS
 //
