@@ -16,7 +16,6 @@ libplanarity_la_SOURCES = \
 	c/graphLib/extensionSystem/graphExtensions.private.h \
 	c/graphLib/extensionSystem/graphFunctionTable.h \
 	c/graphLib/graph.private.h \
-	c/graphLib/graphVertexInfo.private.h \
 	c/graphLib/graphDFSUtils.private.h \
 	c/graphLib/planarityRelated/graphPlanarity.private.h \
 	c/graphLib/planarityRelated/graphOuterplanarity.private.h \

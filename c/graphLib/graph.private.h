@@ -12,7 +12,6 @@ See the LICENSE.TXT file for licensing information.
 
 #include "lowLevelUtils/listcoll.h"
 #include "lowLevelUtils/stack.h"
-#include "graphVertexInfo.private.h"
 
 #ifdef __cplusplus
 extern "C"
