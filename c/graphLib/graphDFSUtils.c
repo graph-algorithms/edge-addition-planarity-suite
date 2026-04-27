@@ -12,6 +12,9 @@ See the LICENSE.TXT file for licensing information.
 // For LOGGING-related declarations
 #include "lowLevelUtils/apiutils.private.h"
 
+// Allows the default _SortVertices() to swap planarity vertex info, if present
+#include "planarityRelated/graphPlanarity.private.h"
+
 // Private methods, except exported within library
 int _SortVertices(graphP theGraph);
 
@@ -217,11 +220,18 @@ int gp_SortVertices(graphP theGraph)
         dstGraph->V[vdst] = srcGraph->V[vsrc];                   \
         srcGraph->V[vsrc] = tempV;                               \
     }
-#define _gp_SwapVertexInfo(dstGraph, dstPos, srcGraph, srcPos) \
-    {                                                          \
-        vertexInfoRec tempVI = dstGraph->VI[dstPos];           \
-        dstGraph->VI[dstPos] = srcGraph->VI[srcPos];           \
-        srcGraph->VI[srcPos] = tempVI;                         \
+#define _gp_SwapDFSUtilsVertexInfo(dstGraph, dstPos, srcGraph, srcPos) \
+    {                                                                  \
+        DFSUtils_VertexInfo tempDVI = dstGraph->DVI[dstPos];           \
+        dstGraph->DVI[dstPos] = srcGraph->DVI[srcPos];                 \
+        srcGraph->DVI[srcPos] = tempDVI;                               \
+    }
+#define _gp_SwapPlanarityVertexInfo(dstGraph, dstPos, srcGraph, srcPos) \
+    if (dstGraph->PVI != NULL && srcGraph->PVI != NULL)                 \
+    {                                                                   \
+        Planarity_VertexInfo tempPVI = dstGraph->PVI[dstPos];           \
+        dstGraph->PVI[dstPos] = srcGraph->PVI[srcPos];                  \
+        srcGraph->PVI[srcPos] = tempPVI;                                \
     }
 
 // This is the default method for sorting vertices into and back
@@ -283,7 +293,8 @@ int _SortVertices(graphP theGraph)
             dstPos = gp_GetIndex(theGraph, v);
 
             _gp_SwapAnyTypeVertexRec(theGraph, dstPos, theGraph, v);
-            _gp_SwapVertexInfo(theGraph, dstPos, theGraph, v);
+            _gp_SwapDFSUtilsVertexInfo(theGraph, dstPos, theGraph, v);
+            _gp_SwapPlanarityVertexInfo(theGraph, dstPos, theGraph, v);
 
             gp_SetVisited(theGraph, dstPos);
             gp_SetIndex(theGraph, dstPos, srcPos);

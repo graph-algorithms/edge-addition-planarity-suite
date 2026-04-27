@@ -120,24 +120,9 @@ graphP gp_New(void)
 
     if (theGraph != NULL && functionTable != NULL)
     {
-        theGraph->E = NULL;
-        theGraph->V = NULL;
-        theGraph->VI = NULL;
-
-        theGraph->IC = NULL;
-        theGraph->BicompRootLists = NULL;
-        theGraph->sortedDFSChildLists = NULL;
-        theGraph->theStack = NULL;
-
-        theGraph->extFace = NULL;
-
-        theGraph->edgeHoles = NULL;
-
-        theGraph->extensions = NULL;
-
+        // All pointers within the graph are NULL due to using calloc() above
         theGraph->functions = functionTable;
         _InitFunctionTable(theGraph);
-
         _ClearGraph(theGraph);
     }
     else
@@ -213,20 +198,22 @@ void _InitFunctionTable(graphP theGraph)
 
  For V, we need 2N vertex records, N for vertices and N for virtual vertices (root copies).
 
- For VI, we need N vertexInfoRec records.
-
  For E, we need 2*edgeCapacity edge records (plus 2 for default of using 1-based arrays).
 
- The BicompRootLists and sortedDFSChildLists are of size N and start out empty.
+ The edgeHoles stack, initially empty, is set to the edgeCapacity,
+     which is big enough to push every edge (to indicate an edge
+     you only need to indicate one of its two edge records)
 
  The stack, initially empty, is made big enough for a pair of integers
      per edge (2 * edgeCapacity), or 6N integers if the edgeCapacity
      was set below the default value. Space for 2 extra integers is added
      to allow depth-first search to push (NIL, NIL) to start at a DFS tree root
 
- The edgeHoles stack, initially empty, is set to the edgeCapacity,
-     which is big enough to push every edge (to indicate an edge
-     you only need to indicate one of its two edge records)
+ The BicompRootLists and sortedDFSChildLists are of size N and start out empty.
+
+ For each DVI and PVI, we need N of each of the respective vertex info records.
+
+ For the isolator context, we need a single instance.
 
   Returns OK on success, NOTOK on all failures.
           On NOTOK, graph extensions are freed so that the graph is
@@ -265,14 +252,17 @@ int _InitGraph(graphP theGraph, int N)
 
     // Allocate memory as described above
     if ((theGraph->V = (anyTypeVertexRecP)calloc(Vsize, sizeof(anyTypeVertexRec))) == NULL ||
-        (theGraph->VI = (vertexInfoP)calloc(VIsize, sizeof(vertexInfoRec))) == NULL ||
         (theGraph->E = (edgeRecP)calloc(Esize, sizeof(edgeRec))) == NULL ||
-        (theGraph->IC = (isolatorContextP)calloc(1, sizeof(isolatorContextStruct))) == NULL ||
-        (theGraph->BicompRootLists = LCNew(VIsize)) == NULL ||
-        (theGraph->sortedDFSChildLists = LCNew(VIsize)) == NULL ||
-        (theGraph->theStack = sp_New(stackSize)) == NULL ||
-        (theGraph->extFace = (extFaceLinkRecP)calloc(Vsize, sizeof(extFaceLinkRec))) == NULL ||
         (theGraph->edgeHoles = sp_New(theGraph->edgeCapacity)) == NULL ||
+
+        (theGraph->theStack = sp_New(stackSize)) == NULL ||
+        (theGraph->BicompRootLists = LCNew(VIsize)) == NULL ||
+        (theGraph->DVI = (DFSUtils_VertexInfoP)calloc(VIsize, sizeof(DFSUtils_VertexInfo))) == NULL ||
+
+        (theGraph->PVI = (Planarity_VertexInfoP)calloc(VIsize, sizeof(Planarity_VertexInfo))) == NULL ||
+        (theGraph->sortedDFSChildLists = LCNew(VIsize)) == NULL ||
+        (theGraph->extFace = (extFaceLinkRecP)calloc(Vsize, sizeof(extFaceLinkRec))) == NULL ||
+        (theGraph->IC = (isolatorContextP)calloc(1, sizeof(isolatorContextStruct))) == NULL ||
         0)
     {
         _ClearGraph(theGraph);
@@ -292,39 +282,18 @@ int _InitGraph(graphP theGraph, int N)
  ********************************************************************/
 void _InitVertices(graphP theGraph)
 {
+    memset(theGraph->V, NIL_CHAR, gp_AnyTypeVertexArraySize(theGraph) * sizeof(anyTypeVertexRec));
+
+    memset(theGraph->DVI, NIL_CHAR, gp_VertexArraySize(theGraph) * sizeof(DFSUtils_VertexInfo));
+
+    memset(theGraph->PVI, NIL_CHAR, gp_VertexArraySize(theGraph) * sizeof(Planarity_VertexInfo));
+    memset(theGraph->extFace, NIL_CHAR, gp_AnyTypeVertexArraySize(theGraph) * sizeof(extFaceLinkRec));
+
 #ifdef USE_1BASEDARRAYS
-    memset(theGraph->V, NIL_CHAR, gp_AnyTypeVertexArraySize(theGraph) * sizeof(anyTypeVertexRec));
-    memset(theGraph->VI, NIL_CHAR, gp_VertexArraySize(theGraph) * sizeof(vertexInfoRec));
-    memset(theGraph->extFace, NIL_CHAR, gp_AnyTypeVertexArraySize(theGraph) * sizeof(extFaceLinkRec));
 #else
-    int v;
-
-    memset(theGraph->V, NIL_CHAR, gp_AnyTypeVertexArraySize(theGraph) * sizeof(anyTypeVertexRec));
-    memset(theGraph->VI, NIL_CHAR, gp_VertexArraySize(theGraph) * sizeof(vertexInfoRec));
-    memset(theGraph->extFace, NIL_CHAR, gp_AnyTypeVertexArraySize(theGraph) * sizeof(extFaceLinkRec));
-
-    for (v = gp_GetFirstVertex(theGraph); gp_AnyTypeVertexInRangeAscending(theGraph, v); v++)
+    for (int v = gp_GetFirstVertex(theGraph); gp_AnyTypeVertexInRangeAscending(theGraph, v); v++)
         gp_InitFlags(theGraph, v);
 #endif
-    // N.B. This is the legacy API-based approach to initializing the vertices
-    // int v;
-
-    // // Initialize the vertices (non-virtual vertices)
-    // for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
-    // {
-    //     _InitAnyTypeVertexRec(theGraph, v);
-    //     _InitVertexInfo(theGraph, v);
-    //     gp_SetExtFaceVertex(theGraph, v, 0, NIL);
-    //     gp_SetExtFaceVertex(theGraph, v, 1, NIL);
-    // }
-
-    // // Initialize virtual vertices
-    // for (v = gp_GetFirstVirtualVertex(theGraph); gp_VirtualVertexInRangeAscending(theGraph, v); v++)
-    // {
-    //     _InitAnyTypeVertexRec(theGraph, v);
-    //     gp_SetExtFaceVertex(theGraph, v, 0, NIL);
-    //     gp_SetExtFaceVertex(theGraph, v, 1, NIL);
-    // }
 }
 
 /********************************************************************
@@ -343,12 +312,6 @@ void _InitEdges(graphP theGraph)
     for (e = gp_EdgeArrayStart(theGraph); e < Esize; e++)
         gp_InitEdgeFlags(theGraph, e);
 #endif
-    // N.B. This is the legacy API-based approach to initializing the edges
-    // int e, Esize;
-
-    // Esize = gp_EdgeArraySize(theGraph);
-    // for (e = gp_EdgeArrayStart(theGraph); e < Esize; e++)
-    //     _InitEdgeRec(theGraph, e);
 }
 
 /********************************************************************
@@ -873,11 +836,6 @@ void _ClearGraph(graphP theGraph)
         free(theGraph->V);
         theGraph->V = NULL;
     }
-    if (theGraph->VI != NULL)
-    {
-        free(theGraph->VI);
-        theGraph->V = NULL;
-    }
     if (theGraph->E != NULL)
     {
         free(theGraph->E);
@@ -890,24 +848,32 @@ void _ClearGraph(graphP theGraph)
     theGraph->edgeCapacity = 0;
     theGraph->embedFlags = 0;
 
-    if (theGraph->IC != NULL)
-    {
-        free(theGraph->IC);
-        theGraph->IC = NULL;
-    }
-
-    LCFree(&theGraph->BicompRootLists);
-    LCFree(&theGraph->sortedDFSChildLists);
+    sp_Free(&theGraph->edgeHoles);
 
     sp_Free(&theGraph->theStack);
+    LCFree(&theGraph->BicompRootLists);
+    if (theGraph->DVI != NULL)
+    {
+        free(theGraph->DVI);
+        theGraph->DVI = NULL;
+    }
 
+    if (theGraph->PVI != NULL)
+    {
+        free(theGraph->PVI);
+        theGraph->PVI = NULL;
+    }
+    LCFree(&theGraph->sortedDFSChildLists);
     if (theGraph->extFace != NULL)
     {
         free(theGraph->extFace);
         theGraph->extFace = NULL;
     }
-
-    sp_Free(&theGraph->edgeHoles);
+    if (theGraph->IC != NULL)
+    {
+        free(theGraph->IC);
+        theGraph->IC = NULL;
+    }
 
     gp_FreeExtensions(theGraph);
 
@@ -1014,7 +980,8 @@ int gp_CopyAdjacencyLists(graphP dstGraph, graphP srcGraph)
 
 // Give macro names to three copy operations
 #define _gp_CopyAnyTypeVertexRec(dstGraph, vdst, srcGraph, vsrc) (dstGraph->V[vdst] = srcGraph->V[vsrc])
-#define _gp_CopyVertexInfo(dstGraph, dstI, srcGraph, srcI) (dstGraph->VI[dstI] = srcGraph->VI[srcI])
+#define _gp_CopyDFSUtilsVertexInfo(dstGraph, dstI, srcGraph, srcI) (dstGraph->DVI[dstI] = srcGraph->DVI[srcI])
+#define _gp_CopyPlanarityVertexInfo(dstGraph, dstI, srcGraph, srcI) (dstGraph->PVI[dstI] = srcGraph->PVI[srcI])
 #define _gp_CopyEdgeRec(dstGraph, edst, srcGraph, esrc) (dstGraph->E[edst] = srcGraph->E[esrc])
 
 int gp_CopyGraph(graphP dstGraph, graphP srcGraph)
@@ -1060,7 +1027,10 @@ int gp_CopyGraph(graphP dstGraph, graphP srcGraph)
     for (v = gp_GetFirstVertex(srcGraph); gp_VertexInRangeAscending(srcGraph, v); v++)
     {
         _gp_CopyAnyTypeVertexRec(dstGraph, v, srcGraph, v);
-        _gp_CopyVertexInfo(dstGraph, v, srcGraph, v);
+        if (dstGraph->DVI != NULL && srcGraph->DVI != NULL)
+            _gp_CopyDFSUtilsVertexInfo(dstGraph, v, srcGraph, v);
+        if (dstGraph->PVI != NULL && srcGraph->PVI != NULL)
+            _gp_CopyPlanarityVertexInfo(dstGraph, v, srcGraph, v);
         gp_SetExtFaceVertex(dstGraph, v, 0, gp_GetExtFaceVertex(srcGraph, v, 0));
         gp_SetExtFaceVertex(dstGraph, v, 1, gp_GetExtFaceVertex(srcGraph, v, 1));
     }

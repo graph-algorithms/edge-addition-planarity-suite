@@ -111,19 +111,33 @@ extern "C"
                     This member indicates (by index) a node in that list.
     */
 
-#define gp_GetVertexVisitedInfo(theGraph, v) (theGraph->VI[v].visitedInfo)
-#define gp_SetVertexVisitedInfo(theGraph, v, theVisitedInfo) (theGraph->VI[v].visitedInfo = theVisitedInfo)
+    struct Planarity_VertexInfo
+    {
+        int visitedInfo;
 
-#define gp_GetVertexPertinentEdge(theGraph, v) (theGraph->VI[v].pertinentEdge)
-#define gp_SetVertexPertinentEdge(theGraph, v, e) (theGraph->VI[v].pertinentEdge = e)
+        int pertinentEdge,
+            pertinentRoots,
+            futurePertinentChild,
+            sortedDFSChildList,
+            fwdEdgeList;
+    };
 
-#define gp_GetVertexPertinentRootsList(theGraph, v) (theGraph->VI[v].pertinentRoots)
-#define gp_SetVertexPertinentRootsList(theGraph, v, pertinentRootsHead) (theGraph->VI[v].pertinentRoots = pertinentRootsHead)
+    typedef struct Planarity_VertexInfo Planarity_VertexInfo;
+    typedef Planarity_VertexInfo *Planarity_VertexInfoP;
 
-#define gp_GetVertexFirstPertinentRoot(theGraph, v) gp_GetBicompRootFromDFSChild(theGraph, theGraph->VI[v].pertinentRoots)
-#define gp_GetVertexFirstPertinentRootChild(theGraph, v) (theGraph->VI[v].pertinentRoots)
-#define gp_GetVertexLastPertinentRoot(theGraph, v) gp_GetBicompRootFromDFSChild(theGraph, LCGetPrev(theGraph->BicompRootLists, theGraph->VI[v].pertinentRoots, NIL))
-#define gp_GetVertexLastPertinentRootChild(theGraph, v) LCGetPrev(theGraph->BicompRootLists, theGraph->VI[v].pertinentRoots, NIL)
+#define gp_GetVertexVisitedInfo(theGraph, v) (theGraph->PVI[v].visitedInfo)
+#define gp_SetVertexVisitedInfo(theGraph, v, theVisitedInfo) (theGraph->PVI[v].visitedInfo = theVisitedInfo)
+
+#define gp_GetVertexPertinentEdge(theGraph, v) (theGraph->PVI[v].pertinentEdge)
+#define gp_SetVertexPertinentEdge(theGraph, v, e) (theGraph->PVI[v].pertinentEdge = e)
+
+#define gp_GetVertexPertinentRootsList(theGraph, v) (theGraph->PVI[v].pertinentRoots)
+#define gp_SetVertexPertinentRootsList(theGraph, v, pertinentRootsHead) (theGraph->PVI[v].pertinentRoots = pertinentRootsHead)
+
+#define gp_GetVertexFirstPertinentRoot(theGraph, v) gp_GetBicompRootFromDFSChild(theGraph, theGraph->PVI[v].pertinentRoots)
+#define gp_GetVertexFirstPertinentRootChild(theGraph, v) (theGraph->PVI[v].pertinentRoots)
+#define gp_GetVertexLastPertinentRoot(theGraph, v) gp_GetBicompRootFromDFSChild(theGraph, LCGetPrev(theGraph->BicompRootLists, theGraph->PVI[v].pertinentRoots, NIL))
+#define gp_GetVertexLastPertinentRootChild(theGraph, v) LCGetPrev(theGraph->BicompRootLists, theGraph->PVI[v].pertinentRoots, NIL)
 
 #define gp_DeleteVertexPertinentRoot(theGraph, v, R)                                     \
     gp_SetVertexPertinentRootsList(theGraph, v,                                          \
@@ -143,36 +157,36 @@ extern "C"
                                             gp_GetVertexPertinentRootsList(theGraph, v), \
                                             gp_GetDFSChildFromBicompRoot(theGraph, R)))
 
-#define gp_GetVertexFuturePertinentChild(theGraph, v) (theGraph->VI[v].futurePertinentChild)
-#define gp_SetVertexFuturePertinentChild(theGraph, v, theFuturePertinentChild) (theGraph->VI[v].futurePertinentChild = theFuturePertinentChild)
+#define gp_GetVertexFuturePertinentChild(theGraph, v) (theGraph->PVI[v].futurePertinentChild)
+#define gp_SetVertexFuturePertinentChild(theGraph, v, theFuturePertinentChild) (theGraph->PVI[v].futurePertinentChild = theFuturePertinentChild)
 
 // Used to advance futurePertinentChild of w to the next separated DFS child with a lowpoint less than v
 // Once futurePertinentChild advances past a child, no future planarity operation could make that child
 // relevant to future pertinence.
 #define gp_UpdateVertexFuturePertinentChild(theGraph, w, v)                                             \
-    while (gp_IsVertex(theGraph, theGraph->VI[w].futurePertinentChild))                                 \
+    while (gp_IsVertex(theGraph, theGraph->PVI[w].futurePertinentChild))                                 \
     {                                                                                                   \
         /* Skip children that 1) aren't future pertinent, 2) have been merged into the bicomp with w */ \
-        if (gp_GetVertexLowpoint(theGraph, theGraph->VI[w].futurePertinentChild) >= v ||                \
-            gp_IsNotSeparatedDFSChild(theGraph, theGraph->VI[w].futurePertinentChild))                  \
+        if (gp_GetVertexLowpoint(theGraph, theGraph->PVI[w].futurePertinentChild) >= v ||               \
+            gp_IsNotSeparatedDFSChild(theGraph, theGraph->PVI[w].futurePertinentChild))                 \
         {                                                                                               \
-            theGraph->VI[w].futurePertinentChild =                                                      \
+            theGraph->PVI[w].futurePertinentChild =                                                      \
                 gp_GetVertexNextDFSChild(theGraph, w, gp_GetVertexFuturePertinentChild(theGraph, w));   \
         }                                                                                               \
         else                                                                                            \
             break;                                                                                      \
     }
 
-#define gp_GetVertexSortedDFSChildList(theGraph, v) (theGraph->VI[v].sortedDFSChildList)
-#define gp_SetVertexSortedDFSChildList(theGraph, v, theSortedDFSChildList) (theGraph->VI[v].sortedDFSChildList = theSortedDFSChildList)
+#define gp_GetVertexSortedDFSChildList(theGraph, v) (theGraph->PVI[v].sortedDFSChildList)
+#define gp_SetVertexSortedDFSChildList(theGraph, v, theSortedDFSChildList) (theGraph->PVI[v].sortedDFSChildList = theSortedDFSChildList)
 
 #define gp_GetVertexNextDFSChild(theGraph, v, c) LCGetNext(theGraph->sortedDFSChildLists, gp_GetVertexSortedDFSChildList(theGraph, v), c)
 
 #define gp_AppendDFSChild(theGraph, v, c) \
     LCAppend(theGraph->sortedDFSChildLists, gp_GetVertexSortedDFSChildList(theGraph, v), c)
 
-#define gp_GetVertexFwdEdgeList(theGraph, v) (theGraph->VI[v].fwdEdgeList)
-#define gp_SetVertexFwdEdgeList(theGraph, v, theFwdEdgeList) (theGraph->VI[v].fwdEdgeList = theFwdEdgeList)
+#define gp_GetVertexFwdEdgeList(theGraph, v) (theGraph->PVI[v].fwdEdgeList)
+#define gp_SetVertexFwdEdgeList(theGraph, v, theFwdEdgeList) (theGraph->PVI[v].fwdEdgeList = theFwdEdgeList)
 
     /********************************************************************
     // PLANARITY-RELATED ONLY
@@ -272,14 +286,14 @@ extern "C"
     compiler extensions not assumed by this code).
     ********************************************************************/
 #define FUTUREPERTINENT(theGraph, theVertex, v)                              \
-    (theGraph->VI[theVertex].leastAncestor < v ||                            \
-     (gp_IsVertex(theGraph, theGraph->VI[theVertex].futurePertinentChild) && \
-      theGraph->VI[theGraph->VI[theVertex].futurePertinentChild].lowpoint < v))
+    (theGraph->DVI[theVertex].leastAncestor < v ||                            \
+     (gp_IsVertex(theGraph, theGraph->PVI[theVertex].futurePertinentChild) && \
+      theGraph->DVI[theGraph->PVI[theVertex].futurePertinentChild].lowpoint < v))
 
 #define NOTFUTUREPERTINENT(theGraph, theVertex, v)                              \
-    (theGraph->VI[theVertex].leastAncestor >= v &&                              \
-     (gp_IsNotVertex(theGraph, theGraph->VI[theVertex].futurePertinentChild) || \
-      theGraph->VI[theGraph->VI[theVertex].futurePertinentChild].lowpoint >= v))
+    (theGraph->DVI[theVertex].leastAncestor >= v &&                              \
+     (gp_IsNotVertex(theGraph, theGraph->PVI[theVertex].futurePertinentChild) || \
+      theGraph->DVI[theGraph->PVI[theVertex].futurePertinentChild].lowpoint >= v))
 
 /********************************************************************
  INACTIVE()

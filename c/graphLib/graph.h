@@ -469,8 +469,10 @@ extern "C"
     // DFS-RELATED and PLANARITY-RELATED ONLY
     // Declaration of package-private data type for managing additonal DFS-
     // and planarity-related information associated with each non-virtual vertex
-    typedef struct vertexInfoRec vertexInfoRec;
-    typedef vertexInfoRec *vertexInfoP;
+    typedef struct DFSUtils_VertexInfo DFSUtils_VertexInfo;
+    typedef DFSUtils_VertexInfo *DFSUtils_VertexInfoP;
+    typedef struct Planarity_VertexInfo Planarity_VertexInfo;
+    typedef Planarity_VertexInfo *Planarity_VertexInfoP;
 
     // PLANARITY-RELATED ONLY
     // Declaration of package private data type for optimizing management of
@@ -536,19 +538,22 @@ extern "C"
     struct graphStruct
     {
         anyTypeVertexRecP V;
-        vertexInfoP VI;
         int N, NV;
 
         edgeRecP E;
         int M, edgeCapacity;
         stackP edgeHoles;
 
-        stackP theStack;
         unsigned graphFlags, embedFlags;
 
-        isolatorContextP IC;
-        listCollectionP BicompRootLists, sortedDFSChildLists;
+        stackP theStack;
+        listCollectionP BicompRootLists;
+        DFSUtils_VertexInfoP DVI;
+
+        Planarity_VertexInfoP PVI;
+        listCollectionP sortedDFSChildLists;
         extFaceLinkRecP extFace;
+        isolatorContextP IC;
 
         graphExtensionP extensions;
         graphFunctionTableP functions;

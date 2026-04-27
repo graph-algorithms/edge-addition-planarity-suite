@@ -25,6 +25,14 @@ extern "C"
         lowpoint: min(leastAncestor, min(lowpoint of DFS Children))
     */
 
+    struct DFSUtils_VertexInfo
+    {
+        int parent, leastAncestor, lowpoint;
+    };
+
+    typedef struct DFSUtils_VertexInfo DFSUtils_VertexInfo;
+    typedef DFSUtils_VertexInfo *DFSUtils_VertexInfoP;
+
     struct vertexInfoRec
     {
         int parent, leastAncestor, lowpoint;
@@ -41,14 +49,14 @@ extern "C"
     typedef struct vertexInfoRec vertexInfoRec;
     typedef vertexInfoRec *vertexInfoP;
 
-#define gp_GetVertexParent(theGraph, v) (theGraph->VI[v].parent)
-#define gp_SetVertexParent(theGraph, v, theParent) (theGraph->VI[v].parent = theParent)
+#define gp_GetVertexParent(theGraph, v) (theGraph->DVI[v].parent)
+#define gp_SetVertexParent(theGraph, v, theParent) (theGraph->DVI[v].parent = theParent)
 
-#define gp_GetVertexLeastAncestor(theGraph, v) (theGraph->VI[v].leastAncestor)
-#define gp_SetVertexLeastAncestor(theGraph, v, theLeastAncestor) (theGraph->VI[v].leastAncestor = theLeastAncestor)
+#define gp_GetVertexLeastAncestor(theGraph, v) (theGraph->DVI[v].leastAncestor)
+#define gp_SetVertexLeastAncestor(theGraph, v, theLeastAncestor) (theGraph->DVI[v].leastAncestor = theLeastAncestor)
 
-#define gp_GetVertexLowpoint(theGraph, v) (theGraph->VI[v].lowpoint)
-#define gp_SetVertexLowpoint(theGraph, v, theLowpoint) (theGraph->VI[v].lowpoint = theLowpoint)
+#define gp_GetVertexLowpoint(theGraph, v) (theGraph->DVI[v].lowpoint)
+#define gp_SetVertexLowpoint(theGraph, v, theLowpoint) (theGraph->DVI[v].lowpoint = theLowpoint)
 
 #ifdef __cplusplus
 }
