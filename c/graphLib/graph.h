@@ -510,7 +510,6 @@ extern "C"
     /********************************************************************
          Graph structure definition
                 V : Array of vertex records (allocated size N + NV)
-                VI: Array of additional vertexInfoRec structures (allocated size N)
                 N : Number of non-virtual vertices (the "order" of the graph)
                 NV: Number of virtual vertices (currently always equal to N)
 
@@ -520,19 +519,31 @@ extern "C"
                 edgeCapacity: the maximum number of edges allowed in E
                 edgeHoles: free locations in E where edges have been deleted
 
-                theStack: Used by various graph routines needing a stack
                 graphFlags: Additional state information about the graph
                 embedFlags: records the type of embedding requested (uses EMBEDFLAGS)
 
-                IC: contains additional useful variables for Kuratowski subgraph isolation.
-                BicompRootLists: storage space for pertinent bicomp root lists that develop
+                theStack: Used by routines of various DFSUtils graph subclasses
+                BicompRootLists: storage for bicomp root lists (DFSUtils) or, for
+                                 Planarity, pertinent child bicomp lists that develop
                                 during embedding
-                sortedDFSChildLists: storage for the sorted DFS child lists of each vertex
-                extFace: Array of (N + NV) external face short circuit records
+                DVI: package private pointer; if the graph is extended to DFSUtils,
+                        then N instances of DFSUtils vertex info records are allocated
+
+                PVI: package private pointer; if the graph is extended to Planarity,
+                        then N instances of Planarity vertex info records are allocated
+                IC: contains additional useful variables for Kuratowski subgraph isolation.
+                sortedDFSChildLists: for Planarity graphs, storage for the sorted DFS child 
+                        lists of each vertex
+                extFace: For Planarity graphs, an array of (N + NV) external face 
+                        short circuit records
 
                 extensions: a list of extension data structures
                 functions: a table of function pointers that can be overloaded to provide
                            extension behaviors to the graph
+
+                extraData: void pointer for extra package private data, if any.
+                           This allows adding data members for graph subclasses
+                           while maintaining backwards compatibility.
         */
 
     struct graphStruct
@@ -557,6 +568,8 @@ extern "C"
 
         graphExtensionP extensions;
         graphFunctionTableP functions;
+
+        void *extraData;
     };
 
     typedef struct graphStruct graphStruct;
