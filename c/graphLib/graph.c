@@ -421,7 +421,7 @@ int _EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity)
 {
     stackP newStack = NULL;
     int e, Esize = gp_EdgeArraySize(theGraph),
-           newEsize = gp_EdgeArrayStart(theGraph) + (requiredEdgeCapacity << 1);
+           newEsize = gp_LowerEdgeBound(theGraph) + (requiredEdgeCapacity << 1);
 
     // If the new size is less than or equal to the old size, then
     // the graph already has the required edge capacity
@@ -2047,18 +2047,19 @@ int gp_DynamicAddEdge(graphP theGraph, int u, int ulink, int v, int vlink)
 int gp_InsertEdge(graphP theGraph, int u, int e_u, int e_ulink,
                   int v, int e_v, int e_vlink)
 {
-    int vertMax, edgeMax, upos, vpos;
+    int vertMax, upos, vpos;
 
     if (theGraph == NULL)
         return NOTOK;
 
     vertMax = gp_GetLastVirtualVertex(theGraph);
-    edgeMax = gp_EdgeInUseArraySize(theGraph) - 1;
 
     if (u < gp_GetFirstVertex(theGraph) || u > vertMax ||
         v < gp_GetFirstVertex(theGraph) || v > vertMax ||
-        e_u > edgeMax || (e_u < gp_EdgeArrayStart(theGraph) && gp_IsEdge(theGraph, e_u)) ||
-        e_v > edgeMax || (e_v < gp_EdgeArrayStart(theGraph) && gp_IsEdge(theGraph, e_v)) ||
+        (e_u < gp_LowerEdgeBound(theGraph) && gp_IsEdge(theGraph, e_u)) ||
+        e_u >= gp_UpperEdgeInUseBound(theGraph) ||
+        (e_v < gp_LowerEdgeBound(theGraph) && gp_IsEdge(theGraph, e_v)) ||
+        e_v >= gp_UpperEdgeInUseBound(theGraph) ||
         e_ulink < 0 || e_ulink > 1 || e_vlink < 0 || e_vlink > 1)
         return NOTOK;
 
@@ -2112,7 +2113,8 @@ int gp_InsertEdge(graphP theGraph, int u, int e_u, int e_ulink,
 int gp_DeleteEdge(graphP theGraph, int e)
 {
     if (theGraph == NULL ||
-        e < gp_EdgeArrayStart(theGraph) || e >= gp_EdgeInUseArraySize(theGraph) ||
+        e < gp_LowerEdgeBound(theGraph) ||
+        e >= gp_UpperEdgeInUseBound(theGraph) ||
         gp_EdgeNotInUse(theGraph, e))
         return NOTOK;
 
@@ -2193,7 +2195,7 @@ void _RestoreEdgeRecord(graphP theGraph, int e)
 void gp_HideEdge(graphP theGraph, int e)
 {
     if (theGraph == NULL ||
-        e < gp_EdgeArrayStart(theGraph) || e >= gp_EdgeInUseArraySize(theGraph) ||
+        e < gp_LowerEdgeBound(theGraph) || e >= gp_UpperEdgeInUseBound(theGraph) ||
         gp_EdgeNotInUse(theGraph, e))
     {
 #ifdef DEBUG
@@ -2231,7 +2233,7 @@ void _HideEdge(graphP theGraph, int e)
 void gp_RestoreEdge(graphP theGraph, int e)
 {
     if (theGraph == NULL ||
-        e < gp_EdgeArrayStart(theGraph) || e >= gp_EdgeInUseArraySize(theGraph) ||
+        e < gp_LowerEdgeBound(theGraph) || e >= gp_UpperEdgeInUseBound(theGraph) ||
         gp_EdgeNotInUse(theGraph, e))
     {
 #ifdef DEBUG
@@ -2385,7 +2387,7 @@ int _HideVertex(graphP theGraph, int vertex)
 int gp_ContractEdge(graphP theGraph, int e)
 {
     if (theGraph == NULL ||
-        e < gp_EdgeArrayStart(theGraph) || e >= gp_EdgeInUseArraySize(theGraph) ||
+        e < gp_LowerEdgeBound(theGraph) || e >= gp_UpperEdgeInUseBound(theGraph) ||
         gp_EdgeNotInUse(theGraph, e))
     {
         return NOTOK;
@@ -2451,8 +2453,8 @@ int gp_IdentifyVertices(graphP theGraph, int u, int v, int eBefore)
     if (theGraph == NULL ||
         u < gp_GetFirstVertex(theGraph) || u >= gp_AnyTypeVertexArraySize(theGraph) ||
         v < gp_GetFirstVertex(theGraph) || v >= gp_AnyTypeVertexArraySize(theGraph) ||
-        (eBefore != NIL && eBefore < gp_EdgeArrayStart(theGraph)) ||
-        eBefore >= gp_EdgeInUseArraySize(theGraph) ||
+        (eBefore != NIL && eBefore < gp_LowerEdgeBound(theGraph)) ||
+        eBefore >= gp_UpperEdgeInUseBound(theGraph) ||
         (eBefore != NIL && gp_EdgeNotInUse(theGraph, eBefore)))
     {
         return NOTOK;

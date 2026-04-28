@@ -148,13 +148,15 @@ extern "C"
 #define gp_IsEdge(theGraph, e)                                                     \
     ((e) == NIL                                                                    \
          ? 0                                                                       \
-         : ((e) < gp_EdgeArrayStart(theGraph) || (e) >= gp_EdgeArraySize(theGraph) \
+         : ((e) < gp_LowerEdgeBound(theGraph) || (e) >= gp_UpperEdgeBound(theGraph) \
                 ? (NOTOK, 0)                                                       \
                 : 1))
 #endif
 
 #define gp_IsNotEdge(theGraph, e) (!(e))
 #define gp_EdgeArrayStart(theGraph) (2)
+
+#define gp_LowerEdgeBound(theGraph) (2)
 
 #else // When using slower 0-based Arrays
 
@@ -164,19 +166,24 @@ extern "C"
 #define gp_IsEdge(theGraph, e)                                                     \
     ((e) == NIL                                                                    \
          ? 0                                                                       \
-         : ((e) < gp_EdgeArrayStart(theGraph) || (e) >= gp_EdgeArraySize(theGraph) \
+         : ((e) < gp_LowerEdgeBound(theGraph) || (e) >= gp_UpperEdgeBound(theGraph) \
                 ? (NOTOK, 0)                                                       \
                 : 1))
 #endif
 
 #define gp_IsNotEdge(theGraph, e) ((e) == NIL)
 #define gp_EdgeArrayStart(theGraph) (0)
+
+#define gp_LowerEdgeBound(theGraph) (0)
 #endif
 
 #define gp_EdgeInUse(theGraph, e) (gp_IsAnyTypeVertex(theGraph, gp_GetNeighbor(theGraph, e)))
 #define gp_EdgeNotInUse(theGraph, e) (gp_IsNotAnyTypeVertex(theGraph, gp_GetNeighbor(theGraph, e)))
-#define gp_EdgeArraySize(theGraph) (gp_EdgeArrayStart(theGraph) + ((theGraph)->edgeCapacity << 1))
-#define gp_EdgeInUseArraySize(theGraph) (gp_EdgeArrayStart(theGraph) + ((gp_GetM(theGraph) + (theGraph)->numEdgeHoles) << 1))
+#define gp_EdgeArraySize(theGraph) (gp_LowerEdgeBound(theGraph) + ((theGraph)->edgeCapacity << 1))
+#define gp_EdgeInUseArraySize(theGraph) (gp_LowerEdgeBound(theGraph) + ((gp_GetM(theGraph) + (theGraph)->numEdgeHoles) << 1))
+
+#define gp_UpperEdgeBound(theGraph)(gp_LowerEdgeBound(theGraph) + ((theGraph)->edgeCapacity << 1))
+#define gp_UpperEdgeInUseBound(theGraph) (gp_LowerEdgeBound(theGraph) + ((gp_GetM(theGraph) + (theGraph)->numEdgeHoles) << 1))
 
 // An edge is represented by two consecutive edge records in the edge array E.
 // If an even number, xor 1 will add one; if an odd number, xor 1 will subtract 1

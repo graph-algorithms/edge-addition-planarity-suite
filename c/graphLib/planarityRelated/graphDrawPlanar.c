@@ -366,7 +366,7 @@ int _ComputeEdgePositions(DrawPlanarContext *context)
     //    represented by a pair of adjacent edge records
     //    at index 2X.
 
-    if (gp_GetM(theEmbedding) > 0 && (edgeList = LCNew(gp_EdgeArrayStart(theEmbedding) / 2 + gp_GetM(theEmbedding))) == NULL)
+    if (gp_GetM(theEmbedding) > 0 && (edgeList = LCNew(gp_LowerEdgeBound(theEmbedding) / 2 + gp_GetM(theEmbedding))) == NULL)
     {
         free(vertexOrder);
         vertexOrder = NULL;
