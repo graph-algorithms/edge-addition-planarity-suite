@@ -176,7 +176,7 @@ extern "C"
 #define gp_EdgeInUse(theGraph, e) (gp_IsAnyTypeVertex(theGraph, gp_GetNeighbor(theGraph, e)))
 #define gp_EdgeNotInUse(theGraph, e) (gp_IsNotAnyTypeVertex(theGraph, gp_GetNeighbor(theGraph, e)))
 #define gp_EdgeArraySize(theGraph) (gp_EdgeArrayStart(theGraph) + ((theGraph)->edgeCapacity << 1))
-    int gp_EdgeInUseArraySize(graphP theGraph);
+#define gp_EdgeInUseArraySize(theGraph) (gp_EdgeArrayStart(theGraph) + ((gp_GetM(theGraph) + (theGraph)->numEdgeHoles) << 1))
 
 // An edge is represented by two consecutive edge records in the edge array E.
 // If an even number, xor 1 will add one; if an odd number, xor 1 will subtract 1
@@ -518,6 +518,7 @@ extern "C"
                 M: Number of edges (the "size" of the graph)
                 edgeCapacity: the maximum number of edges allowed in E
                 edgeHoles: free locations in E where edges have been deleted
+                numEdgeHoles: package private member indicating the number of edge holes.
 
                 graphFlags: Additional state information about the graph
                 embedFlags: records the type of embedding requested (uses EMBEDFLAGS)
@@ -532,9 +533,9 @@ extern "C"
                 PVI: package private pointer; if the graph is extended to Planarity,
                         then N instances of Planarity vertex info records are allocated
                 IC: contains additional useful variables for Kuratowski subgraph isolation.
-                sortedDFSChildLists: for Planarity graphs, storage for the sorted DFS child 
+                sortedDFSChildLists: for Planarity graphs, storage for the sorted DFS child
                         lists of each vertex
-                extFace: For Planarity graphs, an array of (N + NV) external face 
+                extFace: For Planarity graphs, an array of (N + NV) external face
                         short circuit records
 
                 extensions: a list of extension data structures
@@ -554,6 +555,7 @@ extern "C"
         edgeRecP E;
         int M, edgeCapacity;
         stackP edgeHoles;
+        int numEdgeHoles;
 
         unsigned graphFlags, embedFlags;
 

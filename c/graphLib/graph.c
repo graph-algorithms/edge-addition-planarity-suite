@@ -202,7 +202,10 @@ void _InitFunctionTable(graphP theGraph)
 
  The edgeHoles stack, initially empty, is set to the edgeCapacity,
      which is big enough to push every edge (to indicate an edge
-     you only need to indicate one of its two edge records)
+     you only need to indicate one of its two edge records).
+
+ The numEdgeHoles member tracks the size of the edgeHoles stack so that
+    the number of edges in use within E can be efficiently computed.
 
  The stack, initially empty, is made big enough for a pair of integers
      per edge (2 * edgeCapacity), or 6N integers if the edgeCapacity
@@ -241,6 +244,8 @@ int _InitGraph(graphP theGraph, int N)
     theGraph->N = N;
     theGraph->NV = N;
     theGraph->edgeCapacity = theGraph->edgeCapacity > 0 ? theGraph->edgeCapacity : DEFAULT_EDGE_LIMIT * N;
+    theGraph->numEdgeHoles = 0;
+
     VIsize = gp_VertexArraySize(theGraph);
     Vsize = gp_AnyTypeVertexArraySize(theGraph);
     Esize = gp_EdgeArraySize(theGraph);
@@ -344,6 +349,7 @@ void _ReinitializeGraph(graphP theGraph)
     LCReset(theGraph->sortedDFSChildLists);
     sp_ClearStack(theGraph->theStack);
     sp_ClearStack(theGraph->edgeHoles);
+    theGraph->numEdgeHoles = 0;
 }
 
 /********************************************************************
@@ -457,6 +463,7 @@ int _EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity)
     sp_CopyContent(newStack, theGraph->edgeHoles);
     sp_Free(&theGraph->edgeHoles);
     theGraph->edgeHoles = newStack;
+    theGraph->numEdgeHoles = sp_GetCurrentSize(theGraph->edgeHoles);
 
     // Reallocate the edgeRec array to the new size,
     theGraph->E = (edgeRecP)realloc(theGraph->E, newEsize * sizeof(edgeRec));
@@ -849,6 +856,7 @@ void _ClearGraph(graphP theGraph)
     theGraph->embedFlags = 0;
 
     sp_Free(&theGraph->edgeHoles);
+    theGraph->numEdgeHoles = 0;
 
     sp_Free(&theGraph->theStack);
     LCFree(&theGraph->BicompRootLists);
@@ -959,6 +967,7 @@ int gp_CopyAdjacencyLists(graphP dstGraph, graphP srcGraph)
     // Tell the dstGraph how many edges it now has and where the edge holes are
     dstGraph->M = gp_GetM(srcGraph);
     sp_Copy(dstGraph->edgeHoles, srcGraph->edgeHoles);
+    dstGraph->numEdgeHoles = sp_GetCurrentSize(dstGraph->edgeHoles);
 
     return OK;
 }
@@ -1062,6 +1071,7 @@ int gp_CopyGraph(graphP dstGraph, graphP srcGraph)
     LCCopy(dstGraph->sortedDFSChildLists, srcGraph->sortedDFSChildLists);
     sp_Copy(dstGraph->theStack, srcGraph->theStack);
     sp_Copy(dstGraph->edgeHoles, srcGraph->edgeHoles);
+    dstGraph->numEdgeHoles = sp_GetCurrentSize((dstGraph)->edgeHoles);
 
     // Copy the set of extensions, which includes copying the
     // extension data as well as the function overload tables
@@ -1950,6 +1960,7 @@ int gp_AddEdge(graphP theGraph, int u, int ulink, int v, int vlink)
     if (sp_NonEmpty(theGraph->edgeHoles))
     {
         sp_Pop(theGraph->edgeHoles, vpos);
+        theGraph->numEdgeHoles = sp_GetCurrentSize(theGraph->edgeHoles);
     }
     else
         vpos = gp_EdgeInUseArraySize(theGraph);
@@ -2057,6 +2068,7 @@ int gp_InsertEdge(graphP theGraph, int u, int e_u, int e_ulink,
     if (sp_NonEmpty(theGraph->edgeHoles))
     {
         sp_Pop(theGraph->edgeHoles, vpos);
+        theGraph->numEdgeHoles = sp_GetCurrentSize(theGraph->edgeHoles);
     }
     else
         vpos = gp_EdgeInUseArraySize(theGraph);
@@ -2128,28 +2140,11 @@ int gp_DeleteEdge(graphP theGraph, int e)
             return NOTOK;
 
         sp_Push(theGraph->edgeHoles, e);
+        theGraph->numEdgeHoles = sp_GetCurrentSize(theGraph->edgeHoles);
     }
 
     // Return the previously calculated successor of e.
     return OK;
-}
-
-/****************************************************************************
- gp_EdgeInUseArraySize()
-
- Returns the array index just after the last edge record that is in use.
- This is the number of edges plus the number of edge holes created by
- prior edge deletion and not filled by prior edge additions/insertions.
- If theGraph is NULL, 0 is returned.
-
- NOTE: This was a macro that has been converted to a function as part of
-       hiding the stack data structure from the public API.
- ****************************************************************************/
-int gp_EdgeInUseArraySize(graphP theGraph)
-{
-    return theGraph == NULL
-               ? 0
-               : (gp_EdgeArrayStart(theGraph) + ((gp_GetM(theGraph) + sp_GetCurrentSize((theGraph)->edgeHoles)) << 1));
 }
 
 /********************************************************************
