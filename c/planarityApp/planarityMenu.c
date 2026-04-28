@@ -56,9 +56,9 @@ int menu(void)
 
         while (1)
         {
-            Message(GetProjectTitle());
+            Message("%s", GetProjectTitle());
 
-            Message(GetAlgorithmSpecifiers());
+            Message("%s", GetAlgorithmSpecifiers());
 
             Message(
                 "X. Transform single graph in supported file to .g6, adjacency list, or adjacency matrix\n"
@@ -68,7 +68,7 @@ int menu(void)
                 "Q. Quit\n"
                 "\n");
 
-            Prompt("Enter Choice: ");
+            Message("Enter Choice: ");
 
             if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
             {
@@ -162,7 +162,7 @@ int menu(void)
                 }
             }
 
-            Prompt("\nPress return key to continue...");
+            Message("\nPress return key to continue...");
             if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
             {
                 ErrorMessage("Unable to fetch from stdin; exiting.\n");
@@ -231,7 +231,7 @@ int TransformGraphMenu(void)
 
     while (1)
     {
-        Prompt("Enter input filename:\n");
+        Message("Enter input filename:\n");
         if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
         {
             ErrorMessage("Unable to read input filename from stdin.\n");
@@ -261,7 +261,7 @@ int TransformGraphMenu(void)
     {
         while (1)
         {
-            Prompt("Enter output filename, or type \"stdout\" to output to console:\n");
+            Message("Enter output filename, or type \"stdout\" to output to console:\n");
             if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
             {
                 ErrorMessage("Unable to read output filename from stdin.\n");
@@ -287,8 +287,8 @@ int TransformGraphMenu(void)
     {
         while (1)
         {
-            Message(GetSupportedOutputChoices());
-            Prompt("Enter output format: ");
+            Message("%s", GetSupportedOutputChoices());
+            Message("Enter output format: ");
             if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
             {
                 ErrorMessage("Unable to read output format from stdin.\n");
@@ -403,7 +403,7 @@ int TestAllGraphsMenu(void)
 
     while (1)
     {
-        Prompt("Enter input filename:\n");
+        Message("Enter input filename:\n");
         if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
         {
             ErrorMessage("Unable to read input filename from stdin.\n");
@@ -433,7 +433,7 @@ int TestAllGraphsMenu(void)
     {
         while (1)
         {
-            Prompt("Enter output filename, or type \"stdout\" to output to console:\n");
+            Message("Enter output filename, or type \"stdout\" to output to console:\n");
             if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
             {
                 ErrorMessage("Unable to read output filename from stdin.\n");
@@ -459,8 +459,8 @@ int TestAllGraphsMenu(void)
     {
         while (1)
         {
-            Message(GetAlgorithmSpecifiers());
-            Prompt("Enter algorithm specifier (with optional modifier): ");
+            Message("%s", GetAlgorithmSpecifiers());
+            Message("Enter algorithm specifier (with optional modifier): ");
             if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
             {
                 ErrorMessage("Unable to read command and optional modifier from stdin.\n");

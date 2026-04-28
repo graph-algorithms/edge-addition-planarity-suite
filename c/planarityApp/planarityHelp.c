@@ -30,7 +30,7 @@ char const *GetProjectTitle(void)
 
 int helpMessage(char *param)
 {
-    Message(GetProjectTitle());
+    Message("%s", GetProjectTitle());
 
     if (param == NULL)
     {
@@ -95,7 +95,7 @@ int helpMessage(char *param)
 
         Message("-q is for quiet mode (no messages to stdout and stderr)\n\n");
 
-        Message(GetAlgorithmFlags());
+        Message( "%s", GetAlgorithmFlags());
 
         Message(
             "K = # of graphs to randomly generate\n"

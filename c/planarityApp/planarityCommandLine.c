@@ -118,15 +118,8 @@ int legacyCommandLine(int argc, char *argv[])
         Result = gp_Read(theGraph, argv[1]);
         if (Result != OK)
         {
-            char const *messageFormat = "Failed to read graph \"%.*s\"";
-            char messageContents[MAXLINE + 1];
-            int charsAvailForFilename = (int)(MAXLINE - strlen(messageFormat));
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-nonliteral"
-            sprintf(messageContents, messageFormat, charsAvailForFilename, argv[1]);
-#pragma GCC diagnostic pop
-            ErrorMessage(messageContents);
-
+            ErrorMessage("Failed to read graph \"%.*s\"",
+                         FILENAME_MAX, argv[1]);
             Result = NOTOK;
         }
     }
@@ -641,11 +634,6 @@ int runGraphTransformationTest(char const *command, char const *infileName, int 
         else
         {
             char *expectedOutfileName = NULL;
-            char const *messageFormat = NULL;
-            int charsAvailForFilename = 0;
-            char messageContents[MAXLINE + 1];
-            messageContents[0] = '\0';
-
             // Final arg is baseFlag, which is dependent on whether the FLAGS_ZEROBASEDIO is set in a graph's graphFlags
             Result = ConstructTransformationExpectedResultFilename(infileName, &expectedOutfileName, transformationCode, zeroBasedOutputFlag ? 0 : 1);
 
@@ -661,25 +649,18 @@ int runGraphTransformationTest(char const *command, char const *infileName, int 
 
                 if (Result == TRUE)
                 {
-                    messageFormat = "For the transformation %s on file \"%.*s\", actual output matched expected output file.\n";
-                    charsAvailForFilename = (int)(MAXLINE - strlen(messageFormat));
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-nonliteral"
-                    sprintf(messageContents, messageFormat, command, charsAvailForFilename, infileName);
-#pragma GCC diagnostic pop
-                    Message(messageContents);
+                    Message("For the transformation %s on file \"%.*s\", "
+                            "actual output matched expected output file.\n",
+                            command, FILENAME_MAX, infileName);
 
                     Result = OK;
                 }
                 else
                 {
-                    messageFormat = "For the transformation %s on file \"%.*s\", actual output did not match expected output file.\n";
-                    charsAvailForFilename = (int)(MAXLINE - strlen(messageFormat));
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-nonliteral"
-                    sprintf(messageContents, messageFormat, command, charsAvailForFilename, infileName);
-#pragma GCC diagnostic pop
-                    ErrorMessage(messageContents);
+                    ErrorMessage("For the transformation %s on file \"%.*s\", "
+                                 "actual output did not match expected output "
+                                 "file.\n",
+                                 command, FILENAME_MAX, infileName);
 
                     Result = NOTOK;
                 }

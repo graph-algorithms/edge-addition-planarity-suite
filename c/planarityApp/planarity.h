@@ -57,7 +57,6 @@ extern "C"
     /* Low-level Utilities */
     int GetLineFromStdin(char *lineBuff, int lineBuffSize);
     void FlushConsole(FILE *f);
-    void Prompt(char const *message);
 
     void SaveAsciiGraph(graphP theGraph, char *filename);
 
