@@ -65,7 +65,7 @@ int TestAllGraphs(char const *const commandString, char const *const infileName,
     platform_GetTime(end);
     stats.duration = platform_GetDuration(start, end);
 
-    if (Result != OK && Result != NONEMBEDDABLE)
+    if (Result != OK)
     {
         ErrorMessage("\nEncountered error while running command '%c' on all "
                      "graphs in \"%.*s\".\n",
@@ -94,7 +94,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
 
     graphP origGraphRead = NULL;
     graphP graphForEmbedding = NULL;
-    int embedFlags = 0, numOK = 0, numNONEMBEDDABLE = 0, errorFlag = FALSE;
+    int embedFlags = 0, numOK = 0, numNONEMBEDDABLE = 0;
     int order = 0, maxNumEdgesForOrder = 0;
 
     G6ReadIteratorP theG6ReadIterator = NULL;
@@ -164,8 +164,6 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
         return NOTOK;
     }
 
-    // We must extend the original graph so that in the loop body when we
-    // gp_CopyGraph(), the extension structures will be copied over.
     if (ExtendGraph(origGraphRead, command) != OK ||
         ExtendGraph(graphForEmbedding, command) != OK)
     {
@@ -185,7 +183,6 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
             ErrorMessage("Unable to read graph on line %d from .g6 read "
                          "iterator.\n",
                          theG6ReadIterator->numGraphsRead + 1);
-            errorFlag = TRUE;
             Result = NOTOK;
             break;
         }
@@ -197,7 +194,6 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
         {
             ErrorMessage("Unable to copy graph read into graph for "
                          "embedding.\n");
-            errorFlag = TRUE;
             Result = NOTOK;
             break;
         }
@@ -207,9 +203,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
         {
             ErrorMessage("Failed to embed graph on line %d for command '%c'.\n",
                          theG6ReadIterator->numGraphsRead + 1, command);
-            errorFlag = TRUE;
             Result = NOTOK;
-            break;
         }
 
         if (gp_TestEmbedResultIntegrity(graphForEmbedding, origGraphRead, Result) != Result)
@@ -217,15 +211,18 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
             ErrorMessage("Embed integrity check failed for graph on line %d "
                          "for command '%c'.\n",
                          theG6ReadIterator->numGraphsRead + 1, command);
-            errorFlag = TRUE;
             Result = NOTOK;
-            break;
         }
 
         if (Result == OK)
             numOK++;
         else if (Result == NONEMBEDDABLE)
+        {
             numNONEMBEDDABLE++;
+            // Now that we've processed the NONEMBEDDABLE result, we set the
+            // Result to OK so that we exit the loop with an OK or NOTOK only
+            Result = OK;
+        }
         else
         {
             if (modifier == '\0')
@@ -241,7 +238,6 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
                              command, modifier,
                              theG6ReadIterator->numGraphsRead + 1);
             }
-            errorFlag = TRUE;
             Result = NOTOK;
             break;
         }
@@ -250,7 +246,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
     stats->numGraphsRead = theG6ReadIterator->numGraphsRead;
     stats->numOK = numOK;
     stats->numNONEMBEDDABLE = numNONEMBEDDABLE;
-    stats->errorFlag = errorFlag;
+    stats->errorFlag = (Result == OK) ? FALSE : TRUE;
 
     g6_FreeReader((&theG6ReadIterator));
     gp_Free(&origGraphRead);

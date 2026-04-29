@@ -1012,31 +1012,31 @@ void WriteAlgorithmResults(graphP theGraph, int Result, char command, platform_t
     Message("The graph ");
     if (infileName)
     {
-        Message("\"%.*s\"", FILENAME_MAX, infileName);
+        Message("\"%.*s\" ", FILENAME_MAX, infileName);
     }
 
     switch (command)
     {
     case 'p':
-        Message(" is%s planar.\n", Result == OK ? "" : " not");
+        Message("is%s planar.\n", Result == OK ? "" : " not");
         break;
     case 'd':
-        Message(" is%s planar.\n", Result == OK ? "" : " not");
+        Message("is%s planar.\n", Result == OK ? "" : " not");
         break;
     case 'o':
-        Message(" is%s outerplanar.\n", Result == OK ? "" : " not");
+        Message("is%s outerplanar.\n", Result == OK ? "" : " not");
         break;
     case '2':
-        Message(" has %s subgraph homeomorphic to K_{2,3}.\n", Result == OK ? "no" : "a");
+        Message("has %s subgraph homeomorphic to K_{2,3}.\n", Result == OK ? "no" : "a");
         break;
     case '3':
-        Message(" has %s subgraph homeomorphic to K_{3,3}.\n", Result == OK ? "no" : "a");
+        Message("has %s subgraph homeomorphic to K_{3,3}.\n", Result == OK ? "no" : "a");
         break;
     case '4':
-        Message(" has %s subgraph homeomorphic to K_4.\n", Result == OK ? "no" : "a");
+        Message("has %s subgraph homeomorphic to K_4.\n", Result == OK ? "no" : "a");
         break;
     default:
-        Message(" has not been processed due to unrecognized command.\n");
+        Message("has not been processed due to unrecognized command.\n");
         break;
     }
 
