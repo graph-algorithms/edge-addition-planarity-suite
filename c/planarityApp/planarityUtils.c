@@ -27,11 +27,11 @@ int Reconfigure(void)
 
     while (1)
     {
-        Prompt("\nDo you want to \n"
-               "  Randomly generate graphs (r),\n"
-               "  Specify a graph (s),\n"
-               "  Randomly generate a maximal planar graph (m), or\n"
-               "  Randomly generate a non-planar graph (n)?\n\t");
+        Message("\nDo you want to \n"
+                "  Randomly generate graphs (r),\n"
+                "  Specify a graph (s),\n"
+                "  Randomly generate a maximal planar graph (m), or\n"
+                "  Randomly generate a non-planar graph (n)?\n\t");
 
         if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
         {
@@ -57,7 +57,7 @@ int Reconfigure(void)
 
         while (1)
         {
-            Prompt("Do you want original graphs in directory 'random'? (y/n) ");
+            Message("Do you want original graphs in directory 'random'? (y/n) ");
             if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
             {
                 ErrorMessage("Unable to fetch choice from stdin.\n");
@@ -80,7 +80,7 @@ int Reconfigure(void)
         {
             while (1)
             {
-                Prompt("Do you want to output generated graphs to Adjacency List (last 10 only) or to G6 (all)? (a/g) ");
+                Message("Do you want to output generated graphs to Adjacency List (last 10 only) or to G6 (all)? (a/g) ");
                 if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
                 {
                     ErrorMessage("Unable to fetch choice from stdin.\n");
@@ -104,7 +104,7 @@ int Reconfigure(void)
         {
             while (1)
             {
-                Prompt("Do you want adj. matrix of embeddable graphs in directory 'embedded' (last 10 max))? (y/n) ");
+                Message("Do you want adj. matrix of embeddable graphs in directory 'embedded' (last 10 max))? (y/n) ");
                 if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
                 {
                     ErrorMessage("Unable to fetch choice from stdin.\n");
@@ -127,7 +127,7 @@ int Reconfigure(void)
         {
             while (1)
             {
-                Prompt("Do you want adj. matrix of obstructed graphs in directory 'obstructed' (last 10 max)? (y/n) ");
+                Message("Do you want adj. matrix of obstructed graphs in directory 'obstructed' (last 10 max)? (y/n) ");
                 if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
                 {
                     ErrorMessage("Unable to fetch choice from stdin.\n");
@@ -151,7 +151,7 @@ int Reconfigure(void)
         {
             while (1)
             {
-                Prompt("Do you want adjacency list format of embeddings in directory 'adjlist' (last 10 max)? (y/n) ");
+                Message("Do you want adjacency list format of embeddings in directory 'adjlist' (last 10 max)? (y/n) ");
                 if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
                 {
                     ErrorMessage("Unable to fetch choice from stdin.\n");
@@ -212,12 +212,6 @@ void FlushConsole(FILE *f)
     fflush(f);
 }
 
-void Prompt(char const *message)
-{
-    Message(message);
-    FlushConsole(stdout);
-}
-
 /****************************************************************************
  ****************************************************************************/
 
@@ -229,14 +223,9 @@ void SaveAsciiGraph(graphP theGraph, char *filename)
     // The filename may specify a directory that doesn't exist
     if (outfile == NULL)
     {
-        char messageContents[MAXLINE + 1];
-        char const *messageFormat = "Failed to write to \"%.*s\"\nMake the directory if not present\n";
-        int charsAvailForStrToInclude = (int)(MAXLINE - strlen(messageFormat));
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-nonliteral"
-        sprintf(messageContents, messageFormat, charsAvailForStrToInclude, filename);
-#pragma GCC diagnostic pop
-        ErrorMessage(messageContents);
+        ErrorMessage("Failed to write to \"%.*s\"\nMake the directory if not "
+                     "present\n",
+                     FILENAME_MAX, filename);
         return;
     }
 
@@ -830,7 +819,7 @@ char *ConstructInputFilename(char const *infileName)
     {
         while (1)
         {
-            Prompt("Enter graph file name: ");
+            Message("Enter graph file name: ");
             if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
             {
                 ErrorMessage("Unable to read graph file name from stdin.\n");
@@ -935,11 +924,6 @@ char *ConstructPrimaryOutputFilename(char const *infileName, char const *outfile
     {
         if (strlen(outfileName) > FILENAMEMAXLENGTH)
         {
-            char const *messageFormat = "Outfile filename is too long. Result placed in \"%.*s\"";
-            int charsAvailForStrToInclude = (int)(MAXLINE - strlen(messageFormat));
-            char messageContents[MAXLINE + 1];
-            messageContents[0] = '\0';
-
             // The output filename is based on the input filename
             if (theFileName != infileName)
                 strcpy(theFileName, infileName);
@@ -951,11 +935,7 @@ char *ConstructPrimaryOutputFilename(char const *infileName, char const *outfile
             }
             strcat(theFileName, ".out.txt");
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-nonliteral"
-            sprintf(messageContents, messageFormat, charsAvailForStrToInclude, theFileName);
-#pragma GCC diagnostic pop
-            ErrorMessage(messageContents);
+            ErrorMessage("Outfile filename is too long. Result placed in \"%.*s\"", FILENAME_MAX, theFileName);
         }
         else
         {
@@ -1029,52 +1009,37 @@ int ConstructTransformationExpectedResultFilename(char const *infileName, char *
 
 void WriteAlgorithmResults(graphP theGraph, int Result, char command, platform_time start, platform_time end, char const *infileName)
 {
-    char const *messageFormat = NULL;
-    char messageContents[MAXLINE + 1];
-    int charsAvailForStr = 0;
-
-    memset(messageContents, '\0', (MAXLINE + 1));
-
+    Message("The graph ");
     if (infileName)
     {
-        messageFormat = "The graph \"%.*s\" ";
-        charsAvailForStr = (int)(MAXLINE - strlen(messageFormat));
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-nonliteral"
-        sprintf(messageContents, messageFormat, charsAvailForStr, infileName);
-#pragma GCC diagnostic pop
+        Message("\"%.*s\" ", FILENAME_MAX, infileName);
     }
-    else
-        sprintf(messageContents, "The graph ");
-    Message(messageContents);
 
     switch (command)
     {
     case 'p':
-        sprintf(messageContents, "is%s planar.\n", Result == OK ? "" : " not");
+        Message("is%s planar.\n", Result == OK ? "" : " not");
         break;
     case 'd':
-        sprintf(messageContents, "is%s planar.\n", Result == OK ? "" : " not");
+        Message("is%s planar.\n", Result == OK ? "" : " not");
         break;
     case 'o':
-        sprintf(messageContents, "is%s outerplanar.\n", Result == OK ? "" : " not");
+        Message("is%s outerplanar.\n", Result == OK ? "" : " not");
         break;
     case '2':
-        sprintf(messageContents, "has %s subgraph homeomorphic to K_{2,3}.\n", Result == OK ? "no" : "a");
+        Message("has %s subgraph homeomorphic to K_{2,3}.\n", Result == OK ? "no" : "a");
         break;
     case '3':
-        sprintf(messageContents, "has %s subgraph homeomorphic to K_{3,3}.\n", Result == OK ? "no" : "a");
+        Message("has %s subgraph homeomorphic to K_{3,3}.\n", Result == OK ? "no" : "a");
         break;
     case '4':
-        sprintf(messageContents, "has %s subgraph homeomorphic to K_4.\n", Result == OK ? "no" : "a");
+        Message("has %s subgraph homeomorphic to K_4.\n", Result == OK ? "no" : "a");
         break;
     default:
-        sprintf(messageContents, "has not been processed due to unrecognized command.\n");
+        Message("has not been processed due to unrecognized command.\n");
         break;
     }
-    Message(messageContents);
 
-    sprintf(messageContents, "Algorithm '%s' executed in %.3lf seconds.\n",
+    Message("Algorithm '%s' executed in %.3lf seconds.\n",
             GetAlgorithmName(command), platform_GetDuration(start, end));
-    Message(messageContents);
 }

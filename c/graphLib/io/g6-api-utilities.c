@@ -89,15 +89,15 @@ int _g6_ValidateOrderOfEncodedGraph(char *graphBuff, int order)
         n = currChar - 63;
     else
     {
-        ErrorMessage("Character doesn't correspond to a printable ASCII character.\n");
+        ErrorMessage("Character doesn't correspond to a printable ASCII "
+                     "character.\n");
         return NOTOK;
     }
 
     if (n != order)
     {
-        char messageContents[MAXLINE + 1];
-        sprintf(messageContents, "Graph order %d doesn't match expected graph order %d", n, order);
-        ErrorMessage(messageContents);
+        ErrorMessage("Graph order %d doesn't match expected graph order %d",
+                     n, order);
         return NOTOK;
     }
 
@@ -114,7 +114,7 @@ int _g6_ValidateGraphEncoding(char *graphBuff, const int order, const int numCha
 
     if (graphBuff == NULL || strlen(graphBuff) == 0)
     {
-        ErrorMessage("Invalid encoding: graphBuff is NULL or has no content.\n");
+        ErrorMessage("Invalid encoding: graphBuff is NULL or empty.\n");
         return NOTOK;
     }
 
@@ -129,10 +129,9 @@ int _g6_ValidateGraphEncoding(char *graphBuff, const int order, const int numCha
 
     if (expectedNumChars != numCharsForGraphEncoding)
     {
-        char messageContents[MAXLINE + 1];
-        messageContents[0] = '\0';
-        sprintf(messageContents, "Invalid number of bytes for graph of order %d; got %d but expected %d\n", order, numCharsForGraphEncoding, expectedNumChars);
-        ErrorMessage(messageContents);
+        ErrorMessage("Invalid number of bytes for graph of order %d; got %d "
+                     "but expected %d\n",
+                     order, numCharsForGraphEncoding, expectedNumChars);
         return NOTOK;
     }
 
@@ -141,10 +140,8 @@ int _g6_ValidateGraphEncoding(char *graphBuff, const int order, const int numCha
     {
         if (graphBuff[i] < 63 || graphBuff[i] > 126)
         {
-            char messageContents[MAXLINE + 1];
-            messageContents[0] = '\0';
-            sprintf(messageContents, "Invalid character at index %d: \"%c\"\n", i, graphBuff[i]);
-            ErrorMessage(messageContents);
+            ErrorMessage("Invalid character at index %d: \"%c\"\n",
+                         i, graphBuff[i]);
             return NOTOK;
         }
     }
@@ -161,10 +158,8 @@ int _g6_ValidateGraphEncoding(char *graphBuff, const int order, const int numCha
 
     if (numPaddingZeroes != expectedNumPaddingZeroes)
     {
-        char messageContents[MAXLINE + 1];
-        messageContents[0] = '\0';
-        sprintf(messageContents, "Expected %d padding zeroes, but got %d.\n", expectedNumPaddingZeroes, numPaddingZeroes);
-        ErrorMessage(messageContents);
+        ErrorMessage("Expected %d padding zeroes, but got %d.\n",
+                     expectedNumPaddingZeroes, numPaddingZeroes);
         exitCode = NOTOK;
     }
 

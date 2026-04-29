@@ -24,20 +24,26 @@ void setQuietModeSetting(int newQuietModeSetting)
     quietMode = newQuietModeSetting;
 }
 
-void Message(char const *message)
+void Message(char const *message, ...)
 {
+    va_list args;
     if (!getQuietModeSetting())
     {
-        fprintf(stdout, "%s", message);
+        va_start(args, message);
+        vfprintf(stdout, message, args);
+        va_end(args);
         fflush(stdout);
     }
 }
 
-void ErrorMessage(char const *message)
+void ErrorMessage(char const *message, ...)
 {
+    va_list args;
     if (!getQuietModeSetting())
     {
-        fprintf(stderr, "%s", message);
+        va_start(args, message);
+        vfprintf(stderr, message, args);
+        va_end(args);
         fflush(stderr);
     }
 }

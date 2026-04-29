@@ -29,8 +29,8 @@ extern "C"
     extern int getQuietModeSetting(void);
     extern void setQuietModeSetting(int);
 
-    extern void Message(char const *message);
-    extern void ErrorMessage(char const *message);
+    extern void Message(char const *message, ...) __attribute__((format(printf, 1, 2)));
+    extern void ErrorMessage(char const *message, ...) __attribute__((format(printf, 1, 2)));
 
     int GetNumCharsToReprInt(int theNum, int *numCharsRequired);
 #ifdef __cplusplus
