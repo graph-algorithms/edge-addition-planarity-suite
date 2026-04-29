@@ -13,7 +13,7 @@ See the LICENSE.TXT file for licensing information.
 #include "apiutils.h"
 #include "apiutils.private.h"
 
-// The graphLib gp_ErrorMessage() and gp_Message() calls are suppressed by
+// The graphLib ErrorMessage() and Message() calls are suppressed by
 // default, but an application can turn them on if desired.
 int quietModeFlag = TRUE;
 
@@ -27,7 +27,7 @@ void gp_SetQuietModeFlag(int newQuietModeFlag)
     quietModeFlag = newQuietModeFlag;
 }
 
-void gp_Message(char const *message)
+void Message(char const *message)
 {
     if (!gp_GetQuietModeFlag())
     {
@@ -36,7 +36,7 @@ void gp_Message(char const *message)
     }
 }
 
-void gp_ErrorMessage(char const *message)
+void ErrorMessage(char const *message)
 {
     if (!gp_GetQuietModeFlag())
     {
@@ -71,11 +71,11 @@ void _Log(char const *Str)
     {
         triedlogfile = TRUE;
         if (atexit(closeLogFileAtExit) != 0)
-            gp_ErrorMessage("Unable to set up atexit() to close Edge_Addition_Planarity_Suite log file on exit");
+            ErrorMessage("Unable to set up atexit() to close Edge_Addition_Planarity_Suite log file on exit");
         else
         {
             if ((logfile = fopen("Edge_Addition_Planarity_Suite.LOG", WRITETEXT)) == NULL)
-                gp_ErrorMessage("Unable to open the Edge_Addition_Planarity_Suite log file");
+                ErrorMessage("Unable to open the Edge_Addition_Planarity_Suite log file");
         }
     }
 

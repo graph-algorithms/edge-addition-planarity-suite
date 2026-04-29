@@ -47,14 +47,14 @@ int TestAllGraphs(char const *const commandString, char const *const infileName,
 
     if (GetCommandAndOptionalModifier(commandString, &command, &modifier) != OK)
     {
-        gp_ErrorMessage("Unable to determine command (and optional modifier) from command string.\n");
+        ErrorMessage("Unable to determine command (and optional modifier) from command string.\n");
 
         return NOTOK;
     }
 
     if (infileName == NULL)
     {
-        gp_ErrorMessage("No input file provided.\n");
+        ErrorMessage("No input file provided.\n");
 
         return NOTOK;
     }
@@ -65,7 +65,7 @@ int TestAllGraphs(char const *const commandString, char const *const infileName,
 #pragma GCC diagnostic ignored "-Wformat-nonliteral"
     sprintf(messageContents, messageFormat, charsAvailForFilename, infileName);
 #pragma GCC diagnostic pop
-    gp_Message(messageContents);
+    Message(messageContents);
 
     // Start the timer
     platform_GetTime(start);
@@ -84,14 +84,14 @@ int TestAllGraphs(char const *const commandString, char const *const infileName,
 #pragma GCC diagnostic ignored "-Wformat-nonliteral"
         sprintf(messageContents, messageFormat, command, charsAvailForFilename, infileName);
 #pragma GCC diagnostic pop
-        gp_ErrorMessage(messageContents);
+        ErrorMessage(messageContents);
 
         Result = NOTOK;
     }
     else
     {
         sprintf(messageContents, "\nDone testing all graphs (%.3lf seconds).\n", stats.duration);
-        gp_Message(messageContents);
+        Message(messageContents);
     }
 
     if (outputTestAllGraphsResults(command, modifier, &stats, infileName, outfileName, pOutputStr) != OK)
@@ -102,7 +102,7 @@ int TestAllGraphs(char const *const commandString, char const *const infileName,
 #pragma GCC diagnostic ignored "-Wformat-nonliteral"
         sprintf(messageContents, messageFormat, command, charsAvailForFilename, infileName);
 #pragma GCC diagnostic pop
-        gp_ErrorMessage(messageContents);
+        ErrorMessage(messageContents);
 
         Result = NOTOK;
     }
@@ -125,7 +125,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
 
     if ((Result = GetEmbedFlags(command, modifier, &embedFlags)) != OK)
     {
-        gp_ErrorMessage("Unable to derive embedFlags from command and modifier characters.\n");
+        ErrorMessage("Unable to derive embedFlags from command and modifier characters.\n");
 
         stats->errorFlag = TRUE;
 
@@ -136,7 +136,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
 
     if (theGraph == NULL)
     {
-        gp_ErrorMessage("Unable to allocate graph.\n");
+        ErrorMessage("Unable to allocate graph.\n");
 
         stats->errorFlag = TRUE;
 
@@ -145,7 +145,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
 
     if ((Result = g6_NewReader((&theG6ReadIterator), theGraph)) != OK)
     {
-        gp_ErrorMessage("Unable to allocate G6ReadIterator.\n");
+        ErrorMessage("Unable to allocate G6ReadIterator.\n");
 
         gp_Free(&theGraph);
         stats->errorFlag = TRUE;
@@ -155,8 +155,8 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
 
     if ((Result = g6_InitReaderWithFileName(theG6ReadIterator, infileName)) != OK)
     {
-        gp_ErrorMessage("Unable to test all graphs due to failure to initialize"
-                        "G6ReadIterator.\n");
+        ErrorMessage("Unable to test all graphs due to failure to initialize"
+                     "G6ReadIterator.\n");
 
         g6_FreeReader((&theG6ReadIterator));
         gp_Free(&theGraph);
@@ -173,7 +173,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
     {
         if ((Result = gp_EnsureEdgeCapacity(theGraph, (order * (order - 1) / 2))) != OK)
         {
-            gp_ErrorMessage("Unable to ensure sufficient edge capacity of the G6ReadIterator's graph struct.\n");
+            ErrorMessage("Unable to ensure sufficient edge capacity of the G6ReadIterator's graph struct.\n");
 
             g6_FreeReader((&theG6ReadIterator));
             gp_Free(&theGraph);
@@ -196,7 +196,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
         sprintf(messageContents, messageFormat, commandStr);
 #pragma GCC diagnostic pop
 
-        gp_ErrorMessage(messageContents);
+        ErrorMessage(messageContents);
 
         g6_FreeReader(&theG6ReadIterator);
         gp_Free(&theGraph);
@@ -208,7 +208,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
     copyOfOrigGraph = gp_New();
     if (copyOfOrigGraph == NULL)
     {
-        gp_ErrorMessage("Unable to allocate graph to store copy of original graph before embedding.\n");
+        ErrorMessage("Unable to allocate graph to store copy of original graph before embedding.\n");
 
         g6_FreeReader((&theG6ReadIterator));
         gp_Free(&theGraph);
@@ -219,7 +219,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
 
     if (gp_InitGraph(copyOfOrigGraph, order) != OK)
     {
-        gp_ErrorMessage("Unable to initialize graph datastructure to store copy of original graph before embedding.\n");
+        ErrorMessage("Unable to initialize graph datastructure to store copy of original graph before embedding.\n");
 
         g6_FreeReader((&theG6ReadIterator));
         gp_Free(&theGraph);
@@ -238,7 +238,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
 #pragma GCC diagnostic ignored "-Wformat-nonliteral"
             sprintf(messageContents, messageFormat, theG6ReadIterator->numGraphsRead + 1);
 #pragma GCC diagnostic pop
-            gp_ErrorMessage(messageContents);
+            ErrorMessage(messageContents);
 
             errorFlag = TRUE;
 
@@ -258,7 +258,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
 #pragma GCC diagnostic ignored "-Wformat-nonliteral"
             sprintf(messageContents, messageFormat, theG6ReadIterator->numGraphsRead + 1, command);
 #pragma GCC diagnostic pop
-            gp_ErrorMessage(messageContents);
+            ErrorMessage(messageContents);
 
             errorFlag = TRUE;
 
@@ -272,7 +272,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
 #pragma GCC diagnostic ignored "-Wformat-nonliteral"
             sprintf(messageContents, messageFormat, theG6ReadIterator->numGraphsRead + 1, command);
 #pragma GCC diagnostic pop
-            gp_ErrorMessage(messageContents);
+            ErrorMessage(messageContents);
 
             errorFlag = TRUE;
 
@@ -302,7 +302,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
                 sprintf(messageContents, messageFormat, command, modifier, theG6ReadIterator->numGraphsRead + 1);
 #pragma GCC diagnostic pop
             }
-            gp_ErrorMessage(messageContents);
+            ErrorMessage(messageContents);
 
             errorFlag = TRUE;
 
@@ -338,7 +338,7 @@ int outputTestAllGraphsResults(char command, char modifier, testAllStatsP stats,
 
     if (outfileName == NULL && (pOutputStr == NULL || *pOutputStr == NULL))
     {
-        gp_ErrorMessage("Invalid parameters: Must be able to output to file or memory.");
+        ErrorMessage("Invalid parameters: Must be able to output to file or memory.");
         return NOTOK;
     }
 
@@ -352,7 +352,7 @@ int outputTestAllGraphsResults(char command, char modifier, testAllStatsP stats,
         GetNumCharsToReprInt(stats->numOK, &numCharsToReprNumOK) != OK ||
         GetNumCharsToReprInt(stats->numNONEMBEDDABLE, &numCharsToReprNumNONEMBEDDABLE) != OK)
     {
-        gp_ErrorMessage("Unable to determine the number of characters required to represent testAllGraphs stat values.\n");
+        ErrorMessage("Unable to determine the number of characters required to represent testAllGraphs stat values.\n");
         return NOTOK;
     }
 
@@ -374,7 +374,7 @@ int outputTestAllGraphsResults(char command, char modifier, testAllStatsP stats,
     theOutputStr = (char *)malloc((headerStrLen + resultStrLen + 1) * sizeof(char));
     if (theOutputStr == NULL)
     {
-        gp_ErrorMessage("Unable allocate memory for the output.\n");
+        ErrorMessage("Unable allocate memory for the output.\n");
         return NOTOK;
     }
 

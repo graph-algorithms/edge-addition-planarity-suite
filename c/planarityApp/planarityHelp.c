@@ -30,11 +30,11 @@ char const *GetProjectTitle(void)
 
 int helpMessage(char *param)
 {
-    gp_Message(GetProjectTitle());
+    Message(GetProjectTitle());
 
     if (param == NULL)
     {
-        gp_Message(
+        Message(
             "'planarity': if no command-line, then menu-driven\n"
             "'planarity (-h|-help)': this message\n"
             "'planarity (-h|-help) -menu': more help with menu-based command line\n"
@@ -42,7 +42,7 @@ int helpMessage(char *param)
             "'planarity -test [-q] [samples dir]': runs tests (optional quiet mode)\n"
             "\n");
 
-        gp_Message(
+        Message(
             "Common usages\n"
             "-------------\n"
             "planarity -s -q -p infile.txt embedding.out [obstruction.out]\n"
@@ -58,7 +58,7 @@ int helpMessage(char *param)
 
     else if (strcmp(param, "-i") == 0 || strcmp(param, "-info") == 0)
     {
-        gp_Message(
+        Message(
             "Includes a reference implementation of the following:\n"
             "\n"
             "* John M. Boyer. \"Subgraph Homeomorphism via the Edge Addition Planarity \n"
@@ -83,7 +83,7 @@ int helpMessage(char *param)
 
     else if (strcmp(param, "-menu") == 0)
     {
-        gp_Message(
+        Message(
             "'planarity -r [-q] C K N [O]': Random graphs\n"
             "'planarity -s [-q] C I O [O2]': Specific graph\n"
             "'planarity -rm [-q] N O [O2]': Random maximal planar graph\n"
@@ -93,11 +93,11 @@ int helpMessage(char *param)
             "'planarity I O [-n O2]': Legacy command-line (default -s -p)\n"
             "\n");
 
-        gp_Message("-q is for quiet mode (no messages to stdout and stderr)\n\n");
+        Message("-q is for quiet mode (no messages to stdout and stderr)\n\n");
 
-        gp_Message(GetAlgorithmFlags());
+        Message(GetAlgorithmFlags());
 
-        gp_Message(
+        Message(
             "K = # of graphs to randomly generate\n"
             "N = # of vertices in each randomly generated graph\n"
             "I = Input file (for work on a specific graph)\n"
@@ -110,7 +110,7 @@ int helpMessage(char *param)
             "    For -rm and -rn, O2 contains the original randomly generated graph\n"
             "\n");
 
-        gp_Message(
+        Message(
             "planarity process results: 0=OK, -1=NOTOK, 1=NONEMBEDDABLE\n"
             "    1 result only produced by specific graph mode (-s)\n"
             "      with command -2,-3,-4: found K_{2,3}, K_{3,3} or K_4\n"

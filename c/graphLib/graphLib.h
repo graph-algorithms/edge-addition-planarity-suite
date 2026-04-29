@@ -18,7 +18,7 @@ extern "C"
 
 // Basic public API declarations, such as for OK, NOTOK, and NIL
 #include "lowLevelUtils/appconst.h"
-// And for get/set quiet mode, gp_ErrorMessage() and gp_Message()
+// And for get/set quiet mode, ErrorMessage() and Message()
 #include "lowLevelUtils/apiutils.h"
 
 // Graph structure and public API methods
