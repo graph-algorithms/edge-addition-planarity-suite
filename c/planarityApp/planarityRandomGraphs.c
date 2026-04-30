@@ -41,36 +41,39 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
 
     G6WriteIteratorP theG6WriteIterator = NULL;
 
-    int charsAvailForStr = 0;
-    char const *messageFormat = NULL;
-    char messageContents[MAXLINE + 1];
+    char const g6WriterInitializationErrorMessage[] = "Unable to write random graphs to G6 outfile \"%.*s\" due to failure initializing G6WriteIterator.\n";
+    char const writeErrorMessage[] = "Failed to write graph \"%.*s\".\nMake the directory if not present\n";
+
     char theFileName[FILENAMEMAXLENGTH + 1];
 
     memset(ObstructionMinorFreqs, 0, NUM_MINORS * sizeof(int));
-    memset(messageContents, '\0', (MAXLINE + 1));
     memset(theFileName, '\0', (FILENAMEMAXLENGTH + 1));
 
     if ((Result = GetCommandAndOptionalModifier(commandString, &command, &modifier)) != OK)
     {
-        ErrorMessage("Unable to extract command and optional modifier character from commandString.\n");
+        ErrorMessage("Unable to extract command and optional modifier "
+                     "character from commandString.\n");
         return Result;
     }
 
     if ((Result = GetEmbedFlags(command, modifier, &embedFlags)) != OK)
     {
-        ErrorMessage("Unable to derive embedFlags from command and optional modifier character.\n");
+        ErrorMessage("Unable to derive embedFlags from command and optional "
+                     "modifier character.\n");
         return Result;
     }
 
     if ((Result = GetNumberIfZero(&NumGraphs, "Enter number of graphs to generate:", 1, 1000000000)) != OK)
     {
-        ErrorMessage("Encountered unrecoverable error when prompting for NumGraphs.\n");
+        ErrorMessage("Encountered unrecoverable error when prompting for "
+                     "NumGraphs.\n");
         return Result;
     }
 
     if ((Result = GetNumberIfZero(&SizeOfGraphs, "Enter size of graphs:", 1, 10000000)) != OK)
     {
-        ErrorMessage("Encountered unrecoverable error when prompting for SizeOfGraphs.\n");
+        ErrorMessage("Encountered unrecoverable error when prompting for "
+                     "SizeOfGraphs.\n");
         return Result;
     }
 
@@ -78,7 +81,8 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
     origGraph = MakeGraph(SizeOfGraphs, command);
     if (theGraph == NULL || origGraph == NULL)
     {
-        ErrorMessage("Unable to allocate and initialize graph datastructures to contain randomly generated graphs.\n");
+        ErrorMessage("Unable to allocate and initialize graph datastructures "
+                     "to contain randomly generated graphs.\n");
 
         gp_Free(&theGraph);
         gp_Free(&origGraph);
@@ -99,17 +103,11 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
         }
     }
 
-    messageFormat = "Unable to write random graphs to G6 outfile \"%.*s\" due to failure initializing G6WriteIterator.\n";
-    charsAvailForStr = (int)(MAXLINE - strlen(messageFormat));
     if (outfileName != NULL)
     {
         if (g6_InitWriterWithFileName(theG6WriteIterator, outfileName) != OK)
         {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-nonliteral"
-            sprintf(messageContents, messageFormat, charsAvailForStr, outfileName);
-#pragma GCC diagnostic pop
-            ErrorMessage(messageContents);
+            ErrorMessage(g6WriterInitializationErrorMessage, FILENAME_MAX, outfileName);
 
             g6_FreeWriter((&theG6WriteIterator));
             gp_Free(&theGraph);
@@ -126,16 +124,10 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
         sprintf(theFileName, "random%cn%d.k%d.g6", FILE_DELIMITER, SizeOfGraphs, NumGraphs);
         if (g6_InitWriterWithFileName(theG6WriteIterator, theFileName) != OK)
         {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-nonliteral"
-            sprintf(messageContents, messageFormat, charsAvailForStr, theFileName);
-#pragma GCC diagnostic pop
-            ErrorMessage(messageContents);
-
+            ErrorMessage(g6WriterInitializationErrorMessage, FILENAME_MAX, theFileName);
             g6_FreeWriter((&theG6WriteIterator));
             gp_Free(&theGraph);
             gp_Free(&origGraph);
-
             return NOTOK;
         }
     }
@@ -160,8 +152,6 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
     // Start the timer
     platform_GetTime(start);
 
-    messageFormat = "Failed to write graph \"%.*s\".\nMake the directory if not present\n";
-    charsAvailForStr = (int)(MAXLINE - strlen(messageFormat));
     // Generate and process the number of graphs requested
     for (K = 0; K < NumGraphs; K++)
     {
@@ -171,11 +161,10 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
             {
                 if ((writeResult = g6_WriteGraph(theG6WriteIterator)) != OK)
                 {
-                    sprintf(messageContents, "Unable to write graph number %d using G6WriteIterator.\n", K);
-                    ErrorMessage(messageContents);
-
+                    ErrorMessage("Unable to write graph number %d using "
+                                 "G6WriteIterator.\n",
+                                 K);
                     Result = writeResult;
-
                     break;
                 }
             }
@@ -184,27 +173,20 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
                 sprintf(theFileName, "random%c%d.txt", FILE_DELIMITER, K % 10);
                 if ((writeResult = gp_Write(theGraph, theFileName, WRITE_ADJLIST)) != OK)
                 {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-nonliteral"
-                    sprintf(messageContents, messageFormat, charsAvailForStr, theFileName);
-#pragma GCC diagnostic pop
-                    ErrorMessage(messageContents);
-
+                    ErrorMessage(writeErrorMessage, FILENAME_MAX, theFileName);
                     Result = writeResult;
-
                     break;
                 }
             }
 
             if ((Result = gp_CopyGraph(origGraph, theGraph)) != OK)
             {
-                sprintf(messageContents, "Unable to make a copy of graph number %d before embedding.\n", K);
-                ErrorMessage(messageContents);
-
+                ErrorMessage("Unable to make a copy of graph number %d before "
+                             "embedding.\n",
+                             K);
                 gp_Free(&theGraph);
                 gp_Free(&origGraph);
                 g6_FreeWriter((&theG6WriteIterator));
-
                 return Result;
             }
 
@@ -223,12 +205,8 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
 
                     if ((writeResult = gp_Write(theGraph, theFileName, WRITE_ADJMATRIX)) != OK)
                     {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-nonliteral"
-                        sprintf(messageContents, messageFormat, charsAvailForStr, theFileName);
-#pragma GCC diagnostic pop
-                        ErrorMessage(messageContents);
-
+                        ErrorMessage(writeErrorMessage,
+                                     FILENAME_MAX, theFileName);
                         Result = writeResult;
                     }
                 }
@@ -239,12 +217,8 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
 
                     if ((writeResult = gp_Write(theGraph, theFileName, WRITE_ADJLIST)) != OK)
                     {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-nonliteral"
-                        sprintf(messageContents, messageFormat, charsAvailForStr, theFileName);
-#pragma GCC diagnostic pop
-                        ErrorMessage(messageContents);
-
+                        ErrorMessage(writeErrorMessage,
+                                     FILENAME_MAX, theFileName);
                         Result = writeResult;
                     }
                 }
@@ -279,12 +253,8 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
 
                         if ((writeResult = gp_Write(theGraph, theFileName, WRITE_ADJMATRIX)) != OK)
                         {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-nonliteral"
-                            sprintf(messageContents, messageFormat, charsAvailForStr, theFileName);
-#pragma GCC diagnostic pop
-                            ErrorMessage(messageContents);
-
+                            ErrorMessage(writeErrorMessage,
+                                         FILENAME_MAX, theFileName);
                             Result = writeResult;
                         }
                     }
@@ -297,12 +267,7 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
                 sprintf(theFileName, "error%c%d.txt", FILE_DELIMITER, K % 10);
                 if ((writeResult = gp_Write(origGraph, theFileName, WRITE_ADJLIST)) != OK)
                 {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-nonliteral"
-                    sprintf(messageContents, messageFormat, charsAvailForStr, theFileName);
-#pragma GCC diagnostic pop
-                    ErrorMessage(messageContents);
-
+                    ErrorMessage(writeErrorMessage, FILENAME_MAX, theFileName);
                     Result = writeResult;
                 }
             }
@@ -312,9 +277,7 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
         if (Result != OK && Result != NONEMBEDDABLE)
         {
             ErrorMessage("\nError found\n");
-
             Result = NOTOK;
-
             break;
         }
 
@@ -336,8 +299,7 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
     fprintf(stdout, "%d\n", NumGraphs);
     fflush(stdout);
 
-    sprintf(messageContents, "\nDone (%.3lf seconds).\n", platform_GetDuration(start, end));
-    Message(messageContents);
+    Message("\nDone (%.3lf seconds).\n", platform_GetDuration(start, end));
 
     // Print some demographic results
     if (Result == OK || Result == NONEMBEDDABLE)
@@ -346,8 +308,7 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
         // Report statistics for planar or outerplanar embedding
         if (embedFlags == EMBEDFLAGS_PLANAR || embedFlags == EMBEDFLAGS_OUTERPLANAR)
         {
-            sprintf(messageContents, "Num Embedded=%d.\n", MainStatistic);
-            Message(messageContents);
+            Message("Num Embedded=%d.\n", MainStatistic);
 
             for (K = 0; K < 5; K++)
             {
@@ -355,19 +316,18 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
                 if (embedFlags == EMBEDFLAGS_OUTERPLANAR && (K == 2 || K == 3))
                     continue;
 
-                sprintf(messageContents, "Minor %c = %d\n", K + 'A', ObstructionMinorFreqs[K]);
-                Message(messageContents);
+                Message("Minor %c = %d\n", K + 'A', ObstructionMinorFreqs[K]);
             }
 
             if (!(embedFlags & ~EMBEDFLAGS_PLANAR))
             {
-                sprintf(messageContents, "\nNote: E1 are added to C, E2 are added to A, and E=E3+E4+K5 homeomorphs.\n");
-                Message(messageContents);
+                Message("\nNote: E1 are added to C, E2 are added to A, and "
+                        "E=E3+E4+K5 homeomorphs.\n");
 
                 for (K = 5; K < NUM_MINORS; K++)
                 {
-                    sprintf(messageContents, "Minor E%d = %d\n", K - 4, ObstructionMinorFreqs[K]);
-                    Message(messageContents);
+                    Message("Minor E%d = %d\n",
+                            K - 4, ObstructionMinorFreqs[K]);
                 }
             }
         }
@@ -375,25 +335,27 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
         // Report statistics for graph drawing
         else if (embedFlags == EMBEDFLAGS_DRAWPLANAR)
         {
-            sprintf(messageContents, "Num Graphs Embedded and Drawn=%d.\n", MainStatistic);
-            Message(messageContents);
+            Message("Num Graphs Embedded and Drawn=%d.\n", MainStatistic);
         }
 
         // Report statistics for subgraph homeomorphism algorithms
         else if (embedFlags == EMBEDFLAGS_SEARCHFORK23)
         {
-            sprintf(messageContents, "Of the generated graphs, %d did not contain a K_{2,3} homeomorph as a subgraph.\n", MainStatistic);
-            Message(messageContents);
+            Message("Of the generated graphs, %d did not contain a K_{2,3} "
+                    "homeomorph as a subgraph.\n",
+                    MainStatistic);
         }
         else if (embedFlags == EMBEDFLAGS_SEARCHFORK33)
         {
-            sprintf(messageContents, "Of the generated graphs, %d did not contain a K_{3,3} homeomorph as a subgraph.\n", MainStatistic);
-            Message(messageContents);
+            Message("Of the generated graphs, %d did not contain a K_{3,3} "
+                    "homeomorph as a subgraph.\n",
+                    MainStatistic);
         }
         else if (embedFlags == EMBEDFLAGS_SEARCHFORK4)
         {
-            sprintf(messageContents, "Of the generated graphs, %d did not contain a K_4 homeomorph as a subgraph.\n", MainStatistic);
-            Message(messageContents);
+            Message("Of the generated graphs, %d did not contain a K_4 "
+                    "homeomorph as a subgraph.\n",
+                    MainStatistic);
         }
     }
 
@@ -437,7 +399,7 @@ int GetNumberIfZero(int *pNum, char const *prompt, int min, int max)
 
     while (*pNum == 0)
     {
-        Prompt(prompt);
+        Message("%s", prompt);
         if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
         {
             ErrorMessage("Unable to read integer choice from stdin.\n");
@@ -459,11 +421,9 @@ int GetNumberIfZero(int *pNum, char const *prompt, int min, int max)
 
     if (*pNum < min || *pNum > max)
     {
-        char messageContents[MAXLINE + 1];
-        messageContents[0] = '\0';
         *pNum = (max + min) / 2;
-        sprintf(messageContents, "Number out of range [%d, %d]; changed to %d\n", min, max, *pNum);
-        ErrorMessage(messageContents);
+        ErrorMessage("Number out of range [%d, %d]; changed to %d\n",
+                     min, max, *pNum);
     }
 
     return OK;
@@ -478,9 +438,6 @@ int GetNumberIfZero(int *pNum, char const *prompt, int min, int max)
 graphP MakeGraph(int Size, char command)
 {
     graphP theGraph = NULL;
-    char messageContents[MAXLINE + 1];
-
-    memset(messageContents, '\0', (MAXLINE + 1));
 
     if ((theGraph = gp_New()) == NULL || gp_InitGraph(theGraph, Size) != OK)
     {
@@ -491,8 +448,7 @@ graphP MakeGraph(int Size, char command)
 
     if (ExtendGraph(theGraph, command) != OK)
     {
-        sprintf(messageContents, "Unable to extend graph based on command '%c'\n", command);
-        ErrorMessage(messageContents);
+        ErrorMessage("Unable to extend graph based on command '%c'\n", command);
         gp_Free(&theGraph);
     }
 
@@ -529,25 +485,25 @@ int RandomGraph(char const *const commandString, int extraEdges, int numVertices
     graphP theGraph = NULL, origGraph = NULL;
     int embedFlags = 0;
     char command = '\0', modifier = '\0';
-    char messageContents[MAXLINE + 1];
-
-    memset(messageContents, '\0', (MAXLINE + 1));
 
     if ((Result = GetCommandAndOptionalModifier(commandString, &command, &modifier)) != OK)
     {
-        ErrorMessage("Unable to extract command and optional modifier character from commandString.\n");
+        ErrorMessage("Unable to extract command and optional modifier "
+                     "character from commandString.\n");
         return Result;
     }
 
     if ((Result = GetEmbedFlags(command, modifier, &embedFlags)) != OK)
     {
-        ErrorMessage("Unable to derive embedFlags from command and optional modifier character.\n");
+        ErrorMessage("Unable to derive embedFlags from command and optional "
+                     "modifier character.\n");
         return Result;
     }
 
     if ((Result = GetNumberIfZero(&numVertices, "Enter number of vertices:", 1, 10000000) != OK))
     {
-        ErrorMessage("Encountered unrecoverable error when prompting for numVertices.\n");
+        ErrorMessage("Encountered unrecoverable error when prompting for "
+                     "numVertices.\n");
         return Result;
     }
 
@@ -567,16 +523,16 @@ int RandomGraph(char const *const commandString, int extraEdges, int numVertices
     }
     platform_GetTime(end);
 
-    sprintf(messageContents, "Created random graph with %d edges in %.3lf seconds. ", gp_GetM(theGraph), platform_GetDuration(start, end));
-    Message(messageContents);
-    FlushConsole(stdout);
+    Message("Created random graph with %d edges in %.3lf seconds.",
+            gp_GetM(theGraph), platform_GetDuration(start, end));
 
     // The user may have requested a copy of the random graph before processing
     if (outfile2Name != NULL)
     {
         if (gp_Write(theGraph, outfile2Name, WRITE_ADJLIST) != OK)
         {
-            ErrorMessage("Unable to write generated random graph before embedding.\n");
+            ErrorMessage("Unable to write generated random graph before "
+                         "embedding.\n");
             gp_Free(&theGraph);
             return NOTOK;
         }
@@ -584,7 +540,8 @@ int RandomGraph(char const *const commandString, int extraEdges, int numVertices
 
     if ((origGraph = gp_DupGraph(theGraph)) == NULL)
     {
-        ErrorMessage("Unable to create copy of generated random graph before embedding.\n");
+        ErrorMessage("Unable to create copy of generated random graph before "
+                     "embedding.\n");
         gp_Free(&theGraph);
         return NOTOK;
     }
@@ -632,7 +589,7 @@ int RandomGraph(char const *const commandString, int extraEdges, int numVertices
         {
             if (gp_Write(theGraph, outfileName, WRITE_ADJLIST) != OK)
             {
-                ErrorMessage("Unable to write graph as adjacency list after successful gp_Embed() and gp_TestEmbedResultIntegrity().\n");
+                ErrorMessage("Unable to write embedded graph as adjacency list.\n");
                 Result = NOTOK;
             }
         }
@@ -643,17 +600,17 @@ int RandomGraph(char const *const commandString, int extraEdges, int numVertices
         {
             if (PromptSaveGraph(theGraph, origGraph, extraEdges, 0) != OK)
             {
-                ErrorMessage("Encountered an error when attempting to save graph in edge list format.\n");
+                ErrorMessage("Error saving graph in edge list format.\n");
                 Result = NOTOK;
             }
             if (PromptSaveGraph(theGraph, origGraph, extraEdges, WRITE_ADJLIST) != OK)
             {
-                ErrorMessage("Encountered an error when attempting to save graph in adjacency list format.\n");
+                ErrorMessage("Error saving graph in adjacency list format.\n");
                 Result = NOTOK;
             }
             if (PromptSaveGraph(theGraph, origGraph, extraEdges, WRITE_G6) != OK)
             {
-                ErrorMessage("Encountered an error when attempting to save graph in G6 format.\n");
+                ErrorMessage("Error saving graph in G6 format.\n");
                 Result = NOTOK;
             }
         }
@@ -671,15 +628,10 @@ int RandomGraph(char const *const commandString, int extraEdges, int numVertices
 
 int PromptSaveGraph(graphP theGraph, graphP origGraph, int extraEdges, int saveMode)
 {
-    const char *promptStr = NULL;
     char saveGraph = '\0';
-    int charsAvailForStr = 0;
-    char const *messageFormat = NULL;
-    char messageContents[MAXLINE + 1];
     char theFileName[MAXLINE + 1];
     char lineBuff[MAXLINE + 1];
 
-    memset(messageContents, '\0', (MAXLINE + 1));
     memset(theFileName, '\0', (MAXLINE + 1));
     memset(lineBuff, '\0', (MAXLINE + 1));
 
@@ -687,32 +639,31 @@ int PromptSaveGraph(graphP theGraph, graphP origGraph, int extraEdges, int saveM
     switch (saveMode)
     {
     case WRITE_ADJLIST:
-        promptStr = "\nDo you want to save the generated graph in adjacency list format (y/n)? ";
+        Message("\nDo you want to save the generated graph in adjacency list format (y/n)? ");
         break;
     case WRITE_ADJMATRIX:
-        promptStr = "\nDo you want to save the generated graph in adjacency matrix format (y/n)? ";
+        Message("\nDo you want to save the generated graph in adjacency matrix format (y/n)? ");
         break;
     case WRITE_G6:
-        promptStr = "\nDo you want to save the generated graph in G6 format (y/n)? ";
+        Message("\nDo you want to save the generated graph in G6 format (y/n)? ");
         break;
     default:
-        promptStr = "\nDo you want to save the generated graph in edge list format (y/n)? ";
+        Message("\nDo you want to save the generated graph in edge list format (y/n)? ");
         break;
     }
     // Prompt the user
     while (1)
     {
-        Prompt(promptStr);
         if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
         {
-            ErrorMessage("Unable to read user input to indicate whether to save graph to file.\n");
+            ErrorMessage("Unable to read user input.\n");
             return NOTOK;
         }
 
         if (strlen(lineBuff) != 1 ||
             sscanf(lineBuff, " %c", &saveGraph) != 1 ||
             !strchr(YESNOCHOICECHARS, saveGraph))
-            ErrorMessage("Invalid choice for whether to save graph to file (enter y/n).\n");
+            ErrorMessage("Invalid choice, please try again (enter y/n).\n");
         else
         {
             saveGraph = (char)tolower(lineBuff[0]);
@@ -748,14 +699,19 @@ int PromptSaveGraph(graphP theGraph, graphP origGraph, int extraEdges, int saveM
         break;
     }
 
+    Message("Saving original graph to \"%.*s\"\n",
+            FILENAME_MAX, theFileName);
+    SaveAsciiGraph(origGraph, theFileName);
+
+    strcat(theFileName, ".out.txt");
+    Message("Saving edge list format of result to \"%.*s\"\n",
+            FILENAME_MAX, theFileName);
+    SaveAsciiGraph(theGraph, theFileName);
+
     // Save the original graph
-    messageFormat = "Saving original graph to \"%.*s\"\n";
-    charsAvailForStr = (int)(MAXLINE - strlen(messageFormat));
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-nonliteral"
-    sprintf(messageContents, messageFormat, charsAvailForStr, theFileName);
-#pragma GCC diagnostic pop
-    Message(messageContents);
+    Message("Saving original graph to \"%.*s\"\n",
+            FILENAME_MAX, theFileName);
+
     if (saveMode)
     {
         if (gp_Write(origGraph, theFileName, saveMode) != OK)
@@ -784,13 +740,9 @@ int PromptSaveGraph(graphP theGraph, graphP origGraph, int extraEdges, int saveM
     else
         strcat(theFileName, ".out.txt");
 
-    messageFormat = "Saving result graph to \"%.*s\"\n";
-    charsAvailForStr = (int)(MAXLINE - strlen(messageFormat));
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-nonliteral"
-    sprintf(messageContents, messageFormat, charsAvailForStr, theFileName);
-#pragma GCC diagnostic pop
-    Message(messageContents);
+    Message("Saving result graph to \"%.*s\"\n",
+            FILENAME_MAX, theFileName);
+
     if (saveMode)
     {
         if (gp_Write(theGraph, theFileName, saveMode) != OK)

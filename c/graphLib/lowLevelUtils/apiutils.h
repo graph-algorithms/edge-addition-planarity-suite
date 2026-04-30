@@ -21,8 +21,8 @@ extern "C"
 
     // Used within the graphLib and also usable by graph applications to
     // emit error messages and informational messages.
-    void ErrorMessage(char const *message);
-    void Message(char const *message);
+    void ErrorMessage(char const *message, ...) __attribute__((format(printf, 1, 2)));
+    void Message(char const *message, ...) __attribute__((format(printf, 1, 2)));
 
     // These methods control whether ErrorMessage() and Message() calls
     // emit output or skip producing output (the default)

@@ -27,20 +27,32 @@ void gp_SetQuietModeFlag(int newQuietModeFlag)
     quietModeFlag = newQuietModeFlag;
 }
 
-void Message(char const *message)
+void Message(char const *message, ...)
 {
+    va_list args;
     if (!gp_GetQuietModeFlag())
     {
-        fprintf(stdout, "%s", message);
+        va_start(args, message);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsuggest-attribute=format"
+        vfprintf(stdout, message, args);
+#pragma GCC diagnostic pop
+        va_end(args);
         fflush(stdout);
     }
 }
 
-void ErrorMessage(char const *message)
+void ErrorMessage(char const *message, ...)
 {
+    va_list args;
     if (!gp_GetQuietModeFlag())
     {
-        fprintf(stderr, "%s", message);
+        va_start(args, message);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsuggest-attribute=format"
+        vfprintf(stderr, message, args);
+#pragma GCC diagnostic pop
+        va_end(args);
         fflush(stderr);
     }
 }
