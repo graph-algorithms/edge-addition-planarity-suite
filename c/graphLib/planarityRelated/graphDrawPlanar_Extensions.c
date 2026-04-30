@@ -657,7 +657,7 @@ int _DrawPlanar_WritePostprocess(graphP theGraph, char **pExtraData)
             if (gp_GetGraphFlags(theGraph) & GRAPHFLAGS_ZEROBASEDIO)
             {
                 zeroBasedVertexOffset = gp_GetFirstVertex(theGraph);
-                zeroBasedEdgeOffset = gp_LowerEdgeBound(theGraph);
+                zeroBasedEdgeOffset = gp_LowerBoundEdgeStorage(theGraph);
             }
 
             // Bit of an unlikely case, but for safety, a bigger maxLineSize
