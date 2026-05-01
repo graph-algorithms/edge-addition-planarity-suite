@@ -209,7 +209,7 @@ int _DrawPlanar_CreateStructures(DrawPlanarContext *context)
 {
     graphP theGraph = context->theGraph;
     int VIsize = gp_VertexArraySize(theGraph);
-    int Esize = gp_EdgeArraySize(theGraph);
+    int Esize = gp_UpperBoundEdgeStorage(theGraph);
 
     if (gp_GetN(theGraph) <= 0)
         return NOTOK;
@@ -231,11 +231,12 @@ int _DrawPlanar_CreateStructures(DrawPlanarContext *context)
  ********************************************************************/
 int _DrawPlanar_InitStructures(DrawPlanarContext *context)
 {
+    memset(context->E, 0, gp_UpperBoundEdgeStorage(context->theGraph) * sizeof(DrawPlanar_EdgeRec));
+
 #ifdef USE_1BASEDARRAYS
     memset(context->VI, NIL_CHAR, gp_VertexArraySize(context->theGraph) * sizeof(DrawPlanar_VertexInfo));
-    memset(context->E, NIL_CHAR, gp_EdgeArraySize(context->theGraph) * sizeof(DrawPlanar_EdgeRec));
 #else
-    int v, e, Esize;
+    int v;
     graphP theGraph = context->theGraph;
 
     if (gp_GetN(theGraph) <= 0)
@@ -243,10 +244,6 @@ int _DrawPlanar_InitStructures(DrawPlanarContext *context)
 
     for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
         _DrawPlanar_InitVertexInfo(context, v);
-
-    Esize = gp_EdgeArraySize(theGraph);
-    for (e = gp_EdgeArrayStart(theGraph); e < Esize; e++)
-        _DrawPlanar_InitEdgeRec(context, e);
 #endif
 
     return OK;
@@ -264,7 +261,7 @@ void *_DrawPlanar_DupContext(void *pContext, void *theGraph)
     if (newContext != NULL)
     {
         int VIsize = gp_VertexArraySize((graphP)theGraph);
-        int Esize = gp_EdgeArraySize((graphP)theGraph);
+        int Esize = gp_UpperBoundEdgeStorage((graphP)theGraph);
 
         *newContext = *context;
 
@@ -573,7 +570,7 @@ int _DrawPlanar_ReadPostprocess(graphP theGraph, char *extraData)
 
         else if (extraData != NULL && strlen(extraData) > 0)
         {
-            int v, e, tempInt, EsizeOccupied;
+            int v, tempInt, e, EsizeOccupied;
             char line[64], tempChar;
 
             sprintf(line, "<%s>", DRAWPLANAR_NAME);
@@ -598,8 +595,8 @@ int _DrawPlanar_ReadPostprocess(graphP theGraph, char *extraData)
             }
 
             // Read the lines that contain edge information
-            EsizeOccupied = gp_EdgeInUseArraySize(theGraph);
-            for (e = gp_EdgeArrayStart(theGraph); e < EsizeOccupied; e++)
+            EsizeOccupied = gp_UpperBoundEdges(theGraph);
+            for (e = gp_LowerBoundEdges(theGraph); e < EsizeOccupied; e++)
             {
                 sscanf(extraData, " %d%c %d %d %d", &tempInt, &tempChar,
                        &context->E[e].pos,
@@ -684,8 +681,8 @@ int _DrawPlanar_WritePostprocess(graphP theGraph, char **pExtraData)
                 extraDataPos += (int)strlen(line);
             }
 
-            EsizeOccupied = gp_EdgeInUseArraySize(theGraph);
-            for (e = gp_EdgeArrayStart(theGraph); e < EsizeOccupied; e++)
+            EsizeOccupied = gp_UpperBoundEdges(theGraph);
+            for (e = gp_LowerBoundEdges(theGraph); e < EsizeOccupied; e++)
             {
                 if (gp_EdgeInUse(theGraph, e))
                 {

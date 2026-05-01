@@ -576,8 +576,8 @@ int _ComputeEdgeRanges(DrawPlanarContext *context)
     if (sp_NonEmpty(theEmbedding->edgeHoles))
         return NOTOK;
 
-    EsizeOccupied = gp_EdgeInUseArraySize(theEmbedding);
-    for (e = gp_EdgeArrayStart(theEmbedding); e < EsizeOccupied; e += 2)
+    EsizeOccupied = gp_UpperBoundEdges(theEmbedding);
+    for (e = gp_LowerBoundEdges(theEmbedding); e < EsizeOccupied; e += 2)
     {
         eTwin = gp_GetTwin(theEmbedding, e);
 
@@ -806,7 +806,8 @@ char *_RenderToString(graphP theEmbedding)
         int N = gp_GetN(theEmbedding);
         int M = gp_GetM(theEmbedding);
         int zeroBasedVertexOffset = 0;
-        int n, m, EsizeOccupied, v, vRange, e, eRange, Mid, Pos;
+        int n, m, v, vRange, eRange, Mid, Pos;
+        int e, EsizeOccupied;
         char *visRep = (char *)malloc(sizeof(char) * ((M + 1) * 2 * N + 1));
         char numBuffer[32];
 
@@ -873,8 +874,8 @@ char *_RenderToString(graphP theEmbedding)
         }
 
         // Draw the edges
-        EsizeOccupied = gp_EdgeInUseArraySize(theEmbedding);
-        for (e = gp_EdgeArrayStart(theEmbedding); e < EsizeOccupied; e += 2)
+        EsizeOccupied = gp_UpperBoundEdges(theEmbedding);
+        for (e = gp_LowerBoundEdges(theEmbedding); e < EsizeOccupied; e += 2)
         {
             Pos = context->E[e].pos;
             for (eRange = context->E[e].start; eRange < context->E[e].end; eRange++)
@@ -972,7 +973,8 @@ int gp_DrawPlanar_RenderToFile(graphP theEmbedding, char *theFileName)
 int _CheckVisibilityRepresentationIntegrity(DrawPlanarContext *context)
 {
     graphP theEmbedding = context->theGraph;
-    int v, e, eTwin, EsizeOccupied, epos, eposIndex;
+    int v, e, eTwin, epos, eposIndex;
+    int EsizeOccupied;
 
     if (sp_NonEmpty(context->theGraph->edgeHoles))
         return NOTOK;
@@ -1008,8 +1010,8 @@ int _CheckVisibilityRepresentationIntegrity(DrawPlanarContext *context)
     /* Test whether the edge values make sense and
             whether the edge positions are unique */
 
-    EsizeOccupied = gp_EdgeInUseArraySize(theEmbedding);
-    for (e = gp_EdgeArrayStart(theEmbedding); e < EsizeOccupied; e += 2)
+    EsizeOccupied = gp_UpperBoundEdges(theEmbedding);
+    for (e = gp_LowerBoundEdges(theEmbedding); e < EsizeOccupied; e += 2)
     {
         /* Each edge has two index locations in the edge information array */
         eTwin = gp_GetTwin(theEmbedding, e);
@@ -1033,7 +1035,7 @@ int _CheckVisibilityRepresentationIntegrity(DrawPlanarContext *context)
             can use the visited flags in the graph's edges to
             tell us whether the positions are being reused. */
 
-        eposIndex = (epos << 1) + gp_EdgeArrayStart(theEmbedding);
+        eposIndex = (epos << 1) + gp_LowerBoundEdgeStorage(theEmbedding);
         eTwin = gp_GetTwin(theEmbedding, eposIndex);
 
         if (gp_GetEdgeVisited(theEmbedding, eposIndex) || gp_GetEdgeVisited(theEmbedding, eTwin))
@@ -1046,8 +1048,8 @@ int _CheckVisibilityRepresentationIntegrity(DrawPlanarContext *context)
     /* Test whether any edge intersects any vertex position
         for a vertex that is not an endpoint of the edge. */
 
-    EsizeOccupied = gp_EdgeInUseArraySize(theEmbedding);
-    for (e = gp_EdgeArrayStart(theEmbedding); e < EsizeOccupied; e += 2)
+    EsizeOccupied = gp_UpperBoundEdges(theEmbedding);
+    for (e = gp_LowerBoundEdges(theEmbedding); e < EsizeOccupied; e += 2)
     {
         eTwin = gp_GetTwin(theEmbedding, e);
 

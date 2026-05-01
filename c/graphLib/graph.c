@@ -248,7 +248,7 @@ int _InitGraph(graphP theGraph, int N)
 
     VIsize = gp_VertexArraySize(theGraph);
     Vsize = gp_AnyTypeVertexArraySize(theGraph);
-    Esize = gp_EdgeArraySize(theGraph);
+    Esize = gp_UpperBoundEdgeStorage(theGraph);
 
     // Stack size is 2 integers per edge record plus 2 to start depth-first search at a tree root
     stackSize = (theGraph->edgeCapacity << 2) + 2;
@@ -306,15 +306,11 @@ void _InitVertices(graphP theGraph)
  ********************************************************************/
 void _InitEdges(graphP theGraph)
 {
+    memset(theGraph->E, NIL_CHAR, gp_UpperBoundEdgeStorage(theGraph) * sizeof(edgeRec));
+
 #ifdef USE_1BASEDARRAYS
-    memset(theGraph->E, NIL_CHAR, gp_EdgeArraySize(theGraph) * sizeof(edgeRec));
 #else
-    int e, Esize;
-
-    memset(theGraph->E, NIL_CHAR, gp_EdgeArraySize(theGraph) * sizeof(edgeRec));
-
-    Esize = gp_EdgeArraySize(theGraph);
-    for (e = gp_EdgeArrayStart(theGraph); e < Esize; e++)
+    for (int e = gp_BeginEdgeStorage(theGraph); e != gp_EndEdgeStorage(theGraph); ++e)
         gp_InitEdgeFlags(theGraph, e);
 #endif
 }
@@ -420,12 +416,11 @@ int gp_EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity)
 int _EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity)
 {
     stackP newStack = NULL;
-    int e, Esize = gp_EdgeArraySize(theGraph),
-           newEsize = gp_LowerBoundEdgeStorage(theGraph) + (requiredEdgeCapacity << 1);
+    int newEsize = gp_LowerBoundEdgeStorage(theGraph) + (requiredEdgeCapacity << 1);
 
-    // If the new size is less than or equal to the old size, then
-    // the graph already has the required edge capacity
-    if (newEsize <= Esize)
+    // If the new size is less than or equal to the current edge storage size,
+    // then the graph already has the required edge capacity
+    if (newEsize <= gp_UpperBoundEdgeStorage(theGraph))
         return OK;
 
     // Expand theStack. Depth-first search needs 2 integers per edge record
@@ -471,7 +466,7 @@ int _EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity)
         return NOTOK;
 
     // Initialize the new edge records
-    for (e = Esize; e < newEsize; e++)
+    for (int e = gp_UpperBoundEdgeStorage(theGraph); e < newEsize; ++e)
         _InitEdgeRec(theGraph, e);
 
     // The new edgeCapacity has been successfully allocated
@@ -576,8 +571,8 @@ void _ClearEdgeVisitedFlags(graphP theGraph)
 {
     int e, EsizeOccupied;
 
-    EsizeOccupied = gp_EdgeInUseArraySize(theGraph);
-    for (e = gp_EdgeArrayStart(theGraph); e < EsizeOccupied; e++)
+    EsizeOccupied = gp_UpperBoundEdges(theGraph);
+    for (e = gp_LowerBoundEdges(theGraph); e < EsizeOccupied; e++)
         gp_ClearEdgeVisited(theGraph, e);
 }
 
@@ -956,8 +951,8 @@ int gp_CopyAdjacencyLists(graphP dstGraph, graphP srcGraph)
     }
 
     // Copy the adjacency links and neighbor pointers for each edge record
-    EsizeOccupied = gp_EdgeInUseArraySize(srcGraph);
-    for (e = gp_EdgeArrayStart(theGraph); e < EsizeOccupied; e++)
+    EsizeOccupied = gp_UpperBoundEdges(srcGraph);
+    for (e = gp_LowerBoundEdges(srcGraph); e < EsizeOccupied; e++)
     {
         gp_SetNeighbor(dstGraph, e, gp_GetNeighbor(srcGraph, e));
         gp_SetNextEdge(dstGraph, e, gp_GetNextEdge(srcGraph, e));
@@ -1055,8 +1050,8 @@ int gp_CopyGraph(graphP dstGraph, graphP srcGraph)
 
     // Copy the basic EdgeRec structures.  Augmentations to the edgeRec structure
     // created by extensions are copied below by gp_CopyExtensions()
-    Esize = gp_EdgeArraySize(srcGraph);
-    for (e = gp_EdgeArrayStart(theGraph); e < Esize; e++)
+    Esize = gp_UpperBoundEdgeStorage(srcGraph);
+    for (e = gp_LowerBoundEdgeStorage(srcGraph); e < Esize; e++)
         _gp_CopyEdgeRec(dstGraph, e, srcGraph, e);
 
     // Give the dstGraph the same size and intrinsic properties
@@ -1497,8 +1492,8 @@ int gp_CreateRandomGraphEx(graphP theGraph, int numEdges)
 
     /* Clear the edge types back to 'unknown' */
 
-    EsizeOccupied = gp_EdgeInUseArraySize(theGraph);
-    for (e = 0; e < EsizeOccupied; e++)
+    EsizeOccupied = gp_UpperBoundEdges(theGraph);
+    for (e = gp_LowerBoundEdges(theGraph); e < EsizeOccupied; e++)
     {
         gp_ClearEdgeType(theGraph, e);
         gp_ClearEdgeVisited(theGraph, e);
@@ -1963,7 +1958,7 @@ int gp_AddEdge(graphP theGraph, int u, int ulink, int v, int vlink)
         theGraph->numEdgeHoles = sp_GetCurrentSize(theGraph->edgeHoles);
     }
     else
-        vpos = gp_EdgeInUseArraySize(theGraph);
+        vpos = gp_UpperBoundEdges(theGraph);
 
     upos = gp_GetTwin(theGraph, vpos);
 
@@ -2074,7 +2069,7 @@ int gp_InsertEdge(graphP theGraph, int u, int e_u, int e_ulink,
         theGraph->numEdgeHoles = sp_GetCurrentSize(theGraph->edgeHoles);
     }
     else
-        vpos = gp_EdgeInUseArraySize(theGraph);
+        vpos = gp_UpperBoundEdges(theGraph);
 
     // NOTE: We do not _InitEdgeRec() nor gp_InitEdgeFlags() here because
     // the vpos edge location is expected to be in initialized state,
@@ -2138,7 +2133,7 @@ int gp_DeleteEdge(graphP theGraph, int e)
 
     // If records e and eTwin were not the last in the edge record array,
     // then record a new hole in the edge array. */
-    if (e < gp_EdgeInUseArraySize(theGraph))
+    if (e < gp_UpperBoundEdges(theGraph))
     {
         if (theGraph->edgeHoles->size + 1 >= theGraph->edgeHoles->capacity)
             return NOTOK;

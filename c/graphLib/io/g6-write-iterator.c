@@ -543,13 +543,13 @@ void _g6_GetFirstEdgeInUse(graphP theGraph, int *e, int *u, int *v)
 
 void _g6_GetNextEdgeInUse(graphP theGraph, int *e, int *u, int *v)
 {
-    int EsizeOccupied = gp_EdgeInUseArraySize(theGraph);
+    int EsizeOccupied = gp_UpperBoundEdges(theGraph);
 
     (*u) = NIL;
     (*v) = NIL;
 
     if ((*e) == NIL)
-        (*e) = gp_EdgeArrayStart(theGraph);
+        (*e) = gp_LowerBoundEdges(theGraph);
     else
         (*e) += 2;
 

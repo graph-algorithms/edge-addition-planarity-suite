@@ -211,7 +211,7 @@ void _K33Search_ClearStructures(K33SearchContext *context)
 int _K33Search_CreateStructures(K33SearchContext *context)
 {
     int VIsize = gp_VertexArraySize(context->theGraph);
-    int Esize = gp_EdgeArraySize(context->theGraph);
+    int Esize = gp_UpperBoundEdgeStorage(context->theGraph);
 
     if (gp_GetN(context->theGraph) <= 0)
         return NOTOK;
@@ -234,21 +234,7 @@ int _K33Search_CreateStructures(K33SearchContext *context)
 int _K33Search_InitStructures(K33SearchContext *context)
 {
     memset(context->VI, NIL_CHAR, gp_VertexArraySize(context->theGraph) * sizeof(K33Search_VertexInfo));
-    memset(context->E, NIL_CHAR, gp_EdgeArraySize(context->theGraph) * sizeof(K33Search_EdgeRec));
-    // N.B. This is the legacy API-based approach to initializing the structures
-    // required for the K_{3, 3} search graph algorithm extension.
-    // graphP theGraph = context->theGraph;
-    // int v, e, Esize;
-
-    // if (gp_GetN(theGraph) <= 0)
-    //     return OK;
-
-    // for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
-    //     _K33Search_InitVertexInfo(context, v);
-
-    // Esize = gp_EdgeArraySize(theGraph);
-    // for (e = gp_EdgeArrayStart(theGraph); e < Esize; e++)
-    //     _K33Search_InitEdgeRec(context, e);
+    memset(context->E, NIL_CHAR, gp_UpperBoundEdgeStorage(context->theGraph) * sizeof(K33Search_EdgeRec));
 
     return OK;
 }
@@ -327,7 +313,7 @@ void *_K33Search_DupContext(void *pContext, void *theGraph)
     if (newContext != NULL)
     {
         int VIsize = gp_VertexArraySize((graphP)theGraph);
-        int Esize = gp_EdgeArraySize((graphP)theGraph);
+        int Esize = gp_UpperBoundEdgeStorage((graphP)theGraph);
 
         *newContext = *context;
 

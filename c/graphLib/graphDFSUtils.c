@@ -238,10 +238,12 @@ int gp_SortVertices(graphP theGraph)
 // out of DFI order.
 int _SortVertices(graphP theGraph)
 {
-    int v, EsizeOccupied, e, srcPos, dstPos;
+    int v, srcPos, dstPos;
+    int e, EsizeOccupied;
 
     if (theGraph == NULL)
         return NOTOK;
+
     if (!(gp_GetGraphFlags(theGraph) & GRAPHFLAGS_DFSNUMBERED))
         if (gp_CreateDFSTree(theGraph) != OK)
             return NOTOK;
@@ -252,13 +254,13 @@ int _SortVertices(graphP theGraph)
        Also, if any links go back to locations 0 to n-1, then they
        need to be changed because we are reordering the vertices */
 
-    EsizeOccupied = gp_EdgeInUseArraySize(theGraph);
-    for (e = gp_EdgeArrayStart(theGraph); e < EsizeOccupied; e += 2)
+    EsizeOccupied = gp_UpperBoundEdges(theGraph);
+    for (e = gp_LowerBoundEdges(theGraph); e < EsizeOccupied; e += 2)
     {
         if (gp_EdgeInUse(theGraph, e))
         {
             gp_SetNeighbor(theGraph, e, gp_GetIndex(theGraph, gp_GetNeighbor(theGraph, e)));
-            gp_SetNeighbor(theGraph, e + 1, gp_GetIndex(theGraph, gp_GetNeighbor(theGraph, e + 1)));
+            gp_SetNeighbor(theGraph, e+1, gp_GetIndex(theGraph, gp_GetNeighbor(theGraph, e+1)));
         }
     }
 

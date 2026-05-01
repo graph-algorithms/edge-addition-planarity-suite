@@ -220,7 +220,7 @@ void FlushConsole(FILE *f)
 
 void SaveAsciiGraph(graphP theGraph, char *filename)
 {
-    int e, EsizeOccupied, vertexLabelFix;
+    int vertexLabelFix, e, EsizeOccupied;
     FILE *outfile = fopen(filename, WRITETEXT);
 
     // The filename may specify a directory that doesn't exist
@@ -245,15 +245,14 @@ void SaveAsciiGraph(graphP theGraph, char *filename)
     vertexLabelFix = 1 - gp_GetFirstVertex(theGraph);
 
     // Iterate over the edges of the graph
-    EsizeOccupied = gp_EdgeInUseArraySize(theGraph);
-    for (e = gp_EdgeArrayStart(theGraph); e < EsizeOccupied; e += 2)
+    EsizeOccupied = gp_UpperBoundEdges(theGraph);
+    for (e = gp_LowerBoundEdges(theGraph); e < EsizeOccupied; e += 2)
     {
         // Only output edges that haven't been deleted (i.e. skip the edge holes)
         if (gp_EdgeInUse(theGraph, e))
         {
-            fprintf(outfile, "%d %d\n",
-                    gp_GetNeighbor(theGraph, e) + vertexLabelFix,
-                    gp_GetNeighbor(theGraph, e + 1) + vertexLabelFix);
+            fprintf(outfile, "%d ", gp_GetNeighbor(theGraph, e) + vertexLabelFix);
+            fprintf(outfile, "%d\n", gp_GetNeighbor(theGraph, e + 1) + vertexLabelFix);
         }
     }
 

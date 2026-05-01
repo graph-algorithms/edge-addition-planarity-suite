@@ -1453,8 +1453,8 @@ int _K4_RestoreAndOrientReducedPaths(graphP theGraph, K4SearchContext *context)
 {
     int EsizeOccupied, e, eTwin, u, v, w, x, visited;
 
-    EsizeOccupied = gp_EdgeInUseArraySize(theGraph);
-    for (e = gp_EdgeArrayStart(theGraph); e < EsizeOccupied;)
+    EsizeOccupied = gp_UpperBoundEdges(theGraph);
+    for (e = gp_LowerBoundEdges(theGraph); e < EsizeOccupied;)
     {
         if (gp_IsAnyTypeVertex(theGraph, context->E[e].pathConnector))
         {

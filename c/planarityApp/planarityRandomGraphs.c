@@ -283,13 +283,14 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
 
         // Reinitialize or recreate graphs for next iteration
         ReinitializeGraph(&theGraph, ReuseGraphs, command);
-
-        // Show progress, but not so often that it bogs down progress
-        if (!gp_GetQuietModeFlag() && (K + 1) % countUpdateFreq == 0)
-        {
-            fprintf(stdout, "%d\r", K + 1);
-            fflush(stdout);
-        }
+        /*
+                // Show progress, but not so often that it bogs down progress
+                if (!gp_GetQuietModeFlag() && (K + 1) % countUpdateFreq == 0)
+                {
+                    fprintf(stdout, "%d\r", K + 1);
+                    fflush(stdout);
+                }
+        */
     }
 
     // Stop the timer

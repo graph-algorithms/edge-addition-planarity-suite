@@ -183,12 +183,10 @@ void _K4Search_ClearStructures(K4SearchContext *context)
  ********************************************************************/
 int _K4Search_CreateStructures(K4SearchContext *context)
 {
-    int Esize = gp_EdgeArraySize(context->theGraph);
-
     if (gp_GetN(context->theGraph) <= 0)
         return NOTOK;
 
-    if ((context->E = (K4Search_EdgeRecP)malloc(Esize * sizeof(K4Search_EdgeRec))) == NULL ||
+    if ((context->E = (K4Search_EdgeRecP)malloc(gp_UpperBoundEdgeStorage(context->theGraph) * sizeof(K4Search_EdgeRec))) == NULL ||
         0)
     {
         return NOTOK;
@@ -202,14 +200,7 @@ int _K4Search_CreateStructures(K4SearchContext *context)
  ********************************************************************/
 int _K4Search_InitStructures(K4SearchContext *context)
 {
-    memset(context->E, NIL_CHAR, gp_EdgeArraySize(context->theGraph) * sizeof(K4Search_EdgeRec));
-    // N.B. This is the legacy API-based approach to initializing the structures
-    // required for the K_4 search graph algorithm extension.
-    // int e, Esize;
-
-    // Esize = gp_EdgeArraySize(context->theGraph);
-    // for (e = gp_EdgeArrayStart(context->theGraph); e < Esize; e++)
-    //     _K4Search_InitEdgeRec(context, e);
+    memset(context->E, NIL_CHAR, gp_UpperBoundEdgeStorage(context->theGraph) * sizeof(K4Search_EdgeRec));
 
     return OK;
 }
@@ -283,7 +274,7 @@ void *_K4Search_DupContext(void *pContext, void *theGraph)
 
     if (newContext != NULL)
     {
-        int Esize = gp_EdgeArraySize((graphP)theGraph);
+        int Esize = gp_UpperBoundEdgeStorage((graphP)theGraph);
 
         *newContext = *context;
 
