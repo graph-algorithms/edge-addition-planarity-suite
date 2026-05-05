@@ -12,116 +12,116 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # aarch64:
-  #   name: Ubuntu-aarch64
-  #   runs-on: ubuntu-24.04-arm
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - uses: uraimo/run-on-arch-action@v3
-  #       with:
-  #         arch: aarch64
-  #         distro: ubuntu22.04
-  #         run: |
-  #           apt-get --yes update
-  #           apt-get install autoconf automake libtool build-essential --yes
-  #           gcc --version
-  #           autoreconf -if && ./configure
-  #           make -j4
-  #           ./test-samples.sh
-  # alpine:
-  #   name: Alpine
-  #   defaults:
-  #     run:
-  #       shell: alpine.sh {0}
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - uses: jirutka/setup-alpine@v1
-  #       with:
-  #         branch: v3.15
-  #     - name: Alpine/musl versions . . .
-  #       run: |
-  #         cat /etc/alpine-release
-  #         apk info musl
-  #     - name: Install autotools etc . . .
-  #       run: |
-  #         apk add build-base autoconf automake libtool
-  #       shell: alpine.sh --root {0}
-  #     - name: Configure . . .
-  #       run: autoreconf -if && ./configure
-  #     - name: Build . . .
-  #       run: make -j4
-  #     - name: Run the tests . . .
-  #       run: ./test-samples.sh
-  # arm:
-  #   name: Ubuntu-arm
-  #   runs-on: ubuntu-24.04-arm
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - name: Install autotools etc . . .
-  #       run: sudo apt-get install autoconf automake libtool
-  #     - name: Configure . . .
-  #       run: autoreconf -if && ./configure
-  #     - name: Build . . .
-  #       run: make -j4
-  #     - name: Run the tests . . .
-  #       run: ./test-samples.sh
-  # debian:
-  #   name: Debian
-  #   runs-on: ubuntu-latest
-  #   container:
-  #     image: debian:latest
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - name: Install autotools etc . . .
-  #       run: apt update && apt -y upgrade && apt install -y make autoconf automake libtool
-  #     - name: Configure . . .
-  #       run: autoreconf -if && ./configure
-  #     - name: Build . . .
-  #       run: make -j4
-  #     - name: Run the tests . . .
-  #       run: ./test-samples.sh
-  # cygwin:
-  #   name: Cygwin
-  #   defaults:
-  #     run:
-  #       shell: C:\cygwin\bin\bash.exe --noprofile --norc -o igncr -eo pipefail '{0}'
-  #   timeout-minutes: 60
-  #   runs-on: windows-latest
-  #   steps:
-  #     - run: git config --global core.autocrlf input
-  #       shell: pwsh -command ". '{0}'".
-  #     - uses: actions/checkout@v4
-  #     - uses: cygwin/cygwin-install-action@v6
-  #       with:
-  #         packages: gcc-core,automake,libtool,autoconf
-  #     - name: Configure . . .
-  #       run: autoreconf -if && ./configure
-  #     - name: Build . . .
-  #       run: make -j4
-  #     - name: Run the tests . . .
-  #       run: ./test-samples.sh
-  # macos:
-  #   name: macOS
-  #   timeout-minutes: 60
-  #   runs-on: macOS-latest
-  #   env:
-  #     CC: clang
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - name: Install dependencies . . .
-  #       run: brew install autoconf automake libtool
-  #     - name: Clang version . . .
-  #       run: clang --version
-  #     - name: Configure . . .
-  #       run: |
-  #         mkdir -p m4
-  #         autoreconf -if
-  #         ./configure CC="$CC"
-  #     - name: Build . . .
-  #       run: make -j4
-  #     - name: Run the tests . . .
-  #       run: ./test-samples.sh
+  aarch64:
+    name: Ubuntu-aarch64
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+      - uses: uraimo/run-on-arch-action@v3
+        with:
+          arch: aarch64
+          distro: ubuntu22.04
+          run: |
+            apt-get --yes update
+            apt-get install autoconf automake libtool build-essential --yes
+            gcc --version
+            autoreconf -if && ./configure
+            make -j4
+            ./test-samples.sh
+  alpine:
+    name: Alpine
+    defaults:
+      run:
+        shell: alpine.sh {0}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jirutka/setup-alpine@v1
+        with:
+          branch: v3.15
+      - name: Alpine/musl versions . . .
+        run: |
+          cat /etc/alpine-release
+          apk info musl
+      - name: Install autotools etc . . .
+        run: |
+          apk add build-base autoconf automake libtool
+        shell: alpine.sh --root {0}
+      - name: Configure . . .
+        run: autoreconf -if && ./configure
+      - name: Build . . .
+        run: make -j4
+      - name: Run the tests . . .
+        run: ./test-samples.sh
+  arm:
+    name: Ubuntu-arm
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install autotools etc . . .
+        run: sudo apt-get install autoconf automake libtool
+      - name: Configure . . .
+        run: autoreconf -if && ./configure
+      - name: Build . . .
+        run: make -j4
+      - name: Run the tests . . .
+        run: ./test-samples.sh
+  debian:
+    name: Debian
+    runs-on: ubuntu-latest
+    container:
+      image: debian:latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install autotools etc . . .
+        run: apt update && apt -y upgrade && apt install -y make autoconf automake libtool
+      - name: Configure . . .
+        run: autoreconf -if && ./configure
+      - name: Build . . .
+        run: make -j4
+      - name: Run the tests . . .
+        run: ./test-samples.sh
+  cygwin:
+    name: Cygwin
+    defaults:
+      run:
+        shell: C:\cygwin\bin\bash.exe --noprofile --norc -o igncr -eo pipefail '{0}'
+    timeout-minutes: 60
+    runs-on: windows-latest
+    steps:
+      - run: git config --global core.autocrlf input
+        shell: pwsh -command ". '{0}'".
+      - uses: actions/checkout@v4
+      - uses: cygwin/cygwin-install-action@v6
+        with:
+          packages: gcc-core,automake,libtool,autoconf
+      - name: Configure . . .
+        run: autoreconf -if && ./configure
+      - name: Build . . .
+        run: make -j4
+      - name: Run the tests . . .
+        run: ./test-samples.sh
+  macos:
+    name: macOS
+    timeout-minutes: 60
+    runs-on: macOS-latest
+    env:
+      CC: clang
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies . . .
+        run: brew install autoconf automake libtool
+      - name: Clang version . . .
+        run: clang --version
+      - name: Configure . . .
+        run: |
+          mkdir -p m4
+          autoreconf -if
+          ./configure CC="$CC"
+      - name: Build . . .
+        run: make -j4
+      - name: Run the tests . . .
+        run: ./test-samples.sh
   msvc:
     name: Windows MSVC cl
     timeout-minutes: 60
@@ -129,7 +129,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        arch: [x64,] #x86, x86_amd64, x86_arm, x86_arm64, amd64_x86, amd64_arm, amd64_arm64]
+        arch: [x64, x86, x86_amd64, x86_arm, x86_arm64, amd64_x86, amd64_arm, amd64_arm64]
     steps:
       - uses: actions/checkout@v4
       - name: Setup MSVC Developer Command Prompt
@@ -142,49 +142,55 @@ jobs:
         # VS tools with spectre mitigations) Also, not setting vs-path so we
         # always use the latest
       - name: Build using MSVC cl
-        run:  cl /O2 /nologo /Wall /wd4464 /wd4710 /wd4711 /wd4774 /wd4996 /wd5045 /wd4068 /wd4100 /wd4820 /external:anglebrackets /external:W0 /Fe./planarity.exe ./c/planarityApp/**.c ./c/graphLib/**.c ./c/graphLib/extensionSystem/**.c ./c/graphLib/homeomorphSearch/**.c ./c/graphLib/io/**.c ./c/graphLib/lowLevelUtils/**.c ./c/graphLib/planarityRelated/**.c
+        run: |
+          cl /O2 /nologo /Wall /wd4464 /wd4710 /wd4711 /wd4774 /wd4996 /wd5045 \
+          /wd4068 /wd4100 /wd4820 /external:anglebrackets /external:W0 \
+          /Fe./planarity.exe ./c/planarityApp/**.c ./c/graphLib/**.c \
+          ./c/graphLib/extensionSystem/**.c ./c/graphLib/homeomorphSearch/**.c \
+          ./c/graphLib/io/**.c ./c/graphLib/lowLevelUtils/**.c \
+          ./c/graphLib/planarityRelated/**.c
       - name: Run the tests...
         run: ./planarity.exe -test ./c/samples/
-  # msys:
-  #   name: Windows-${{ matrix.sys }}
-  #   defaults:
-  #     run:
-  #       shell: msys2 {0}
-  #   timeout-minutes: 60
-  #   runs-on: windows-latest
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       sys: [MINGW64, MINGW32, UCRT64, CLANG64]
-  #   steps:
-  #     - uses: msys2/setup-msys2@v2
-  #       with:
-  #         update: true
-  #         msystem: ${{ matrix.sys }}
-  #         pacboy: toolchain autotools
-  #     - uses: actions/checkout@v4
-  #     - name: Configure . . .
-  #       run: autoreconf -if && ./configure
-  #     - name: Build . . .
-  #       run: make -j4
-  #     - name: Run the tests . . .
-  #       run: ./test-samples.sh
-  # msys-arm:
-  #   name: Windows-CLANGARM64
-  #   defaults:
-  #     run:
-  #       shell: msys2 {0}
-  #   runs-on: windows-11-arm
-  #   steps:
-  #     - uses: msys2/setup-msys2@v2
-  #       with:
-  #         update: true
-  #         msystem: CLANGARM64
-  #         pacboy: toolchain autotools
-  #     - uses: actions/checkout@v4
-  #     - name: Configure . . .
-  #       run: autoreconf -if && ./configure
-  #     - name: Build . . .
-  #       run: make -j4
-  #     - name: Run the tests . . .
-  #       run: ./test-samples.sh
+  msys:
+    name: Windows-${{ matrix.sys }}
+    defaults:
+      run:
+        shell: msys2 {0}
+    timeout-minutes: 60
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        sys: [MINGW64, MINGW32, UCRT64, CLANG64]
+    steps:
+      - uses: msys2/setup-msys2@v2
+        with:
+          update: true
+          msystem: ${{ matrix.sys }}
+          pacboy: toolchain autotools
+      - uses: actions/checkout@v4
+      - name: Configure . . .
+        run: autoreconf -if && ./configure
+      - name: Build . . .
+        run: make -j4
+      - name: Run the tests . . .
+        run: ./test-samples.sh
+  msys-arm:
+    name: Windows-CLANGARM64
+    defaults:
+      run:
+        shell: msys2 {0}
+    runs-on: windows-11-arm
+    steps:
+      - uses: msys2/setup-msys2@v2
+        with:
+          update: true
+          msystem: CLANGARM64
+          pacboy: toolchain autotools
+      - uses: actions/checkout@v4
+      - name: Configure . . .
+        run: autoreconf -if && ./configure
+      - name: Build . . .
+        run: make -j4
+      - name: Run the tests . . .
+        run: ./test-samples.sh
