@@ -1080,7 +1080,7 @@ int _K4_GetCumulativeOrientationOnDFSPath(graphP theGraph, int ancestor, int des
 
     while (descendant != ancestor)
     {
-        if (gp_IsNotAnyTypeVertex(theGraph, descendant))
+        if (descendant == NIL)
             return NOTOK;
 
         // If we are at a bicomp root, then ascend to its parent copy
@@ -1106,7 +1106,7 @@ int _K4_GetCumulativeOrientationOnDFSPath(graphP theGraph, int ancestor, int des
             }
 
             // If the edge to the parent vertex was not found, then the data structure is corrupt
-            if (gp_IsNotAnyTypeVertex(theGraph, parent))
+            if (parent == NIL)
                 return NOTOK;
 
             // Add the inversion flag on the child edge record to the cumulative result
@@ -1286,7 +1286,9 @@ int _K4_ReducePathToEdge(graphP theGraph, K4SearchContext *context, int edgeType
 
         // Prepare for removing each of the two edges that join the path to the bicomp by
         // restoring it if it is a reduction edge (a constant time operation)
-        if (gp_IsAnyTypeVertex(theGraph, context->E[e_R].pathConnector))
+        // If e_R has a pathConnector vertex, then we prep by restoring a previously reduced
+        // path for e_R
+        if (context->E[e_R].pathConnector != NIL)
         {
             if (_K4_RestoreReducedPath(theGraph, context, e_R) != OK)
             {
@@ -1299,7 +1301,9 @@ int _K4_ReducePathToEdge(graphP theGraph, K4SearchContext *context, int edgeType
             e_R = gp_GetEdgeByLink(theGraph, R, Rlink);
         }
 
-        if (gp_IsAnyTypeVertex(theGraph, context->E[e_A].pathConnector))
+        // If e_A has a pathConnector vertex, then we prep by restoring a previously reduced
+        // path for e_A
+        if (context->E[e_A].pathConnector != NIL)
         {
             if (_K4_RestoreReducedPath(theGraph, context, e_A) != OK)
             {
@@ -1376,7 +1380,9 @@ int _K4_RestoreReducedPath(graphP theGraph, K4SearchContext *context, int e)
     int eTwin, u, v, w, x;
     int e0, e1, eTwin0, eTwin1;
 
-    if (gp_IsNotAnyTypeVertex(theGraph, context->E[e].pathConnector))
+    // An edge e does not represent a path reduction that needs to be restored
+    // unless it was assigned a pathConnector vertex (and so is non-NIL)
+    if (context->E[e].pathConnector == NIL)
         return OK;
 
     eTwin = gp_GetTwin(theGraph, e);
@@ -1456,7 +1462,9 @@ int _K4_RestoreAndOrientReducedPaths(graphP theGraph, K4SearchContext *context)
     EsizeOccupied = gp_UpperBoundEdges(theGraph);
     for (e = gp_LowerBoundEdges(theGraph); e < EsizeOccupied;)
     {
-        if (gp_IsAnyTypeVertex(theGraph, context->E[e].pathConnector))
+        // If e has a pathConnector vertex, then there is a reduced path
+        // to restore and orient.
+        if (context->E[e].pathConnector != NIL)
         {
             visited = gp_GetEdgeVisited(theGraph, e);
 

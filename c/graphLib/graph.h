@@ -164,6 +164,12 @@ extern "C"
                 : 1))
 #endif
 
+// Given a valid edge record storage index e, we test whether e is in use by an
+// existing edge by testing whether or not it indicates a neighbor vertex (versus NIL)
+// This test is needed to avoid edge index holes created by gp_DeleteEdge()).
+#define gp_EdgeInUse(theGraph, e) (gp_GetNeighbor(theGraph, e))
+#define gp_EdgeNotInUse(theGraph, e) (!gp_GetNeighbor(theGraph, e))
+
 /*********************************************/
 #else /* When using 0-based Arrays ***********/
 /*********************************************/
@@ -182,14 +188,12 @@ extern "C"
                 ? (NOTOK, 0)                                                                      \
                 : 1))
 #endif
+
+#define gp_EdgeInUse(theGraph, e) (gp_GetNeighbor(theGraph, e) != NIL)
+#define gp_EdgeNotInUse(theGraph, e) (!gp_GetNeighbor(theGraph, e) == NIL)
 /*********************************************/
 #endif /* End of macros for 0-based Arrays ***/
 /*********************************************/
-
-// Given a valid edge record storage index e, we test whether e is in use by an
-// existing edge (versus being an edge index hole created by gp_DeleteEdge())
-#define gp_EdgeInUse(theGraph, e) (gp_IsAnyTypeVertex(theGraph, gp_GetNeighbor(theGraph, e)))
-#define gp_EdgeNotInUse(theGraph, e) (gp_IsNotAnyTypeVertex(theGraph, gp_GetNeighbor(theGraph, e)))
 
 // Lower and upper edge bounds methods are used to test whether a given valid
 // edge storage location falls within the range of locations occupied by edges
@@ -378,7 +382,6 @@ extern "C"
 #ifndef DEBUG
 #define gp_IsVertex(theGraph, v) (v)
 #define gp_IsVirtualVertex(theGraph, v) ((v) > gp_GetN(theGraph))
-#define gp_IsAnyTypeVertex(theGraph, v) (v)
 #else
 // See below for definitions common to 1-based and 0-based
 #endif
@@ -387,7 +390,6 @@ extern "C"
 #ifndef DEBUG
 #define gp_IsVertex(theGraph, v) ((v) != NIL)
 #define gp_IsVirtualVertex(theGraph, v) ((v) >= gp_GetN(theGraph))
-#define gp_IsAnyTypeVertex(theGraph, v) ((v) != NIL)
 #else
 // See below for definitions common to 1-based and 0-based
 #endif
@@ -407,17 +409,10 @@ extern "C"
                 ? ((v) < gp_LowerBoundVertices(theGraph) ? (NOTOK, 0) : 0) \
                 : ((v) >= gp_UpperBoundVirtualVertices(theGraph) ? (NOTOK, 0) : 1)))
 
-#define gp_IsAnyTypeVertex(theGraph, v)                \
-    ((v) == NIL                                        \
-         ? 0                                           \
-         : ((v) < gp_LowerBoundVertexStorage(theGraph) \
-                ? (NOTOK, 0)                           \
-                : ((v) >= gp_UpperBoundVertexStorage(theGraph) ? (NOTOK, 0) : 1)))
 #endif
 
 #define gp_IsNotVertex(theGraph, v) (!(gp_IsVertex(theGraph, v)))
 #define gp_IsNotVirtualVertex(theGraph, v) (!(gp_IsVirtualVertex(theGraph, v)))
-#define gp_IsNotAnyTypeVertex(theGraph, v) (!(gp_IsAnyTypeVertex(theGraph, v)))
 
 #define gp_VirtualVertexInUse(theGraph, virtualVertex) (gp_IsEdge(theGraph, gp_GetFirstEdge(theGraph, virtualVertex)))
 #define gp_VirtualVertexNotInUse(theGraph, virtualVertex) (gp_IsNotEdge(theGraph, gp_GetFirstEdge(theGraph, virtualVertex)))

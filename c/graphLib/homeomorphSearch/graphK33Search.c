@@ -1500,7 +1500,8 @@ int _ReduceExternalFacePathToEdge(graphP theGraph, K33SearchContext *context, in
        not a reduction edge. */
 
     e = gp_GetFirstEdge(theGraph, u);
-    if (gp_IsAnyTypeVertex(theGraph, context->E[e].pathConnector))
+    // An edge e is a reduction edge if it has a pathConnector vertex set
+    if (context->E[e].pathConnector != NIL)
     {
         if (_RestoreReducedPath(theGraph, context, e) != OK)
             return NOTOK;
@@ -1510,7 +1511,8 @@ int _ReduceExternalFacePathToEdge(graphP theGraph, K33SearchContext *context, in
     _K33Search_DeleteEdge(theGraph, context, e);
 
     e = gp_GetLastEdge(theGraph, x);
-    if (gp_IsAnyTypeVertex(theGraph, context->E[e].pathConnector))
+    // An edge e is a reduction edge if it has a pathConnector vertex set
+    if (context->E[e].pathConnector != NIL)
     {
         if (_RestoreReducedPath(theGraph, context, e) != OK)
             return NOTOK;
@@ -1561,7 +1563,8 @@ int _ReduceXYPathToEdge(graphP theGraph, K33SearchContext *context, int u, int x
 
     /* Otherwise, remove the two edges that join the XY-path to the bicomp */
 
-    if (gp_IsAnyTypeVertex(theGraph, context->E[e].pathConnector))
+    // An edge e is a reduction edge if it has a pathConnector vertex set
+    if (context->E[e].pathConnector != NIL)
     {
         if (_RestoreReducedPath(theGraph, context, e) != OK)
             return NOTOK;
@@ -1574,7 +1577,8 @@ int _ReduceXYPathToEdge(graphP theGraph, K33SearchContext *context, int u, int x
     e = gp_GetFirstEdge(theGraph, x);
     e = gp_GetNextEdge(theGraph, e);
     w = gp_GetNeighbor(theGraph, e);
-    if (gp_IsAnyTypeVertex(theGraph, context->E[e].pathConnector))
+    // An edge e is a reduction edge if it has a pathConnector vertex set
+    if (context->E[e].pathConnector != NIL)
     {
         if (_RestoreReducedPath(theGraph, context, e) != OK)
             return NOTOK;
@@ -1619,7 +1623,9 @@ int _RestoreReducedPath(graphP theGraph, K33SearchContext *context, int e)
     int eTwin, u, v, w, x;
     int e0, e1, eTwin0, eTwin1;
 
-    if (gp_IsNotAnyTypeVertex(theGraph, context->E[e].pathConnector))
+    // Edge e does not represent a reducible path unless it has a
+    // pathConnect vertex (i.e., a non-NIL value indicating the vertex)
+    if (context->E[e].pathConnector == NIL)
         return OK;
 
     eTwin = gp_GetTwin(theGraph, e);
@@ -1702,7 +1708,8 @@ int _RestoreAndOrientReducedPaths(graphP theGraph, K33SearchContext *context)
     EsizeOccupied = gp_UpperBoundEdges(theGraph);
     for (e = gp_LowerBoundEdges(theGraph); e < EsizeOccupied;)
     {
-        if (gp_IsAnyTypeVertex(theGraph, context->E[e].pathConnector))
+        // An edge e is a reduction edge if it has a pathConnector vertex set
+        if (context->E[e].pathConnector != NIL)
         {
             visited = gp_GetEdgeVisited(theGraph, e);
 

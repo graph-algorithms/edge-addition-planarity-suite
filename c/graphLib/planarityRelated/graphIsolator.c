@@ -630,7 +630,7 @@ int _MarkDFSPath(graphP theGraph, int ancestor, int descendant)
     {
         // This loop traverses all vertices from descendant to ancestor,
         // including intervening bicomp roots (which are virtual vertices)
-        if (gp_IsNotAnyTypeVertex(theGraph, descendant))
+        if (descendant == NIL)
             return NOTOK;
 
         // If we are at a bicomp root, then ascend to its non-virtual
@@ -661,7 +661,7 @@ int _MarkDFSPath(graphP theGraph, int ancestor, int descendant)
             // The found parent may be a non-virtual or a virtual vertex.
             // If the latter, then it will be marked visited, and then the
             // next iteration of the loop will hop up to its non-virtual
-            if (gp_IsNotAnyTypeVertex(theGraph, parent))
+            if (parent == NIL)
                 return NOTOK;
 
             // Mark the edge
