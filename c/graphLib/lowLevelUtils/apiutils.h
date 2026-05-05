@@ -24,7 +24,17 @@ extern "C"
 // One must always allocate an additional byte for the null-terminator!
 #define MAXCHARSFOR32BITINT 11
 
-#if defined(__GNUC__) || defined(__clang__)
+#if defined(_MSC_VER) && !defined(__llvm__) && !defined(__INTEL_COMPILER)
+#define APPLY_FORMAT_ATTRIBUTE 0
+#elif defined(__has_attribute)
+#define APPLY_FORMAT_ATTRIBUTE __has_attribute(format)
+#elif defined(__GNUC__) || defined(__clang__)
+#define APPLY_FORMAT_ATTRIBUTE 1
+#else
+#define APPLY_FORMAT_ATTRIBUTE 0
+#endif
+
+#if APPLY_FORMAT_ATTRIBUTE
 #define FORMAT_PRINTF(formatIndex, firstArg) __attribute__((format(printf, formatIndex, firstArg)))
 #else
 #define FORMAT_PRINTF(formatIndex, firstArg)
