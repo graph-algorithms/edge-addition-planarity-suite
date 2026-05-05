@@ -143,11 +143,11 @@ jobs:
         # always use the latest
       - name: Build using MSVC cl
         run: |
-          cl /O2 /nologo /Wall /wd4464 /wd4710 /wd4711 /wd4774 /wd4996 /wd5045 ^
-          /wd4068 /wd4100 /wd4820 /external:anglebrackets /external:W0 ^
-          /Fe./planarity.exe ./c/planarityApp/**.c ./c/graphLib/**.c ^
-          ./c/graphLib/extensionSystem/**.c ./c/graphLib/homeomorphSearch/**.c ^
-          ./c/graphLib/io/**.c ./c/graphLib/lowLevelUtils/**.c ^
+          cl /O2 /nologo /Wall /wd4464 /wd4710 /wd4711 /wd4774 /wd4996 /wd5045 `
+          /wd4068 /wd4100 /wd4820 /external:anglebrackets /external:W0 `
+          /Fe./planarity.exe ./c/planarityApp/**.c ./c/graphLib/**.c `
+          ./c/graphLib/extensionSystem/**.c ./c/graphLib/homeomorphSearch/**.c `
+          ./c/graphLib/io/**.c ./c/graphLib/lowLevelUtils/**.c `
           ./c/graphLib/planarityRelated/**.c
       - name: Run the tests...
         run: ./planarity.exe -test ./c/samples/
