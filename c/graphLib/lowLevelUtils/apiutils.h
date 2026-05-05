@@ -35,7 +35,11 @@ extern "C"
 #endif
 
 #if APPLY_FORMAT_ATTRIBUTE
+#if defined(__GNUC__)
+#define FORMAT_PRINTF(formatIndex, firstArg) __attribute__((format(gnu_printf, formatIndex, firstArg)))
+#else
 #define FORMAT_PRINTF(formatIndex, firstArg) __attribute__((format(printf, formatIndex, firstArg)))
+#endif
 #else
 #define FORMAT_PRINTF(formatIndex, firstArg)
 #endif

@@ -30,10 +30,7 @@ void Message(char const *message, ...)
     if (!getQuietModeSetting())
     {
         va_start(args, message);
-        // #pragma GCC diagnostic push
-        // #pragma GCC diagnostic ignored "-Wsuggest-attribute=format"
         vfprintf(stdout, message, args);
-        // #pragma GCC diagnostic pop
         va_end(args);
         fflush(stdout);
     }
@@ -45,10 +42,7 @@ void ErrorMessage(char const *message, ...)
     if (!getQuietModeSetting())
     {
         va_start(args, message);
-        // #pragma GCC diagnostic push
-        // #pragma GCC diagnostic ignored "-Wsuggest-attribute=format"
         vfprintf(stderr, message, args);
-        // #pragma GCC diagnostic pop
         va_end(args);
         fflush(stderr);
     }
