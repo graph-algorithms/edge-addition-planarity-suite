@@ -242,7 +242,7 @@ void SaveAsciiGraph(graphP theGraph, char *filename)
     // internally uses 1-based indexing by default, so this vertex label 'fix' adds zero
     // But earlier code used 0-based indexing and added one on output, so we replicate
     // that behavior in case the current code has been compiled with zero-based indexing.
-    vertexLabelFix = 1 - gp_GetFirstVertex(theGraph);
+    vertexLabelFix = 1 - gp_LowerBoundVertexStorage(theGraph);
 
     // Iterate over the edges of the graph
     EsizeOccupied = gp_UpperBoundEdges(theGraph);

@@ -128,7 +128,7 @@ int gp_CreateDFSTree(graphP theGraph)
     /* This outer loop causes the connected subgraphs of a disconnected
             graph to be numbered */
 
-    for (DFI = v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, DFI); v++)
+    for (DFI = v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
     {
         if (gp_IsNotDFSTreeRoot(theGraph, v))
             continue;
@@ -260,13 +260,13 @@ int _SortVertices(graphP theGraph)
         if (gp_EdgeInUse(theGraph, e))
         {
             gp_SetNeighbor(theGraph, e, gp_GetIndex(theGraph, gp_GetNeighbor(theGraph, e)));
-            gp_SetNeighbor(theGraph, e+1, gp_GetIndex(theGraph, gp_GetNeighbor(theGraph, e+1)));
+            gp_SetNeighbor(theGraph, e + 1, gp_GetIndex(theGraph, gp_GetNeighbor(theGraph, e + 1)));
         }
     }
 
     /* Convert DFSParent from v to DFI(v) or vice versa */
 
-    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
+    for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
         if (gp_IsNotDFSTreeRoot(theGraph, v))
             gp_SetVertexParent(theGraph, v, gp_GetIndex(theGraph, gp_GetVertexParent(theGraph, v)));
 
@@ -287,7 +287,7 @@ int _SortVertices(graphP theGraph)
        location as visited, then sets its index to be the location from
        whence we obtained the vertex record. */
 
-    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
+    for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
     {
         srcPos = v;
         while (!gp_GetVisited(theGraph, v))
@@ -376,7 +376,7 @@ int gp_ComputeLowpoints(graphP theGraph)
     _ClearAnyTypeVertexVisitedFlags(theGraph, FALSE);
 
     // This outer loop causes the connected subgraphs of a disconnected graph to be processed
-    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v);)
+    for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph);)
     {
         if (gp_GetVisited(theGraph, v))
         {
@@ -491,7 +491,7 @@ int gp_ComputeLeastAncestors(graphP theGraph)
     sp_ClearStack(theStack);
 
     // This outer loop causes the connected subgraphs of a disconnected graph to be processed
-    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v);)
+    for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph);)
     {
         if (gp_GetVisited(theGraph, v))
         {
@@ -547,7 +547,7 @@ int gp_ComputeLeastAncestors(graphP theGraph)
 int gp_GetParent(graphP theGraph, int v)
 {
     if (theGraph == NULL ||
-        v < gp_GetFirstVertex(theGraph) || v >= gp_VertexArraySize(theGraph))
+        v < gp_LowerBoundVertices(theGraph) || v >= gp_UpperBoundVertices(theGraph))
     {
 #ifdef DEBUG
         NOTOK;
@@ -571,7 +571,7 @@ int gp_GetParent(graphP theGraph, int v)
 int gp_GetLeastAncestor(graphP theGraph, int v)
 {
     if (theGraph == NULL ||
-        v < gp_GetFirstVertex(theGraph) || v >= gp_VertexArraySize(theGraph))
+        v < gp_LowerBoundVertices(theGraph) || v >= gp_UpperBoundVertices(theGraph))
     {
 #ifdef DEBUG
         NOTOK;
@@ -593,7 +593,7 @@ int gp_GetLeastAncestor(graphP theGraph, int v)
 int gp_GetLowpoint(graphP theGraph, int v)
 {
     if (theGraph == NULL ||
-        v < gp_GetFirstVertex(theGraph) || v >= gp_VertexArraySize(theGraph))
+        v < gp_LowerBoundVertices(theGraph) || v >= gp_UpperBoundVertices(theGraph))
     {
 #ifdef DEBUG
         NOTOK;

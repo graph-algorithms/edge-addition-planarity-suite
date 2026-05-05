@@ -135,7 +135,7 @@ int gp_Embed(graphP theGraph, unsigned embedFlags)
         return NOTOK;
 
     // In reverse DFI order, embed the back edges from each vertex to its DFS descendants.
-    for (v = gp_GetLastVertex(theGraph); gp_VertexInRangeDescending(theGraph, v); v--)
+    for (v = gp_UpperBoundVertices(theGraph) - 1; v >= gp_LowerBoundVertices(theGraph); --v)
     {
         RetVal = OK;
 
@@ -291,7 +291,7 @@ int _EmbeddingInitialize(graphP theGraph)
     // This outer loop processes each connected component of a disconnected graph
     // No need to compare v < N since DFI will reach N when inner loop processes the
     // last connected component in the graph
-    for (DFI = v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, DFI); v++)
+    for (DFI = v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
     {
         // Skip numbered vertices to cause the outerloop to find the
         // next DFS tree root in a disconnected graph
@@ -406,8 +406,8 @@ int _EmbeddingInitialize(graphP theGraph)
     if (gp_SortVertices(theGraph) != OK)
         return NOTOK;
 
-    // Loop through the vertices and virtual vertices to...
-    for (v = gp_GetLastVertex(theGraph); gp_VertexInRangeDescending(theGraph, v); v--)
+    // Loop through the vertices to...
+    for (v = gp_UpperBoundVertices(theGraph) - 1; v >= gp_LowerBoundVertices(theGraph); --v)
     {
         // (7) Initialize for pertinence management
         gp_SetVertexVisitedInfo(theGraph, v, gp_GetN(theGraph));
@@ -1299,13 +1299,11 @@ int _EmbedPostprocess(graphP theGraph, int v, int edgeEmbeddingResult)
 
 int _OrientVerticesInEmbedding(graphP theGraph)
 {
-    int R;
-
     sp_ClearStack(theGraph->theStack);
 
     // For each vertex, obtain the associated bicomp root location and,
     // if it is still in use as a bicomp root, orient the vertices in the bicomp
-    for (R = gp_GetFirstVirtualVertex(theGraph); gp_VirtualVertexInRangeAscending(theGraph, R); R++)
+    for (int R = gp_LowerBoundVirtualVertices(theGraph); R < gp_UpperBoundVirtualVertices(theGraph); ++R)
     {
         if (gp_VirtualVertexInUse(theGraph, R))
         {
@@ -1394,9 +1392,7 @@ int _OrientVerticesInBicomp(graphP theGraph, int BicompRoot, int PreserveSigns)
 
 int _JoinBicomps(graphP theGraph)
 {
-    int R;
-
-    for (R = gp_GetFirstVirtualVertex(theGraph); gp_VirtualVertexInRangeAscending(theGraph, R); R++)
+    for (int R = gp_LowerBoundVirtualVertices(theGraph); R < gp_UpperBoundVirtualVertices(theGraph); ++R)
     {
         // If the bicomp root is still active (i.e. an in-use virtual vertex)
         // then merge it with its parent copy vertex (non-virtual)

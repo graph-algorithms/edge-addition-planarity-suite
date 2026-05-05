@@ -210,7 +210,7 @@ void _K33Search_ClearStructures(K33SearchContext *context)
  ********************************************************************/
 int _K33Search_CreateStructures(K33SearchContext *context)
 {
-    int VIsize = gp_VertexArraySize(context->theGraph);
+    int VIsize = gp_UpperBoundVertices(context->theGraph);
     int Esize = gp_UpperBoundEdgeStorage(context->theGraph);
 
     if (gp_GetN(context->theGraph) <= 0)
@@ -233,7 +233,7 @@ int _K33Search_CreateStructures(K33SearchContext *context)
  ********************************************************************/
 int _K33Search_InitStructures(K33SearchContext *context)
 {
-    memset(context->VI, NIL_CHAR, gp_VertexArraySize(context->theGraph) * sizeof(K33Search_VertexInfo));
+    memset(context->VI, NIL_CHAR, gp_UpperBoundVertices(context->theGraph) * sizeof(K33Search_VertexInfo));
     memset(context->E, NIL_CHAR, gp_UpperBoundEdgeStorage(context->theGraph) * sizeof(K33Search_EdgeRec));
 
     return OK;
@@ -312,7 +312,7 @@ void *_K33Search_DupContext(void *pContext, void *theGraph)
 
     if (newContext != NULL)
     {
-        int VIsize = gp_VertexArraySize((graphP)theGraph);
+        int VIsize = gp_UpperBoundVertices((graphP)theGraph);
         int Esize = gp_UpperBoundEdgeStorage((graphP)theGraph);
 
         *newContext = *context;
@@ -390,7 +390,7 @@ void _CreateBackEdgeLists(graphP theGraph, K33SearchContext *context)
 {
     int v, e, eTwin, ancestor;
 
-    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
+    for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
     {
         e = gp_GetVertexFwdEdgeList(theGraph, v);
         while (gp_IsEdge(theGraph, e))
@@ -441,12 +441,12 @@ void _CreateSeparatedDFSChildLists(graphP theGraph, K33SearchContext *context)
 
     // Initialize the bin and all the buckets to be empty
     LCReset(bin);
-    for (L = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, L); L++)
+    for (L = gp_LowerBoundVertices(theGraph); L < gp_UpperBoundVertices(theGraph); L++)
         buckets[L] = NIL;
 
     // For each vertex, add it to the bucket whose index is equal to the lowpoint of the vertex.
 
-    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
+    for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
     {
         L = gp_GetVertexLowpoint(theGraph, v);
         buckets[L] = LCAppend(bin, buckets[L], v);
@@ -456,7 +456,7 @@ void _CreateSeparatedDFSChildLists(graphP theGraph, K33SearchContext *context)
     // Since lower numbered buckets are processed before higher numbered buckets, vertices with lower
     // lowpoint values are added before those with higher lowpoint values, so the separatedDFSChildList
     // of each vertex is sorted by lowpoint
-    for (L = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, L); L++)
+    for (L = gp_LowerBoundVertices(theGraph); L < gp_UpperBoundVertices(theGraph); L++)
     {
         v = buckets[L];
 

@@ -665,10 +665,11 @@ int _g6_DecodeGraph(char *graphBuff, const int order, const int numChars, graphP
             bitValue = ((currByte >> j) & 1u) ? 1 : 0;
             if (bitValue == 1)
             {
-                // Add gp_GetFirstVertex(theGraph), which is 1 if NIL == 0 (i.e.
-                // internal 1-based labelling) and 0 if NIL == -1 (internally
-                // 0-based)
-                if (gp_DynamicAddEdge(theGraph, row + gp_GetFirstVertex(theGraph), 0, col + gp_GetFirstVertex(theGraph), 0) != OK)
+                // Also add the offset to the first vertex in in-memory storage,
+                // because the G6 file is 0-based, but im-memory storage may not be.
+                if (gp_DynamicAddEdge(theGraph,
+                                      row + gp_LowerBoundVertexStorage(theGraph), 0,
+                                      col + gp_LowerBoundVertexStorage(theGraph), 0) != OK)
                     return NOTOK;
             }
 

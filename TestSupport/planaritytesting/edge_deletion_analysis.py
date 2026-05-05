@@ -932,7 +932,7 @@ class EdgeDeletionAnalyzer:
                     - this could happen if rather than starting with a graph in
                     .g6 format, your input graph is an adjacency list produced
                     by planarity when NIL is set to 0 rather than -1, causing
-                    gp_GetFirstVertex(theGraph) to return 1 and line
+                    gp_LowerBoundVertexStorage(theGraph) to return 1 and line
                     terminators to be set to 0 because
                     gp_GetGraphFlags(theGraph) & GRAPHFLAGS_ZEROBASEDIO is falsy
                 - Deleting an edge from the copied graph fails

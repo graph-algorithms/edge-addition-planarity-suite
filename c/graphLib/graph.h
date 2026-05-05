@@ -350,119 +350,80 @@ extern "C"
 ///////////////////////////////////
 // Vertex iteration-related methods
 ///////////////////////////////////
+
+// These lower and upper bounds for vertex storage are used for initializing and for
+// iterating through all of non-virtual and virtual vertex records.
 #ifdef USE_1BASEDARRAYS
+#define gp_LowerBoundVertexStorage(theGraph) (1)
+#else
+#define gp_LowerBoundVertexStorage(theGraph) (0)
+#endif
 
-    // The use of *Vertex* alone consistently refers to the initial N vertices.
-    // The use of *VirtualVertex* refers to vertex array locations after the first N.
-    // The use of *AnyTypeVertex* refers to any non-virtual or virtual vertex
+#define gp_UpperBoundVertexStorage(theGraph) (gp_LowerBoundVertexStorage(theGraph) + gp_GetN(theGraph) + gp_GetNV(theGraph))
 
-#define gp_GetFirstVertex(theGraph) (1)
-#define gp_GetLastVertex(theGraph) (gp_GetN(theGraph))
+// The original N non-virtual vertices of a graph start at the lowest allowed storage location.
+// The upper bound is one-past-the-end of the storage for the N non-virtual vertices.
+#define gp_LowerBoundVertices(theGraph) gp_LowerBoundVertexStorage(theGraph)
+#define gp_UpperBoundVertices(theGraph) (gp_LowerBoundVertexStorage(theGraph) + gp_GetN(theGraph))
 
-#define gp_GetFirstVirtualVertex(theGraph) (gp_GetN(theGraph) + 1)
-#define gp_GetLastVirtualVertex(theGraph) (gp_GetN(theGraph) + gp_GetNV(theGraph))
+// The virtual vertices start at the one-past-the-end upper bound of the non-virtual vertices.
+// The upper bound is one-past-the-end of the vertex storage locations.
+#define gp_LowerBoundVirtualVertices(theGraph) gp_UpperBoundVertices(theGraph)
+#define gp_UpperBoundVirtualVertices(theGraph) gp_UpperBoundVertexStorage(theGraph)
 
-#define gp_GetFirstAnyTypeVertex(theGraph) (gp_GetFirstVertex(theGraph))
-#define gp_GetLastAnyTypeVertex(theGraph) (gp_GetLastVirtualVertex(theGraph))
-
+#ifdef USE_1BASEDARRAYS
+// The use of *Vertex* alone consistently refers to the initial N vertices.
+// The use of *VirtualVertex* refers to vertex array locations after the first N.
+// The use of *AnyTypeVertex* refers to any non-virtual or virtual vertex
 #ifndef DEBUG
 #define gp_IsVertex(theGraph, v) (v)
 #define gp_IsVirtualVertex(theGraph, v) ((v) > gp_GetN(theGraph))
 #define gp_IsAnyTypeVertex(theGraph, v) (v)
 #else
-#define gp_IsVertex(theGraph, v) \
-    ((v) == NIL ? 0 : ((v) < gp_GetFirstVertex(theGraph) ? (NOTOK, 0) : ((v) > gp_GetLastVertex(theGraph) ? (NOTOK, 0) : 1)))
-
-// NOTE: gp_IsVirtualVertex() is sometimes called to distinguish between
-// an existing non-virtual and a virtual
-#define gp_IsVirtualVertex(theGraph, v)                                \
-    ((v) == NIL                                                        \
-         ? 0                                                           \
-         : ((v) < gp_GetFirstVirtualVertex(theGraph)                   \
-                ? ((v) < gp_GetFirstVertex(theGraph) ? (NOTOK, 0) : 0) \
-                : ((v) > gp_GetLastVirtualVertex(theGraph) ? (NOTOK, 0) : 1)))
-
-#define gp_IsAnyTypeVertex(theGraph, v)              \
-    ((v) == NIL                                      \
-         ? 0                                         \
-         : ((v) < gp_GetFirstAnyTypeVertex(theGraph) \
-                ? (NOTOK, 0)                         \
-                : ((v) > gp_GetLastAnyTypeVertex(theGraph) ? (NOTOK, 0) : 1)))
-
+// See below for definitions common to 1-based and 0-based
 #endif
 
-#define gp_IsNotVertex(theGraph, v) (!(gp_IsVertex(theGraph, v)))
-#define gp_IsNotVirtualVertex(theGraph, v) (!(gp_IsVirtualVertex(theGraph, v)))
-#define gp_IsNotAnyTypeVertex(theGraph, v) (!(gp_IsAnyTypeVertex(theGraph, v)))
-
-#define gp_VertexInRangeAscending(theGraph, v) ((v) <= gp_GetN(theGraph))
-#define gp_VertexInRangeDescending(theGraph, v) (v)
-
-#define gp_VirtualVertexInRangeAscending(theGraph, v) ((v) <= gp_GetN(theGraph) + gp_GetNV(theGraph))
-#define gp_VirtualVertexInRangeDescending(theGraph, v) ((v) > gp_GetN(theGraph))
-
-#define gp_AnyTypeVertexInRangeAscending(theGraph, v) (gp_VirtualVertexInRangeAscending(theGraph, v))
-#define gp_AnyTypeVertexInRangeDescending(theGraph, v) (gp_VirtualVertexInRangeDescending(theGraph, v))
-
-#define gp_VertexArraySize(theGraph) (gp_GetFirstVertex(theGraph) + gp_GetN(theGraph))
-#define gp_AnyTypeVertexArraySize(theGraph) (gp_VertexArraySize(theGraph) + gp_GetNV(theGraph))
-
-#define gp_VirtualVertexInUse(theGraph, virtualVertex) (gp_IsEdge(theGraph, gp_GetFirstEdge(theGraph, virtualVertex)))
-#define gp_VirtualVertexNotInUse(theGraph, virtualVertex) (gp_IsNotEdge(theGraph, gp_GetFirstEdge(theGraph, virtualVertex)))
-
-#else // Using Slower 0-based Arrays
-
-#define gp_GetFirstVertex(theGraph) (0)
-#define gp_GetLastVertex(theGraph) (gp_GetN(theGraph) - 1)
-
-#define gp_GetFirstVirtualVertex(theGraph) (gp_GetN(theGraph))
-#define gp_GetLastVirtualVertex(theGraph) (gp_GetN(theGraph) + gp_GetNV(theGraph) - 1)
-
-#define gp_GetFirstAnyTypeVertex(theGraph) (gp_GetFirstVertex(theGraph))
-#define gp_GetLastAnyTypeVertex(theGraph) (gp_GetLastVirtualVertex(theGraph))
-
+#else // Using 0-based Arrays
 #ifndef DEBUG
 #define gp_IsVertex(theGraph, v) ((v) != NIL)
 #define gp_IsVirtualVertex(theGraph, v) ((v) >= gp_GetN(theGraph))
 #define gp_IsAnyTypeVertex(theGraph, v) ((v) != NIL)
 #else
+// See below for definitions common to 1-based and 0-based
+#endif
+#endif // End of 0-based Arrays
+
+// The same for 1-based and 0-based when debugging
+#ifdef DEBUG
 #define gp_IsVertex(theGraph, v) \
-    ((v) == NIL ? 0 : ((v) < gp_GetFirstVertex(theGraph) ? (NOTOK, 0) : ((v) > gp_GetLastVertex(theGraph) ? (NOTOK, 0) : 1)))
+    ((v) == NIL ? 0 : ((v) < gp_LowerBoundVertices(theGraph) ? (NOTOK, 0) : ((v) >= gp_UpperBoundVertices(theGraph) ? (NOTOK, 0) : 1)))
 
-#define gp_IsVirtualVertex(theGraph, v)                                \
-    ((v) == NIL                                                        \
-         ? 0                                                           \
-         : ((v) < gp_GetFirstVirtualVertex(theGraph)                   \
-                ? ((v) < gp_GetFirstVertex(theGraph) ? (NOTOK, 0) : 0) \
-                : ((v) > gp_GetLastVirtualVertex(theGraph) ? (NOTOK, 0) : 1)))
+// NOTE: gp_IsVirtualVertex() is sometimes called to distinguish between
+// an existing non-virtual and a virtual
+#define gp_IsVirtualVertex(theGraph, v)                                    \
+    ((v) == NIL                                                            \
+         ? 0                                                               \
+         : ((v) < gp_LowerBoundVirtualVertices(theGraph)                   \
+                ? ((v) < gp_LowerBoundVertices(theGraph) ? (NOTOK, 0) : 0) \
+                : ((v) >= gp_UpperBoundVirtualVertices(theGraph) ? (NOTOK, 0) : 1)))
 
-#define gp_IsAnyTypeVertex(theGraph, v) \
-    ((v) == NIL ? 0 : ((v) < gp_GetFirstAnyTypeVertex(theGraph) ? (NOTOK, 0) : ((v) > gp_GetLastAnyTypeVertex(theGraph) ? (NOTOK, 0) : 1)))
+#define gp_IsAnyTypeVertex(theGraph, v)                \
+    ((v) == NIL                                        \
+         ? 0                                           \
+         : ((v) < gp_LowerBoundVertexStorage(theGraph) \
+                ? (NOTOK, 0)                           \
+                : ((v) >= gp_UpperBoundVertexStorage(theGraph) ? (NOTOK, 0) : 1)))
 #endif
 
 #define gp_IsNotVertex(theGraph, v) (!(gp_IsVertex(theGraph, v)))
 #define gp_IsNotVirtualVertex(theGraph, v) (!(gp_IsVirtualVertex(theGraph, v)))
 #define gp_IsNotAnyTypeVertex(theGraph, v) (!(gp_IsAnyTypeVertex(theGraph, v)))
 
-#define gp_VertexInRangeAscending(theGraph, v) ((v) < gp_GetN(theGraph))
-#define gp_VertexInRangeDescending(theGraph, v) ((v) >= 0)
-
-#define gp_VirtualVertexInRangeAscending(theGraph, v) ((v) < gp_GetN(theGraph) + gp_GetNV(theGraph))
-#define gp_VirtualVertexInRangeDescending(theGraph, v) ((v) >= gp_GetN(theGraph))
-
-#define gp_AnyTypeVertexInRangeAscending(theGraph, v) (gp_VirtualVertexInRangeAscending(theGraph, v))
-#define gp_AnyTypeVertexInRangeDescending(theGraph, v) (gp_VirtualVertexInRangeDescending(theGraph, v))
-
-#define gp_VertexArraySize(theGraph) (gp_GetFirstVertex(theGraph) + gp_GetN(theGraph))
-#define gp_AnyTypeVertexArraySize(theGraph) (gp_VertexArraySize(theGraph) + gp_GetNV(theGraph))
-
 #define gp_VirtualVertexInUse(theGraph, virtualVertex) (gp_IsEdge(theGraph, gp_GetFirstEdge(theGraph, virtualVertex)))
 #define gp_VirtualVertexNotInUse(theGraph, virtualVertex) (gp_IsNotEdge(theGraph, gp_GetFirstEdge(theGraph, virtualVertex)))
-
-#endif
-    ///////////////////////////////////////////
-    // End of Vertex iteration-related methods
-    //////////////////////////////////////////
+///////////////////////////////////////////
+// End of Vertex iteration-related methods
+//////////////////////////////////////////
 
 // Accessors for "any type" vertex index
 #define gp_GetIndex(theGraph, v) (theGraph->V[v].index)

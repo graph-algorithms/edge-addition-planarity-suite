@@ -492,11 +492,10 @@ void _g6_EncodeAdjMatAsG6(G6WriteIteratorP theG6WriteIterator)
     charOffset = bitPositionPower = 0;
     while (u != NIL && v != NIL)
     {
-        // The internal graph representation is usually 1-based, but may be 0-based, so
-        // one must subtract the index of the first vertex (i.e. result of gp_GetFirstVertex)
-        // because the .g6 format is 0-based
-        u -= gp_GetFirstVertex(theGraph);
-        v -= gp_GetFirstVertex(theGraph);
+        // The in-memory vertex storage may 1-based or 0-based, so we subtract the index
+        // of the first vertex in storage because the .g6 format is 0-based
+        u -= gp_LowerBoundVertexStorage(theGraph);
+        v -= gp_LowerBoundVertexStorage(theGraph);
 
         // The columnOffset machinery assumes that we are traversing the edges represented in
         // the upper-triangular matrix. Since we are dealing with simple graphs, if (v, u)

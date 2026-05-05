@@ -208,7 +208,7 @@ void _DrawPlanar_ClearStructures(DrawPlanarContext *context)
 int _DrawPlanar_CreateStructures(DrawPlanarContext *context)
 {
     graphP theGraph = context->theGraph;
-    int VIsize = gp_VertexArraySize(theGraph);
+    int VIsize = gp_UpperBoundVertices(theGraph);
     int Esize = gp_UpperBoundEdgeStorage(theGraph);
 
     if (gp_GetN(theGraph) <= 0)
@@ -234,7 +234,7 @@ int _DrawPlanar_InitStructures(DrawPlanarContext *context)
     memset(context->E, 0, gp_UpperBoundEdgeStorage(context->theGraph) * sizeof(DrawPlanar_EdgeRec));
 
 #ifdef USE_1BASEDARRAYS
-    memset(context->VI, NIL_CHAR, gp_VertexArraySize(context->theGraph) * sizeof(DrawPlanar_VertexInfo));
+    memset(context->VI, NIL_CHAR, gp_UpperBoundVertices(context->theGraph) * sizeof(DrawPlanar_VertexInfo));
 #else
     int v;
     graphP theGraph = context->theGraph;
@@ -242,7 +242,7 @@ int _DrawPlanar_InitStructures(DrawPlanarContext *context)
     if (gp_GetN(theGraph) <= 0)
         return NOTOK;
 
-    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
+    for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
         _DrawPlanar_InitVertexInfo(context, v);
 #endif
 
@@ -260,7 +260,7 @@ void *_DrawPlanar_DupContext(void *pContext, void *theGraph)
 
     if (newContext != NULL)
     {
-        int VIsize = gp_VertexArraySize((graphP)theGraph);
+        int VIsize = gp_UpperBoundVertices((graphP)theGraph);
         int Esize = gp_UpperBoundEdgeStorage((graphP)theGraph);
 
         *newContext = *context;
@@ -376,7 +376,7 @@ int _DrawPlanar_SortVertices(graphP theGraph)
             DrawPlanar_VertexInfo temp;
 
             // Relabel the context data members that indicate vertices
-            for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
+            for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
             {
                 if (gp_IsVertex(theGraph, context->VI[v].ancestor))
                 {
@@ -390,7 +390,7 @@ int _DrawPlanar_SortVertices(graphP theGraph)
             // which, for each v, newVI[index of v] = VI[v].  However, this loop avoids memory allocation
             // by performing the operation (almost) in-place, except for the pre-existing visitation flags.
             _ClearAnyTypeVertexVisitedFlags(theGraph, FALSE);
-            for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
+            for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
             {
                 // If the correct data has already been placed into position v
                 // by prior steps, then skip to the next vertex
@@ -584,7 +584,7 @@ int _DrawPlanar_ReadPostprocess(graphP theGraph, char *extraData)
             extraData = extraData + strlen(line) + 1;
 
             // Read the N lines of vertex information
-            for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
+            for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
             {
                 sscanf(extraData, " %d%c %d %d %d", &tempInt, &tempChar,
                        &context->VI[v].pos,
@@ -653,7 +653,7 @@ int _DrawPlanar_WritePostprocess(graphP theGraph, char **pExtraData)
             // with USE_1BASEDARRAYS USE_0BASEDARRAYS). The macros invoked are responsive to the difference.
             if (gp_GetGraphFlags(theGraph) & GRAPHFLAGS_ZEROBASEDIO)
             {
-                zeroBasedVertexOffset = gp_GetFirstVertex(theGraph);
+                zeroBasedVertexOffset = gp_LowerBoundVertexStorage(theGraph);
                 zeroBasedEdgeOffset = gp_LowerBoundEdgeStorage(theGraph);
             }
 
@@ -671,7 +671,7 @@ int _DrawPlanar_WritePostprocess(graphP theGraph, char **pExtraData)
             strcpy(extraData + extraDataPos, line);
             extraDataPos += (int)strlen(line);
 
-            for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
+            for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
             {
                 sprintf(line, "%d: %d %d %d\n", v - zeroBasedVertexOffset,
                         context->VI[v].pos,

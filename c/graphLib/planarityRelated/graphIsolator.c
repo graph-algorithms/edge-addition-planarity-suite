@@ -821,7 +821,7 @@ int _DeleteUnmarkedVerticesAndEdges(graphP theGraph)
        preprocessing.  We now put them back into the adjacency lists
        (and we do not mark them), so they can be properly deleted below. */
 
-    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
+    for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
     {
         while (gp_IsEdge(theGraph, e = gp_GetVertexFwdEdgeList(theGraph, v)))
             _AddBackEdge(theGraph, v, gp_GetNeighbor(theGraph, e));
@@ -830,7 +830,7 @@ int _DeleteUnmarkedVerticesAndEdges(graphP theGraph)
     /* Now we delete all unmarked edges.  We don't delete vertices from the
        embedding, but the ones we should delete will become degree zero. */
 
-    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
+    for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
     {
         e = gp_GetFirstEdge(theGraph, v);
         while (gp_IsEdge(theGraph, e))

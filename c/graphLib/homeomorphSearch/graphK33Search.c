@@ -828,7 +828,7 @@ int _FindK33WithMergeBlocker(graphP theGraph, K33SearchContext *context, int v, 
 
     /* Reinitialize the visitation, pertinence and future pertinence settings from step u_max for step v */
 
-    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
+    for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
     {
         gp_SetVertexVisitedInfo(theGraph, v, gp_GetN(theGraph));
         gp_SetVertexPertinentEdge(theGraph, v, NIL);

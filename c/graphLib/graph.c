@@ -246,8 +246,8 @@ int _InitGraph(graphP theGraph, int N)
     theGraph->edgeCapacity = theGraph->edgeCapacity > 0 ? theGraph->edgeCapacity : DEFAULT_EDGE_LIMIT * N;
     theGraph->numEdgeHoles = 0;
 
-    VIsize = gp_VertexArraySize(theGraph);
-    Vsize = gp_AnyTypeVertexArraySize(theGraph);
+    VIsize = gp_UpperBoundVertices(theGraph);
+    Vsize = gp_UpperBoundVertexStorage(theGraph);
     Esize = gp_UpperBoundEdgeStorage(theGraph);
 
     // Stack size is 2 integers per edge record plus 2 to start depth-first search at a tree root
@@ -287,16 +287,17 @@ int _InitGraph(graphP theGraph, int N)
  ********************************************************************/
 void _InitVertices(graphP theGraph)
 {
-    memset(theGraph->V, NIL_CHAR, gp_AnyTypeVertexArraySize(theGraph) * sizeof(anyTypeVertexRec));
+    memset(theGraph->V, NIL_CHAR, gp_UpperBoundVertexStorage(theGraph) * sizeof(anyTypeVertexRec));
 
-    memset(theGraph->DVI, NIL_CHAR, gp_VertexArraySize(theGraph) * sizeof(DFSUtils_VertexInfo));
+    memset(theGraph->DVI, NIL_CHAR, gp_UpperBoundVertices(theGraph) * sizeof(DFSUtils_VertexInfo));
 
-    memset(theGraph->PVI, NIL_CHAR, gp_VertexArraySize(theGraph) * sizeof(Planarity_VertexInfo));
-    memset(theGraph->extFace, NIL_CHAR, gp_AnyTypeVertexArraySize(theGraph) * sizeof(extFaceLinkRec));
+    memset(theGraph->PVI, NIL_CHAR, gp_UpperBoundVertices(theGraph) * sizeof(Planarity_VertexInfo));
+    memset(theGraph->extFace, NIL_CHAR, gp_UpperBoundVertexStorage(theGraph) * sizeof(extFaceLinkRec));
 
 #ifdef USE_1BASEDARRAYS
+// For 1-based arrays, the memset() initializes the flags correctly
 #else
-    for (int v = gp_GetFirstVertex(theGraph); gp_AnyTypeVertexInRangeAscending(theGraph, v); v++)
+    for (int v = gp_LowerBoundVertexStorage(theGraph); v < gp_UpperBoundVertexStorage(theGraph); ++v)
         gp_InitFlags(theGraph, v);
 #endif
 }
@@ -555,11 +556,11 @@ void _ClearAnyTypeVertexVisitedFlags(graphP theGraph, int includeVirtualVertices
 {
     int v;
 
-    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
+    for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
         gp_ClearVisited(theGraph, v);
 
     if (includeVirtualVertices)
-        for (v = gp_GetFirstVirtualVertex(theGraph); gp_VirtualVertexInRangeAscending(theGraph, v); v++)
+        for (v = gp_LowerBoundVirtualVertices(theGraph); v < gp_UpperBoundVirtualVertices(theGraph); ++v)
             gp_ClearVisited(theGraph, v);
 }
 
@@ -631,7 +632,7 @@ int _ClearAllVisitedFlagsInOtherBicomps(graphP theGraph, int BicompRoot)
 {
     int R;
 
-    for (R = gp_GetFirstVirtualVertex(theGraph); gp_VirtualVertexInRangeAscending(theGraph, R); R++)
+    for (R = gp_LowerBoundVirtualVertices(theGraph); R < gp_UpperBoundVirtualVertices(theGraph); ++R)
     {
         if (R != BicompRoot && gp_VirtualVertexInUse(theGraph, R))
         {
@@ -652,7 +653,7 @@ void _ClearEdgeVisitedFlagsInUnembeddedEdges(graphP theGraph)
 {
     int v, e;
 
-    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
+    for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
     {
         e = gp_GetVertexFwdEdgeList(theGraph, v);
         while (gp_IsEdge(theGraph, e))
@@ -944,7 +945,7 @@ int gp_CopyAdjacencyLists(graphP dstGraph, graphP srcGraph)
         return NOTOK;
 
     // Copy the links that hook each owning vertex to its adjacency list
-    for (v = gp_GetFirstVertex(srcGraph); gp_VertexInRangeAscending(srcGraph, v); v++)
+    for (v = gp_LowerBoundVertices(srcGraph); v < gp_UpperBoundVertices(srcGraph); ++v)
     {
         gp_SetFirstEdge(dstGraph, v, gp_GetFirstEdge(srcGraph, v));
         gp_SetLastEdge(dstGraph, v, gp_GetLastEdge(srcGraph, v));
@@ -1028,7 +1029,7 @@ int gp_CopyGraph(graphP dstGraph, graphP srcGraph)
 
     // Copy the vertices (non-virtual only).  Augmentations to vertices created
     // by extensions are copied below by gp_CopyExtensions()
-    for (v = gp_GetFirstVertex(srcGraph); gp_VertexInRangeAscending(srcGraph, v); v++)
+    for (v = gp_LowerBoundVertices(srcGraph); v < gp_UpperBoundVertices(srcGraph); ++v)
     {
         _gp_CopyAnyTypeVertexRec(dstGraph, v, srcGraph, v);
         if (dstGraph->DVI != NULL && srcGraph->DVI != NULL)
@@ -1041,7 +1042,7 @@ int gp_CopyGraph(graphP dstGraph, graphP srcGraph)
 
     // Copy the virtual vertices.  Augmentations to virtual vertices created
     // by extensions are copied below by gp_CopyExtensions()
-    for (v = gp_GetFirstVirtualVertex(srcGraph); gp_VirtualVertexInRangeAscending(srcGraph, v); v++)
+    for (v = gp_LowerBoundVirtualVertices(srcGraph); v < gp_UpperBoundVirtualVertices(srcGraph); ++v)
     {
         _gp_CopyAnyTypeVertexRec(dstGraph, v, srcGraph, v);
         gp_SetExtFaceVertex(dstGraph, v, 0, gp_GetExtFaceVertex(srcGraph, v, 0));
@@ -1136,9 +1137,9 @@ int gp_CreateRandomGraph(graphP theGraph)
             Also, we are not generating the DFS tree but rather a tree
             that simply ensures the resulting random graph is connected. */
 
-    for (v = gp_GetFirstVertex(theGraph) + 1; gp_VertexInRangeAscending(theGraph, v); v++)
+    for (v = gp_LowerBoundVertices(theGraph) + 1; v < gp_UpperBoundVertices(theGraph); ++v)
     {
-        u = _GetRandomNumber(gp_GetFirstVertex(theGraph), v - 1);
+        u = _GetRandomNumber(gp_LowerBoundVertices(theGraph), v - 1);
         if (gp_AddEdge(theGraph, u, 0, v, 0) != OK)
             return NOTOK;
     }
@@ -1154,8 +1155,8 @@ int gp_CreateRandomGraph(graphP theGraph)
 
     for (m = N - 1; m < M; m++)
     {
-        u = _GetRandomNumber(gp_GetFirstVertex(theGraph), gp_GetLastVertex(theGraph) - 1);
-        v = _GetRandomNumber(u + 1, gp_GetLastVertex(theGraph));
+        u = _GetRandomNumber(gp_LowerBoundVertices(theGraph), gp_UpperBoundVertices(theGraph) - 2);
+        v = _GetRandomNumber(u + 1, gp_UpperBoundVertices(theGraph) - 1);
 
         // If the edge (u,v) exists, decrement eIndex to try again
         if (gp_IsNeighbor(theGraph, u, v))
@@ -1302,9 +1303,9 @@ int gp_CreateRandomGraphEx(graphP theGraph, int numEdges)
 
     /* Generate a random tree. */
 
-    for (v = gp_GetFirstVertex(theGraph) + 1; gp_VertexInRangeAscending(theGraph, v); v++)
+    for (v = gp_LowerBoundVertices(theGraph) + 1; v < gp_UpperBoundVertices(theGraph); ++v)
     {
-        u = _GetRandomNumber(gp_GetFirstVertex(theGraph), v - 1);
+        u = _GetRandomNumber(gp_LowerBoundVertices(theGraph), v - 1);
         if (gp_AddEdge(theGraph, u, 0, v, 0) != OK)
             return NOTOK;
 
@@ -1323,7 +1324,8 @@ int gp_CreateRandomGraphEx(graphP theGraph, int numEdges)
 
     M = numEdges <= 3 * N - 6 ? numEdges : 3 * N - 6;
 
-    root = gp_GetFirstVertex(theGraph);
+    // Start with the firt vertex
+    root = gp_LowerBoundVertices(theGraph);
 
     // Generally, we use v keep track of a traversal down and up all the random tree edges
     // The last variable marks the location of the last vertex that was an endpoint of the
@@ -1482,8 +1484,8 @@ int gp_CreateRandomGraphEx(graphP theGraph, int numEdges)
 
     while (gp_GetM(theGraph) < numEdges)
     {
-        u = _GetRandomNumber(gp_GetFirstVertex(theGraph), gp_GetLastVertex(theGraph));
-        v = _GetRandomNumber(gp_GetFirstVertex(theGraph), gp_GetLastVertex(theGraph));
+        u = _GetRandomNumber(gp_LowerBoundVertices(theGraph), gp_UpperBoundVertices(theGraph) - 1);
+        v = _GetRandomNumber(gp_LowerBoundVertices(theGraph), gp_UpperBoundVertices(theGraph) - 1);
 
         if (u != v && !gp_IsNeighbor(theGraph, u, v))
             if (gp_AddEdge(theGraph, u, 0, v, 0) != OK)
@@ -1501,7 +1503,7 @@ int gp_CreateRandomGraphEx(graphP theGraph, int numEdges)
 
     /* Put all DFSParent indicators back to NIL */
 
-    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
+    for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
         gp_SetVertexParent(theGraph, v, NIL);
 
     return OK;
@@ -1525,8 +1527,8 @@ int gp_IsNeighbor(graphP theGraph, int u, int v)
     int e = NIL;
 
     if (theGraph == NULL ||
-        u < gp_GetFirstVertex(theGraph) || u >= gp_AnyTypeVertexArraySize(theGraph) ||
-        v < gp_GetFirstVertex(theGraph) || v >= gp_AnyTypeVertexArraySize(theGraph))
+        u < gp_LowerBoundVertexStorage(theGraph) || u >= gp_UpperBoundVertexStorage(theGraph) ||
+        v < gp_LowerBoundVertexStorage(theGraph) || v >= gp_UpperBoundVertexStorage(theGraph))
     {
 #ifdef DEBUG
         NOTOK;
@@ -1563,8 +1565,8 @@ int gp_IsNeighborDirected(graphP theGraph, int u, int v, unsigned direction)
     int e = NIL;
 
     if (theGraph == NULL ||
-        u < gp_GetFirstVertex(theGraph) || u >= gp_AnyTypeVertexArraySize(theGraph) ||
-        v < gp_GetFirstVertex(theGraph) || v >= gp_AnyTypeVertexArraySize(theGraph) ||
+        u < gp_LowerBoundVertexStorage(theGraph) || u >= gp_UpperBoundVertexStorage(theGraph) ||
+        v < gp_LowerBoundVertexStorage(theGraph) || v >= gp_UpperBoundVertexStorage(theGraph) ||
         (direction != 0 && direction != EDGEFLAG_DIRECTION_INONLY && direction != EDGEFLAG_DIRECTION_OUTONLY))
     {
 #ifdef DEBUG
@@ -1604,8 +1606,8 @@ int gp_IsNeighborDirected(graphP theGraph, int u, int v, unsigned direction)
 int gp_FindEdge(graphP theGraph, int u, int v)
 {
     if (theGraph == NULL ||
-        u < gp_GetFirstVertex(theGraph) || u >= gp_AnyTypeVertexArraySize(theGraph) ||
-        v < gp_GetFirstVertex(theGraph) || v >= gp_AnyTypeVertexArraySize(theGraph))
+        u < gp_LowerBoundVertexStorage(theGraph) || u >= gp_UpperBoundVertexStorage(theGraph) ||
+        v < gp_LowerBoundVertexStorage(theGraph) || v >= gp_UpperBoundVertexStorage(theGraph))
     {
 #ifdef DEBUG
         NOTOK;
@@ -1656,8 +1658,8 @@ int gp_FindDirectedEdge(graphP theGraph, int u, int v, unsigned direction)
     int e = NIL;
 
     if (theGraph == NULL ||
-        u < gp_GetFirstVertex(theGraph) || u >= gp_AnyTypeVertexArraySize(theGraph) ||
-        v < gp_GetFirstVertex(theGraph) || v >= gp_AnyTypeVertexArraySize(theGraph) ||
+        u < gp_LowerBoundVertexStorage(theGraph) || u >= gp_UpperBoundVertexStorage(theGraph) ||
+        v < gp_LowerBoundVertexStorage(theGraph) || v >= gp_UpperBoundVertexStorage(theGraph) ||
         (direction != 0 && direction != EDGEFLAG_DIRECTION_INONLY && direction != EDGEFLAG_DIRECTION_OUTONLY))
     {
 #ifdef DEBUG
@@ -1705,7 +1707,7 @@ int gp_GetVertexDegree(graphP theGraph, int v)
     int e, degree;
 
     if (theGraph == NULL ||
-        v < gp_GetFirstVertex(theGraph) || v >= gp_AnyTypeVertexArraySize(theGraph))
+        v < gp_LowerBoundVertexStorage(theGraph) || v >= gp_UpperBoundVertexStorage(theGraph))
     {
 #ifdef DEBUG
         NOTOK;
@@ -1745,7 +1747,7 @@ int gp_GetVertexInDegree(graphP theGraph, int v)
     int e, degree;
 
     if (theGraph == NULL ||
-        v < gp_GetFirstVertex(theGraph) || v >= gp_AnyTypeVertexArraySize(theGraph))
+        v < gp_LowerBoundVertexStorage(theGraph) || v >= gp_UpperBoundVertexStorage(theGraph))
     {
 #ifdef DEBUG
         NOTOK;
@@ -1785,7 +1787,7 @@ int gp_GetVertexOutDegree(graphP theGraph, int v)
     int e, degree;
 
     if (theGraph == NULL ||
-        v < gp_GetFirstVertex(theGraph) || v >= gp_AnyTypeVertexArraySize(theGraph))
+        v < gp_LowerBoundVertexStorage(theGraph) || v >= gp_UpperBoundVertexStorage(theGraph))
     {
 #ifdef DEBUG
         NOTOK;
@@ -1943,8 +1945,8 @@ int gp_AddEdge(graphP theGraph, int u, int ulink, int v, int vlink)
     int upos, vpos;
 
     if (theGraph == NULL ||
-        u < gp_GetFirstVertex(theGraph) || v < gp_GetFirstVertex(theGraph) ||
-        !gp_VirtualVertexInRangeAscending(theGraph, u) || !gp_VirtualVertexInRangeAscending(theGraph, v))
+        u < gp_LowerBoundVertexStorage(theGraph) || v < gp_LowerBoundVertexStorage(theGraph) ||
+        u >= gp_UpperBoundVertexStorage(theGraph) || v >= gp_UpperBoundVertexStorage(theGraph))
         return NOTOK;
 
     /* We enforce the edge limit */
@@ -2042,15 +2044,15 @@ int gp_DynamicAddEdge(graphP theGraph, int u, int ulink, int v, int vlink)
 int gp_InsertEdge(graphP theGraph, int u, int e_u, int e_ulink,
                   int v, int e_v, int e_vlink)
 {
-    int vertMax, upos, vpos;
+    int upos, vpos;
 
     if (theGraph == NULL)
         return NOTOK;
 
-    vertMax = gp_GetLastVirtualVertex(theGraph);
-
-    if (u < gp_GetFirstVertex(theGraph) || u > vertMax ||
-        v < gp_GetFirstVertex(theGraph) || v > vertMax ||
+    if (u < gp_LowerBoundVertexStorage(theGraph) ||
+        u >= gp_UpperBoundVertexStorage(theGraph) ||
+        v < gp_LowerBoundVertexStorage(theGraph) ||
+        v >= gp_UpperBoundVertexStorage(theGraph) ||
         (e_u < gp_LowerBoundEdges(theGraph) && gp_IsEdge(theGraph, e_u)) ||
         e_u >= gp_UpperBoundEdges(theGraph) ||
         (gp_IsEdge(theGraph, e_u) && gp_EdgeNotInUse(theGraph, e_u)) ||
@@ -2338,7 +2340,7 @@ int _RestoreHiddenEdges(graphP theGraph, int stackBottom)
 int gp_HideVertex(graphP theGraph, int vertex)
 {
     if (theGraph == NULL ||
-        vertex < gp_GetFirstVertex(theGraph) || vertex >= gp_AnyTypeVertexArraySize(theGraph))
+        vertex < gp_LowerBoundVertexStorage(theGraph) || vertex >= gp_UpperBoundVertexStorage(theGraph))
     {
         return NOTOK;
     }
@@ -2448,8 +2450,8 @@ int _ContractEdge(graphP theGraph, int e)
 int gp_IdentifyVertices(graphP theGraph, int u, int v, int eBefore)
 {
     if (theGraph == NULL ||
-        u < gp_GetFirstVertex(theGraph) || u >= gp_AnyTypeVertexArraySize(theGraph) ||
-        v < gp_GetFirstVertex(theGraph) || v >= gp_AnyTypeVertexArraySize(theGraph) ||
+        u < gp_LowerBoundVertexStorage(theGraph) || u >= gp_UpperBoundVertexStorage(theGraph) ||
+        v < gp_LowerBoundVertexStorage(theGraph) || v >= gp_UpperBoundVertexStorage(theGraph) ||
         (eBefore != NIL && eBefore < gp_LowerBoundEdges(theGraph)) ||
         eBefore >= gp_UpperBoundEdges(theGraph) ||
         (eBefore != NIL && gp_EdgeNotInUse(theGraph, eBefore)))

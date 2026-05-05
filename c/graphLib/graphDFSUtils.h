@@ -71,7 +71,7 @@ extern "C"
 #define gp_GetBicompRootFromDFSChild(theGraph, c) ((c) + gp_GetN(theGraph))
 #define gp_GetDFSChildFromBicompRoot(theGraph, R) ((R) - gp_GetN(theGraph))
 #define gp_GetVertexFromBicompRoot(theGraph, R) gp_GetVertexParent(theGraph, gp_GetDFSChildFromBicompRoot(theGraph, R))
-#define gp_IsBicompRoot(theGraph, v) (!gp_VertexInRangeAscending(theGraph, v))
+#define gp_IsBicompRoot(theGraph, v) ((v) >= gp_LowerBoundVirtualVertices(theGraph))
 
 // If a vertex v is a cut vertex that separates one of its DFS children, say c,
 // from the DFS ancestors and other children of v, then when the graph has been
