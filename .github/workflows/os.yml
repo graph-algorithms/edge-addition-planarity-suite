@@ -129,7 +129,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        arch: [x64, x86, x86_amd64, x86_arm, x86_arm64, amd64_x86, amd64_arm, amd64_arm64]
+        arch: [x64, x86, x86_amd64, amd64_x86]
     steps:
       - uses: actions/checkout@v4
       - name: Setup MSVC Developer Command Prompt
