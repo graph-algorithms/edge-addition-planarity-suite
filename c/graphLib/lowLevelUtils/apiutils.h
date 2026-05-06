@@ -19,15 +19,35 @@ extern "C"
 // then 10 digits (max signed 32-bit int), and a null-terminator
 #define MAXCHARSFOR32BITINT 11
 
-    // Used within the graphLib and also usable by graph applications to
-    // emit error messages and informational messages.
-    void ErrorMessage(char const *message, ...) __attribute__((format(printf, 1, 2)));
-    void Message(char const *message, ...) __attribute__((format(printf, 1, 2)));
+#if defined(_MSC_VER) && !defined(__llvm__) && !defined(__INTEL_COMPILER)
+#define APPLY_FORMAT_ATTRIBUTE 0
+#elif defined(__has_attribute)
+#define APPLY_FORMAT_ATTRIBUTE __has_attribute(format)
+#elif defined(__GNUC__) || defined(__clang__)
+#define APPLY_FORMAT_ATTRIBUTE 1
+#else
+#define APPLY_FORMAT_ATTRIBUTE 0
+#endif
+
+#if APPLY_FORMAT_ATTRIBUTE
+#if defined(__GNUC__) && !defined(__clang__)
+#define FORMAT_PRINTF(formatIndex, firstArg) __attribute__((format(gnu_printf, formatIndex, firstArg)))
+#else
+#define FORMAT_PRINTF(formatIndex, firstArg) __attribute__((format(printf, formatIndex, firstArg)))
+#endif
+#else
+#define FORMAT_PRINTF(formatIndex, firstArg)
+#endif
+
+    extern int quietMode;
 
     // These methods control whether ErrorMessage() and Message() calls
     // emit output or skip producing output (the default)
     int gp_GetQuietModeFlag(void);
     void gp_SetQuietModeFlag(int newQuietModeFlag);
+
+    extern void Message(char const *message, ...) FORMAT_PRINTF(1, 2);
+    extern void ErrorMessage(char const *message, ...) FORMAT_PRINTF(1, 2);
 
 #ifdef __cplusplus
 }
