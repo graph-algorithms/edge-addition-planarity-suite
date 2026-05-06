@@ -74,11 +74,6 @@ int _ClearInvertedFlagsInBicomp(graphP theGraph, int BicompRoot);
 
 void _InitFunctionTable(graphP theGraph);
 
-// Eliminates missingprototype warning
-#ifndef DEBUG
-int debugNOTOK(void);
-#endif
-
 /********************************************************************
  Private functions.
  ********************************************************************/
@@ -2934,27 +2929,4 @@ int _GetBicompSize(graphP theGraph, int BicompRoot)
         }
     }
     return theSize;
-}
-
-/********************************************************************
- debugNOTOK()
-
- This function returns the literal value of NOTOK. In debug mode,
- NOTOK is redefined to first use printf() to emit information about
- where in the code a NOTOK has occurred. Then, this method is invoked
- so that the debug version of NOTOK still returns the NOTOK value.
-
- Rather than just returning 0 in the debug-mode NOTOK macro, we
- invoke this method because it gives the option (with recompilation)
- of having the program exit on the first NOTOK occurrence. That
- option is off by default, so we normally get a stack trace of the
- NOTOK occcurences, but on an exhaustive, long-run test, it can be
- handy to stop on the first error since otherwise the error message
- might not be seen.
- ********************************************************************/
-
-int debugNOTOK(void)
-{
-    // exit(-1);
-    return 0; // NOTOK is normally defined to be zero
 }
