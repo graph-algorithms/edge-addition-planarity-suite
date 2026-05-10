@@ -1702,11 +1702,10 @@ int _RestoreReducedPath(graphP theGraph, K33SearchContext *context, int e)
 
 int _RestoreAndOrientReducedPaths(graphP theGraph, K33SearchContext *context)
 {
-    int EsizeOccupied, e, eTwin, u, v, w, x, visited;
+    int e, eTwin, u, v, w, x, visited;
     int e0, eTwin0, e1, eTwin1;
 
-    EsizeOccupied = gp_UpperBoundEdges(theGraph);
-    for (e = gp_LowerBoundEdges(theGraph); e < EsizeOccupied;)
+    for (e = gp_LowerBoundEdges(theGraph); e < gp_UpperBoundEdges(theGraph);)
     {
         // An edge e is a reduction edge if it has a pathConnector vertex set
         if (context->E[e].pathConnector != NIL)

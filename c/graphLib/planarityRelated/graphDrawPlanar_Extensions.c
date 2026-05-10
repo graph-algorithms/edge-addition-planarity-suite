@@ -570,7 +570,7 @@ int _DrawPlanar_ReadPostprocess(graphP theGraph, char *extraData)
 
         else if (extraData != NULL && strlen(extraData) > 0)
         {
-            int v, tempInt, e, EsizeOccupied;
+            int v, tempInt, e;
             char line[64], tempChar;
 
             sprintf(line, "<%s>", DRAWPLANAR_NAME);
@@ -595,8 +595,7 @@ int _DrawPlanar_ReadPostprocess(graphP theGraph, char *extraData)
             }
 
             // Read the lines that contain edge information
-            EsizeOccupied = gp_UpperBoundEdges(theGraph);
-            for (e = gp_LowerBoundEdges(theGraph); e < EsizeOccupied; e++)
+            for (e = gp_LowerBoundEdges(theGraph); e < gp_UpperBoundEdges(theGraph); ++e)
             {
                 sscanf(extraData, " %d%c %d %d %d", &tempInt, &tempChar,
                        &context->E[e].pos,
@@ -637,7 +636,7 @@ int _DrawPlanar_WritePostprocess(graphP theGraph, char **pExtraData)
         }
         else
         {
-            int v, e, EsizeOccupied;
+            int v, e;
             char line[64];
             int maxLineSize = 64, extraDataPos = 0;
             char *extraData = (char *)calloc((1 + gp_GetN(theGraph) + 2 * gp_GetM(theGraph) + 1) * maxLineSize, sizeof(char));
@@ -681,8 +680,7 @@ int _DrawPlanar_WritePostprocess(graphP theGraph, char **pExtraData)
                 extraDataPos += (int)strlen(line);
             }
 
-            EsizeOccupied = gp_UpperBoundEdges(theGraph);
-            for (e = gp_LowerBoundEdges(theGraph); e < EsizeOccupied; e++)
+            for (e = gp_LowerBoundEdges(theGraph); e < gp_UpperBoundEdges(theGraph); e++)
             {
                 if (gp_EdgeInUse(theGraph, e))
                 {

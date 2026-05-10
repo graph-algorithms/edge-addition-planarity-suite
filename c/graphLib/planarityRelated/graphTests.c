@@ -173,7 +173,7 @@ int _CheckEmbeddingIntegrity(graphP theGraph, graphP origGraph)
 int _CheckEmbeddingFacialIntegrity(graphP theGraph)
 {
     stackP theStack = theGraph->theStack;
-    int v, e, eTwin, EsizeOccupied, eStart, eNext, NumFaces, connectedComponents;
+    int v, e, eTwin, eStart, eNext, NumFaces, connectedComponents;
 
     if (theGraph == NULL)
         return NOTOK;
@@ -187,8 +187,7 @@ int _CheckEmbeddingFacialIntegrity(graphP theGraph)
 
     /* Push all edge records (both parts of each edge) and set them all to unvisited */
 
-    EsizeOccupied = gp_UpperBoundEdges(theGraph);
-    for (e = gp_LowerBoundEdges(theGraph); e < EsizeOccupied; e += 2)
+    for (e = gp_LowerBoundEdges(theGraph); e < gp_UpperBoundEdges(theGraph); e += 2)
     {
         // Except skip edge holes
         if (gp_EdgeInUse(theGraph, e))

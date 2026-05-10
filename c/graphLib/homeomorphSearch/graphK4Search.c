@@ -1457,10 +1457,9 @@ int _K4_RestoreReducedPath(graphP theGraph, K4SearchContext *context, int e)
 
 int _K4_RestoreAndOrientReducedPaths(graphP theGraph, K4SearchContext *context)
 {
-    int EsizeOccupied, e, eTwin, u, v, w, x, visited;
+    int e, eTwin, u, v, w, x, visited;
 
-    EsizeOccupied = gp_UpperBoundEdges(theGraph);
-    for (e = gp_LowerBoundEdges(theGraph); e < EsizeOccupied;)
+    for (e = gp_LowerBoundEdges(theGraph); e < gp_UpperBoundEdges(theGraph);)
     {
         // If e has a pathConnector vertex, then there is a reduced path
         // to restore and orient.

@@ -569,15 +569,14 @@ int _ComputeVertexRanges(DrawPlanarContext *context)
 int _ComputeEdgeRanges(DrawPlanarContext *context)
 {
     graphP theEmbedding = context->theGraph;
-    int e, eTwin, EsizeOccupied, v1, v2, pos1, pos2;
+    int e, eTwin, v1, v2, pos1, pos2;
 
     // Deleted edges are not supported, nor should they be in the embedding, so
     // this is just a reality check that avoids an in-use test inside the loop
     if (sp_NonEmpty(theEmbedding->edgeHoles))
         return NOTOK;
 
-    EsizeOccupied = gp_UpperBoundEdges(theEmbedding);
-    for (e = gp_LowerBoundEdges(theEmbedding); e < EsizeOccupied; e += 2)
+    for (e = gp_LowerBoundEdges(theEmbedding); e < gp_UpperBoundEdges(theEmbedding); e += 2)
     {
         eTwin = gp_GetTwin(theEmbedding, e);
 
@@ -807,7 +806,7 @@ char *_RenderToString(graphP theEmbedding)
         int M = gp_GetM(theEmbedding);
         int zeroBasedVertexOffset = 0;
         int n, m, v, vRange, eRange, Mid, Pos;
-        int e, EsizeOccupied;
+        int e;
         char *visRep = (char *)malloc(sizeof(char) * ((M + 1) * 2 * N + 1));
         char numBuffer[32];
 
@@ -874,8 +873,7 @@ char *_RenderToString(graphP theEmbedding)
         }
 
         // Draw the edges
-        EsizeOccupied = gp_UpperBoundEdges(theEmbedding);
-        for (e = gp_LowerBoundEdges(theEmbedding); e < EsizeOccupied; e += 2)
+        for (e = gp_LowerBoundEdges(theEmbedding); e < gp_UpperBoundEdges(theEmbedding); e += 2)
         {
             Pos = context->E[e].pos;
             for (eRange = context->E[e].start; eRange < context->E[e].end; eRange++)
@@ -974,7 +972,6 @@ int _CheckVisibilityRepresentationIntegrity(DrawPlanarContext *context)
 {
     graphP theEmbedding = context->theGraph;
     int v, e, eTwin, epos, eposIndex;
-    int EsizeOccupied;
 
     if (sp_NonEmpty(context->theGraph->edgeHoles))
         return NOTOK;
@@ -1010,8 +1007,7 @@ int _CheckVisibilityRepresentationIntegrity(DrawPlanarContext *context)
     /* Test whether the edge values make sense and
             whether the edge positions are unique */
 
-    EsizeOccupied = gp_UpperBoundEdges(theEmbedding);
-    for (e = gp_LowerBoundEdges(theEmbedding); e < EsizeOccupied; e += 2)
+    for (e = gp_LowerBoundEdges(theEmbedding); e < gp_UpperBoundEdges(theEmbedding); e += 2)
     {
         /* Each edge has two index locations in the edge information array */
         eTwin = gp_GetTwin(theEmbedding, e);
@@ -1048,8 +1044,7 @@ int _CheckVisibilityRepresentationIntegrity(DrawPlanarContext *context)
     /* Test whether any edge intersects any vertex position
         for a vertex that is not an endpoint of the edge. */
 
-    EsizeOccupied = gp_UpperBoundEdges(theEmbedding);
-    for (e = gp_LowerBoundEdges(theEmbedding); e < EsizeOccupied; e += 2)
+    for (e = gp_LowerBoundEdges(theEmbedding); e < gp_UpperBoundEdges(theEmbedding); e += 2)
     {
         eTwin = gp_GetTwin(theEmbedding, e);
 

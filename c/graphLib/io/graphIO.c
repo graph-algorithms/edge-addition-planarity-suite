@@ -783,7 +783,7 @@ char _GetObstructionMarkChar(graphP theGraph, int v)
 
 int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer)
 {
-    int v = NIL, e = NIL, EsizeOccupied = 0;
+    int v = NIL, e = NIL;
     char lineBuf[MAXLINE + 1];
 
     memset(lineBuf, '\0', (MAXLINE + 1) * sizeof(char));
@@ -892,8 +892,7 @@ int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer)
     if (sf_fputs("\nEDGE INFORMATION\n", outputContainer) == EOF)
         return NOTOK;
 
-    EsizeOccupied = gp_UpperBoundEdges(theGraph);
-    for (e = gp_LowerBoundEdges(theGraph); e < EsizeOccupied; e++)
+    for (e = gp_LowerBoundEdges(theGraph); e < gp_UpperBoundEdges(theGraph); ++e)
     {
         if (gp_EdgeInUse(theGraph, e))
         {

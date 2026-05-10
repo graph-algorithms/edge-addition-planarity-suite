@@ -239,7 +239,7 @@ int gp_SortVertices(graphP theGraph)
 int _SortVertices(graphP theGraph)
 {
     int v, srcPos, dstPos;
-    int e, EsizeOccupied;
+    int e;
 
     if (theGraph == NULL)
         return NOTOK;
@@ -254,13 +254,22 @@ int _SortVertices(graphP theGraph)
        Also, if any links go back to locations 0 to n-1, then they
        need to be changed because we are reordering the vertices */
 
-    EsizeOccupied = gp_UpperBoundEdges(theGraph);
-    for (e = gp_LowerBoundEdges(theGraph); e < EsizeOccupied; e += 2)
+    if (theGraph->numEdgeHoles == 0)
     {
-        if (gp_EdgeInUse(theGraph, e))
-        {
+        // Slight optimization of the usual loop, for when edge deletion has not been used
+        int edgeLast = gp_LowerBoundEdges(theGraph) + (gp_GetM(theGraph) << 1);
+        for (e = gp_LowerBoundEdges(theGraph); e < edgeLast; ++e)
             gp_SetNeighbor(theGraph, e, gp_GetIndex(theGraph, gp_GetNeighbor(theGraph, e)));
-            gp_SetNeighbor(theGraph, e + 1, gp_GetIndex(theGraph, gp_GetNeighbor(theGraph, e + 1)));
+    }
+    else
+    {
+        for (e = gp_LowerBoundEdges(theGraph); e < gp_UpperBoundEdges(theGraph); e += 2)
+        {
+            if (gp_EdgeInUse(theGraph, e))
+            {
+                gp_SetNeighbor(theGraph, e, gp_GetIndex(theGraph, gp_GetNeighbor(theGraph, e)));
+                gp_SetNeighbor(theGraph, e + 1, gp_GetIndex(theGraph, gp_GetNeighbor(theGraph, e + 1)));
+            }
         }
     }
 

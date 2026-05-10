@@ -378,7 +378,6 @@ extern "C"
 #ifdef USE_1BASEDARRAYS
 // The use of *Vertex* alone consistently refers to the initial N vertices.
 // The use of *VirtualVertex* refers to vertex array locations after the first N.
-// The use of *AnyTypeVertex* refers to any non-virtual or virtual vertex
 #ifndef DEBUG
 #define gp_IsVertex(theGraph, v) (v)
 #define gp_IsVirtualVertex(theGraph, v) ((v) > gp_GetN(theGraph))

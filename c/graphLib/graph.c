@@ -549,14 +549,12 @@ void _ClearAllVisitedFlagsInGraph(graphP theGraph)
 
 void _ClearAnyTypeVertexVisitedFlags(graphP theGraph, int includeVirtualVertices)
 {
-    int v;
-
-    for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
+    for (int v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
         gp_ClearVisited(theGraph, v);
 
     if (includeVirtualVertices)
-        for (v = gp_LowerBoundVirtualVertices(theGraph); v < gp_UpperBoundVirtualVertices(theGraph); ++v)
-            gp_ClearVisited(theGraph, v);
+        for (int vv = gp_LowerBoundVirtualVertices(theGraph); vv < gp_UpperBoundVirtualVertices(theGraph); ++vv)
+            gp_ClearVisited(theGraph, vv);
 }
 
 /********************************************************************
@@ -565,10 +563,7 @@ void _ClearAnyTypeVertexVisitedFlags(graphP theGraph, int includeVirtualVertices
 
 void _ClearEdgeVisitedFlags(graphP theGraph)
 {
-    int e, EsizeOccupied;
-
-    EsizeOccupied = gp_UpperBoundEdges(theGraph);
-    for (e = gp_LowerBoundEdges(theGraph); e < EsizeOccupied; e++)
+    for (int e = gp_LowerBoundEdges(theGraph); e < gp_UpperBoundEdges(theGraph); ++e)
         gp_ClearEdgeVisited(theGraph, e);
 }
 
@@ -928,7 +923,7 @@ void gp_Free(graphP *pGraph)
  ********************************************************************/
 int gp_CopyAdjacencyLists(graphP dstGraph, graphP srcGraph)
 {
-    int v, e, EsizeOccupied;
+    int v, e;
 
     if (dstGraph == NULL || srcGraph == NULL)
         return NOTOK;
@@ -947,8 +942,7 @@ int gp_CopyAdjacencyLists(graphP dstGraph, graphP srcGraph)
     }
 
     // Copy the adjacency links and neighbor pointers for each edge record
-    EsizeOccupied = gp_UpperBoundEdges(srcGraph);
-    for (e = gp_LowerBoundEdges(srcGraph); e < EsizeOccupied; e++)
+    for (e = gp_LowerBoundEdges(srcGraph); e < gp_UpperBoundEdges(srcGraph); ++e)
     {
         gp_SetNeighbor(dstGraph, e, gp_GetNeighbor(srcGraph, e));
         gp_SetNextEdge(dstGraph, e, gp_GetNextEdge(srcGraph, e));
@@ -986,7 +980,7 @@ int gp_CopyAdjacencyLists(graphP dstGraph, graphP srcGraph)
 
 int gp_CopyGraph(graphP dstGraph, graphP srcGraph)
 {
-    int v, e, Esize;
+    int v, e;
 
     // Parameter checks
     if (dstGraph == NULL || srcGraph == NULL)
@@ -1046,8 +1040,7 @@ int gp_CopyGraph(graphP dstGraph, graphP srcGraph)
 
     // Copy the basic EdgeRec structures.  Augmentations to the edgeRec structure
     // created by extensions are copied below by gp_CopyExtensions()
-    Esize = gp_UpperBoundEdgeStorage(srcGraph);
-    for (e = gp_LowerBoundEdgeStorage(srcGraph); e < Esize; e++)
+    for (e = gp_LowerBoundEdgeStorage(srcGraph); e < gp_UpperBoundEdgeStorage(srcGraph); e++)
         _gp_CopyEdgeRec(dstGraph, e, srcGraph, e);
 
     // Give the dstGraph the same size and intrinsic properties
@@ -1284,7 +1277,7 @@ int _hasUnprocessedChild(graphP theGraph, int parent)
 
 int gp_CreateRandomGraphEx(graphP theGraph, int numEdges)
 {
-    int N, M, root, v, c, p, last, u, e, EsizeOccupied;
+    int N, M, root, v, c, p, last, u, e;
 
     // Parameter checks: Must have a graph of at least three vertices, and the
     // number of edges must be at least enough to support making a random tree.
@@ -1489,8 +1482,7 @@ int gp_CreateRandomGraphEx(graphP theGraph, int numEdges)
 
     /* Clear the edge types back to 'unknown' */
 
-    EsizeOccupied = gp_UpperBoundEdges(theGraph);
-    for (e = gp_LowerBoundEdges(theGraph); e < EsizeOccupied; e++)
+    for (e = gp_LowerBoundEdges(theGraph); e < gp_UpperBoundEdges(theGraph); ++e)
     {
         gp_ClearEdgeType(theGraph, e);
         gp_ClearEdgeVisited(theGraph, e);

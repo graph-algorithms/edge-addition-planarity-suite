@@ -542,8 +542,6 @@ void _g6_GetFirstEdgeInUse(graphP theGraph, int *e, int *u, int *v)
 
 void _g6_GetNextEdgeInUse(graphP theGraph, int *e, int *u, int *v)
 {
-    int EsizeOccupied = gp_UpperBoundEdges(theGraph);
-
     (*u) = NIL;
     (*v) = NIL;
 
@@ -552,16 +550,16 @@ void _g6_GetNextEdgeInUse(graphP theGraph, int *e, int *u, int *v)
     else
         (*e) += 2;
 
-    if ((*e) < EsizeOccupied)
+    if ((*e) < gp_UpperBoundEdges(theGraph))
     {
         while (!gp_EdgeInUse(theGraph, (*e)))
         {
             (*e) += 2;
-            if ((*e) >= EsizeOccupied)
+            if ((*e) >= gp_UpperBoundEdges(theGraph))
                 break;
         }
 
-        if ((*e) < EsizeOccupied && gp_EdgeInUse(theGraph, (*e)))
+        if ((*e) < gp_UpperBoundEdges(theGraph) && gp_EdgeInUse(theGraph, (*e)))
         {
             (*u) = gp_GetNeighbor(theGraph, (*e));
             (*v) = gp_GetNeighbor(theGraph, gp_GetTwin(theGraph, (*e)));
