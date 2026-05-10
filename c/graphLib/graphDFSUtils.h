@@ -26,7 +26,7 @@ extern "C"
                 This is automatically called by the utility methods below that create
                 a DFS tree, sort vertices, and compute least ancestors and lowpoints
         GRAPHFLAGS_DFSNUMBERED is set if DFS numbering has been performed on the graph,
-                such as by calling the gp_CreateDFSTree() utility method below
+                such as by calling the gp_DepthFirstSearch() utility method below
         GRAPHFLAGS_SORTEDBYDFI records whether the graph is in original vertex order
                 or sorted by depth first index. Successive calls to the
                 gp_SortVertices() utility method below toggle this bit.
@@ -37,7 +37,7 @@ extern "C"
 
         // DFS-related utility methods that create a DFS tree, sort vertices and
         // compute least ancestor and lowpoint values
-        int gp_CreateDFSTree(graphP theGraph);
+        int gp_DepthFirstSearch(graphP theGraph);
         int gp_SortVertices(graphP theGraph);
         int gp_ComputeLowpoints(graphP theGraph);
         int gp_ComputeLeastAncestors(graphP theGraph);

@@ -22,7 +22,7 @@ int _SortVertices(graphP theGraph);
 extern void _ClearAnyTypeVertexVisitedFlags(graphP theGraph, int);
 
 /********************************************************************
- gp_ExtendWith_DFSUtils
+ gp_ExtendWith_DFSUtils()
 
  Makes any necessary preparations for supporting DFS utility methods
  that create a DFS tree, sort vertices, and compute least ancestor.
@@ -56,7 +56,7 @@ int gp_ExtendWith_DFSUtils(graphP theGraph)
 }
 
 /********************************************************************
- gp_Detach_DFSUtils
+ gp_Detach_DFSUtils()
 
  This function is intended to disinherit the DFS Utils feature by
  removing the extension from the graph, which also frees any
@@ -78,20 +78,24 @@ int gp_Detach_DFSUtils(graphP theGraph)
 }
 
 /********************************************************************
- gp_CreateDFSTree
- Assigns Depth First Index (DFI) to each vertex.  Also records parent
- of each vertex in the DFS tree, and marks DFS tree edges that connect
- parent and child. Forward edge records are also distinguished from
- edges leading from a DFS tree descendant back to an ancestor.
- The forward edge records are moved to the end of the adjacency list
- to make the set easier to find and process.
+ gp_DepthFirstSearch()
+
+ This depth-first search (DFS) assigns a Depth First Index (DFI) to
+ each vertex and records the DFS parent of each vertex in each DFS tree
+ that forms during the depth-first search. Also, the type of each
+ edge record of each edge is set to indicate whether the edge record's
+ neighbor value points to a DFS child or parent (a DFS tree edge) or
+ a farther DFS ancestor or descendant (a "back" edge, "cycle" edge, or
+ co-tree edge). The "forward" edge records, which lead from a DFS
+ ancestor to a descendant, are moved to the end of the adjacency list
+ to make the set of them easier to find and process.
 
  NOTE: This is a utility function provided for general use. The core
         planarity algorithm uses its own DFS so it can build related
-        data structures at the same time as the DFS tree is created.
+        data structures at the same time.
  ********************************************************************/
 
-int gp_CreateDFSTree(graphP theGraph)
+int gp_DepthFirstSearch(graphP theGraph)
 {
     stackP theStack;
     int DFI, v, uparent, u, e;
@@ -105,7 +109,7 @@ int gp_CreateDFSTree(graphP theGraph)
     if (gp_ExtendWith_DFSUtils(theGraph) != OK)
         return NOTOK;
 
-    _gp_LogLine("\ngraphDFSUtils.c/gp_CreateDFSTree() start");
+    _gp_LogLine("\ngraphDFSUtils.c/gp_DepthFirstSearch() start");
 
     theStack = theGraph->theStack;
 
@@ -173,7 +177,7 @@ int gp_CreateDFSTree(graphP theGraph)
         }
     }
 
-    _gp_LogLine("graphDFSUtils.c/gp_CreateDFSTree() end\n");
+    _gp_LogLine("graphDFSUtils.c/gp_DepthFirstSearch() end\n");
 
     theGraph->graphFlags |= GRAPHFLAGS_DFSNUMBERED;
 
@@ -182,6 +186,7 @@ int gp_CreateDFSTree(graphP theGraph)
 
 /********************************************************************
  gp_SortVertices()
+
  Once depth first numbering has been applied to the graph, the index
  member of each vertex contains the DFI.  This routine can reorder the
  vertices in linear time so that they appear in ascending order by DFI.
@@ -239,13 +244,12 @@ int gp_SortVertices(graphP theGraph)
 int _SortVertices(graphP theGraph)
 {
     int v, srcPos, dstPos;
-    int e;
 
     if (theGraph == NULL)
         return NOTOK;
 
     if (!(gp_GetGraphFlags(theGraph) & GRAPHFLAGS_DFSNUMBERED))
-        if (gp_CreateDFSTree(theGraph) != OK)
+        if (gp_DepthFirstSearch(theGraph) != OK)
             return NOTOK;
 
     _gp_LogLine("\ngraphDFSUtils.c/_SortVertices() start");
@@ -256,14 +260,16 @@ int _SortVertices(graphP theGraph)
 
     if (theGraph->numEdgeHoles == 0)
     {
-        // Slight optimization of the usual loop, for when edge deletion has not been used
-        int edgeLast = gp_LowerBoundEdges(theGraph) + (gp_GetM(theGraph) << 1);
-        for (e = gp_LowerBoundEdges(theGraph); e < edgeLast; ++e)
+        // Slightly optimized loop body, for when edge deletion has not been used
+        // (Optimization level O1 or higher hoists the upperBoundEdges calculation,
+        //  so this is mainly just a little less work in the loop body).
+        int upperBoundEdges = gp_LowerBoundEdges(theGraph) + (gp_GetM(theGraph) << 1);
+        for (int e = gp_LowerBoundEdges(theGraph); e < upperBoundEdges; ++e)
             gp_SetNeighbor(theGraph, e, gp_GetIndex(theGraph, gp_GetNeighbor(theGraph, e)));
     }
     else
     {
-        for (e = gp_LowerBoundEdges(theGraph); e < gp_UpperBoundEdges(theGraph); e += 2)
+        for (int e = gp_LowerBoundEdges(theGraph); e < gp_UpperBoundEdges(theGraph); e += 2)
         {
             if (gp_EdgeInUse(theGraph, e))
             {
@@ -325,6 +331,7 @@ int _SortVertices(graphP theGraph)
 
 /********************************************************************
  gp_ComputeLowpoints()
+
         leastAncestor(v): min(v, ancestor neighbors of v, excluding parent)
         Lowpoint(v): min(leastAncestor(v), Lowpoint of DFS children of v)
 
@@ -341,7 +348,7 @@ int _SortVertices(graphP theGraph)
  values based on the childrens' lowpoints and the least ancestor from
  among the edges in the vertex's adjacency list.
 
- If they have not already been performed, gp_CreateDFSTree() and
+ If they have not already been performed, gp_DepthFirstSearch() and
  gp_SortVertices() are invoked on the graph, and it is left in the
  sorted state on completion of this method.
 
@@ -365,7 +372,7 @@ int gp_ComputeLowpoints(graphP theGraph)
     theStack = theGraph->theStack;
 
     if (!(gp_GetGraphFlags(theGraph) & GRAPHFLAGS_DFSNUMBERED))
-        if (gp_CreateDFSTree(theGraph) != OK)
+        if (gp_DepthFirstSearch(theGraph) != OK)
             return NOTOK;
 
     if (!(gp_GetGraphFlags(theGraph) & GRAPHFLAGS_SORTEDBYDFI))
@@ -462,7 +469,7 @@ int gp_ComputeLowpoints(graphP theGraph)
  By simple pre-order visitation, compute the least ancestor of each
  vertex that is directly adjacent to the vertex by a back edge.
 
- If they have not already been performed, gp_CreateDFSTree() and
+ If they have not already been performed, gp_DepthFirstSearch() and
  gp_SortVertices() are invoked on the graph, and it is left in the
  sorted state on completion of this method.
 
@@ -484,7 +491,7 @@ int gp_ComputeLeastAncestors(graphP theGraph)
     theStack = theGraph->theStack;
 
     if (!(gp_GetGraphFlags(theGraph) & GRAPHFLAGS_DFSNUMBERED))
-        if (gp_CreateDFSTree(theGraph) != OK)
+        if (gp_DepthFirstSearch(theGraph) != OK)
             return NOTOK;
 
     if (!(gp_GetGraphFlags(theGraph) & GRAPHFLAGS_SORTEDBYDFI))

@@ -145,7 +145,7 @@ int SpecificGraph(
         // Run the algorithm
         platform_GetTime(start);
 
-        //          gp_CreateDFSTree(theGraph);
+        //          gp_DepthFirstSearch(theGraph);
         //          gp_SortVertices(theGraph);
         //          gp_Write(theGraph, "debug.before.txt", WRITE_DEBUGINFO);
         //          gp_SortVertices(theGraph);
