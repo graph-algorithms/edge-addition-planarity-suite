@@ -296,7 +296,7 @@ extern "C"
     }
 
     /********************************************************************
-     Vertex Record Definition (Any Type of Vertex)
+     Vertex Record Definition (For non-virtual and virtual vertices)
 
      This record definition provides the data members needed for the
      core structural information for both vertices and virtual vertices.
@@ -336,9 +336,9 @@ extern "C"
         int link[2];
         int index;
         unsigned flags;
-    } anyTypeVertexRec;
+    } vertexRec;
 
-    typedef anyTypeVertexRec *anyTypeVertexRecP;
+    typedef vertexRec *vertexRecP;
 
 ////////////////////////////////////////////
 // Accessors for vertex adjacency list links
@@ -419,26 +419,26 @@ extern "C"
 // End of Vertex iteration-related methods
 //////////////////////////////////////////
 
-// Accessors for "any type" vertex index
+// Accessors for non-virtual and virtual vertex index value
 #define gp_GetIndex(theGraph, v) (theGraph->V[v].index)
 #define gp_SetIndex(theGraph, v, theIndex) (theGraph->V[v].index = theIndex)
 
-// Initializer for "any type" vertex flags
+// Initializer for non-virtual and virtual vertex flags
 #define gp_InitFlags(theGraph, v) (theGraph->V[v].flags = 0)
 
-// Definition and accessors for the "any type" vertex visited flag
-#define ANYTYPEVERTEX_VISITED_MASK 1
-#define gp_GetVisited(theGraph, v) (theGraph->V[v].flags & ANYTYPEVERTEX_VISITED_MASK)
-#define gp_ClearVisited(theGraph, v) (theGraph->V[v].flags &= ~ANYTYPEVERTEX_VISITED_MASK)
-#define gp_SetVisited(theGraph, v) (theGraph->V[v].flags |= ANYTYPEVERTEX_VISITED_MASK)
+// Definition and accessors for the non-virtual and virtual vertex visited flag
+#define VERTEX_VISITED_MASK 1
+#define gp_GetVisited(theGraph, v) (theGraph->V[v].flags & VERTEX_VISITED_MASK)
+#define gp_ClearVisited(theGraph, v) (theGraph->V[v].flags &= ~VERTEX_VISITED_MASK)
+#define gp_SetVisited(theGraph, v) (theGraph->V[v].flags |= VERTEX_VISITED_MASK)
 
-// Definition and accessors for the "any type" vertex marked flag
+// Definition and accessors for the non-virtual and virtual vertex marked flag
 // Essentially, this is a second visitation flag that can help applications that
 // must visit all vertices to analyze and mark the ones important for some purpose.
-#define ANYTYPEVERTEX_MARKED_MASK 2
-#define gp_GetMarked(theGraph, v) (theGraph->V[v].flags & ANYTYPEVERTEX_MARKED_MASK)
-#define gp_ClearMarked(theGraph, v) (theGraph->V[v].flags &= ~ANYTYPEVERTEX_MARKED_MASK)
-#define gp_SetMarked(theGraph, v) (theGraph->V[v].flags |= ANYTYPEVERTEX_MARKED_MASK)
+#define VERTEX_MARKED_MASK 2
+#define gp_GetMarked(theGraph, v) (theGraph->V[v].flags & VERTEX_MARKED_MASK)
+#define gp_ClearMarked(theGraph, v) (theGraph->V[v].flags &= ~VERTEX_MARKED_MASK)
+#define gp_SetMarked(theGraph, v) (theGraph->V[v].flags |= VERTEX_MARKED_MASK)
 
     // DFS-RELATED and PLANARITY-RELATED ONLY
     // Declaration of package-private data type for managing additonal DFS-
@@ -523,7 +523,7 @@ extern "C"
 
     struct graphStruct
     {
-        anyTypeVertexRecP V;
+        vertexRecP V;
         int N, NV;
 
         edgeRecP E;

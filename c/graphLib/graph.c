@@ -48,7 +48,7 @@ int _RestoreVertex(graphP theGraph);
 
 void _InitIsolatorContext(graphP theGraph);
 void _ClearAllVisitedFlagsInGraph(graphP theGraph);
-void _ClearAnyTypeVertexVisitedFlags(graphP theGraph, int includeVirtualVertices);
+void _ClearVertexVisitedFlags(graphP theGraph, int includeVirtualVertices);
 void _ClearEdgeVisitedFlags(graphP theGraph);
 int _ClearAllVisitedFlagsInBicomp(graphP theGraph, int BicompRoot);
 int _ClearAllVisitedFlagsInOtherBicomps(graphP theGraph, int BicompRoot);
@@ -94,7 +94,7 @@ void _RestoreEdgeRecord(graphP theGraph, int e);
 
 /* Private functions for which there are FUNCTION POINTERS */
 
-void _InitAnyTypeVertexRec(graphP theGraph, int v);
+void _InitVertexRec(graphP theGraph, int v);
 void _InitVertexInfo(graphP theGraph, int v);
 void _InitEdgeRec(graphP theGraph, int e);
 
@@ -251,7 +251,7 @@ int _InitGraph(graphP theGraph, int N)
     stackSize = stackSize <= 2 * 2 * DEFAULT_EDGE_LIMIT * N ? 2 * 2 * DEFAULT_EDGE_LIMIT * N + 2 : stackSize;
 
     // Allocate memory as described above
-    if ((theGraph->V = (anyTypeVertexRecP)calloc(Vsize, sizeof(anyTypeVertexRec))) == NULL ||
+    if ((theGraph->V = (vertexRecP)calloc(Vsize, sizeof(vertexRec))) == NULL ||
         (theGraph->E = (edgeRecP)calloc(Esize, sizeof(edgeRec))) == NULL ||
         (theGraph->edgeHoles = sp_New(theGraph->edgeCapacity)) == NULL ||
 
@@ -282,7 +282,7 @@ int _InitGraph(graphP theGraph, int N)
  ********************************************************************/
 void _InitVertices(graphP theGraph)
 {
-    memset(theGraph->V, NIL_CHAR, gp_UpperBoundVertexStorage(theGraph) * sizeof(anyTypeVertexRec));
+    memset(theGraph->V, NIL_CHAR, gp_UpperBoundVertexStorage(theGraph) * sizeof(vertexRec));
 
     memset(theGraph->DVI, NIL_CHAR, gp_UpperBoundVertices(theGraph) * sizeof(DFSUtils_VertexInfo));
 
@@ -471,11 +471,11 @@ int _EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity)
 }
 
 /********************************************************************
- _InitAnyTypeVertexRec()
+ _InitVertexRec()
  Sets the fields in a single vertex record to initial values
  ********************************************************************/
 
-void _InitAnyTypeVertexRec(graphP theGraph, int v)
+void _InitVertexRec(graphP theGraph, int v)
 {
     gp_SetFirstEdge(theGraph, v, NIL);
     gp_SetLastEdge(theGraph, v, NIL);
@@ -537,17 +537,17 @@ void _InitIsolatorContext(graphP theGraph)
 
 void _ClearAllVisitedFlagsInGraph(graphP theGraph)
 {
-    _ClearAnyTypeVertexVisitedFlags(theGraph, TRUE);
+    _ClearVertexVisitedFlags(theGraph, TRUE);
     _ClearEdgeVisitedFlags(theGraph);
 }
 
 /********************************************************************
- _ClearAnyTypeVertexVisitedFlags()
+ _ClearVertexVisitedFlags()
  Clears the visited flags of vertices, and if the second parameter
  is truthy, also clears the visited flags of virtual vertices.
  ********************************************************************/
 
-void _ClearAnyTypeVertexVisitedFlags(graphP theGraph, int includeVirtualVertices)
+void _ClearVertexVisitedFlags(graphP theGraph, int includeVirtualVertices)
 {
     for (int v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
         gp_ClearVisited(theGraph, v);
@@ -973,7 +973,7 @@ int gp_CopyAdjacencyLists(graphP dstGraph, graphP srcGraph)
  ********************************************************************/
 
 // Give macro names to three copy operations
-#define _gp_CopyAnyTypeVertexRec(dstGraph, vdst, srcGraph, vsrc) (dstGraph->V[vdst] = srcGraph->V[vsrc])
+#define _gp_CopyVertexRec(dstGraph, vdst, srcGraph, vsrc) (dstGraph->V[vdst] = srcGraph->V[vsrc])
 #define _gp_CopyDFSUtilsVertexInfo(dstGraph, dstI, srcGraph, srcI) (dstGraph->DVI[dstI] = srcGraph->DVI[srcI])
 #define _gp_CopyPlanarityVertexInfo(dstGraph, dstI, srcGraph, srcI) (dstGraph->PVI[dstI] = srcGraph->PVI[srcI])
 #define _gp_CopyEdgeRec(dstGraph, edst, srcGraph, esrc) (dstGraph->E[edst] = srcGraph->E[esrc])
@@ -1020,7 +1020,7 @@ int gp_CopyGraph(graphP dstGraph, graphP srcGraph)
     // by extensions are copied below by gp_CopyExtensions()
     for (v = gp_LowerBoundVertices(srcGraph); v < gp_UpperBoundVertices(srcGraph); ++v)
     {
-        _gp_CopyAnyTypeVertexRec(dstGraph, v, srcGraph, v);
+        _gp_CopyVertexRec(dstGraph, v, srcGraph, v);
         if (dstGraph->DVI != NULL && srcGraph->DVI != NULL)
             _gp_CopyDFSUtilsVertexInfo(dstGraph, v, srcGraph, v);
         if (dstGraph->PVI != NULL && srcGraph->PVI != NULL)
@@ -1033,7 +1033,7 @@ int gp_CopyGraph(graphP dstGraph, graphP srcGraph)
     // by extensions are copied below by gp_CopyExtensions()
     for (v = gp_LowerBoundVirtualVertices(srcGraph); v < gp_UpperBoundVirtualVertices(srcGraph); ++v)
     {
-        _gp_CopyAnyTypeVertexRec(dstGraph, v, srcGraph, v);
+        _gp_CopyVertexRec(dstGraph, v, srcGraph, v);
         gp_SetExtFaceVertex(dstGraph, v, 0, gp_GetExtFaceVertex(srcGraph, v, 0));
         gp_SetExtFaceVertex(dstGraph, v, 1, gp_GetExtFaceVertex(srcGraph, v, 1));
     }

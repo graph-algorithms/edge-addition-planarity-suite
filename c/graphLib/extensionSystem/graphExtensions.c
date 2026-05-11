@@ -110,13 +110,12 @@ static int moduleIDGenerator = 0;
 
      b) If any data must be associated with vertices and virtual vertices,
         then it is necessary to perform initialization parallel to the
-        initialization of anyTypeVertexRec instances. Similarly, if data
+        initialization of VertexRec instances. Similarly, if data
         must be associated only with vertices (and not virtual vertices),
         then initialization parallel to VertexInfo initialization is
         required. At this time, there do not exist overloadable functions
-        for fpInitAnyTypeVertexRec() and fpInitVertexInfo().
-        Instead, overload fpInitGraph() and fpReinitializeGraph(). Also
-        if an extension must delete an edge, it should have its own
+        for fpInitVertexRec() and fpInitVertexInfo().
+        Instead, overload fpInitGraph() and fpReinitializeGraph().
 
      c) If any data must be associated with the edges, then the extension
         creates a parallel array that is initialized and reinitialized
@@ -149,7 +148,7 @@ static int moduleIDGenerator = 0;
         list collection, should be created _and_ initialized.
 
      c) The _Feature_InitStructures() should invoke just the functions
-        needed to initialize the custom AnyTypeVertexRec, VertexInfo and
+        needed to initialize the custom VertexRec, VertexInfo and
         EdgeRec data members, if any.
 
   8) Define a function gp_Detach_Feature() that invokes gp_RemoveExtension()

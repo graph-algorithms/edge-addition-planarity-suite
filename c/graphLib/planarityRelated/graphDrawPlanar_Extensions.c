@@ -12,7 +12,7 @@ See the LICENSE.TXT file for licensing information.
 
 #include <stdlib.h>
 
-extern void _ClearAnyTypeVertexVisitedFlags(graphP theGraph, int);
+extern void _ClearVertexVisitedFlags(graphP theGraph, int);
 
 extern void _CollectDrawingData(DrawPlanarContext *context, int RootVertex, int W, int WPrevLink);
 extern int _BreakTie(DrawPlanarContext *context, int BicompRoot, int W, int WPrevLink);
@@ -389,7 +389,7 @@ int _DrawPlanar_SortVertices(graphP theGraph)
             // to the index values of the vertices.  This could be done very easily with an extra array in
             // which, for each v, newVI[index of v] = VI[v].  However, this loop avoids memory allocation
             // by performing the operation (almost) in-place, except for the pre-existing visitation flags.
-            _ClearAnyTypeVertexVisitedFlags(theGraph, FALSE);
+            _ClearVertexVisitedFlags(theGraph, FALSE);
             for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
             {
                 // If the correct data has already been placed into position v

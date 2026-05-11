@@ -13,7 +13,7 @@ See the LICENSE.TXT file for licensing information.
 #include "graphPlanarity.h"
 #include "graphPlanarity.private.h"
 
-extern void _ClearAnyTypeVertexVisitedFlags(graphP theGraph, int);
+extern void _ClearVertexVisitedFlags(graphP theGraph, int);
 
 /* Private function declarations (some exported to system) */
 
@@ -276,7 +276,7 @@ int _CheckAllVerticesOnExternalFace(graphP theGraph)
     int v;
 
     // Mark all vertices unvisited
-    _ClearAnyTypeVertexVisitedFlags(theGraph, FALSE);
+    _ClearVertexVisitedFlags(theGraph, FALSE);
 
     // For each connected component, walk its external face and
     // mark the vertices as visited
@@ -489,7 +489,7 @@ int _TestForCompleteGraphObstruction(graphP theGraph, int numVerts,
         return FALSE;
 
     // We clear all the vertex visited flags
-    _ClearAnyTypeVertexVisitedFlags(theGraph, FALSE);
+    _ClearVertexVisitedFlags(theGraph, FALSE);
 
     // For each pair of image vertices, we test that there is a path
     // between the two vertices.  If so, the visited flags of the
@@ -570,7 +570,7 @@ int _TestForK33GraphObstruction(graphP theGraph, int *degrees, int *imageVerts)
     /* Now test the paths between each of the first three vertices and
            each of the last three vertices */
 
-    _ClearAnyTypeVertexVisitedFlags(theGraph, FALSE);
+    _ClearVertexVisitedFlags(theGraph, FALSE);
 
     for (imageVertPos = 0; imageVertPos < 3; imageVertPos++)
         for (K = 3; K < 6; K++)
@@ -696,7 +696,7 @@ int _TestForK23GraphObstruction(graphP theGraph, int *degrees, int *imageVerts)
          Now test the paths between each of the degree 2 image
          vertices and imageVerts[1]. */
 
-    _ClearAnyTypeVertexVisitedFlags(theGraph, FALSE);
+    _ClearVertexVisitedFlags(theGraph, FALSE);
 
     for (imageVertPos = 2; imageVertPos < 5; imageVertPos++)
     {
@@ -902,7 +902,7 @@ int _TestSubgraph(graphP theSubgraph, graphP theGraph)
 
     /* We clear all visitation flags */
 
-    _ClearAnyTypeVertexVisitedFlags(theGraph, FALSE);
+    _ClearVertexVisitedFlags(theGraph, FALSE);
 
     /* For each vertex... */
     for (v = gp_LowerBoundVertices(theSubgraph), degreeCount = 0; v < gp_UpperBoundVertices(theSubgraph); ++v)

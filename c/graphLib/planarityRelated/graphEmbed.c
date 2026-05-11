@@ -23,12 +23,12 @@ See the LICENSE.TXT file for licensing information.
 
 /* Imported functions */
 
-extern void _ClearAnyTypeVertexVisitedFlags(graphP theGraph, int);
+extern void _ClearVertexVisitedFlags(graphP theGraph, int);
 
 extern int _IsolateKuratowskiSubgraph(graphP theGraph, int v, int R);
 extern int _IsolateOuterplanarObstruction(graphP theGraph, int v, int R);
 
-extern void _InitAnyTypeVertexRec(graphP theGraph, int v);
+extern void _InitVertexRec(graphP theGraph, int v);
 
 extern int _gp_FindEdge(graphP theGraph, int u, int v);
 
@@ -286,7 +286,7 @@ int _EmbeddingInitialize(graphP theGraph)
 
     // We clear the visited flags of vertices because they are used to determine
     // which vertices have already been visited as the DFS traverses theGraph.
-    _ClearAnyTypeVertexVisitedFlags(theGraph, FALSE);
+    _ClearVertexVisitedFlags(theGraph, FALSE);
 
     // This outer loop processes each connected component of a disconnected graph
     // No need to compare v < N since DFI will reach N when inner loop processes the
@@ -636,7 +636,7 @@ void _MergeVertex(graphP theGraph, int W, int WPrevLink, int R)
     }
 
     // Erase the entries in R, which is a root copy that is no longer needed
-    _InitAnyTypeVertexRec(theGraph, R);
+    _InitVertexRec(theGraph, R);
 }
 
 /********************************************************************

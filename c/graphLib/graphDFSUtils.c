@@ -19,7 +19,7 @@ See the LICENSE.TXT file for licensing information.
 int _SortVertices(graphP theGraph);
 
 // Imported methods
-extern void _ClearAnyTypeVertexVisitedFlags(graphP theGraph, int);
+extern void _ClearVertexVisitedFlags(graphP theGraph, int);
 
 /********************************************************************
  gp_ExtendWith_DFSUtils()
@@ -125,7 +125,7 @@ int gp_DepthFirstSearch(graphP theGraph)
 
     /* Clear the visited flags because they are used to detect what has
         been visited as the DFS traverses the graph. */
-    _ClearAnyTypeVertexVisitedFlags(theGraph, FALSE);
+    _ClearVertexVisitedFlags(theGraph, FALSE);
 
     /* This outer loop causes the connected subgraphs of a disconnected
             graph to be numbered */
@@ -217,11 +217,11 @@ int gp_SortVertices(graphP theGraph)
 // The index values of the first N vertices are changed to hold
 // the prior locations of vertices when they are rearranged to
 // or from DFI order.
-#define _gp_SwapAnyTypeVertexRec(dstGraph, vdst, srcGraph, vsrc) \
-    {                                                            \
-        anyTypeVertexRec tempV = dstGraph->V[vdst];              \
-        dstGraph->V[vdst] = srcGraph->V[vsrc];                   \
-        srcGraph->V[vsrc] = tempV;                               \
+#define _gp_SwapVertexRec(dstGraph, vdst, srcGraph, vsrc) \
+    {                                                     \
+        vertexRec tempV = dstGraph->V[vdst];              \
+        dstGraph->V[vdst] = srcGraph->V[vsrc];            \
+        srcGraph->V[vsrc] = tempV;                        \
     }
 #define _gp_SwapDFSUtilsVertexInfo(dstGraph, dstPos, srcGraph, srcPos) \
     {                                                                  \
@@ -291,7 +291,7 @@ int _SortVertices(graphP theGraph)
        location, so we cannot use index==v as a test for whether the
        correct vertex is in location 'index'. */
 
-    _ClearAnyTypeVertexVisitedFlags(theGraph, FALSE);
+    _ClearVertexVisitedFlags(theGraph, FALSE);
 
     /* We visit each vertex location, skipping those marked as visited since
        we've already moved the correct vertex into that location. The
@@ -307,7 +307,7 @@ int _SortVertices(graphP theGraph)
         {
             dstPos = gp_GetIndex(theGraph, v);
 
-            _gp_SwapAnyTypeVertexRec(theGraph, dstPos, theGraph, v);
+            _gp_SwapVertexRec(theGraph, dstPos, theGraph, v);
             _gp_SwapDFSUtilsVertexInfo(theGraph, dstPos, theGraph, v);
             _gp_SwapPlanarityVertexInfo(theGraph, dstPos, theGraph, v);
 
@@ -387,7 +387,7 @@ int gp_ComputeLowpoints(graphP theGraph)
 
     sp_ClearStack(theStack);
 
-    _ClearAnyTypeVertexVisitedFlags(theGraph, FALSE);
+    _ClearVertexVisitedFlags(theGraph, FALSE);
 
     // This outer loop causes the connected subgraphs of a disconnected graph to be processed
     for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph);)
