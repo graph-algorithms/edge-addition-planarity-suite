@@ -99,7 +99,7 @@ void _InitVertexInfo(graphP theGraph, int v);
 void _InitEdgeRec(graphP theGraph, int e);
 
 int _InitGraph(graphP theGraph, int N);
-void _ReinitializeGraph(graphP theGraph);
+void _ReinitGraph(graphP theGraph);
 int _EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity);
 
 /********************************************************************
@@ -169,7 +169,7 @@ void _InitFunctionTable(graphP theGraph)
         theGraph->functions->fpCheckObstructionIntegrity = _CheckObstructionIntegrity;
 
         theGraph->functions->fpInitGraph = _InitGraph;
-        theGraph->functions->fpReinitializeGraph = _ReinitializeGraph;
+        theGraph->functions->fpReinitGraph = _ReinitGraph;
         theGraph->functions->fpEnsureEdgeCapacity = _EnsureEdgeCapacity;
         theGraph->functions->fpSortVertices = _SortVertices;
 
@@ -312,20 +312,20 @@ void _InitEdges(graphP theGraph)
 }
 
 /********************************************************************
- gp_ReinitializeGraph()
+ gp_ReinitGraph()
  Reinitializes a graph, restoring it to the state it was in immediately
  after gp_InitGraph() processed it.
  ********************************************************************/
 
-void gp_ReinitializeGraph(graphP theGraph)
+void gp_ReinitGraph(graphP theGraph)
 {
     if (theGraph == NULL || gp_GetN(theGraph) <= 0)
         return;
 
-    theGraph->functions->fpReinitializeGraph(theGraph);
+    theGraph->functions->fpReinitGraph(theGraph);
 }
 
-void _ReinitializeGraph(graphP theGraph)
+void _ReinitGraph(graphP theGraph)
 {
     theGraph->M = 0;
     theGraph->embedFlags = 0;

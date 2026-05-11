@@ -41,7 +41,7 @@ extern "C"
         // These function pointers allow extension modules to overload some
         // of the behaviors of gp_* function in the public API
         int (*fpInitGraph)(graphP, int);
-        void (*fpReinitializeGraph)(graphP);
+        void (*fpReinitGraph)(graphP);
         int (*fpEnsureEdgeCapacity)(graphP, int);
         int (*fpSortVertices)(graphP);
 

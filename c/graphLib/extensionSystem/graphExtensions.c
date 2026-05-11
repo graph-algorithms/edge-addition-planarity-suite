@@ -115,17 +115,17 @@ static int moduleIDGenerator = 0;
         then initialization parallel to VertexInfo initialization is
         required. At this time, there do not exist overloadable functions
         for fpInitVertexRec() and fpInitVertexInfo().
-        Instead, overload fpInitGraph() and fpReinitializeGraph().
+        Instead, overload fpInitGraph() and fpReinitGraph().
 
      c) If any data must be associated with the edges, then the extension
         creates a parallel array that is initialized and reinitialized
-        in overloads of fpInitGraph() and fpReinitializeGraph().
+        in overloads of fpInitGraph() and fpReinitGraph().
         Also, if the extension deletes edges, then the extension provides
         its own _Feature_DeleteEdge() that initializes its edge
         extension data along with calling gp_DeleteEdge().
 
      d) If any graph-level data structures are needed, then an
-        overload of fpReinitializeGraph() will also be needed, not just the
+        overload of fpReinitGraph() will also be needed, not just the
         overload of fpInitGraph().
 
      e) If any data must be persisted in the file format, then overloads

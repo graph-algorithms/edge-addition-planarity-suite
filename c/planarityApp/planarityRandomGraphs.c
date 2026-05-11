@@ -7,7 +7,7 @@ See the LICENSE.TXT file for licensing information.
 #include "planarity.h"
 
 int GetNumberIfZero(int *pNum, char const *prompt, int min, int max);
-void ReinitializeGraph(graphP *pGraph, int ReuseGraphs, char command);
+void ReinitGraph(graphP *pGraph, int ReuseGraphs, char command);
 graphP MakeGraph(int Size, char command);
 int PromptSaveGraph(graphP theGraph, graphP origGraph, int extraEdges, int saveMode);
 
@@ -282,7 +282,7 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
         }
 
         // Reinitialize or recreate graphs for next iteration
-        ReinitializeGraph(&theGraph, ReuseGraphs, command);
+        ReinitGraph(&theGraph, ReuseGraphs, command);
 
         // Show progress, but not so often that it bogs down progress
         if (!gp_GetQuietModeFlag() && (K + 1) % countUpdateFreq == 0)
@@ -456,15 +456,15 @@ graphP MakeGraph(int Size, char command)
 }
 
 /****************************************************************************
- ReinitializeGraph()
+ ReinitGraph()
  Internal function that will either reinitialize the given graph or free it
  and make a new one just like it.
  ****************************************************************************/
 
-void ReinitializeGraph(graphP *pGraph, int ReuseGraphs, char command)
+void ReinitGraph(graphP *pGraph, int ReuseGraphs, char command)
 {
     if (ReuseGraphs)
-        gp_ReinitializeGraph(*pGraph);
+        gp_ReinitGraph(*pGraph);
     else
     {
         graphP newGraph = MakeGraph((*pGraph)->N, command);

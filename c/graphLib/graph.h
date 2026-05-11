@@ -28,19 +28,18 @@ extern "C"
     graphP gp_New(void);
 
     int gp_InitGraph(graphP theGraph, int N);
-    void gp_ReinitializeGraph(graphP theGraph);
+    void gp_ReinitGraph(graphP theGraph);
 
     void gp_Free(graphP *pGraph);
 
     int gp_EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity);
 
-// Basic graph structure interrogators
+#define gp_GetEdgeCapacity(theGraph) ((theGraph)->edgeCapacity)
+
 // N=# of vertices; NV=# of virtual vertices; M=# of edges
 #define gp_GetN(theGraph) ((theGraph)->N)
 #define gp_GetNV(theGraph) ((theGraph)->NV)
 #define gp_GetM(theGraph) ((theGraph)->M)
-
-#define gp_GetEdgeCapacity(theGraph) ((theGraph)->edgeCapacity)
 
     // Basic graph utility methods
     int gp_CopyGraph(graphP dstGraph, graphP srcGraph);

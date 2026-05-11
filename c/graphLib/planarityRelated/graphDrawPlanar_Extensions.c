@@ -38,7 +38,7 @@ int _DrawPlanar_CheckEmbeddingIntegrity(graphP theGraph, graphP origGraph);
 int _DrawPlanar_CheckObstructionIntegrity(graphP theGraph, graphP origGraph);
 
 int _DrawPlanar_InitGraph(graphP theGraph, int N);
-void _DrawPlanar_ReinitializeGraph(graphP theGraph);
+void _DrawPlanar_ReinitGraph(graphP theGraph);
 int _DrawPlanar_EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity);
 int _DrawPlanar_SortVertices(graphP theGraph);
 
@@ -121,7 +121,7 @@ int gp_ExtendWith_DrawPlanar(graphP theGraph)
     context->functions.fpCheckObstructionIntegrity = _DrawPlanar_CheckObstructionIntegrity;
 
     context->functions.fpInitGraph = _DrawPlanar_InitGraph;
-    context->functions.fpReinitializeGraph = _DrawPlanar_ReinitializeGraph;
+    context->functions.fpReinitGraph = _DrawPlanar_ReinitGraph;
     context->functions.fpEnsureEdgeCapacity = _DrawPlanar_EnsureEdgeCapacity;
     context->functions.fpSortVertices = _DrawPlanar_SortVertices;
 
@@ -328,7 +328,7 @@ int _DrawPlanar_InitGraph(graphP theGraph, int N)
 /********************************************************************
  ********************************************************************/
 
-void _DrawPlanar_ReinitializeGraph(graphP theGraph)
+void _DrawPlanar_ReinitGraph(graphP theGraph)
 {
     DrawPlanarContext *context = NULL;
     gp_FindExtension(theGraph, DRAWPLANAR_ID, (void *)&context);
@@ -336,7 +336,7 @@ void _DrawPlanar_ReinitializeGraph(graphP theGraph)
     if (context != NULL)
     {
         // Reinitialize the graph
-        context->functions.fpReinitializeGraph(theGraph);
+        context->functions.fpReinitGraph(theGraph);
 
         // Do the reinitialization that is specific to this module
         _DrawPlanar_InitStructures(context);

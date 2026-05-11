@@ -185,7 +185,7 @@ int _K23Search_EmbedPostprocess(graphP theGraph, int v, int edgeEmbeddingResult)
             // to ensure post-processing continues as expected.
             savedEmbedFlags = gp_GetEmbedFlags(theGraph);
             savedZEROBASEDIO = gp_GetGraphFlags(theGraph) & GRAPHFLAGS_ZEROBASEDIO;
-            gp_ReinitializeGraph(theGraph);
+            gp_ReinitGraph(theGraph);
             theGraph->embedFlags = savedEmbedFlags;
             theGraph->graphFlags &= savedZEROBASEDIO;
         }

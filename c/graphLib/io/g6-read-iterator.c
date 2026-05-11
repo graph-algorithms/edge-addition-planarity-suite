@@ -402,7 +402,7 @@ int _g6_InitReader(G6ReadIteratorP theG6ReadIterator)
         }
         else
         {
-            gp_ReinitializeGraph(theG6ReadIterator->currGraph);
+            gp_ReinitGraph(theG6ReadIterator->currGraph);
             theG6ReadIterator->order = order;
         }
     }
@@ -597,7 +597,7 @@ int g6_ReadGraph(G6ReadIteratorP theG6ReadIterator)
 
         if (numGraphsRead > 1)
         {
-            gp_ReinitializeGraph(currGraph);
+            gp_ReinitGraph(currGraph);
             // Ensures zero-based flag is set after reinitializing graph.
             currGraph->graphFlags |= GRAPHFLAGS_ZEROBASEDIO;
         }

@@ -44,7 +44,7 @@ int _K33Search_CheckEmbeddingIntegrity(graphP theGraph, graphP origGraph);
 int _K33Search_CheckObstructionIntegrity(graphP theGraph, graphP origGraph);
 
 int _K33Search_InitGraph(graphP theGraph, int N);
-void _K33Search_ReinitializeGraph(graphP theGraph);
+void _K33Search_ReinitGraph(graphP theGraph);
 int _K33Search_EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity);
 
 /* Forward declarations of functions used by the extension system */
@@ -114,7 +114,7 @@ int gp_ExtendWith_K33Search(graphP theGraph)
     context->functions.fpCheckObstructionIntegrity = _K33Search_CheckObstructionIntegrity;
 
     context->functions.fpInitGraph = _K33Search_InitGraph;
-    context->functions.fpReinitializeGraph = _K33Search_ReinitializeGraph;
+    context->functions.fpReinitGraph = _K33Search_ReinitGraph;
     context->functions.fpEnsureEdgeCapacity = _K33Search_EnsureEdgeCapacity;
 
     _K33Search_ClearStructures(context);
@@ -269,7 +269,7 @@ int _K33Search_InitGraph(graphP theGraph, int N)
 /********************************************************************
  ********************************************************************/
 
-void _K33Search_ReinitializeGraph(graphP theGraph)
+void _K33Search_ReinitGraph(graphP theGraph)
 {
     K33SearchContext *context = NULL;
     gp_FindExtension(theGraph, K33SEARCH_ID, (void *)&context);
@@ -277,7 +277,7 @@ void _K33Search_ReinitializeGraph(graphP theGraph)
     if (context != NULL)
     {
         // Reinitialize the graph
-        context->functions.fpReinitializeGraph(theGraph);
+        context->functions.fpReinitGraph(theGraph);
 
         // Do the reinitialization that is specific to this module
         _K33Search_InitStructures(context);
@@ -677,7 +677,7 @@ int _K33Search_EmbedPostprocess(graphP theGraph, int v, int edgeEmbeddingResult)
             // to ensure post-processing continues as expected.
             savedEmbedFlags = gp_GetEmbedFlags(theGraph);
             savedZEROBASEDIO = gp_GetGraphFlags(theGraph) & GRAPHFLAGS_ZEROBASEDIO;
-            gp_ReinitializeGraph(theGraph);
+            gp_ReinitGraph(theGraph);
             theGraph->embedFlags = savedEmbedFlags;
             theGraph->graphFlags &= savedZEROBASEDIO;
         }
