@@ -85,10 +85,8 @@ int gp_Detach_DFSUtils(graphP theGraph)
  that forms during the depth-first search. Also, the type of each
  edge record of each edge is set to indicate whether the edge record's
  neighbor value points to a DFS child or parent (a DFS tree edge) or
- a farther DFS ancestor or descendant (a "back" edge, "cycle" edge, or
- co-tree edge). The "forward" edge records, which lead from a DFS
- ancestor to a descendant, are moved to the end of the adjacency list
- to make the set of them easier to find and process.
+ a farther DFS ancestor or descendant (the backward and forward
+ edge records of a "back" edge/"cycle" edge/"co-tree" edge).
 
  NOTE: This is a utility function provided for general use. The core
         planarity algorithm uses its own DFS so it can build related
