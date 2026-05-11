@@ -130,13 +130,14 @@ extern "C"
             Bit 7: Edge record is directed from the containing vertex only
      ********************************************************************/
 
-    typedef struct
+    struct edgeRec
     {
         int link[2];
         int neighbor;
         unsigned flags;
-    } edgeRec;
+    };
 
+    typedef struct edgeRec edgeRec;
     typedef edgeRec *edgeRecP;
 
 /*********************************************/
@@ -299,8 +300,8 @@ extern "C"
 
      This record definition provides the data members needed for the
      core structural information for both vertices and virtual vertices.
-     Vertices are also equipped with additional information provided by
-     the vertexInfo structure.
+     Non-virtual vertices are also equipped with additional information
+     provided by private vertexInfo records.
 
      The vertices of a graph are stored in the first N locations of array V.
      Virtual vertices are secondary vertices used to help represent the
@@ -330,13 +331,14 @@ extern "C"
                     Bits 2-4 used in planarity-related algorithms
      ********************************************************************/
 
-    typedef struct
+    struct vertexRec
     {
         int link[2];
         int index;
         unsigned flags;
-    } vertexRec;
+    };
 
+    typedef struct vertexRec vertexRec;
     typedef vertexRec *vertexRecP;
 
 ////////////////////////////////////////////
