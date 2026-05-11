@@ -255,7 +255,7 @@ int _K33Search_InitGraph(graphP theGraph, int N)
     theGraph->N = N;
     theGraph->NV = N;
     if (theGraph->edgeCapacity == 0)
-        theGraph->edgeCapacity = DEFAULT_EDGE_LIMIT * N;
+        theGraph->edgeCapacity = DEFAULT_EDGE_CAPACITY_FACTOR * N;
 
     if (_K33Search_CreateStructures(context) != OK ||
         _K33Search_InitStructures(context) != OK)

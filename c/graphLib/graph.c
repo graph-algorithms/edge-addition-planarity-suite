@@ -188,7 +188,7 @@ void _InitFunctionTable(graphP theGraph)
 /********************************************************************
  gp_InitGraph()
  Allocates memory for vertex and edge records now that N is known.
- The edgeCapacity is set to (DEFAULT_EDGE_LIMIT * N) unless it
+ The edgeCapacity is set to (DEFAULT_EDGE_CAPACITY_FACTOR * N) unless it
      has already been set by gp_EnsureEdgeCapacity()
 
  For V, we need 2N vertex records, N for vertices and N for virtual vertices (root copies).
@@ -238,7 +238,7 @@ int _InitGraph(graphP theGraph, int N)
     // Compute the vertex and edge capacities of the graph
     theGraph->N = N;
     theGraph->NV = N;
-    theGraph->edgeCapacity = theGraph->edgeCapacity > 0 ? theGraph->edgeCapacity : DEFAULT_EDGE_LIMIT * N;
+    theGraph->edgeCapacity = theGraph->edgeCapacity > 0 ? theGraph->edgeCapacity : DEFAULT_EDGE_CAPACITY_FACTOR * N;
     theGraph->numEdgeHoles = 0;
 
     VIsize = gp_UpperBoundVertices(theGraph);
@@ -248,7 +248,7 @@ int _InitGraph(graphP theGraph, int N)
     // Stack size is 2 integers per edge record plus 2 to start depth-first search at a tree root
     stackSize = (theGraph->edgeCapacity << 2) + 2;
     // In case of small edgeCapacity, ensure minimum based on number of vertices
-    stackSize = stackSize <= 2 * 2 * DEFAULT_EDGE_LIMIT * N ? 2 * 2 * DEFAULT_EDGE_LIMIT * N + 2 : stackSize;
+    stackSize = stackSize <= 2 * 2 * DEFAULT_EDGE_CAPACITY_FACTOR * N ? 2 * 2 * DEFAULT_EDGE_CAPACITY_FACTOR * N + 2 : stackSize;
 
     // Allocate memory as described above
     if ((theGraph->V = (vertexRecP)calloc(Vsize, sizeof(vertexRec))) == NULL ||
@@ -426,7 +426,7 @@ int _EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity)
     {
         int newStackSize = 2 * (2 * requiredEdgeCapacity) + 2;
 
-        if (newStackSize < 2 * DEFAULT_EDGE_LIMIT * gp_GetN(theGraph) + 2)
+        if (newStackSize < 2 * DEFAULT_EDGE_CAPACITY_FACTOR * gp_GetN(theGraph) + 2)
         {
             // NOTE: We enforce a minimum stack based on number of vertices
             //       if edgeCapacity is small. Currently, this will not
@@ -434,7 +434,7 @@ int _EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity)
             //       the capacity can only ever get bigger. However, this
             //       rule is enforced in case future methods are added
             //       that reduce edge capacity
-            newStackSize = 2 * DEFAULT_EDGE_LIMIT * gp_GetN(theGraph) + 2;
+            newStackSize = 2 * DEFAULT_EDGE_CAPACITY_FACTOR * gp_GetN(theGraph) + 2;
         }
 
         if ((newStack = sp_New(newStackSize)) == NULL)

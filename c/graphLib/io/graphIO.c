@@ -50,7 +50,7 @@ char _GetObstructionMarkChar(graphP theGraph, int v);
  Though O(N^2) time is required, this routine is useful during
  reliability testing due to the wealth of graph generating software
  that uses this format for output.
- Returns: OK, NOTOK on internal error, NONEMBEDDABLE if too many edges
+ Returns: OK, NOTOK on internal error
  ********************************************************************/
 
 int _ReadAdjMatrix(graphP theGraph, strOrFileP inputContainer)
@@ -124,7 +124,7 @@ int _ReadAdjMatrix(graphP theGraph, strOrFileP inputContainer)
         This makes it easy to used edge directedness when appropriate
         but also seamlessly process the corresponding undirected graph.
 
- Returns: OK on success, NONEMBEDDABLE if success except too many edges
+ Returns: OK on success,
           NOTOK on file content error (or internal error)
  ********************************************************************/
 
@@ -341,7 +341,7 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
  LEDA files use a one-based numbering system, which is converted to
  zero-based numbers if the graph reports starting at zero as the first vertex.
 
- Returns: OK on success, NONEMBEDDABLE if success except too many edges
+ Returns: OK on success,
           NOTOK on file content error (or internal error)
  ********************************************************************/
 
@@ -436,7 +436,7 @@ int _ReadLEDAGraph(graphP theGraph, strOrFileP inputContainer)
 
  Pass "stdin" for the FileName to read from the stdin stream.
 
- Returns: OK, NOTOK on internal error, NONEMBEDDABLE if too many edges
+ Returns: OK, NOTOK on internal error
  ********************************************************************/
 
 int gp_Read(graphP theGraph, char const *FileName)
@@ -544,9 +544,8 @@ int _ReadGraph(graphP theGraph, strOrFileP *pInputContainer)
     // The possibility of "extra data" is not allowed for .g6 format:
     // .g6 files may contain multiple graphs, which are not valid input
     // for the extra data readers (i.e. fpReadPostProcess) Additionally,
-    // we don't want to add extra data if the graph is nonembeddable, as
-    // the FILE pointer isn't necessarily advanced past the graph
-    // encoding unless OK is returned.
+    // we don't want to process extra data unless the graph reading
+    // was OK.
     if (extraDataAllowed)
     {
         char charAfterGraphRead = EOF;
