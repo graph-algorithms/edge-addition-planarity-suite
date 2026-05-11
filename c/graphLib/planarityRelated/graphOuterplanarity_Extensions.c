@@ -36,7 +36,7 @@ int gp_ExtendWith_Outerplanarity(graphP theGraph)
     if (gp_ExtendWith_Planarity(theGraph) != OK)
         return NOTOK;
 
-    // Allocate supporting data strucures as needed
+    // Allocate supporting data structures as needed
 
     // Perform "on success" operations
     theGraph->graphFlags |= GRAPHFLAGS_EXTENDEDWITH_OUTERPLANARITY;

@@ -121,7 +121,7 @@ int gp_Embed(graphP theGraph, unsigned embedFlags)
                 return NOTOK;
         }
 
-        // For other Graph subclasses, the calller must have invoked their
+        // For other Graph subclasses, the caller must have invoked their
         // ExtendWith method prior to calling gp_Embed()
         else
             return NOTOK;

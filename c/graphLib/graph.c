@@ -1069,7 +1069,7 @@ int gp_CopyGraph(graphP dstGraph, graphP srcGraph)
     //
     // This must be done after copying the extension because the
     // first step of copying the extensions is to free the extensions
-    // of the dstGraph, which performes _InitFunctionTable() on dstGraph.
+    // of the dstGraph, which performs _InitFunctionTable() on dstGraph.
     // Therefore, assigning the srcGraph functions to dstGraph *before*
     // copying the extensions doesn't work because the assignment would be
     // wiped out. This, in turn, means that the DupContext function of an
@@ -1312,7 +1312,7 @@ int gp_CreateRandomGraphEx(graphP theGraph, int numEdges)
 
     M = numEdges <= 3 * N - 6 ? numEdges : 3 * N - 6;
 
-    // Start with the firt vertex
+    // Start with the first vertex
     root = gp_LowerBoundVertices(theGraph);
 
     // Generally, we use v keep track of a traversal down and up all the random tree edges
@@ -1335,7 +1335,7 @@ int gp_CreateRandomGraphEx(graphP theGraph, int numEdges)
     {
         // Get the next unprocessed child of v, if any. This method has the side effect
         // that it marks the edge (v, c) and hence c as being processed. This method
-        // returns NIL (which not a vertex) if v has no _unprocessed_ chidren left.
+        // returns NIL (which not a vertex) if v has no _unprocessed_ children left.
         c = _getUnprocessedChild(theGraph, v);
 
         // If v did have an unprocessed child...
@@ -1439,7 +1439,7 @@ int gp_CreateRandomGraphEx(graphP theGraph, int numEdges)
                     //       because v will advance to c below and the next iteration of
                     //       the outer loop will get _its_ next unprocessed child, say c2.
                     //       Only once we know the identity of c2 can we add the extra edge
-                    //       needed to create a triagular face with last, c, and c2.
+                    //       needed to create a triangular face with last, c, and c2.
                     //       This occurs at FORWARD_LABEL_0 above, with v=c and c=c2,
                     //       after which last is assigned the value c2.
                     //       Perhaps one day enough guilt will accrue to foster doing what

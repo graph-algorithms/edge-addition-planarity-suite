@@ -48,7 +48,7 @@ int gp_ExtendWith_DFSUtils(graphP theGraph)
     if (gp_GetGraphFlags(theGraph) & GRAPHFLAGS_EXTENDEDWITH_DFSUTILS)
         return OK;
 
-    // Allocate supporting data strucures as needed
+    // Allocate supporting data structures as needed
 
     // Perform "on success" operations
     theGraph->graphFlags |= GRAPHFLAGS_EXTENDEDWITH_DFSUTILS;

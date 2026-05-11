@@ -14,7 +14,7 @@ See the LICENSE.TXT file for licensing information.
 
  This function is intended to subclass a DFSUtils Graph by extending it with
  the planar graph embedding and obstruction isolation capabilities and any
- additional required data strucutures. If the given graph has not already
+ additional required data structures. If the given graph has not already
  been extended with DFSUtils, then gp_ExtendWith_DFSUtils() is called.
 
  To use Planarity during gp_Embed(), use EMBEDFLAGS_PLANAR.
@@ -36,7 +36,7 @@ int gp_ExtendWith_Planarity(graphP theGraph)
     if (gp_ExtendWith_DFSUtils(theGraph) != OK)
         return NOTOK;
 
-    // Allocate supporting data strucures as needed
+    // Allocate supporting data structures as needed
 
     // Perform "on success" operations
     theGraph->graphFlags |= GRAPHFLAGS_EXTENDEDWITH_PLANARITY;

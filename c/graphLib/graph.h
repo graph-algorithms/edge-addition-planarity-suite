@@ -442,7 +442,7 @@ extern "C"
 #define gp_SetMarked(theGraph, v) (theGraph->V[v].flags |= VERTEX_MARKED_MASK)
 
     // DFS-RELATED and PLANARITY-RELATED ONLY
-    // Declaration of package-private data type for managing additonal DFS-
+    // Declaration of package-private data type for managing additional DFS-
     // and planarity-related information associated with each non-virtual vertex
     typedef struct DFSUtils_VertexInfo DFSUtils_VertexInfo;
     typedef DFSUtils_VertexInfo *DFSUtils_VertexInfoP;

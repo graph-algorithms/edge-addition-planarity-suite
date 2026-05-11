@@ -388,7 +388,7 @@ int _g6_InitWriter(G6WriteIteratorP theG6WriteIterator)
 }
 
 /*
- * NOTE: columnOffsets is an array of size_t rathern than of int, because for a
+ * NOTE: columnOffsets is an array of size_t rather than of int, because for a
  * graph with N <= 100000, the index for an edge can be as large as
  * (100000 * 99999) / 2, which overflows the size of a signed integer.
  */
