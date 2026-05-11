@@ -70,12 +70,12 @@ int _g6_ValidateOrderOfEncodedGraph(char *graphBuff, int order)
     {
         if (graphBuff[1] == 126)
         {
-            ErrorMessage("Can only handle graphs of order <= 100,000.\n");
+            gp_ErrorMessage("Can only handle graphs of order <= 100,000.\n");
             return NOTOK;
         }
         else if (graphBuff[1] > 126)
         {
-            ErrorMessage("Invalid graph order signifier.\n");
+            gp_ErrorMessage("Invalid graph order signifier.\n");
             return NOTOK;
         }
         else
@@ -89,15 +89,15 @@ int _g6_ValidateOrderOfEncodedGraph(char *graphBuff, int order)
         n = currChar - 63;
     else
     {
-        ErrorMessage("Character doesn't correspond to a printable ASCII "
-                     "character.\n");
+        gp_ErrorMessage("Character doesn't correspond to a printable ASCII "
+                        "character.\n");
         return NOTOK;
     }
 
     if (n != order)
     {
-        ErrorMessage("Graph order %d doesn't match expected graph order %d",
-                     n, order);
+        gp_ErrorMessage("Graph order %d doesn't match expected graph order %d",
+                        n, order);
         return NOTOK;
     }
 
@@ -114,7 +114,7 @@ int _g6_ValidateGraphEncoding(char *graphBuff, const int order, const size_t num
 
     if (graphBuff == NULL || strlen(graphBuff) == 0)
     {
-        ErrorMessage("Invalid encoding: graphBuff is NULL or empty.\n");
+        gp_ErrorMessage("Invalid encoding: graphBuff is NULL or empty.\n");
         return NOTOK;
     }
 
@@ -129,9 +129,9 @@ int _g6_ValidateGraphEncoding(char *graphBuff, const int order, const size_t num
 
     if (expectedNumChars != numCharsForGraphEncoding)
     {
-        ErrorMessage("Invalid number of bytes for graph of order %d; got %d "
-                     "but expected %d\n",
-                     order, (int)numCharsForGraphEncoding, (int)expectedNumChars);
+        gp_ErrorMessage("Invalid number of bytes for graph of order %d; got %d "
+                        "but expected %d\n",
+                        order, (int)numCharsForGraphEncoding, (int)expectedNumChars);
         return NOTOK;
     }
 
@@ -140,8 +140,8 @@ int _g6_ValidateGraphEncoding(char *graphBuff, const int order, const size_t num
     {
         if (graphBuff[i] < 63 || graphBuff[i] > 126)
         {
-            ErrorMessage("Invalid character at index %d: \"%c\"\n",
-                         (int)i, graphBuff[i]);
+            gp_ErrorMessage("Invalid character at index %d: \"%c\"\n",
+                            (int)i, graphBuff[i]);
             return NOTOK;
         }
     }
@@ -158,8 +158,8 @@ int _g6_ValidateGraphEncoding(char *graphBuff, const int order, const size_t num
 
     if (numPaddingZeroes != expectedNumPaddingZeroes)
     {
-        ErrorMessage("Expected %d padding zeroes, but got %d.\n",
-                     (int)expectedNumPaddingZeroes, (int)numPaddingZeroes);
+        gp_ErrorMessage("Expected %d padding zeroes, but got %d.\n",
+                        (int)expectedNumPaddingZeroes, (int)numPaddingZeroes);
         exitCode = NOTOK;
     }
 

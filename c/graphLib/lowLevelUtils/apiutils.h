@@ -41,13 +41,13 @@ extern "C"
 
     extern int quietMode;
 
-    // These methods control whether ErrorMessage() and Message() calls
+    // These methods control whether gp_ErrorMessage() and gp_Message() calls
     // emit output or skip producing output (the default)
     int gp_GetQuietModeFlag(void);
     void gp_SetQuietModeFlag(int newQuietModeFlag);
 
-    extern void Message(char const *message, ...) FORMAT_PRINTF(1, 2);
-    extern void ErrorMessage(char const *message, ...) FORMAT_PRINTF(1, 2);
+    extern void gp_Message(char const *message, ...) FORMAT_PRINTF(1, 2);
+    extern void gp_ErrorMessage(char const *message, ...) FORMAT_PRINTF(1, 2);
 
 #ifdef __cplusplus
 }
