@@ -6,11 +6,12 @@
             "command": "C:\\msys64\\ucrt64\\bin\\gcc.exe",
             "args": [
                 "-fdiagnostics-color=always",
-                "-fno-strict-aliasing",
                 "-DDEBUG", // Added so that _DEBUG is defined; see appconst.h
                 //"-DUSE_0BASEDARRAYS", // Commented out to use faster 1-based array indexing
                 "-Wall",
+                "-fno-strict-aliasing",
                 "-pedantic",
+                "-Wall",
                 "-Warray-bounds",
                 "-Wcast-align",
                 "-Wdeclaration-after-statement",
@@ -66,31 +67,35 @@
                 "${workspaceFolder}\\c\\planarityApp\\planarityTestAllGraphs.c",
                 "${workspaceFolder}\\c\\planarityApp\\planarityTransformGraph.c",
                 "${workspaceFolder}\\c\\planarityApp\\planarityUtils.c",
-                "${workspaceFolder}\\c\\graphLib\\graphDFSUtils.c",
-                "${workspaceFolder}\\c\\graphLib\\graphUtils.c",
+                "${workspaceFolder}\\c\\graphLib\\graphLib.c",
+                "${workspaceFolder}\\c\\graphLib\\lowLevelUtils\\apiutils.c",
                 "${workspaceFolder}\\c\\graphLib\\extensionSystem\\graphExtensions.c",
-                "${workspaceFolder}\\c\\graphLib\\homeomorphSearch\\graphK4Search.c",
-                "${workspaceFolder}\\c\\graphLib\\homeomorphSearch\\graphK23Search.c",
-                "${workspaceFolder}\\c\\graphLib\\homeomorphSearch\\graphK33Search.c",
-                "${workspaceFolder}\\c\\graphLib\\homeomorphSearch\\graphK4Search_Extensions.c",
-                "${workspaceFolder}\\c\\graphLib\\homeomorphSearch\\graphK23Search_Extensions.c",
-                "${workspaceFolder}\\c\\graphLib\\homeomorphSearch\\graphK33Search_Extensions.c",
+                "${workspaceFolder}\\c\\graphLib\\graph.c",
                 "${workspaceFolder}\\c\\graphLib\\io\\g6-api-utilities.c",
                 "${workspaceFolder}\\c\\graphLib\\io\\g6-read-iterator.c",
                 "${workspaceFolder}\\c\\graphLib\\io\\g6-write-iterator.c",
                 "${workspaceFolder}\\c\\graphLib\\io\\graphIO.c",
                 "${workspaceFolder}\\c\\graphLib\\io\\strbuf.c",
                 "${workspaceFolder}\\c\\graphLib\\io\\strOrFile.c",
-                "${workspaceFolder}\\c\\graphLib\\lowLevelUtils\\apiutils.c",
                 "${workspaceFolder}\\c\\graphLib\\lowLevelUtils\\listcoll.c",
                 "${workspaceFolder}\\c\\graphLib\\lowLevelUtils\\stack.c",
-                "${workspaceFolder}\\c\\graphLib\\planarityRelated\\graphDrawPlanar.c",
-                "${workspaceFolder}\\c\\graphLib\\planarityRelated\\graphDrawPlanar_Extensions.c",
+                "${workspaceFolder}\\c\\graphLib\\graphDFSUtils.c",
+                "${workspaceFolder}\\c\\graphLib\\planarityRelated\\graphPlanarity_Extensions.c",
                 "${workspaceFolder}\\c\\graphLib\\planarityRelated\\graphEmbed.c",
                 "${workspaceFolder}\\c\\graphLib\\planarityRelated\\graphIsolator.c",
                 "${workspaceFolder}\\c\\graphLib\\planarityRelated\\graphNonplanar.c",
-                "${workspaceFolder}\\c\\graphLib\\planarityRelated\\graphOuterplanarObstruction.c",
                 "${workspaceFolder}\\c\\graphLib\\planarityRelated\\graphTests.c",
+                "${workspaceFolder}\\c\\graphLib\\planarityRelated\\graphOuterplanarity_Extensions.c",
+                "${workspaceFolder}\\c\\graphLib\\planarityRelated\\graphOuterplanarObstruction.c",
+                "${workspaceFolder}\\c\\graphLib\\planarityRelated\\graphDrawPlanar_Extensions.c",
+                "${workspaceFolder}\\c\\graphLib\\planarityRelated\\graphDrawPlanar.c",
+                "${workspaceFolder}\\c\\graphLib\\homeomorphSearch\\graphK23Search_Extensions.c",
+                "${workspaceFolder}\\c\\graphLib\\homeomorphSearch\\graphK23Search.c",
+                "${workspaceFolder}\\c\\graphLib\\homeomorphSearch\\graphK33Search_Extensions.c",
+                "${workspaceFolder}\\c\\graphLib\\homeomorphSearch\\graphK33Search.c",
+                //"${workspaceFolder}\\c\\graphLib\\homeomorphSearch\\graphK33Search_embedder.c",
+                "${workspaceFolder}\\c\\graphLib\\homeomorphSearch\\graphK4Search_Extensions.c",
+                "${workspaceFolder}\\c\\graphLib\\homeomorphSearch\\graphK4Search.c",
                 "-o",
                 "${workspaceFolder}\\Debug\\planarity.exe"
             ],
@@ -109,8 +114,9 @@
             "command": "C:\\msys64\\ucrt64\\bin\\gcc.exe",
             "args": [
                 "-O3",
-                "-fno-strict-aliasing",
                 //"-DUSE_0BASEDARRAYS", // Commented out to use faster 1-based array indexing
+                "-Wall",
+                "-fno-strict-aliasing",
                 "-pedantic",
                 "-Wall",
                 "-Warray-bounds",
@@ -168,31 +174,35 @@
                 "${workspaceFolder}\\c\\planarityApp\\planarityTestAllGraphs.c",
                 "${workspaceFolder}\\c\\planarityApp\\planarityTransformGraph.c",
                 "${workspaceFolder}\\c\\planarityApp\\planarityUtils.c",
-                "${workspaceFolder}\\c\\graphLib\\graphDFSUtils.c",
-                "${workspaceFolder}\\c\\graphLib\\graphUtils.c",
+                "${workspaceFolder}\\c\\graphLib\\graphLib.c",
+                "${workspaceFolder}\\c\\graphLib\\lowLevelUtils\\apiutils.c",
                 "${workspaceFolder}\\c\\graphLib\\extensionSystem\\graphExtensions.c",
-                "${workspaceFolder}\\c\\graphLib\\homeomorphSearch\\graphK4Search.c",
-                "${workspaceFolder}\\c\\graphLib\\homeomorphSearch\\graphK23Search.c",
-                "${workspaceFolder}\\c\\graphLib\\homeomorphSearch\\graphK33Search.c",
-                "${workspaceFolder}\\c\\graphLib\\homeomorphSearch\\graphK4Search_Extensions.c",
-                "${workspaceFolder}\\c\\graphLib\\homeomorphSearch\\graphK23Search_Extensions.c",
-                "${workspaceFolder}\\c\\graphLib\\homeomorphSearch\\graphK33Search_Extensions.c",
+                "${workspaceFolder}\\c\\graphLib\\graph.c",
                 "${workspaceFolder}\\c\\graphLib\\io\\g6-api-utilities.c",
                 "${workspaceFolder}\\c\\graphLib\\io\\g6-read-iterator.c",
                 "${workspaceFolder}\\c\\graphLib\\io\\g6-write-iterator.c",
                 "${workspaceFolder}\\c\\graphLib\\io\\graphIO.c",
                 "${workspaceFolder}\\c\\graphLib\\io\\strbuf.c",
                 "${workspaceFolder}\\c\\graphLib\\io\\strOrFile.c",
-                "${workspaceFolder}\\c\\graphLib\\lowLevelUtils\\apiutils.c",
                 "${workspaceFolder}\\c\\graphLib\\lowLevelUtils\\listcoll.c",
                 "${workspaceFolder}\\c\\graphLib\\lowLevelUtils\\stack.c",
-                "${workspaceFolder}\\c\\graphLib\\planarityRelated\\graphDrawPlanar.c",
-                "${workspaceFolder}\\c\\graphLib\\planarityRelated\\graphDrawPlanar_Extensions.c",
+                "${workspaceFolder}\\c\\graphLib\\graphDFSUtils.c",
+                "${workspaceFolder}\\c\\graphLib\\planarityRelated\\graphPlanarity_Extensions.c",
                 "${workspaceFolder}\\c\\graphLib\\planarityRelated\\graphEmbed.c",
                 "${workspaceFolder}\\c\\graphLib\\planarityRelated\\graphIsolator.c",
                 "${workspaceFolder}\\c\\graphLib\\planarityRelated\\graphNonplanar.c",
-                "${workspaceFolder}\\c\\graphLib\\planarityRelated\\graphOuterplanarObstruction.c",
                 "${workspaceFolder}\\c\\graphLib\\planarityRelated\\graphTests.c",
+                "${workspaceFolder}\\c\\graphLib\\planarityRelated\\graphOuterplanarity_Extensions.c",
+                "${workspaceFolder}\\c\\graphLib\\planarityRelated\\graphOuterplanarObstruction.c",
+                "${workspaceFolder}\\c\\graphLib\\planarityRelated\\graphDrawPlanar_Extensions.c",
+                "${workspaceFolder}\\c\\graphLib\\planarityRelated\\graphDrawPlanar.c",
+                "${workspaceFolder}\\c\\graphLib\\homeomorphSearch\\graphK23Search_Extensions.c",
+                "${workspaceFolder}\\c\\graphLib\\homeomorphSearch\\graphK23Search.c",
+                "${workspaceFolder}\\c\\graphLib\\homeomorphSearch\\graphK33Search_Extensions.c",
+                "${workspaceFolder}\\c\\graphLib\\homeomorphSearch\\graphK33Search.c",
+                //"${workspaceFolder}\\c\\graphLib\\homeomorphSearch\\graphK33Search_embedder.c",
+                "${workspaceFolder}\\c\\graphLib\\homeomorphSearch\\graphK4Search_Extensions.c",
+                "${workspaceFolder}\\c\\graphLib\\homeomorphSearch\\graphK4Search.c",
                 "-o",
                 "${workspaceFolder}\\Release\\planarity.exe"
             ],
@@ -213,7 +223,7 @@
                 "-fdiagnostics-color=always",
                 "-fno-strict-aliasing",
                 "-DDEBUG", // Added so that _DEBUG is defined; see appconst.h
-                //"-DUSE_0BASEDARRAYS", // Commented out to use faster 1-based array indexing
+                //"-DUSE_0BASEDARRAYS", // Commented out to use default of 1-based array indexing
                 "-pedantic",
                 "-Wall",
                 "-Warray-bounds",
@@ -287,7 +297,7 @@
             "args": [
                 "-O3",
                 "-fno-strict-aliasing",
-                //"-DUSE_0BASEDARRAYS", // Commented out to use faster 1-based array indexing
+                //"-DUSE_0BASEDARRAYS", // Commented out to use default of 1-based array indexing
                 "-pedantic",
                 "-Wall",
                 "-Warray-bounds",
@@ -364,7 +374,7 @@
                 "/EHsc",
                 "/nologo",
                 "/DDEBUG", // Added so that _DEBUG is defined; see appconst.h
-                //"/DUSE_0BASEDARRAYS", // Commented out to use faster 1-based array indexing
+                //"/DUSE_0BASEDARRAYS", // Commented out to use default of 1-based array indexing
                 "/Wall",
                 "/wd4464", // Ignore warnings about relative paths
                 "/wd4710", // Ignore warnings about not inlining scanf, sprintf, printf, fprintf, etc.
@@ -404,7 +414,7 @@
             "args": [
                 "/O2", // This is the maximum optimization level available for MSVC cl
                 "/nologo",
-                //"/DUSE_0BASEDARRAYS", // Commented out to use faster 1-based array indexing
+                //"/DUSE_0BASEDARRAYS", // Commented out to use default of 1-based array indexing
                 "/Wall",
                 "/wd4464", // Ignore warnings about relative paths
                 "/wd4710", // Ignore warnings about not inlining scanf, sprintf, printf, fprintf, etc.
@@ -446,7 +456,7 @@
                 "-fansi-escape-codes",
                 "-fno-strict-aliasing",
                 "-DDEBUG", // Added so that _DEBUG is defined; see appconst.h
-                //"-DUSE_0BASEDARRAYS", // Commented out to use faster 1-based array indexing
+                //"-DUSE_0BASEDARRAYS", // Commented out to use default of 1-based array indexing
                 "-Wall",
                 "-pedantic",
                 "-Warray-bounds",
@@ -515,7 +525,7 @@
             "args": [
                 "-O3",
                 "-fno-strict-aliasing",
-                //"-DUSE_0BASEDARRAYS", // Commented out to use faster 1-based array indexing
+                //"-DUSE_0BASEDARRAYS", // Commented out to use default of 1-based array indexing
                 "-Wall",
                 "-pedantic",
                 "-Warray-bounds",

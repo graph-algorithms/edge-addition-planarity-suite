@@ -16,25 +16,28 @@ extern "C"
 #include <stdbool.h>
 
 #include "../graph.h"
-#include "strOrFile.h"
 
-    typedef struct
+    typedef struct strOrFileStruct strOrFileStruct;
+    typedef strOrFileStruct *strOrFileP;
+
+    struct G6WriteIteratorStruct
     {
         strOrFileP outputContainer;
         int numGraphsWritten;
 
         int order;
         int numCharsForOrder;
-        int numCharsForGraphEncoding;
-        int currGraphBuffSize;
+        size_t numCharsForGraphEncoding;
+        size_t currGraphBuffSize;
         char *currGraphBuff;
 
-        int *columnOffsets;
+        size_t *columnOffsets;
 
         graphP currGraph;
-    } G6WriteIterator;
+    };
 
-    typedef G6WriteIterator *G6WriteIteratorP;
+    typedef struct G6WriteIteratorStruct G6WriteIteratorStruct;
+    typedef G6WriteIteratorStruct *G6WriteIteratorP;
 
     int g6_NewWriter(G6WriteIteratorP *pG6WriteIterator, graphP theGraph);
 

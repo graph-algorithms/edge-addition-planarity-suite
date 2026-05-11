@@ -14,6 +14,8 @@ extern "C"
 
 #include "../graphLib/graphLib.h"
 
+#include "platformTime.h"
+
 #define FILENAMEMAXLENGTH 128
 #define ALGORITHMNAMEMAXLENGTH 32
 #define SUFFIXMAXLENGTH 32
@@ -81,6 +83,8 @@ extern "C"
 
     int ConstructTransformationExpectedResultFilename(char const *infileName, char **outfileName, char command, int actualOrExpectedFlag);
     void WriteAlgorithmResults(graphP theGraph, int Result, char command, platform_time start, platform_time end, char const *infileName);
+
+    int GetNumCharsToReprInt(int theNum, int *numCharsRequired);
 
 #ifdef __cplusplus
 }

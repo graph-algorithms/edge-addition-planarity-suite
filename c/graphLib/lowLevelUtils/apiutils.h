@@ -13,15 +13,10 @@ extern "C"
 
 #include "stdio.h"
 
-// N.B. Every time this is used to create a string for a message or
-// error message, the developer must check that there will not be a
-// memory overwrite error.
 #define MAXLINE 1024
 
-// N.B. Every time you're trying to read a 32-bit int from a string,
-// you should only need to read this many characters: an optional '-',
-// followed by 10 digits (max signed 32-bit int value is 2,147,483,647).
-// One must always allocate an additional byte for the null-terminator!
+// The string representation for an integer must account for: an optional '-',
+// then 10 digits (max signed 32-bit int), and a null-terminator
 #define MAXCHARSFOR32BITINT 11
 
 #if defined(_MSC_VER) && !defined(__llvm__) && !defined(__INTEL_COMPILER)
@@ -46,13 +41,14 @@ extern "C"
 
     extern int quietMode;
 
-    extern int getQuietModeSetting(void);
-    extern void setQuietModeSetting(int);
+    // These methods control whether gp_ErrorMessage() and gp_Message() calls
+    // emit output or skip producing output (the default)
+    int gp_GetQuietModeFlag(void);
+    void gp_SetQuietModeFlag(int newQuietModeFlag);
 
-    extern void Message(char const *message, ...) FORMAT_PRINTF(1, 2);
-    extern void ErrorMessage(char const *message, ...) FORMAT_PRINTF(1, 2);
+    extern void gp_Message(char const *message, ...) FORMAT_PRINTF(1, 2);
+    extern void gp_ErrorMessage(char const *message, ...) FORMAT_PRINTF(1, 2);
 
-    int GetNumCharsToReprInt(int theNum, int *numCharsRequired);
 #ifdef __cplusplus
 }
 #endif

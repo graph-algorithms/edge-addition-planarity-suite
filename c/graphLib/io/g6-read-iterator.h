@@ -16,24 +16,30 @@ extern "C"
 #include <stdbool.h>
 
 #include "../graph.h"
-#include "strOrFile.h"
 
-    typedef struct
+    // Declaration of package private structure for I/O
+    // from/to a string or file.
+    typedef struct strOrFileStruct strOrFileStruct;
+    typedef strOrFileStruct *strOrFileP;
+
+    struct G6ReadIteratorStruct
     {
         strOrFileP inputContainer;
         int numGraphsRead;
 
         int order;
         int numCharsForOrder;
-        int numCharsForGraphEncoding;
-        int currGraphBuffSize;
+        size_t numCharsForGraphEncoding;
+        size_t currGraphBuffSize;
         char *currGraphBuff;
 
         graphP currGraph;
 
         bool endReached;
-    } G6ReadIterator;
-    typedef G6ReadIterator *G6ReadIteratorP;
+    };
+
+    typedef struct G6ReadIteratorStruct G6ReadIteratorStruct;
+    typedef G6ReadIteratorStruct *G6ReadIteratorP;
 
     int g6_NewReader(G6ReadIteratorP *pG6ReadIterator, graphP theGraph);
     bool g6_EndReached(G6ReadIteratorP theG6ReadIterator);
