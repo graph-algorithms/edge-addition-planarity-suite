@@ -180,9 +180,11 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
     {
         if (g6_ReadGraph(theG6ReadIterator) != OK)
         {
+            int numGraphsRead = 0;
+            g6_GetNumGraphsRead(theG6ReadIterator, &numGraphsRead);
             gp_ErrorMessage("Unable to read graph on line %d from .g6 read "
                             "iterator.\n",
-                            theG6ReadIterator->numGraphsRead + 1);
+                            numGraphsRead + 1);
             Result = NOTOK;
             break;
         }
@@ -201,16 +203,20 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
         Result = gp_Embed(graphForEmbedding, embedFlags);
         if (Result != OK && Result != NONEMBEDDABLE)
         {
+            int numGraphsRead = 0;
+            g6_GetNumGraphsRead(theG6ReadIterator, &numGraphsRead);
             gp_ErrorMessage("Failed to embed graph on line %d for command '%c'.\n",
-                            theG6ReadIterator->numGraphsRead + 1, command);
+                            numGraphsRead + 1, command);
             Result = NOTOK;
         }
 
         if (gp_TestEmbedResultIntegrity(graphForEmbedding, origGraphRead, Result) != Result)
         {
+            int numGraphsRead = 0;
+            g6_GetNumGraphsRead(theG6ReadIterator, &numGraphsRead);
             gp_ErrorMessage("Embed integrity check failed for graph on line %d "
                             "for command '%c'.\n",
-                            theG6ReadIterator->numGraphsRead + 1, command);
+                            numGraphsRead + 1, command);
             Result = NOTOK;
         }
 
@@ -227,23 +233,28 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
         {
             if (modifier == '\0')
             {
+                int numGraphsRead = 0;
+                g6_GetNumGraphsRead(theG6ReadIterator, &numGraphsRead);
                 gp_ErrorMessage("Error applying algorithm '%c' to graph on line "
                                 "%d.\n",
-                                command, theG6ReadIterator->numGraphsRead + 1);
+                                command, numGraphsRead + 1);
             }
             else
             {
+                int numGraphsRead = 0;
+                g6_GetNumGraphsRead(theG6ReadIterator, &numGraphsRead);
                 gp_ErrorMessage("Error applying algorithm '%c' with modifier '%c' "
                                 "to graph on line %d.\n",
-                                command, modifier,
-                                theG6ReadIterator->numGraphsRead + 1);
+                                command, modifier, numGraphsRead + 1);
             }
             Result = NOTOK;
             break;
         }
     }
 
-    stats->numGraphsRead = theG6ReadIterator->numGraphsRead;
+    stats->numGraphsRead = 0;
+    if (g6_GetNumGraphsRead(theG6ReadIterator, &stats->numGraphsRead) != OK)
+        NOTOK;
     stats->numOK = numOK;
     stats->numNONEMBEDDABLE = numNONEMBEDDABLE;
     stats->errorFlag = (Result == OK) ? FALSE : TRUE;

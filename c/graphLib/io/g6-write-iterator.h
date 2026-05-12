@@ -17,25 +17,6 @@ extern "C"
 
 #include "../graph.h"
 
-    typedef struct strOrFileStruct strOrFileStruct;
-    typedef strOrFileStruct *strOrFileP;
-
-    struct G6WriteIteratorStruct
-    {
-        strOrFileP outputContainer;
-        int numGraphsWritten;
-
-        int order;
-        int numCharsForOrder;
-        size_t numCharsForGraphEncoding;
-        size_t currGraphBuffSize;
-        char *currGraphBuff;
-
-        size_t *columnOffsets;
-
-        graphP currGraph;
-    };
-
     typedef struct G6WriteIteratorStruct G6WriteIteratorStruct;
     typedef G6WriteIteratorStruct *G6WriteIteratorP;
 

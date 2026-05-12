@@ -17,27 +17,6 @@ extern "C"
 
 #include "../graph.h"
 
-    // Declaration of package private structure for I/O
-    // from/to a string or file.
-    typedef struct strOrFileStruct strOrFileStruct;
-    typedef strOrFileStruct *strOrFileP;
-
-    struct G6ReadIteratorStruct
-    {
-        strOrFileP inputContainer;
-        int numGraphsRead;
-
-        int order;
-        int numCharsForOrder;
-        size_t numCharsForGraphEncoding;
-        size_t currGraphBuffSize;
-        char *currGraphBuff;
-
-        graphP currGraph;
-
-        bool endReached;
-    };
-
     typedef struct G6ReadIteratorStruct G6ReadIteratorStruct;
     typedef G6ReadIteratorStruct *G6ReadIteratorP;
 
