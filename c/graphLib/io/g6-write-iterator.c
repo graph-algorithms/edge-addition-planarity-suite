@@ -33,6 +33,32 @@ int _g6_WriteEncodedGraph(G6WriteIteratorP theG6WriteIterator);
 int _g6_WriteGraphToFile(graphP theGraph, char *g6OutputFileName);
 int _g6_WriteGraphToString(graphP theGraph, char **pOutputStr);
 
+/********************************************************************
+ Package private structure declaration for write iterator
+ ********************************************************************/
+    typedef struct strOrFileStruct strOrFileStruct;
+    typedef strOrFileStruct *strOrFileP;
+
+    struct G6WriteIteratorStruct
+    {
+        strOrFileP outputContainer;
+        int numGraphsWritten;
+
+        int order;
+        int numCharsForOrder;
+        size_t numCharsForGraphEncoding;
+        size_t currGraphBuffSize;
+        char *currGraphBuff;
+
+        size_t *columnOffsets;
+
+        graphP currGraph;
+    };
+
+/********************************************************************
+ Public and package private method implementations for write iterator
+ ********************************************************************/
+
 int g6_NewWriter(G6WriteIteratorP *pG6WriteIterator, graphP theGraph)
 {
     if (pG6WriteIterator == NULL)

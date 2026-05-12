@@ -37,6 +37,32 @@ int _g6_DecodeGraph(char *graphBuff, const int order, const int numChars, graphP
 int _g6_ReadGraphFromFile(graphP theGraph, char *pathToG6File);
 int _g6_ReadGraphFromString(graphP theGraph, char *g6EncodedString);
 
+/********************************************************************
+ Package private structure declaration for read iterator
+ ********************************************************************/
+    typedef struct strOrFileStruct strOrFileStruct;
+    typedef strOrFileStruct *strOrFileP;
+
+    struct G6ReadIteratorStruct
+    {
+        strOrFileP inputContainer;
+        int numGraphsRead;
+
+        int order;
+        int numCharsForOrder;
+        size_t numCharsForGraphEncoding;
+        size_t currGraphBuffSize;
+        char *currGraphBuff;
+
+        graphP currGraph;
+
+        bool endReached;
+    };
+
+/********************************************************************
+ Public and package private method implementations for read iterator
+ ********************************************************************/
+
 int g6_NewReader(G6ReadIteratorP *pG6ReadIterator, graphP theGraph)
 {
     int exitCode = OK;
@@ -614,7 +640,6 @@ int g6_ReadGraph(G6ReadIteratorP theG6ReadIterator)
     }
     else
     {
-        theG6ReadIterator->currGraph = NULL;
         theG6ReadIterator->endReached = true;
     }
 
