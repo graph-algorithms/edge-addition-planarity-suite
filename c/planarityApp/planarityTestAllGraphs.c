@@ -253,8 +253,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
     }
 
     stats->numGraphsRead = 0;
-    if (g6_GetNumGraphsRead(theG6ReadIterator, &stats->numGraphsRead) != OK)
-        NOTOK;
+    g6_GetNumGraphsRead(theG6ReadIterator, &stats->numGraphsRead);
     stats->numOK = numOK;
     stats->numNONEMBEDDABLE = numNONEMBEDDABLE;
     stats->errorFlag = (Result == OK) ? FALSE : TRUE;
