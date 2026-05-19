@@ -362,7 +362,7 @@ int _RunExtraK33Tests(graphP theGraph, K33SearchContext *context)
     // Now mark the lowest x-y path so that we can test whether _any_ x-y path
     // has points of attachment, px or py, below x or y, respectively (where
     // below means closer to W than x or y, respectively, along the external face).
-    if (_MarkLowestXYPath(theGraph) != TRUE)
+    if (_MarkLowestXYPath(theGraph) != OK)
         return NOTOK;
 
     // Now we test for E4 based on whether px!=x or py!=y. Note that the inequality
@@ -918,7 +918,7 @@ int _FindK33WithMergeBlocker(graphP theGraph, K33SearchContext *context, int v, 
  The function returns NOTOK on internal error, OK otherwise.
 
  Preconditions: The X-Y path is marked visited by a prior invocation of
- the meothd _MarkLowestXYPath() above.
+ the method _MarkLowestXYPath() above.
 
  So, we start a depth first search from W to find a visited vertex, except
  we prune the search to ignore vertices whose obstruction type is other than
