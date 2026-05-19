@@ -231,20 +231,19 @@ int _DrawPlanar_CreateStructures(DrawPlanarContext *context)
  ********************************************************************/
 int _DrawPlanar_InitStructures(DrawPlanarContext *context)
 {
-    memset(context->E, 0, gp_UpperBoundEdgeStorage(context->theGraph) * sizeof(DrawPlanar_EdgeRec));
-
 #ifdef USE_1BASEDARRAYS
     memset(context->VI, NIL_CHAR, gp_UpperBoundVertices(context->theGraph) * sizeof(DrawPlanar_VertexInfo));
 #else
-    int v;
     graphP theGraph = context->theGraph;
 
     if (gp_GetN(theGraph) <= 0)
         return NOTOK;
 
-    for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
+    for (int v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
         _DrawPlanar_InitVertexInfo(context, v);
 #endif
+
+    memset(context->E, 0, gp_UpperBoundEdgeStorage(context->theGraph) * sizeof(DrawPlanar_EdgeRec));
 
     return OK;
 }

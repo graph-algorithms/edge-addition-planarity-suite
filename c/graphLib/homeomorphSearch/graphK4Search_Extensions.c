@@ -402,13 +402,9 @@ int _K4Search_HandleBlockedBicomp(graphP theGraph, int v, int RootVertex, int R)
 
         return RetVal;
     }
-    else
-    {
-        return context->functions.fpHandleBlockedBicomp(theGraph, v, RootVertex, R);
-    }
 
-    // No way to get here in current implementation, but this protects against future mistakes
-    return NOTOK;
+    // else if we are not doing a K3,3 homeomorph search, then call the superclass to handle
+    return context->functions.fpHandleBlockedBicomp(theGraph, v, RootVertex, R);
 }
 
 /********************************************************************

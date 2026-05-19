@@ -306,7 +306,7 @@ void _InitEdges(graphP theGraph)
 
 #ifdef USE_1BASEDARRAYS
 #else
-    for (int e = gp_BeginEdgeStorage(theGraph); e != gp_EndEdgeStorage(theGraph); ++e)
+    for (int e = gp_LowerBoundEdgeStorage(theGraph); e < gp_UpperBoundEdgeStorage(theGraph); ++e)
         gp_InitEdgeFlags(theGraph, e);
 #endif
 }
