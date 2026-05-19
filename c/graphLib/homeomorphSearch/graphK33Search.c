@@ -20,7 +20,7 @@ extern int _HideInternalEdges(graphP theGraph, int vertex);
 extern int _RestoreInternalEdges(graphP theGraph, int stackBottom);
 extern int _ClearInvertedFlagsInBicomp(graphP theGraph, int BicompRoot);
 extern int _ComputeEdgeRecordType(graphP theGraph, int a, int b, int edgeType);
-extern int _SetEdgeType(graphP theGraph, int u, int v);
+extern int _RestoreEdgeType(graphP theGraph, int u, int v);
 
 extern int _GetNeighborOnExtFace(graphP theGraph, int curVertex, int *pPrevLink);
 extern int _JoinBicomps(graphP theGraph);
@@ -1678,8 +1678,8 @@ int _RestoreReducedPath(graphP theGraph, K33SearchContext *context, int e)
     // Set the types of the newly added edges. In both cases, the first of the two
     // vertex parameters is known to be degree 2 because they are internal to the
     // path being restored, so this operation is constant time.
-    if (_SetEdgeType(theGraph, v, u) != OK ||
-        _SetEdgeType(theGraph, w, x) != OK)
+    if (_RestoreEdgeType(theGraph, v, u) != OK ||
+        _RestoreEdgeType(theGraph, w, x) != OK)
         return NOTOK;
 
     return OK;
@@ -1762,8 +1762,8 @@ int _RestoreAndOrientReducedPaths(graphP theGraph, K33SearchContext *context)
 
             /* Set the types of the newly added edges */
 
-            if (_SetEdgeType(theGraph, u, v) != OK ||
-                _SetEdgeType(theGraph, w, x) != OK)
+            if (_RestoreEdgeType(theGraph, u, v) != OK ||
+                _RestoreEdgeType(theGraph, w, x) != OK)
                 return NOTOK;
 
             /* We determine whether the reduction edge may be on the external face,
