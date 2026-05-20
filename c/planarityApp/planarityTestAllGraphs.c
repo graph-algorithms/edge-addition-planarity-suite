@@ -95,7 +95,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
     graphP origGraphRead = NULL;
     graphP graphForEmbedding = NULL;
     int embedFlags = 0, numOK = 0, numNONEMBEDDABLE = 0;
-    int order = 0, maxNumEdgesForOrder = 0;
+    int order = 0;
 
     G6ReadIteratorP theG6ReadIterator = NULL;
 
@@ -137,26 +137,6 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
     {
         gp_ErrorMessage("Unable to allocate or initialize graph for embedding "
                         "operation.\n");
-        g6_FreeReader((&theG6ReadIterator));
-        gp_Free(&origGraphRead);
-        gp_Free(&graphForEmbedding);
-        stats->errorFlag = TRUE;
-        return NOTOK;
-    }
-
-    maxNumEdgesForOrder = (order * (order - 1)) / 2;
-    // We have to set the maximum edge capacity (i.e. (N * (N - 1) / 2)) because
-    // some of the test files contain graphs with an edge count greater than the
-    // default of 3 * N.
-    // Additionally, we have to set the maximum edge capacity because otherwise
-    // gp_CopyGraph() will fail due to the destination graph (graphForEmbedding)
-    // having a greater edge capacity than the source graph (origGraphRead)
-    if (
-        gp_EnsureEdgeCapacity(origGraphRead, (order * (order - 1) / 2)) != OK ||
-        gp_EnsureEdgeCapacity(graphForEmbedding, maxNumEdgesForOrder) != OK)
-    {
-        gp_ErrorMessage("Unable to ensure sufficient edge capacity of the "
-                        "original graph read or the graph for embedding.\n");
         g6_FreeReader((&theG6ReadIterator));
         gp_Free(&origGraphRead);
         gp_Free(&graphForEmbedding);
