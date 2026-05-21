@@ -171,6 +171,16 @@ int gp_Detach_DrawPlanar(graphP theGraph)
 }
 
 /********************************************************************
+ gp_GetDrawPlanarExtensionIdentifier()
+ A private function that returns the DRAWPLANAR_ID.
+ ********************************************************************/
+
+int gp_GetDrawPlanarExtensionIdentifier()
+{
+    return DRAWPLANAR_ID;
+}
+
+/********************************************************************
  _DrawPlanar_ClearStructures()
  ********************************************************************/
 
@@ -362,15 +372,15 @@ int _DrawPlanar_EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity)
         return NOTOK;
 
     // Call the superclass function to make sure lower levels of parallel
-    // edge arrays can successfully meet the new capacity requirement 
+    // edge arrays can successfully meet the new capacity requirement
     if (context->functions.fpEnsureEdgeCapacity(theGraph, requiredEdgeCapacity) != OK)
         return NOTOK;
 
     // Save the current E so it can be freed once we replace it
     oldE = context->E;
 
-    // The superclass EnsureEdgeCapacity method succeeded, so the graph's 
-    // new edge capacity is already set, which means we the upper bound of 
+    // The superclass EnsureEdgeCapacity method succeeded, so the graph's
+    // new edge capacity is already set, which means we the upper bound of
     // the graph's edge storage gives the new parallel array size we need.
     newEsize = gp_UpperBoundEdgeStorage(theGraph);
 
