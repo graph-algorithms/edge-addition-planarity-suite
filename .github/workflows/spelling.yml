@@ -8,4 +8,4 @@ jobs:
       - uses: actions/checkout@v4
       - uses: codespell-project/actions-codespell@v2
         with:
-          skip: c/samples/
+          skip: c/samples
