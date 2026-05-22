@@ -429,32 +429,32 @@ int runSpecificGraphTests(char const *samplesDir)
     }
 
     // Run TestAllGraphs Tests
-    if (runTestAllGraphsTest("-p", "n8.mAll.g6") != OK)
+    if (runTestAllGraphsTest("-p", "n8.mALL.g6") != OK)
     {
         gp_ErrorMessage("Planarity test on all graphs failed.\n");
         retVal = NOTOK;
     }
-    if (runTestAllGraphsTest("-d", "n8.mAll.g6") != OK)
+    if (runTestAllGraphsTest("-d", "n8.mALL.g6") != OK)
     {
         gp_ErrorMessage("Planar graph drawing test on all graphs failed.\n");
         retVal = NOTOK;
     }
-    if (runTestAllGraphsTest("-o", "n8.mAll.g6") != OK)
+    if (runTestAllGraphsTest("-o", "n8.mALL.g6") != OK)
     {
         gp_ErrorMessage("Outerplanarity test on all graphs failed.\n");
         retVal = NOTOK;
     }
-    if (runTestAllGraphsTest("-2", "n8.mAll.g6") != OK)
+    if (runTestAllGraphsTest("-2", "n8.mALL.g6") != OK)
     {
         gp_ErrorMessage("K2,3 homeomorph search test on all graphs failed.\n");
         retVal = NOTOK;
     }
-    if (runTestAllGraphsTest("-3", "n8.mAll.g6") != OK)
+    if (runTestAllGraphsTest("-3", "n8.mALL.g6") != OK)
     {
         gp_ErrorMessage("K3,3 homeomorph search test on all graphs failed.\n");
         retVal = NOTOK;
     }
-    if (runTestAllGraphsTest("-4", "n8.mAll.g6") != OK)
+    if (runTestAllGraphsTest("-4", "n8.mALL.g6") != OK)
     {
         gp_ErrorMessage("K4 homeomorph search test on all graphs failed.\n");
         retVal = NOTOK;
