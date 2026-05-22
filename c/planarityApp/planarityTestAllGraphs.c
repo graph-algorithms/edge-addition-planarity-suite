@@ -251,7 +251,7 @@ int outputTestAllGraphsResults(char command, char modifier, testAllStatsP stats,
     int headerStrLen = 0, resultStrLen = 0;
     char *resultsStr = NULL;
 
-    if (outfileName == NULL && (pOutputStr == NULL || *pOutputStr == NULL))
+    if (outfileName == NULL && (pOutputStr == NULL || *pOutputStr != NULL))
     {
         gp_ErrorMessage("Invalid parameters: Must be able to output to file or memory.");
         return NOTOK;

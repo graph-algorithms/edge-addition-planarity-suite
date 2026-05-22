@@ -175,7 +175,7 @@ int gp_Detach_DrawPlanar(graphP theGraph)
  A private function that returns the DRAWPLANAR_ID.
  ********************************************************************/
 
-int gp_GetDrawPlanarExtensionIdentifier()
+int gp_GetDrawPlanarExtensionIdentifier(void)
 {
     return DRAWPLANAR_ID;
 }
