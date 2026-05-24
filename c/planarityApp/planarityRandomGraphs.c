@@ -135,7 +135,7 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
     // Seed the random number generator with "now". Do it after any prompting
     // to tie randomness to human process of answering the prompt.
     // Acceptable downcast of time_t to unsigned int (seeding benefits from the lower bits of now)
-    srand(time(NULL));
+    srand((unsigned int) time(NULL));
 
     // Select a counter update frequency that updates more frequently with larger graphs
     // and which is relatively prime with 10 so that all digits of the count will change
@@ -511,7 +511,7 @@ int RandomGraph(char const *const commandString, int extraEdges, int numVertices
         return NOTOK;
 
     // Acceptable downcast of time_t to unsigned int (seeding benefits from the lower bits of now)
-    srand(time(NULL));
+    srand((unsigned int) time(NULL));
 
     gp_Message("Creating the random graph...\n");
     platform_GetTime(start);

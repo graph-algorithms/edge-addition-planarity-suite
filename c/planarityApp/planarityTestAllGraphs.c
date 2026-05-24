@@ -95,21 +95,20 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
     graphP origGraphRead = NULL;
     graphP graphForEmbedding = NULL;
     int embedFlags = 0, numOK = 0, numNONEMBEDDABLE = 0;
-    int order = 0, maxNumEdgesForOrder = 0;
+    int order = 0;
 
     G6ReadIteratorP theG6ReadIterator = NULL;
 
     if (GetEmbedFlags(command, modifier, &embedFlags) != OK)
     {
-        gp_ErrorMessage("Unable to derive embedFlags from command and modifier "
-                        "characters.\n");
+        gp_ErrorMessage("Invalid command or modifier.\n");
         stats->errorFlag = TRUE;
         return NOTOK;
     }
 
     if ((origGraphRead = gp_New()) == NULL)
     {
-        gp_ErrorMessage("Unable to allocate graph.\n");
+        gp_ErrorMessage("Unable to allocate graph for reading.\n");
         stats->errorFlag = TRUE;
         return NOTOK;
     }
@@ -118,8 +117,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
         g6_NewReader((&theG6ReadIterator), origGraphRead) != OK ||
         g6_InitReaderWithFileName(theG6ReadIterator, infileName) != OK)
     {
-        gp_ErrorMessage("Unable to test all graphs due to failure to allocate or "
-                        "initialize G6ReadIterator.\n");
+        gp_ErrorMessage("Unable to allocate or initialize G6 read iterator.\n");
         gp_Free(&origGraphRead);
         g6_FreeReader((&theG6ReadIterator));
         stats->errorFlag = TRUE;
@@ -135,28 +133,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
         (graphForEmbedding = gp_New()) == NULL ||
         gp_InitGraph(graphForEmbedding, order) != OK)
     {
-        gp_ErrorMessage("Unable to allocate or initialize graph for embedding "
-                        "operation.\n");
-        g6_FreeReader((&theG6ReadIterator));
-        gp_Free(&origGraphRead);
-        gp_Free(&graphForEmbedding);
-        stats->errorFlag = TRUE;
-        return NOTOK;
-    }
-
-    maxNumEdgesForOrder = (order * (order - 1)) / 2;
-    // We have to set the maximum edge capacity (i.e. (N * (N - 1) / 2)) because
-    // some of the test files contain graphs with an edge count greater than the
-    // default of 3 * N.
-    // Additionally, we have to set the maximum edge capacity because otherwise
-    // gp_CopyGraph() will fail due to the destination graph (graphForEmbedding)
-    // having a greater edge capacity than the source graph (origGraphRead)
-    if (
-        gp_EnsureEdgeCapacity(origGraphRead, (order * (order - 1) / 2)) != OK ||
-        gp_EnsureEdgeCapacity(graphForEmbedding, maxNumEdgesForOrder) != OK)
-    {
-        gp_ErrorMessage("Unable to ensure sufficient edge capacity of the "
-                        "original graph read or the graph for embedding.\n");
+        gp_ErrorMessage("Unable initialize graph for embedding.\n");
         g6_FreeReader((&theG6ReadIterator));
         gp_Free(&origGraphRead);
         gp_Free(&graphForEmbedding);
@@ -167,8 +144,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
     if (ExtendGraph(origGraphRead, command) != OK ||
         ExtendGraph(graphForEmbedding, command) != OK)
     {
-        gp_ErrorMessage("Unable to extend graph to support requested graph "
-                        "embedding operation.");
+        gp_ErrorMessage("Unable to extend graph for embedding operation.\n");
         g6_FreeReader(&theG6ReadIterator);
         gp_Free(&origGraphRead);
         gp_Free(&graphForEmbedding);
@@ -182,8 +158,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
         {
             int numGraphsRead = 0;
             g6_GetNumGraphsRead(theG6ReadIterator, &numGraphsRead);
-            gp_ErrorMessage("Unable to read graph on line %d from .g6 read "
-                            "iterator.\n",
+            gp_ErrorMessage("Unable to read graph on line %d.\n",
                             numGraphsRead + 1);
             Result = NOTOK;
             break;
@@ -194,8 +169,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
 
         if (gp_CopyGraph(graphForEmbedding, origGraphRead) != OK)
         {
-            gp_ErrorMessage("Unable to copy graph read into graph for "
-                            "embedding.\n");
+            gp_ErrorMessage("Unable to copy graph.\n");
             Result = NOTOK;
             break;
         }
@@ -235,16 +209,14 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
             {
                 int numGraphsRead = 0;
                 g6_GetNumGraphsRead(theG6ReadIterator, &numGraphsRead);
-                gp_ErrorMessage("Error applying algorithm '%c' to graph on line "
-                                "%d.\n",
+                gp_ErrorMessage("Command '%c' error on graph on line %d.\n",
                                 command, numGraphsRead + 1);
             }
             else
             {
                 int numGraphsRead = 0;
                 g6_GetNumGraphsRead(theG6ReadIterator, &numGraphsRead);
-                gp_ErrorMessage("Error applying algorithm '%c' with modifier '%c' "
-                                "to graph on line %d.\n",
+                gp_ErrorMessage("Command '%c%c' error on graph on line %d.\n",
                                 command, modifier, numGraphsRead + 1);
             }
             Result = NOTOK;
@@ -279,7 +251,7 @@ int outputTestAllGraphsResults(char command, char modifier, testAllStatsP stats,
     int headerStrLen = 0, resultStrLen = 0;
     char *resultsStr = NULL;
 
-    if (outfileName == NULL && (pOutputStr == NULL || *pOutputStr == NULL))
+    if (outfileName == NULL && (pOutputStr == NULL || *pOutputStr != NULL))
     {
         gp_ErrorMessage("Invalid parameters: Must be able to output to file or memory.");
         return NOTOK;

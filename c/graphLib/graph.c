@@ -62,7 +62,7 @@ int _ClearAllVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x);
 int _SetAllVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x);
 
 int _ComputeEdgeRecordType(graphP theGraph, int a, int b, int edgeType);
-int _SetEdgeType(graphP theGraph, int u, int v);
+int _RestoreEdgeType(graphP theGraph, int u, int v);
 
 int _HideInternalEdges(graphP theGraph, int vertex);
 int _RestoreInternalEdges(graphP theGraph, int stackBottom);
@@ -306,7 +306,7 @@ void _InitEdges(graphP theGraph)
 
 #ifdef USE_1BASEDARRAYS
 #else
-    for (int e = gp_BeginEdgeStorage(theGraph); e != gp_EndEdgeStorage(theGraph); ++e)
+    for (int e = gp_LowerBoundEdgeStorage(theGraph); e < gp_UpperBoundEdgeStorage(theGraph); ++e)
         gp_InitEdgeFlags(theGraph, e);
 #endif
 }
@@ -2754,7 +2754,7 @@ int _ComputeEdgeRecordType(graphP theGraph, int a, int b, int edgeType)
 }
 
 /****************************************************************************
- _SetEdgeType()
+ _RestoreEdgeType()
 
  When we are restoring an edge, we must restore its type (tree edge or cycle edge).
  We can deduce what the type was based on other information in the graph.
@@ -2763,7 +2763,7 @@ int _ComputeEdgeRecordType(graphP theGraph, int a, int b, int edgeType)
  constant time if u is known to have a degree bound by a constant.
  ****************************************************************************/
 
-int _SetEdgeType(graphP theGraph, int u, int v)
+int _RestoreEdgeType(graphP theGraph, int u, int v)
 {
     int e, eTwin, u_orig, v_orig;
 
