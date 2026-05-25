@@ -23,7 +23,9 @@ int callRandomNonplanarGraph(int argc, char *argv[]);
 int callTestAllGraphs(int argc, char *argv[]);
 int callTransformGraph(int argc, char *argv[]);
 
-int runSpecificGraphTests(char const *);
+int runSpecificGraphTests(void);
+int runGraphTransformationTests(void);
+int runTestAllGraphsTests(void);
 int runSpecificGraphTest(char const *command, char const *infileName, int inputInMemFlag);
 int runGraphTransformationTest(char const *command, char const *infileName, int inputInMemFlag);
 int runTestAllGraphsTest(char const *commandString, char const *infileName);
@@ -170,6 +172,8 @@ int runQuickRegressionTests(int argc, char *argv[])
 {
     char const *samplesDir = "samples";
     int samplesDirArgLocation = 2;
+    int retVal = OK;
+    char origDir[2 * MAXLINE + 1];
 
     // Skip optional -q quiet mode command-line parameter, if present
     if (argc > samplesDirArgLocation && strcmp(argv[samplesDirArgLocation], "-q") == 0)
@@ -178,15 +182,6 @@ int runQuickRegressionTests(int argc, char *argv[])
     // Accept overriding sample directory command-line parameter, if present
     if (argc > samplesDirArgLocation)
         samplesDir = argv[samplesDirArgLocation];
-
-    return runSpecificGraphTests(samplesDir);
-}
-
-int runSpecificGraphTests(char const *samplesDir)
-{
-    int retVal = OK;
-
-    char origDir[2 * MAXLINE + 1];
 
     memset(origDir, '\0', (2 * MAXLINE + 1));
 
@@ -202,6 +197,7 @@ int runSpecificGraphTests(char const *samplesDir)
             {
                 // Give success result, but Warn if no samples (except no warning if in quiet mode)
                 gp_Message("WARNING: Unable to change to samples directory to run tests on samples.\n");
+                chdir(origDir);
 
                 return OK;
             }
@@ -217,6 +213,29 @@ int runSpecificGraphTests(char const *samplesDir)
             return OK;
         }
     }
+
+    if (runSpecificGraphTests() != OK)
+        retVal = NOTOK;
+    else if (runGraphTransformationTests() != OK)
+        retVal = NOTOK;
+    else if (runTestAllGraphsTests() != OK)
+        retVal = NOTOK;
+
+    // All done.
+    if (retVal == OK)
+        gp_Message("============\nAll tests have succeeded.\n");
+    else
+        gp_Message("============\nOne or more tests FAILED.\n");
+
+    chdir(origDir);
+    FlushConsole(stdout);
+
+    return retVal;
+}
+
+int runSpecificGraphTests(void)
+{
+    int retVal = OK;
 
 #ifdef USE_1BASEDARRAYS
     gp_Message("\n\tStarting 1-based Array Index Tests\n\n");
@@ -319,6 +338,13 @@ int runSpecificGraphTests(char const *samplesDir)
         gp_ErrorMessage("K_4 search on Petersen.0-based.txt failed.\n");
         retVal = NOTOK;
     }
+
+    return retVal;
+}
+
+int runGraphTransformationTests(void)
+{
+    int retVal = OK;
 
     /*
         GRAPH TRANSFORMATION TESTS
@@ -428,6 +454,13 @@ int runSpecificGraphTests(char const *samplesDir)
         retVal = NOTOK;
     }
 
+    return retVal;
+}
+
+int runTestAllGraphsTests(void)
+{
+    int retVal = OK;
+
     // Run TestAllGraphs Tests
     if (runTestAllGraphsTest("-p", "n8.mALL.g6") != OK)
     {
@@ -459,15 +492,6 @@ int runSpecificGraphTests(char const *samplesDir)
         gp_ErrorMessage("K4 homeomorph search test on all graphs failed.\n");
         retVal = NOTOK;
     }
-
-    // All done.
-    if (retVal == OK)
-        gp_Message("============\nAll tests have succeeded.\n");
-    else
-        gp_Message("============\nOne or more tests FAILED.\n");
-
-    chdir(origDir);
-    FlushConsole(stdout);
 
     return retVal;
 }
