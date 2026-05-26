@@ -47,7 +47,7 @@ int _DrawPlanar_WritePostprocess(graphP theGraph, char **pExtraData);
 
 /* Forward declarations of functions used by the extension system */
 
-void *_DrawPlanar_DupContext(void *pContext, void *theGraph);
+int _DrawPlanar_CopyData(void *dstContext, void *srcContext);
 void _DrawPlanar_FreeContext(void *);
 
 /****************************************************************************
@@ -133,7 +133,7 @@ int gp_ExtendWith_DrawPlanar(graphP theGraph)
     // Store the Draw context, including the data structure and the
     // function pointers, as an extension of the graph
     if (gp_AddExtension(theGraph, &DRAWPLANAR_ID, (void *)context,
-                        _DrawPlanar_DupContext, _DrawPlanar_FreeContext,
+                        _DrawPlanar_CopyData, _DrawPlanar_FreeContext,
                         &context->functions) != OK)
     {
         _DrawPlanar_FreeContext(context);
@@ -259,9 +259,49 @@ int _DrawPlanar_InitStructures(DrawPlanarContext *context)
 }
 
 /********************************************************************
- _DrawPlanar_DupContext()
+ _DrawPlanar_CopyData()
  ********************************************************************/
+int _DrawPlanar_CopyData(void *dstContext, void *srcContext)
+{
+    DrawPlanarContext *dstDrawPlanarContext = (DrawPlanarContext *)dstContext;
+    DrawPlanarContext *srcDrawPlanarContext = (DrawPlanarContext *)srcContext;
+    int dstEdgeStorage, srcEdgeStorage;
 
+    if (dstContext == NULL)
+        return NOTOK;
+
+    // If the srcContext is NULL, then the caller wants the data
+    // structures in the dstContext to be reset/reinitialized
+
+    if (srcContext == NULL)
+        return _DrawPlanar_InitStructures(dstDrawPlanarContext);
+
+    // ELSE: If there is also a srcContext, then we copy data from it
+    dstEdgeStorage = gp_UpperBoundEdgeStorage(dstDrawPlanarContext->theGraph);
+    srcEdgeStorage = gp_UpperBoundEdgeStorage(srcDrawPlanarContext->theGraph);
+
+    // The caller (ultimately gp_CopyGraph()) is responsible for making sure that the
+    // destination graph has enough edge capacity to receive the source graph content
+    if (dstEdgeStorage < srcEdgeStorage)
+        return NOTOK;
+
+    // If the destination graph has more edge capacity, then we make sure that the
+    // extra edge capacity is reinitialized
+    if (dstEdgeStorage > srcEdgeStorage)
+    {
+        memset(dstDrawPlanarContext->E, NIL_CHAR, gp_UpperBoundEdgeStorage(dstDrawPlanarContext->theGraph) * sizeof(DrawPlanar_EdgeRec));
+    }
+
+    memcpy(dstDrawPlanarContext->E, srcDrawPlanarContext->E, gp_UpperBoundEdgeStorage(dstDrawPlanarContext->theGraph) * sizeof(DrawPlanar_EdgeRec));
+
+    memcpy(dstDrawPlanarContext->VI, srcDrawPlanarContext->VI, gp_UpperBoundVertices(dstDrawPlanarContext->theGraph) * sizeof(DrawPlanar_VertexInfo));
+
+    return OK;
+}
+
+/********************************************************************
+ _DrawPlanar_DupContext()
+// Keeping this around as a comment for now
 void *_DrawPlanar_DupContext(void *pContext, void *theGraph)
 {
     DrawPlanarContext *context = (DrawPlanarContext *)pContext;
@@ -294,6 +334,7 @@ void *_DrawPlanar_DupContext(void *pContext, void *theGraph)
 
     return newContext;
 }
+ ********************************************************************/
 
 /********************************************************************
  _DrawPlanar_FreeContext()
