@@ -78,7 +78,8 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
     }
 
     theGraph = MakeGraph(SizeOfGraphs, command);
-    origGraph = MakeGraph(SizeOfGraphs, command);
+    // The origGraph no longer needs extensions, so we just use a null terminator for the command
+    origGraph = MakeGraph(SizeOfGraphs, '\0');
     if (theGraph == NULL || origGraph == NULL)
     {
         gp_ErrorMessage("Unable to allocate and initialize graph datastructures "
@@ -446,10 +447,13 @@ graphP MakeGraph(int Size, char command)
         return NULL;
     }
 
-    if (ExtendGraph(theGraph, command) != OK)
+    if (command != '\0')
     {
-        gp_ErrorMessage("Unable to extend graph based on command '%c'\n", command);
-        gp_Free(&theGraph);
+        if (ExtendGraph(theGraph, command) != OK)
+        {
+            gp_ErrorMessage("Unable to extend graph based on command '%c'\n", command);
+            gp_Free(&theGraph);
+        }
     }
 
     return theGraph;

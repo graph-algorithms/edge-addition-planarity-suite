@@ -499,7 +499,7 @@ int gp_CopyExtensions(graphP dstGraph, graphP srcGraph)
     while (dstExtension != NULL)
     {
         srcExtension = srcExtensionIDMap[dstExtension->moduleID];
-        if (dstExtension->copyData(dstExtension->context, srcExtension->context) != OK)
+        if (dstExtension->copyData(dstExtension->context, srcExtension ? srcExtension->context : NULL) != OK)
             return NOTOK;
 
         dstExtension = (graphExtensionP)dstExtension->next;

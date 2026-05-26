@@ -141,8 +141,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
         return NOTOK;
     }
 
-    if (ExtendGraph(origGraphRead, command) != OK ||
-        ExtendGraph(graphForEmbedding, command) != OK)
+    if (ExtendGraph(graphForEmbedding, command) != OK)
     {
         gp_ErrorMessage("Unable to extend graph for embedding operation.\n");
         g6_FreeReader(&theG6ReadIterator);
