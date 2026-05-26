@@ -300,43 +300,6 @@ int _DrawPlanar_CopyData(void *dstContext, void *srcContext)
 }
 
 /********************************************************************
- _DrawPlanar_DupContext()
-// Keeping this around as a comment for now
-void *_DrawPlanar_DupContext(void *pContext, void *theGraph)
-{
-    DrawPlanarContext *context = (DrawPlanarContext *)pContext;
-    DrawPlanarContext *newContext = (DrawPlanarContext *)malloc(sizeof(DrawPlanarContext));
-
-    if (newContext != NULL)
-    {
-        int VIsize = gp_UpperBoundVertices((graphP)theGraph);
-        int Esize = gp_UpperBoundEdgeStorage((graphP)theGraph);
-
-        *newContext = *context;
-
-        newContext->theGraph = (graphP)theGraph;
-
-        newContext->initialized = 0;
-        _DrawPlanar_ClearStructures(newContext);
-        if (((graphP)theGraph)->N > 0)
-        {
-            if (_DrawPlanar_CreateStructures(newContext) != OK)
-            {
-                _DrawPlanar_FreeContext(newContext);
-                return NULL;
-            }
-
-            // Initialize custom data structures by copying
-            memcpy(newContext->E, context->E, Esize * sizeof(DrawPlanar_EdgeRec));
-            memcpy(newContext->VI, context->VI, VIsize * sizeof(DrawPlanar_VertexInfo));
-        }
-    }
-
-    return newContext;
-}
- ********************************************************************/
-
-/********************************************************************
  _DrawPlanar_FreeContext()
  ********************************************************************/
 

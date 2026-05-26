@@ -1002,20 +1002,6 @@ int gp_CopyGraph(graphP dstGraph, graphP srcGraph)
         return NOTOK;
     }
 
-    // If the dstGraph has a larger edge capacity than the srcGraph
-    // then we report failure because the code below only gives valid
-    // values to edge records up to the edge capacity of the srcGraph
-    // It would be possible to invoke _InitEdgeRec() on the extra
-    // edge records in dstGraph, but we do not support this
-    // currently because we would need to have and currently do
-    // not have a way to reinitialize the edge record extensions
-    // (gp_CopyExtensions() only copies the content in extension
-    // content up to the size of data structures in srcGraph).
-    if (dstGraph->edgeCapacity > srcGraph->edgeCapacity)
-    {
-        return NOTOK;
-    }
-
     // Copy the vertices (non-virtual only).  Augmentations to vertices created
     // by extensions are copied below by gp_CopyExtensions()
     for (v = gp_LowerBoundVertices(srcGraph); v < gp_UpperBoundVertices(srcGraph); ++v)
@@ -1042,6 +1028,15 @@ int gp_CopyGraph(graphP dstGraph, graphP srcGraph)
     // created by extensions are copied below by gp_CopyExtensions()
     for (e = gp_LowerBoundEdgeStorage(srcGraph); e < gp_UpperBoundEdgeStorage(srcGraph); e++)
         _gp_CopyEdgeRec(dstGraph, e, srcGraph, e);
+
+    // If the dstGraph has more edge storage than the srcGraph, then we clear the extra 
+    // base edgeRec structures. In gp_CopyExtensions(), the various extensions' copyData()
+    // functions are expected to clear out any extension-specific extra edgeRec structures
+    if (gp_UpperBoundEdgeStorage(dstGraph) > gp_UpperBoundEdgeStorage(srcGraph))
+    {
+        for (e = gp_UpperBoundEdgeStorage(srcGraph); e < gp_UpperBoundEdgeStorage(dstGraph); e++)
+            _InitEdgeRec(dstGraph, e);
+    }
 
     // Give the dstGraph the same size and intrinsic properties
     dstGraph->N = gp_GetN(srcGraph);
