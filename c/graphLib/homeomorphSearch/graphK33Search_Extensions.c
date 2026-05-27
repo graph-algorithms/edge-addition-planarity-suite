@@ -49,7 +49,7 @@ int _K33Search_EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity);
 
 /* Forward declarations of functions used by the extension system */
 
-void *_K33Search_DupContext(void *pContext, void *theGraph);
+int _K33Search_CopyData(void *dstContext, void *srcContext);
 void _K33Search_FreeContext(void *);
 
 /****************************************************************************
@@ -122,7 +122,7 @@ int gp_ExtendWith_K33Search(graphP theGraph)
     // Store the K33 search context, including the data structure and the
     // function pointers, as an extension of the graph
     if (gp_AddExtension(theGraph, &K33SEARCH_ID, (void *)context,
-                        _K33Search_DupContext, _K33Search_FreeContext,
+                        _K33Search_CopyData, _K33Search_FreeContext,
                         &context->functions) != OK)
     {
         _K33Search_FreeContext(context);
@@ -240,6 +240,47 @@ int _K33Search_InitStructures(K33SearchContext *context)
 }
 
 /********************************************************************
+ _K33Search_CopyData()
+ ********************************************************************/
+int _K33Search_CopyData(void *dstContext, void *srcContext)
+{
+    K33SearchContext *dstK33Context = (K33SearchContext *)dstContext;
+    K33SearchContext *srcK33Context = (K33SearchContext *)srcContext;
+    int dstEdgeStorage, srcEdgeStorage;
+
+    if (dstContext == NULL)
+        return NOTOK;
+
+    // If the srcContext is NULL, then the caller wants the data
+    // structures in the dstContext to be reset/reinitialized
+
+    if (srcContext == NULL)
+        return _K33Search_InitStructures(dstK33Context);
+
+    // ELSE: If there is also a srcContext, then we copy data from it
+    dstEdgeStorage = gp_UpperBoundEdgeStorage(dstK33Context->theGraph);
+    srcEdgeStorage = gp_UpperBoundEdgeStorage(srcK33Context->theGraph);
+
+    // The caller (ultimately gp_CopyGraph()) is responsible for making sure that the
+    // destination graph has enough edge capacity to receive the source graph content
+    if (dstEdgeStorage < srcEdgeStorage)
+        return NOTOK;
+
+    // If the destination graph has more edge capacity, then we make sure that the
+    // extra edge capacity is reinitialized
+    if (dstEdgeStorage > srcEdgeStorage)
+    {
+        memset(dstK33Context->E, NIL_CHAR, gp_UpperBoundEdgeStorage(dstK33Context->theGraph) * sizeof(K33Search_EdgeRec));
+    }
+
+    memcpy(dstK33Context->E, srcK33Context->E, gp_UpperBoundEdgeStorage(dstK33Context->theGraph) * sizeof(K33Search_EdgeRec));
+
+    memcpy(dstK33Context->VI, srcK33Context->VI, gp_UpperBoundVertices(dstK33Context->theGraph) * sizeof(K33Search_VertexInfo));
+
+    return OK;
+}
+
+/********************************************************************
  ********************************************************************/
 
 int _K33Search_InitGraph(graphP theGraph, int N)
@@ -306,15 +347,15 @@ int _K33Search_EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity)
         return NOTOK;
 
     // Call the superclass function to make sure lower levels of parallel
-    // edge arrays can successfully meet the new capacity requirement 
+    // edge arrays can successfully meet the new capacity requirement
     if (context->functions.fpEnsureEdgeCapacity(theGraph, requiredEdgeCapacity) != OK)
         return NOTOK;
 
     // Save the current E so it can be freed once we replace it
     oldE = context->E;
 
-    // The superclass EnsureEdgeCapacity method succeeded, so the graph's 
-    // new edge capacity is already set, which means we the upper bound of 
+    // The superclass EnsureEdgeCapacity method succeeded, so the graph's
+    // new edge capacity is already set, which means we the upper bound of
     // the graph's edge storage gives the new parallel array size we need.
     newEsize = gp_UpperBoundEdgeStorage(theGraph);
 
@@ -334,45 +375,6 @@ int _K33Search_EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity)
     free(oldE);
 
     return OK;
-}
-
-/********************************************************************
- _K33Search_DupContext()
- ********************************************************************/
-
-void *_K33Search_DupContext(void *pContext, void *theGraph)
-{
-    K33SearchContext *context = (K33SearchContext *)pContext;
-    K33SearchContext *newContext = (K33SearchContext *)malloc(sizeof(K33SearchContext));
-
-    if (newContext != NULL)
-    {
-        int VIsize = gp_UpperBoundVertices((graphP)theGraph);
-        int Esize = gp_UpperBoundEdgeStorage((graphP)theGraph);
-
-        *newContext = *context;
-
-        newContext->theGraph = (graphP)theGraph;
-
-        newContext->initialized = 0;
-        _K33Search_ClearStructures(newContext);
-        if (((graphP)theGraph)->N > 0)
-        {
-            if (_K33Search_CreateStructures(newContext) != OK)
-            {
-                _K33Search_FreeContext(newContext);
-                newContext = NULL;
-
-                return NULL;
-            }
-
-            memcpy(newContext->E, context->E, Esize * sizeof(K33Search_EdgeRec));
-            memcpy(newContext->VI, context->VI, VIsize * sizeof(K33Search_VertexInfo));
-            LCCopy(newContext->separatedDFSChildLists, context->separatedDFSChildLists);
-        }
-    }
-
-    return newContext;
 }
 
 /********************************************************************
