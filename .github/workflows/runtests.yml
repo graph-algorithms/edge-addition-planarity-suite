@@ -22,7 +22,7 @@ jobs:
       matrix:
         compiler: [clang, gcc]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: test
         run: |
           echo ${{ github.event_name }}
@@ -43,7 +43,7 @@ jobs:
     env:
       CC: gcc
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Configure . . .
         run: |
           mkdir -p m4 
