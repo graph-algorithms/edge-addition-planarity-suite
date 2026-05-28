@@ -16,7 +16,7 @@ jobs:
     name: Ubuntu-aarch64
     runs-on: ubuntu-24.04-arm
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: uraimo/run-on-arch-action@v3
         with:
           arch: aarch64
@@ -35,7 +35,7 @@ jobs:
         shell: alpine.sh {0}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: jirutka/setup-alpine@v1
         with:
           branch: v3.15
@@ -57,7 +57,7 @@ jobs:
     name: Ubuntu-arm
     runs-on: ubuntu-24.04-arm
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install autotools etc . . .
         run: sudo apt-get install autoconf automake libtool
       - name: Configure . . .
@@ -72,7 +72,7 @@ jobs:
     container:
       image: debian:latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install autotools etc . . .
         run: apt update && apt -y upgrade && apt install -y make autoconf automake libtool
       - name: Configure . . .
@@ -91,7 +91,7 @@ jobs:
     steps:
       - run: git config --global core.autocrlf input
         shell: pwsh -command ". '{0}'".
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: cygwin/cygwin-install-action@v6
         with:
           packages: gcc-core,automake,libtool,autoconf
@@ -108,7 +108,7 @@ jobs:
     env:
       CC: clang
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install dependencies . . .
         run: brew install autoconf automake libtool
       - name: Clang version . . .
@@ -131,7 +131,7 @@ jobs:
       matrix:
         arch: [x64, x86, x86_amd64, amd64_x86]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Setup MSVC Developer Command Prompt
         uses: TheMrMilchmann/setup-msvc-dev@v4.0.0
         with:
@@ -168,7 +168,7 @@ jobs:
           update: true
           msystem: ${{ matrix.sys }}
           pacboy: toolchain autotools
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Configure . . .
         run: autoreconf -if && ./configure
       - name: Build . . .
@@ -187,7 +187,7 @@ jobs:
           update: true
           msystem: CLANGARM64
           pacboy: toolchain autotools
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Configure . . .
         run: autoreconf -if && ./configure
       - name: Build . . .
