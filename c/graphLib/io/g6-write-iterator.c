@@ -322,7 +322,7 @@ int g6_InitWriterWithFileName(G6WriteIteratorP theG6WriteIterator, char *outputF
     if ((outputContainer = sf_NewOutputContainer(NULL, outputFileName)) == NULL)
     {
         gp_ErrorMessage(
-            "Unable to initialize writer with filename, as we failed to "
+            "Unable to initialize writer with file name, as we failed to "
             "allocate the outputContainer.\n");
         return NOTOK;
     }
@@ -652,7 +652,7 @@ int _g6_WriteGraphToFile(graphP theGraph, char *g6OutputFileName)
     if (g6OutputFileName == NULL || strlen(g6OutputFileName) == 0)
     {
         gp_ErrorMessage(
-            "Unable to write graph to file, as output filename supplied is "
+            "Unable to write graph to file, as output file name supplied is "
             "NULL or empty.\n");
         return NOTOK;
     }

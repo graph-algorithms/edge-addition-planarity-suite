@@ -219,7 +219,7 @@ int TransformGraphMenu(void)
     fileNameFormat = (char *)malloc((strlen(fileNameFormatFormat) + numCharsToReprFILENAMEMAXLENGTH + 1) * sizeof(char));
     if (fileNameFormat == NULL)
     {
-        gp_ErrorMessage("Unable to allocate memory for filename format string.\n");
+        gp_ErrorMessage("Unable to allocate memory for file name format string.\n");
 
         return NOTOK;
     }
@@ -231,10 +231,10 @@ int TransformGraphMenu(void)
 
     while (1)
     {
-        gp_Message("Enter input filename:\n");
+        gp_Message("Enter input file name:\n");
         if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
         {
-            gp_ErrorMessage("Unable to read input filename from stdin.\n");
+            gp_ErrorMessage("Unable to read input file name from stdin.\n");
 
             Result = NOTOK;
 
@@ -246,7 +246,7 @@ int TransformGraphMenu(void)
         if (strlen(lineBuff) == 0 || strlen(lineBuff) > FILENAMEMAXLENGTH ||
             sscanf(lineBuff, fileNameFormat, infileName) != 1 ||
             strlen(infileName) == 0)
-            gp_ErrorMessage("Invalid input filename.\n");
+            gp_ErrorMessage("Invalid input file name.\n");
         else if (strncmp(infileName, "stdin", strlen("stdin")) == 0)
         {
             gp_ErrorMessage("\n\tPlease choose an input file path: stdin not supported from menu.\n\n");
@@ -261,10 +261,10 @@ int TransformGraphMenu(void)
     {
         while (1)
         {
-            gp_Message("Enter output filename, or type \"stdout\" to output to console:\n");
+            gp_Message("Enter output file name, or type \"stdout\" to output to console:\n");
             if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
             {
-                gp_ErrorMessage("Unable to read output filename from stdin.\n");
+                gp_ErrorMessage("Unable to read output file name from stdin.\n");
 
                 Result = NOTOK;
 
@@ -276,7 +276,7 @@ int TransformGraphMenu(void)
             if (strlen(lineBuff) == 0 || strlen(lineBuff) > FILENAMEMAXLENGTH ||
                 sscanf(lineBuff, fileNameFormat, outfileName) != 1 ||
                 strlen(outfileName) == 0)
-                gp_ErrorMessage("Invalid output filename.\n");
+                gp_ErrorMessage("Invalid output file name.\n");
             else
                 break;
 #pragma GCC diagnostic pop
@@ -386,7 +386,7 @@ int TestAllGraphsMenu(void)
     fileNameFormat = (char *)malloc((strlen(fileNameFormatFormat) + numCharsToReprFILENAMEMAXLENGTH + 1) * sizeof(char));
     if (fileNameFormat == NULL)
     {
-        gp_ErrorMessage("Unable to allocate memory for filename format string.\n");
+        gp_ErrorMessage("Unable to allocate memory for file name format string.\n");
 
         if (commandStringFormat != NULL)
         {
@@ -403,10 +403,10 @@ int TestAllGraphsMenu(void)
 
     while (1)
     {
-        gp_Message("Enter input filename:\n");
+        gp_Message("Enter input file name:\n");
         if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
         {
-            gp_ErrorMessage("Unable to read input filename from stdin.\n");
+            gp_ErrorMessage("Unable to read input file name from stdin.\n");
 
             Result = NOTOK;
 
@@ -418,7 +418,7 @@ int TestAllGraphsMenu(void)
         if (strlen(lineBuff) == 0 || strlen(lineBuff) > FILENAMEMAXLENGTH ||
             sscanf(lineBuff, fileNameFormat, infileName) != 1 ||
             strlen(infileName) == 0)
-            gp_ErrorMessage("Invalid input filename.\n");
+            gp_ErrorMessage("Invalid input file name.\n");
         else if (strncmp(infileName, "stdin", strlen("stdin")) == 0)
         {
             gp_ErrorMessage("\n\tPlease choose an input file path: stdin not supported from menu.\n\n");
@@ -433,10 +433,10 @@ int TestAllGraphsMenu(void)
     {
         while (1)
         {
-            gp_Message("Enter output filename, or type \"stdout\" to output to console:\n");
+            gp_Message("Enter output file name, or type \"stdout\" to output to console:\n");
             if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
             {
-                gp_ErrorMessage("Unable to read output filename from stdin.\n");
+                gp_ErrorMessage("Unable to read output file name from stdin.\n");
 
                 Result = NOTOK;
 
@@ -448,7 +448,7 @@ int TestAllGraphsMenu(void)
             if (strlen(lineBuff) == 0 || strlen(lineBuff) > FILENAMEMAXLENGTH ||
                 sscanf(lineBuff, fileNameFormat, outfileName) != 1 ||
                 strlen(outfileName) == 0)
-                gp_ErrorMessage("Invalid output filename.\n");
+                gp_ErrorMessage("Invalid output file name.\n");
             else
                 break;
 #pragma GCC diagnostic pop

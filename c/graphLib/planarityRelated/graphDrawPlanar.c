@@ -919,7 +919,7 @@ int gp_DrawPlanar_RenderToString(graphP theEmbedding, char **pRenditionString)
 
  Creates a rendition of the planar graph visibility representation
  as a string, then dumps the string to the file.
- theFileName - can be "stdout", "stderr" or a file system filename
+ theFileName - can be "stdout", "stderr" or a file system file name
 
  Returns NOTOK for any error, OK otherwise.
  ********************************************************************/

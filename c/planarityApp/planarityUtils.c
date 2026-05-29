@@ -218,25 +218,25 @@ void FlushConsole(FILE *f)
 /****************************************************************************
  ****************************************************************************/
 
-void SaveAsciiGraph(graphP theGraph, char *filename)
+void SaveAsciiGraph(graphP theGraph, char *fileName)
 {
     int vertexLabelFix, e;
-    FILE *outfile = fopen(filename, WRITETEXT);
+    FILE *outfile = fopen(fileName, WRITETEXT);
 
-    // The filename may specify a directory that doesn't exist
+    // The fileName may specify a directory that doesn't exist
     if (outfile == NULL)
     {
         gp_ErrorMessage("Failed to write to \"%.*s\"\nMake the directory if not "
                         "present\n",
-                        FILENAME_MAX, filename);
+                        FILENAME_MAX, fileName);
         return;
     }
 
-    // If filename includes path elements, remove them before writing the file's name to the file
-    if (strrchr(filename, FILE_DELIMITER))
-        filename = strrchr(filename, FILE_DELIMITER) + 1;
+    // If fileName includes path elements, remove them before writing the file's name to the file
+    if (strrchr(fileName, FILE_DELIMITER))
+        fileName = strrchr(fileName, FILE_DELIMITER) + 1;
 
-    fprintf(outfile, "%s\n", filename);
+    fprintf(outfile, "%s\n", fileName);
 
     // This edge list file format uses 1-based vertex numbering, and the current code
     // internally uses 1-based indexing by default, so this vertex label 'fix' adds zero
@@ -302,7 +302,7 @@ char *ReadTextFileIntoString(char const *infileName)
 /****************************************************************************
  * TextFileMatchesString()
  *
- * Compares the text file content from the file named 'theFilename' with
+ * Compares the text file content from the file named 'theFileName' with
  * the content of 'theString'.
  *
  * Textual equality is measured as content equality except for suppressing
@@ -311,14 +311,14 @@ char *ReadTextFileIntoString(char const *infileName)
  * Returns TRUE if the contents are textually equal, FALSE otherwise
  ****************************************************************************/
 
-int TextFileMatchesString(char const *theFilename, char const *theString)
+int TextFileMatchesString(char const *theFileName, char const *theString)
 {
     int Result = TRUE;
 
     FILE *infile = NULL;
 
-    if (theFilename != NULL)
-        infile = fopen(theFilename, "r");
+    if (theFileName != NULL)
+        infile = fopen(theFileName, "r");
 
     if (infile == NULL || theString == NULL)
         Result = FALSE;
@@ -771,7 +771,7 @@ int ExtendGraph(graphP theGraph, char command)
 }
 
 /****************************************************************************
- A string used to construct input and output filenames.
+ A string used to construct input and output file names.
 
  The SUFFIXMAXLENGTH is 32 to accommodate ".out.txt" + ".render.txt" + ".test.txt"
  ****************************************************************************/
@@ -779,14 +779,14 @@ int ExtendGraph(graphP theGraph, char command)
 char theFileName[FILENAMEMAXLENGTH + 1 + ALGORITHMNAMEMAXLENGTH + 1 + SUFFIXMAXLENGTH + 1];
 
 /****************************************************************************
- ConstructInputFilename()
+ ConstructInputFileName()
  Returns a string not owned by the caller (do not free string).
  String contains infileName content if infileName is non-NULL.
  If infileName is NULL, then the user is asked to supply a name.
  Returns NULL on error, or a non-NULL string on success.
  ****************************************************************************/
 
-char *ConstructInputFilename(char const *infileName)
+char *ConstructInputFileName(char const *infileName)
 {
     int Result = OK;
 
@@ -800,15 +800,13 @@ char *ConstructInputFilename(char const *infileName)
     if (GetNumCharsToReprInt(FILENAMEMAXLENGTH, &numCharsToReprFILENAMEMAXLENGTH) != OK)
     {
         gp_ErrorMessage("Unable to determine number of characters required to represent FILENAMEMAXLENGTH.\n");
-
         return NULL;
     }
 
     fileNameFormat = (char *)malloc((strlen(fileNameFormatFormat) + numCharsToReprFILENAMEMAXLENGTH + 1) * sizeof(char));
     if (fileNameFormat == NULL)
     {
-        gp_ErrorMessage("Unable to allocate memory for filename format string.\n");
-
+        gp_ErrorMessage("Unable to allocate memory for file name format string.\n");
         return NULL;
     }
 
@@ -824,7 +822,6 @@ char *ConstructInputFilename(char const *infileName)
             if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
             {
                 gp_ErrorMessage("Unable to read graph file name from stdin.\n");
-
                 Result = NOTOK;
 
                 break;
@@ -834,7 +831,7 @@ char *ConstructInputFilename(char const *infileName)
 #pragma GCC diagnostic ignored "-Wformat-nonliteral"
             if (strlen(lineBuff) == 0 || strlen(lineBuff) > FILENAMEMAXLENGTH ||
                 sscanf(lineBuff, fileNameFormat, theFileName) != 1)
-                gp_ErrorMessage("Invalid input filename.\n");
+                gp_ErrorMessage("Invalid input file name.\n");
             else
             {
                 if (strncmp(theFileName, "stdin", strlen("stdin")) != 0 && !strchr(theFileName, '.'))
@@ -843,7 +840,6 @@ char *ConstructInputFilename(char const *infileName)
                     if (strcat(theFileName, ".txt") == NULL)
                     {
                         gp_ErrorMessage("Appending \".txt\" extension to theFileName using strcat() failed.\n");
-
                         Result = NOTOK;
                     }
                 }
@@ -856,25 +852,18 @@ char *ConstructInputFilename(char const *infileName)
     {
         if (strlen(infileName) > FILENAMEMAXLENGTH)
         {
-            gp_ErrorMessage("Filename is too long.\n");
-
+            gp_ErrorMessage("File name is too long.\n");
             Result = NOTOK;
         }
         else if (strlen(infileName) == 0)
         {
-            gp_ErrorMessage("Filename is empty.\n");
-
+            gp_ErrorMessage("File name is empty.\n");
             Result = NOTOK;
         }
 
         if (Result == OK)
         {
-            if (strcpy(theFileName, infileName) == NULL)
-            {
-                gp_ErrorMessage("Copying infileName into theFileName using strcpy() failed.\n");
-
-                Result = NOTOK;
-            }
+            strcpy(theFileName, infileName);
         }
     }
 
@@ -888,10 +877,10 @@ char *ConstructInputFilename(char const *infileName)
 }
 
 /****************************************************************************
- * ConstructPrimaryOutputFilename()
+ * ConstructPrimaryOutputFileName()
  *
  * Returns a string not owned by the caller (do not free string).
- * Reuses the same memory space as ConstructInputFilename().
+ * Reuses the same memory space as ConstructInputFileName().
  * If outfileName is non-NULL, then the result string contains its content.
  * If outfileName is NULL, then the infileName and the command's algorithm name
  * are used to construct a string.
@@ -899,25 +888,25 @@ char *ConstructInputFilename(char const *infileName)
  * Returns non-NULL string
  ****************************************************************************/
 
-char *ConstructPrimaryOutputFilename(char const *infileName, char const *outfileName, char command)
+char *ConstructPrimaryOutputFileName(char const *infileName, char const *outfileName, char command)
 {
     char const *algorithmName = GetAlgorithmName(command);
 
     if (outfileName == NULL)
     {
-        // The output filename is based on the input filename
+        // The output file name is based on the input file name
         if (theFileName != infileName)
             strcpy(theFileName, infileName);
 
-        // If the primary output filename has not been given, then we use
-        // the input filename + the algorithm name + a simple suffix
+        // If the primary output file name has not been given, then we use
+        // the input file name + the algorithm name + a simple suffix
         if (strlen(algorithmName) <= ALGORITHMNAMEMAXLENGTH)
         {
             strcat(theFileName, ".");
             strcat(theFileName, algorithmName);
         }
         else
-            gp_ErrorMessage("Algorithm Name is too long, so it will not be used in output filename.\n");
+            gp_ErrorMessage("Algorithm Name is too long, so it will not be used in output file name.\n");
 
         strcat(theFileName, ".out.txt");
     }
@@ -925,7 +914,7 @@ char *ConstructPrimaryOutputFilename(char const *infileName, char const *outfile
     {
         if (strlen(outfileName) > FILENAMEMAXLENGTH)
         {
-            // The output filename is based on the input filename
+            // The output file name is based on the input file name
             if (theFileName != infileName)
                 strcpy(theFileName, infileName);
 
@@ -936,7 +925,7 @@ char *ConstructPrimaryOutputFilename(char const *infileName, char const *outfile
             }
             strcat(theFileName, ".out.txt");
 
-            gp_ErrorMessage("Outfile filename is too long. Result placed in \"%.*s\"", FILENAME_MAX, theFileName);
+            gp_ErrorMessage("Outfile file name is too long. Result placed in \"%.*s\"", FILENAME_MAX, theFileName);
         }
         else
         {
@@ -949,7 +938,7 @@ char *ConstructPrimaryOutputFilename(char const *infileName, char const *outfile
 }
 
 /****************************************************************************
- * ConstructTransformationExpectedResultFilename()
+ * ConstructTransformationExpectedResultFileName()
  *
  * Returns a string whose ownership will be transferred to the caller (must free
  * string).
@@ -961,7 +950,7 @@ char *ConstructPrimaryOutputFilename(char const *infileName, char const *outfile
  * Returns non-NULL string
  ****************************************************************************/
 
-int ConstructTransformationExpectedResultFilename(char const *infileName, char **outfileName, char command, int baseFlag)
+int ConstructTransformationExpectedResultFileName(char const *infileName, char **outfileName, char command, int baseFlag)
 {
     int Result = OK;
 
@@ -971,7 +960,7 @@ int ConstructTransformationExpectedResultFilename(char const *infileName, char *
 
     if (infileName == NULL || (infileNameLen = strlen(infileName)) < 1)
     {
-        gp_ErrorMessage("Cannot construct transformation output filename for empty infileName.\n");
+        gp_ErrorMessage("Cannot construct transformation output file name for empty infileName.\n");
         return NOTOK;
     }
 
@@ -984,7 +973,7 @@ int ConstructTransformationExpectedResultFilename(char const *infileName, char *
 
         if ((*outfileName) == NULL)
         {
-            gp_ErrorMessage("Unable to allocate memory for output filename.\n");
+            gp_ErrorMessage("Unable to allocate memory for output file name.\n");
             return NOTOK;
         }
 

@@ -310,7 +310,7 @@ int g6_InitReaderWithFileName(G6ReadIteratorP theG6ReadIterator, char const *con
     if ((inputContainer = sf_NewInputContainer(NULL, infileName)) == NULL)
     {
         gp_ErrorMessage(
-            "Unable to initialize reader with filename, as we failed to "
+            "Unable to initialize reader with file name, as we failed to "
             "allocate the inputContainer.\n");
         return NOTOK;
     }

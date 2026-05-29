@@ -121,7 +121,7 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
     {
         // If outfileName is NULL, then the only case in which we would want to
         // output the generated random graphs to .g6 is if we Reconfigure() and
-        // choose these options; in that case, need to set a default output filename.
+        // choose these options; in that case, need to set a default output file name.
         sprintf(theFileName, "random%cn%d.k%d.g6", FILE_DELIMITER, SizeOfGraphs, NumGraphs);
         if (g6_InitWriterWithFileName(theG6WriteIterator, theFileName) != OK)
         {
