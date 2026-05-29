@@ -43,7 +43,7 @@ int commandLine(int argc, char *argv[])
 #endif
 
     if (argc >= 3 && strcmp(argv[2], "-q") == 0)
-        gp_SetQuietMode(QUITEMODE_ALL);
+        gp_SetQuietMode(QUIETMODE_ALL);
 
     if (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "-help") == 0)
     {

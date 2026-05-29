@@ -47,7 +47,7 @@ extern "C"
 #define QUIETMODE_NONE 0
 #define QUIETMODE_ERRORS 1
 #define QUIETMODE_MESSAGES 2
-#define QUITEMODE_ALL 0XFFFFFFFF
+#define QUIETMODE_ALL 0XFFFFFFFF
 
     void gp_Message(char const *message, ...) FORMAT_PRINTF(1, 2);
     void gp_ErrorMessage(char const *message, ...) FORMAT_PRINTF(1, 2);
