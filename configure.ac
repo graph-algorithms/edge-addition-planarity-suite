@@ -12,7 +12,7 @@ AC_CONFIG_SRCDIR([c/])
 # The version number in the following line must be synchronized with 
 # the LibPlanarity version numbers in graphLib.h 
 #
-# The meanings of the three vesrion number components are
+# The meanings of the three version number components are
 #    current : Most recent interface number that the library implements
 #    revision: The implementation number of the current interface
 #    age     : The number of previous interfaces that this version
