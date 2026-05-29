@@ -211,7 +211,7 @@ extern "C"
 
     struct isolatorContextStruct
     {
-        int minorType;
+        unsigned minorType;
         int v, r, x, y, w, px, py, z;
         int ux, dx, uy, dy, dw, uz, dz;
     };
