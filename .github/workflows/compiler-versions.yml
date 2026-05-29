@@ -33,7 +33,7 @@ jobs:
           - { compiler: clang, version: 18 }
           - { compiler: clang, version: 19 }
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Setup compiler . . .
         run: |
           sudo add-apt-repository ppa:ubuntu-toolchain-r/ppa -y
