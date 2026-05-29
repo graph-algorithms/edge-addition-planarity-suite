@@ -23,7 +23,7 @@ jobs:
       matrix:
         compiler: [clang-18, gcc-14]
     steps:
-      - uses: actions/checkout@v6.0.2
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Compiler information . . .
         run: $CC --version
       - name: Configure . . .
