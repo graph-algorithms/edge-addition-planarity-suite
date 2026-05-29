@@ -30,8 +30,8 @@ extern void _ClearVertexVisitedFlags(graphP theGraph, int);
  this method to extend the graph, though this method can also be
  called beforehand.
 
- This method should be called after gp_InitGraph() or gp_Read()
- because the number of vertices must be known.
+ This method should be called after gp_EnsureVertexCapacity() or
+ gp_Read() because the number of vertices must be known.
 
  On success, sets GRAPHFLAGS_EXTENDEDWITH_DFSUTILS.
 

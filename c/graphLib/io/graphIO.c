@@ -70,7 +70,7 @@ int _ReadAdjMatrix(graphP theGraph, strOrFileP inputContainer)
         return NOTOK;
 
     // Initialize the graph based on the number of vertices
-    if (gp_InitGraph(theGraph, N) != OK)
+    if (gp_EnsureVertexCapacity(theGraph, N) != OK)
         return NOTOK;
 
     // Read an upper-triangular matrix row for each vertex
@@ -155,7 +155,7 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
         return NOTOK;
 
     // Initialize theGraph based on the number of vertices in the input
-    if (gp_InitGraph(theGraph, N) != OK)
+    if (gp_EnsureVertexCapacity(theGraph, N) != OK)
         return NOTOK;
 
     // Clear the visited members of the vertices so they can be used
@@ -386,7 +386,7 @@ int _ReadLEDAGraph(graphP theGraph, strOrFileP inputContainer)
     if (sf_ReadSkipWhitespace(inputContainer) != OK)
         return NOTOK;
 
-    if (gp_InitGraph(theGraph, N) != OK)
+    if (gp_EnsureVertexCapacity(theGraph, N) != OK)
         return NOTOK;
 
     for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)

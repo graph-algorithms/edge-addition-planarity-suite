@@ -43,8 +43,8 @@ int _K33Search_EmbedPostprocess(graphP theGraph, int v, int edgeEmbeddingResult)
 int _K33Search_CheckEmbeddingIntegrity(graphP theGraph, graphP origGraph);
 int _K33Search_CheckObstructionIntegrity(graphP theGraph, graphP origGraph);
 
-int _K33Search_InitGraph(graphP theGraph, int N);
-void _K33Search_ReinitGraph(graphP theGraph);
+int _K33Search_EnsureVertexCapacity(graphP theGraph, int N);
+void _K33Search_ResetGraphStorage(graphP theGraph);
 int _K33Search_EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity);
 
 /* Forward declarations of functions used by the extension system */
@@ -113,8 +113,8 @@ int gp_ExtendWith_K33Search(graphP theGraph)
     context->functions.fpCheckEmbeddingIntegrity = _K33Search_CheckEmbeddingIntegrity;
     context->functions.fpCheckObstructionIntegrity = _K33Search_CheckObstructionIntegrity;
 
-    context->functions.fpInitGraph = _K33Search_InitGraph;
-    context->functions.fpReinitGraph = _K33Search_ReinitGraph;
+    context->functions.fpEnsureVertexCapacity = _K33Search_EnsureVertexCapacity;
+    context->functions.fpResetGraphStorage = _K33Search_ResetGraphStorage;
     context->functions.fpEnsureEdgeCapacity = _K33Search_EnsureEdgeCapacity;
 
     _K33Search_ClearStructures(context);
@@ -134,9 +134,9 @@ int gp_ExtendWith_K33Search(graphP theGraph)
     // Create the K33-specific structures if the size of the graph is known
     // Attach functions are always invoked after gp_New(), but if a graph
     // extension must be attached before gp_Read(), then the attachment
-    // also happens before gp_InitGraph(), which means N==0.
-    // However, sometimes a feature is attached after gp_InitGraph(), in
-    // which case N > 0
+    // also happens before gp_EnsureVertexCapacity(), which means N==0.
+    // However, a feature can be attached after gp_EnsureVertexCapacity(),
+    // in which case there is extra work to do when N > 0.
     if (gp_GetN(theGraph) > 0)
     {
         if (_K33Search_CreateStructures(context) != OK ||
@@ -283,7 +283,7 @@ int _K33Search_CopyData(void *dstContext, void *srcContext)
 /********************************************************************
  ********************************************************************/
 
-int _K33Search_InitGraph(graphP theGraph, int N)
+int _K33Search_EnsureVertexCapacity(graphP theGraph, int N)
 {
     K33SearchContext *context = NULL;
     gp_FindExtension(theGraph, K33SEARCH_ID, (void *)&context);
@@ -302,7 +302,7 @@ int _K33Search_InitGraph(graphP theGraph, int N)
         _K33Search_InitStructures(context) != OK)
         return NOTOK;
 
-    context->functions.fpInitGraph(theGraph, N);
+    context->functions.fpEnsureVertexCapacity(theGraph, N);
 
     return OK;
 }
@@ -310,17 +310,17 @@ int _K33Search_InitGraph(graphP theGraph, int N)
 /********************************************************************
  ********************************************************************/
 
-void _K33Search_ReinitGraph(graphP theGraph)
+void _K33Search_ResetGraphStorage(graphP theGraph)
 {
     K33SearchContext *context = NULL;
     gp_FindExtension(theGraph, K33SEARCH_ID, (void *)&context);
 
     if (context != NULL)
     {
-        // Reinitialize the graph
-        context->functions.fpReinitGraph(theGraph);
+        // Reset the graph storage in base class(es)
+        context->functions.fpResetGraphStorage(theGraph);
 
-        // Do the reinitialization that is specific to this module
+        // Do the reset that is specific to this module
         _K33Search_InitStructures(context);
         LCReset(context->separatedDFSChildLists);
         LCReset(context->bin);
@@ -710,7 +710,7 @@ int _K33Search_EmbedPostprocess(graphP theGraph, int v, int edgeEmbeddingResult)
             // to ensure post-processing continues as expected.
             savedEmbedFlags = gp_GetEmbedFlags(theGraph);
             savedZEROBASEDIO = gp_GetGraphFlags(theGraph) & GRAPHFLAGS_ZEROBASEDIO;
-            gp_ReinitGraph(theGraph);
+            gp_ResetGraphStorage(theGraph);
             theGraph->embedFlags = savedEmbedFlags;
             theGraph->graphFlags &= savedZEROBASEDIO;
         }

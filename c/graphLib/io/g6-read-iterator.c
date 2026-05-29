@@ -40,24 +40,24 @@ int _g6_ReadGraphFromString(graphP theGraph, char *g6EncodedString);
 /********************************************************************
  Package private structure declaration for read iterator
  ********************************************************************/
-    typedef struct strOrFileStruct strOrFileStruct;
-    typedef strOrFileStruct *strOrFileP;
+typedef struct strOrFileStruct strOrFileStruct;
+typedef strOrFileStruct *strOrFileP;
 
-    struct G6ReadIteratorStruct
-    {
-        strOrFileP inputContainer;
-        int numGraphsRead;
+struct G6ReadIteratorStruct
+{
+    strOrFileP inputContainer;
+    int numGraphsRead;
 
-        int order;
-        int numCharsForOrder;
-        size_t numCharsForGraphEncoding;
-        size_t currGraphBuffSize;
-        char *currGraphBuff;
+    int order;
+    int numCharsForOrder;
+    size_t numCharsForGraphEncoding;
+    size_t currGraphBuffSize;
+    char *currGraphBuff;
 
-        graphP currGraph;
+    graphP currGraph;
 
-        bool endReached;
-    };
+    bool endReached;
+};
 
 /********************************************************************
  Public and package private method implementations for read iterator
@@ -404,7 +404,7 @@ int _g6_InitReader(G6ReadIteratorP theG6ReadIterator)
 
     if (gp_GetN(theG6ReadIterator->currGraph) == 0)
     {
-        if (gp_InitGraph(theG6ReadIterator->currGraph, order) != OK)
+        if (gp_EnsureVertexCapacity(theG6ReadIterator->currGraph, order) != OK)
         {
             gp_ErrorMessage("Unable to initialize reader due to failure "
                             "initializing graph datastructure with order %d for "
@@ -428,7 +428,7 @@ int _g6_InitReader(G6ReadIteratorP theG6ReadIterator)
         }
         else
         {
-            gp_ReinitGraph(theG6ReadIterator->currGraph);
+            gp_ResetGraphStorage(theG6ReadIterator->currGraph);
             theG6ReadIterator->order = order;
         }
     }
@@ -623,7 +623,7 @@ int g6_ReadGraph(G6ReadIteratorP theG6ReadIterator)
 
         if (numGraphsRead > 1)
         {
-            gp_ReinitGraph(currGraph);
+            gp_ResetGraphStorage(currGraph);
             // Ensures zero-based flag is set after reinitializing graph.
             currGraph->graphFlags |= GRAPHFLAGS_ZEROBASEDIO;
         }

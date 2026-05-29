@@ -113,8 +113,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
         return NOTOK;
     }
 
-    if (
-        g6_NewReader((&theG6ReadIterator), origGraphRead) != OK ||
+    if (g6_NewReader((&theG6ReadIterator), origGraphRead) != OK ||
         g6_InitReaderWithFileName(theG6ReadIterator, infileName) != OK)
     {
         gp_ErrorMessage("Unable to allocate or initialize G6 read iterator.\n");
@@ -129,11 +128,10 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
     // embedding
     order = gp_GetN(origGraphRead);
 
-    if (
-        (graphForEmbedding = gp_New()) == NULL ||
-        gp_InitGraph(graphForEmbedding, order) != OK)
+    if ((graphForEmbedding = gp_New()) == NULL ||
+        gp_EnsureVertexCapacity(graphForEmbedding, order) != OK)
     {
-        gp_ErrorMessage("Unable initialize graph for embedding.\n");
+        gp_ErrorMessage("Unable allocate graph for embedding.\n");
         g6_FreeReader((&theG6ReadIterator));
         gp_Free(&origGraphRead);
         gp_Free(&graphForEmbedding);

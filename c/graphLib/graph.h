@@ -24,22 +24,21 @@ extern "C"
     typedef struct graphStruct graphStruct;
     typedef graphStruct *graphP;
 
-    // Methods related to graph allocation, initialization, and destruction
+    // Methods related to graph allocation and destruction
     graphP gp_New(void);
 
-    int gp_InitGraph(graphP theGraph, int N);
-    void gp_ReinitGraph(graphP theGraph);
+    int gp_EnsureVertexCapacity(graphP theGraph, int N);
+    void gp_ResetGraphStorage(graphP theGraph);
 
     void gp_Free(graphP *pGraph);
 
     int gp_EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity);
 
-#define gp_GetEdgeCapacity(theGraph) ((theGraph)->edgeCapacity)
-
 // N=# of vertices; NV=# of virtual vertices; M=# of edges
 #define gp_GetN(theGraph) ((theGraph)->N)
 #define gp_GetNV(theGraph) ((theGraph)->NV)
 #define gp_GetM(theGraph) ((theGraph)->M)
+#define gp_GetEdgeCapacity(theGraph) ((theGraph)->edgeCapacity)
 
     // Basic graph utility methods
     int gp_CopyGraph(graphP dstGraph, graphP srcGraph);
@@ -50,6 +49,7 @@ extern "C"
     int gp_CreateRandomGraphEx(graphP theGraph, int numEdges);
 
     // Basic graph I/O methods: see graphIO.h
+    // Intermediate graph I/O methods: see g6-read-iterator.h and g6-write-iterator.h
 
     // Basic vertex interrogators
     int gp_IsNeighbor(graphP theGraph, int u, int v);
@@ -179,7 +179,7 @@ extern "C"
 #define gp_UpperBoundVertexStorage(theGraph) gp_UpperBoundVirtualVertices(theGraph)
 
 #ifdef USE_1BASEDARRAYS
-// The use of *Vertex* alone consistently refers to the initial N vertices.
+// The use of *Vertex* alone consistently refers to the first N vertices.
 // The use of *VirtualVertex* refers to vertex array locations after the first N.
 #ifndef DEBUG
 #define gp_IsVertex(theGraph, v) (v)
@@ -403,9 +403,9 @@ extern "C"
 
 // The initial setting for the edge storage capacity expressed as a constant factor of N,
 // which is the number of vertices in the graph. By default, array E is allocated enough
-// space to contain 3N edges, which is 6N edge records, but this initial setting
-// can be overridden using gp_EnsureEdgeCapacity(). It is especially efficient to change
-// to ensure a higher edge capacity if done before calling gp_InitGraph() or gp_Read().
+// space to contain 3N edges, which is 6N edge records, but this initial setting can be
+// overridden using gp_EnsureEdgeCapacity(). It is especially efficient to change to ensure
+// a higher edge capacity if done before calling gp_EnsureVertexCapacity() or gp_Read().
 #define DEFAULT_EDGE_CAPACITY_FACTOR 3
 
 // This value is returned by gp_AddEdge() and gp_InsertEdge() if adding or inserting
