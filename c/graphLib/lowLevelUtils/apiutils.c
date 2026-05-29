@@ -15,7 +15,7 @@ See the LICENSE.TXT file for licensing information.
 
 // The graphLib gp_ErrorMessage() and gp_Message() calls are suppressed by
 // default, but an application can turn them on if desired.
-unsigned quietMode = TRUE;
+unsigned quietMode = QUITEMODE_ALL;
 
 unsigned gp_GetQuietMode(void)
 {
