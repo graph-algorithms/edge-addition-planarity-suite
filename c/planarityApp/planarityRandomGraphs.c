@@ -286,10 +286,13 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
         ResetGraphStorage(&theGraph, ReuseGraphs, command);
 
         // Show progress, but not so often that it bogs down progress
-        if (!gp_GetQuietModeFlag() && (K + 1) % countUpdateFreq == 0)
+        if (!(gp_GetQuietMode() & QUIETMODE_MESSAGES))
         {
-            fprintf(stdout, "%d\r", K + 1);
-            fflush(stdout);
+            if ((K + 1) % countUpdateFreq == 0)
+            {
+                fprintf(stdout, "%d\r", K + 1);
+                fflush(stdout);
+            }
         }
     }
 
@@ -600,7 +603,7 @@ int RandomGraph(char const *const commandString, int extraEdges, int numVertices
 
         // If no outfileName was given and not quiet mode (i.e., if in menu mode),
         // then we ask the user if they want to save in various formats.
-        else if (!gp_GetQuietModeFlag())
+        else if (!(gp_GetQuietMode() & QUIETMODE_MESSAGES))
         {
             if (PromptSaveGraph(theGraph, origGraph, extraEdges, 0) != OK)
             {
