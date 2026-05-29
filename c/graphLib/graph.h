@@ -28,11 +28,10 @@ extern "C"
     graphP gp_New(void);
 
     int gp_EnsureVertexCapacity(graphP theGraph, int N);
+    int gp_EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity);
     void gp_ResetGraphStorage(graphP theGraph);
 
     void gp_Free(graphP *pGraph);
-
-    int gp_EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity);
 
 // N=# of vertices; NV=# of virtual vertices; M=# of edges
 #define gp_GetN(theGraph) ((theGraph)->N)
@@ -142,12 +141,12 @@ extern "C"
 
 ////////////////////////////////////////////
 // Accessors for vertex adjacency list links
+// such as for adjacency list iteration
+// (see also gp_GetNextEdge and gp_IsEdge)
 ////////////////////////////////////////////
 #define gp_GetFirstEdge(theGraph, v) (theGraph->V[v].link[0])
 #define gp_GetLastEdge(theGraph, v) (theGraph->V[v].link[1])
 #define gp_GetEdgeByLink(theGraph, v, theLink) (theGraph->V[v].link[theLink])
-
-// See also gp_GetNextEdge/gp_GetPrevEdge and gp_IsEdge for adjacency list iteration
 
 // Setters for adjacency list links
 #define gp_SetFirstEdge(theGraph, v, newFirstEdge) (theGraph->V[v].link[0] = newFirstEdge)
@@ -281,7 +280,10 @@ extern "C"
 // If an even number, xor 1 will add one; if an odd number, xor 1 will subtract 1
 #define gp_GetTwin(theGraph, e) ((e) ^ 1)
 
+////////////////////////////////////////////
 // Access to adjacency list pointers
+// such as for adjacency list iteration
+////////////////////////////////////////////
 #define gp_GetNextEdge(theGraph, e) (theGraph->E[e].link[0])
 #define gp_GetPrevEdge(theGraph, e) (theGraph->E[e].link[1])
 #define gp_GetAdjacentEdge(theGraph, e, theLink) (theGraph->E[e].link[theLink])
@@ -290,7 +292,10 @@ extern "C"
 #define gp_SetPrevEdge(theGraph, e, newPrevEdge) (theGraph->E[e].link[1] = newPrevEdge)
 #define gp_SetAdjacentEdge(theGraph, e, theLink, newEdge) (theGraph->E[e].link[theLink] = newEdge)
 
-// gp_IsEdge() helps detect the end of an adjacency list iteration loop
+////////////////////////////////////////////
+// gp_IsEdge() helps detect the end of an 
+// adjacency list iteration loop
+////////////////////////////////////////////
 #ifdef USE_1BASEDARRAYS
 #define gp_IsEdge(theGraph, e) (e)
 #define gp_IsNotEdge(theGraph, e) (!(e))
