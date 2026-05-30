@@ -43,7 +43,7 @@ int _FindFuturePertinenceBelowXYPath(graphP theGraph);
  _gp_GetObstructionMinorType()
  ****************************************************************************/
 
-int gp_GetObstructionMinorType(graphP theGraph)
+unsigned gp_GetObstructionMinorType(graphP theGraph)
 {
     if (theGraph == NULL || theGraph->IC == NULL)
         return MINORTYPE_NONE;

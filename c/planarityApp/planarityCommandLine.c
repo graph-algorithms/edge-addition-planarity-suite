@@ -43,7 +43,7 @@ int commandLine(int argc, char *argv[])
 #endif
 
     if (argc >= 3 && strcmp(argv[2], "-q") == 0)
-        gp_SetQuietModeFlag(TRUE);
+        gp_SetQuietMode(QUIETMODE_ALL);
 
     if (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "-help") == 0)
     {
@@ -573,9 +573,9 @@ int runSpecificGraphTest(char const *commandString, char const *infileName, int 
         return NOTOK;
     }
 
-    // The algorithm, indicated by algorithmCode, operating on 'infilename' is expected to produce
+    // The algorithm, indicated by algorithmCode, operating on 'infileName' is expected to produce
     // an output that is stored in the file named 'expectedResultFileName' (return string not owned)
-    expectedPrimaryResultFileName = ConstructPrimaryOutputFilename(infileName, NULL, command);
+    expectedPrimaryResultFileName = ConstructPrimaryOutputFileName(infileName, NULL, command);
 
     // SpecificGraph() can invoke gp_Read() if the graph is to be read from a file, or it can invoke
     // gp_ReadFromString() if the inputInMemFlag is set.
@@ -621,7 +621,7 @@ int runSpecificGraphTest(char const *commandString, char const *infileName, int 
 
         if (expectedSecondaryResultFileName == NULL)
         {
-            gp_ErrorMessage("Unable to allocate memory for expected secondary output filename.\n");
+            gp_ErrorMessage("Unable to allocate memory for expected secondary output file name.\n");
             Result = NOTOK;
         }
         else
@@ -718,11 +718,11 @@ int runGraphTransformationTest(char const *command, char const *infileName, int 
         {
             char *expectedOutfileName = NULL;
             // Final arg is baseFlag, which is dependent on whether the FLAGS_ZEROBASEDIO is set in a graph's graphFlags
-            Result = ConstructTransformationExpectedResultFilename(infileName, &expectedOutfileName, transformationCode, zeroBasedOutputFlag ? 0 : 1);
+            Result = ConstructTransformationExpectedResultFileName(infileName, &expectedOutfileName, transformationCode, zeroBasedOutputFlag ? 0 : 1);
 
             if (Result != OK || expectedOutfileName == NULL)
             {
-                gp_ErrorMessage("Unable to construct output filename for expected transformation output.\n");
+                gp_ErrorMessage("Unable to construct output file name for expected transformation output.\n");
                 Result = NOTOK;
             }
             else

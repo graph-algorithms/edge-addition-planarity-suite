@@ -7,7 +7,7 @@ See the LICENSE.TXT file for licensing information.
 #include "planarity.h"
 
 int GetNumberIfZero(int *pNum, char const *prompt, int min, int max);
-void ReinitGraph(graphP *pGraph, int ReuseGraphs, char command);
+void ResetGraphStorage(graphP *pGraph, int ReuseGraphs, char command);
 graphP MakeGraph(int Size, char command);
 int PromptSaveGraph(graphP theGraph, graphP origGraph, int extraEdges, int saveMode);
 
@@ -121,7 +121,7 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
     {
         // If outfileName is NULL, then the only case in which we would want to
         // output the generated random graphs to .g6 is if we Reconfigure() and
-        // choose these options; in that case, need to set a default output filename.
+        // choose these options; in that case, need to set a default output file name.
         sprintf(theFileName, "random%cn%d.k%d.g6", FILE_DELIMITER, SizeOfGraphs, NumGraphs);
         if (g6_InitWriterWithFileName(theG6WriteIterator, theFileName) != OK)
         {
@@ -136,7 +136,7 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
     // Seed the random number generator with "now". Do it after any prompting
     // to tie randomness to human process of answering the prompt.
     // Acceptable downcast of time_t to unsigned int (seeding benefits from the lower bits of now)
-    srand((unsigned int) time(NULL));
+    srand((unsigned int)time(NULL));
 
     // Select a counter update frequency that updates more frequently with larger graphs
     // and which is relatively prime with 10 so that all digits of the count will change
@@ -282,14 +282,17 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
             break;
         }
 
-        // Reinitialize or recreate graphs for next iteration
-        ReinitGraph(&theGraph, ReuseGraphs, command);
+        // Reset (or recreate) graph for next iteration
+        ResetGraphStorage(&theGraph, ReuseGraphs, command);
 
         // Show progress, but not so often that it bogs down progress
-        if (!gp_GetQuietModeFlag() && (K + 1) % countUpdateFreq == 0)
+        if (!(gp_GetQuietMode() & QUIETMODE_MESSAGES))
         {
-            fprintf(stdout, "%d\r", K + 1);
-            fflush(stdout);
+            if ((K + 1) % countUpdateFreq == 0)
+            {
+                fprintf(stdout, "%d\r", K + 1);
+                fflush(stdout);
+            }
         }
     }
 
@@ -440,7 +443,7 @@ graphP MakeGraph(int Size, char command)
 {
     graphP theGraph = NULL;
 
-    if ((theGraph = gp_New()) == NULL || gp_InitGraph(theGraph, Size) != OK)
+    if ((theGraph = gp_New()) == NULL || gp_EnsureVertexCapacity(theGraph, Size) != OK)
     {
         gp_ErrorMessage("Error creating space for a graph of the given size.\n");
         gp_Free(&theGraph);
@@ -460,15 +463,15 @@ graphP MakeGraph(int Size, char command)
 }
 
 /****************************************************************************
- ReinitGraph()
- Internal function that will either reinitialize the given graph or free it
+ ResetGraphStorage()
+ Internal function that will either reset the given graph or free it
  and make a new one just like it.
  ****************************************************************************/
 
-void ReinitGraph(graphP *pGraph, int ReuseGraphs, char command)
+void ResetGraphStorage(graphP *pGraph, int ReuseGraphs, char command)
 {
     if (ReuseGraphs)
-        gp_ReinitGraph(*pGraph);
+        gp_ResetGraphStorage(*pGraph);
     else
     {
         graphP newGraph = MakeGraph((*pGraph)->N, command);
@@ -515,7 +518,7 @@ int RandomGraph(char const *const commandString, int extraEdges, int numVertices
         return NOTOK;
 
     // Acceptable downcast of time_t to unsigned int (seeding benefits from the lower bits of now)
-    srand((unsigned int) time(NULL));
+    srand((unsigned int)time(NULL));
 
     gp_Message("Creating the random graph...\n");
     platform_GetTime(start);
@@ -600,7 +603,7 @@ int RandomGraph(char const *const commandString, int extraEdges, int numVertices
 
         // If no outfileName was given and not quiet mode (i.e., if in menu mode),
         // then we ask the user if they want to save in various formats.
-        else if (!gp_GetQuietModeFlag())
+        else if (!(gp_GetQuietMode() & QUIETMODE_MESSAGES))
         {
             if (PromptSaveGraph(theGraph, origGraph, extraEdges, 0) != OK)
             {

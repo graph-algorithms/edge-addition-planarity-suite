@@ -28,7 +28,7 @@ int _K23Search_CheckObstructionIntegrity(graphP theGraph, graphP origGraph);
 
 /* Forward declarations of functions used by the extension system */
 
-int  _K23Search_CopyData(void *, void *);
+int _K23Search_CopyData(void *, void *);
 void _K23Search_FreeContext(void *);
 
 /****************************************************************************
@@ -176,7 +176,7 @@ int _K23Search_EmbedPostprocess(graphP theGraph, int v, int edgeEmbeddingResult)
             // to ensure post-processing continues as expected.
             savedEmbedFlags = gp_GetEmbedFlags(theGraph);
             savedZEROBASEDIO = gp_GetGraphFlags(theGraph) & GRAPHFLAGS_ZEROBASEDIO;
-            gp_ReinitGraph(theGraph);
+            gp_ResetGraphStorage(theGraph);
             theGraph->embedFlags = savedEmbedFlags;
             theGraph->graphFlags &= savedZEROBASEDIO;
         }

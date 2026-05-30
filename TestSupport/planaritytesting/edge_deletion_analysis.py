@@ -319,7 +319,7 @@ class EdgeDeletionAnalyzer:
         """Perform steps of edge-deletion analysis
         
         First os.chdir() to the output_dir, since SpecificGraph() calls
-        ConstructInputFilename(), which enforces a limit on the length of the
+        ConstructInputFileName(), which enforces a limit on the length of the
         infileName.
 
         Runs 

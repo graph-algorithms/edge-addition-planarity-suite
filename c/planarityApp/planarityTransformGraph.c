@@ -13,11 +13,11 @@ int transformString(graphP theGraph, char *inputStr);
  TransformGraph()
  commandString - command to run; i.e. `-(gam)` to transform graph to .g6, adjacency list, or
  adjacency matrix format
- infileName - name of file to read, or NULL to cause the program to prompt the user for a filename
+ infileName - name of file to read, or NULL to cause the program to prompt the user for a file name
  inputStr - string containing input graph, or NULL to cause the program to fall back on reading from file
  outputBase - pointer to the flag set for whether output is 0- or 1-based
  outputFormat - output format
- outfileName - name of primary output file, or NULL to construct an output filename based on the input
+ outfileName - name of primary output file, or NULL to construct an output file name based on the input
  pOutputStr - pointer to string which we wish to use to store the transformation output
  ****************************************************************************/
 int TransformGraph(char const *const commandString, char const *const infileName, char *inputStr, int *outputBase, char const *outfileName, char **pOutputStr)
@@ -33,7 +33,6 @@ int TransformGraph(char const *const commandString, char const *const infileName
     if (theGraph == NULL)
     {
         gp_ErrorMessage("Unable to allocate graphP for input graph transformation target.\n");
-
         return NOTOK;
     }
 
@@ -94,10 +93,9 @@ int transformFile(graphP theGraph, char const *infileName)
 {
     if (infileName == NULL)
     {
-        if ((infileName = ConstructInputFilename(infileName)) == NULL)
+        if ((infileName = ConstructInputFileName(infileName)) == NULL)
         {
-            gp_ErrorMessage("Unable to construct input filename for graph to transform.\n");
-
+            gp_ErrorMessage("Unable to construct input file name for graph to transform.\n");
             return NOTOK;
         }
     }
@@ -110,7 +108,6 @@ int transformString(graphP theGraph, char *inputStr)
     if (inputStr == NULL || strlen(inputStr) == 0)
     {
         gp_ErrorMessage("Input string is null or empty.\n");
-
         return NOTOK;
     }
 

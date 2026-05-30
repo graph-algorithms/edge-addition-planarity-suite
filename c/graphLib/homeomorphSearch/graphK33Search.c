@@ -826,7 +826,7 @@ int _FindK33WithMergeBlocker(graphP theGraph, K33SearchContext *context, int v, 
 
     IC->v = gp_GetVertexFromBicompRoot(theGraph, R);
 
-    /* Reinitialize the visitation, pertinence and future pertinence settings from step u_max for step v */
+    /* Reset the visitation, pertinence and future pertinence settings from step u_max for step v */
 
     for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
     {

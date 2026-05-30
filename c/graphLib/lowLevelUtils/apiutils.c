@@ -15,22 +15,22 @@ See the LICENSE.TXT file for licensing information.
 
 // The graphLib gp_ErrorMessage() and gp_Message() calls are suppressed by
 // default, but an application can turn them on if desired.
-int quietModeFlag = TRUE;
+unsigned quietMode = QUIETMODE_ALL;
 
-int gp_GetQuietModeFlag(void)
+unsigned gp_GetQuietMode(void)
 {
-    return quietModeFlag;
+    return quietMode;
 }
 
-void gp_SetQuietModeFlag(int newQuietModeFlag)
+void gp_SetQuietMode(unsigned newQuietMode)
 {
-    quietModeFlag = newQuietModeFlag;
+    quietMode = newQuietMode;
 }
 
 void gp_Message(char const *message, ...)
 {
     va_list args;
-    if (!gp_GetQuietModeFlag())
+    if (!(gp_GetQuietMode() & QUIETMODE_MESSAGES))
     {
         va_start(args, message);
         vfprintf(stdout, message, args);
@@ -42,7 +42,7 @@ void gp_Message(char const *message, ...)
 void gp_ErrorMessage(char const *message, ...)
 {
     va_list args;
-    if (!gp_GetQuietModeFlag())
+    if (!(gp_GetQuietMode() & QUIETMODE_ERRORS))
     {
         va_start(args, message);
         vfprintf(stderr, message, args);
