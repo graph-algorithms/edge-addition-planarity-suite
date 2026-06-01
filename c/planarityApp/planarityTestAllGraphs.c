@@ -149,7 +149,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
         return NOTOK;
     }
 
-    while (true)
+    while (TRUE)
     {
         if (g6_ReadGraph(theG6ReadIterator) != OK)
         {
