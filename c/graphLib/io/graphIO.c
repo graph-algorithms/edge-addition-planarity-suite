@@ -496,7 +496,7 @@ int _ReadGraph(graphP theGraph, strOrFileP *pInputContainer)
 {
     int RetVal = OK;
 
-    bool extraDataAllowed = false;
+    int extraDataAllowed = FALSE;
     char lineBuff[MAXLINE + 1];
 
     memset(lineBuff, '\0', (MAXLINE + 1));
@@ -524,13 +524,13 @@ int _ReadGraph(graphP theGraph, strOrFileP *pInputContainer)
     {
         RetVal = _ReadAdjList(theGraph, (*pInputContainer));
         if (RetVal == OK)
-            extraDataAllowed = true;
+            extraDataAllowed = TRUE;
     }
     else if (isdigit(lineBuff[0]))
     {
         RetVal = _ReadAdjMatrix(theGraph, (*pInputContainer));
         if (RetVal == OK)
-            extraDataAllowed = true;
+            extraDataAllowed = TRUE;
     }
     else
     {

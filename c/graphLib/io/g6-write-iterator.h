@@ -13,7 +13,6 @@ extern "C"
 #endif
 
 #include <stdio.h>
-#include <stdbool.h>
 
 #include "../graph.h"
 
