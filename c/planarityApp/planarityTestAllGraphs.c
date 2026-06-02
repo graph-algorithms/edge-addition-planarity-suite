@@ -430,7 +430,7 @@ int testAllGraphsN8(char command, char modifier, char const *const infileName, t
 
     // Read the graphs into memory
     lineNum = 0;
-    while (lineNum < NUM8VERTEXTGRAPHS)
+    while (lineNum <= NUM8VERTEXTGRAPHS)
     {
         lineNum++;
         if (g6_ReadGraph(theG6ReadIterator) != OK)
