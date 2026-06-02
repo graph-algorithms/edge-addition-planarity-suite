@@ -180,10 +180,10 @@ extern "C"
 #define gp_GetVertexSortedDFSChildList(theGraph, v) (theGraph->PVI[v].sortedDFSChildList)
 #define gp_SetVertexSortedDFSChildList(theGraph, v, theSortedDFSChildList) (theGraph->PVI[v].sortedDFSChildList = theSortedDFSChildList)
 
-#define gp_GetVertexNextDFSChild(theGraph, v, c) LCGetNext(theGraph->sortedDFSChildLists, gp_GetVertexSortedDFSChildList(theGraph, v), c)
+#define gp_GetVertexNextDFSChild(theGraph, v, c) LCGetNext(theGraphSortedDFSChildLists(theGraph), gp_GetVertexSortedDFSChildList(theGraph, v), c)
 
 #define gp_AppendDFSChild(theGraph, v, c) \
-    LCAppend(theGraph->sortedDFSChildLists, gp_GetVertexSortedDFSChildList(theGraph, v), c)
+    LCAppend(theGraphSortedDFSChildLists(theGraph), gp_GetVertexSortedDFSChildList(theGraph, v), c)
 
 #define gp_GetVertexFwdEdgeList(theGraph, v) (theGraph->PVI[v].fwdEdgeList)
 #define gp_SetVertexFwdEdgeList(theGraph, v, theFwdEdgeList) (theGraph->PVI[v].fwdEdgeList = theFwdEdgeList)

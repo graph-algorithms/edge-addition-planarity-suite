@@ -272,7 +272,7 @@ int _EnsureVertexCapacity(graphP theGraph, int N)
         (theGraph->DVI = (DFSUtils_VertexInfoP)calloc(VIsize, sizeof(DFSUtils_VertexInfo))) == NULL ||
 
         (theGraph->PVI = (Planarity_VertexInfoP)calloc(VIsize, sizeof(Planarity_VertexInfo))) == NULL ||
-        (theGraph->sortedDFSChildLists = LCNew(VIsize)) == NULL ||
+        (theGraphSortedDFSChildLists(theGraph) = LCNew(VIsize)) == NULL ||
         (theGraphExtFace(theGraph) = (extFaceLinkRecP)calloc(Vsize, sizeof(extFaceLinkRec))) == NULL ||
         (theGraphIC(theGraph) = (isolatorContextP)calloc(1, sizeof(isolatorContextStruct))) == NULL ||
         0)
@@ -350,7 +350,7 @@ void _ResetGraphStorage(graphP theGraph)
     _InitIsolatorContext(theGraph);
 
     LCReset(theGraph->BicompRootLists);
-    LCReset(theGraph->sortedDFSChildLists);
+    LCReset(theGraphSortedDFSChildLists(theGraph));
     sp_ClearStack(theGraph->theStack);
     sp_ClearStack(theGraph->edgeHoles);
     theGraph->numEdgeHoles = 0;
@@ -865,7 +865,7 @@ void _ClearGraph(graphP theGraph)
         free(theGraph->PVI);
         theGraph->PVI = NULL;
     }
-    LCFree(&theGraph->sortedDFSChildLists);
+    LCFree(&theGraphSortedDFSChildLists(theGraph));
     if (theGraphExtFace(theGraph) != NULL)
     {
         free(theGraphExtFace(theGraph));
@@ -1061,7 +1061,7 @@ int gp_CopyGraph(graphP dstGraph, graphP srcGraph)
     dstGraph->graphFlags = gp_GetGraphFlags(srcGraph);
 
     LCCopy(dstGraph->BicompRootLists, srcGraph->BicompRootLists);
-    LCCopy(dstGraph->sortedDFSChildLists, srcGraph->sortedDFSChildLists);
+    LCCopy(theGraphSortedDFSChildLists(dstGraph), theGraphSortedDFSChildLists(srcGraph));
     sp_Copy(dstGraph->theStack, srcGraph->theStack);
     sp_Copy(dstGraph->edgeHoles, srcGraph->edgeHoles);
     dstGraph->numEdgeHoles = sp_GetCurrentSize((dstGraph)->edgeHoles);
