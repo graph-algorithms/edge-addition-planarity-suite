@@ -273,7 +273,7 @@ int _EnsureVertexCapacity(graphP theGraph, int N)
 
         (theGraph->PVI = (Planarity_VertexInfoP)calloc(VIsize, sizeof(Planarity_VertexInfo))) == NULL ||
         (theGraph->sortedDFSChildLists = LCNew(VIsize)) == NULL ||
-        (theGraph->extFace = (extFaceLinkRecP)calloc(Vsize, sizeof(extFaceLinkRec))) == NULL ||
+        (theGraphExtFace(theGraph) = (extFaceLinkRecP)calloc(Vsize, sizeof(extFaceLinkRec))) == NULL ||
         (theGraphIC(theGraph) = (isolatorContextP)calloc(1, sizeof(isolatorContextStruct))) == NULL ||
         0)
     {
@@ -299,7 +299,7 @@ void _InitVertices(graphP theGraph)
     memset(theGraph->DVI, NIL_CHAR, gp_UpperBoundVertices(theGraph) * sizeof(DFSUtils_VertexInfo));
 
     memset(theGraph->PVI, NIL_CHAR, gp_UpperBoundVertices(theGraph) * sizeof(Planarity_VertexInfo));
-    memset(theGraph->extFace, NIL_CHAR, gp_UpperBoundVertexStorage(theGraph) * sizeof(extFaceLinkRec));
+    memset(theGraphExtFace(theGraph), NIL_CHAR, gp_UpperBoundVertexStorage(theGraph) * sizeof(extFaceLinkRec));
 
 #ifdef USE_1BASEDARRAYS
 // For 1-based arrays, the memset() initializes the flags correctly
@@ -866,10 +866,10 @@ void _ClearGraph(graphP theGraph)
         theGraph->PVI = NULL;
     }
     LCFree(&theGraph->sortedDFSChildLists);
-    if (theGraph->extFace != NULL)
+    if (theGraphExtFace(theGraph) != NULL)
     {
-        free(theGraph->extFace);
-        theGraph->extFace = NULL;
+        free(theGraphExtFace(theGraph));
+        theGraphExtFace(theGraph) = NULL;
     }
     if (theGraphIC(theGraph) != NULL)
     {

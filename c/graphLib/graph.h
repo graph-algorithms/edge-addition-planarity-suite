@@ -527,7 +527,7 @@ extern "C"
 
         Planarity_VertexInfoP PVI;
         listCollectionP sortedDFSChildLists;
-        extFaceLinkRecP extFace;
+        //extFaceLinkRecP extFace;
         //isolatorContextP IC;
    };
 

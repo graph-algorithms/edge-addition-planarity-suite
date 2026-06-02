@@ -66,8 +66,8 @@ extern "C"
     typedef struct extFaceLinkRec extFaceLinkRec;
     typedef extFaceLinkRec *extFaceLinkRecP;
 
-#define gp_GetExtFaceVertex(theGraph, v, link) (theGraph->extFace[v].vertex[link])
-#define gp_SetExtFaceVertex(theGraph, v, link, theVertex) (theGraph->extFace[v].vertex[link] = theVertex)
+#define gp_GetExtFaceVertex(theGraph, v, link) (theGraphExtFace(theGraph)[v].vertex[link])
+#define gp_SetExtFaceVertex(theGraph, v, link, theVertex) (theGraphExtFace(theGraph)[v].vertex[link] = theVertex)
 
     /********************************************************************
     // PLANARITY-RELATED ONLY
@@ -164,13 +164,13 @@ extern "C"
 // Once futurePertinentChild advances past a child, no future planarity operation could make that child
 // relevant to future pertinence.
 #define gp_UpdateVertexFuturePertinentChild(theGraph, w, v)                                             \
-    while (gp_IsVertex(theGraph, theGraph->PVI[w].futurePertinentChild))                                 \
+    while (gp_IsVertex(theGraph, theGraph->PVI[w].futurePertinentChild))                                \
     {                                                                                                   \
         /* Skip children that 1) aren't future pertinent, 2) have been merged into the bicomp with w */ \
         if (gp_GetVertexLowpoint(theGraph, theGraph->PVI[w].futurePertinentChild) >= v ||               \
             gp_IsNotSeparatedDFSChild(theGraph, theGraph->PVI[w].futurePertinentChild))                 \
         {                                                                                               \
-            theGraph->PVI[w].futurePertinentChild =                                                      \
+            theGraph->PVI[w].futurePertinentChild =                                                     \
                 gp_GetVertexNextDFSChild(theGraph, w, gp_GetVertexFuturePertinentChild(theGraph, w));   \
         }                                                                                               \
         else                                                                                            \
@@ -285,12 +285,12 @@ extern "C"
     desired commented out version does not compile (except with special
     compiler extensions not assumed by this code).
     ********************************************************************/
-#define FUTUREPERTINENT(theGraph, theVertex, v)                              \
+#define FUTUREPERTINENT(theGraph, theVertex, v)                               \
     (theGraph->DVI[theVertex].leastAncestor < v ||                            \
      (gp_IsVertex(theGraph, theGraph->PVI[theVertex].futurePertinentChild) && \
       theGraph->DVI[theGraph->PVI[theVertex].futurePertinentChild].lowpoint < v))
 
-#define NOTFUTUREPERTINENT(theGraph, theVertex, v)                              \
+#define NOTFUTUREPERTINENT(theGraph, theVertex, v)                               \
     (theGraph->DVI[theVertex].leastAncestor >= v &&                              \
      (gp_IsNotVertex(theGraph, theGraph->PVI[theVertex].futurePertinentChild) || \
       theGraph->DVI[theGraph->PVI[theVertex].futurePertinentChild].lowpoint >= v))
