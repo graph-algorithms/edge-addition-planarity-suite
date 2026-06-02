@@ -20,7 +20,7 @@ typedef testAllStats *testAllStatsP;
 int testAllGraphs(char command, char modifier, char const *const infileName, testAllStatsP stats);
 int outputTestAllGraphsResults(char command, char modifier, testAllStatsP stats, char const *const infileName, char *outfileName, char **pOutputStr);
 
-#define TESTALLGRAPHS_MEMORY_TIMING_TEST
+//#define TESTALLGRAPHS_MEMORY_TIMING_TEST
 
 #ifdef TESTALLGRAPHS_MEMORY_TIMING_TEST
 int testAllGraphsN8(char command, char modifier, char const *const infileName, testAllStatsP stats);
@@ -472,7 +472,7 @@ int testAllGraphsN8(char command, char modifier, char const *const infileName, t
 
     platform_GetTime(start);
 
-    for (int i = 0; i < 3; ++i)
+    for (int i = 0; i < 1000; ++i)
     {
         numOK = numNONEMBEDDABLE = 0;
         for (lineNum = 1; lineNum <= NUM8VERTEXTGRAPHS; lineNum++)
