@@ -96,6 +96,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
     graphP graphForEmbedding = NULL;
     int embedFlags = 0, numOK = 0, numNONEMBEDDABLE = 0;
     int order = 0;
+    int lineNum = 0;
 
     G6ReadIteratorP theG6ReadIterator = NULL;
 
@@ -151,12 +152,11 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
 
     while (TRUE)
     {
+        lineNum++;
         if (g6_ReadGraph(theG6ReadIterator) != OK)
         {
-            int numGraphsRead = 0;
-            g6_GetNumGraphsRead(theG6ReadIterator, &numGraphsRead);
             gp_ErrorMessage("Unable to read graph on line %d.\n",
-                            numGraphsRead + 1);
+                            lineNum);
             Result = NOTOK;
             break;
         }
@@ -174,20 +174,16 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
         Result = gp_Embed(graphForEmbedding, embedFlags);
         if (Result != OK && Result != NONEMBEDDABLE)
         {
-            int numGraphsRead = 0;
-            g6_GetNumGraphsRead(theG6ReadIterator, &numGraphsRead);
             gp_ErrorMessage("Failed to embed graph on line %d for command '%c'.\n",
-                            numGraphsRead + 1, command);
+                            lineNum, command);
             Result = NOTOK;
         }
 
         if (gp_TestEmbedResultIntegrity(graphForEmbedding, origGraphRead, Result) != Result)
         {
-            int numGraphsRead = 0;
-            g6_GetNumGraphsRead(theG6ReadIterator, &numGraphsRead);
             gp_ErrorMessage("Embed integrity check failed for graph on line %d "
                             "for command '%c'.\n",
-                            numGraphsRead + 1, command);
+                            lineNum, command);
             Result = NOTOK;
         }
 
@@ -204,25 +200,20 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
         {
             if (modifier == '\0')
             {
-                int numGraphsRead = 0;
-                g6_GetNumGraphsRead(theG6ReadIterator, &numGraphsRead);
                 gp_ErrorMessage("Command '%c' error on graph on line %d.\n",
-                                command, numGraphsRead + 1);
+                                command, lineNum);
             }
             else
             {
-                int numGraphsRead = 0;
-                g6_GetNumGraphsRead(theG6ReadIterator, &numGraphsRead);
                 gp_ErrorMessage("Command '%c%c' error on graph on line %d.\n",
-                                command, modifier, numGraphsRead + 1);
+                                command, modifier, lineNum);
             }
             Result = NOTOK;
             break;
         }
     }
 
-    stats->numGraphsRead = 0;
-    g6_GetNumGraphsRead(theG6ReadIterator, &stats->numGraphsRead);
+    stats->numGraphsRead = lineNum;
     stats->numOK = numOK;
     stats->numNONEMBEDDABLE = numNONEMBEDDABLE;
     stats->errorFlag = (Result == OK) ? FALSE : TRUE;
