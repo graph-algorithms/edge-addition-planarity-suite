@@ -27,26 +27,33 @@ void gp_SetQuietMode(unsigned newQuietMode)
     quietMode = newQuietMode;
 }
 
-void gp_Message(char const *message, ...)
+void gp_Message(const char *message, ...)
 {
-    va_list args;
     if (!(gp_GetQuietMode() & QUIETMODE_MESSAGES))
     {
+        va_list args;
+
         va_start(args, message);
         vfprintf(stdout, message, args);
         va_end(args);
+
         fflush(stdout);
     }
 }
 
-void gp_ErrorMessage(char const *message, ...)
+void gp_LogErrorMessage(int line, const char *sourceFileName, const char *message, ...)
 {
-    va_list args;
     if (!(gp_GetQuietMode() & QUIETMODE_ERRORS))
     {
+        va_list args;
+
+        fprintf(stderr, "[ERROR] ");
+
         va_start(args, message);
         vfprintf(stderr, message, args);
         va_end(args);
+
+        fprintf(stderr, "\n\ton line %d of '%s'\n", line, sourceFileName);
         fflush(stderr);
     }
 }

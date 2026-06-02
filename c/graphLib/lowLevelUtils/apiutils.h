@@ -49,8 +49,10 @@ extern "C"
 #define QUIETMODE_MESSAGES 2
 #define QUIETMODE_ALL 0XFFFFFFFF
 
-    void gp_Message(char const *message, ...) FORMAT_PRINTF(1, 2);
-    void gp_ErrorMessage(char const *message, ...) FORMAT_PRINTF(1, 2);
+    void gp_Message(const char *message, ...) FORMAT_PRINTF(1, 2);
+
+#define gp_ErrorMessage(...) (gp_LogErrorMessage(__LINE__, __FILE__, __VA_ARGS__))
+    void gp_LogErrorMessage(int line, const char *sourceFileName, const char *message, ...) FORMAT_PRINTF(3, 4);
 
 #ifdef __cplusplus
 }
