@@ -274,7 +274,7 @@ int _EnsureVertexCapacity(graphP theGraph, int N)
         (theGraph->PVI = (Planarity_VertexInfoP)calloc(VIsize, sizeof(Planarity_VertexInfo))) == NULL ||
         (theGraph->sortedDFSChildLists = LCNew(VIsize)) == NULL ||
         (theGraph->extFace = (extFaceLinkRecP)calloc(Vsize, sizeof(extFaceLinkRec))) == NULL ||
-        (theGraph->IC = (isolatorContextP)calloc(1, sizeof(isolatorContextStruct))) == NULL ||
+        (theGraphIC(theGraph) = (isolatorContextP)calloc(1, sizeof(isolatorContextStruct))) == NULL ||
         0)
     {
         _ClearGraph(theGraph);
@@ -529,7 +529,7 @@ void _InitEdgeRec(graphP theGraph, int e)
 
 void _InitIsolatorContext(graphP theGraph)
 {
-    isolatorContextP IC = theGraph->IC;
+    isolatorContextP IC = theGraphIC(theGraph);
 
     if (IC != NULL)
     {
@@ -871,10 +871,10 @@ void _ClearGraph(graphP theGraph)
         free(theGraph->extFace);
         theGraph->extFace = NULL;
     }
-    if (theGraph->IC != NULL)
+    if (theGraphIC(theGraph) != NULL)
     {
-        free(theGraph->IC);
-        theGraph->IC = NULL;
+        free(theGraphIC(theGraph));
+        theGraphIC(theGraph) = NULL;
     }
 
     gp_FreeExtensions(theGraph);
