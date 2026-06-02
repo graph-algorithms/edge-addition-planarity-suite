@@ -429,46 +429,48 @@ extern "C"
                 : 1))
 #endif
 
-    // DFS-RELATED and PLANARITY-RELATED ONLY
-    // Declaration of package-private data type for managing additional DFS-
-    // and planarity-related information associated with each non-virtual vertex
-    typedef struct DFSUtils_VertexInfo DFSUtils_VertexInfo;
-    typedef DFSUtils_VertexInfo *DFSUtils_VertexInfoP;
-    typedef struct Planarity_VertexInfo Planarity_VertexInfo;
-    typedef Planarity_VertexInfo *Planarity_VertexInfoP;
-
-    // PLANARITY-RELATED ONLY
-    // Declaration of package private data type for optimizing management of
-    // the external face of a planar embedding as it is being built
-    typedef struct extFaceLinkRec extFaceLinkRec;
-    typedef extFaceLinkRec *extFaceLinkRecP;
-
-    // DFS-RELATED and PLANARITY-RELATED ONLY
     // Declaration of package-private data type for managing a
     // stack of integers
     typedef struct stackStruct stackStruct;
     typedef stackStruct *stackP;
+
+    // Declaration of package private data types for extending the base Graph class 
+    // with subclasses having data members and function overloads
+    typedef struct graphExtensionStruct graphExtensionStruct;
+    typedef graphExtensionStruct *graphExtensionP;
+
+    typedef struct graphFunctionTableStruct graphFunctionTableStruct;
+    typedef graphFunctionTableStruct *graphFunctionTableP;
+
+    // DFS-RELATED and PLANARITY-RELATED ONLY
+
+    // Declaration of package-private data type for managing a
+    // collection of lists of integers
+    typedef struct listCollectionStruct listCollectionStruct;
+    typedef listCollectionStruct *listCollectionP;
+
+    // Declaration of package-private data type for managing additional 
+    // DFS--related information associated with each non-virtual vertex
+    typedef struct DFSUtils_VertexInfo DFSUtils_VertexInfo;
+    typedef DFSUtils_VertexInfo *DFSUtils_VertexInfoP;
+
+    // PLANARITY-RELATED ONLY
+
+    // Declaration of package-private data type for managing additional 
+    // planarity-related information associated with each non-virtual vertex
+    typedef struct Planarity_VertexInfo Planarity_VertexInfo;
+    typedef Planarity_VertexInfo *Planarity_VertexInfoP;
+
+    // Declaration of package private data type for optimizing management of
+    // the external face of a planar embedding as it is being built
+    typedef struct extFaceLinkRec extFaceLinkRec;
+    typedef extFaceLinkRec *extFaceLinkRecP;
 
     // PLANARITY-RELATED ONLY
     // Declaration of package private data type for isolating
     // minimal subgraphs obstructing planarity-related embedding
     typedef struct isolatorContextStruct isolatorContextStruct;
     typedef isolatorContextStruct *isolatorContextP;
-
-    // DFS-RELATED and PLANARITY-RELATED ONLY
-    // Declaration of package-private data type for managing a
-    // collection of lists of integers
-    typedef struct listCollectionStruct listCollectionStruct;
-    typedef listCollectionStruct *listCollectionP;
-
-    // PLANARITY-RELATED ONLY
-    // Declaration of package private data types for extending the
-    // planarity algorithm to implement planarity-related algorithms
-    typedef struct graphExtensionStruct graphExtensionStruct;
-    typedef graphExtensionStruct *graphExtensionP;
-
-    typedef struct graphFunctionTableStruct graphFunctionTableStruct;
-    typedef graphFunctionTableStruct *graphFunctionTableP;
 
     /********************************************************************
          Graph structure definition
@@ -486,28 +488,16 @@ extern "C"
                 graphFlags: Additional state information about the graph
                 embedFlags: records the type of embedding requested (uses EMBEDFLAGS)
 
-                theStack: Used by routines of various DFSUtils graph subclasses
-                BicompRootLists: storage for bicomp root lists (DFSUtils) or, for
-                                 Planarity, pertinent child bicomp lists that develop
-                                during embedding
-                DVI: package private pointer; if the graph is extended to DFSUtils,
-                        then N instances of DFSUtils vertex info records are allocated
+                theStack: Used by methods of the base Graph class and its subclasses
 
-                PVI: package private pointer; if the graph is extended to Planarity,
-                        then N instances of Planarity vertex info records are allocated
-                IC: contains additional useful variables for Kuratowski subgraph isolation.
-                sortedDFSChildLists: for Planarity graphs, storage for the sorted DFS child
-                        lists of each vertex
-                extFace: For Planarity graphs, an array of (N + NV) external face
-                        short circuit records
+                extensions: an object-oriented hierarchy of graph classes is implemented
+                            manually as a list of extensions for data of any subclasses
+                            with which a graph has been extended. 
+                functions: the object-oriented hierarchies includes virtual function 
+                           overloading, which is provided by a function pointer table.
 
-                extensions: a list of extension data structures
-                functions: a table of function pointers that can be overloaded to provide
-                           extension behaviors to the graph
-
-                extraData: void pointer for extra package private data, if any.
-                           This allows adding data members for graph subclasses
-                           while maintaining backwards compatibility.
+                privateData: pointer to structure for package private data that can change
+                             while maintaining backwards compatibility.
         */
 
     struct graphStruct
@@ -522,7 +512,16 @@ extern "C"
 
         unsigned graphFlags, embedFlags;
 
+        // Used by base Graph class and its subclasses
         stackP theStack;
+
+        // Provides ability to subclass the base Graph, 
+        // including virtual function overlaods by subclasses
+        graphExtensionP extensions;
+        graphFunctionTableP functions;
+
+        void *privateData;
+ 
         listCollectionP BicompRootLists;
         DFSUtils_VertexInfoP DVI;
 
@@ -530,12 +529,7 @@ extern "C"
         listCollectionP sortedDFSChildLists;
         extFaceLinkRecP extFace;
         isolatorContextP IC;
-
-        graphExtensionP extensions;
-        graphFunctionTableP functions;
-
-        void *extraData;
-    };
+   };
 
     typedef struct graphStruct graphStruct;
     typedef graphStruct *graphP;

@@ -112,12 +112,15 @@ graphP gp_New(void)
 {
     graphP theGraph = (graphP)calloc(1, sizeof(graphStruct));
     graphFunctionTableP functionTable = (graphFunctionTableP)calloc(1, sizeof(graphFunctionTableStruct));
+    graphPrivateDataP theGraphPrivateData = (graphPrivateDataP)calloc(1, sizeof(graphPrivateDataStruct));
 
-    if (theGraph != NULL && functionTable != NULL)
+    if (theGraph != NULL && functionTable != NULL && theGraphPrivateData != NULL)
     {
-        // All pointers within the graph are NULL due to using calloc() above
+        theGraph->privateData = (void *)theGraphPrivateData;
+
         theGraph->functions = functionTable;
         _InitFunctionTable(theGraph);
+
         _ClearGraph(theGraph);
     }
     else
@@ -131,6 +134,11 @@ graphP gp_New(void)
         {
             free(functionTable);
             functionTable = NULL;
+        }
+        if (theGraphPrivateData != NULL)
+        {
+            free(theGraphPrivateData);
+            theGraphPrivateData = NULL;
         }
     }
 
@@ -903,6 +911,12 @@ void gp_Free(graphP *pGraph)
     {
         free((*pGraph)->functions);
         (*pGraph)->functions = NULL;
+    }
+
+    if ((*pGraph)->privateData != NULL)
+    {
+        free((*pGraph)->privateData);
+        (*pGraph)->privateData = NULL;
     }
 
     free(*pGraph);
