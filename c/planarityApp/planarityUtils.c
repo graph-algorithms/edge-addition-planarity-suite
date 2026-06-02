@@ -831,17 +831,13 @@ char *ConstructInputFileName(char const *infileName)
 #pragma GCC diagnostic ignored "-Wformat-nonliteral"
             if (strlen(lineBuff) == 0 || strlen(lineBuff) > FILENAMEMAXLENGTH ||
                 sscanf(lineBuff, fileNameFormat, theFileName) != 1)
-                gp_ErrorMessage("Invalid input file name.\n");
+                gp_Message("Invalid input file name; retry.\n");
             else
             {
                 if (strncmp(theFileName, "stdin", strlen("stdin")) != 0 && !strchr(theFileName, '.'))
                 {
                     gp_Message("Graph file name does not have extension; automatically appending \".txt\".\n");
-                    if (strcat(theFileName, ".txt") == NULL)
-                    {
-                        gp_ErrorMessage("Appending \".txt\" extension to theFileName using strcat() failed.\n");
-                        Result = NOTOK;
-                    }
+                    strcat(theFileName, ".txt");
                 }
                 break;
             }
@@ -906,7 +902,7 @@ char *ConstructPrimaryOutputFileName(char const *infileName, char const *outfile
             strcat(theFileName, algorithmName);
         }
         else
-            gp_ErrorMessage("Algorithm Name is too long, so it will not be used in output file name.\n");
+            gp_Message("Algorithm Name is too long, so it will not be used in output file name.\n");
 
         strcat(theFileName, ".out.txt");
     }
@@ -925,7 +921,7 @@ char *ConstructPrimaryOutputFileName(char const *infileName, char const *outfile
             }
             strcat(theFileName, ".out.txt");
 
-            gp_ErrorMessage("Outfile file name is too long. Result placed in \"%.*s\"", FILENAME_MAX, theFileName);
+            gp_Message("Outfile file name is too long. Result placed in \"%.*s\"", FILENAME_MAX, theFileName);
         }
         else
         {
