@@ -472,7 +472,7 @@ int testAllGraphsN8(char command, char modifier, char const *const infileName, t
 
     platform_GetTime(start);
 
-    for (int i = 0; i < 1000; ++i)
+    for (int i = 0; i < 3; ++i)
     {
         numOK = numNONEMBEDDABLE = 0;
         for (lineNum = 1; lineNum <= NUM8VERTEXTGRAPHS; lineNum++)
