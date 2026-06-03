@@ -268,7 +268,7 @@ int _EnsureVertexCapacity(graphP theGraph, int N)
         (theGraph->edgeHoles = sp_New(theGraph->edgeCapacity)) == NULL ||
 
         (theGraph->theStack = sp_New(stackSize)) == NULL ||
-        (theGraph->BicompRootLists = LCNew(VIsize)) == NULL ||
+        (theGraphBicompRootLists(theGraph) = LCNew(VIsize)) == NULL ||
         (theGraphDVI(theGraph) = (DFSUtils_VertexInfoP)calloc(VIsize, sizeof(DFSUtils_VertexInfo))) == NULL ||
 
         (theGraphPVI(theGraph) = (Planarity_VertexInfoP)calloc(VIsize, sizeof(Planarity_VertexInfo))) == NULL ||
@@ -349,7 +349,7 @@ void _ResetGraphStorage(graphP theGraph)
     _InitEdges(theGraph);
     _InitIsolatorContext(theGraph);
 
-    LCReset(theGraph->BicompRootLists);
+    LCReset(theGraphBicompRootLists(theGraph));
     LCReset(theGraphSortedDFSChildLists(theGraph));
     sp_ClearStack(theGraph->theStack);
     sp_ClearStack(theGraph->edgeHoles);
@@ -853,7 +853,7 @@ void _ClearGraph(graphP theGraph)
     theGraph->numEdgeHoles = 0;
 
     sp_Free(&theGraph->theStack);
-    LCFree(&theGraph->BicompRootLists);
+    LCFree(&theGraphBicompRootLists(theGraph));
     if (theGraphDVI(theGraph) != NULL)
     {
         free(theGraphDVI(theGraph));
@@ -1060,7 +1060,7 @@ int gp_CopyGraph(graphP dstGraph, graphP srcGraph)
 
     dstGraph->graphFlags = gp_GetGraphFlags(srcGraph);
 
-    LCCopy(dstGraph->BicompRootLists, srcGraph->BicompRootLists);
+    LCCopy(theGraphBicompRootLists(dstGraph), theGraphBicompRootLists(srcGraph));
     LCCopy(theGraphSortedDFSChildLists(dstGraph), theGraphSortedDFSChildLists(srcGraph));
     sp_Copy(dstGraph->theStack, srcGraph->theStack);
     sp_Copy(dstGraph->edgeHoles, srcGraph->edgeHoles);

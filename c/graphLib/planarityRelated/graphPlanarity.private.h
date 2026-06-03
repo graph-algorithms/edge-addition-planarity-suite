@@ -136,24 +136,24 @@ extern "C"
 
 #define gp_GetVertexFirstPertinentRoot(theGraph, v) gp_GetBicompRootFromDFSChild(theGraph, theGraphPVI(theGraph)[v].pertinentRoots)
 #define gp_GetVertexFirstPertinentRootChild(theGraph, v) (theGraphPVI(theGraph)[v].pertinentRoots)
-#define gp_GetVertexLastPertinentRoot(theGraph, v) gp_GetBicompRootFromDFSChild(theGraph, LCGetPrev(theGraph->BicompRootLists, theGraphPVI(theGraph)[v].pertinentRoots, NIL))
-#define gp_GetVertexLastPertinentRootChild(theGraph, v) LCGetPrev(theGraph->BicompRootLists, theGraphPVI(theGraph)[v].pertinentRoots, NIL)
+#define gp_GetVertexLastPertinentRoot(theGraph, v) gp_GetBicompRootFromDFSChild(theGraph, LCGetPrev(theGraphBicompRootLists(theGraph), theGraphPVI(theGraph)[v].pertinentRoots, NIL))
+#define gp_GetVertexLastPertinentRootChild(theGraph, v) LCGetPrev(theGraphBicompRootLists(theGraph), theGraphPVI(theGraph)[v].pertinentRoots, NIL)
 
 #define gp_DeleteVertexPertinentRoot(theGraph, v, R)                                     \
     gp_SetVertexPertinentRootsList(theGraph, v,                                          \
-                                   LCDelete(theGraph->BicompRootLists,                   \
+                                   LCDelete(theGraphBicompRootLists(theGraph),           \
                                             gp_GetVertexPertinentRootsList(theGraph, v), \
                                             gp_GetDFSChildFromBicompRoot(theGraph, R)))
 
 #define gp_PrependVertexPertinentRoot(theGraph, v, R)                                     \
     gp_SetVertexPertinentRootsList(theGraph, v,                                           \
-                                   LCPrepend(theGraph->BicompRootLists,                   \
+                                   LCPrepend(theGraphBicompRootLists(theGraph),           \
                                              gp_GetVertexPertinentRootsList(theGraph, v), \
                                              gp_GetDFSChildFromBicompRoot(theGraph, R)))
 
 #define gp_AppendVertexPertinentRoot(theGraph, v, R)                                     \
     gp_SetVertexPertinentRootsList(theGraph, v,                                          \
-                                   LCAppend(theGraph->BicompRootLists,                   \
+                                   LCAppend(theGraphBicompRootLists(theGraph),           \
                                             gp_GetVertexPertinentRootsList(theGraph, v), \
                                             gp_GetDFSChildFromBicompRoot(theGraph, R)))
 
