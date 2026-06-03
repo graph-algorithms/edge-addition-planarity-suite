@@ -286,14 +286,14 @@ extern "C"
     compiler extensions not assumed by this code).
     ********************************************************************/
 #define FUTUREPERTINENT(theGraph, theVertex, v)                                       \
-    (theGraph->DVI[theVertex].leastAncestor < v ||                                    \
+    (theGraphDVI(theGraph)[theVertex].leastAncestor < v ||                            \
      (gp_IsVertex(theGraph, theGraphPVI(theGraph)[theVertex].futurePertinentChild) && \
-      theGraph->DVI[theGraphPVI(theGraph)[theVertex].futurePertinentChild].lowpoint < v))
+      theGraphDVI(theGraph)[theGraphPVI(theGraph)[theVertex].futurePertinentChild].lowpoint < v))
 
 #define NOTFUTUREPERTINENT(theGraph, theVertex, v)                                       \
-    (theGraph->DVI[theVertex].leastAncestor >= v &&                                      \
+    (theGraphDVI(theGraph)[theVertex].leastAncestor >= v &&                              \
      (gp_IsNotVertex(theGraph, theGraphPVI(theGraph)[theVertex].futurePertinentChild) || \
-      theGraph->DVI[theGraphPVI(theGraph)[theVertex].futurePertinentChild].lowpoint >= v))
+      theGraphDVI(theGraph)[theGraphPVI(theGraph)[theVertex].futurePertinentChild].lowpoint >= v))
 
 /********************************************************************
  INACTIVE()

@@ -225,9 +225,9 @@ int gp_SortVertices(graphP theGraph)
     }
 #define _gp_SwapDFSUtilsVertexInfo(dstGraph, dstPos, srcGraph, srcPos) \
     {                                                                  \
-        DFSUtils_VertexInfo tempDVI = dstGraph->DVI[dstPos];           \
-        dstGraph->DVI[dstPos] = srcGraph->DVI[srcPos];                 \
-        srcGraph->DVI[srcPos] = tempDVI;                               \
+        DFSUtils_VertexInfo tempDVI = theGraphDVI(dstGraph)[dstPos];   \
+        theGraphDVI(dstGraph)[dstPos] = theGraphDVI(srcGraph)[srcPos]; \
+        theGraphDVI(srcGraph)[srcPos] = tempDVI;                       \
     }
 #define _gp_SwapPlanarityVertexInfo(dstGraph, dstPos, srcGraph, srcPos) \
     if (theGraphPVI(dstGraph) != NULL && theGraphPVI(srcGraph) != NULL) \
