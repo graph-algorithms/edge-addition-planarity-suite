@@ -36,8 +36,8 @@ int _K4Search_EmbedPostprocess(graphP theGraph, int v, int edgeEmbeddingResult);
 int _K4Search_CheckEmbeddingIntegrity(graphP theGraph, graphP origGraph);
 int _K4Search_CheckObstructionIntegrity(graphP theGraph, graphP origGraph);
 
-int _K4Search_InitGraph(graphP theGraph, int N);
-void _K4Search_ReinitGraph(graphP theGraph);
+int _K4Search_EnsureVertexCapacity(graphP theGraph, int N);
+void _K4Search_ResetGraphStorage(graphP theGraph);
 int _K4Search_EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity);
 
 /* Forward declarations of functions used by the extension system */
@@ -101,8 +101,8 @@ int gp_ExtendWith_K4Search(graphP theGraph)
     context->functions.fpCheckEmbeddingIntegrity = _K4Search_CheckEmbeddingIntegrity;
     context->functions.fpCheckObstructionIntegrity = _K4Search_CheckObstructionIntegrity;
 
-    context->functions.fpInitGraph = _K4Search_InitGraph;
-    context->functions.fpReinitGraph = _K4Search_ReinitGraph;
+    context->functions.fpEnsureVertexCapacity = _K4Search_EnsureVertexCapacity;
+    context->functions.fpResetGraphStorage = _K4Search_ResetGraphStorage;
     context->functions.fpEnsureEdgeCapacity = _K4Search_EnsureEdgeCapacity;
 
     _K4Search_ClearStructures(context);
@@ -122,9 +122,9 @@ int gp_ExtendWith_K4Search(graphP theGraph)
     // Create the K4-specific structures if the size of the graph is known
     // Attach functions are always invoked after gp_New(), but if a graph
     // extension must be attached before gp_Read(), then the attachment
-    // also happens before gp_InitGraph(), which means N==0.
-    // However, sometimes a feature is attached after gp_InitGraph(), in
-    // which case N > 0
+    // also happens before gp_EnsureVertexCapacity(), which means N==0.
+    // However, a feature can be attached after gp_EnsureVertexCapacity(),
+    // in which case there is extra work to do when N > 0.
     if (gp_GetN(theGraph) > 0)
     {
         if (_K4Search_CreateStructures(context) != OK ||
@@ -210,8 +210,8 @@ int _K4Search_InitStructures(K4SearchContext *context)
  ********************************************************************/
 int _K4Search_CopyData(void *dstContext, void *srcContext)
 {
-    K4SearchContext *dstK4Context = (K4SearchContext *) dstContext;
-    K4SearchContext *srcK4Context = (K4SearchContext *) srcContext;
+    K4SearchContext *dstK4Context = (K4SearchContext *)dstContext;
+    K4SearchContext *srcK4Context = (K4SearchContext *)srcContext;
     int dstEdgeStorage, srcEdgeStorage;
 
     if (dstContext == NULL)
@@ -246,7 +246,7 @@ int _K4Search_CopyData(void *dstContext, void *srcContext)
 /********************************************************************
  ********************************************************************/
 
-int _K4Search_InitGraph(graphP theGraph, int N)
+int _K4Search_EnsureVertexCapacity(graphP theGraph, int N)
 {
     K4SearchContext *context = NULL;
     gp_FindExtension(theGraph, K4SEARCH_ID, (void *)&context);
@@ -263,7 +263,7 @@ int _K4Search_InitGraph(graphP theGraph, int N)
         _K4Search_InitStructures(context) != OK)
         return NOTOK;
 
-    context->functions.fpInitGraph(theGraph, N);
+    context->functions.fpEnsureVertexCapacity(theGraph, N);
 
     return OK;
 }
@@ -271,17 +271,17 @@ int _K4Search_InitGraph(graphP theGraph, int N)
 /********************************************************************
  ********************************************************************/
 
-void _K4Search_ReinitGraph(graphP theGraph)
+void _K4Search_ResetGraphStorage(graphP theGraph)
 {
     K4SearchContext *context = NULL;
     gp_FindExtension(theGraph, K4SEARCH_ID, (void *)&context);
 
     if (context != NULL)
     {
-        // Reinitialize the graph
-        context->functions.fpReinitGraph(theGraph);
+        // Reset the graph storage in base class(es)
+        context->functions.fpResetGraphStorage(theGraph);
 
-        // Do the reinitialization that is specific to this module
+        // Do the reset that is specific to this module
         _K4Search_InitStructures(context);
     }
 }
@@ -306,15 +306,15 @@ int _K4Search_EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity)
         return NOTOK;
 
     // Call the superclass function to make sure lower levels of parallel
-    // edge arrays can successfully meet the new capacity requirement 
+    // edge arrays can successfully meet the new capacity requirement
     if (context->functions.fpEnsureEdgeCapacity(theGraph, requiredEdgeCapacity) != OK)
         return NOTOK;
 
     // Save the current E so it can be freed once we replace it
     oldE = context->E;
 
-    // The superclass EnsureEdgeCapacity method succeeded, so the graph's 
-    // new edge capacity is already set, which means we the upper bound of 
+    // The superclass EnsureEdgeCapacity method succeeded, so the graph's
+    // new edge capacity is already set, which means we the upper bound of
     // the graph's edge storage gives the new parallel array size we need.
     newEsize = gp_UpperBoundEdgeStorage(theGraph);
 
@@ -462,7 +462,7 @@ int _K4Search_EmbedPostprocess(graphP theGraph, int v, int edgeEmbeddingResult)
             // to ensure post-processing continues as expected.
             savedEmbedFlags = gp_GetEmbedFlags(theGraph);
             savedZEROBASEDIO = gp_GetGraphFlags(theGraph) & GRAPHFLAGS_ZEROBASEDIO;
-            gp_ReinitGraph(theGraph);
+            gp_ResetGraphStorage(theGraph);
             theGraph->embedFlags = savedEmbedFlags;
             theGraph->graphFlags &= savedZEROBASEDIO;
         }

@@ -60,10 +60,10 @@ extern "C"
     int GetLineFromStdin(char *lineBuff, int lineBuffSize);
     void FlushConsole(FILE *f);
 
-    void SaveAsciiGraph(graphP theGraph, char *filename);
+    void SaveAsciiGraph(graphP theGraph, char *fileName);
 
     char *ReadTextFileIntoString(char const *infileName);
-    int TextFileMatchesString(char const *theFilename, char const *theString);
+    int TextFileMatchesString(char const *theFileName, char const *theString);
     int TextFilesEqual(char *file1Name, char *file2Name);
     int BinaryFilesEqual(char *file1Name, char *file2Name);
 
@@ -77,11 +77,11 @@ extern "C"
 
     int ExtendGraph(graphP theGraph, char command);
 
-    char *ConstructInputFilename(char const *infileName);
+    char *ConstructInputFileName(char const *infileName);
 
-    char *ConstructPrimaryOutputFilename(char const *infileName, char const *outfileName, char command);
+    char *ConstructPrimaryOutputFileName(char const *infileName, char const *outfileName, char command);
 
-    int ConstructTransformationExpectedResultFilename(char const *infileName, char **outfileName, char command, int actualOrExpectedFlag);
+    int ConstructTransformationExpectedResultFileName(char const *infileName, char **outfileName, char command, int actualOrExpectedFlag);
     void WriteAlgorithmResults(graphP theGraph, int Result, char command, platform_time start, platform_time end, char const *infileName);
 
     int GetNumCharsToReprInt(int theNum, int *numCharsRequired);

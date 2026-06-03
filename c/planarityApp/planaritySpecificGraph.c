@@ -9,16 +9,16 @@ See the LICENSE.TXT file for licensing information.
 /****************************************************************************
  SpecificGraph()
  commandString - a string (e.g. p,d,o,2,3,3e,4) indicating the algorithm to run on the specific graph
- infilename - name of file to read, or NULL to cause the program to prompt the user for a filename
- outfilename - name of primary output file, or NULL to construct an output filename based on the input
+ infileName - name of file to read, or NULL to cause the program to prompt the user for a file name
+ outfileName - name of primary output file, or NULL to construct an output file name based on the input
  outfile2Name - name of a secondary output file, or NULL to suppress secondary output, or empty string
-                to construct the secondary output filename based on the output filename.
+                to construct the secondary output file name based on the output file name.
                 For p=planarity and o=outerplanarity, empty string means that the planarity or outerplanarity
-                    obstruction will be written to outfilename, rather than only an embedding
+                    obstruction will be written to outfileName, rather than only an embedding
                 For d=drawing a planar graph, empty string means the visibility representation will be
-                    written to outfilename+".render.txt"
- inputStr - if non-NULL, overrides infilename and provides the input graph within a string
- pOutputStr - if non-NULL, overrides outfilename and provides a pointer pointer where a string containing
+                    written to outfileName+".render.txt"
+ inputStr - if non-NULL, overrides infileName and provides the input graph within a string
+ pOutputStr - if non-NULL, overrides outfileName and provides a pointer pointer where a string containing
                 the primary output should go.
                 For p=planarity, o=outerplanarity, and d=drawing, the primary output is the graph embedding
                 For p=planarity and o=outerplanarity, if the graph is not embeddable, then the primary
@@ -45,27 +45,26 @@ int SpecificGraph(
 
     if (GetCommandAndOptionalModifier(commandString, &command, &modifier) != OK)
     {
-        gp_ErrorMessage("Unable to derive command and modifier from commandString.\n");
-
+        gp_ErrorMessage("Unable to derive command and modifier from "
+                        "commandString.");
         return NOTOK;
     }
 
     if (GetEmbedFlags(command, modifier, &embedFlags) != OK)
     {
-        gp_ErrorMessage("Unable to derive embedFlags from command and optional modifier character.\n");
-
+        gp_ErrorMessage("Unable to derive embedFlags from command and optional "
+                        "modifier character.");
         return NOTOK;
     }
 
-    // Get the filename of the graph to test
+    // Get the file name of the graph to test
     if (inputStr == NULL)
     {
         if (infileName != NULL)
         {
-            if ((infileName = ConstructInputFilename(infileName)) == NULL)
+            if ((infileName = ConstructInputFileName(infileName)) == NULL)
             {
-                gp_ErrorMessage("Error constructing input filename.\n");
-
+                gp_ErrorMessage("Error constructing input file name.");
                 Result = NOTOK;
             }
         }
@@ -73,11 +72,10 @@ int SpecificGraph(
         {
             while (1)
             {
-                infileName = ConstructInputFilename(infileName);
+                infileName = ConstructInputFileName(infileName);
                 if (infileName == NULL || strlen(infileName) == 0)
                 {
-                    gp_ErrorMessage("Error constructing input filename.\n");
-
+                    gp_ErrorMessage("Error constructing input file name.");
                     Result = NOTOK;
 
                     break;
@@ -86,10 +84,11 @@ int SpecificGraph(
                 {
                     // NOTE: When run from command-line or test, it is not
                     // possible to have infileName being NULL and therefore
-                    // prompting the user for the input filename, so there's no
+                    // prompting the user for the input file name, so there's no
                     // way you could have them enter stdin and reach this error
                     // from command-line
-                    gp_ErrorMessage("\n\tPlease choose an input file path: stdin not supported from menu.\n\n");
+                    gp_Message("Please retry with an input file "
+                               "path: stdin not supported from menu.");
 
                     infileName = NULL;
                 }
@@ -104,8 +103,7 @@ int SpecificGraph(
         // Create the graph and, if needed, attach the correct algorithm to it
         if ((theGraph = gp_New()) == NULL)
         {
-            gp_ErrorMessage("Unable to allocate graph.\n");
-
+            gp_ErrorMessage("Unable to allocate graph.");
             return NOTOK;
         }
 
@@ -119,7 +117,7 @@ int SpecificGraph(
     // If there was an unrecoverable error, report it and exit early.
     if (Result != OK)
     {
-        gp_ErrorMessage("Failed to read graph.\n");
+        gp_ErrorMessage("Failed to read graph.");
 
         gp_Free(&theGraph);
 
@@ -131,10 +129,8 @@ int SpecificGraph(
 
     if (origGraph == NULL)
     {
-        gp_ErrorMessage("Unable to duplicate original graph.\n");
-
+        gp_ErrorMessage("Unable to duplicate original graph.");
         gp_Free(&theGraph);
-
         return NOTOK;
     }
 
@@ -156,11 +152,9 @@ int SpecificGraph(
 
         if (Result != OK && Result != NONEMBEDDABLE)
         {
-            gp_ErrorMessage("Failed to embed graph.\n");
-
+            gp_ErrorMessage("Failed to embed graph.");
             gp_Free(&theGraph);
             gp_Free(&origGraph);
-
             return NOTOK;
         }
 
@@ -182,7 +176,7 @@ int SpecificGraph(
     // Report an error, if there was one, free the graph, and return
     if (Result != OK && Result != NONEMBEDDABLE)
     {
-        gp_ErrorMessage("AN ERROR HAS BEEN DETECTED\n");
+        gp_ErrorMessage("AN ERROR HAS BEEN DETECTED");
         Result = NOTOK;
         //      gp_Write(theGraph, "debug.after.txt", WRITE_DEBUGINFO);
     }
@@ -193,15 +187,13 @@ int SpecificGraph(
         // Restore the vertex ordering of the original graph (undo DFS numbering)
         if (gp_SortVertices(theGraph) != OK)
         {
-            gp_ErrorMessage("Unable to restore original vertex ordering.\n");
-
+            gp_ErrorMessage("Unable to restore original vertex ordering.");
             gp_Free(&theGraph);
-
             return NOTOK;
         }
 
         // Determine the name of the primary output file
-        outfileName = ConstructPrimaryOutputFilename(infileName, outfileName, command);
+        outfileName = ConstructPrimaryOutputFileName(infileName, outfileName, command);
 
         // For some algorithms, the primary output file is not always written
         if ((strchr("pdo", command) && Result == NONEMBEDDABLE) ||
@@ -222,8 +214,7 @@ int SpecificGraph(
 
             if (writeResult != OK)
             {
-                gp_ErrorMessage("Failed to write graph to primary output file.\n");
-
+                gp_ErrorMessage("Failed to write graph to primary output file.");
                 Result = NOTOK;
             }
         }
@@ -251,7 +242,7 @@ int SpecificGraph(
             {
                 if ((command == 'p' || command == 'o') && Result == NONEMBEDDABLE)
                 {
-                    // By default, use the same name as the primary output filename
+                    // By default, use the same name as the primary output file name
                     if (strlen(outfile2Name) == 0)
                         outfile2Name = outfileName;
                     writeResult = gp_Write(theGraph, outfile2Name, WRITE_ADJLIST);
@@ -260,7 +251,7 @@ int SpecificGraph(
                 {
                     // An empty but non-NULL string is passed to indicate the necessity
                     // of selecting a default name for the second output file.
-                    // By default, add ".render.txt" to the primary output filename
+                    // By default, add ".render.txt" to the primary output file name
                     if (strlen(outfile2Name) == 0)
                         strcat((outfile2Name = outfileName), ".render.txt");
                     writeResult = gp_DrawPlanar_RenderToFile(theGraph, outfile2Name);
@@ -269,8 +260,7 @@ int SpecificGraph(
 
             if (writeResult != OK)
             {
-                gp_ErrorMessage("Failed to write secondary output file.\n");
-
+                gp_ErrorMessage("Failed to write secondary output file.");
                 Result = NOTOK;
             }
         }

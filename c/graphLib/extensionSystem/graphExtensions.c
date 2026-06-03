@@ -95,36 +95,20 @@ static int moduleIDGenerator = 0;
      if your feature is attached but not active or if your feature
      augments the base behavior rather than replacing it.
 
-     a) If any kind of data structures needs to be maintained at
-        the graph, vertex or edge levels, then an overload of
-        fpInitGraph() will be needed.
+     a) If extra data must be maintained at the graph, vertex or edge 
+        levels, then fpEnsureVertexCapacity(), fpEnsureEdgeCapacity(), 
+        and fpResetGraphStorage() must be overloaded.
 
-     b) If any data must be associated with vertices and virtual vertices,
-        then it is necessary to perform initialization parallel to the
-        initialization of VertexRec instances. Similarly, if data
-        must be associated only with vertices (and not virtual vertices),
-        then initialization parallel to VertexInfo initialization is
-        required. At this time, there do not exist overloadable functions
-        for fpInitVertexRec() and fpInitVertexInfo().
-        Instead, overload fpInitGraph() and fpReinitGraph().
-
-     c) If any data must be associated with the edges, then the extension
-        creates a parallel array that is initialized and reinitialized
-        in overloads of fpInitGraph() and fpReinitGraph().
-        Also, if the extension deletes edges, then the extension provides
-        its own _Feature_DeleteEdge() that initializes its edge
+     b) For a parallel array of edge data, the extension must currently
+        provides its own _Feature_DeleteEdge() that initializes its edge
         extension data along with calling gp_DeleteEdge().
 
-     d) If any graph-level data structures are needed, then an
-        overload of fpReinitGraph() will also be needed, not just the
-        overload of fpInitGraph().
-
-     e) If any data must be persisted in the file format, then overloads
+     c) If any data must be persisted in the file format, then overloads
         of fpReadPostprocess() and fpWritePostprocess() are needed.
 
   7) Define internal functions for _Feature_ClearStructures(),
      _Feature_CreateStructures(), _Feature_InitStructures(), and
-     _Feature_CopyStructures();
+     _Feature_CopyData();
 
      a) The _Feature_ClearStructures() should simply null out pointers
         to extra structures on its first invocation, but thereafter it
@@ -143,12 +127,12 @@ static int moduleIDGenerator = 0;
         needed to initialize the custom VertexRec, VertexInfo and
         EdgeRec data members, if any.
 
-     d) The _Feature_CopyStructures() should invoke just the functions
-        needed to copy the custom VertexRec, VertexInfo and EdgeRec data
-        members, if any, from a source extension context to a destination
-        extension context. For custom EdgeRec arrays, if the destination
-        has more capacitiy than the source, then the implementation should
-        also ensure the extra EdgeRecs are initialized in the destination.
+     d) The _Feature_CopyData() should invoke just the functions needed
+        to copy the custom VertexRec, VertexInfo and EdgeRec data members, 
+        if any, from a source extension context to a destination extension 
+        context. For custom EdgeRec arrays, if the destination has more 
+        capacitiy than the source, then the implementation should also 
+        ensure the extra EdgeRecs are initialized in the destination.
 
   8) Define a function gp_Detach_Feature() that invokes gp_RemoveExtension()
      This should be done for consistency, so that users of a feature
