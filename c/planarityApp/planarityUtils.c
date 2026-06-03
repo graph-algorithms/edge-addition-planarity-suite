@@ -1005,38 +1005,42 @@ int ConstructTransformationExpectedResultFileName(char const *infileName, char *
 
 void WriteAlgorithmResults(graphP theGraph, int Result, char command, platform_time start, platform_time end, char const *infileName)
 {
-    gp_Message("The graph ");
+    char algorithmResults[2 * MAXLINE + 1];
+    char *target = algorithmResults;
+
+    target += sprintf(target, "The graph ");
     if (infileName)
     {
-        gp_Message("\"%.*s\" ", FILENAME_MAX, infileName);
+        target += sprintf(target, "\"%.*s\" ", FILENAME_MAX, infileName);
     }
 
     switch (command)
     {
     case 'p':
-        gp_Message("is%s planar.", Result == OK ? "" : " not");
+        target += sprintf(target, "is%s planar.", Result == OK ? "" : " not");
         break;
     case 'd':
-        gp_Message("is%s planar.", Result == OK ? "" : " not");
+        target += sprintf(target, "is%s planar.", Result == OK ? "" : " not");
         break;
     case 'o':
-        gp_Message("is%s outerplanar.", Result == OK ? "" : " not");
+        target += sprintf(target, "is%s outerplanar.", Result == OK ? "" : " not");
         break;
     case '2':
-        gp_Message("has %s subgraph homeomorphic to K_{2,3}.", Result == OK ? "no" : "a");
+        target += sprintf(target, "has %s subgraph homeomorphic to K_{2,3}.", Result == OK ? "no" : "a");
         break;
     case '3':
-        gp_Message("has %s subgraph homeomorphic to K_{3,3}.", Result == OK ? "no" : "a");
+        target += sprintf(target, "has %s subgraph homeomorphic to K_{3,3}.", Result == OK ? "no" : "a");
         break;
     case '4':
-        gp_Message("has %s subgraph homeomorphic to K_4.", Result == OK ? "no" : "a");
+        target += sprintf(target, "has %s subgraph homeomorphic to K_4.", Result == OK ? "no" : "a");
         break;
     default:
-        gp_Message("has not been processed due to unrecognized command.");
+        target += sprintf(target, "has not been processed due to unrecognized command.");
         break;
     }
 
-    gp_Message("Algorithm '%s' executed in %.3lf seconds.",
+    gp_Message("%s", algorithmResults);
+    gp_Message("Algorithm '%s' executed on graph in  in %.3lf seconds.",
                GetAlgorithmName(command), platform_GetDuration(start, end));
 }
 

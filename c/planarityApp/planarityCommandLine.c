@@ -227,9 +227,9 @@ int runQuickRegressionTests(int argc, char *argv[])
 
     // All done.
     if (retVal == OK)
-        gp_Message("============\nAll tests have succeeded.");
+        gp_Message("============\n\nAll tests have succeeded.");
     else
-        gp_Message("============\nOne or more tests FAILED.");
+        gp_Message("============\n\nOne or more tests FAILED.");
 
     chdir(origDir);
     FlushConsole(stdout);
@@ -242,7 +242,7 @@ int runSpecificGraphTests(void)
     int retVal = OK;
 
 #ifdef USE_1BASEDARRAYS
-    gp_Message("\n\tStarting 1-based Array Index Tests");
+    gp_Message("\n\tStarting 1-based Array Index Tests\n");
 
     if (runSpecificGraphTest("-p", "maxPlanar5.txt", TRUE) != OK)
     {
@@ -292,7 +292,7 @@ int runSpecificGraphTests(void)
         retVal = NOTOK;
     }
 
-    gp_Message("\tFinished 1-based Array Index Tests.");
+    gp_Message("\tFinished 1-based Array Index Tests.\n");
 #endif
 
     if (runSpecificGraphTest("-p", "maxPlanar5.0-based.txt", FALSE) != OK)
@@ -568,6 +568,8 @@ int runTestAllGraphsTest(char const *commandString, char const *infileName)
             Result = strstr(outputStr, theValidationStr) ? OK : NOTOK;
     }
 
+    gp_Message(" ");
+
     if (outputStr != NULL)
     {
         free(outputStr);
@@ -668,7 +670,7 @@ int runSpecificGraphTest(char const *commandString, char const *infileName, int 
         }
     }
 
-    gp_Message("");
+    gp_Message(" ");
 
     if (inputString != NULL)
     {
@@ -785,7 +787,7 @@ int runGraphTransformationTest(char const *command, char const *infileName, int 
         }
     }
 
-    gp_Message("");
+    gp_Message(" ");
 
     if (inputString != NULL)
     {
