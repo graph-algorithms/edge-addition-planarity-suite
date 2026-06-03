@@ -462,12 +462,14 @@ extern "C"
 
                 extensions: an object-oriented hierarchy of graph classes is implemented
                             manually as a list of extensions for data of any subclasses
-                            with which a graph has been extended. 
-                functions: the object-oriented hierarchies includes virtual function 
-                           overloading, which is provided by a function pointer table.
+                            with which a graph has been extended.
+                extensionLookupTable: if not NULL, keeps an array of pointers to the 
+                                      extensions indexed by ID for constant-time lookup.
+                functions: object-oriented class hierarchies includes virtual function 
+                           overloading, which is provided by this function pointer table.
 
-                privateData: pointer to structure for package private data that can change
-                             while maintaining backwards compatibility.
+                privateData: pointer to a package private data structure that can be
+                             backwards compatibly changed in releases of graphLib.
         */
 
     struct graphStruct
@@ -488,6 +490,7 @@ extern "C"
         // Provides ability to subclass the base Graph, 
         // including virtual function overloads by subclasses
         graphExtensionP extensions;
+        graphExtensionP *extensionLookupTable;
         graphFunctionTableP functions;
 
         void *privateData;

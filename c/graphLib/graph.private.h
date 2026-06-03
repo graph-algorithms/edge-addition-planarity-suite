@@ -18,35 +18,6 @@ extern "C"
 {
 #endif
 
-/*
-    // DFS-RELATED and PLANARITY-RELATED ONLY
-    // Declaration of package-private data type for managing additional DFS-
-    // and planarity-related information associated with each non-virtual vertex
-    typedef struct DFSUtils_VertexInfo DFSUtils_VertexInfo;
-    typedef DFSUtils_VertexInfo *DFSUtils_VertexInfoP;
-    typedef struct Planarity_VertexInfo Planarity_VertexInfo;
-    typedef Planarity_VertexInfo *Planarity_VertexInfoP;
-
-    // PLANARITY-RELATED ONLY
-    // Declaration of package private data type for optimizing management of
-    // the external face of a planar embedding as it is being built
-    typedef struct extFaceLinkRec extFaceLinkRec;
-    typedef extFaceLinkRec *extFaceLinkRecP;
-
-    // PLANARITY-RELATED ONLY
-    // Declaration of package private data type for isolating
-    // minimal subgraphs obstructing planarity-related embedding
-    typedef struct isolatorContextStruct isolatorContextStruct;
-    typedef isolatorContextStruct *isolatorContextP;
-
-    // DFS-RELATED and PLANARITY-RELATED ONLY
-    // Declaration of package-private data type for managing a
-    // collection of lists of integers
-    typedef struct listCollectionStruct listCollectionStruct;
-    typedef listCollectionStruct *listCollectionP;
-
-*/
-
     // DFS-RELATED and PLANARITY-RELATED ONLY
 
     // Declaration of package-private data type for managing a
@@ -110,6 +81,10 @@ extern "C"
     typedef struct graphPrivateDataStruct graphPrivateDataStruct;
     typedef graphPrivateDataStruct *graphPrivateDataP;
 
+// These macros describe how to currently get access to additional data structures
+// used in DFSUtils Graphs and Planarity Graphs. Once full extensions are
+// developed for those, then these definitions can change to access the data 
+// from the extensions, and the data can be removed from graphPrivateDataStruct. 
 #define theGraphBicompRootLists(theGraph) (((graphPrivateDataP)((theGraph)->privateData))->BicompRootLists)
 #define theGraphDVI(theGraph) (((graphPrivateDataP)((theGraph)->privateData))->DVI)
 
