@@ -1005,13 +1005,16 @@ int ConstructTransformationExpectedResultFileName(char const *infileName, char *
 
 void WriteAlgorithmResults(graphP theGraph, int Result, char command, platform_time start, platform_time end, char const *infileName)
 {
-    char algorithmResults[2 * MAXLINE + 1];
+    char algorithmResults[MAXLINE + 1];
     char *target = algorithmResults;
 
+    memset(algorithmResults, '\0', MAXLINE + 1);
+
     target += sprintf(target, "The graph ");
+
     if (infileName)
     {
-        target += sprintf(target, "\"%.*s\" ", FILENAME_MAX, infileName);
+        target += sprintf(target, "\"%.*s\" ", FILENAMEMAXLENGTH, infileName);
     }
 
     switch (command)
