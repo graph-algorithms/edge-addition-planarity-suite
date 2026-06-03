@@ -20,7 +20,7 @@ typedef testAllStats *testAllStatsP;
 int testAllGraphs(char command, char modifier, char const *const infileName, testAllStatsP stats);
 int outputTestAllGraphsResults(char command, char modifier, testAllStatsP stats, char const *const infileName, char *outfileName, char **pOutputStr);
 
-#define TESTALLGRAPHS_MEMORY_TIMING_TEST
+// #define TESTALLGRAPHS_MEMORY_TIMING_TEST
 
 #ifdef TESTALLGRAPHS_MEMORY_TIMING_TEST
 int testAllGraphsN8(char command, char modifier, char const *const infileName, testAllStatsP stats);
