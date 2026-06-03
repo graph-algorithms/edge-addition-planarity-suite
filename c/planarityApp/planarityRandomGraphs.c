@@ -399,7 +399,7 @@ int GetNumberIfZero(int *pNum, char const *prompt, int min, int max)
 
     while (*pNum == 0)
     {
-        gp_Message("%s", prompt);
+        gp_MessagePrompt("%s", prompt);
         if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
         {
             gp_ErrorMessage("Unable to read integer choice from stdin.");
@@ -645,16 +645,20 @@ int PromptSaveGraph(graphP theGraph, graphP origGraph, int extraEdges, int saveM
     switch (saveMode)
     {
     case WRITE_ADJLIST:
-        gp_Message("Do you want to save the generated graph in adjacency list format (y/n)?");
+        gp_MessagePrompt("Do you want to save the generated graph in adjacency "
+                         "list format (y/n)?");
         break;
     case WRITE_ADJMATRIX:
-        gp_Message("Do you want to save the generated graph in adjacency matrix format (y/n)?");
+        gp_MessagePrompt("Do you want to save the generated graph in adjacency "
+                         "matrix format (y/n)?");
         break;
     case WRITE_G6:
-        gp_Message("Do you want to save the generated graph in G6 format (y/n)?");
+        gp_MessagePrompt("Do you want to save the generated graph in G6 format "
+                         "(y/n)?");
         break;
     default:
-        gp_Message("Do you want to save the generated graph in edge list format (y/n)?");
+        gp_MessagePrompt("Do you want to save the generated graph in edge list "
+                         "format (y/n)?");
         break;
     }
     // Prompt the user
@@ -705,7 +709,7 @@ int PromptSaveGraph(graphP theGraph, graphP origGraph, int extraEdges, int saveM
         break;
     }
 
-    gp_Message("Saving original graph to \"%.*s\"",
+    gp_Message("Saving edge list format of original graph to \"%.*s\"",
                FILENAME_MAX, theFileName);
     SaveAsciiGraph(origGraph, theFileName);
 

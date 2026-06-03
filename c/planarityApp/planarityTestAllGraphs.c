@@ -52,7 +52,7 @@ int TestAllGraphs(char const *const commandString, char const *const infileName,
         return NOTOK;
     }
 
-    gp_Message("Start testing all graphs in \"%.*s\".",
+    gp_Message("Starting to test all graphs in \"%.*s\".",
                FILENAME_MAX,
                infileName);
 

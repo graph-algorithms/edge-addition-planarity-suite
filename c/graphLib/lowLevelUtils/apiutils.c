@@ -43,6 +43,22 @@ void gp_Message(const char *message, ...)
     }
 }
 
+void gp_MessagePrompt(const char *message, ...)
+{
+    if (!(gp_GetQuietMode() & QUIETMODE_MESSAGES))
+    {
+        va_list args;
+
+        va_start(args, message);
+        vfprintf(stdout, message, args);
+        va_end(args);
+
+        fprintf(stdout, " ");
+
+        fflush(stdout);
+    }
+}
+
 void gp_LogErrorMessage(int lineNum, const char *srcFileName, const char *message, ...)
 {
     if (!(gp_GetQuietMode() & QUIETMODE_ERRORS))

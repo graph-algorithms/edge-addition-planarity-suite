@@ -90,7 +90,7 @@ int helpMessage(char *param)
             "'planarity -x [-q] -(gam) I O': Transform graph to .g6 (g), Adjacency List (a), or Adjacency Matrix (m)\n"
             "'planarity I O [-n O2]': Legacy command-line (default -s -p)\n");
 
-        gp_Message("-q is for quiet mode (no messages to stdout and stderr)");
+        gp_Message("-q is for quiet mode (no messages to stdout and stderr)\n");
 
         gp_Message("%s", GetAlgorithmFlags());
 

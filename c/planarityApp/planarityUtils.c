@@ -30,11 +30,11 @@ int Reconfigure(void)
 
     while (1)
     {
-        gp_Message("Do you want to \n"
-                   "  Randomly generate graphs (r),\n"
-                   "  Specify a graph (s),\n"
-                   "  Randomly generate a maximal planar graph (m), or\n"
-                   "  Randomly generate a non-planar graph (n)?");
+        gp_MessagePrompt("Do you want to \n"
+                         "  Randomly generate graphs (r),\n"
+                         "  Specify a graph (s),\n"
+                         "  Randomly generate a maximal planar graph (m), or\n"
+                         "  Randomly generate a non-planar graph (n)? ");
 
         if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
         {
@@ -60,8 +60,8 @@ int Reconfigure(void)
 
         while (1)
         {
-            gp_Message("Do you want original graphs in directory 'random'? "
-                       "(y/n)");
+            gp_MessagePrompt("Do you want original graphs in directory "
+                             "'random'? (y/n) ");
             if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
             {
                 gp_ErrorMessage("Unable to fetch choice from stdin.");
@@ -84,9 +84,9 @@ int Reconfigure(void)
         {
             while (1)
             {
-                gp_Message("Do you want to output generated graphs to "
-                           "Adjacency List (last 10 only) or to G6 (all)? "
-                           "(a/g)");
+                gp_MessagePrompt("Do you want to output generated graphs to "
+                                 "Adjacency List (last 10 only) or to G6 "
+                                 "(all)? (a/g) ");
                 if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
                 {
                     gp_ErrorMessage("Unable to fetch choice from stdin.");
@@ -110,7 +110,9 @@ int Reconfigure(void)
         {
             while (1)
             {
-                gp_Message("Do you want adj. matrix of embeddable graphs in directory 'embedded' (last 10 max))? (y/n) ");
+                gp_MessagePrompt("Do you want adj. matrix of embeddable graphs "
+                                 "in directory 'embedded' (last 10 max))? "
+                                 "(y/n) ");
                 if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
                 {
                     gp_ErrorMessage("Unable to fetch choice from stdin.");
@@ -133,7 +135,9 @@ int Reconfigure(void)
         {
             while (1)
             {
-                gp_Message("Do you want adj. matrix of obstructed graphs in directory 'obstructed' (last 10 max)? (y/n) ");
+                gp_MessagePrompt("Do you want adj. matrix of obstructed graphs "
+                                 "in directory 'obstructed' (last 10 max)? "
+                                 "(y/n) ");
                 if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
                 {
                     gp_ErrorMessage("Unable to fetch choice from stdin.");
@@ -157,7 +161,9 @@ int Reconfigure(void)
         {
             while (1)
             {
-                gp_Message("Do you want adjacency list format of embeddings in directory 'adjlist' (last 10 max)? (y/n) ");
+                gp_MessagePrompt("Do you want adjacency list format of "
+                                 "embeddings in directory 'adjlist' "
+                                 "(last 10 max)? (y/n) ");
                 if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
                 {
                     gp_ErrorMessage("Unable to fetch choice from stdin.");
@@ -229,8 +235,8 @@ void SaveAsciiGraph(graphP theGraph, char *fileName)
     // The fileName may specify a directory that doesn't exist
     if (outfile == NULL)
     {
-        gp_ErrorMessage("Failed to write to \"%.*s\"\nMake the directory if not "
-                        "present\n",
+        gp_ErrorMessage("Failed to write to \"%.*s\"\nMake the directory if "
+                        "not present.",
                         FILENAME_MAX, fileName);
         return;
     }
@@ -824,7 +830,7 @@ char *ConstructInputFileName(char const *infileName)
     {
         while (1)
         {
-            gp_Message("Enter graph file name: ");
+            gp_MessagePrompt("Enter graph file name: ");
             if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
             {
                 gp_ErrorMessage("Unable to read graph file name from stdin.");

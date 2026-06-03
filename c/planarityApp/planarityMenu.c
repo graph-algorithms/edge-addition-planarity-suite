@@ -65,9 +65,9 @@ int menu(void)
                 "T. Perform an algorithm test on all graphs in .g6 input file\n"
                 "H. Help message for command line version\n"
                 "R. Reconfigure options\n"
-                "Q. Quit");
+                "Q. Quit\n");
 
-            gp_Message("Enter Choice: ");
+            gp_MessagePrompt("Enter Choice:");
 
             if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
             {
@@ -165,7 +165,7 @@ int menu(void)
                 break;
             }
 
-            gp_Message("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+            gp_Message("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
             FlushConsole(stdout);
         }
     }
@@ -224,7 +224,7 @@ int TransformGraphMenu(void)
 
     while (1)
     {
-        gp_Message("Enter input file name:");
+        gp_MessagePrompt("Enter input file name:");
         if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
         {
             gp_ErrorMessage("Unable to read input file name from stdin.");
@@ -253,8 +253,8 @@ int TransformGraphMenu(void)
     {
         while (1)
         {
-            gp_Message("Enter output file name, or type \"stdout\" to output "
-                       "to console:");
+            gp_MessagePrompt("Enter output file name, or type \"stdout\" to "
+                             "output to console:");
             if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
             {
                 gp_ErrorMessage("Unable to read output file name from stdin.");
@@ -279,7 +279,7 @@ int TransformGraphMenu(void)
         while (1)
         {
             gp_Message("%s", GetSupportedOutputChoices());
-            gp_Message("Enter output format: ");
+            gp_MessagePrompt("Enter output format:");
             if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
             {
                 gp_ErrorMessage("Unable to read output format from stdin.");
@@ -396,7 +396,7 @@ int TestAllGraphsMenu(void)
 
     while (1)
     {
-        gp_Message("Enter input file name:");
+        gp_MessagePrompt("Enter input file name:");
         if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
         {
             gp_ErrorMessage("Unable to read input file name from stdin.");
@@ -425,7 +425,8 @@ int TestAllGraphsMenu(void)
     {
         while (1)
         {
-            gp_Message("Enter output file name, or type \"stdout\" to output to console:");
+            gp_MessagePrompt("Enter output file name, or type \"stdout\" to "
+                             "output to console:");
             if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
             {
                 gp_ErrorMessage("Unable to read output file name from stdin.");
@@ -450,7 +451,8 @@ int TestAllGraphsMenu(void)
         while (1)
         {
             gp_Message("%s", GetAlgorithmSpecifiers());
-            gp_Message("Enter algorithm specifier (with optional modifier): ");
+            gp_MessagePrompt("Enter algorithm specifier (with optional "
+                             "modifier):");
             if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
             {
                 gp_ErrorMessage("Unable to read command and optional modifier "
