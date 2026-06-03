@@ -525,7 +525,7 @@ extern "C"
         listCollectionP BicompRootLists;
         DFSUtils_VertexInfoP DVI;
 
-        Planarity_VertexInfoP PVI;
+        // Planarity_VertexInfoP PVI;
         //listCollectionP sortedDFSChildLists;
         //extFaceLinkRecP extFace;
         //isolatorContextP IC;

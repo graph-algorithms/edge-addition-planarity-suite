@@ -271,7 +271,7 @@ int _EnsureVertexCapacity(graphP theGraph, int N)
         (theGraph->BicompRootLists = LCNew(VIsize)) == NULL ||
         (theGraph->DVI = (DFSUtils_VertexInfoP)calloc(VIsize, sizeof(DFSUtils_VertexInfo))) == NULL ||
 
-        (theGraph->PVI = (Planarity_VertexInfoP)calloc(VIsize, sizeof(Planarity_VertexInfo))) == NULL ||
+        (theGraphPVI(theGraph) = (Planarity_VertexInfoP)calloc(VIsize, sizeof(Planarity_VertexInfo))) == NULL ||
         (theGraphSortedDFSChildLists(theGraph) = LCNew(VIsize)) == NULL ||
         (theGraphExtFace(theGraph) = (extFaceLinkRecP)calloc(Vsize, sizeof(extFaceLinkRec))) == NULL ||
         (theGraphIC(theGraph) = (isolatorContextP)calloc(1, sizeof(isolatorContextStruct))) == NULL ||
@@ -298,7 +298,7 @@ void _InitVertices(graphP theGraph)
 
     memset(theGraph->DVI, NIL_CHAR, gp_UpperBoundVertices(theGraph) * sizeof(DFSUtils_VertexInfo));
 
-    memset(theGraph->PVI, NIL_CHAR, gp_UpperBoundVertices(theGraph) * sizeof(Planarity_VertexInfo));
+    memset(theGraphPVI(theGraph), NIL_CHAR, gp_UpperBoundVertices(theGraph) * sizeof(Planarity_VertexInfo));
     memset(theGraphExtFace(theGraph), NIL_CHAR, gp_UpperBoundVertexStorage(theGraph) * sizeof(extFaceLinkRec));
 
 #ifdef USE_1BASEDARRAYS
@@ -860,10 +860,10 @@ void _ClearGraph(graphP theGraph)
         theGraph->DVI = NULL;
     }
 
-    if (theGraph->PVI != NULL)
+    if (theGraphPVI(theGraph) != NULL)
     {
-        free(theGraph->PVI);
-        theGraph->PVI = NULL;
+        free(theGraphPVI(theGraph));
+        theGraphPVI(theGraph) = NULL;
     }
     LCFree(&theGraphSortedDFSChildLists(theGraph));
     if (theGraphExtFace(theGraph) != NULL)
@@ -989,7 +989,7 @@ int gp_CopyAdjacencyLists(graphP dstGraph, graphP srcGraph)
 // Give macro names to three copy operations
 #define _gp_CopyVertexRec(dstGraph, vdst, srcGraph, vsrc) (dstGraph->V[vdst] = srcGraph->V[vsrc])
 #define _gp_CopyDFSUtilsVertexInfo(dstGraph, dstI, srcGraph, srcI) (dstGraph->DVI[dstI] = srcGraph->DVI[srcI])
-#define _gp_CopyPlanarityVertexInfo(dstGraph, dstI, srcGraph, srcI) (dstGraph->PVI[dstI] = srcGraph->PVI[srcI])
+#define _gp_CopyPlanarityVertexInfo(dstGraph, dstI, srcGraph, srcI) (theGraphPVI(dstGraph)[dstI] = theGraphPVI(srcGraph)[srcI])
 #define _gp_CopyEdgeRec(dstGraph, edst, srcGraph, esrc) (dstGraph->E[edst] = srcGraph->E[esrc])
 
 int gp_CopyGraph(graphP dstGraph, graphP srcGraph)
@@ -1023,7 +1023,7 @@ int gp_CopyGraph(graphP dstGraph, graphP srcGraph)
         _gp_CopyVertexRec(dstGraph, v, srcGraph, v);
         if (dstGraph->DVI != NULL && srcGraph->DVI != NULL)
             _gp_CopyDFSUtilsVertexInfo(dstGraph, v, srcGraph, v);
-        if (dstGraph->PVI != NULL && srcGraph->PVI != NULL)
+        if (theGraphPVI(dstGraph) != NULL && theGraphPVI(srcGraph) != NULL)
             _gp_CopyPlanarityVertexInfo(dstGraph, v, srcGraph, v);
         gp_SetExtFaceVertex(dstGraph, v, 0, gp_GetExtFaceVertex(srcGraph, v, 0));
         gp_SetExtFaceVertex(dstGraph, v, 1, gp_GetExtFaceVertex(srcGraph, v, 1));
