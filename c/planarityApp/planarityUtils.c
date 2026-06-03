@@ -830,7 +830,7 @@ char *ConstructInputFileName(char const *infileName)
     {
         while (1)
         {
-            gp_MessagePrompt("Enter graph file name: ");
+            gp_MessagePrompt("Enter graph file name:");
             if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
             {
                 gp_ErrorMessage("Unable to read graph file name from stdin.");
