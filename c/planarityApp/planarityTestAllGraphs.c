@@ -48,11 +48,11 @@ int TestAllGraphs(char const *const commandString, char const *const infileName,
 
     if (infileName == NULL)
     {
-        gp_ErrorMessage("No input file provided.\n");
+        gp_ErrorMessage("No input file provided.");
         return NOTOK;
     }
 
-    gp_Message("Start testing all graphs in \"%.*s\".\n",
+    gp_Message("Starting to test all graphs in \"%.*s\".",
                FILENAME_MAX,
                infileName);
 
@@ -67,14 +67,14 @@ int TestAllGraphs(char const *const commandString, char const *const infileName,
 
     if (Result != OK)
     {
-        gp_ErrorMessage("\nEncountered error while running command '%c' on all "
-                        "graphs in \"%.*s\".\n",
+        gp_ErrorMessage("Encountered error while running command '%c' on all "
+                        "graphs in \"%.*s\".",
                         command, FILENAME_MAX, infileName);
         Result = NOTOK;
     }
     else
     {
-        gp_Message("\nDone testing all graphs (%.3lf seconds).\n", stats.duration);
+        gp_Message("Done testing all graphs (%.3lf seconds).", stats.duration);
     }
 
     if (outputTestAllGraphsResults(command, modifier, &stats, infileName, outfileName, pOutputStr) != OK)
@@ -102,14 +102,14 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
 
     if (GetEmbedFlags(command, modifier, &embedFlags) != OK)
     {
-        gp_ErrorMessage("Invalid command or modifier.\n");
+        gp_ErrorMessage("Invalid command or modifier.");
         stats->errorFlag = TRUE;
         return NOTOK;
     }
 
     if ((origGraphRead = gp_New()) == NULL)
     {
-        gp_ErrorMessage("Unable to allocate graph for reading.\n");
+        gp_ErrorMessage("Unable to allocate graph for reading.");
         stats->errorFlag = TRUE;
         return NOTOK;
     }
@@ -117,7 +117,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
     if (g6_NewReader((&theG6ReadIterator), origGraphRead) != OK ||
         g6_InitReaderWithFileName(theG6ReadIterator, infileName) != OK)
     {
-        gp_ErrorMessage("Unable to allocate or initialize G6 read iterator.\n");
+        gp_ErrorMessage("Unable to allocate or initialize G6 read iterator.");
         gp_Free(&origGraphRead);
         g6_FreeReader((&theG6ReadIterator));
         stats->errorFlag = TRUE;
@@ -132,7 +132,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
     if ((graphForEmbedding = gp_New()) == NULL ||
         gp_EnsureVertexCapacity(graphForEmbedding, order) != OK)
     {
-        gp_ErrorMessage("Unable allocate graph for embedding.\n");
+        gp_ErrorMessage("Unable allocate graph for embedding.");
         g6_FreeReader((&theG6ReadIterator));
         gp_Free(&origGraphRead);
         gp_Free(&graphForEmbedding);
@@ -142,7 +142,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
 
     if (ExtendGraph(graphForEmbedding, command) != OK)
     {
-        gp_ErrorMessage("Unable to extend graph for embedding operation.\n");
+        gp_ErrorMessage("Unable to extend graph for embedding operation.");
         g6_FreeReader(&theG6ReadIterator);
         gp_Free(&origGraphRead);
         gp_Free(&graphForEmbedding);
@@ -155,7 +155,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
         lineNum++;
         if (g6_ReadGraph(theG6ReadIterator) != OK)
         {
-            gp_ErrorMessage("Unable to read graph on line %d.\n",
+            gp_ErrorMessage("Unable to read graph on line %d.",
                             lineNum);
             Result = NOTOK;
             break;
@@ -166,7 +166,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
 
         if (gp_CopyGraph(graphForEmbedding, origGraphRead) != OK)
         {
-            gp_ErrorMessage("Unable to copy graph.\n");
+            gp_ErrorMessage("Unable to copy graph.");
             Result = NOTOK;
             break;
         }
@@ -174,7 +174,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
         Result = gp_Embed(graphForEmbedding, embedFlags);
         if (Result != OK && Result != NONEMBEDDABLE)
         {
-            gp_ErrorMessage("Failed to embed graph on line %d for command '%c'.\n",
+            gp_ErrorMessage("Failed to embed graph on line %d for command '%c'.",
                             lineNum, command);
             Result = NOTOK;
         }
@@ -200,12 +200,12 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
         {
             if (modifier == '\0')
             {
-                gp_ErrorMessage("Command '%c' error on graph on line %d.\n",
+                gp_ErrorMessage("Command '%c' error on graph on line %d.",
                                 command, lineNum);
             }
             else
             {
-                gp_ErrorMessage("Command '%c%c' error on graph on line %d.\n",
+                gp_ErrorMessage("Command '%c%c' error on graph on line %d.",
                                 command, modifier, lineNum);
             }
             Result = NOTOK;
@@ -245,7 +245,8 @@ int outputTestAllGraphsResults(char command, char modifier, testAllStatsP stats,
 
     if (outfileName == NULL && (pOutputStr == NULL || *pOutputStr != NULL))
     {
-        gp_ErrorMessage("Invalid parameters: Must be able to output to file or memory.");
+        gp_ErrorMessage("Invalid parameters: Must be able to output to file or "
+                        "memory.");
         return NOTOK;
     }
 
@@ -259,8 +260,8 @@ int outputTestAllGraphsResults(char command, char modifier, testAllStatsP stats,
         GetNumCharsToReprInt(stats->numOK, &numCharsToReprNumOK) != OK ||
         GetNumCharsToReprInt(stats->numNONEMBEDDABLE, &numCharsToReprNumNONEMBEDDABLE) != OK)
     {
-        gp_ErrorMessage("Unable to determine the number of characters required to "
-                        "represent testAllGraphs stat values.\n");
+        gp_ErrorMessage("Unable to determine the number of characters required "
+                        "to represent testAllGraphs stat values.");
         return NOTOK;
     }
 
@@ -282,7 +283,7 @@ int outputTestAllGraphsResults(char command, char modifier, testAllStatsP stats,
     theOutputStr = (char *)malloc((headerStrLen + resultStrLen + 1) * sizeof(char));
     if (theOutputStr == NULL)
     {
-        gp_ErrorMessage("Unable allocate memory for the output.\n");
+        gp_ErrorMessage("Unable allocate memory for the output.");
         return NOTOK;
     }
 
