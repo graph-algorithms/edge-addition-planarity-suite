@@ -37,11 +37,13 @@ void gp_Message(const char *message, ...)
         vfprintf(stdout, message, args);
         va_end(args);
 
+        fprintf(stdout, "\n");
+
         fflush(stdout);
     }
 }
 
-void gp_LogErrorMessage(int line, const char *sourceFileName, const char *message, ...)
+void gp_LogErrorMessage(int lineNum, const char *srcFileName, const char *message, ...)
 {
     if (!(gp_GetQuietMode() & QUIETMODE_ERRORS))
     {
@@ -53,7 +55,11 @@ void gp_LogErrorMessage(int line, const char *sourceFileName, const char *messag
         vfprintf(stderr, message, args);
         va_end(args);
 
-        fprintf(stderr, "\n\ton line %d of '%s'\n", line, sourceFileName);
+        if (lineNum > 0 && srcFileName != NULL)
+            fprintf(stderr, "\n\ton line %d of '%s'", lineNum, srcFileName);
+
+        fprintf(stderr, "\n");
+
         fflush(stderr);
     }
 }

@@ -52,7 +52,7 @@ extern "C"
     void gp_Message(const char *message, ...) FORMAT_PRINTF(1, 2);
 
 #define gp_ErrorMessage(...) (gp_LogErrorMessage(__LINE__, __FILE__, __VA_ARGS__))
-    void gp_LogErrorMessage(int line, const char *sourceFileName, const char *message, ...) FORMAT_PRINTF(3, 4);
+    void gp_LogErrorMessage(int lineNum, const char *srcFileName, const char *message, ...) FORMAT_PRINTF(3, 4);
 
 #ifdef __cplusplus
 }
