@@ -32,7 +32,8 @@ int TransformGraph(char const *const commandString, char const *const infileName
 
     if (theGraph == NULL)
     {
-        gp_ErrorMessage("Unable to allocate graphP for input graph transformation target.\n");
+        gp_ErrorMessage("Unable to allocate graphP for input graph "
+                        "transformation target.");
         return NOTOK;
     }
 
@@ -46,10 +47,8 @@ int TransformGraph(char const *const commandString, char const *const infileName
             outputFormat = WRITE_ADJMATRIX;
         else
         {
-            gp_ErrorMessage("Invalid argument; only -(gam) is allowed.\n");
-
+            gp_ErrorMessage("Invalid argument; only -(gam) is allowed.");
             gp_Free(&theGraph);
-
             return NOTOK;
         }
 
@@ -60,7 +59,7 @@ int TransformGraph(char const *const commandString, char const *const infileName
 
         if (Result != OK)
         {
-            gp_ErrorMessage("Unable to transform input graph.\n");
+            gp_ErrorMessage("Unable to transform input graph.");
         }
         else
         {
@@ -75,12 +74,12 @@ int TransformGraph(char const *const commandString, char const *const infileName
                 Result = gp_Write(theGraph, outfileName, outputFormat);
 
             if (Result != OK)
-                gp_ErrorMessage("Unable to write graph.\n");
+                gp_ErrorMessage("Unable to write graph.");
         }
     }
     else
     {
-        gp_ErrorMessage("Invalid argument; must start with '-'.\n");
+        gp_ErrorMessage("Invalid argument; must start with '-'.");
         Result = NOTOK;
     }
 
@@ -95,7 +94,8 @@ int transformFile(graphP theGraph, char const *infileName)
     {
         if ((infileName = ConstructInputFileName(infileName)) == NULL)
         {
-            gp_ErrorMessage("Unable to construct input file name for graph to transform.\n");
+            gp_ErrorMessage("Unable to construct input file name for graph to "
+                            "transform.");
             return NOTOK;
         }
     }
@@ -107,7 +107,7 @@ int transformString(graphP theGraph, char *inputStr)
 {
     if (inputStr == NULL || strlen(inputStr) == 0)
     {
-        gp_ErrorMessage("Input string is null or empty.\n");
+        gp_ErrorMessage("Input string is null or empty.");
         return NOTOK;
     }
 

@@ -39,8 +39,7 @@ int helpMessage(char *param)
             "'planarity (-h|-help)': this message\n"
             "'planarity (-h|-help) -menu': more help with menu-based command line\n"
             "'planarity (-i|-info): copyright and license information\n"
-            "'planarity -test [-q] [samples dir]': runs tests (optional quiet mode)\n"
-            "\n");
+            "'planarity -test [-q] [samples dir]': runs tests (optional quiet mode)\n");
 
         gp_Message(
             "Common usages\n"
@@ -53,7 +52,7 @@ int helpMessage(char *param)
             "planarity -s -q -d infile.txt embedding.out [drawing.out]\n"
             "If graph in infile.txt is planar, then put embedding in embedding.out \n"
             "and (optionally) an ASCII art drawing in drawing.out\n"
-            "Process returns 0=planar, 1=nonplanar, -1=error\n");
+            "Process returns 0=planar, 1=nonplanar, -1=error");
     }
 
     else if (strcmp(param, "-i") == 0 || strcmp(param, "-info") == 0)
@@ -77,8 +76,7 @@ int helpMessage(char *param)
             "\n"
             "* John M. Boyer. \"Simplified O(n) Algorithms for Planar Graph Embedding,\n"
             "  Kuratowski Subgraph Isolation, and Related Problems\". Ph.D. Dissertation,\n"
-            "  University of Victoria, 2001. https://dspace.library.uvic.ca/handle/1828/9918\n"
-            "\n");
+            "  University of Victoria, 2001. https://dspace.library.uvic.ca/handle/1828/9918\n");
     }
 
     else if (strcmp(param, "-menu") == 0)
@@ -90,10 +88,9 @@ int helpMessage(char *param)
             "'planarity -rn [-q] N O [O2]': Random nonplanar graph (maximal planar + edge)\n"
             "'planarity -t [-q] C I O': Test algorithm on graph(s) in .g6 file\n"
             "'planarity -x [-q] -(gam) I O': Transform graph to .g6 (g), Adjacency List (a), or Adjacency Matrix (m)\n"
-            "'planarity I O [-n O2]': Legacy command-line (default -s -p)\n"
-            "\n");
+            "'planarity I O [-n O2]': Legacy command-line (default -s -p)");
 
-        gp_Message("-q is for quiet mode (no messages to stdout and stderr)\n\n");
+        gp_Message("-q is for quiet mode (no messages to stdout and stderr)");
 
         gp_Message("%s", GetAlgorithmFlags());
 
@@ -107,15 +104,14 @@ int helpMessage(char *param)
             "O2= Secondary output file\n"
             "    For -s, if C=-p or -o, then O2 receives the embedding obstruction\n"
             "    For -s, if C=-d, then O2 receives a drawing of the planar graph\n"
-            "    For -rm and -rn, O2 contains the original randomly generated graph\n"
-            "\n");
+            "    For -rm and -rn, O2 contains the original randomly generated graph");
 
         gp_Message(
             "planarity process results: 0=OK, -1=NOTOK, 1=NONEMBEDDABLE\n"
             "    1 result only produced by specific graph mode (-s)\n"
             "      with command -2,-3,-4: found K_{2,3}, K_{3,3} or K_4\n"
             "      with command -p,-d: found planarity obstruction\n"
-            "      with command -o: found outerplanarity obstruction\n");
+            "      with command -o: found outerplanarity obstruction");
     }
 
     FlushConsole(stdout);
