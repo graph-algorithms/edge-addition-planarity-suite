@@ -1109,6 +1109,13 @@ graphP gp_DupGraph(graphP theGraph)
         return NULL;
     }
 
+    if (gp_DupExtensions(result, theGraph) != OK)
+    {
+        gp_ErrorMessage("Failed to duplicate the extensions of the source graph into the new graph.");
+        gp_Free(&result);
+        return NULL;
+    }
+
     return result;
 }
 
