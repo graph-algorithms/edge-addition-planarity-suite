@@ -27,26 +27,55 @@ void gp_SetQuietMode(unsigned newQuietMode)
     quietMode = newQuietMode;
 }
 
-void gp_Message(char const *message, ...)
+void gp_Message(const char *message, ...)
 {
-    va_list args;
     if (!(gp_GetQuietMode() & QUIETMODE_MESSAGES))
     {
+        va_list args;
+
         va_start(args, message);
         vfprintf(stdout, message, args);
         va_end(args);
+
+        fprintf(stdout, "\n");
+
         fflush(stdout);
     }
 }
 
-void gp_ErrorMessage(char const *message, ...)
+void gp_MessagePrompt(const char *message, ...)
 {
-    va_list args;
+    if (!(gp_GetQuietMode() & QUIETMODE_MESSAGES))
+    {
+        va_list args;
+
+        va_start(args, message);
+        vfprintf(stdout, message, args);
+        va_end(args);
+
+        fprintf(stdout, " ");
+
+        fflush(stdout);
+    }
+}
+
+void gp_LogErrorMessage(int lineNum, const char *srcFileName, const char *message, ...)
+{
     if (!(gp_GetQuietMode() & QUIETMODE_ERRORS))
     {
+        va_list args;
+
+        fprintf(stderr, "[ERROR] ");
+
         va_start(args, message);
         vfprintf(stderr, message, args);
         va_end(args);
+
+        if (lineNum > 0 && srcFileName != NULL)
+            fprintf(stderr, "\n\ton line %d of '%s'", lineNum, srcFileName);
+
+        fprintf(stderr, "\n");
+
         fflush(stderr);
     }
 }

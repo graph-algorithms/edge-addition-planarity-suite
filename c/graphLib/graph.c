@@ -1090,20 +1090,21 @@ graphP gp_DupGraph(graphP theGraph)
 
     if ((result = gp_New()) == NULL)
     {
-        gp_ErrorMessage("Failed to create a new graph.\n");
+        gp_ErrorMessage("Failed to create a new graph.");
         return NULL;
     }
 
     if (gp_EnsureVertexCapacity(result, gp_GetN(theGraph)) != OK)
     {
-        gp_ErrorMessage("Failed to increase the vertex capacity of the new graph.\n");
+        gp_ErrorMessage("Failed to increase the vertex capacity of the new "
+                        "graph.");
         gp_Free(&result);
         return NULL;
     }
 
     if (gp_CopyGraph(result, theGraph) != OK)
     {
-        gp_ErrorMessage("Failed to copy the source graph to the new graph.\n");
+        gp_ErrorMessage("Failed to copy the source graph to the new graph.");
         gp_Free(&result);
         return NULL;
     }
