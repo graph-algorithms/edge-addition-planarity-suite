@@ -47,6 +47,7 @@ int _DrawPlanar_WritePostprocess(graphP theGraph, char **pExtraData);
 
 /* Forward declarations of functions used by the extension system */
 
+void *_DrawPlanar_DupContext(void *pContext, void *theGraph);
 int _DrawPlanar_CopyData(void *dstContext, void *srcContext);
 void _DrawPlanar_FreeContext(void *);
 
@@ -133,7 +134,9 @@ int gp_ExtendWith_DrawPlanar(graphP theGraph)
     // Store the Draw context, including the data structure and the
     // function pointers, as an extension of the graph
     if (gp_AddExtension(theGraph, &DRAWPLANAR_ID, (void *)context,
-                        _DrawPlanar_CopyData, _DrawPlanar_FreeContext,
+                        _DrawPlanar_DupContext, 
+                        _DrawPlanar_CopyData, 
+                        _DrawPlanar_FreeContext,
                         &context->functions) != OK)
     {
         _DrawPlanar_FreeContext(context);
@@ -254,6 +257,43 @@ int _DrawPlanar_InitStructures(DrawPlanarContext *context)
     memset(context->E, 0, gp_UpperBoundEdgeStorage(context->theGraph) * sizeof(DrawPlanar_EdgeRec));
 
     return OK;
+}
+
+/********************************************************************
+ _DrawPlanar_DupContext()
+ ********************************************************************/
+
+void *_DrawPlanar_DupContext(void *pContext, void *theGraph)
+{
+    DrawPlanarContext *context = (DrawPlanarContext *)pContext;
+    DrawPlanarContext *newContext = (DrawPlanarContext *)malloc(sizeof(DrawPlanarContext));
+
+    if (newContext != NULL)
+    {
+        int VIsize = gp_UpperBoundVertices((graphP)theGraph);
+        int Esize = gp_UpperBoundEdgeStorage((graphP)theGraph);
+
+        *newContext = *context;
+
+        newContext->theGraph = (graphP)theGraph;
+
+        newContext->initialized = 0;
+        _DrawPlanar_ClearStructures(newContext);
+        if (((graphP)theGraph)->N > 0)
+        {
+            if (_DrawPlanar_CreateStructures(newContext) != OK)
+            {
+                _DrawPlanar_FreeContext(newContext);
+                return NULL;
+            }
+
+            // Initialize custom data structures by copying
+            memcpy(newContext->E, context->E, Esize * sizeof(DrawPlanar_EdgeRec));
+            memcpy(newContext->VI, context->VI, VIsize * sizeof(DrawPlanar_VertexInfo));
+        }
+    }
+
+    return newContext;
 }
 
 /********************************************************************

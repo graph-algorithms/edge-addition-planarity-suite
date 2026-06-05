@@ -112,12 +112,15 @@ graphP gp_New(void)
 {
     graphP theGraph = (graphP)calloc(1, sizeof(graphStruct));
     graphFunctionTableP functionTable = (graphFunctionTableP)calloc(1, sizeof(graphFunctionTableStruct));
+    graphPrivateDataP theGraphPrivateData = (graphPrivateDataP)calloc(1, sizeof(graphPrivateDataStruct));
 
-    if (theGraph != NULL && functionTable != NULL)
+    if (theGraph != NULL && functionTable != NULL && theGraphPrivateData != NULL)
     {
-        // All pointers within the graph are NULL due to using calloc() above
+        theGraph->privateData = (void *)theGraphPrivateData;
+
         theGraph->functions = functionTable;
         _InitFunctionTable(theGraph);
+
         _ClearGraph(theGraph);
     }
     else
@@ -131,6 +134,11 @@ graphP gp_New(void)
         {
             free(functionTable);
             functionTable = NULL;
+        }
+        if (theGraphPrivateData != NULL)
+        {
+            free(theGraphPrivateData);
+            theGraphPrivateData = NULL;
         }
     }
 
@@ -260,13 +268,13 @@ int _EnsureVertexCapacity(graphP theGraph, int N)
         (theGraph->edgeHoles = sp_New(theGraph->edgeCapacity)) == NULL ||
 
         (theGraph->theStack = sp_New(stackSize)) == NULL ||
-        (theGraph->BicompRootLists = LCNew(VIsize)) == NULL ||
-        (theGraph->DVI = (DFSUtils_VertexInfoP)calloc(VIsize, sizeof(DFSUtils_VertexInfo))) == NULL ||
+        (theGraphBicompRootLists(theGraph) = LCNew(VIsize)) == NULL ||
+        (theGraphDVI(theGraph) = (DFSUtils_VertexInfoP)calloc(VIsize, sizeof(DFSUtils_VertexInfo))) == NULL ||
 
-        (theGraph->PVI = (Planarity_VertexInfoP)calloc(VIsize, sizeof(Planarity_VertexInfo))) == NULL ||
-        (theGraph->sortedDFSChildLists = LCNew(VIsize)) == NULL ||
-        (theGraph->extFace = (extFaceLinkRecP)calloc(Vsize, sizeof(extFaceLinkRec))) == NULL ||
-        (theGraph->IC = (isolatorContextP)calloc(1, sizeof(isolatorContextStruct))) == NULL ||
+        (theGraphPVI(theGraph) = (Planarity_VertexInfoP)calloc(VIsize, sizeof(Planarity_VertexInfo))) == NULL ||
+        (theGraphSortedDFSChildLists(theGraph) = LCNew(VIsize)) == NULL ||
+        (theGraphExtFace(theGraph) = (extFaceLinkRecP)calloc(Vsize, sizeof(extFaceLinkRec))) == NULL ||
+        (theGraphIC(theGraph) = (isolatorContextP)calloc(1, sizeof(isolatorContextStruct))) == NULL ||
         0)
     {
         _ClearGraph(theGraph);
@@ -288,10 +296,10 @@ void _InitVertices(graphP theGraph)
 {
     memset(theGraph->V, NIL_CHAR, gp_UpperBoundVertexStorage(theGraph) * sizeof(vertexRec));
 
-    memset(theGraph->DVI, NIL_CHAR, gp_UpperBoundVertices(theGraph) * sizeof(DFSUtils_VertexInfo));
+    memset(theGraphDVI(theGraph), NIL_CHAR, gp_UpperBoundVertices(theGraph) * sizeof(DFSUtils_VertexInfo));
 
-    memset(theGraph->PVI, NIL_CHAR, gp_UpperBoundVertices(theGraph) * sizeof(Planarity_VertexInfo));
-    memset(theGraph->extFace, NIL_CHAR, gp_UpperBoundVertexStorage(theGraph) * sizeof(extFaceLinkRec));
+    memset(theGraphPVI(theGraph), NIL_CHAR, gp_UpperBoundVertices(theGraph) * sizeof(Planarity_VertexInfo));
+    memset(theGraphExtFace(theGraph), NIL_CHAR, gp_UpperBoundVertexStorage(theGraph) * sizeof(extFaceLinkRec));
 
 #ifdef USE_1BASEDARRAYS
 // For 1-based arrays, the memset() initializes the flags correctly
@@ -341,8 +349,8 @@ void _ResetGraphStorage(graphP theGraph)
     _InitEdges(theGraph);
     _InitIsolatorContext(theGraph);
 
-    LCReset(theGraph->BicompRootLists);
-    LCReset(theGraph->sortedDFSChildLists);
+    LCReset(theGraphBicompRootLists(theGraph));
+    LCReset(theGraphSortedDFSChildLists(theGraph));
     sp_ClearStack(theGraph->theStack);
     sp_ClearStack(theGraph->edgeHoles);
     theGraph->numEdgeHoles = 0;
@@ -521,7 +529,7 @@ void _InitEdgeRec(graphP theGraph, int e)
 
 void _InitIsolatorContext(graphP theGraph)
 {
-    isolatorContextP IC = theGraph->IC;
+    isolatorContextP IC = theGraphIC(theGraph);
 
     if (IC != NULL)
     {
@@ -845,28 +853,28 @@ void _ClearGraph(graphP theGraph)
     theGraph->numEdgeHoles = 0;
 
     sp_Free(&theGraph->theStack);
-    LCFree(&theGraph->BicompRootLists);
-    if (theGraph->DVI != NULL)
+    LCFree(&theGraphBicompRootLists(theGraph));
+    if (theGraphDVI(theGraph) != NULL)
     {
-        free(theGraph->DVI);
-        theGraph->DVI = NULL;
+        free(theGraphDVI(theGraph));
+        theGraphDVI(theGraph) = NULL;
     }
 
-    if (theGraph->PVI != NULL)
+    if (theGraphPVI(theGraph) != NULL)
     {
-        free(theGraph->PVI);
-        theGraph->PVI = NULL;
+        free(theGraphPVI(theGraph));
+        theGraphPVI(theGraph) = NULL;
     }
-    LCFree(&theGraph->sortedDFSChildLists);
-    if (theGraph->extFace != NULL)
+    LCFree(&theGraphSortedDFSChildLists(theGraph));
+    if (theGraphExtFace(theGraph) != NULL)
     {
-        free(theGraph->extFace);
-        theGraph->extFace = NULL;
+        free(theGraphExtFace(theGraph));
+        theGraphExtFace(theGraph) = NULL;
     }
-    if (theGraph->IC != NULL)
+    if (theGraphIC(theGraph) != NULL)
     {
-        free(theGraph->IC);
-        theGraph->IC = NULL;
+        free(theGraphIC(theGraph));
+        theGraphIC(theGraph) = NULL;
     }
 
     gp_FreeExtensions(theGraph);
@@ -903,6 +911,12 @@ void gp_Free(graphP *pGraph)
     {
         free((*pGraph)->functions);
         (*pGraph)->functions = NULL;
+    }
+
+    if ((*pGraph)->privateData != NULL)
+    {
+        free((*pGraph)->privateData);
+        (*pGraph)->privateData = NULL;
     }
 
     free(*pGraph);
@@ -974,8 +988,8 @@ int gp_CopyAdjacencyLists(graphP dstGraph, graphP srcGraph)
 
 // Give macro names to three copy operations
 #define _gp_CopyVertexRec(dstGraph, vdst, srcGraph, vsrc) (dstGraph->V[vdst] = srcGraph->V[vsrc])
-#define _gp_CopyDFSUtilsVertexInfo(dstGraph, dstI, srcGraph, srcI) (dstGraph->DVI[dstI] = srcGraph->DVI[srcI])
-#define _gp_CopyPlanarityVertexInfo(dstGraph, dstI, srcGraph, srcI) (dstGraph->PVI[dstI] = srcGraph->PVI[srcI])
+#define _gp_CopyDFSUtilsVertexInfo(dstGraph, dstI, srcGraph, srcI) (theGraphDVI(dstGraph)[dstI] = theGraphDVI(srcGraph)[srcI])
+#define _gp_CopyPlanarityVertexInfo(dstGraph, dstI, srcGraph, srcI) (theGraphPVI(dstGraph)[dstI] = theGraphPVI(srcGraph)[srcI])
 #define _gp_CopyEdgeRec(dstGraph, edst, srcGraph, esrc) (dstGraph->E[edst] = srcGraph->E[esrc])
 
 int gp_CopyGraph(graphP dstGraph, graphP srcGraph)
@@ -1007,9 +1021,9 @@ int gp_CopyGraph(graphP dstGraph, graphP srcGraph)
     for (v = gp_LowerBoundVertices(srcGraph); v < gp_UpperBoundVertices(srcGraph); ++v)
     {
         _gp_CopyVertexRec(dstGraph, v, srcGraph, v);
-        if (dstGraph->DVI != NULL && srcGraph->DVI != NULL)
+        if (theGraphDVI(dstGraph) != NULL && theGraphDVI(srcGraph) != NULL)
             _gp_CopyDFSUtilsVertexInfo(dstGraph, v, srcGraph, v);
-        if (dstGraph->PVI != NULL && srcGraph->PVI != NULL)
+        if (theGraphPVI(dstGraph) != NULL && theGraphPVI(srcGraph) != NULL)
             _gp_CopyPlanarityVertexInfo(dstGraph, v, srcGraph, v);
         gp_SetExtFaceVertex(dstGraph, v, 0, gp_GetExtFaceVertex(srcGraph, v, 0));
         gp_SetExtFaceVertex(dstGraph, v, 1, gp_GetExtFaceVertex(srcGraph, v, 1));
@@ -1046,8 +1060,8 @@ int gp_CopyGraph(graphP dstGraph, graphP srcGraph)
 
     dstGraph->graphFlags = gp_GetGraphFlags(srcGraph);
 
-    LCCopy(dstGraph->BicompRootLists, srcGraph->BicompRootLists);
-    LCCopy(dstGraph->sortedDFSChildLists, srcGraph->sortedDFSChildLists);
+    LCCopy(theGraphBicompRootLists(dstGraph), theGraphBicompRootLists(srcGraph));
+    LCCopy(theGraphSortedDFSChildLists(dstGraph), theGraphSortedDFSChildLists(srcGraph));
     sp_Copy(dstGraph->theStack, srcGraph->theStack);
     sp_Copy(dstGraph->edgeHoles, srcGraph->edgeHoles);
     dstGraph->numEdgeHoles = sp_GetCurrentSize((dstGraph)->edgeHoles);
@@ -1091,6 +1105,13 @@ graphP gp_DupGraph(graphP theGraph)
     if (gp_CopyGraph(result, theGraph) != OK)
     {
         gp_ErrorMessage("Failed to copy the source graph to the new graph.");
+        gp_Free(&result);
+        return NULL;
+    }
+
+    if (gp_DupExtensions(result, theGraph) != OK)
+    {
+        gp_ErrorMessage("Failed to duplicate the extensions of the source graph into the new graph.");
         gp_Free(&result);
         return NULL;
     }

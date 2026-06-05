@@ -173,6 +173,7 @@ static int moduleIDGenerator = 0;
 int gp_AddExtension(graphP theGraph,
                     int *pModuleID,
                     void *context,
+                    void *(*dupContext)(void *, void *),
                     int  (*copyData)(void *, void *),
                     void (*freeContext)(void *),
                     graphFunctionTableP functions)
@@ -207,6 +208,7 @@ int gp_AddExtension(graphP theGraph,
     // Assign the data payload of the extension
     newExtension->moduleID = *pModuleID;
     newExtension->context = context;
+    newExtension->dupContext = dupContext;
     newExtension->copyData = copyData;
     newExtension->freeContext = freeContext;
     newExtension->functions = functions;
@@ -437,6 +439,50 @@ graphExtensionP _FindNearestOverload(graphP theGraph, graphExtensionP target, in
 
     return found;
 }
+
+/********************************************************************
+ gp_DupExtensions()
+ ********************************************************************/
+
+int gp_DupExtensions(graphP dstGraph, graphP srcGraph)
+{
+    graphExtensionP next = NULL, newNext = NULL, newLast = NULL;
+
+    if (srcGraph == NULL || dstGraph == NULL)
+        return NOTOK;
+
+    gp_FreeExtensions(dstGraph);
+
+    next = srcGraph->extensions;
+
+    while (next != NULL)
+    {
+        if ((newNext = (graphExtensionP)malloc(sizeof(graphExtensionStruct))) == NULL)
+        {
+            gp_FreeExtensions(dstGraph);
+            return NOTOK;
+        }
+
+        newNext->moduleID = next->moduleID;
+        newNext->context = next->dupContext(next->context, dstGraph);
+        newNext->dupContext = next->dupContext;
+        newNext->copyData = next->copyData;
+        newNext->freeContext = next->freeContext;
+        newNext->functions = next->functions;
+        newNext->next = NULL;
+
+        if (newLast != NULL)
+            newLast->next = (struct graphExtensionStruct *)newNext;
+        else
+            dstGraph->extensions = newNext;
+
+        newLast = newNext;
+        next = (graphExtensionP)next->next;
+    }
+
+    return OK;
+}
+
 
 /********************************************************************
  gp_CopyExtensions()

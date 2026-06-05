@@ -225,16 +225,16 @@ int gp_SortVertices(graphP theGraph)
     }
 #define _gp_SwapDFSUtilsVertexInfo(dstGraph, dstPos, srcGraph, srcPos) \
     {                                                                  \
-        DFSUtils_VertexInfo tempDVI = dstGraph->DVI[dstPos];           \
-        dstGraph->DVI[dstPos] = srcGraph->DVI[srcPos];                 \
-        srcGraph->DVI[srcPos] = tempDVI;                               \
+        DFSUtils_VertexInfo tempDVI = theGraphDVI(dstGraph)[dstPos];   \
+        theGraphDVI(dstGraph)[dstPos] = theGraphDVI(srcGraph)[srcPos]; \
+        theGraphDVI(srcGraph)[srcPos] = tempDVI;                       \
     }
 #define _gp_SwapPlanarityVertexInfo(dstGraph, dstPos, srcGraph, srcPos) \
-    if (dstGraph->PVI != NULL && srcGraph->PVI != NULL)                 \
+    if (theGraphPVI(dstGraph) != NULL && theGraphPVI(srcGraph) != NULL) \
     {                                                                   \
-        Planarity_VertexInfo tempPVI = dstGraph->PVI[dstPos];           \
-        dstGraph->PVI[dstPos] = srcGraph->PVI[srcPos];                  \
-        srcGraph->PVI[srcPos] = tempPVI;                                \
+        Planarity_VertexInfo tempPVI = theGraphPVI(dstGraph)[dstPos];   \
+        theGraphPVI(dstGraph)[dstPos] = theGraphPVI(srcGraph)[srcPos];  \
+        theGraphPVI(srcGraph)[srcPos] = tempPVI;                        \
     }
 
 // This is the default method for sorting vertices into and back

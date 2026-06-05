@@ -42,6 +42,7 @@ int _K4Search_EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity);
 
 /* Forward declarations of functions used by the extension system */
 
+void *_K4Search_DupContext(void *pContext, void *theGraph);
 int _K4Search_CopyData(void *dstContext, void *srcContext);
 void _K4Search_FreeContext(void *);
 
@@ -110,7 +111,9 @@ int gp_ExtendWith_K4Search(graphP theGraph)
     // Store the K4 search context, including the data structure and the
     // function pointers, as an extension of the graph
     if (gp_AddExtension(theGraph, &K4SEARCH_ID, (void *)context,
-                        _K4Search_CopyData, _K4Search_FreeContext,
+                        _K4Search_DupContext,
+                        _K4Search_CopyData, 
+                        _K4Search_FreeContext,
                         &context->functions) != OK)
     {
         _K4Search_FreeContext(context);
@@ -202,44 +205,6 @@ int _K4Search_InitStructures(K4SearchContext *context)
 {
     memset(context->E, NIL_CHAR, gp_UpperBoundEdgeStorage(context->theGraph) * sizeof(K4Search_EdgeRec));
 
-    return OK;
-}
-
-/********************************************************************
- _K4Search_CopyData()
- ********************************************************************/
-int _K4Search_CopyData(void *dstContext, void *srcContext)
-{
-    K4SearchContext *dstK4Context = (K4SearchContext *)dstContext;
-    K4SearchContext *srcK4Context = (K4SearchContext *)srcContext;
-    int dstEdgeStorage, srcEdgeStorage;
-
-    if (dstContext == NULL)
-        return NOTOK;
-
-    // If the srcContext is NULL, then the caller wants the data
-    // structures in the dstContext to be reset/reinitialized
-
-    if (srcContext == NULL)
-        return _K4Search_InitStructures(dstK4Context);
-
-    // ELSE: If there is also a srcContext, then we copy data from it
-    dstEdgeStorage = gp_UpperBoundEdgeStorage(dstK4Context->theGraph);
-    srcEdgeStorage = gp_UpperBoundEdgeStorage(srcK4Context->theGraph);
-
-    // The caller (ultimately gp_CopyGraph()) is responsible for making sure that the
-    // destination graph has enough edge capacity to receive the source graph content
-    if (dstEdgeStorage < srcEdgeStorage)
-        return NOTOK;
-
-    // If the destination graph has more edge capacity, then we make sure that the
-    // extra edge capacity is reinitialized
-    if (dstEdgeStorage > srcEdgeStorage)
-    {
-        memset(dstK4Context->E, NIL_CHAR, gp_UpperBoundEdgeStorage(dstK4Context->theGraph) * sizeof(K4Search_EdgeRec));
-    }
-
-    memcpy(dstK4Context->E, srcK4Context->E, gp_UpperBoundEdgeStorage(dstK4Context->theGraph) * sizeof(K4Search_EdgeRec));
     return OK;
 }
 
@@ -337,6 +302,80 @@ int _K4Search_EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity)
 }
 
 /********************************************************************
+ _K4Search_DupContext()
+ ********************************************************************/
+
+void *_K4Search_DupContext(void *pContext, void *theGraph)
+{
+    K4SearchContext *context = (K4SearchContext *)pContext;
+    K4SearchContext *newContext = (K4SearchContext *)malloc(sizeof(K4SearchContext));
+
+    if (newContext != NULL)
+    {
+        int Esize = gp_UpperBoundEdgeStorage((graphP)theGraph);
+
+        *newContext = *context;
+
+        newContext->theGraph = (graphP)theGraph;
+
+        newContext->initialized = 0;
+        _K4Search_ClearStructures(newContext);
+        if (((graphP)theGraph)->N > 0)
+        {
+            if (_K4Search_CreateStructures(newContext) != OK)
+            {
+                _K4Search_FreeContext(newContext);
+                newContext = NULL;
+
+                return NULL;
+            }
+
+            memcpy(newContext->E, context->E, Esize * sizeof(K4Search_EdgeRec));
+        }
+    }
+
+    return newContext;
+}
+
+/********************************************************************
+ _K4Search_CopyData()
+ ********************************************************************/
+int _K4Search_CopyData(void *dstContext, void *srcContext)
+{
+    K4SearchContext *dstK4Context = (K4SearchContext *)dstContext;
+    K4SearchContext *srcK4Context = (K4SearchContext *)srcContext;
+    int dstEdgeStorage, srcEdgeStorage;
+
+    if (dstContext == NULL)
+        return NOTOK;
+
+    // If the srcContext is NULL, then the caller wants the data
+    // structures in the dstContext to be reset/reinitialized
+
+    if (srcContext == NULL)
+        return _K4Search_InitStructures(dstK4Context);
+
+    // ELSE: If there is also a srcContext, then we copy data from it
+    dstEdgeStorage = gp_UpperBoundEdgeStorage(dstK4Context->theGraph);
+    srcEdgeStorage = gp_UpperBoundEdgeStorage(srcK4Context->theGraph);
+
+    // The caller (ultimately gp_CopyGraph()) is responsible for making sure that the
+    // destination graph has enough edge capacity to receive the source graph content
+    if (dstEdgeStorage < srcEdgeStorage)
+        return NOTOK;
+
+    // If the destination graph has more edge capacity, then we make sure that the
+    // extra edge capacity is reinitialized
+    if (dstEdgeStorage > srcEdgeStorage)
+    {
+        memset(dstK4Context->E, NIL_CHAR, gp_UpperBoundEdgeStorage(dstK4Context->theGraph) * sizeof(K4Search_EdgeRec));
+    }
+
+    memcpy(dstK4Context->E, srcK4Context->E, gp_UpperBoundEdgeStorage(dstK4Context->theGraph) * sizeof(K4Search_EdgeRec));
+    return OK;
+}
+
+/********************************************************************
  _K4Search_FreeContext()
  ********************************************************************/
 
@@ -392,7 +431,7 @@ int _K4Search_HandleBlockedBicomp(graphP theGraph, int v, int RootVertex, int R)
                 sp_Pop2_Discard1(theGraph->theStack, R);
 
                 // And we have to clear the indicator of the minor A that was reduced, since it was eliminated.
-                theGraph->IC->minorType = MINORTYPE_NONE;
+                theGraphIC(theGraph)->minorType = MINORTYPE_NONE;
             }
         }
 
@@ -424,13 +463,13 @@ int _K4Search_HandleBlockedBicomp(graphP theGraph, int v, int RootVertex, int R)
                 // detects that it still has not embedded all the edges to descendants of the bicomp's
                 // root edge child, then Walkdown calls this routine again, and the above non-reentrancy
                 // code returns NONEMBEDDABLE, causing this loop to search again for a K4.
-                theGraph->IC->minorType = MINORTYPE_NONE;
+                theGraphIC(theGraph)->minorType = MINORTYPE_NONE;
                 RetVal = theGraph->functions->fpWalkDown(theGraph, v, RootVertex);
 
                 // Except if the Walkdown returns NONEMBEDDABLE due to finding a K4 homeomorph entangled
                 // with a descendant bicomp (the R != RootVertex case above), then it was found
                 // entangled with Minor A, so we can stop the search if minor A is detected
-                if (theGraph->IC->minorType & MINORTYPE_A)
+                if (theGraphIC(theGraph)->minorType & MINORTYPE_A)
                     break;
 
             } while (RetVal == NONEMBEDDABLE);
