@@ -2,12 +2,12 @@ Resolves #__**ISSUE NUMBER**__
 
 ## Type of change
 
-Please check only relevant options:
+Please indicate the type of change by deleting non-relevant list items below:
 
-- [ ] Bug fix (non-breaking change which fixes an issue)
-- [ ] New feature (non-breaking change which adds functionality)
-- [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
-- [ ] This change requires a documentation update
+- Bug fix (non-breaking change which fixes an issue)
+- New feature (non-breaking change which adds functionality)
+- Breaking change (fix or feature that would cause existing functionality to not work as expected)
+- This change requires a documentation update
 
 ## Changes
 
@@ -25,8 +25,8 @@ Please check only relevant options:
 
 ## Testing
 
-- [ ] Outline manual or automated tests performed and how it relates to the particular feature added or functionality changed
-- [ ] Upload logs or provide relevant snippets of terminal output to demo functionality
+- _Outline manual or automated tests performed and how it relates to the particular feature added or functionality changed_
+- _Upload logs or provide relevant snippets of terminal output to demo functionality_
 
 <details><summary>Replace with high-level description of log snippets</summary>
 
@@ -34,4 +34,4 @@ Please check only relevant options:
 Paste terminal log snippets here
 ```
 
-<details>
+</details>
