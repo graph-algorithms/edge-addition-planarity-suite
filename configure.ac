@@ -1,6 +1,6 @@
 # The version number in the following line must be synchronized with 
 # the project version numbering in graphLib.h 
-AC_INIT([planarity],[4.0.2.0],[jboyer@acm.org])
+AC_INIT([planarity],[5.0.0.0],[jboyer@acm.org])
 AM_INIT_AUTOMAKE([subdir-objects] [foreign])
 AC_CONFIG_MACRO_DIRS([m4])
 AC_CONFIG_SRCDIR([c/])
