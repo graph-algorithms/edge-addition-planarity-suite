@@ -471,7 +471,7 @@ void ResetGraphStorage(graphP *pGraph, int ReuseGraphs, char command)
         gp_ResetGraphStorage(*pGraph);
     else
     {
-        graphP newGraph = MakeGraph((*pGraph)->N, command);
+        graphP newGraph = MakeGraph(gp_GetN(*pGraph), command);
         gp_Free(pGraph);
         *pGraph = newGraph;
     }
