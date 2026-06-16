@@ -1049,7 +1049,7 @@ void WriteAlgorithmResults(graphP theGraph, int Result, char command, platform_t
     }
 
     gp_Message("%s", algorithmResults);
-    gp_Message("Algorithm '%s' executed on graph in  in %.3lf seconds.",
+    gp_Message("Algorithm '%s' executed in %.3lf seconds.",
                GetAlgorithmName(command), platform_GetDuration(start, end));
 }
 
