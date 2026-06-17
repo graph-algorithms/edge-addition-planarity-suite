@@ -58,9 +58,8 @@ int TestAllGraphs(char const *const commandString, char const *const infileName,
         return NOTOK;
     }
 
-    gp_Message("Starting to test all graphs in \"%.*s\".",
-               FILENAME_MAX,
-               infileName);
+    gp_Message("Starting to test all graphs in \"%.*s\" for command=\"%s\".",
+               FILENAME_MAX, infileName, commandString);
 
     // Start the timer
     platform_GetTime(start);
