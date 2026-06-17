@@ -752,7 +752,7 @@ char const *GetBaseName(int baseFlag)
 
 int ExtendGraph(graphP theGraph, char command)
 {
-    if (theGraph == NULL || theGraph->N <= 0)
+    if (theGraph == NULL || gp_GetN(theGraph) <= 0)
     {
         gp_ErrorMessage("Unable to extend graph with algorithm extension due "
                         "to NULL or uninitialized graph.");
