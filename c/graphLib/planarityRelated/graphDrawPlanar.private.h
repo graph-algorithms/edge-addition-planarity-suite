@@ -7,7 +7,7 @@ All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
 
-#include "../graph.h"
+#include "../planarityRelated/graphPlanarity.private.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -80,11 +80,13 @@ extern "C"
                 DrawPlanar_VertexInfoP VI;
 
                 // Overloaded function pointers
-                graphFunctionTable functions;
+                graphFunctionTableStruct functions;
 
         } DrawPlanarContext;
 
         extern int DRAWPLANAR_ID;
+
+        int gp_GetDrawPlanarExtensionIdentifier(void);
 
 #ifdef __cplusplus
 }

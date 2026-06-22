@@ -14,19 +14,21 @@ extern "C"
 {
 #endif
 
-    typedef struct
+    struct graphExtensionStruct
     {
         int moduleID;
         void *context;
         void *(*dupContext)(void *, void *);
+        int  (*copyData)(void *, void *);
         void (*freeContext)(void *);
 
         graphFunctionTableP functions;
 
-        struct graphExtension *next;
-    } graphExtension;
+        struct graphExtensionStruct *next;
+    };
 
-    typedef graphExtension *graphExtensionP;
+    typedef struct graphExtensionStruct graphExtensionStruct;
+    typedef graphExtensionStruct *graphExtensionP;
 
 #ifdef __cplusplus
 }

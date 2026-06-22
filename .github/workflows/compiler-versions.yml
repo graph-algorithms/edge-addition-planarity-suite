@@ -1,4 +1,5 @@
-name: Compilers
+name: Compiler Version Compatibility
+# Currently, we are prioritizing gcc and clang for maximum version compatibility
 on:
   workflow_dispatch:
   pull_request:
@@ -32,7 +33,7 @@ jobs:
           - { compiler: clang, version: 18 }
           - { compiler: clang, version: 19 }
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - name: Setup compiler . . .
         run: |
           sudo add-apt-repository ppa:ubuntu-toolchain-r/ppa -y

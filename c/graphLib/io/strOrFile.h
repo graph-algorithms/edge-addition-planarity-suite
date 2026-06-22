@@ -12,7 +12,6 @@ extern "C"
 {
 #endif
 
-#include <stdbool.h>
 #include <stdio.h>
 
 #include "../lowLevelUtils/stack.h"
@@ -20,21 +19,22 @@ extern "C"
 
 #define INPUT_CONTAINER 1
 #define OUTPUT_CONTAINER 2
-    typedef struct
+    struct strOrFileStruct
     {
         char **pOutputStr;
         strBufP theStrBuf;
         FILE *pFile;
         int containerType;
         stackP ungetBuf;
-    } strOrFile;
+    };
 
-    typedef strOrFile *strOrFileP;
+    typedef struct strOrFileStruct strOrFileStruct;
+    typedef strOrFileStruct *strOrFileP;
 
     strOrFileP sf_NewInputContainer(char const *const inputStr, char const *const fileName);
     strOrFileP sf_NewOutputContainer(char **pOutputStr, char const *const fileName);
 
-    bool sf_IsValidStrOrFile(strOrFileP theStrOrFile);
+    int sf_IsValidStrOrFile(strOrFileP theStrOrFile);
 
     char sf_getc(strOrFileP theStrOrFile);
     int sf_ReadSkipChar(strOrFileP theStrOrFile);

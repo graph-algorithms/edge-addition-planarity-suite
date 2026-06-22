@@ -1,6 +1,6 @@
 # The version number in the following line must be synchronized with 
 # the project version numbering in graphLib.h 
-AC_INIT([planarity],[4.1.0.0],[jboyer@acm.org])
+AC_INIT([planarity],[5.1.0.0],[jboyer@acm.org])
 AM_INIT_AUTOMAKE([subdir-objects] [foreign])
 AC_CONFIG_MACRO_DIRS([m4])
 AC_CONFIG_SRCDIR([c/])
@@ -12,7 +12,7 @@ AC_CONFIG_SRCDIR([c/])
 # The version number in the following line must be synchronized with 
 # the LibPlanarity version numbers in graphLib.h 
 #
-# The meanings of the three vesrion number components are
+# The meanings of the three version number components are
 #    current : Most recent interface number that the library implements
 #    revision: The implementation number of the current interface
 #    age     : The number of previous interfaces that this version

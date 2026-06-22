@@ -13,11 +13,11 @@ int transformString(graphP theGraph, char *inputStr);
  TransformGraph()
  commandString - command to run; i.e. `-(gam)` to transform graph to .g6, adjacency list, or
  adjacency matrix format
- infileName - name of file to read, or NULL to cause the program to prompt the user for a filename
+ infileName - name of file to read, or NULL to cause the program to prompt the user for a file name
  inputStr - string containing input graph, or NULL to cause the program to fall back on reading from file
  outputBase - pointer to the flag set for whether output is 0- or 1-based
  outputFormat - output format
- outfileName - name of primary output file, or NULL to construct an output filename based on the input
+ outfileName - name of primary output file, or NULL to construct an output file name based on the input
  pOutputStr - pointer to string which we wish to use to store the transformation output
  ****************************************************************************/
 int TransformGraph(char const *const commandString, char const *const infileName, char *inputStr, int *outputBase, char const *outfileName, char **pOutputStr)
@@ -32,8 +32,8 @@ int TransformGraph(char const *const commandString, char const *const infileName
 
     if (theGraph == NULL)
     {
-        ErrorMessage("Unable to allocate graphP for input graph transformation target.\n");
-
+        gp_ErrorMessage("Unable to allocate graphP for input graph "
+                        "transformation target.");
         return NOTOK;
     }
 
@@ -47,10 +47,8 @@ int TransformGraph(char const *const commandString, char const *const infileName
             outputFormat = WRITE_ADJMATRIX;
         else
         {
-            ErrorMessage("Invalid argument; only -(gam) is allowed.\n");
-
+            gp_ErrorMessage("Invalid argument; only -(gam) is allowed.");
             gp_Free(&theGraph);
-
             return NOTOK;
         }
 
@@ -61,14 +59,14 @@ int TransformGraph(char const *const commandString, char const *const infileName
 
         if (Result != OK)
         {
-            ErrorMessage("Unable to transform input graph.\n");
+            gp_ErrorMessage("Unable to transform input graph.");
         }
         else
         {
             // Want to know whether the output is 0- or 1-based; will always be
             // 0-based for transformations of .g6 input
             if (outputBase != NULL)
-                (*outputBase) = (gp_GetGraphFlags(theGraph) & FLAGS_ZEROBASEDIO) ? 1 : 0;
+                (*outputBase) = (gp_GetGraphFlags(theGraph) & GRAPHFLAGS_ZEROBASEDIO) ? 1 : 0;
 
             if (pOutputStr != NULL)
                 Result = gp_WriteToString(theGraph, pOutputStr, outputFormat);
@@ -76,12 +74,12 @@ int TransformGraph(char const *const commandString, char const *const infileName
                 Result = gp_Write(theGraph, outfileName, outputFormat);
 
             if (Result != OK)
-                ErrorMessage("Unable to write graph.\n");
+                gp_ErrorMessage("Unable to write graph.");
         }
     }
     else
     {
-        ErrorMessage("Invalid argument; must start with '-'.\n");
+        gp_ErrorMessage("Invalid argument; must start with '-'.");
         Result = NOTOK;
     }
 
@@ -94,10 +92,10 @@ int transformFile(graphP theGraph, char const *infileName)
 {
     if (infileName == NULL)
     {
-        if ((infileName = ConstructInputFilename(infileName)) == NULL)
+        if ((infileName = ConstructInputFileName(infileName)) == NULL)
         {
-            ErrorMessage("Unable to construct input filename for graph to transform.\n");
-
+            gp_ErrorMessage("Unable to construct input file name for graph to "
+                            "transform.");
             return NOTOK;
         }
     }
@@ -109,8 +107,7 @@ int transformString(graphP theGraph, char *inputStr)
 {
     if (inputStr == NULL || strlen(inputStr) == 0)
     {
-        ErrorMessage("Input string is null or empty.\n");
-
+        gp_ErrorMessage("Input string is null or empty.");
         return NOTOK;
     }
 

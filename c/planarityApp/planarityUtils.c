@@ -6,6 +6,9 @@ See the LICENSE.TXT file for licensing information.
 
 #include "planarity.h"
 
+#include <limits.h>
+#include <stdint.h>
+
 /****************************************************************************
  Configuration
  ****************************************************************************/
@@ -27,15 +30,15 @@ int Reconfigure(void)
 
     while (1)
     {
-        Prompt("\nDo you want to \n"
-               "  Randomly generate graphs (r),\n"
-               "  Specify a graph (s),\n"
-               "  Randomly generate a maximal planar graph (m), or\n"
-               "  Randomly generate a non-planar graph (n)?\n\t");
+        gp_MessagePrompt("Do you want to \n"
+                         "  Randomly generate graphs (r),\n"
+                         "  Specify a graph (s),\n"
+                         "  Randomly generate a maximal planar graph (m), or\n"
+                         "  Randomly generate a non-planar graph (n)?");
 
         if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
         {
-            ErrorMessage("Unable to fetch reconfigure choice from stdin.\n");
+            gp_ErrorMessage("Unable to fetch reconfigure choice from stdin.");
             Result = NOTOK;
             break;
         }
@@ -43,7 +46,7 @@ int Reconfigure(void)
         if (strlen(lineBuff) != 1 ||
             sscanf(lineBuff, " %c", &Mode) != 1 ||
             !strchr("rsmn", tolower(Mode)))
-            ErrorMessage("Invalid choice for Mode.\n");
+            gp_Message("Invalid choice for Mode; please retry.");
         else
         {
             Mode = (char)tolower(Mode);
@@ -53,14 +56,15 @@ int Reconfigure(void)
 
     if (Result == OK && Mode == 'r')
     {
-        Message("\nNOTE: The directories for the graphs you want must exist.\n\n");
+        gp_Message("NOTE: The directories for the graphs you want must exist.");
 
         while (1)
         {
-            Prompt("Do you want original graphs in directory 'random'? (y/n) ");
+            gp_MessagePrompt("Do you want original graphs in directory "
+                             "'random'? (y/n)");
             if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
             {
-                ErrorMessage("Unable to fetch choice from stdin.\n");
+                gp_ErrorMessage("Unable to fetch choice from stdin.");
                 Result = NOTOK;
                 break;
             }
@@ -68,7 +72,7 @@ int Reconfigure(void)
             if (strlen(lineBuff) != 1 ||
                 sscanf(lineBuff, " %c", &OrigOut) != 1 ||
                 !strchr(YESNOCHOICECHARS, OrigOut))
-                ErrorMessage("Invalid choice.\n");
+                gp_Message("Invalid choice; please retry.");
             else
             {
                 OrigOut = (char)tolower(OrigOut);
@@ -80,10 +84,12 @@ int Reconfigure(void)
         {
             while (1)
             {
-                Prompt("Do you want to output generated graphs to Adjacency List (last 10 only) or to G6 (all)? (a/g) ");
+                gp_MessagePrompt("Do you want to output generated graphs to "
+                                 "Adjacency List (last 10 only) or to G6 "
+                                 "(all)? (a/g)");
                 if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
                 {
-                    ErrorMessage("Unable to fetch choice from stdin.\n");
+                    gp_ErrorMessage("Unable to fetch choice from stdin.");
                     Result = NOTOK;
                     break;
                 }
@@ -91,7 +97,7 @@ int Reconfigure(void)
                 if (strlen(lineBuff) != 1 ||
                     sscanf(lineBuff, " %c", &OrigOutFormat) != 1 ||
                     !strchr("aAgG", OrigOutFormat))
-                    ErrorMessage("Invalid choice.\n");
+                    gp_Message("Invalid choice; please retry.");
                 else
                 {
                     OrigOutFormat = (char)tolower(OrigOutFormat);
@@ -104,17 +110,19 @@ int Reconfigure(void)
         {
             while (1)
             {
-                Prompt("Do you want adj. matrix of embeddable graphs in directory 'embedded' (last 10 max))? (y/n) ");
+                gp_MessagePrompt("Do you want adj. matrix of embeddable graphs "
+                                 "in directory 'embedded' (last 10 max))? "
+                                 "(y/n)");
                 if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
                 {
-                    ErrorMessage("Unable to fetch choice from stdin.\n");
+                    gp_ErrorMessage("Unable to fetch choice from stdin.");
                     Result = NOTOK;
                     break;
                 }
                 if (strlen(lineBuff) != 1 ||
                     sscanf(lineBuff, " %c", &EmbeddableOut) != 1 ||
                     !strchr(YESNOCHOICECHARS, EmbeddableOut))
-                    ErrorMessage("Invalid choice.\n");
+                    gp_Message("Invalid choice; please retry.");
                 else
                 {
                     EmbeddableOut = (char)tolower(EmbeddableOut);
@@ -127,10 +135,12 @@ int Reconfigure(void)
         {
             while (1)
             {
-                Prompt("Do you want adj. matrix of obstructed graphs in directory 'obstructed' (last 10 max)? (y/n) ");
+                gp_MessagePrompt("Do you want adj. matrix of obstructed graphs "
+                                 "in directory 'obstructed' (last 10 max)? "
+                                 "(y/n)");
                 if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
                 {
-                    ErrorMessage("Unable to fetch choice from stdin.\n");
+                    gp_ErrorMessage("Unable to fetch choice from stdin.");
                     Result = NOTOK;
                     break;
                 }
@@ -138,7 +148,7 @@ int Reconfigure(void)
                 if (strlen(lineBuff) != 1 ||
                     sscanf(lineBuff, " %c", &ObstructedOut) != 1 ||
                     !strchr(YESNOCHOICECHARS, ObstructedOut))
-                    ErrorMessage("Invalid choice.\n");
+                    gp_Message("Invalid choice; please retry.");
                 else
                 {
                     ObstructedOut = (char)tolower(ObstructedOut);
@@ -151,10 +161,12 @@ int Reconfigure(void)
         {
             while (1)
             {
-                Prompt("Do you want adjacency list format of embeddings in directory 'adjlist' (last 10 max)? (y/n) ");
+                gp_MessagePrompt("Do you want adjacency list format of "
+                                 "embeddings in directory 'adjlist' "
+                                 "(last 10 max)? (y/n)");
                 if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
                 {
-                    ErrorMessage("Unable to fetch choice from stdin.\n");
+                    gp_ErrorMessage("Unable to fetch choice from stdin.");
                     Result = NOTOK;
                     break;
                 }
@@ -162,7 +174,7 @@ int Reconfigure(void)
                 if (strlen(lineBuff) != 1 ||
                     sscanf(lineBuff, " %c", &AdjListsForEmbeddingsOut) != 1 ||
                     !strchr(YESNOCHOICECHARS, AdjListsForEmbeddingsOut))
-                    ErrorMessage("Invalid choice.\n");
+                    gp_Message("Invalid choice; please retry.");
                 else
                 {
                     AdjListsForEmbeddingsOut = (char)tolower(AdjListsForEmbeddingsOut);
@@ -181,7 +193,7 @@ int GetLineFromStdin(char *lineBuff, int lineBuffSize)
 {
     if (lineBuff == NULL)
     {
-        ErrorMessage("Line buffer to populate is NULL.\n");
+        gp_ErrorMessage("Line buffer to populate is NULL.");
         return NOTOK;
     }
 
@@ -189,7 +201,7 @@ int GetLineFromStdin(char *lineBuff, int lineBuffSize)
 
     if (fgets(lineBuff, lineBuffSize, stdin) == NULL && ferror(stdin))
     {
-        ErrorMessage("Call to fgets() from stdin failed.\n");
+        gp_ErrorMessage("Call to fgets() from stdin failed.");
         return NOTOK;
     }
 
@@ -212,56 +224,43 @@ void FlushConsole(FILE *f)
     fflush(f);
 }
 
-void Prompt(char const *message)
-{
-    Message(message);
-    FlushConsole(stdout);
-}
-
 /****************************************************************************
  ****************************************************************************/
 
-void SaveAsciiGraph(graphP theGraph, char *filename)
+void SaveAsciiGraph(graphP theGraph, char *fileName)
 {
-    int e, EsizeOccupied, vertexLabelFix;
-    FILE *outfile = fopen(filename, WRITETEXT);
+    int vertexLabelFix, e;
+    FILE *outfile = fopen(fileName, WRITETEXT);
 
-    // The filename may specify a directory that doesn't exist
+    // The fileName may specify a directory that doesn't exist
     if (outfile == NULL)
     {
-        char messageContents[MAXLINE + 1];
-        char const *messageFormat = "Failed to write to \"%.*s\"\nMake the directory if not present\n";
-        int charsAvailForStrToInclude = (int)(MAXLINE - strlen(messageFormat));
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-nonliteral"
-        sprintf(messageContents, messageFormat, charsAvailForStrToInclude, filename);
-#pragma GCC diagnostic pop
-        ErrorMessage(messageContents);
+        gp_ErrorMessage("Failed to write to \"%.*s\"\nMake the directory if "
+                        "not present.",
+                        FILENAME_MAX, fileName);
         return;
     }
 
-    // If filename includes path elements, remove them before writing the file's name to the file
-    if (strrchr(filename, FILE_DELIMITER))
-        filename = strrchr(filename, FILE_DELIMITER) + 1;
+    // If fileName includes path elements, remove them before writing the file's name to the file
+    if (strrchr(fileName, FILE_DELIMITER))
+        fileName = strrchr(fileName, FILE_DELIMITER) + 1;
 
-    fprintf(outfile, "%s\n", filename);
+    fprintf(outfile, "%s\n", fileName);
 
     // This edge list file format uses 1-based vertex numbering, and the current code
     // internally uses 1-based indexing by default, so this vertex label 'fix' adds zero
     // But earlier code used 0-based indexing and added one on output, so we replicate
     // that behavior in case the current code has been compiled with zero-based indexing.
-    vertexLabelFix = 1 - gp_GetFirstVertex(theGraph);
+    vertexLabelFix = 1 - gp_LowerBoundVertexStorage(theGraph);
 
     // Iterate over the edges of the graph
-    EsizeOccupied = gp_EdgeInUseArraySize(theGraph);
-    for (e = gp_EdgeArrayStart(theGraph); e < EsizeOccupied; e += 2)
+    for (e = gp_LowerBoundEdges(theGraph); e < gp_UpperBoundEdges(theGraph); e += 2)
     {
         // Only output edges that haven't been deleted (i.e. skip the edge holes)
         if (gp_EdgeInUse(theGraph, e))
         {
-            fprintf(outfile, "%d %d\n",
-                    gp_GetNeighbor(theGraph, e) + vertexLabelFix,
-                    gp_GetNeighbor(theGraph, e + 1) + vertexLabelFix);
+            fprintf(outfile, "%d ", gp_GetNeighbor(theGraph, e) + vertexLabelFix);
+            fprintf(outfile, "%d\n", gp_GetNeighbor(theGraph, e + 1) + vertexLabelFix);
         }
     }
 
@@ -285,9 +284,9 @@ char *ReadTextFileIntoString(char const *infileName)
     char *inputString = NULL;
 
     if (infileName == NULL || strlen(infileName) == 0)
-        ErrorMessage("Unable to fopen() with NULL or empty infileName.\n");
+        gp_ErrorMessage("Unable to fopen() with NULL or empty infileName.");
     else if ((infile = fopen(infileName, "r")) == NULL)
-        ErrorMessage("fopen() failed.\n");
+        gp_ErrorMessage("fopen() failed.");
     else
     {
         long filePos = ftell(infile);
@@ -312,7 +311,7 @@ char *ReadTextFileIntoString(char const *infileName)
 /****************************************************************************
  * TextFileMatchesString()
  *
- * Compares the text file content from the file named 'theFilename' with
+ * Compares the text file content from the file named 'theFileName' with
  * the content of 'theString'.
  *
  * Textual equality is measured as content equality except for suppressing
@@ -321,14 +320,14 @@ char *ReadTextFileIntoString(char const *infileName)
  * Returns TRUE if the contents are textually equal, FALSE otherwise
  ****************************************************************************/
 
-int TextFileMatchesString(char const *theFilename, char const *theString)
+int TextFileMatchesString(char const *theFileName, char const *theString)
 {
     int Result = TRUE;
 
     FILE *infile = NULL;
 
-    if (theFilename != NULL)
-        infile = fopen(theFilename, "r");
+    if (theFileName != NULL)
+        infile = fopen(theFileName, "r");
 
     if (infile == NULL || theString == NULL)
         Result = FALSE;
@@ -506,14 +505,13 @@ int BinaryFilesEqual(char *file1Name, char *file2Name)
 char const *GetAlgorithmFlags(void)
 {
     return "C = command (algorithm implementation to run)\n"
-           "    -p  = Planar embedding and Kuratowski subgraph isolation\n"
-           "    -d  = Planar graph drawing by visibility representation\n"
-           "    -o  = Outerplanar embedding and obstruction isolation\n"
-           "    -2  = Search for subgraph homeomorphic to K_{2,3}\n"
-           "    -3  = Search for subgraph homeomorphic to K_{3,3}\n"
+           "    -p = Planar embedding and Kuratowski subgraph isolation\n"
+           "    -d = Planar graph drawing by visibility representation\n"
+           "    -o = Outerplanar embedding and obstruction isolation\n"
+           "    -2 = Search for subgraph homeomorphic to K_{2,3}\n"
+           "    -3 = Search for subgraph homeomorphic to K_{3,3}\n"
            "    -3e = Search for subgraph homeomorphic to K_{3,3} with embedder\n"
-           "    -4  = Search for subgraph homeomorphic to K_4\n"
-           "\n";
+           "    -4 = Search for subgraph homeomorphic to K_4\n";
 }
 
 char const *GetAlgorithmSpecifiers(void)
@@ -559,13 +557,14 @@ int GetCommandAndOptionalModifier(const char *commandString, char *command, char
 
     if (commandString == NULL || strlen(commandString) == 0)
     {
-        ErrorMessage("Cannot get embed flags for empty command string.\n");
+        gp_ErrorMessage("Cannot get embed flags for empty command string.");
         return NOTOK;
     }
 
     if (command == NULL)
     {
-        ErrorMessage("Pointer to character to which to write command is NULL.\n");
+        gp_ErrorMessage("Pointer to character to which to write command is "
+                        "NULL.");
         return NOTOK;
     }
 
@@ -603,7 +602,7 @@ int GetEmbedFlags(char command, char modifier, int *pEmbedFlags)
 {
     if (pEmbedFlags == NULL)
     {
-        ErrorMessage("Pointer to embedFlags int is NULL.\n");
+        gp_ErrorMessage("Pointer to embedFlags int is NULL.");
         return NOTOK;
     }
 
@@ -628,7 +627,7 @@ int GetEmbedFlags(char command, char modifier, int *pEmbedFlags)
         (*pEmbedFlags) = EMBEDFLAGS_SEARCHFORK4;
         break;
     default:
-        ErrorMessage("Unrecognized algorithm command specifier.\n");
+        gp_ErrorMessage("Unrecognized algorithm command specifier.");
         return NOTOK;
     }
 
@@ -642,13 +641,13 @@ int GetEmbedFlags(char command, char modifier, int *pEmbedFlags)
                 (*pEmbedFlags) |= EMBEDFLAGS_SEARCHWITHEMBEDDER;
                 break;
             default:
-                ErrorMessage("Only allowed modifier for K_{3,3} search is 'e' (embedder).\n");
+                gp_ErrorMessage("Only allowed modifier for K_{3,3} search is 'e' (embedder).");
                 return NOTOK;
             }
         }
         else
         {
-            ErrorMessage("Modifiers currently not supported for selected algorithm.\n");
+            gp_ErrorMessage("Modifiers currently not supported for selected algorithm.");
             return NOTOK;
         }
     }
@@ -671,13 +670,13 @@ char const *GetAlgorithmName(char command)
     switch (command)
     {
     case 'p':
-        algorithmName = "PlanarEmbed";
+        algorithmName = PLANARITY_NAME;
         break;
     case 'd':
         algorithmName = DRAWPLANAR_NAME;
         break;
     case 'o':
-        algorithmName = "OuterplanarEmbed";
+        algorithmName = OUTERPLANARITY_NAME;
         break;
     case '2':
         algorithmName = K23SEARCH_NAME;
@@ -762,9 +761,10 @@ char const *GetBaseName(int baseFlag)
 
 int ExtendGraph(graphP theGraph, char command)
 {
-    if (theGraph == NULL || theGraph->N <= 0)
+    if (theGraph == NULL || gp_GetN(theGraph) <= 0)
     {
-        ErrorMessage("Unable to extend graph with algorithm extension due to NULL or uninitialized graph.\n");
+        gp_ErrorMessage("Unable to extend graph with algorithm extension due "
+                        "to NULL or uninitialized graph.");
         return NOTOK;
     }
 
@@ -790,7 +790,7 @@ int ExtendGraph(graphP theGraph, char command)
 }
 
 /****************************************************************************
- A string used to construct input and output filenames.
+ A string used to construct input and output file names.
 
  The SUFFIXMAXLENGTH is 32 to accommodate ".out.txt" + ".render.txt" + ".test.txt"
  ****************************************************************************/
@@ -798,14 +798,14 @@ int ExtendGraph(graphP theGraph, char command)
 char theFileName[FILENAMEMAXLENGTH + 1 + ALGORITHMNAMEMAXLENGTH + 1 + SUFFIXMAXLENGTH + 1];
 
 /****************************************************************************
- ConstructInputFilename()
+ ConstructInputFileName()
  Returns a string not owned by the caller (do not free string).
  String contains infileName content if infileName is non-NULL.
  If infileName is NULL, then the user is asked to supply a name.
  Returns NULL on error, or a non-NULL string on success.
  ****************************************************************************/
 
-char *ConstructInputFilename(char const *infileName)
+char *ConstructInputFileName(char const *infileName)
 {
     int Result = OK;
 
@@ -818,16 +818,16 @@ char *ConstructInputFilename(char const *infileName)
 
     if (GetNumCharsToReprInt(FILENAMEMAXLENGTH, &numCharsToReprFILENAMEMAXLENGTH) != OK)
     {
-        ErrorMessage("Unable to determine number of characters required to represent FILENAMEMAXLENGTH.\n");
-
+        gp_ErrorMessage("Unable to determine number of characters required to "
+                        "represent FILENAMEMAXLENGTH.");
         return NULL;
     }
 
     fileNameFormat = (char *)malloc((strlen(fileNameFormatFormat) + numCharsToReprFILENAMEMAXLENGTH + 1) * sizeof(char));
     if (fileNameFormat == NULL)
     {
-        ErrorMessage("Unable to allocate memory for filename format string.\n");
-
+        gp_ErrorMessage("Unable to allocate memory for file name format "
+                        "string.");
         return NULL;
     }
 
@@ -839,13 +839,11 @@ char *ConstructInputFilename(char const *infileName)
     {
         while (1)
         {
-            Prompt("Enter graph file name: ");
+            gp_MessagePrompt("Enter graph file name:");
             if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
             {
-                ErrorMessage("Unable to read graph file name from stdin.\n");
-
+                gp_ErrorMessage("Unable to read graph file name from stdin.");
                 Result = NOTOK;
-
                 break;
             }
 
@@ -853,18 +851,14 @@ char *ConstructInputFilename(char const *infileName)
 #pragma GCC diagnostic ignored "-Wformat-nonliteral"
             if (strlen(lineBuff) == 0 || strlen(lineBuff) > FILENAMEMAXLENGTH ||
                 sscanf(lineBuff, fileNameFormat, theFileName) != 1)
-                ErrorMessage("Invalid input filename.\n");
+                gp_Message("Invalid input file name; please retry.");
             else
             {
                 if (strncmp(theFileName, "stdin", strlen("stdin")) != 0 && !strchr(theFileName, '.'))
                 {
-                    Message("Graph file name does not have extension; automatically appending \".txt\".\n");
-                    if (strcat(theFileName, ".txt") == NULL)
-                    {
-                        ErrorMessage("Appending \".txt\" extension to theFileName using strcat() failed.\n");
-
-                        Result = NOTOK;
-                    }
+                    gp_Message("Graph file name does not have extension; "
+                               "automatically appending \".txt\".");
+                    strcat(theFileName, ".txt");
                 }
                 break;
             }
@@ -875,25 +869,18 @@ char *ConstructInputFilename(char const *infileName)
     {
         if (strlen(infileName) > FILENAMEMAXLENGTH)
         {
-            ErrorMessage("Filename is too long.\n");
-
+            gp_ErrorMessage("File name is too long.");
             Result = NOTOK;
         }
         else if (strlen(infileName) == 0)
         {
-            ErrorMessage("Filename is empty.\n");
-
+            gp_ErrorMessage("File name is empty.");
             Result = NOTOK;
         }
 
         if (Result == OK)
         {
-            if (strcpy(theFileName, infileName) == NULL)
-            {
-                ErrorMessage("Copying infileName into theFileName using strcpy() failed.\n");
-
-                Result = NOTOK;
-            }
+            strcpy(theFileName, infileName);
         }
     }
 
@@ -907,10 +894,10 @@ char *ConstructInputFilename(char const *infileName)
 }
 
 /****************************************************************************
- * ConstructPrimaryOutputFilename()
+ * ConstructPrimaryOutputFileName()
  *
  * Returns a string not owned by the caller (do not free string).
- * Reuses the same memory space as ConstructInputFilename().
+ * Reuses the same memory space as ConstructInputFileName().
  * If outfileName is non-NULL, then the result string contains its content.
  * If outfileName is NULL, then the infileName and the command's algorithm name
  * are used to construct a string.
@@ -918,25 +905,26 @@ char *ConstructInputFilename(char const *infileName)
  * Returns non-NULL string
  ****************************************************************************/
 
-char *ConstructPrimaryOutputFilename(char const *infileName, char const *outfileName, char command)
+char *ConstructPrimaryOutputFileName(char const *infileName, char const *outfileName, char command)
 {
     char const *algorithmName = GetAlgorithmName(command);
 
     if (outfileName == NULL)
     {
-        // The output filename is based on the input filename
+        // The output file name is based on the input file name
         if (theFileName != infileName)
             strcpy(theFileName, infileName);
 
-        // If the primary output filename has not been given, then we use
-        // the input filename + the algorithm name + a simple suffix
+        // If the primary output file name has not been given, then we use
+        // the input file name + the algorithm name + a simple suffix
         if (strlen(algorithmName) <= ALGORITHMNAMEMAXLENGTH)
         {
             strcat(theFileName, ".");
             strcat(theFileName, algorithmName);
         }
         else
-            ErrorMessage("Algorithm Name is too long, so it will not be used in output filename.\n");
+            gp_Message("Algorithm Name is too long, so it will not be used in "
+                       "output file name.");
 
         strcat(theFileName, ".out.txt");
     }
@@ -944,12 +932,7 @@ char *ConstructPrimaryOutputFilename(char const *infileName, char const *outfile
     {
         if (strlen(outfileName) > FILENAMEMAXLENGTH)
         {
-            char const *messageFormat = "Outfile filename is too long. Result placed in \"%.*s\"";
-            int charsAvailForStrToInclude = (int)(MAXLINE - strlen(messageFormat));
-            char messageContents[MAXLINE + 1];
-            messageContents[0] = '\0';
-
-            // The output filename is based on the input filename
+            // The output file name is based on the input file name
             if (theFileName != infileName)
                 strcpy(theFileName, infileName);
 
@@ -960,11 +943,9 @@ char *ConstructPrimaryOutputFilename(char const *infileName, char const *outfile
             }
             strcat(theFileName, ".out.txt");
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-nonliteral"
-            sprintf(messageContents, messageFormat, charsAvailForStrToInclude, theFileName);
-#pragma GCC diagnostic pop
-            ErrorMessage(messageContents);
+            gp_Message("Outfile file name is too long. Result placed in "
+                       "\"%.*s\"",
+                       FILENAME_MAX, theFileName);
         }
         else
         {
@@ -977,7 +958,7 @@ char *ConstructPrimaryOutputFilename(char const *infileName, char const *outfile
 }
 
 /****************************************************************************
- * ConstructTransformationExpectedResultFilename()
+ * ConstructTransformationExpectedResultFileName()
  *
  * Returns a string whose ownership will be transferred to the caller (must free
  * string).
@@ -989,7 +970,7 @@ char *ConstructPrimaryOutputFilename(char const *infileName, char const *outfile
  * Returns non-NULL string
  ****************************************************************************/
 
-int ConstructTransformationExpectedResultFilename(char const *infileName, char **outfileName, char command, int baseFlag)
+int ConstructTransformationExpectedResultFileName(char const *infileName, char **outfileName, char command, int baseFlag)
 {
     int Result = OK;
 
@@ -999,7 +980,8 @@ int ConstructTransformationExpectedResultFilename(char const *infileName, char *
 
     if (infileName == NULL || (infileNameLen = strlen(infileName)) < 1)
     {
-        ErrorMessage("Cannot construct transformation output filename for empty infileName.\n");
+        gp_ErrorMessage("Cannot construct transformation output file name for "
+                        "empty infileName.");
         return NOTOK;
     }
 
@@ -1012,7 +994,7 @@ int ConstructTransformationExpectedResultFilename(char const *infileName, char *
 
         if ((*outfileName) == NULL)
         {
-            ErrorMessage("Unable to allocate memory for output filename.\n");
+            gp_ErrorMessage("Unable to allocate memory for output file name.");
             return NOTOK;
         }
 
@@ -1025,7 +1007,7 @@ int ConstructTransformationExpectedResultFilename(char const *infileName, char *
     }
     else
     {
-        ErrorMessage("outfileName already allocated.\n");
+        gp_ErrorMessage("outfileName already allocated.");
         Result = NOTOK;
     }
 
@@ -1038,52 +1020,78 @@ int ConstructTransformationExpectedResultFilename(char const *infileName, char *
 
 void WriteAlgorithmResults(graphP theGraph, int Result, char command, platform_time start, platform_time end, char const *infileName)
 {
-    char const *messageFormat = NULL;
-    char messageContents[MAXLINE + 1];
-    int charsAvailForStr = 0;
+    char algorithmResults[MAXLINE + 1];
+    char *target = algorithmResults;
 
-    memset(messageContents, '\0', (MAXLINE + 1));
+    memset(algorithmResults, '\0', MAXLINE + 1);
+
+    target += sprintf(target, "The graph ");
 
     if (infileName)
     {
-        messageFormat = "The graph \"%.*s\" ";
-        charsAvailForStr = (int)(MAXLINE - strlen(messageFormat));
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-nonliteral"
-        sprintf(messageContents, messageFormat, charsAvailForStr, infileName);
-#pragma GCC diagnostic pop
+        target += sprintf(target, "\"%.*s\" ", FILENAMEMAXLENGTH, infileName);
     }
-    else
-        sprintf(messageContents, "The graph ");
-    Message(messageContents);
 
     switch (command)
     {
     case 'p':
-        sprintf(messageContents, "is%s planar.\n", Result == OK ? "" : " not");
+        target += sprintf(target, "is%s planar.", Result == OK ? "" : " not");
         break;
     case 'd':
-        sprintf(messageContents, "is%s planar.\n", Result == OK ? "" : " not");
+        target += sprintf(target, "is%s planar.", Result == OK ? "" : " not");
         break;
     case 'o':
-        sprintf(messageContents, "is%s outerplanar.\n", Result == OK ? "" : " not");
+        target += sprintf(target, "is%s outerplanar.", Result == OK ? "" : " not");
         break;
     case '2':
-        sprintf(messageContents, "has %s subgraph homeomorphic to K_{2,3}.\n", Result == OK ? "no" : "a");
+        target += sprintf(target, "has %s subgraph homeomorphic to K_{2,3}.", Result == OK ? "no" : "a");
         break;
     case '3':
-        sprintf(messageContents, "has %s subgraph homeomorphic to K_{3,3}.\n", Result == OK ? "no" : "a");
+        target += sprintf(target, "has %s subgraph homeomorphic to K_{3,3}.", Result == OK ? "no" : "a");
         break;
     case '4':
-        sprintf(messageContents, "has %s subgraph homeomorphic to K_4.\n", Result == OK ? "no" : "a");
+        target += sprintf(target, "has %s subgraph homeomorphic to K_4.", Result == OK ? "no" : "a");
         break;
     default:
-        sprintf(messageContents, "has not been processed due to unrecognized command.\n");
+        target += sprintf(target, "has not been processed due to unrecognized command.");
         break;
     }
-    Message(messageContents);
 
-    sprintf(messageContents, "Algorithm '%s' executed in %.3lf seconds.\n",
-            GetAlgorithmName(command), platform_GetDuration(start, end));
-    Message(messageContents);
+    gp_Message("%s", algorithmResults);
+    gp_Message("Algorithm '%s' executed in %.3lf seconds.",
+               GetAlgorithmName(command), platform_GetDuration(start, end));
+}
+
+/****************************************************************************
+ * GetNumCharsToReprInt()
+ ****************************************************************************/
+
+int GetNumCharsToReprInt(int theNum, int *numCharsRequired)
+{
+    int charCount = 0;
+
+    if (numCharsRequired == NULL)
+        return NOTOK;
+
+    if (theNum < 0)
+    {
+        charCount++;
+        // N.B. since 32-bit signed integers are represented using twos-complement,
+        // the absolute value of INT_MIN is not defined; however, adding 1 to this
+        // min value before taking the absolute value will still require the same
+        // number of digits.
+        if ((theNum == INT_MIN) || (theNum == INT8_MAX) || (theNum == INT16_MIN) || (theNum == INT32_MIN))
+            theNum++;
+        theNum = abs(theNum);
+    }
+
+    while (theNum > 0)
+    {
+        theNum /= 10;
+        charCount++;
+    }
+
+    (*numCharsRequired) = charCount;
+
+    return OK;
 }

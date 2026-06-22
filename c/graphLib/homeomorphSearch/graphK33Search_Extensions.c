@@ -6,8 +6,11 @@ See the LICENSE.TXT file for licensing information.
 
 #include <stdlib.h>
 
-#include "graphK33Search.private.h"
 #include "graphK33Search.h"
+#include "graphK33Search.private.h"
+
+// Need to save and restore a graph flag related to IO
+#include "../io/graphIO.h"
 
 extern int _SearchForMergeBlocker(graphP theGraph, K33SearchContext *context, int v, int *pMergeBlocker);
 extern int _FindK33WithMergeBlocker(graphP theGraph, K33SearchContext *context, int v, int mergeBlocker);
@@ -51,13 +54,14 @@ int _K33Search_EmbedPostprocess(graphP theGraph, int v, int edgeEmbeddingResult)
 int _K33Search_CheckEmbeddingIntegrity(graphP theGraph, graphP origGraph);
 int _K33Search_CheckObstructionIntegrity(graphP theGraph, graphP origGraph);
 
-int _K33Search_InitGraph(graphP theGraph, int N);
-void _K33Search_ReinitializeGraph(graphP theGraph);
+int _K33Search_EnsureVertexCapacity(graphP theGraph, int N);
+void _K33Search_ResetGraphStorage(graphP theGraph);
 int _K33Search_EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity);
 
 /* Forward declarations of functions used by the extension system */
 
 void *_K33Search_DupContext(void *pContext, void *theGraph);
+int _K33Search_CopyData(void *dstContext, void *srcContext);
 void _K33Search_FreeContext(void *);
 
 /****************************************************************************
@@ -79,6 +83,9 @@ int gp_ExtendWith_K33Search(graphP theGraph)
 {
     K33SearchContext *context = NULL;
 
+    if (theGraph == NULL || gp_GetN(theGraph) <= 0)
+        return NOTOK;
+
     // If the K3,3 search feature has already been attached to the graph,
     // then there is no need to attach it again
     gp_FindExtension(theGraph, K33SEARCH_ID, (void *)&context);
@@ -86,6 +93,10 @@ int gp_ExtendWith_K33Search(graphP theGraph)
     {
         return OK;
     }
+
+    // Ensure theGraph is a Planarity Graph
+    if (gp_ExtendWith_Planarity(theGraph) != OK)
+        return NOTOK;
 
     // Allocate a new extension context
     context = (K33SearchContext *)malloc(sizeof(K33SearchContext));
@@ -103,7 +114,7 @@ int gp_ExtendWith_K33Search(graphP theGraph)
     // Put the overload functions into the context function table.
     // gp_AddExtension will overload the graph's functions with these, and
     // return the base function pointers in the context function table
-    memset(&context->functions, 0, sizeof(graphFunctionTable));
+    memset(&context->functions, 0, sizeof(graphFunctionTableStruct));
 
     context->functions.fpEmbeddingInitialize = _K33Search_EmbeddingInitialize;
     context->functions.fpEmbedBackEdgeToDescendant = _K33Search_EmbedBackEdgeToDescendant;
@@ -114,9 +125,8 @@ int gp_ExtendWith_K33Search(graphP theGraph)
     context->functions.fpCheckEmbeddingIntegrity = _K33Search_CheckEmbeddingIntegrity;
     context->functions.fpCheckObstructionIntegrity = _K33Search_CheckObstructionIntegrity;
 
-    // Overloads of functions that are called outside of the gp_Embed() processing sequence
-    context->functions.fpInitGraph = _K33Search_InitGraph;
-    context->functions.fpReinitializeGraph = _K33Search_ReinitializeGraph;
+    context->functions.fpEnsureVertexCapacity = _K33Search_EnsureVertexCapacity;
+    context->functions.fpResetGraphStorage = _K33Search_ResetGraphStorage;
     context->functions.fpEnsureEdgeCapacity = _K33Search_EnsureEdgeCapacity;
 
     _K33Search_ClearStructures(context);
@@ -124,7 +134,9 @@ int gp_ExtendWith_K33Search(graphP theGraph)
     // Store the K33 search context, including the data structure and the
     // function pointers, as an extension of the graph
     if (gp_AddExtension(theGraph, &K33SEARCH_ID, (void *)context,
-                        _K33Search_DupContext, _K33Search_FreeContext,
+                        _K33Search_DupContext,
+                        _K33Search_CopyData,
+                        _K33Search_FreeContext,
                         &context->functions) != OK)
     {
         _K33Search_FreeContext(context);
@@ -136,9 +148,9 @@ int gp_ExtendWith_K33Search(graphP theGraph)
     // Create the K33-specific structures if the size of the graph is known
     // Attach functions are always invoked after gp_New(), but if a graph
     // extension must be attached before gp_Read(), then the attachment
-    // also happens before gp_InitGraph(), which means N==0.
-    // However, sometimes a feature is attached after gp_InitGraph(), in
-    // which case N > 0
+    // also happens before gp_EnsureVertexCapacity(), which means N==0.
+    // However, a feature can be attached after gp_EnsureVertexCapacity(),
+    // in which case there is extra work to do when N > 0.
     if (gp_GetN(theGraph) > 0)
     {
         if (_K33Search_CreateStructures(context) != OK ||
@@ -223,8 +235,8 @@ void _K33Search_ClearStructures(K33SearchContext *context)
  ********************************************************************/
 int _K33Search_CreateStructures(K33SearchContext *context)
 {
-    int VIsize = gp_VertexArraySize(context->theGraph);
-    int Esize = gp_EdgeArraySize(context->theGraph);
+    int VIsize = gp_UpperBoundVertices(context->theGraph);
+    int Esize = gp_UpperBoundEdgeStorage(context->theGraph);
 
     if (gp_GetN(context->theGraph) <= 0)
         return NOTOK;
@@ -253,22 +265,8 @@ int _K33Search_CreateStructures(K33SearchContext *context)
  ********************************************************************/
 int _K33Search_InitStructures(K33SearchContext *context)
 {
-    memset(context->VI, NIL_CHAR, gp_VertexArraySize(context->theGraph) * sizeof(K33Search_VertexInfo));
-    memset(context->E, NIL_CHAR, gp_EdgeArraySize(context->theGraph) * sizeof(K33Search_EdgeRec));
-    // N.B. This is the legacy API-based approach to initializing the structures
-    // required for the K_{3, 3} search graph algorithm extension.
-    // graphP theGraph = context->theGraph;
-    // int v, e, Esize;
-
-    // if (gp_GetN(theGraph) <= 0)
-    //     return OK;
-
-    // for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
-    //     _K33Search_InitVertexInfo(context, v);
-
-    // Esize = gp_EdgeArraySize(theGraph);
-    // for (e = gp_EdgeArrayStart(theGraph); e < Esize; e++)
-    //     _K33Search_InitEdgeRec(context, e);
+    memset(context->VI, NIL_CHAR, gp_UpperBoundVertices(context->theGraph) * sizeof(K33Search_VertexInfo));
+    memset(context->E, NIL_CHAR, gp_UpperBoundEdgeStorage(context->theGraph) * sizeof(K33Search_EdgeRec));
 
     return OK;
 }
@@ -276,7 +274,7 @@ int _K33Search_InitStructures(K33SearchContext *context)
 /********************************************************************
  ********************************************************************/
 
-int _K33Search_InitGraph(graphP theGraph, int N)
+int _K33Search_EnsureVertexCapacity(graphP theGraph, int N)
 {
     K33SearchContext *context = NULL;
     gp_FindExtension(theGraph, K33SEARCH_ID, (void *)&context);
@@ -289,13 +287,13 @@ int _K33Search_InitGraph(graphP theGraph, int N)
     theGraph->N = N;
     theGraph->NV = N;
     if (theGraph->edgeCapacity == 0)
-        theGraph->edgeCapacity = DEFAULT_EDGE_LIMIT * N;
+        theGraph->edgeCapacity = DEFAULT_EDGE_CAPACITY_FACTOR * N;
 
     if (_K33Search_CreateStructures(context) != OK ||
         _K33Search_InitStructures(context) != OK)
         return NOTOK;
 
-    context->functions.fpInitGraph(theGraph, N);
+    context->functions.fpEnsureVertexCapacity(theGraph, N);
 
     return OK;
 }
@@ -303,7 +301,7 @@ int _K33Search_InitGraph(graphP theGraph, int N)
 /********************************************************************
  ********************************************************************/
 
-void _K33Search_ReinitializeGraph(graphP theGraph)
+void _K33Search_ResetGraphStorage(graphP theGraph)
 {
     K33SearchContext *context = NULL;
     gp_FindExtension(theGraph, K33SEARCH_ID, (void *)&context);
@@ -314,13 +312,13 @@ void _K33Search_ReinitializeGraph(graphP theGraph)
         // Get rid of an embedding obstruction tree if one was formed due to operations on this graph
         _K33Search_EONode_Free(&context->associatedEONode);
         if ((context->associatedEONode = _K33Search_EONode_New(K33SEARCH_EOTYPE_ENODE, context->theGraph, FALSE)) == NULL)
-            ErrorMessage("_K33Search_ReinitializeGraph() failed to allocate an embedding obstruction tree root node.\n");
+            gp_ErrorMessage("_K33Search_ReinitializeGraph() failed to allocate an embedding obstruction tree root node.");
 #endif
 
-        // Reinitialize the graph
-        context->functions.fpReinitializeGraph(theGraph);
+        // Reset the graph storage in base class(es)
+        context->functions.fpResetGraphStorage(theGraph);
 
-        // Do the reinitialization that is specific to this module
+        // Do the reset that is specific to this module
         _K33Search_InitStructures(context);
         LCReset(context->separatedDFSChildLists);
         LCReset(context->bin);
@@ -328,18 +326,53 @@ void _K33Search_ReinitializeGraph(graphP theGraph)
 }
 
 /********************************************************************
- The current implementation does not support an increase of edge
- capacity once the extension is attached to the graph data structure.
- This is only due to not being necessary to support.
-
- For now, it is easy to ensure the correct capacity before attaching
- the extension, but support could be added later if there is some
- reason to do so.
+ _K33Search_EnsureEdgeCapacity()
  ********************************************************************/
 
 int _K33Search_EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity)
 {
-    return NOTOK;
+    K33SearchContext *context = NULL;
+    K33Search_EdgeRecP oldE = NULL, newE = NULL;
+    int oldEsize = gp_UpperBoundEdgeStorage(theGraph), newEsize = 0;
+
+    // If the requirement is already satisfied, then no work to do
+    if (gp_GetEdgeCapacity(theGraph) >= requiredEdgeCapacity)
+        return OK;
+
+    // Get the graph's extension context so we can work on it
+    gp_FindExtension(theGraph, K33SEARCH_ID, (void *)&context);
+    if (context == NULL)
+        return NOTOK;
+
+    // Call the superclass function to make sure lower levels of parallel
+    // edge arrays can successfully meet the new capacity requirement
+    if (context->functions.fpEnsureEdgeCapacity(theGraph, requiredEdgeCapacity) != OK)
+        return NOTOK;
+
+    // Save the current E so it can be freed once we replace it
+    oldE = context->E;
+
+    // The superclass EnsureEdgeCapacity method succeeded, so the graph's
+    // new edge capacity is already set, which means we the upper bound of
+    // the graph's edge storage gives the new parallel array size we need.
+    newEsize = gp_UpperBoundEdgeStorage(theGraph);
+
+    // We must successfully allocate the new parallel edge array
+    newE = (K33Search_EdgeRecP)malloc(newEsize * sizeof(K33Search_EdgeRec));
+    if (newE == NULL)
+        return NOTOK;
+
+    // Clear all new edge records
+    memset(newE, NIL_CHAR, newEsize * sizeof(K33Search_EdgeRec));
+
+    // Copy the old edge records to the new edge records
+    memcpy(newE, oldE, oldEsize * sizeof(K33Search_EdgeRec));
+
+    // Set the new edge array into the context and free the old one
+    context->E = newE;
+    free(oldE);
+
+    return OK;
 }
 
 /********************************************************************
@@ -353,8 +386,8 @@ void *_K33Search_DupContext(void *pContext, void *theGraph)
 
     if (newContext != NULL)
     {
-        int VIsize = gp_VertexArraySize((graphP)theGraph);
-        int Esize = gp_EdgeArraySize((graphP)theGraph);
+        int VIsize = gp_UpperBoundVertices((graphP)theGraph);
+        int Esize = gp_UpperBoundEdgeStorage((graphP)theGraph);
 
         *newContext = *context;
 
@@ -367,7 +400,7 @@ void *_K33Search_DupContext(void *pContext, void *theGraph)
 #ifdef INCLUDE_K33SEARCH_EMBEDDER
             if (_K33Search_TestForEOTreeChildren(context->associatedEONode) == TRUE)
             {
-                ErrorMessage("_K33Search_DupContext(): Duplicating an embedding obstruction tree is unsupported.\n");
+                gp_ErrorMessage("_K33Search_DupContext(): Duplicating an embedding obstruction tree is unsupported.");
                 _K33Search_FreeContext(newContext);
                 return NULL;
             }
@@ -388,6 +421,47 @@ void *_K33Search_DupContext(void *pContext, void *theGraph)
     }
 
     return newContext;
+}
+
+/********************************************************************
+ _K33Search_CopyData()
+ ********************************************************************/
+int _K33Search_CopyData(void *dstContext, void *srcContext)
+{
+    K33SearchContext *dstK33Context = (K33SearchContext *)dstContext;
+    K33SearchContext *srcK33Context = (K33SearchContext *)srcContext;
+    int dstEdgeStorage, srcEdgeStorage;
+
+    if (dstContext == NULL)
+        return NOTOK;
+
+    // If the srcContext is NULL, then the caller wants the data
+    // structures in the dstContext to be reset/reinitialized
+
+    if (srcContext == NULL)
+        return _K33Search_InitStructures(dstK33Context);
+
+    // ELSE: If there is also a srcContext, then we copy data from it
+    dstEdgeStorage = gp_UpperBoundEdgeStorage(dstK33Context->theGraph);
+    srcEdgeStorage = gp_UpperBoundEdgeStorage(srcK33Context->theGraph);
+
+    // The caller (ultimately gp_CopyGraph()) is responsible for making sure that the
+    // destination graph has enough edge capacity to receive the source graph content
+    if (dstEdgeStorage < srcEdgeStorage)
+        return NOTOK;
+
+    // If the destination graph has more edge capacity, then we make sure that the
+    // extra edge capacity is reinitialized
+    if (dstEdgeStorage > srcEdgeStorage)
+    {
+        memset(dstK33Context->E, NIL_CHAR, gp_UpperBoundEdgeStorage(dstK33Context->theGraph) * sizeof(K33Search_EdgeRec));
+    }
+
+    memcpy(dstK33Context->E, srcK33Context->E, gp_UpperBoundEdgeStorage(dstK33Context->theGraph) * sizeof(K33Search_EdgeRec));
+
+    memcpy(dstK33Context->VI, srcK33Context->VI, gp_UpperBoundVertices(dstK33Context->theGraph) * sizeof(K33Search_VertexInfo));
+
+    return OK;
 }
 
 /********************************************************************
@@ -442,7 +516,7 @@ void _CreateBackEdgeLists(graphP theGraph, K33SearchContext *context)
 {
     int v, e, eTwin, ancestor;
 
-    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
+    for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
     {
         e = gp_GetVertexFwdEdgeList(theGraph, v);
         while (gp_IsEdge(theGraph, e))
@@ -493,12 +567,12 @@ void _CreateSeparatedDFSChildLists(graphP theGraph, K33SearchContext *context)
 
     // Initialize the bin and all the buckets to be empty
     LCReset(bin);
-    for (L = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, L); L++)
+    for (L = gp_LowerBoundVertices(theGraph); L < gp_UpperBoundVertices(theGraph); L++)
         buckets[L] = NIL;
 
     // For each vertex, add it to the bucket whose index is equal to the lowpoint of the vertex.
 
-    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
+    for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
     {
         L = gp_GetVertexLowpoint(theGraph, v);
         buckets[L] = LCAppend(bin, buckets[L], v);
@@ -508,7 +582,7 @@ void _CreateSeparatedDFSChildLists(graphP theGraph, K33SearchContext *context)
     // Since lower numbered buckets are processed before higher numbered buckets, vertices with lower
     // lowpoint values are added before those with higher lowpoint values, so the separatedDFSChildList
     // of each vertex is sorted by lowpoint
-    for (L = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, L); L++)
+    for (L = gp_LowerBoundVertices(theGraph); L < gp_UpperBoundVertices(theGraph); L++)
     {
         v = buckets[L];
 
@@ -712,13 +786,9 @@ int _K33Search_HandleBlockedBicomp(graphP theGraph, int v, int RootVertex, int R
         // happen on a child bicomp of vertex v, not a descendant bicomp.
         return _SearchForK33InBicomp(theGraph, context, v, RootVertex);
     }
-    else
-    {
-        return context->functions.fpHandleBlockedBicomp(theGraph, v, RootVertex, R);
-    }
 
-    // No way to get here in current implementation, but this protects against future mistakes
-    return NOTOK;
+    // else if we are not doing a K3,3 homeomorph search, then call the superclass to handle
+    return context->functions.fpHandleBlockedBicomp(theGraph, v, RootVertex, R);
 }
 
 /********************************************************************
@@ -748,21 +818,21 @@ int _K33Search_EmbedPostprocess(graphP theGraph, int v, int edgeEmbeddingResult)
 
                 if (context == NULL || _K33Search_AssembleMainPlanarEmbedding(context->associatedEONode) != OK)
                 {
-                    ErrorMessage("_K33Search_EmbedPostporcess() failed to assemble main planar embedding");
+                    gp_ErrorMessage("_K33Search_EmbedPostporcess() failed to assemble main planar embedding");
                     return NOTOK;
                 }
 
                 tempRoot = context->associatedEONode;
                 context->associatedEONode = NULL;
 
-                vertexIndices = (int *)malloc((theGraph->N + gp_GetFirstVertex(theGraph)) * sizeof(int));
+                vertexIndices = (int *)malloc(gp_UpperBoundVertices(theGraph) * sizeof(int));
                 if (vertexIndices == NULL)
                 {
-                    ErrorMessage("_K33Search_EmbedPostporcess() failed to allocate memory for array saving vertex DFI ordering.\n");
+                    gp_ErrorMessage("_K33Search_EmbedPostprocess() failed to allocate memory for array saving vertex DFI ordering.");
                     return NOTOK;
                 }
 
-                for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
+                for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
                 {
                     vertexIndices[v] = gp_GetIndex(theGraph, v);
                 }
@@ -772,8 +842,8 @@ int _K33Search_EmbedPostprocess(graphP theGraph, int v, int edgeEmbeddingResult)
             // is meaningless, so we empty it out. We preserve the embedFlags
             // to ensure post-processing continues as expected.
             savedEmbedFlags = gp_GetEmbedFlags(theGraph);
-            savedZEROBASEDIO = gp_GetGraphFlags(theGraph) & FLAGS_ZEROBASEDIO;
-            gp_ReinitializeGraph(theGraph);
+            savedZEROBASEDIO = gp_GetGraphFlags(theGraph) & GRAPHFLAGS_ZEROBASEDIO;
+            gp_ResetGraphStorage(theGraph);
             theGraph->embedFlags = savedEmbedFlags;
             theGraph->graphFlags &= savedZEROBASEDIO;
 
@@ -785,7 +855,7 @@ int _K33Search_EmbedPostprocess(graphP theGraph, int v, int edgeEmbeddingResult)
 
                 context->associatedEONode = tempRoot;
 
-                for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
+                for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
                 {
                     gp_SetIndex(theGraph, v, vertexIndices[v]);
                 }

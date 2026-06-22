@@ -7,8 +7,6 @@ See the LICENSE.TXT file for licensing information.
 #include "graphK33Search.h"
 #include "graphK33Search.private.h"
 
-#include "../graph.h"
-
 /* Imported functions */
 
 // extern void _ClearAllVisitedFlagsInGraph(graphP);
@@ -22,7 +20,7 @@ extern int _HideInternalEdges(graphP theGraph, int vertex);
 extern int _RestoreInternalEdges(graphP theGraph, int stackBottom);
 extern int _ClearInvertedFlagsInBicomp(graphP theGraph, int BicompRoot);
 extern int _ComputeEdgeRecordType(graphP theGraph, int a, int b, int edgeType);
-extern int _SetEdgeType(graphP theGraph, int u, int v);
+extern int _RestoreEdgeType(graphP theGraph, int u, int v);
 
 extern int _GetNeighborOnExtFace(graphP theGraph, int curVertex, int *pPrevLink);
 extern int _JoinBicomps(graphP theGraph);
@@ -109,7 +107,7 @@ int _IsolateMinorE7(graphP theGraph, K33SearchContext *context);
 
 int _SearchForK33InBicomp(graphP theGraph, K33SearchContext *context, int v, int R)
 {
-    isolatorContextP IC = &theGraph->IC;
+    isolatorContextP IC = theGraphIC(theGraph);
     int tempResult;
 
     /* Begin by determining which non-planarity minor is detected */
@@ -125,7 +123,7 @@ int _SearchForK33InBicomp(graphP theGraph, K33SearchContext *context, int v, int
     /* Minors A to D result in the desired K_{3,3} homeomorph,
         so we isolate it and return NONEMBEDDABLE. */
 
-    if (theGraph->IC.minorType & (MINORTYPE_A | MINORTYPE_B | MINORTYPE_C | MINORTYPE_D))
+    if (theGraphIC(theGraph)->minorType & (MINORTYPE_A | MINORTYPE_B | MINORTYPE_C | MINORTYPE_D))
     {
 #ifdef INCLUDE_K33SEARCH_EMBEDDER
         // Found Minor A, B, C, or D so eliminate the embedding obstruction tree because the graph is not K3,3-free
@@ -152,7 +150,7 @@ int _SearchForK33InBicomp(graphP theGraph, K33SearchContext *context, int v, int
             For minor A, we need to set up the stack that would be
             available immediately after a Walkdown failure. */
 
-        if (theGraph->IC.minorType & MINORTYPE_A)
+        if (theGraphIC(theGraph)->minorType & MINORTYPE_A)
         {
             sp_ClearStack(theGraph->theStack);
             sp_Push2(theGraph->theStack, R, NIL);
@@ -257,7 +255,7 @@ int _SearchForK33InBicomp(graphP theGraph, K33SearchContext *context, int v, int
 
 int _RunExtraK33Tests(graphP theGraph, K33SearchContext *context)
 {
-    isolatorContextP IC = &theGraph->IC;
+    isolatorContextP IC = theGraphIC(theGraph);
     int u_max = MAX3(IC->ux, IC->uy, IC->uz);
 
 #ifndef USE_MERGEBLOCKER
@@ -385,7 +383,7 @@ int _RunExtraK33Tests(graphP theGraph, K33SearchContext *context)
     // Now mark the lowest x-y path so that we can test whether _any_ x-y path
     // has points of attachment, px or py, below x or y, respectively (where
     // below means closer to W than x or y, respectively, along the external face).
-    if (_MarkLowestXYPath(theGraph) != TRUE)
+    if (_MarkLowestXYPath(theGraph) != OK)
         return NOTOK;
 
     // Now we test for E4 based on whether px!=x or py!=y. Note that the inequality
@@ -476,27 +474,27 @@ int _RunExtraK33Tests(graphP theGraph, K33SearchContext *context)
 
 int _SearchForMinorE1(graphP theGraph)
 {
-    int Z = theGraph->IC.px, ZPrevLink = 1;
+    int Z = theGraphIC(theGraph)->px, ZPrevLink = 1;
 
     Z = _GetNeighborOnExtFace(theGraph, Z, &ZPrevLink);
 
-    while (Z != theGraph->IC.py)
+    while (Z != theGraphIC(theGraph)->py)
     {
-        if (Z != theGraph->IC.w)
+        if (Z != theGraphIC(theGraph)->w)
         {
-            gp_UpdateVertexFuturePertinentChild(theGraph, Z, theGraph->IC.v);
-            if (FUTUREPERTINENT(theGraph, Z, theGraph->IC.v))
+            gp_UpdateVertexFuturePertinentChild(theGraph, Z, theGraphIC(theGraph)->v);
+            if (FUTUREPERTINENT(theGraph, Z, theGraphIC(theGraph)->v))
             {
-                theGraph->IC.z = Z;
-                theGraph->IC.uz = _GetLeastAncestorConnection(theGraph, Z);
+                theGraphIC(theGraph)->z = Z;
+                theGraphIC(theGraph)->uz = _GetLeastAncestorConnection(theGraph, Z);
                 return OK;
             }
             else if (PERTINENT(theGraph, Z))
             {
                 /* Swap the roles of W and Z */
 
-                theGraph->IC.z = theGraph->IC.w;
-                theGraph->IC.w = Z;
+                theGraphIC(theGraph)->z = theGraphIC(theGraph)->w;
+                theGraphIC(theGraph)->w = Z;
 
                 /* If the new W (indicated by Z) was on the path (R, X, old W) then
                     the new Z (the old W, which has no type mark) is on the path
@@ -505,17 +503,17 @@ int _SearchForMinorE1(graphP theGraph)
                     new Z (old W with no type) is type changed to be on the RXW path.*/
 
                 if (gp_GetObstructionMark(theGraph, Z) == ANYVERTEX_OBSTRUCTIONMARK_LOW_RXW)
-                    gp_ResetObstructionMark(theGraph, theGraph->IC.z, ANYVERTEX_OBSTRUCTIONMARK_LOW_RYW);
+                    gp_ResetObstructionMark(theGraph, theGraphIC(theGraph)->z, ANYVERTEX_OBSTRUCTIONMARK_LOW_RYW);
                 else
-                    gp_ResetObstructionMark(theGraph, theGraph->IC.z, ANYVERTEX_OBSTRUCTIONMARK_LOW_RXW);
+                    gp_ResetObstructionMark(theGraph, theGraphIC(theGraph)->z, ANYVERTEX_OBSTRUCTIONMARK_LOW_RXW);
 
                 /* For completeness, we change the new W to type unknown */
 
-                gp_ClearObstructionMark(theGraph, theGraph->IC.w);
+                gp_ClearObstructionMark(theGraph, theGraphIC(theGraph)->w);
 
                 /* The external activity ancestor connection of the new Z must be obtained */
 
-                theGraph->IC.uz = _GetLeastAncestorConnection(theGraph, theGraph->IC.z);
+                theGraphIC(theGraph)->uz = _GetLeastAncestorConnection(theGraph, theGraphIC(theGraph)->z);
 
                 return OK;
             }
@@ -535,7 +533,7 @@ int _SearchForMinorE1(graphP theGraph)
 
 int _FinishIsolatorContextInitialization(graphP theGraph, K33SearchContext *context)
 {
-    isolatorContextP IC = &theGraph->IC;
+    isolatorContextP IC = theGraphIC(theGraph);
 
 #ifdef INCLUDE_K33SEARCH_EMBEDDER
     // Found one of Minors E1 through E7 so eliminate the embedding obstruction tree because the graph is not K3,3-free
@@ -649,7 +647,7 @@ int _GetAdjacentAncestorInRange(graphP theGraph, K33SearchContext *context, int 
 
 int _SearchForDescendantExternalConnection(graphP theGraph, K33SearchContext *context, int cutVertex, int u_max)
 {
-    isolatorContextP IC = &theGraph->IC;
+    isolatorContextP IC = theGraphIC(theGraph);
     int u2 = _GetAdjacentAncestorInRange(theGraph, context, cutVertex, IC->v, u_max);
     int child, descendant;
 
@@ -749,7 +747,7 @@ int _FindExternalConnectionDescendantEndpoint(graphP theGraph, int ancestor,
     child = gp_GetVertexSortedDFSChildList(theGraph, cutVertex);
     while (gp_IsVertex(theGraph, child))
     {
-        if (gp_GetVertexLowpoint(theGraph, child) < theGraph->IC.v && gp_IsSeparatedDFSChild(theGraph, child))
+        if (gp_GetVertexLowpoint(theGraph, child) < theGraphIC(theGraph)->v && gp_IsSeparatedDFSChild(theGraph, child))
         {
             if (_FindUnembeddedEdgeToSubtree(theGraph, ancestor, child, pDescendant) == TRUE)
                 return OK;
@@ -826,7 +824,7 @@ int _SearchForMergeBlocker(graphP theGraph, K33SearchContext *context, int v, in
 int _FindK33WithMergeBlocker(graphP theGraph, K33SearchContext *context, int v, int mergeBlocker)
 {
     int R, RPrevLink, u_max, u, e;
-    isolatorContextP IC = &theGraph->IC;
+    isolatorContextP IC = theGraphIC(theGraph);
 
     /* First, we orient the vertices so we can successfully restore all of the
         reduced paths.  This needs to be done before reconstructing the context
@@ -854,9 +852,9 @@ int _FindK33WithMergeBlocker(graphP theGraph, K33SearchContext *context, int v, 
 
     IC->v = gp_GetVertexFromBicompRoot(theGraph, R);
 
-    /* Reinitialize the visitation, pertinence and future pertinence settings from step u_max for step v */
+    /* Reset the visitation, pertinence and future pertinence settings from step u_max for step v */
 
-    for (v = gp_GetFirstVertex(theGraph); gp_VertexInRangeAscending(theGraph, v); v++)
+    for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
     {
         gp_SetVertexVisitedInfo(theGraph, v, gp_GetN(theGraph));
         gp_SetVertexPertinentEdge(theGraph, v, NIL);
@@ -873,7 +871,7 @@ int _FindK33WithMergeBlocker(graphP theGraph, K33SearchContext *context, int v, 
     e = gp_GetVertexFwdEdgeList(theGraph, IC->v);
     while (gp_IsEdge(theGraph, e))
     {
-        theGraph->functions.fpWalkUp(theGraph, IC->v, e);
+        theGraph->functions->fpWalkUp(theGraph, IC->v, e);
 
         e = gp_GetNextEdge(theGraph, e);
         if (e == gp_GetVertexFwdEdgeList(theGraph, IC->v))
@@ -1010,7 +1008,7 @@ int _FindK33WithMergeBlocker(graphP theGraph, K33SearchContext *context, int v, 
 
 int _TestForZtoWPath(graphP theGraph)
 {
-    isolatorContextP IC = &theGraph->IC;
+    isolatorContextP IC = theGraphIC(theGraph);
     int v, e, w;
 
     sp_ClearStack(theGraph->theStack);
@@ -1120,7 +1118,7 @@ int _TestForZtoWPath(graphP theGraph)
 
 int _TestForStraddlingBridge(graphP theGraph, K33SearchContext *context, int u_max)
 {
-    isolatorContextP IC = &theGraph->IC;
+    isolatorContextP IC = theGraphIC(theGraph);
     int p, c, d, excludedChild, e;
 
     p = IC->v;
@@ -1238,7 +1236,7 @@ int _TestForStraddlingBridge(graphP theGraph, K33SearchContext *context, int u_m
 
 int _ReduceBicomp(graphP theGraph, K33SearchContext *context, int R)
 {
-    isolatorContextP IC = &theGraph->IC;
+    isolatorContextP IC = theGraphIC(theGraph);
     int min, max, A, A_edge, B, B_edge;
     int rxType, xwType, wyType, yrType, xyType;
 #ifdef INCLUDE_K33SEARCH_EMBEDDER
@@ -1392,7 +1390,7 @@ int _ReduceBicomp(graphP theGraph, K33SearchContext *context, int R)
           Case 3. (V, ..., Y=min, ..., W=mid, ..., X=max)
           Case 4. (V, ..., Y=min, ..., X=mid, ..., W=max) */
 
-    if (theGraph->functions.fpMarkDFSPath(theGraph, R, max) != OK)
+    if (theGraph->functions->fpMarkDFSPath(theGraph, R, max) != OK)
         return NOTOK;
 
     /* Now we use A to mark a path on the external face corresponding to:
@@ -1401,7 +1399,7 @@ int _ReduceBicomp(graphP theGraph, K33SearchContext *context, int R)
           Case 3. (V, ..., X=max)
           Case 4. (V, ..., X=mid) */
 
-    if (theGraph->functions.fpMarkDFSPath(theGraph, min == IC->x ? IC->y : IC->x, A) != OK)
+    if (theGraph->functions->fpMarkDFSPath(theGraph, min == IC->x ? IC->y : IC->x, A) != OK)
         return NOTOK;
 
     gp_SetEdgeVisited(theGraph, A_edge);
@@ -1414,7 +1412,7 @@ int _ReduceBicomp(graphP theGraph, K33SearchContext *context, int R)
           Case 3. (Y=min, ..., B, ..., X=max)
           Case 4. (Y=min, ..., B, ..., W=max) */
 
-    if (theGraph->functions.fpMarkDFSPath(theGraph, max, B) != OK)
+    if (theGraph->functions->fpMarkDFSPath(theGraph, max, B) != OK)
         return NOTOK;
 
     gp_SetEdgeVisited(theGraph, B_edge);
@@ -1563,7 +1561,8 @@ int _ReduceExternalFacePathToEdge(graphP theGraph, K33SearchContext *context, in
        not a reduction edge. */
 
     e = gp_GetFirstEdge(theGraph, u);
-    if (gp_IsAnyTypeVertex(theGraph, context->E[e].pathConnector))
+    // An edge e is a reduction edge if it has a pathConnector vertex set
+    if (context->E[e].pathConnector != NIL)
     {
         if (_RestoreReducedPath(theGraph, context, e) != OK)
             return NOTOK;
@@ -1573,7 +1572,8 @@ int _ReduceExternalFacePathToEdge(graphP theGraph, K33SearchContext *context, in
     _K33Search_DeleteEdge(theGraph, context, e);
 
     e = gp_GetLastEdge(theGraph, x);
-    if (gp_IsAnyTypeVertex(theGraph, context->E[e].pathConnector))
+    // An edge e is a reduction edge if it has a pathConnector vertex set
+    if (context->E[e].pathConnector != NIL)
     {
         if (_RestoreReducedPath(theGraph, context, e) != OK)
             return NOTOK;
@@ -1632,7 +1632,8 @@ int _ReduceXYPathToEdge(graphP theGraph, K33SearchContext *context, int u, int x
 
     /* Otherwise, remove the two edges that join the XY-path to the bicomp */
 
-    if (gp_IsAnyTypeVertex(theGraph, context->E[e].pathConnector))
+    // An edge e is a reduction edge if it has a pathConnector vertex set
+    if (context->E[e].pathConnector != NIL)
     {
         if (_RestoreReducedPath(theGraph, context, e) != OK)
             return NOTOK;
@@ -1645,7 +1646,8 @@ int _ReduceXYPathToEdge(graphP theGraph, K33SearchContext *context, int u, int x
     e = gp_GetFirstEdge(theGraph, x);
     e = gp_GetNextEdge(theGraph, e);
     w = gp_GetNeighbor(theGraph, e);
-    if (gp_IsAnyTypeVertex(theGraph, context->E[e].pathConnector))
+    // An edge e is a reduction edge if it has a pathConnector vertex set
+    if (context->E[e].pathConnector != NIL)
     {
         if (_RestoreReducedPath(theGraph, context, e) != OK)
             return NOTOK;
@@ -1698,7 +1700,9 @@ int _RestoreReducedPath(graphP theGraph, K33SearchContext *context, int e)
     int eTwin, u, v, w, x;
     int e0, e1, eTwin0, eTwin1;
 
-    if (gp_IsNotAnyTypeVertex(theGraph, context->E[e].pathConnector))
+    // Edge e does not represent a reducible path unless it has a
+    // pathConnect vertex (i.e., a non-NIL value indicating the vertex)
+    if (context->E[e].pathConnector == NIL)
         return OK;
 
     eTwin = gp_GetTwin(theGraph, e);
@@ -1751,8 +1755,8 @@ int _RestoreReducedPath(graphP theGraph, K33SearchContext *context, int e)
     // Set the types of the newly added edges. In both cases, the first of the two
     // vertex parameters is known to be degree 2 because they are internal to the
     // path being restored, so this operation is constant time.
-    if (_SetEdgeType(theGraph, v, u) != OK ||
-        _SetEdgeType(theGraph, w, x) != OK)
+    if (_RestoreEdgeType(theGraph, v, u) != OK ||
+        _RestoreEdgeType(theGraph, w, x) != OK)
         return NOTOK;
 
     return OK;
@@ -1775,13 +1779,13 @@ int _RestoreReducedPath(graphP theGraph, K33SearchContext *context, int e)
 
 int _RestoreAndOrientReducedPaths(graphP theGraph, K33SearchContext *context)
 {
-    int EsizeOccupied, e, eTwin, u, v, w, x, visited;
+    int e, eTwin, u, v, w, x, visited;
     int e0, eTwin0, e1, eTwin1;
 
-    EsizeOccupied = gp_EdgeInUseArraySize(theGraph);
-    for (e = gp_EdgeArrayStart(theGraph); e < EsizeOccupied;)
+    for (e = gp_LowerBoundEdges(theGraph); e < gp_UpperBoundEdges(theGraph);)
     {
-        if (gp_IsAnyTypeVertex(theGraph, context->E[e].pathConnector))
+        // An edge e is a reduction edge if it has a pathConnector vertex set
+        if (context->E[e].pathConnector != NIL)
         {
             visited = gp_GetEdgeVisited(theGraph, e);
 
@@ -1835,8 +1839,8 @@ int _RestoreAndOrientReducedPaths(graphP theGraph, K33SearchContext *context)
 
             /* Set the types of the newly added edges */
 
-            if (_SetEdgeType(theGraph, u, v) != OK ||
-                _SetEdgeType(theGraph, w, x) != OK)
+            if (_RestoreEdgeType(theGraph, u, v) != OK ||
+                _RestoreEdgeType(theGraph, w, x) != OK)
                 return NOTOK;
 
             /* We determine whether the reduction edge may be on the external face,
@@ -1887,13 +1891,13 @@ int _RestoreAndOrientReducedPaths(graphP theGraph, K33SearchContext *context)
 
 int _MarkStraddlingBridgePath(graphP theGraph, int u_min, int u_max, int u_d, int d)
 {
-    isolatorContextP IC = &theGraph->IC;
+    isolatorContextP IC = theGraphIC(theGraph);
     int p, e;
 
     /* Find the point of intersection p between the path (v ... u_max)
            and the path (d ... u_max). */
 
-    if (theGraph->functions.fpMarkDFSPath(theGraph, u_max, IC->r) != OK)
+    if (theGraph->functions->fpMarkDFSPath(theGraph, u_max, IC->r) != OK)
         return NOTOK;
 
     p = d;
@@ -1960,7 +1964,7 @@ int _MarkStraddlingBridgePath(graphP theGraph, int u_min, int u_max, int u_d, in
         ancestor of u_min, then mark the path that joins u_d to u_min. */
 
     if (u_d < u_min)
-        if (theGraph->functions.fpMarkDFSPath(theGraph, u_d, u_min) != OK)
+        if (theGraph->functions->fpMarkDFSPath(theGraph, u_d, u_min) != OK)
             return NOTOK;
 
     return OK;
@@ -1974,12 +1978,12 @@ int _MarkStraddlingBridgePath(graphP theGraph, int u_min, int u_max, int u_d, in
 
 int _IsolateMinorE5(graphP theGraph)
 {
-    isolatorContextP IC = &theGraph->IC;
+    isolatorContextP IC = theGraphIC(theGraph);
 
     if (_MarkPathAlongBicompExtFace(theGraph, IC->r, IC->x) != OK ||
         _MarkPathAlongBicompExtFace(theGraph, IC->y, IC->r) != OK ||
-        theGraph->functions.fpMarkDFSPath(theGraph, MIN3(IC->ux, IC->uy, IC->uz),
-                                          MAX3(IC->ux, IC->uy, IC->uz)) != OK ||
+        theGraph->functions->fpMarkDFSPath(theGraph, MIN3(IC->ux, IC->uy, IC->uz),
+                                           MAX3(IC->ux, IC->uy, IC->uz)) != OK ||
         _MarkDFSPathsToDescendants(theGraph) != OK ||
         _JoinBicomps(theGraph) != OK ||
         _AddAndMarkUnembeddedEdges(theGraph) != OK)
@@ -1998,7 +2002,7 @@ int _IsolateMinorE5(graphP theGraph)
 
 int _IsolateMinorE6(graphP theGraph, K33SearchContext *context)
 {
-    isolatorContextP IC = &theGraph->IC;
+    isolatorContextP IC = theGraphIC(theGraph);
     int u_min, u_max, d, u_d;
 
     /* Clear the previously marked x-y path */
@@ -2028,7 +2032,7 @@ int _IsolateMinorE6(graphP theGraph, K33SearchContext *context)
 
     /* Make the final markings and edge additions */
 
-    if (theGraph->functions.fpMarkDFSPath(theGraph, u_min, u_max) != OK ||
+    if (theGraph->functions->fpMarkDFSPath(theGraph, u_min, u_max) != OK ||
         _MarkDFSPathsToDescendants(theGraph) != OK ||
         _JoinBicomps(theGraph) != OK ||
         _AddAndMarkUnembeddedEdges(theGraph) != OK ||
@@ -2044,7 +2048,7 @@ int _IsolateMinorE6(graphP theGraph, K33SearchContext *context)
 
 int _IsolateMinorE7(graphP theGraph, K33SearchContext *context)
 {
-    isolatorContextP IC = &theGraph->IC;
+    isolatorContextP IC = theGraphIC(theGraph);
     int u_min, u_max, d, u_d;
 
     /* Mark the appropriate two portions of the external face depending on
@@ -2076,7 +2080,7 @@ int _IsolateMinorE7(graphP theGraph, K33SearchContext *context)
 
     /* Make the final markings and edge additions */
 
-    if (theGraph->functions.fpMarkDFSPath(theGraph, u_min, u_max) != OK ||
+    if (theGraph->functions->fpMarkDFSPath(theGraph, u_min, u_max) != OK ||
         _MarkDFSPathsToDescendants(theGraph) != OK ||
         _JoinBicomps(theGraph) != OK ||
         _AddAndMarkUnembeddedEdges(theGraph) != OK ||

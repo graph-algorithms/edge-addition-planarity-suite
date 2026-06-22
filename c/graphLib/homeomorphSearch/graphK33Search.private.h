@@ -7,7 +7,7 @@ All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
 
-#include "../graph.h"
+#include "../planarityRelated/graphPlanarity.private.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -81,7 +81,7 @@ extern "C"
                 listCollectionP bin;
 
                 // Overloaded function pointers
-                graphFunctionTable functions;
+                graphFunctionTableStruct functions;
 
         } K33SearchContext;
 

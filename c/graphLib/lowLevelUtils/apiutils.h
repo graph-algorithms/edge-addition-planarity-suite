@@ -13,26 +13,48 @@ extern "C"
 
 #include "stdio.h"
 
-// N.B. Every time this is used to create a string for a message or
-// error message, the developer must check that there will not be a
-// memory overwrite error.
 #define MAXLINE 1024
 
-// N.B. Every time you're trying to read a 32-bit int from a string,
-// you should only need to read this many characters: an optional '-',
-// followed by 10 digits (max signed 32-bit int value is 2,147,483,647).
-// One must always allocate an additional byte for the null-terminator!
+// The string representation for an integer must account for: an optional '-',
+// then 10 digits (max signed 32-bit int), and a null-terminator
 #define MAXCHARSFOR32BITINT 11
 
-    extern int quietMode;
+#if defined(_MSC_VER) && !defined(__llvm__) && !defined(__INTEL_COMPILER)
+#define APPLY_FORMAT_ATTRIBUTE 0
+#elif defined(__has_attribute)
+#define APPLY_FORMAT_ATTRIBUTE __has_attribute(format)
+#elif defined(__GNUC__) || defined(__clang__)
+#define APPLY_FORMAT_ATTRIBUTE 1
+#else
+#define APPLY_FORMAT_ATTRIBUTE 0
+#endif
 
-    extern int getQuietModeSetting(void);
-    extern void setQuietModeSetting(int);
+#if APPLY_FORMAT_ATTRIBUTE
+#if defined(__GNUC__) && !defined(__clang__)
+#define FORMAT_PRINTF(formatIndex, firstArg) __attribute__((format(gnu_printf, formatIndex, firstArg)))
+#else
+#define FORMAT_PRINTF(formatIndex, firstArg) __attribute__((format(printf, formatIndex, firstArg)))
+#endif
+#else
+#define FORMAT_PRINTF(formatIndex, firstArg)
+#endif
 
-    extern void Message(char const *message);
-    extern void ErrorMessage(char const *message);
+    // These methods control whether gp_ErrorMessage() and gp_Message() calls
+    // emit output or skip producing output (the default)
+    unsigned gp_GetQuietMode(void);
+    void gp_SetQuietMode(unsigned newQuietMode);
 
-    int GetNumCharsToReprInt(int theNum, int *numCharsRequired);
+#define QUIETMODE_NONE 0
+#define QUIETMODE_ERRORS 1
+#define QUIETMODE_MESSAGES 2
+#define QUIETMODE_ALL 0XFFFFFFFF
+
+    void gp_Message(const char *message, ...) FORMAT_PRINTF(1, 2);
+    void gp_MessagePrompt(const char *message, ...) FORMAT_PRINTF(1, 2);
+
+#define gp_ErrorMessage(...) (gp_LogErrorMessage(__LINE__, __FILE__, __VA_ARGS__))
+    void gp_LogErrorMessage(int lineNum, const char *srcFileName, const char *message, ...) FORMAT_PRINTF(3, 4);
+
 #ifdef __cplusplus
 }
 #endif
