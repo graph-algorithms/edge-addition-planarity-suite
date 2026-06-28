@@ -1020,8 +1020,7 @@ int testPetersenDigraph(void)
 {
     graphP G = gp_New();
     graphP G1 = NULL;
-    int quietModeCache;
-    char *outString = NULL;
+    int quietModeCache, v, e, eTwin, eDir, eTwinDir;
     char *dummyStr = NULL; // Safe throwaway pointer for early-outs
 
     if (G == NULL)
@@ -1043,6 +1042,7 @@ int testPetersenDigraph(void)
         return NOTOK;
     }
 
+    // Verify the directed edge flag detected and that all edges are directed
     if (!(gp_GetGraphFlags(G) & GRAPHFLAG_DIRECTEDEDGEDETECTED))
     {
         gp_ErrorMessage("Directed edge flag was not set upon reading digraph.");
@@ -1050,16 +1050,16 @@ int testPetersenDigraph(void)
         return NOTOK;
     }
 
-    for (int v = gp_LowerBoundVertices(G); v < gp_UpperBoundVertices(G); ++v)
+    for (v = gp_LowerBoundVertices(G); v < gp_UpperBoundVertices(G); ++v)
     {
-        int e = gp_GetFirstEdge(G, v);
+        e = gp_GetFirstEdge(G, v);
         while (gp_IsEdge(G, e))
         {
-            int twin = gp_GetTwin(G, e);
-            int dirE = gp_GetDirection(G, e);
-            int dirTwin = gp_GetDirection(G, twin);
+            eTwin = gp_GetTwin(G, e);
+            eDir = gp_GetDirection(G, e);
+            eTwinDir = gp_GetDirection(G, eTwin);
 
-            if (dirE == 0 || dirTwin == 0 || dirE == dirTwin)
+            if (eDir == 0 || eTwinDir == 0 || eDir == eTwinDir)
             {
                 gp_ErrorMessage("Edge direction mismatch found.");
                 gp_Free(&G);
@@ -1069,6 +1069,7 @@ int testPetersenDigraph(void)
         }
     }
 
+    // Test that the planarity algorithm works on digraphs
     if ((G1 = gp_DupGraph(G)) == NULL)
     {
         gp_Free(&G);
@@ -1091,10 +1092,12 @@ int testPetersenDigraph(void)
         return NOTOK;
     }
 
+    gp_Free(&G1);
+
+    // Run early-outs quietly (with a dummy string for write operations)
     quietModeCache = gp_GetQuietMode();
     gp_SetQuietMode(QUIETMODE_ALL);
 
-    // Run early-outs safely (with a dummy string for write operations)
     if (gp_DepthFirstSearch(G) == OK ||
         gp_ComputeLowpoints(G) == OK ||
         gp_ComputeLeastAncestors(G) == OK ||
@@ -1104,7 +1107,6 @@ int testPetersenDigraph(void)
         gp_SetQuietMode(quietModeCache);
         gp_ErrorMessage("Digraph early-out test failed.");
         gp_Free(&G);
-        gp_Free(&G1);
         if (dummyStr != NULL)
             free(dummyStr);
         return NOTOK;
@@ -1112,36 +1114,40 @@ int testPetersenDigraph(void)
 
     gp_SetQuietMode(quietModeCache);
 
-    //  Clear edge direction flags, Write, and verify equality with Petersen.txt
+    //  Clear edge direction flags, and verify
     if (gp_ClearEdgeDirectionFlags(G) != OK)
     {
         gp_Free(&G);
-        gp_Free(&G1);
         return NOTOK;
     }
 
-    // Write the modified graph back to a string using standard Adjacency List format
-
-    if (gp_WriteToString(G, &outString, WRITE_ADJLIST) != OK)
+    if (gp_GetGraphFlags(G) & GRAPHFLAG_DIRECTEDEDGEDETECTED)
     {
+        gp_ErrorMessage("Directed edge detected flag should be but is not clear.");
         gp_Free(&G);
-        gp_Free(&G1);
         return NOTOK;
     }
-    // Note: Bypassing strict string comparison because edge printing order
-    // differs slightly from the original Petersen.txt file.
 
-    /*if (TextFileMatchesString("Petersen.txt", outString) != TRUE) {
-        gp_ErrorMessage("Reverted graph string does not match Petersen.txt.");
-        if (outString != NULL) free(outString);
-        gp_Free(&G); gp_Free(&G1);
-        return NOTOK;
-    }*/
+    for (v = gp_LowerBoundVertices(G); v < gp_UpperBoundVertices(G); ++v)
+    {
+        e = gp_GetFirstEdge(G, v);
+        while (gp_IsEdge(G, e))
+        {
+            eTwin = gp_GetTwin(G, e);
+            eDir = gp_GetDirection(G, e);
+            eTwinDir = gp_GetDirection(G, eTwin);
 
-    if (outString != NULL)
-        free(outString);
+            if (eDir != 0 || eTwinDir != 0)
+            {
+                gp_ErrorMessage("Unexpected directed edge found.");
+                gp_Free(&G);
+                return NOTOK;
+            }
+            e = gp_GetNextEdge(G, e);
+        }
+    }
+
     gp_Free(&G);
-    gp_Free(&G1);
 
     return OK;
 }
