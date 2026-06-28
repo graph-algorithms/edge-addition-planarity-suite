@@ -70,8 +70,7 @@ int g6_NewWriter(G6WriteIteratorP *pG6WriteIterator, graphP theGraph)
 
     if (pG6WriteIterator != NULL && (*pG6WriteIterator) != NULL)
     {
-        gp_ErrorMessage("G6WriteIterator is not NULL and therefore can't be "
-                        "allocated.");
+        gp_ErrorMessage("G6WriteIterator is not NULL and therefore can't be allocated.");
         return NOTOK;
     }
 
@@ -116,8 +115,7 @@ int _g6_IsWriterInitialized(G6WriteIteratorP theG6WriteIterator, int reportUnini
         if (!sf_IsValidStrOrFile(theG6WriteIterator->outputContainer))
         {
             if (reportUninitializedParts)
-                gp_ErrorMessage("G6WriteIterator's outputContainer is not "
-                                "valid.");
+                gp_ErrorMessage("G6WriteIterator's outputContainer is not valid.");
             writerIsInitialized = FALSE;
         }
         if (theG6WriteIterator->currGraphBuff == NULL)
@@ -159,16 +157,14 @@ int g6_InitWriterWithString(G6WriteIteratorP theG6WriteIterator, char **pOutputS
 
     if (theG6WriteIterator == NULL)
     {
-        gp_ErrorMessage("Invalid parameter: theG6WriteIterator must be "
-                        "non-NULL.");
+        gp_ErrorMessage("Invalid parameter: theG6WriteIterator must be non-NULL.");
         return NOTOK;
     }
 
     if (_g6_IsWriterInitialized(theG6WriteIterator, FALSE))
     {
         gp_ErrorMessage(
-            "Unable to initialize writer, as it was already previously "
-            "initialized.");
+            "Unable to initialize writer, as it was already previously initialized.");
         return NOTOK;
     }
 
@@ -205,8 +201,7 @@ int g6_InitWriterWithFileName(G6WriteIteratorP theG6WriteIterator, char *outputF
 
     if (theG6WriteIterator == NULL)
     {
-        gp_ErrorMessage("Invalid parameter: theG6WriteIterator must be "
-                        "non-NULL.");
+        gp_ErrorMessage("Invalid parameter: theG6WriteIterator must be non-NULL.");
         return NOTOK;
     }
 
@@ -240,8 +235,7 @@ int _g6_InitWriterWithStrOrFile(G6WriteIteratorP theG6WriteIterator, strOrFileP 
 {
     if (theG6WriteIterator == NULL)
     {
-        gp_ErrorMessage("Invalid parameter: theG6WriteIterator must be "
-                        "non-NULL.");
+        gp_ErrorMessage("Invalid parameter: theG6WriteIterator must be non-NULL.");
         return NOTOK;
     }
 
@@ -276,8 +270,7 @@ int _g6_InitWriter(G6WriteIteratorP theG6WriteIterator)
 
     if (theG6WriteIterator->order > 100000)
     {
-        gp_ErrorMessage("Graphs of order n > 100000 are not supported at this "
-                        "time.");
+        gp_ErrorMessage("Graphs of order n > 100000 are not supported at this time.");
         return NOTOK;
     }
 
@@ -325,8 +318,7 @@ void _g6_PrecomputeColumnOffsets(size_t *columnOffsets, int order)
 {
     if (columnOffsets == NULL)
     {
-        gp_ErrorMessage("Must allocate columnOffsets memory before "
-                        "precomputation.");
+        gp_ErrorMessage("Must allocate columnOffsets memory before precomputation.");
         return;
     }
 
@@ -339,10 +331,16 @@ void _g6_PrecomputeColumnOffsets(size_t *columnOffsets, int order)
 int g6_WriteGraph(G6WriteIteratorP theG6WriteIterator)
 {
     char *graphEncodingChars = NULL;
+
     if (!_g6_IsWriterInitialized(theG6WriteIterator, TRUE))
     {
-        gp_ErrorMessage("Unable to write graph because G6WriteIterator is not "
-                        "initialized.");
+        gp_ErrorMessage("Unable to write graph because G6WriteIterator is not initialized.");
+        return NOTOK;
+    }
+
+    if (gp_GetGraphFlags(theG6WriteIterator->currGraph) & GRAPHFLAG_DIRECTEDEDGEDETECTED)
+    {
+        gp_ErrorMessage("G6 format doesn't support digraphs.");
         return NOTOK;
     }
 
@@ -350,23 +348,20 @@ int g6_WriteGraph(G6WriteIteratorP theG6WriteIterator)
 
     if (_g6_ValidateOrderOfEncodedGraph(theG6WriteIterator->currGraphBuff, theG6WriteIterator->order) != OK)
     {
-        gp_ErrorMessage("Unable to write graph, as constructed encoding has "
-                        "incorrect order.");
+        gp_ErrorMessage("Unable to write graph, as constructed encoding has incorrect order.");
         return NOTOK;
     }
 
     graphEncodingChars = theG6WriteIterator->currGraphBuff + theG6WriteIterator->numCharsForOrder;
     if (_g6_ValidateGraphEncoding(graphEncodingChars, theG6WriteIterator->order, theG6WriteIterator->numCharsForGraphEncoding) != OK)
     {
-        gp_ErrorMessage("Unable to write graph, as constructed encoding is "
-                        "invalid.");
+        gp_ErrorMessage("Unable to write graph, as constructed encoding is invalid.");
         return NOTOK;
     }
 
     if (_g6_WriteEncodedGraph(theG6WriteIterator) != OK)
     {
-        gp_ErrorMessage("Unable to write g6 encoded graph to output "
-                        "container.");
+        gp_ErrorMessage("Unable to write g6 encoded graph to output container.");
         return NOTOK;
     }
 
@@ -592,8 +587,7 @@ int _g6_WriteGraphToString(graphP theGraph, char **pOutputStr)
 
     if ((outputContainer = sf_NewOutputContainer(pOutputStr, NULL)) == NULL)
     {
-        gp_ErrorMessage("Unable to allocate outputContainer to which to "
-                        "write.");
+        gp_ErrorMessage("Unable to allocate outputContainer to which to write.");
         return NOTOK;
     }
 
@@ -605,10 +599,6 @@ int _g6_WriteGraphToString(graphP theGraph, char **pOutputStr)
 
 int _g6_WriteGraphToStrOrFile(graphP theGraph, strOrFileP *pOutputContainer)
 {
-    if(gp_GetGraphFlags(theGraph) & GRAPHFLAG_DIRECTEDEDGEDETECTED){
-        gp_ErrorMessage("graph6 writer doesn't support digraphs.");
-        return NOTOK;
-    }
     G6WriteIteratorP theG6WriteIterator = NULL;
 
     if (!sf_IsValidStrOrFile((*pOutputContainer)))
