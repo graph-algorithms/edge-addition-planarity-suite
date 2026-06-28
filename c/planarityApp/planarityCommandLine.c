@@ -1150,7 +1150,7 @@ int runDigraphTests(void)
 {
     int retVal = OK;
 
-    gp_Message("\n\tStarting Digraph Tests\n");
+    gp_Message("Starting Digraph Tests");
 
     if (testPetersenDigraph() != OK)
     {
@@ -1158,6 +1158,6 @@ int runDigraphTests(void)
         retVal = NOTOK;
     }
 
-    gp_Message("\tFinished Digraph Tests.\n");
+    gp_Message("Finished Digraph Tests.");
     return retVal;
 }

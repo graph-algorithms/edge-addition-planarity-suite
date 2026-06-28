@@ -967,7 +967,12 @@ int gp_CopyAdjacencyLists(graphP dstGraph, graphP srcGraph)
     dstGraph->M = gp_GetM(srcGraph);
     sp_Copy(dstGraph->edgeHoles, srcGraph->edgeHoles);
     dstGraph->numEdgeHoles = sp_GetCurrentSize(dstGraph->edgeHoles);
-    dstGraph->graphFlags = gp_GetGraphFlags(srcGraph);
+
+    dstGraph->graphFlags &= ~GRAPHFLAGS_DFSNUMBERED;
+    dstGraph->graphFlags &= ~GRAPHFLAGS_SORTEDBYDFI;
+    dstGraph->graphFlags &= ~GRAPHFLAG_DIRECTEDEDGEDETECTED;
+    if (gp_GetGraphFlags(srcGraph) & GRAPHFLAG_DIRECTEDEDGEDETECTED)
+        dstGraph->graphFlags |= GRAPHFLAG_DIRECTEDEDGEDETECTED;
 
     return OK;
 }
@@ -2153,19 +2158,24 @@ int gp_DeleteEdge(graphP theGraph, int e)
     // Return the previously calculated successor of e.
     return OK;
 }
-int gp_ClearEdgeDirectionFlags(graphP theGraph){
-    if(theGraph == NULL) return NOTOK;
-    for(int e = gp_LowerBoundEdges(theGraph);e<gp_UpperBoundEdges(theGraph);e++)
+
+int gp_ClearEdgeDirectionFlags(graphP theGraph)
+{
+    if (theGraph == NULL)
+        return NOTOK;
+
+    for (int e = gp_LowerBoundEdges(theGraph); e < gp_UpperBoundEdges(theGraph); e += 2)
     {
-        if((!gp_EdgeNotInUse(theGraph,e)) && 
-        gp_GetNeighbor(theGraph,gp_GetTwin(theGraph,e)) != gp_GetNeighbor(theGraph,e))
+        if (gp_EdgeInUse(theGraph, e))
         {
-            gp_SetDirection(theGraph,e,0);
+            // Clear direction flags if non-loop edge
+            if (gp_GetNeighbor(theGraph, gp_GetTwin(theGraph, e)) != gp_GetNeighbor(theGraph, e))
+                gp_SetDirection(theGraph, e, 0);
         }
     }
+
     theGraph->graphFlags &= ~GRAPHFLAG_DIRECTEDEDGEDETECTED;
     return OK;
-
 }
 
 /********************************************************************
