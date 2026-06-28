@@ -226,7 +226,7 @@ int runQuickRegressionTests(int argc, char *argv[])
         retVal = NOTOK;
     else if (runTestAllGraphsTests() != OK)
         retVal = NOTOK;
-    else if(runDigraphTests() != OK)
+    else if (runDigraphTests() != OK)
         retVal = NOTOK;
 
     // All done.
@@ -1013,10 +1013,10 @@ int callTestAllGraphs(int argc, char *argv[])
     return TestAllGraphs(commandString, infileName, outfileName, NULL);
 }
 /****************************************************************************
- testPetersenDigraph() 
+ testPetersenDigraph()
  ****************************************************************************/
 
-int testPetersenDigraph(void) 
+int testPetersenDigraph(void)
 {
     graphP G = gp_New();
     graphP G1 = NULL;
@@ -1024,41 +1024,42 @@ int testPetersenDigraph(void)
     char *outString = NULL;
     char *dummyStr = NULL; // Safe throwaway pointer for early-outs
 
-    if (G == NULL) return NOTOK;
+    if (G == NULL)
+        return NOTOK;
 
     //  Read Petersen.digraph.txt into a graph G
-    if (gp_Read(G, "Petersen.digraph.txt") != OK) 
+    if (gp_Read(G, "Petersen.digraph.txt") != OK)
     {
         gp_ErrorMessage("Failed to read Petersen.digraph.txt");
         gp_Free(&G);
         return NOTOK;
     }
-    
+
     //  Verify edges and flags
-    if (gp_GetM(G) != 15) 
+    if (gp_GetM(G) != 15)
     {
         gp_ErrorMessage("Petersen Digraph should have exactly 15 edges.");
         gp_Free(&G);
         return NOTOK;
     }
-    
-    if (!(gp_GetGraphFlags(G) & GRAPHFLAG_DIRECTEDEDGEDETECTED)) 
+
+    if (!(gp_GetGraphFlags(G) & GRAPHFLAG_DIRECTEDEDGEDETECTED))
     {
         gp_ErrorMessage("Directed edge flag was not set upon reading digraph.");
         gp_Free(&G);
         return NOTOK;
     }
 
-    for (int v = gp_LowerBoundVertices(G); v < gp_UpperBoundVertices(G); ++v) 
+    for (int v = gp_LowerBoundVertices(G); v < gp_UpperBoundVertices(G); ++v)
     {
         int e = gp_GetFirstEdge(G, v);
-        while (gp_IsEdge(G, e)) 
+        while (gp_IsEdge(G, e))
         {
             int twin = gp_GetTwin(G, e);
             int dirE = gp_GetDirection(G, e);
             int dirTwin = gp_GetDirection(G, twin);
 
-            if (dirE == 0 || dirTwin == 0 || dirE == dirTwin) 
+            if (dirE == 0 || dirTwin == 0 || dirE == dirTwin)
             {
                 gp_ErrorMessage("Edge direction mismatch found.");
                 gp_Free(&G);
@@ -1068,15 +1069,18 @@ int testPetersenDigraph(void)
         }
     }
 
-    G1 = gp_DupGraph(G);
-    if (G1 == NULL) { gp_Free(&G); return NOTOK; }
+    if ((G1 = gp_DupGraph(G) == NULL) 
+    {
+        gp_Free(&G);
+        return NOTOK; 
+    }
     
-    int embedResult = gp_Embed(G1, EMBEDFLAGS_PLANAR);
-    
-    if (embedResult != NONEMBEDDABLE) 
-    { 
-        gp_ErrorMessage("Digraph embed did not return NONEMBEDDABLE.");
-        gp_Free(&G); gp_Free(&G1); return NOTOK; 
+    if (gp_Embed(G1, EMBEDFLAGS_PLANAR) != NONEMBEDDABLE) 
+    {
+        gp_ErrorMessage("Digraph embed did not return expected result.");
+        gp_Free(&G);
+        gp_Free(&G1);
+        return NOTOK; 
     }
     
    /*
@@ -1095,30 +1099,37 @@ int testPetersenDigraph(void)
     quietModeCache = gp_GetQuietMode();
     gp_SetQuietMode(QUIETMODE_ALL);
     
-    // Run early-outs safely with a dummy string that we DO NOT free
-    int earlyOutFailed = 0;
-
-    if (gp_DepthFirstSearch(G) != NOTOK) earlyOutFailed = 1;
-    if (gp_ComputeLowpoints(G) != NOTOK) earlyOutFailed = 1;
-    if (gp_ComputeLeastAncestors(G) != NOTOK) earlyOutFailed = 1;
-    if (gp_WriteToString(G, &dummyStr, WRITE_G6) != NOTOK) earlyOutFailed = 1;
-    if (gp_WriteToString(G, &dummyStr, WRITE_ADJMATRIX) != NOTOK) earlyOutFailed = 1;
-
-    if (earlyOutFailed) {
+    // Run early-outs safely (with a dummy string for write operations)
+    if (gp_DepthFirstSearch(G) == OK ||
+        gp_ComputeLowpoints(G) == OK ||
+        gp_ComputeLeastAncestors(G) == OK ||
+        gp_WriteToString(G, &dummyStr, WRITE_G6) == OK ||
+        gp_WriteToString(G, &dummyStr, WRITE_ADJMATRIX) == OK)
+    {
         gp_SetQuietMode(quietModeCache);
-        gp_Free(&G); gp_Free(&G1);
+        gp_ErrorMessage("Digraph early-out test failed.");
+        gp_Free(&G);
+        gp_Free(&G1);
+        if (dummyStr != NULL)
+            free(dummyStr);
         return NOTOK;
     }
 
     gp_SetQuietMode(quietModeCache);
 
     //  Clear edge direction flags, Write, and verify equality with Petersen.txt
-    if (gp_ClearEdgeDirectionFlags(G) != OK) { gp_Free(&G); gp_Free(&G1); return NOTOK; }
+    if (gp_ClearEdgeDirectionFlags(G) != OK) {
+        gp_Free(&G);
+        gp_Free(&G1);
+        return NOTOK; }
     
     // Write the modified graph back to a string using standard Adjacency List format
     
-    if (gp_WriteToString(G, &outString, WRITE_ADJLIST) != OK) { 
-        gp_Free(&G); gp_Free(&G1); return NOTOK; 
+    if (gp_WriteToString(G, &outString, WRITE_ADJLIST) != OK) 
+    {
+        gp_Free(&G);
+        gp_Free(&G1);
+        return NOTOK; 
     }
     // Note: Bypassing strict string comparison because edge printing order 
     // differs slightly from the original Petersen.txt file.
@@ -1130,19 +1141,21 @@ int testPetersenDigraph(void)
         return NOTOK;
     }*/
 
-    if (outString != NULL) free(outString);
+    if (outString != NULL) 
+        free(outString);
     gp_Free(&G);
     gp_Free(&G1);
 
     return OK;
 }
-int runDigraphTests(void) 
+
+int runDigraphTests(void)
 {
     int retVal = OK;
-    
+
     gp_Message("\n\tStarting Digraph Tests\n");
 
-    if (testPetersenDigraph() != OK) 
+    if (testPetersenDigraph() != OK)
     {
         gp_ErrorMessage("Petersen Digraph test failed.");
         retVal = NOTOK;
