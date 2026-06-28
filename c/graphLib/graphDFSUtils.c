@@ -95,11 +95,18 @@ int gp_Detach_DFSUtils(graphP theGraph)
 
 int gp_DepthFirstSearch(graphP theGraph)
 {
+    
     stackP theStack;
     int DFI, v, uparent, u, e;
 
     if (theGraph == NULL)
         return NOTOK;
+
+    if (gp_GetGraphFlags(theGraph) & GRAPHFLAG_DIRECTEDEDGEDETECTED)
+    {
+        gp_ErrorMessage("This implementation of depth-first search does not support directed graphs.");
+        return NOTOK;
+    }
 
     if (gp_GetGraphFlags(theGraph) & GRAPHFLAGS_DFSNUMBERED)
         return OK;
@@ -363,6 +370,11 @@ int gp_ComputeLowpoints(graphP theGraph)
 
     if (theGraph == NULL)
         return NOTOK;
+    if (gp_GetGraphFlags(theGraph) & GRAPHFLAG_DIRECTEDEDGEDETECTED)
+    {
+        gp_ErrorMessage("This implementation of lowpoint computation does not support directed graphs.");
+    return NOTOK;
+    }
 
     if (gp_ExtendWith_DFSUtils(theGraph) != OK)
         return NOTOK;
@@ -482,6 +494,11 @@ int gp_ComputeLeastAncestors(graphP theGraph)
 
     if (theGraph == NULL)
         return NOTOK;
+    if (gp_GetGraphFlags(theGraph) & GRAPHFLAG_DIRECTEDEDGEDETECTED)
+    {
+        gp_ErrorMessage("This implementation of least ancestor computation does not support directed graphs.");
+        return NOTOK;
+    }
 
     if (gp_ExtendWith_DFSUtils(theGraph) != OK)
         return NOTOK;

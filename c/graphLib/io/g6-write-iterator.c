@@ -605,6 +605,10 @@ int _g6_WriteGraphToString(graphP theGraph, char **pOutputStr)
 
 int _g6_WriteGraphToStrOrFile(graphP theGraph, strOrFileP *pOutputContainer)
 {
+    if(gp_GetGraphFlags(theGraph) & GRAPHFLAG_DIRECTEDEDGEDETECTED){
+        gp_ErrorMessage("graph6 writer doesn't support digraphs.");
+        return NOTOK;
+    }
     G6WriteIteratorP theG6WriteIterator = NULL;
 
     if (!sf_IsValidStrOrFile((*pOutputContainer)))

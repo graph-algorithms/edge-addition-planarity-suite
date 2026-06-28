@@ -68,6 +68,7 @@ extern "C"
     int gp_InsertEdge(graphP theGraph, int u, int e_u, int e_ulink,
                       int v, int e_v, int e_vlink);
     int gp_DeleteEdge(graphP theGraph, int e);
+    int gp_ClearEdgeDirectionFlags(graphP theGraph);
 
     // Intermediate graph structure manipulators
     void gp_HideEdge(graphP theGraph, int e);
@@ -89,6 +90,7 @@ extern "C"
         Bits 16-23 reserved for Planarity-Related
         bits 24-31 reserved for future expansion
 */
+#define GRAPHFLAG_DIRECTEDEDGEDETECTED 1
 #define gp_GetGraphFlags(theGraph) ((theGraph)->graphFlags)
 
     // For graph embedding methods and declarations, see graphPlanarity.h
@@ -366,23 +368,31 @@ extern "C"
 
 // A direction of 0 clears directedness. Otherwise, edge record e is set
 // to direction and e's twin edge record is set to the opposing setting.
-#define gp_SetDirection(theGraph, e, direction)                                       \
-    {                                                                                 \
-        if (direction == EDGEFLAG_DIRECTION_INONLY)                                   \
-        {                                                                             \
-            theGraph->E[e].flags |= EDGEFLAG_DIRECTION_INONLY;                        \
-            theGraph->E[gp_GetTwin(theGraph, e)].flags |= EDGEFLAG_DIRECTION_OUTONLY; \
-        }                                                                             \
-        else if (direction == EDGEFLAG_DIRECTION_OUTONLY)                             \
-        {                                                                             \
-            theGraph->E[e].flags |= EDGEFLAG_DIRECTION_OUTONLY;                       \
-            theGraph->E[gp_GetTwin(theGraph, e)].flags |= EDGEFLAG_DIRECTION_INONLY;  \
-        }                                                                             \
-        else                                                                          \
-        {                                                                             \
-            theGraph->E[e].flags &= ~EDGEFLAG_DIRECTION_MASK;                         \
-            theGraph->E[gp_GetTwin(theGraph, e)].flags &= ~EDGEFLAG_DIRECTION_MASK;   \
-        }                                                                             \
+#define gp_SetDirection(theGraph, e, direction)                                           \
+    {                                                                                     \
+        if (direction == EDGEFLAG_DIRECTION_INONLY)                                       \
+        {                                                                                 \
+            theGraph->E[e].flags |= EDGEFLAG_DIRECTION_INONLY;                            \
+            theGraph->E[gp_GetTwin(theGraph, e)].flags |= EDGEFLAG_DIRECTION_OUTONLY;     \
+            if (gp_GetNeighbor(theGraph, e) != gp_GetNeighbor(theGraph, gp_GetTwin(theGraph, e))) \
+            {                                                                             \
+                theGraph->graphFlags |= GRAPHFLAG_DIRECTEDEDGEDETECTED;                   \
+            }                                                                             \
+        }                                                                                 \
+        else if (direction == EDGEFLAG_DIRECTION_OUTONLY)                                 \
+        {                                                                                 \
+            theGraph->E[e].flags |= EDGEFLAG_DIRECTION_OUTONLY;                           \
+            theGraph->E[gp_GetTwin(theGraph, e)].flags |= EDGEFLAG_DIRECTION_INONLY;      \
+            if (gp_GetNeighbor(theGraph, e) != gp_GetNeighbor(theGraph, gp_GetTwin(theGraph, e))) \
+            {                                                                             \
+                theGraph->graphFlags |= GRAPHFLAG_DIRECTEDEDGEDETECTED;                   \
+            }                                                                             \
+        }                                                                                 \
+        else                                                                              \
+        {                                                                                 \
+            theGraph->E[e].flags &= ~EDGEFLAG_DIRECTION_MASK;                             \
+            theGraph->E[gp_GetTwin(theGraph, e)].flags &= ~EDGEFLAG_DIRECTION_MASK;       \
+        }                                                                                 \
     }
 
 // Iterate through all edges with gp_LowerBoundEdges, gp_UpperBoundEdges, and gp_EdgeInUse
