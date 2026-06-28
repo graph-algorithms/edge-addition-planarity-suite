@@ -15,8 +15,6 @@ See the LICENSE.TXT file for licensing information.
 #include <unistd.h>
 #endif
 
-int runDigraphTests();
-int testPetersenDigraph();
 int runQuickRegressionTests(int argc, char *argv[]);
 int callRandomGraphs(int argc, char *argv[]);
 int callSpecificGraph(int argc, char *argv[]);
@@ -31,6 +29,8 @@ int runTestAllGraphsTests(void);
 int runSpecificGraphTest(char const *command, char const *infileName, int inputInMemFlag);
 int runGraphTransformationTest(char const *command, char const *infileName, int inputInMemFlag);
 int runTestAllGraphsTest(char const *commandString, char const *infileName);
+int runDigraphTests(void);
+int testPetersenDigraph(void);
 
 /****************************************************************************
  Command Line Processor
