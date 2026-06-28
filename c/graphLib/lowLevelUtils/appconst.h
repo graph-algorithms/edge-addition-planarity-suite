@@ -50,7 +50,7 @@ See the LICENSE.TXT file for licensing information.
 #undef NOTOK
 extern int debugNOTOK(void);
 #include <stdio.h>
-#define NOTOK (printf("NOTOK on Line %d of %s\n", __LINE__, __FILE__), debugNOTOK())
+#define NOTOK (gp_Message("NOTOK on Line %d of %s\n", __LINE__, __FILE__), debugNOTOK())
 #endif
 
 #ifndef TRUE

@@ -1069,36 +1069,31 @@ int testPetersenDigraph(void)
         }
     }
 
-    if ((G1 = gp_DupGraph(G) == NULL) 
+    if ((G1 = gp_DupGraph(G)) == NULL)
     {
         gp_Free(&G);
-        return NOTOK; 
+        return NOTOK;
     }
-    
-    if (gp_Embed(G1, EMBEDFLAGS_PLANAR) != NONEMBEDDABLE) 
+
+    if (gp_Embed(G1, EMBEDFLAGS_PLANAR) != NONEMBEDDABLE)
     {
         gp_ErrorMessage("Digraph embed did not return expected result.");
         gp_Free(&G);
         gp_Free(&G1);
-        return NOTOK; 
+        return NOTOK;
     }
-    
-   /*
-    graphP G_temp = gp_DupGraph(G);
-    gp_ClearEdgeDirectionFlags(G_temp);
-    gp_ClearEdgeDirectionFlags(G1);
-    
-    if (gp_TestEmbedResultIntegrity(G1, G_temp, NONEMBEDDABLE) != OK) 
-    { 
+
+    if (gp_TestEmbedResultIntegrity(G1, G, NONEMBEDDABLE) != NONEMBEDDABLE)
+    {
         gp_ErrorMessage("Embed integrity check failed.");
-        gp_Free(&G); gp_Free(&G_temp); gp_Free(&G1); return NOTOK; 
-    }   
-    gp_Free(&G_temp);
-    */
+        gp_Free(&G);
+        gp_Free(&G1);
+        return NOTOK;
+    }
 
     quietModeCache = gp_GetQuietMode();
     gp_SetQuietMode(QUIETMODE_ALL);
-    
+
     // Run early-outs safely (with a dummy string for write operations)
     if (gp_DepthFirstSearch(G) == OK ||
         gp_ComputeLowpoints(G) == OK ||
@@ -1118,30 +1113,32 @@ int testPetersenDigraph(void)
     gp_SetQuietMode(quietModeCache);
 
     //  Clear edge direction flags, Write, and verify equality with Petersen.txt
-    if (gp_ClearEdgeDirectionFlags(G) != OK) {
-        gp_Free(&G);
-        gp_Free(&G1);
-        return NOTOK; }
-    
-    // Write the modified graph back to a string using standard Adjacency List format
-    
-    if (gp_WriteToString(G, &outString, WRITE_ADJLIST) != OK) 
+    if (gp_ClearEdgeDirectionFlags(G) != OK)
     {
         gp_Free(&G);
         gp_Free(&G1);
-        return NOTOK; 
+        return NOTOK;
     }
-    // Note: Bypassing strict string comparison because edge printing order 
+
+    // Write the modified graph back to a string using standard Adjacency List format
+
+    if (gp_WriteToString(G, &outString, WRITE_ADJLIST) != OK)
+    {
+        gp_Free(&G);
+        gp_Free(&G1);
+        return NOTOK;
+    }
+    // Note: Bypassing strict string comparison because edge printing order
     // differs slightly from the original Petersen.txt file.
 
     /*if (TextFileMatchesString("Petersen.txt", outString) != TRUE) {
         gp_ErrorMessage("Reverted graph string does not match Petersen.txt.");
-        if (outString != NULL) free(outString); 
+        if (outString != NULL) free(outString);
         gp_Free(&G); gp_Free(&G1);
         return NOTOK;
     }*/
 
-    if (outString != NULL) 
+    if (outString != NULL)
         free(outString);
     gp_Free(&G);
     gp_Free(&G1);
