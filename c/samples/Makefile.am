@@ -50,4 +50,5 @@ dist_samples_DATA = \
   Petersen.txt.K33Search.out.txt \
   Petersen.txt.K4Search.out.txt \
   Petersen.txt.Outerplanarity.out.txt \
-  Petersen.txt.Planarity.out.txt
+  Petersen.txt.Planarity.out.txt \
+  Petersen.digraph.txt

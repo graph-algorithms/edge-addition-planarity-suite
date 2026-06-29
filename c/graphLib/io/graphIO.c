@@ -687,6 +687,12 @@ int _WriteAdjMatrix(graphP theGraph, strOrFileP outputContainer)
     if (theGraph == NULL || !sf_IsValidStrOrFile(outputContainer))
         return NOTOK;
 
+    if (gp_GetGraphFlags(theGraph) & GRAPHFLAG_DIRECTEDEDGEDETECTED)
+    {
+        gp_ErrorMessage("Adjacency matrix writer does not support directed graphs.");
+        return NOTOK;
+    }
+
     // Write the number of vertices in the graph to the file or string buffer
     if (sprintf(numberStr, "%d\n", gp_GetN(theGraph)) < 1)
         return NOTOK;
