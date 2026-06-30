@@ -164,14 +164,18 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
         lineNum++;
         if (g6_ReadGraph(theG6ReadIterator) != OK)
         {
-            gp_ErrorMessage("Unable to read graph on line %d.",
-                            lineNum);
+            gp_ErrorMessage("Unable to read graph on line %d.", lineNum);
             Result = NOTOK;
             break;
         }
 
         if (g6_EndReached(theG6ReadIterator))
+        {
+            // If the read did not read a graph because the end of input was reached, 
+            // then decrement so that the lineNum reflects the number of graphs read.
+            lineNum--;
             break;
+        }
 
         if (gp_CopyGraph(graphForEmbedding, origGraphRead) != OK)
         {
@@ -226,7 +230,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
     // occurs during processing a graph on the current lineNum, or if we reach
     // the end of the input, then the number of graphs successfully tested is
     // lineNum - 1.
-    stats->numGraphsTested = lineNum - 1;
+    stats->numGraphsTested = lineNum;
     stats->numOK = numOK;
     stats->numNONEMBEDDABLE = numNONEMBEDDABLE;
     stats->errorFlag = (Result == OK) ? FALSE : TRUE;

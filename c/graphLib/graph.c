@@ -225,7 +225,7 @@ void _InitFunctionTable(graphP theGraph)
 
  An instance of the isolator context is created.
 
- Returns OK on success, NOTOK on aany failure.
+ Returns OK on success, NOTOK on any failure.
           On NOTOK, graph extensions are freed so that the graph is
           returned to the post-condition of gp_New().
  ********************************************************************/
