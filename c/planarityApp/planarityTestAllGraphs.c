@@ -161,21 +161,17 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
 
     while (TRUE)
     {
-        lineNum++;
         if (g6_ReadGraph(theG6ReadIterator) != OK)
         {
-            gp_ErrorMessage("Unable to read graph on line %d.", lineNum);
+            gp_ErrorMessage("Unable to read graph on line %d.", lineNum + 1);
             Result = NOTOK;
             break;
         }
 
         if (g6_EndReached(theG6ReadIterator))
-        {
-            // If the read did not read a graph because the end of input was reached, 
-            // then decrement so that the lineNum reflects the number of graphs read.
-            lineNum--;
             break;
-        }
+
+        lineNum++;
 
         if (gp_CopyGraph(graphForEmbedding, origGraphRead) != OK)
         {
