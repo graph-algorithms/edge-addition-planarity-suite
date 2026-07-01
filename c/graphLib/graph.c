@@ -1141,7 +1141,8 @@ graphP gp_DupGraph(graphP theGraph)
 int gp_CreateRandomGraph(graphP theGraph)
 {
     int N, M, u, v, m;
-    if(theGraph == NULL) 
+
+    if (theGraph == NULL) 
     {
         return NOTOK;
     }
@@ -1964,7 +1965,7 @@ int gp_AddEdge(graphP theGraph, int u, int ulink, int v, int vlink)
         u >= gp_UpperBoundVertexStorage(theGraph) || v >= gp_UpperBoundVertexStorage(theGraph))
         return NOTOK;
 
-     if ((ulink != 0 && ulink != 1) || (vlink != 0 && vlink != 1))
+    if ((ulink != 0 && ulink != 1) || (vlink != 0 && vlink != 1))
     {
         return NOTOK;
     }
