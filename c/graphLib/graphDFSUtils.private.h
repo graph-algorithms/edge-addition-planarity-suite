@@ -8,6 +8,7 @@ See the LICENSE.TXT file for licensing information.
 #define GRAPHDFSUTILS_PRIVATE_H
 
 #include "graph.private.h"
+#include "graphDFSUtils.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -54,7 +55,7 @@ extern "C"
 
 #define _gp_IsDFSTreeRoot(theGraph, v) gp_IsNotVertex(theGraph, gp_GetVertexParent(theGraph, v))
 #define _gp_IsNotDFSTreeRoot(theGraph, v) gp_IsVertex(theGraph, gp_GetVertexParent(theGraph, v))
-#define _gp_GetVertexFromBicompRoot(theGraph, R) gp_GetVertexParent(theGraph, (R) - gp_GetN(theGraph))
+#define _gp_GetVertexFromBicompRoot(theGraph, R) gp_GetVertexParent(theGraph, gp_GetDFSChildFromBicompRoot(theGraph, R))
 
 #define gp_GetVertexLeastAncestor(theGraph, v) (theGraphDVI(theGraph)[v].leastAncestor)
 #define gp_SetVertexLeastAncestor(theGraph, v, theLeastAncestor) (theGraphDVI(theGraph)[v].leastAncestor = theLeastAncestor)
