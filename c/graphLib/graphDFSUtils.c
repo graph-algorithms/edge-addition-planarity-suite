@@ -40,7 +40,7 @@ extern void _ClearVertexVisitedFlags(graphP theGraph, int);
 
 int gp_ExtendWith_DFSUtils(graphP theGraph)
 {
-    if (theGraph == NULL || gp_GetN(theGraph) <= 0)
+    if (theGraph == NULL)
         return NOTOK;
 
     // if the Graph has already been extended with DFS Utils,

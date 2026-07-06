@@ -72,7 +72,7 @@ int gp_ExtendWith_K33Search(graphP theGraph)
 {
     K33SearchContext *context = NULL;
 
-    if (theGraph == NULL || gp_GetN(theGraph) <= 0)
+    if (theGraph == NULL)
         return NOTOK;
 
     // If the K3,3 search feature has already been attached to the graph,
