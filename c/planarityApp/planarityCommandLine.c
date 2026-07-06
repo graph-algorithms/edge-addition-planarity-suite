@@ -26,9 +26,11 @@ int callTransformGraph(int argc, char *argv[]);
 int runSpecificGraphTests(void);
 int runGraphTransformationTests(void);
 int runTestAllGraphsTests(void);
+int runHideRestoreTests(void);
 int runSpecificGraphTest(char const *command, char const *infileName, int inputInMemFlag);
 int runGraphTransformationTest(char const *command, char const *infileName, int inputInMemFlag);
 int runTestAllGraphsTest(char const *commandString, char const *infileName);
+int runHideRestoreTest(graphP theGraph);
 int runDigraphTests(void);
 int testPetersenDigraph(void);
 
@@ -225,6 +227,8 @@ int runQuickRegressionTests(int argc, char *argv[])
     else if (runGraphTransformationTests() != OK)
         retVal = NOTOK;
     else if (runTestAllGraphsTests() != OK)
+        retVal = NOTOK;
+    else if (runHideRestoreTests() != OK)
         retVal = NOTOK;
     else if (runDigraphTests() != OK)
         retVal = NOTOK;
@@ -516,6 +520,128 @@ int runTestAllGraphsTests(void)
     }
 
     return retVal;
+}
+
+int runHideRestoreTests(void)
+{
+    graphP theGraph = NULL;
+    G6ReadIteratorP theG6ReadIterator = NULL;
+    platform_time start, end;
+    int Result = OK;
+    int lineNum = 0;
+
+    gp_Message("Starting Hide/Restore Tests");
+    platform_GetTime(start);
+
+    if ((theGraph = gp_New()) == NULL)
+    {
+        gp_ErrorMessage("Unable to allocate graph for hide/restore tests.");
+        return NOTOK;
+    }
+
+    if (g6_NewReader((&theG6ReadIterator), theGraph) != OK ||
+        g6_InitReaderWithFileName(theG6ReadIterator, "n8.mALL.g6") != OK)
+    {
+        gp_ErrorMessage("Unable to allocate or initialize G6 read iterator for hide/restore tests.");
+        Result = NOTOK;
+    }
+
+    while (Result == OK)
+    {
+        if (g6_ReadGraph(theG6ReadIterator) != OK)
+        {
+            gp_ErrorMessage("Unable to read graph on line %d for hide/restore tests.", lineNum + 1);
+            Result = NOTOK;
+            break;
+        }
+
+        if (g6_EndReached(theG6ReadIterator))
+            break;
+
+        lineNum++;
+
+        if (runHideRestoreTest(theGraph) != OK)
+        {
+            gp_ErrorMessage("Hide/restore test failed for graph on line %d.", lineNum);
+            Result = NOTOK;
+            break;
+        }
+    }
+
+    platform_GetTime(end);
+
+    if (Result == OK)
+        gp_Message("Done running Hide/Restore Tests (%.3lf seconds).", platform_GetDuration(start, end));
+
+    gp_Message(" ");
+
+    g6_FreeReader((&theG6ReadIterator));
+    gp_Free(&theGraph);
+
+    return Result;
+}
+
+int runHideRestoreTest(graphP theGraph)
+{
+    char *beforeStr = NULL, *afterStr = NULL;
+    int Result = OK;
+    int v;
+
+    if (theGraph == NULL)
+    {
+        gp_ErrorMessage("runHideRestoreTest() received NULL graph.");
+        return NOTOK;
+    }
+
+    if (gp_WriteToString(theGraph, &beforeStr, WRITE_ADJLIST) != OK || beforeStr == NULL)
+    {
+        gp_ErrorMessage("Unable to write graph to string before hide/restore test.");
+        Result = NOTOK;
+    }
+
+    for (v = gp_LowerBoundVertices(theGraph); Result == OK && v < gp_UpperBoundVertices(theGraph); ++v)
+    {
+        if (gp_HideVertex(theGraph, v) != OK)
+        {
+            gp_ErrorMessage("gp_HideVertex() failed during hide/restore test.");
+            Result = NOTOK;
+        }
+    }
+
+    if (Result == OK && gp_RestoreVertices(theGraph) != OK)
+    {
+        gp_ErrorMessage("gp_RestoreVertices() failed during hide/restore test.");
+        Result = NOTOK;
+    }
+
+    if (Result == OK)
+    {
+        if (gp_WriteToString(theGraph, &afterStr, WRITE_ADJLIST) != OK || afterStr == NULL)
+        {
+            gp_ErrorMessage("Unable to write graph to string after hide/restore test.");
+            Result = NOTOK;
+        }
+    }
+
+    if (Result == OK && strcmp(beforeStr, afterStr) != 0)
+    {
+        gp_ErrorMessage("Graph changed after hide/restore test.");
+        Result = NOTOK;
+    }
+
+    if (beforeStr != NULL)
+    {
+        free(beforeStr);
+        beforeStr = NULL;
+    }
+
+    if (afterStr != NULL)
+    {
+        free(afterStr);
+        afterStr = NULL;
+    }
+
+    return Result;
 }
 
 int runTestAllGraphsTest(char const *commandString, char const *infileName)

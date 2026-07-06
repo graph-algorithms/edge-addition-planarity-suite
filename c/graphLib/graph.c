@@ -2443,12 +2443,24 @@ int _HideVertex(graphP theGraph, int vertex)
     // Cycle through all the edges, pushing and hiding each
     while (gp_IsEdge(theGraph, e))
     {
+        if (sp_GetCurrentSize(theGraph->theStack) >= sp_GetCapacity(theGraph->theStack))
+        {
+            gp_ErrorMessage("_HideVertex() is attempting to push to a full stack.");
+            return NOTOK;
+        }
+
         sp_Push(theGraph->theStack, e);
         gp_HideEdge(theGraph, e);
         e = gp_GetNextEdge(theGraph, e);
     }
 
     // Push the additional integers needed by gp_RestoreVertex()
+    if (sp_GetCurrentSize(theGraph->theStack) + 7 > sp_GetCapacity(theGraph->theStack))
+    {
+        gp_ErrorMessage("_HideVertex() is attempting to push to a full stack.");
+        return NOTOK;
+    }
+
     sp_Push(theGraph->theStack, hiddenEdgeStackBottom);
     sp_Push(theGraph->theStack, NIL);
     sp_Push(theGraph->theStack, NIL);
@@ -2737,7 +2749,10 @@ int _RestoreVertex(graphP theGraph)
     int u, v, e_u_succ, e_u_pred, e_v_first, e_v_last, HESB, e;
 
     if (sp_GetCurrentSize(theGraph->theStack) < 7)
+    {
+        gp_ErrorMessage("_RestoreVertex() is attempting to pop from an empty stack.");
         return NOTOK;
+    }
 
     sp_Pop(theGraph->theStack, v);
     sp_Pop(theGraph->theStack, u);
@@ -2794,6 +2809,12 @@ int _RestoreVertex(graphP theGraph)
     }
 
     // Restore the hidden edges of v, if any
+    if (sp_IsEmpty(theGraph->theStack))
+    {
+        gp_ErrorMessage("_RestoreVertex() is attempting to pop from an empty stack.");
+        return NOTOK;
+    }
+
     sp_Pop(theGraph->theStack, HESB);
     return _RestoreHiddenEdges(theGraph, HESB);
 }
