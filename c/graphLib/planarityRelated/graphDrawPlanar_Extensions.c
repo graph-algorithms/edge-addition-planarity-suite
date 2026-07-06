@@ -82,7 +82,7 @@ int gp_ExtendWith_DrawPlanar(graphP theGraph)
 {
     DrawPlanarContext *context = NULL;
 
-    if (theGraph == NULL || gp_GetN(theGraph) <= 0)
+    if (theGraph == NULL)
         return NOTOK;
 
     // If the drawing feature has already been attached to the graph,
