@@ -67,6 +67,8 @@ extern "C"
     int gp_DynamicAddEdge(graphP theGraph, int u, int ulink, int v, int vlink);
     int gp_InsertEdge(graphP theGraph, int u, int e_u, int e_ulink,
                       int v, int e_v, int e_vlink);
+    int gp_DynamicInsertEdge(graphP theGraph, int u, int e_u, int e_ulink,
+                             int v, int e_v, int e_vlink);
     int gp_DeleteEdge(graphP theGraph, int e);
     int gp_ClearEdgeDirectionFlags(graphP theGraph);
 
@@ -425,7 +427,7 @@ extern "C"
 
 // This value is returned by gp_AddEdge() and gp_InsertEdge() if adding or inserting
 // the edge would exceed the edge capacity limit. The limit can be increased by
-// calling gp_EnsureEdgeCapacity(), or by calling gp_DynamicAddEdge().
+// calling gp_EnsureEdgeCapacity(), gp_DynamicAddEdge(), or gp_DynamicInsertEdge().
 #define AT_EDGE_CAPACITY_LIMIT -1
 
 // A bounds-checking version of gp_IsEdge() for DEBUG mode compilation
