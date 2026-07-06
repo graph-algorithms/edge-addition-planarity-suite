@@ -2041,6 +2041,53 @@ int gp_DynamicAddEdge(graphP theGraph, int u, int ulink, int v, int vlink)
 }
 
 /********************************************************************
+ gp_DynamicInsertEdge()
+ Refer to documentation for gp_InsertEdge() for parameter description.
+
+ Calls gp_InsertEdge(); if AT_EDGE_CAPACITY_LIMIT, doubles the edge
+ capacity using gp_EnsureEdgeCapacity(), then retries gp_InsertEdge().
+
+ Returns OK on success, NOTOK on failure.
+ ********************************************************************/
+int gp_DynamicInsertEdge(graphP theGraph, int u, int e_u, int e_ulink,
+                         int v, int e_v, int e_vlink)
+{
+    int Result = OK;
+
+    Result = gp_InsertEdge(theGraph, u, e_u, e_ulink, v, e_v, e_vlink);
+
+    if (Result == AT_EDGE_CAPACITY_LIMIT)
+    {
+        // The candidate edge capacity is double the current capacity
+        int candidateEdgeCapacity = gp_GetEdgeCapacity(theGraph) << 1;
+        int N = gp_GetN(theGraph);
+        int newEdgeCapacity = candidateEdgeCapacity;
+
+        // If the candidate edge capacity exceeds the number of edges
+        // needed in an undirected clique on N vertices, then attempt
+        // to use that as the new edge capacity.
+        if (candidateEdgeCapacity > ((N * (N - 1)) >> 1))
+            newEdgeCapacity = ((N * (N - 1)) >> 1);
+
+        // However, if the edge capacity is already greater than or
+        // equal to that maximum capacity needed for an undirected
+        // clique on N vertices, then we allow the capacity to double
+        // beyond the simple undirected graph limit.
+        if (newEdgeCapacity <= gp_GetEdgeCapacity(theGraph))
+            newEdgeCapacity = candidateEdgeCapacity;
+
+        Result = gp_EnsureEdgeCapacity(theGraph, newEdgeCapacity);
+
+        if (Result != OK)
+            return NOTOK;
+
+        Result = gp_InsertEdge(theGraph, u, e_u, e_ulink, v, e_v, e_vlink);
+    }
+
+    return Result != OK ? NOTOK : Result;
+}
+
+/********************************************************************
  gp_InsertEdge()
 
  This function adds the edge (u, v) such that the edge record added
