@@ -428,7 +428,7 @@ int _EmbeddingInitialize(graphP theGraph)
         // (8) Create the DFS tree embedding using the child edge records stored in the virtual vertices
         //     For each vertex v that is a DFS child, the virtual vertex R that will represent v's parent
         //     in the singleton bicomp with v is at location v + N in the vertex array.
-        if (gp_IsDFSTreeRoot(theGraph, v))
+        if (_gp_IsDFSTreeRoot(theGraph, v))
         {
             gp_SetFirstEdge(theGraph, v, NIL);
             gp_SetLastEdge(theGraph, v, NIL);
@@ -486,7 +486,7 @@ void _EmbedBackEdgeToDescendant(graphP theGraph, int RootSide, int RootVertex, i
 
     /* The forward edge record is removed from the fwdEdgeList of the root's parent copy. */
 
-    parentCopy = gp_GetVertexFromBicompRoot(theGraph, RootVertex);
+    parentCopy = _gp_GetVertexFromBicompRoot(theGraph, RootVertex);
 
     _gp_LogLine(_gp_MakeLogStr5("graphEmbed.c/_EmbedBackEdgeToDescendant() V=%d, R=%d, R_out=%d, W=%d, W_in=%d",
                                 parentCopy, RootVertex, RootSide, W, WPrevLink));
@@ -851,7 +851,7 @@ void _WalkUp(graphP theGraph, int v, int e)
             // Step up from the bicomp root vertex (virtual) to the parent copy of
             // the vertex (non-virtual; called parent copy because it is the one that
             // is in a bicomp with a virtual or non-virtual copy of its DFS parent)
-            Zig = Zag = gp_GetVertexFromBicompRoot(theGraph, R);
+            Zig = Zag = _gp_GetVertexFromBicompRoot(theGraph, R);
             ZigPrevLink = 1;
             ZagPrevLink = 0;
 
@@ -1397,7 +1397,7 @@ int _JoinBicomps(graphP theGraph)
         // If the bicomp root is still active (i.e. an in-use virtual vertex)
         // then merge it with its parent copy vertex (non-virtual)
         if (gp_VirtualVertexInUse(theGraph, R))
-            _MergeVertex(theGraph, gp_GetVertexFromBicompRoot(theGraph, R), 0, R);
+            _MergeVertex(theGraph, _gp_GetVertexFromBicompRoot(theGraph, R), 0, R);
     }
 
     return OK;

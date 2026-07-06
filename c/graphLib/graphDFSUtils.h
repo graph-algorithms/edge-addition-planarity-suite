@@ -51,8 +51,8 @@ extern "C"
 
 // A DFS tree root is one that has no DFS parent. There is one DFS tree root
 // per connected component of a graph (connected, not biconnected; component, not bicomp)
-#define gp_IsDFSTreeRoot(theGraph, v) gp_IsNotVertex(theGraph, gp_GetVertexParent(theGraph, v))
-#define gp_IsNotDFSTreeRoot(theGraph, v) gp_IsVertex(theGraph, gp_GetVertexParent(theGraph, v))
+#define gp_IsDFSTreeRoot(theGraph, v) gp_IsNotVertex(theGraph, gp_GetParent(theGraph, v))
+#define gp_IsNotDFSTreeRoot(theGraph, v) gp_IsVertex(theGraph, gp_GetParent(theGraph, v))
 
 // Mapping between bicomp roots and virtual vertex locations used to store them.
 // A cut vertex v separates one or more of its DFS children, say c1 and c2, from
@@ -70,7 +70,7 @@ extern "C"
 // pairs of vertices in, respectively, T(c1) and T(c2).
 #define gp_GetBicompRootFromDFSChild(theGraph, c) ((c) + gp_GetN(theGraph))
 #define gp_GetDFSChildFromBicompRoot(theGraph, R) ((R) - gp_GetN(theGraph))
-#define gp_GetVertexFromBicompRoot(theGraph, R) gp_GetVertexParent(theGraph, gp_GetDFSChildFromBicompRoot(theGraph, R))
+#define gp_GetVertexFromBicompRoot(theGraph, R) gp_GetParent(theGraph, gp_GetDFSChildFromBicompRoot(theGraph, R))
 #define gp_IsBicompRoot(theGraph, v) ((v) >= gp_LowerBoundVirtualVertices(theGraph))
 
 // If a vertex v is a cut vertex that separates one of its DFS children, say c,
