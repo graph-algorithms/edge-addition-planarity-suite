@@ -52,6 +52,10 @@ extern "C"
 #define gp_GetVertexParent(theGraph, v) (theGraphDVI(theGraph)[v].parent)
 #define gp_SetVertexParent(theGraph, v, theParent) (theGraphDVI(theGraph)[v].parent = theParent)
 
+#define _gp_IsDFSTreeRoot(theGraph, v) gp_IsNotVertex(theGraph, gp_GetVertexParent(theGraph, v))
+#define _gp_IsNotDFSTreeRoot(theGraph, v) gp_IsVertex(theGraph, gp_GetVertexParent(theGraph, v))
+#define _gp_GetVertexFromBicompRoot(theGraph, R) gp_GetVertexParent(theGraph, (R) - gp_GetN(theGraph))
+
 #define gp_GetVertexLeastAncestor(theGraph, v) (theGraphDVI(theGraph)[v].leastAncestor)
 #define gp_SetVertexLeastAncestor(theGraph, v, theLeastAncestor) (theGraphDVI(theGraph)[v].leastAncestor = theLeastAncestor)
 

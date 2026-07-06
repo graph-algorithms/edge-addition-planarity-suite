@@ -91,7 +91,7 @@ int _ComputeVertexPositions(DrawPlanarContext *context)
     {
         // For each DFS tree root in the embedding, we
         // compute the vertex positions
-        if (gp_IsDFSTreeRoot(theEmbedding, v))
+        if (_gp_IsDFSTreeRoot(theEmbedding, v))
         {
             if (_ComputeVertexPositionsInComponent(context, v, &vertpos) != OK)
                 return NOTOK;
@@ -399,7 +399,7 @@ int _ComputeEdgePositions(DrawPlanarContext *context)
         // false generator edge so that it is still "visited" and then
         // all of its edges are generators for its neighbor vertices because
         // they all have greater numbers in the vertex order.
-        if (gp_IsDFSTreeRoot(theEmbedding, v))
+        if (_gp_IsDFSTreeRoot(theEmbedding, v))
         {
             // Set a false generator edge, so the vertex is distinguishable from
             // a vertex with no generator edge when its neighbors are visited
@@ -753,7 +753,7 @@ int _BreakTie(DrawPlanarContext *context, int BicompRoot, int W, int WPrevLink)
             or 'beyond' its parent relative to what. */
 
         context->VI[DFSChild].ancestorChild = gp_GetDFSChildFromBicompRoot(theEmbedding, BicompRoot);
-        context->VI[DFSChild].ancestor = gp_GetVertexFromBicompRoot(theEmbedding, BicompRoot);
+        context->VI[DFSChild].ancestor = _gp_GetVertexFromBicompRoot(theEmbedding, BicompRoot);
 
         _gp_LogLine(_gp_MakeLogStr4("V[child=%d]=.ancestorChild = %d, V[child=%d]=.ancestor = %d",
                                     DFSChild, context->VI[DFSChild].ancestorChild, DFSChild, context->VI[DFSChild].ancestor));
@@ -1242,4 +1242,3 @@ int gp_DrawPlanar_GetEdgeEnd(graphP theEmbedding, int e)
 
     return  context->E[e].end;
 }
-

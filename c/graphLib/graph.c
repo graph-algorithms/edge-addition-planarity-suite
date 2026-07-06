@@ -2797,8 +2797,8 @@ int gp_RestoreVertices(graphP theGraph)
 
 int _ComputeEdgeRecordType(graphP theGraph, int a, int b, int edgeType)
 {
-    a = gp_IsVirtualVertex(theGraph, a) ? gp_GetVertexFromBicompRoot(theGraph, a) : a;
-    b = gp_IsVirtualVertex(theGraph, b) ? gp_GetVertexFromBicompRoot(theGraph, b) : b;
+    a = gp_IsVirtualVertex(theGraph, a) ? _gp_GetVertexFromBicompRoot(theGraph, a) : a;
+    b = gp_IsVirtualVertex(theGraph, b) ? _gp_GetVertexFromBicompRoot(theGraph, b) : b;
 
     if (a < b)
         return edgeType == EDGE_TYPE_PARENT || edgeType == EDGE_TYPE_CHILD ? EDGE_TYPE_CHILD : EDGE_TYPE_FORWARD;
@@ -2821,8 +2821,8 @@ int _RestoreEdgeType(graphP theGraph, int u, int v)
     int e, eTwin, u_orig, v_orig;
 
     // If u or v is a virtual vertex (a root copy), then get the non-virtual counterpart.
-    u_orig = gp_IsVirtualVertex(theGraph, u) ? (gp_GetVertexFromBicompRoot(theGraph, u)) : u;
-    v_orig = gp_IsVirtualVertex(theGraph, v) ? (gp_GetVertexFromBicompRoot(theGraph, v)) : v;
+    u_orig = gp_IsVirtualVertex(theGraph, u) ? (_gp_GetVertexFromBicompRoot(theGraph, u)) : u;
+    v_orig = gp_IsVirtualVertex(theGraph, v) ? (_gp_GetVertexFromBicompRoot(theGraph, v)) : v;
 
     // Get the edge for which we will set the type
 

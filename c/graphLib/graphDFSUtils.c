@@ -138,7 +138,7 @@ int gp_DepthFirstSearch(graphP theGraph)
 
     for (DFI = v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
     {
-        if (gp_IsNotDFSTreeRoot(theGraph, v))
+        if (_gp_IsNotDFSTreeRoot(theGraph, v))
             continue;
 
         sp_Push2(theStack, NIL, NIL);
@@ -286,7 +286,7 @@ int _SortVertices(graphP theGraph)
     /* Convert DFSParent from v to DFI(v) or vice versa */
 
     for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
-        if (gp_IsNotDFSTreeRoot(theGraph, v))
+        if (_gp_IsNotDFSTreeRoot(theGraph, v))
             gp_SetVertexParent(theGraph, v, gp_GetIndex(theGraph, gp_GetVertexParent(theGraph, v)));
 
     /* Sort by 'v using constant time random access. Move each vertex to its
