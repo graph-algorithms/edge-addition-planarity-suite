@@ -139,7 +139,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
     order = gp_GetN(origGraphRead);
 
     if ((graphForEmbedding = gp_New()) == NULL ||
-        gp_EnsureVertexCapacity(graphForEmbedding, order) != OK)
+        ExtendGraph(graphForEmbedding, command) != OK)
     {
         gp_ErrorMessage("Unable allocate graph for embedding.");
         g6_FreeReader((&theG6ReadIterator));
@@ -149,9 +149,9 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
         return NOTOK;
     }
 
-    if (ExtendGraph(graphForEmbedding, command) != OK)
+    if (gp_EnsureVertexCapacity(graphForEmbedding, order) != OK)
     {
-        gp_ErrorMessage("Unable to extend graph for embedding operation.");
+        gp_ErrorMessage("Unable to expand graph storage for expected number of vertices.");
         g6_FreeReader(&theG6ReadIterator);
         gp_Free(&origGraphRead);
         gp_Free(&graphForEmbedding);
