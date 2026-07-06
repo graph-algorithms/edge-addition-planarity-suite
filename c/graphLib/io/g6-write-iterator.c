@@ -338,7 +338,7 @@ int g6_WriteGraph(G6WriteIteratorP theG6WriteIterator)
         return NOTOK;
     }
 
-    if (gp_GetGraphFlags(theG6WriteIterator->currGraph) & GRAPHFLAG_DIRECTEDEDGEDETECTED)
+    if (gp_GetGraphFlags(theG6WriteIterator->currGraph) & GRAPHFLAGS_DIRECTEDEDGEDETECTED)
     {
         gp_ErrorMessage("G6 format doesn't support digraphs.");
         return NOTOK;

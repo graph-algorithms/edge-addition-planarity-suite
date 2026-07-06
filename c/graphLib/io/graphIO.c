@@ -687,7 +687,7 @@ int _WriteAdjMatrix(graphP theGraph, strOrFileP outputContainer)
     if (theGraph == NULL || !sf_IsValidStrOrFile(outputContainer))
         return NOTOK;
 
-    if (gp_GetGraphFlags(theGraph) & GRAPHFLAG_DIRECTEDEDGEDETECTED)
+    if (gp_GetGraphFlags(theGraph) & GRAPHFLAGS_DIRECTEDEDGEDETECTED)
     {
         gp_ErrorMessage("Adjacency matrix writer does not support directed graphs.");
         return NOTOK;

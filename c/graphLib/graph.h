@@ -90,7 +90,7 @@ extern "C"
         Bits 16-23 reserved for Planarity-Related
         bits 24-31 reserved for future expansion
 */
-#define GRAPHFLAG_DIRECTEDEDGEDETECTED 1
+#define GRAPHFLAGS_DIRECTEDEDGEDETECTED 1
 #define gp_GetGraphFlags(theGraph) ((theGraph)->graphFlags)
 
     // For graph embedding methods and declarations, see graphPlanarity.h
@@ -295,7 +295,7 @@ extern "C"
 #define gp_SetAdjacentEdge(theGraph, e, theLink, newEdge) (theGraph->E[e].link[theLink] = newEdge)
 
 ////////////////////////////////////////////
-// gp_IsEdge() helps detect the end of an 
+// gp_IsEdge() helps detect the end of an
 // adjacency list iteration loop
 ////////////////////////////////////////////
 #ifdef USE_1BASEDARRAYS
@@ -368,31 +368,31 @@ extern "C"
 
 // A direction of 0 clears directedness. Otherwise, edge record e is set
 // to direction and e's twin edge record is set to the opposing setting.
-#define gp_SetDirection(theGraph, e, direction)                                           \
-    {                                                                                     \
-        if (direction == EDGEFLAG_DIRECTION_INONLY)                                       \
-        {                                                                                 \
-            theGraph->E[e].flags |= EDGEFLAG_DIRECTION_INONLY;                            \
-            theGraph->E[gp_GetTwin(theGraph, e)].flags |= EDGEFLAG_DIRECTION_OUTONLY;     \
+#define gp_SetDirection(theGraph, e, direction)                                                   \
+    {                                                                                             \
+        if (direction == EDGEFLAG_DIRECTION_INONLY)                                               \
+        {                                                                                         \
+            theGraph->E[e].flags |= EDGEFLAG_DIRECTION_INONLY;                                    \
+            theGraph->E[gp_GetTwin(theGraph, e)].flags |= EDGEFLAG_DIRECTION_OUTONLY;             \
             if (gp_GetNeighbor(theGraph, e) != gp_GetNeighbor(theGraph, gp_GetTwin(theGraph, e))) \
-            {                                                                             \
-                theGraph->graphFlags |= GRAPHFLAG_DIRECTEDEDGEDETECTED;                   \
-            }                                                                             \
-        }                                                                                 \
-        else if (direction == EDGEFLAG_DIRECTION_OUTONLY)                                 \
-        {                                                                                 \
-            theGraph->E[e].flags |= EDGEFLAG_DIRECTION_OUTONLY;                           \
-            theGraph->E[gp_GetTwin(theGraph, e)].flags |= EDGEFLAG_DIRECTION_INONLY;      \
+            {                                                                                     \
+                theGraph->graphFlags |= GRAPHFLAGS_DIRECTEDEDGEDETECTED;                          \
+            }                                                                                     \
+        }                                                                                         \
+        else if (direction == EDGEFLAG_DIRECTION_OUTONLY)                                         \
+        {                                                                                         \
+            theGraph->E[e].flags |= EDGEFLAG_DIRECTION_OUTONLY;                                   \
+            theGraph->E[gp_GetTwin(theGraph, e)].flags |= EDGEFLAG_DIRECTION_INONLY;              \
             if (gp_GetNeighbor(theGraph, e) != gp_GetNeighbor(theGraph, gp_GetTwin(theGraph, e))) \
-            {                                                                             \
-                theGraph->graphFlags |= GRAPHFLAG_DIRECTEDEDGEDETECTED;                   \
-            }                                                                             \
-        }                                                                                 \
-        else                                                                              \
-        {                                                                                 \
-            theGraph->E[e].flags &= ~EDGEFLAG_DIRECTION_MASK;                             \
-            theGraph->E[gp_GetTwin(theGraph, e)].flags &= ~EDGEFLAG_DIRECTION_MASK;       \
-        }                                                                                 \
+            {                                                                                     \
+                theGraph->graphFlags |= GRAPHFLAGS_DIRECTEDEDGEDETECTED;                          \
+            }                                                                                     \
+        }                                                                                         \
+        else                                                                                      \
+        {                                                                                         \
+            theGraph->E[e].flags &= ~EDGEFLAG_DIRECTION_MASK;                                     \
+            theGraph->E[gp_GetTwin(theGraph, e)].flags &= ~EDGEFLAG_DIRECTION_MASK;               \
+        }                                                                                         \
     }
 
 // Iterate through all edges with gp_LowerBoundEdges, gp_UpperBoundEdges, and gp_EdgeInUse
@@ -444,7 +444,7 @@ extern "C"
     typedef struct stackStruct stackStruct;
     typedef stackStruct *stackP;
 
-    // Declaration of package private data types for extending the base Graph class 
+    // Declaration of package private data types for extending the base Graph class
     // with subclasses having data members and function overloads
     typedef struct graphExtensionStruct graphExtensionStruct;
     typedef graphExtensionStruct *graphExtensionP;
@@ -473,9 +473,9 @@ extern "C"
                 extensions: an object-oriented hierarchy of graph classes is implemented
                             manually as a list of extensions for data of any subclasses
                             with which a graph has been extended.
-                extensionLookupTable: if not NULL, keeps an array of pointers to the 
+                extensionLookupTable: if not NULL, keeps an array of pointers to the
                                       extensions indexed by ID for constant-time lookup.
-                functions: object-oriented class hierarchies includes virtual function 
+                functions: object-oriented class hierarchies includes virtual function
                            overloading, which is provided by this function pointer table.
 
                 privateData: pointer to a package private data structure that can be
@@ -497,7 +497,7 @@ extern "C"
         // Used by base Graph class and its subclasses
         stackP theStack;
 
-        // Provides ability to subclass the base Graph, 
+        // Provides ability to subclass the base Graph,
         // including virtual function overloads by subclasses
         graphExtensionP extensions;
         graphExtensionP *extensionLookupTable;

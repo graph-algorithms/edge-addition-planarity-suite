@@ -344,7 +344,7 @@ void _ResetGraphStorage(graphP theGraph)
 
     theGraph->graphFlags &= ~GRAPHFLAGS_DFSNUMBERED;
     theGraph->graphFlags &= ~GRAPHFLAGS_SORTEDBYDFI;
-    theGraph->graphFlags &= ~GRAPHFLAG_DIRECTEDEDGEDETECTED;
+    theGraph->graphFlags &= ~GRAPHFLAGS_DIRECTEDEDGEDETECTED;
     _InitVertices(theGraph);
     _InitEdges(theGraph);
     _InitIsolatorContext(theGraph);
@@ -970,9 +970,9 @@ int gp_CopyAdjacencyLists(graphP dstGraph, graphP srcGraph)
 
     dstGraph->graphFlags &= ~GRAPHFLAGS_DFSNUMBERED;
     dstGraph->graphFlags &= ~GRAPHFLAGS_SORTEDBYDFI;
-    dstGraph->graphFlags &= ~GRAPHFLAG_DIRECTEDEDGEDETECTED;
-    if (gp_GetGraphFlags(srcGraph) & GRAPHFLAG_DIRECTEDEDGEDETECTED)
-        dstGraph->graphFlags |= GRAPHFLAG_DIRECTEDEDGEDETECTED;
+    dstGraph->graphFlags &= ~GRAPHFLAGS_DIRECTEDEDGEDETECTED;
+    if (gp_GetGraphFlags(srcGraph) & GRAPHFLAGS_DIRECTEDEDGEDETECTED)
+        dstGraph->graphFlags |= GRAPHFLAGS_DIRECTEDEDGEDETECTED;
 
     return OK;
 }
@@ -1142,7 +1142,7 @@ int gp_CreateRandomGraph(graphP theGraph)
 {
     int N, M, u, v, m;
 
-    if (theGraph == NULL) 
+    if (theGraph == NULL)
     {
         return NOTOK;
     }
@@ -2184,7 +2184,7 @@ int gp_ClearEdgeDirectionFlags(graphP theGraph)
         }
     }
 
-    theGraph->graphFlags &= ~GRAPHFLAG_DIRECTEDEDGEDETECTED;
+    theGraph->graphFlags &= ~GRAPHFLAGS_DIRECTEDEDGEDETECTED;
     return OK;
 }
 

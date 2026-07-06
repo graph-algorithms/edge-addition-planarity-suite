@@ -1043,7 +1043,7 @@ int testPetersenDigraph(void)
     }
 
     // Verify the directed edge flag detected and that all edges are directed
-    if (!(gp_GetGraphFlags(G) & GRAPHFLAG_DIRECTEDEDGEDETECTED))
+    if (!(gp_GetGraphFlags(G) & GRAPHFLAGS_DIRECTEDEDGEDETECTED))
     {
         gp_ErrorMessage("Directed edge flag was not set upon reading digraph.");
         gp_Free(&G);
@@ -1121,7 +1121,7 @@ int testPetersenDigraph(void)
         return NOTOK;
     }
 
-    if (gp_GetGraphFlags(G) & GRAPHFLAG_DIRECTEDEDGEDETECTED)
+    if (gp_GetGraphFlags(G) & GRAPHFLAGS_DIRECTEDEDGEDETECTED)
     {
         gp_ErrorMessage("Directed edge detected flag should be but is not clear.");
         gp_Free(&G);
