@@ -329,25 +329,37 @@ extern "C"
 #define gp_ClearEdgeMarked(theGraph, e) (theGraph->E[e].flags &= ~EDGE_MARKED_MASK)
 #define gp_SetEdgeMarked(theGraph, e) (theGraph->E[e].flags |= EDGE_MARKED_MASK)
 
-// The edge type is defined by bits 2-4, 4+8+16=28
-#define EDGE_TYPE_MASK 28
-
-// Call gp_GetEdgeType(), then compare to one of these four possibilities
-// EDGE_TYPE_CHILD - edge record points to a neighboring DFS child
-// EDGE_TYPE_FORWARD - edge record points to a DFS descendant, not a DFS child
-// EDGE_TYPE_PARENT - edge record points to the DFS parent
-// EDGE_TYPE_BACK - edge record points to a DFS ancestor, not the DFS parent
-// NOTE: A parent/child tree edge has bit 3 (8) set, forward/back edges do not
-#define EDGE_TYPE_CHILD 28
-#define EDGE_TYPE_FORWARD 20
-#define EDGE_TYPE_PARENT 12
-#define EDGE_TYPE_BACK 4
+// The edge type is defined by bits 2-4 and 8, 4+8+16+256=284
+// Bit 2 set means the edge record neighbor field indicates a parent (in a
+//       tree edge) or ancestor (in a "back" edge, aka a cotree edge)
+// Bit 3 set means edge record is part of a "tree" edge whose endpoints share
+//       the direct DFS parent/child relationship
+// Bit 4 set means the edge record's neighbor field indicates either a child
+//       (in a tree edge) or a descendant (in a "back" edge, aka "cotree" edge)
+// Bit 5 set means the edge record is in a "cross" edge that is neither a
+//       tree edge nor a back edge (so, bits 2, 3, and 4 are clear).
+#define EDGE_TYPE_MASK 284
 
 // EDGE_TYPE_NOTDEFINED - the edge record type has not been defined
-// EDGE_TYPE_TREE - edge record is part of a randomly generated tree
-// NOTE: EDGE_TYPE_TREE uses the same bit 3 as DFS parent and child edges above
 #define EDGE_TYPE_NOTDEFINED 0
+
+// EDGE_TYPE_TREE - gives a name to the bit indicating a tree edge
+// EDGE_TYPE_PARENT - edge record neighbor field indicates DFS parent
+// EDGE_TYPE_CHILD - edge record neighbor field indicates a DFS child
 #define EDGE_TYPE_TREE 8
+#define EDGE_TYPE_PARENT 12
+#define EDGE_TYPE_CHILD 28
+
+// EDGE_TYPE_BACK - edge record points to a DFS ancestor, not the DFS parent
+// EDGE_TYPE_FORWARD - edge record points to a DFS descendant, not a DFS child
+#define EDGE_TYPE_BACK 4
+#define EDGE_TYPE_FORWARD 20
+
+// EDGE_TYPE_CROSS - edge record and its twin represent a cross edge
+//    Bit3 is not set because the edge is not a tree edge
+//    Bits 2 and 4 are not set because the edge's endpoings are not
+//        in a parent-or-ancestor/child-or-descendant relationship
+#define EDGE_TYPE_CROSS 256
 
 #define gp_GetEdgeType(theGraph, e) (theGraph->E[e].flags & EDGE_TYPE_MASK)
 #define gp_ClearEdgeType(theGraph, e) (theGraph->E[e].flags &= ~EDGE_TYPE_MASK)
@@ -364,6 +376,9 @@ extern "C"
 #define EDGEFLAG_DIRECTION_INONLY 64
 #define EDGEFLAG_DIRECTION_OUTONLY 128
 #define EDGEFLAG_DIRECTION_MASK 192
+
+// NOTE: Edge 'flags' bit 8 used by EDGE_TYPE_CROSS above,
+//       so next available bit is bit 9 = 512
 
 // Returns the direction, if any, of the edge record
 #define gp_GetDirection(theGraph, e) (theGraph->E[e].flags & EDGEFLAG_DIRECTION_MASK)
