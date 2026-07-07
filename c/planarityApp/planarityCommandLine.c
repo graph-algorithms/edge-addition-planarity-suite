@@ -26,9 +26,13 @@ int callTransformGraph(int argc, char *argv[]);
 int runSpecificGraphTests(void);
 int runGraphTransformationTests(void);
 int runTestAllGraphsTests(void);
+int runHideRestoreTests(void);
 int runSpecificGraphTest(char const *command, char const *infileName, int inputInMemFlag);
 int runGraphTransformationTest(char const *command, char const *infileName, int inputInMemFlag);
 int runTestAllGraphsTest(char const *commandString, char const *infileName);
+int runHideRestoreTest(graphP theGraph);
+int runDigraphTests(void);
+int testPetersenDigraph(void);
 
 /****************************************************************************
  Command Line Processor
@@ -223,6 +227,10 @@ int runQuickRegressionTests(int argc, char *argv[])
     else if (runGraphTransformationTests() != OK)
         retVal = NOTOK;
     else if (runTestAllGraphsTests() != OK)
+        retVal = NOTOK;
+    else if (runHideRestoreTests() != OK)
+        retVal = NOTOK;
+    else if (runDigraphTests() != OK)
         retVal = NOTOK;
 
     // All done.
@@ -512,6 +520,128 @@ int runTestAllGraphsTests(void)
     }
 
     return retVal;
+}
+
+int runHideRestoreTests(void)
+{
+    graphP theGraph = NULL;
+    G6ReadIteratorP theG6ReadIterator = NULL;
+    platform_time start, end;
+    int Result = OK;
+    int lineNum = 0;
+
+    gp_Message("Starting Hide/Restore Tests");
+    platform_GetTime(start);
+
+    if ((theGraph = gp_New()) == NULL)
+    {
+        gp_ErrorMessage("Unable to allocate graph for hide/restore tests.");
+        return NOTOK;
+    }
+
+    if (g6_NewReader((&theG6ReadIterator), theGraph) != OK ||
+        g6_InitReaderWithFileName(theG6ReadIterator, "n8.mALL.g6") != OK)
+    {
+        gp_ErrorMessage("Unable to allocate or initialize G6 read iterator for hide/restore tests.");
+        Result = NOTOK;
+    }
+
+    while (Result == OK)
+    {
+        if (g6_ReadGraph(theG6ReadIterator) != OK)
+        {
+            gp_ErrorMessage("Unable to read graph on line %d for hide/restore tests.", lineNum + 1);
+            Result = NOTOK;
+            break;
+        }
+
+        if (g6_EndReached(theG6ReadIterator))
+            break;
+
+        lineNum++;
+
+        if (runHideRestoreTest(theGraph) != OK)
+        {
+            gp_ErrorMessage("Hide/restore test failed for graph on line %d.", lineNum);
+            Result = NOTOK;
+            break;
+        }
+    }
+
+    platform_GetTime(end);
+
+    if (Result == OK)
+        gp_Message("Done running Hide/Restore Tests (%.3lf seconds).", platform_GetDuration(start, end));
+
+    gp_Message(" ");
+
+    g6_FreeReader((&theG6ReadIterator));
+    gp_Free(&theGraph);
+
+    return Result;
+}
+
+int runHideRestoreTest(graphP theGraph)
+{
+    char *beforeStr = NULL, *afterStr = NULL;
+    int Result = OK;
+    int v;
+
+    if (theGraph == NULL)
+    {
+        gp_ErrorMessage("runHideRestoreTest() received NULL graph.");
+        return NOTOK;
+    }
+
+    if (gp_WriteToString(theGraph, &beforeStr, WRITE_ADJLIST) != OK || beforeStr == NULL)
+    {
+        gp_ErrorMessage("Unable to write graph to string before hide/restore test.");
+        Result = NOTOK;
+    }
+
+    for (v = gp_LowerBoundVertices(theGraph); Result == OK && v < gp_UpperBoundVertices(theGraph); ++v)
+    {
+        if (gp_HideVertex(theGraph, v) != OK)
+        {
+            gp_ErrorMessage("gp_HideVertex() failed during hide/restore test.");
+            Result = NOTOK;
+        }
+    }
+
+    if (Result == OK && gp_RestoreVertices(theGraph) != OK)
+    {
+        gp_ErrorMessage("gp_RestoreVertices() failed during hide/restore test.");
+        Result = NOTOK;
+    }
+
+    if (Result == OK)
+    {
+        if (gp_WriteToString(theGraph, &afterStr, WRITE_ADJLIST) != OK || afterStr == NULL)
+        {
+            gp_ErrorMessage("Unable to write graph to string after hide/restore test.");
+            Result = NOTOK;
+        }
+    }
+
+    if (Result == OK && strcmp(beforeStr, afterStr) != 0)
+    {
+        gp_ErrorMessage("Graph changed after hide/restore test.");
+        Result = NOTOK;
+    }
+
+    if (beforeStr != NULL)
+    {
+        free(beforeStr);
+        beforeStr = NULL;
+    }
+
+    if (afterStr != NULL)
+    {
+        free(afterStr);
+        afterStr = NULL;
+    }
+
+    return Result;
 }
 
 int runTestAllGraphsTest(char const *commandString, char const *infileName)
@@ -1007,4 +1137,159 @@ int callTestAllGraphs(int argc, char *argv[])
 
     // NOTE: We don't want to write to string, so pOutputStr is NULL
     return TestAllGraphs(commandString, infileName, outfileName, NULL);
+}
+/****************************************************************************
+ testPetersenDigraph()
+ ****************************************************************************/
+
+int testPetersenDigraph(void)
+{
+    graphP G = gp_New();
+    graphP G1 = NULL;
+    int quietModeCache, v, e, eTwin, eDir, eTwinDir;
+    char *dummyStr = NULL; // Safe throwaway pointer for early-outs
+
+    if (G == NULL)
+        return NOTOK;
+
+    //  Read Petersen.digraph.txt into a graph G
+    if (gp_Read(G, "Petersen.digraph.txt") != OK)
+    {
+        gp_ErrorMessage("Failed to read Petersen.digraph.txt");
+        gp_Free(&G);
+        return NOTOK;
+    }
+
+    //  Verify edges and flags
+    if (gp_GetM(G) != 15)
+    {
+        gp_ErrorMessage("Petersen Digraph should have exactly 15 edges.");
+        gp_Free(&G);
+        return NOTOK;
+    }
+
+    // Verify the directed edge flag detected and that all edges are directed
+    if (!(gp_GetGraphFlags(G) & GRAPHFLAGS_DIRECTEDEDGEDETECTED))
+    {
+        gp_ErrorMessage("Directed edge flag was not set upon reading digraph.");
+        gp_Free(&G);
+        return NOTOK;
+    }
+
+    for (v = gp_LowerBoundVertices(G); v < gp_UpperBoundVertices(G); ++v)
+    {
+        e = gp_GetFirstEdge(G, v);
+        while (gp_IsEdge(G, e))
+        {
+            eTwin = gp_GetTwin(G, e);
+            eDir = gp_GetDirection(G, e);
+            eTwinDir = gp_GetDirection(G, eTwin);
+
+            if (eDir == 0 || eTwinDir == 0 || eDir == eTwinDir)
+            {
+                gp_ErrorMessage("Edge direction mismatch found.");
+                gp_Free(&G);
+                return NOTOK;
+            }
+            e = gp_GetNextEdge(G, e);
+        }
+    }
+
+    // Test that the planarity algorithm works on digraphs
+    if ((G1 = gp_DupGraph(G)) == NULL)
+    {
+        gp_Free(&G);
+        return NOTOK;
+    }
+
+    if (gp_Embed(G1, EMBEDFLAGS_PLANAR) != NONEMBEDDABLE)
+    {
+        gp_ErrorMessage("Digraph embed did not return expected result.");
+        gp_Free(&G);
+        gp_Free(&G1);
+        return NOTOK;
+    }
+
+    if (gp_TestEmbedResultIntegrity(G1, G, NONEMBEDDABLE) != NONEMBEDDABLE)
+    {
+        gp_ErrorMessage("Embed integrity check failed.");
+        gp_Free(&G);
+        gp_Free(&G1);
+        return NOTOK;
+    }
+
+    gp_Free(&G1);
+
+    // Run early-outs quietly (with a dummy string for write operations)
+    quietModeCache = gp_GetQuietMode();
+    gp_SetQuietMode(QUIETMODE_ALL);
+
+    if (gp_DepthFirstSearch(G) == OK ||
+        gp_ComputeLowpoints(G) == OK ||
+        gp_ComputeLeastAncestors(G) == OK ||
+        gp_WriteToString(G, &dummyStr, WRITE_G6) == OK ||
+        gp_WriteToString(G, &dummyStr, WRITE_ADJMATRIX) == OK)
+    {
+        gp_SetQuietMode(quietModeCache);
+        gp_ErrorMessage("Digraph early-out test failed.");
+        gp_Free(&G);
+        if (dummyStr != NULL)
+            free(dummyStr);
+        return NOTOK;
+    }
+
+    gp_SetQuietMode(quietModeCache);
+
+    //  Clear edge direction flags, and verify
+    if (gp_ClearEdgeDirectionFlags(G) != OK)
+    {
+        gp_Free(&G);
+        return NOTOK;
+    }
+
+    if (gp_GetGraphFlags(G) & GRAPHFLAGS_DIRECTEDEDGEDETECTED)
+    {
+        gp_ErrorMessage("Directed edge detected flag should be but is not clear.");
+        gp_Free(&G);
+        return NOTOK;
+    }
+
+    for (v = gp_LowerBoundVertices(G); v < gp_UpperBoundVertices(G); ++v)
+    {
+        e = gp_GetFirstEdge(G, v);
+        while (gp_IsEdge(G, e))
+        {
+            eTwin = gp_GetTwin(G, e);
+            eDir = gp_GetDirection(G, e);
+            eTwinDir = gp_GetDirection(G, eTwin);
+
+            if (eDir != 0 || eTwinDir != 0)
+            {
+                gp_ErrorMessage("Unexpected directed edge found.");
+                gp_Free(&G);
+                return NOTOK;
+            }
+            e = gp_GetNextEdge(G, e);
+        }
+    }
+
+    gp_Free(&G);
+
+    return OK;
+}
+
+int runDigraphTests(void)
+{
+    int retVal = OK;
+
+    gp_Message("Starting Digraph Tests");
+
+    if (testPetersenDigraph() != OK)
+    {
+        gp_ErrorMessage("Petersen Digraph test failed.");
+        retVal = NOTOK;
+    }
+
+    gp_Message("Finished Digraph Tests.");
+    return retVal;
 }

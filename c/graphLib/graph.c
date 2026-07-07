@@ -225,7 +225,7 @@ void _InitFunctionTable(graphP theGraph)
 
  An instance of the isolator context is created.
 
- Returns OK on success, NOTOK on aany failure.
+ Returns OK on success, NOTOK on any failure.
           On NOTOK, graph extensions are freed so that the graph is
           returned to the post-condition of gp_New().
  ********************************************************************/
@@ -344,7 +344,7 @@ void _ResetGraphStorage(graphP theGraph)
 
     theGraph->graphFlags &= ~GRAPHFLAGS_DFSNUMBERED;
     theGraph->graphFlags &= ~GRAPHFLAGS_SORTEDBYDFI;
-
+    theGraph->graphFlags &= ~GRAPHFLAGS_DIRECTEDEDGEDETECTED;
     _InitVertices(theGraph);
     _InitEdges(theGraph);
     _InitIsolatorContext(theGraph);
@@ -968,6 +968,12 @@ int gp_CopyAdjacencyLists(graphP dstGraph, graphP srcGraph)
     sp_Copy(dstGraph->edgeHoles, srcGraph->edgeHoles);
     dstGraph->numEdgeHoles = sp_GetCurrentSize(dstGraph->edgeHoles);
 
+    dstGraph->graphFlags &= ~GRAPHFLAGS_DFSNUMBERED;
+    dstGraph->graphFlags &= ~GRAPHFLAGS_SORTEDBYDFI;
+    dstGraph->graphFlags &= ~GRAPHFLAGS_DIRECTEDEDGEDETECTED;
+    if (gp_GetGraphFlags(srcGraph) & GRAPHFLAGS_DIRECTEDEDGEDETECTED)
+        dstGraph->graphFlags |= GRAPHFLAGS_DIRECTEDEDGEDETECTED;
+
     return OK;
 }
 
@@ -1135,6 +1141,11 @@ graphP gp_DupGraph(graphP theGraph)
 int gp_CreateRandomGraph(graphP theGraph)
 {
     int N, M, u, v, m;
+
+    if (theGraph == NULL)
+    {
+        return NOTOK;
+    }
 
     N = gp_GetN(theGraph);
 
@@ -1954,6 +1965,11 @@ int gp_AddEdge(graphP theGraph, int u, int ulink, int v, int vlink)
         u >= gp_UpperBoundVertexStorage(theGraph) || v >= gp_UpperBoundVertexStorage(theGraph))
         return NOTOK;
 
+    if ((ulink != 0 && ulink != 1) || (vlink != 0 && vlink != 1))
+    {
+        return NOTOK;
+    }
+
     /* We enforce the edge limit */
 
     if (gp_GetM(theGraph) >= theGraph->edgeCapacity)
@@ -2019,6 +2035,53 @@ int gp_DynamicAddEdge(graphP theGraph, int u, int ulink, int v, int vlink)
             return NOTOK;
 
         Result = gp_AddEdge(theGraph, u, ulink, v, vlink);
+    }
+
+    return Result != OK ? NOTOK : Result;
+}
+
+/********************************************************************
+ gp_DynamicInsertEdge()
+ Refer to documentation for gp_InsertEdge() for parameter description.
+
+ Calls gp_InsertEdge(); if AT_EDGE_CAPACITY_LIMIT, doubles the edge
+ capacity using gp_EnsureEdgeCapacity(), then retries gp_InsertEdge().
+
+ Returns OK on success, NOTOK on failure.
+ ********************************************************************/
+int gp_DynamicInsertEdge(graphP theGraph, int u, int e_u, int e_ulink,
+                         int v, int e_v, int e_vlink)
+{
+    int Result = OK;
+
+    Result = gp_InsertEdge(theGraph, u, e_u, e_ulink, v, e_v, e_vlink);
+
+    if (Result == AT_EDGE_CAPACITY_LIMIT)
+    {
+        // The candidate edge capacity is double the current capacity
+        int candidateEdgeCapacity = gp_GetEdgeCapacity(theGraph) << 1;
+        int N = gp_GetN(theGraph);
+        int newEdgeCapacity = candidateEdgeCapacity;
+
+        // If the candidate edge capacity exceeds the number of edges
+        // needed in an undirected clique on N vertices, then attempt
+        // to use that as the new edge capacity.
+        if (candidateEdgeCapacity > ((N * (N - 1)) >> 1))
+            newEdgeCapacity = ((N * (N - 1)) >> 1);
+
+        // However, if the edge capacity is already greater than or
+        // equal to that maximum capacity needed for an undirected
+        // clique on N vertices, then we allow the capacity to double
+        // beyond the simple undirected graph limit.
+        if (newEdgeCapacity <= gp_GetEdgeCapacity(theGraph))
+            newEdgeCapacity = candidateEdgeCapacity;
+
+        Result = gp_EnsureEdgeCapacity(theGraph, newEdgeCapacity);
+
+        if (Result != OK)
+            return NOTOK;
+
+        Result = gp_InsertEdge(theGraph, u, e_u, e_ulink, v, e_v, e_vlink);
     }
 
     return Result != OK ? NOTOK : Result;
@@ -2150,6 +2213,25 @@ int gp_DeleteEdge(graphP theGraph, int e)
     }
 
     // Return the previously calculated successor of e.
+    return OK;
+}
+
+int gp_ClearEdgeDirectionFlags(graphP theGraph)
+{
+    if (theGraph == NULL)
+        return NOTOK;
+
+    for (int e = gp_LowerBoundEdges(theGraph); e < gp_UpperBoundEdges(theGraph); e += 2)
+    {
+        if (gp_EdgeInUse(theGraph, e))
+        {
+            // Clear direction flags if non-loop edge
+            if (gp_GetNeighbor(theGraph, gp_GetTwin(theGraph, e)) != gp_GetNeighbor(theGraph, e))
+                gp_SetDirection(theGraph, e, 0);
+        }
+    }
+
+    theGraph->graphFlags &= ~GRAPHFLAGS_DIRECTEDEDGEDETECTED;
     return OK;
 }
 
@@ -2361,12 +2443,24 @@ int _HideVertex(graphP theGraph, int vertex)
     // Cycle through all the edges, pushing and hiding each
     while (gp_IsEdge(theGraph, e))
     {
+        if (sp_GetCurrentSize(theGraph->theStack) >= sp_GetCapacity(theGraph->theStack))
+        {
+            gp_ErrorMessage("_HideVertex() is attempting to push to a full stack.");
+            return NOTOK;
+        }
+
         sp_Push(theGraph->theStack, e);
         gp_HideEdge(theGraph, e);
         e = gp_GetNextEdge(theGraph, e);
     }
 
     // Push the additional integers needed by gp_RestoreVertex()
+    if (sp_GetCurrentSize(theGraph->theStack) + 7 > sp_GetCapacity(theGraph->theStack))
+    {
+        gp_ErrorMessage("_HideVertex() is attempting to push to a full stack.");
+        return NOTOK;
+    }
+
     sp_Push(theGraph->theStack, hiddenEdgeStackBottom);
     sp_Push(theGraph->theStack, NIL);
     sp_Push(theGraph->theStack, NIL);
@@ -2655,7 +2749,10 @@ int _RestoreVertex(graphP theGraph)
     int u, v, e_u_succ, e_u_pred, e_v_first, e_v_last, HESB, e;
 
     if (sp_GetCurrentSize(theGraph->theStack) < 7)
+    {
+        gp_ErrorMessage("_RestoreVertex() is attempting to pop from an empty stack.");
         return NOTOK;
+    }
 
     sp_Pop(theGraph->theStack, v);
     sp_Pop(theGraph->theStack, u);
@@ -2712,6 +2809,12 @@ int _RestoreVertex(graphP theGraph)
     }
 
     // Restore the hidden edges of v, if any
+    if (sp_IsEmpty(theGraph->theStack))
+    {
+        gp_ErrorMessage("_RestoreVertex() is attempting to pop from an empty stack.");
+        return NOTOK;
+    }
+
     sp_Pop(theGraph->theStack, HESB);
     return _RestoreHiddenEdges(theGraph, HESB);
 }
@@ -2762,8 +2865,8 @@ int gp_RestoreVertices(graphP theGraph)
 
 int _ComputeEdgeRecordType(graphP theGraph, int a, int b, int edgeType)
 {
-    a = gp_IsVirtualVertex(theGraph, a) ? gp_GetVertexFromBicompRoot(theGraph, a) : a;
-    b = gp_IsVirtualVertex(theGraph, b) ? gp_GetVertexFromBicompRoot(theGraph, b) : b;
+    a = gp_IsVirtualVertex(theGraph, a) ? _gp_GetVertexFromBicompRoot(theGraph, a) : a;
+    b = gp_IsVirtualVertex(theGraph, b) ? _gp_GetVertexFromBicompRoot(theGraph, b) : b;
 
     if (a < b)
         return edgeType == EDGE_TYPE_PARENT || edgeType == EDGE_TYPE_CHILD ? EDGE_TYPE_CHILD : EDGE_TYPE_FORWARD;
@@ -2786,8 +2889,8 @@ int _RestoreEdgeType(graphP theGraph, int u, int v)
     int e, eTwin, u_orig, v_orig;
 
     // If u or v is a virtual vertex (a root copy), then get the non-virtual counterpart.
-    u_orig = gp_IsVirtualVertex(theGraph, u) ? (gp_GetVertexFromBicompRoot(theGraph, u)) : u;
-    v_orig = gp_IsVirtualVertex(theGraph, v) ? (gp_GetVertexFromBicompRoot(theGraph, v)) : v;
+    u_orig = gp_IsVirtualVertex(theGraph, u) ? (_gp_GetVertexFromBicompRoot(theGraph, u)) : u;
+    v_orig = gp_IsVirtualVertex(theGraph, v) ? (_gp_GetVertexFromBicompRoot(theGraph, v)) : v;
 
     // Get the edge for which we will set the type
 
