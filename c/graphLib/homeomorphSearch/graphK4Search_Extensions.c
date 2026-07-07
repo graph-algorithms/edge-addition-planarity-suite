@@ -65,7 +65,7 @@ int gp_ExtendWith_K4Search(graphP theGraph)
 {
     K4SearchContext *context = NULL;
 
-    if (theGraph == NULL || gp_GetN(theGraph) <= 0)
+    if (theGraph == NULL)
         return NOTOK;
 
     // If the K4 search feature has already been attached to the graph,

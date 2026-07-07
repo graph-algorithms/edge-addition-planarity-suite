@@ -8,6 +8,7 @@ See the LICENSE.TXT file for licensing information.
 #define GRAPHDFSUTILS_PRIVATE_H
 
 #include "graph.private.h"
+#include "graphDFSUtils.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -33,24 +34,12 @@ extern "C"
     typedef struct DFSUtils_VertexInfo DFSUtils_VertexInfo;
     typedef DFSUtils_VertexInfo *DFSUtils_VertexInfoP;
 
-    struct vertexInfoRec
-    {
-        int parent, leastAncestor, lowpoint;
-
-        int visitedInfo;
-
-        int pertinentEdge,
-            pertinentRoots,
-            futurePertinentChild,
-            sortedDFSChildList,
-            fwdEdgeList;
-    };
-
-    typedef struct vertexInfoRec vertexInfoRec;
-    typedef vertexInfoRec *vertexInfoP;
-
 #define gp_GetVertexParent(theGraph, v) (theGraphDVI(theGraph)[v].parent)
 #define gp_SetVertexParent(theGraph, v, theParent) (theGraphDVI(theGraph)[v].parent = theParent)
+
+#define _gp_IsDFSTreeRoot(theGraph, v) gp_IsNotVertex(theGraph, gp_GetVertexParent(theGraph, v))
+#define _gp_IsNotDFSTreeRoot(theGraph, v) gp_IsVertex(theGraph, gp_GetVertexParent(theGraph, v))
+#define _gp_GetVertexFromBicompRoot(theGraph, R) gp_GetVertexParent(theGraph, gp_GetDFSChildFromBicompRoot(theGraph, R))
 
 #define gp_GetVertexLeastAncestor(theGraph, v) (theGraphDVI(theGraph)[v].leastAncestor)
 #define gp_SetVertexLeastAncestor(theGraph, v, theLeastAncestor) (theGraphDVI(theGraph)[v].leastAncestor = theLeastAncestor)

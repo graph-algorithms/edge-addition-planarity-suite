@@ -240,7 +240,7 @@ int _CheckEmbeddingFacialIntegrity(graphP theGraph)
     connectedComponents = 0;
     for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
     {
-        if (gp_IsDFSTreeRoot(theGraph, v))
+        if (_gp_IsDFSTreeRoot(theGraph, v))
         {
             if (gp_GetVertexDegree(theGraph, v) > 0)
                 NumFaces--;
@@ -282,7 +282,7 @@ int _CheckAllVerticesOnExternalFace(graphP theGraph)
     // mark the vertices as visited
     for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
     {
-        if (gp_IsDFSTreeRoot(theGraph, v))
+        if (_gp_IsDFSTreeRoot(theGraph, v))
             _MarkExternalFaceVertices(theGraph, v);
     }
 

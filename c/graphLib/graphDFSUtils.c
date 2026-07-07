@@ -40,7 +40,7 @@ extern void _ClearVertexVisitedFlags(graphP theGraph, int);
 
 int gp_ExtendWith_DFSUtils(graphP theGraph)
 {
-    if (theGraph == NULL || gp_GetN(theGraph) <= 0)
+    if (theGraph == NULL)
         return NOTOK;
 
     // if the Graph has already been extended with DFS Utils,
@@ -101,6 +101,12 @@ int gp_DepthFirstSearch(graphP theGraph)
     if (theGraph == NULL)
         return NOTOK;
 
+    if (gp_GetGraphFlags(theGraph) & GRAPHFLAGS_DIRECTEDEDGEDETECTED)
+    {
+        gp_ErrorMessage("gp_DepthFirstSearch() does not support directed graphs.");
+        return NOTOK;
+    }
+
     if (gp_GetGraphFlags(theGraph) & GRAPHFLAGS_DFSNUMBERED)
         return OK;
 
@@ -132,7 +138,7 @@ int gp_DepthFirstSearch(graphP theGraph)
 
     for (DFI = v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
     {
-        if (gp_IsNotDFSTreeRoot(theGraph, v))
+        if (_gp_IsNotDFSTreeRoot(theGraph, v))
             continue;
 
         sp_Push2(theStack, NIL, NIL);
@@ -280,7 +286,7 @@ int _SortVertices(graphP theGraph)
     /* Convert DFSParent from v to DFI(v) or vice versa */
 
     for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
-        if (gp_IsNotDFSTreeRoot(theGraph, v))
+        if (_gp_IsNotDFSTreeRoot(theGraph, v))
             gp_SetVertexParent(theGraph, v, gp_GetIndex(theGraph, gp_GetVertexParent(theGraph, v)));
 
     /* Sort by 'v using constant time random access. Move each vertex to its
@@ -363,6 +369,11 @@ int gp_ComputeLowpoints(graphP theGraph)
 
     if (theGraph == NULL)
         return NOTOK;
+    if (gp_GetGraphFlags(theGraph) & GRAPHFLAGS_DIRECTEDEDGEDETECTED)
+    {
+        gp_ErrorMessage("gp_ComputeLowpoints() does not support directed graphs.");
+        return NOTOK;
+    }
 
     if (gp_ExtendWith_DFSUtils(theGraph) != OK)
         return NOTOK;
@@ -482,6 +493,11 @@ int gp_ComputeLeastAncestors(graphP theGraph)
 
     if (theGraph == NULL)
         return NOTOK;
+    if (gp_GetGraphFlags(theGraph) & GRAPHFLAGS_DIRECTEDEDGEDETECTED)
+    {
+        gp_ErrorMessage("gp_ComputeLeastAncestors() does not support directed graphs.");
+        return NOTOK;
+    }
 
     if (gp_ExtendWith_DFSUtils(theGraph) != OK)
         return NOTOK;

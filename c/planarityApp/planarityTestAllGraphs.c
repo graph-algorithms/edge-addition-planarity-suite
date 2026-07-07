@@ -139,7 +139,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
     order = gp_GetN(origGraphRead);
 
     if ((graphForEmbedding = gp_New()) == NULL ||
-        gp_EnsureVertexCapacity(graphForEmbedding, order) != OK)
+        ExtendGraph(graphForEmbedding, command) != OK)
     {
         gp_ErrorMessage("Unable allocate graph for embedding.");
         g6_FreeReader((&theG6ReadIterator));
@@ -149,9 +149,9 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
         return NOTOK;
     }
 
-    if (ExtendGraph(graphForEmbedding, command) != OK)
+    if (gp_EnsureVertexCapacity(graphForEmbedding, order) != OK)
     {
-        gp_ErrorMessage("Unable to extend graph for embedding operation.");
+        gp_ErrorMessage("Unable to expand graph storage for expected number of vertices.");
         g6_FreeReader(&theG6ReadIterator);
         gp_Free(&origGraphRead);
         gp_Free(&graphForEmbedding);
@@ -161,17 +161,17 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
 
     while (TRUE)
     {
-        lineNum++;
         if (g6_ReadGraph(theG6ReadIterator) != OK)
         {
-            gp_ErrorMessage("Unable to read graph on line %d.",
-                            lineNum);
+            gp_ErrorMessage("Unable to read graph on line %d.", lineNum + 1);
             Result = NOTOK;
             break;
         }
 
         if (g6_EndReached(theG6ReadIterator))
             break;
+
+        lineNum++;
 
         if (gp_CopyGraph(graphForEmbedding, origGraphRead) != OK)
         {
@@ -226,7 +226,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
     // occurs during processing a graph on the current lineNum, or if we reach
     // the end of the input, then the number of graphs successfully tested is
     // lineNum - 1.
-    stats->numGraphsTested = lineNum - 1;
+    stats->numGraphsTested = lineNum;
     stats->numOK = numOK;
     stats->numNONEMBEDDABLE = numNONEMBEDDABLE;
     stats->errorFlag = (Result == OK) ? FALSE : TRUE;
