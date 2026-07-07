@@ -158,10 +158,10 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
     if (gp_EnsureVertexCapacity(theGraph, N) != OK)
         return NOTOK;
 
-    // Clear the visited members of the vertices so they can be used
+    // Clear the index members of the vertices so they can be used
     // during the adjacency list read operation
     for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
-        gp_SetVertexVisitedInfo(theGraph, v, NIL);
+        gp_SetIndex(theGraph, v, NIL);
 
     // Do the adjacency list read operation for each vertex in order
     for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
@@ -184,10 +184,8 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
         if (zeroBased)
             indexValue += gp_LowerBoundVertexStorage(theGraph);
 
-        gp_SetIndex(theGraph, v, indexValue);
-
         // The vertices are expected to be in numeric ascending order
-        if (gp_GetIndex(theGraph, v) != v)
+        if (indexValue != v)
             return NOTOK;
 
         // Skip the colon after the vertex number
@@ -207,14 +205,14 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
         adjList = gp_GetFirstEdge(theGraph, v);
         if (gp_IsEdge(theGraph, adjList))
         {
-            // Store the adjacency node location in the visited member of each
+            // Store the adjacency node location in the index member of each
             // of the preceding vertices to which v is adjacent so that we can
             // efficiently detect the adjacency during the read operation and
             // efficiently find the adjacency node.
             e = gp_GetFirstEdge(theGraph, v);
             while (gp_IsEdge(theGraph, e))
             {
-                gp_SetVertexVisitedInfo(theGraph, gp_GetNeighbor(theGraph, e), e);
+                gp_SetIndex(theGraph, gp_GetNeighbor(theGraph, e), e);
                 e = gp_GetNextEdge(theGraph, e);
             }
 
@@ -273,12 +271,12 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
             {
                 // If the directed edge already exists, then we add it
                 // as the new first edge of the vertex and delete it from adjList
-                if (gp_IsEdge(theGraph, gp_GetVertexVisitedInfo(theGraph, W)))
+                if (gp_IsEdge(theGraph, gp_GetIndex(theGraph, W)))
                 {
-                    e = gp_GetVertexVisitedInfo(theGraph, W);
+                    e = gp_GetIndex(theGraph, W);
 
                     // Remove the directed edge  e from the adjList construct
-                    gp_SetVertexVisitedInfo(theGraph, W, NIL);
+                    gp_SetIndex(theGraph, W, NIL);
                     if (adjList == e)
                     {
                         if ((adjList = gp_GetNextEdge(theGraph, e)) == e)
@@ -315,7 +313,7 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
         {
             e = adjList;
 
-            gp_SetVertexVisitedInfo(theGraph, gp_GetNeighbor(theGraph, e), NIL);
+            gp_SetIndex(theGraph, gp_GetNeighbor(theGraph, e), NIL);
 
             if ((adjList = gp_GetNextEdge(theGraph, e)) == e)
                 adjList = NIL;
@@ -331,6 +329,11 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
 
     if (zeroBased)
         theGraph->graphFlags |= GRAPHFLAGS_ZEROBASEDIO;
+
+    // The exit condition of this method is to have the index member of each non-virtual vertex v 
+    // be equal to v, until overridden by a depth-first search (e.g., gp_DepthFirstSearch())
+    for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
+        gp_SetIndex(theGraph, v, v);
 
     return OK;
 }
