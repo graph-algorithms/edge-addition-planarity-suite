@@ -158,7 +158,7 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
     if (gp_EnsureVertexCapacity(theGraph, N) != OK)
         return NOTOK;
 
-    // Clear the visited members of the vertices so they can be used
+    // Clear the index members of the vertices so they can be used
     // during the adjacency list read operation
     for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
         gp_SetIndex(theGraph, v, NIL);
@@ -184,8 +184,6 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
         if (zeroBased)
             indexValue += gp_LowerBoundVertexStorage(theGraph);
 
-        
-
         // The vertices are expected to be in numeric ascending order
         if (indexValue != v)
             return NOTOK;
@@ -207,7 +205,7 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
         adjList = gp_GetFirstEdge(theGraph, v);
         if (gp_IsEdge(theGraph, adjList))
         {
-            // Store the adjacency node location in the visited member of each
+            // Store the adjacency node location in the index member of each
             // of the preceding vertices to which v is adjacent so that we can
             // efficiently detect the adjacency during the read operation and
             // efficiently find the adjacency node.
@@ -331,6 +329,9 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
 
     if (zeroBased)
         theGraph->graphFlags |= GRAPHFLAGS_ZEROBASEDIO;
+
+    // The exit condition of this method is to have the index member of each non-virtual vertex v 
+    // be equal to v, until overridden by a depth-first search (e.g., gp_DepthFirstSearch())
     for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
         gp_SetIndex(theGraph, v, v);
 
