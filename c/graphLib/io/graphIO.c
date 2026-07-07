@@ -278,7 +278,7 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
                     e = gp_GetIndex(theGraph, W);
 
                     // Remove the directed edge  e from the adjList construct
-                    gp_GetIndex(theGraph, W, NIL);
+                    gp_SetIndex(theGraph, W, NIL);
                     if (adjList == e)
                     {
                         if ((adjList = gp_GetNextEdge(theGraph, e)) == e)
