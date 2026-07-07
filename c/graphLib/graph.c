@@ -2505,6 +2505,13 @@ int _ContractEdge(graphP theGraph, int e)
     v = gp_GetNeighbor(theGraph, e);
 
     eBefore = gp_GetNextEdge(theGraph, e);
+
+    if (sp_GetCurrentSize(theGraph->theStack) >= sp_GetCapacity(theGraph->theStack))
+    {
+        gp_ErrorMessage("_ContractEdge() is attempting to push to a full stack.");
+        return NOTOK;
+    }
+
     sp_Push(theGraph->theStack, e);
     gp_HideEdge(theGraph, e);
 
@@ -2571,6 +2578,11 @@ int _IdentifyVertices(graphP theGraph, int u, int v, int eBefore)
     if (gp_IsEdge(theGraph, e))
     {
         int result = gp_ContractEdge(theGraph, e);
+        int hiddenEdgesStackBottomIndex;
+        int hiddenEdgesStackBottomValue;
+
+        if (result != OK)
+            return result;
 
         // The edge contraction operation pushes one hidden edge then
         // recursively calls this method. This method then pushes K
@@ -2583,8 +2595,8 @@ int _IdentifyVertices(graphP theGraph, int u, int v, int eBefore)
         // six more integers to indicate edges that were moved from
         // v to u, so the "hidden edges stackBottom" is in the next
         // position down.
-        int hiddenEdgesStackBottomIndex = sp_GetCurrentSize(theGraph->theStack) - 7;
-        int hiddenEdgesStackBottomValue = sp_Get(theGraph->theStack, hiddenEdgesStackBottomIndex);
+        hiddenEdgesStackBottomIndex = sp_GetCurrentSize(theGraph->theStack) - 7;
+        hiddenEdgesStackBottomValue = sp_Get(theGraph->theStack, hiddenEdgesStackBottomIndex);
 
         sp_Set(theGraph->theStack, hiddenEdgesStackBottomIndex, hiddenEdgesStackBottomValue - 1);
 
@@ -2614,6 +2626,18 @@ int _IdentifyVertices(graphP theGraph, int u, int v, int eBefore)
     {
         if (gp_GetVisited(theGraph, gp_GetNeighbor(theGraph, e)))
         {
+            if (sp_GetCurrentSize(theGraph->theStack) >= sp_GetCapacity(theGraph->theStack))
+            {
+                gp_ErrorMessage("_IdentifyVertices() is attempting to push to a full stack.");
+                e = gp_GetFirstEdge(theGraph, u);
+                while (gp_IsEdge(theGraph, e))
+                {
+                    gp_ClearVisited(theGraph, gp_GetNeighbor(theGraph, e));
+                    e = gp_GetNextEdge(theGraph, e);
+                }
+                return NOTOK;
+            }
+
             sp_Push(theGraph->theStack, e);
             gp_HideEdge(theGraph, e);
         }
@@ -2630,6 +2654,12 @@ int _IdentifyVertices(graphP theGraph, int u, int v, int eBefore)
 
     // Push the hiddenEdgeStackBottom as a record of how many hidden
     // edges were pushed (also, see above for Contract Edge adjustment)
+    if (sp_GetCurrentSize(theGraph->theStack) + 7 > sp_GetCapacity(theGraph->theStack))
+    {
+        gp_ErrorMessage("_IdentifyVertices() is attempting to push to a full stack.");
+        return NOTOK;
+    }
+
     sp_Push(theGraph->theStack, hiddenEdgeStackBottom);
 
     // Moving v's adjacency list to u is aided by knowing the predecessor
@@ -2796,7 +2826,7 @@ int _RestoreVertex(graphP theGraph)
         if (gp_IsEdge(theGraph, e_v_first))
             gp_SetPrevEdge(theGraph, e_v_first, NIL);
         if (gp_IsEdge(theGraph, e_v_last))
-            gp_SetPrevEdge(theGraph, e_v_last, NIL);
+            gp_SetNextEdge(theGraph, e_v_last, NIL);
 
         // For each edge record restored to v's adjacency list, reassign the 'v' member
         //    of each twin edge record to indicate v rather than u.
