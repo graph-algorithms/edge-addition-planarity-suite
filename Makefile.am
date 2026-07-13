@@ -37,6 +37,7 @@ libplanarity_la_SOURCES = \
 	c/graphLib/lowLevelUtils/stack.c \
 	c/graphLib/graphDFSUtils.c \
 	c/graphLib/planarityRelated/graphPlanarity_Extensions.c \
+	c/graphLib/planarityRelated/graphPlanarity_Faces.c \
 	c/graphLib/planarityRelated/graphEmbed.c \
 	c/graphLib/planarityRelated/graphIsolator.c \
 	c/graphLib/planarityRelated/graphNonplanar.c \
