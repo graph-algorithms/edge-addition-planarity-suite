@@ -113,10 +113,13 @@ graphP gp_New(void)
     graphP theGraph = (graphP)calloc(1, sizeof(graphStruct));
     graphFunctionTableP functionTable = (graphFunctionTableP)calloc(1, sizeof(graphFunctionTableStruct));
     graphPrivateDataP theGraphPrivateData = (graphPrivateDataP)calloc(1, sizeof(graphPrivateDataStruct));
+    graphExtensionP *extensionLookupTable = (graphExtensionP *)calloc(MAXNUMSUPPORTEDEXTENSIONS+1, sizeof(graphExtensionP));
 
-    if (theGraph != NULL && functionTable != NULL && theGraphPrivateData != NULL)
+    if (theGraph != NULL && functionTable != NULL &&
+        theGraphPrivateData != NULL && extensionLookupTable != NULL)
     {
         theGraph->privateData = (void *)theGraphPrivateData;
+        theGraph->extensionLookupTable = extensionLookupTable;
 
         theGraph->functions = functionTable;
         _InitFunctionTable(theGraph);
@@ -139,6 +142,11 @@ graphP gp_New(void)
         {
             free(theGraphPrivateData);
             theGraphPrivateData = NULL;
+        }
+        if (extensionLookupTable != NULL)
+        {
+            free(extensionLookupTable);
+            extensionLookupTable = NULL;
         }
     }
 
@@ -917,6 +925,11 @@ void gp_Free(graphP *pGraph)
     {
         free((*pGraph)->privateData);
         (*pGraph)->privateData = NULL;
+    }
+    if ((*pGraph)->extensionLookupTable != NULL)
+    {
+        free((*pGraph)->extensionLookupTable);
+        (*pGraph)->extensionLookupTable = NULL;
     }
 
     free(*pGraph);

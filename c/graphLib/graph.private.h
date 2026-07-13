@@ -206,4 +206,7 @@ extern "C"
 }
 #endif
 
+// This number can just be made bigger if ever needed
+#define MAXNUMSUPPORTEDEXTENSIONS 32
+
 #endif /* GRAPHUTILS_PRIVATE_H */
