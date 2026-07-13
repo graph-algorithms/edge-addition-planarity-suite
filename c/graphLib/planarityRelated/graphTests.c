@@ -237,14 +237,16 @@ int _CheckEmbeddingFacialIntegrity(graphP theGraph)
         DFS parent, except in the case of isolated vertices, no face was counted
         so we do not subtract one. */
 
-    connectedComponents = 0;
+    connectedComponents = gp_CountConnectedComponents(theGraph);
+    if (connectedComponents < 0)
+        return NOTOK;
+
     for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
     {
         if (_gp_IsDFSTreeRoot(theGraph, v))
         {
             if (gp_GetVertexDegree(theGraph, v) > 0)
                 NumFaces--;
-            connectedComponents++;
         }
     }
 

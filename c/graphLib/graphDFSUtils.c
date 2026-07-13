@@ -567,6 +567,30 @@ int gp_ComputeLeastAncestors(graphP theGraph)
 }
 
 /********************************************************************
+ gp_CountConnectedComponents()
+
+ Once the DFS tree has been created in theGraph, this method returns
+ the number of connected components identified by DFS tree roots.
+ Returns -1 on error, such as a NULL graph or DFS tree not created yet.
+ ********************************************************************/
+int gp_CountConnectedComponents(graphP theGraph)
+{
+    int v, connectedComponents;
+
+    if (theGraph == NULL)
+        return -1;
+    if (!(gp_GetGraphFlags(theGraph) & GRAPHFLAGS_DFSNUMBERED))
+        return -1;
+
+    connectedComponents = 0;
+    for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
+        if (_gp_IsDFSTreeRoot(theGraph, v))
+            connectedComponents++;
+
+    return connectedComponents;
+}
+
+/********************************************************************
  gp_GetParent()
 
  Once the DFS tree has been created in theGraph, this method returns
