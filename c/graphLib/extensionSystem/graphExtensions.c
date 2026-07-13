@@ -95,15 +95,11 @@ static int moduleIDGenerator = 0;
      if your feature is attached but not active or if your feature
      augments the base behavior rather than replacing it.
 
-     a) If extra data must be maintained at the graph, vertex or edge 
-        levels, then fpEnsureVertexCapacity(), fpEnsureEdgeCapacity(), 
-        and fpResetGraphStorage() must be overloaded.
+     a) If extra data must be maintained at the graph, vertex or edge
+        levels, then fpEnsureVertexCapacity(), fpEnsureEdgeCapacity(),
+        fpDeleteEdge(), and fpResetGraphStorage() must be overloaded.
 
-     b) For a parallel array of edge data, the extension must currently
-        provides its own _Feature_DeleteEdge() that initializes its edge
-        extension data along with calling gp_DeleteEdge().
-
-     c) If any data must be persisted in the file format, then overloads
+     b) If any data must be persisted in the file format, then overloads
         of fpReadPostprocess() and fpWritePostprocess() are needed.
 
   7) Define internal functions for _Feature_ClearStructures(),

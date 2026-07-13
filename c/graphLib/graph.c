@@ -91,6 +91,7 @@ int _hasUnprocessedChild(graphP theGraph, int parent);
 void _AttachEdgeRecord(graphP theGraph, int v, int e, int link, int newEdge);
 void _DetachEdgeRecord(graphP theGraph, int e);
 void _RestoreEdgeRecord(graphP theGraph, int e);
+int _DeleteEdge(graphP theGraph, int e);
 
 /* Private functions for which there are FUNCTION POINTERS */
 
@@ -184,6 +185,7 @@ void _InitFunctionTable(graphP theGraph)
         theGraph->functions->fpReadPostprocess = _ReadPostprocess;
         theGraph->functions->fpWritePostprocess = _WritePostprocess;
 
+        theGraph->functions->fpDeleteEdge = _DeleteEdge;
         theGraph->functions->fpHideEdge = _HideEdge;
         theGraph->functions->fpRestoreEdge = _RestoreEdge;
         theGraph->functions->fpHideVertex = _HideVertex;
@@ -2169,10 +2171,7 @@ int gp_InsertEdge(graphP theGraph, int u, int e_u, int e_ulink,
 
  NOTE: This method reinitializes the edge records for e and its twin
        in the base graph data structure. Extensions having parallel
-       edge record extension data elements must implement and use their
-       own edge deletion methods, which must then call gp_DeleteEdge().
-       Calling gp_DeleteEdge() does not currently clear data in extension
-       data structures.
+       edge record extension data elements must overload gp_DeleteEdge().
 
  Returns OK on success, NOTOK on failure
  ****************************************************************************/
@@ -2185,6 +2184,11 @@ int gp_DeleteEdge(graphP theGraph, int e)
         gp_EdgeNotInUse(theGraph, e))
         return NOTOK;
 
+    return theGraph->functions->fpDeleteEdge(theGraph, e);
+}
+
+int _DeleteEdge(graphP theGraph, int e)
+{
     // Delete the edge records e and eTwin from their adjacency lists.
     _DetachEdgeRecord(theGraph, e);
     _DetachEdgeRecord(theGraph, gp_GetTwin(theGraph, e));
