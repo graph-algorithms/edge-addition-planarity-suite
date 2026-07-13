@@ -45,6 +45,7 @@ extern "C"
         // Additional DFS-related uitility methods (functions and macros) that assume
         // one or more of the above methods have been called to create a DFS tree,
         // sort vertices and/or compute least ancestor and lowpoint values
+        int gp_CountConnectedComponents(graphP theGraph);
         int gp_GetParent(graphP theGraph, int v);
         int gp_GetLeastAncestor(graphP theGraph, int v);
         int gp_GetLowpoint(graphP theGraph, int v);
