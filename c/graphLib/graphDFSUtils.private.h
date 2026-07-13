@@ -24,11 +24,16 @@ extern "C"
         parent: The DFI of the DFS tree parent of this vertex
         leastAncestor: min(DFI of neighbors connected by backedge)
         lowpoint: min(leastAncestor, min(lowpoint of DFS Children))
+        visitedIndex: enables algorithms to manage vertex visitation with more than
+                    just a flag.  For example, the planarity test flags visitation
+                    as a step number that implicitly resets on each step, whereas
+                    part of the planar drawing method signifies a first visitation
+                    by storing the index of the first edge used to reach a vertex
     */
 
     struct DFSUtils_VertexInfo
     {
-        int parent, leastAncestor, lowpoint;
+        int parent, leastAncestor, lowpoint, visitedIndex;
     };
 
     typedef struct DFSUtils_VertexInfo DFSUtils_VertexInfo;
@@ -46,6 +51,9 @@ extern "C"
 
 #define gp_GetVertexLowpoint(theGraph, v) (theGraphDVI(theGraph)[v].lowpoint)
 #define gp_SetVertexLowpoint(theGraph, v, theLowpoint) (theGraphDVI(theGraph)[v].lowpoint = theLowpoint)
+
+#define gp_GetVertexVisitedIndex(theGraph, v) (theGraphDVI(theGraph)[v].visitedIndex)
+#define gp_SetVertexVisitedIndex(theGraph, v, newVisitedIndex) (theGraphDVI(theGraph)[v].visitedIndex = newVisitedIndex)
 
 #ifdef __cplusplus
 }
