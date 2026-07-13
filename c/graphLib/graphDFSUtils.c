@@ -590,6 +590,27 @@ int gp_GetParent(graphP theGraph, int v)
 }
 
 /********************************************************************
+ gp_GetVisitedIndex()
+
+ This method returns the visited index of the given vertex v.
+ Returns NIL on error, such as invalid parameters.
+ ********************************************************************/
+int gp_GetVisitedIndex(graphP theGraph, int v)
+{
+    if (theGraph == NULL ||
+        v < gp_LowerBoundVertices(theGraph) || v >= gp_UpperBoundVertices(theGraph))
+    {
+#ifdef DEBUG
+        NOTOK;
+        ;
+#endif
+        return NIL;
+    }
+
+    return gp_GetVertexVisitedIndex(theGraph, v);
+}
+
+/********************************************************************
  gp_GetLeastAncestor()
 
  Once the least ancestors have been computed in the graph, which
