@@ -83,10 +83,24 @@ void _InitEdges(graphP theGraph);
 
 void _ClearGraph(graphP theGraph);
 
-int _GetRandomNumber(int NMin, int NMax);
+typedef struct
+{
+    int u;
+    int v;
+} randomGraphEdgeRec;
 
-int _getUnprocessedChild(graphP theGraph, int parent);
-int _hasUnprocessedChild(graphP theGraph, int parent);
+typedef struct
+{
+    int a;
+    int b;
+    int c;
+} randomGraphFaceRec;
+
+int _GetRandomNumber(int NMin, int NMax);
+int _AddRandomGraphEdgeCandidate(randomGraphEdgeRec *edgeList, int edgeListCapacity, int *pEdgeListCount, int u, int v);
+int _ProcessRandomGraphOptionalEdge(graphP theGraph, randomGraphEdgeRec *edgeList, int edgeListCapacity,
+                                    int *pEdgeListCount, int addImmediately, int u, int v);
+void _ShuffleRandomGraphEdgeCandidates(randomGraphEdgeRec *edgeList, int edgeCount);
 
 void _AttachEdgeRecord(graphP theGraph, int v, int e, int link, int newEdge);
 void _DetachEdgeRecord(graphP theGraph, int e);
@@ -1214,74 +1228,45 @@ int _GetRandomNumber(int NMin, int NMax)
     return N + NMin;
 }
 
-/********************************************************************
- _getUnprocessedChild()
- Support routine for gp_Create RandomGraphEx(), this function
- obtains a child of the given vertex in the randomly generated
- tree that has not yet been processed.  NIL is returned if the
- given vertex has no unprocessed children
-
- ********************************************************************/
-
-int _getUnprocessedChild(graphP theGraph, int parent)
+int _AddRandomGraphEdgeCandidate(randomGraphEdgeRec *edgeList, int edgeListCapacity, int *pEdgeListCount, int u, int v)
 {
-    int e = gp_GetFirstEdge(theGraph, parent);
-    int eTwin = gp_GetTwin(theGraph, e);
-    int child = gp_GetNeighbor(theGraph, e);
+    if (edgeList == NULL || pEdgeListCount == NULL || *pEdgeListCount >= edgeListCapacity)
+        return NOTOK;
 
-    // The tree edges were added to the beginning of the adjacency list,
-    // and we move processed tree edge records to the end of the list, so
-    // if the immediate next edge record is not a tree edge, then we
-    // return NIL because the vertex has no remaining unprocessed children
-    if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_NOTDEFINED)
-        return NIL;
+    edgeList[*pEdgeListCount].u = u;
+    edgeList[*pEdgeListCount].v = v;
+    (*pEdgeListCount)++;
 
-    // If the child has already been processed, then all children
-    // have been pushed to the end of the list, and we have just
-    // encountered the first child we processed, so there are no
-    // remaining unprocessed children */
-    if (gp_GetEdgeVisited(theGraph, e))
-        return NIL;
-
-    // We have found an edge leading to an unprocessed child, so
-    // we mark it as processed so that it doesn't get returned
-    // again in future iterations.
-    gp_SetEdgeVisited(theGraph, e);
-    gp_SetEdgeVisited(theGraph, eTwin);
-
-    // Now we move the edge record in the parent vertex to the end
-    // of the adjacency list of that vertex.
-    gp_MoveEdgeToLast(theGraph, parent, e);
-
-    // Now we move the edge record in the child vertex to the
-    // end of the adjacency list of the child.
-    gp_MoveEdgeToLast(theGraph, child, eTwin);
-
-    // Now we set the child's parent and return the child.
-    gp_SetVertexParent(theGraph, child, parent);
-
-    return child;
+    return OK;
 }
 
-/********************************************************************
- _hasUnprocessedChild()
- Support routine for gp_Create RandomGraphEx(), this function
- obtains a child of the given vertex in the randomly generated
- tree that has not yet been processed.  False (0) is returned
- unless the given vertex has an unprocessed child.
- ********************************************************************/
-
-int _hasUnprocessedChild(graphP theGraph, int parent)
+int _ProcessRandomGraphOptionalEdge(graphP theGraph, randomGraphEdgeRec *edgeList, int edgeListCapacity,
+                                    int *pEdgeListCount, int addImmediately, int u, int v)
 {
-    int e = gp_GetFirstEdge(theGraph, parent);
+    if (addImmediately)
+        return gp_AddEdge(theGraph, u, 0, v, 0) == OK ? OK : NOTOK;
 
-    if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_NOTDEFINED)
-        return 0;
+    if (edgeList != NULL)
+        return _AddRandomGraphEdgeCandidate(edgeList, edgeListCapacity, pEdgeListCount, u, v);
 
-    if (gp_GetEdgeVisited(theGraph, e))
-        return 0;
+    return OK;
+}
 
-    return 1;
+void _ShuffleRandomGraphEdgeCandidates(randomGraphEdgeRec *edgeList, int edgeCount)
+{
+    int e;
+
+    if (edgeList == NULL)
+        return;
+
+    for (e = edgeCount - 1; e > 0; --e)
+    {
+        int e2 = _GetRandomNumber(0, e);
+        randomGraphEdgeRec temp = edgeList[e];
+
+        edgeList[e] = edgeList[e2];
+        edgeList[e2] = temp;
+    }
 }
 
 /********************************************************************
@@ -1295,18 +1280,22 @@ int _hasUnprocessedChild(graphP theGraph, int parent)
  of random additional edges. These cases correspond to the
  numEdges being equal to 3N-6 or greater than 3N-6, respectively.
 
- If numEdges < 3N-6, then the graph generated is a random tree plus
- edges added systematically to the tree while maintaining planarity.
- The output graph will have at least numEdges edges, but it may have
- a few more since more than one edge is added per iteration of the
- loop that adds the extra edges to the random tree.
+ If numEdges < 3N-6, then the graph generated is a connected planar
+ subgraph of a random maximal planar graph. The output graph will
+ have exactly numEdges edges.
 
  This function assumes the caller has already called srand().
  ********************************************************************/
 
 int gp_CreateRandomGraphEx(graphP theGraph, int numEdges)
 {
-    int N, M, root, v, c, p, last, u, e;
+    randomGraphEdgeRec *optionalEdges = NULL;
+    randomGraphFaceRec *faces = NULL;
+    int N, maxNumEdges, maxPlanarEdges, numPlanarCoreEdges;
+    int lowerVertex, upperVertex, faceCapacity, optionalEdgeCapacity;
+    int optionalEdgeCount = 0, faceCount = 0, addAllPlanarEdges;
+    int Result = NOTOK;
+    int v, u, e;
 
     // Parameter checks: Must have a graph of at least three vertices, and the
     // number of edges must be at least enough to support making a random tree.
@@ -1314,199 +1303,122 @@ int gp_CreateRandomGraphEx(graphP theGraph, int numEdges)
         return NOTOK;
 
     N = gp_GetN(theGraph);
+    lowerVertex = gp_LowerBoundVertices(theGraph);
+    upperVertex = gp_UpperBoundVertices(theGraph);
+    maxNumEdges = (N * (N - 1)) >> 1;
+    maxPlanarEdges = 3 * N - 6;
 
     if (numEdges > theGraph->edgeCapacity)
         numEdges = theGraph->edgeCapacity;
 
-    /* Generate a random tree. */
+    if (numEdges > maxNumEdges)
+        numEdges = maxNumEdges;
 
-    for (v = gp_LowerBoundVertices(theGraph) + 1; v < gp_UpperBoundVertices(theGraph); ++v)
-    {
-        u = _GetRandomNumber(gp_LowerBoundVertices(theGraph), v - 1);
-        if (gp_AddEdge(theGraph, u, 0, v, 0) != OK)
-            return NOTOK;
-
-        else
-        {
-            e = _gp_FindEdge(theGraph, u, v);
-            gp_SetEdgeType(theGraph, e, EDGE_TYPE_TREE);
-            gp_SetEdgeType(theGraph, gp_GetTwin(theGraph, e), EDGE_TYPE_TREE);
-            gp_ClearEdgeVisited(theGraph, e);
-            gp_ClearEdgeVisited(theGraph, gp_GetTwin(theGraph, e));
-        }
-    }
-
-    // Start with generating a maxplanar graph on the random tree
-    // (or adding edges up to numEdges in the fashion of generating a maxplanar graph)
-
-    M = numEdges <= 3 * N - 6 ? numEdges : 3 * N - 6;
-
-    // Start with the first vertex
-    root = gp_LowerBoundVertices(theGraph);
-
-    // Generally, we use v keep track of a traversal down and up all the random tree edges
-    // The last variable marks the location of the last vertex that was an endpoint of the
-    // most recently added edge.
-    v = last = _getUnprocessedChild(theGraph, root);
-
-    // Just a safety check (all children of root are initially unprocessed)
-    if (gp_IsNotVertex(theGraph, v))
+    if (numEdges < N - 1)
         return NOTOK;
 
-    // Vertex v starts at the first unprocessed child of root and traverses around both sides
-    // of the edges of the random tree until it gets back to the root... except,
-    // The original version of this method generated a maxplanar graph only, but it was
-    // refactored to give greater control of the number of edges. After the refactor, this
-    // loop now stops when the edge count reaches M. Even for a maxplanar graph, that will
-    // happen when v reaches the last unprocessed child of the last unprocessed child of root.
-    // Still, we test for v != root for greater understanding of the idea of this method.
-    while (v != root && gp_GetM(theGraph) < M)
+    numPlanarCoreEdges = numEdges <= maxPlanarEdges ? numEdges : maxPlanarEdges;
+    addAllPlanarEdges = numPlanarCoreEdges == maxPlanarEdges;
+    faceCapacity = 2 * N - 4;
+    optionalEdgeCapacity = maxPlanarEdges - (N - 1);
+
+    faces = (randomGraphFaceRec *)calloc((size_t)faceCapacity, sizeof(randomGraphFaceRec));
+
+    if (!addAllPlanarEdges && numPlanarCoreEdges > N - 1)
+        optionalEdges = (randomGraphEdgeRec *)calloc((size_t)optionalEdgeCapacity, sizeof(randomGraphEdgeRec));
+
+    if (faces == NULL || (!addAllPlanarEdges && numPlanarCoreEdges > N - 1 && optionalEdges == NULL))
+        goto gp_CreateRandomGraphEx_Cleanup;
+
+    faces[faceCount].a = lowerVertex;
+    faces[faceCount].b = lowerVertex + 1;
+    faces[faceCount].c = lowerVertex + 2;
+    faceCount++;
+
+    faces[faceCount].a = lowerVertex;
+    faces[faceCount].b = lowerVertex + 2;
+    faces[faceCount].c = lowerVertex + 1;
+    faceCount++;
+
+    if (gp_AddEdge(theGraph, lowerVertex, 0, lowerVertex + 1, 0) != OK ||
+        gp_AddEdge(theGraph, lowerVertex + 1, 0, lowerVertex + 2, 0) != OK)
     {
-        // Get the next unprocessed child of v, if any. This method has the side effect
-        // that it marks the edge (v, c) and hence c as being processed. This method
-        // returns NIL (which not a vertex) if v has no _unprocessed_ children left.
-        c = _getUnprocessedChild(theGraph, v);
+        goto gp_CreateRandomGraphEx_Cleanup;
+    }
 
-        // If v did have an unprocessed child...
-        if (gp_IsVertex(theGraph, c))
+    if (_ProcessRandomGraphOptionalEdge(theGraph, optionalEdges, optionalEdgeCapacity, &optionalEdgeCount,
+                                        addAllPlanarEdges, lowerVertex + 2, lowerVertex) != OK)
+    {
+        goto gp_CreateRandomGraphEx_Cleanup;
+    }
+
+    for (v = lowerVertex + 3; v < upperVertex; ++v)
+    {
+        int faceIndex = _GetRandomNumber(0, faceCount - 1);
+        int a = faces[faceIndex].a;
+        int b = faces[faceIndex].b;
+        int c = faces[faceIndex].c;
+        int faceVertices[3] = {a, b, c};
+        int treeEdgeIndex = _GetRandomNumber(0, 2);
+        int i;
+
+        if (gp_AddEdge(theGraph, v, 0, faceVertices[treeEdgeIndex], 0) != OK)
+            goto gp_CreateRandomGraphEx_Cleanup;
+
+        for (i = 0; i < 3; ++i)
         {
-            // FORWARD_LABEL_0 (see below)
-            if (last != v)
+            if (i != treeEdgeIndex &&
+                _ProcessRandomGraphOptionalEdge(theGraph, optionalEdges, optionalEdgeCapacity,
+                                                &optionalEdgeCount, addAllPlanarEdges, v, faceVertices[i]) != OK)
             {
-                if (gp_AddEdge(theGraph, last, 1, c, 1) != OK)
-                    return NOTOK;
+                goto gp_CreateRandomGraphEx_Cleanup;
             }
-
-            // Add an edge to create a new triangular face with root, v, and the child c
-            // FORWARD_LABEL_1 (see below)
-            if (gp_AddEdge(theGraph, root, 1, c, 1) != OK)
-                return NOTOK;
-
-            // Advance the traversal of v to the child c, and also assign c to last because
-            // (root, c) is the last non-tree edge added.
-            v = last = c;
         }
 
-        // If v did not have any more unprocessed children, then we have to back up to
-        // the nearest of its tree ancestors that does have an unprocessed child
-        else
+        faces[faceIndex].a = a;
+        faces[faceIndex].b = b;
+        faces[faceIndex].c = v;
+
+        if (faceCount + 2 > faceCapacity)
+            goto gp_CreateRandomGraphEx_Cleanup;
+
+        faces[faceCount].a = b;
+        faces[faceCount].b = c;
+        faces[faceCount].c = v;
+        faceCount++;
+
+        faces[faceCount].a = c;
+        faces[faceCount].b = a;
+        faces[faceCount].c = v;
+        faceCount++;
+    }
+
+    if (optionalEdges != NULL)
+    {
+        _ShuffleRandomGraphEdgeCandidates(optionalEdges, optionalEdgeCount);
+
+        for (e = 0; e < optionalEdgeCount && gp_GetM(theGraph) < numPlanarCoreEdges; ++e)
         {
-            // Get the parent of v and get its next unprocessed child, if any
-            p = gp_GetVertexParent(theGraph, v);
-            if (gp_IsVertex(theGraph, p))
-                c = _getUnprocessedChild(theGraph, p);
-
-            // Loop until we find an ancestor (p) of v that does have an unprocessed child
-            // This loop also creates more triangular faces as it traverses back up along
-            // the child-to-parent sides of edges to the successive ancestors of v.
-            // FORWARD_LABEL_2 (see below)
-            while (gp_IsVertex(theGraph, p) && gp_IsNotVertex(theGraph, (c)))
-            {
-                // Since we are in this loop, the parent p did not have
-                // an unprocessed child, so we advance both p and v to
-                // enable checking the next higher ancestor
-                v = p;
-                p = gp_GetVertexParent(theGraph, v);
-
-                // Now that we have advanced upward, there is now a triangular face
-                // we can create between the original v (denoted last) and the new
-                // parent, which is a grandparent or higher of last.
-                // This ensures that we triangulate along the path leading back
-                // up to the next vertex with an unprocessed child.
-                if (gp_IsVertex(theGraph, p))
-                {
-                    // We exclude adding an edge between last and p in the special case
-                    // that p has ascended back up to the root because adding the edge
-                    // would create a duplicate of the edge added at FORWARD_LABEL_1
-                    if (p != root)
-                    {
-                        if (gp_AddEdge(theGraph, last, 1, p, 1) != OK)
-                            return NOTOK;
-                    }
-                }
-
-                // Now that we have dealt with triangulation of that path up to the new p,
-                // we obtain its next unprocessed child, if any to see if we have gone
-                // to a high enough ancestor that we have an unprocessed child to deal with.
-                // NOTE: At the very least, there will still be an unprocessed child by the
-                //       time p gets to the tree root because we haven't yet reached the
-                //       edge limit in the outer loop condition.
-                if (gp_IsVertex(theGraph, p))
-                    c = _getUnprocessedChild(theGraph, p);
-            }
-
-            // Back when v != root was the outer loop condition, it was possible for v to
-            // go to the root, and for p to become NIL (not a vertex). Now, that the outer
-            // loop ends as soon as enough edges are added, p is always a vertex.
-            // Still, we do the test here.
-            if (gp_IsVertex(theGraph, p))
-            {
-                if (p == root)
-                {
-                    // If p is the root, then we create a triangular face containing
-                    // v, p==root, and c, where v is the last vertex visited in one
-                    // of subtree of p==root, and c is the first vertex visited in the
-                    // next subtree of p== root.
-                    // NOTE: This is a special kind of edge called a "cross edge" that
-                    //       joins two vertices that do not have the ancestor-descendant
-                    //       relationship (i.e., it is not a "back edge" and so the tree
-                    //       is not a DFS tree).
-                    if (gp_AddEdge(theGraph, v, 1, c, 1) != OK)
-                        return NOTOK;
-
-                    // If v advanced upward to a higher ancestor than the parent of last,
-                    // then we entered the loop at FORWARD_LABEL_2, which triangulated
-                    // on the way up, except now we must add an edge that creates a
-                    // triangular face with last, v, and c.
-                    if (v != last)
-                    {
-                        if (gp_AddEdge(theGraph, last, 1, c, 1) != OK)
-                            return NOTOK;
-                    }
-
-                    // NOTE: Because p is the root, we do not advance 'last' to c quite yet
-                    //       because v will advance to c below and the next iteration of
-                    //       the outer loop will get _its_ next unprocessed child, say c2.
-                    //       Only once we know the identity of c2 can we add the extra edge
-                    //       needed to create a triangular face with last, c, and c2.
-                    //       This occurs at FORWARD_LABEL_0 above, with v=c and c=c2,
-                    //       after which last is assigned the value c2.
-                    //       Perhaps one day enough guilt will accrue to foster doing what
-                    //       is needed here to allow c to be assigned to last.
-                }
-
-                // In case p is not the root, then we have already triangulated along the
-                // path up from last to p, so...
-                else
-                {
-                    // We add an edge that creates a triangular face with last, p, and c.
-                    if (gp_AddEdge(theGraph, last, 1, c, 1) != OK)
-                        return NOTOK;
-
-                    // And then an edge that creates a triangular face with root, last, and c.
-                    if (gp_AddEdge(theGraph, root, 1, c, 1) != OK)
-                        return NOTOK;
-
-                    // At which point, last can advance to c
-                    last = c;
-                }
-
-                // The main traversal tracking variable v can now advance to c
-                v = c;
-            }
+            if (gp_AddEdge(theGraph, optionalEdges[e].u, 0, optionalEdges[e].v, 0) != OK)
+                goto gp_CreateRandomGraphEx_Cleanup;
         }
     }
 
-    /* Add additional edges if the limit has not yet been reached. */
+    if (gp_GetM(theGraph) < numPlanarCoreEdges)
+        goto gp_CreateRandomGraphEx_Cleanup;
+
+    /* Add additional random edges if the limit has not yet been reached. */
 
     while (gp_GetM(theGraph) < numEdges)
     {
-        u = _GetRandomNumber(gp_LowerBoundVertices(theGraph), gp_UpperBoundVertices(theGraph) - 1);
-        v = _GetRandomNumber(gp_LowerBoundVertices(theGraph), gp_UpperBoundVertices(theGraph) - 1);
+        u = _GetRandomNumber(lowerVertex, upperVertex - 1);
+        v = _GetRandomNumber(lowerVertex, upperVertex - 1);
 
         if (u != v && !gp_IsNeighbor(theGraph, u, v))
+        {
             if (gp_AddEdge(theGraph, u, 0, v, 0) != OK)
-                return NOTOK;
+                goto gp_CreateRandomGraphEx_Cleanup;
+        }
     }
 
     /* Clear the edge types back to 'unknown' */
@@ -1519,10 +1431,17 @@ int gp_CreateRandomGraphEx(graphP theGraph, int numEdges)
 
     /* Put all DFSParent indicators back to NIL */
 
-    for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
+    for (v = lowerVertex; v < upperVertex; ++v)
         gp_SetVertexParent(theGraph, v, NIL);
 
-    return OK;
+    Result = OK;
+
+gp_CreateRandomGraphEx_Cleanup:
+
+    free(optionalEdges);
+    free(faces);
+
+    return Result;
 }
 
 /********************************************************************
