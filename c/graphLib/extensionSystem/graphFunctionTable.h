@@ -48,6 +48,7 @@ extern "C"
         int (*fpReadPostprocess)(graphP, char *);
         int (*fpWritePostprocess)(graphP, char **);
 
+        int (*fpDeleteEdge)(graphP, int);
         void (*fpHideEdge)(graphP, int);
         void (*fpRestoreEdge)(graphP, int);
         int (*fpHideVertex)(graphP, int);
