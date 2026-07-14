@@ -1,6 +1,7 @@
 # Directories
 **/Release/
 **/Debug/
+**/AddressSanitizer/
 /c/.settings/
 
 # Ignore directories for output of Random Graphs

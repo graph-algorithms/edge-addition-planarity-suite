@@ -2,6 +2,7 @@
 
 echo -e "Copying VSCode configuration files.\n"
 cp -R .vscode ../
+mkdir -p ../AddressSanitizer
 
 echo -e "Copying Python TestSupport pylint configuration file.\n"
 cp TestSupport/planaritytesting/.pylintrc ../TestSupport/planaritytesting/
