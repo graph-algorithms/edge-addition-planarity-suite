@@ -187,6 +187,24 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
                 return Result;
             }
 
+            if ((Result = gp_DepthFirstSearch(theGraph)) != OK)
+            {
+                gp_ErrorMessage("Unable to depth first search graph number %d before embedding.", K);
+                break;
+            }
+
+            if ((Result = gp_SortVertices(theGraph)) != OK)
+            {
+                gp_ErrorMessage("Unable to sort graph number %d before embedding.", K);
+                break;
+            }
+
+            if ((Result = gp_ComputeLowpoints(theGraph)) != OK)
+            {
+                gp_ErrorMessage("Unable to compute lowpoints for graph number %d before embedding.", K);
+                break;
+            }
+
             Result = gp_Embed(theGraph, embedFlags);
 
             if (gp_TestEmbedResultIntegrity(theGraph, origGraph, Result) != Result)
