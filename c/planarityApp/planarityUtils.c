@@ -45,7 +45,7 @@ int Reconfigure(void)
 
         if (strlen(lineBuff) != 1 ||
             sscanf(lineBuff, " %c", &Mode) != 1 ||
-            !strchr("rsmn", tolower(Mode)))
+            !strchr(MODECHOICECHARS, tolower(Mode)))
             gp_Message("Invalid choice for Mode; please retry.");
         else
         {
@@ -96,7 +96,7 @@ int Reconfigure(void)
 
                 if (strlen(lineBuff) != 1 ||
                     sscanf(lineBuff, " %c", &OrigOutFormat) != 1 ||
-                    !strchr("aAgG", OrigOutFormat))
+                    !strchr(RANDOMGRAPHSOUTPUTCHOICECHARS, OrigOutFormat))
                     gp_Message("Invalid choice; please retry.");
                 else
                 {
@@ -525,7 +525,7 @@ char const *GetAlgorithmSpecifiers(void)
 
 char const *GetAlgorithmChoices(void)
 {
-    return "pdo234";
+    return GRAPHALGORITHMCHOICES;
 }
 
 /****************************************************************************
@@ -719,7 +719,7 @@ char const *GetSupportedOutputChoices(void)
 
 char const *GetSupportedOutputFormats(void)
 {
-    return "gam";
+    return TRANSFORMGRAPHOUTPUTFORMATCHOICES;
 }
 
 /****************************************************************************
