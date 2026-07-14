@@ -36,6 +36,8 @@ extern int _gp_FindEdge(graphP theGraph, int u, int v);
 
 int _gp_EmbedFlagsValid(graphP theGraph, int embedFlags);
 int _EmbeddingInitialize(graphP theGraph);
+int _EmbeddingInitialize_Full(graphP theGraph);
+int _EmbeddingInitialize_Incremental(graphP theGraph);
 
 void _EmbedBackEdgeToDescendant(graphP theGraph, int RootSide, int RootVertex, int W, int WPrevLink);
 
@@ -249,6 +251,212 @@ int _gp_EmbedFlagsValid(graphP theGraph, int embedFlags)
 /********************************************************************
  _EmbeddingInitialize()
 
+ Routes to the full initialization path when no DFS state is present,
+ otherwise uses the incremental path to honor DFS utility work already
+ performed by the caller.
+ ********************************************************************/
+int _EmbeddingInitialize(graphP theGraph)
+{
+    unsigned graphFlags;
+
+    if (theGraph == NULL)
+        return NOTOK;
+
+    graphFlags = gp_GetGraphFlags(theGraph);
+
+    if (!(graphFlags & (GRAPHFLAGS_DFSNUMBERED |
+                        GRAPHFLAGS_SORTEDBYDFI |
+                        GRAPHFLAGS_LOWPOINTSCOMPUTED)))
+    {
+        return _EmbeddingInitialize_Full(theGraph);
+    }
+
+    return _EmbeddingInitialize_Incremental(theGraph);
+}
+
+/********************************************************************
+ _EmbeddingInitialize_Incremental()
+
+ Uses previously computed DFS, sort, and/or lowpoint data to perform
+ only the embedding initialization steps still required by gp_Embed().
+ ********************************************************************/
+int _EmbeddingInitialize_Incremental(graphP theGraph)
+{
+    stackP theStack;
+    unsigned graphFlags;
+    int graphAlreadySorted;
+    int v, R, uparent, u, uneighbor, e, f, eTwin, ePrev, eNext;
+    int child;
+
+    _gp_LogLine("graphEmbed.c/_EmbeddingInitialize_Incremental() start\n");
+
+    graphFlags = gp_GetGraphFlags(theGraph);
+
+    if ((graphFlags & GRAPHFLAGS_SORTEDBYDFI) &&
+        !(graphFlags & GRAPHFLAGS_DFSNUMBERED))
+    {
+        gp_ErrorMessage("Invalid graph flags: SORTEDBYDFI requires DFSNUMBERED.");
+        return NOTOK;
+    }
+
+    if ((graphFlags & GRAPHFLAGS_LOWPOINTSCOMPUTED) &&
+        ((graphFlags & (GRAPHFLAGS_DFSNUMBERED | GRAPHFLAGS_SORTEDBYDFI)) !=
+         (GRAPHFLAGS_DFSNUMBERED | GRAPHFLAGS_SORTEDBYDFI)))
+    {
+        gp_ErrorMessage("Invalid graph flags: LOWPOINTSCOMPUTED requires DFSNUMBERED and SORTEDBYDFI.");
+        return NOTOK;
+    }
+
+    if (!(graphFlags & GRAPHFLAGS_DFSNUMBERED))
+    {
+        if (gp_DepthFirstSearch(theGraph) != OK)
+            return NOTOK;
+        graphFlags = gp_GetGraphFlags(theGraph);
+    }
+
+    graphAlreadySorted = (graphFlags & GRAPHFLAGS_SORTEDBYDFI) != 0;
+    theStack = theGraph->theStack;
+
+    if (sp_GetCapacity(theStack) < 2 * 2 * gp_GetM(theGraph) + 2)
+        return NOTOK;
+
+    sp_ClearStack(theStack);
+    _ClearVertexVisitedFlags(theGraph, FALSE);
+
+    for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
+    {
+        if (gp_IsVertex(theGraph, gp_GetVertexParent(theGraph, v)))
+            continue;
+
+        sp_Push2(theStack, NIL, NIL);
+        while (sp_NonEmpty(theStack))
+        {
+            sp_Pop2(theStack, uparent, e);
+            u = gp_IsNotVertex(theGraph, uparent) ? v : gp_GetNeighbor(theGraph, e);
+
+            if (!gp_GetVisited(theGraph, u))
+            {
+                gp_SetVisited(theGraph, u);
+
+                if (gp_IsEdge(theGraph, e))
+                {
+                    if (gp_GetEdgeType(theGraph, e) != EDGE_TYPE_CHILD)
+                        return NOTOK;
+
+                    child = graphAlreadySorted ? u : gp_GetIndex(theGraph, u);
+
+                    gp_SetVertexSortedDFSChildList(theGraph, uparent,
+                                                   gp_AppendDFSChild(theGraph, uparent, child));
+
+                    R = gp_GetBicompRootFromDFSChild(theGraph, child);
+                    gp_SetFirstEdge(theGraph, R, e);
+                    gp_SetLastEdge(theGraph, R, e);
+                }
+
+                e = gp_GetFirstEdge(theGraph, u);
+                while (gp_IsEdge(theGraph, e))
+                {
+                    if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_CHILD)
+                    {
+                        if (!gp_GetVisited(theGraph, gp_GetNeighbor(theGraph, e)))
+                            sp_Push2(theStack, u, e);
+                    }
+                    else if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_BACK)
+                    {
+                        eTwin = gp_GetTwin(theGraph, e);
+                        uneighbor = gp_GetNeighbor(theGraph, e);
+                        ePrev = gp_GetPrevEdge(theGraph, eTwin);
+                        eNext = gp_GetNextEdge(theGraph, eTwin);
+
+                        if (gp_IsEdge(theGraph, ePrev))
+                            gp_SetNextEdge(theGraph, ePrev, eNext);
+                        else
+                            gp_SetFirstEdge(theGraph, uneighbor, eNext);
+                        if (gp_IsEdge(theGraph, eNext))
+                            gp_SetPrevEdge(theGraph, eNext, ePrev);
+                        else
+                            gp_SetLastEdge(theGraph, uneighbor, ePrev);
+
+                        if (gp_IsEdge(theGraph, f = gp_GetVertexFwdEdgeList(theGraph, uneighbor)))
+                        {
+                            ePrev = gp_GetPrevEdge(theGraph, f);
+                            gp_SetPrevEdge(theGraph, eTwin, ePrev);
+                            gp_SetNextEdge(theGraph, eTwin, f);
+                            gp_SetPrevEdge(theGraph, f, eTwin);
+                            gp_SetNextEdge(theGraph, ePrev, eTwin);
+                        }
+                        else
+                        {
+                            gp_SetVertexFwdEdgeList(theGraph, uneighbor, eTwin);
+                            gp_SetPrevEdge(theGraph, eTwin, eTwin);
+                            gp_SetNextEdge(theGraph, eTwin, eTwin);
+                        }
+                    }
+
+                    e = gp_GetNextEdge(theGraph, e);
+                }
+            }
+        }
+    }
+
+    if (!graphAlreadySorted)
+    {
+        if (gp_SortVertices(theGraph) != OK)
+            return NOTOK;
+        graphFlags = gp_GetGraphFlags(theGraph);
+    }
+
+    if (!(graphFlags & GRAPHFLAGS_LOWPOINTSCOMPUTED))
+    {
+        if (gp_ComputeLowpoints(theGraph) != OK)
+            return NOTOK;
+    }
+
+    for (v = gp_UpperBoundVertices(theGraph) - 1; v >= gp_LowerBoundVertices(theGraph); --v)
+    {
+        gp_SetVertexVisitedInfo(theGraph, v, gp_GetN(theGraph));
+
+        child = gp_GetVertexSortedDFSChildList(theGraph, v);
+        gp_SetVertexFuturePertinentChild(theGraph, v, child);
+
+        if (_gp_IsDFSTreeRoot(theGraph, v))
+        {
+            gp_SetFirstEdge(theGraph, v, NIL);
+            gp_SetLastEdge(theGraph, v, NIL);
+        }
+        else
+        {
+            R = gp_GetBicompRootFromDFSChild(theGraph, v);
+
+            e = gp_GetFirstEdge(theGraph, R);
+            gp_SetPrevEdge(theGraph, e, NIL);
+            gp_SetNextEdge(theGraph, e, NIL);
+
+            eTwin = gp_GetTwin(theGraph, e);
+            gp_SetNeighbor(theGraph, eTwin, R);
+
+            gp_SetFirstEdge(theGraph, v, eTwin);
+            gp_SetLastEdge(theGraph, v, eTwin);
+            gp_SetPrevEdge(theGraph, eTwin, NIL);
+            gp_SetNextEdge(theGraph, eTwin, NIL);
+
+            gp_SetExtFaceVertex(theGraph, R, 0, v);
+            gp_SetExtFaceVertex(theGraph, R, 1, v);
+            gp_SetExtFaceVertex(theGraph, v, 0, R);
+            gp_SetExtFaceVertex(theGraph, v, 1, R);
+        }
+    }
+
+    theGraph->graphFlags |= GRAPHFLAGS_LOWPOINTSCOMPUTED;
+
+    _gp_LogLine("graphEmbed.c/_EmbeddingInitialize_Incremental() end\n");
+
+    return OK;
+}
+
+/********************************************************************
+ _EmbeddingInitialize_Full()
+
  This method performs the following tasks:
  (1) Assign depth first index (DFI) and DFS parentvalues to vertices
  (2) Assign DFS edge types
@@ -264,13 +472,13 @@ int _gp_EmbedFlagsValid(graphP theGraph, int embedFlags)
  are assigned and then the DFS tree edges stored in virtual vertices
  during the DFS are used to create the DFS tree embedding.
  ********************************************************************/
-int _EmbeddingInitialize(graphP theGraph)
+int _EmbeddingInitialize_Full(graphP theGraph)
 {
     stackP theStack;
     int DFI, v, R, uparent, u, uneighbor, e, f, eTwin, ePrev, eNext;
     int leastValue, child;
 
-    _gp_LogLine("graphEmbed.c/_EmbeddingInitialize() start\n");
+    _gp_LogLine("graphEmbed.c/_EmbeddingInitialize_Full() start\n");
 
     theStack = theGraph->theStack;
 
@@ -460,7 +668,9 @@ int _EmbeddingInitialize(graphP theGraph)
         }
     }
 
-    _gp_LogLine("graphEmbed.c/_EmbeddingInitialize() end\n");
+    theGraph->graphFlags |= GRAPHFLAGS_LOWPOINTSCOMPUTED;
+
+    _gp_LogLine("graphEmbed.c/_EmbeddingInitialize_Full() end\n");
 
     return OK;
 }

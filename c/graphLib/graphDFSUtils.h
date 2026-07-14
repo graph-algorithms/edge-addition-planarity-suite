@@ -30,10 +30,13 @@ extern "C"
         GRAPHFLAGS_SORTEDBYDFI records whether the graph is in original vertex order
                 or sorted by depth first index. Successive calls to the
                 gp_SortVertices() utility method below toggle this bit.
+        GRAPHFLAGS_LOWPOINTSCOMPUTED records whether lowpoint calculations have
+                been performed on the graph.
 */
 #define GRAPHFLAGS_EXTENDEDWITH_DFSUTILS 256
 #define GRAPHFLAGS_DFSNUMBERED 512
 #define GRAPHFLAGS_SORTEDBYDFI 1024
+#define GRAPHFLAGS_LOWPOINTSCOMPUTED 2048
 
         // DFS-related utility methods that create a DFS tree, sort vertices and
         // compute least ancestor and lowpoint values

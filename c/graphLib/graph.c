@@ -344,6 +344,7 @@ void _ResetGraphStorage(graphP theGraph)
 
     theGraph->graphFlags &= ~GRAPHFLAGS_DFSNUMBERED;
     theGraph->graphFlags &= ~GRAPHFLAGS_SORTEDBYDFI;
+    theGraph->graphFlags &= ~GRAPHFLAGS_LOWPOINTSCOMPUTED;
     theGraph->graphFlags &= ~GRAPHFLAGS_DIRECTEDEDGEDETECTED;
     _InitVertices(theGraph);
     _InitEdges(theGraph);
@@ -970,6 +971,7 @@ int gp_CopyAdjacencyLists(graphP dstGraph, graphP srcGraph)
 
     dstGraph->graphFlags &= ~GRAPHFLAGS_DFSNUMBERED;
     dstGraph->graphFlags &= ~GRAPHFLAGS_SORTEDBYDFI;
+    dstGraph->graphFlags &= ~GRAPHFLAGS_LOWPOINTSCOMPUTED;
     dstGraph->graphFlags &= ~GRAPHFLAGS_DIRECTEDEDGEDETECTED;
     if (gp_GetGraphFlags(srcGraph) & GRAPHFLAGS_DIRECTEDEDGEDETECTED)
         dstGraph->graphFlags |= GRAPHFLAGS_DIRECTEDEDGEDETECTED;
