@@ -9,3 +9,27 @@ planaritydir="@abs_top_builddir@"
 
 cd "${planaritydir}"                || exit 1
 ./planarity -test "${samplesdir}"   || exit 2
+
+# Exercise random graph endpoints in the shared sample test script.
+endpointdir="${planaritydir}/test-endpoints.$$"
+rm -rf "${endpointdir}"             || exit 3
+mkdir "${endpointdir}"              || exit 4
+
+./planarity -r -q -p 1 5 "${endpointdir}/random.g6" > /dev/null              || exit 5
+test -s "${endpointdir}/random.g6"                                           || exit 6
+
+./planarity -rm -q 5 "${endpointdir}/maxplanar.out.txt" \
+                     "${endpointdir}/maxplanar.pre.txt"                     || exit 7
+test -s "${endpointdir}/maxplanar.out.txt"                                   || exit 8
+test -s "${endpointdir}/maxplanar.pre.txt"                                   || exit 9
+
+./planarity -rn -q 5 "${endpointdir}/nonplanar.out.txt" \
+                     "${endpointdir}/nonplanar.pre.txt"
+rn_status=$?
+if test "${rn_status}" -ne 1
+then
+    exit 10
+fi
+test -s "${endpointdir}/nonplanar.out.txt"                                   || exit 11
+test -s "${endpointdir}/nonplanar.pre.txt"                                   || exit 12
+rm -rf "${endpointdir}"                                                       || exit 13
