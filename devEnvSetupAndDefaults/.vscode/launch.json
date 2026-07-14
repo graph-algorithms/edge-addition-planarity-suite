@@ -113,6 +113,46 @@
             "preLaunchTask": "C/C++: (Linux) [Debug] gcc build planarity project"
         },
         {
+            "name": "C/C++: (Linux) [AddressSanitizer] gcc build and debug planarity project",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/AddressSanitizer/planarity",
+            "args": [
+                // Command: `planarity -x [-q] -a I O`
+                // "-x",
+                // "-a",
+                // "${workspaceFolder}/c/samples/nauty_example.g6",
+                // "${workspaceFolder}/c/samples/nauty_example.g6.AdjList.expected.out.txt"
+                // Command: `planarity -test <samplesDir>`
+                // "-test",
+                // "${workspaceFolder}/c/samples"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [
+                {
+                    "name": "ASAN_OPTIONS",
+                    "value": "detect_leaks=1:symbolize=1"
+                }
+            ],
+            "externalConsole": true,
+            "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "C/C++: (Linux) [AddressSanitizer] gcc build planarity project"
+        },
+        {
             "name": "C/C++: (Linux) [Release] gcc build and run planarity project",
             "type": "cppdbg",
             "request": "launch",
@@ -159,6 +199,28 @@
             "preLaunchTask": "C/C++: (Windows) [Debug] cl.exe build planarity project"
         },
         {
+            "name": "C/C++: (Windows) [AddressSanitizer] cl.exe build and debug planarity project",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}\\AddressSanitizer\\planarity.exe",
+            "args": [
+                // Command: `planarity -x [-q] -a I O`
+                // "-x",
+                // "-a",
+                // "${workspaceFolder}\\c\\samples\\nauty_example.g6",
+                // "${workspaceFolder}\\c\\samples\\nauty_example.g6.AdjList.expected.out.txt"
+                // Command: `planarity -test <samplesDir>`
+                // "-test",
+                // "${workspaceFolder}\\c\\samples"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "console": "integratedTerminal",
+            // "externalConsole": false, // externalConsole deprecated for MSVC
+            "preLaunchTask": "C/C++: (Windows) [AddressSanitizer] cl.exe build planarity project"
+        },
+        {
             "name": "C/C++: (Windows) [Release] cl.exe build and run planarity project",
             "type": "cppvsdbg",
             "request": "launch",
@@ -201,6 +263,37 @@
             "externalConsole": true,
             "MIMode": "lldb",
             "preLaunchTask": "C/C++: (MacOS) [Debug] clang build planarity project"
+        },
+        {
+            "name": "C/C++: (MacOS) [AddressSanitizer] clang build and debug planarity project",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/AddressSanitizer/planarity",
+            "args": [
+                // Command: `planarity -x [-q] -a I O`
+                // "-x",
+                // "-a",
+                // "${workspaceFolder}/c/samples/nauty_example.g6",
+                // "${workspaceFolder}/c/samples/nauty_example.g6.AdjList.expected.out.txt"
+                // Command: `planarity -test <samplesDir>`
+                // "-test",
+                // "${workspaceFolder}/c/samples"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [
+                {
+                    "name": "ASAN_OPTIONS",
+                    "value": "detect_leaks=1:symbolize=1"
+                },
+                {
+                    "name": "ASAN_SYMBOLIZER_PATH",
+                    "value": "/opt/homebrew/opt/llvm/bin/llvm-symbolizer"
+                }
+            ],
+            "externalConsole": true,
+            "MIMode": "lldb",
+            "preLaunchTask": "C/C++: (MacOS) [AddressSanitizer] clang build planarity project"
         },
         {
             "name": "C/C++: (MacOS) [Release] clang build and run planarity project",
