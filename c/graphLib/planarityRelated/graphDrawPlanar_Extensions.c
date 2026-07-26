@@ -140,8 +140,8 @@ int gp_ExtendWith_DrawPlanar(graphP theGraph)
     // Store the Draw context, including the data structure and the
     // function pointers, as an extension of the graph
     if (gp_AddExtension(theGraph, &DRAWPLANAR_ID, (void *)context,
-                        _DrawPlanar_DupContext, 
-                        _DrawPlanar_CopyData, 
+                        _DrawPlanar_DupContext,
+                        _DrawPlanar_CopyData,
                         _DrawPlanar_FreeContext,
                         &context->functions) != OK)
     {
@@ -200,6 +200,8 @@ void _DrawPlanar_ClearStructures(DrawPlanarContext *context)
         context->E = NULL;
         context->VI = NULL;
 
+        context->drawingDataValid = FALSE;
+
         context->initialized = 1;
     }
     else
@@ -214,6 +216,8 @@ void _DrawPlanar_ClearStructures(DrawPlanarContext *context)
             free(context->VI);
             context->VI = NULL;
         }
+
+        context->drawingDataValid = FALSE;
     }
 }
 
@@ -248,15 +252,10 @@ int _DrawPlanar_CreateStructures(DrawPlanarContext *context)
  ********************************************************************/
 int _DrawPlanar_InitStructures(DrawPlanarContext *context)
 {
-#ifndef USE_1BASEDARRAYS
-    graphP theGraph = context->theGraph;
-#endif
-
-    context->drawingDataValid = FALSE;
-
 #ifdef USE_1BASEDARRAYS
     memset(context->VI, NIL_CHAR, gp_UpperBoundVertices(context->theGraph) * sizeof(DrawPlanar_VertexInfo));
 #else
+    graphP theGraph = context->theGraph;
     if (gp_GetN(theGraph) <= 0)
         return NOTOK;
 
@@ -265,6 +264,8 @@ int _DrawPlanar_InitStructures(DrawPlanarContext *context)
 #endif
 
     memset(context->E, 0, gp_UpperBoundEdgeStorage(context->theGraph) * sizeof(DrawPlanar_EdgeRec));
+
+    context->drawingDataValid = FALSE;
 
     return OK;
 }
