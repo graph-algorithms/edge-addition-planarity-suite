@@ -53,7 +53,7 @@ void _ClearEdgeVisitedFlags(graphP theGraph);
 int _ClearAllVisitedFlagsInBicomp(graphP theGraph, int BicompRoot);
 int _ClearAllVisitedFlagsInOtherBicomps(graphP theGraph, int BicompRoot);
 void _ClearEdgeVisitedFlagsInUnembeddedEdges(graphP theGraph);
-int _FillVertexVisitedInfoInBicomp(graphP theGraph, int BicompRoot, int FillValue);
+int _FillVertexVisitedIndexInBicomp(graphP theGraph, int BicompRoot, int FillValue);
 int _ClearObstructionMarksInBicomp(graphP theGraph, int BicompRoot);
 
 int _gp_FindEdge(graphP theGraph, int u, int v);
@@ -502,7 +502,7 @@ void _InitVertexInfo(graphP theGraph, int v)
     gp_SetVertexLeastAncestor(theGraph, v, NIL);
     gp_SetVertexLowpoint(theGraph, v, NIL);
 
-    gp_SetVertexVisitedInfo(theGraph, v, NIL);
+    gp_SetVertexVisitedIndex(theGraph, v, NIL);
     gp_SetVertexPertinentEdge(theGraph, v, NIL);
     gp_SetVertexPertinentRootsList(theGraph, v, NIL);
     gp_SetVertexFuturePertinentChild(theGraph, v, NIL);
@@ -751,9 +751,9 @@ int _SetAllVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x)
 }
 
 /********************************************************************
- _FillVertexVisitedInfoInBicomp()
+ _FillVertexVisitedIndexInBicomp()
 
- Places the FillValue into the visitedInfo of the non-virtual vertices
+ Places the FillValue into the visitedIndex of the non-virtual vertices
  in the bicomp rooted by BicompRoot.
 
  This method uses the stack but preserves whatever may have been
@@ -763,7 +763,7 @@ int _SetAllVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x)
  Returns OK on success, NOTOK on implementation failure.
  ********************************************************************/
 
-int _FillVertexVisitedInfoInBicomp(graphP theGraph, int BicompRoot, int FillValue)
+int _FillVertexVisitedIndexInBicomp(graphP theGraph, int BicompRoot, int FillValue)
 {
     int v, e;
     int stackBottom = sp_GetCurrentSize(theGraph->theStack);
@@ -774,7 +774,7 @@ int _FillVertexVisitedInfoInBicomp(graphP theGraph, int BicompRoot, int FillValu
         sp_Pop(theGraph->theStack, v);
 
         if (gp_IsNotVirtualVertex(theGraph, v))
-            gp_SetVertexVisitedInfo(theGraph, v, FillValue);
+            gp_SetVertexVisitedIndex(theGraph, v, FillValue);
 
         e = gp_GetFirstEdge(theGraph, v);
         while (gp_IsEdge(theGraph, e))

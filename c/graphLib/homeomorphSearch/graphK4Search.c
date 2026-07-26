@@ -879,7 +879,7 @@ int _K4_ReduceBicompToEdge(graphP theGraph, K4SearchContext *context, int R, int
 
     // Finally, set the visited info state of W to unvisited so that
     // the core embedder (esp. Walkup) will not have any problems.
-    gp_SetVertexVisitedInfo(theGraph, W, gp_GetN(theGraph));
+    gp_SetVertexVisitedIndex(theGraph, W, gp_GetN(theGraph));
 
     return OK;
 }
@@ -980,7 +980,7 @@ int _K4_ReducePathComponent(graphP theGraph, K4SearchContext *context, int R, in
     // will remain in the embedding, and the core embedder (Walkup) uses a
     // value greater than the current vertex to indicate an unvisited vertex
     _K4_ClearVisitedInPathComponent(theGraph, R, prevLink, A);
-    gp_SetVertexVisitedInfo(theGraph, A, gp_GetN(theGraph));
+    gp_SetVertexVisitedIndex(theGraph, A, gp_GetN(theGraph));
 
     // Find the component's remaining edges e_A and e_R incident to A and R
     ZPrevLink = prevLink;
