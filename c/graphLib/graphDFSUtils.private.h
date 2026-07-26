@@ -25,10 +25,13 @@ extern "C"
         leastAncestor: min(DFI of neighbors connected by backedge)
         lowpoint: min(leastAncestor, min(lowpoint of DFS Children))
         visitedIndex: enables algorithms to manage vertex visitation with more than
-                    just a flag.  For example, the planarity test flags visitation
-                    as a step number that implicitly resets on each step, whereas
-                    part of the planar drawing method signifies a first visitation
-                    by storing the index of the first edge used to reach a vertex
+                    just a flag. In a directed depth-first search, the vertex index
+                    indicates the discovery time, so visitedIndex is needed for the
+                    finish time. The planarity test uses this member to flag
+                    visitation as a step number so that it implicitly resets on each
+                    vertex step of embedding. The planar graph drawing method
+                    signifies a first visitation by storing the index of the first
+                    _edge_ used to reach a vertex.
     */
 
     struct DFSUtils_VertexInfo
