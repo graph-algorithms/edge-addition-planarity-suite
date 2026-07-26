@@ -34,6 +34,7 @@ int runTestAllGraphsTest(char const *commandString, char const *infileName);
 int runHideRestoreTest(graphP theGraph);
 int runIdentifyContractTest(graphP theGraph);
 int runDigraphTests(void);
+int runDrawPlanarNonplanarWriteTest(void);
 int testPetersenDigraph(void);
 
 /****************************************************************************
@@ -280,6 +281,12 @@ int runSpecificGraphTests(void)
         retVal = NOTOK;
     }
 
+    if (runDrawPlanarNonplanarWriteTest() != OK)
+    {
+        gp_ErrorMessage("DrawPlanar non-planar write test on Petersen.txt failed.");
+        retVal = NOTOK;
+    }
+
     if (runSpecificGraphTest("-o", "Petersen.txt", TRUE) != OK)
     {
         gp_ErrorMessage("Outerplanarity test on Petersen.txt failed.");
@@ -356,6 +363,63 @@ int runSpecificGraphTests(void)
     }
 
     return retVal;
+}
+
+int runDrawPlanarNonplanarWriteTest(void)
+{
+    int Result = OK;
+    graphP theGraph = NULL, origGraph = NULL;
+    char *actualOutput = NULL;
+
+    gp_Message("Calling DrawPlanar Algorithm on a non-planar graph.");
+
+    if ((theGraph = gp_New()) == NULL)
+        Result = NOTOK;
+
+    if (Result == OK && gp_Read(theGraph, "Petersen.txt") != OK)
+        Result = NOTOK;
+
+    if (Result == OK && (origGraph = gp_DupGraph(theGraph)) == NULL)
+        Result = NOTOK;
+
+    if (Result == OK && gp_ExtendWith_DrawPlanar(theGraph) != OK)
+        Result = NOTOK;
+
+    if (Result == OK)
+    {
+        Result = gp_Embed(theGraph, EMBEDFLAGS_DRAWPLANAR);
+        if (Result != NONEMBEDDABLE)
+            Result = NOTOK;
+    }
+
+    if (Result == NONEMBEDDABLE)
+    {
+        Result = gp_TestEmbedResultIntegrity(theGraph, origGraph, Result);
+        if (Result != NONEMBEDDABLE)
+            Result = NOTOK;
+    }
+
+    if (Result == NONEMBEDDABLE && gp_SortVertices(theGraph) != OK)
+        Result = NOTOK;
+
+    if (Result == NONEMBEDDABLE)
+    {
+        if (gp_WriteToString(theGraph, &actualOutput, WRITE_ADJLIST) != OK ||
+            TextFileMatchesString("Petersen.txt.Planarity.out.txt", actualOutput) != TRUE)
+        {
+            Result = NOTOK;
+        }
+        else
+            gp_Message("Test succeeded.\n");
+    }
+
+    if (actualOutput != NULL)
+        free(actualOutput);
+
+    gp_Free(&origGraph);
+    gp_Free(&theGraph);
+
+    return Result == NONEMBEDDABLE ? OK : Result;
 }
 
 int runGraphTransformationTests(void)
@@ -1033,14 +1097,14 @@ int runGraphTransformationTest(char const *command, char const *infileName, int 
 
                 if (Result == TRUE)
                 {
-                    gp_Message("For the transformation %s on file \"%.*s\", "
+                    gp_Message("For the transformation %s on \"%.*s\", "
                                "actual output matched expected output file.",
                                command, FILENAME_MAX, infileName);
                     Result = OK;
                 }
                 else
                 {
-                    gp_ErrorMessage("For the transformation %s on file \"%.*s\", "
+                    gp_ErrorMessage("For the transformation %s on \"%.*s\", "
                                     "actual output did not match expected "
                                     "output file.",
                                     command, FILENAME_MAX, infileName);
