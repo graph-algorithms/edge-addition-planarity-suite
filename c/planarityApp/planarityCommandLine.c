@@ -371,18 +371,16 @@ int runDrawPlanarNonplanarWriteTest(void)
     graphP theGraph = NULL, origGraph = NULL;
     char *actualOutput = NULL;
 
-    if ((theGraph = gp_New()) == NULL)
-        return NOTOK;
+    gp_Message("Calling DrawPlanar Algorithm on a non-planar graph.");
 
-    if (gp_Read(theGraph, "Petersen.txt") != OK)
+    if ((theGraph = gp_New()) == NULL)
         Result = NOTOK;
 
-    if (Result == OK)
-    {
-        origGraph = gp_DupGraph(theGraph);
-        if (origGraph == NULL)
-            Result = NOTOK;
-    }
+    if (Result == OK && gp_Read(theGraph, "Petersen.txt") != OK)
+        Result = NOTOK;
+
+    if (Result == OK && (origGraph = gp_DupGraph(theGraph)) == NULL)
+        Result = NOTOK;
 
     if (Result == OK && gp_ExtendWith_DrawPlanar(theGraph) != OK)
         Result = NOTOK;
@@ -411,6 +409,8 @@ int runDrawPlanarNonplanarWriteTest(void)
         {
             Result = NOTOK;
         }
+        else
+            gp_Message("Test succeeded.\n");
     }
 
     if (actualOutput != NULL)
@@ -1097,14 +1097,14 @@ int runGraphTransformationTest(char const *command, char const *infileName, int 
 
                 if (Result == TRUE)
                 {
-                    gp_Message("For the transformation %s on file \"%.*s\", "
+                    gp_Message("For the transformation %s on \"%.*s\", "
                                "actual output matched expected output file.",
                                command, FILENAME_MAX, infileName);
                     Result = OK;
                 }
                 else
                 {
-                    gp_ErrorMessage("For the transformation %s on file \"%.*s\", "
+                    gp_ErrorMessage("For the transformation %s on \"%.*s\", "
                                     "actual output did not match expected "
                                     "output file.",
                                     command, FILENAME_MAX, infileName);
