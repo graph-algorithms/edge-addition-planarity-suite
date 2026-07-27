@@ -2219,7 +2219,7 @@ int _DeleteEdge(graphP theGraph, int e)
     theGraph->M--;
 
     // If records e and eTwin were not the last in the edge record array,
-    // then record a new hole in the edge array. */
+    // then record a new hole in the edge array. 
     if (e < gp_UpperBoundEdges(theGraph))
     {
         if (theGraph->edgeHoles->size + 1 >= theGraph->edgeHoles->capacity)
