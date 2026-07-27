@@ -73,7 +73,6 @@ int _K4_TestPathComponentForAncestor(graphP theGraph, int R, int prevLink, int A
 void _K4_ClearVisitedInPathComponent(graphP theGraph, int R, int prevLink, int A);
 int _K4_DeleteUnmarkedEdgesInPathComponent(graphP theGraph, int R, int prevLink, int A);
 int _K4_DeleteUnmarkedEdgesInBicomp(graphP theGraph, K4SearchContext *context, int BicompRoot);
-int _K4_DeleteEdge(graphP theGraph, K4SearchContext *context, int e);
 
 int _K4_RestoreReducedPath(graphP theGraph, K4SearchContext *context, int e);
 int _K4_RestoreAndOrientReducedPaths(graphP theGraph, K4SearchContext *context);
@@ -1018,7 +1017,7 @@ int _K4_ReducePathComponent(graphP theGraph, K4SearchContext *context, int R, in
  per vertex in the bicomp.
 
  This is the same as _DeleteUnmarkedEdgesInBicomp(), except it calls
- the overloaded _K4_DeleteEdge() rather than gp_DeleteEdge()
+ the overloaded gp_DeleteEdge()
 
  Returns OK on success, NOTOK on implementation failure
  ********************************************************************/
@@ -1041,27 +1040,11 @@ int _K4_DeleteUnmarkedEdgesInBicomp(graphP theGraph, K4SearchContext *context, i
 
             eNext = gp_GetNextEdge(theGraph, e);
             if (!gp_GetEdgeVisited(theGraph, e))
-                _K4_DeleteEdge(theGraph, context, e);
+                gp_DeleteEdge(theGraph, e);
             e = eNext;
         }
     }
     return OK;
-}
-
-/********************************************************************
- Edge deletion that occurs during a reduction or restoration of a
- reduction is augmented by clearing the K_4 search-specific
- data members.  This is augmentation is not needed in the delete edge
- operations that happen once a K_4 homeomorph has been found and
- marked for isolation.
- ********************************************************************/
-
-int _K4_DeleteEdge(graphP theGraph, K4SearchContext *context, int e)
-{
-    _K4Search_InitEdgeRec(context, e);
-    _K4Search_InitEdgeRec(context, gp_GetTwin(theGraph, e));
-
-    return gp_DeleteEdge(theGraph, e);
 }
 
 /****************************************************************************
@@ -1255,7 +1238,7 @@ int _K4_DeleteUnmarkedEdgesInPathComponent(graphP theGraph, int R, int prevLink,
     while (sp_NonEmpty(theGraph->theStack))
     {
         sp_Pop(theGraph->theStack, e);
-        _K4_DeleteEdge(theGraph, context, e);
+        gp_DeleteEdge(theGraph, e);
     }
 
     return OK;
@@ -1321,8 +1304,8 @@ int _K4_ReducePathToEdge(graphP theGraph, K4SearchContext *context, int edgeType
         v_A = gp_GetNeighbor(theGraph, e_A);
 
         // Now delete the two edges that join the path to the bicomp.
-        _K4_DeleteEdge(theGraph, context, e_R);
-        _K4_DeleteEdge(theGraph, context, e_A);
+        gp_DeleteEdge(theGraph, e_R);
+        gp_DeleteEdge(theGraph, e_A);
 
         // Now add a single edge to represent the path
         // We use 1^Rlink, for example, because Rlink was the link from R that indicated e_R,
@@ -1401,7 +1384,7 @@ int _K4_RestoreReducedPath(graphP theGraph, K4SearchContext *context, int e)
 
     // We first delete the edge represented by e and eTwin. We do so before
     // restoring the path to ensure we do not exceed the maximum edge capacity.
-    _K4_DeleteEdge(theGraph, context, e);
+    gp_DeleteEdge(theGraph, e);
 
     // Now we add the two edges to reconnect the reduced path represented
     // by the edge [e, eTwin].  The edge record in u is added between e0 and e1.
