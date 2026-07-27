@@ -53,7 +53,7 @@ void _ClearEdgeVisitedFlags(graphP theGraph);
 int _ClearAllVisitedFlagsInBicomp(graphP theGraph, int BicompRoot);
 int _ClearAllVisitedFlagsInOtherBicomps(graphP theGraph, int BicompRoot);
 void _ClearEdgeVisitedFlagsInUnembeddedEdges(graphP theGraph);
-int _FillVertexVisitedInfoInBicomp(graphP theGraph, int BicompRoot, int FillValue);
+int _FillVertexVisitedIndexInBicomp(graphP theGraph, int BicompRoot, int FillValue);
 int _ClearObstructionMarksInBicomp(graphP theGraph, int BicompRoot);
 
 int _gp_FindEdge(graphP theGraph, int u, int v);
@@ -114,10 +114,13 @@ graphP gp_New(void)
     graphP theGraph = (graphP)calloc(1, sizeof(graphStruct));
     graphFunctionTableP functionTable = (graphFunctionTableP)calloc(1, sizeof(graphFunctionTableStruct));
     graphPrivateDataP theGraphPrivateData = (graphPrivateDataP)calloc(1, sizeof(graphPrivateDataStruct));
+    graphExtensionP *extensionLookupTable = (graphExtensionP *)calloc(MAXNUMSUPPORTEDEXTENSIONS+1, sizeof(graphExtensionP));
 
-    if (theGraph != NULL && functionTable != NULL && theGraphPrivateData != NULL)
+    if (theGraph != NULL && functionTable != NULL &&
+        theGraphPrivateData != NULL && extensionLookupTable != NULL)
     {
         theGraph->privateData = (void *)theGraphPrivateData;
+        theGraph->extensionLookupTable = extensionLookupTable;
 
         theGraph->functions = functionTable;
         _InitFunctionTable(theGraph);
@@ -140,6 +143,11 @@ graphP gp_New(void)
         {
             free(theGraphPrivateData);
             theGraphPrivateData = NULL;
+        }
+        if (extensionLookupTable != NULL)
+        {
+            free(extensionLookupTable);
+            extensionLookupTable = NULL;
         }
     }
 
@@ -504,7 +512,7 @@ void _InitVertexInfo(graphP theGraph, int v)
     gp_SetVertexLeastAncestor(theGraph, v, NIL);
     gp_SetVertexLowpoint(theGraph, v, NIL);
 
-    gp_SetVertexVisitedInfo(theGraph, v, NIL);
+    gp_SetVertexVisitedIndex(theGraph, v, NIL);
     gp_SetVertexPertinentEdge(theGraph, v, NIL);
     gp_SetVertexPertinentRootsList(theGraph, v, NIL);
     gp_SetVertexFuturePertinentChild(theGraph, v, NIL);
@@ -753,9 +761,9 @@ int _SetAllVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x)
 }
 
 /********************************************************************
- _FillVertexVisitedInfoInBicomp()
+ _FillVertexVisitedIndexInBicomp()
 
- Places the FillValue into the visitedInfo of the non-virtual vertices
+ Places the FillValue into the visitedIndex of the non-virtual vertices
  in the bicomp rooted by BicompRoot.
 
  This method uses the stack but preserves whatever may have been
@@ -765,7 +773,7 @@ int _SetAllVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x)
  Returns OK on success, NOTOK on implementation failure.
  ********************************************************************/
 
-int _FillVertexVisitedInfoInBicomp(graphP theGraph, int BicompRoot, int FillValue)
+int _FillVertexVisitedIndexInBicomp(graphP theGraph, int BicompRoot, int FillValue)
 {
     int v, e;
     int stackBottom = sp_GetCurrentSize(theGraph->theStack);
@@ -776,7 +784,7 @@ int _FillVertexVisitedInfoInBicomp(graphP theGraph, int BicompRoot, int FillValu
         sp_Pop(theGraph->theStack, v);
 
         if (gp_IsNotVirtualVertex(theGraph, v))
-            gp_SetVertexVisitedInfo(theGraph, v, FillValue);
+            gp_SetVertexVisitedIndex(theGraph, v, FillValue);
 
         e = gp_GetFirstEdge(theGraph, v);
         while (gp_IsEdge(theGraph, e))
@@ -919,6 +927,11 @@ void gp_Free(graphP *pGraph)
     {
         free((*pGraph)->privateData);
         (*pGraph)->privateData = NULL;
+    }
+    if ((*pGraph)->extensionLookupTable != NULL)
+    {
+        free((*pGraph)->extensionLookupTable);
+        (*pGraph)->extensionLookupTable = NULL;
     }
 
     free(*pGraph);
