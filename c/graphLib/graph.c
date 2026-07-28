@@ -1309,7 +1309,7 @@ int gp_CreateRandomGraphEx(graphP theGraph, int numEdges)
     int N, maxNumEdges, maxPlanarEdges, numPlanarCoreEdges;
     int lowerVertex, upperVertex, faceCapacity, optionalEdgeCapacity;
     int optionalEdgeCount = 0, faceCount = 0, addAllPlanarEdges;
-    int Result = NOTOK;
+    int Result = OK;
     int v, u, e;
 
     // Parameter checks: Must have a graph of at least three vertices, and the
@@ -1343,7 +1343,10 @@ int gp_CreateRandomGraphEx(graphP theGraph, int numEdges)
         optionalEdges = (randomGraphEdgeRec *)calloc((size_t)optionalEdgeCapacity, sizeof(randomGraphEdgeRec));
 
     if (faces == NULL || (!addAllPlanarEdges && numPlanarCoreEdges > N - 1 && optionalEdges == NULL))
+    {
+        Result = NOTOK;
         goto gp_CreateRandomGraphEx_Cleanup;
+    }
 
     faces[faceCount].a = lowerVertex;
     faces[faceCount].b = lowerVertex + 1;
@@ -1358,12 +1361,14 @@ int gp_CreateRandomGraphEx(graphP theGraph, int numEdges)
     if (gp_AddEdge(theGraph, lowerVertex, 0, lowerVertex + 1, 0) != OK ||
         gp_AddEdge(theGraph, lowerVertex + 1, 0, lowerVertex + 2, 0) != OK)
     {
+        Result = NOTOK;
         goto gp_CreateRandomGraphEx_Cleanup;
     }
 
     if (_ProcessRandomGraphOptionalEdge(theGraph, optionalEdges, optionalEdgeCapacity, &optionalEdgeCount,
                                         addAllPlanarEdges, lowerVertex + 2, lowerVertex) != OK)
     {
+        Result = NOTOK;
         goto gp_CreateRandomGraphEx_Cleanup;
     }
 
@@ -1378,7 +1383,10 @@ int gp_CreateRandomGraphEx(graphP theGraph, int numEdges)
         int i;
 
         if (gp_AddEdge(theGraph, v, 0, faceVertices[treeEdgeIndex], 0) != OK)
+        {
+            Result = NOTOK;
             goto gp_CreateRandomGraphEx_Cleanup;
+        }
 
         for (i = 0; i < 3; ++i)
         {
@@ -1386,6 +1394,7 @@ int gp_CreateRandomGraphEx(graphP theGraph, int numEdges)
                 _ProcessRandomGraphOptionalEdge(theGraph, optionalEdges, optionalEdgeCapacity,
                                                 &optionalEdgeCount, addAllPlanarEdges, v, faceVertices[i]) != OK)
             {
+                Result = NOTOK;
                 goto gp_CreateRandomGraphEx_Cleanup;
             }
         }
@@ -1395,7 +1404,10 @@ int gp_CreateRandomGraphEx(graphP theGraph, int numEdges)
         faces[faceIndex].c = v;
 
         if (faceCount + 2 > faceCapacity)
+        {
+            Result = NOTOK;
             goto gp_CreateRandomGraphEx_Cleanup;
+        }
 
         faces[faceCount].a = b;
         faces[faceCount].b = c;
@@ -1415,12 +1427,18 @@ int gp_CreateRandomGraphEx(graphP theGraph, int numEdges)
         for (e = 0; e < optionalEdgeCount && gp_GetM(theGraph) < numPlanarCoreEdges; ++e)
         {
             if (gp_AddEdge(theGraph, optionalEdges[e].u, 0, optionalEdges[e].v, 0) != OK)
+            {
+                Result = NOTOK;
                 goto gp_CreateRandomGraphEx_Cleanup;
+            }
         }
     }
 
     if (gp_GetM(theGraph) < numPlanarCoreEdges)
+    {
+        Result = NOTOK;
         goto gp_CreateRandomGraphEx_Cleanup;
+    }
 
     /* Add additional random edges if the limit has not yet been reached. */
 
@@ -1432,7 +1450,10 @@ int gp_CreateRandomGraphEx(graphP theGraph, int numEdges)
         if (u != v && !gp_IsNeighbor(theGraph, u, v))
         {
             if (gp_AddEdge(theGraph, u, 0, v, 0) != OK)
+            {
+                Result = NOTOK;
                 goto gp_CreateRandomGraphEx_Cleanup;
+            }
         }
     }
 
@@ -1448,8 +1469,6 @@ int gp_CreateRandomGraphEx(graphP theGraph, int numEdges)
 
     for (v = lowerVertex; v < upperVertex; ++v)
         gp_SetVertexParent(theGraph, v, NIL);
-
-    Result = OK;
 
 gp_CreateRandomGraphEx_Cleanup:
 
