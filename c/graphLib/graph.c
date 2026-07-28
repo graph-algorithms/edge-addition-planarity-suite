@@ -1463,8 +1463,16 @@ int gp_CreateRandomGraphEx(graphP theGraph, int numEdges)
 
 gp_CreateRandomGraphEx_Cleanup:
 
-    free(optionalEdges);
-    free(faces);
+    if (optionalEdges != NULL)
+    {
+        free(optionalEdges);
+        optionalEdges = NULL;
+    }
+    if (faces != NULL)
+    {
+        free(faces);
+        faces = NULL;
+    }
 
     return Result;
 }
