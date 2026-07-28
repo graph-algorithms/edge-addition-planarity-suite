@@ -53,7 +53,7 @@ void _ClearEdgeVisitedFlags(graphP theGraph);
 int _ClearAllVisitedFlagsInBicomp(graphP theGraph, int BicompRoot);
 int _ClearAllVisitedFlagsInOtherBicomps(graphP theGraph, int BicompRoot);
 void _ClearEdgeVisitedFlagsInUnembeddedEdges(graphP theGraph);
-int _FillVertexVisitedInfoInBicomp(graphP theGraph, int BicompRoot, int FillValue);
+int _FillVertexVisitedIndexInBicomp(graphP theGraph, int BicompRoot, int FillValue);
 int _ClearObstructionMarksInBicomp(graphP theGraph, int BicompRoot);
 
 int _gp_FindEdge(graphP theGraph, int u, int v);
@@ -105,6 +105,7 @@ void _ShuffleRandomGraphEdgeCandidates(randomGraphEdgeRec *edgeList, int edgeCou
 void _AttachEdgeRecord(graphP theGraph, int v, int e, int link, int newEdge);
 void _DetachEdgeRecord(graphP theGraph, int e);
 void _RestoreEdgeRecord(graphP theGraph, int e);
+int _DeleteEdge(graphP theGraph, int e);
 
 /* Private functions for which there are FUNCTION POINTERS */
 
@@ -127,10 +128,13 @@ graphP gp_New(void)
     graphP theGraph = (graphP)calloc(1, sizeof(graphStruct));
     graphFunctionTableP functionTable = (graphFunctionTableP)calloc(1, sizeof(graphFunctionTableStruct));
     graphPrivateDataP theGraphPrivateData = (graphPrivateDataP)calloc(1, sizeof(graphPrivateDataStruct));
+    graphExtensionP *extensionLookupTable = (graphExtensionP *)calloc(MAXNUMSUPPORTEDEXTENSIONS+1, sizeof(graphExtensionP));
 
-    if (theGraph != NULL && functionTable != NULL && theGraphPrivateData != NULL)
+    if (theGraph != NULL && functionTable != NULL &&
+        theGraphPrivateData != NULL && extensionLookupTable != NULL)
     {
         theGraph->privateData = (void *)theGraphPrivateData;
+        theGraph->extensionLookupTable = extensionLookupTable;
 
         theGraph->functions = functionTable;
         _InitFunctionTable(theGraph);
@@ -153,6 +157,11 @@ graphP gp_New(void)
         {
             free(theGraphPrivateData);
             theGraphPrivateData = NULL;
+        }
+        if (extensionLookupTable != NULL)
+        {
+            free(extensionLookupTable);
+            extensionLookupTable = NULL;
         }
     }
 
@@ -198,6 +207,7 @@ void _InitFunctionTable(graphP theGraph)
         theGraph->functions->fpReadPostprocess = _ReadPostprocess;
         theGraph->functions->fpWritePostprocess = _WritePostprocess;
 
+        theGraph->functions->fpDeleteEdge = _DeleteEdge;
         theGraph->functions->fpHideEdge = _HideEdge;
         theGraph->functions->fpRestoreEdge = _RestoreEdge;
         theGraph->functions->fpHideVertex = _HideVertex;
@@ -516,7 +526,7 @@ void _InitVertexInfo(graphP theGraph, int v)
     gp_SetVertexLeastAncestor(theGraph, v, NIL);
     gp_SetVertexLowpoint(theGraph, v, NIL);
 
-    gp_SetVertexVisitedInfo(theGraph, v, NIL);
+    gp_SetVertexVisitedIndex(theGraph, v, NIL);
     gp_SetVertexPertinentEdge(theGraph, v, NIL);
     gp_SetVertexPertinentRootsList(theGraph, v, NIL);
     gp_SetVertexFuturePertinentChild(theGraph, v, NIL);
@@ -765,9 +775,9 @@ int _SetAllVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x)
 }
 
 /********************************************************************
- _FillVertexVisitedInfoInBicomp()
+ _FillVertexVisitedIndexInBicomp()
 
- Places the FillValue into the visitedInfo of the non-virtual vertices
+ Places the FillValue into the visitedIndex of the non-virtual vertices
  in the bicomp rooted by BicompRoot.
 
  This method uses the stack but preserves whatever may have been
@@ -777,7 +787,7 @@ int _SetAllVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x)
  Returns OK on success, NOTOK on implementation failure.
  ********************************************************************/
 
-int _FillVertexVisitedInfoInBicomp(graphP theGraph, int BicompRoot, int FillValue)
+int _FillVertexVisitedIndexInBicomp(graphP theGraph, int BicompRoot, int FillValue)
 {
     int v, e;
     int stackBottom = sp_GetCurrentSize(theGraph->theStack);
@@ -788,7 +798,7 @@ int _FillVertexVisitedInfoInBicomp(graphP theGraph, int BicompRoot, int FillValu
         sp_Pop(theGraph->theStack, v);
 
         if (gp_IsNotVirtualVertex(theGraph, v))
-            gp_SetVertexVisitedInfo(theGraph, v, FillValue);
+            gp_SetVertexVisitedIndex(theGraph, v, FillValue);
 
         e = gp_GetFirstEdge(theGraph, v);
         while (gp_IsEdge(theGraph, e))
@@ -931,6 +941,11 @@ void gp_Free(graphP *pGraph)
     {
         free((*pGraph)->privateData);
         (*pGraph)->privateData = NULL;
+    }
+    if ((*pGraph)->extensionLookupTable != NULL)
+    {
+        free((*pGraph)->extensionLookupTable);
+        (*pGraph)->extensionLookupTable = NULL;
     }
 
     free(*pGraph);
@@ -2088,10 +2103,7 @@ int gp_InsertEdge(graphP theGraph, int u, int e_u, int e_ulink,
 
  NOTE: This method reinitializes the edge records for e and its twin
        in the base graph data structure. Extensions having parallel
-       edge record extension data elements must implement and use their
-       own edge deletion methods, which must then call gp_DeleteEdge().
-       Calling gp_DeleteEdge() does not currently clear data in extension
-       data structures.
+       edge record extension data elements must overload gp_DeleteEdge().
 
  Returns OK on success, NOTOK on failure
  ****************************************************************************/
@@ -2104,6 +2116,11 @@ int gp_DeleteEdge(graphP theGraph, int e)
         gp_EdgeNotInUse(theGraph, e))
         return NOTOK;
 
+    return theGraph->functions->fpDeleteEdge(theGraph, e);
+}
+
+int _DeleteEdge(graphP theGraph, int e)
+{
     // Delete the edge records e and eTwin from their adjacency lists.
     _DetachEdgeRecord(theGraph, e);
     _DetachEdgeRecord(theGraph, gp_GetTwin(theGraph, e));
@@ -2121,7 +2138,7 @@ int gp_DeleteEdge(graphP theGraph, int e)
     theGraph->M--;
 
     // If records e and eTwin were not the last in the edge record array,
-    // then record a new hole in the edge array. */
+    // then record a new hole in the edge array. 
     if (e < gp_UpperBoundEdges(theGraph))
     {
         if (theGraph->edgeHoles->size + 1 >= theGraph->edgeHoles->capacity)
