@@ -128,7 +128,7 @@ graphP gp_New(void)
     graphP theGraph = (graphP)calloc(1, sizeof(graphStruct));
     graphFunctionTableP functionTable = (graphFunctionTableP)calloc(1, sizeof(graphFunctionTableStruct));
     graphPrivateDataP theGraphPrivateData = (graphPrivateDataP)calloc(1, sizeof(graphPrivateDataStruct));
-    graphExtensionP *extensionLookupTable = (graphExtensionP *)calloc(MAXNUMSUPPORTEDEXTENSIONS+1, sizeof(graphExtensionP));
+    graphExtensionP *extensionLookupTable = (graphExtensionP *)calloc(MAXNUMSUPPORTEDEXTENSIONS + 1, sizeof(graphExtensionP));
 
     if (theGraph != NULL && functionTable != NULL &&
         theGraphPrivateData != NULL && extensionLookupTable != NULL)
@@ -1299,7 +1299,11 @@ void _ShuffleRandomGraphEdgeCandidates(randomGraphEdgeRec *edgeList, int edgeCou
  subgraph of a random maximal planar graph. The output graph will
  have exactly numEdges edges.
 
- This function assumes the caller has already called srand().
+ NOTE: This function assumes the caller has already called srand().
+
+ NOTE: If numEdges is larger than the edge capacity of theGraph, then
+       then its value is reduced internally. The caller can invoke
+       gp_EnsureEdgeCapacity() beforehand, if desired.
  ********************************************************************/
 
 int gp_CreateRandomGraphEx(graphP theGraph, int numEdges)
@@ -2144,7 +2148,7 @@ int _DeleteEdge(graphP theGraph, int e)
     theGraph->M--;
 
     // If records e and eTwin were not the last in the edge record array,
-    // then record a new hole in the edge array. 
+    // then record a new hole in the edge array.
     if (e < gp_UpperBoundEdges(theGraph))
     {
         if (theGraph->edgeHoles->size + 1 >= theGraph->edgeHoles->capacity)
