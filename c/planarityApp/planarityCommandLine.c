@@ -1168,7 +1168,7 @@ int callRandomGraphs(int argc, char *argv[])
     if (argc == (6 + offset))
         outfileName = argv[5 + offset];
 
-    return RandomGraphs(commandString, NumGraphs, SizeOfGraphs, outfileName);
+    return RandomGraphs(commandString, NumGraphs, SizeOfGraphs, outfileName, FALSE, FALSE);
 }
 
 /****************************************************************************
