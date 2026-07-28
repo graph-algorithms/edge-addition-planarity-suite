@@ -151,7 +151,12 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
     // Generate and process the number of graphs requested
     for (K = 0; K < NumGraphs; K++)
     {
+// #define TEST_GP_CREATERANDOMGRAPHEX
+#ifndef TEST_GP_CREATERANDOMGRAPHEX
         if ((Result = gp_CreateRandomGraph(theGraph)) == OK)
+#else
+        if ((Result = gp_CreateRandomGraphEx(theGraph, gp_GetRandomNumber(gp_GetN(theGraph), gp_GetEdgeCapacity(theGraph)))) == OK)
+#endif
         {
             if (theG6WriteIterator != NULL)
             {

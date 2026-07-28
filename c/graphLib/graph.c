@@ -96,7 +96,6 @@ typedef struct
     int c;
 } randomGraphFaceRec;
 
-int _GetRandomNumber(int NMin, int NMax);
 int _AddRandomGraphEdgeCandidate(randomGraphEdgeRec *edgeList, int edgeListCapacity, int *pEdgeListCount, int u, int v);
 int _ProcessRandomGraphOptionalEdge(graphP theGraph, randomGraphEdgeRec *edgeList, int edgeListCapacity,
                                     int *pEdgeListCount, int addImmediately, int u, int v);
@@ -1185,7 +1184,7 @@ int gp_CreateRandomGraph(graphP theGraph)
 
     for (v = gp_LowerBoundVertices(theGraph) + 1; v < gp_UpperBoundVertices(theGraph); ++v)
     {
-        u = _GetRandomNumber(gp_LowerBoundVertices(theGraph), v - 1);
+        u = gp_GetRandomNumber(gp_LowerBoundVertices(theGraph), v - 1);
         if (gp_AddEdge(theGraph, u, 0, v, 0) != OK)
             return NOTOK;
     }
@@ -1194,15 +1193,15 @@ int gp_CreateRandomGraph(graphP theGraph)
             (actually, leave open a small chance that no
             additional edges will be added). */
 
-    M = _GetRandomNumber(7 * N / 8, theGraph->edgeCapacity);
+    M = gp_GetRandomNumber(7 * N / 8, theGraph->edgeCapacity);
 
     if (M > N * (N - 1) / 2)
         M = N * (N - 1) / 2;
 
     for (m = N - 1; m < M; m++)
     {
-        u = _GetRandomNumber(gp_LowerBoundVertices(theGraph), gp_UpperBoundVertices(theGraph) - 2);
-        v = _GetRandomNumber(u + 1, gp_UpperBoundVertices(theGraph) - 1);
+        u = gp_GetRandomNumber(gp_LowerBoundVertices(theGraph), gp_UpperBoundVertices(theGraph) - 2);
+        v = gp_GetRandomNumber(u + 1, gp_UpperBoundVertices(theGraph) - 1);
 
         // If the edge (u,v) exists, decrement eIndex to try again
         if (gp_IsNeighbor(theGraph, u, v))
@@ -1217,30 +1216,6 @@ int gp_CreateRandomGraph(graphP theGraph)
     }
 
     return OK;
-}
-
-/********************************************************************
- _GetRandomNumber()
- This function generates a random number between NMin and NMax
- inclusive.  It assumes that the caller has called srand().
- It calls rand(), but before truncating to the proper range,
- it adds the high bits of the rand() result into the low bits.
- The result of this is that the randomness appearing in the
- truncated bits also has an affect on the non-truncated bits.
- ********************************************************************/
-
-int _GetRandomNumber(int NMin, int NMax)
-{
-    int N = rand();
-
-    if (NMax < NMin)
-        return NMin;
-
-    N += ((N & 0xFFFF0000) >> 16);
-    N += ((N & 0x0000FF00) >> 8);
-    N &= 0x7FFFFFF;
-    N %= (NMax - NMin + 1);
-    return N + NMin;
 }
 
 int _AddRandomGraphEdgeCandidate(randomGraphEdgeRec *edgeList, int edgeListCapacity, int *pEdgeListCount, int u, int v)
@@ -1276,7 +1251,7 @@ void _ShuffleRandomGraphEdgeCandidates(randomGraphEdgeRec *edgeList, int edgeCou
 
     for (e = edgeCount - 1; e > 0; --e)
     {
-        int e2 = _GetRandomNumber(0, e);
+        int e2 = gp_GetRandomNumber(0, e);
         randomGraphEdgeRec temp = edgeList[e];
 
         edgeList[e] = edgeList[e2];
@@ -1378,12 +1353,12 @@ int gp_CreateRandomGraphEx(graphP theGraph, int numEdges)
 
     for (v = lowerVertex + 3; v < upperVertex; ++v)
     {
-        int faceIndex = _GetRandomNumber(0, faceCount - 1);
+        int faceIndex = gp_GetRandomNumber(0, faceCount - 1);
         int a = faces[faceIndex].a;
         int b = faces[faceIndex].b;
         int c = faces[faceIndex].c;
         int faceVertices[3] = {a, b, c};
-        int treeEdgeIndex = _GetRandomNumber(0, 2);
+        int treeEdgeIndex = gp_GetRandomNumber(0, 2);
         int i;
 
         if (gp_AddEdge(theGraph, v, 0, faceVertices[treeEdgeIndex], 0) != OK)
@@ -1448,8 +1423,8 @@ int gp_CreateRandomGraphEx(graphP theGraph, int numEdges)
 
     while (gp_GetM(theGraph) < numEdges)
     {
-        u = _GetRandomNumber(lowerVertex, upperVertex - 1);
-        v = _GetRandomNumber(lowerVertex, upperVertex - 1);
+        u = gp_GetRandomNumber(lowerVertex, upperVertex - 1);
+        v = gp_GetRandomNumber(lowerVertex, upperVertex - 1);
 
         if (u != v && !gp_IsNeighbor(theGraph, u, v))
         {
