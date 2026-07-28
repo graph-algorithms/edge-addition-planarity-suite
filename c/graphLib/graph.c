@@ -1457,19 +1457,6 @@ int gp_CreateRandomGraphEx(graphP theGraph, int numEdges)
         }
     }
 
-    /* Clear the edge types back to 'unknown' */
-
-    for (e = gp_LowerBoundEdges(theGraph); e < gp_UpperBoundEdges(theGraph); ++e)
-    {
-        gp_ClearEdgeType(theGraph, e);
-        gp_ClearEdgeVisited(theGraph, e);
-    }
-
-    /* Put all DFSParent indicators back to NIL */
-
-    for (v = lowerVertex; v < upperVertex; ++v)
-        gp_SetVertexParent(theGraph, v, NIL);
-
 gp_CreateRandomGraphEx_Cleanup:
 
     free(optionalEdges);
