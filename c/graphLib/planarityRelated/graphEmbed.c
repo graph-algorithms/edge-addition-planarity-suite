@@ -414,7 +414,7 @@ int _EmbeddingInitialize_Incremental(graphP theGraph)
 
     for (v = gp_UpperBoundVertices(theGraph) - 1; v >= gp_LowerBoundVertices(theGraph); --v)
     {
-        gp_SetVertexVisitedInfo(theGraph, v, gp_GetN(theGraph));
+        gp_SetVertexVisitedIndex(theGraph, v, gp_GetN(theGraph));
 
         child = gp_GetVertexSortedDFSChildList(theGraph, v);
         gp_SetVertexFuturePertinentChild(theGraph, v, child);
