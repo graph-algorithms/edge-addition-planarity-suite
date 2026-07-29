@@ -53,7 +53,8 @@ void _ClearEdgeVisitedFlags(graphP theGraph);
 int _ClearAllVisitedFlagsInBicomp(graphP theGraph, int BicompRoot);
 int _ClearAllVisitedFlagsInOtherBicomps(graphP theGraph, int BicompRoot);
 void _ClearEdgeVisitedFlagsInUnembeddedEdges(graphP theGraph);
-int _FillVertexVisitedIndexInBicomp(graphP theGraph, int BicompRoot, int FillValue);
+int _FillVertexVisitedIndexes(graphP theGraph, int FillValue);
+int _FillVertexVisitedIndexesInBicomp(graphP theGraph, int BicompRoot, int FillValue);
 int _ClearObstructionMarksInBicomp(graphP theGraph, int BicompRoot);
 
 int _gp_FindEdge(graphP theGraph, int u, int v);
@@ -775,7 +776,27 @@ int _SetAllVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x)
 }
 
 /********************************************************************
- _FillVertexVisitedIndexInBicomp()
+ _FillVertexVisitedIndexes()
+
+ Places the FillValue into the visitedIndex of all non-virtual vertices
+ in the graph.
+
+ Returns OK on success, NOTOK on failure.
+ ********************************************************************/
+
+int _FillVertexVisitedIndexes(graphP theGraph, int FillValue)
+{
+    if (theGraph == NULL)
+        return NOTOK;
+
+    for (int v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
+        gp_SetVertexVisitedIndex(theGraph, v, FillValue);
+
+    return OK;
+}
+
+/********************************************************************
+ _FillVertexVisitedIndexesInBicomp()
 
  Places the FillValue into the visitedIndex of the non-virtual vertices
  in the bicomp rooted by BicompRoot.
@@ -787,7 +808,7 @@ int _SetAllVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x)
  Returns OK on success, NOTOK on implementation failure.
  ********************************************************************/
 
-int _FillVertexVisitedIndexInBicomp(graphP theGraph, int BicompRoot, int FillValue)
+int _FillVertexVisitedIndexesInBicomp(graphP theGraph, int BicompRoot, int FillValue)
 {
     int v, e;
     int stackBottom = sp_GetCurrentSize(theGraph->theStack);

@@ -24,6 +24,7 @@ See the LICENSE.TXT file for licensing information.
 /* Imported functions */
 
 extern void _ClearVertexVisitedFlags(graphP theGraph, int);
+extern int _FillVertexVisitedIndexes(graphP theGraph, int FillValue);
 
 extern int _IsolateKuratowskiSubgraph(graphP theGraph, int v, int R);
 extern int _IsolateOuterplanarObstruction(graphP theGraph, int v, int R);
@@ -326,6 +327,15 @@ int _EmbeddingInitialize_Incremental(graphP theGraph)
         graphFlags = gp_GetGraphFlags(theGraph);
     }
 
+    // The planarity embedder uses the visitedIndex like a flag, except that equality
+    // means 'set' and greater than means 'clear'. So, the 'flag' is implicitly
+    // cleared when the main embedding loop decrements v to process the next lower
+    // numbered vertex (because then all the visitedIndex values are greater than v).
+    // This call starts all 'flags' as clear since gp_UpperBoundVertices() returns
+    // a value one greater than the highest numbered vertex.
+    if (_FillVertexVisitedIndexes(theGraph, gp_UpperBoundVertices(theGraph)) != OK)
+        return NOTOK;
+
     theStack = theGraph->theStack;
 
     if (sp_GetCapacity(theStack) < 2 * 2 * gp_GetM(theGraph) + 2)
@@ -410,8 +420,6 @@ int _EmbeddingInitialize_Incremental(graphP theGraph)
 
     for (v = gp_UpperBoundVertices(theGraph) - 1; v >= gp_LowerBoundVertices(theGraph); --v)
     {
-        gp_SetVertexVisitedIndex(theGraph, v, gp_GetN(theGraph));
-
         child = gp_GetVertexSortedDFSChildList(theGraph, v);
         gp_SetVertexFuturePertinentChild(theGraph, v, child);
 
@@ -612,7 +620,7 @@ int _EmbeddingInitialize_Full(graphP theGraph)
     for (v = gp_UpperBoundVertices(theGraph) - 1; v >= gp_LowerBoundVertices(theGraph); --v)
     {
         // (7) Initialize for pertinence management
-        gp_SetVertexVisitedIndex(theGraph, v, gp_GetN(theGraph));
+        gp_SetVertexVisitedIndex(theGraph, v, gp_UpperBoundVertices(theGraph));
 
         // (7) Initialize for future pertinence management
         child = gp_GetVertexSortedDFSChildList(theGraph, v);
