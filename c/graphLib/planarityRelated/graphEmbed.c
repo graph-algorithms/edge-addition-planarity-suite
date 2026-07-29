@@ -410,7 +410,7 @@ int _EmbeddingInitialize(graphP theGraph)
     for (v = gp_UpperBoundVertices(theGraph) - 1; v >= gp_LowerBoundVertices(theGraph); --v)
     {
         // (7) Initialize for pertinence management
-        gp_SetVertexVisitedInfo(theGraph, v, gp_GetN(theGraph));
+        gp_SetVertexVisitedIndex(theGraph, v, gp_GetN(theGraph));
 
         // (7) Initialize for future pertinence management
         child = gp_GetVertexSortedDFSChildList(theGraph, v);
@@ -789,7 +789,7 @@ void _WalkUp(graphP theGraph, int v, int e)
         {
             // If the current vertex along the external face was visited in this step v,
             // then the bicomp root and its ancestor roots have already been added.
-            if (gp_GetVertexVisitedInfo(theGraph, Zig) == v)
+            if (gp_GetVertexVisitedIndex(theGraph, Zig) == v)
                 break;
 
             // Store the bicomp root that was found
@@ -802,28 +802,28 @@ void _WalkUp(graphP theGraph, int v, int e)
 
             // If the opposing vertex was already marked visited in this step, then a prior
             // Walkup already recorded as pertinent the bicomp root and its ancestor roots.
-            if (gp_GetVertexVisitedInfo(theGraph, nextZag) == v)
+            if (gp_GetVertexVisitedIndex(theGraph, nextZag) == v)
                 break;
         }
 
         // Obtain the next vertex in the parallel direction and perform the analogous logic
         else if (gp_IsVirtualVertex(theGraph, (nextZag = gp_GetExtFaceVertex(theGraph, Zag, 1 ^ ZagPrevLink))))
         {
-            if (gp_GetVertexVisitedInfo(theGraph, Zag) == v)
+            if (gp_GetVertexVisitedIndex(theGraph, Zag) == v)
                 break;
             R = nextZag;
             nextZig = gp_GetExtFaceVertex(theGraph, R,
                                           gp_GetExtFaceVertex(theGraph, R, 0) == Zag ? 1 : 0);
-            if (gp_GetVertexVisitedInfo(theGraph, nextZig) == v)
+            if (gp_GetVertexVisitedIndex(theGraph, nextZig) == v)
                 break;
         }
 
         // The bicomp root was not found in either direction.
         else
         {
-            if (gp_GetVertexVisitedInfo(theGraph, Zig) == v)
+            if (gp_GetVertexVisitedIndex(theGraph, Zig) == v)
                 break;
-            if (gp_GetVertexVisitedInfo(theGraph, Zag) == v)
+            if (gp_GetVertexVisitedIndex(theGraph, Zag) == v)
                 break;
             R = NIL;
         }
@@ -831,8 +831,8 @@ void _WalkUp(graphP theGraph, int v, int e)
         // This Walkup has now finished with another vertex along each of the parallel
         // paths, so they are marked visited in step v so that future Walkups in this
         // step v can break if these vertices are encountered again.
-        gp_SetVertexVisitedInfo(theGraph, Zig, v);
-        gp_SetVertexVisitedInfo(theGraph, Zag, v);
+        gp_SetVertexVisitedIndex(theGraph, Zig, v);
+        gp_SetVertexVisitedIndex(theGraph, Zag, v);
 
         // If both directions found new non-root vertices, then proceed with parallel external face traversal
         if (gp_IsNotVirtualVertex(theGraph, R))

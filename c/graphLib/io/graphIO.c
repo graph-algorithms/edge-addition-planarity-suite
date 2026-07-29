@@ -133,7 +133,7 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
     int ErrorCode = OK;
 
     int N = 0, v = NIL, W = NIL, adjList = NIL, e = NIL, indexValue = NIL;
-    int zeroBased = FALSE;
+    int zeroBased = FALSE, inputOffset = NIL, inputTerminatorLowerBound = NIL;
 
     if (!sf_IsValidStrOrFile(inputContainer))
         return NOTOK;
@@ -174,15 +174,19 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
         if (sf_ReadSkipWhitespace(inputContainer) != OK)
             return NOTOK;
 
-        if (indexValue == 0 && v == gp_LowerBoundVertexStorage(theGraph))
-            zeroBased = TRUE;
+        if (v == gp_LowerBoundVertexStorage(theGraph))
+        {
+            // Infer whether the input file is zero-based or one-based from
+            // the first vertex label, then convert file labels to storage indices.
+            // A zero-based file terminates adjacency lists with any negative
+            // value; a one-based file terminates them with any value below 1.
+            zeroBased = indexValue == 0;
+            inputOffset = gp_LowerBoundVertexStorage(theGraph) - (zeroBased ? 0 : 1);
+            inputTerminatorLowerBound = zeroBased ? 0 : 1;
+        }
 
-        // If we are reading a zero-based input file, then we have to add to the
-        // indexValue for v the offset of the first vertex in storage, which is
-        // usually 1 (because we compile with USE_1BASEDARRAYS by default) but
-        // which may be 0 if this library was compiled with USE_0BASEDARRAYS.
-        if (zeroBased)
-            indexValue += gp_LowerBoundVertexStorage(theGraph);
+        // Convert the file vertex label to the corresponding storage location.
+        indexValue += inputOffset;
 
         // The vertices are expected to be in numeric ascending order
         if (indexValue != v)
@@ -236,17 +240,16 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
             if (sf_ReadSkipWhitespace(inputContainer) != OK)
                 return NOTOK;
 
-            // If we are reading a zero-based input file, then we have to add to W
-            // the offset of the first vertex in storage, which is usually 1
-            // (because we compile with USE_1BASEDARRAYS by default) but which may
-            // be 0 if this library was compiled with USE_0BASEDARRAYS.
-            if (zeroBased)
-                W += gp_LowerBoundVertexStorage(theGraph);
-
-            // A value below the valid range indicates the adjacency list end
-            // This was written before gp_IsNotVertex() existed
-            if (W < gp_LowerBoundVertices(theGraph))
+            // The adjacency list terminator belongs to the input numbering base,
+            // so detect it before converting labels to storage locations.
+            if (W < inputTerminatorLowerBound)
                 break;
+
+            W += inputOffset;
+
+            // A value outside the valid range is an error.
+            if (W < gp_LowerBoundVertices(theGraph))
+                return NOTOK;
 
             // A value above the valid range is an error
             if (W >= gp_UpperBoundVertices(theGraph))
