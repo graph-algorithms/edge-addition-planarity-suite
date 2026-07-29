@@ -2,10 +2,10 @@ name: Dev Platforms
 # This comprises a non-exhaustive list of supported development platforms
 on:
   workflow_dispatch:
-  pull_request:
-    branches: [ '**' ]
-    paths-ignore:
-      - '**/*.md'
+#  pull_request:
+#    branches: [ '**' ]
+#    paths-ignore:
+#      - '**/*.md'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
