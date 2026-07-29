@@ -21,7 +21,11 @@ extern "C"
 #define SUFFIXMAXLENGTH 32
 #define COMMANDSTRINGMAXLENGTH 2
 
+#define MODECHOICECHARS "rsmn"
 #define YESNOCHOICECHARS "yYnN"
+#define RANDOMGRAPHSOUTPUTCHOICECHARS "aAgG"
+#define GRAPHALGORITHMCHOICES "pdo234"
+#define TRANSFORMGRAPHOUTPUTFORMATCHOICES "gam"
 
     char const *GetProjectTitle(void);
     char const *GetAlgorithmFlags(void);
