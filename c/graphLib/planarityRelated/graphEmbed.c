@@ -319,6 +319,13 @@ int _EmbeddingInitialize_Incremental(graphP theGraph)
         graphFlags = gp_GetGraphFlags(theGraph);
     }
 
+    if (!(graphFlags & GRAPHFLAGS_LOWPOINTSCOMPUTED))
+    {
+        if (gp_ComputeLowpoints(theGraph) != OK)
+            return NOTOK;
+        graphFlags = gp_GetGraphFlags(theGraph);
+    }
+
     theStack = theGraph->theStack;
 
     if (sp_GetCapacity(theStack) < 2 * 2 * gp_GetM(theGraph) + 2)
@@ -401,12 +408,6 @@ int _EmbeddingInitialize_Incremental(graphP theGraph)
         }
     }
 
-    if (!(graphFlags & GRAPHFLAGS_LOWPOINTSCOMPUTED))
-    {
-        if (gp_ComputeLowpoints(theGraph) != OK)
-            return NOTOK;
-    }
-
     for (v = gp_UpperBoundVertices(theGraph) - 1; v >= gp_LowerBoundVertices(theGraph); --v)
     {
         gp_SetVertexVisitedIndex(theGraph, v, gp_GetN(theGraph));
@@ -441,8 +442,6 @@ int _EmbeddingInitialize_Incremental(graphP theGraph)
             gp_SetExtFaceVertex(theGraph, v, 1, R);
         }
     }
-
-    theGraph->graphFlags |= GRAPHFLAGS_LOWPOINTSCOMPUTED;
 
     _gp_LogLine("graphEmbed.c/_EmbeddingInitialize_Incremental() end\n");
 
