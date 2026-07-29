@@ -284,9 +284,7 @@ int _EmbeddingInitialize_Incremental(graphP theGraph)
 {
     stackP theStack;
     unsigned graphFlags;
-    int graphAlreadySorted;
-    int v, R, uparent, u, uneighbor, e, f, eTwin, ePrev, eNext;
-    int child;
+    int v, R, uparent, u, uneighbor, e, f, eTwin, ePrev, eNext, child;
 
     _gp_LogLine("graphEmbed.c/_EmbeddingInitialize_Incremental() start\n");
 
@@ -314,7 +312,13 @@ int _EmbeddingInitialize_Incremental(graphP theGraph)
         graphFlags = gp_GetGraphFlags(theGraph);
     }
 
-    graphAlreadySorted = (graphFlags & GRAPHFLAGS_SORTEDBYDFI) != 0;
+    if (!(graphFlags & GRAPHFLAGS_SORTEDBYDFI))
+    {
+        if (gp_SortVertices(theGraph) != OK)
+            return NOTOK;
+        graphFlags = gp_GetGraphFlags(theGraph);
+    }
+
     theStack = theGraph->theStack;
 
     if (sp_GetCapacity(theStack) < 2 * 2 * gp_GetM(theGraph) + 2)
@@ -343,12 +347,10 @@ int _EmbeddingInitialize_Incremental(graphP theGraph)
                     if (gp_GetEdgeType(theGraph, e) != EDGE_TYPE_CHILD)
                         return NOTOK;
 
-                    child = graphAlreadySorted ? u : gp_GetIndex(theGraph, u);
-
                     gp_SetVertexSortedDFSChildList(theGraph, uparent,
-                                                   gp_AppendDFSChild(theGraph, uparent, child));
+                                                   gp_AppendDFSChild(theGraph, uparent, u));
 
-                    R = gp_GetBicompRootFromDFSChild(theGraph, child);
+                    R = gp_GetBicompRootFromDFSChild(theGraph, u);
                     gp_SetFirstEdge(theGraph, R, e);
                     gp_SetLastEdge(theGraph, R, e);
                 }
@@ -397,13 +399,6 @@ int _EmbeddingInitialize_Incremental(graphP theGraph)
                 }
             }
         }
-    }
-
-    if (!graphAlreadySorted)
-    {
-        if (gp_SortVertices(theGraph) != OK)
-            return NOTOK;
-        graphFlags = gp_GetGraphFlags(theGraph);
     }
 
     if (!(graphFlags & GRAPHFLAGS_LOWPOINTSCOMPUTED))
