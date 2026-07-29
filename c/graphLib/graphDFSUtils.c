@@ -567,6 +567,30 @@ int gp_ComputeLeastAncestors(graphP theGraph)
 }
 
 /********************************************************************
+ gp_CountConnectedComponents()
+
+ Once the DFS tree has been created in theGraph, this method returns
+ the number of connected components identified by DFS tree roots.
+ Returns -1 on error, such as a NULL graph or DFS tree not created yet.
+ ********************************************************************/
+int gp_CountConnectedComponents(graphP theGraph)
+{
+    int v, connectedComponents;
+
+    if (theGraph == NULL)
+        return -1;
+    if (!(gp_GetGraphFlags(theGraph) & GRAPHFLAGS_DFSNUMBERED))
+        return -1;
+
+    connectedComponents = 0;
+    for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
+        if (_gp_IsDFSTreeRoot(theGraph, v))
+            connectedComponents++;
+
+    return connectedComponents;
+}
+
+/********************************************************************
  gp_GetParent()
 
  Once the DFS tree has been created in theGraph, this method returns
@@ -587,6 +611,27 @@ int gp_GetParent(graphP theGraph, int v)
     }
 
     return gp_GetVertexParent(theGraph, v);
+}
+
+/********************************************************************
+ gp_GetVisitedIndex()
+
+ This method returns the visited index of the given vertex v.
+ Returns NIL on error, such as invalid parameters.
+ ********************************************************************/
+int gp_GetVisitedIndex(graphP theGraph, int v)
+{
+    if (theGraph == NULL ||
+        v < gp_LowerBoundVertices(theGraph) || v >= gp_UpperBoundVertices(theGraph))
+    {
+#ifdef DEBUG
+        NOTOK;
+        ;
+#endif
+        return NIL;
+    }
+
+    return gp_GetVertexVisitedIndex(theGraph, v);
 }
 
 /********************************************************************
