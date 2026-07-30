@@ -21,7 +21,11 @@ extern "C"
 #define SUFFIXMAXLENGTH 32
 #define COMMANDSTRINGMAXLENGTH 2
 
+#define MODECHOICECHARS "rsmn"
 #define YESNOCHOICECHARS "yYnN"
+#define RANDOMGRAPHSOUTPUTCHOICECHARS "aAgG"
+#define GRAPHALGORITHMCHOICES "pdo234"
+#define TRANSFORMGRAPHOUTPUTFORMATCHOICES "gam"
 
     char const *GetProjectTitle(void);
     char const *GetAlgorithmFlags(void);
@@ -38,7 +42,7 @@ extern "C"
         char const *infileName, char *outfileName, char *outfile2Name,
         char *inputStr, char **pOutputStr, char **pOutput2Str);
     int RandomGraph(char const *const commandString, int extraEdges, int numVertices, char *outfileName, char *outfile2Name);
-    int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraphs, char *outfileName);
+    int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraphs, char *outfileName, int forceQuiet, int useExGenerator);
     int TransformGraph(char const *const commandString, char const *const infileName, char *inputStr, int *outputBase, char const *outfileName, char **pOutputStr);
     int TestAllGraphs(char const *const commandString, char const *const infileName, char *outfileName, char **pOutputStr);
 
