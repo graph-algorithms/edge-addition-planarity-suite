@@ -596,16 +596,18 @@ int runTestAllGraphsTests(void)
 int runFaceListTest(void)
 {
     graphP theGraph = NULL, origGraph = NULL;
-    char *faceList = NULL;
-    char const *infileName = NULL, *expectedOutfileName = NULL;
+    char *faceList = NULL, *drawing = NULL;
+    char const *infileName = NULL, *expectedOutfileName = NULL, *expectedDrawingFileName = NULL;
     int embedResult, retVal = OK;
 
 #ifdef USE_1BASEDARRAYS
     infileName = "faceListComponents.txt";
     expectedOutfileName = "faceListComponents.out.txt";
+    expectedDrawingFileName = "faceListComponents.Drawing.txt";
 #else
     infileName = "faceListComponents.0-based.txt";
     expectedOutfileName = "faceListComponents.0-based.out.txt";
+    expectedDrawingFileName = "faceListComponents.0-based.Drawing.txt";
 #endif
 
     gp_Message("Starting Face List Test");
@@ -613,18 +615,25 @@ int runFaceListTest(void)
     if ((theGraph = gp_New()) == NULL ||
         gp_Read(theGraph, infileName) != OK ||
         (origGraph = gp_DupGraph(theGraph)) == NULL ||
-        gp_ExtendWith_Planarity(theGraph) != OK)
+        gp_ExtendWith_DrawPlanar(theGraph) != OK)
     {
         gp_ErrorMessage("Unable to set up the face list sample graph.");
         retVal = NOTOK;
         goto runFaceListTest_Cleanup;
     }
 
-    embedResult = gp_Embed(theGraph, EMBEDFLAGS_PLANAR);
+    embedResult = gp_Embed(theGraph, EMBEDFLAGS_DRAWPLANAR);
     if (embedResult != OK ||
         gp_TestEmbedResultIntegrity(theGraph, origGraph, embedResult) != OK)
     {
         gp_ErrorMessage("Unable to embed the face list sample graph.");
+        retVal = NOTOK;
+        goto runFaceListTest_Cleanup;
+    }
+
+    if (gp_SortVertices(theGraph) != OK)
+    {
+        gp_ErrorMessage("Unable to restore original vertex labelling.");
         retVal = NOTOK;
         goto runFaceListTest_Cleanup;
     }
@@ -650,10 +659,19 @@ int runFaceListTest(void)
         goto runFaceListTest_Cleanup;
     }
 
+    if (gp_DrawPlanar_RenderToString(theGraph, &drawing) != OK || drawing == NULL ||
+        TextFileMatchesString(expectedDrawingFileName, drawing) != TRUE)
+    {
+        gp_ErrorMessage("Face list sample drawing did not match the expected output.");
+        retVal = NOTOK;
+        goto runFaceListTest_Cleanup;
+    }
+
     gp_Message("Finished Face List Test.");
 
 runFaceListTest_Cleanup:
 
+    free(drawing);
     free(faceList);
     gp_Free(&origGraph);
     gp_Free(&theGraph);
