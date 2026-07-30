@@ -285,7 +285,7 @@ int _EmbeddingInitialize_Incremental(graphP theGraph)
 {
     stackP theStack;
     unsigned graphFlags;
-    int v, R, uparent, u, uneighbor, e, f, eTwin, ePrev, eNext, child;
+    int v, R, uparent, u, uneighbor, e, f, eTwin, ePrev, eNext;
 
     _gp_LogLine("graphEmbed.c/_EmbeddingInitialize_Incremental() start\n");
 
@@ -306,6 +306,10 @@ int _EmbeddingInitialize_Incremental(graphP theGraph)
         return NOTOK;
     }
 
+    // Start with the standard initializations to perform depth-first search,
+    // sorting vertices (in linear time) by their depth-first indexes, and
+    // computing least ancestor and lowpoint values for the vertices, if they
+    // have not already been done before calling gp_Embed()
     if (!(graphFlags & GRAPHFLAGS_DFSNUMBERED))
     {
         if (gp_DepthFirstSearch(theGraph) != OK)
@@ -336,6 +340,12 @@ int _EmbeddingInitialize_Incremental(graphP theGraph)
     if (_FillVertexVisitedIndexes(theGraph, gp_UpperBoundVertices(theGraph)) != OK)
         return NOTOK;
 
+    // Use the stack and visited flags to traverse the previously created DFS tree to
+    // do initializations that build up the sorted DFS child lists of each vertex, to
+    // associate each tree edge with the bicomp root associated with the child endpoint,
+    // and to remove the back edges from being embedded in the graph and instead put
+    // their forward edge records in the forward edge lists of the ancestor endpoints
+    // (so back edges from a vertex to its descendants can be easily processed).
     theStack = theGraph->theStack;
 
     if (sp_GetCapacity(theStack) < 2 * 2 * gp_GetM(theGraph) + 2)
@@ -361,32 +371,44 @@ int _EmbeddingInitialize_Incremental(graphP theGraph)
 
                 if (gp_IsEdge(theGraph, e))
                 {
+                    // If we are visiting a previously unvisited vertex via an existing edge,
+                    // then of course we are arriving via a DFS tree edge from its parent.
                     if (gp_GetEdgeType(theGraph, e) != EDGE_TYPE_CHILD)
                         return NOTOK;
 
+                    // Build up the sorted DFS child lists of each vertex (by appending
+                    // the vertex being visited to the sorted DFS child list of its parent)
                     gp_SetVertexSortedDFSChildList(theGraph, uparent,
                                                    gp_AppendDFSChild(theGraph, uparent, u));
 
+                    // Associate each tree edge with the bicomp root associated with the child endpoint
                     R = gp_GetBicompRootFromDFSChild(theGraph, u);
                     gp_SetFirstEdge(theGraph, R, e);
                     gp_SetLastEdge(theGraph, R, e);
                 }
 
+                // Iterate the adjacency list of vertex u
                 e = gp_GetFirstEdge(theGraph, u);
                 while (gp_IsEdge(theGraph, e))
                 {
                     if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_CHILD)
                     {
+                        // If the edge record points to an unvisited DFS child, then
+                        // that is a new vertex to add to the navigation stack
                         if (!gp_GetVisited(theGraph, gp_GetNeighbor(theGraph, e)))
                             sp_Push2(theStack, u, e);
                     }
                     else if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_BACK)
                     {
+                        // For each back edge record, we get the associated forward
+                        // edge record (into eTwin) and info about it.
                         eTwin = gp_GetTwin(theGraph, e);
                         uneighbor = gp_GetNeighbor(theGraph, e);
                         ePrev = gp_GetPrevEdge(theGraph, eTwin);
                         eNext = gp_GetNextEdge(theGraph, eTwin);
 
+                        // The forward edge record is then removed from the adjacency list
+                        // of the ancestor (uneighbor), and...
                         if (gp_IsEdge(theGraph, ePrev))
                             gp_SetNextEdge(theGraph, ePrev, eNext);
                         else
@@ -396,6 +418,7 @@ int _EmbeddingInitialize_Incremental(graphP theGraph)
                         else
                             gp_SetLastEdge(theGraph, uneighbor, ePrev);
 
+                        // ... placed into the forward edge list of the ancestor (uneighbor)
                         if (gp_IsEdge(theGraph, f = gp_GetVertexFwdEdgeList(theGraph, uneighbor)))
                         {
                             ePrev = gp_GetPrevEdge(theGraph, f);
@@ -418,32 +441,71 @@ int _EmbeddingInitialize_Incremental(graphP theGraph)
         }
     }
 
-    for (v = gp_UpperBoundVertices(theGraph) - 1; v >= gp_LowerBoundVertices(theGraph); --v)
-    {
-        child = gp_GetVertexSortedDFSChildList(theGraph, v);
-        gp_SetVertexFuturePertinentChild(theGraph, v, child);
+    // Initialize the future pertinent child of each vertex to just be the first
+    // element of the sorted DFS child list. Initially, the embedding comprises
+    // only DFS tree edges embedded as singleton bicomps, so every DFS child is
+    // separated from its DFS parent(in a separate bicomp from its parent). In the
+    // first articulation of the edge addition planarity algorithm, the knowledge
+    // of future pertinent children was managed by a "separated DFS child list" that
+    // was sorted by lowpoint. In the current implementation, this has been
+    // relaxed. We start out with any separated DFS child, but then just before
+    // the future pertinent child must be used in a vertex step v, it is updated to
+    // be the first child that has any lowpoint less than v (it doesn't have to be
+    // the lowest, so we don't need a separated DFS child list strictly sorted by
+    // lowpoint). See the invocations of gp_UpdateVertexFuturePertinentChild().
+    for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
+        gp_SetVertexFuturePertinentChild(theGraph, v, gp_GetVertexSortedDFSChildList(theGraph, v));
 
+    // A second pass through the vertices to set up the embedding of all
+    // DFS tree edges as singleton comps
+    for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
+    {
         if (_gp_IsDFSTreeRoot(theGraph, v))
         {
+            // Each DFS tree root vertex is not going to be in a singleton bicomp
+            // with its DFS parent because it has no parent, so it will initially
+            // have no adjacency list entries (rather than having an adjacency list
+            // entry for a tree edge to its parent, as in the else clause).
             gp_SetFirstEdge(theGraph, v, NIL);
             gp_SetLastEdge(theGraph, v, NIL);
         }
         else
         {
+            // For each vertex v that is not a DFS tree root, v will be joining
+            // a virtual vertex R representing its DFS parent in an embedding of
+            // a singleton biconnected component containing only the DFS tree edge
+            // between v and the virtual vertex R representing v's DFS parent.
+            // In the preceding initialization for-loop, the DFS tree edge was
+            // already linked to R, so we obtain R now...
             R = gp_GetBicompRootFromDFSChild(theGraph, v);
 
+            // ... and then ensure that the DFS tree edge record is alone in the
+            // adjacency list of R...
             e = gp_GetFirstEdge(theGraph, R);
             gp_SetPrevEdge(theGraph, e, NIL);
             gp_SetNextEdge(theGraph, e, NIL);
 
+            // ... then we get the twin edge record that will be going into
+            // v's adjacency list, and we reset its neighbor from indicating
+            // v's DFS parent to indicating R (because R is the virtual vertex
+            // representing v's parent in the bicomp that will contain v).
             eTwin = gp_GetTwin(theGraph, e);
             gp_SetNeighbor(theGraph, eTwin, R);
 
+            // Now we place that twin edge record into v's adjacency list as
+            // its only adjacency.
             gp_SetFirstEdge(theGraph, v, eTwin);
             gp_SetLastEdge(theGraph, v, eTwin);
             gp_SetPrevEdge(theGraph, eTwin, NIL);
             gp_SetNextEdge(theGraph, eTwin, NIL);
 
+            // And finally we initialize the auxiliary data structure that
+            // optimizes knowledge and management of the vertices on the
+            // external face of the bicomp rooted by R. At this initial stage,
+            // the external face contains only R and v. The links are arranged
+            // so that one can navigate around the external face from R to v a
+            // and back to R in either a clockwise or counterclockwise direction
+            // by consistently following either 0 links or 1 links.
             gp_SetExtFaceVertex(theGraph, R, 0, v);
             gp_SetExtFaceVertex(theGraph, R, 1, v);
             gp_SetExtFaceVertex(theGraph, v, 0, R);
@@ -473,6 +535,9 @@ int _EmbeddingInitialize_Incremental(graphP theGraph)
  Afterward, the vertices are sorted by their DFIs, the lowpoint values
  are assigned and then the DFS tree edges stored in virtual vertices
  during the DFS are used to create the DFS tree embedding.
+
+ This performs the same function as _EmbeddingInitialize_Incremental()
+ but has optimized total gp_Embed() execution by about 12%.
  ********************************************************************/
 int _EmbeddingInitialize_Full(graphP theGraph)
 {
@@ -931,7 +996,9 @@ int _MergeBicomps(graphP theGraph, int v, int RootVertex, int W, int WPrevLink)
         gp_DeleteVertexPertinentRoot(theGraph, Z, R);
 
         // If the merge will place the current future pertinence child into the same bicomp as Z,
-        // then we advance to the next child (or NIL) because future pertinence is
+        // then we advance to the next child (or NIL) because future pertinence is based on
+        // back edge connections from vertices in other bicomps (i.e., DFS subtrees rooted by
+        // other DFS children of Z that have not yet been merged into the bicomp with Z).
         if (gp_GetDFSChildFromBicompRoot(theGraph, R) == gp_GetVertexFuturePertinentChild(theGraph, Z))
         {
             gp_SetVertexFuturePertinentChild(theGraph, Z,
