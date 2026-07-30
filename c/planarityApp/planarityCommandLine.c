@@ -24,7 +24,7 @@ int callTestAllGraphs(int argc, char *argv[]);
 int callTransformGraph(int argc, char *argv[]);
 
 int runSpecificGraphTests(void);
-int runRandomGraphTests(void);
+int runRandomGraphsTests(void);
 int runGraphTransformationTests(void);
 int runTestAllGraphsTests(void);
 int runHideRestoreTests(void);
@@ -228,7 +228,7 @@ int runQuickRegressionTests(int argc, char *argv[])
 
     if (runSpecificGraphTests() != OK)
         retVal = NOTOK;
-    else if (runRandomGraphTests() != OK)
+    else if (runRandomGraphsTests() != OK)
         retVal = NOTOK;
     else if (runGraphTransformationTests() != OK)
         retVal = NOTOK;
@@ -253,7 +253,7 @@ int runQuickRegressionTests(int argc, char *argv[])
     return retVal;
 }
 
-int runRandomGraphTests(void)
+int runRandomGraphsTests(void)
 {
     int retVal = OK;
 
@@ -272,7 +272,7 @@ int runRandomGraphTests(void)
     }
 
     if (retVal == OK)
-        gp_Message("Finished Random Graph Tests.");
+        gp_Message("Finished Random Graph Tests.\n");
 
     return retVal;
 }
@@ -1525,7 +1525,8 @@ int runDigraphTests(void)
         gp_ErrorMessage("Petersen Digraph test failed.");
         retVal = NOTOK;
     }
+    else
+        gp_Message("Finished Digraph Tests.\n");
 
-    gp_Message("Finished Digraph Tests.");
     return retVal;
 }
