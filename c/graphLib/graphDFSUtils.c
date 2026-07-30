@@ -326,6 +326,7 @@ int _SortVertices(graphP theGraph)
 
     /* Invert the bit that records the sort order of the graph */
 
+    theGraph->graphFlags &= ~GRAPHFLAGS_LOWPOINTSCOMPUTED;
     theGraph->graphFlags ^= GRAPHFLAGS_SORTEDBYDFI;
 
     _gp_LogLine("graphDFSUtils.c/_SortVertices() end\n");
@@ -468,6 +469,8 @@ int gp_ComputeLowpoints(graphP theGraph)
     }
 
     _gp_LogLine("graphDFSUtils.c/gp_ComputeLowpoints() end\n");
+
+    theGraph->graphFlags |= GRAPHFLAGS_LOWPOINTSCOMPUTED;
 
     return OK;
 }

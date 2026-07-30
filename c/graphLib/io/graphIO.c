@@ -177,7 +177,7 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
         if (v == gp_LowerBoundVertexStorage(theGraph))
         {
             // Infer whether the input file is zero-based or one-based from
-            // the first vertex label, then convert file labels to storage indices.
+            // the first vertex label, then convert file labels to storage indexes.
             // A zero-based file terminates adjacency lists with any negative
             // value; a one-based file terminates them with any value below 1.
             zeroBased = indexValue == 0;

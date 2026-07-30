@@ -79,7 +79,7 @@ extern int debugNOTOK(void);
 #undef USE_1BASEDARRAYS
 #endif
 
-/* Array indices are used as pointers, and NIL means bad pointer */
+/* Array indexes are used as pointers, and NIL means bad pointer */
 #ifdef USE_1BASEDARRAYS
 // This definition is used with 1-based array indexing
 #define NIL 0
