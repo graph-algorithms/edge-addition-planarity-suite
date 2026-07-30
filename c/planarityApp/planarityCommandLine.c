@@ -24,6 +24,7 @@ int callTestAllGraphs(int argc, char *argv[]);
 int callTransformGraph(int argc, char *argv[]);
 
 int runSpecificGraphTests(void);
+int runRandomGraphsTests(void);
 int runGraphTransformationTests(void);
 int runTestAllGraphsTests(void);
 int runFaceListTest(void);
@@ -228,6 +229,8 @@ int runQuickRegressionTests(int argc, char *argv[])
 
     if (runSpecificGraphTests() != OK)
         retVal = NOTOK;
+    else if (runRandomGraphsTests() != OK)
+        retVal = NOTOK;
     else if (runGraphTransformationTests() != OK)
         retVal = NOTOK;
     else if (runTestAllGraphsTests() != OK)
@@ -249,6 +252,30 @@ int runQuickRegressionTests(int argc, char *argv[])
 
     chdir(origDir);
     FlushConsole(stdout);
+
+    return retVal;
+}
+
+int runRandomGraphsTests(void)
+{
+    int retVal = OK;
+
+    gp_Message("Starting Random Graph Tests");
+
+    if (RandomGraphs("-p", 1000, 20, NULL, TRUE, FALSE) != OK)
+    {
+        gp_ErrorMessage("gp_CreateRandomGraph() test failed.");
+        retVal = NOTOK;
+    }
+
+    if (RandomGraphs("-p", 1000, 20, NULL, TRUE, TRUE) != OK)
+    {
+        gp_ErrorMessage("gp_CreateRandomGraphEx() test failed.");
+        retVal = NOTOK;
+    }
+
+    if (retVal == OK)
+        gp_Message("Finished Random Graph Tests.\n");
 
     return retVal;
 }
@@ -1587,7 +1614,8 @@ int runDigraphTests(void)
         gp_ErrorMessage("Petersen Digraph test failed.");
         retVal = NOTOK;
     }
+    else
+        gp_Message("Finished Digraph Tests.\n");
 
-    gp_Message("Finished Digraph Tests.");
     return retVal;
 }
