@@ -13,7 +13,7 @@ See the LICENSE.TXT file for licensing information.
 extern int _ClearAllVisitedFlagsInBicomp(graphP theGraph, int BicompRoot);
 extern int _ClearAllVisitedFlagsInOtherBicomps(graphP theGraph, int BicompRoot);
 extern void _ClearEdgeVisitedFlagsInUnembeddedEdges(graphP theGraph);
-extern int _FillVertexVisitedIndexInBicomp(graphP theGraph, int BicompRoot, int FillValue);
+extern int _FillVertexVisitedIndexesInBicomp(graphP theGraph, int BicompRoot, int FillValue);
 
 // extern int  _GetBicompSize(graphP theGraph, int BicompRoot);
 extern int _HideInternalEdges(graphP theGraph, int vertex);
@@ -207,7 +207,7 @@ int _SearchForK33InBicomp(graphP theGraph, K33SearchContext *context, int v, int
     /* Set visitedIndex values in the bicomp to the initialized state so the planarity
         algorithm can properly do the Walkup procedure in future steps */
 
-    if (_FillVertexVisitedIndexInBicomp(theGraph, IC->r, gp_GetN(theGraph)) != OK)
+    if (_FillVertexVisitedIndexesInBicomp(theGraph, IC->r, gp_GetN(theGraph)) != OK)
         return NOTOK;
 
     /* We now intend to ignore the pertinence of W (conceptually eliminating
