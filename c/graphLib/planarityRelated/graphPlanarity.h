@@ -32,9 +32,11 @@ extern "C"
     // can be OK if the graph is embedded or embeddable, NONEMBEDDABLE if a minimal
     // subgraph obstructing embedding has been isolated, or NOTOK on error
     int gp_Embed(graphP theGraph, unsigned embedFlags);
+    int gp_TestEmbedResultIntegrity(graphP theGraph, graphP origGraph, int embedResult);
+
+    // Graph embedding face enumeration and listing methods
     int gp_CountEmbeddingFaces(graphP theGraph);
     int gp_CreateEmbeddingFaceList(graphP theGraph, char **pFaceList);
-    int gp_TestEmbedResultIntegrity(graphP theGraph, graphP origGraph, int embedResult);
 
 // A return result value for gp_Embed() to indicate success prior to embedding completion,
 // due to finding an obstruction to embedding.
