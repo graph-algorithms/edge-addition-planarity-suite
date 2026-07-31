@@ -51,6 +51,7 @@ extern "C"
 
         int sb_ConcatString(strBufP theStrBuf, char const *s);
         int sb_ConcatChar(strBufP theStrBuf, char ch);
+        int sb_ConcatInt(strBufP theStrBuf, int value);
 
         char *sb_TakeString(strBufP theStrBuf);
 

@@ -5,9 +5,11 @@ See the LICENSE.TXT file for licensing information.
 */
 
 #include "../lowLevelUtils/appconst.h"
+#include "../lowLevelUtils/apiutils.h"
 #include "strbuf.h"
 #include <stdlib.h>
 #include <ctype.h>
+#include <stdio.h>
 
 /********************************************************************
  sb_New()
@@ -222,6 +224,21 @@ int sb_ConcatChar(strBufP theStrBuf, char ch)
     s[0] = ch;
     s[1] = '\0';
     return sb_ConcatString(theStrBuf, s);
+}
+
+/********************************************************************
+ sb_ConcatInt()
+ Converts theInt into a string, then invokes sb_ConcatString().
+ Returns Same as sb_ConcatString()
+ ********************************************************************/
+int sb_ConcatInt(strBufP theStrBuf, int theInt)
+{
+    char numberStr[MAXCHARSFOR32BITINT + 1];
+
+    if (sprintf(numberStr, "%d", theInt) < 1)
+        return NOTOK;
+
+    return sb_ConcatString(theStrBuf, numberStr);
 }
 
 /********************************************************************

@@ -27,6 +27,7 @@ int runSpecificGraphTests(void);
 int runRandomGraphsTests(void);
 int runGraphTransformationTests(void);
 int runTestAllGraphsTests(void);
+int runFaceListTest(void);
 int runHideRestoreTests(void);
 int runIdentifyContractTests(void);
 int runSpecificGraphTest(char const *command, char const *infileName, int inputInMemFlag);
@@ -233,6 +234,8 @@ int runQuickRegressionTests(int argc, char *argv[])
     else if (runGraphTransformationTests() != OK)
         retVal = NOTOK;
     else if (runTestAllGraphsTests() != OK)
+        retVal = NOTOK;
+    else if (runFaceListTest() != OK)
         retVal = NOTOK;
     else if (runHideRestoreTests() != OK)
         retVal = NOTOK;
@@ -613,6 +616,102 @@ int runTestAllGraphsTests(void)
         gp_ErrorMessage("K4 homeomorph search test on all graphs failed.");
         retVal = NOTOK;
     }
+
+    return retVal;
+}
+
+int runFaceListTest(void)
+{
+    graphP theGraph = NULL, origGraph = NULL;
+    char *faceList = NULL, *drawing = NULL;
+    char const *infileName = NULL, *expectedOutfileName = NULL, *expectedDrawingFileName = NULL;
+    int embedResult, retVal = OK;
+
+#ifdef USE_1BASEDARRAYS
+    infileName = "faceListComponents.txt";
+    expectedOutfileName = "faceListComponents.out.txt";
+    expectedDrawingFileName = "faceListComponents.Drawing.txt";
+#else
+    infileName = "faceListComponents.0-based.txt";
+    expectedOutfileName = "faceListComponents.0-based.out.txt";
+    expectedDrawingFileName = "faceListComponents.0-based.Drawing.txt";
+#endif
+
+    gp_Message("Starting Face List Test");
+
+    if ((theGraph = gp_New()) == NULL ||
+        gp_Read(theGraph, infileName) != OK ||
+        (origGraph = gp_DupGraph(theGraph)) == NULL ||
+        gp_ExtendWith_DrawPlanar(theGraph) != OK)
+    {
+        gp_ErrorMessage("Unable to set up the face list sample graph.");
+        retVal = NOTOK;
+        goto runFaceListTest_Cleanup;
+    }
+
+    embedResult = gp_Embed(theGraph, EMBEDFLAGS_DRAWPLANAR);
+    if (embedResult != OK ||
+        gp_TestEmbedResultIntegrity(theGraph, origGraph, embedResult) != OK)
+    {
+        gp_ErrorMessage("Unable to embed the face list sample graph.");
+        retVal = NOTOK;
+        goto runFaceListTest_Cleanup;
+    }
+
+    if (gp_SortVertices(theGraph) != OK)
+    {
+        gp_ErrorMessage("Unable to restore original vertex labelling.");
+        retVal = NOTOK;
+        goto runFaceListTest_Cleanup;
+    }
+
+    if (gp_CountEmbeddingFaces(theGraph) != 7)
+    {
+        gp_ErrorMessage("Unexpected face count for the face list sample graph.");
+        retVal = NOTOK;
+        goto runFaceListTest_Cleanup;
+    }
+
+    if (gp_CreateEmbeddingFaceList(theGraph, &faceList) != OK || faceList == NULL)
+    {
+        gp_ErrorMessage("Unable to create the face list sample output.");
+        retVal = NOTOK;
+        goto runFaceListTest_Cleanup;
+    }
+
+    if (TextFileMatchesString(expectedOutfileName, faceList) != TRUE)
+    {
+        gp_ErrorMessage("Face list sample output did not match the expected output.");
+        retVal = NOTOK;
+        goto runFaceListTest_Cleanup;
+    }
+
+    if (gp_DrawPlanar_RenderToString(theGraph, &drawing) != OK || drawing == NULL ||
+        TextFileMatchesString(expectedDrawingFileName, drawing) != TRUE)
+    {
+        gp_ErrorMessage("Face list sample drawing did not match the expected output.");
+        retVal = NOTOK;
+        goto runFaceListTest_Cleanup;
+    }
+
+    gp_Message("Finished Face List Test.\n");
+
+runFaceListTest_Cleanup:
+
+    if (drawing != NULL) 
+    {
+        free(drawing);
+        drawing = NULL;
+    }
+
+    if (faceList != NULL)
+    {
+        free(faceList);
+        faceList = NULL;
+    }
+    
+    gp_Free(&origGraph);
+    gp_Free(&theGraph);
 
     return retVal;
 }
