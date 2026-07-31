@@ -166,7 +166,7 @@ int gp_CreateEmbeddingFaceList(graphP theGraph, char **pFaceList)
     stackP theStack;
     strBufP faceList = NULL;
     int *visitedVertices = NULL, *componentEdges = NULL;
-    int componentEdgesCapacity, componentNumber = 0, Result = NOTOK;
+    int componentEdgesCapacity, componentNumber = 0, Result = OK;
     int lowerVertex, upperVertex, v;
 
     if (theGraph == NULL || pFaceList == NULL || *pFaceList != NULL)
@@ -191,7 +191,10 @@ int gp_CreateEmbeddingFaceList(graphP theGraph, char **pFaceList)
     componentEdges = (int *)calloc((size_t)componentEdgesCapacity, sizeof(int));
 
     if (faceList == NULL || visitedVertices == NULL || componentEdges == NULL)
+    {
+        Result = NOTOK;
         goto gp_CreateEmbeddingFaceList_Cleanup;
+    }
 
     for (v = lowerVertex; v < upperVertex; ++v)
     {
@@ -202,7 +205,10 @@ int gp_CreateEmbeddingFaceList(graphP theGraph, char **pFaceList)
 
         componentNumber++;
         if (_AppendEmbeddingFaceListHeader(faceList, componentNumber) != OK)
+        {
+            Result = NOTOK;
             goto gp_CreateEmbeddingFaceList_Cleanup;
+        }
 
         sp_ClearStack(theStack);
         sp_Push(theStack, v);
@@ -236,6 +242,7 @@ int gp_CreateEmbeddingFaceList(graphP theGraph, char **pFaceList)
             if (!gp_GetEdgeVisited(theGraph, componentEdges[i]) &&
                 _AppendEmbeddingFace(faceList, theGraph, componentEdges[i]) != OK)
             {
+                Result = NOTOK;
                 goto gp_CreateEmbeddingFaceList_Cleanup;
             }
         }
@@ -246,14 +253,27 @@ int gp_CreateEmbeddingFaceList(graphP theGraph, char **pFaceList)
 
 gp_CreateEmbeddingFaceList_Cleanup:
 
-    free(componentEdges);
-    free(visitedVertices);
+    if (componentEdges != NULL)
+    {
+        free(componentEdges);
+        componentEdges = NULL;
+    }
+
+    if (visitedVertices != NULL)
+    {
+        free(visitedVertices);
+        visitedVertices = NULL;
+    }
+
     sb_Free(&faceList);
 
     if (Result != OK && pFaceList != NULL)
     {
-        free(*pFaceList);
-        *pFaceList = NULL;
+        if (*pFaceList != NULL)
+        {
+            free(*pFaceList);
+            *pFaceList = NULL;
+        }
     }
 
     return Result;

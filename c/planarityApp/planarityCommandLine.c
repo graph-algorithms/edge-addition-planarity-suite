@@ -694,12 +694,22 @@ int runFaceListTest(void)
         goto runFaceListTest_Cleanup;
     }
 
-    gp_Message("Finished Face List Test.");
+    gp_Message("Finished Face List Test.\n");
 
 runFaceListTest_Cleanup:
 
-    free(drawing);
-    free(faceList);
+    if (drawing != NULL) 
+    {
+        free(drawing);
+        drawing = NULL;
+    }
+
+    if (faceList != NULL)
+    {
+        free(faceList);
+        faceList = NULL;
+    }
+    
     gp_Free(&origGraph);
     gp_Free(&theGraph);
 
