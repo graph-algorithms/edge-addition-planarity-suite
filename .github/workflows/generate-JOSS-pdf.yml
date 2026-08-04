@@ -1,0 +1,36 @@
+name: Generate JOSS PDF
+on:
+  workflow_dispatch:
+  push:
+    branches: [ 'JOSS' ]
+    paths:
+      - JOSS/**
+      - .github/workflows/generate-JOSS-pdf.yml
+
+jobs:
+  paper:
+    runs-on: ubuntu-latest
+    name: Generate JOSS Submission PDF
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Generate JOSS submission PDF
+        uses: openjournals/openjournals-draft-action@85a18372e48f551d8af9ddb7a747de685fbbb01c # v1.0
+        with:
+          journal: joss
+          # This should be the path to the paper within your repo.
+          paper-path: JOSS/paper.md
+      - name: Upload
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: paper
+          # This is the output path where Pandoc will write the compiled
+          # PDF. Note, this should be the same directory as the input
+          # paper.md
+          path: JOSS/paper.pdf
+      - name: Commit JOSS submission PDF to repository
+        uses: EndBug/add-and-commit@290ea2c423ad77ca9c62ae0f5b224379612c0321 # v10.0.0
+        with:
+          message: '(auto) JOSS Paper PDF generated'
+          # This should be the path to the paper within your repo.
+          add: 'JOSS/paper.pdf' # 'JOSS/*.pdf' to commit all PDFs in the JOSS directory
