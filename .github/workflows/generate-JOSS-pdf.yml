@@ -4,12 +4,11 @@ on:
   push:
     branches: [ 'JOSS' ]
     paths:
-      - JOSS/**
-      - .github/workflows/generate-JOSS-pdf.yml
-    paths-ignore:
-      # This is necessary so that once the final step to Commit JOSS submission PDF to repository
-      # finishes, we don't trigger the workflow again.
-      - JOSS/paper.pdf
+      - 'JOSS/**'
+      # This is necessary so that once the final step 'Commit JOSS submission PDF to repository'
+      # finishes, we don't trigger the workflow again
+      - '!JOSS/*.pdf'
+      - '.github/workflows/generate-JOSS-pdf.yml'
 
 jobs:
   paper:
