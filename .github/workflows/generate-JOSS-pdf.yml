@@ -6,6 +6,8 @@ on:
     paths:
       - JOSS/**
       - .github/workflows/generate-JOSS-pdf.yml
+    paths-ignore:
+      - JOSS/paper.pdf
 
 jobs:
   paper:
