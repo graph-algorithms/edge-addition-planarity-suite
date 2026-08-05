@@ -110,10 +110,10 @@ subgraph search. For example, torus embedding algorithms and torus obstruction
 isolation algorithms are able to operate differently based on whether a
 search for a subgraph homeomorphic to $K_{3, 3}$ finds a result
 [@MyrvoldKocay:ErrorsInGraphEmbeddingAlgorithms;
-@MyrvoldWoodcock:TorusObstructions]. Similarly, specialized algorithms 
-related to graph isomorphims, reachability, and finding matching cuts, can be
-used if a graph is known to be $K_{3, 3}$-free [@DattaEtAl:GraphIsomorphism; 
-@FeghaliEtAl:MatchingCuts; @ThieraufWagner:Reachability]. 
+@MyrvoldWoodcock:TorusObstructions]. Similarly, several graph theoretic
+results are applicable to graphs that are known to be $K_{3, 3}$-free, including
+results related to graph isomorphism, reachability, and finding matching cuts
+[@DattaEtAl:GraphIsomorphism; @FeghaliEtAl:MatchingCuts; @ThieraufWagner:Reachability]. 
 
 # Software design
 
