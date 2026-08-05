@@ -113,7 +113,7 @@ search for a subgraph homeomorphic to $K_{3, 3}$ finds a result
 @MyrvoldWoodcock:TorusObstructions]. Similarly, specialized algorithms 
 related to graph isomorphims, reachability, and finding matching cuts, can be
 used if a graph is known to be $K_{3, 3}$-free [@DattaEtAl:GraphIsomorphism; 
-FeghaliEtAl:MatchingCuts; ThieraufWagner:Reachability]. 
+@FeghaliEtAl:MatchingCuts; @ThieraufWagner:Reachability]. 
 
 # Software design
 
