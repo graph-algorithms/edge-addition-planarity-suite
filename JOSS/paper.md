@@ -168,7 +168,7 @@ and [repology/planarity](https://repology.org/project/planarity/versions)
 The Python package named `planarity` was originally developed in 2013 by Aric Hagberg as a way to
 get the planarity testing and drawing algorithms from [@BoyerMyrvold:EdgeAddition] and [@Boyer:GD2005] 
 to work with graphs from NetworkX [@HagbergEtAl:NetworkX]. Recently, Hagberg transferred the 
-`planarity` GitHub repository [PlanarityDevelopers:PlanarityGitHub] to the 
+`planarity` GitHub repository [@PlanarityDevelopers:PlanarityGitHub] to the 
 [GitHub Graph Algorithms Organization](https://github.com/graph-algorithms) and the 
 `planarity` Python package [@PlanarityDevelopers:PlanarityPyPI] to the 
 [PyPI Graph Algorithms Organization](https://pypi.org/org/graph-algorithms/), which are both maintained
@@ -176,7 +176,10 @@ by the authors. On August 1, 2026, the
 [Top PyPI Packages](https://web.archive.org/web/20260801164632/https://hugovk.dev/top-pypi-packages/) 
 website indicated that the `planarity` Python package had over 700,000 downloads for the preceding month 
 and was ranked in the top 1% of PyPI package downloads (ranked 5262 out of 
-[864,036 projects](https://web.archive.org/web/20260801170757/https://pypi.org/)). 
+[864,036 projects](https://web.archive.org/web/20260801170757/https://pypi.org/)). According to
+[pepy.tech](https://pepy.tech/projects/planarity)
+([web archive](https://web.archive.org/web/20260804124534/https://pepy.tech/projects/planarity)) 
+the `planarity` Python package has been downloaded over 2 million times in total.
 The `planarity` Python package has now been included as a standard Python package in
 several versions of Linux including Debian, Devuan, Kali, Raspbian, and Ubuntu, according to
 [repology/python:planarity](https://repology.org/project/python%3Aplanarity/versions)
@@ -188,8 +191,6 @@ For the 700K downloads in the last month, see also the web archived snapshot of
 
 For July 1-31, 2026, ranking, see also 
 [ClickPy](https://clickpy.clickhouse.com/dashboard/planarity?min_date=2026-07-02&max_date=2026-08-01)
-
-and for evidence of over 2 million total downloads, see also [pepy.tech](https://pepy.tech/projects/planarity)
 -->
 
 # AI usage disclosure
