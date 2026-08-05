@@ -20,7 +20,7 @@ authors:
 affiliations:
  - name: Independent Researcher, Canada
    index: 1
-date: 4 August 2026
+date: 5 August 2026
 bibliography: paper.bib
 ---
 
