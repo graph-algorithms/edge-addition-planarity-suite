@@ -107,10 +107,13 @@ a Graph Algorithm Library and Editor
 ([PIGALE](https://sourceforge.net/projects/pigale/)). However, PIGALE is also
 C++ only, has a GPLv2 license, and lacks advanced algorithms for homeomorphic
 subgraph search. For example, torus embedding algorithms and torus obstruction
-isolation algorithms are able to operate differently based on the result of a
-search for a subgraph homeomorphic to $K_{3, 3}$
+isolation algorithms are able to operate differently based on whether a
+search for a subgraph homeomorphic to $K_{3, 3}$ finds a result
 [@MyrvoldKocay:ErrorsInGraphEmbeddingAlgorithms;
-@MyrvoldWoodcock:TorusObstructions]. 
+@MyrvoldWoodcock:TorusObstructions]. Similarly, specialized algorithms 
+related to graph isomorphims, reachability, and finding matching cuts, can be
+used if a graph is known to be $K_{3, 3}$-free [@DattaEtAl:GraphIsomorphism; 
+FeghaliEtAl:MatchingCuts; ThieraufWagner:Reachability]. 
 
 # Software design
 
@@ -155,8 +158,8 @@ A final aspect of this open source software project is our emphasis on software
 reliability. We perform validation code on `gp_Embed()` and its five overloads
 on billions of randomly generated graphs up to 10 million vertices and 30
 million edges. The GitHub actions that run on every pull request include
-sanitizer tests on all graphs on 8 vertices. Finally, the [Edge Addition
-Planarity Suite Testing GitHub
+sanitizer tests on all graphs on 8 vertices. Finally, the 
+[`edge-addition-planarity-suite-testing` GitHub
 repository](https://github.com/graph-algorithms/edge-addition-planarity-suite-testing)
 provides our multithreaded Python code for validating `gp_Embed()` and its five
 overloads on the more than one billion graphs having 11 or fewer vertices, as
@@ -177,6 +180,8 @@ nauty and Traces [@McKayPiperno:nauty_traces_manual], and the [Open Graph
 Drawing Framework](https://ogdf.uos.de/wp-content/uploads/2019/04/ogdf.pdf)
 ([web
 archive](https://web.archive.org/web/20260801181735/https://master--ogdf.netlify.app/classogdf_1_1_boyer_myrvold_planar.html)).
+An executable program built from the source code was used to build a 
+knot theory software package [@JablanSazdanovic:LinKnot, p. 7, 38]. 
 The source code from the Edge Addition Planarity Suite repository has been
 directly included in several large open source projects, including
 [SageMath](https://web.archive.org/web/20260801180924/https://www.sagemath.org/development-ack.html),
