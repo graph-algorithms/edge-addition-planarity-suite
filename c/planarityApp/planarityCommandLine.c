@@ -24,8 +24,10 @@ int callTestAllGraphs(int argc, char *argv[]);
 int callTransformGraph(int argc, char *argv[]);
 
 int runSpecificGraphTests(void);
+int runRandomGraphsTests(void);
 int runGraphTransformationTests(void);
 int runTestAllGraphsTests(void);
+int runFaceListTest(void);
 int runHideRestoreTests(void);
 int runIdentifyContractTests(void);
 int runSpecificGraphTest(char const *command, char const *infileName, int inputInMemFlag);
@@ -34,6 +36,7 @@ int runTestAllGraphsTest(char const *commandString, char const *infileName);
 int runHideRestoreTest(graphP theGraph);
 int runIdentifyContractTest(graphP theGraph);
 int runDigraphTests(void);
+int runDrawPlanarNonplanarWriteTest(void);
 int testPetersenDigraph(void);
 
 /****************************************************************************
@@ -226,9 +229,13 @@ int runQuickRegressionTests(int argc, char *argv[])
 
     if (runSpecificGraphTests() != OK)
         retVal = NOTOK;
+    else if (runRandomGraphsTests() != OK)
+        retVal = NOTOK;
     else if (runGraphTransformationTests() != OK)
         retVal = NOTOK;
     else if (runTestAllGraphsTests() != OK)
+        retVal = NOTOK;
+    else if (runFaceListTest() != OK)
         retVal = NOTOK;
     else if (runHideRestoreTests() != OK)
         retVal = NOTOK;
@@ -245,6 +252,30 @@ int runQuickRegressionTests(int argc, char *argv[])
 
     chdir(origDir);
     FlushConsole(stdout);
+
+    return retVal;
+}
+
+int runRandomGraphsTests(void)
+{
+    int retVal = OK;
+
+    gp_Message("Starting Random Graph Tests");
+
+    if (RandomGraphs("-p", 1000, 20, NULL, TRUE, FALSE) != OK)
+    {
+        gp_ErrorMessage("gp_CreateRandomGraph() test failed.");
+        retVal = NOTOK;
+    }
+
+    if (RandomGraphs("-p", 1000, 20, NULL, TRUE, TRUE) != OK)
+    {
+        gp_ErrorMessage("gp_CreateRandomGraphEx() test failed.");
+        retVal = NOTOK;
+    }
+
+    if (retVal == OK)
+        gp_Message("Finished Random Graph Tests.\n");
 
     return retVal;
 }
@@ -277,6 +308,12 @@ int runSpecificGraphTests(void)
     if (runSpecificGraphTest("-p", "Petersen.txt", FALSE) != OK)
     {
         gp_ErrorMessage("Planarity test on Petersen.txt failed.");
+        retVal = NOTOK;
+    }
+
+    if (runDrawPlanarNonplanarWriteTest() != OK)
+    {
+        gp_ErrorMessage("DrawPlanar non-planar write test on Petersen.txt failed.");
         retVal = NOTOK;
     }
 
@@ -356,6 +393,63 @@ int runSpecificGraphTests(void)
     }
 
     return retVal;
+}
+
+int runDrawPlanarNonplanarWriteTest(void)
+{
+    int Result = OK;
+    graphP theGraph = NULL, origGraph = NULL;
+    char *actualOutput = NULL;
+
+    gp_Message("Calling DrawPlanar Algorithm on a non-planar graph.");
+
+    if ((theGraph = gp_New()) == NULL)
+        Result = NOTOK;
+
+    if (Result == OK && gp_Read(theGraph, "Petersen.txt") != OK)
+        Result = NOTOK;
+
+    if (Result == OK && (origGraph = gp_DupGraph(theGraph)) == NULL)
+        Result = NOTOK;
+
+    if (Result == OK && gp_ExtendWith_DrawPlanar(theGraph) != OK)
+        Result = NOTOK;
+
+    if (Result == OK)
+    {
+        Result = gp_Embed(theGraph, EMBEDFLAGS_DRAWPLANAR);
+        if (Result != NONEMBEDDABLE)
+            Result = NOTOK;
+    }
+
+    if (Result == NONEMBEDDABLE)
+    {
+        Result = gp_TestEmbedResultIntegrity(theGraph, origGraph, Result);
+        if (Result != NONEMBEDDABLE)
+            Result = NOTOK;
+    }
+
+    if (Result == NONEMBEDDABLE && gp_SortVertices(theGraph) != OK)
+        Result = NOTOK;
+
+    if (Result == NONEMBEDDABLE)
+    {
+        if (gp_WriteToString(theGraph, &actualOutput, WRITE_ADJLIST) != OK ||
+            TextFileMatchesString("Petersen.txt.Planarity.out.txt", actualOutput) != TRUE)
+        {
+            Result = NOTOK;
+        }
+        else
+            gp_Message("Test succeeded.\n");
+    }
+
+    if (actualOutput != NULL)
+        free(actualOutput);
+
+    gp_Free(&origGraph);
+    gp_Free(&theGraph);
+
+    return Result == NONEMBEDDABLE ? OK : Result;
 }
 
 int runGraphTransformationTests(void)
@@ -522,6 +616,102 @@ int runTestAllGraphsTests(void)
         gp_ErrorMessage("K4 homeomorph search test on all graphs failed.");
         retVal = NOTOK;
     }
+
+    return retVal;
+}
+
+int runFaceListTest(void)
+{
+    graphP theGraph = NULL, origGraph = NULL;
+    char *faceList = NULL, *drawing = NULL;
+    char const *infileName = NULL, *expectedOutfileName = NULL, *expectedDrawingFileName = NULL;
+    int embedResult, retVal = OK;
+
+#ifdef USE_1BASEDARRAYS
+    infileName = "faceListComponents.txt";
+    expectedOutfileName = "faceListComponents.out.txt";
+    expectedDrawingFileName = "faceListComponents.Drawing.txt";
+#else
+    infileName = "faceListComponents.0-based.txt";
+    expectedOutfileName = "faceListComponents.0-based.out.txt";
+    expectedDrawingFileName = "faceListComponents.0-based.Drawing.txt";
+#endif
+
+    gp_Message("Starting Face List Test");
+
+    if ((theGraph = gp_New()) == NULL ||
+        gp_Read(theGraph, infileName) != OK ||
+        (origGraph = gp_DupGraph(theGraph)) == NULL ||
+        gp_ExtendWith_DrawPlanar(theGraph) != OK)
+    {
+        gp_ErrorMessage("Unable to set up the face list sample graph.");
+        retVal = NOTOK;
+        goto runFaceListTest_Cleanup;
+    }
+
+    embedResult = gp_Embed(theGraph, EMBEDFLAGS_DRAWPLANAR);
+    if (embedResult != OK ||
+        gp_TestEmbedResultIntegrity(theGraph, origGraph, embedResult) != OK)
+    {
+        gp_ErrorMessage("Unable to embed the face list sample graph.");
+        retVal = NOTOK;
+        goto runFaceListTest_Cleanup;
+    }
+
+    if (gp_SortVertices(theGraph) != OK)
+    {
+        gp_ErrorMessage("Unable to restore original vertex labelling.");
+        retVal = NOTOK;
+        goto runFaceListTest_Cleanup;
+    }
+
+    if (gp_CountEmbeddingFaces(theGraph) != 7)
+    {
+        gp_ErrorMessage("Unexpected face count for the face list sample graph.");
+        retVal = NOTOK;
+        goto runFaceListTest_Cleanup;
+    }
+
+    if (gp_CreateEmbeddingFaceList(theGraph, &faceList) != OK || faceList == NULL)
+    {
+        gp_ErrorMessage("Unable to create the face list sample output.");
+        retVal = NOTOK;
+        goto runFaceListTest_Cleanup;
+    }
+
+    if (TextFileMatchesString(expectedOutfileName, faceList) != TRUE)
+    {
+        gp_ErrorMessage("Face list sample output did not match the expected output.");
+        retVal = NOTOK;
+        goto runFaceListTest_Cleanup;
+    }
+
+    if (gp_DrawPlanar_RenderToString(theGraph, &drawing) != OK || drawing == NULL ||
+        TextFileMatchesString(expectedDrawingFileName, drawing) != TRUE)
+    {
+        gp_ErrorMessage("Face list sample drawing did not match the expected output.");
+        retVal = NOTOK;
+        goto runFaceListTest_Cleanup;
+    }
+
+    gp_Message("Finished Face List Test.\n");
+
+runFaceListTest_Cleanup:
+
+    if (drawing != NULL) 
+    {
+        free(drawing);
+        drawing = NULL;
+    }
+
+    if (faceList != NULL)
+    {
+        free(faceList);
+        faceList = NULL;
+    }
+    
+    gp_Free(&origGraph);
+    gp_Free(&theGraph);
 
     return retVal;
 }
@@ -1033,14 +1223,14 @@ int runGraphTransformationTest(char const *command, char const *infileName, int 
 
                 if (Result == TRUE)
                 {
-                    gp_Message("For the transformation %s on file \"%.*s\", "
+                    gp_Message("For the transformation %s on \"%.*s\", "
                                "actual output matched expected output file.",
                                command, FILENAME_MAX, infileName);
                     Result = OK;
                 }
                 else
                 {
-                    gp_ErrorMessage("For the transformation %s on file \"%.*s\", "
+                    gp_ErrorMessage("For the transformation %s on \"%.*s\", "
                                     "actual output did not match expected "
                                     "output file.",
                                     command, FILENAME_MAX, infileName);
@@ -1104,7 +1294,7 @@ int callRandomGraphs(int argc, char *argv[])
     if (argc == (6 + offset))
         outfileName = argv[5 + offset];
 
-    return RandomGraphs(commandString, NumGraphs, SizeOfGraphs, outfileName);
+    return RandomGraphs(commandString, NumGraphs, SizeOfGraphs, outfileName, FALSE, FALSE);
 }
 
 /****************************************************************************
@@ -1434,7 +1624,8 @@ int runDigraphTests(void)
         gp_ErrorMessage("Petersen Digraph test failed.");
         retVal = NOTOK;
     }
+    else
+        gp_Message("Finished Digraph Tests.\n");
 
-    gp_Message("Finished Digraph Tests.");
     return retVal;
 }

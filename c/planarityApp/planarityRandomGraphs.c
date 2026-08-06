@@ -23,8 +23,9 @@ int PromptSaveGraph(graphP theGraph, graphP origGraph, int extraEdges, int saveM
 
 #define NUM_MINORS 9
 
-int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraphs, char *outfileName)
+int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraphs, char *outfileName, int forceQuiet, int useExGenerator)
 {
+    int savedQuietModeSetting = gp_GetQuietMode();
     int Result = OK;
     int writeResult = OK;
 
@@ -49,10 +50,14 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
     memset(ObstructionMinorFreqs, 0, NUM_MINORS * sizeof(int));
     memset(theFileName, '\0', (FILENAMEMAXLENGTH + 1));
 
+    if (forceQuiet)
+        gp_SetQuietMode(QUIETMODE_ALL);
+
     if ((Result = GetCommandAndOptionalModifier(commandString, &command, &modifier)) != OK)
     {
         gp_ErrorMessage("Unable to extract command and optional modifier "
                         "character from commandString.\n");
+        gp_SetQuietMode(savedQuietModeSetting);
         return Result;
     }
 
@@ -60,6 +65,7 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
     {
         gp_ErrorMessage("Unable to derive embedFlags from command and optional "
                         "modifier character.\n");
+        gp_SetQuietMode(savedQuietModeSetting);
         return Result;
     }
 
@@ -67,6 +73,7 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
     {
         gp_ErrorMessage("Encountered unrecoverable error when prompting for "
                         "NumGraphs.\n");
+        gp_SetQuietMode(savedQuietModeSetting);
         return Result;
     }
 
@@ -74,6 +81,7 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
     {
         gp_ErrorMessage("Encountered unrecoverable error when prompting for "
                         "SizeOfGraphs.\n");
+        gp_SetQuietMode(savedQuietModeSetting);
         return Result;
     }
 
@@ -86,6 +94,7 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
                         "to contain randomly generated graphs.\n");
         gp_Free(&theGraph);
         gp_Free(&origGraph);
+        gp_SetQuietMode(savedQuietModeSetting);
         return NOTOK;
     }
 
@@ -96,11 +105,12 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
             gp_ErrorMessage("Unable to allocate G6WriteIterator.");
             gp_Free(&theGraph);
             gp_Free(&origGraph);
+            gp_SetQuietMode(savedQuietModeSetting);
             return NOTOK;
         }
     }
 
-    if (outfileName != NULL)
+    if (outfileName != NULL && !forceQuiet)
     {
         if (g6_InitWriterWithFileName(theG6WriteIterator, outfileName) != OK)
         {
@@ -108,10 +118,11 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
             g6_FreeWriter((&theG6WriteIterator));
             gp_Free(&theGraph);
             gp_Free(&origGraph);
+            gp_SetQuietMode(savedQuietModeSetting);
             return NOTOK;
         }
     }
-    else if (tolower(OrigOut) == 'y' && tolower(OrigOutFormat) == 'g')
+    else if (tolower(OrigOut) == 'y' && tolower(OrigOutFormat) == 'g' && !forceQuiet)
     {
         // If outfileName is NULL, then the only case in which we would want to
         // output the generated random graphs to .g6 is if we Reconfigure() and
@@ -124,6 +135,7 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
             g6_FreeWriter((&theG6WriteIterator));
             gp_Free(&theGraph);
             gp_Free(&origGraph);
+            gp_SetQuietMode(savedQuietModeSetting);
             return NOTOK;
         }
     }
@@ -142,18 +154,28 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
     countUpdateFreq = countUpdateFreq % 5 == 0 ? countUpdateFreq + 2 : countUpdateFreq;
 
     // Start the count
-    fprintf(stdout, "0\r");
-    fflush(stdout);
+    if (!(gp_GetQuietMode() & QUIETMODE_MESSAGES))
+    {
+        fprintf(stdout, "0\r");
+        fflush(stdout);
+    }
 
     // Start the timer
     platform_GetTime(start);
 
+    // useExGenerator = TRUE;
+
     // Generate and process the number of graphs requested
     for (K = 0; K < NumGraphs; K++)
     {
-        if ((Result = gp_CreateRandomGraph(theGraph)) == OK)
+        if (useExGenerator)
+            Result = gp_CreateRandomGraphEx(theGraph, gp_GetRandomNumber(gp_GetN(theGraph), gp_GetEdgeCapacity(theGraph)));
+        else
+            Result = gp_CreateRandomGraph(theGraph);
+
+        if (Result == OK)
         {
-            if (theG6WriteIterator != NULL)
+            if (theG6WriteIterator != NULL && !forceQuiet)
             {
                 if ((writeResult = g6_WriteGraph(theG6WriteIterator)) != OK)
                 {
@@ -164,7 +186,7 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
                     break;
                 }
             }
-            else if (tolower(OrigOut) == 'y' && tolower(OrigOutFormat) == 'a')
+            else if (tolower(OrigOut) == 'y' && tolower(OrigOutFormat) == 'a' && !forceQuiet)
             {
                 sprintf(theFileName, "random%c%d.txt", FILE_DELIMITER, K % 10);
                 if ((writeResult = gp_Write(theGraph, theFileName, WRITE_ADJLIST)) != OK)
@@ -187,16 +209,48 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
                 return Result;
             }
 
+            if ((Result = gp_DepthFirstSearch(theGraph)) != OK)
+            {
+                gp_ErrorMessage("Unable to depth first search graph number %d before embedding.", K);
+                break;
+            }
+
+            if ((Result = gp_SortVertices(theGraph)) != OK)
+            {
+                gp_ErrorMessage("Unable to sort graph number %d before embedding.", K);
+                break;
+            }
+
+            if ((Result = gp_ComputeLowpoints(theGraph)) != OK)
+            {
+                gp_ErrorMessage("Unable to compute lowpoints for graph number %d before embedding.", K);
+                break;
+            }
+
             Result = gp_Embed(theGraph, embedFlags);
 
             if (gp_TestEmbedResultIntegrity(theGraph, origGraph, Result) != Result)
                 Result = NOTOK;
+            else
+            {
+                if (useExGenerator && embedFlags == EMBEDFLAGS_PLANAR)
+                {
+                    // The Ex random graph generator is supposed to generate a planar graph
+                    // if the number of edges is <= 3N-6, so it is an error to have a
+                    // NONEMBEDDABLE result here.
+                    if (gp_GetM(origGraph) <= 3 * gp_GetN(origGraph) - 6)
+                    {
+                        if (Result == NONEMBEDDABLE)
+                            Result = NOTOK;
+                    }
+                }
+            }
 
             if (Result == OK)
             {
                 MainStatistic++;
 
-                if (tolower(EmbeddableOut) == 'y')
+                if (tolower(EmbeddableOut) == 'y' && !forceQuiet)
                 {
                     sprintf(theFileName, "embedded%c%d.txt", FILE_DELIMITER, K % 10);
 
@@ -208,7 +262,7 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
                     }
                 }
 
-                if (tolower(AdjListsForEmbeddingsOut) == 'y')
+                if (tolower(AdjListsForEmbeddingsOut) == 'y' && !forceQuiet)
                 {
                     sprintf(theFileName, "adjlist%c%d.txt", FILE_DELIMITER, K % 10);
 
@@ -244,7 +298,7 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
                     else if (gp_GetObstructionMinorType(theGraph) & MINORTYPE_E4)
                         ObstructionMinorFreqs[8]++;
 
-                    if (tolower(ObstructedOut) == 'y')
+                    if (tolower(ObstructedOut) == 'y' && !forceQuiet)
                     {
                         sprintf(theFileName, "obstructed%c%d.txt", FILE_DELIMITER, K % 10);
 
@@ -259,7 +313,7 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
             }
 
             // If there is an error in processing, then write the file for debugging
-            if (Result != OK && Result != NONEMBEDDABLE)
+            if (Result != OK && Result != NONEMBEDDABLE && !forceQuiet)
             {
                 sprintf(theFileName, "error%c%d.txt", FILE_DELIMITER, K % 10);
                 if ((writeResult = gp_Write(origGraph, theFileName, WRITE_ADJLIST)) != OK)
@@ -296,8 +350,11 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
     platform_GetTime(end);
 
     // Finish the count
-    fprintf(stdout, "%d\n", NumGraphs);
-    fflush(stdout);
+    if (!(gp_GetQuietMode() & QUIETMODE_MESSAGES))
+    {
+        fprintf(stdout, "%d\n", NumGraphs);
+        fflush(stdout);
+    }
 
     gp_Message("Done (%.3lf seconds).", platform_GetDuration(start, end));
 
@@ -366,6 +423,8 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
     // Free the graph structures created before the loop
     gp_Free(&theGraph);
     gp_Free(&origGraph);
+
+    gp_SetQuietMode(savedQuietModeSetting);
 
     return Result == OK || Result == NONEMBEDDABLE ? OK : NOTOK;
 }
