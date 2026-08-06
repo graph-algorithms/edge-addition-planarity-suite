@@ -132,7 +132,7 @@
             "environment": [
                 {
                     "name": "ASAN_OPTIONS",
-                    "value": "detect_leaks=1:symbolize=1"
+                    "value": "symbolize=1"
                 }
             ],
             "externalConsole": true,
@@ -291,7 +291,7 @@
                     "value": "/opt/homebrew/opt/llvm/bin/llvm-symbolizer"
                 }
             ],
-            "externalConsole": true,
+            "externalConsole": false,
             "MIMode": "lldb",
             "preLaunchTask": "C/C++: (MacOS) [AddressSanitizer] clang build planarity project"
         },

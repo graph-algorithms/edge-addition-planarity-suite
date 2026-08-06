@@ -527,6 +527,7 @@
                 "-Wcast-align",
                 "-Wdeclaration-after-statement",
                 "-Wdouble-promotion",
+                "-Werror",
                 "-Wextra",
                 "-Wformat-nonliteral",
                 "-Wformat-security",
@@ -591,6 +592,7 @@
                 "-fansi-escape-codes",
                 "-fno-strict-aliasing",
                 "-fsanitize=address",
+                "-Wno-deprecated-declarations",
                 "-DDEBUG", // Added so that _DEBUG is defined; see appconst.h
                 //"-DUSE_0BASEDARRAYS", // Commented out to use default of 1-based array indexing
                 "-Wall",
@@ -599,6 +601,7 @@
                 "-Wcast-align",
                 "-Wdeclaration-after-statement",
                 "-Wdouble-promotion",
+                "-Werror",
                 "-Wextra",
                 "-Wformat-nonliteral",
                 "-Wformat-security",
@@ -668,6 +671,7 @@
                 "-Wcast-align",
                 "-Wdeclaration-after-statement",
                 "-Wdouble-promotion",
+                "-Werror",
                 "-Wextra",
                 "-Wformat-nonliteral",
                 "-Wformat-security",
