@@ -21,7 +21,8 @@ jobs:
         type: [address, undefined]
         include:
           - type: undefined
-            environment_variables: UBSAN_OPTIONS=log_path=ubsan.log
+            extra_cflags: -fno-sanitize-merge
+            environment_variables: UBSAN_OPTIONS=print_stacktrace=1:log_path=ubsan.log
       fail-fast: false
     name: ${{ matrix.type }}
     steps:
@@ -29,7 +30,7 @@ jobs:
       - name: Configure with -fsanitize=${{ matrix.type }} . . .
         run: |
           mkdir -p m4 && autoreconf -if
-          ./configure CC="$CC" CFLAGS="-fsanitize=${{ matrix.type }} $CFLAGS"
+          ./configure CC="$CC" CFLAGS="-fsanitize=${{ matrix.type }} ${{ matrix.extra_cflags }} $CFLAGS"
       - name: Build . . .
         run: make -j4
       - name: Run tests . . .
