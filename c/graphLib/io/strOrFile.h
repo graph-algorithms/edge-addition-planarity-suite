@@ -24,7 +24,10 @@ extern "C"
         char **pOutputStr;
         strBufP theStrBuf;
         FILE *pFile;
+        char *fileName;
+        char const *fileMode;
         int containerType;
+        int errorFlag;
         stackP ungetBuf;
     };
 
@@ -50,6 +53,8 @@ extern "C"
     char *sf_fgets(char *str, int count, strOrFileP theStrOrFile);
 
     int sf_fputs(char const *strToWrite, strOrFileP theStrOrFile);
+
+    int sf_SetErrorFlag(strOrFileP theStrOrFile);
 
     int sf_closeFile(strOrFileP theStrOrFile);
 

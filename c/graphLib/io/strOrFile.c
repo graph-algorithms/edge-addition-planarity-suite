@@ -12,6 +12,44 @@ See the LICENSE.TXT file for licensing information.
 #include "../lowLevelUtils/appconst.h"
 #include "strOrFile.h"
 
+char *_sf_DuplicateString(char const *const str);
+int _sf_ShouldRemoveFailedOutputFile(strOrFileP theStrOrFile);
+int _sf_RemoveFailedOutputFile(strOrFileP theStrOrFile);
+
+char *_sf_DuplicateString(char const *const str)
+{
+    char *copy = NULL;
+    size_t strLen = 0;
+
+    if (str == NULL)
+        return NULL;
+
+    strLen = strlen(str) + 1;
+    copy = (char *)malloc(strLen);
+    if (copy != NULL)
+        memcpy(copy, str, strLen);
+
+    return copy;
+}
+
+int _sf_ShouldRemoveFailedOutputFile(strOrFileP theStrOrFile)
+{
+    return theStrOrFile != NULL &&
+           theStrOrFile->containerType == OUTPUT_CONTAINER &&
+           theStrOrFile->errorFlag &&
+           theStrOrFile->fileName != NULL &&
+           theStrOrFile->fileMode != NULL &&
+           strcmp(theStrOrFile->fileMode, WRITETEXT) == 0;
+}
+
+int _sf_RemoveFailedOutputFile(strOrFileP theStrOrFile)
+{
+    if (!_sf_ShouldRemoveFailedOutputFile(theStrOrFile))
+        return OK;
+
+    return remove(theStrOrFile->fileName) == 0 ? OK : NOTOK;
+}
+
 /********************************************************************
  sf_NewInputContainer()
 
@@ -58,7 +96,11 @@ strOrFileP sf_NewInputContainer(char const *const inputStr, char const *const fi
             }
             else
             {
-                if ((theStrOrFile->pFile = fopen(fileName, READTEXT)) == NULL)
+                theStrOrFile->fileMode = READTEXT;
+                theStrOrFile->fileName = _sf_DuplicateString(fileName);
+
+                if (theStrOrFile->fileName == NULL ||
+                    (theStrOrFile->pFile = fopen(fileName, READTEXT)) == NULL)
                 {
                     sf_Free(&theStrOrFile);
                     theStrOrFile = NULL;
@@ -141,12 +183,21 @@ strOrFileP sf_NewOutputContainer(char **pOutputStr, char const *const fileName)
                 return NULL;
             }
             else if (strcmp(fileName, "stdout") == 0)
+            {
                 theStrOrFile->pFile = stdout;
+                theStrOrFile->fileMode = WRITETEXT;
+            }
             else if (strcmp(fileName, "stderr") == 0)
+            {
                 theStrOrFile->pFile = stderr;
+                theStrOrFile->fileMode = WRITETEXT;
+            }
             else
             {
-                if (
+                theStrOrFile->fileMode = WRITETEXT;
+                theStrOrFile->fileName = _sf_DuplicateString(fileName);
+
+                if (theStrOrFile->fileName == NULL ||
                     (theStrOrFile->pFile = fopen(fileName, WRITETEXT)) == NULL)
                 {
                     sf_Free(&theStrOrFile);
@@ -665,7 +716,28 @@ int sf_fputs(char const *strToWrite, strOrFileP theStrOrFile)
             outputLen = EOF;
     }
 
+    if (outputLen == EOF)
+        sf_SetErrorFlag(theStrOrFile);
+
     return outputLen;
+}
+
+/********************************************************************
+ sf_SetErrorFlag()
+
+ Marks the container as having encountered an error while reading or writing.
+ Output containers use this state during sf_Free() to avoid returning partial
+ strings and to remove partial ordinary output files.
+ ********************************************************************/
+
+int sf_SetErrorFlag(strOrFileP theStrOrFile)
+{
+    if (!sf_IsValidStrOrFile(theStrOrFile))
+        return NOTOK;
+
+    theStrOrFile->errorFlag = TRUE;
+
+    return OK;
 }
 
 /********************************************************************
@@ -683,7 +755,13 @@ int sf_fputs(char const *strToWrite, strOrFileP theStrOrFile)
 
 int sf_closeFile(strOrFileP theStrOrFile)
 {
-    FILE *pFile = theStrOrFile->pFile;
+    int closeResult = OK;
+    FILE *pFile = NULL;
+
+    if (theStrOrFile == NULL)
+        return NOTOK;
+
+    pFile = theStrOrFile->pFile;
     theStrOrFile->pFile = NULL;
     if (pFile != NULL)
     {
@@ -695,12 +773,18 @@ int sf_closeFile(strOrFileP theStrOrFile)
             errorCode = fclose(pFile);
 
         if (errorCode < 0)
-            return NOTOK;
+        {
+            theStrOrFile->errorFlag = TRUE;
+            closeResult = NOTOK;
+        }
     }
+
+    if (_sf_RemoveFailedOutputFile(theStrOrFile) != OK)
+        closeResult = NOTOK;
 
     sp_Free(&(theStrOrFile->ungetBuf));
 
-    return OK;
+    return closeResult;
 }
 
 /********************************************************************
@@ -728,9 +812,9 @@ void sf_Free(strOrFileP *pStrOrFile)
     {
         if ((*pStrOrFile)->theStrBuf != NULL)
         {
-            // TODO: (#56) If in an error state, just don't sb_TakeString()
-            // before freeing it
-            if ((*pStrOrFile)->pOutputStr != NULL)
+            // In an error state, discard the partial string instead of
+            // returning it to the caller.
+            if ((*pStrOrFile)->pOutputStr != NULL && !(*pStrOrFile)->errorFlag)
             {
                 (*((*pStrOrFile)->pOutputStr)) = sb_TakeString((*pStrOrFile)->theStrBuf);
                 (*pStrOrFile)->pOutputStr = NULL;
@@ -738,10 +822,6 @@ void sf_Free(strOrFileP *pStrOrFile)
             sb_Free(&((*pStrOrFile)->theStrBuf));
         }
 
-        // TODO: (#56) if the strOrFile container's FILE pointer
-        // corresponds to an output file, i.e. ioMode is 'w',
-        // we should try to remove the file since the error state
-        // means the contents are invalid
         if ((*pStrOrFile)->pFile != NULL)
             sf_closeFile((*pStrOrFile));
         (*pStrOrFile)->pFile = NULL;
@@ -751,6 +831,14 @@ void sf_Free(strOrFileP *pStrOrFile)
             sp_Free(&((*pStrOrFile)->ungetBuf));
         }
         (*pStrOrFile)->ungetBuf = NULL;
+
+        if ((*pStrOrFile)->fileName != NULL)
+        {
+            free((*pStrOrFile)->fileName);
+            (*pStrOrFile)->fileName = NULL;
+        }
+
+        (*pStrOrFile)->fileMode = NULL;
 
         free(*pStrOrFile);
         (*pStrOrFile) = NULL;
