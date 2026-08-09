@@ -12,7 +12,7 @@ concurrency:
 jobs:
   sanitisers:
     timeout-minutes: 60
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     env:
       CC: clang
       CFLAGS: -fno-omit-frame-pointer -g -O1
@@ -31,6 +31,13 @@ jobs:
         run: |
           mkdir -p m4 && autoreconf -if
           ./configure CC="$CC" CFLAGS="-fsanitize=${{ matrix.type }} ${{ matrix.extra_cflags }} $CFLAGS"
+      - name: 'Preserve config.log in case of failure'
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: configure-script-failure-log
+          path: config.log
+          retention-days: 5
       - name: Build . . .
         run: make -j4
       - name: Run tests . . .
