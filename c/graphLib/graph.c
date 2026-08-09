@@ -2187,6 +2187,37 @@ int gp_ClearEdgeDirectionFlags(graphP theGraph)
     return OK;
 }
 
+/*
+ * Reverse every in-use directed edge. This can be used along with a directed
+ * depth-first search when computing strongly connected components.
+ */
+int gp_TransposeDirectedGraph(graphP theGraph)
+{
+    if (theGraph == NULL)
+        return NOTOK;
+
+    for (int e = gp_LowerBoundEdges(theGraph); e < gp_UpperBoundEdges(theGraph); e += 2)
+    {
+        if (gp_EdgeInUse(theGraph, e))
+        {
+            int direction = gp_GetDirection(theGraph, e);
+
+            if (direction == EDGEFLAG_DIRECTION_INONLY ||
+                direction == EDGEFLAG_DIRECTION_OUTONLY)
+            {
+                int transposedDirection = direction == EDGEFLAG_DIRECTION_INONLY
+                                               ? EDGEFLAG_DIRECTION_OUTONLY
+                                               : EDGEFLAG_DIRECTION_INONLY;
+
+                gp_SetDirection(theGraph, e, 0);
+                gp_SetDirection(theGraph, e, transposedDirection);
+            }
+        }
+    }
+
+    return OK;
+}
+
 /********************************************************************
  _RestoreEdgeRecord()
 

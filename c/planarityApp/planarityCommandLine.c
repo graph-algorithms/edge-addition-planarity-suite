@@ -38,6 +38,7 @@ int runIdentifyContractTest(graphP theGraph);
 int runDigraphTests(void);
 int runDrawPlanarNonplanarWriteTest(void);
 int testPetersenDigraph(void);
+int testDigraphTranspose(void);
 
 /****************************************************************************
  Command Line Processor
@@ -1613,6 +1614,58 @@ int testPetersenDigraph(void)
     return OK;
 }
 
+/****************************************************************************
+ testDigraphTranspose()
+ ****************************************************************************/
+
+int testDigraphTranspose(void)
+{
+    graphP G = gp_New();
+    char *actualOutput = NULL;
+    int e;
+
+    if (G == NULL)
+        return NOTOK;
+
+    if (gp_Read(G, "Petersen.digraph.txt") != OK)
+    {
+        gp_ErrorMessage("Failed to read Petersen.digraph.txt for transpose test.");
+        gp_Free(&G);
+        return NOTOK;
+    }
+
+    // Preserve one undirected edge while transposing all directed edges.
+    e = gp_FindDirectedEdge(G, 5, 1, EDGEFLAG_DIRECTION_OUTONLY);
+    if (e == NIL)
+    {
+        gp_ErrorMessage("Failed to find directed edge (5 -> 1).");
+        gp_Free(&G);
+        return NOTOK;
+    }
+    gp_SetDirection(G, e, 0);
+
+    if (gp_TransposeDirectedGraph(NULL) != NOTOK || gp_TransposeDirectedGraph(G) != OK)
+    {
+        gp_ErrorMessage("Directed graph transpose returned an unexpected result.");
+        gp_Free(&G);
+        return NOTOK;
+    }
+
+    if (gp_WriteToString(G, &actualOutput, WRITE_ADJLIST) != OK || actualOutput == NULL ||
+        TextFileMatchesString("Digraph.transposeTest.txt", actualOutput) != TRUE)
+    {
+        gp_ErrorMessage("Directed graph transpose output did not match the expected sample.");
+        gp_Free(&G);
+        if (actualOutput != NULL)
+            free(actualOutput);
+        return NOTOK;
+    }
+
+    gp_Free(&G);
+    free(actualOutput);
+    return OK;
+}
+
 int runDigraphTests(void)
 {
     int retVal = OK;
@@ -1622,6 +1675,11 @@ int runDigraphTests(void)
     if (testPetersenDigraph() != OK)
     {
         gp_ErrorMessage("Petersen Digraph test failed.");
+        retVal = NOTOK;
+    }
+    else if (testDigraphTranspose() != OK)
+    {
+        gp_ErrorMessage("Digraph transpose test failed.");
         retVal = NOTOK;
     }
     else
