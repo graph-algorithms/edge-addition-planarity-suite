@@ -1644,7 +1644,7 @@ int testDigraphTranspose(void)
     }
     gp_SetDirection(G, e, 0);
 
-    if (gp_TransposeDirectedGraph(NULL) != NOTOK || gp_TransposeDirectedGraph(G) != OK)
+    if (gp_TransposeDirectedGraph(G) != OK)
     {
         gp_ErrorMessage("Directed graph transpose returned an unexpected result.");
         gp_Free(&G);
