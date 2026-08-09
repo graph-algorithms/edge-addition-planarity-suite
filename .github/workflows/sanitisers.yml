@@ -12,7 +12,7 @@ concurrency:
 jobs:
   sanitisers:
     timeout-minutes: 60
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     env:
       CC: clang
       CFLAGS: -fno-omit-frame-pointer -g -O1
