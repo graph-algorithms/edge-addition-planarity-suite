@@ -37,7 +37,7 @@ extern int _gp_FindEdge(graphP theGraph, int u, int v);
 
 int _gp_EmbedFlagsValid(graphP theGraph, int embedFlags);
 int _EmbeddingInitialize(graphP theGraph);
-int _EmbeddingInitialize_Full(graphP theGraph);
+int _EmbeddingInitialize_Optimized(graphP theGraph);
 int _EmbeddingInitialize_Incremental(graphP theGraph);
 
 void _EmbedBackEdgeToDescendant(graphP theGraph, int RootSide, int RootVertex, int W, int WPrevLink);
@@ -269,7 +269,7 @@ int _EmbeddingInitialize(graphP theGraph)
                         GRAPHFLAGS_SORTEDBYDFI |
                         GRAPHFLAGS_LOWPOINTSCOMPUTED)))
     {
-        return _EmbeddingInitialize_Full(theGraph);
+        return _EmbeddingInitialize_Optimized(theGraph);
     }
 
     return _EmbeddingInitialize_Incremental(theGraph);
@@ -519,7 +519,7 @@ int _EmbeddingInitialize_Incremental(graphP theGraph)
 }
 
 /********************************************************************
- _EmbeddingInitialize_Full()
+ _EmbeddingInitialize_Optimized()
 
  This method performs the following tasks:
  (1) Assign depth first index (DFI) and DFS parentvalues to vertices
@@ -539,13 +539,13 @@ int _EmbeddingInitialize_Incremental(graphP theGraph)
  This performs the same function as _EmbeddingInitialize_Incremental()
  but has optimized total gp_Embed() execution by about 12%.
  ********************************************************************/
-int _EmbeddingInitialize_Full(graphP theGraph)
+int _EmbeddingInitialize_Optimized(graphP theGraph)
 {
     stackP theStack;
     int DFI, v, R, uparent, u, uneighbor, e, f, eTwin, ePrev, eNext;
     int leastValue, child;
 
-    _gp_LogLine("graphEmbed.c/_EmbeddingInitialize_Full() start\n");
+    _gp_LogLine("graphEmbed.c/_EmbeddingInitialize_Optimized() start\n");
 
     theStack = theGraph->theStack;
 
@@ -737,7 +737,7 @@ int _EmbeddingInitialize_Full(graphP theGraph)
 
     theGraph->graphFlags |= GRAPHFLAGS_LOWPOINTSCOMPUTED;
 
-    _gp_LogLine("graphEmbed.c/_EmbeddingInitialize_Full() end\n");
+    _gp_LogLine("graphEmbed.c/_EmbeddingInitialize_Optimized() end\n");
 
     return OK;
 }
