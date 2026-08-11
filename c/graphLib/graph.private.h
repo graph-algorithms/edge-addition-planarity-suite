@@ -4,8 +4,8 @@ All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
 
-#ifndef GRAPHUTILS_PRIVATE_H
-#define GRAPHUTILS_PRIVATE_H
+#ifndef GRAPH_PRIVATE_H
+#define GRAPH_PRIVATE_H
 
 #include "extensionSystem/graphExtensions.h"
 #include "extensionSystem/graphExtensions.private.h"
@@ -209,4 +209,4 @@ extern "C"
 // This number can just be made bigger if ever needed
 #define MAXNUMSUPPORTEDEXTENSIONS 32
 
-#endif /* GRAPHUTILS_PRIVATE_H */
+#endif /* GRAPH_PRIVATE_H */
