@@ -42,8 +42,8 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
 
     G6WriteIteratorP theG6WriteIterator = NULL;
 
-    char const g6WriterInitializationgp_ErrorMessage[] = "Unable to write random graphs to G6 outfile \"%.*s\" due to failure initializing G6WriteIterator.";
-    char const writegp_ErrorMessage[] = "Failed to write graph \"%.*s\".\nMake the directory if not present.";
+    char const g6WriterInitializationErrorMessage[] = "Unable to write random graphs to G6 outfile \"%.*s\" due to failure initializing G6WriteIterator.";
+    char const writeErrorMessage[] = "Failed to write graph \"%.*s\".\nMake the directory if not present.";
 
     char theFileName[FILENAMEMAXLENGTH + 1];
 
@@ -58,7 +58,7 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
         gp_ErrorMessage("Unable to extract command and optional modifier "
                         "character from commandString.\n");
         gp_SetQuietMode(savedQuietModeSetting);
-        return Result;
+        return NOTOK;
     }
 
     if ((Result = GetEmbedFlags(command, modifier, &embedFlags)) != OK)
@@ -66,7 +66,7 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
         gp_ErrorMessage("Unable to derive embedFlags from command and optional "
                         "modifier character.\n");
         gp_SetQuietMode(savedQuietModeSetting);
-        return Result;
+        return NOTOK;
     }
 
     if ((Result = GetNumberIfZero(&NumGraphs, "Enter number of graphs to generate:", 1, 1000000000)) != OK)
@@ -74,7 +74,7 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
         gp_ErrorMessage("Encountered unrecoverable error when prompting for "
                         "NumGraphs.\n");
         gp_SetQuietMode(savedQuietModeSetting);
-        return Result;
+        return NOTOK;
     }
 
     if ((Result = GetNumberIfZero(&SizeOfGraphs, "Enter size of graphs:", 1, 10000000)) != OK)
@@ -82,7 +82,7 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
         gp_ErrorMessage("Encountered unrecoverable error when prompting for "
                         "SizeOfGraphs.\n");
         gp_SetQuietMode(savedQuietModeSetting);
-        return Result;
+        return NOTOK;
     }
 
     theGraph = MakeGraph(SizeOfGraphs, command);
@@ -114,7 +114,7 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
     {
         if (g6_InitWriterWithFileName(theG6WriteIterator, outfileName) != OK)
         {
-            gp_ErrorMessage(g6WriterInitializationgp_ErrorMessage, FILENAME_MAX, outfileName);
+            gp_ErrorMessage(g6WriterInitializationErrorMessage, FILENAME_MAX, outfileName);
             g6_FreeWriter((&theG6WriteIterator));
             gp_Free(&theGraph);
             gp_Free(&origGraph);
@@ -130,7 +130,7 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
         sprintf(theFileName, "random%cn%d.k%d.g6", FILE_DELIMITER, SizeOfGraphs, NumGraphs);
         if (g6_InitWriterWithFileName(theG6WriteIterator, theFileName) != OK)
         {
-            gp_ErrorMessage(g6WriterInitializationgp_ErrorMessage,
+            gp_ErrorMessage(g6WriterInitializationErrorMessage,
                             FILENAME_MAX, theFileName);
             g6_FreeWriter((&theG6WriteIterator));
             gp_Free(&theGraph);
@@ -182,7 +182,7 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
                     gp_ErrorMessage("Unable to write graph number %d using "
                                     "G6WriteIterator.",
                                     K);
-                    Result = writeResult;
+                    Result = NOTOK;
                     break;
                 }
             }
@@ -191,22 +191,26 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
                 sprintf(theFileName, "random%c%d.txt", FILE_DELIMITER, K % 10);
                 if ((writeResult = gp_Write(theGraph, theFileName, WRITE_ADJLIST)) != OK)
                 {
-                    gp_ErrorMessage(writegp_ErrorMessage,
+                    gp_ErrorMessage(writeErrorMessage,
                                     FILENAME_MAX, theFileName);
-                    Result = writeResult;
+                    Result = NOTOK;
                     break;
                 }
             }
+
+            // NOTE: (#56) Spot-testing removal of output file on error.
+            // if (K > 10000)
+            // {
+            //     Result = NOTOK;
+            //     break;
+            // }
 
             if ((Result = gp_CopyGraph(origGraph, theGraph)) != OK)
             {
                 gp_ErrorMessage("Unable to make a copy of graph number %d "
                                 "before embedding.",
                                 K);
-                gp_Free(&theGraph);
-                gp_Free(&origGraph);
-                g6_FreeWriter((&theG6WriteIterator));
-                return Result;
+                break;
             }
 
             if ((Result = gp_DepthFirstSearch(theGraph)) != OK)
@@ -228,9 +232,18 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
             }
 
             Result = gp_Embed(theGraph, embedFlags);
+            if (Result != OK && Result != NONEMBEDDABLE)
+            {
+                gp_ErrorMessage("Embed operation failed on graph number %d.", K);
+                break;
+            }
 
             if (gp_TestEmbedResultIntegrity(theGraph, origGraph, Result) != Result)
+            {
+                gp_ErrorMessage("Embed integrity check failed on graph number %d.", K);
                 Result = NOTOK;
+                break;
+            }
             else
             {
                 if (useExGenerator && embedFlags == EMBEDFLAGS_PLANAR)
@@ -241,7 +254,11 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
                     if (gp_GetM(origGraph) <= 3 * gp_GetN(origGraph) - 6)
                     {
                         if (Result == NONEMBEDDABLE)
+                        {
+                            gp_ErrorMessage("Generated graph was expected to be planar.");
                             Result = NOTOK;
+                            break;
+                        }
                     }
                 }
             }
@@ -256,9 +273,10 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
 
                     if ((writeResult = gp_Write(theGraph, theFileName, WRITE_ADJMATRIX)) != OK)
                     {
-                        gp_ErrorMessage(writegp_ErrorMessage,
+                        gp_ErrorMessage(writeErrorMessage,
                                         FILENAME_MAX, theFileName);
-                        Result = writeResult;
+                        Result = NOTOK;
+                        break;
                     }
                 }
 
@@ -268,9 +286,10 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
 
                     if ((writeResult = gp_Write(theGraph, theFileName, WRITE_ADJLIST)) != OK)
                     {
-                        gp_ErrorMessage(writegp_ErrorMessage,
+                        gp_ErrorMessage(writeErrorMessage,
                                         FILENAME_MAX, theFileName);
-                        Result = writeResult;
+                        Result = NOTOK;
+                        break;
                     }
                 }
             }
@@ -304,32 +323,14 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
 
                         if ((writeResult = gp_Write(theGraph, theFileName, WRITE_ADJMATRIX)) != OK)
                         {
-                            gp_ErrorMessage(writegp_ErrorMessage,
+                            gp_ErrorMessage(writeErrorMessage,
                                             FILENAME_MAX, theFileName);
-                            Result = writeResult;
+                            Result = NOTOK;
+                            break;
                         }
                     }
                 }
             }
-
-            // If there is an error in processing, then write the file for debugging
-            if (Result != OK && Result != NONEMBEDDABLE && !forceQuiet)
-            {
-                sprintf(theFileName, "error%c%d.txt", FILE_DELIMITER, K % 10);
-                if ((writeResult = gp_Write(origGraph, theFileName, WRITE_ADJLIST)) != OK)
-                {
-                    gp_ErrorMessage(writegp_ErrorMessage, FILENAME_MAX, theFileName);
-                    Result = writeResult;
-                }
-            }
-        }
-
-        // Terminate loop on error
-        if (Result != OK && Result != NONEMBEDDABLE)
-        {
-            gp_ErrorMessage("\nError found");
-            Result = NOTOK;
-            break;
         }
 
         // Reset (or recreate) graph for next iteration
@@ -413,6 +414,18 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
             gp_Message("Of the generated graphs, %d did not contain a K_4 "
                        "homeomorph as a subgraph.",
                        MainStatistic);
+        }
+    }
+    else
+    {
+        gp_ErrorMessage("\nError found.");
+        g6_SetOutputErrorFlag(theG6WriteIterator);
+        Result = NOTOK;
+        if (!forceQuiet)
+        {
+            sprintf(theFileName, "error%c%d.txt", FILE_DELIMITER, K % 10);
+            if ((writeResult = gp_Write(origGraph, theFileName, WRITE_ADJLIST)) != OK)
+                gp_ErrorMessage(writeErrorMessage, FILENAME_MAX, theFileName);
         }
     }
 
