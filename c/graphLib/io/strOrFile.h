@@ -27,7 +27,7 @@ extern "C"
         char *fileName;
         char const *fileMode;
         int containerType;
-        int errorFlag;
+        int outputErrorFlag;
         stackP ungetBuf;
     };
 
@@ -54,7 +54,7 @@ extern "C"
 
     int sf_fputs(char const *strToWrite, strOrFileP theStrOrFile);
 
-    int sf_SetErrorFlag(strOrFileP theStrOrFile);
+    int sf_SetOutputErrorFlag(strOrFileP theStrOrFile);
 
     int sf_closeFile(strOrFileP theStrOrFile);
 

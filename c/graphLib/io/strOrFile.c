@@ -25,7 +25,7 @@ char *_sf_DuplicateString(char const *const str)
         return NULL;
 
     strLen = strlen(str) + 1;
-    copy = (char *)malloc(strLen);
+    copy = (char *)malloc(strLen * sizeof(char));
     if (copy != NULL)
         memcpy(copy, str, strLen);
 
@@ -34,12 +34,19 @@ char *_sf_DuplicateString(char const *const str)
 
 int _sf_ShouldRemoveFailedOutputFile(strOrFileP theStrOrFile)
 {
-    return theStrOrFile != NULL &&
-           theStrOrFile->containerType == OUTPUT_CONTAINER &&
-           theStrOrFile->errorFlag &&
-           theStrOrFile->fileName != NULL &&
-           theStrOrFile->fileMode != NULL &&
-           strcmp(theStrOrFile->fileMode, WRITETEXT) == 0;
+    // NOTE: (#56) Used for spot-testing removal of output files upon error.
+    // return FALSE;
+    return (theStrOrFile != NULL &&
+            theStrOrFile->containerType == OUTPUT_CONTAINER &&
+            theStrOrFile->outputErrorFlag &&
+            theStrOrFile->fileName != NULL &&
+            strcmp(theStrOrFile->fileName, "stdout") != 0 &&
+            strcmp(theStrOrFile->fileName, "stderr") != 0 &&
+            theStrOrFile->pFile != NULL &&
+            theStrOrFile->fileMode != NULL &&
+            strcmp(theStrOrFile->fileMode, WRITETEXT) == 0)
+               ? TRUE
+               : FALSE;
 }
 
 int _sf_RemoveFailedOutputFile(strOrFileP theStrOrFile)
@@ -250,7 +257,6 @@ int sf_IsValidStrOrFile(strOrFileP theStrOrFile)
         if (
             (theStrOrFile->ungetBuf == NULL) ||
             (theStrOrFile->theStrBuf != NULL && sb_GetSize(theStrOrFile->theStrBuf) == 0))
-
         {
             return FALSE;
         }
@@ -717,25 +723,25 @@ int sf_fputs(char const *strToWrite, strOrFileP theStrOrFile)
     }
 
     if (outputLen == EOF)
-        sf_SetErrorFlag(theStrOrFile);
+        sf_SetOutputErrorFlag(theStrOrFile);
 
     return outputLen;
 }
 
 /********************************************************************
- sf_SetErrorFlag()
+ sf_SetOutputErrorFlag()
 
  Marks the container as having encountered an error while reading or writing.
  Output containers use this state during sf_Free() to avoid returning partial
  strings and to remove partial ordinary output files.
  ********************************************************************/
 
-int sf_SetErrorFlag(strOrFileP theStrOrFile)
+int sf_SetOutputErrorFlag(strOrFileP theStrOrFile)
 {
-    if (!sf_IsValidStrOrFile(theStrOrFile))
+    if (theStrOrFile == NULL)
         return NOTOK;
 
-    theStrOrFile->errorFlag = TRUE;
+    theStrOrFile->outputErrorFlag = TRUE;
 
     return OK;
 }
@@ -762,7 +768,6 @@ int sf_closeFile(strOrFileP theStrOrFile)
         return NOTOK;
 
     pFile = theStrOrFile->pFile;
-    theStrOrFile->pFile = NULL;
     if (pFile != NULL)
     {
         int errorCode = 0;
@@ -774,13 +779,27 @@ int sf_closeFile(strOrFileP theStrOrFile)
 
         if (errorCode < 0)
         {
-            theStrOrFile->errorFlag = TRUE;
+            theStrOrFile->outputErrorFlag = TRUE;
             closeResult = NOTOK;
         }
-    }
 
-    if (_sf_RemoveFailedOutputFile(theStrOrFile) != OK)
-        closeResult = NOTOK;
+        // If the outputErrorFlag was already set on the output container, or if
+        // an error was encountered when trying to fclose() the file, then the
+        // output file must be removed. However, the behaviour of what happens
+        // when you call remove() after fclose() fails is platform-dependent: on
+        // Windows, remove() will fail and the output file will still persist,
+        // whereas on POSIX systems, the file will only persist on disk until
+        // any processes with open file descriptors (i.e. should only be this
+        // thread) terminate.
+        if (_sf_RemoveFailedOutputFile(theStrOrFile) != OK)
+            closeResult = NOTOK;
+
+        // NOTE: This indicates that we no longer own the FILE *, but we've
+        // delayed to this point because the FILE * tells us whether we've
+        // successfully opened the file, which is part of how we determine
+        // whether or not to remove() the file in an error case.
+        theStrOrFile->pFile = NULL;
+    }
 
     sp_Free(&(theStrOrFile->ungetBuf));
 
@@ -814,11 +833,11 @@ void sf_Free(strOrFileP *pStrOrFile)
         {
             // In an error state, discard the partial string instead of
             // returning it to the caller.
-            if ((*pStrOrFile)->pOutputStr != NULL && !(*pStrOrFile)->errorFlag)
-            {
+            if ((*pStrOrFile)->pOutputStr != NULL && !(*pStrOrFile)->outputErrorFlag)
                 (*((*pStrOrFile)->pOutputStr)) = sb_TakeString((*pStrOrFile)->theStrBuf);
-                (*pStrOrFile)->pOutputStr = NULL;
-            }
+
+            (*pStrOrFile)->pOutputStr = NULL;
+
             sb_Free(&((*pStrOrFile)->theStrBuf));
         }
 
@@ -827,9 +846,7 @@ void sf_Free(strOrFileP *pStrOrFile)
         (*pStrOrFile)->pFile = NULL;
 
         if ((*pStrOrFile)->ungetBuf != NULL)
-        {
             sp_Free(&((*pStrOrFile)->ungetBuf));
-        }
         (*pStrOrFile)->ungetBuf = NULL;
 
         if ((*pStrOrFile)->fileName != NULL)

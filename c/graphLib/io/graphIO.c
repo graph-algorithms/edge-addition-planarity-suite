@@ -333,8 +333,9 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
     if (zeroBased)
         theGraph->graphFlags |= GRAPHFLAGS_ZEROBASEDIO;
 
-    // The exit condition of this method is to have the index member of each non-virtual vertex v 
-    // be equal to v, until overridden by a depth-first search (e.g., gp_DepthFirstSearch())
+    // The exit condition of this method is to have the index member of each
+    // non-virtual vertex v be equal to v, until overridden by a depth-first
+    // search (e.g., gp_DepthFirstSearch())
     for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
         gp_SetIndex(theGraph, v, v);
 
@@ -986,21 +987,6 @@ int gp_WriteToString(graphP theGraph, char **pOutputStr, int writeMode)
 
     sf_Free(&outputContainer);
 
-    // NOTE: (#56) If an error was encountered when we _WriteGraph(), we do not
-    // want to return garbage to the caller. When we free the output container,
-    // if writing to string, this means that we will have taken the string from
-    // the internal theStrBuf and have assigned it to the container's
-    // pointer-pointer pOutputStr for output; if the RetVal is not OK, we
-    // must free the string and set the pointer-pointer to NULL.
-    if (RetVal != OK)
-    {
-        if (pOutputStr != NULL && (*pOutputStr) != NULL)
-        {
-            free((*pOutputStr));
-            pOutputStr = NULL;
-        }
-    }
-
     // NOTE: If the output string is NULL or empty, need to report NOTOK
     if (pOutputStr != NULL && (*pOutputStr) == NULL)
         RetVal = NOTOK;
@@ -1028,6 +1014,7 @@ int gp_WriteToString(graphP theGraph, char **pOutputStr, int writeMode)
 int _WriteGraph(graphP theGraph, strOrFileP *pOutputContainer, int Mode)
 {
     int RetVal = OK;
+    int extraDataAllowed = FALSE;
 
     switch (Mode)
     {
@@ -1038,9 +1025,13 @@ int _WriteGraph(graphP theGraph, strOrFileP *pOutputContainer, int Mode)
         break;
     case WRITE_ADJLIST:
         RetVal = _WriteAdjList(theGraph, (*pOutputContainer));
+        if (RetVal == OK)
+            extraDataAllowed = TRUE;
         break;
     case WRITE_ADJMATRIX:
         RetVal = _WriteAdjMatrix(theGraph, (*pOutputContainer));
+        if (RetVal == OK)
+            extraDataAllowed = TRUE;
         break;
     case WRITE_DEBUGINFO:
         RetVal = _WriteDebugInfo(theGraph, (*pOutputContainer));
@@ -1050,7 +1041,7 @@ int _WriteGraph(graphP theGraph, strOrFileP *pOutputContainer, int Mode)
         break;
     }
 
-    if (RetVal == OK)
+    if (extraDataAllowed)
     {
         char *extraData = NULL;
 
@@ -1065,6 +1056,9 @@ int _WriteGraph(graphP theGraph, strOrFileP *pOutputContainer, int Mode)
             extraData = NULL;
         }
     }
+
+    if (RetVal != OK && pOutputContainer != NULL && (*pOutputContainer) != NULL)
+        sf_SetOutputErrorFlag((*pOutputContainer));
 
     return RetVal;
 }
