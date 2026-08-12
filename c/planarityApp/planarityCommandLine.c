@@ -36,9 +36,11 @@ int runTestAllGraphsTest(char const *commandString, char const *infileName);
 int runHideRestoreTest(graphP theGraph);
 int runIdentifyContractTest(graphP theGraph);
 int runDigraphTests(void);
+int runGraphMLTests(void);
 int runDrawPlanarNonplanarWriteTest(void);
 int testPetersenDigraph(void);
 int testDigraphTranspose(void);
+int runBasicGraphMLWriteTest(void);
 
 /****************************************************************************
  Command Line Processor
@@ -243,6 +245,8 @@ int runQuickRegressionTests(int argc, char *argv[])
     else if (runIdentifyContractTests() != OK)
         retVal = NOTOK;
     else if (runDigraphTests() != OK)
+        retVal = NOTOK;
+    else if (runGraphMLTests() != OK)
         retVal = NOTOK;
 
     // All done.
@@ -1686,4 +1690,43 @@ int runDigraphTests(void)
         gp_Message("Finished Digraph Tests.\n");
 
     return retVal;
+}
+
+int runBasicGraphMLWriteTest(void)
+{
+    graphP G = gp_New();
+    char *actualOutput = NULL;
+    int Result = OK;
+
+    if (G == NULL)
+        return NOTOK;
+
+    if (gp_Read(G, "Digraph.transposeTest.txt") != OK ||
+        gp_WriteToString(G, &actualOutput, WRITE_GRAPHML) != OK ||
+        actualOutput == NULL ||
+        TextFileMatchesString("Digraph.transposeTest.graphml", actualOutput) != TRUE)
+        Result = NOTOK;
+
+    if (actualOutput != NULL)
+        free(actualOutput);
+    gp_Free(&G);
+
+    return Result;
+}
+
+int runGraphMLTests(void)
+{
+    int Result = OK;
+
+    gp_Message("Starting GraphML Tests");
+
+    if (runBasicGraphMLWriteTest() != OK)
+    {
+        gp_ErrorMessage("Basic GraphML write test failed.");
+        Result = NOTOK;
+    }
+    else
+        gp_Message("Finished GraphML Tests.\n");
+
+    return Result;
 }

@@ -53,6 +53,7 @@ extern "C"
     char *sf_fgets(char *str, int count, strOrFileP theStrOrFile);
 
     int sf_fputs(char const *strToWrite, strOrFileP theStrOrFile);
+    int sf_WriteInteger(int intToWrite, strOrFileP theStrOrFile);
 
     int sf_SetOutputErrorFlag(strOrFileP theStrOrFile);
 
