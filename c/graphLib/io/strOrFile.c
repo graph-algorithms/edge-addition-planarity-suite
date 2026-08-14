@@ -738,7 +738,7 @@ int sf_fputs(char const *strToWrite, strOrFileP theStrOrFile)
 
 int sf_WriteInteger(int intToWrite, strOrFileP theStrOrFile)
 {
-    int result = NOTOK;
+    int result = OK;
 
     if (!sf_IsValidStrOrFile(theStrOrFile) ||
         theStrOrFile->containerType != OUTPUT_CONTAINER)

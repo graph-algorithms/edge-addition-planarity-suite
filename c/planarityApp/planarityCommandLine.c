@@ -1634,9 +1634,9 @@ int testDigraphTranspose(void)
     char *actualOutput = NULL;
     char const *inputFileName = NULL;
     char const *expectedOutputFileName = NULL;
-    int preservedEdgeSource;
-    int preservedEdgeTarget;
-    int e;
+    int preservedEdgeSource = NIL;
+    int preservedEdgeTarget = NIL;
+    int e = NIL;
 
     if (G == NULL)
         return NOTOK;
