@@ -729,6 +729,33 @@ int sf_fputs(char const *strToWrite, strOrFileP theStrOrFile)
 }
 
 /********************************************************************
+ sf_WriteInteger()
+
+ Writes an integer to a string-or-file output container.
+
+ Returns OK on success, NOTOK on failure.
+ ********************************************************************/
+
+int sf_WriteInteger(int intToWrite, strOrFileP theStrOrFile)
+{
+    int result = OK;
+
+    if (!sf_IsValidStrOrFile(theStrOrFile) ||
+        theStrOrFile->containerType != OUTPUT_CONTAINER)
+        return NOTOK;
+
+    if (theStrOrFile->pFile != NULL)
+        result = fprintf(theStrOrFile->pFile, "%d", intToWrite) < 0 ? NOTOK : OK;
+    else if (theStrOrFile->theStrBuf != NULL)
+        result = sb_ConcatInt(theStrOrFile->theStrBuf, intToWrite);
+
+    if (result != OK)
+        sf_SetOutputErrorFlag(theStrOrFile);
+
+    return result;
+}
+
+/********************************************************************
  sf_SetOutputErrorFlag()
 
  Marks the container as having encountered an error while reading or writing.
