@@ -24,6 +24,7 @@ See the LICENSE.TXT file for licensing information.
 /* Imported functions */
 extern int _g6_ReadGraphFromStrOrFile(graphP theGraph, strOrFileP *pG6InputContainer);
 extern int _g6_WriteGraphToStrOrFile(graphP theGraph, strOrFileP *pOutputContainer);
+extern int _WriteGraphMLGraph(graphP theGraph, strOrFileP outputContainer);
 
 /* Private functions (exported to system) */
 
@@ -927,9 +928,10 @@ int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer)
  gp_Write()
  Writes theGraph into the file.
  Pass "stdout" or "stderr" to fileName to write to the corresponding stream
- Pass WRITE_G6, WRITE_ADJLIST, WRITE_ADJMATRIX, or WRITE_DEBUGINFO for writeMode
+ Pass WRITE_G6, WRITE_GRAPHML, WRITE_ADJLIST, WRITE_ADJMATRIX, or
+ WRITE_DEBUGINFO for writeMode.
 
- NOTE: For digraphs, it is an error to use a writeMode other than WRITE_ADJLIST
+ NOTE: For digraphs, only WRITE_ADJLIST and WRITE_GRAPHML are supported.
 
  Returns NOTOK on error, OK on success.
  ********************************************************************/
@@ -963,10 +965,10 @@ int gp_Write(graphP theGraph, char const *fileName, int writeMode)
  * The string is owned by the caller and should be released with
  * free() when the caller doesn't need the string anymore.
  * The format of the content written into the returned string is based
- * on writeMode: WRITE_G6, WRITE_ADJLIST, or WRITE_ADJMATRIX
+ * on writeMode: WRITE_G6, WRITE_GRAPHML, WRITE_ADJLIST, or WRITE_ADJMATRIX
  * (the WRITE_DEBUGINFO writeMode is not supported at this time)
 
- NOTE: For digraphs, it is an error to use a mode other than WRITE_ADJLIST
+ NOTE: For digraphs, only WRITE_ADJLIST and WRITE_GRAPHML are supported.
 
  Returns NOTOK on error, or OK on success along with an allocated string
          *pOutputStr that the caller must free()
@@ -1004,9 +1006,10 @@ int gp_WriteToString(graphP theGraph, char **pOutputStr, int writeMode)
  _WriteGraph()
  Writes theGraph into the strOrFile container.
 
- Pass WRITE_G6, WRITE_ADJLIST, WRITE_ADJMATRIX, or WRITE_DEBUGINFO for the Mode
+ Pass WRITE_G6, WRITE_GRAPHML, WRITE_ADJLIST, WRITE_ADJMATRIX, or
+ WRITE_DEBUGINFO for the Mode.
 
- NOTE: For digraphs, it is an error to use a mode other than WRITE_ADJLIST
+ NOTE: For digraphs, only WRITE_ADJLIST and WRITE_GRAPHML are supported.
 
  Returns NOTOK on error, OK on success.
  ********************************************************************/
@@ -1035,6 +1038,9 @@ int _WriteGraph(graphP theGraph, strOrFileP *pOutputContainer, int Mode)
         break;
     case WRITE_DEBUGINFO:
         RetVal = _WriteDebugInfo(theGraph, (*pOutputContainer));
+        break;
+    case WRITE_GRAPHML:
+        RetVal = _WriteGraphMLGraph(theGraph, (*pOutputContainer));
         break;
     default:
         RetVal = NOTOK;
