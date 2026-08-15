@@ -36,9 +36,11 @@ int runTestAllGraphsTest(char const *commandString, char const *infileName);
 int runHideRestoreTest(graphP theGraph);
 int runIdentifyContractTest(graphP theGraph);
 int runDigraphTests(void);
+int runGraphMLTests(void);
 int runDrawPlanarNonplanarWriteTest(void);
 int testPetersenDigraph(void);
 int testDigraphTranspose(void);
+int runBasicGraphMLWriteTest(void);
 
 /****************************************************************************
  Command Line Processor
@@ -243,6 +245,8 @@ int runQuickRegressionTests(int argc, char *argv[])
     else if (runIdentifyContractTests() != OK)
         retVal = NOTOK;
     else if (runDigraphTests() != OK)
+        retVal = NOTOK;
+    else if (runGraphMLTests() != OK)
         retVal = NOTOK;
 
     // All done.
@@ -1482,16 +1486,22 @@ int testPetersenDigraph(void)
 {
     graphP G = gp_New();
     graphP G1 = NULL;
+    char const *inputFileName = NULL;
     int quietModeCache, v, e, eTwin, eDir, eTwinDir;
     char *dummyStr = NULL; // Safe throwaway pointer for early-outs
 
     if (G == NULL)
         return NOTOK;
 
-    //  Read Petersen.digraph.txt into a graph G
-    if (gp_Read(G, "Petersen.digraph.txt") != OK)
+#ifdef USE_1BASEDARRAYS
+    inputFileName = "Petersen.digraph.txt";
+#else
+    inputFileName = "Petersen.digraph.0-based.txt";
+#endif
+
+    if (gp_Read(G, inputFileName) != OK)
     {
-        gp_ErrorMessage("Failed to read Petersen.digraph.txt");
+        gp_ErrorMessage("Failed to read Petersen digraph sample.");
         gp_Free(&G);
         return NOTOK;
     }
@@ -1622,23 +1632,39 @@ int testDigraphTranspose(void)
 {
     graphP G = gp_New();
     char *actualOutput = NULL;
-    int e;
+    char const *inputFileName = NULL;
+    char const *expectedOutputFileName = NULL;
+    int preservedEdgeSource = NIL;
+    int preservedEdgeTarget = NIL;
+    int e = NIL;
 
     if (G == NULL)
         return NOTOK;
 
-    if (gp_Read(G, "Petersen.digraph.txt") != OK)
+#ifdef USE_1BASEDARRAYS
+    inputFileName = "Petersen.digraph.txt";
+    expectedOutputFileName = "Digraph.transposeTest.txt";
+    preservedEdgeSource = 5;
+    preservedEdgeTarget = 1;
+#else
+    inputFileName = "Petersen.digraph.0-based.txt";
+    expectedOutputFileName = "Digraph.transposeTest.0-based.txt";
+    preservedEdgeSource = 4;
+    preservedEdgeTarget = 0;
+#endif
+
+    if (gp_Read(G, inputFileName) != OK)
     {
-        gp_ErrorMessage("Failed to read Petersen.digraph.txt for transpose test.");
+        gp_ErrorMessage("Failed to read Petersen digraph sample for transpose test.");
         gp_Free(&G);
         return NOTOK;
     }
 
     // Preserve one undirected edge while transposing all directed edges.
-    e = gp_FindDirectedEdge(G, 5, 1, EDGEFLAG_DIRECTION_OUTONLY);
+    e = gp_FindDirectedEdge(G, preservedEdgeSource, preservedEdgeTarget, EDGEFLAG_DIRECTION_OUTONLY);
     if (e == NIL)
     {
-        gp_ErrorMessage("Failed to find directed edge (5 -> 1).");
+        gp_ErrorMessage("Failed to find directed edge to preserve during transpose.");
         gp_Free(&G);
         return NOTOK;
     }
@@ -1652,7 +1678,7 @@ int testDigraphTranspose(void)
     }
 
     if (gp_WriteToString(G, &actualOutput, WRITE_ADJLIST) != OK || actualOutput == NULL ||
-        TextFileMatchesString("Digraph.transposeTest.txt", actualOutput) != TRUE)
+        TextFileMatchesString(expectedOutputFileName, actualOutput) != TRUE)
     {
         gp_ErrorMessage("Directed graph transpose output did not match the expected sample.");
         gp_Free(&G);
@@ -1686,4 +1712,53 @@ int runDigraphTests(void)
         gp_Message("Finished Digraph Tests.\n");
 
     return retVal;
+}
+
+int runBasicGraphMLWriteTest(void)
+{
+    graphP G = gp_New();
+    char *actualOutput = NULL;
+    char const *inputFileName = NULL;
+    char const *expectedOutputFileName = NULL;
+    int Result = OK;
+
+    if (G == NULL)
+        return NOTOK;
+
+#ifdef USE_1BASEDARRAYS
+    inputFileName = "Digraph.transposeTest.txt";
+    expectedOutputFileName = "Digraph.transposeTest.graphml";
+#else
+    inputFileName = "Digraph.transposeTest.0-based.txt";
+    expectedOutputFileName = "Digraph.transposeTest.0-based.graphml";
+#endif
+
+    if (gp_Read(G, inputFileName) != OK ||
+        gp_WriteToString(G, &actualOutput, WRITE_GRAPHML) != OK ||
+        actualOutput == NULL ||
+        TextFileMatchesString(expectedOutputFileName, actualOutput) != TRUE)
+        Result = NOTOK;
+
+    if (actualOutput != NULL)
+        free(actualOutput);
+    gp_Free(&G);
+
+    return Result;
+}
+
+int runGraphMLTests(void)
+{
+    int Result = OK;
+
+    gp_Message("Starting GraphML Tests");
+
+    if (runBasicGraphMLWriteTest() != OK)
+    {
+        gp_ErrorMessage("Basic GraphML write test failed.");
+        Result = NOTOK;
+    }
+    else
+        gp_Message("Finished GraphML Tests.\n");
+
+    return Result;
 }

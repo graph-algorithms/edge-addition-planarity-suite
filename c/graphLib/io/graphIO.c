@@ -24,6 +24,7 @@ See the LICENSE.TXT file for licensing information.
 /* Imported functions */
 extern int _g6_ReadGraphFromStrOrFile(graphP theGraph, strOrFileP *pG6InputContainer);
 extern int _g6_WriteGraphToStrOrFile(graphP theGraph, strOrFileP *pOutputContainer);
+extern int _WriteGraphMLGraph(graphP theGraph, strOrFileP outputContainer);
 
 /* Private functions (exported to system) */
 
@@ -333,8 +334,9 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
     if (zeroBased)
         theGraph->graphFlags |= GRAPHFLAGS_ZEROBASEDIO;
 
-    // The exit condition of this method is to have the index member of each non-virtual vertex v 
-    // be equal to v, until overridden by a depth-first search (e.g., gp_DepthFirstSearch())
+    // The exit condition of this method is to have the index member of each
+    // non-virtual vertex v be equal to v, until overridden by a depth-first
+    // search (e.g., gp_DepthFirstSearch())
     for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
         gp_SetIndex(theGraph, v, v);
 
@@ -357,7 +359,7 @@ int _ReadLEDAGraph(graphP theGraph, strOrFileP inputContainer)
 
     int graphType = 0;
     int N = 0, M = 0, u = NIL, v = NIL;
-    int zeroBasedOffset = gp_LowerBoundVertexStorage(theGraph) == 0 ? 1 : 0;
+    int zeroBasedOffset = (gp_LowerBoundVertexStorage(theGraph) == 0) ? 1 : 0;
     char Line[MAXLINE + 1];
 
     memset(Line, '\0', (MAXLINE + 1));
@@ -926,9 +928,10 @@ int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer)
  gp_Write()
  Writes theGraph into the file.
  Pass "stdout" or "stderr" to fileName to write to the corresponding stream
- Pass WRITE_G6, WRITE_ADJLIST, WRITE_ADJMATRIX, or WRITE_DEBUGINFO for writeMode
+ Pass WRITE_G6, WRITE_GRAPHML, WRITE_ADJLIST, WRITE_ADJMATRIX, or
+ WRITE_DEBUGINFO for writeMode.
 
- NOTE: For digraphs, it is an error to use a writeMode other than WRITE_ADJLIST
+ NOTE: For digraphs, only WRITE_ADJLIST and WRITE_GRAPHML are supported.
 
  Returns NOTOK on error, OK on success.
  ********************************************************************/
@@ -962,10 +965,10 @@ int gp_Write(graphP theGraph, char const *fileName, int writeMode)
  * The string is owned by the caller and should be released with
  * free() when the caller doesn't need the string anymore.
  * The format of the content written into the returned string is based
- * on writeMode: WRITE_G6, WRITE_ADJLIST, or WRITE_ADJMATRIX
+ * on writeMode: WRITE_G6, WRITE_GRAPHML, WRITE_ADJLIST, or WRITE_ADJMATRIX
  * (the WRITE_DEBUGINFO writeMode is not supported at this time)
 
- NOTE: For digraphs, it is an error to use a mode other than WRITE_ADJLIST
+ NOTE: For digraphs, only WRITE_ADJLIST and WRITE_GRAPHML are supported.
 
  Returns NOTOK on error, or OK on success along with an allocated string
          *pOutputStr that the caller must free()
@@ -986,21 +989,6 @@ int gp_WriteToString(graphP theGraph, char **pOutputStr, int writeMode)
 
     sf_Free(&outputContainer);
 
-    // NOTE: (#56) If an error was encountered when we _WriteGraph(), we do not
-    // want to return garbage to the caller. When we free the output container,
-    // if writing to string, this means that we will have taken the string from
-    // the internal theStrBuf and have assigned it to the container's
-    // pointer-pointer pOutputStr for output; if the RetVal is not OK, we
-    // must free the string and set the pointer-pointer to NULL.
-    if (RetVal != OK)
-    {
-        if (pOutputStr != NULL && (*pOutputStr) != NULL)
-        {
-            free((*pOutputStr));
-            pOutputStr = NULL;
-        }
-    }
-
     // NOTE: If the output string is NULL or empty, need to report NOTOK
     if (pOutputStr != NULL && (*pOutputStr) == NULL)
         RetVal = NOTOK;
@@ -1018,9 +1006,10 @@ int gp_WriteToString(graphP theGraph, char **pOutputStr, int writeMode)
  _WriteGraph()
  Writes theGraph into the strOrFile container.
 
- Pass WRITE_G6, WRITE_ADJLIST, WRITE_ADJMATRIX, or WRITE_DEBUGINFO for the Mode
+ Pass WRITE_G6, WRITE_GRAPHML, WRITE_ADJLIST, WRITE_ADJMATRIX, or
+ WRITE_DEBUGINFO for the Mode.
 
- NOTE: For digraphs, it is an error to use a mode other than WRITE_ADJLIST
+ NOTE: For digraphs, only WRITE_ADJLIST and WRITE_GRAPHML are supported.
 
  Returns NOTOK on error, OK on success.
  ********************************************************************/
@@ -1028,6 +1017,7 @@ int gp_WriteToString(graphP theGraph, char **pOutputStr, int writeMode)
 int _WriteGraph(graphP theGraph, strOrFileP *pOutputContainer, int Mode)
 {
     int RetVal = OK;
+    int extraDataAllowed = FALSE;
 
     switch (Mode)
     {
@@ -1038,19 +1028,26 @@ int _WriteGraph(graphP theGraph, strOrFileP *pOutputContainer, int Mode)
         break;
     case WRITE_ADJLIST:
         RetVal = _WriteAdjList(theGraph, (*pOutputContainer));
+        if (RetVal == OK)
+            extraDataAllowed = TRUE;
         break;
     case WRITE_ADJMATRIX:
         RetVal = _WriteAdjMatrix(theGraph, (*pOutputContainer));
+        if (RetVal == OK)
+            extraDataAllowed = TRUE;
         break;
     case WRITE_DEBUGINFO:
         RetVal = _WriteDebugInfo(theGraph, (*pOutputContainer));
+        break;
+    case WRITE_GRAPHML:
+        RetVal = _WriteGraphMLGraph(theGraph, (*pOutputContainer));
         break;
     default:
         RetVal = NOTOK;
         break;
     }
 
-    if (RetVal == OK)
+    if (extraDataAllowed)
     {
         char *extraData = NULL;
 
@@ -1065,6 +1062,9 @@ int _WriteGraph(graphP theGraph, strOrFileP *pOutputContainer, int Mode)
             extraData = NULL;
         }
     }
+
+    if (RetVal != OK && pOutputContainer != NULL && (*pOutputContainer) != NULL)
+        sf_SetOutputErrorFlag((*pOutputContainer));
 
     return RetVal;
 }
