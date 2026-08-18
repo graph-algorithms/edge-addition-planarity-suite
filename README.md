@@ -18,7 +18,7 @@ These instructions will get you a copy of the project up and running on your loc
 
 ### Pre-compiled Executable Releases for Non-Developers
 
-On several (Debian-based) distributions of Linux, you may be able to get the planarity executable with `sudo apt install planarity`, or you may already have access to its key functionality if you have SageMath or MATLAB. For non-developer users on an operating system _Platform_ supported by the release, a pre-compiled executable version of the `planarity` executable can be obtained by downloading from the release tag and then decompressing the `planarity-N.N.N.N.`_Platform_`Exe.zip` file. 
+On several (Debian-based) distributions of Linux, you may be able to get the planarity executable with `sudo apt install planarity`, or you may already have access to its key functionality if you have SageMath or MATLAB. For non-developer users on an operating system _Platform_ and _Processor_ supported by the release, a pre-compiled executable version of the `planarity` executable can be obtained by downloading from the release tag and then decompressing the `planarity-N.N.N.N.`_Platform-Processor_`.zip` file. 
 
 If you run the `planarity` executable program, it will offer an interactive, menu-driven mode that lets a user manually select algorithms to run and, where appropriate, files containing graphs on which to run the algorithms. 
 
@@ -46,7 +46,7 @@ The result is a validated `planarity-N.N.N.N.tar.gz` distribution, where `N.N.N.
 
 If you have done the steps to set up the development environment and work with the code, then you can make and run the software using the development environment, so you don't necessarily need to make or run the software using the process below.
 
-You also don't necessarily need to `make` and `make install` the planarity software on Linux if you are able to get it using `sudo apt planarity` (e.g., using a Debian-based Linux distribution, which uses [`apt`](https://en.wikipedia.org/wiki/APT_(software)) for package management).
+You also don't necessarily need to `make` and `make install` the planarity software on Linux if you are able to get it using `sudo apt install planarity` (e.g., using a Debian-based Linux distribution, which uses [`apt`](https://en.wikipedia.org/wiki/APT_(software)) for package management).
 
 However, you may have only downloaded the distribution (i.e., `planarity-N.N.N.N.tar.gz`) from a Release tag of this project. Once you have decompressed the distribution into a directory, you can make it by getting into `bash` (e.g., on Windows, open the start menu and start typing "MSYS2 UCRT64" to open the correct terminal app) and then entering the following commands: 
 1. `./configure`
