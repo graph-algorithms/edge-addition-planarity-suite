@@ -6,4 +6,4 @@ We are dedicated to providing a harassment-free community for everyone, regardle
 
 # How to Report
 
-Please send email to report any instance of alleged misconduct directly to the project's ombudsperson, [John M. Boyer](jboyer@acm.org), with cc to [John's backup email](john.boyer.phd@gmail.com). Your concern will be investigated and handled promptly. If you feel you have been unfairly blocked, please email the project's ombudsperson. 
+Please send email to report any instance of alleged misconduct directly to the project's ombudsperson, [John M. Boyer](mailto:jboyer@acm.org), with cc to [John's backup email](mailto:john.boyer.phd@gmail.com). Your concern will be investigated and handled promptly. If you feel you have been unfairly blocked, please email the project's ombudsperson. 
