@@ -705,6 +705,9 @@ int _ClearAllVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x)
 {
     int e, eTwin;
 
+    // Suppresses an unused-parameter warning for a parameter we intend to keep
+    (void)w;
+
     // We want to exit u from e, but we get eTwin first here in order to avoid
     // work, in case the degree of u is greater than 2.
     eTwin = _gp_FindEdge(theGraph, v, u);
@@ -746,6 +749,9 @@ int _ClearAllVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x)
 int _SetAllVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x)
 {
     int e, eTwin;
+
+    // Suppresses an unused-parameter warning for a parameter we intend to keep
+    (void)w;
 
     // We want to exit u from e, but we get eTwin first here in order to avoid
     // work, in case the degree of u is greater than 2.

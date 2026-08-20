@@ -597,6 +597,11 @@ int _ReadGraph(graphP theGraph, strOrFileP *pInputContainer)
 
 int _ReadPostprocess(graphP theGraph, char *extraData)
 {
+    // Suppresses an unused-parameter warning for a parameter we intend to keep
+    (void)theGraph;
+    // Suppresses an unused-parameter warning for a parameter we intend to keep
+    (void)extraData;
+
     return OK;
 }
 
@@ -1077,5 +1082,10 @@ int _WriteGraph(graphP theGraph, strOrFileP *pOutputContainer, int Mode)
 
 int _WritePostprocess(graphP theGraph, char **pExtraData)
 {
+    // Suppresses an unused-parameter warning for a parameter we intend to keep
+    (void)theGraph;
+    // Suppresses an unused-parameter warning for a parameter we intend to keep
+    (void)pExtraData;
+
     return OK;
 }
