@@ -1901,9 +1901,9 @@ void _DetachEdgeRecord(graphP theGraph, int e)
        caller can guard against these conditions by pre-testing that
        u != v and that gp_FindEdge() returns NIL.
 
- Returns OK on success, NOTOK on failure, or AT_EDGE_CAPACITY_LIMIT if
-         adding the edge would exceed the graph's edge capacity (the
-         caller can use gp_DynamicAddEdge()).
+ Returns OK on success, NOTOK on failure (including when adding the
+         edge would exceed the graph's edge capacity; the caller can
+         use gp_DynamicAddEdge()).
  ********************************************************************/
 
 int gp_AddEdge(graphP theGraph, int u, int ulink, int v, int vlink)
@@ -1918,7 +1918,10 @@ int gp_AddEdge(graphP theGraph, int u, int ulink, int v, int vlink)
         return NOTOK;
     }
 
-    return gp_InsertEdge(theGraph, u, NIL, ulink, v, NIL, vlink);
+    if (gp_InsertEdge(theGraph, u, NIL, ulink, v, NIL, vlink) != OK)
+        return NOTOK;
+
+    return OK;
 }
 
 /********************************************************************
@@ -1932,7 +1935,10 @@ int gp_AddEdge(graphP theGraph, int u, int ulink, int v, int vlink)
  ********************************************************************/
 int gp_DynamicAddEdge(graphP theGraph, int u, int ulink, int v, int vlink)
 {
-    return gp_DynamicInsertEdge(theGraph, u, NIL, ulink, v, NIL, vlink);
+    if (gp_DynamicInsertEdge(theGraph, u, NIL, ulink, v, NIL, vlink) != OK)
+        return NOTOK;
+
+    return OK;
 }
 
 /********************************************************************
@@ -1975,7 +1981,10 @@ int gp_DynamicInsertEdge(graphP theGraph, int u, int e_u, int e_ulink,
             return NOTOK;
     }
 
-    return gp_InsertEdge(theGraph, u, e_u, e_ulink, v, e_v, e_vlink);
+    if (gp_InsertEdge(theGraph, u, e_u, e_ulink, v, e_v, e_vlink) != OK)
+        return NOTOK;
+
+    return OK;
 }
 
 /********************************************************************
