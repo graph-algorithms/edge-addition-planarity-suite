@@ -646,6 +646,13 @@ void _CollectDrawingData(DrawPlanarContext *context, int RootVertex, int W, int 
     graphP theEmbedding = context->theGraph;
     int K, Parent, BicompRoot, DFSChild, direction, descendant;
 
+    // Suppresses an unused-parameter warning for a parameter we intend to keep
+    (void)RootVertex;
+    // Suppresses an unused-parameter warning for a parameter we intend to keep
+    (void)W;
+    // Suppresses an unused-parameter warning for a parameter we intend to keep
+    (void)WPrevLink;
+
     _gp_LogLine("\ngraphDrawPlanar.c/_CollectDrawingData() start");
     _gp_LogLine(_gp_MakeLogStr3("_CollectDrawingData(RootVertex=%d, W=%d, W_in=%d)",
                                 RootVertex, W, WPrevLink));

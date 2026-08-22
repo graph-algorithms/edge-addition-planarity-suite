@@ -111,6 +111,7 @@ int _WriteGraphMLGraphVertices(graphP theGraph, int index, strOrFileP outputCont
     int v = NIL;
     int zeroBasedVertexOffset = 0;
 
+    // Suppresses an unused-parameter warning for a parameter we intend to keep
     (void)index;
 
     if (theGraph == NULL || !sf_IsValidStrOrFile(outputContainer))
@@ -145,6 +146,7 @@ int _WriteGraphMLGraphEdges(graphP theGraph, int index, strOrFileP outputContain
     int targetVertex = NIL;
     int zeroBasedVertexOffset = 0;
 
+    // Suppresses an unused-parameter warning for a parameter we intend to keep
     (void)index;
 
     if (theGraph == NULL || !sf_IsValidStrOrFile(outputContainer))
@@ -198,6 +200,7 @@ int _WriteGraphMLGraphEdges(graphP theGraph, int index, strOrFileP outputContain
  ********************************************************************/
 int _WriteGraphMLGraphEndTag(graphP theGraph, int index, strOrFileP outputContainer)
 {
+    // Suppresses an unused-parameter warning for a parameter we intend to keep
     (void)index;
 
     if (theGraph == NULL)

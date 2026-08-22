@@ -1027,6 +1027,9 @@ int _K4_DeleteUnmarkedEdgesInBicomp(graphP theGraph, K4SearchContext *context, i
     int V, e, eNext;
     int stackBottom = sp_GetCurrentSize(theGraph->theStack);
 
+    // Suppresses an unused-parameter warning for a parameter we intend to keep
+    (void)context;
+
     sp_Push(theGraph->theStack, BicompRoot);
     while (sp_GetCurrentSize(theGraph->theStack) > stackBottom)
     {
