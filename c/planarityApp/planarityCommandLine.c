@@ -28,6 +28,7 @@ int runRandomGraphsTests(void);
 int runGraphTransformationTests(void);
 int runTestAllGraphsTests(void);
 int runFaceListTest(void);
+int runAddInsertEdgeTests(void);
 int runHideRestoreTests(void);
 int runIdentifyContractTests(void);
 int runSpecificGraphTest(char const *command, char const *infileName, int inputInMemFlag);
@@ -241,6 +242,8 @@ int runQuickRegressionTests(int argc, char *argv[])
         retVal = NOTOK;
     else if (runFaceListTest() != OK)
         retVal = NOTOK;
+    else if (runAddInsertEdgeTests() != OK)
+        retVal = NOTOK;
     else if (runHideRestoreTests() != OK)
         retVal = NOTOK;
     else if (runIdentifyContractTests() != OK)
@@ -260,6 +263,82 @@ int runQuickRegressionTests(int argc, char *argv[])
     FlushConsole(stdout);
 
     return retVal;
+}
+
+int runAddInsertEdgeTests(void)
+{
+    graphP theGraph = NULL;
+    int initialEdgeCapacity;
+    int edgeToDelete;
+    int v;
+
+    gp_Message("Starting Add/Insert Edge Tests");
+
+    if ((theGraph = gp_New()) == NULL)
+    {
+        gp_ErrorMessage("Unable to allocate graph for add/insert edge tests.");
+        return NOTOK;
+    }
+
+    if (gp_EnsureEdgeCapacity(theGraph, 2) != OK ||
+        gp_EnsureVertexCapacity(theGraph, 3) != OK)
+    {
+        gp_ErrorMessage("Unable to initialize graph for add/insert edge tests.");
+        gp_Free(&theGraph);
+        return NOTOK;
+    }
+
+    v = gp_LowerBoundVertices(theGraph);
+    initialEdgeCapacity = gp_GetEdgeCapacity(theGraph);
+
+    if (gp_AddEdge(theGraph, v, 0, v + 1, 0) != OK ||
+        gp_AddEdge(theGraph, v + 1, 1, v + 2, 0) != OK)
+    {
+        gp_ErrorMessage("Unable to fill initial edge capacity.");
+        gp_Free(&theGraph);
+        return NOTOK;
+    }
+
+    if (gp_InsertEdge(theGraph, v, NIL, 1, v + 2, NIL, 1) != AT_EDGE_CAPACITY_LIMIT)
+    {
+        gp_ErrorMessage("gp_InsertEdge() did not report the edge capacity limit.");
+        gp_Free(&theGraph);
+        return NOTOK;
+    }
+
+    if (gp_DynamicInsertEdge(theGraph, v, NIL, 1, v + 2, NIL, 1) != OK ||
+        gp_GetEdgeCapacity(theGraph) <= initialEdgeCapacity ||
+        gp_GetM(theGraph) != 3)
+    {
+        gp_ErrorMessage("gp_DynamicInsertEdge() did not grow edge capacity and insert once.");
+        gp_Free(&theGraph);
+        return NOTOK;
+    }
+
+    edgeToDelete = gp_FindEdge(theGraph, v, v + 1);
+    if (edgeToDelete == NIL || gp_DeleteEdge(theGraph, edgeToDelete) != OK)
+    {
+        gp_ErrorMessage("Unable to create an edge hole for add/insert edge tests.");
+        gp_Free(&theGraph);
+        return NOTOK;
+    }
+
+    initialEdgeCapacity = gp_GetEdgeCapacity(theGraph);
+    if (gp_DynamicAddEdge(theGraph, v, 0, v + 1, 0) != OK ||
+        gp_GetEdgeCapacity(theGraph) != initialEdgeCapacity ||
+        gp_GetM(theGraph) != 3 ||
+        gp_FindEdge(theGraph, v, v + 1) == NIL)
+    {
+        gp_ErrorMessage("gp_DynamicAddEdge() did not reuse an available edge hole.");
+        gp_Free(&theGraph);
+        return NOTOK;
+    }
+
+    gp_Message("Finished Add/Insert Edge Tests.\n");
+
+    gp_Free(&theGraph);
+
+    return OK;
 }
 
 int runRandomGraphsTests(void)
