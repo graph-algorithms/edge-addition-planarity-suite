@@ -22,3 +22,7 @@ When possible, include:
 
 Please allow the maintainers time to investigate and coordinate a fix and any
 necessary notification to downstream consumers before public disclosure.
+
+## Preferred Languages
+
+We prefer reports in **English** since we will otherwise need to use translation tools that may not fully convey intended meanings in your report.
