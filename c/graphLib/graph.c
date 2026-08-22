@@ -367,6 +367,7 @@ void _ResetGraphStorage(graphP theGraph)
     theGraph->embedFlags = 0;
 
     theGraph->graphFlags &= ~GRAPHFLAGS_DFSNUMBERED;
+    theGraph->graphFlags &= ~GRAPHFLAGS_DFSNUMBERED_DIRECTED;
     theGraph->graphFlags &= ~GRAPHFLAGS_SORTEDBYDFI;
     theGraph->graphFlags &= ~GRAPHFLAGS_LOWPOINTSCOMPUTED;
     theGraph->graphFlags &= ~GRAPHFLAGS_DIRECTEDEDGEDETECTED;
@@ -1019,6 +1020,7 @@ int gp_CopyAdjacencyLists(graphP dstGraph, graphP srcGraph)
     dstGraph->numEdgeHoles = sp_GetCurrentSize(dstGraph->edgeHoles);
 
     dstGraph->graphFlags &= ~GRAPHFLAGS_DFSNUMBERED;
+    dstGraph->graphFlags &= ~GRAPHFLAGS_DFSNUMBERED_DIRECTED;
     dstGraph->graphFlags &= ~GRAPHFLAGS_SORTEDBYDFI;
     dstGraph->graphFlags &= ~GRAPHFLAGS_LOWPOINTSCOMPUTED;
     dstGraph->graphFlags &= ~GRAPHFLAGS_DIRECTEDEDGEDETECTED;
