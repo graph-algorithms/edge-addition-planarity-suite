@@ -229,7 +229,6 @@ For July 1-31, 2026, ranking, see also
 
 # AI usage disclosure
 
-No generative AI tools were used in the development of this software, the
-writing of this manuscript, nor the preparation of supporting materials.
+No generative AI tools were used in the writing of this manuscript, nor in the preparation of supporting materials. The authors are not aware of any substantive use of generative AI tooling yet in the development of the open source software projects reported in this paper. However, in light of the proliferation of availability and use of generative AI tooling in software development, we assert that it is our pull request (PR) review process, performed with no generative AI tooling, that protects the projects and their consumers from low quality or harmful contributions. As the project owners, we amend PRs with further commits or request contributor changes as needed, and we use our own holistic project expertise to ensure that the code contribution meets our quality requirements. Specifically, a code contribution must cover all parts of the project that it should, its code must be consistent with the rest of the code in the module(s) containing it, it must be a good solution conforming to every aspect of the technical specifications in the issue(s) it solves, the tests also given in the technical specifications must be correctly coded, the coded solution must pass the coded tests, and all code in the contribution must pass our sanitizer and compiler-warning-sensitive automated tests. Only once a project owner has determined that these requirements are met by the pull request's code contribution is the pull request approved to be merged. 
 
 # References
