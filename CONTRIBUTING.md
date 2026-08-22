@@ -4,10 +4,9 @@ Contributing can be as simple as asking a question. Please send questions by ema
 
 Contributing can take the form of posting an [issue](https://github.com/graph-algorithms/edge-addition-planarity-suite/issues) containing a feature request or a bug report. You are also welcome to post additional comments on issues to provide your insights or experiences related to the issue, as this will help us to make better decisions when resolving the issue.
 
-**NOTE:** Please do not report any suspected security vulnerabilities as issue. Instead, please email the project lead as above so that we may patch the security vulnerability and notify downstream consumers before it can be exploited.
+**NOTE:** Please do not report suspected security vulnerabilities publicly. Follow the private reporting instructions in the project's [security policy](SECURITY.md) so that we may patch the vulnerability and notify downstream consumers before it can be exploited.
 
 Contributing can also take the form of submitting pull requests that solve or partially solve an existing issue. Please ensure that you are familiar with [this project's license](https://github.com/graph-algorithms/edge-addition-planarity-suite/blob/master/LICENSE.TXT) before you create a pull request to make a contribution. Please also read and follow the instructions in the [Dev Setup Wiki Page](https://github.com/graph-algorithms/edge-addition-planarity-suite/wiki/2.-Dev-Setup) to get started with contributing code.
 
 **NOTE:** If your pull request is merged, then you will be considered as having contributed code. We would very much like for GitHub to add your identity into the Contributors list on [this project's main page](https://github.com/graph-algorithms/edge-addition-planarity-suite). However, this will only happen if you correctly configure your git `user.name` and `user.email` on your development computer. Instructions for this are on [Dev Setup Wiki Page](https://github.com/graph-algorithms/edge-addition-planarity-suite/wiki/2.-Dev-Setup).
-
 
