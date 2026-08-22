@@ -1428,6 +1428,9 @@ int _K33Search_DeleteUnmarkedEdgesInBicomp(graphP theGraph, K33SearchContext *co
     int V, e, eNext;
     int stackBottom = sp_GetCurrentSize(theGraph->theStack);
 
+    // Suppresses an unused-parameter warning for a parameter we intend to keep
+    (void)context;
+
     sp_Push(theGraph->theStack, BicompRoot);
     while (sp_GetCurrentSize(theGraph->theStack) > stackBottom)
     {

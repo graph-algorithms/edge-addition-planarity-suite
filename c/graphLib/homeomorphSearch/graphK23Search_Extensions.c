@@ -118,6 +118,9 @@ void *_K23Search_DupContext(void *pContext, void *theGraph)
     K23SearchContext *context = (K23SearchContext *)pContext;
     K23SearchContext *newContext = (K23SearchContext *)malloc(sizeof(K23SearchContext));
 
+    // Suppresses an unused-parameter warning for a parameter we intend to keep
+    (void)theGraph;
+
     if (newContext != NULL)
     {
         *newContext = *context;
@@ -131,6 +134,11 @@ void *_K23Search_DupContext(void *pContext, void *theGraph)
  ********************************************************************/
 int _K23Search_CopyData(void *dstContext, void *srcContext)
 {
+    // Suppresses an unused-parameter warning for a parameter we intend to keep
+    (void)dstContext;
+    // Suppresses an unused-parameter warning for a parameter we intend to keep
+    (void)srcContext;
+
     return OK;
 }
 
