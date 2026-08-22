@@ -38,6 +38,7 @@ int runIdentifyContractTest(graphP theGraph);
 int runDigraphTests(void);
 int runGraphMLTests(void);
 int runDrawPlanarNonplanarWriteTest(void);
+int testDirectedDFS(void);
 int testPetersenDigraph(void);
 int testDigraphTranspose(void);
 int runBasicGraphMLWriteTest(void);
@@ -1479,6 +1480,124 @@ int callTestAllGraphs(int argc, char *argv[])
     return TestAllGraphs(commandString, infileName, outfileName, NULL);
 }
 /****************************************************************************
+ testDirectedDFS()
+ ****************************************************************************/
+
+int testDirectedDFS(void)
+{
+    graphP G = gp_New();
+    graphP G1 = NULL;
+    int const expectedDiscoveryTimes[] = {1, 11, 2, 3, 7, 4};
+    int const expectedFinishTimes[] = {10, 12, 9, 6, 8, 5};
+    int lowerVertex, v, e, source, target, expectedType;
+
+    if (G == NULL)
+        return NOTOK;
+
+    if (gp_Read(G, "DirectedDFSTest.txt") != OK)
+    {
+        gp_ErrorMessage("Failed to read directed DFS sample.");
+        gp_Free(&G);
+        return NOTOK;
+    }
+
+    if (gp_DepthFirstSearchEx(G, DFSMODE_DIRECTED) != OK)
+    {
+        gp_ErrorMessage("Directed DFS returned an unexpected result.");
+        gp_Free(&G);
+        return NOTOK;
+    }
+
+    if (!(gp_GetGraphFlags(G) & GRAPHFLAGS_DFSNUMBERED_DIRECTED) ||
+        (gp_GetGraphFlags(G) & GRAPHFLAGS_DFSNUMBERED))
+    {
+        gp_ErrorMessage("Directed DFS graph flags were not set correctly.");
+        gp_Free(&G);
+        return NOTOK;
+    }
+
+    lowerVertex = gp_LowerBoundVertices(G);
+    for (v = lowerVertex; v < gp_UpperBoundVertices(G); ++v)
+    {
+        if (gp_GetIndex(G, v) != expectedDiscoveryTimes[v - lowerVertex] ||
+            gp_GetVisitedIndex(G, v) != expectedFinishTimes[v - lowerVertex])
+        {
+            gp_ErrorMessage("Directed DFS timestamp mismatch at vertex %d: "
+                            "expected (%d, %d), found (%d, %d).",
+                            v - lowerVertex + 1,
+                            expectedDiscoveryTimes[v - lowerVertex],
+                            expectedFinishTimes[v - lowerVertex],
+                            gp_GetIndex(G, v),
+                            gp_GetVisitedIndex(G, v));
+            gp_Free(&G);
+            return NOTOK;
+        }
+    }
+
+    for (e = gp_LowerBoundEdges(G); e < gp_UpperBoundEdges(G); ++e)
+    {
+        if (!gp_EdgeInUse(G, e) ||
+            gp_GetDirection(G, e) == EDGEFLAG_DIRECTION_INONLY)
+            continue;
+
+        source = gp_GetNeighbor(G, gp_GetTwin(G, e)) - lowerVertex + 1;
+        target = gp_GetNeighbor(G, e) - lowerVertex + 1;
+        expectedType = EDGE_TYPE_TREE;
+
+        if ((source == 5 && (target == 1 || target == 3)))
+            expectedType = EDGE_TYPE_BACK;
+        else if (source == 2 && (target == 3 || target == 4))
+            expectedType = EDGE_TYPE_CROSS;
+        else if (source == 1 && target == 4)
+            expectedType = EDGE_TYPE_FORWARD;
+
+        if (gp_GetEdgeType(G, e) != expectedType)
+        {
+            gp_ErrorMessage("Directed DFS edge type mismatch.");
+            gp_Free(&G);
+            return NOTOK;
+        }
+    }
+
+    // The optimized embedding initialization performs its own undirected
+    // DFS and must replace the directed DFS state on a duplicated graph.
+    G1 = gp_DupGraph(G);
+    if (G1 == NULL || gp_Embed(G1, EMBEDFLAGS_PLANAR) != OK ||
+        (gp_GetGraphFlags(G1) & GRAPHFLAGS_DFSNUMBERED_DIRECTED))
+    {
+        gp_ErrorMessage("Embedding did not replace directed DFS state.");
+        gp_Free(&G);
+        gp_Free(&G1);
+        return NOTOK;
+    }
+    gp_Free(&G1);
+
+    // The legacy DFS must remain available for directed input and replace
+    // directed timestamps and flags with its original undirected DFS state.
+    if (gp_DepthFirstSearchEx(G, DFSMODE_UNDIRECTED) != OK ||
+        !(gp_GetGraphFlags(G) & GRAPHFLAGS_DFSNUMBERED) ||
+        (gp_GetGraphFlags(G) & GRAPHFLAGS_DFSNUMBERED_DIRECTED))
+    {
+        gp_ErrorMessage("Undirected DFS did not replace directed DFS state.");
+        gp_Free(&G);
+        return NOTOK;
+    }
+
+    for (v = lowerVertex; v < gp_UpperBoundVertices(G); ++v)
+    {
+        if (gp_GetVisitedIndex(G, v) != 0)
+        {
+            gp_ErrorMessage("Undirected DFS did not clear directed finish times.");
+            gp_Free(&G);
+            return NOTOK;
+        }
+    }
+
+    gp_Free(&G);
+    return OK;
+}
+
+/****************************************************************************
  testPetersenDigraph()
  ****************************************************************************/
 
@@ -1570,7 +1689,7 @@ int testPetersenDigraph(void)
     quietModeCache = gp_GetQuietMode();
     gp_SetQuietMode(QUIETMODE_ALL);
 
-    if (gp_DepthFirstSearch(G) == OK ||
+    if (gp_DepthFirstSearch(G) != OK ||
         gp_ComputeLowpoints(G) == OK ||
         gp_ComputeLeastAncestors(G) == OK ||
         gp_WriteToString(G, &dummyStr, WRITE_G6) == OK ||
@@ -1698,7 +1817,12 @@ int runDigraphTests(void)
 
     gp_Message("Starting Digraph Tests");
 
-    if (testPetersenDigraph() != OK)
+    if (testDirectedDFS() != OK)
+    {
+        gp_ErrorMessage("Directed DFS test failed.");
+        retVal = NOTOK;
+    }
+    else if (testPetersenDigraph() != OK)
     {
         gp_ErrorMessage("Petersen Digraph test failed.");
         retVal = NOTOK;
