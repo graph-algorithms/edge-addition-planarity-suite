@@ -9,6 +9,7 @@ dist_samples_DATA = \
   drawExample.txt.ColorVertices.out.txt \
   drawExample.txt.DrawPlanar.out.txt \
   drawExample.txt.DrawPlanar.out.txt.render.txt \
+  DirectedDFSTest.txt \
   faceListComponents.0-based.Drawing.txt \
   faceListComponents.0-based.out.txt \
   faceListComponents.0-based.txt \

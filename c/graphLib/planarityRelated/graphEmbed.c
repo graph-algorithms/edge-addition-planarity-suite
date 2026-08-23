@@ -677,6 +677,13 @@ int _EmbeddingInitialize_Optimized(graphP theGraph)
     // The graph is now DFS numbered
     theGraph->graphFlags |= GRAPHFLAGS_DFSNUMBERED;
 
+    if (gp_GetGraphFlags(theGraph) & GRAPHFLAGS_DFSNUMBERED_DIRECTED)
+    {
+        theGraph->graphFlags &= ~GRAPHFLAGS_DFSNUMBERED_DIRECTED;
+        if (_FillVertexVisitedIndexes(theGraph, 0) != OK)
+            return NOTOK;
+    }
+
     // (6) Now that all vertices have a DFI in the index member, we can sort vertices
     if (gp_SortVertices(theGraph) != OK)
         return NOTOK;
