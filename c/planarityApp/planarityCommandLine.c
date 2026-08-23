@@ -784,7 +784,7 @@ int runFaceListTest(void)
 
 runFaceListTest_Cleanup:
 
-    if (drawing != NULL) 
+    if (drawing != NULL)
     {
         free(drawing);
         drawing = NULL;
@@ -795,7 +795,7 @@ runFaceListTest_Cleanup:
         free(faceList);
         faceList = NULL;
     }
-    
+
     gp_Free(&origGraph);
     gp_Free(&theGraph);
 
@@ -1640,10 +1640,18 @@ int testDirectedDFS(void)
         }
     }
 
+    G1 = gp_DupGraph(G);
+    if (G1 == NULL || !(gp_GetGraphFlags(G1) & GRAPHFLAGS_DFSNUMBERED_DIRECTED))
+    {
+        gp_ErrorMessage("Graph duplication method failed to preserve directed DFS state.");
+        gp_Free(&G);
+        gp_Free(&G1);
+        return NOTOK;
+    }
+
     // The optimized embedding initialization performs its own undirected
     // DFS and must replace the directed DFS state on a duplicated graph.
-    G1 = gp_DupGraph(G);
-    if (G1 == NULL || gp_Embed(G1, EMBEDFLAGS_PLANAR) != OK ||
+    if (gp_Embed(G1, EMBEDFLAGS_PLANAR) != OK ||
         (gp_GetGraphFlags(G1) & GRAPHFLAGS_DFSNUMBERED_DIRECTED))
     {
         gp_ErrorMessage("Embedding did not replace directed DFS state.");
