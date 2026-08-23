@@ -39,9 +39,7 @@
                 "-Wnested-externs",
                 "-Wno-error=suggest-attribute=format",
                 "-Wno-error=missing-field-initializers",
-                "-Wno-error=unused-parameter",
                 "-Wno-missing-field-initializers",
-                "-Wno-unused-parameter",
                 "-Wnull-dereference",
                 "-Wold-style-definition",
                 "-Wpacked",
@@ -118,9 +116,7 @@
                 "-Wnested-externs",
                 "-Wno-error=suggest-attribute=format",
                 "-Wno-error=missing-field-initializers",
-                "-Wno-error=unused-parameter",
                 "-Wno-missing-field-initializers",
-                "-Wno-unused-parameter",
                 "-Wnull-dereference",
                 "-Wold-style-definition",
                 "-Wpacked",
@@ -193,9 +189,7 @@
                 "-Wmissing-prototypes",
                 "-Wnested-externs",
                 "-Wno-error=missing-field-initializers",
-                "-Wno-error=unused-parameter",
                 "-Wno-missing-field-initializers",
-                "-Wno-unused-parameter",
                 "-Wnull-dereference",
                 "-Wold-style-definition",
                 "-Wpacked",
@@ -269,9 +263,7 @@
                 "-Wmissing-prototypes",
                 "-Wnested-externs",
                 "-Wno-error=missing-field-initializers",
-                "-Wno-error=unused-parameter",
                 "-Wno-missing-field-initializers",
-                "-Wno-unused-parameter",
                 "-Wnull-dereference",
                 "-Wold-style-definition",
                 "-Wpacked",
@@ -343,9 +335,7 @@
                 "-Wmissing-prototypes",
                 "-Wnested-externs",
                 "-Wno-error=missing-field-initializers",
-                "-Wno-error=unused-parameter",
                 "-Wno-missing-field-initializers",
-                "-Wno-unused-parameter",
                 "-Wnull-dereference",
                 "-Wold-style-definition",
                 "-Wpacked",
@@ -403,7 +393,6 @@
                 "/wd4996", // Ignore safety warnings about sprintf, scanf, strcpy, strcat, fopen, etc.
                 "/wd5045", // Ignore Spectre mitigation warning
                 "/wd4068", // Ignore warnings about unrecognized pragmas (like the ones that suppress format-nonliteral warnings)
-                "/wd4100", // Ignore warnings about unused parameters (because they may be used by future function overloads or may help with programming consistency)
                 "/wd4820", // Ignore warnings from antediluvian compiler about padding, e.g., for normal use of bool type
                 "/external:anglebrackets",
                 "/external:W0", // Ignore warnings thrown by external headers
@@ -447,7 +436,6 @@
                 "/wd4996", // Ignore safety warnings about sprintf, scanf, strcpy, strcat, fopen, etc.
                 "/wd5045", // Ignore Spectre mitigation warning
                 "/wd4068", // Ignore warnings about unrecognized pragmas (like the ones that suppress format-nonliteral warnings)
-                "/wd4100", // Ignore warnings about unused parameters (because they may be used by future function overloads or may help with programming consistency)
                 "/wd4820", // Ignore warnings from antediluvian compiler about padding, e.g., for normal use of bool type
                 "/external:anglebrackets",
                 "/external:W0", // Ignore warnings thrown by external headers
@@ -487,7 +475,6 @@
                 "/wd4996", // Ignore safety warnings about sprintf, scanf, strcpy, strcat, fopen, etc.
                 "/wd5045", // Ignore Spectre mitigation warning
                 "/wd4068", // Ignore warnings about unrecognized pragmas (like the ones that suppress format-nonliteral warnings)
-                "/wd4100", // Ignore warnings about unused parameters (because they may be used by future function overloads or may help with programming consistency)
                 "/wd4820", // Ignore warnings from antediluvian compiler about padding, e.g., for normal use of bool type
                 "/external:anglebrackets",
                 "/external:W0", // Ignore warnings thrown by external headers
@@ -542,9 +529,7 @@
                 "-Wmissing-prototypes",
                 "-Wnested-externs",
                 "-Wno-error=missing-field-initializers",
-                "-Wno-error=unused-parameter",
                 "-Wno-missing-field-initializers",
-                "-Wno-unused-parameter",
                 "-Wnull-dereference",
                 "-Wold-style-definition",
                 "-Wpacked",
@@ -616,9 +601,7 @@
                 "-Wmissing-prototypes",
                 "-Wnested-externs",
                 "-Wno-error=missing-field-initializers",
-                "-Wno-error=unused-parameter",
                 "-Wno-missing-field-initializers",
-                "-Wno-unused-parameter",
                 "-Wnull-dereference",
                 "-Wold-style-definition",
                 "-Wpacked",
@@ -686,9 +669,7 @@
                 "-Wmissing-prototypes",
                 "-Wnested-externs",
                 "-Wno-error=missing-field-initializers",
-                "-Wno-error=unused-parameter",
                 "-Wno-missing-field-initializers",
-                "-Wno-unused-parameter",
                 "-Wnull-dereference",
                 "-Wold-style-definition",
                 "-Wpacked",

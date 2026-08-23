@@ -935,6 +935,15 @@ int _MergeBicomps(graphP theGraph, int v, int RootVertex, int W, int WPrevLink)
 {
     int R, Rout, Z, ZPrevLink, e, extFaceVertex;
 
+    // Suppresses an unused-parameter warning for a parameter we intend to keep
+    (void)v;
+    // Suppresses an unused-parameter warning for a parameter we intend to keep
+    (void)RootVertex;
+    // Suppresses an unused-parameter warning for a parameter we intend to keep
+    (void)W;
+    // Suppresses an unused-parameter warning for a parameter we intend to keep
+    (void)WPrevLink;
+
     while (sp_NonEmpty(theGraph->theStack))
     {
         sp_Pop2(theGraph->theStack, R, Rout);
@@ -1516,7 +1525,12 @@ void _AdvanceFwdEdgeList(graphP theGraph, int v, int child, int nextChild)
 
 int _HandleInactiveVertex(graphP theGraph, int BicompRoot, int *pW, int *pWPrevLink)
 {
-    int X = gp_GetExtFaceVertex(theGraph, *pW, 1 ^ *pWPrevLink);
+    int X;
+
+    // Suppresses an unused-parameter warning for a parameter we intend to keep
+    (void)BicompRoot;
+
+    X = gp_GetExtFaceVertex(theGraph, *pW, 1 ^ *pWPrevLink);
     *pWPrevLink = gp_GetExtFaceVertex(theGraph, X, 0) == *pW ? 0 : 1;
     *pW = X;
 
@@ -1551,6 +1565,9 @@ int _HandleInactiveVertex(graphP theGraph, int BicompRoot, int *pW, int *pWPrevL
 int _EmbedPostprocess(graphP theGraph, int v, int edgeEmbeddingResult)
 {
     int RetVal = edgeEmbeddingResult;
+
+    // Suppresses an unused-parameter warning for a parameter we intend to keep
+    (void)v;
 
     // If an embedding was found, then post-process the embedding structure give
     // a consistent orientation to all vertices then eliminate virtual vertices
@@ -1697,6 +1714,9 @@ int _JoinBicomps(graphP theGraph)
 int _OrientExternalFacePath(graphP theGraph, int u, int v, int w, int x)
 {
     int e_u, e_v, e_ulink, e_vlink;
+
+    // Suppresses an unused-parameter warning for a parameter we intend to keep
+    (void)w;
 
     // Get the edge record in u that indicates v; uses the "get twin" method
     // to ensure the cost is dominated by the degree of v (which is 2), not u

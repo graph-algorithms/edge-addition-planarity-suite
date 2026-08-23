@@ -94,7 +94,7 @@ AC_DEFUN([AX_COMPILER_FLAGS_CFLAGS],[
             -Wpointer-arith dnl
             -Wmissing-declarations dnl
             -Wredundant-decls dnl
-            -Wno-unused-parameter dnl
+            -Wunused-parameter dnl
             -Wno-missing-field-initializers dnl
             -Wformat=2 dnl
             -Wcast-align dnl
