@@ -41,6 +41,7 @@ int runGraphMLTests(void);
 int runDrawPlanarNonplanarWriteTest(void);
 int testPetersenDigraph(void);
 int testDigraphTranspose(void);
+int runGraphMLWriteTest(char const *inputFileName, char const *expectedOutputFileName);
 int runBasicGraphMLWriteTest(void);
 
 /****************************************************************************
@@ -1793,24 +1794,14 @@ int runDigraphTests(void)
     return retVal;
 }
 
-int runBasicGraphMLWriteTest(void)
+int runGraphMLWriteTest(char const *inputFileName, char const *expectedOutputFileName)
 {
     graphP G = gp_New();
     char *actualOutput = NULL;
-    char const *inputFileName = NULL;
-    char const *expectedOutputFileName = NULL;
     int Result = OK;
 
     if (G == NULL)
         return NOTOK;
-
-#ifdef USE_1BASEDARRAYS
-    inputFileName = "Digraph.transposeTest.txt";
-    expectedOutputFileName = "Digraph.transposeTest.graphml";
-#else
-    inputFileName = "Digraph.transposeTest.0-based.txt";
-    expectedOutputFileName = "Digraph.transposeTest.0-based.graphml";
-#endif
 
     if (gp_Read(G, inputFileName) != OK ||
         gp_WriteToString(G, &actualOutput, WRITE_GRAPHML) != OK ||
@@ -1823,6 +1814,15 @@ int runBasicGraphMLWriteTest(void)
     gp_Free(&G);
 
     return Result;
+}
+
+int runBasicGraphMLWriteTest(void)
+{
+    if (runGraphMLWriteTest("Digraph.transposeTest.txt", "Digraph.transposeTest.graphml") != OK ||
+        runGraphMLWriteTest("Digraph.transposeTest.0-based.txt", "Digraph.transposeTest.0-based.graphml") != OK)
+        return NOTOK;
+
+    return OK;
 }
 
 int runGraphMLTests(void)
