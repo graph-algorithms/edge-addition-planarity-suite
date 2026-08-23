@@ -1568,7 +1568,8 @@ int testDirectedDFS(void)
     graphP G1 = NULL;
     int const expectedDiscoveryTimes[] = {1, 11, 2, 3, 7, 4};
     int const expectedFinishTimes[] = {10, 12, 9, 6, 8, 5};
-    int lowerVertex, v, e, source, target, expectedType;
+    int lowerVertex, v, e, source, target;
+    unsigned expectedType;
 
     if (G == NULL)
         return NOTOK;
