@@ -203,9 +203,19 @@ int gp_DepthFirstSearchEx(graphP theGraph, unsigned mode)
         return NOTOK;
 
     if (mode == DFSMODE_UNDIRECTED)
-        return gp_DepthFirstSearch(theGraph);
+    {
+        if (gp_DepthFirstSearch(theGraph) == OK)
+            return OK;
+        else
+            return NOTOK;
+    }
     else if (mode == DFSMODE_DIRECTED)
-        return _DepthFirstSearchDirected(theGraph);
+    {
+        if (_DepthFirstSearchDirected(theGraph) == OK)
+            return OK;
+        else
+            return NOTOK;
+    }
 
     return NOTOK;
 }
@@ -539,6 +549,7 @@ int gp_ComputeLowpoints(graphP theGraph)
 
     if (theGraph == NULL)
         return NOTOK;
+
     if (gp_GetGraphFlags(theGraph) & GRAPHFLAGS_DIRECTEDEDGEDETECTED)
     {
         gp_ErrorMessage("gp_ComputeLowpoints() does not support directed graphs.");
@@ -665,6 +676,7 @@ int gp_ComputeLeastAncestors(graphP theGraph)
 
     if (theGraph == NULL)
         return NOTOK;
+
     if (gp_GetGraphFlags(theGraph) & GRAPHFLAGS_DIRECTEDEDGEDETECTED)
     {
         gp_ErrorMessage("gp_ComputeLeastAncestors() does not support directed graphs.");
@@ -751,6 +763,7 @@ int gp_CountConnectedComponents(graphP theGraph)
 
     if (theGraph == NULL)
         return -1;
+        
     if (!(gp_GetGraphFlags(theGraph) & GRAPHFLAGS_DFSNUMBERED))
         return -1;
 
