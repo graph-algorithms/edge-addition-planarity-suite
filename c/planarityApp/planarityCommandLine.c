@@ -345,6 +345,7 @@ int runAddInsertEdgeTests(void)
 int runRandomGraphsTests(void)
 {
     int retVal = OK;
+    unsigned quietModeCache = gp_GetQuietMode();
 
     gp_Message("Starting Random Graph Tests");
 
@@ -359,6 +360,24 @@ int runRandomGraphsTests(void)
         gp_ErrorMessage("gp_CreateRandomGraphEx() test failed.");
         retVal = NOTOK;
     }
+
+    // Suppress RandomGraph()'s interactive save prompts while exercising the
+    // maximal-planar and nonplanar paths used by the -rm and -rn endpoints.
+    gp_SetQuietMode(quietModeCache | QUIETMODE_MESSAGES);
+
+    if (RandomGraph("-p", 0, 5, NULL, NULL) != OK)
+    {
+        gp_ErrorMessage("Random maximal planar graph test failed.");
+        retVal = NOTOK;
+    }
+
+    if (RandomGraph("-p", 1, 5, NULL, NULL) != NONEMBEDDABLE)
+    {
+        gp_ErrorMessage("Random nonplanar graph test failed.");
+        retVal = NOTOK;
+    }
+
+    gp_SetQuietMode(quietModeCache);
 
     if (retVal == OK)
         gp_Message("Finished Random Graph Tests.\n");
