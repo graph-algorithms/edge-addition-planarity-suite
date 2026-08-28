@@ -39,6 +39,7 @@ LT_INIT
 AC_PROG_INSTALL
 
 AC_CHECK_HEADERS([ctype.h stdio.h stdlib.h string.h time.h unistd.h])
+AC_CHECK_FUNCS([fopencookie funopen])
 
 
 # Enable compiler warnings

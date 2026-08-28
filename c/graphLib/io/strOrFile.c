@@ -279,6 +279,10 @@ int sf_IsValidStrOrFile(strOrFileP theStrOrFile)
  If the ungetBuf is empty, then we'll read from pFile using getc() OR
  from theStrBuf by fetching the character at theStrPos and incrementing
  theStrPos.
+
+ A file read error sets inputErrorFlag and returns EOF. Once set, the
+ flag prevents further reads, including reads from ungetBuf. Normal EOF
+ does not set the flag.
  ********************************************************************/
 
 char sf_getc(strOrFileP theStrOrFile)
@@ -286,7 +290,8 @@ char sf_getc(strOrFileP theStrOrFile)
     char theChar = EOF;
 
     if (!sf_IsValidStrOrFile(theStrOrFile) ||
-        theStrOrFile->containerType != INPUT_CONTAINER)
+        theStrOrFile->containerType != INPUT_CONTAINER ||
+        theStrOrFile->inputErrorFlag)
         return EOF;
 
     if ((theStrOrFile->ungetBuf != NULL) && (sp_GetCurrentSize(theStrOrFile->ungetBuf) > 0))
@@ -305,7 +310,14 @@ char sf_getc(strOrFileP theStrOrFile)
         theChar = (char)currChar;
     }
     else if (theStrOrFile->pFile != NULL)
+    {
         theChar = (char)getc(theStrOrFile->pFile);
+        if (ferror(theStrOrFile->pFile))
+        {
+            theStrOrFile->inputErrorFlag = TRUE;
+            return EOF;
+        }
+    }
     else if (theStrOrFile->theStrBuf != NULL && sb_GetUnreadCharCount(theStrOrFile->theStrBuf) > 0)
     {
         theChar = sb_GetReadString(theStrOrFile->theStrBuf) != NULL
@@ -355,6 +367,9 @@ int sf_ReadSkipWhitespace(strOrFileP theStrOrFile)
     {
         continue;
     }
+
+    if (theStrOrFile->inputErrorFlag)
+        return NOTOK;
 
     if (sf_ungetc(currChar, theStrOrFile) != currChar)
         return NOTOK;
@@ -499,6 +514,9 @@ int sf_ReadInteger(int *intToRead, strOrFileP theStrOrFile)
         }
     } while (currChar != EOF);
 
+    if (theStrOrFile->inputErrorFlag)
+        exitCode = NOTOK;
+
     if (exitCode == OK)
     {
         if (sscanf(intCandidateStr, "%d", &intCandidate) != 1)
@@ -612,7 +630,9 @@ int sf_ungets(char *strToUnget, strOrFileP theStrOrFile)
  is allocated for str to contain count characters plus \0.
 
  Like fgets() in stdio, on success the pointer to the buffer is returned.
- On failure, NULL is returned.
+ On failure, NULL is returned. File read errors also set inputErrorFlag,
+ even if characters were already obtained from ungetBuf. Normal EOF
+ does not set the flag, and any ungotten characters are still returned.
  ********************************************************************/
 
 char *sf_fgets(char *str, int count, strOrFileP theStrOrFile)
@@ -622,7 +642,8 @@ char *sf_fgets(char *str, int count, strOrFileP theStrOrFile)
 
     if (str == NULL || count < 0 ||
         !sf_IsValidStrOrFile(theStrOrFile) ||
-        theStrOrFile->containerType != INPUT_CONTAINER)
+        theStrOrFile->containerType != INPUT_CONTAINER ||
+        theStrOrFile->inputErrorFlag)
         return NULL;
 
     if (theStrOrFile->ungetBuf != NULL)
@@ -659,14 +680,15 @@ char *sf_fgets(char *str, int count, strOrFileP theStrOrFile)
     {
         if (theStrOrFile->pFile != NULL)
         {
-            // N.B. if fgets() returns NULL (can't read more characters) AND the ungetBuf was empty,
-            // then return NULL (error trying to read from empty stream). Otherwise, return str (that
-            // was read from ungetBuf)
-            if (fgets(str + charsToReadFromUngetBuf, charsToReadFromStrOrFile, theStrOrFile->pFile) == NULL)
+            char *result = fgets(str + charsToReadFromUngetBuf, charsToReadFromStrOrFile, theStrOrFile->pFile);
+            if (ferror(theStrOrFile->pFile))
             {
-                if (charsToReadFromUngetBuf == 0)
-                    return NULL;
+                theStrOrFile->inputErrorFlag = TRUE;
+                return NULL;
             }
+            // Normal EOF may follow valid characters from the pushback buffer.
+            if (result == NULL && charsToReadFromUngetBuf == 0)
+                return NULL;
         }
         else if (theStrOrFile->theStrBuf != NULL)
         {

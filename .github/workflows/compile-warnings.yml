@@ -32,6 +32,6 @@ jobs:
           autoreconf -if
           ./configure --enable-compile-warnings CC="$CC" CFLAGS="$CFLAGS"
       - name: Build . . .
-        run: make -j4
+        run: make -j4 all test-read-errors
         # We don't run the tests, since in this job we are only checking for
         # compiler warnings

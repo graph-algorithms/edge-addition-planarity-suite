@@ -98,7 +98,11 @@ planarity_SOURCES = \
 man1_MANS = c/planarityApp/planarity.1
 EXTRA_DIST=$(man1_MANS)
 
-TESTS = test-samples.sh
+check_PROGRAMS = test-read-errors
+test_read_errors_SOURCES = c/tests/test-read-errors.c
+test_read_errors_LDADD = libplanarity.la
+
+TESTS = test-samples.sh test-read-errors
 
 # The @docdir@ variable will be replaced by the ./configure script.
 docdir = @docdir@

@@ -27,6 +27,8 @@ extern "C"
         char *fileName;
         char const *fileMode;
         int containerType;
+        // Sticky input read-error state; normal EOF does not set this flag.
+        int inputErrorFlag;
         int outputErrorFlag;
         stackP ungetBuf;
     };

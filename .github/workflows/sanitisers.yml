@@ -41,7 +41,7 @@ jobs:
       - name: Build . . .
         run: make -j4
       - name: Run tests . . .
-        run: ${{ matrix.environment_variables }} ./test-samples.sh
+        run: ${{ matrix.environment_variables }} make -j4 check
       - name: Check log files
         if: ${{ matrix.type == 'undefined' }}
         run: |
