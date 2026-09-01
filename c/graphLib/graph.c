@@ -1200,6 +1200,7 @@ graphP gp_DupGraph(graphP theGraph)
 int gp_CreateRandomGraph(graphP theGraph)
 {
     int N, M, u, v, m;
+    long long maxSimpleEdges;
 
     if (theGraph == NULL)
     {
@@ -1226,8 +1227,14 @@ int gp_CreateRandomGraph(graphP theGraph)
 
     M = gp_GetRandomNumber(7 * N / 8, theGraph->edgeCapacity);
 
-    if (M > N * (N - 1) / 2)
-        M = N * (N - 1) / 2;
+    /* N * (N - 1) overflows a 32-bit int at N == 46342, before the halved
+            result would, so the simple undirected edge bound is formed in a
+            wider type. */
+
+    maxSimpleEdges = ((long long)N * (N - 1)) / 2;
+
+    if (M > maxSimpleEdges)
+        M = (int)maxSimpleEdges;
 
     for (m = N - 1; m < M; m++)
     {
@@ -1316,7 +1323,8 @@ int gp_CreateRandomGraphEx(graphP theGraph, int numEdges)
 {
     randomGraphEdgeRec *optionalEdges = NULL;
     randomGraphFaceRec *faces = NULL;
-    int N, maxNumEdges, maxPlanarEdges, numPlanarCoreEdges;
+    int N, maxPlanarEdges, numPlanarCoreEdges;
+    long long maxNumEdges;
     int lowerVertex, upperVertex, faceCapacity, optionalEdgeCapacity;
     int optionalEdgeCount = 0, faceCount = 0, addAllPlanarEdges;
     int Result = OK;
@@ -1330,14 +1338,16 @@ int gp_CreateRandomGraphEx(graphP theGraph, int numEdges)
     N = gp_GetN(theGraph);
     lowerVertex = gp_LowerBoundVertices(theGraph);
     upperVertex = gp_UpperBoundVertices(theGraph);
-    maxNumEdges = (N * (N - 1)) >> 1;
+    // Formed in a wider type because N * (N - 1) overflows a 32-bit int at
+    // N == 46342, before the halved result would.
+    maxNumEdges = ((long long)N * (N - 1)) >> 1;
     maxPlanarEdges = 3 * N - 6;
 
     if (numEdges > theGraph->edgeCapacity)
         numEdges = theGraph->edgeCapacity;
 
     if (numEdges > maxNumEdges)
-        numEdges = maxNumEdges;
+        numEdges = (int)maxNumEdges;
 
     if (numEdges < N - 1)
         return NOTOK;
@@ -1967,23 +1977,10 @@ int gp_DynamicInsertEdge(graphP theGraph, int u, int e_u, int e_ulink,
 
     if (gp_GetM(theGraph) >= theGraph->edgeCapacity && sp_IsEmpty(theGraph->edgeHoles))
     {
-        // The candidate edge capacity is double the current capacity
-        int candidateEdgeCapacity = gp_GetEdgeCapacity(theGraph) << 1;
-        int N = gp_GetN(theGraph);
-        int newEdgeCapacity = candidateEdgeCapacity;
-
-        // If the candidate edge capacity exceeds the number of edges
-        // needed in an undirected clique on N vertices, then attempt
-        // to use that as the new edge capacity.
-        if (candidateEdgeCapacity > ((N * (N - 1)) >> 1))
-            newEdgeCapacity = ((N * (N - 1)) >> 1);
-
-        // However, if the edge capacity is already greater than or
-        // equal to that maximum capacity needed for an undirected
-        // clique on N vertices, then we allow the capacity to double
-        // beyond the simple undirected graph limit.
-        if (newEdgeCapacity <= gp_GetEdgeCapacity(theGraph))
-            newEdgeCapacity = candidateEdgeCapacity;
+        // The new edge capacity is double the current capacity. Parallel
+        // edges are supported, so the capacity is not capped at the number
+        // of edges needed for an undirected clique on N vertices.
+        int newEdgeCapacity = gp_GetEdgeCapacity(theGraph) << 1;
 
         if (gp_EnsureEdgeCapacity(theGraph, newEdgeCapacity) != OK)
             return NOTOK;
