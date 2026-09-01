@@ -26,7 +26,9 @@ The `planarity` executable program also supports an extensive list of command-li
 
 ### Setting up a Development Environment
 
-Please refer to the [2. Dev Setup](https://github.com/graph-algorithms/edge-addition-planarity-suite/wiki/2.-Dev-Setup) wiki page for instructions on how to install development dependencies on various supported platforms, as well as how to get started working with the project in Visual Studio Code.
+Please refer to the [2. Dev Setup](https://github.com/graph-algorithms/edge-addition-planarity-suite/wiki/2.-Dev-Setup) wiki page for instructions on how to install development dependencies on various supported platforms, as well as how to get started working with the project in Visual Studio Code. 
+
+If you need to know about development setup and build dependencies related to a particular release, please see the [History of the Dev Setup Page](https://github.com/graph-algorithms/edge-addition-planarity-suite/wiki/2.-Dev-Setup/_history) to select the commit with the most recent date not exceeding the release date of the particular release.
 
 ### Making the Distribution
 
