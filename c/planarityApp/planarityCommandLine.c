@@ -215,7 +215,9 @@ int runQuickRegressionTests(int argc, char *argv[])
                 // Give success result, but Warn if no samples (except no warning if in quiet mode)
                 gp_Message("WARNING: Unable to change to samples directory to "
                            "run tests on samples.");
-                chdir(origDir);
+                if (chdir(origDir) != 0)
+                    gp_Message("WARNING: Unable to restore the original "
+                               "working directory.");
 
                 return OK;
             }
@@ -260,7 +262,9 @@ int runQuickRegressionTests(int argc, char *argv[])
     else
         gp_Message("============\n\nOne or more tests FAILED.");
 
-    chdir(origDir);
+    if (chdir(origDir) != 0)
+        gp_Message("WARNING: Unable to restore the original working directory.");
+
     FlushConsole(stdout);
 
     return retVal;
