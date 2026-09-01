@@ -556,7 +556,7 @@ int _ReadGraph(graphP theGraph, strOrFileP *pInputContainer)
     // was OK.
     if (extraDataAllowed)
     {
-        char charAfterGraphRead = EOF;
+        int charAfterGraphRead = EOF;
         if ((charAfterGraphRead = sf_getc((*pInputContainer))) != EOF)
         {
             if (sf_ungetc(charAfterGraphRead, (*pInputContainer)) != charAfterGraphRead)

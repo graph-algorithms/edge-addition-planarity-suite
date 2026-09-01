@@ -5,6 +5,7 @@ See the LICENSE.TXT file for licensing information.
 */
 
 #include "planarity.h"
+#include "../graphLib/io/strOrFile.h"
 
 #if defined(_MSC_VER) && !defined(__llvm__) && !defined(__INTEL_COMPILER)
 // MSVC under Windows doesn't have unistd.h, but does define functions like getcwd and chdir
@@ -39,6 +40,8 @@ int runIdentifyContractTest(graphP theGraph);
 int runDigraphTests(void);
 int runGraphMLTests(void);
 int runDrawPlanarNonplanarWriteTest(void);
+int runReadWithExtensionAtEofTest(void);
+int runHighByteRoundTripTest(void);
 int testDirectedDFS(void);
 int testPetersenDigraph(void);
 int testDigraphTranspose(void);
@@ -252,6 +255,10 @@ int runQuickRegressionTests(int argc, char *argv[])
     else if (runDigraphTests() != OK)
         retVal = NOTOK;
     else if (runGraphMLTests() != OK)
+        retVal = NOTOK;
+    else if (runReadWithExtensionAtEofTest() != OK)
+        retVal = NOTOK;
+    else if (runHighByteRoundTripTest() != OK)
         retVal = NOTOK;
 
     // All done.
@@ -555,6 +562,100 @@ int runDrawPlanarNonplanarWriteTest(void)
     gp_Free(&theGraph);
 
     return Result == NONEMBEDDABLE ? OK : Result;
+}
+
+/********************************************************************
+ runReadWithExtensionAtEofTest()
+
+ Reads a graph with an extension attached before gp_Read(), which
+ exercises the end-of-input handling in _ReadGraph(): the extra-data
+ check must see a true EOF rather than a fabricated byte.
+
+ Before the sf_getc()/sf_ungetc() int conversion (issue #319), on
+ platforms where plain char is unsigned, (char)EOF == 255, so this
+ read handed a spurious 0xFF extra-data byte to the extension's
+ post-processor and failed on a valid input file.
+ ********************************************************************/
+
+int runReadWithExtensionAtEofTest(void)
+{
+    int Result = OK;
+    graphP theGraph = NULL;
+
+    gp_Message("Reading a graph with an extension attached, to exercise "
+               "the end-of-input path (issue #319).");
+
+    if ((theGraph = gp_New()) == NULL)
+        Result = NOTOK;
+
+    if (Result == OK && gp_ExtendWith_DrawPlanar(theGraph) != OK)
+        Result = NOTOK;
+
+    if (Result == OK && gp_Read(theGraph, "maxPlanar5.txt") != OK)
+        Result = NOTOK;
+
+    if (Result == OK)
+        gp_Message("Test succeeded.\n");
+
+    gp_Free(&theGraph);
+
+    return Result;
+}
+
+/********************************************************************
+ runHighByteRoundTripTest()
+
+ Reads the byte 0xFF from a string container directly and through the
+ unget buffer, and confirms it is never mistaken for EOF.
+
+ Before the sf_getc()/sf_ungetc() int conversion (issue #319), on
+ platforms where plain char is signed, a literal 0xFF byte fetched
+ from the string container sign-extended to EOF, and the same
+ happened to bytes round-tripped through the unget buffer.
+ ********************************************************************/
+
+int runHighByteRoundTripTest(void)
+{
+    int Result = OK;
+    int currChar = EOF;
+    char const highByteStr[] = {'a', (char)0xFF, 'b', '\0'};
+    strOrFileP inputContainer = NULL;
+
+    gp_Message("Reading a 0xFF byte directly and through the unget buffer "
+               "(issue #319).");
+
+    if ((inputContainer = sf_NewInputContainer(highByteStr, NULL)) == NULL)
+        Result = NOTOK;
+
+    if (Result == OK && sf_getc(inputContainer) != 'a')
+        Result = NOTOK;
+
+    if (Result == OK)
+    {
+        currChar = sf_getc(inputContainer);
+        if (currChar != 0xFF)
+            Result = NOTOK;
+    }
+
+    if (Result == OK && sf_ungetc(currChar, inputContainer) != 0xFF)
+        Result = NOTOK;
+
+    if (Result == OK && sf_getc(inputContainer) != 0xFF)
+        Result = NOTOK;
+
+    if (Result == OK && sf_getc(inputContainer) != 'b')
+        Result = NOTOK;
+
+    if (Result == OK && sf_getc(inputContainer) != EOF)
+        Result = NOTOK;
+
+    if (Result == OK)
+        gp_Message("Test succeeded.\n");
+
+    if (inputContainer != NULL)
+        sf_Free(&inputContainer);
+
+    return Result;
 }
 
 int runGraphTransformationTests(void)
