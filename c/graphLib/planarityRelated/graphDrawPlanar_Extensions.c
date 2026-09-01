@@ -12,7 +12,7 @@ See the LICENSE.TXT file for licensing information.
 
 #include <stdlib.h>
 
-extern void _ClearVertexVisitedFlags(graphP theGraph, int);
+extern void _ClearVertexVisitedFlags(graphP theGraph, int includeVirtualVertices);
 
 extern void _CollectDrawingData(DrawPlanarContext *context, int RootVertex, int W, int WPrevLink);
 extern int _BreakTie(DrawPlanarContext *context, int BicompRoot, int W, int WPrevLink);
@@ -53,7 +53,7 @@ int _DrawPlanar_WritePostprocess(graphP theGraph, char **pExtraData);
 
 void *_DrawPlanar_DupContext(void *pContext, void *theGraph);
 int _DrawPlanar_CopyData(void *dstContext, void *srcContext);
-void _DrawPlanar_FreeContext(void *);
+void _DrawPlanar_FreeContext(void *pContext);
 
 /****************************************************************************
  * DRAWPLANAR_ID - the variable used to hold the integer identifier for this
