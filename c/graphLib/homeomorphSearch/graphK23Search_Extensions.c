@@ -29,8 +29,8 @@ int _K23Search_CheckObstructionIntegrity(graphP theGraph, graphP origGraph);
 /* Forward declarations of functions used by the extension system */
 
 void *_K23Search_DupContext(void *pContext, void *theGraph);
-int _K23Search_CopyData(void *, void *);
-void _K23Search_FreeContext(void *);
+int _K23Search_CopyData(void *dstContext, void *srcContext);
+void _K23Search_FreeContext(void *pContext);
 
 /****************************************************************************
  * K23SEARCH_ID - the variable used to hold the integer identifier for this

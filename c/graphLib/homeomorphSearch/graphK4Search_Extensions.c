@@ -45,7 +45,7 @@ int _K4Search_EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity);
 
 void *_K4Search_DupContext(void *pContext, void *theGraph);
 int _K4Search_CopyData(void *dstContext, void *srcContext);
-void _K4Search_FreeContext(void *);
+void _K4Search_FreeContext(void *pContext);
 
 /****************************************************************************
  * K4SEARCH_ID - the variable used to hold the integer identifier for this

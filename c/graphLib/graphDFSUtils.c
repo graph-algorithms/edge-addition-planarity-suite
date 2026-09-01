@@ -20,7 +20,7 @@ int _DepthFirstSearchDirected(graphP theGraph);
 int _SortVertices(graphP theGraph);
 
 // Imported methods
-extern void _ClearVertexVisitedFlags(graphP theGraph, int);
+extern void _ClearVertexVisitedFlags(graphP theGraph, int includeVirtualVertices);
 extern int _FillVertexVisitedIndexes(graphP theGraph, int FillValue);
 
 /********************************************************************

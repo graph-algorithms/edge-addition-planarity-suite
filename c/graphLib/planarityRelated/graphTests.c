@@ -13,7 +13,7 @@ See the LICENSE.TXT file for licensing information.
 #include "graphPlanarity.h"
 #include "graphPlanarity.private.h"
 
-extern void _ClearVertexVisitedFlags(graphP theGraph, int);
+extern void _ClearVertexVisitedFlags(graphP theGraph, int includeVirtualVertices);
 
 /* Private function declarations (some exported to system) */
 
