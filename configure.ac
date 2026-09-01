@@ -45,14 +45,17 @@ AC_CHECK_FUNCS([fopencookie funopen])
 # Enable compiler warnings
 
 AC_ARG_ENABLE([compile-warnings],
-    [AS_HELP_STRING([--enable-compile-warnings], [enable compiler warnings])],
-    [enable_compile_warnings=yes],
+    [AS_HELP_STRING([--enable-compile-warnings@<:@=no|yes|error@:>@],
+        [enable compiler warnings; "error" also makes them fatal])],
+    [AS_CASE([$enableval],
+        [no|yes|error], [enable_compile_warnings=$enableval],
+        [AC_MSG_ERROR([invalid value "$enableval" for --enable-compile-warnings; use no, yes or error])])],
     [enable_compile_warnings=no])
 AC_MSG_CHECKING([whether enable compiler warnings])
 AC_MSG_RESULT([$enable_compile_warnings])
 
 AS_IF([test "x$enable_compile_warnings" != "xno"],
-  [ax_enable_compile_warnings=yes
+  [ax_enable_compile_warnings=$enable_compile_warnings
    AX_COMPILER_FLAGS_CFLAGS([WARNING_CFLAGS], [], [ dnl
        -pedantic dnl])
    AC_SUBST([WARNING_CFLAGS])])

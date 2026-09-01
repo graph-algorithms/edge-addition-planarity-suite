@@ -10,7 +10,7 @@ See the LICENSE.TXT file for licensing information.
 /* Imported functions */
 
 extern void _InitIsolatorContext(graphP theGraph);
-extern void _ClearAllVisitedFlagsInGraph(graphP);
+extern void _ClearAllVisitedFlagsInGraph(graphP theGraph);
 extern int _ClearAllVisitedFlagsInBicomp(graphP theGraph, int BicompRoot);
 // extern int  _ClearAllVisitedFlagsInOtherBicomps(graphP theGraph, int BicompRoot);
 // extern void _ClearEdgeVisitedFlagsInUnembeddedEdges(graphP theGraph);
