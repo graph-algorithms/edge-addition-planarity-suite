@@ -256,11 +256,11 @@ int runQuickRegressionTests(int argc, char *argv[])
         retVal = NOTOK;
     else if (runDigraphTests() != OK)
         retVal = NOTOK;
-    else if (runGraphMLTests() != OK)
-        retVal = NOTOK;
     else if (runReadWithExtensionAtEofTest() != OK)
         retVal = NOTOK;
     else if (runHighByteRoundTripTest() != OK)
+        retVal = NOTOK;
+    else if (runGraphMLTests() != OK)
         retVal = NOTOK;
 
     // All done.
@@ -594,8 +594,7 @@ int runReadWithExtensionAtEofTest(void)
     int Result = OK;
     graphP theGraph = NULL;
 
-    gp_Message("Reading a graph with an extension attached, to exercise "
-               "the end-of-input path (issue #319).");
+    gp_Message("Test EOF Handling (for platforms that have char unsigned).");
 
     if ((theGraph = gp_New()) == NULL)
         Result = NOTOK;
@@ -633,8 +632,7 @@ int runHighByteRoundTripTest(void)
     char const highByteStr[] = {'a', (char)0xFF, 'b', '\0'};
     strOrFileP inputContainer = NULL;
 
-    gp_Message("Reading a 0xFF byte directly and through the unget buffer "
-               "(issue #319).");
+    gp_Message("Test Support of 0xFF Byte.");
 
     if ((inputContainer = sf_NewInputContainer(highByteStr, NULL)) == NULL)
         Result = NOTOK;
