@@ -35,7 +35,7 @@ jobs:
       - name: Build . . .
         run: make -j4
       - name: Run the tests . . .
-        run: make -j4 check
+        run: ./test-samples.sh
   distcheck:
     timeout-minutes: 15
     runs-on: ubuntu-latest

@@ -13,14 +13,14 @@ See the LICENSE.TXT file for licensing information.
 #include <stdlib.h>
 #include <string.h>
 
-#include "../graphLib/graph.h"
-#include "../graphLib/extensionSystem/graphFunctionTable.h"
-#include "../graphLib/io/g6-read-iterator.h"
-#include "../graphLib/io/strOrFile.h"
+#include "../planarity.h"
+#include "../../graphLib/extensionSystem/graphFunctionTable.h"
+#include "../../graphLib/io/strOrFile.h"
 
 extern int _ReadGraph(graphP theGraph, strOrFileP *pInputContainer);
 extern int _g6_InitReaderWithStrOrFile(G6ReadIteratorP reader, strOrFileP *input);
 extern int _g6_ReadGraphFromStrOrFile(graphP theGraph, strOrFileP *input);
+int runReadErrorTests(void);
 
 #if defined(HAVE_FOPENCOOKIE) || defined(HAVE_FUNOPEN)
 
@@ -103,6 +103,8 @@ static graphP newGraph(void)
 static void testLineReads(void)
 {
     char buffer[32] = {0};
+    char pushed[] = "pushed";
+    char retry[] = "retry";
     TestInput input = {"line\n", 0, FALSE};
     strOrFileP container = newInput(&input);
 
@@ -112,7 +114,7 @@ static void testLineReads(void)
     CHECK(strcmp(buffer, "line\n") == 0);
     CHECK(sf_fgets(buffer, sizeof(buffer), container) == NULL);
     CHECK(container->inputErrorFlag == FALSE);
-    CHECK(sf_ungets("pushed", container) == OK);
+    CHECK(sf_ungets(pushed, container) == OK);
     CHECK(sf_fgets(buffer, sizeof(buffer), container) == buffer);
     CHECK(strcmp(buffer, "pushed") == 0);
     CHECK(container->inputErrorFlag == FALSE);
@@ -122,14 +124,14 @@ static void testLineReads(void)
     input.failAtEnd = TRUE;
     container = newInput(&input);
     CHECK(sf_fgets(buffer, sizeof(buffer), container) == buffer);
-    CHECK(sf_ungets("pushed", container) == OK);
+    CHECK(sf_ungets(pushed, container) == OK);
     CHECK(sf_fgets(buffer, sizeof(buffer), container) == NULL);
     CHECK(container->inputErrorFlag == TRUE);
     CHECK(ferror(container->pFile) != 0);
     // Clearing stdio's indicator must not erase the container's error history.
     clearerr(container->pFile);
     input.failAtEnd = FALSE;
-    CHECK(sf_ungets("retry", container) == OK);
+    CHECK(sf_ungets(retry, container) == OK);
     CHECK(sf_fgets(buffer, sizeof(buffer), container) == NULL);
     CHECK(sf_getc(container) == EOF);
     CHECK(container->inputErrorFlag == TRUE);
@@ -268,22 +270,25 @@ static void testGraph6Reads(void)
     }
 }
 
-int main(void)
+int runReadErrorTests(void)
 {
+    failures = 0;
+    checks = 0;
+    gp_Message("Starting Read Error Tests");
     testLineReads();
     testCharacterReads();
     testGraphReads();
     testGraph6Reads();
-    printf("Read-error regression checks: %d passed, %d failed.\n", checks - failures, failures);
-    return failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
+    gp_Message("Read-error regression checks: %d passed, %d failed.", checks - failures, failures);
+    return failures == 0 ? OK : NOTOK;
 }
 
 #else
 
-int main(void)
+int runReadErrorTests(void)
 {
-    puts("Custom FILE read callbacks are unavailable; skipping fault-injection tests.");
-    return 77;
+    gp_Message("Custom FILE read callbacks are unavailable; skipping read-error fault-injection tests.");
+    return OK;
 }
 
 #endif

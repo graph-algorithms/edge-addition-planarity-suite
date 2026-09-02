@@ -44,6 +44,7 @@ int testPetersenDigraph(void);
 int testDigraphTranspose(void);
 int runGraphMLWriteTest(char const *inputFileName, char const *expectedOutputFileName);
 int runBasicGraphMLWriteTest(void);
+int runReadErrorTests(void);
 
 /****************************************************************************
  Command Line Processor
@@ -254,6 +255,8 @@ int runQuickRegressionTests(int argc, char *argv[])
     else if (runDigraphTests() != OK)
         retVal = NOTOK;
     else if (runGraphMLTests() != OK)
+        retVal = NOTOK;
+    else if (runReadErrorTests() != OK)
         retVal = NOTOK;
 
     // All done.

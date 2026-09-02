@@ -35,6 +35,6 @@ jobs:
           # -Werror comes from --enable-compile-warnings=error instead.
           ./configure --enable-compile-warnings=error CC="$CC"
       - name: Build . . .
-        run: make -j4 all test-read-errors
+        run: make -j4
         # We don't run the tests, since in this job we are only checking for
         # compiler warnings
