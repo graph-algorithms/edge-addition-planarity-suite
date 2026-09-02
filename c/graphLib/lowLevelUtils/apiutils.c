@@ -92,16 +92,18 @@ void gp_LogErrorMessage(int lineNum, const char *srcFileName, const char *messag
 
 int gp_GetRandomNumber(int NMin, int NMax)
 {
-    int N = rand();
+    unsigned int N = (unsigned int)rand();
 
     if (NMax < NMin)
         return NMin;
 
+    /* Folded in unsigned arithmetic because the additions below overflow a
+       signed int for rand() results just below INT_MAX. */
+
     N += ((N & 0xFFFF0000) >> 16);
     N += ((N & 0x0000FF00) >> 8);
-    N &= 0x7FFFFFFF;
-    N %= (NMax - NMin + 1);
-    return N + NMin;
+    N %= (unsigned int)(NMax - NMin + 1);
+    return (int)(N & 0x7FFFFFFF) + NMin;
 }
 
 

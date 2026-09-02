@@ -23,7 +23,7 @@ See the LICENSE.TXT file for licensing information.
 
 /* Imported functions */
 
-extern void _ClearVertexVisitedFlags(graphP theGraph, int);
+extern void _ClearVertexVisitedFlags(graphP theGraph, int includeVirtualVertices);
 extern int _FillVertexVisitedIndexes(graphP theGraph, int FillValue);
 
 extern int _IsolateKuratowskiSubgraph(graphP theGraph, int v, int R);

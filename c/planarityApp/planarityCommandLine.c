@@ -218,7 +218,9 @@ int runQuickRegressionTests(int argc, char *argv[])
                 // Give success result, but Warn if no samples (except no warning if in quiet mode)
                 gp_Message("WARNING: Unable to change to samples directory to "
                            "run tests on samples.");
-                chdir(origDir);
+                if (chdir(origDir) != 0)
+                    gp_Message("WARNING: Unable to restore the original "
+                               "working directory.");
 
                 return OK;
             }
@@ -267,7 +269,9 @@ int runQuickRegressionTests(int argc, char *argv[])
     else
         gp_Message("============\n\nOne or more tests FAILED.");
 
-    chdir(origDir);
+    if (chdir(origDir) != 0)
+        gp_Message("WARNING: Unable to restore the original working directory.");
+
     FlushConsole(stdout);
 
     return retVal;
@@ -353,8 +357,11 @@ int runRandomGraphsTests(void)
 {
     int retVal = OK;
     unsigned quietModeCache = gp_GetQuietMode();
+    platform_time start, end;
+    double duration;
 
     gp_Message("Starting Random Graph Tests");
+    platform_GetTime(start);
 
     if (RandomGraphs("-p", 1000, 20, NULL, TRUE, FALSE) != OK)
     {
@@ -372,13 +379,15 @@ int runRandomGraphsTests(void)
     // maximal-planar and nonplanar paths used by the -rm and -rn endpoints.
     gp_SetQuietMode(quietModeCache | QUIETMODE_MESSAGES);
 
-    if (RandomGraph("-p", 0, 5, NULL, NULL) != OK)
+    // N=46342 chosen to sanitize signed int overflow on simple graph clique size
+    if (RandomGraph("-p", 0, 46342, NULL, NULL) != OK)
     {
         gp_ErrorMessage("Random maximal planar graph test failed.");
         retVal = NOTOK;
     }
 
-    if (RandomGraph("-p", 1, 5, NULL, NULL) != NONEMBEDDABLE)
+    // N=65538 chosen to sanitize unsigned int overflow on simple graph clique size
+    if (RandomGraph("-p", 1, 65538, NULL, NULL) != NONEMBEDDABLE)
     {
         gp_ErrorMessage("Random nonplanar graph test failed.");
         retVal = NOTOK;
@@ -386,8 +395,11 @@ int runRandomGraphsTests(void)
 
     gp_SetQuietMode(quietModeCache);
 
+    platform_GetTime(end);
+    duration = platform_GetDuration(start, end);
+
     if (retVal == OK)
-        gp_Message("Finished Random Graph Tests.\n");
+        gp_Message("Finished Random Graph Tests (%.3lf seconds).\n", duration);
 
     return retVal;
 }
