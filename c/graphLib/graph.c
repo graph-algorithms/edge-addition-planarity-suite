@@ -1980,9 +1980,19 @@ int gp_DynamicInsertEdge(graphP theGraph, int u, int e_u, int e_ulink,
         // The new edge capacity is double the current capacity. Parallel
         // edges are supported, so the capacity is not capped at the number
         // of edges needed for an undirected clique on N vertices.
-        int newEdgeCapacity = gp_GetEdgeCapacity(theGraph) << 1;
+        long long newEdgeCapacity = ((long long)gp_GetEdgeCapacity(theGraph)) << 1;
 
-        if (gp_EnsureEdgeCapacity(theGraph, newEdgeCapacity) != OK)
+        // If left shift would overflow signed integer, then cap it at INT_MAX.
+        if (newEdgeCapacity > INT_MAX)
+        {
+            newEdgeCapacity = INT_MAX;
+            // If unable to allocate more edges due to already being at INT_MAX,
+            // then return failure.
+            if (newEdgeCapacity <= gp_GetEdgeCapacity(theGraph))
+                return NOTOK;
+        }
+
+        if (gp_EnsureEdgeCapacity(theGraph, (int)newEdgeCapacity) != OK)
             return NOTOK;
     }
 
@@ -2160,8 +2170,8 @@ int gp_TransposeDirectedGraph(graphP theGraph)
                 direction == EDGEFLAG_DIRECTION_OUTONLY)
             {
                 int transposedDirection = direction == EDGEFLAG_DIRECTION_INONLY
-                                               ? EDGEFLAG_DIRECTION_OUTONLY
-                                               : EDGEFLAG_DIRECTION_INONLY;
+                                              ? EDGEFLAG_DIRECTION_OUTONLY
+                                              : EDGEFLAG_DIRECTION_INONLY;
 
                 gp_SetDirection(theGraph, e, 0);
                 gp_SetDirection(theGraph, e, transposedDirection);
