@@ -68,8 +68,6 @@
 /autom4te.cache/
 libtool
 test-samples.sh
-test-read-errors
-test-*.trs
 Makefile
 config.status
 config.guess*
