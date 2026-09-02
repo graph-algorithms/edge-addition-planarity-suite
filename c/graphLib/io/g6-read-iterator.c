@@ -249,7 +249,7 @@ int _g6_InitReaderWithStrOrFile(G6ReadIteratorP theG6ReadIterator, strOrFileP *p
 
 int _g6_InitReader(G6ReadIteratorP theG6ReadIterator)
 {
-    char charConfirmation = EOF;
+    int charConfirmation = EOF;
     int firstChar = '\0';
     int lineNum = 1;
     int order = NIL;
@@ -262,7 +262,7 @@ int _g6_InitReader(G6ReadIteratorP theG6ReadIterator)
     }
     else
     {
-        charConfirmation = sf_ungetc((char)firstChar, inputContainer);
+        charConfirmation = sf_ungetc(firstChar, inputContainer);
 
         if (charConfirmation != firstChar)
         {
@@ -283,7 +283,7 @@ int _g6_InitReader(G6ReadIteratorP theG6ReadIterator)
     }
 
     firstChar = sf_getc(inputContainer);
-    charConfirmation = sf_ungetc((char)firstChar, inputContainer);
+    charConfirmation = sf_ungetc(firstChar, inputContainer);
 
     if (charConfirmation != firstChar)
     {
@@ -430,7 +430,7 @@ int _g6_DetermineOrderFromInput(strOrFileP inputContainer, int *order)
             return NOTOK;
         }
 
-        sf_ungetc((char)graphChar, inputContainer);
+        sf_ungetc(graphChar, inputContainer);
 
         for (int i = 2; i >= 0; i--)
         {

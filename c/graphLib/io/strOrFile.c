@@ -279,11 +279,17 @@ int sf_IsValidStrOrFile(strOrFileP theStrOrFile)
  If the ungetBuf is empty, then we'll read from pFile using getc() OR
  from theStrBuf by fetching the character at theStrPos and incrementing
  theStrPos.
+
+ Like getc() in stdio, returns the character as an unsigned char
+ converted to int, or EOF. The int return type is what keeps EOF
+ distinguishable from the byte 0xFF on builds where plain char is
+ unsigned, e.g. the Linux ABIs for AArch64, ARM, PowerPC and s390x,
+ where (char)EOF == 255 (issue #319).
  ********************************************************************/
 
-char sf_getc(strOrFileP theStrOrFile)
+int sf_getc(strOrFileP theStrOrFile)
 {
-    char theChar = EOF;
+    int theChar = EOF;
 
     if (!sf_IsValidStrOrFile(theStrOrFile) ||
         theStrOrFile->containerType != INPUT_CONTAINER)
@@ -302,14 +308,16 @@ char sf_getc(strOrFileP theStrOrFile)
         // so we cut to the underlying debug method to stop its warnings
         sp__Pop(theStrOrFile->ungetBuf, &(currChar));
 #endif
-        theChar = (char)currChar;
+        theChar = currChar;
     }
     else if (theStrOrFile->pFile != NULL)
-        theChar = (char)getc(theStrOrFile->pFile);
+        theChar = getc(theStrOrFile->pFile);
     else if (theStrOrFile->theStrBuf != NULL && sb_GetUnreadCharCount(theStrOrFile->theStrBuf) > 0)
     {
+        // N.B. Convert through unsigned char so that a literal 0xFF byte in
+        // the string buffer does not sign-extend to EOF on signed-char platforms
         theChar = sb_GetReadString(theStrOrFile->theStrBuf) != NULL
-                      ? sb_GetReadString(theStrOrFile->theStrBuf)[0]
+                      ? (unsigned char)sb_GetReadString(theStrOrFile->theStrBuf)[0]
                       : EOF;
         if (theChar != EOF)
             sb_ReadSkipChar(theStrOrFile->theStrBuf);
@@ -345,7 +353,7 @@ int sf_ReadSkipChar(strOrFileP theStrOrFile)
 
 int sf_ReadSkipWhitespace(strOrFileP theStrOrFile)
 {
-    char currChar = EOF;
+    int currChar = EOF;
 
     if (!sf_IsValidStrOrFile(theStrOrFile) ||
         theStrOrFile->containerType != INPUT_CONTAINER)
@@ -405,7 +413,7 @@ int sf_ReadInteger(int *intToRead, strOrFileP theStrOrFile)
     int exitCode = OK;
 
     int intCandidate = 0, intCandidateIndex = 0;
-    char currChar = '\0', nextChar = '\0';
+    int currChar = '\0', nextChar = '\0';
     int startedReadingInt = FALSE, isNegative = FALSE;
     char intCandidateStr[MAXCHARSFOR32BITINT + 1];
     memset(intCandidateStr, '\0', (MAXCHARSFOR32BITINT + 1) * sizeof(char));
@@ -552,17 +560,23 @@ int sf_ReadSkipLineRemainder(strOrFileP theStrOrFile)
  where it contains a strBufP, we unget to the ungetBuf; this ungetBuf
  is consumed first when we sf_getc(), sf_fgets(), etc.
 
- Like ungetc() in stdio, on success theChar is returned. On failure,
- EOF is returned.
+ Like ungetc() in stdio, on success the pushed byte is returned as
+ (unsigned char)theChar converted to int. On failure, EOF is
+ returned. Takes and returns int for the same reason as sf_getc():
+ EOF must stay distinguishable from the byte 0xFF.
  ********************************************************************/
 
-char sf_ungetc(char theChar, strOrFileP theStrOrFile)
+int sf_ungetc(int theChar, strOrFileP theStrOrFile)
 {
     if (theChar == EOF ||
         !sf_IsValidStrOrFile(theStrOrFile) ||
         theStrOrFile->containerType != INPUT_CONTAINER ||
         sp_GetCurrentSize(theStrOrFile->ungetBuf) >= sp_GetCapacity(theStrOrFile->ungetBuf))
-        return EOF; // Acceptable downcast, allowing char rather than int return type
+        return EOF;
+
+    // N.B. Store the byte value as an unsigned char would deliver it, so a
+    // pushed-back byte reads back from sf_getc() exactly as it was read
+    theChar = (unsigned char)theChar;
 
 #ifndef DEBUG
     sp_Push(theStrOrFile->ungetBuf, theChar);
@@ -593,7 +607,9 @@ int sf_ungets(char *strToUnget, strOrFileP theStrOrFile)
         return NOTOK;
 
     for (int i = (strlen(strToUnget) - 1); i >= 0; i--)
-        sp_Push(theStrOrFile->ungetBuf, strToUnget[i]);
+        // N.B. Convert through unsigned char so a 0xFF byte does not enter the
+        // unget buffer as EOF on signed-char platforms
+        sp_Push(theStrOrFile->ungetBuf, (unsigned char)strToUnget[i]);
 
     return OK;
 }
@@ -630,7 +646,7 @@ char *sf_fgets(char *str, int count, strOrFileP theStrOrFile)
         int numCharsInUngetBuf = sp_GetCurrentSize(theStrOrFile->ungetBuf);
         if (numCharsInUngetBuf > 0)
         {
-            char currChar = '\0';
+            int currChar = '\0';
             int encounteredNewline = FALSE;
 
             charsToReadFromUngetBuf = (count > numCharsInUngetBuf) ? numCharsInUngetBuf : count;
@@ -639,7 +655,7 @@ char *sf_fgets(char *str, int count, strOrFileP theStrOrFile)
                 currChar = sf_getc(theStrOrFile);
                 if (currChar == EOF)
                     return NULL;
-                str[i] = currChar;
+                str[i] = (char)currChar;
                 str[i + 1] = '\0';
                 // N.B. fgets() includes the \n in the string returned, and
                 // no further characters shall be read
