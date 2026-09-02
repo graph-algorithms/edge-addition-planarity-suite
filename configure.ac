@@ -38,7 +38,7 @@ AC_PROG_CC
 LT_INIT
 AC_PROG_INSTALL
 
-AC_CHECK_HEADERS([ctype.h stdio.h stdlib.h string.h time.h unistd.h])
+AC_CHECK_HEADERS([ctype.h stdio.h stdlib.h limits.h string.h time.h unistd.h])
 
 
 # Enable compiler warnings
