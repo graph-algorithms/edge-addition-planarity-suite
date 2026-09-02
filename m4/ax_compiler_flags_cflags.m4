@@ -86,6 +86,21 @@ AC_DEFUN([AX_COMPILER_FLAGS_CFLAGS],[
         fi
 
         # "yes" flags
+        #
+        # This list is kept in step with the compiler flags in
+        # devEnvSetupAndDefaults/.vscode/tasks.json. Compiler-specific spellings
+        # are safe to list together because AX_APPEND_COMPILE_FLAGS probes each
+        # flag and drops the ones the active compiler does not accept, e.g.
+        # -Wdiscarded-qualifiers is gcc and
+        # -Wincompatible-pointer-types-discards-qualifiers is its clang analogue.
+        #
+        # Deliberately not mirrored from tasks.json:
+        #   -Wno-deprecated-declarations  a suppression, not a warning; the
+        #     editor tasks quiet it for local builds, and adding it here would
+        #     weaken the gate that compile-warnings.yml exists to enforce.
+        #   -fsanitize=address, -fdiagnostics-color, -fcolor-diagnostics,
+        #     -fansi-escape-codes  not warning flags; sanitisers have their own
+        #     workflow and colour is an editor concern.
         AX_APPEND_COMPILE_FLAGS([ dnl
             -Wall dnl
             -Wextra dnl
@@ -121,6 +136,11 @@ AC_DEFUN([AX_COMPILER_FLAGS_CFLAGS],[
             -Wrestrict dnl
             -Wnull-dereference dnl
             -Wdouble-promotion dnl
+            -Wunused-result dnl
+            -Wignored-qualifiers dnl
+            -Wdiscarded-qualifiers dnl
+            -Wdeprecated-non-prototype dnl
+            -Wincompatible-pointer-types-discards-qualifiers dnl
             $4 dnl
             $5 dnl
             $6 dnl

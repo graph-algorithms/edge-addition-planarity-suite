@@ -17,7 +17,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       CC: ${{ matrix.compiler }}
-      CFLAGS: -Werror
     strategy:
       fail-fast: false
       matrix:
@@ -30,7 +29,11 @@ jobs:
         run: |
           mkdir -p m4
           autoreconf -if
-          ./configure --enable-compile-warnings CC="$CC" CFLAGS="$CFLAGS"
+          # We deliberately don't set CFLAGS: assigning it replaces autoconf's
+          # default -g -O2, and gcc only emits the fortified warn_unused_result
+          # warnings when optimising, so the job would have nothing to fail on.
+          # -Werror comes from --enable-compile-warnings=error instead.
+          ./configure --enable-compile-warnings=error CC="$CC"
       - name: Build . . .
         run: make -j4 all test-read-errors
         # We don't run the tests, since in this job we are only checking for
