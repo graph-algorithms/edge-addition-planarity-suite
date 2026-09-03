@@ -386,6 +386,7 @@
                 "/DDEBUG", // Added so that _DEBUG is defined; see appconst.h
                 //"/DUSE_0BASEDARRAYS", // Commented out to use default of 1-based array indexing
                 "/Wall",
+                "/WX",
                 "/wd4464", // Ignore warnings about relative paths
                 "/wd4710", // Ignore warnings about not inlining scanf, sprintf, printf, fprintf, etc.
                 "/wd4711", // Ignore warnings about automatic inline expansion, as we are not concerned with code size
@@ -429,6 +430,7 @@
                 "/DDEBUG", // Added so that _DEBUG is defined; see appconst.h
                 //"/DUSE_0BASEDARRAYS", // Commented out to use default of 1-based array indexing
                 "/Wall",
+                "/WX",
                 "/wd4464", // Ignore warnings about relative paths
                 "/wd4710", // Ignore warnings about not inlining scanf, sprintf, printf, fprintf, etc.
                 "/wd4711", // Ignore warnings about automatic inline expansion, as we are not concerned with code size
@@ -468,6 +470,7 @@
                 "/nologo",
                 //"/DUSE_0BASEDARRAYS", // Commented out to use default of 1-based array indexing
                 "/Wall",
+                "/WX",
                 "/wd4464", // Ignore warnings about relative paths
                 "/wd4710", // Ignore warnings about not inlining scanf, sprintf, printf, fprintf, etc.
                 "/wd4711", // Ignore warnings about automatic inline expansion, as we are not concerned with code size
