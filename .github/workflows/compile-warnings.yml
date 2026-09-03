@@ -45,5 +45,39 @@ jobs:
             CC="$CC"
       - name: Build . . .
         run: make -j4
-        # We don't run the tests, since in this job we are only checking for
-        # compiler warnings
+        # This job is run on every PR, so we ensure that for at least these warning-free
+        # compiles, the build program also works
+      - name: Run the tests . . .
+        run: ./test-samples.sh
+
+  msvc:
+    name: Windows MSVC cl
+    timeout-minutes: 60
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x64, x86, x86_amd64, amd64_x86]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Setup MSVC Developer Command Prompt
+        uses: TheMrMilchmann/setup-msvc-dev@368ef7d1ee4d1171b31d4a7f67f4d954f903f5a9 # v4.1.0
+        with:
+          arch: ${{ matrix.arch }}
+        # NOTE: Using defaults for sdk (use default Windows SDK), toolset (use
+        # default compiler toolset), uwp (not building for Windows Store, so no
+        # need for Universal Windows Platform support), nor spectre (not using
+        # VS tools with spectre mitigations) Also, not setting vs-path so we
+        # always use the latest
+      - name: Build using MSVC cl
+        run: |
+          cl /O2 /nologo /Wall /wd4464 /wd4710 /wd4711 /wd4774 /wd4996 /wd5045 `
+          /wd4068 /wd4820 /WX /external:anglebrackets /external:W0 `
+          /Fe./planarity.exe ./c/planarityApp/**.c ./c/graphLib/**.c `
+          ./c/graphLib/extensionSystem/**.c ./c/graphLib/homeomorphSearch/**.c `
+          ./c/graphLib/io/**.c ./c/graphLib/lowLevelUtils/**.c `
+          ./c/graphLib/planarityRelated/**.c
+        # This job is run on every PR, so we ensure that for at least these warning-free
+        # compiles, the build program also works
+      - name: Run the tests...
+        run: ./planarity.exe -test ./c/samples/
