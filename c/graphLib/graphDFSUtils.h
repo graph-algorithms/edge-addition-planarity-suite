@@ -32,15 +32,23 @@ extern "C"
                 gp_SortVertices() utility method below toggle this bit.
         GRAPHFLAGS_LOWPOINTSCOMPUTED records whether lowpoint calculations have
                 been performed on the graph.
+        GRAPHFLAGS_DFSNUMBERED_DIRECTED is set when a directed depth-first search
+                performs the DFS numbering.
 */
 #define GRAPHFLAGS_EXTENDEDWITH_DFSUTILS 256
 #define GRAPHFLAGS_DFSNUMBERED 512
 #define GRAPHFLAGS_SORTEDBYDFI 1024
 #define GRAPHFLAGS_LOWPOINTSCOMPUTED 2048
+#define GRAPHFLAGS_DFSNUMBERED_DIRECTED 4096
 
         // DFS-related utility methods that create a DFS tree, sort vertices and
         // compute least ancestor and lowpoint values
         int gp_DepthFirstSearch(graphP theGraph);
+        int gp_DepthFirstSearchEx(graphP theGraph, unsigned mode);
+
+#define DFSMODE_UNDIRECTED 1
+#define DFSMODE_DIRECTED 2
+
         int gp_SortVertices(graphP theGraph);
         int gp_ComputeLowpoints(graphP theGraph);
         int gp_ComputeLeastAncestors(graphP theGraph);

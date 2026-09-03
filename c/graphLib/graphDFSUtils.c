@@ -16,10 +16,12 @@ See the LICENSE.TXT file for licensing information.
 #include "planarityRelated/graphPlanarity.private.h"
 
 // Private methods, except exported within library
+int _DepthFirstSearchDirected(graphP theGraph);
 int _SortVertices(graphP theGraph);
 
 // Imported methods
-extern void _ClearVertexVisitedFlags(graphP theGraph, int);
+extern void _ClearVertexVisitedFlags(graphP theGraph, int includeVirtualVertices);
+extern int _FillVertexVisitedIndexes(graphP theGraph, int FillValue);
 
 /********************************************************************
  gp_ExtendWith_DFSUtils()
@@ -101,12 +103,6 @@ int gp_DepthFirstSearch(graphP theGraph)
     if (theGraph == NULL)
         return NOTOK;
 
-    if (gp_GetGraphFlags(theGraph) & GRAPHFLAGS_DIRECTEDEDGEDETECTED)
-    {
-        gp_ErrorMessage("gp_DepthFirstSearch() does not support directed graphs.");
-        return NOTOK;
-    }
-
     if (gp_GetGraphFlags(theGraph) & GRAPHFLAGS_DFSNUMBERED)
         return OK;
 
@@ -184,6 +180,189 @@ int gp_DepthFirstSearch(graphP theGraph)
     _gp_LogLine("graphDFSUtils.c/gp_DepthFirstSearch() end\n");
 
     theGraph->graphFlags |= GRAPHFLAGS_DFSNUMBERED;
+
+    if (gp_GetGraphFlags(theGraph) & GRAPHFLAGS_DFSNUMBERED_DIRECTED)
+    {
+        theGraph->graphFlags &= ~GRAPHFLAGS_DFSNUMBERED_DIRECTED;
+        if (_FillVertexVisitedIndexes(theGraph, 0) != OK)
+            return NOTOK;
+    }
+
+    return OK;
+}
+
+/********************************************************************
+ gp_DepthFirstSearchEx()
+
+ Routes to the requested depth-first search variant.
+ ********************************************************************/
+
+int gp_DepthFirstSearchEx(graphP theGraph, unsigned mode)
+{
+    if (theGraph == NULL)
+        return NOTOK;
+
+    if (mode == DFSMODE_UNDIRECTED)
+    {
+        if (gp_DepthFirstSearch(theGraph) == OK)
+            return OK;
+        else
+            return NOTOK;
+    }
+    else if (mode == DFSMODE_DIRECTED)
+    {
+        if (_DepthFirstSearchDirected(theGraph) == OK)
+            return OK;
+        else
+            return NOTOK;
+    }
+
+    return NOTOK;
+}
+
+/********************************************************************
+ _DepthFirstSearchDirected()
+
+ Performs a directed depth-first search. Discovery times are stored
+ in vertex index fields and finish times are stored in visitedIndex.
+ Only outgoing and undirected edge records are traversed.
+ ********************************************************************/
+
+int _DepthFirstSearchDirected(graphP theGraph)
+{
+    stackP theStack;
+    int timer = 1;
+    int v, u, w, e, stackItem, numEdgesPushed;
+
+    if (theGraph == NULL)
+        return NOTOK;
+
+    if (gp_ExtendWith_DFSUtils(theGraph) != OK)
+        return NOTOK;
+
+    theStack = theGraph->theStack;
+
+    // One integer is pushed per eligible edge record, plus at most one
+    // finish event per active DFS tree vertex. The graph stack capacity
+    // required by the undirected DFS is sufficient for these events.
+    if (sp_GetCapacity(theStack) < 2 * 2 * gp_GetM(theGraph) + 2)
+        return NOTOK;
+
+    sp_ClearStack(theStack);
+
+    for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
+    {
+        gp_SetIndex(theGraph, v, 0);
+        gp_SetVertexVisitedIndex(theGraph, v, 0);
+        gp_SetVertexParent(theGraph, v, NIL);
+    }
+
+    for (e = gp_LowerBoundEdges(theGraph); e < gp_UpperBoundEdges(theGraph); ++e)
+    {
+        if (gp_EdgeInUse(theGraph, e))
+        {
+            gp_ClearEdgeType(theGraph, e);
+            gp_ClearEdgeMarked(theGraph, e);
+        }
+    }
+
+    // Process each directed DFS tree, including isolated vertices.
+    for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
+    {
+        if (gp_GetIndex(theGraph, v) != 0)
+            continue;
+
+        gp_SetIndex(theGraph, v, timer++);
+        gp_SetVertexParent(theGraph, v, NIL);
+
+        numEdgesPushed = 0;
+        // Adjacencies are stored in the reverse of their file order, so
+        // walking first-to-last pushes the displayed list right-to-left.
+        e = gp_GetFirstEdge(theGraph, v);
+        while (gp_IsEdge(theGraph, e))
+        {
+            if (gp_GetDirection(theGraph, e) != EDGEFLAG_DIRECTION_INONLY)
+            {
+                // This first-pushed edge is the last edge that will be
+                // processed for v because the stack reverses the order.
+                if (numEdgesPushed == 0)
+                    gp_SetEdgeMarked(theGraph, e);
+                sp_Push(theStack, e);
+                ++numEdgesPushed;
+            }
+            e = gp_GetNextEdge(theGraph, e);
+        }
+
+        if (numEdgesPushed == 0)
+            gp_SetVertexVisitedIndex(theGraph, v, timer++);
+
+        while (sp_NonEmpty(theStack))
+        {
+            sp_Pop(theStack, stackItem);
+
+            // A negative stack item is a deferred finish event. Deferring
+            // this event is necessary when a vertex's marked final edge is
+            // a tree edge: the new child's subtree must finish first.
+            if (stackItem < gp_LowerBoundEdges(theGraph))
+            {
+                u = -stackItem - 1;
+                gp_SetVertexVisitedIndex(theGraph, u, timer++);
+                continue;
+            }
+
+            e = stackItem;
+            u = gp_GetNeighbor(theGraph, gp_GetTwin(theGraph, e));
+            w = gp_GetNeighbor(theGraph, e);
+
+            if (gp_GetIndex(theGraph, w) == 0)
+            {
+                gp_ResetEdgeType(theGraph, e, EDGE_TYPE_TREE);
+                gp_SetIndex(theGraph, w, timer++);
+                gp_SetVertexParent(theGraph, w, u);
+
+                if (gp_GetEdgeMarked(theGraph, e))
+                {
+                    gp_ClearEdgeMarked(theGraph, e);
+                    sp_Push(theStack, -u - 1);
+                }
+
+                numEdgesPushed = 0;
+                e = gp_GetFirstEdge(theGraph, w);
+                while (gp_IsEdge(theGraph, e))
+                {
+                    if (gp_GetDirection(theGraph, e) != EDGEFLAG_DIRECTION_INONLY)
+                    {
+                        if (numEdgesPushed == 0)
+                            gp_SetEdgeMarked(theGraph, e);
+                        sp_Push(theStack, e);
+                        ++numEdgesPushed;
+                    }
+                    e = gp_GetNextEdge(theGraph, e);
+                }
+
+                if (numEdgesPushed == 0)
+                    gp_SetVertexVisitedIndex(theGraph, w, timer++);
+            }
+            else
+            {
+                if (gp_GetVertexVisitedIndex(theGraph, w) == 0)
+                    gp_ResetEdgeType(theGraph, e, EDGE_TYPE_BACK);
+                else if (gp_GetIndex(theGraph, w) < gp_GetIndex(theGraph, u))
+                    gp_ResetEdgeType(theGraph, e, EDGE_TYPE_CROSS);
+                else
+                    gp_ResetEdgeType(theGraph, e, EDGE_TYPE_FORWARD);
+
+                if (gp_GetEdgeMarked(theGraph, e))
+                {
+                    gp_ClearEdgeMarked(theGraph, e);
+                    gp_SetVertexVisitedIndex(theGraph, u, timer++);
+                }
+            }
+        }
+    }
+
+    theGraph->graphFlags |= GRAPHFLAGS_DFSNUMBERED_DIRECTED;
+    theGraph->graphFlags &= ~GRAPHFLAGS_DFSNUMBERED;
 
     return OK;
 }
@@ -370,6 +549,7 @@ int gp_ComputeLowpoints(graphP theGraph)
 
     if (theGraph == NULL)
         return NOTOK;
+
     if (gp_GetGraphFlags(theGraph) & GRAPHFLAGS_DIRECTEDEDGEDETECTED)
     {
         gp_ErrorMessage("gp_ComputeLowpoints() does not support directed graphs.");
@@ -496,6 +676,7 @@ int gp_ComputeLeastAncestors(graphP theGraph)
 
     if (theGraph == NULL)
         return NOTOK;
+
     if (gp_GetGraphFlags(theGraph) & GRAPHFLAGS_DIRECTEDEDGEDETECTED)
     {
         gp_ErrorMessage("gp_ComputeLeastAncestors() does not support directed graphs.");
@@ -582,6 +763,7 @@ int gp_CountConnectedComponents(graphP theGraph)
 
     if (theGraph == NULL)
         return -1;
+        
     if (!(gp_GetGraphFlags(theGraph) & GRAPHFLAGS_DFSNUMBERED))
         return -1;
 

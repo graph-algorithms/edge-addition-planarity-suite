@@ -367,6 +367,7 @@ void _ResetGraphStorage(graphP theGraph)
     theGraph->embedFlags = 0;
 
     theGraph->graphFlags &= ~GRAPHFLAGS_DFSNUMBERED;
+    theGraph->graphFlags &= ~GRAPHFLAGS_DFSNUMBERED_DIRECTED;
     theGraph->graphFlags &= ~GRAPHFLAGS_SORTEDBYDFI;
     theGraph->graphFlags &= ~GRAPHFLAGS_LOWPOINTSCOMPUTED;
     theGraph->graphFlags &= ~GRAPHFLAGS_DIRECTEDEDGEDETECTED;
@@ -705,6 +706,9 @@ int _ClearAllVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x)
 {
     int e, eTwin;
 
+    // Suppresses an unused-parameter warning for a parameter we intend to keep
+    (void)w;
+
     // We want to exit u from e, but we get eTwin first here in order to avoid
     // work, in case the degree of u is greater than 2.
     eTwin = _gp_FindEdge(theGraph, v, u);
@@ -746,6 +750,9 @@ int _ClearAllVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x)
 int _SetAllVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x)
 {
     int e, eTwin;
+
+    // Suppresses an unused-parameter warning for a parameter we intend to keep
+    (void)w;
 
     // We want to exit u from e, but we get eTwin first here in order to avoid
     // work, in case the degree of u is greater than 2.
@@ -1019,6 +1026,7 @@ int gp_CopyAdjacencyLists(graphP dstGraph, graphP srcGraph)
     dstGraph->numEdgeHoles = sp_GetCurrentSize(dstGraph->edgeHoles);
 
     dstGraph->graphFlags &= ~GRAPHFLAGS_DFSNUMBERED;
+    dstGraph->graphFlags &= ~GRAPHFLAGS_DFSNUMBERED_DIRECTED;
     dstGraph->graphFlags &= ~GRAPHFLAGS_SORTEDBYDFI;
     dstGraph->graphFlags &= ~GRAPHFLAGS_LOWPOINTSCOMPUTED;
     dstGraph->graphFlags &= ~GRAPHFLAGS_DIRECTEDEDGEDETECTED;
@@ -1192,6 +1200,7 @@ graphP gp_DupGraph(graphP theGraph)
 int gp_CreateRandomGraph(graphP theGraph)
 {
     int N, M, u, v, m;
+    long long maxSimpleEdges;
 
     if (theGraph == NULL)
     {
@@ -1218,8 +1227,14 @@ int gp_CreateRandomGraph(graphP theGraph)
 
     M = gp_GetRandomNumber(7 * N / 8, theGraph->edgeCapacity);
 
-    if (M > N * (N - 1) / 2)
-        M = N * (N - 1) / 2;
+    /* N * (N - 1) overflows a 32-bit int at N == 46342, before the halved
+            result would, so the simple undirected edge bound is formed in a
+            wider type. */
+
+    maxSimpleEdges = ((long long)N * (N - 1)) / 2;
+
+    if (M > maxSimpleEdges)
+        M = (int)maxSimpleEdges;
 
     for (m = N - 1; m < M; m++)
     {
@@ -1308,7 +1323,8 @@ int gp_CreateRandomGraphEx(graphP theGraph, int numEdges)
 {
     randomGraphEdgeRec *optionalEdges = NULL;
     randomGraphFaceRec *faces = NULL;
-    int N, maxNumEdges, maxPlanarEdges, numPlanarCoreEdges;
+    int N, maxPlanarEdges, numPlanarCoreEdges;
+    long long maxNumEdges;
     int lowerVertex, upperVertex, faceCapacity, optionalEdgeCapacity;
     int optionalEdgeCount = 0, faceCount = 0, addAllPlanarEdges;
     int Result = OK;
@@ -1322,14 +1338,16 @@ int gp_CreateRandomGraphEx(graphP theGraph, int numEdges)
     N = gp_GetN(theGraph);
     lowerVertex = gp_LowerBoundVertices(theGraph);
     upperVertex = gp_UpperBoundVertices(theGraph);
-    maxNumEdges = (N * (N - 1)) >> 1;
+    // Formed in a wider type because N * (N - 1) overflows a 32-bit int at
+    // N == 46342, before the halved result would.
+    maxNumEdges = ((long long)N * (N - 1)) >> 1;
     maxPlanarEdges = 3 * N - 6;
 
     if (numEdges > theGraph->edgeCapacity)
         numEdges = theGraph->edgeCapacity;
 
     if (numEdges > maxNumEdges)
-        numEdges = maxNumEdges;
+        numEdges = (int)maxNumEdges;
 
     if (numEdges < N - 1)
         return NOTOK;
@@ -1901,15 +1919,13 @@ void _DetachEdgeRecord(graphP theGraph, int e)
        caller can guard against these conditions by pre-testing that
        u != v and that gp_FindEdge() returns NIL.
 
- Returns OK on success, NOTOK on failure, or AT_EDGE_CAPACITY_LIMIT if
-         adding the edge would exceed the graph's edge capacity (the
-         caller can use gp_DynamicAddEdge()).
+ Returns OK on success, NOTOK on failure (including when adding the
+         edge would exceed the graph's edge capacity; the caller can
+         use gp_DynamicAddEdge()).
  ********************************************************************/
 
 int gp_AddEdge(graphP theGraph, int u, int ulink, int v, int vlink)
 {
-    int upos, vpos;
-
     if (theGraph == NULL ||
         u < gp_LowerBoundVertexStorage(theGraph) || v < gp_LowerBoundVertexStorage(theGraph) ||
         u >= gp_UpperBoundVertexStorage(theGraph) || v >= gp_UpperBoundVertexStorage(theGraph))
@@ -1920,27 +1936,9 @@ int gp_AddEdge(graphP theGraph, int u, int ulink, int v, int vlink)
         return NOTOK;
     }
 
-    /* We enforce the edge limit */
+    if (gp_InsertEdge(theGraph, u, NIL, ulink, v, NIL, vlink) != OK)
+        return NOTOK;
 
-    if (gp_GetM(theGraph) >= theGraph->edgeCapacity)
-        return AT_EDGE_CAPACITY_LIMIT;
-
-    if (sp_NonEmpty(theGraph->edgeHoles))
-    {
-        sp_Pop(theGraph->edgeHoles, vpos);
-        theGraph->numEdgeHoles = sp_GetCurrentSize(theGraph->edgeHoles);
-    }
-    else
-        vpos = gp_UpperBoundEdges(theGraph);
-
-    upos = gp_GetTwin(theGraph, vpos);
-
-    gp_SetNeighbor(theGraph, upos, v);
-    _AttachEdgeRecord(theGraph, u, NIL, ulink, upos);
-    gp_SetNeighbor(theGraph, vpos, u);
-    _AttachEdgeRecord(theGraph, v, NIL, vlink, vpos);
-
-    theGraph->M++;
     return OK;
 }
 
@@ -1948,93 +1946,60 @@ int gp_AddEdge(graphP theGraph, int u, int ulink, int v, int vlink)
  gp_DynamicAddEdge()
  Refer to documentation for gp_AddEdge() for parameter description.
 
- Calls gp_AddEdge(); if AT_EDGE_CAPACITY_LIMIT, doubles the edge
- capacity using gp_EnsureEdgeCapacity(), then retries gp_AddEdge().
+ Calls gp_DynamicInsertEdge() with insertion positions that prepend or
+ append the new edge records according to ulink and vlink.
 
  Returns OK on success, NOTOK on failure.
  ********************************************************************/
 int gp_DynamicAddEdge(graphP theGraph, int u, int ulink, int v, int vlink)
 {
-    int Result = OK;
+    if (gp_DynamicInsertEdge(theGraph, u, NIL, ulink, v, NIL, vlink) != OK)
+        return NOTOK;
 
-    Result = gp_AddEdge(theGraph, u, ulink, v, vlink);
-
-    if (Result == AT_EDGE_CAPACITY_LIMIT)
-    {
-        // The candidate edge capacity is double the current capacity
-        int candidateEdgeCapacity = gp_GetEdgeCapacity(theGraph) << 1;
-        int N = gp_GetN(theGraph);
-        int newEdgeCapacity = candidateEdgeCapacity;
-
-        // If the candidate edge capacity exceeds the number of edges
-        // needed in an undirected clique on N vertices, then attempt
-        // to use that as the new edge capacity.
-        if (candidateEdgeCapacity > ((N * (N - 1)) >> 1))
-            newEdgeCapacity = ((N * (N - 1)) >> 1);
-
-        // However, if the edge capacity is already greater than or
-        // equal to that maximum capacity needed for an undirected
-        // clique on N vertices, then we allow the capacity to double
-        // beyond the simple undirected graph limit.
-        if (newEdgeCapacity <= gp_GetEdgeCapacity(theGraph))
-            newEdgeCapacity = candidateEdgeCapacity;
-
-        Result = gp_EnsureEdgeCapacity(theGraph, newEdgeCapacity);
-
-        if (Result != OK)
-            return NOTOK;
-
-        Result = gp_AddEdge(theGraph, u, ulink, v, vlink);
-    }
-
-    return Result != OK ? NOTOK : Result;
+    return OK;
 }
 
 /********************************************************************
  gp_DynamicInsertEdge()
  Refer to documentation for gp_InsertEdge() for parameter description.
 
- Calls gp_InsertEdge(); if AT_EDGE_CAPACITY_LIMIT, doubles the edge
- capacity using gp_EnsureEdgeCapacity(), then retries gp_InsertEdge().
+ If the graph is at its edge capacity and has no reusable edge hole,
+ doubles the edge capacity using gp_EnsureEdgeCapacity() before calling
+ gp_InsertEdge().
 
  Returns OK on success, NOTOK on failure.
  ********************************************************************/
 int gp_DynamicInsertEdge(graphP theGraph, int u, int e_u, int e_ulink,
                          int v, int e_v, int e_vlink)
 {
-    int Result = OK;
+    if (theGraph == NULL || gp_GetN(theGraph) <= 0)
+        return NOTOK;
 
-    Result = gp_InsertEdge(theGraph, u, e_u, e_ulink, v, e_v, e_vlink);
-
-    if (Result == AT_EDGE_CAPACITY_LIMIT)
+    if (gp_GetM(theGraph) >= theGraph->edgeCapacity && sp_IsEmpty(theGraph->edgeHoles))
     {
-        // The candidate edge capacity is double the current capacity
-        int candidateEdgeCapacity = gp_GetEdgeCapacity(theGraph) << 1;
-        int N = gp_GetN(theGraph);
-        int newEdgeCapacity = candidateEdgeCapacity;
+        // The new edge capacity is double the current capacity. Parallel
+        // edges are supported, so the capacity is not capped at the number
+        // of edges needed for an undirected clique on N vertices.
+        long long newEdgeCapacity = ((long long)gp_GetEdgeCapacity(theGraph)) << 1;
 
-        // If the candidate edge capacity exceeds the number of edges
-        // needed in an undirected clique on N vertices, then attempt
-        // to use that as the new edge capacity.
-        if (candidateEdgeCapacity > ((N * (N - 1)) >> 1))
-            newEdgeCapacity = ((N * (N - 1)) >> 1);
+        // If left shift would overflow signed integer, then cap it at INT_MAX.
+        if (newEdgeCapacity > INT_MAX)
+        {
+            newEdgeCapacity = INT_MAX;
+            // If unable to allocate more edges due to already being at INT_MAX,
+            // then return failure.
+            if (newEdgeCapacity <= gp_GetEdgeCapacity(theGraph))
+                return NOTOK;
+        }
 
-        // However, if the edge capacity is already greater than or
-        // equal to that maximum capacity needed for an undirected
-        // clique on N vertices, then we allow the capacity to double
-        // beyond the simple undirected graph limit.
-        if (newEdgeCapacity <= gp_GetEdgeCapacity(theGraph))
-            newEdgeCapacity = candidateEdgeCapacity;
-
-        Result = gp_EnsureEdgeCapacity(theGraph, newEdgeCapacity);
-
-        if (Result != OK)
+        if (gp_EnsureEdgeCapacity(theGraph, (int)newEdgeCapacity) != OK)
             return NOTOK;
-
-        Result = gp_InsertEdge(theGraph, u, e_u, e_ulink, v, e_v, e_vlink);
     }
 
-    return Result != OK ? NOTOK : Result;
+    if (gp_InsertEdge(theGraph, u, e_u, e_ulink, v, e_v, e_vlink) != OK)
+        return NOTOK;
+
+    return OK;
 }
 
 /********************************************************************
@@ -2080,14 +2045,13 @@ int gp_InsertEdge(graphP theGraph, int u, int e_u, int e_ulink,
         e_ulink < 0 || e_ulink > 1 || e_vlink < 0 || e_vlink > 1)
         return NOTOK;
 
-    if (gp_GetM(theGraph) >= theGraph->edgeCapacity)
-        return AT_EDGE_CAPACITY_LIMIT;
-
     if (sp_NonEmpty(theGraph->edgeHoles))
     {
         sp_Pop(theGraph->edgeHoles, vpos);
         theGraph->numEdgeHoles = sp_GetCurrentSize(theGraph->edgeHoles);
     }
+    else if (gp_GetM(theGraph) >= theGraph->edgeCapacity)
+        return AT_EDGE_CAPACITY_LIMIT;
     else
         vpos = gp_UpperBoundEdges(theGraph);
 
@@ -2206,8 +2170,8 @@ int gp_TransposeDirectedGraph(graphP theGraph)
                 direction == EDGEFLAG_DIRECTION_OUTONLY)
             {
                 int transposedDirection = direction == EDGEFLAG_DIRECTION_INONLY
-                                               ? EDGEFLAG_DIRECTION_OUTONLY
-                                               : EDGEFLAG_DIRECTION_INONLY;
+                                              ? EDGEFLAG_DIRECTION_OUTONLY
+                                              : EDGEFLAG_DIRECTION_INONLY;
 
                 gp_SetDirection(theGraph, e, 0);
                 gp_SetDirection(theGraph, e, transposedDirection);

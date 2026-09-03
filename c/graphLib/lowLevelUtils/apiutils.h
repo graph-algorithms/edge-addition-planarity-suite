@@ -11,7 +11,8 @@ extern "C"
 {
 #endif
 
-#include "stdio.h"
+#include <stdio.h>
+#include <limits.h>
 
 #define MAXLINE 1024
 

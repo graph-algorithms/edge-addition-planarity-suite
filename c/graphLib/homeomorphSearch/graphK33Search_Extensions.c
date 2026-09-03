@@ -52,7 +52,7 @@ int _K33Search_EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity);
 
 void *_K33Search_DupContext(void *pContext, void *theGraph);
 int _K33Search_CopyData(void *dstContext, void *srcContext);
-void _K33Search_FreeContext(void *);
+void _K33Search_FreeContext(void *pContext);
 
 /****************************************************************************
  * K33SEARCH_ID - the variable used to hold the integer identifier for this

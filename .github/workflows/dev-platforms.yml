@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-24.04-arm
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: uraimo/run-on-arch-action@f9b26e3a1a408d5fd530d20c17b9f3f4428ff8d9 # v3.1.0
+      - uses: uraimo/run-on-arch-action@460cb8e6d9f726a588fc9b5e681c8a6cab09ae41 # v3.2.0
         with:
           arch: aarch64
           distro: ubuntu22.04
@@ -144,7 +144,7 @@ jobs:
       - name: Build using MSVC cl
         run: |
           cl /O2 /nologo /Wall /wd4464 /wd4710 /wd4711 /wd4774 /wd4996 /wd5045 `
-          /wd4068 /wd4100 /wd4820 /external:anglebrackets /external:W0 `
+          /wd4068 /wd4820 /external:anglebrackets /external:W0 `
           /Fe./planarity.exe ./c/planarityApp/**.c ./c/graphLib/**.c `
           ./c/graphLib/extensionSystem/**.c ./c/graphLib/homeomorphSearch/**.c `
           ./c/graphLib/io/**.c ./c/graphLib/lowLevelUtils/**.c `

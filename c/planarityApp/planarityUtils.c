@@ -1013,6 +1013,9 @@ void WriteAlgorithmResults(graphP theGraph, int Result, char command, platform_t
     char algorithmResults[MAXLINE + 1];
     char *target = algorithmResults;
 
+    // Suppresses an unused-parameter warning for a parameter we intend to keep
+    (void)theGraph;
+
     memset(algorithmResults, '\0', MAXLINE + 1);
 
     target += sprintf(target, "The graph ");

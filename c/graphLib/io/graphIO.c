@@ -359,7 +359,7 @@ int _ReadLEDAGraph(graphP theGraph, strOrFileP inputContainer)
 
     int graphType = 0;
     int N = 0, M = 0, u = NIL, v = NIL;
-    int zeroBasedOffset = (gp_LowerBoundVertexStorage(theGraph) == 0) ? 1 : 0;
+    int zeroBasedOffset = (gp_LowerBoundVertexStorage(theGraph) == ( 0 )) ? ( 1 ) : ( 0 );
     char Line[MAXLINE + 1];
 
     memset(Line, '\0', (MAXLINE + 1));
@@ -556,7 +556,7 @@ int _ReadGraph(graphP theGraph, strOrFileP *pInputContainer)
     // was OK.
     if (extraDataAllowed)
     {
-        char charAfterGraphRead = EOF;
+        int charAfterGraphRead = EOF;
         if ((charAfterGraphRead = sf_getc((*pInputContainer))) != EOF)
         {
             if (sf_ungetc(charAfterGraphRead, (*pInputContainer)) != charAfterGraphRead)
@@ -597,6 +597,11 @@ int _ReadGraph(graphP theGraph, strOrFileP *pInputContainer)
 
 int _ReadPostprocess(graphP theGraph, char *extraData)
 {
+    // Suppresses an unused-parameter warning for a parameter we intend to keep
+    (void)theGraph;
+    // Suppresses an unused-parameter warning for a parameter we intend to keep
+    (void)extraData;
+
     return OK;
 }
 
@@ -1077,5 +1082,10 @@ int _WriteGraph(graphP theGraph, strOrFileP *pOutputContainer, int Mode)
 
 int _WritePostprocess(graphP theGraph, char **pExtraData)
 {
+    // Suppresses an unused-parameter warning for a parameter we intend to keep
+    (void)theGraph;
+    // Suppresses an unused-parameter warning for a parameter we intend to keep
+    (void)pExtraData;
+
     return OK;
 }

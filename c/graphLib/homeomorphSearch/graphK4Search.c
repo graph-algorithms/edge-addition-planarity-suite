@@ -10,7 +10,7 @@ See the LICENSE.TXT file for licensing information.
 /* Imported functions */
 
 extern void _InitIsolatorContext(graphP theGraph);
-extern void _ClearAllVisitedFlagsInGraph(graphP);
+extern void _ClearAllVisitedFlagsInGraph(graphP theGraph);
 extern int _ClearAllVisitedFlagsInBicomp(graphP theGraph, int BicompRoot);
 // extern int  _ClearAllVisitedFlagsInOtherBicomps(graphP theGraph, int BicompRoot);
 // extern void _ClearEdgeVisitedFlagsInUnembeddedEdges(graphP theGraph);
@@ -1026,6 +1026,9 @@ int _K4_DeleteUnmarkedEdgesInBicomp(graphP theGraph, K4SearchContext *context, i
 {
     int V, e, eNext;
     int stackBottom = sp_GetCurrentSize(theGraph->theStack);
+
+    // Suppresses an unused-parameter warning for a parameter we intend to keep
+    (void)context;
 
     sp_Push(theGraph->theStack, BicompRoot);
     while (sp_GetCurrentSize(theGraph->theStack) > stackBottom)

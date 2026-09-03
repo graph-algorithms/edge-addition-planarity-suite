@@ -5,6 +5,7 @@ See the LICENSE.TXT file for licensing information.
 */
 
 #include "planarity.h"
+#include "../graphLib/io/strOrFile.h"
 
 #if defined(_MSC_VER) && !defined(__llvm__) && !defined(__INTEL_COMPILER)
 // MSVC under Windows doesn't have unistd.h, but does define functions like getcwd and chdir
@@ -28,6 +29,7 @@ int runRandomGraphsTests(void);
 int runGraphTransformationTests(void);
 int runTestAllGraphsTests(void);
 int runFaceListTest(void);
+int runAddInsertEdgeTests(void);
 int runHideRestoreTests(void);
 int runIdentifyContractTests(void);
 int runSpecificGraphTest(char const *command, char const *infileName, int inputInMemFlag);
@@ -38,8 +40,12 @@ int runIdentifyContractTest(graphP theGraph);
 int runDigraphTests(void);
 int runGraphMLTests(void);
 int runDrawPlanarNonplanarWriteTest(void);
+int runReadWithExtensionAtEofTest(void);
+int runHighByteRoundTripTest(void);
+int testDirectedDFS(void);
 int testPetersenDigraph(void);
 int testDigraphTranspose(void);
+int runGraphMLWriteTest(char const *inputFileName, char const *expectedOutputFileName);
 int runBasicGraphMLWriteTest(void);
 
 /****************************************************************************
@@ -212,7 +218,9 @@ int runQuickRegressionTests(int argc, char *argv[])
                 // Give success result, but Warn if no samples (except no warning if in quiet mode)
                 gp_Message("WARNING: Unable to change to samples directory to "
                            "run tests on samples.");
-                chdir(origDir);
+                if (chdir(origDir) != 0)
+                    gp_Message("WARNING: Unable to restore the original "
+                               "working directory.");
 
                 return OK;
             }
@@ -240,11 +248,17 @@ int runQuickRegressionTests(int argc, char *argv[])
         retVal = NOTOK;
     else if (runFaceListTest() != OK)
         retVal = NOTOK;
+    else if (runAddInsertEdgeTests() != OK)
+        retVal = NOTOK;
     else if (runHideRestoreTests() != OK)
         retVal = NOTOK;
     else if (runIdentifyContractTests() != OK)
         retVal = NOTOK;
     else if (runDigraphTests() != OK)
+        retVal = NOTOK;
+    else if (runReadWithExtensionAtEofTest() != OK)
+        retVal = NOTOK;
+    else if (runHighByteRoundTripTest() != OK)
         retVal = NOTOK;
     else if (runGraphMLTests() != OK)
         retVal = NOTOK;
@@ -255,17 +269,99 @@ int runQuickRegressionTests(int argc, char *argv[])
     else
         gp_Message("============\n\nOne or more tests FAILED.");
 
-    chdir(origDir);
+    if (chdir(origDir) != 0)
+        gp_Message("WARNING: Unable to restore the original working directory.");
+
     FlushConsole(stdout);
 
     return retVal;
 }
 
+int runAddInsertEdgeTests(void)
+{
+    graphP theGraph = NULL;
+    int initialEdgeCapacity;
+    int edgeToDelete;
+    int v;
+
+    gp_Message("Starting Add/Insert Edge Tests");
+
+    if ((theGraph = gp_New()) == NULL)
+    {
+        gp_ErrorMessage("Unable to allocate graph for add/insert edge tests.");
+        return NOTOK;
+    }
+
+    if (gp_EnsureEdgeCapacity(theGraph, 2) != OK ||
+        gp_EnsureVertexCapacity(theGraph, 3) != OK)
+    {
+        gp_ErrorMessage("Unable to initialize graph for add/insert edge tests.");
+        gp_Free(&theGraph);
+        return NOTOK;
+    }
+
+    v = gp_LowerBoundVertices(theGraph);
+    initialEdgeCapacity = gp_GetEdgeCapacity(theGraph);
+
+    if (gp_AddEdge(theGraph, v, 0, v + 1, 0) != OK ||
+        gp_AddEdge(theGraph, v + 1, 1, v + 2, 0) != OK)
+    {
+        gp_ErrorMessage("Unable to fill initial edge capacity.");
+        gp_Free(&theGraph);
+        return NOTOK;
+    }
+
+    if (gp_InsertEdge(theGraph, v, NIL, 1, v + 2, NIL, 1) != AT_EDGE_CAPACITY_LIMIT)
+    {
+        gp_ErrorMessage("gp_InsertEdge() did not report the edge capacity limit.");
+        gp_Free(&theGraph);
+        return NOTOK;
+    }
+
+    if (gp_DynamicInsertEdge(theGraph, v, NIL, 1, v + 2, NIL, 1) != OK ||
+        gp_GetEdgeCapacity(theGraph) <= initialEdgeCapacity ||
+        gp_GetM(theGraph) != 3)
+    {
+        gp_ErrorMessage("gp_DynamicInsertEdge() did not grow edge capacity and insert once.");
+        gp_Free(&theGraph);
+        return NOTOK;
+    }
+
+    edgeToDelete = gp_FindEdge(theGraph, v, v + 1);
+    if (edgeToDelete == NIL || gp_DeleteEdge(theGraph, edgeToDelete) != OK)
+    {
+        gp_ErrorMessage("Unable to create an edge hole for add/insert edge tests.");
+        gp_Free(&theGraph);
+        return NOTOK;
+    }
+
+    initialEdgeCapacity = gp_GetEdgeCapacity(theGraph);
+    if (gp_DynamicAddEdge(theGraph, v, 0, v + 1, 0) != OK ||
+        gp_GetEdgeCapacity(theGraph) != initialEdgeCapacity ||
+        gp_GetM(theGraph) != 3 ||
+        gp_FindEdge(theGraph, v, v + 1) == NIL)
+    {
+        gp_ErrorMessage("gp_DynamicAddEdge() did not reuse an available edge hole.");
+        gp_Free(&theGraph);
+        return NOTOK;
+    }
+
+    gp_Message("Finished Add/Insert Edge Tests.\n");
+
+    gp_Free(&theGraph);
+
+    return OK;
+}
+
 int runRandomGraphsTests(void)
 {
     int retVal = OK;
+    unsigned quietModeCache = gp_GetQuietMode();
+    platform_time start, end;
+    double duration;
 
     gp_Message("Starting Random Graph Tests");
+    platform_GetTime(start);
 
     if (RandomGraphs("-p", 1000, 20, NULL, TRUE, FALSE) != OK)
     {
@@ -279,8 +375,31 @@ int runRandomGraphsTests(void)
         retVal = NOTOK;
     }
 
+    // Suppress RandomGraph()'s interactive save prompts while exercising the
+    // maximal-planar and nonplanar paths used by the -rm and -rn endpoints.
+    gp_SetQuietMode(quietModeCache | QUIETMODE_MESSAGES);
+
+    // N=46342 chosen to sanitize signed int overflow on simple graph clique size
+    if (RandomGraph("-p", 0, 46342, NULL, NULL) != OK)
+    {
+        gp_ErrorMessage("Random maximal planar graph test failed.");
+        retVal = NOTOK;
+    }
+
+    // N=65538 chosen to sanitize unsigned int overflow on simple graph clique size
+    if (RandomGraph("-p", 1, 65538, NULL, NULL) != NONEMBEDDABLE)
+    {
+        gp_ErrorMessage("Random nonplanar graph test failed.");
+        retVal = NOTOK;
+    }
+
+    gp_SetQuietMode(quietModeCache);
+
+    platform_GetTime(end);
+    duration = platform_GetDuration(start, end);
+
     if (retVal == OK)
-        gp_Message("Finished Random Graph Tests.\n");
+        gp_Message("Finished Random Graph Tests (%.3lf seconds).\n", duration);
 
     return retVal;
 }
@@ -455,6 +574,98 @@ int runDrawPlanarNonplanarWriteTest(void)
     gp_Free(&theGraph);
 
     return Result == NONEMBEDDABLE ? OK : Result;
+}
+
+/********************************************************************
+ runReadWithExtensionAtEofTest()
+
+ Reads a graph with an extension attached before gp_Read(), which
+ exercises the end-of-input handling in _ReadGraph(): the extra-data
+ check must see a true EOF rather than a fabricated byte.
+
+ Before the sf_getc()/sf_ungetc() int conversion (issue #319), on
+ platforms where plain char is unsigned, (char)EOF == 255, so this
+ read handed a spurious 0xFF extra-data byte to the extension's
+ post-processor and failed on a valid input file.
+ ********************************************************************/
+
+int runReadWithExtensionAtEofTest(void)
+{
+    int Result = OK;
+    graphP theGraph = NULL;
+
+    gp_Message("Test EOF Handling (for platforms that have char unsigned).");
+
+    if ((theGraph = gp_New()) == NULL)
+        Result = NOTOK;
+
+    if (Result == OK && gp_ExtendWith_DrawPlanar(theGraph) != OK)
+        Result = NOTOK;
+
+    if (Result == OK && gp_Read(theGraph, "maxPlanar5.txt") != OK)
+        Result = NOTOK;
+
+    if (Result == OK)
+        gp_Message("Test succeeded.\n");
+
+    gp_Free(&theGraph);
+
+    return Result;
+}
+
+/********************************************************************
+ runHighByteRoundTripTest()
+
+ Reads the byte 0xFF from a string container directly and through the
+ unget buffer, and confirms it is never mistaken for EOF.
+
+ Before the sf_getc()/sf_ungetc() int conversion (issue #319), on
+ platforms where plain char is signed, a literal 0xFF byte fetched
+ from the string container sign-extended to EOF, and the same
+ happened to bytes round-tripped through the unget buffer.
+ ********************************************************************/
+
+int runHighByteRoundTripTest(void)
+{
+    int Result = OK;
+    int currChar = EOF;
+    char const highByteStr[] = {'a', (char)0xFF, 'b', '\0'};
+    strOrFileP inputContainer = NULL;
+
+    gp_Message("Test Support of 0xFF Byte.");
+
+    if ((inputContainer = sf_NewInputContainer(highByteStr, NULL)) == NULL)
+        Result = NOTOK;
+
+    if (Result == OK && sf_getc(inputContainer) != 'a')
+        Result = NOTOK;
+
+    if (Result == OK)
+    {
+        currChar = sf_getc(inputContainer);
+        if (currChar != 0xFF)
+            Result = NOTOK;
+    }
+
+    if (Result == OK && sf_ungetc(currChar, inputContainer) != 0xFF)
+        Result = NOTOK;
+
+    if (Result == OK && sf_getc(inputContainer) != 0xFF)
+        Result = NOTOK;
+
+    if (Result == OK && sf_getc(inputContainer) != 'b')
+        Result = NOTOK;
+
+    if (Result == OK && sf_getc(inputContainer) != EOF)
+        Result = NOTOK;
+
+    if (Result == OK)
+        gp_Message("Test succeeded.\n");
+
+    if (inputContainer != NULL)
+        sf_Free(&inputContainer);
+
+    return Result;
 }
 
 int runGraphTransformationTests(void)
@@ -703,7 +914,7 @@ int runFaceListTest(void)
 
 runFaceListTest_Cleanup:
 
-    if (drawing != NULL) 
+    if (drawing != NULL)
     {
         free(drawing);
         drawing = NULL;
@@ -714,7 +925,7 @@ runFaceListTest_Cleanup:
         free(faceList);
         faceList = NULL;
     }
-    
+
     gp_Free(&origGraph);
     gp_Free(&theGraph);
 
@@ -1479,6 +1690,133 @@ int callTestAllGraphs(int argc, char *argv[])
     return TestAllGraphs(commandString, infileName, outfileName, NULL);
 }
 /****************************************************************************
+ testDirectedDFS()
+ ****************************************************************************/
+
+int testDirectedDFS(void)
+{
+    graphP G = gp_New();
+    graphP G1 = NULL;
+    int const expectedDiscoveryTimes[] = {1, 11, 2, 3, 7, 4};
+    int const expectedFinishTimes[] = {10, 12, 9, 6, 8, 5};
+    int lowerVertex, v, e, source, target;
+    unsigned expectedType;
+
+    if (G == NULL)
+        return NOTOK;
+
+    if (gp_Read(G, "DirectedDFSTest.txt") != OK)
+    {
+        gp_ErrorMessage("Failed to read directed DFS sample.");
+        gp_Free(&G);
+        return NOTOK;
+    }
+
+    if (gp_DepthFirstSearchEx(G, DFSMODE_DIRECTED) != OK)
+    {
+        gp_ErrorMessage("Directed DFS returned an unexpected result.");
+        gp_Free(&G);
+        return NOTOK;
+    }
+
+    if (!(gp_GetGraphFlags(G) & GRAPHFLAGS_DFSNUMBERED_DIRECTED) ||
+        (gp_GetGraphFlags(G) & GRAPHFLAGS_DFSNUMBERED))
+    {
+        gp_ErrorMessage("Directed DFS graph flags were not set correctly.");
+        gp_Free(&G);
+        return NOTOK;
+    }
+
+    lowerVertex = gp_LowerBoundVertices(G);
+    for (v = lowerVertex; v < gp_UpperBoundVertices(G); ++v)
+    {
+        if (gp_GetIndex(G, v) != expectedDiscoveryTimes[v - lowerVertex] ||
+            gp_GetVisitedIndex(G, v) != expectedFinishTimes[v - lowerVertex])
+        {
+            gp_ErrorMessage("Directed DFS timestamp mismatch at vertex %d: "
+                            "expected (%d, %d), found (%d, %d).",
+                            v - lowerVertex + 1,
+                            expectedDiscoveryTimes[v - lowerVertex],
+                            expectedFinishTimes[v - lowerVertex],
+                            gp_GetIndex(G, v),
+                            gp_GetVisitedIndex(G, v));
+            gp_Free(&G);
+            return NOTOK;
+        }
+    }
+
+    for (e = gp_LowerBoundEdges(G); e < gp_UpperBoundEdges(G); ++e)
+    {
+        if (!gp_EdgeInUse(G, e) ||
+            gp_GetDirection(G, e) == EDGEFLAG_DIRECTION_INONLY)
+            continue;
+
+        source = gp_GetNeighbor(G, gp_GetTwin(G, e)) - lowerVertex + 1;
+        target = gp_GetNeighbor(G, e) - lowerVertex + 1;
+        expectedType = EDGE_TYPE_TREE;
+
+        if ((source == 5 && (target == 1 || target == 3)))
+            expectedType = EDGE_TYPE_BACK;
+        else if (source == 2 && (target == 3 || target == 4))
+            expectedType = EDGE_TYPE_CROSS;
+        else if (source == 1 && target == 4)
+            expectedType = EDGE_TYPE_FORWARD;
+
+        if (gp_GetEdgeType(G, e) != expectedType)
+        {
+            gp_ErrorMessage("Directed DFS edge type mismatch.");
+            gp_Free(&G);
+            return NOTOK;
+        }
+    }
+
+    G1 = gp_DupGraph(G);
+    if (G1 == NULL || !(gp_GetGraphFlags(G1) & GRAPHFLAGS_DFSNUMBERED_DIRECTED))
+    {
+        gp_ErrorMessage("Graph duplication method failed to preserve directed DFS state.");
+        gp_Free(&G);
+        gp_Free(&G1);
+        return NOTOK;
+    }
+
+    // The optimized embedding initialization performs its own undirected
+    // DFS and must replace the directed DFS state on a duplicated graph.
+    if (gp_Embed(G1, EMBEDFLAGS_PLANAR) != OK ||
+        (gp_GetGraphFlags(G1) & GRAPHFLAGS_DFSNUMBERED_DIRECTED))
+    {
+        gp_ErrorMessage("Embedding did not replace directed DFS state.");
+        gp_Free(&G);
+        gp_Free(&G1);
+        return NOTOK;
+    }
+    gp_Free(&G1);
+
+    // The legacy DFS must remain available for directed input and replace
+    // directed timestamps and flags with its original undirected DFS state.
+    if (gp_DepthFirstSearchEx(G, DFSMODE_UNDIRECTED) != OK ||
+        !(gp_GetGraphFlags(G) & GRAPHFLAGS_DFSNUMBERED) ||
+        (gp_GetGraphFlags(G) & GRAPHFLAGS_DFSNUMBERED_DIRECTED))
+    {
+        gp_ErrorMessage("Undirected DFS did not replace directed DFS state.");
+        gp_Free(&G);
+        return NOTOK;
+    }
+
+    for (v = lowerVertex; v < gp_UpperBoundVertices(G); ++v)
+    {
+        if (gp_GetVisitedIndex(G, v) != 0)
+        {
+            gp_ErrorMessage("Undirected DFS did not clear directed finish times.");
+            gp_Free(&G);
+            return NOTOK;
+        }
+    }
+
+    gp_Free(&G);
+    return OK;
+}
+
+/****************************************************************************
  testPetersenDigraph()
  ****************************************************************************/
 
@@ -1570,7 +1908,7 @@ int testPetersenDigraph(void)
     quietModeCache = gp_GetQuietMode();
     gp_SetQuietMode(QUIETMODE_ALL);
 
-    if (gp_DepthFirstSearch(G) == OK ||
+    if (gp_DepthFirstSearch(G) != OK ||
         gp_ComputeLowpoints(G) == OK ||
         gp_ComputeLeastAncestors(G) == OK ||
         gp_WriteToString(G, &dummyStr, WRITE_G6) == OK ||
@@ -1698,7 +2036,12 @@ int runDigraphTests(void)
 
     gp_Message("Starting Digraph Tests");
 
-    if (testPetersenDigraph() != OK)
+    if (testDirectedDFS() != OK)
+    {
+        gp_ErrorMessage("Directed DFS test failed.");
+        retVal = NOTOK;
+    }
+    else if (testPetersenDigraph() != OK)
     {
         gp_ErrorMessage("Petersen Digraph test failed.");
         retVal = NOTOK;
@@ -1714,24 +2057,14 @@ int runDigraphTests(void)
     return retVal;
 }
 
-int runBasicGraphMLWriteTest(void)
+int runGraphMLWriteTest(char const *inputFileName, char const *expectedOutputFileName)
 {
     graphP G = gp_New();
     char *actualOutput = NULL;
-    char const *inputFileName = NULL;
-    char const *expectedOutputFileName = NULL;
     int Result = OK;
 
     if (G == NULL)
         return NOTOK;
-
-#ifdef USE_1BASEDARRAYS
-    inputFileName = "Digraph.transposeTest.txt";
-    expectedOutputFileName = "Digraph.transposeTest.graphml";
-#else
-    inputFileName = "Digraph.transposeTest.0-based.txt";
-    expectedOutputFileName = "Digraph.transposeTest.0-based.graphml";
-#endif
 
     if (gp_Read(G, inputFileName) != OK ||
         gp_WriteToString(G, &actualOutput, WRITE_GRAPHML) != OK ||
@@ -1744,6 +2077,15 @@ int runBasicGraphMLWriteTest(void)
     gp_Free(&G);
 
     return Result;
+}
+
+int runBasicGraphMLWriteTest(void)
+{
+    if (runGraphMLWriteTest("Digraph.transposeTest.txt", "Digraph.transposeTest.graphml") != OK ||
+        runGraphMLWriteTest("Digraph.transposeTest.0-based.txt", "Digraph.transposeTest.0-based.graphml") != OK)
+        return NOTOK;
+
+    return OK;
 }
 
 int runGraphMLTests(void)
