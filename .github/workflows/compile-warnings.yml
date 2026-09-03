@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   tests:
-    name: ${{ matrix.compiler }}
+    name: ${{ matrix.compiler }}${{ matrix.unsigned-char == 'yes' && ' (unsigned char)' || '' }}
     timeout-minutes: 60
     runs-on: ubuntu-latest
     env:
@@ -21,6 +21,13 @@ jobs:
       fail-fast: false
       matrix:
         compiler: [clang-18, gcc-14]
+        unsigned-char: [no]
+        include:
+          # One leg emulates unsigned-plain-char ABIs (Linux AArch64, ARM,
+          # PowerPC, s390x) so char-signedness bugs like issue #319 surface
+          # on the x86-64 runner
+          - compiler: gcc-14
+            unsigned-char: yes
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Compiler information . . .
@@ -33,7 +40,9 @@ jobs:
           # default -g -O2, and gcc only emits the fortified warn_unused_result
           # warnings when optimising, so the job would have nothing to fail on.
           # -Werror comes from --enable-compile-warnings=error instead.
-          ./configure --enable-compile-warnings=error CC="$CC"
+          ./configure --enable-compile-warnings=error \
+            ${{ matrix.unsigned-char == 'yes' && '--enable-unsigned-char' || '' }} \
+            CC="$CC"
       - name: Build . . .
         run: make -j4
         # We don't run the tests, since in this job we are only checking for
