@@ -356,6 +356,7 @@ int _g6_InitReader(G6ReadIteratorP theG6ReadIterator)
 
 int _g6_ValidateHeader(strOrFileP inputContainer)
 {
+    int intChar = 0;
     char const *g6Header = ">>graph6<<";
     char const *sparse6Header = ">>sparse6<";
     char const *digraph6Header = ">>digraph6";
@@ -371,7 +372,13 @@ int _g6_ValidateHeader(strOrFileP inputContainer)
 
     for (int i = 0; i < 10; i++)
     {
-        headerCandidateChars[i] = sf_getc(inputContainer);
+        intChar = sf_getc(inputContainer);
+        if (intChar == EOF)
+        {
+            gp_ErrorMessage("Truncated >>graph6<< header.");
+            return NOTOK;
+        }
+        headerCandidateChars[i] = (char)intChar;
     }
 
     headerCandidateChars[10] = '\0';
