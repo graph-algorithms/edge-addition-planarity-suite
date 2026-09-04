@@ -10,7 +10,6 @@ See the LICENSE.TXT file for licensing information.
 
 #include <errno.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 #include "../planarity.h"
@@ -42,7 +41,7 @@ static const char *expectedExtraData = NULL;
         checks++;                                                              \
         if (!(condition))                                                      \
         {                                                                      \
-            fprintf(stderr, "Line %d: %s\n", __LINE__, #condition);              \
+            gp_ErrorMessage("Line %d: %s", __LINE__, #condition);               \
             failures++;                                                        \
         }                                                                      \
     } while (0)
@@ -71,7 +70,7 @@ static int readInput(void *cookie, char *buffer, int size)
     return 0;
 }
 
-static strOrFileP newInput(TestInput *input)
+static int newInput(TestInput *input, strOrFileP *pContainer)
 {
     strOrFileP container = sf_NewInputContainer("placeholder", NULL);
     FILE *stream = NULL;
@@ -84,29 +83,28 @@ static strOrFileP newInput(TestInput *input)
 #endif
     if (container == NULL || stream == NULL)
     {
-        fprintf(stderr, "Unable to create test input stream.\n");
-        exit(EXIT_FAILURE);
+        gp_ErrorMessage("Unable to create test input stream.");
+        sf_Free(&container);
+        if (stream != NULL)
+            fclose(stream);
+        return NOTOK;
     }
     sb_Free(&container->theStrBuf);
     container->pFile = stream;
-    return container;
+    *pContainer = container;
+    return OK;
 }
 
-static graphP newGraph(void)
-{
-    graphP graph = gp_New();
-    if (graph == NULL)
-        exit(EXIT_FAILURE);
-    return graph;
-}
-
-static void testLineReads(void)
+static int testLineReads(void)
 {
     char buffer[32] = {0};
     char pushed[] = "pushed";
     char retry[] = "retry";
     TestInput input = {"line\n", 0, FALSE};
-    strOrFileP container = newInput(&input);
+    strOrFileP container = NULL;
+
+    if (newInput(&input, &container) != OK)
+        return NOTOK;
 
     CHECK(container->inputErrorFlag == FALSE);
     errno = EIO;
@@ -122,7 +120,8 @@ static void testLineReads(void)
 
     input.position = 0;
     input.failAtEnd = TRUE;
-    container = newInput(&input);
+    if (newInput(&input, &container) != OK)
+        return NOTOK;
     CHECK(sf_fgets(buffer, sizeof(buffer), container) == buffer);
     CHECK(sf_ungets(pushed, container) == OK);
     CHECK(sf_fgets(buffer, sizeof(buffer), container) == NULL);
@@ -140,25 +139,33 @@ static void testLineReads(void)
     input.data = "partial";
     input.position = 0;
     input.failAtEnd = TRUE;
-    container = newInput(&input);
+    if (newInput(&input, &container) != OK)
+        return NOTOK;
     CHECK(sf_fgets(buffer, sizeof(buffer), container) == NULL);
     CHECK(container->inputErrorFlag == TRUE);
     sf_Free(&container);
 
     container = sf_NewInputContainer("string", NULL);
     if (container == NULL)
-        exit(EXIT_FAILURE);
+    {
+        gp_ErrorMessage("Unable to create string-backed test input.");
+        return NOTOK;
+    }
     CHECK(sf_fgets(buffer, sizeof(buffer), container) == buffer);
     CHECK(strcmp(buffer, "string") == 0);
     CHECK(sf_fgets(buffer, sizeof(buffer), container) == NULL);
     CHECK(container->inputErrorFlag == FALSE);
     sf_Free(&container);
+    return OK;
 }
 
-static void testCharacterReads(void)
+static int testCharacterReads(void)
 {
     TestInput input = {"x", 0, TRUE};
-    strOrFileP container = newInput(&input);
+    strOrFileP container = NULL;
+
+    if (newInput(&input, &container) != OK)
+        return NOTOK;
     CHECK(sf_getc(container) == 'x');
     CHECK(sf_getc(container) == EOF);
     CHECK(container->inputErrorFlag == TRUE);
@@ -170,7 +177,8 @@ static void testCharacterReads(void)
         input.data = "123";
         input.position = 0;
         input.failAtEnd = failAtEnd;
-        container = newInput(&input);
+        if (newInput(&input, &container) != OK)
+            return NOTOK;
         CHECK(sf_ReadInteger(&value, container) == (failAtEnd ? NOTOK : OK));
         CHECK(value == (failAtEnd ? 77 : 123));
         CHECK(container->inputErrorFlag == failAtEnd);
@@ -178,11 +186,13 @@ static void testCharacterReads(void)
 
         input.data = " \t";
         input.position = 0;
-        container = newInput(&input);
+        if (newInput(&input, &container) != OK)
+            return NOTOK;
         CHECK(sf_ReadSkipWhitespace(container) == (failAtEnd ? NOTOK : OK));
         CHECK(container->inputErrorFlag == failAtEnd);
         sf_Free(&container);
     }
+    return OK;
 }
 
 static int readPostprocess(graphP graph, char *extraData)
@@ -193,7 +203,7 @@ static int readPostprocess(graphP graph, char *extraData)
     return OK;
 }
 
-static void testGraphReads(void)
+static int testGraphReads(void)
 {
     const struct
     {
@@ -211,8 +221,18 @@ static void testGraphReads(void)
         for (size_t index = 0; index < sizeof(inputs) / sizeof(inputs[0]); index++)
         {
             TestInput input = {inputs[index].data, 0, failAtEnd};
-            strOrFileP container = newInput(&input);
-            graphP graph = newGraph();
+            strOrFileP container = NULL;
+            graphP graph = NULL;
+
+            if (newInput(&input, &container) != OK)
+                return NOTOK;
+            graph = gp_New();
+            if (graph == NULL)
+            {
+                gp_ErrorMessage("Unable to create graph for read-error test.");
+                sf_Free(&container);
+                return NOTOK;
+            }
             postprocessCalls = 0;
             expectedExtraData = inputs[index].extraData;
             graph->functions->fpReadPostprocess = readPostprocess;
@@ -223,16 +243,27 @@ static void testGraphReads(void)
             gp_Free(&graph);
         }
     }
+    return OK;
 }
 
-static void testGraph6Reads(void)
+static int testGraph6Reads(void)
 {
     for (int failAtEnd = FALSE; failAtEnd <= TRUE; failAtEnd++)
     {
         TestInput input = {"A?\n", 0, failAtEnd};
-        strOrFileP container = newInput(&input);
+        strOrFileP container = NULL;
         G6ReadIteratorP reader = NULL;
-        graphP graph = newGraph();
+        graphP graph = NULL;
+
+        if (newInput(&input, &container) != OK)
+            return NOTOK;
+        graph = gp_New();
+        if (graph == NULL)
+        {
+            gp_ErrorMessage("Unable to create graph for graph6 read-error test.");
+            sf_Free(&container);
+            return NOTOK;
+        }
         CHECK(g6_NewReader(&reader, graph) == OK);
         CHECK(_g6_InitReaderWithStrOrFile(reader, &container) == OK);
         CHECK(container == NULL);
@@ -245,8 +276,15 @@ static void testGraph6Reads(void)
 
         input.data = "A?";
         input.position = 0;
-        container = newInput(&input);
-        graph = newGraph();
+        if (newInput(&input, &container) != OK)
+            return NOTOK;
+        graph = gp_New();
+        if (graph == NULL)
+        {
+            gp_ErrorMessage("Unable to create graph for graph6 read-error test.");
+            sf_Free(&container);
+            return NOTOK;
+        }
         CHECK(_g6_ReadGraphFromStrOrFile(graph, &container) == (failAtEnd ? NOTOK : OK));
         CHECK(container == NULL);
         gp_Free(&graph);
@@ -259,15 +297,24 @@ static void testGraph6Reads(void)
         TestInput input = {order, 0, TRUE};
         strOrFileP container = NULL;
         G6ReadIteratorP reader = NULL;
-        graphP graph = newGraph();
+        graphP graph = NULL;
         order[length] = '\0';
-        container = newInput(&input);
+        if (newInput(&input, &container) != OK)
+            return NOTOK;
+        graph = gp_New();
+        if (graph == NULL)
+        {
+            gp_ErrorMessage("Unable to create graph for graph6 read-error test.");
+            sf_Free(&container);
+            return NOTOK;
+        }
         CHECK(g6_NewReader(&reader, graph) == OK);
         CHECK(_g6_InitReaderWithStrOrFile(reader, &container) == NOTOK);
         g6_FreeReader(&reader);
         sf_Free(&container);
         gp_Free(&graph);
     }
+    return OK;
 }
 
 int runReadErrorTests(void)
@@ -275,10 +322,14 @@ int runReadErrorTests(void)
     failures = 0;
     checks = 0;
     gp_Message("Starting Read Error Tests");
-    testLineReads();
-    testCharacterReads();
-    testGraphReads();
-    testGraph6Reads();
+    if (testLineReads() != OK)
+        return NOTOK;
+    if (testCharacterReads() != OK)
+        return NOTOK;
+    if (testGraphReads() != OK)
+        return NOTOK;
+    if (testGraph6Reads() != OK)
+        return NOTOK;
     gp_Message("Read-error regression checks: %d passed, %d failed.", checks - failures, failures);
     return failures == 0 ? OK : NOTOK;
 }

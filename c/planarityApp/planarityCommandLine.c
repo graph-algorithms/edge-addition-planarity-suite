@@ -5,6 +5,7 @@ See the LICENSE.TXT file for licensing information.
 */
 
 #include "planarity.h"
+#include "../graphLib/io/strOrFile.h"
 
 #if defined(_MSC_VER) && !defined(__llvm__) && !defined(__INTEL_COMPILER)
 // MSVC under Windows doesn't have unistd.h, but does define functions like getcwd and chdir
@@ -39,6 +40,8 @@ int runIdentifyContractTest(graphP theGraph);
 int runDigraphTests(void);
 int runGraphMLTests(void);
 int runDrawPlanarNonplanarWriteTest(void);
+int runReadWithExtensionAtEofTest(void);
+int runHighByteRoundTripTest(void);
 int testDirectedDFS(void);
 int testPetersenDigraph(void);
 int testDigraphTranspose(void);
@@ -254,6 +257,10 @@ int runQuickRegressionTests(int argc, char *argv[])
         retVal = NOTOK;
     else if (runDigraphTests() != OK)
         retVal = NOTOK;
+    else if (runReadWithExtensionAtEofTest() != OK)
+        retVal = NOTOK;
+    else if (runHighByteRoundTripTest() != OK)
+        retVal = NOTOK;
     else if (runGraphMLTests() != OK)
         retVal = NOTOK;
     else if (runReadErrorTests() != OK)
@@ -353,8 +360,11 @@ int runRandomGraphsTests(void)
 {
     int retVal = OK;
     unsigned quietModeCache = gp_GetQuietMode();
+    platform_time start, end;
+    double duration;
 
     gp_Message("Starting Random Graph Tests");
+    platform_GetTime(start);
 
     if (RandomGraphs("-p", 1000, 20, NULL, TRUE, FALSE) != OK)
     {
@@ -372,13 +382,15 @@ int runRandomGraphsTests(void)
     // maximal-planar and nonplanar paths used by the -rm and -rn endpoints.
     gp_SetQuietMode(quietModeCache | QUIETMODE_MESSAGES);
 
-    if (RandomGraph("-p", 0, 5, NULL, NULL) != OK)
+    // N=46342 chosen to sanitize signed int overflow on simple graph clique size
+    if (RandomGraph("-p", 0, 46342, NULL, NULL) != OK)
     {
         gp_ErrorMessage("Random maximal planar graph test failed.");
         retVal = NOTOK;
     }
 
-    if (RandomGraph("-p", 1, 5, NULL, NULL) != NONEMBEDDABLE)
+    // N=65538 chosen to sanitize unsigned int overflow on simple graph clique size
+    if (RandomGraph("-p", 1, 65538, NULL, NULL) != NONEMBEDDABLE)
     {
         gp_ErrorMessage("Random nonplanar graph test failed.");
         retVal = NOTOK;
@@ -386,8 +398,11 @@ int runRandomGraphsTests(void)
 
     gp_SetQuietMode(quietModeCache);
 
+    platform_GetTime(end);
+    duration = platform_GetDuration(start, end);
+
     if (retVal == OK)
-        gp_Message("Finished Random Graph Tests.\n");
+        gp_Message("Finished Random Graph Tests (%.3lf seconds).\n", duration);
 
     return retVal;
 }
@@ -562,6 +577,98 @@ int runDrawPlanarNonplanarWriteTest(void)
     gp_Free(&theGraph);
 
     return Result == NONEMBEDDABLE ? OK : Result;
+}
+
+/********************************************************************
+ runReadWithExtensionAtEofTest()
+
+ Reads a graph with an extension attached before gp_Read(), which
+ exercises the end-of-input handling in _ReadGraph(): the extra-data
+ check must see a true EOF rather than a fabricated byte.
+
+ Before the sf_getc()/sf_ungetc() int conversion (issue #319), on
+ platforms where plain char is unsigned, (char)EOF == 255, so this
+ read handed a spurious 0xFF extra-data byte to the extension's
+ post-processor and failed on a valid input file.
+ ********************************************************************/
+
+int runReadWithExtensionAtEofTest(void)
+{
+    int Result = OK;
+    graphP theGraph = NULL;
+
+    gp_Message("Test EOF Handling (for platforms that have char unsigned).");
+
+    if ((theGraph = gp_New()) == NULL)
+        Result = NOTOK;
+
+    if (Result == OK && gp_ExtendWith_DrawPlanar(theGraph) != OK)
+        Result = NOTOK;
+
+    if (Result == OK && gp_Read(theGraph, "maxPlanar5.txt") != OK)
+        Result = NOTOK;
+
+    if (Result == OK)
+        gp_Message("Test succeeded.\n");
+
+    gp_Free(&theGraph);
+
+    return Result;
+}
+
+/********************************************************************
+ runHighByteRoundTripTest()
+
+ Reads the byte 0xFF from a string container directly and through the
+ unget buffer, and confirms it is never mistaken for EOF.
+
+ Before the sf_getc()/sf_ungetc() int conversion (issue #319), on
+ platforms where plain char is signed, a literal 0xFF byte fetched
+ from the string container sign-extended to EOF, and the same
+ happened to bytes round-tripped through the unget buffer.
+ ********************************************************************/
+
+int runHighByteRoundTripTest(void)
+{
+    int Result = OK;
+    int currChar = EOF;
+    char const highByteStr[] = {'a', (char)0xFF, 'b', '\0'};
+    strOrFileP inputContainer = NULL;
+
+    gp_Message("Test Support of 0xFF Byte.");
+
+    if ((inputContainer = sf_NewInputContainer(highByteStr, NULL)) == NULL)
+        Result = NOTOK;
+
+    if (Result == OK && sf_getc(inputContainer) != 'a')
+        Result = NOTOK;
+
+    if (Result == OK)
+    {
+        currChar = sf_getc(inputContainer);
+        if (currChar != 0xFF)
+            Result = NOTOK;
+    }
+
+    if (Result == OK && sf_ungetc(currChar, inputContainer) != 0xFF)
+        Result = NOTOK;
+
+    if (Result == OK && sf_getc(inputContainer) != 0xFF)
+        Result = NOTOK;
+
+    if (Result == OK && sf_getc(inputContainer) != 'b')
+        Result = NOTOK;
+
+    if (Result == OK && sf_getc(inputContainer) != EOF)
+        Result = NOTOK;
+
+    if (Result == OK)
+        gp_Message("Test succeeded.\n");
+
+    if (inputContainer != NULL)
+        sf_Free(&inputContainer);
+
+    return Result;
 }
 
 int runGraphTransformationTests(void)

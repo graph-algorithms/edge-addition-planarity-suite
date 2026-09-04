@@ -38,7 +38,7 @@ AC_PROG_CC
 LT_INIT
 AC_PROG_INSTALL
 
-AC_CHECK_HEADERS([ctype.h stdio.h stdlib.h string.h time.h unistd.h])
+AC_CHECK_HEADERS([ctype.h stdio.h stdlib.h limits.h string.h time.h unistd.h])
 AC_CHECK_FUNCS([fopencookie funopen])
 
 
@@ -58,6 +58,23 @@ AS_IF([test "x$enable_compile_warnings" != "xno"],
   [ax_enable_compile_warnings=$enable_compile_warnings
    AX_COMPILER_FLAGS_CFLAGS([WARNING_CFLAGS], [], [ dnl
        -pedantic dnl])
+   AC_SUBST([WARNING_CFLAGS])])
+
+# Build with -funsigned-char so that CI can exercise unsigned-plain-char
+# behavior (e.g. the Linux ABIs for AArch64, ARM, PowerPC, s390x) on any
+# host. Off by default; no build is affected unless the switch is given.
+# See issue #319.
+
+AC_ARG_ENABLE([unsigned-char],
+    [AS_HELP_STRING([--enable-unsigned-char],
+        [build with -funsigned-char, to test unsigned-plain-char ABIs on any host])],
+    [enable_unsigned_char=yes],
+    [enable_unsigned_char=no])
+AC_MSG_CHECKING([whether to build with -funsigned-char])
+AC_MSG_RESULT([$enable_unsigned_char])
+
+AS_IF([test "x$enable_unsigned_char" = "xyes"],
+  [AX_APPEND_COMPILE_FLAGS([-funsigned-char], [WARNING_CFLAGS])
    AC_SUBST([WARNING_CFLAGS])])
 
 AC_CONFIG_FILES([
