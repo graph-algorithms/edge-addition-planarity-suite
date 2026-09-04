@@ -256,12 +256,29 @@ void _InitFunctionTable(graphP theGraph)
 
 int gp_EnsureVertexCapacity(graphP theGraph, int N)
 {
+    long long effectiveEdgeCapacity = 0;
+
     // valid params check
     if (theGraph == NULL || N <= 0)
         return NOTOK;
 
     // Should not call init a second time; use reinit
     if (gp_GetN(theGraph) > 0)
+        return NOTOK;
+
+    // Reject a vertex count whose capacity arithmetic cannot be represented
+    // in int (issue #325). The effective edge capacity is the greater of a
+    // pre-set edgeCapacity and DEFAULT_EDGE_CAPACITY_FACTOR * N, because
+    // gp_EnsureEdgeCapacity() may legitimately have stored a lower value
+    // before this call. The stack holds (edgeCapacity << 2) + 2 entries,
+    // which strictly exceeds every other derived quantity (vertex storage,
+    // edge storage and the 2 * 2 * DEFAULT_EDGE_CAPACITY_FACTOR * N + 2
+    // fallback), so one test on it shields them all, including the
+    // gp_UpperBoundEdgeStorage() uses in the algorithm extensions.
+    effectiveEdgeCapacity = (long long)DEFAULT_EDGE_CAPACITY_FACTOR * N;
+    if (theGraph->edgeCapacity > effectiveEdgeCapacity)
+        effectiveEdgeCapacity = theGraph->edgeCapacity;
+    if ((effectiveEdgeCapacity << 2) + 2 > INT_MAX)
         return NOTOK;
 
     return theGraph->functions->fpEnsureVertexCapacity(theGraph, N);
@@ -424,6 +441,15 @@ void _ResetGraphStorage(graphP theGraph)
 int gp_EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity)
 {
     if (theGraph == NULL || requiredEdgeCapacity <= 0)
+        return NOTOK;
+
+    // Reject a capacity whose stack arithmetic cannot be represented in int
+    // (issue #325). Together with the guard in gp_EnsureVertexCapacity(),
+    // this keeps every stored capacity able to support its stack and edge
+    // storage arithmetic: the vertex-side guard covers the derived
+    // quantities computed from N, and this test covers the ones computed
+    // from a stored or requested capacity
+    if ((((long long)requiredEdgeCapacity) << 2) + 2 > INT_MAX)
         return NOTOK;
 
     if (theGraph->edgeCapacity >= requiredEdgeCapacity)

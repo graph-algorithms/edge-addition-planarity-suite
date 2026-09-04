@@ -42,6 +42,7 @@ int runGraphMLTests(void);
 int runDrawPlanarNonplanarWriteTest(void);
 int runReadWithExtensionAtEofTest(void);
 int runHighByteRoundTripTest(void);
+int runCapacityLimitTests(void);
 int testDirectedDFS(void);
 int testPetersenDigraph(void);
 int testDigraphTranspose(void);
@@ -259,6 +260,8 @@ int runQuickRegressionTests(int argc, char *argv[])
     else if (runReadWithExtensionAtEofTest() != OK)
         retVal = NOTOK;
     else if (runHighByteRoundTripTest() != OK)
+        retVal = NOTOK;
+    else if (runCapacityLimitTests() != OK)
         retVal = NOTOK;
     else if (runGraphMLTests() != OK)
         retVal = NOTOK;
@@ -664,6 +667,66 @@ int runHighByteRoundTripTest(void)
 
     if (inputContainer != NULL)
         sf_Free(&inputContainer);
+
+    return Result;
+}
+
+/********************************************************************
+ runCapacityLimitTests()
+
+ Exercises the issue #325 guards: a vertex count or edge capacity
+ whose capacity arithmetic cannot be represented in int must be
+ rejected by the public wrappers before any allocation is attempted.
+
+ The first rejected vertex count on the default edge capacity is
+ (INT_MAX - 2) / 4 / DEFAULT_EDGE_CAPACITY_FACTOR + 1, and the first
+ rejected edge capacity is (INT_MAX - 2) / 4 + 1; the largest
+ acceptable edge capacity is tested on the accept side too, which is
+ safe because storing a capacity before gp_EnsureVertexCapacity()
+ allocates nothing.
+ ********************************************************************/
+
+int runCapacityLimitTests(void)
+{
+    int Result = OK;
+    graphP theGraph = NULL;
+    int firstBadN = (int)((((long long)INT_MAX - 2) / 4) / DEFAULT_EDGE_CAPACITY_FACTOR + 1);
+    int maxGoodEdgeCapacity = (int)(((long long)INT_MAX - 2) / 4);
+
+    gp_Message("Rejecting vertex counts and edge capacities beyond the "
+               "int arithmetic range (issue #325).");
+
+    if ((theGraph = gp_New()) == NULL)
+        Result = NOTOK;
+
+    if (Result == OK && gp_EnsureVertexCapacity(theGraph, INT_MAX) != NOTOK)
+        Result = NOTOK;
+
+    if (Result == OK && gp_EnsureVertexCapacity(theGraph, firstBadN) != NOTOK)
+        Result = NOTOK;
+
+    if (Result == OK && gp_EnsureEdgeCapacity(theGraph, maxGoodEdgeCapacity + 1) != NOTOK)
+        Result = NOTOK;
+
+    if (Result == OK && gp_EnsureEdgeCapacity(theGraph, maxGoodEdgeCapacity) != OK)
+        Result = NOTOK;
+
+    gp_Free(&theGraph);
+
+    // The guards must not disturb ordinary use
+    if (Result == OK)
+    {
+        if ((theGraph = gp_New()) == NULL)
+            Result = NOTOK;
+
+        if (Result == OK && gp_EnsureVertexCapacity(theGraph, 5) != OK)
+            Result = NOTOK;
+
+        gp_Free(&theGraph);
+    }
+
+    if (Result == OK)
+        gp_Message("Test succeeded.\n");
 
     return Result;
 }
