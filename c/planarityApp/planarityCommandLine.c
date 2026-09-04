@@ -629,10 +629,17 @@ int runHighByteRoundTripTest(void)
 {
     int Result = OK;
     int currChar = EOF;
-    char const highByteStr[] = {'a', (char)0xFF, 'b', '\0'};
+    unsigned char eofChar = 0xFF;
+    char highByteStr[4];
+    // char const highByteStr[] = {'a', (char)0xFF, 'b', '\0'};
     strOrFileP inputContainer = NULL;
 
     gp_Message("Test Support of 0xFF Byte.");
+
+    highByteStr[0] = 'a';
+    highByteStr[1] = (char)eofChar;
+    highByteStr[2] = 'b';
+    highByteStr[3] = '\0';
 
     if ((inputContainer = sf_NewInputContainer(highByteStr, NULL)) == NULL)
         Result = NOTOK;
