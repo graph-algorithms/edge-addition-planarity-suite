@@ -257,7 +257,8 @@ int _g6_InitReader(G6ReadIteratorP theG6ReadIterator)
 
     if ((firstChar = sf_getc(inputContainer)) == EOF)
     {
-        gp_ErrorMessage("Unable to initialize reader: .g6 infile is empty.");
+        // if inputContainer->inputErrorFlag, then sf_getc() also returns EOF
+        gp_ErrorMessage("Unexpected end of file or read error.");
         return NOTOK;
     }
     else
@@ -282,7 +283,15 @@ int _g6_InitReader(G6ReadIteratorP theG6ReadIterator)
         }
     }
 
-    firstChar = sf_getc(inputContainer);
+    // The next character may be the one that was just ungotten, or it may
+    // be a fresh new character if there was a >>graph6<< header.
+    if ((firstChar = sf_getc(inputContainer)) == EOF)
+    {
+        // if inputContainer->inputErrorFlag, then sf_getc() also returns EOF
+        gp_ErrorMessage("Unexpected end of file or read error.");
+        return NOTOK;
+    }
+
     charConfirmation = sf_ungetc(firstChar, inputContainer);
 
     if (charConfirmation != firstChar)
@@ -356,6 +365,7 @@ int _g6_InitReader(G6ReadIteratorP theG6ReadIterator)
 
 int _g6_ValidateHeader(strOrFileP inputContainer)
 {
+    int intChar = 0;
     char const *g6Header = ">>graph6<<";
     char const *sparse6Header = ">>sparse6<";
     char const *digraph6Header = ">>digraph6";
@@ -371,7 +381,13 @@ int _g6_ValidateHeader(strOrFileP inputContainer)
 
     for (int i = 0; i < 10; i++)
     {
-        headerCandidateChars[i] = sf_getc(inputContainer);
+        intChar = sf_getc(inputContainer);
+        if (intChar == EOF)
+        {
+            gp_ErrorMessage("Truncated >>graph6<< header.");
+            return NOTOK;
+        }
+        headerCandidateChars[i] = (char)intChar;
     }
 
     headerCandidateChars[10] = '\0';
@@ -421,31 +437,54 @@ int _g6_DetermineOrderFromInput(strOrFileP inputContainer, int *order)
     // Since geng: n must be in the range 1..32, and since edge-addition-planarity-suite
     // processing of random graphs may only handle up to n = 100,000, we will only check
     // if 1 or 4 bytes are necessary
-    if ((graphChar = sf_getc(inputContainer)) == 126)
+
+    if ((graphChar = sf_getc(inputContainer)) == EOF)
     {
-        if ((graphChar = sf_getc(inputContainer)) == 126)
+        // if inputContainer->inputErrorFlag, then sf_getc() also returns EOF
+        gp_ErrorMessage("Unexpected end of file or read error.");
+        return NOTOK;
+    }
+
+    if (graphChar == 126)
+    {
+        // Read a second character to see what it indicates about the order of the graph
+        if ((graphChar = sf_getc(inputContainer)) == EOF)
+        {
+            // if inputContainer->inputErrorFlag, then sf_getc() also returns EOF
+            gp_ErrorMessage("Unexpected end of file or read error.");
+            return NOTOK;
+        }
+
+        if (graphChar == 126)
         {
             gp_ErrorMessage("Graphs of order n > 100000 are not supported at "
                             "this time.");
             return NOTOK;
         }
 
-        if (graphChar == EOF)
-            return NOTOK;
-
         sf_ungetc(graphChar, inputContainer);
 
         for (int i = 2; i >= 0; i--)
         {
-            graphChar = sf_getc(inputContainer);
-            if (graphChar < 63 || graphChar > 126)
+            if ((graphChar = sf_getc(inputContainer)) == EOF)
+            {
+                // if inputContainer->inputErrorFlag, then sf_getc() also returns EOF
+                gp_ErrorMessage("Unexpected end of file or read error.");
                 return NOTOK;
+            }
+
+            if (graphChar < 63 || graphChar > 126)
+            {
+                gp_ErrorMessage("Illegal character found.");
+                return NOTOK;
+            }
+
             n |= (graphChar - 63) << (6 * i);
         }
 
         if (n > 100000)
         {
-            gp_ErrorMessage("Graph order greater than 100000 not supported.");
+            gp_ErrorMessage("Graphs of order greater than 100000 are not supported.");
             return NOTOK;
         }
     }
