@@ -35,15 +35,15 @@ static int checks = 0;
 static int postprocessCalls = 0;
 static const char *expectedExtraData = NULL;
 
-#define CHECK(condition)                                                        \
-    do                                                                         \
-    {                                                                          \
-        checks++;                                                              \
-        if (!(condition))                                                      \
-        {                                                                      \
-            gp_ErrorMessage("Line %d: %s", __LINE__, #condition);               \
-            failures++;                                                        \
-        }                                                                      \
+#define CHECK(condition)                                          \
+    do                                                            \
+    {                                                             \
+        checks++;                                                 \
+        if (!(condition))                                         \
+        {                                                         \
+            gp_ErrorMessage("Line %d: %s", __LINE__, #condition); \
+            failures++;                                           \
+        }                                                         \
     } while (0)
 
 #ifdef HAVE_FOPENCOOKIE
@@ -330,7 +330,7 @@ int runReadErrorTests(void)
         return NOTOK;
     if (testGraph6Reads() != OK)
         return NOTOK;
-    gp_Message("Read-error regression checks: %d passed, %d failed.", checks - failures, failures);
+    gp_Message("Read-error regression checks: %d passed, %d failed.\n", checks - failures, failures);
     return failures == 0 ? OK : NOTOK;
 }
 
@@ -338,7 +338,7 @@ int runReadErrorTests(void)
 
 int runReadErrorTests(void)
 {
-    gp_Message("Custom FILE read callbacks are unavailable; skipping read-error fault-injection tests.");
+    gp_Message("Custom FILE read callbacks are unavailable; skipping read-error fault-injection tests.\n");
     return OK;
 }
 
