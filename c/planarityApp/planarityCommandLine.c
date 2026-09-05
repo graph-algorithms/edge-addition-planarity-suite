@@ -692,21 +692,41 @@ int runCapacityLimitTests(void)
     graphP theGraph = NULL;
     int firstBadN = (int)((((long long)INT_MAX - 2) / 4) / DEFAULT_EDGE_CAPACITY_FACTOR + 1);
     int maxGoodEdgeCapacity = (int)(((long long)INT_MAX - 2) / 4);
+    unsigned quietModeCache = gp_GetQuietMode();
 
-    gp_Message("Rejecting vertex counts and edge capacities beyond the "
-               "int arithmetic range (issue #325).");
+    gp_Message("Testing rejection of excessive vertex and edge capacity requests.");
 
     if ((theGraph = gp_New()) == NULL)
         Result = NOTOK;
 
-    if (Result == OK && gp_EnsureVertexCapacity(theGraph, INT_MAX) != NOTOK)
-        Result = NOTOK;
+    // The first tests below intentionally cause a NOTOK to come from the APIs,
+    // so we set fully quiet mode to prevent error messages on expected behaviors.
+    gp_SetQuietMode(QUIETMODE_ALL);
 
-    if (Result == OK && gp_EnsureVertexCapacity(theGraph, firstBadN) != NOTOK)
+    if (Result == OK && gp_EnsureVertexCapacity(theGraph, INT_MAX) == OK)
+    {
+        gp_SetQuietMode(quietModeCache);
         Result = NOTOK;
+        gp_SetQuietMode(QUIETMODE_ALL);
+    }
 
-    if (Result == OK && gp_EnsureEdgeCapacity(theGraph, maxGoodEdgeCapacity + 1) != NOTOK)
+    if (Result == OK && gp_EnsureVertexCapacity(theGraph, firstBadN) == OK)
+    {
+        gp_SetQuietMode(quietModeCache);
         Result = NOTOK;
+        gp_SetQuietMode(QUIETMODE_ALL);
+    }
+
+    if (Result == OK && gp_EnsureEdgeCapacity(theGraph, maxGoodEdgeCapacity + 1) == OK)
+    {
+        gp_SetQuietMode(quietModeCache);
+        Result = NOTOK;
+        gp_SetQuietMode(QUIETMODE_ALL);
+    }
+
+    // The end of tests intended to produce NOTOK has been reached, so we can go back
+    // to normal quiet mode behavior.
+    gp_SetQuietMode(quietModeCache);
 
     if (Result == OK && gp_EnsureEdgeCapacity(theGraph, maxGoodEdgeCapacity) != OK)
         Result = NOTOK;
