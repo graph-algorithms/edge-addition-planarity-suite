@@ -486,7 +486,7 @@ int _EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity)
     {
         int newStackSize = 2 * (2 * requiredEdgeCapacity) + 2;
 
-        if (newStackSize < 2 * DEFAULT_EDGE_CAPACITY_FACTOR * gp_GetN(theGraph) + 2)
+        if (newStackSize < 2 * (2 * DEFAULT_EDGE_CAPACITY_FACTOR * gp_GetN(theGraph)) + 2)
         {
             // NOTE: We enforce a minimum stack based on number of vertices
             //       if edgeCapacity is small. Currently, this will not
@@ -494,7 +494,7 @@ int _EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity)
             //       the capacity can only ever get bigger. However, this
             //       rule is enforced in case future methods are added
             //       that reduce edge capacity
-            newStackSize = 2 * DEFAULT_EDGE_CAPACITY_FACTOR * gp_GetN(theGraph) + 2;
+            newStackSize = 2 * (2 * DEFAULT_EDGE_CAPACITY_FACTOR * gp_GetN(theGraph)) + 2;
         }
 
         if ((newStack = sp_New(newStackSize)) == NULL)
