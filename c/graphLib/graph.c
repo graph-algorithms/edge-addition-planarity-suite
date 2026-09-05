@@ -276,7 +276,7 @@ int gp_EnsureVertexCapacity(graphP theGraph, int N)
     // fallback), so one test on it shields them all, including the
     // gp_UpperBoundEdgeStorage() uses in the algorithm extensions.
     effectiveEdgeCapacity = (long long)DEFAULT_EDGE_CAPACITY_FACTOR * N;
-    if (theGraph->edgeCapacity > effectiveEdgeCapacity)
+    if (effectiveEdgeCapacity < theGraph->edgeCapacity)
         effectiveEdgeCapacity = theGraph->edgeCapacity;
     if ((effectiveEdgeCapacity << 2) + 2 > INT_MAX)
         return NOTOK;
