@@ -32,7 +32,7 @@ int _g6_ValidateHeader(strOrFileP inputContainer);
 int _g6_ValidateFirstChar(char c, const int lineNum);
 int _g6_DetermineOrderFromInput(strOrFileP inputContainer, int *order);
 
-int _g6_DecodeGraph(char *graphBuff, const int order, const int numChars, graphP theGraph);
+int _g6_DecodeGraph(char *graphBuff, const int order, const size_t numChars, graphP theGraph);
 
 int _g6_ReadGraphFromFile(graphP theGraph, char *pathToG6File);
 int _g6_ReadGraphFromString(graphP theGraph, char *g6EncodedString);
@@ -475,7 +475,7 @@ int g6_ReadGraph(G6ReadIteratorP theG6ReadIterator)
     graphP currGraph = NULL;
     const int order = theG6ReadIterator == NULL ? 0 : theG6ReadIterator->order;
     const int numCharsForOrder = theG6ReadIterator == NULL ? 0 : theG6ReadIterator->numCharsForOrder;
-    const int numCharsForGraphEncoding = theG6ReadIterator == NULL ? 0 : theG6ReadIterator->numCharsForGraphEncoding;
+    const size_t numCharsForGraphEncoding = theG6ReadIterator == NULL ? 0 : theG6ReadIterator->numCharsForGraphEncoding;
     const int currGraphBuffSize = theG6ReadIterator == NULL ? 0 : theG6ReadIterator->currGraphBuffSize;
 
     if (!_g6_IsReaderInitialized(theG6ReadIterator, TRUE))
@@ -503,10 +503,9 @@ int g6_ReadGraph(G6ReadIteratorP theG6ReadIterator)
         // If the line was too long, then we would have placed the null terminator at the final
         // index (where it already was; see strcpn docs), and the length of the string will be
         // longer than the line should have been, i.e. orderOffset + numCharsForGraphRepr
-        if ((int)strlen(currGraphBuff) != (((lineNum == 1) ? 0 : numCharsForOrder) + numCharsForGraphEncoding))
+        if (strlen(currGraphBuff) != (((lineNum == 1) ? 0 : numCharsForOrder) + numCharsForGraphEncoding))
         {
-            gp_ErrorMessage("Invalid line length read on line %d",
-                            lineNum);
+            gp_ErrorMessage("Invalid line length read on line %d", lineNum);
             return NOTOK;
         }
 
@@ -514,8 +513,7 @@ int g6_ReadGraph(G6ReadIteratorP theG6ReadIterator)
         {
             if (_g6_ValidateOrderOfEncodedGraph(currGraphBuff, order) != OK)
             {
-                gp_ErrorMessage("Order of graph on line %d is incorrect.",
-                                lineNum);
+                gp_ErrorMessage("Order of graph on line %d is incorrect.", lineNum);
                 return NOTOK;
             }
         }
@@ -564,7 +562,7 @@ int g6_ReadGraph(G6ReadIteratorP theG6ReadIterator)
 // the final byte, we determine how many padding zeroes to expect, and exclude them
 // from being processed. We index into the adjacency matrix by row and column, which
 // are incremented such that row ranges from 0 to one less than the column index.
-int _g6_DecodeGraph(char *graphBuff, const int order, const int numChars, graphP theGraph)
+int _g6_DecodeGraph(char *graphBuff, const int order, const size_t numChars, graphP theGraph)
 {
     int numPaddingZeroes = _g6_GetExpectedNumPaddingZeroes(order, numChars);
 
@@ -580,7 +578,13 @@ int _g6_DecodeGraph(char *graphBuff, const int order, const int numChars, graphP
         return NOTOK;
     }
 
-    for (int i = 0; i < numChars; i++)
+    if (numChars > INT_MAX)
+    {
+        gp_ErrorMessage("Unsupported number of characters to decode.");
+        return NOTOK;
+    }
+
+    for (int i = 0; i < (int)numChars; i++)
     {
         currByte = graphBuff[i] - 63;
         // j corresponds to the number of places one must bitshift the byte by
@@ -589,7 +593,7 @@ int _g6_DecodeGraph(char *graphBuff, const int order, const int numChars, graphP
         {
             // If we are on the final byte, we know that the final
             // numPaddingZeroes bits can be ignored, so we break out of the loop
-            if ((i == numChars) && j == numPaddingZeroes - 1)
+            if ((i == (int)numChars) && j == numPaddingZeroes - 1)
                 break;
 
             if (row == col)
