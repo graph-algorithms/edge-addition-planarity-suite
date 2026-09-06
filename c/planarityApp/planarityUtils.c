@@ -296,10 +296,23 @@ char *ReadTextFileIntoString(char const *infileName)
         fileSize = ftell(infile);
         fseek(infile, filePos, SEEK_SET);
 
-        if ((inputString = (char *)malloc((fileSize + 1) * sizeof(char))) != NULL)
+        if (fileSize >= INT_MAX)
+            gp_ErrorMessage("The file is too large.");
+        else
         {
-            long bytesRead = fread((void *)inputString, 1, fileSize, infile);
-            inputString[bytesRead] = '\0';
+            if ((inputString = (char *)malloc((fileSize + 1) * sizeof(char))) != NULL)
+            {
+                size_t bytesRead = fread((void *)inputString, 1, fileSize, infile);
+
+                if (bytesRead != (size_t)fileSize)
+                {
+                    gp_ErrorMessage("A read error occurred.");
+                    free(inputString);
+                    inputString = NULL;
+                }
+                else
+                    inputString[bytesRead] = '\0';
+            }
         }
 
         fclose(infile);
