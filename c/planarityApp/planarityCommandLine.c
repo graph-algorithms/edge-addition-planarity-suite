@@ -1042,8 +1042,11 @@ int runSparse6LockstepTest(char const *g6FileName, char const *s6FileName, int i
         numGraphs++;
 
         // The edge count is compared as well because a repeated edge would
-        // set the same bit of the graph6 encoding twice and go unnoticed
+        // set the same bit of the graph6 encoding twice and go unnoticed,
+        // and the edge storage must be dense (no holes left by incremental
+        // deletions), which DrawPlanar requires of any graph it embeds
         if (gp_GetM(g6Graph) != gp_GetM(s6Graph) ||
+            gp_UpperBoundEdges(s6Graph) != gp_LowerBoundEdges(s6Graph) + (gp_GetM(s6Graph) << 1) ||
             gp_WriteToString(g6Graph, &g6Str, WRITE_G6) != OK || g6Str == NULL ||
             gp_WriteToString(s6Graph, &s6Str, WRITE_G6) != OK || s6Str == NULL ||
             strcmp(g6Str, s6Str) != 0)

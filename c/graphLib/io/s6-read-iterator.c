@@ -800,7 +800,37 @@ int _s6_ApplyEdge(S6ReadIteratorP theS6ReadIterator, int u, int v, const int inc
         int e = gp_FindEdge(theGraph, uStorage, vStorage);
 
         if (gp_IsEdge(theGraph, e))
-            return gp_DeleteEdge(theGraph, e);
+        {
+            if (gp_DeleteEdge(theGraph, e) != OK)
+                return NOTOK;
+
+            // gp_DeleteEdge() leaves a hole in the edge storage unless the
+            // pair it removed was the last one. A freshly read graph has no
+            // holes, and some algorithms (e.g. DrawPlanar) require that, so
+            // the hole is filled with the last pair: that pair is deleted,
+            // which shrinks the storage rather than making a second hole,
+            // and re-added, which gp_InsertEdge() places into the hole.
+            // Within one line there is never more than one hole, since each
+            // is filled before the next pair is decoded.
+            if (theGraph->numEdgeHoles > 0)
+            {
+                int eLast = gp_UpperBoundEdges(theGraph) - 2;
+                int uLast = gp_GetNeighbor(theGraph, eLast);
+                int vLast = gp_GetNeighbor(theGraph, gp_GetTwin(theGraph, eLast));
+
+                if (gp_DeleteEdge(theGraph, eLast) != OK ||
+                    gp_DynamicAddEdge(theGraph, uLast, 0, vLast, 0) != OK ||
+                    theGraph->numEdgeHoles > 0)
+                {
+                    gp_ErrorMessage("Unable to keep the edge storage dense "
+                                    "after removing an edge on line %d.",
+                                    lineNum);
+                    return NOTOK;
+                }
+            }
+
+            return OK;
+        }
     }
     else
     {
