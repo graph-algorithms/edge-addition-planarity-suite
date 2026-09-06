@@ -463,14 +463,14 @@ int sf_ReadInteger(int *intToRead, strOrFileP theStrOrFile)
                 }
                 else
                 {
-                    intCandidateStr[intCandidateIndex++] = currChar;
+                    intCandidateStr[intCandidateIndex++] = (char)currChar;
                     isNegative = TRUE;
                 }
             }
         }
         else if (isdigit(currChar))
         {
-            intCandidateStr[intCandidateIndex++] = currChar;
+            intCandidateStr[intCandidateIndex++] = (char)currChar;
             startedReadingInt = TRUE;
         }
         else
@@ -512,7 +512,7 @@ int sf_ReadInteger(int *intToRead, strOrFileP theStrOrFile)
 
                     if (exitCode == OK)
                     {
-                        intCandidateStr[intCandidateIndex++] = nextChar;
+                        intCandidateStr[intCandidateIndex++] = (char)nextChar;
                     }
                 }
                 else if (sf_ungetc(nextChar, theStrOrFile) != nextChar)
@@ -619,12 +619,15 @@ int sf_ungetc(int theChar, strOrFileP theStrOrFile)
 
 int sf_ungets(char *strToUnget, strOrFileP theStrOrFile)
 {
+    if (strToUnget == NULL || strlen(strToUnget) > INT_MAX)
+        return NOTOK;
+
     if (!sf_IsValidStrOrFile(theStrOrFile) ||
         theStrOrFile->containerType != INPUT_CONTAINER ||
         (int)strlen(strToUnget) > (sp_GetCapacity(theStrOrFile->ungetBuf) - sp_GetCurrentSize(theStrOrFile->ungetBuf)))
         return NOTOK;
 
-    for (int i = (strlen(strToUnget) - 1); i >= 0; i--)
+    for (int i = ((int)strlen(strToUnget) - 1); i >= 0; i--)
         // N.B. Convert through unsigned char so a 0xFF byte does not enter the
         // unget buffer as EOF on signed-char platforms
         sp_Push(theStrOrFile->ungetBuf, (unsigned char)strToUnget[i]);
@@ -744,9 +747,14 @@ int sf_fputs(char const *strToWrite, strOrFileP theStrOrFile)
     int outputLen = EOF;
 
     if (strToWrite == NULL ||
+        strlen(strToWrite) > INT_MAX ||
         !sf_IsValidStrOrFile(theStrOrFile) ||
         theStrOrFile->containerType != OUTPUT_CONTAINER)
+    {
+        gp_ErrorMessage("Internal error.");
+        sf_SetOutputErrorFlag(theStrOrFile);
         return EOF;
+    }
 
     // N.B. fputs() will fail and return EOF if pFile doesn't correspond
     // to an output stream
@@ -755,7 +763,7 @@ int sf_fputs(char const *strToWrite, strOrFileP theStrOrFile)
     else if (theStrOrFile->theStrBuf != NULL)
     {
         if (sb_ConcatString(theStrOrFile->theStrBuf, strToWrite) == OK)
-            outputLen = strlen(strToWrite);
+            outputLen = (int)strlen(strToWrite);
         else
             outputLen = EOF;
     }
@@ -780,7 +788,11 @@ int sf_WriteInteger(int intToWrite, strOrFileP theStrOrFile)
 
     if (!sf_IsValidStrOrFile(theStrOrFile) ||
         theStrOrFile->containerType != OUTPUT_CONTAINER)
+    {
+        gp_ErrorMessage("Internal error.");
+        sf_SetOutputErrorFlag(theStrOrFile);
         return NOTOK;
+    }
 
     if (theStrOrFile->pFile != NULL)
         result = fprintf(theStrOrFile->pFile, "%d", intToWrite) < 0 ? NOTOK : OK;
