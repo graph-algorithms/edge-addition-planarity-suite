@@ -216,7 +216,7 @@ int sb_ConcatString(strBufP theStrBuf, char const *s)
         strcpy(newBuf, theStrBuf->buf);
         free(theStrBuf->buf);
         theStrBuf->buf = newBuf;
-        theStrBuf->capacity = newLen;
+        theStrBuf->capacity = (int)newLen;
     }
 
     strcpy(theStrBuf->buf + theStrBuf->size, s);

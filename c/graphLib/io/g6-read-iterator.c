@@ -476,11 +476,16 @@ int g6_ReadGraph(G6ReadIteratorP theG6ReadIterator)
     const int order = theG6ReadIterator == NULL ? 0 : theG6ReadIterator->order;
     const int numCharsForOrder = theG6ReadIterator == NULL ? 0 : theG6ReadIterator->numCharsForOrder;
     const size_t numCharsForGraphEncoding = theG6ReadIterator == NULL ? 0 : theG6ReadIterator->numCharsForGraphEncoding;
-    const int currGraphBuffSize = theG6ReadIterator == NULL ? 0 : theG6ReadIterator->currGraphBuffSize;
+    const size_t currGraphBuffSize = theG6ReadIterator == NULL ? 0 : theG6ReadIterator->currGraphBuffSize;
 
     if (!_g6_IsReaderInitialized(theG6ReadIterator, TRUE))
     {
         gp_ErrorMessage("G6ReadIterator is not initialized.");
+        return NOTOK;
+    }
+    if (numCharsForGraphEncoding > INT_MAX || currGraphBuffSize > INT_MAX)
+    {
+        gp_ErrorMessage("Integer overflow.");
         return NOTOK;
     }
 
@@ -489,7 +494,7 @@ int g6_ReadGraph(G6ReadIteratorP theG6ReadIterator)
     currGraphBuff = theG6ReadIterator->currGraphBuff;
     currGraph = theG6ReadIterator->currGraph;
 
-    if (sf_fgets(currGraphBuff, currGraphBuffSize, inputContainer) != NULL)
+    if (sf_fgets(currGraphBuff, (int)currGraphBuffSize, inputContainer) != NULL)
     {
         firstChar = currGraphBuff[0];
 
@@ -564,7 +569,7 @@ int g6_ReadGraph(G6ReadIteratorP theG6ReadIterator)
 // are incremented such that row ranges from 0 to one less than the column index.
 int _g6_DecodeGraph(char *graphBuff, const int order, const size_t numChars, graphP theGraph)
 {
-    int numPaddingZeroes = _g6_GetExpectedNumPaddingZeroes(order, numChars);
+    size_t numPaddingZeroes = _g6_GetExpectedNumPaddingZeroes(order, numChars);
 
     char currByte = '\0';
     int bitValue = 0;
@@ -578,9 +583,9 @@ int _g6_DecodeGraph(char *graphBuff, const int order, const size_t numChars, gra
         return NOTOK;
     }
 
-    if (numChars > INT_MAX)
+    if (numChars > INT_MAX || numPaddingZeroes > INT_MAX)
     {
-        gp_ErrorMessage("Unsupported number of characters to decode.");
+        gp_ErrorMessage("Integer overflow.");
         return NOTOK;
     }
 
@@ -593,7 +598,7 @@ int _g6_DecodeGraph(char *graphBuff, const int order, const size_t numChars, gra
         {
             // If we are on the final byte, we know that the final
             // numPaddingZeroes bits can be ignored, so we break out of the loop
-            if ((i == (int)numChars) && j == numPaddingZeroes - 1)
+            if ((i == (int)numChars) && j == ((int)numPaddingZeroes) - 1)
                 break;
 
             if (row == col)
