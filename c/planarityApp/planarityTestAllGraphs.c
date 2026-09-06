@@ -250,6 +250,7 @@ int outputTestAllGraphsResults(char command, char modifier, testAllStatsP stats,
 
     char *theOutputStr = NULL;
     int headerStrLen = 0, resultStrLen = 0;
+    size_t headerStrLenWide = 0;
     char *resultsStr = NULL;
 
     if (outfileName == NULL && (pOutputStr == NULL || *pOutputStr != NULL))
@@ -259,11 +260,18 @@ int outputTestAllGraphsResults(char command, char modifier, testAllStatsP stats,
         return NOTOK;
     }
 
-    headerStrLen =
+    headerStrLenWide =
         strlen(headerFormat) +
         strlen(infileBasename) +
         strlen("-1.7976931348623158e+308") + // -DBL_MAX from float.h
         3;
+
+    if (headerStrLenWide > INT_MAX)
+    {
+        gp_ErrorMessage("Integer overflow.");
+        return NOTOK;
+    }
+    headerStrLen = (int)headerStrLenWide;
 
     if (GetNumCharsToReprInt(stats->numGraphsTested, &numCharsToReprNumGraphsTested) != OK ||
         GetNumCharsToReprInt(stats->numOK, &numCharsToReprNumOK) != OK ||

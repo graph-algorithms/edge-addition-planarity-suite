@@ -296,10 +296,23 @@ char *ReadTextFileIntoString(char const *infileName)
         fileSize = ftell(infile);
         fseek(infile, filePos, SEEK_SET);
 
-        if ((inputString = (char *)malloc((fileSize + 1) * sizeof(char))) != NULL)
+        if (fileSize >= INT_MAX)
+            gp_ErrorMessage("The file is too large.");
+        else
         {
-            long bytesRead = fread((void *)inputString, 1, fileSize, infile);
-            inputString[bytesRead] = '\0';
+            if ((inputString = (char *)malloc((fileSize + 1) * sizeof(char))) != NULL)
+            {
+                size_t bytesRead = fread((void *)inputString, 1, fileSize, infile);
+
+                if (bytesRead != (size_t)fileSize)
+                {
+                    gp_ErrorMessage("A read error occurred.");
+                    free(inputString);
+                    inputString = NULL;
+                }
+                else
+                    inputString[bytesRead] = '\0';
+            }
         }
 
         fclose(infile);
@@ -966,22 +979,35 @@ int ConstructTransformationExpectedResultFileName(char const *infileName, char *
 
     char const *baseName = GetBaseName(baseFlag);
     char const *transformationName = GetTransformationName(command);
-    int infileNameLen = -1;
 
-    if (infileName == NULL || (infileNameLen = strlen(infileName)) < 1)
+    if (infileName == NULL || strlen(infileName) < 1)
     {
         gp_ErrorMessage("Cannot construct transformation output file name for "
                         "empty infileName.");
         return NOTOK;
     }
 
+    if (baseName == NULL || transformationName == NULL)
+    {
+        gp_ErrorMessage("Cannot construct transformation output file name due "
+                        "to an internal error.");
+        return NOTOK;
+    }
+
     if ((*outfileName) == NULL)
     {
-        (*outfileName) = (char *)calloc(
-            infileNameLen + 1 + strlen(baseName) + 1 + strlen(transformationName) +
-                ((command == 'g') ? strlen(".out.g6") : strlen(".out.txt")) + 1,
-            sizeof(char));
+        size_t outfileNameLen = strlen(infileName) + 1 +
+                                strlen(baseName) + 1 + strlen(transformationName) +
+                                ((command == 'g') ? strlen(".out.g6") : strlen(".out.txt"));
 
+        if (outfileNameLen + 1 > INT_MAX)
+        {
+            gp_ErrorMessage("Cannot construct transformation output file name "
+                            "because the output file name would be too long.");
+            return NOTOK;
+        }
+
+        (*outfileName) = (char *)calloc(outfileNameLen + 1, sizeof(char));
         if ((*outfileName) == NULL)
         {
             gp_ErrorMessage("Unable to allocate memory for output file name.");
@@ -997,7 +1023,8 @@ int ConstructTransformationExpectedResultFileName(char const *infileName, char *
     }
     else
     {
-        gp_ErrorMessage("outfileName already allocated.");
+        gp_ErrorMessage("Cannot construct transformation output file name "
+                        " because the output file name already allocated.");
         Result = NOTOK;
     }
 
