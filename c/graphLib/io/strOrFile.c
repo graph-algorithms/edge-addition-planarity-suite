@@ -448,14 +448,14 @@ int sf_ReadInteger(int *intToRead, strOrFileP theStrOrFile)
                 }
                 else
                 {
-                    intCandidateStr[intCandidateIndex++] = currChar;
+                    intCandidateStr[intCandidateIndex++] = (char)currChar;
                     isNegative = TRUE;
                 }
             }
         }
         else if (isdigit(currChar))
         {
-            intCandidateStr[intCandidateIndex++] = currChar;
+            intCandidateStr[intCandidateIndex++] = (char)currChar;
             startedReadingInt = TRUE;
         }
         else
@@ -497,7 +497,7 @@ int sf_ReadInteger(int *intToRead, strOrFileP theStrOrFile)
 
                     if (exitCode == OK)
                     {
-                        intCandidateStr[intCandidateIndex++] = nextChar;
+                        intCandidateStr[intCandidateIndex++] = (char)nextChar;
                     }
                 }
                 else if (sf_ungetc(nextChar, theStrOrFile) != nextChar)
