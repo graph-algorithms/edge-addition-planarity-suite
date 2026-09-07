@@ -57,6 +57,7 @@ extern "C"
     int sf_fputs(char const *strToWrite, strOrFileP theStrOrFile);
     int sf_WriteInteger(int intToWrite, strOrFileP theStrOrFile);
 
+    int sf_SetInputErrorFlag(strOrFileP theStrOrFile);
     int sf_SetOutputErrorFlag(strOrFileP theStrOrFile);
 
     int sf_closeFile(strOrFileP theStrOrFile);

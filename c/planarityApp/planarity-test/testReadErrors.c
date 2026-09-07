@@ -28,6 +28,7 @@ typedef struct
     const char *data;
     size_t position;
     int failAtEnd;
+    int failOnClose;
 } TestInput;
 
 static int failures = 0;
@@ -70,16 +71,28 @@ static int readInput(void *cookie, char *buffer, int size)
     return 0;
 }
 
+static int closeInput(void *cookie)
+{
+    TestInput *input = (TestInput *)cookie;
+
+    if (input->failOnClose)
+    {
+        errno = EIO;
+        return EOF;
+    }
+    return 0;
+}
+
 static int newInput(TestInput *input, strOrFileP *pContainer)
 {
     strOrFileP container = sf_NewInputContainer("placeholder", NULL);
     FILE *stream = NULL;
 
 #ifdef HAVE_FOPENCOOKIE
-    cookie_io_functions_t functions = {readInput, NULL, NULL, NULL};
+    cookie_io_functions_t functions = {readInput, NULL, NULL, closeInput};
     stream = fopencookie(input, "r", functions);
 #else
-    stream = funopen(input, readInput, NULL, NULL, NULL);
+    stream = funopen(input, readInput, NULL, NULL, closeInput);
 #endif
     if (container == NULL || stream == NULL)
     {
@@ -100,7 +113,7 @@ static int testLineReads(void)
     char buffer[32] = {0};
     char pushed[] = "pushed";
     char retry[] = "retry";
-    TestInput input = {"line\n", 0, FALSE};
+    TestInput input = {"line\n", 0, FALSE, FALSE};
     strOrFileP container = NULL;
 
     if (newInput(&input, &container) != OK)
@@ -161,8 +174,17 @@ static int testLineReads(void)
 
 static int testCharacterReads(void)
 {
-    TestInput input = {"x", 0, TRUE};
+    TestInput input = {"x", 0, TRUE, FALSE};
     strOrFileP container = NULL;
+    const struct
+    {
+        const char *data;
+        int value;
+    } integers[] = {
+        {"123", 123},
+        {"-7", -7},
+        {"214748364", 214748364},
+        {"-214748364", -214748364}};
 
     if (newInput(&input, &container) != OK)
         return NOTOK;
@@ -173,16 +195,19 @@ static int testCharacterReads(void)
 
     for (int failAtEnd = FALSE; failAtEnd <= TRUE; failAtEnd++)
     {
-        int value = 77;
-        input.data = "123";
-        input.position = 0;
-        input.failAtEnd = failAtEnd;
-        if (newInput(&input, &container) != OK)
-            return NOTOK;
-        CHECK(sf_ReadInteger(&value, container) == (failAtEnd ? NOTOK : OK));
-        CHECK(value == (failAtEnd ? 77 : 123));
-        CHECK(container->inputErrorFlag == failAtEnd);
-        sf_Free(&container);
+        for (size_t index = 0; index < sizeof(integers) / sizeof(integers[0]); index++)
+        {
+            int value = 77;
+            input.data = integers[index].data;
+            input.position = 0;
+            input.failAtEnd = failAtEnd;
+            if (newInput(&input, &container) != OK)
+                return NOTOK;
+            CHECK(sf_ReadInteger(&value, container) == (failAtEnd ? NOTOK : OK));
+            CHECK(value == (failAtEnd ? 77 : integers[index].value));
+            CHECK(container->inputErrorFlag == failAtEnd);
+            sf_Free(&container);
+        }
 
         input.data = " \t";
         input.position = 0;
@@ -192,6 +217,70 @@ static int testCharacterReads(void)
         CHECK(container->inputErrorFlag == failAtEnd);
         sf_Free(&container);
     }
+    return OK;
+}
+
+static int testInputFailureFlags(void)
+{
+    char buffer[2] = {0};
+    char tooLong[MAXLINE + 2];
+    int digit = 0;
+    strOrFileP container = NULL;
+    TestInput input = {"x", 0, FALSE, TRUE};
+
+    CHECK(sf_SetInputErrorFlag(NULL) == NOTOK);
+
+    if (newInput(&input, &container) != OK)
+        return NOTOK;
+    CHECK(sf_closeFile(container) == NOTOK);
+    CHECK(container->inputErrorFlag == TRUE);
+    sf_Free(&container);
+
+    container = sf_NewInputContainer("x", NULL);
+    if (container == NULL)
+        return NOTOK;
+    CHECK(sf_ReadSkipChar(container) == OK);
+    CHECK(sf_ReadSkipChar(container) == NOTOK);
+    CHECK(container->inputErrorFlag == TRUE);
+    sf_Free(&container);
+
+    container = sf_NewInputContainer("x", NULL);
+    if (container == NULL)
+        return NOTOK;
+    CHECK(sf_ReadSingleDigit(&digit, container) == NOTOK);
+    CHECK(container->inputErrorFlag == TRUE);
+    sf_Free(&container);
+
+    container = sf_NewInputContainer("-", NULL);
+    if (container == NULL)
+        return NOTOK;
+    CHECK(sf_ReadInteger(&digit, container) == NOTOK);
+    CHECK(container->inputErrorFlag == TRUE);
+    sf_Free(&container);
+
+    container = sf_NewInputContainer("x", NULL);
+    if (container == NULL)
+        return NOTOK;
+    CHECK(sf_ungetc(EOF, container) == EOF);
+    CHECK(container->inputErrorFlag == TRUE);
+    sf_Free(&container);
+
+    memset(tooLong, 'x', sizeof(tooLong) - 1);
+    tooLong[sizeof(tooLong) - 1] = '\0';
+    container = sf_NewInputContainer("x", NULL);
+    if (container == NULL)
+        return NOTOK;
+    CHECK(sf_ungets(tooLong, container) == NOTOK);
+    CHECK(container->inputErrorFlag == TRUE);
+    sf_Free(&container);
+
+    container = sf_NewInputContainer("x", NULL);
+    if (container == NULL)
+        return NOTOK;
+    CHECK(sf_fgets(NULL, sizeof(buffer), container) == NULL);
+    CHECK(container->inputErrorFlag == TRUE);
+    sf_Free(&container);
+
     return OK;
 }
 
@@ -220,9 +309,11 @@ static int testGraphReads(void)
     {
         for (size_t index = 0; index < sizeof(inputs) / sizeof(inputs[0]); index++)
         {
-            TestInput input = {inputs[index].data, 0, failAtEnd};
+            TestInput input = {inputs[index].data, 0, failAtEnd, FALSE};
             strOrFileP container = NULL;
             graphP graph = NULL;
+            int readResult = NOTOK;
+            unsigned quietModeCache = gp_GetQuietMode();
 
             if (newInput(&input, &container) != OK)
                 return NOTOK;
@@ -237,7 +328,11 @@ static int testGraphReads(void)
             expectedExtraData = inputs[index].extraData;
             graph->functions->fpReadPostprocess = readPostprocess;
 
-            CHECK(_ReadGraph(graph, &container) == (failAtEnd ? NOTOK : OK));
+            if (failAtEnd)
+                gp_SetQuietMode(QUIETMODE_ALL);
+            readResult = _ReadGraph(graph, &container);
+            gp_SetQuietMode(quietModeCache);
+            CHECK(readResult == (failAtEnd ? NOTOK : OK));
             CHECK(container == NULL);
             CHECK(postprocessCalls == (!failAtEnd && expectedExtraData != NULL ? 1 : 0));
             gp_Free(&graph);
@@ -250,10 +345,12 @@ static int testGraph6Reads(void)
 {
     for (int failAtEnd = FALSE; failAtEnd <= TRUE; failAtEnd++)
     {
-        TestInput input = {"A?\n", 0, failAtEnd};
+        TestInput input = {"A?\n", 0, failAtEnd, FALSE};
         strOrFileP container = NULL;
         G6ReadIteratorP reader = NULL;
         graphP graph = NULL;
+        int readResult = NOTOK;
+        unsigned quietModeCache = gp_GetQuietMode();
 
         if (newInput(&input, &container) != OK)
             return NOTOK;
@@ -269,7 +366,11 @@ static int testGraph6Reads(void)
         CHECK(container == NULL);
         CHECK(g6_ReadGraph(reader) == OK);
         CHECK(g6_EndReached(reader) == FALSE);
-        CHECK(g6_ReadGraph(reader) == (failAtEnd ? NOTOK : OK));
+        if (failAtEnd)
+            gp_SetQuietMode(QUIETMODE_ALL);
+        readResult = g6_ReadGraph(reader);
+        gp_SetQuietMode(quietModeCache);
+        CHECK(readResult == (failAtEnd ? NOTOK : OK));
         CHECK(g6_EndReached(reader) == !failAtEnd);
         g6_FreeReader(&reader);
         gp_Free(&graph);
@@ -285,7 +386,11 @@ static int testGraph6Reads(void)
             sf_Free(&container);
             return NOTOK;
         }
-        CHECK(_g6_ReadGraphFromStrOrFile(graph, &container) == (failAtEnd ? NOTOK : OK));
+        if (failAtEnd)
+            gp_SetQuietMode(QUIETMODE_ALL);
+        readResult = _g6_ReadGraphFromStrOrFile(graph, &container);
+        gp_SetQuietMode(quietModeCache);
+        CHECK(readResult == (failAtEnd ? NOTOK : OK));
         CHECK(container == NULL);
         gp_Free(&graph);
     }
@@ -294,10 +399,12 @@ static int testGraph6Reads(void)
     for (size_t length = 1; length <= 3; length++)
     {
         char order[] = "~???";
-        TestInput input = {order, 0, TRUE};
+        TestInput input = {order, 0, TRUE, FALSE};
         strOrFileP container = NULL;
         G6ReadIteratorP reader = NULL;
         graphP graph = NULL;
+        int initResult = NOTOK;
+        unsigned quietModeCache = gp_GetQuietMode();
         order[length] = '\0';
         if (newInput(&input, &container) != OK)
             return NOTOK;
@@ -309,7 +416,10 @@ static int testGraph6Reads(void)
             return NOTOK;
         }
         CHECK(g6_NewReader(&reader, graph) == OK);
-        CHECK(_g6_InitReaderWithStrOrFile(reader, &container) == NOTOK);
+        gp_SetQuietMode(QUIETMODE_ALL);
+        initResult = _g6_InitReaderWithStrOrFile(reader, &container);
+        gp_SetQuietMode(quietModeCache);
+        CHECK(initResult == NOTOK);
         g6_FreeReader(&reader);
         sf_Free(&container);
         gp_Free(&graph);
@@ -325,6 +435,8 @@ int runReadErrorTests(void)
     if (testLineReads() != OK)
         return NOTOK;
     if (testCharacterReads() != OK)
+        return NOTOK;
+    if (testInputFailureFlags() != OK)
         return NOTOK;
     if (testGraphReads() != OK)
         return NOTOK;
