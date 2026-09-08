@@ -39,7 +39,6 @@ jobs:
   distcheck:
     timeout-minutes: 15
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'pull_request' }}
     env:
       CC: gcc
     steps:
