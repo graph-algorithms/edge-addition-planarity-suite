@@ -313,6 +313,7 @@ int sf_getc(strOrFileP theStrOrFile)
             return EOF;
         }
 #else
+        // Note that this cannot underflow due to if condition above
         sp_Pop(theStrOrFile->ungetBuf, currChar);
 #endif
         theChar = currChar;
@@ -653,6 +654,12 @@ int sf_ungetc(int theChar, strOrFileP theStrOrFile)
         return EOF;
     }
 #else
+    if (sp_GetCurrentSize(theStrOrFile->ungetBuf) >= sp_GetCapacity(theStrOrFile->ungetBuf))
+    {
+        sf_SetInputErrorFlag(theStrOrFile);
+        return EOF;
+    }
+
     sp_Push(theStrOrFile->ungetBuf, theChar);
 #endif
 
@@ -701,6 +708,12 @@ int sf_ungets(char *strToUnget, strOrFileP theStrOrFile)
             return NOTOK;
         }
 #else
+        if (sp_GetCurrentSize(theStrOrFile->ungetBuf) >= sp_GetCapacity(theStrOrFile->ungetBuf))
+        {
+            sf_SetInputErrorFlag(theStrOrFile);
+            return EOF;
+        }
+
         sp_Push(theStrOrFile->ungetBuf, (unsigned char)strToUnget[i]);
 #endif
     }
