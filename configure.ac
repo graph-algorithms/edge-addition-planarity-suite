@@ -1,6 +1,6 @@
 # The version number in the following line must be synchronized with 
 # the project version numbering in graphLib.h 
-AC_INIT([planarity],[5.0.0.0],[jboyer@acm.org])
+AC_INIT([planarity],[5.1.0.0],[jboyer@acm.org])
 AM_INIT_AUTOMAKE([subdir-objects] [foreign])
 AC_CONFIG_MACRO_DIRS([m4])
 AC_CONFIG_SRCDIR([c/])
@@ -25,9 +25,9 @@ AC_CONFIG_SRCDIR([c/])
 # revision to zero and increment age.
 # 3. If interfaces were removed (breaks backward compatibility): increment
 # current, and set both revision and age to zero.
-LT_CURRENT=4
+LT_CURRENT=5
 LT_REVISION=0
-LT_AGE=0
+LT_AGE=1
 AC_SUBST(LT_CURRENT)
 AC_SUBST(LT_REVISION)
 AC_SUBST(LT_AGE)
@@ -57,6 +57,23 @@ AS_IF([test "x$enable_compile_warnings" != "xno"],
   [ax_enable_compile_warnings=$enable_compile_warnings
    AX_COMPILER_FLAGS_CFLAGS([WARNING_CFLAGS], [], [ dnl
        -pedantic dnl])
+   AC_SUBST([WARNING_CFLAGS])])
+
+# Build with -funsigned-char so that CI can exercise unsigned-plain-char
+# behavior (e.g. the Linux ABIs for AArch64, ARM, PowerPC, s390x) on any
+# host. Off by default; no build is affected unless the switch is given.
+# See issue #319.
+
+AC_ARG_ENABLE([unsigned-char],
+    [AS_HELP_STRING([--enable-unsigned-char],
+        [build with -funsigned-char, to test unsigned-plain-char ABIs on any host])],
+    [enable_unsigned_char=yes],
+    [enable_unsigned_char=no])
+AC_MSG_CHECKING([whether to build with -funsigned-char])
+AC_MSG_RESULT([$enable_unsigned_char])
+
+AS_IF([test "x$enable_unsigned_char" = "xyes"],
+  [AX_APPEND_COMPILE_FLAGS([-funsigned-char], [WARNING_CFLAGS])
    AC_SUBST([WARNING_CFLAGS])])
 
 AC_CONFIG_FILES([
