@@ -242,7 +242,7 @@ int outputTestAllGraphsResults(char command, char modifier, testAllStatsP stats,
 {
     int Result = OK;
 
-    char *finalSlash = strrchr(infileName, FILE_DELIMITER);
+    char const *finalSlash = strrchr(infileName, FILE_DELIMITER);
     char const *infileBasename = finalSlash ? (finalSlash + 1) : infileName;
 
     char const *headerFormat = "FILENAME=\"%s\" DURATION=\"%.3lf\"\n";
