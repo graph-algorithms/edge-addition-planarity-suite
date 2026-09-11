@@ -37,17 +37,18 @@ int runGraphTransformationTest(char const *command, char const *infileName, int 
 int runTestAllGraphsTest(char const *commandString, char const *infileName);
 int runHideRestoreTest(graphP theGraph);
 int runIdentifyContractTest(graphP theGraph);
-int runDigraphTests(void);
-int runGraphMLTests(void);
-int runDrawPlanarNonplanarWriteTest(void);
-int runReadWithExtensionAtEofTest(void);
-int runHighByteRoundTripTest(void);
-int runCapacityLimitTests(void);
 int testDirectedDFS(void);
 int testPetersenDigraph(void);
 int testDigraphTranspose(void);
+int runDigraphTests(void);
+int runDrawPlanarNonplanarWriteTest(void);
+int runReadErrorTests(void);
+int runReadWithExtensionAtEofTest(void);
+int runHighByteRoundTripTest(void);
+int runCapacityLimitTests(void);
 int runGraphMLWriteTest(char const *inputFileName, char const *expectedOutputFileName);
 int runBasicGraphMLWriteTest(void);
+int runGraphMLTests(void);
 
 /****************************************************************************
  Command Line Processor
@@ -256,6 +257,8 @@ int runQuickRegressionTests(int argc, char *argv[])
     else if (runIdentifyContractTests() != OK)
         retVal = NOTOK;
     else if (runDigraphTests() != OK)
+        retVal = NOTOK;
+    else if (runReadErrorTests() != OK)
         retVal = NOTOK;
     else if (runReadWithExtensionAtEofTest() != OK)
         retVal = NOTOK;

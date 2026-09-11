@@ -257,7 +257,8 @@ int _g6_InitReader(G6ReadIteratorP theG6ReadIterator)
 
     if ((firstChar = sf_getc(inputContainer)) == EOF)
     {
-        gp_ErrorMessage("Unable to initialize reader: .g6 infile is empty.");
+        // if inputContainer->inputErrorFlag, then sf_getc() also returns EOF
+        gp_ErrorMessage("Unexpected end of file or read error.");
         return NOTOK;
     }
     else
@@ -282,7 +283,15 @@ int _g6_InitReader(G6ReadIteratorP theG6ReadIterator)
         }
     }
 
-    firstChar = sf_getc(inputContainer);
+    // The next character may be the one that was just ungotten, or it may
+    // be a fresh new character if there was a >>graph6<< header.
+    if ((firstChar = sf_getc(inputContainer)) == EOF)
+    {
+        // if inputContainer->inputErrorFlag, then sf_getc() also returns EOF
+        gp_ErrorMessage("Unexpected end of file or read error.");
+        return NOTOK;
+    }
+
     charConfirmation = sf_ungetc(firstChar, inputContainer);
 
     if (charConfirmation != firstChar)
@@ -428,9 +437,25 @@ int _g6_DetermineOrderFromInput(strOrFileP inputContainer, int *order)
     // Since geng: n must be in the range 1..32, and since edge-addition-planarity-suite
     // processing of random graphs may only handle up to n = 100,000, we will only check
     // if 1 or 4 bytes are necessary
-    if ((graphChar = sf_getc(inputContainer)) == 126)
+
+    if ((graphChar = sf_getc(inputContainer)) == EOF)
     {
-        if ((graphChar = sf_getc(inputContainer)) == 126)
+        // if inputContainer->inputErrorFlag, then sf_getc() also returns EOF
+        gp_ErrorMessage("Unexpected end of file or read error.");
+        return NOTOK;
+    }
+
+    if (graphChar == 126)
+    {
+        // Read a second character to see what it indicates about the order of the graph
+        if ((graphChar = sf_getc(inputContainer)) == EOF)
+        {
+            // if inputContainer->inputErrorFlag, then sf_getc() also returns EOF
+            gp_ErrorMessage("Unexpected end of file or read error.");
+            return NOTOK;
+        }
+
+        if (graphChar == 126)
         {
             gp_ErrorMessage("Graphs of order n > 100000 are not supported at "
                             "this time.");
@@ -441,13 +466,25 @@ int _g6_DetermineOrderFromInput(strOrFileP inputContainer, int *order)
 
         for (int i = 2; i >= 0; i--)
         {
-            graphChar = sf_getc(inputContainer) - 63;
-            n |= graphChar << (6 * i);
+            if ((graphChar = sf_getc(inputContainer)) == EOF)
+            {
+                // if inputContainer->inputErrorFlag, then sf_getc() also returns EOF
+                gp_ErrorMessage("Unexpected end of file or read error.");
+                return NOTOK;
+            }
+
+            if (graphChar < 63 || graphChar > 126)
+            {
+                gp_ErrorMessage("Illegal character found.");
+                return NOTOK;
+            }
+
+            n |= (graphChar - 63) << (6 * i);
         }
 
         if (n > 100000)
         {
-            gp_ErrorMessage("Graph order greater than 100000 not supported.");
+            gp_ErrorMessage("Graphs of order greater than 100000 are not supported.");
             return NOTOK;
         }
     }
@@ -554,6 +591,11 @@ int g6_ReadGraph(G6ReadIteratorP theG6ReadIterator)
     }
     else
     {
+        if (inputContainer->inputErrorFlag)
+        {
+            gp_ErrorMessage("Unable to read line %d of .g6 input due to a file read error.", lineNum);
+            return NOTOK;
+        }
         theG6ReadIterator->endReached = TRUE;
     }
 
@@ -693,6 +735,7 @@ int _g6_ReadGraphFromString(graphP theGraph, char *g6EncodedString)
 int _g6_ReadGraphFromStrOrFile(graphP theGraph, strOrFileP *pInputContainer)
 {
     G6ReadIteratorP theG6ReadIterator = NULL;
+    int RetVal = OK;
 
     if (!sf_IsValidStrOrFile((*pInputContainer)))
     {
@@ -715,10 +758,11 @@ int _g6_ReadGraphFromStrOrFile(graphP theGraph, strOrFileP *pInputContainer)
         return NOTOK;
     }
 
-    if (g6_ReadGraph(theG6ReadIterator) != OK)
+    RetVal = g6_ReadGraph(theG6ReadIterator);
+    if (RetVal != OK)
         gp_ErrorMessage("Unable to read graph from .g6 read iterator.");
 
     g6_FreeReader((&theG6ReadIterator));
 
-    return OK;
+    return RetVal;
 }

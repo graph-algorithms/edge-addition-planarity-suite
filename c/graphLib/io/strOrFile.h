@@ -27,6 +27,8 @@ extern "C"
         char *fileName;
         char const *fileMode;
         int containerType;
+        // Sticky input read-error state; normal EOF does not set this flag.
+        int inputErrorFlag;
         int outputErrorFlag;
         stackP ungetBuf;
     };
@@ -55,6 +57,7 @@ extern "C"
     int sf_fputs(char const *strToWrite, strOrFileP theStrOrFile);
     int sf_WriteInteger(int intToWrite, strOrFileP theStrOrFile);
 
+    int sf_SetInputErrorFlag(strOrFileP theStrOrFile);
     int sf_SetOutputErrorFlag(strOrFileP theStrOrFile);
 
     int sf_closeFile(strOrFileP theStrOrFile);

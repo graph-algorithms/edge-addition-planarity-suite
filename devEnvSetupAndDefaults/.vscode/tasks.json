@@ -60,6 +60,7 @@
                 "-Wunused-result",
                 "-g", // Generate debug symbols
                 "${workspaceFolder}\\c\\planarityApp\\**.c",
+                "${workspaceFolder}\\c\\planarityApp\\planarity-test\\**.c",
                 "${workspaceFolder}\\c\\graphLib\\**.c",
                 "${workspaceFolder}\\c\\graphLib\\extensionSystem\\**.c",
                 "${workspaceFolder}\\c\\graphLib\\homeomorphSearch\\**.c",
@@ -137,6 +138,7 @@
                 "-Wunused-result",
                 // "-g", // Uncomment to generate debug symbols for Release build and debug with VSCode
                 "${workspaceFolder}\\c\\planarityApp\\**.c",
+                "${workspaceFolder}\\c\\planarityApp\\planarity-test\\**.c",
                 "${workspaceFolder}\\c\\graphLib\\**.c",
                 "${workspaceFolder}\\c\\graphLib\\extensionSystem\\**.c",
                 "${workspaceFolder}\\c\\graphLib\\homeomorphSearch\\**.c",
@@ -210,6 +212,7 @@
                 "-Wunused-result",
                 "-g", // Generate debug symbols
                 "${workspaceFolder}/c/planarityApp/**.c",
+                "${workspaceFolder}/c/planarityApp/planarity-test/**.c",
                 "${workspaceFolder}/c/graphLib/**.c",
                 "${workspaceFolder}/c/graphLib/extensionSystem/**.c",
                 "${workspaceFolder}/c/graphLib/homeomorphSearch/**.c",
@@ -284,6 +287,7 @@
                 "-Wunused-result",
                 "-g", // Generate debug symbols
                 "${workspaceFolder}/c/planarityApp/**.c",
+                "${workspaceFolder}/c/planarityApp/planarity-test/**.c",
                 "${workspaceFolder}/c/graphLib/**.c",
                 "${workspaceFolder}/c/graphLib/extensionSystem/**.c",
                 "${workspaceFolder}/c/graphLib/homeomorphSearch/**.c",
@@ -356,6 +360,7 @@
                 "-Wunused-result",
                 // "-g", // Uncomment to generate debug symbols for Release build and debug with VSCode
                 "${workspaceFolder}/c/planarityApp/**.c",
+                "${workspaceFolder}/c/planarityApp/planarity-test/**.c",
                 "${workspaceFolder}/c/graphLib/**.c",
                 "${workspaceFolder}/c/graphLib/extensionSystem/**.c",
                 "${workspaceFolder}/c/graphLib/homeomorphSearch/**.c",
@@ -399,6 +404,7 @@
                 "/external:W0", // Ignore warnings thrown by external headers
                 "/Fe${workspaceFolder}\\Debug\\planarity.exe",
                 "${workspaceFolder}\\c\\planarityApp\\**.c",
+                "${workspaceFolder}\\c\\planarityApp\\planarity-test\\**.c",
                 "${workspaceFolder}\\c\\graphLib\\**.c",
                 "${workspaceFolder}\\c\\graphLib\\extensionSystem\\**.c",
                 "${workspaceFolder}\\c\\graphLib\\homeomorphSearch\\**.c",
@@ -443,6 +449,7 @@
                 "/external:W0", // Ignore warnings thrown by external headers
                 "/Fe${workspaceFolder}\\AddressSanitizer\\planarity.exe",
                 "${workspaceFolder}\\c\\planarityApp\\**.c",
+                "${workspaceFolder}\\c\\planarityApp\\planarity-test\\**.c",
                 "${workspaceFolder}\\c\\graphLib\\**.c",
                 "${workspaceFolder}\\c\\graphLib\\extensionSystem\\**.c",
                 "${workspaceFolder}\\c\\graphLib\\homeomorphSearch\\**.c",
@@ -483,6 +490,7 @@
                 "/external:W0", // Ignore warnings thrown by external headers
                 "/Fe${workspaceFolder}\\Release\\planarity.exe",
                 "${workspaceFolder}\\c\\planarityApp\\**.c",
+                "${workspaceFolder}\\c\\planarityApp\\planarity-test\\**.c",
                 "${workspaceFolder}\\c\\graphLib\\**.c",
                 "${workspaceFolder}\\c\\graphLib\\extensionSystem\\**.c",
                 "${workspaceFolder}\\c\\graphLib\\homeomorphSearch\\**.c",
@@ -553,6 +561,7 @@
                 "-Wignored-qualifiers",
                 "-g", // Generate debug symbols
                 "${workspaceFolder}/c/planarityApp/**.c",
+                "${workspaceFolder}/c/planarityApp/planarity-test/**.c",
                 "${workspaceFolder}/c/graphLib/**.c",
                 "${workspaceFolder}/c/graphLib/extensionSystem/**.c",
                 "${workspaceFolder}/c/graphLib/homeomorphSearch/**.c",
@@ -625,6 +634,7 @@
                 "-Wignored-qualifiers",
                 "-g", // Generate debug symbols
                 "${workspaceFolder}/c/planarityApp/**.c",
+                "${workspaceFolder}/c/planarityApp/planarity-test/**.c",
                 "${workspaceFolder}/c/graphLib/**.c",
                 "${workspaceFolder}/c/graphLib/extensionSystem/**.c",
                 "${workspaceFolder}/c/graphLib/homeomorphSearch/**.c",
@@ -693,6 +703,7 @@
                 "-Wignored-qualifiers",
                 // "-g", // Uncomment to generate debug symbols for Release build and debug with VSCode
                 "${workspaceFolder}/c/planarityApp/**.c",
+                "${workspaceFolder}/c/planarityApp/planarity-test/**.c",
                 "${workspaceFolder}/c/graphLib/**.c",
                 "${workspaceFolder}/c/graphLib/extensionSystem/**.c",
                 "${workspaceFolder}/c/graphLib/homeomorphSearch/**.c",
