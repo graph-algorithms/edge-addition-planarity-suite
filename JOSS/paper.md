@@ -55,7 +55,7 @@ a graph may be used to represent the electrical components and wiring in a
 circuit, such as transistors and etchings on a silicon wafer. The graph of a
 circuit must be planar or planarized to eliminate short circuits.
 
-The open-source software described in this paper provides a highly-performant
+The open source software described in this paper provides a highly performant
 generalized graph library that also implements state-of-the-art algorithms for
 planarity-related problems. The generalized graph library and planarity-related
 algorithms are available to C/C++ and Python graph application developers.
