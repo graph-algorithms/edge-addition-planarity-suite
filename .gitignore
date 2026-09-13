@@ -113,3 +113,6 @@ TestSupport/results/
 TestSupport/g6_diff_finder_logs/
 TestSupport/planaritytesting/.pylintrc
 TestSupport/planaritytesting/leaksorchestrator/planarity_leaks_config.ini
+
+# Ignore JOSS paper generation artifacts
+/JOSS/jats/**
