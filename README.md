@@ -1,5 +1,7 @@
 # Edge Addition Planarity Suite
 
+[![DOI](https://joss.theoj.org/papers/10.21105/joss.11163/status.svg)](https://doi.org/10.21105/joss.11163)
+   
 The primary purpose of this repository is to provide implementations of the edge addition planar graph embedding algorithm and related algorithms, including a planar graph drawing method, an isolator for a minimal subgraph obstructing planarity in non-planar graphs, outerplanar graph embedder and obstruction isolator algorithms, and tester/isolator algorithms for subgraphs homeomorphic to _K<sub>2,3</sub>_, _K<sub>4</sub>_, and _K<sub>3,3</sub>_. The C implementations in this repository are the reference implementations of algorithms appearing in the following papers:
 
 * [Subgraph Homeomorphism via the Edge Addition Planarity Algorithm](http://dx.doi.org/10.7155/jgaa.00268)
