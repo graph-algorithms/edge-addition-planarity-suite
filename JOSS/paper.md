@@ -93,7 +93,7 @@ Python Package Index (`PyPI`) by simply running `pip install planarity`.
 Several large scientific software packages offer a graph planarity algorithm,
 which is a complex graph algorithm suitable for benchmarking graph libraries.
 Mathematica and Wolfram Alpha include planarity algorithms, but these packages
-are not meant for high performance graph algorithms, so the Library for
+are not meant for high-performance graph algorithms, so the Library for
 Efficient Data Types and Algorithms
 ([LEDA](https://leda.uni-trier.de/leda/guide/Index.html)) is significantly
 faster than they are because it is an industrial library designed for
