@@ -577,7 +577,10 @@ int _ReadGraph(graphP theGraph, strOrFileP *pInputContainer)
                         }
                     }
 
-                    if (sb_GetSize(extraData) > 0)
+                    if ((*pInputContainer)->inputErrorFlag)
+                        RetVal = NOTOK;
+
+                    if (RetVal == OK && sb_GetSize(extraData) > 0)
                         RetVal = theGraph->functions->fpReadPostprocess(theGraph, sb_GetReadString(extraData));
 
                     sb_Free(&extraData);
@@ -586,6 +589,9 @@ int _ReadGraph(graphP theGraph, strOrFileP *pInputContainer)
             }
         }
     }
+
+    if (*pInputContainer != NULL && (*pInputContainer)->inputErrorFlag)
+        RetVal = NOTOK;
 
     // This is a no-op if pInputContainer or *pInputContainer is already NULL,
     // such as in the case of G6 file processing. This cleans up for the other
