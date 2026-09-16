@@ -338,6 +338,29 @@ static int testGraphReads(void)
             gp_Free(&graph);
         }
     }
+
+    // Closing an input stream can fail after the graph itself was read.
+    // _ReadGraph() frees its container, so errno is the caller's signal.
+    {
+        TestInput input = {"N=1\n0: -1\n", 0, FALSE, TRUE};
+        strOrFileP container = NULL;
+        graphP graph = gp_New();
+        int readResult = NOTOK;
+        int closeError = 0;
+
+        if (graph == NULL || newInput(&input, &container) != OK)
+        {
+            gp_Free(&graph);
+            return NOTOK;
+        }
+        errno = 0;
+        readResult = _ReadGraph(graph, &container);
+        closeError = errno;
+        CHECK(readResult == OK);
+        CHECK(container == NULL);
+        CHECK(closeError == EIO);
+        gp_Free(&graph);
+    }
     return OK;
 }
 
@@ -392,6 +415,48 @@ static int testGraph6Reads(void)
         gp_SetQuietMode(quietModeCache);
         CHECK(readResult == (failAtEnd ? NOTOK : OK));
         CHECK(container == NULL);
+        gp_Free(&graph);
+    }
+
+    // A malformed order-5 graph6 line (one encoding byte instead of two)
+    // must fail at the public graph-reading boundary; see issue #328.
+    {
+        char truncatedGraph[] = "D?\n";
+        graphP graph = gp_New();
+        int readResult = NOTOK;
+        unsigned quietModeCache = gp_GetQuietMode();
+
+        if (graph == NULL)
+            return NOTOK;
+        gp_SetQuietMode(QUIETMODE_ALL);
+        readResult = gp_ReadFromString(graph, truncatedGraph);
+        gp_SetQuietMode(quietModeCache);
+        CHECK(readResult == NOTOK);
+        gp_Free(&graph);
+    }
+
+    // g6_FreeReader() also owns and closes the input stream. Its void return
+    // value cannot report that close failure, but errno remains available.
+    {
+        TestInput input = {"A?\n", 0, FALSE, TRUE};
+        strOrFileP container = NULL;
+        G6ReadIteratorP reader = NULL;
+        graphP graph = gp_New();
+        int closeError = 0;
+
+        if (graph == NULL || newInput(&input, &container) != OK)
+        {
+            gp_Free(&graph);
+            return NOTOK;
+        }
+        CHECK(g6_NewReader(&reader, graph) == OK);
+        CHECK(_g6_InitReaderWithStrOrFile(reader, &container) == OK);
+        CHECK(g6_ReadGraph(reader) == OK);
+        errno = 0;
+        g6_FreeReader(&reader);
+        closeError = errno;
+        CHECK(reader == NULL);
+        CHECK(closeError == EIO);
         gp_Free(&graph);
     }
 
