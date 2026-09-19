@@ -726,13 +726,14 @@ int sf_ungets(char *strToUnget, strOrFileP theStrOrFile)
 
  Order of parameters matches stdio fgets().
 
- First param is the string to populate (assumes allocated (count + 1)
- bytes), second param is the max number of characters to read, and
- third param is the pointer to the string-or-file container from which
- we wish to read count characters (or up to and including \n).
+ First param is the string to populate, second param is the size of that
+ buffer, and third param is the pointer to the string-or-file container
+ from which we wish to read, up to and including \n.
 
- Like fgets() in stdio, this function doesn't check that enough memory
- is allocated for str to contain count characters plus \0.
+ As in stdio, at most count - 1 characters are stored, followed by the
+ null terminator, whether the characters come from the pushback buffer,
+ from a file or from a string. Like fgets() in stdio, this function
+ doesn't check that count matches the size of the buffer.
 
  Like fgets() in stdio, on success the pointer to the buffer is returned.
  On failure, NULL is returned. File read errors also set inputErrorFlag,
@@ -762,7 +763,14 @@ char *sf_fgets(char *str, int count, strOrFileP theStrOrFile)
             int currChar = '\0';
             int encounteredNewline = FALSE;
 
-            charsToReadFromUngetBuf = (count > numCharsInUngetBuf) ? numCharsInUngetBuf : count;
+            // As with fgets(), at most count - 1 characters are stored, so
+            // that the null terminator written after the last one of them
+            // stays inside a buffer of count bytes. Without this bound, a
+            // pushback buffer holding at least count characters made the
+            // loop below write str[count].
+            int maxCharsToRead = (count > 0) ? (count - 1) : 0;
+
+            charsToReadFromUngetBuf = (maxCharsToRead > numCharsInUngetBuf) ? numCharsInUngetBuf : maxCharsToRead;
             for (int i = 0; i < charsToReadFromUngetBuf; i++)
             {
                 currChar = sf_getc(theStrOrFile);
@@ -783,7 +791,7 @@ char *sf_fgets(char *str, int count, strOrFileP theStrOrFile)
             }
             // N.B. If we broke out of the loop early due to \n, do not read
             // any further characters from stream
-            charsToReadFromStrOrFile = (encounteredNewline) ? 0 : ((count > numCharsInUngetBuf) ? (count - charsToReadFromUngetBuf) : 0);
+            charsToReadFromStrOrFile = (encounteredNewline) ? 0 : ((maxCharsToRead > numCharsInUngetBuf) ? (count - charsToReadFromUngetBuf) : 0);
         }
     }
 
