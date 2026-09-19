@@ -91,6 +91,30 @@ struct S6ReadIteratorStruct
  Public and package private method implementations for read iterator
  ********************************************************************/
 
+/********************************************************************
+ s6_IsSparse6Input()
+
+ Returns TRUE if the given first line of an input is sparse6 or
+ incremental sparse6 content, i.e. it starts with the optional
+ ">>sparse6<<" header, with the ':' of a whole graph, or with the ';'
+ of an incremental graph. A leading ';' is an error, since the first
+ graph of an input cannot be incremental, but it is the reader that
+ reports it, so this method accepts it as sparse6 input.
+
+ Returns FALSE for a NULL first line and for the other formats.
+ ********************************************************************/
+
+int s6_IsSparse6Input(char const *const firstLine)
+{
+    if (firstLine == NULL)
+        return FALSE;
+
+    return (firstLine[0] == ':' || firstLine[0] == ';' ||
+            strncmp(firstLine, ">>sparse6<<", strlen(">>sparse6<<")) == 0)
+               ? TRUE
+               : FALSE;
+}
+
 int s6_NewReader(S6ReadIteratorP *pS6ReadIterator, graphP theGraph)
 {
     if (pS6ReadIterator == NULL)

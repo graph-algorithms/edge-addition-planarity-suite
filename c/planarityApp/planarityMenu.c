@@ -62,7 +62,7 @@ int menu(void)
 
             gp_Message(
                 "X. Transform single graph in supported file to .g6, adjacency list, or adjacency matrix\n"
-                "T. Perform an algorithm test on all graphs in .g6 input file\n"
+                "T. Perform an algorithm test on all graphs in .g6, .s6 or .inc.s6 input file\n"
                 "H. Help message for command line version\n"
                 "R. Reconfigure options\n"
                 "Q. Quit\n");

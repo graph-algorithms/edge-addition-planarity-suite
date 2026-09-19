@@ -5,6 +5,7 @@ See the LICENSE.TXT file for licensing information.
 */
 
 #include "planarity.h"
+#include "../graphLib/io/strOrFile.h"
 
 typedef struct
 {
@@ -19,6 +20,30 @@ typedef testAllStats *testAllStatsP;
 
 int testAllGraphs(char command, char modifier, char const *const infileName, testAllStatsP stats);
 int outputTestAllGraphsResults(char command, char modifier, testAllStatsP stats, char const *const infileName, char *outfileName, char **pOutputStr);
+
+// A .g6 file is read by the graph6 read iterator and a .s6 or .inc.s6 file by
+// the sparse6 read iterator, so the loop below drives whichever one matches the
+// content of the input file through this small facade.
+typedef struct
+{
+    G6ReadIteratorP g6ReadIterator;
+    S6ReadIteratorP s6ReadIterator;
+} allGraphsReader;
+
+typedef allGraphsReader *allGraphsReaderP;
+
+// Package private initializers of the read iterators. The facade needs them
+// because the format of the input is decided from its first line, which has to
+// be read before the iterator exists. Re-opening the input by name instead
+// would read the first line twice, and an input that cannot be re-opened, such
+// as stdin or a pipe, would lose its first graph.
+extern int _g6_InitReaderWithStrOrFile(G6ReadIteratorP theG6ReadIterator, strOrFileP *pInputContainer);
+extern int _s6_InitReaderWithStrOrFile(S6ReadIteratorP theS6ReadIterator, strOrFileP *pInputContainer);
+
+static int allGraphsReaderInit(allGraphsReaderP theReader, graphP theGraph, char const *const infileName);
+static int allGraphsReaderReadGraph(allGraphsReaderP theReader);
+static int allGraphsReaderEndReached(allGraphsReaderP theReader);
+static void allGraphsReaderFree(allGraphsReaderP theReader);
 
 // #define TESTALLGRAPHS_MEMORY_TIMING_TEST
 
@@ -97,6 +122,117 @@ int TestAllGraphs(char const *const commandString, char const *const infileName,
     return Result;
 }
 
+/****************************************************************************
+ allGraphsReaderInit()
+
+ Opens the input, decides its format from its first line by the same test that
+ gp_Read() applies, and creates the matching read iterator.
+
+ The input is opened once: the first line is pushed back into the input
+ container and the container is then transferred to the iterator, so that
+ inputs which cannot be re-opened, such as stdin, are read from their first
+ byte exactly once. An input whose first line cannot be read is left to the
+ graph6 iterator, which reports the failure.
+
+ On failure the caller frees the facade with allGraphsReaderFree(), which
+ handles a partially created iterator.
+ ****************************************************************************/
+static int allGraphsReaderInit(allGraphsReaderP theReader, graphP theGraph, char const *const infileName)
+{
+    strOrFileP inputContainer = NULL;
+    char lineBuff[MAXLINE + 1];
+    int Result = OK;
+
+    if (theReader == NULL)
+        return NOTOK;
+
+    theReader->g6ReadIterator = NULL;
+    theReader->s6ReadIterator = NULL;
+
+    if ((inputContainer = sf_NewInputContainer(NULL, infileName)) == NULL)
+    {
+        gp_ErrorMessage("Unable to open \"%.*s\" for reading.",
+                        FILENAME_MAX, infileName);
+        return NOTOK;
+    }
+
+    memset(lineBuff, '\0', (MAXLINE + 1));
+
+    if (sf_fgets(lineBuff, MAXLINE, inputContainer) != NULL &&
+        sf_ungets(lineBuff, inputContainer) != OK)
+    {
+        gp_ErrorMessage("Unable to push back the first line of \"%.*s\".",
+                        FILENAME_MAX, infileName);
+        sf_Free(&inputContainer);
+        return NOTOK;
+    }
+
+    if (s6_IsSparse6Input(lineBuff))
+    {
+        if (s6_NewReader((&theReader->s6ReadIterator), theGraph) != OK ||
+            _s6_InitReaderWithStrOrFile(theReader->s6ReadIterator, (&inputContainer)) != OK)
+            Result = NOTOK;
+    }
+    else
+    {
+        if (g6_NewReader((&theReader->g6ReadIterator), theGraph) != OK ||
+            _g6_InitReaderWithStrOrFile(theReader->g6ReadIterator, (&inputContainer)) != OK)
+            Result = NOTOK;
+    }
+
+    // The iterator owns the container once it has been initialized with it, and
+    // sets this pointer to NULL, so this only frees a container that no
+    // iterator took, i.e. one that could not be created.
+    sf_Free(&inputContainer);
+
+    return Result;
+}
+
+/****************************************************************************
+ allGraphsReaderReadGraph()
+
+ Reads the next graph of the input into the graph given to
+ allGraphsReaderInit(). As with the read iterators themselves, an OK return
+ with allGraphsReaderEndReached() set means the input ended.
+ ****************************************************************************/
+static int allGraphsReaderReadGraph(allGraphsReaderP theReader)
+{
+    if (theReader == NULL)
+        return NOTOK;
+
+    return theReader->s6ReadIterator != NULL
+               ? s6_ReadGraph(theReader->s6ReadIterator)
+               : g6_ReadGraph(theReader->g6ReadIterator);
+}
+
+/****************************************************************************
+ allGraphsReaderEndReached()
+ ****************************************************************************/
+static int allGraphsReaderEndReached(allGraphsReaderP theReader)
+{
+    if (theReader == NULL)
+        return TRUE;
+
+    return theReader->s6ReadIterator != NULL
+               ? s6_EndReached(theReader->s6ReadIterator)
+               : g6_EndReached(theReader->g6ReadIterator);
+}
+
+/****************************************************************************
+ allGraphsReaderFree()
+ ****************************************************************************/
+static void allGraphsReaderFree(allGraphsReaderP theReader)
+{
+    if (theReader == NULL)
+        return;
+
+    if (theReader->s6ReadIterator != NULL)
+        s6_FreeReader((&theReader->s6ReadIterator));
+
+    if (theReader->g6ReadIterator != NULL)
+        g6_FreeReader((&theReader->g6ReadIterator));
+}
+
 int testAllGraphs(char command, char modifier, char const *const infileName, testAllStatsP stats)
 {
     int Result = OK;
@@ -107,7 +243,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
     int order = 0;
     int lineNum = 0;
 
-    G6ReadIteratorP theG6ReadIterator = NULL;
+    allGraphsReader theReader = {NULL, NULL};
 
     if (GetEmbedFlags(command, modifier, &embedFlags) != OK)
     {
@@ -123,26 +259,25 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
         return NOTOK;
     }
 
-    if (g6_NewReader((&theG6ReadIterator), origGraphRead) != OK ||
-        g6_InitReaderWithFileName(theG6ReadIterator, infileName) != OK)
+    if (allGraphsReaderInit((&theReader), origGraphRead, infileName) != OK)
     {
-        gp_ErrorMessage("Unable to allocate or initialize G6 read iterator.");
+        gp_ErrorMessage("Unable to allocate or initialize the read iterator.");
         gp_Free(&origGraphRead);
-        g6_FreeReader((&theG6ReadIterator));
+        allGraphsReaderFree((&theReader));
         stats->errorFlag = TRUE;
         return NOTOK;
     }
 
-    // The order of the graphs in the G6 source file or string was determined by
-    // g6_InitReaderWithFileName() and we obtain it to initialize the graph for
-    // embedding
+    // The order of the graphs in the source file was determined by the read
+    // iterator when it was initialized with the file, and we obtain it to
+    // initialize the graph for embedding
     order = gp_GetN(origGraphRead);
 
     if ((graphForEmbedding = gp_New()) == NULL ||
         ExtendGraph(graphForEmbedding, command) != OK)
     {
         gp_ErrorMessage("Unable allocate graph for embedding.");
-        g6_FreeReader((&theG6ReadIterator));
+        allGraphsReaderFree((&theReader));
         gp_Free(&origGraphRead);
         gp_Free(&graphForEmbedding);
         stats->errorFlag = TRUE;
@@ -152,7 +287,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
     if (gp_EnsureVertexCapacity(graphForEmbedding, order) != OK)
     {
         gp_ErrorMessage("Unable to expand graph storage for expected number of vertices.");
-        g6_FreeReader(&theG6ReadIterator);
+        allGraphsReaderFree((&theReader));
         gp_Free(&origGraphRead);
         gp_Free(&graphForEmbedding);
         stats->errorFlag = TRUE;
@@ -161,14 +296,14 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
 
     while (TRUE)
     {
-        if (g6_ReadGraph(theG6ReadIterator) != OK)
+        if (allGraphsReaderReadGraph((&theReader)) != OK)
         {
             gp_ErrorMessage("Unable to read graph on line %d.", lineNum + 1);
             Result = NOTOK;
             break;
         }
 
-        if (g6_EndReached(theG6ReadIterator))
+        if (allGraphsReaderEndReached((&theReader)))
             break;
 
         lineNum++;
@@ -231,7 +366,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
     stats->numNONEMBEDDABLE = numNONEMBEDDABLE;
     stats->errorFlag = (Result == OK) ? FALSE : TRUE;
 
-    g6_FreeReader((&theG6ReadIterator));
+    allGraphsReaderFree((&theReader));
     gp_Free(&origGraphRead);
     gp_Free(&graphForEmbedding);
 

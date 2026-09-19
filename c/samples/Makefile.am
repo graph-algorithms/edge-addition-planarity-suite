@@ -42,6 +42,7 @@ dist_samples_DATA = \
   N5-all.inc.s6 \
   N5-all.s6 \
   n8.mALL.g6 \
+  n8.mALL.inc.s6 \
   nauty_example.g6 \
   nauty_example.g6.0-based.AdjList.out.txt \
   nauty_example.g6.0-based.AdjList.out.txt.0-based.G6.out.g6 \

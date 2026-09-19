@@ -34,7 +34,7 @@ int runHideRestoreTests(void);
 int runIdentifyContractTests(void);
 int runSpecificGraphTest(char const *command, char const *infileName, int inputInMemFlag);
 int runGraphTransformationTest(char const *command, char const *infileName, int inputInMemFlag);
-int runTestAllGraphsTest(char const *commandString, char const *infileName);
+int runTestAllGraphsTest(char const *commandString, char const *infileName, char const *expectedValidationStr);
 int runHideRestoreTest(graphP theGraph);
 int runIdentifyContractTest(graphP theGraph);
 int runSparse6ReadTests(void);
@@ -1397,34 +1397,75 @@ int runTestAllGraphsTests(void)
     int retVal = OK;
 
     // Run TestAllGraphs Tests
-    if (runTestAllGraphsTest("-p", "n8.mALL.g6") != OK)
+    if (runTestAllGraphsTest("-p", "n8.mALL.g6", NULL) != OK)
     {
         gp_ErrorMessage("Planarity test on all graphs failed.");
         retVal = NOTOK;
     }
-    if (runTestAllGraphsTest("-d", "n8.mALL.g6") != OK)
+    if (runTestAllGraphsTest("-d", "n8.mALL.g6", NULL) != OK)
     {
         gp_ErrorMessage("Planar graph drawing test on all graphs failed.");
         retVal = NOTOK;
     }
-    if (runTestAllGraphsTest("-o", "n8.mALL.g6") != OK)
+    if (runTestAllGraphsTest("-o", "n8.mALL.g6", NULL) != OK)
     {
         gp_ErrorMessage("Outerplanarity test on all graphs failed.");
         retVal = NOTOK;
     }
-    if (runTestAllGraphsTest("-2", "n8.mALL.g6") != OK)
+    if (runTestAllGraphsTest("-2", "n8.mALL.g6", NULL) != OK)
     {
         gp_ErrorMessage("K2,3 homeomorph search test on all graphs failed.");
         retVal = NOTOK;
     }
-    if (runTestAllGraphsTest("-3", "n8.mALL.g6") != OK)
+    if (runTestAllGraphsTest("-3", "n8.mALL.g6", NULL) != OK)
     {
         gp_ErrorMessage("K3,3 homeomorph search test on all graphs failed.");
         retVal = NOTOK;
     }
-    if (runTestAllGraphsTest("-4", "n8.mALL.g6") != OK)
+    if (runTestAllGraphsTest("-4", "n8.mALL.g6", NULL) != OK)
     {
         gp_ErrorMessage("K4 homeomorph search test on all graphs failed.");
+        retVal = NOTOK;
+    }
+
+    // The same graphs in incremental sparse6 format must give the same results,
+    // which exercises the sparse6 read iterator on every algorithm, including
+    // planar graph drawing, which requires edge storage without holes.
+    if (runTestAllGraphsTest("-p", "n8.mALL.inc.s6", NULL) != OK)
+    {
+        gp_ErrorMessage("Planarity test on all graphs in incremental sparse6 failed.");
+        retVal = NOTOK;
+    }
+    if (runTestAllGraphsTest("-d", "n8.mALL.inc.s6", NULL) != OK)
+    {
+        gp_ErrorMessage("Planar graph drawing test on all graphs in incremental sparse6 failed.");
+        retVal = NOTOK;
+    }
+    if (runTestAllGraphsTest("-o", "n8.mALL.inc.s6", NULL) != OK)
+    {
+        gp_ErrorMessage("Outerplanarity test on all graphs in incremental sparse6 failed.");
+        retVal = NOTOK;
+    }
+    if (runTestAllGraphsTest("-2", "n8.mALL.inc.s6", NULL) != OK)
+    {
+        gp_ErrorMessage("K2,3 homeomorph search test on all graphs in incremental sparse6 failed.");
+        retVal = NOTOK;
+    }
+    if (runTestAllGraphsTest("-3", "n8.mALL.inc.s6", NULL) != OK)
+    {
+        gp_ErrorMessage("K3,3 homeomorph search test on all graphs in incremental sparse6 failed.");
+        retVal = NOTOK;
+    }
+    if (runTestAllGraphsTest("-4", "n8.mALL.inc.s6", NULL) != OK)
+    {
+        gp_ErrorMessage("K4 homeomorph search test on all graphs in incremental sparse6 failed.");
+        retVal = NOTOK;
+    }
+
+    // Plain sparse6 input, where every line is a whole graph
+    if (runTestAllGraphsTest("-p", "N5-all.s6", "-p 34 33 1 SUCCESS") != OK)
+    {
+        gp_ErrorMessage("Planarity test on all graphs in sparse6 failed.");
         retVal = NOTOK;
     }
 
@@ -1790,7 +1831,7 @@ int runIdentifyContractTest(graphP theGraph)
     return Result;
 }
 
-int runTestAllGraphsTest(char const *commandString, char const *infileName)
+int runTestAllGraphsTest(char const *commandString, char const *infileName, char const *expectedValidationStr)
 {
     char *outputStr = NULL;
     int Result = OK;
@@ -1805,7 +1846,11 @@ int runTestAllGraphsTest(char const *commandString, char const *infileName)
 
     Result = TestAllGraphs(commandString, infileName, NULL, &outputStr);
 
-    if (Result == OK)
+    if (Result == OK && expectedValidationStr != NULL)
+    {
+        Result = strstr(outputStr, expectedValidationStr) ? OK : NOTOK;
+    }
+    else if (Result == OK)
     {
         const char *planarityValidationStr = "-p 12346 6966 5380 SUCCESS";
         const char *drawPlanarValidationStr = "-d 12346 6966 5380 SUCCESS";
