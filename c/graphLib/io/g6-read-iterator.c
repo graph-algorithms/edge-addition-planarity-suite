@@ -63,6 +63,40 @@ struct G6ReadIteratorStruct
  Public and package private method implementations for read iterator
  ********************************************************************/
 
+/********************************************************************
+ g6_IsGraph6Input()
+
+ Returns TRUE if the given first line of an input can be graph6
+ content, i.e. it starts with the optional ">>graph6<<" header or with
+ a byte in the range 63 to 126, which is how graph6 encodes the order
+ of the first graph.
+
+ Unlike sparse6, graph6 has no character that marks a line as its own:
+ the test accepts a first line that a graph6 reader could begin to
+ read, and the reader reports the lines it cannot. Returns FALSE for a
+ NULL or empty first line, and for the other formats, whose first
+ characters lie outside that range or are the ':', ';' and '&' that
+ introduce sparse6, incremental sparse6 and digraph6.
+ ********************************************************************/
+
+int g6_IsGraph6Input(char const *const firstLine)
+{
+    int firstChar = '\0';
+
+    if (firstLine == NULL)
+        return FALSE;
+
+    if (strncmp(firstLine, ">>graph6<<", strlen(">>graph6<<")) == 0)
+        return TRUE;
+
+    firstChar = (unsigned char)firstLine[0];
+
+    if (firstChar == ':' || firstChar == ';' || firstChar == '&')
+        return FALSE;
+
+    return (firstChar >= 63 && firstChar <= 126) ? TRUE : FALSE;
+}
+
 int g6_NewReader(G6ReadIteratorP *pG6ReadIterator, graphP theGraph)
 {
     int exitCode = OK;

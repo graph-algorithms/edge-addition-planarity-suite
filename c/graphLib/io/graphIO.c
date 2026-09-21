@@ -26,6 +26,7 @@ extern int _g6_ReadGraphFromStrOrFile(graphP theGraph, strOrFileP *pG6InputConta
 extern int _g6_WriteGraphToStrOrFile(graphP theGraph, strOrFileP *pOutputContainer);
 extern int _s6_ReadGraphFromStrOrFile(graphP theGraph, strOrFileP *pS6InputContainer);
 extern int s6_IsSparse6Input(char const *const firstLine);
+extern int g6_IsGraph6Input(char const *const firstLine);
 extern int _WriteGraphMLGraph(graphP theGraph, strOrFileP outputContainer);
 
 /* Private functions (exported to system) */
@@ -549,13 +550,21 @@ int _ReadGraph(graphP theGraph, strOrFileP *pInputContainer)
         // read iterator, so (*pInputContainer) is NULL after this call.
         RetVal = _s6_ReadGraphFromStrOrFile(theGraph, pInputContainer);
     }
-    else
+    else if (g6_IsGraph6Input(lineBuff))
     {
         // N.B. Unlike the other _Read functions, we are relinquishing
         // ownership of inputContainer to the G6ReadIterator, which
         // calls sf_Free() when ending iteration. This will mean that
         // (*pInputContainer) is NULL after we return from this call.
         RetVal = _g6_ReadGraphFromStrOrFile(theGraph, pInputContainer);
+    }
+    else
+    {
+        // The first line matches none of the formats above, where the
+        // graph6 reader used to be given the input and report it.
+        gp_ErrorMessage("The first line of the input is in none of the "
+                        "supported formats.");
+        RetVal = NOTOK;
     }
 
     // The possibility of "extra data" is not allowed for .g6 format:
