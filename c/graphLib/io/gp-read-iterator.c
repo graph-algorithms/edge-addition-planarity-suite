@@ -57,6 +57,13 @@ int gp_NewReader(GPReadIteratorP *pGPReadIterator, graphP theGraph)
         return NOTOK;
     }
 
+    if ((*pGPReadIterator) != NULL)
+    {
+        gp_ErrorMessage("The read iterator is not NULL and therefore can't be "
+                        "allocated.");
+        return NOTOK;
+    }
+
     if (theGraph == NULL)
     {
         gp_ErrorMessage("Invalid parameter: theGraph must be non-NULL.");

@@ -855,6 +855,9 @@ int runGeneralReadIteratorTests(void)
         // digraph6, GraphML, and a line whose first byte is below the range
         {"&AG", FALSE, FALSE},
         {"<graphml>", FALSE, FALSE},
+        // The byte after the range, and one with the high bit set
+        {"\x7f", FALSE, FALSE},
+        {"\xff", FALSE, FALSE},
         {"\n", FALSE, FALSE},
         {"", FALSE, FALSE},
         {NULL, FALSE, FALSE},
@@ -914,15 +917,33 @@ int runGeneralReadIteratorTests(void)
                             acceptCases[i][1]);
             Result = NOTOK;
         }
-        // A reader carries one input, so a second initialization is refused
+        // A reader carries one input, so a second initialization is refused,
+        // and refusing it leaves the reader reading the input it has
         else
         {
+            GPReadIteratorP theSameReadIterator = theReadIterator;
+
             gp_SetQuietMode(QUIETMODE_ALL);
 
             if (gp_InitReaderWithString(theReadIterator, inputStr) == OK)
             {
                 gp_SetQuietMode(origQuietMode);
                 gp_ErrorMessage("Reader of accept case %d was initialized twice.", (int)i);
+                Result = NOTOK;
+            }
+            // Allocating over an existing reader would lose it
+            else if (gp_NewReader((&theSameReadIterator), theGraph) == OK)
+            {
+                gp_SetQuietMode(origQuietMode);
+                gp_ErrorMessage("Reader of accept case %d was allocated over.", (int)i);
+                Result = NOTOK;
+            }
+            else if (gp_ReadGraph(theReadIterator) != OK)
+            {
+                gp_SetQuietMode(origQuietMode);
+                gp_ErrorMessage("Reader of accept case %d stopped reading after "
+                                "the refusals.",
+                                (int)i);
                 Result = NOTOK;
             }
 
@@ -1032,6 +1053,34 @@ int runGeneralReadIteratorTests(void)
                                 fileCases[i][0], actualEncoding == NULL ? "" : actualEncoding,
                                 fileCases[i][1]);
                 Result = NOTOK;
+            }
+
+            else
+            {
+                // The samples hold every graph of order 5, and a reader that
+                // never advances or never ends would not count them
+                int numGraphsRead = 1;
+
+                while (Result == OK)
+                {
+                    if (gp_ReadGraph(theReadIterator) != OK)
+                    {
+                        gp_ErrorMessage("Unable to read graph %d of \"%s\".",
+                                        numGraphsRead + 1, fileCases[i][0]);
+                        Result = NOTOK;
+                    }
+                    else if (gp_EndReached(theReadIterator))
+                        break;
+                    else
+                        numGraphsRead++;
+                }
+
+                if (Result == OK && numGraphsRead != 34)
+                {
+                    gp_ErrorMessage("Read %d graphs of \"%s\" rather than 34.",
+                                    numGraphsRead, fileCases[i][0]);
+                    Result = NOTOK;
+                }
             }
 
             if (actualEncoding != NULL)
