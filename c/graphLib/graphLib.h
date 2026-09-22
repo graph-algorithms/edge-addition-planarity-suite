@@ -27,6 +27,7 @@ extern "C"
 // Graph I/O public API methods and definitions
 #include "io/graphIO.h"
 #include "io/g6-read-iterator.h"
+#include "io/gp-read-iterator.h"
 #include "io/g6-write-iterator.h"
 #include "io/s6-read-iterator.h"
 

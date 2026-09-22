@@ -19,6 +19,8 @@ extern "C"
     typedef struct S6ReadIteratorStruct S6ReadIteratorStruct;
     typedef S6ReadIteratorStruct *S6ReadIteratorP;
 
+    int s6_IsSparse6Input(char const *const firstLine);
+
     int s6_NewReader(S6ReadIteratorP *pS6ReadIterator, graphP theGraph);
 
     int s6_InitReaderWithString(S6ReadIteratorP theS6ReadIterator, char *inputString);

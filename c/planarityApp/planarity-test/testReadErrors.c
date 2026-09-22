@@ -169,6 +169,31 @@ static int testLineReads(void)
     CHECK(sf_fgets(buffer, sizeof(buffer), container) == NULL);
     CHECK(container->inputErrorFlag == FALSE);
     sf_Free(&container);
+
+    // A pushback buffer holding at least as many characters as the caller's
+    // buffer must still leave room for the null terminator: the guard byte
+    // after the requested count stays as it was, and the string is terminated.
+    {
+        char small[8];
+        char pushedLongLine[] = "0123456789abcdef";
+        int smallCount = (int)(sizeof(small) - 1);
+
+        input.data = "line\n";
+        input.position = 0;
+        input.failAtEnd = FALSE;
+        if (newInput(&input, &container) != OK)
+            return NOTOK;
+
+        memset(small, 'x', sizeof(small));
+        CHECK(sf_ungets(pushedLongLine, container) == OK);
+        CHECK(sf_fgets(small, smallCount, container) == small);
+        CHECK(small[smallCount - 1] == '\0');
+        CHECK(small[smallCount] == 'x');
+        CHECK(strlen(small) == (size_t)(smallCount - 1));
+        CHECK(strncmp(small, pushedLongLine, (size_t)(smallCount - 1)) == 0);
+        sf_Free(&container);
+    }
+
     return OK;
 }
 

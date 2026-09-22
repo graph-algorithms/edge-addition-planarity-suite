@@ -19,6 +19,8 @@ extern "C"
     typedef struct G6ReadIteratorStruct G6ReadIteratorStruct;
     typedef G6ReadIteratorStruct *G6ReadIteratorP;
 
+    int g6_IsGraph6Input(char const *const firstLine);
+
     int g6_NewReader(G6ReadIteratorP *pG6ReadIterator, graphP theGraph);
 
     int g6_InitReaderWithString(G6ReadIteratorP theG6ReadIterator, char *inputString);
