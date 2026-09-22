@@ -100,10 +100,10 @@ int _gp_IsReaderInitialized(GPReadIteratorP theGPReadIterator)
  ********************************************************************/
 int _gp_SetFileType(GPReadIteratorP theGPReadIterator, char const *const firstLine)
 {
-    if (s6_IsSparse6Input(firstLine))
-        theGPReadIterator->fileType = GP_FILE_TYPE_S6;
-    else if (g6_IsGraph6Input(firstLine))
+    if (g6_IsGraph6Input(firstLine))
         theGPReadIterator->fileType = GP_FILE_TYPE_G6;
+    else if (s6_IsSparse6Input(firstLine))
+        theGPReadIterator->fileType = GP_FILE_TYPE_S6;
     else
     {
         gp_ErrorMessage("The input is in none of the formats that contain "
@@ -157,6 +157,8 @@ void _gp_FreeChildReader(GPReadIteratorP theGPReadIterator)
 
 int gp_InitReaderWithString(GPReadIteratorP theGPReadIterator, char *inputString)
 {
+    int Result = OK;
+
     if (theGPReadIterator == NULL)
     {
         gp_ErrorMessage("Invalid parameter: theGPReadIterator must be non-NULL.");
@@ -186,9 +188,22 @@ int gp_InitReaderWithString(GPReadIteratorP theGPReadIterator, char *inputString
         return NOTOK;
     }
 
-    if ((theGPReadIterator->fileType == GP_FILE_TYPE_S6
-             ? s6_InitReaderWithString(theGPReadIterator->s6ReadIterator, inputString)
-             : g6_InitReaderWithString(theGPReadIterator->g6ReadIterator, inputString)) != OK)
+    switch (theGPReadIterator->fileType)
+    {
+    case GP_FILE_TYPE_G6:
+        Result = g6_InitReaderWithString(theGPReadIterator->g6ReadIterator, inputString);
+        break;
+
+    case GP_FILE_TYPE_S6:
+        Result = s6_InitReaderWithString(theGPReadIterator->s6ReadIterator, inputString);
+        break;
+
+    default:
+        Result = NOTOK;
+        break;
+    }
+
+    if (Result != OK)
     {
         _gp_FreeChildReader(theGPReadIterator);
         return NOTOK;
@@ -251,9 +266,20 @@ int gp_InitReaderWithFileName(GPReadIteratorP theGPReadIterator, char const *con
         return NOTOK;
     }
 
-    Result = (theGPReadIterator->fileType == GP_FILE_TYPE_S6)
-                 ? _s6_InitReaderWithStrOrFile(theGPReadIterator->s6ReadIterator, (&inputContainer))
-                 : _g6_InitReaderWithStrOrFile(theGPReadIterator->g6ReadIterator, (&inputContainer));
+    switch (theGPReadIterator->fileType)
+    {
+    case GP_FILE_TYPE_G6:
+        Result = _g6_InitReaderWithStrOrFile(theGPReadIterator->g6ReadIterator, (&inputContainer));
+        break;
+
+    case GP_FILE_TYPE_S6:
+        Result = _s6_InitReaderWithStrOrFile(theGPReadIterator->s6ReadIterator, (&inputContainer));
+        break;
+
+    default:
+        Result = NOTOK;
+        break;
+    }
 
     if (Result != OK)
     {

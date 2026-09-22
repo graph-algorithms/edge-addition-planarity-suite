@@ -821,14 +821,18 @@ int runGeneralReadIteratorTests(void)
         "&AG\n",
         // GraphML, whose first character is below the graph6 range
         "<graphml>\n",
+        // An adjacency list, which gp_Read() recognizes by its "N=" but a
+        // file of graphs cannot contain: its first byte is in the graph6
+        // range and its second is not
+        "N=3\n1: 2 3 0\n2: 1 0\n3: 1 0\n",
     };
 
-    // graph6 marks its lines with nothing but the order, so any first byte in
-    // its range begins what could be a graph6 line: an adjacency list, which
-    // gp_Read() recognizes by its "N=" but a file of graphs cannot contain, is
-    // taken for graph6 and then fails on the content of the line.
+    // graph6 marks its lines with nothing but the order, so a first line that
+    // begins like graph6 is handed to the graph6 reader, which then fails on
+    // the content of the line: here the order says 5 vertices but the line
+    // ends before their edges do.
     char const *readFailCases[] = {
-        "N=3\n1: 2 3 0\n2: 1 0\n3: 1 0\n",
+        "D?\n",
     };
 
     char const *g6Header = ">>graph6<<";
@@ -849,12 +853,16 @@ int runGeneralReadIteratorTests(void)
         {">>graph6<<D?{", FALSE, TRUE},
         {"D?{", FALSE, TRUE},
         // The order byte spans 63 to 126, and 126 introduces the longer
-        // order encodings
+        // order encodings; a graph of order 0 or 1 is its order byte alone,
+        // with or without the line terminator sf_fgets() leaves on it
         {"?", FALSE, TRUE},
+        {"@\n", FALSE, TRUE},
         {"~~~~", FALSE, TRUE},
         // digraph6, GraphML, and a line whose first byte is below the range
         {"&AG", FALSE, FALSE},
         {"<graphml>", FALSE, FALSE},
+        // An adjacency list: the first byte is in the range, the second is not
+        {"N=3", FALSE, FALSE},
         // The byte after the range, and one with the high bit set
         {"\x7f", FALSE, FALSE},
         {"\xff", FALSE, FALSE},

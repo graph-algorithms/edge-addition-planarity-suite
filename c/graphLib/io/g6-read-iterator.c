@@ -69,19 +69,24 @@ struct G6ReadIteratorStruct
  Returns TRUE if the given first line of an input can be graph6
  content, i.e. it starts with the optional ">>graph6<<" header or with
  a byte in the range 63 to 126, which is how graph6 encodes the order
- of the first graph.
+ of the first graph, followed by another byte in that range or by the
+ end of the line.
 
  Unlike sparse6, graph6 has no character that marks a line as its own:
  the test accepts a first line that a graph6 reader could begin to
  read, and the reader reports the lines it cannot. Returns FALSE for a
  NULL or empty first line, and for the other formats, whose first
  characters lie outside that range or are the ':', ';' and '&' that
- introduce sparse6, incremental sparse6 and digraph6.
+ introduce sparse6, incremental sparse6 and digraph6. The second byte
+ rejects the adjacency list format, whose "N=" begins in the range but
+ leaves it at once, while the line of a graph of order 0 or 1, which
+ is its order byte alone, is still accepted.
  ********************************************************************/
 
 int g6_IsGraph6Input(char const *const firstLine)
 {
     int firstChar = '\0';
+    int secondChar = '\0';
 
     if (firstLine == NULL)
         return FALSE;
@@ -94,7 +99,15 @@ int g6_IsGraph6Input(char const *const firstLine)
     if (firstChar == ':' || firstChar == ';' || firstChar == '&')
         return FALSE;
 
-    return (firstChar >= 63 && firstChar <= 126) ? TRUE : FALSE;
+    if (firstChar < 63 || firstChar > 126)
+        return FALSE;
+
+    secondChar = (unsigned char)firstLine[1];
+
+    if (secondChar == '\0' || secondChar == '\n' || secondChar == '\r')
+        return TRUE;
+
+    return (secondChar >= 63 && secondChar <= 126) ? TRUE : FALSE;
 }
 
 int g6_NewReader(G6ReadIteratorP *pG6ReadIterator, graphP theGraph)
