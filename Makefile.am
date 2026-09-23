@@ -32,6 +32,7 @@ libplanarity_la_SOURCES = \
 	c/graphLib/io/gp-read-iterator.c \
 	c/graphLib/io/g6-write-iterator.c \
 	c/graphLib/io/s6-read-iterator.c \
+	c/graphLib/io/graphML-reader.c \
 	c/graphLib/io/graphML-writer.c \
 	c/graphLib/io/graphIO.c \
 	c/graphLib/io/strbuf.c \
