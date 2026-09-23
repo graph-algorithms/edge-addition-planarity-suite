@@ -44,6 +44,12 @@ int runSparse6AcceptTest(char const *s6Str, char const *expectedG6Line);
 int runSparse6AcceptEdgesTest(char const *s6Str, int order, int const edges[][2], int numEdges);
 int runSparse6RejectTest(char const *s6Str);
 char *copySparse6TestString(char const *s6Str);
+int runSparse6WriteTests(void);
+int runSparse6WriteLineTest(char const *g6Str, char const *expectedLine);
+int runSparse6WriteRoundTripTest(char const *g6FileName, char const *s6FileName, int incremental);
+int runSparse6WriteContractTests(void);
+int runCompactEdgeStorageTests(void);
+int compareSparse6Output(char const *ours, char const *expected, char const *what);
 int testDirectedDFS(void);
 int testPetersenDigraph(void);
 int testDigraphTranspose(void);
@@ -276,6 +282,8 @@ int runQuickRegressionTests(int argc, char *argv[])
     else if (runSparse6ReadTests() != OK)
         retVal = NOTOK;
     else if (runGeneralReadIteratorTests() != OK)
+        retVal = NOTOK;
+    else if (runSparse6WriteTests() != OK)
         retVal = NOTOK;
     else if (runGraphMLTests() != OK)
         retVal = NOTOK;
@@ -1103,6 +1111,790 @@ int runGeneralReadIteratorTests(void)
     }
 
     gp_Message(" ");
+
+    return Result;
+}
+
+/****************************************************************************
+ compareSparse6Output()
+
+ Compares the output of the sparse6 writer, which begins with the header,
+ with the expected lines, which may or may not, and reports the first line
+ that differs. Returns OK when every line matches, NOTOK otherwise.
+ ****************************************************************************/
+
+int compareSparse6Output(char const *ours, char const *expected, char const *what)
+{
+    char const *s6Header = ">>sparse6<<";
+    char const *p = ours;
+    char const *q = expected;
+    int lineNum = 1;
+
+    if (ours == NULL || expected == NULL)
+    {
+        gp_ErrorMessage("No sparse6 output to compare for %s.", what);
+        return NOTOK;
+    }
+
+    if (strncmp(p, s6Header, strlen(s6Header)) != 0)
+    {
+        gp_ErrorMessage("The sparse6 output for %s does not begin with the header.", what);
+        return NOTOK;
+    }
+    p += strlen(s6Header);
+
+    if (strncmp(q, s6Header, strlen(s6Header)) == 0)
+        q += strlen(s6Header);
+
+    while (*p != '\0' || *q != '\0')
+    {
+        size_t ourLen = strcspn(p, "\r\n");
+        size_t expLen = strcspn(q, "\r\n");
+
+        if (ourLen != expLen || strncmp(p, q, ourLen) != 0)
+        {
+            gp_ErrorMessage("Line %d of the sparse6 output for %s is \"%.*s\" "
+                            "rather than \"%.*s\".",
+                            lineNum, what, (int)ourLen, p, (int)expLen, q);
+            return NOTOK;
+        }
+
+        p += ourLen;
+        q += expLen;
+        while (*p == '\r' || *p == '\n')
+            p++;
+        while (*q == '\r' || *q == '\n')
+            q++;
+        lineNum++;
+    }
+
+    return OK;
+}
+
+/****************************************************************************
+ runSparse6WriteLineTest()
+
+ Reads one graph from the graph6 string and checks that the sparse6 writer
+ produces exactly the expected line for it, which is the line nauty writes.
+ ****************************************************************************/
+
+int runSparse6WriteLineTest(char const *g6Str, char const *expectedLine)
+{
+    int Result = OK;
+    graphP theGraph = NULL;
+    char *inputStr = copySparse6TestString(g6Str);
+    char *outputStr = NULL;
+    char expected[MAXLINE + 1];
+
+    if (inputStr == NULL)
+        return NOTOK;
+
+    if ((theGraph = gp_New()) == NULL ||
+        gp_ReadFromString(theGraph, inputStr) != OK)
+    {
+        gp_ErrorMessage("Unable to read the graph6 line \"%s\".", g6Str);
+        Result = NOTOK;
+    }
+    else if (gp_WriteToString(theGraph, &outputStr, WRITE_SPARSE6) != OK)
+    {
+        gp_ErrorMessage("Unable to write the graph of \"%s\" as sparse6.", g6Str);
+        Result = NOTOK;
+    }
+    else
+    {
+        snprintf(expected, sizeof(expected), "%s\n", expectedLine);
+        Result = compareSparse6Output(outputStr, expected, g6Str);
+    }
+
+    if (outputStr != NULL)
+        free(outputStr);
+    gp_Free(&theGraph);
+    free(inputStr);
+
+    return Result;
+}
+
+/****************************************************************************
+ runSparse6WriteRoundTripTest()
+
+ Reads every graph of the graph6 file and writes it with the sparse6 writer,
+ as a whole graph per line, or, when incremental is set, as a first whole
+ graph followed by the stored symmetric difference from each graph to the
+ next, and compares the output with the sparse6 file, which nauty wrote from
+ the same graphs, byte for byte. In the incremental case it also checks that
+ applying each written batch leaves the writer's graph equal to the graph
+ read, with no holes in its edge storage.
+ ****************************************************************************/
+
+int runSparse6WriteRoundTripTest(char const *g6FileName, char const *s6FileName, int incremental)
+{
+    int Result = OK;
+    graphP theGraph = NULL;
+    graphP writerGraph = NULL;
+    G6ReadIteratorP theReader = NULL;
+    S6WriteIteratorP theWriter = NULL;
+    char *expected = ReadTextFileIntoString(s6FileName);
+    char *outputStr = NULL;
+    int numGraphs = 0;
+
+    if (expected == NULL)
+    {
+        gp_ErrorMessage("Unable to read \"%s\".", s6FileName);
+        return NOTOK;
+    }
+
+    if ((theGraph = gp_New()) == NULL ||
+        g6_NewReader(&theReader, theGraph) != OK ||
+        g6_InitReaderWithFileName(theReader, g6FileName) != OK)
+    {
+        gp_ErrorMessage("Unable to open \"%s\" for the sparse6 write test.", g6FileName);
+        Result = NOTOK;
+    }
+
+    while (Result == OK)
+    {
+        if (g6_ReadGraph(theReader) != OK)
+        {
+            gp_ErrorMessage("Unable to read graph %d of \"%s\".", numGraphs + 1, g6FileName);
+            Result = NOTOK;
+            break;
+        }
+
+        if (g6_EndReached(theReader))
+            break;
+
+        numGraphs++;
+
+        if (!incremental)
+        {
+            // Each graph is written by its own writer, so the output has one
+            // header and one line per graph, compared as we go
+            char *lineStr = NULL;
+
+            if (gp_WriteToString(theGraph, &lineStr, WRITE_SPARSE6) != OK)
+            {
+                gp_ErrorMessage("Unable to write graph %d of \"%s\".", numGraphs, g6FileName);
+                Result = NOTOK;
+            }
+            else
+            {
+                // Advance the expectation one line for each graph
+                size_t expLen = strcspn(expected, "\r\n");
+                char expLine[MAXLINE + 1];
+
+                snprintf(expLine, sizeof(expLine), "%.*s\n", (int)expLen, expected);
+                Result = compareSparse6Output(lineStr, expLine, g6FileName);
+                memmove(expected, expected + expLen, strlen(expected + expLen) + 1);
+                while (*expected == '\r' || *expected == '\n')
+                    memmove(expected, expected + 1, strlen(expected));
+            }
+
+            if (lineStr != NULL)
+                free(lineStr);
+
+            continue;
+        }
+
+        if (writerGraph == NULL)
+        {
+            // The first graph is written whole, from a copy the writer owns
+            if ((writerGraph = gp_New()) == NULL ||
+                gp_EnsureVertexCapacity(writerGraph, gp_GetN(theGraph)) != OK ||
+                gp_CopyGraph(writerGraph, theGraph) != OK ||
+                s6_NewWriter(&theWriter, writerGraph) != OK ||
+                s6_InitWriterWithString(theWriter, &outputStr) != OK ||
+                s6_WriteGraph(theWriter) != OK)
+            {
+                gp_ErrorMessage("Unable to write the first graph of \"%s\".", g6FileName);
+                Result = NOTOK;
+            }
+
+            continue;
+        }
+
+        // Store the symmetric difference: the edges of the writer's graph
+        // that the graph read lacks are deletions, the others are additions
+        for (int e = gp_LowerBoundEdges(writerGraph); Result == OK && e < gp_UpperBoundEdges(writerGraph); e += 2)
+        {
+            if (gp_EdgeInUse(writerGraph, e))
+            {
+                int u = gp_GetNeighbor(writerGraph, gp_GetTwin(writerGraph, e));
+                int v = gp_GetNeighbor(writerGraph, e);
+
+                if (!gp_IsEdge(theGraph, gp_FindEdge(theGraph, u, v)) &&
+                    s6_StoreGraphChange(theWriter, e, NIL, NIL) != OK)
+                {
+                    gp_ErrorMessage("Unable to store a deletion for graph %d of \"%s\".", numGraphs, g6FileName);
+                    Result = NOTOK;
+                }
+            }
+        }
+
+        for (int e = gp_LowerBoundEdges(theGraph); Result == OK && e < gp_UpperBoundEdges(theGraph); e += 2)
+        {
+            if (gp_EdgeInUse(theGraph, e))
+            {
+                int u = gp_GetNeighbor(theGraph, gp_GetTwin(theGraph, e));
+                int v = gp_GetNeighbor(theGraph, e);
+
+                if (!gp_IsEdge(writerGraph, gp_FindEdge(writerGraph, u, v)) &&
+                    s6_StoreGraphChange(theWriter, NIL, u, v) != OK)
+                {
+                    gp_ErrorMessage("Unable to store an addition for graph %d of \"%s\".", numGraphs, g6FileName);
+                    Result = NOTOK;
+                }
+            }
+        }
+
+        if (Result == OK && s6_WriteGraph(theWriter) != OK)
+        {
+            gp_ErrorMessage("Unable to write the changes for graph %d of \"%s\".", numGraphs, g6FileName);
+            Result = NOTOK;
+        }
+
+        // Applying the batch must leave the writer's graph equal to the graph
+        // read, and dense
+        if (Result == OK)
+        {
+            char *ourG6 = NULL, *readG6 = NULL;
+
+            if (gp_WriteToString(writerGraph, &ourG6, WRITE_G6) != OK ||
+                gp_WriteToString(theGraph, &readG6, WRITE_G6) != OK ||
+                strcmp(ourG6, readG6) != 0)
+            {
+                gp_ErrorMessage("After graph %d of \"%s\" the writer's graph is \"%s\" "
+                                "rather than \"%s\".",
+                                numGraphs, g6FileName, ourG6 == NULL ? "" : ourG6,
+                                readG6 == NULL ? "" : readG6);
+                Result = NOTOK;
+            }
+            else if (writerGraph->numEdgeHoles != 0)
+            {
+                gp_ErrorMessage("After graph %d of \"%s\" the writer's graph has "
+                                "%d edge holes.",
+                                numGraphs, g6FileName, writerGraph->numEdgeHoles);
+                Result = NOTOK;
+            }
+
+            if (ourG6 != NULL)
+                free(ourG6);
+            if (readG6 != NULL)
+                free(readG6);
+        }
+    }
+
+    if (incremental)
+    {
+        // The string is handed over when the writer is freed
+        s6_FreeWriter(&theWriter);
+
+        if (Result == OK)
+            Result = compareSparse6Output(outputStr, expected, g6FileName);
+    }
+    else if (Result == OK && strlen(expected) != 0)
+    {
+        gp_ErrorMessage("\"%s\" has more lines than \"%s\" has graphs.", s6FileName, g6FileName);
+        Result = NOTOK;
+    }
+
+    if (Result == OK)
+        gp_Message("Sparse6 %s write of \"%s\" matched \"%s\" on all %d graphs.",
+                   incremental ? "incremental" : "whole-graph", g6FileName, s6FileName, numGraphs);
+
+    if (outputStr != NULL)
+        free(outputStr);
+    g6_FreeReader(&theReader);
+    gp_Free(&theGraph);
+    gp_Free(&writerGraph);
+    free(expected);
+
+    return Result;
+}
+
+/****************************************************************************
+ runSparse6WriteContractTests()
+
+ Exercises the refusals of the writer: nothing can be stored before the
+ first whole graph is written; a deletion must name an edge in use and an
+ addition a pair of real, distinct vertices with no edge between them; a
+ pair stored twice in one batch is refused; a batch is refused, and
+ discarded, once the graph has been modified directly, after which a whole
+ write and then a batch succeed; a graph with hidden edges and a digraph
+ are refused; a writer is initialized once. Each refusal must leave the
+ writer able to write.
+ ****************************************************************************/
+
+int runSparse6WriteContractTests(void)
+{
+    int Result = OK;
+    unsigned origQuietMode = gp_GetQuietMode();
+    graphP theGraph = NULL;
+    S6WriteIteratorP theWriter = NULL;
+    char *outputStr = NULL;
+    int lower = 0;
+    int eFirst = NIL;
+    // The path 0-1-2-3-4 is written whole, then {0, 1} is deleted and
+    // {0, 4} added in one batch, then {3, 4} is deleted directly, which
+    // forces a whole write, and then {1, 2} is deleted in a batch; the
+    // lines are what copyg -s and copyg -i write for those graphs
+    char const *expected =
+        ":DaYn\n"
+        ";b?\n"
+        ":DgYb\n"
+        ";g^\n";
+
+    if ((theGraph = gp_New()) == NULL || gp_EnsureVertexCapacity(theGraph, 5) != OK)
+    {
+        gp_Free(&theGraph);
+        return NOTOK;
+    }
+
+    lower = gp_LowerBoundVertexStorage(theGraph);
+
+    for (int v = 0; v < 4; v++)
+    {
+        if (gp_AddEdge(theGraph, lower + v, 0, lower + v + 1, 0) != OK)
+        {
+            gp_Free(&theGraph);
+            return NOTOK;
+        }
+    }
+
+    if (s6_NewWriter(&theWriter, theGraph) != OK ||
+        s6_InitWriterWithString(theWriter, &outputStr) != OK)
+    {
+        s6_FreeWriter(&theWriter);
+        if (outputStr != NULL)
+            free(outputStr);
+        gp_Free(&theGraph);
+        return NOTOK;
+    }
+
+    gp_SetQuietMode(QUIETMODE_ALL);
+
+    eFirst = gp_FindEdge(theGraph, lower, lower + 1);
+
+    // Before the first whole graph, nothing can be stored
+    if (s6_StoreGraphChange(theWriter, eFirst, NIL, NIL) == OK ||
+        s6_StoreGraphChange(theWriter, NIL, lower, lower + 4) == OK)
+    {
+        gp_SetQuietMode(origQuietMode);
+        gp_ErrorMessage("A change was stored before the first graph was written.");
+        Result = NOTOK;
+    }
+
+    // A second initialization is refused
+    if (Result == OK)
+    {
+        char *secondStr = NULL;
+
+        if (s6_InitWriterWithString(theWriter, &secondStr) == OK)
+        {
+            gp_SetQuietMode(origQuietMode);
+            gp_ErrorMessage("The sparse6 writer was initialized twice.");
+            Result = NOTOK;
+        }
+    }
+
+    if (Result == OK && s6_WriteGraph(theWriter) != OK)
+    {
+        gp_SetQuietMode(origQuietMode);
+        gp_ErrorMessage("Unable to write the path graph whole.");
+        Result = NOTOK;
+    }
+
+    // Invalid changes: an edge not in use, an edge already present, a loop, a
+    // vertex out of range, and neither an edge nor a pair
+    if (Result == OK &&
+        (s6_StoreGraphChange(theWriter, gp_UpperBoundEdges(theGraph), NIL, NIL) == OK ||
+         s6_StoreGraphChange(theWriter, NIL, lower, lower + 1) == OK ||
+         s6_StoreGraphChange(theWriter, NIL, lower + 2, lower + 2) == OK ||
+         s6_StoreGraphChange(theWriter, NIL, lower, lower + 5) == OK ||
+         s6_StoreGraphChange(theWriter, eFirst, lower, lower + 4) == OK ||
+         s6_StoreGraphChange(theWriter, NIL, NIL, NIL) == OK))
+    {
+        gp_SetQuietMode(origQuietMode);
+        gp_ErrorMessage("An invalid change was stored.");
+        Result = NOTOK;
+    }
+
+    // A valid batch: delete {0, 1}, add {0, 4}; the same pair twice is refused
+    if (Result == OK &&
+        (s6_StoreGraphChange(theWriter, eFirst, NIL, NIL) != OK ||
+         s6_StoreGraphChange(theWriter, NIL, lower, lower + 4) != OK))
+    {
+        gp_SetQuietMode(origQuietMode);
+        gp_ErrorMessage("Unable to store a valid batch.");
+        Result = NOTOK;
+    }
+
+    if (Result == OK &&
+        (s6_StoreGraphChange(theWriter, eFirst, NIL, NIL) == OK ||
+         s6_StoreGraphChange(theWriter, NIL, lower + 4, lower) == OK))
+    {
+        gp_SetQuietMode(origQuietMode);
+        gp_ErrorMessage("A pair was stored twice in one batch.");
+        Result = NOTOK;
+    }
+
+    if (Result == OK && s6_WriteGraph(theWriter) != OK)
+    {
+        gp_SetQuietMode(origQuietMode);
+        gp_ErrorMessage("Unable to write the batch.");
+        Result = NOTOK;
+    }
+
+    // The batch was applied: {0, 1} is gone and {0, 4} is there, densely
+    if (Result == OK &&
+        (gp_IsEdge(theGraph, gp_FindEdge(theGraph, lower, lower + 1)) ||
+         !gp_IsEdge(theGraph, gp_FindEdge(theGraph, lower, lower + 4)) ||
+         gp_GetM(theGraph) != 4 || theGraph->numEdgeHoles != 0))
+    {
+        gp_SetQuietMode(origQuietMode);
+        gp_ErrorMessage("The batch was not applied to the graph as written.");
+        Result = NOTOK;
+    }
+
+    // A direct edit after storing a change: the batch is refused and
+    // discarded, a whole write is accepted, and a batch is accepted again
+    if (Result == OK)
+    {
+        int eToDelete = gp_FindEdge(theGraph, lower + 3, lower + 4);
+
+        if (s6_StoreGraphChange(theWriter, eToDelete, NIL, NIL) != OK ||
+            gp_DeleteEdge(theGraph, eToDelete) != OK ||
+            gp_CompactEdgeStorage(theGraph) != OK)
+        {
+            gp_SetQuietMode(origQuietMode);
+            gp_ErrorMessage("Unable to set up the direct edit case.");
+            Result = NOTOK;
+        }
+        else if (s6_WriteGraph(theWriter) == OK)
+        {
+            gp_SetQuietMode(origQuietMode);
+            gp_ErrorMessage("A batch was written after a direct edit of the graph.");
+            Result = NOTOK;
+        }
+        else if (s6_WriteGraph(theWriter) != OK)
+        {
+            gp_SetQuietMode(origQuietMode);
+            gp_ErrorMessage("Unable to write the graph whole after a direct edit.");
+            Result = NOTOK;
+        }
+        else if (s6_StoreGraphChange(theWriter, gp_FindEdge(theGraph, lower + 1, lower + 2), NIL, NIL) != OK ||
+                 s6_WriteGraph(theWriter) != OK)
+        {
+            gp_SetQuietMode(origQuietMode);
+            gp_ErrorMessage("Unable to write a batch after the whole write.");
+            Result = NOTOK;
+        }
+    }
+
+    // Hidden edges are refused, whole and batch alike, until restored
+    if (Result == OK)
+    {
+        int eHidden = gp_FindEdge(theGraph, lower + 2, lower + 3);
+
+        gp_HideEdge(theGraph, eHidden);
+
+        if (s6_WriteGraph(theWriter) == OK)
+        {
+            gp_SetQuietMode(origQuietMode);
+            gp_ErrorMessage("A graph with a hidden edge was written.");
+            Result = NOTOK;
+        }
+
+        gp_RestoreEdge(theGraph, eHidden);
+    }
+
+    // A digraph is refused
+    if (Result == OK)
+    {
+        theGraph->graphFlags |= GRAPHFLAGS_DIRECTEDEDGEDETECTED;
+
+        if (s6_WriteGraph(theWriter) == OK)
+        {
+            gp_SetQuietMode(origQuietMode);
+            gp_ErrorMessage("A digraph was written as sparse6.");
+            Result = NOTOK;
+        }
+
+        theGraph->graphFlags &= ~GRAPHFLAGS_DIRECTEDEDGEDETECTED;
+    }
+
+    gp_SetQuietMode(origQuietMode);
+
+    // The refusals left the output intact: the string is handed over on free
+    s6_FreeWriter(&theWriter);
+
+    if (Result == OK)
+        Result = compareSparse6Output(outputStr, expected, "the contract cases");
+
+    if (outputStr != NULL)
+        free(outputStr);
+    gp_Free(&theGraph);
+
+    return Result;
+}
+
+/****************************************************************************
+ runCompactEdgeStorageTests()
+
+ Deletes edges of K5 so that holes lie in the middle and at the end of the
+ edge storage, recorded by either record of their pairs, and checks that
+ gp_CompactEdgeStorage() removes every hole while keeping the edge set, the
+ edge count and the flags of the moved edge.
+ ****************************************************************************/
+
+int runCompactEdgeStorageTests(void)
+{
+    int Result = OK;
+    graphP theGraph = NULL;
+    char *before = NULL, *after = NULL;
+    int lower = 0;
+    int eLast = NIL, uLast = NIL, vLast = NIL;
+
+    if ((theGraph = gp_New()) == NULL || gp_EnsureVertexCapacity(theGraph, 5) != OK)
+    {
+        gp_Free(&theGraph);
+        return NOTOK;
+    }
+
+    lower = gp_LowerBoundVertexStorage(theGraph);
+
+    for (int u = 0; Result == OK && u < 5; u++)
+        for (int v = u + 1; Result == OK && v < 5; v++)
+            if (gp_AddEdge(theGraph, lower + u, 0, lower + v, 0) != OK)
+                Result = NOTOK;
+
+    // Delete the last pair, then a middle pair by its odd record, then the
+    // pair before the last, so that the trailing region is holes
+    if (Result == OK &&
+        (gp_DeleteEdge(theGraph, gp_FindEdge(theGraph, lower + 3, lower + 4)) != OK ||
+         gp_DeleteEdge(theGraph, gp_GetTwin(theGraph, gp_FindEdge(theGraph, lower + 1, lower + 2))) != OK ||
+         gp_DeleteEdge(theGraph, gp_GetTwin(theGraph, gp_FindEdge(theGraph, lower + 2, lower + 4))) != OK ||
+         gp_DeleteEdge(theGraph, gp_FindEdge(theGraph, lower + 0, lower + 3)) != OK))
+        Result = NOTOK;
+
+    if (Result == OK && theGraph->numEdgeHoles == 0)
+    {
+        gp_ErrorMessage("The deletions left no edge holes to compact.");
+        Result = NOTOK;
+    }
+
+    // The edge set before compaction, taken while the graph is undirected,
+    // since setting a direction below marks it as a digraph for graph6
+    if (Result == OK && gp_WriteToString(theGraph, &before, WRITE_G6) != OK)
+    {
+        gp_ErrorMessage("Unable to write the graph before compaction.");
+        Result = NOTOK;
+    }
+
+    // Flag the last pair in use, so that its move can be checked
+    if (Result == OK)
+    {
+        eLast = gp_UpperBoundEdges(theGraph) - 2;
+        while (eLast >= gp_LowerBoundEdges(theGraph) && gp_EdgeNotInUse(theGraph, eLast))
+            eLast -= 2;
+        uLast = gp_GetNeighbor(theGraph, gp_GetTwin(theGraph, eLast));
+        vLast = gp_GetNeighbor(theGraph, eLast);
+        gp_SetDirection(theGraph, eLast, EDGEFLAG_DIRECTION_OUTONLY);
+    }
+
+    if (Result == OK && gp_CompactEdgeStorage(theGraph) != OK)
+    {
+        gp_ErrorMessage("Unable to compact the edge storage.");
+        Result = NOTOK;
+    }
+
+    if (Result == OK && (theGraph->numEdgeHoles != 0 || gp_GetM(theGraph) != 6 ||
+                         gp_UpperBoundEdges(theGraph) != gp_LowerBoundEdges(theGraph) + 12))
+    {
+        gp_ErrorMessage("Compaction left %d holes, %d edges and an upper bound of %d.",
+                        theGraph->numEdgeHoles, gp_GetM(theGraph), gp_UpperBoundEdges(theGraph));
+        Result = NOTOK;
+    }
+
+    if (Result == OK)
+    {
+        int eMoved = gp_FindEdge(theGraph, uLast, vLast);
+
+        if (!gp_IsEdge(theGraph, eMoved) || gp_GetDirection(theGraph, eMoved) != EDGEFLAG_DIRECTION_OUTONLY)
+        {
+            gp_ErrorMessage("Compaction lost the direction of the moved edge.");
+            Result = NOTOK;
+        }
+        else if (gp_ClearEdgeDirectionFlags(theGraph) != OK)
+            Result = NOTOK;
+    }
+
+    // The edge set after compaction, once the graph is undirected again
+    if (Result == OK && gp_WriteToString(theGraph, &after, WRITE_G6) != OK)
+    {
+        gp_ErrorMessage("Unable to write the graph after compaction.");
+        Result = NOTOK;
+    }
+
+    if (Result == OK && strcmp(before, after) != 0)
+    {
+        gp_ErrorMessage("Compaction changed the graph from %s to %s.", before, after);
+        Result = NOTOK;
+    }
+
+    // Compacting a dense graph, and a NULL graph, behave as documented
+    if (Result == OK && (gp_CompactEdgeStorage(theGraph) != OK || gp_CompactEdgeStorage(NULL) == OK))
+    {
+        gp_ErrorMessage("Compaction of a dense or NULL graph gave the wrong result.");
+        Result = NOTOK;
+    }
+
+    if (before != NULL)
+        free(before);
+    if (after != NULL)
+        free(after);
+    gp_Free(&theGraph);
+
+    return Result;
+}
+
+/****************************************************************************
+ runSparse6WriteTests()
+
+ The writer must produce the bytes nauty produces: single lines with the
+ padding cases the specification singles out, then every graph of order 5
+ against nauty's own files in both modes, then the contract of the change
+ batch, the edge storage compaction it relies on, and the -s transformation
+ of the command line.
+ ****************************************************************************/
+
+int runSparse6WriteTests(void)
+{
+    int Result = OK;
+    size_t i = 0;
+
+    // {graph6 line, sparse6 line nauty writes for the same graph}
+    char const *lineCases[][2] = {
+        // The example in the format specification
+        {"Fw??G\n", ":Fa@x^"},
+        // Orders 2 and 4 with and without edges, including the graphs whose
+        // padding must begin with a 0 bit, since n is a power of two, the
+        // last edge ends at vertex n-2 and at least k+1 bits are padded
+        {"A?\n", ":A"},
+        {"A_\n", ":An"},
+        {"C?\n", ":C"},
+        {"CC\n", ":Cw"},
+        {"CW\n", ":CoJ"},
+        {"CU\n", ":Co`"},
+        {"C~\n", ":CcKI"},
+        // The same padding case at order 16, with five bits to pad
+        {"Oo??????????????W????\n", ":O`Bo?n"},
+        // Order 5, edgeless and the path
+        {"D??\n", ":D"},
+        {"DQo\n", ":DgH_^"},
+        // Edges that jump over several vertices
+        {"DAG\n", ":DkY"},
+    };
+
+    // Order 63 uses the four-byte order encoding; the line is copyg's
+    int const order63Edges[][2] = {{25, 62}, {49, 51}};
+    char const *order63Line = ":~??~xk^pf";
+
+    gp_Message("Start sparse6 write tests");
+
+    for (i = 0; Result == OK && i < (sizeof(lineCases) / sizeof(lineCases[0])); i++)
+        Result = runSparse6WriteLineTest(lineCases[i][0], lineCases[i][1]);
+
+    // A graph of order 1 has no graph6 reader path, so it is built directly
+    if (Result == OK)
+    {
+        graphP theGraph = gp_New();
+        char *outputStr = NULL;
+
+        if (theGraph == NULL || gp_EnsureVertexCapacity(theGraph, 1) != OK ||
+            gp_WriteToString(theGraph, &outputStr, WRITE_SPARSE6) != OK)
+        {
+            gp_ErrorMessage("Unable to write the graph of order 1 as sparse6.");
+            Result = NOTOK;
+        }
+        else
+            Result = compareSparse6Output(outputStr, ":@\n", "the graph of order 1");
+
+        if (outputStr != NULL)
+            free(outputStr);
+        gp_Free(&theGraph);
+    }
+
+    if (Result == OK)
+    {
+        graphP theGraph = gp_New();
+        char *outputStr = NULL;
+        int lower = 0;
+        char expected[MAXLINE + 1];
+
+        if (theGraph == NULL || gp_EnsureVertexCapacity(theGraph, 63) != OK)
+            Result = NOTOK;
+        else
+        {
+            lower = gp_LowerBoundVertexStorage(theGraph);
+
+            for (i = 0; Result == OK && i < (sizeof(order63Edges) / sizeof(order63Edges[0])); i++)
+                if (gp_AddEdge(theGraph, lower + order63Edges[i][0], 0, lower + order63Edges[i][1], 0) != OK)
+                    Result = NOTOK;
+        }
+
+        if (Result == OK && gp_WriteToString(theGraph, &outputStr, WRITE_SPARSE6) != OK)
+        {
+            gp_ErrorMessage("Unable to write the graph of order 63 as sparse6.");
+            Result = NOTOK;
+        }
+
+        if (Result == OK)
+        {
+            snprintf(expected, sizeof(expected), "%s\n", order63Line);
+            Result = compareSparse6Output(outputStr, expected, "the graph of order 63");
+        }
+
+        if (outputStr != NULL)
+            free(outputStr);
+        gp_Free(&theGraph);
+    }
+
+    if (Result == OK)
+        Result = runSparse6WriteRoundTripTest("N5-all.g6", "N5-all.s6", FALSE);
+
+    if (Result == OK)
+        Result = runSparse6WriteRoundTripTest("N5-all.g6", "N5-all.inc.s6", TRUE);
+
+    if (Result == OK)
+        Result = runSparse6WriteContractTests();
+
+    if (Result == OK)
+        Result = runCompactEdgeStorageTests();
+
+    // The -s transformation, from a file and from a string, of graph6 and of
+    // sparse6 input, against the expected output files
+    if (Result == OK && runGraphTransformationTest("-s", "nauty_example.g6", TRUE) != OK)
+        Result = NOTOK;
+
+    if (Result == OK && runGraphTransformationTest("-s", "nauty_example.g6", FALSE) != OK)
+        Result = NOTOK;
+
+    if (Result == OK && runGraphTransformationTest("-s", "N5-all.g6", TRUE) != OK)
+        Result = NOTOK;
+
+    if (Result == OK && runGraphTransformationTest("-s", "N5-all.g6", FALSE) != OK)
+        Result = NOTOK;
+
+    if (Result == OK && runGraphTransformationTest("-s", "K10.g6", FALSE) != OK)
+        Result = NOTOK;
+
+    if (Result == OK && runGraphTransformationTest("-s", "nauty_example.s6", FALSE) != OK)
+        Result = NOTOK;
+
+    if (Result == OK)
+        gp_Message("Sparse6 write tests succeeded.");
+    else
+        gp_ErrorMessage("Sparse6 write tests failed.");
 
     return Result;
 }
@@ -2348,10 +3140,10 @@ int runGraphTransformationTest(char const *command, char const *infileName, int 
     char transformationCode = '\0';
 
     // runGraphTransformationTest will not test performing an algorithm on a given
-    // input graph; it will only support "-(gam)"
+    // input graph; it will only support "-(gsam)"
     if (command == NULL || strlen(command) < 2)
     {
-        gp_ErrorMessage("runGraphTransformationTest only supports -(gam).");
+        gp_ErrorMessage("runGraphTransformationTest only supports -(gsam).");
         return NOTOK;
     }
     else if (strlen(command) == 2)

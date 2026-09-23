@@ -710,6 +710,9 @@ char const *GetTransformationName(char command)
     case 'g':
         transformationName = "G6";
         break;
+    case 's':
+        transformationName = "S6";
+        break;
     case 'a':
         transformationName = "AdjList";
         break;
@@ -726,6 +729,7 @@ char const *GetTransformationName(char command)
 char const *GetSupportedOutputChoices(void)
 {
     return "G. G6 format\n"
+           "S. Sparse6 format\n"
            "A. Adjacency List format\n"
            "M. Adjacency Matrix format\n";
 }
@@ -996,9 +1000,10 @@ int ConstructTransformationExpectedResultFileName(char const *infileName, char *
 
     if ((*outfileName) == NULL)
     {
+        char const *suffix = (command == 'g') ? ".out.g6" : ((command == 's') ? ".out.s6" : ".out.txt");
         size_t outfileNameLen = strlen(infileName) + 1 +
                                 strlen(baseName) + 1 + strlen(transformationName) +
-                                ((command == 'g') ? strlen(".out.g6") : strlen(".out.txt"));
+                                strlen(suffix);
 
         if (outfileNameLen + 1 > INT_MAX)
         {
@@ -1019,7 +1024,7 @@ int ConstructTransformationExpectedResultFileName(char const *infileName, char *
         strcat((*outfileName), baseName);
         strcat((*outfileName), ".");
         strcat((*outfileName), transformationName);
-        strcat((*outfileName), command == 'g' ? ".out.g6" : ".out.txt");
+        strcat((*outfileName), suffix);
     }
     else
     {

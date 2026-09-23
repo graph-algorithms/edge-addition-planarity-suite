@@ -376,6 +376,8 @@ void gp_ResetGraphStorage(graphP theGraph)
         return;
 
     theGraph->functions->fpResetGraphStorage(theGraph);
+
+    gp_NoteModification(theGraph);
 }
 
 void _ResetGraphStorage(graphP theGraph)
@@ -527,6 +529,112 @@ int _EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity)
 
     // The new edgeCapacity has been successfully allocated
     theGraph->edgeCapacity = requiredEdgeCapacity;
+    return OK;
+}
+
+/********************************************************************
+ gp_CompactEdgeStorage()
+
+ Fills every hole that gp_DeleteEdge() has left in the edge record
+ array, so that the edge records in use run from gp_LowerBoundEdges()
+ to gp_UpperBoundEdges() without gaps, as they do in a graph that has
+ only ever had edges added. Some algorithms require this (e.g. the
+ planar drawing), and a reader of a format that deletes edges, or a
+ writer that applies deletions, calls this once per graph rather than
+ keeping the storage dense after every deletion.
+
+ A hole is filled by moving the last pair of edge records in use into
+ it, through gp_DeleteEdge() and gp_DynamicAddEdge(), so that
+ extensions which overload edge deletion and keep parallel edge data
+ stay consistent; the flags of both records, direction included, are
+ carried over. The moved edge is appended to the adjacency lists of
+ its endpoints, so the order of those lists may change. When the last
+ pair of records is itself a hole, that hole is dropped from the
+ record of holes instead, which shrinks the storage in use.
+
+ The holes are sorted once so that the last pair, when it is a hole,
+ is always the one on top of the stack, which keeps each step at
+ constant time beyond the edge move itself.
+
+ This method must not be called while edges are hidden, since a
+ hidden edge is in use but in no adjacency list, and moving it would
+ corrupt the list it is to be restored into. Nor is it meant for a
+ graph in the middle of an algorithm whose extension keeps data per
+ edge: the deletion and insertion overloads clear and initialize that
+ data for the records concerned, so the moved edge keeps its base
+ record flags but not, for example, the path a reduction edge of the
+ K4 or K3,3 search stands for. Its callers, the sparse6 reader and
+ writer, apply it to graphs that are between algorithms.
+
+ Returns OK on success, NOTOK on failure, including a NULL graph.
+ ********************************************************************/
+
+static int _CompareIntsAscending(void const *a, void const *b)
+{
+    int x = *(int const *)a, y = *(int const *)b;
+
+    return (x < y) ? -1 : ((x > y) ? 1 : 0);
+}
+
+int gp_CompactEdgeStorage(graphP theGraph)
+{
+    stackP holes = NULL;
+
+    if (theGraph == NULL)
+        return NOTOK;
+
+    if (theGraph->numEdgeHoles == 0)
+        return OK;
+
+    holes = theGraph->edgeHoles;
+
+    if (holes->size > 1)
+        qsort(holes->S, (size_t)holes->size, sizeof(int), _CompareIntsAscending);
+
+    while (holes->size > 0)
+    {
+        // A hole may have been recorded as either record of its pair, so
+        // both it and the last pair are compared by their lesser record
+        int topHole = holes->S[holes->size - 1];
+        int eLast = gp_UpperBoundEdges(theGraph) - 2;
+
+        if ((topHole & ~1) == eLast)
+        {
+            // The last pair is the largest hole: dropping it shrinks the
+            // storage in use
+            holes->size--;
+            theGraph->numEdgeHoles = holes->size;
+        }
+        else
+        {
+            int u = gp_GetNeighbor(theGraph, gp_GetTwin(theGraph, eLast));
+            int v = gp_GetNeighbor(theGraph, eLast);
+            unsigned short flagsOfLast = theGraph->E[eLast].flags;
+            unsigned short flagsOfLastTwin = theGraph->E[gp_GetTwin(theGraph, eLast)].flags;
+            int eMoved = NIL;
+
+            if (gp_EdgeNotInUse(theGraph, eLast))
+                return NOTOK;
+
+            // Deleting the last pair records no hole, and re-adding the edge
+            // places its record in v's list at the hole on top of the stack
+            // and its record in u's list at the twin of that hole
+            if (gp_DeleteEdge(theGraph, eLast) != OK ||
+                gp_DynamicAddEdge(theGraph, u, 0, v, 0) != OK)
+                return NOTOK;
+
+            eMoved = gp_GetTwin(theGraph, topHole);
+
+            if (gp_GetNeighbor(theGraph, eMoved) != v || gp_GetNeighbor(theGraph, topHole) != u)
+                return NOTOK;
+
+            theGraph->E[eMoved].flags = flagsOfLast;
+            theGraph->E[topHole].flags = flagsOfLastTwin;
+        }
+    }
+
+    gp_NoteModification(theGraph);
+
     return OK;
 }
 
@@ -1051,6 +1159,8 @@ int gp_CopyAdjacencyLists(graphP dstGraph, graphP srcGraph)
     sp_Copy(dstGraph->edgeHoles, srcGraph->edgeHoles);
     dstGraph->numEdgeHoles = sp_GetCurrentSize(dstGraph->edgeHoles);
 
+    gp_NoteModification(dstGraph);
+
     dstGraph->graphFlags &= ~GRAPHFLAGS_DFSNUMBERED;
     dstGraph->graphFlags &= ~GRAPHFLAGS_DFSNUMBERED_DIRECTED;
     dstGraph->graphFlags &= ~GRAPHFLAGS_SORTEDBYDFI;
@@ -1156,6 +1266,8 @@ int gp_CopyGraph(graphP dstGraph, graphP srcGraph)
     sp_Copy(dstGraph->theStack, srcGraph->theStack);
     sp_Copy(dstGraph->edgeHoles, srcGraph->edgeHoles);
     dstGraph->numEdgeHoles = sp_GetCurrentSize((dstGraph)->edgeHoles);
+
+    gp_NoteModification(dstGraph);
 
     // Copy the set of extensions, which includes copying the
     // extension data as well as the function overload tables
@@ -2098,6 +2210,8 @@ int gp_InsertEdge(graphP theGraph, int u, int e_u, int e_ulink,
 
     theGraph->M++;
 
+    gp_NoteModification(theGraph);
+
     return OK;
 }
 
@@ -2121,6 +2235,10 @@ int gp_DeleteEdge(graphP theGraph, int e)
         e >= gp_UpperBoundEdges(theGraph) ||
         gp_EdgeNotInUse(theGraph, e))
         return NOTOK;
+
+    // The deletion has changed the graph even if it then fails to record
+    // the hole, so the modification is noted whatever the result
+    gp_NoteModification(theGraph);
 
     return theGraph->functions->fpDeleteEdge(theGraph, e);
 }
@@ -2160,6 +2278,8 @@ int _DeleteEdge(graphP theGraph, int e)
 
 int gp_ClearEdgeDirectionFlags(graphP theGraph)
 {
+    int modified = FALSE;
+
     if (theGraph == NULL)
         return NOTOK;
 
@@ -2168,12 +2288,20 @@ int gp_ClearEdgeDirectionFlags(graphP theGraph)
         if (gp_EdgeInUse(theGraph, e))
         {
             // Clear direction flags if non-loop edge
-            if (gp_GetNeighbor(theGraph, gp_GetTwin(theGraph, e)) != gp_GetNeighbor(theGraph, e))
+            if (gp_GetNeighbor(theGraph, gp_GetTwin(theGraph, e)) != gp_GetNeighbor(theGraph, e) &&
+                gp_GetDirection(theGraph, e) != 0)
+            {
                 gp_SetDirection(theGraph, e, 0);
+                modified = TRUE;
+            }
         }
     }
 
     theGraph->graphFlags &= ~GRAPHFLAGS_DIRECTEDEDGEDETECTED;
+
+    if (modified)
+        gp_NoteModification(theGraph);
+
     return OK;
 }
 
@@ -2183,6 +2311,8 @@ int gp_ClearEdgeDirectionFlags(graphP theGraph)
  */
 int gp_TransposeDirectedGraph(graphP theGraph)
 {
+    int modified = FALSE;
+
     if (theGraph == NULL)
         return NOTOK;
 
@@ -2201,9 +2331,13 @@ int gp_TransposeDirectedGraph(graphP theGraph)
 
                 gp_SetDirection(theGraph, e, 0);
                 gp_SetDirection(theGraph, e, transposedDirection);
+                modified = TRUE;
             }
         }
     }
+
+    if (modified)
+        gp_NoteModification(theGraph);
 
     return OK;
 }
@@ -2264,6 +2398,8 @@ void gp_HideEdge(graphP theGraph, int e)
     }
 
     theGraph->functions->fpHideEdge(theGraph, e);
+
+    gp_NoteModification(theGraph);
 }
 
 void _HideEdge(graphP theGraph, int e)
@@ -2302,6 +2438,8 @@ void gp_RestoreEdge(graphP theGraph, int e)
     }
 
     theGraph->functions->fpRestoreEdge(theGraph, e);
+
+    gp_NoteModification(theGraph);
 }
 
 void _RestoreEdge(graphP theGraph, int e)
@@ -2538,6 +2676,10 @@ int gp_IdentifyVertices(graphP theGraph, int u, int v, int eBefore)
         return NOTOK;
     }
 
+    // Noted before the call, since a failure part way through has already
+    // changed the graph
+    gp_NoteModification(theGraph);
+
     return theGraph->functions->fpIdentifyVertices(theGraph, u, v, eBefore);
 }
 
@@ -2743,6 +2885,10 @@ int gp_RestoreVertex(graphP theGraph)
 {
     if (theGraph == NULL)
         return NOTOK;
+
+    // Noted before the call, since a failure part way through has already
+    // changed the graph
+    gp_NoteModification(theGraph);
 
     return theGraph->functions->fpRestoreVertex(theGraph);
 }

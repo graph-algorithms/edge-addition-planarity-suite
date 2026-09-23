@@ -24,6 +24,7 @@ See the LICENSE.TXT file for licensing information.
 /* Imported functions */
 extern int _g6_ReadGraphFromStrOrFile(graphP theGraph, strOrFileP *pG6InputContainer);
 extern int _g6_WriteGraphToStrOrFile(graphP theGraph, strOrFileP *pOutputContainer);
+extern int _s6_WriteGraphToStrOrFile(graphP theGraph, strOrFileP *pOutputContainer);
 extern int _s6_ReadGraphFromStrOrFile(graphP theGraph, strOrFileP *pS6InputContainer);
 extern int s6_IsSparse6Input(char const *const firstLine);
 extern int g6_IsGraph6Input(char const *const firstLine);
@@ -957,7 +958,7 @@ int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer)
  gp_Write()
  Writes theGraph into the file.
  Pass "stdout" or "stderr" to fileName to write to the corresponding stream
- Pass WRITE_G6, WRITE_GRAPHML, WRITE_ADJLIST, WRITE_ADJMATRIX, or
+ Pass WRITE_G6, WRITE_SPARSE6, WRITE_GRAPHML, WRITE_ADJLIST, WRITE_ADJMATRIX, or
  WRITE_DEBUGINFO for writeMode.
 
  NOTE: For digraphs, only WRITE_ADJLIST and WRITE_GRAPHML are supported.
@@ -994,7 +995,7 @@ int gp_Write(graphP theGraph, char const *fileName, int writeMode)
  * The string is owned by the caller and should be released with
  * free() when the caller doesn't need the string anymore.
  * The format of the content written into the returned string is based
- * on writeMode: WRITE_G6, WRITE_GRAPHML, WRITE_ADJLIST, or WRITE_ADJMATRIX
+ * on writeMode: WRITE_G6, WRITE_SPARSE6, WRITE_GRAPHML, WRITE_ADJLIST, or WRITE_ADJMATRIX
  * (the WRITE_DEBUGINFO writeMode is not supported at this time)
 
  NOTE: For digraphs, only WRITE_ADJLIST and WRITE_GRAPHML are supported.
@@ -1035,7 +1036,7 @@ int gp_WriteToString(graphP theGraph, char **pOutputStr, int writeMode)
  _WriteGraph()
  Writes theGraph into the strOrFile container.
 
- Pass WRITE_G6, WRITE_GRAPHML, WRITE_ADJLIST, WRITE_ADJMATRIX, or
+ Pass WRITE_G6, WRITE_SPARSE6, WRITE_GRAPHML, WRITE_ADJLIST, WRITE_ADJMATRIX, or
  WRITE_DEBUGINFO for the Mode.
 
  NOTE: For digraphs, only WRITE_ADJLIST and WRITE_GRAPHML are supported.
@@ -1054,6 +1055,10 @@ int _WriteGraph(graphP theGraph, strOrFileP *pOutputContainer, int Mode)
         // This call takes ownership of the outputContainer, so (*pOutputContainer)
         // will be NULL upon return from this function.
         RetVal = _g6_WriteGraphToStrOrFile(theGraph, pOutputContainer);
+        break;
+    case WRITE_SPARSE6:
+        // Likewise takes ownership of the outputContainer
+        RetVal = _s6_WriteGraphToStrOrFile(theGraph, pOutputContainer);
         break;
     case WRITE_ADJLIST:
         RetVal = _WriteAdjList(theGraph, (*pOutputContainer));

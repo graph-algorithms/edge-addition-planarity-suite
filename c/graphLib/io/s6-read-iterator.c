@@ -654,6 +654,16 @@ int s6_ReadGraph(S6ReadIteratorP theS6ReadIterator)
         return NOTOK;
     }
 
+    // The deletions of an incremental line leave holes in the edge storage,
+    // which are filled once here rather than after each deletion
+    if (incremental && gp_CompactEdgeStorage(currGraph) != OK)
+    {
+        gp_ErrorMessage("Unable to keep the edge storage dense after applying "
+                        "line %d.",
+                        lineNum);
+        return NOTOK;
+    }
+
     theS6ReadIterator->numGraphsRead = lineNum;
 
     return OK;
@@ -825,35 +835,11 @@ int _s6_ApplyEdge(S6ReadIteratorP theS6ReadIterator, int u, int v, const int inc
 
         if (gp_IsEdge(theGraph, e))
         {
-            if (gp_DeleteEdge(theGraph, e) != OK)
-                return NOTOK;
-
-            // gp_DeleteEdge() leaves a hole in the edge storage unless the
-            // pair it removed was the last one. A freshly read graph has no
-            // holes, and some algorithms (e.g. DrawPlanar) require that, so
-            // the hole is filled with the last pair: that pair is deleted,
-            // which shrinks the storage rather than making a second hole,
-            // and re-added, which gp_InsertEdge() places into the hole.
-            // Within one line there is never more than one hole, since each
-            // is filled before the next pair is decoded.
-            if (theGraph->numEdgeHoles > 0)
-            {
-                int eLast = gp_UpperBoundEdges(theGraph) - 2;
-                int uLast = gp_GetNeighbor(theGraph, eLast);
-                int vLast = gp_GetNeighbor(theGraph, gp_GetTwin(theGraph, eLast));
-
-                if (gp_DeleteEdge(theGraph, eLast) != OK ||
-                    gp_DynamicAddEdge(theGraph, uLast, 0, vLast, 0) != OK ||
-                    theGraph->numEdgeHoles > 0)
-                {
-                    gp_ErrorMessage("Unable to keep the edge storage dense "
-                                    "after removing an edge on line %d.",
-                                    lineNum);
-                    return NOTOK;
-                }
-            }
-
-            return OK;
+            // The deletion leaves a hole in the edge storage unless the pair
+            // it removed was the last one; s6_ReadGraph() compacts the
+            // storage once the whole line has been applied, since a freshly
+            // read graph must have no holes for algorithms such as DrawPlanar
+            return gp_DeleteEdge(theGraph, e);
         }
     }
     else
