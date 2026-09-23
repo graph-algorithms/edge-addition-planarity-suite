@@ -55,6 +55,12 @@ int runHighByteRoundTripTest(void);
 int runCapacityLimitTests(void);
 int runGraphMLWriteTest(char const *inputFileName, char const *expectedOutputFileName);
 int runBasicGraphMLWriteTest(void);
+int runGraphMLReadWriteTest(char const *inputFileName);
+int runBasicGraphMLReadTest(void);
+char *copyGraphMLTestString(char const *graphMLStr);
+int runGraphMLAcceptTest(char const *graphMLStr, int zeroBased, int directed);
+int runGraphMLRejectTest(char const *graphMLStr);
+int runGraphMLReaderStringTests(void);
 int runGraphMLTests(void);
 
 /****************************************************************************
@@ -3051,6 +3057,234 @@ int runBasicGraphMLWriteTest(void)
     return OK;
 }
 
+int runGraphMLReadWriteTest(char const *inputFileName)
+{
+    graphP G = gp_New();
+    char *actualOutput = NULL;
+    int Result = OK;
+
+    if (G == NULL)
+        return NOTOK;
+
+    if (gp_Read(G, inputFileName) != OK ||
+        gp_WriteToString(G, &actualOutput, WRITE_GRAPHML) != OK ||
+        actualOutput == NULL ||
+        TextFileMatchesString(inputFileName, actualOutput) != TRUE)
+        Result = NOTOK;
+
+    if (actualOutput != NULL)
+        free(actualOutput);
+    gp_Free(&G);
+
+    return Result;
+}
+
+int runBasicGraphMLReadTest(void)
+{
+    if (runGraphMLReadWriteTest("Digraph.transposeTest.graphml") != OK ||
+        runGraphMLReadWriteTest("Digraph.transposeTest.0-based.graphml") != OK)
+        return NOTOK;
+
+    return OK;
+}
+
+char *copyGraphMLTestString(char const *graphMLStr)
+{
+    char *copy = NULL;
+    size_t length = 0;
+
+    if (graphMLStr == NULL)
+        return NULL;
+
+    length = strlen(graphMLStr) + 1;
+    copy = (char *)malloc(length);
+    if (copy != NULL)
+        memcpy(copy, graphMLStr, length);
+
+    return copy;
+}
+
+int runGraphMLAcceptTest(char const *graphMLStr, int zeroBased, int directed)
+{
+    graphP G = gp_New();
+    char *inputCopy = NULL;
+    char *actualOutput = NULL;
+    int Result = OK;
+    int source = NIL;
+    int target = NIL;
+    int edge = NIL;
+
+    if (G == NULL || (inputCopy = copyGraphMLTestString(graphMLStr)) == NULL)
+        Result = NOTOK;
+
+    if (Result == OK && gp_ReadFromString(G, inputCopy) != OK)
+        Result = NOTOK;
+
+    if (Result == OK)
+    {
+        source = gp_LowerBoundVertexStorage(G);
+        target = source + 1;
+        edge = gp_FindEdge(G, source, target);
+
+        if (gp_GetN(G) != 2 || gp_GetM(G) != 1 || edge == NIL ||
+            (directed && gp_GetDirection(G, edge) != EDGEFLAG_DIRECTION_OUTONLY) ||
+            (!directed && gp_GetDirection(G, edge) != 0))
+            Result = NOTOK;
+    }
+
+    if (Result == OK &&
+        (gp_WriteToString(G, &actualOutput, WRITE_GRAPHML) != OK || actualOutput == NULL))
+        Result = NOTOK;
+
+    if (Result == OK &&
+        ((zeroBased && strstr(actualOutput, "<data key=\"graphflags_zerobasedio\">true</data>") == NULL) ||
+         (!zeroBased && strstr(actualOutput, "graphflags_zerobasedio") != NULL)))
+        Result = NOTOK;
+
+    if (Result != OK)
+        gp_ErrorMessage("A valid GraphML string was not read as expected.");
+
+    if (inputCopy != NULL)
+        free(inputCopy);
+    if (actualOutput != NULL)
+        free(actualOutput);
+    gp_Free(&G);
+
+    return Result;
+}
+
+int runGraphMLRejectTest(char const *graphMLStr)
+{
+    graphP G = gp_New();
+    char *inputCopy = NULL;
+    unsigned quietModeCache = gp_GetQuietMode();
+    int Result = OK;
+
+    if (G == NULL || (inputCopy = copyGraphMLTestString(graphMLStr)) == NULL)
+        Result = NOTOK;
+
+    gp_SetQuietMode(QUIETMODE_ALL);
+    if (Result == OK && gp_ReadFromString(G, inputCopy) == OK)
+        Result = NOTOK;
+    gp_SetQuietMode(quietModeCache);
+
+    if (Result != OK)
+        gp_ErrorMessage("An invalid GraphML string was accepted.");
+
+    if (inputCopy != NULL)
+        free(inputCopy);
+    gp_Free(&G);
+
+    return Result;
+}
+
+int runGraphMLReaderStringTests(void)
+{
+    static struct
+    {
+        char const *input;
+        int zeroBased;
+        int directed;
+    } const acceptCases[] = {
+        {
+            " \t\r\n<!--top--><graphml xmlns='http://graphml.graphdrawing.org/xmlns'>"
+            "<graph edgedefault='undirected' parse.nodeids='canonical' "
+            "parse.edgeids='canonical' parse.order='nodesfirst'>"
+            "<node id='n0'/><node id='n1'></node>"
+            "<edge source='n0' target='n1'></edge></graph>",
+            FALSE, FALSE
+        },
+        {
+            "\xEF\xBB\xBF<?xml version='1.0' encoding='UTF-8' standalone='yes'?>"
+            "<!--prolog--><graphml xmlns='http://graphml.graphdrawing.org/xmlns' "
+            "xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' "
+            "xsi:schemaLocation='caf\xC3\xA9 &amp; test'>"
+            "<key id=' graphflags_zerobasedio ' for='graph' "
+            "attr.name=' graphflags_zerobasedio ' attr.type='boolean'>"
+            "<!--default--><default> 1 </default></key>"
+            "<graph edgedefault='directed' parse.nodes='2' parse.edges='1' "
+            "parse.nodeids='canonical' parse.edgeids='canonical' parse.order='nodesfirst'>"
+            "<node id='n0'/><!--nodes--><node id='n1'/>"
+            "<edge id='e0' source='n0' target='n1'/></graph>",
+            TRUE, TRUE
+        },
+        {
+            "<?xml version='1.0' encoding='ISO-8859-1'?>"
+            "<graphml xmlns='http://graphml.graphdrawing.org/xmlns'>"
+            "<key id='graphflags_zerobasedio' for='graph' "
+            "attr.name='graphflags_zerobasedio' attr.type='boolean'/>"
+            "<graph edgedefault='directed' parse.nodeids='canonical' "
+            "parse.edgeids='canonical' parse.order='nodesfirst'>"
+            "<data key='graphflags_zerobasedio'> false </data>"
+            "<node id='n0'/><node id='n1'/>"
+            "<edge source='n0' target='n1' directed='false'/></graph>",
+            FALSE, FALSE
+        }
+    };
+    static char const *rejectCases[] = {
+        "<?xml version='1.1'?><graphml xmlns='http://graphml.graphdrawing.org/xmlns'/>",
+        "<?xml version='1.0' encoding='UTF-16'?><graphml xmlns='http://graphml.graphdrawing.org/xmlns'/>",
+        "<?bad?><graphml xmlns='http://graphml.graphdrawing.org/xmlns'/>",
+        "<!DOCTYPE graphml><graphml xmlns='http://graphml.graphdrawing.org/xmlns'/>",
+        "<graphml><graph edgedefault='undirected' parse.nodeids='canonical' "
+        "parse.edgeids='canonical' parse.order='nodesfirst'/></graphml>",
+        "<graphml xmlns='http://graphml.graphdrawing.org/xmlns' extra='no'>"
+        "<graph edgedefault='undirected' parse.nodeids='canonical' "
+        "parse.edgeids='canonical' parse.order='nodesfirst'/></graphml>",
+        "<graphml xmlns='http://graphml.graphdrawing.org/xmlns'>"
+        "<graph edgedefault='undirected' parse.nodeids='canonical' "
+        "parse.edgeids='canonical' parse.order='nodesfirst'>"
+        "<node id='n0'/><node id='n2'/><edge source='n0' target='n1'/></graph>",
+        "<graphml xmlns='http://graphml.graphdrawing.org/xmlns'>"
+        "<graph edgedefault='undirected' parse.nodes='3' parse.edgeids='canonical' "
+        "parse.nodeids='canonical' parse.order='nodesfirst'>"
+        "<node id='n0'/><node id='n1'/><edge source='n0' target='n1'/></graph>",
+        "<graphml xmlns='http://graphml.graphdrawing.org/xmlns'>"
+        "<graph edgedefault='undirected' parse.nodeids='canonical' "
+        "parse.edgeids='canonical' parse.order='nodesfirst'>"
+        "<node id='n0'/><node id='n1'/><edge source='n0' target='n2'/></graph>",
+        "<graphml xmlns='http://graphml.graphdrawing.org/xmlns'>"
+        "<graph edgedefault='undirected' parse.nodeids='canonical' "
+        "parse.edgeids='canonical' parse.order='nodesfirst'>"
+        "<node id='n0'>text</node><node id='n1'/><edge source='n0' target='n1'/></graph>",
+        "<graphml xmlns='http://graphml.graphdrawing.org/xmlns'>"
+        "<graph edgedefault='undirected' parse.nodeids='canonical' "
+        "parse.edgeids='canonical' parse.order='nodesfirst'>"
+        "<data key='graphflags_zerobasedio'>true</data>"
+        "<node id='n0'/><node id='n1'/><edge source='n0' target='n1'/></graph>",
+        "<graphml xmlns='http://graphml.graphdrawing.org/xmlns'>"
+        "<graph edgedefault='undirected' parse.nodeids='canonical' "
+        "parse.edgeids='canonical' parse.order='nodesfirst'>"
+        "<node id='n0'/><node id='n1'/><edge source='n0' target='n1' directed='1'/></graph>",
+        "<graphml xmlns='http://graphml.graphdrawing.org/xmlns' "
+        "xsi:schemaLocation='bad &entity;'>"
+        "<graph edgedefault='undirected' parse.nodeids='canonical' "
+        "parse.edgeids='canonical' parse.order='nodesfirst'>"
+        "<node id='n0'/><node id='n1'/><edge source='n0' target='n1'/></graph>",
+        "<graphml xmlns='http://graphml.graphdrawing.org/xmlns'>"
+        "<graph edgedefault='undirected' parse.nodes='999999999999999999999999999' "
+        "parse.nodeids='canonical' parse.edgeids='canonical' parse.order='nodesfirst'>"
+        "<node id='n0'/><node id='n1'/><edge source='n0' target='n1'/></graph>"
+    };
+    size_t index = 0;
+
+    for (index = 0; index < sizeof(acceptCases) / sizeof(acceptCases[0]); index++)
+    {
+        if (runGraphMLAcceptTest(acceptCases[index].input,
+                                 acceptCases[index].zeroBased,
+                                 acceptCases[index].directed) != OK)
+            return NOTOK;
+    }
+
+    for (index = 0; index < sizeof(rejectCases) / sizeof(rejectCases[0]); index++)
+    {
+        if (runGraphMLRejectTest(rejectCases[index]) != OK)
+            return NOTOK;
+    }
+
+    return OK;
+}
+
 int runGraphMLTests(void)
 {
     int Result = OK;
@@ -3060,6 +3294,16 @@ int runGraphMLTests(void)
     if (runBasicGraphMLWriteTest() != OK)
     {
         gp_ErrorMessage("Basic GraphML write test failed.");
+        Result = NOTOK;
+    }
+    else if (runBasicGraphMLReadTest() != OK)
+    {
+        gp_ErrorMessage("Basic GraphML read test failed.");
+        Result = NOTOK;
+    }
+    else if (runGraphMLReaderStringTests() != OK)
+    {
+        gp_ErrorMessage("GraphML reader string test failed.");
         Result = NOTOK;
     }
     else
