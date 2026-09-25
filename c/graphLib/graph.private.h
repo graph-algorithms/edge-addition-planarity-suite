@@ -6,7 +6,7 @@ See the LICENSE.TXT file for licensing information.
 
 #ifndef GRAPH_PRIVATE_H
 #define GRAPH_PRIVATE_H
-
+#include "graphEdgeDetector.h"
 #include "extensionSystem/graphExtensions.h"
 #include "extensionSystem/graphExtensions.private.h"
 
@@ -76,6 +76,7 @@ extern "C"
         listCollectionP sortedDFSChildLists;
         extFaceLinkRecP extFace;
         isolatorContextP IC;
+        graphEdgeDetectorP edgeDetector;
     };
 
     typedef struct graphPrivateDataStruct graphPrivateDataStruct;
@@ -92,6 +93,7 @@ extern "C"
 #define theGraphSortedDFSChildLists(theGraph) (((graphPrivateDataP)((theGraph)->privateData))->sortedDFSChildLists)
 #define theGraphExtFace(theGraph) (((graphPrivateDataP)((theGraph)->privateData))->extFace)
 #define theGraphIC(theGraph) (((graphPrivateDataP)((theGraph)->privateData))->IC)
+#define theGraphEdgeDetector(theGraph) (((graphPrivateDataP)((theGraph)->privateData))->edgeDetector)
 
 /********************************************************************
  Additional edge link accessors and manipulators

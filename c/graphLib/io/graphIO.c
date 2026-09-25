@@ -699,6 +699,12 @@ int _WriteAdjMatrix(graphP theGraph, strOrFileP outputContainer)
 
     if (theGraph == NULL || !sf_IsValidStrOrFile(outputContainer))
         return NOTOK;
+    
+    if (theGraph->graphFlags & GRAPHFLAGS_PARALLELEDGEDETECTED)
+    {
+        gp_ErrorMessage("Loop edges were previously added to the graph. See gp_DeleteParallelEdges().");
+        return NOTOK;
+    }
 
     if (gp_GetGraphFlags(theGraph) & GRAPHFLAGS_DIRECTEDEDGEDETECTED)
     {

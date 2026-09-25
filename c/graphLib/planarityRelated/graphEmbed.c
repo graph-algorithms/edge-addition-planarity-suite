@@ -108,6 +108,12 @@ int gp_Embed(graphP theGraph, unsigned embedFlags)
     if (theGraph == NULL || embedFlags == 0 || gp_GetEmbedFlags(theGraph) != 0)
         return NOTOK;
 
+    if (theGraph->graphFlags & GRAPHFLAGS_PARALLELEDGEDETECTED)
+    {
+        gp_ErrorMessage("Loop edges were previously added to the graph. See gp_DeleteParallelEdges().");
+        return NOTOK;
+    }
+    
     // Preprocessing
     if (!_gp_EmbedFlagsValid(theGraph, embedFlags))
     {
