@@ -16,6 +16,7 @@ See the LICENSE.TXT file for licensing information.
 #include "graphIO.h"
 
 /* Private function declarations (exported within system) */
+extern int _CompactEdgeStorage(graphP theGraph);
 int _s6_ReadGraphFromStrOrFile(graphP theGraph, strOrFileP *pInputContainer);
 
 /* Private functions */
@@ -656,7 +657,7 @@ int s6_ReadGraph(S6ReadIteratorP theS6ReadIterator)
 
     // The deletions of an incremental line leave holes in the edge storage,
     // which are filled once here rather than after each deletion
-    if (incremental && gp_CompactEdgeStorage(currGraph) != OK)
+    if (incremental && _CompactEdgeStorage(currGraph) != OK)
     {
         gp_ErrorMessage("Unable to keep the edge storage dense after applying "
                         "line %d.",

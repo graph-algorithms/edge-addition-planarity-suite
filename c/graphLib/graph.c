@@ -59,6 +59,8 @@ int _ClearObstructionMarksInBicomp(graphP theGraph, int BicompRoot);
 
 int _gp_FindEdge(graphP theGraph, int u, int v);
 
+int _CompactEdgeStorage(graphP theGraph);
+
 int _ClearAllVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x);
 int _SetAllVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x);
 
@@ -533,7 +535,7 @@ int _EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity)
 }
 
 /********************************************************************
- gp_CompactEdgeStorage()
+ _CompactEdgeStorage()
 
  Fills every hole that gp_DeleteEdge() has left in the edge record
  array, so that the edge records in use run from gp_LowerBoundEdges()
@@ -566,6 +568,11 @@ int _EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity)
  K4 or K3,3 search stands for. Its callers, the sparse6 reader and
  writer, apply it to graphs that are between algorithms.
 
+ That is also why this method is private. As a public method it would
+ have to be an overloadable function in the graph's function table, so
+ that each extension moves its own edge data along with the base edge
+ records instead of losing it to the deletion overload.
+
  Returns OK on success, NOTOK on failure, including a NULL graph.
  ********************************************************************/
 
@@ -576,7 +583,7 @@ static int _CompareIntsAscending(void const *a, void const *b)
     return (x < y) ? -1 : ((x > y) ? 1 : 0);
 }
 
-int gp_CompactEdgeStorage(graphP theGraph)
+int _CompactEdgeStorage(graphP theGraph)
 {
     stackP holes = NULL;
 

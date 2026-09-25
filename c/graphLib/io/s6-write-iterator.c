@@ -18,6 +18,7 @@ See the LICENSE.TXT file for licensing information.
 
 /* Imported functions */
 extern int _s6_GetNumBitsForVertex(int order);
+extern int _CompactEdgeStorage(graphP theGraph);
 
 /* Private function declarations (exported within system) */
 int _s6_WriteGraphToStrOrFile(graphP theGraph, strOrFileP *pOutputContainer);
@@ -958,7 +959,7 @@ int _s6_ApplyChangeBatch(S6WriteIteratorP theS6WriteIterator)
         }
     }
 
-    return gp_CompactEdgeStorage(theGraph);
+    return _CompactEdgeStorage(theGraph);
 }
 
 /********************************************************************

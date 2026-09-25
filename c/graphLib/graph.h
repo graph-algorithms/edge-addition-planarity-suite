@@ -29,7 +29,6 @@ extern "C"
 
     int gp_EnsureVertexCapacity(graphP theGraph, int N);
     int gp_EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity);
-    int gp_CompactEdgeStorage(graphP theGraph);
     void gp_ResetGraphStorage(graphP theGraph);
 
     void gp_Free(graphP *pGraph);

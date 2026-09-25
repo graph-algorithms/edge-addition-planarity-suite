@@ -49,6 +49,7 @@ int runSparse6WriteLineTest(char const *g6Str, char const *expectedLine);
 int runSparse6WriteRoundTripTest(char const *g6FileName, char const *s6FileName, int incremental);
 int runSparse6WriteContractTests(void);
 int runCompactEdgeStorageTests(void);
+extern int _CompactEdgeStorage(graphP theGraph);
 int compareSparse6Output(char const *ours, char const *expected, char const *what);
 int testDirectedDFS(void);
 int testPetersenDigraph(void);
@@ -1563,7 +1564,7 @@ int runSparse6WriteContractTests(void)
 
         if (s6_StoreGraphChange(theWriter, eToDelete, NIL, NIL) != OK ||
             gp_DeleteEdge(theGraph, eToDelete) != OK ||
-            gp_CompactEdgeStorage(theGraph) != OK)
+            _CompactEdgeStorage(theGraph) != OK)
         {
             gp_SetQuietMode(origQuietMode);
             gp_ErrorMessage("Unable to set up the direct edit case.");
@@ -1642,7 +1643,7 @@ int runSparse6WriteContractTests(void)
 
  Deletes edges of K5 so that holes lie in the middle and at the end of the
  edge storage, recorded by either record of their pairs, and checks that
- gp_CompactEdgeStorage() removes every hole while keeping the edge set, the
+ _CompactEdgeStorage() removes every hole while keeping the edge set, the
  edge count and the flags of the moved edge.
  ****************************************************************************/
 
@@ -1701,7 +1702,7 @@ int runCompactEdgeStorageTests(void)
         gp_SetDirection(theGraph, eLast, EDGEFLAG_DIRECTION_OUTONLY);
     }
 
-    if (Result == OK && gp_CompactEdgeStorage(theGraph) != OK)
+    if (Result == OK && _CompactEdgeStorage(theGraph) != OK)
     {
         gp_ErrorMessage("Unable to compact the edge storage.");
         Result = NOTOK;
@@ -1742,7 +1743,7 @@ int runCompactEdgeStorageTests(void)
     }
 
     // Compacting a dense graph, and a NULL graph, behave as documented
-    if (Result == OK && (gp_CompactEdgeStorage(theGraph) != OK || gp_CompactEdgeStorage(NULL) == OK))
+    if (Result == OK && (_CompactEdgeStorage(theGraph) != OK || _CompactEdgeStorage(NULL) == OK))
     {
         gp_ErrorMessage("Compaction of a dense or NULL graph gave the wrong result.");
         Result = NOTOK;
