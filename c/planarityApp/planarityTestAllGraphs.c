@@ -107,7 +107,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
     int order = 0;
     int lineNum = 0;
 
-    G6ReadIteratorP theG6ReadIterator = NULL;
+    GPReadIteratorP theReadIterator = NULL;
 
     if (GetEmbedFlags(command, modifier, &embedFlags) != OK)
     {
@@ -123,26 +123,26 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
         return NOTOK;
     }
 
-    if (g6_NewReader((&theG6ReadIterator), origGraphRead) != OK ||
-        g6_InitReaderWithFileName(theG6ReadIterator, infileName) != OK)
+    if (gp_NewReader((&theReadIterator), origGraphRead) != OK ||
+        gp_InitReaderWithFileName(theReadIterator, infileName) != OK)
     {
-        gp_ErrorMessage("Unable to allocate or initialize G6 read iterator.");
+        gp_ErrorMessage("Unable to allocate or initialize the read iterator.");
         gp_Free(&origGraphRead);
-        g6_FreeReader((&theG6ReadIterator));
+        gp_FreeReader((&theReadIterator));
         stats->errorFlag = TRUE;
         return NOTOK;
     }
 
-    // The order of the graphs in the G6 source file or string was determined by
-    // g6_InitReaderWithFileName() and we obtain it to initialize the graph for
-    // embedding
+    // The order of the graphs in the source file was determined by the read
+    // iterator when it was initialized with the file, and we obtain it to
+    // initialize the graph for embedding
     order = gp_GetN(origGraphRead);
 
     if ((graphForEmbedding = gp_New()) == NULL ||
         ExtendGraph(graphForEmbedding, command) != OK)
     {
         gp_ErrorMessage("Unable allocate graph for embedding.");
-        g6_FreeReader((&theG6ReadIterator));
+        gp_FreeReader((&theReadIterator));
         gp_Free(&origGraphRead);
         gp_Free(&graphForEmbedding);
         stats->errorFlag = TRUE;
@@ -152,7 +152,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
     if (gp_EnsureVertexCapacity(graphForEmbedding, order) != OK)
     {
         gp_ErrorMessage("Unable to expand graph storage for expected number of vertices.");
-        g6_FreeReader(&theG6ReadIterator);
+        gp_FreeReader((&theReadIterator));
         gp_Free(&origGraphRead);
         gp_Free(&graphForEmbedding);
         stats->errorFlag = TRUE;
@@ -161,14 +161,14 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
 
     while (TRUE)
     {
-        if (g6_ReadGraph(theG6ReadIterator) != OK)
+        if (gp_ReadGraph(theReadIterator) != OK)
         {
             gp_ErrorMessage("Unable to read graph on line %d.", lineNum + 1);
             Result = NOTOK;
             break;
         }
 
-        if (g6_EndReached(theG6ReadIterator))
+        if (gp_EndReached(theReadIterator))
             break;
 
         lineNum++;
@@ -231,7 +231,7 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
     stats->numNONEMBEDDABLE = numNONEMBEDDABLE;
     stats->errorFlag = (Result == OK) ? FALSE : TRUE;
 
-    g6_FreeReader((&theG6ReadIterator));
+    gp_FreeReader((&theReadIterator));
     gp_Free(&origGraphRead);
     gp_Free(&graphForEmbedding);
 

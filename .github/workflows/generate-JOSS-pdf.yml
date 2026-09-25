@@ -1,0 +1,41 @@
+name: Generate JOSS PDF
+on:
+  workflow_dispatch:
+  push:
+    branches: [ 'JOSS' ]
+    paths:
+      - 'JOSS/**'
+      # This is necessary so that once the final step 'Commit JOSS submission PDF to repository'
+      # finishes, we don't trigger the workflow again
+      - '!JOSS/*.pdf'
+      - '.github/workflows/generate-JOSS-pdf.yml'
+
+jobs:
+  paper:
+    runs-on: ubuntu-latest
+    name: Generate JOSS Submission PDF
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          token: ${{ secrets.JOSS_BUILD_TOKEN }}
+      - name: Generate JOSS submission PDF
+        uses: openjournals/openjournals-draft-action@85a18372e48f551d8af9ddb7a747de685fbbb01c # v1.0
+        with:
+          journal: joss
+          # This should be the path to the paper within your repo.
+          paper-path: JOSS/paper.md
+      - name: Upload
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: paper
+          # This is the output path where Pandoc will write the compiled
+          # PDF. Note, this should be the same directory as the input
+          # paper.md
+          path: JOSS/paper.pdf
+      - name: Commit JOSS submission PDF to repository
+        uses: EndBug/add-and-commit@cc9c08ba6c8df3b93a8f2db63e89b98368ae2ae8 # v11.1.1
+        with:
+          # Default message to be used; should be 'Commit from GitHub Actions Generate JOSS Submission PDF'
+          # This should be the path to the paper within your repo.
+          add: 'JOSS/paper.pdf' # 'JOSS/*.pdf' to commit all PDFs in the JOSS directory

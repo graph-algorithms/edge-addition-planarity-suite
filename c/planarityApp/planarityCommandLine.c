@@ -35,20 +35,28 @@ int runHideRestoreTests(void);
 int runIdentifyContractTests(void);
 int runSpecificGraphTest(char const *command, char const *infileName, int inputInMemFlag);
 int runGraphTransformationTest(char const *command, char const *infileName, int inputInMemFlag);
-int runTestAllGraphsTest(char const *commandString, char const *infileName);
+int runTestAllGraphsTest(char const *commandString, char const *infileName, char const *expectedValidationStr);
 int runHideRestoreTest(graphP theGraph);
 int runIdentifyContractTest(graphP theGraph);
-int runDigraphTests(void);
-int runGraphMLTests(void);
-int runDrawPlanarNonplanarWriteTest(void);
-int runReadWithExtensionAtEofTest(void);
-int runHighByteRoundTripTest(void);
-int runCapacityLimitTests(void);
+int runSparse6ReadTests(void);
+int runGeneralReadIteratorTests(void);
+int runSparse6LockstepTest(char const *g6FileName, char const *s6FileName, int inputInMemFlag, int expectedNumGraphs);
+int runSparse6AcceptTest(char const *s6Str, char const *expectedG6Line);
+int runSparse6AcceptEdgesTest(char const *s6Str, int order, int const edges[][2], int numEdges);
+int runSparse6RejectTest(char const *s6Str);
+char *copySparse6TestString(char const *s6Str);
 int testDirectedDFS(void);
 int testPetersenDigraph(void);
 int testDigraphTranspose(void);
+int runDigraphTests(void);
+int runDrawPlanarNonplanarWriteTest(void);
+int runReadErrorTests(void);
+int runReadWithExtensionAtEofTest(void);
+int runHighByteRoundTripTest(void);
+int runCapacityLimitTests(void);
 int runGraphMLWriteTest(char const *inputFileName, char const *expectedOutputFileName);
 int runBasicGraphMLWriteTest(void);
+int runGraphMLTests(void);
 
 /****************************************************************************
  Command Line Processor
@@ -259,11 +267,17 @@ int runQuickRegressionTests(int argc, char *argv[])
         retVal = NOTOK;
     else if (runDigraphTests() != OK)
         retVal = NOTOK;
+    else if (runReadErrorTests() != OK)
+        retVal = NOTOK;
     else if (runReadWithExtensionAtEofTest() != OK)
         retVal = NOTOK;
     else if (runHighByteRoundTripTest() != OK)
         retVal = NOTOK;
     else if (runCapacityLimitTests() != OK)
+        retVal = NOTOK;
+    else if (runSparse6ReadTests() != OK)
+        retVal = NOTOK;
+    else if (runGeneralReadIteratorTests() != OK)
         retVal = NOTOK;
     else if (runGraphMLTests() != OK)
         retVal = NOTOK;
@@ -760,6 +774,820 @@ int runCapacityLimitTests(void)
     return Result;
 }
 
+/********************************************************************
+ runSparse6ReadTests()
+
+ Exercises the sparse6 and incremental sparse6 read iterator (EPIC #38).
+
+ N5-all.s6 and N5-all.inc.s6 were produced from N5-all.g6 by nauty's
+ copyg (-s and -i respectively), and nauty_example.s6 from
+ nauty_example.g6 in the same way, so the graph6 reader serves as
+ the oracle: every graph read through the sparse6 reader must encode
+ to the same graph6 line as the graph read from the .g6 file. The
+ string cases pin the corners of the encoding (the padding rules, an
+ incomplete final pair, CRLF, the four-byte order, the incremental
+ toggle) and the inputs the reader must reject.
+ ********************************************************************/
+
+/****************************************************************************
+ runGeneralReadIteratorTests()
+
+ The general read iterator decides the format of an input from its first
+ line and then reads it with the read iterator of that format, so these
+ cases check that the decision is made correctly, that it is made once,
+ and that an input in none of the formats is refused rather than handed
+ to a reader that cannot make sense of it.
+ ****************************************************************************/
+
+int runGeneralReadIteratorTests(void)
+{
+    int Result = OK;
+    unsigned origQuietMode = gp_GetQuietMode();
+    size_t i = 0;
+
+    // {input string, graph6 encoding of the first graph it contains}
+    char const *acceptCases[][2] = {
+        // graph6, with and without its header
+        {"D?{\n", "D?{"},
+        {">>graph6<<D?{\n", "D?{"},
+        // sparse6 and incremental sparse6, the latter with the whole graph
+        // that its second line modifies
+        {":Fa@x^\n", "Fw??G"},
+        {":D\n;oN\n", "D??"},
+        {">>sparse6<<:Fa@x^\n", "Fw??G"},
+    };
+
+    // Inputs in none of the formats the iterator reads
+    char const *rejectCases[] = {
+        // digraph6, which neither reader accepts
+        "&AG\n",
+        // GraphML, whose first character is below the graph6 range
+        "<graphml>\n",
+        // An adjacency list, which gp_Read() recognizes by its "N=" but a
+        // file of graphs cannot contain: its first byte is in the graph6
+        // range and its second is not
+        "N=3\n1: 2 3 0\n2: 1 0\n3: 1 0\n",
+    };
+
+    // graph6 marks its lines with nothing but the order, so a first line that
+    // begins like graph6 is handed to the graph6 reader, which then fails on
+    // the content of the line: here the order says 5 vertices but the line
+    // ends before their edges do.
+    char const *readFailCases[] = {
+        "D?\n",
+    };
+
+    char const *g6Header = ">>graph6<<";
+    graphP theGraph = NULL;
+    GPReadIteratorP theReadIterator = NULL;
+    char *actualEncoding = NULL;
+
+    // {first line, expected s6_IsSparse6Input(), expected g6_IsGraph6Input()}
+    struct
+    {
+        char const *firstLine;
+        int isSparse6;
+        int isGraph6;
+    } predicateCases[] = {
+        {">>sparse6<<:Fa@x^", TRUE, FALSE},
+        {":Fa@x^", TRUE, FALSE},
+        {";oN", TRUE, FALSE},
+        {">>graph6<<D?{", FALSE, TRUE},
+        {"D?{", FALSE, TRUE},
+        // The order byte spans 63 to 126, and 126 introduces the longer
+        // order encodings; a graph of order 0 or 1 is its order byte alone,
+        // with or without the line terminator sf_fgets() leaves on it
+        {"?", FALSE, TRUE},
+        {"@\n", FALSE, TRUE},
+        {"~~~~", FALSE, TRUE},
+        // digraph6, GraphML, and a line whose first byte is below the range
+        {"&AG", FALSE, FALSE},
+        {"<graphml>", FALSE, FALSE},
+        // An adjacency list: the first byte is in the range, the second is not
+        {"N=3", FALSE, FALSE},
+        // The byte after the range, and one with the high bit set
+        {"\x7f", FALSE, FALSE},
+        {"\xff", FALSE, FALSE},
+        {"\n", FALSE, FALSE},
+        {"", FALSE, FALSE},
+        {NULL, FALSE, FALSE},
+    };
+
+    gp_Message("Starting General Read Iterator Tests");
+
+    for (i = 0; i < (sizeof(predicateCases) / sizeof(predicateCases[0])); i++)
+    {
+        if (s6_IsSparse6Input(predicateCases[i].firstLine) != predicateCases[i].isSparse6 ||
+            g6_IsGraph6Input(predicateCases[i].firstLine) != predicateCases[i].isGraph6)
+        {
+            gp_ErrorMessage("Format of \"%s\" was decided as sparse6=%d graph6=%d.",
+                            predicateCases[i].firstLine == NULL ? "(null)" : predicateCases[i].firstLine,
+                            s6_IsSparse6Input(predicateCases[i].firstLine),
+                            g6_IsGraph6Input(predicateCases[i].firstLine));
+            return NOTOK;
+        }
+    }
+
+    // A reader without a graph to read into is refused
+    gp_SetQuietMode(QUIETMODE_ALL);
+
+    if (gp_NewReader((&theReadIterator), NULL) == OK)
+    {
+        gp_SetQuietMode(origQuietMode);
+        gp_ErrorMessage("Reader was created without a graph.");
+        gp_FreeReader((&theReadIterator));
+        return NOTOK;
+    }
+
+    gp_SetQuietMode(origQuietMode);
+
+    for (i = 0; Result == OK && i < (sizeof(acceptCases) / sizeof(acceptCases[0])); i++)
+    {
+        char *inputStr = copySparse6TestString(acceptCases[i][0]);
+
+        if (inputStr == NULL)
+            return NOTOK;
+
+        if ((theGraph = gp_New()) == NULL ||
+            gp_NewReader((&theReadIterator), theGraph) != OK ||
+            gp_InitReaderWithString(theReadIterator, inputStr) != OK ||
+            gp_ReadGraph(theReadIterator) != OK ||
+            gp_EndReached(theReadIterator))
+        {
+            gp_ErrorMessage("Unable to read the first graph of accept case %d.", (int)i);
+            Result = NOTOK;
+        }
+        else if (gp_WriteToString(theGraph, (&actualEncoding), WRITE_G6) != OK ||
+                 actualEncoding == NULL ||
+                 strncmp(actualEncoding + strlen(g6Header), acceptCases[i][1],
+                         strlen(acceptCases[i][1])) != 0)
+        {
+            gp_ErrorMessage("Graph of accept case %d is \"%s\" rather than \"%s\".",
+                            (int)i, actualEncoding == NULL ? "" : actualEncoding,
+                            acceptCases[i][1]);
+            Result = NOTOK;
+        }
+        // A reader carries one input, so a second initialization is refused,
+        // and refusing it leaves the reader reading the input it has
+        else
+        {
+            GPReadIteratorP theSameReadIterator = theReadIterator;
+
+            gp_SetQuietMode(QUIETMODE_ALL);
+
+            if (gp_InitReaderWithString(theReadIterator, inputStr) == OK)
+            {
+                gp_SetQuietMode(origQuietMode);
+                gp_ErrorMessage("Reader of accept case %d was initialized twice.", (int)i);
+                Result = NOTOK;
+            }
+            // Allocating over an existing reader would lose it
+            else if (gp_NewReader((&theSameReadIterator), theGraph) == OK)
+            {
+                gp_SetQuietMode(origQuietMode);
+                gp_ErrorMessage("Reader of accept case %d was allocated over.", (int)i);
+                Result = NOTOK;
+            }
+            else if (gp_ReadGraph(theReadIterator) != OK)
+            {
+                gp_SetQuietMode(origQuietMode);
+                gp_ErrorMessage("Reader of accept case %d stopped reading after "
+                                "the refusals.",
+                                (int)i);
+                Result = NOTOK;
+            }
+
+            gp_SetQuietMode(origQuietMode);
+        }
+
+        if (actualEncoding != NULL)
+        {
+            free(actualEncoding);
+            actualEncoding = NULL;
+        }
+
+        gp_FreeReader((&theReadIterator));
+        gp_Free(&theGraph);
+        free(inputStr);
+    }
+
+    for (i = 0; Result == OK && i < (sizeof(rejectCases) / sizeof(rejectCases[0])); i++)
+    {
+        char *inputStr = copySparse6TestString(rejectCases[i]);
+
+        if (inputStr == NULL)
+            return NOTOK;
+
+        if ((theGraph = gp_New()) == NULL ||
+            gp_NewReader((&theReadIterator), theGraph) != OK)
+            Result = NOTOK;
+        else
+        {
+            gp_SetQuietMode(QUIETMODE_ALL);
+
+            if (gp_InitReaderWithString(theReadIterator, inputStr) == OK)
+            {
+                gp_SetQuietMode(origQuietMode);
+                gp_ErrorMessage("Reject case %d was accepted by the reader.", (int)i);
+                Result = NOTOK;
+            }
+
+            gp_SetQuietMode(origQuietMode);
+        }
+
+        gp_FreeReader((&theReadIterator));
+        gp_Free(&theGraph);
+        free(inputStr);
+    }
+
+    for (i = 0; Result == OK && i < (sizeof(readFailCases) / sizeof(readFailCases[0])); i++)
+    {
+        char *inputStr = copySparse6TestString(readFailCases[i]);
+
+        if (inputStr == NULL)
+            return NOTOK;
+
+        gp_SetQuietMode(QUIETMODE_ALL);
+
+        if ((theGraph = gp_New()) == NULL ||
+            gp_NewReader((&theReadIterator), theGraph) != OK ||
+            gp_InitReaderWithString(theReadIterator, inputStr) != OK)
+        {
+            gp_SetQuietMode(origQuietMode);
+            gp_ErrorMessage("Read-failure case %d was refused before it was read.", (int)i);
+            Result = NOTOK;
+        }
+        else if (gp_ReadGraph(theReadIterator) == OK)
+        {
+            gp_SetQuietMode(origQuietMode);
+            gp_ErrorMessage("Read-failure case %d was read as a graph.", (int)i);
+            Result = NOTOK;
+        }
+
+        gp_SetQuietMode(origQuietMode);
+
+        gp_FreeReader((&theReadIterator));
+        gp_Free(&theGraph);
+        free(inputStr);
+    }
+
+    // The same decision from a file, where the first line is read and pushed
+    // back before the reader of that format is given the input
+    if (Result == OK)
+    {
+        // The first graph of each sample is the edgeless graph of order 5,
+        // whatever the format of the file
+        char const *fileCases[][2] = {
+            {"N5-all.g6", "D??"},
+            {"N5-all.s6", "D??"},
+            {"N5-all.inc.s6", "D??"},
+        };
+
+        for (i = 0; Result == OK && i < (sizeof(fileCases) / sizeof(fileCases[0])); i++)
+        {
+            if ((theGraph = gp_New()) == NULL ||
+                gp_NewReader((&theReadIterator), theGraph) != OK ||
+                gp_InitReaderWithFileName(theReadIterator, fileCases[i][0]) != OK ||
+                gp_ReadGraph(theReadIterator) != OK ||
+                gp_EndReached(theReadIterator))
+            {
+                gp_ErrorMessage("Unable to read the first graph of \"%s\".", fileCases[i][0]);
+                Result = NOTOK;
+            }
+            else if (gp_WriteToString(theGraph, (&actualEncoding), WRITE_G6) != OK ||
+                     actualEncoding == NULL ||
+                     strncmp(actualEncoding + strlen(g6Header), fileCases[i][1],
+                             strlen(fileCases[i][1])) != 0)
+            {
+                gp_ErrorMessage("First graph of \"%s\" is \"%s\" rather than \"%s\".",
+                                fileCases[i][0], actualEncoding == NULL ? "" : actualEncoding,
+                                fileCases[i][1]);
+                Result = NOTOK;
+            }
+
+            else
+            {
+                // The samples hold every graph of order 5, and a reader that
+                // never advances or never ends would not count them
+                int numGraphsRead = 1;
+
+                while (Result == OK)
+                {
+                    if (gp_ReadGraph(theReadIterator) != OK)
+                    {
+                        gp_ErrorMessage("Unable to read graph %d of \"%s\".",
+                                        numGraphsRead + 1, fileCases[i][0]);
+                        Result = NOTOK;
+                    }
+                    else if (gp_EndReached(theReadIterator))
+                        break;
+                    else
+                        numGraphsRead++;
+                }
+
+                if (Result == OK && numGraphsRead != 34)
+                {
+                    gp_ErrorMessage("Read %d graphs of \"%s\" rather than 34.",
+                                    numGraphsRead, fileCases[i][0]);
+                    Result = NOTOK;
+                }
+            }
+
+            if (actualEncoding != NULL)
+            {
+                free(actualEncoding);
+                actualEncoding = NULL;
+            }
+
+            gp_FreeReader((&theReadIterator));
+            gp_Free(&theGraph);
+        }
+    }
+
+    gp_Message(" ");
+
+    return Result;
+}
+
+int runSparse6ReadTests(void)
+{
+    int Result = OK;
+    unsigned origQuietMode = gp_GetQuietMode();
+    size_t i = 0;
+
+    // {sparse6 input, graph6 encoding of the last graph in it}
+    char const *acceptCases[][2] = {
+        // The example in the format specification
+        {":Fa@x^\n", "Fw??G"},
+        // No line terminator, and header with CRLF
+        {":Fa@x^", "Fw??G"},
+        {">>sparse6<<:Fa@x^\r\n", "Fw??G"},
+        // An incomplete final pair is padding
+        {":Dw\n", "D??"},
+        // Orders 2 and 4, where the padding rule for n = 2^k applies
+        {":A\n", "A?"},
+        {":An\n", "A_"},
+        {":C\n", "C?"},
+        {":Cw\n", "CC"},
+        {":CwN\n", "CE"},
+        {":CwI\n", "CF"},
+        {":Con\n", "CQ"},
+        {":Co`\n", "CU"},
+        {":Coa\n", "CT"},
+        {":Co`V\n", "CV"},
+        {":CoKN\n", "C]"},
+        {":CoKI\n", "C^"},
+        {":CcKI\n", "C~"},
+        // Incremental lines toggle edges relative to the previous graph
+        {":D\n;oN\n", "D?_"},
+        {":D\n;oN\n;oN\n", "D??"},
+        {":D\n;oN\n:D\n", "D??"},
+    };
+
+    // Order 63 uses the four-byte order encoding
+    int const order63Edges[][2] = {{25, 62}, {49, 51}};
+
+    char const *rejectCases[] = {
+        // An incremental line cannot be the first graph
+        ";oN\n",
+        // Loop edge, including on the single vertex of an order-1 graph
+        // (through the zero-width x field), then parallel edges, the second
+        // separated from the first occurrence by another edge
+        ":AF\n",
+        ":@?\n",
+        ":Ab\n",
+        ":CWG\n",
+        // Bytes outside 63..126 in the edge list. The second and third are
+        // chosen so that reading them as data would decode to a valid graph,
+        // so they are rejected by the byte range check alone, and the last
+        // confirms that byte 0xFF is read as data rather than as EOF
+        ":A \n",
+        ":D!\n",
+        ":D\t\n",
+        ":D\xFF\n",
+        // Order 0, and the eight-byte order encoding
+        ":?\n",
+        ":~~????????\n",
+        // A later graph of a different order, an empty line, and a line
+        // beginning with neither ':' nor ';'
+        ":D\n:C\n",
+        ":D\n\n:D\n",
+        ":D\nX\n",
+        // digraph6, and a header followed by a line terminator
+        "&D\n",
+        ">>sparse6<<\n:D\n",
+    };
+
+    gp_Message("Start sparse6 read tests");
+
+    if (Result == OK && runSparse6LockstepTest("N5-all.g6", "N5-all.s6", FALSE, 34) != OK)
+        Result = NOTOK;
+
+    if (Result == OK && runSparse6LockstepTest("N5-all.g6", "N5-all.s6", TRUE, 34) != OK)
+        Result = NOTOK;
+
+    if (Result == OK && runSparse6LockstepTest("N5-all.g6", "N5-all.inc.s6", FALSE, 34) != OK)
+        Result = NOTOK;
+
+    if (Result == OK && runSparse6LockstepTest("N5-all.g6", "N5-all.inc.s6", TRUE, 34) != OK)
+        Result = NOTOK;
+
+    // The single-graph readers gp_Read() and gp_ReadFromString() dispatch
+    // sparse6 input to the sparse6 reader
+    if (Result == OK && runGraphTransformationTest("-a", "nauty_example.s6", TRUE) != OK)
+        Result = NOTOK;
+
+    if (Result == OK && runGraphTransformationTest("-a", "nauty_example.s6", FALSE) != OK)
+        Result = NOTOK;
+
+    if (Result == OK && runGraphTransformationTest("-m", "nauty_example.s6", TRUE) != OK)
+        Result = NOTOK;
+
+    if (Result == OK && runGraphTransformationTest("-m", "nauty_example.s6", FALSE) != OK)
+        Result = NOTOK;
+
+    if (Result == OK && runGraphTransformationTest("-g", "nauty_example.s6", TRUE) != OK)
+        Result = NOTOK;
+
+    if (Result == OK && runGraphTransformationTest("-g", "nauty_example.s6", FALSE) != OK)
+        Result = NOTOK;
+
+    for (i = 0; Result == OK && i < sizeof(acceptCases) / sizeof(acceptCases[0]); i++)
+    {
+        if (runSparse6AcceptTest(acceptCases[i][0], acceptCases[i][1]) != OK)
+            Result = NOTOK;
+    }
+
+    if (Result == OK && runSparse6AcceptEdgesTest(":~??~xk^pf\n", 63, order63Edges, 2) != OK)
+        Result = NOTOK;
+
+    // Order 1, whose vertex field is zero bits wide, is checked directly
+    // because the graph6 writer used by the other cases does not encode
+    // graphs of order 1. The second input has six one-bit pairs that are
+    // all padding, which is the only way through that zero-width field
+    // that does not end in a loop
+    for (i = 0; Result == OK && i < 2; i++)
+    {
+        char const *order1Cases[] = {":@\n", ":@~\n"};
+        graphP order1Graph = gp_New();
+        char *order1Str = copySparse6TestString(order1Cases[i]);
+
+        if (order1Graph == NULL || order1Str == NULL ||
+            gp_ReadFromString(order1Graph, order1Str) != OK ||
+            gp_GetN(order1Graph) != 1 || gp_GetM(order1Graph) != 0)
+        {
+            gp_ErrorMessage("Sparse6 input \"%s\" did not decode to the "
+                            "graph of order 1 with no edges.",
+                            order1Cases[i]);
+            Result = NOTOK;
+        }
+
+        gp_Free(&order1Graph);
+        if (order1Str != NULL)
+            free(order1Str);
+    }
+
+    // The rejected inputs produce error messages by design, and DEBUG builds
+    // report every NOTOK as well, so all output is silenced while the
+    // rejections are checked
+    gp_SetQuietMode(QUIETMODE_ALL);
+
+    for (i = 0; Result == OK && i < sizeof(rejectCases) / sizeof(rejectCases[0]); i++)
+    {
+        if (runSparse6RejectTest(rejectCases[i]) != OK)
+        {
+            gp_SetQuietMode(origQuietMode);
+            gp_ErrorMessage("Sparse6 reject case %d was accepted but should "
+                            "have been rejected.",
+                            (int)i);
+            Result = NOTOK;
+        }
+    }
+
+    // A reader whose initialization failed must accept a fresh
+    // initialization, and (under a leak checker) must not have kept the
+    // rejected input
+    if (Result == OK)
+    {
+        graphP theGraph = gp_New();
+        S6ReadIteratorP theS6ReadIterator = NULL;
+        char *badStr = copySparse6TestString(":?\n");
+        char *goodStr = copySparse6TestString(":D\n");
+
+        if (theGraph == NULL || badStr == NULL || goodStr == NULL ||
+            s6_NewReader((&theS6ReadIterator), theGraph) != OK ||
+            s6_InitReaderWithString(theS6ReadIterator, badStr) != NOTOK ||
+            s6_InitReaderWithString(theS6ReadIterator, goodStr) != OK ||
+            s6_ReadGraph(theS6ReadIterator) != OK ||
+            gp_GetN(theGraph) != 5 || gp_GetM(theGraph) != 0)
+        {
+            gp_SetQuietMode(origQuietMode);
+            gp_ErrorMessage("Sparse6 reader could not be reinitialized after "
+                            "a failed initialization.");
+            Result = NOTOK;
+        }
+
+        s6_FreeReader((&theS6ReadIterator));
+        gp_Free(&theGraph);
+        if (badStr != NULL)
+            free(badStr);
+        if (goodStr != NULL)
+            free(goodStr);
+    }
+
+    gp_SetQuietMode(origQuietMode);
+
+    if (Result == OK)
+        gp_Message("Sparse6 read tests succeeded.\n");
+    else
+        gp_ErrorMessage("Sparse6 read tests failed.");
+
+    return Result;
+}
+
+char *copySparse6TestString(char const *s6Str)
+{
+    size_t len = strlen(s6Str);
+    char *theCopy = (char *)malloc(len + 1);
+
+    if (theCopy != NULL)
+        memcpy(theCopy, s6Str, len + 1);
+
+    return theCopy;
+}
+
+// Reads g6FileName with the graph6 read iterator and s6FileName with the
+// sparse6 read iterator in lockstep, and requires every pair of graphs to
+// have the same graph6 encoding, both inputs to end on the same graph, and
+// the number of graphs to be expectedNumGraphs.
+int runSparse6LockstepTest(char const *g6FileName, char const *s6FileName, int inputInMemFlag, int expectedNumGraphs)
+{
+    int Result = OK;
+    int numGraphs = 0;
+    graphP g6Graph = NULL, s6Graph = NULL;
+    G6ReadIteratorP theG6ReadIterator = NULL;
+    S6ReadIteratorP theS6ReadIterator = NULL;
+    char *s6InputStr = NULL;
+
+    if ((g6Graph = gp_New()) == NULL || (s6Graph = gp_New()) == NULL)
+        Result = NOTOK;
+
+    if (Result == OK &&
+        (g6_NewReader((&theG6ReadIterator), g6Graph) != OK ||
+         g6_InitReaderWithFileName(theG6ReadIterator, g6FileName) != OK))
+        Result = NOTOK;
+
+    if (Result == OK && s6_NewReader((&theS6ReadIterator), s6Graph) != OK)
+        Result = NOTOK;
+
+    if (Result == OK)
+    {
+        if (inputInMemFlag)
+        {
+            if ((s6InputStr = ReadTextFileIntoString(s6FileName)) == NULL ||
+                s6_InitReaderWithString(theS6ReadIterator, s6InputStr) != OK)
+                Result = NOTOK;
+        }
+        else if (s6_InitReaderWithFileName(theS6ReadIterator, s6FileName) != OK)
+            Result = NOTOK;
+    }
+
+    while (Result == OK)
+    {
+        char *g6Str = NULL, *s6Str = NULL;
+
+        if (g6_ReadGraph(theG6ReadIterator) != OK || s6_ReadGraph(theS6ReadIterator) != OK)
+        {
+            Result = NOTOK;
+            break;
+        }
+
+        if (g6_EndReached(theG6ReadIterator) || s6_EndReached(theS6ReadIterator))
+        {
+            if (!g6_EndReached(theG6ReadIterator) || !s6_EndReached(theS6ReadIterator))
+            {
+                gp_ErrorMessage("\"%s\" and \"%s\" do not contain the same "
+                                "number of graphs.",
+                                g6FileName, s6FileName);
+                Result = NOTOK;
+            }
+            break;
+        }
+
+        numGraphs++;
+
+        // The edge count is compared as well because a repeated edge would
+        // set the same bit of the graph6 encoding twice and go unnoticed,
+        // and the edge storage must be dense (no holes left by incremental
+        // deletions), which DrawPlanar requires of any graph it embeds
+        if (gp_GetM(g6Graph) != gp_GetM(s6Graph) ||
+            gp_UpperBoundEdges(s6Graph) != gp_LowerBoundEdges(s6Graph) + (gp_GetM(s6Graph) << 1) ||
+            gp_WriteToString(g6Graph, &g6Str, WRITE_G6) != OK || g6Str == NULL ||
+            gp_WriteToString(s6Graph, &s6Str, WRITE_G6) != OK || s6Str == NULL ||
+            strcmp(g6Str, s6Str) != 0)
+        {
+            gp_ErrorMessage("Graph %d of \"%s\" does not match graph %d of "
+                            "\"%s\".",
+                            numGraphs, s6FileName, numGraphs, g6FileName);
+            Result = NOTOK;
+        }
+
+        if (g6Str != NULL)
+            free(g6Str);
+        if (s6Str != NULL)
+            free(s6Str);
+    }
+
+    if (Result == OK && numGraphs != expectedNumGraphs)
+    {
+        gp_ErrorMessage("Expected %d graphs in \"%s\" but read %d.",
+                        expectedNumGraphs, s6FileName, numGraphs);
+        Result = NOTOK;
+    }
+
+    if (Result == OK)
+        gp_Message("The %d graphs in \"%s\" (read %s) match \"%s\".",
+                   numGraphs, s6FileName, inputInMemFlag ? "from a string" : "from the file", g6FileName);
+
+    g6_FreeReader((&theG6ReadIterator));
+    s6_FreeReader((&theS6ReadIterator));
+    gp_Free(&g6Graph);
+    gp_Free(&s6Graph);
+
+    if (s6InputStr != NULL)
+        free(s6InputStr);
+
+    return Result;
+}
+
+// Reads every graph in s6Str with the sparse6 read iterator and requires the
+// last one to have the graph6 encoding expectedG6Line (given without the
+// header and line terminator).
+int runSparse6AcceptTest(char const *s6Str, char const *expectedG6Line)
+{
+    int Result = OK;
+    int numGraphs = 0;
+    char const *g6Header = ">>graph6<<";
+    char *s6Copy = NULL, *actualG6 = NULL, *expectedG6 = NULL;
+    graphP theGraph = NULL;
+    S6ReadIteratorP theS6ReadIterator = NULL;
+
+    if ((s6Copy = copySparse6TestString(s6Str)) == NULL || (theGraph = gp_New()) == NULL)
+        Result = NOTOK;
+
+    if (Result == OK &&
+        (s6_NewReader((&theS6ReadIterator), theGraph) != OK ||
+         s6_InitReaderWithString(theS6ReadIterator, s6Copy) != OK))
+        Result = NOTOK;
+
+    while (Result == OK)
+    {
+        if (s6_ReadGraph(theS6ReadIterator) != OK)
+        {
+            Result = NOTOK;
+            break;
+        }
+
+        if (s6_EndReached(theS6ReadIterator))
+            break;
+
+        numGraphs++;
+    }
+
+    if (Result == OK && numGraphs == 0)
+        Result = NOTOK;
+
+    if (Result == OK)
+    {
+        expectedG6 = (char *)malloc(strlen(g6Header) + strlen(expectedG6Line) + 2);
+
+        if (expectedG6 == NULL)
+            Result = NOTOK;
+        else
+            sprintf(expectedG6, "%s%s\n", g6Header, expectedG6Line);
+    }
+
+    if (Result == OK &&
+        (gp_WriteToString(theGraph, &actualG6, WRITE_G6) != OK || actualG6 == NULL ||
+         strcmp(actualG6, expectedG6) != 0))
+        Result = NOTOK;
+
+    if (Result != OK)
+        gp_ErrorMessage("Sparse6 input \"%s\" did not decode to the graph "
+                        "with graph6 encoding \"%s\".",
+                        s6Str, expectedG6Line);
+
+    s6_FreeReader((&theS6ReadIterator));
+    gp_Free(&theGraph);
+
+    if (s6Copy != NULL)
+        free(s6Copy);
+    if (actualG6 != NULL)
+        free(actualG6);
+    if (expectedG6 != NULL)
+        free(expectedG6);
+
+    return Result;
+}
+
+// Reads the graph in s6Str with gp_ReadFromString() and requires it to have
+// the same graph6 encoding as the graph of the given order built from the
+// given 0-based edge list.
+int runSparse6AcceptEdgesTest(char const *s6Str, int order, int const edges[][2], int numEdges)
+{
+    int Result = OK;
+    char *s6Copy = NULL, *actualG6 = NULL, *expectedG6 = NULL;
+    graphP actualGraph = NULL, expectedGraph = NULL;
+
+    if ((s6Copy = copySparse6TestString(s6Str)) == NULL ||
+        (actualGraph = gp_New()) == NULL ||
+        (expectedGraph = gp_New()) == NULL)
+        Result = NOTOK;
+
+    if (Result == OK && gp_EnsureVertexCapacity(expectedGraph, order) != OK)
+        Result = NOTOK;
+
+    for (int i = 0; Result == OK && i < numEdges; i++)
+    {
+        if (gp_DynamicAddEdge(expectedGraph,
+                              edges[i][0] + gp_LowerBoundVertexStorage(expectedGraph), 0,
+                              edges[i][1] + gp_LowerBoundVertexStorage(expectedGraph), 0) != OK)
+            Result = NOTOK;
+    }
+
+    if (Result == OK && gp_ReadFromString(actualGraph, s6Copy) != OK)
+        Result = NOTOK;
+
+    if (Result == OK &&
+        (gp_WriteToString(actualGraph, &actualG6, WRITE_G6) != OK || actualG6 == NULL ||
+         gp_WriteToString(expectedGraph, &expectedG6, WRITE_G6) != OK || expectedG6 == NULL ||
+         strcmp(actualG6, expectedG6) != 0))
+        Result = NOTOK;
+
+    if (Result != OK)
+        gp_ErrorMessage("Sparse6 input \"%s\" did not decode to the expected "
+                        "graph of order %d with %d edges.",
+                        s6Str, order, numEdges);
+
+    gp_Free(&actualGraph);
+    gp_Free(&expectedGraph);
+
+    if (s6Copy != NULL)
+        free(s6Copy);
+    if (actualG6 != NULL)
+        free(actualG6);
+    if (expectedG6 != NULL)
+        free(expectedG6);
+
+    return Result;
+}
+
+// Returns OK if the sparse6 read iterator rejects s6Str, either at
+// initialization or while reading one of its graphs, and NOTOK if every
+// graph in it is accepted.
+int runSparse6RejectTest(char const *s6Str)
+{
+    int Result = OK;
+    int accepted = FALSE;
+    char *s6Copy = NULL;
+    graphP theGraph = NULL;
+    S6ReadIteratorP theS6ReadIterator = NULL;
+
+    if ((s6Copy = copySparse6TestString(s6Str)) == NULL || (theGraph = gp_New()) == NULL)
+        Result = NOTOK;
+
+    if (Result == OK && s6_NewReader((&theS6ReadIterator), theGraph) != OK)
+        Result = NOTOK;
+
+    if (Result == OK && s6_InitReaderWithString(theS6ReadIterator, s6Copy) == OK)
+    {
+        accepted = TRUE;
+
+        while (TRUE)
+        {
+            if (s6_ReadGraph(theS6ReadIterator) != OK)
+            {
+                accepted = FALSE;
+                break;
+            }
+
+            if (s6_EndReached(theS6ReadIterator))
+                break;
+        }
+    }
+
+    if (accepted)
+        Result = NOTOK;
+
+    s6_FreeReader((&theS6ReadIterator));
+    gp_Free(&theGraph);
+
+    if (s6Copy != NULL)
+        free(s6Copy);
+
+    return Result;
+}
+
 int runGraphTransformationTests(void)
 {
     int retVal = OK;
@@ -894,34 +1722,75 @@ int runTestAllGraphsTests(void)
     int retVal = OK;
 
     // Run TestAllGraphs Tests
-    if (runTestAllGraphsTest("-p", "n8.mALL.g6") != OK)
+    if (runTestAllGraphsTest("-p", "n8.mALL.g6", NULL) != OK)
     {
         gp_ErrorMessage("Planarity test on all graphs failed.");
         retVal = NOTOK;
     }
-    if (runTestAllGraphsTest("-d", "n8.mALL.g6") != OK)
+    if (runTestAllGraphsTest("-d", "n8.mALL.g6", NULL) != OK)
     {
         gp_ErrorMessage("Planar graph drawing test on all graphs failed.");
         retVal = NOTOK;
     }
-    if (runTestAllGraphsTest("-o", "n8.mALL.g6") != OK)
+    if (runTestAllGraphsTest("-o", "n8.mALL.g6", NULL) != OK)
     {
         gp_ErrorMessage("Outerplanarity test on all graphs failed.");
         retVal = NOTOK;
     }
-    if (runTestAllGraphsTest("-2", "n8.mALL.g6") != OK)
+    if (runTestAllGraphsTest("-2", "n8.mALL.g6", NULL) != OK)
     {
         gp_ErrorMessage("K2,3 homeomorph search test on all graphs failed.");
         retVal = NOTOK;
     }
-    if (runTestAllGraphsTest("-3", "n8.mALL.g6") != OK)
+    if (runTestAllGraphsTest("-3", "n8.mALL.g6", NULL) != OK)
     {
         gp_ErrorMessage("K3,3 homeomorph search test on all graphs failed.");
         retVal = NOTOK;
     }
-    if (runTestAllGraphsTest("-4", "n8.mALL.g6") != OK)
+    if (runTestAllGraphsTest("-4", "n8.mALL.g6", NULL) != OK)
     {
         gp_ErrorMessage("K4 homeomorph search test on all graphs failed.");
+        retVal = NOTOK;
+    }
+
+    // The same graphs in incremental sparse6 format must give the same results,
+    // which exercises the sparse6 read iterator on every algorithm, including
+    // planar graph drawing, which requires edge storage without holes.
+    if (runTestAllGraphsTest("-p", "n8.mALL.inc.s6", NULL) != OK)
+    {
+        gp_ErrorMessage("Planarity test on all graphs in incremental sparse6 failed.");
+        retVal = NOTOK;
+    }
+    if (runTestAllGraphsTest("-d", "n8.mALL.inc.s6", NULL) != OK)
+    {
+        gp_ErrorMessage("Planar graph drawing test on all graphs in incremental sparse6 failed.");
+        retVal = NOTOK;
+    }
+    if (runTestAllGraphsTest("-o", "n8.mALL.inc.s6", NULL) != OK)
+    {
+        gp_ErrorMessage("Outerplanarity test on all graphs in incremental sparse6 failed.");
+        retVal = NOTOK;
+    }
+    if (runTestAllGraphsTest("-2", "n8.mALL.inc.s6", NULL) != OK)
+    {
+        gp_ErrorMessage("K2,3 homeomorph search test on all graphs in incremental sparse6 failed.");
+        retVal = NOTOK;
+    }
+    if (runTestAllGraphsTest("-3", "n8.mALL.inc.s6", NULL) != OK)
+    {
+        gp_ErrorMessage("K3,3 homeomorph search test on all graphs in incremental sparse6 failed.");
+        retVal = NOTOK;
+    }
+    if (runTestAllGraphsTest("-4", "n8.mALL.inc.s6", NULL) != OK)
+    {
+        gp_ErrorMessage("K4 homeomorph search test on all graphs in incremental sparse6 failed.");
+        retVal = NOTOK;
+    }
+
+    // Plain sparse6 input, where every line is a whole graph
+    if (runTestAllGraphsTest("-p", "N5-all.s6", "-p 34 33 1 SUCCESS") != OK)
+    {
+        gp_ErrorMessage("Planarity test on all graphs in sparse6 failed.");
         retVal = NOTOK;
     }
 
@@ -1287,7 +2156,7 @@ int runIdentifyContractTest(graphP theGraph)
     return Result;
 }
 
-int runTestAllGraphsTest(char const *commandString, char const *infileName)
+int runTestAllGraphsTest(char const *commandString, char const *infileName, char const *expectedValidationStr)
 {
     char *outputStr = NULL;
     int Result = OK;
@@ -1302,7 +2171,11 @@ int runTestAllGraphsTest(char const *commandString, char const *infileName)
 
     Result = TestAllGraphs(commandString, infileName, NULL, &outputStr);
 
-    if (Result == OK)
+    if (Result == OK && expectedValidationStr != NULL)
+    {
+        Result = strstr(outputStr, expectedValidationStr) ? OK : NOTOK;
+    }
+    else if (Result == OK)
     {
         const char *planarityValidationStr = "-p 12346 6966 5380 SUCCESS";
         const char *drawPlanarValidationStr = "-d 12346 6966 5380 SUCCESS";
