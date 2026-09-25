@@ -345,12 +345,6 @@ int _s6_InitWriter(S6WriteIteratorP theS6WriteIterator)
     char const *s6Header = ">>sparse6<<";
     int order = gp_GetN(theS6WriteIterator->currGraph);
 
-    if (order > 100000)
-    {
-        gp_ErrorMessage("Graphs of order n > 100000 are not supported at this time.");
-        return NOTOK;
-    }
-
     if (sf_fputs(s6Header, theS6WriteIterator->outputContainer) < 0)
     {
         gp_ErrorMessage("Unable to initialize writer due to failure to fputs "
@@ -761,16 +755,45 @@ int _s6_ComparePairs(void const *a, void const *b)
     return 0;
 }
 
-// Appends the low width bits of value to the bit stream, writing each
-// completed group of six bits as a byte in the range 63 to 126
+// A line is written out through a buffer of this many bytes, so that a line
+// of any length, which for a graph near the largest order can exceed what
+// one sf_fputs() accepts, needs no more memory than that
+#define S6_LINE_CHUNK_SIZE 65536
+
 typedef struct
 {
     char *out;
     size_t pos;
     unsigned long long acc;
     int numBits;
+    strOrFileP outputContainer;
+    int failed;
 } s6BitWriter;
 
+// Writes the bytes gathered so far to the output container, and remembers
+// a failure so that the caller can report it once the line is done
+static void _s6_FlushBytes(s6BitWriter *writer)
+{
+    if (writer->pos == 0)
+        return;
+
+    writer->out[writer->pos] = '\0';
+    if (!writer->failed && sf_fputs(writer->out, writer->outputContainer) < 0)
+        writer->failed = TRUE;
+    writer->pos = 0;
+}
+
+// Appends one byte, keeping room in the buffer for the null terminator
+static void _s6_PutByte(s6BitWriter *writer, char byte)
+{
+    if (writer->pos == S6_LINE_CHUNK_SIZE - 1)
+        _s6_FlushBytes(writer);
+
+    writer->out[writer->pos++] = byte;
+}
+
+// Appends the low width bits of value to the bit stream, writing each
+// completed group of six bits as a byte in the range 63 to 126
 static void _s6_PutBits(s6BitWriter *writer, unsigned int value, int width)
 {
     writer->acc = (writer->acc << width) | (value & ((1ULL << width) - 1));
@@ -779,7 +802,7 @@ static void _s6_PutBits(s6BitWriter *writer, unsigned int value, int width)
     while (writer->numBits >= 6)
     {
         writer->numBits -= 6;
-        writer->out[writer->pos++] = (char)(((writer->acc >> writer->numBits) & 63) + 63);
+        _s6_PutByte(writer, (char)(((writer->acc >> writer->numBits) & 63) + 63));
     }
 
     writer->acc &= (1ULL << writer->numBits) - 1;
@@ -808,65 +831,64 @@ static void _s6_PutBits(s6BitWriter *writer, unsigned int value, int width)
  which keeps a third int per pair, be encoded in place.
 
  The line, including its terminator, is written to the output
- container. Returns OK on success, NOTOK otherwise.
+ container in pieces of at most S6_LINE_CHUNK_SIZE bytes, so its length
+ is limited only by the order and the number of edges. Returns OK on
+ success, NOTOK otherwise.
  ********************************************************************/
 
 int _s6_EncodeLine(S6WriteIteratorP theS6WriteIterator, char lineChar, int const *pairs, int numPairs, int stride)
 {
     const int order = theS6WriteIterator->order;
     const int numBitsForVertex = theS6WriteIterator->numBitsForVertex;
-    size_t requiredSize = 0;
     s6BitWriter writer;
     int lastj = 0;
 
-    // Six bytes per edge covers two pairs of at most 18 bits each, plus
-    // the line character, up to four bytes of order, a padded final byte,
-    // the line terminator and the null terminator
-    if ((size_t)numPairs > (SIZE_MAX - 8) / 6)
+    if (theS6WriteIterator->lineBuff == NULL)
     {
-        gp_ErrorMessage("Too many edges to encode as a sparse6 line.");
-        return NOTOK;
-    }
+        theS6WriteIterator->lineBuff = (char *)malloc(S6_LINE_CHUNK_SIZE);
 
-    requiredSize = (size_t)numPairs * 6 + 8;
-
-    if (theS6WriteIterator->lineBuffSize < requiredSize)
-    {
-        char *newBuff = (char *)realloc(theS6WriteIterator->lineBuff, requiredSize);
-
-        if (newBuff == NULL)
+        if (theS6WriteIterator->lineBuff == NULL)
         {
             gp_ErrorMessage("Unable to allocate memory for the sparse6 line.");
             return NOTOK;
         }
 
-        theS6WriteIterator->lineBuff = newBuff;
-        theS6WriteIterator->lineBuffSize = requiredSize;
+        theS6WriteIterator->lineBuffSize = S6_LINE_CHUNK_SIZE;
     }
 
     writer.out = theS6WriteIterator->lineBuff;
     writer.pos = 0;
     writer.acc = 0;
     writer.numBits = 0;
+    writer.outputContainer = theS6WriteIterator->outputContainer;
+    writer.failed = FALSE;
 
-    writer.out[writer.pos++] = lineChar;
+    _s6_PutByte(&writer, lineChar);
 
     if (lineChar == ':')
     {
         // The order is encoded exactly as in graph6: one byte for n <= 62,
-        // otherwise 126 followed by three bytes carrying 18 bits
+        // 126 and three bytes carrying 18 bits for n <= 258047, and 126 126
+        // and six bytes carrying 36 bits beyond that
         if (order <= 62)
-            writer.out[writer.pos++] = (char)(order + 63);
+            _s6_PutByte(&writer, (char)(order + 63));
+        else if (order <= 258047)
+        {
+            _s6_PutByte(&writer, 126);
+            for (int shift = 12; shift >= 0; shift -= 6)
+                _s6_PutByte(&writer, (char)(((order >> shift) & 63) + 63));
+        }
         else
         {
-            writer.out[writer.pos++] = 126;
-            writer.out[writer.pos++] = (char)(((order >> 12) & 63) + 63);
-            writer.out[writer.pos++] = (char)(((order >> 6) & 63) + 63);
-            writer.out[writer.pos++] = (char)((order & 63) + 63);
+            _s6_PutByte(&writer, 126);
+            _s6_PutByte(&writer, 126);
+            for (int shift = 30; shift >= 0; shift -= 6)
+                _s6_PutByte(&writer, (char)((((long long)order >> shift) & 63) + 63));
         }
     }
 
-    for (int p = 0; p < numPairs; p++)
+    // Once a piece of the line fails to go out, encoding the rest is wasted
+    for (int p = 0; p < numPairs && !writer.failed; p++)
     {
         const int i = pairs[stride * p];
         const int j = pairs[stride * p + 1];
@@ -902,10 +924,10 @@ int _s6_EncodeLine(S6WriteIteratorP theS6WriteIterator, char lineChar, int const
             _s6_PutBits(&writer, (1u << numPadBits) - 1, numPadBits);
     }
 
-    writer.out[writer.pos++] = '\n';
-    writer.out[writer.pos] = '\0';
+    _s6_PutByte(&writer, '\n');
+    _s6_FlushBytes(&writer);
 
-    if (sf_fputs(writer.out, theS6WriteIterator->outputContainer) < 0)
+    if (writer.failed)
     {
         gp_ErrorMessage("Failed to output all characters of the sparse6 line.");
         return NOTOK;

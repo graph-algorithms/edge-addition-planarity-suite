@@ -32,6 +32,7 @@ static int runSparse6LockstepTest(char const *g6FileName, char const *s6FileName
 static int runSparse6AcceptTest(char const *s6Str, char const *expectedG6Line);
 static int runSparse6AcceptEdgesTest(char const *s6Str, int order, int const edges[][2], int numEdges);
 static int runSparse6RejectTest(char const *s6Str);
+static int runSparse6LargeOrderTests(void);
 
 /****************************************************************************
  compareSparse6Output()
@@ -789,6 +790,9 @@ int runSparse6WriteTests(void)
     if (Result == OK)
         Result = runCompactEdgeStorageTests();
 
+    if (Result == OK)
+        Result = runSparse6LargeOrderTests();
+
     // The -s transformation, from a file and from a string, of graph6 and of
     // sparse6 input, against the expected output files
     if (Result == OK && runGraphTransformationTest("-s", "nauty_example.g6", TRUE) != OK)
@@ -873,9 +877,22 @@ int runSparse6ReadTests(void)
         ":D!\n",
         ":D\t\n",
         ":D\xFF\n",
-        // Order 0, and the eight-byte order encoding
+        // Order 0, in the one-byte and in the eight-byte order encoding
         ":?\n",
         ":~~????????\n",
+        // Eight-byte orders no graph can have: 2^36 - 1, 2^31, and 2^32 + 5,
+        // which would become order 5 if cut to an int, all refused by the
+        // reader, then INT_MAX and 178956971, which fit an int but exceed the
+        // vertex capacity of a graph
+        ":~~~~~~~~\n",
+        ":~~A?????\n",
+        ":~~C????D\n",
+        ":~~@~~~~~\n",
+        ":~~?Iiiij\n",
+        // A byte out of range (a space) in an eight-byte order, and an order
+        // cut short
+        ":~~?? ???\n",
+        ":~~???\n",
         // A later graph of a different order, an empty line, and a line
         // beginning with neither ':' nor ';'
         ":D\n:C\n",
@@ -1292,6 +1309,123 @@ static int runSparse6RejectTest(char const *s6Str)
 
     if (s6Copy != NULL)
         free(s6Copy);
+
+    return Result;
+}
+
+/****************************************************************************
+ runSparse6LargeOrderTests()
+
+ Orders at each boundary of the order encoding, then orders beyond 100000,
+ which read and write up to the vertex capacity of a graph: the largest
+ order in the one-byte encoding and the smallest in the four-byte one, the
+ largest in the four-byte encoding and the smallest in the eight-byte one,
+ a power of two, and an order that needs 19 bits per vertex. Each line is
+ one nauty's copyg reproduces byte for byte, and it must decode to its
+ edges and encode back to itself. Last, a path on 300000 vertices makes a
+ line of about 750 KB, longer than the buffer the writer sends a line out
+ through, which must read back to the same graph and write the same line.
+ ****************************************************************************/
+
+static int runSparse6LargeOrderTests(void)
+{
+    typedef struct
+    {
+        char const *s6Line;
+        int order;
+        int numEdges;
+        int edges[2][2];
+    } largeOrderCase;
+
+    largeOrderCase const cases[] = {
+        {":}}_N\n", 62, 1, {{0, 61}, {0, 0}}},
+        {":~??~~?N\n", 63, 1, {{0, 62}, {0, 0}}},
+        {":~}~~_??^n~fv~n\n", 258047, 2, {{0, 1}, {258045, 258046}}},
+        {":~~???~??~^~_??N\n", 258048, 1, {{0, 258047}, {0, 0}}},
+        {":~~??@???_??^~~_??^\n", 262144, 2, {{0, 1}, {3, 262142}}},
+        {":~~??@HN_qRvo??THN]\n", 300000, 2, {{5, 299999}, {299998, 299999}}},
+    };
+    int Result = OK;
+
+    for (size_t i = 0; Result == OK && i < sizeof(cases) / sizeof(cases[0]); i++)
+    {
+        char *s6Copy = copySparse6TestString(cases[i].s6Line);
+        char *outputStr = NULL;
+        graphP theGraph = gp_New();
+
+        if (s6Copy == NULL || theGraph == NULL ||
+            gp_ReadFromString(theGraph, s6Copy) != OK ||
+            gp_GetN(theGraph) != cases[i].order ||
+            gp_GetM(theGraph) != cases[i].numEdges)
+            Result = NOTOK;
+
+        for (int e = 0; Result == OK && e < cases[i].numEdges; e++)
+        {
+            int u = cases[i].edges[e][0] + gp_LowerBoundVertexStorage(theGraph);
+            int v = cases[i].edges[e][1] + gp_LowerBoundVertexStorage(theGraph);
+
+            if (!gp_IsNeighbor(theGraph, u, v))
+                Result = NOTOK;
+        }
+
+        if (Result == OK &&
+            (gp_WriteToString(theGraph, &outputStr, WRITE_SPARSE6) != OK || outputStr == NULL))
+            Result = NOTOK;
+
+        if (Result == OK)
+            Result = compareSparse6Output(outputStr, cases[i].s6Line, "a graph of large order");
+
+        if (Result != OK)
+            gp_ErrorMessage("Sparse6 line \"%s\" of order %d did not decode to "
+                            "its edges or did not encode back to itself.",
+                            cases[i].s6Line, cases[i].order);
+
+        gp_Free(&theGraph);
+        if (s6Copy != NULL)
+            free(s6Copy);
+        if (outputStr != NULL)
+            free(outputStr);
+    }
+
+    if (Result == OK)
+    {
+        int const pathOrder = 300000;
+        char *firstLine = NULL, *secondLine = NULL;
+        graphP pathGraph = gp_New(), readGraph = gp_New();
+
+        if (pathGraph == NULL || readGraph == NULL ||
+            gp_EnsureVertexCapacity(pathGraph, pathOrder) != OK)
+            Result = NOTOK;
+
+        for (int v = 0; Result == OK && v < pathOrder - 1; v++)
+        {
+            if (gp_DynamicAddEdge(pathGraph, v + gp_LowerBoundVertexStorage(pathGraph), 0,
+                                  v + 1 + gp_LowerBoundVertexStorage(pathGraph), 0) != OK)
+                Result = NOTOK;
+        }
+
+        if (Result == OK &&
+            (gp_WriteToString(pathGraph, &firstLine, WRITE_SPARSE6) != OK || firstLine == NULL ||
+             strlen(firstLine) <= 65536 ||
+             gp_ReadFromString(readGraph, firstLine) != OK ||
+             gp_GetN(readGraph) != pathOrder || gp_GetM(readGraph) != pathOrder - 1 ||
+             !gp_IsNeighbor(readGraph, gp_LowerBoundVertexStorage(readGraph) + 149999,
+                            gp_LowerBoundVertexStorage(readGraph) + 150000) ||
+             gp_WriteToString(readGraph, &secondLine, WRITE_SPARSE6) != OK || secondLine == NULL ||
+             strcmp(firstLine, secondLine) != 0))
+        {
+            gp_ErrorMessage("A sparse6 line longer than the write buffer did not "
+                            "survive a write and read round trip.");
+            Result = NOTOK;
+        }
+
+        gp_Free(&pathGraph);
+        gp_Free(&readGraph);
+        if (firstLine != NULL)
+            free(firstLine);
+        if (secondLine != NULL)
+            free(secondLine);
+    }
 
     return Result;
 }

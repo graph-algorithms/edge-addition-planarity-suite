@@ -473,7 +473,8 @@ int _s6_ValidateHeader(strOrFileP inputContainer)
 
 int _s6_ReadOrder(strOrFileP inputContainer, int *order, const int lineNum)
 {
-    int n = 0;
+    long long n = 0;
+    int numGroups = 0;
     int orderChar = EOF;
 
     if (inputContainer == NULL || order == NULL)
@@ -482,30 +483,25 @@ int _s6_ReadOrder(strOrFileP inputContainer, int *order, const int lineNum)
         return NOTOK;
     }
 
-    // The order is encoded exactly as in graph6: one byte for n <= 62, four
-    // bytes beginning with 126 for n <= 258047, and eight bytes beginning
-    // with 126 126 beyond that. Since edge-addition-planarity-suite processing
-    // may only handle up to n = 100,000, we will only check if 1 or 4 bytes
-    // are necessary
+    // The order is encoded exactly as in graph6: one byte for n <= 62, 126
+    // and three bytes carrying 18 bits for n <= 258047, and 126 126 and six
+    // bytes carrying 36 bits beyond that. The order must fit an int; whether
+    // a graph can have that many vertices is for the graph to decide.
     if ((orderChar = sf_getc(inputContainer)) == 126)
     {
-        int orderGroups[3];
-
+        numGroups = 3;
         if ((orderChar = sf_getc(inputContainer)) == 126)
         {
-            gp_ErrorMessage("Graphs of order n > 100000 are not supported at "
-                            "this time (line %d).",
-                            lineNum);
-            return NOTOK;
+            numGroups = 6;
+            orderChar = sf_getc(inputContainer);
         }
 
-        orderGroups[0] = orderChar;
-        orderGroups[1] = sf_getc(inputContainer);
-        orderGroups[2] = sf_getc(inputContainer);
-
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < numGroups; i++)
         {
-            if (orderGroups[i] < 63 || orderGroups[i] > 126)
+            if (i > 0)
+                orderChar = sf_getc(inputContainer);
+
+            if (orderChar < 63 || orderChar > 126)
             {
                 gp_ErrorMessage("Invalid byte in the graph order on line %d; "
                                 "expected a printable ASCII character in the "
@@ -514,13 +510,13 @@ int _s6_ReadOrder(strOrFileP inputContainer, int *order, const int lineNum)
                 return NOTOK;
             }
 
-            n = (n << 6) | (orderGroups[i] - 63);
+            n = (n << 6) | (orderChar - 63);
         }
 
-        if (n > 100000)
+        if (n > INT_MAX)
         {
-            gp_ErrorMessage("Graph order %d on line %d is greater than 100000, "
-                            "which is not supported at this time.",
+            gp_ErrorMessage("Graph order %lld on line %d is larger than a "
+                            "graph can have.",
                             n, lineNum);
             return NOTOK;
         }
@@ -542,7 +538,7 @@ int _s6_ReadOrder(strOrFileP inputContainer, int *order, const int lineNum)
         return NOTOK;
     }
 
-    (*order) = n;
+    (*order) = (int)n;
 
     return OK;
 }
