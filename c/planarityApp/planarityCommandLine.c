@@ -871,7 +871,7 @@ int runGeneralReadIteratorTests(void)
         {NULL, FALSE, FALSE},
     };
 
-    gp_Message("Starting General Read Iterator Tests");
+    gp_Message("Starting Generalized Read Iterator Tests");
 
     for (i = 0; i < (sizeof(predicateCases) / sizeof(predicateCases[0])); i++)
     {
@@ -1102,7 +1102,10 @@ int runGeneralReadIteratorTests(void)
         }
     }
 
-    gp_Message(" ");
+    if (Result == OK)
+        gp_Message("Successfully finished Generalized Read Iterator Tests.\n");
+    else
+        gp_Message("Error detected in Generalized Read Iterator Tests.\n");
 
     return Result;
 }
@@ -1114,6 +1117,8 @@ int runGraphTransformationTests(void)
     /*
         GRAPH TRANSFORMATION TESTS
     */
+    gp_Message("Starting G6-Related Graph Transformation Tests");
+
     //  TRANSFORM TO ADJACENCY LIST
 
     // runGraphTransformationTest by reading file contents into string
@@ -1232,6 +1237,11 @@ int runGraphTransformationTests(void)
                         "file pointer to .g6 failed.");
         retVal = NOTOK;
     }
+
+    if (retVal == OK)
+        gp_Message("Successfully finished G6-related Graph Transformation Tests.\n");
+    else
+        gp_Message("Error detected in G6-related Graph Transformation Tests.\n");
 
     return retVal;
 }
@@ -1914,8 +1924,6 @@ int runGraphTransformationTest(char const *command, char const *infileName, int 
             }
         }
     }
-
-    gp_Message(" ");
 
     if (inputString != NULL)
     {

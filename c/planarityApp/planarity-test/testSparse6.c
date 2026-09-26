@@ -823,9 +823,9 @@ int runSparse6WriteTests(void)
         Result = NOTOK;
 
     if (Result == OK)
-        gp_Message("Sparse6 write tests succeeded.");
+        gp_Message("Sparse6 write tests succeeded.\n");
     else
-        gp_ErrorMessage("Sparse6 write tests failed.");
+        gp_ErrorMessage("Sparse6 write tests failed.\n");
 
     return Result;
 }
