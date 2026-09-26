@@ -572,6 +572,7 @@ static int runCompactEdgeStorageTests(void)
     char *before = NULL, *after = NULL;
     int lower = 0;
     int eLast = NIL, uLast = NIL, vLast = NIL;
+    unsigned origQuietMode = gp_GetQuietMode();
 
     if ((theGraph = gp_New()) == NULL || gp_EnsureVertexCapacity(theGraph, 5) != OK)
     {
@@ -661,11 +662,19 @@ static int runCompactEdgeStorageTests(void)
     }
 
     // Compacting a dense graph, and a NULL graph, behave as documented
-    if (Result == OK && (_CompactEdgeStorage(theGraph) != OK || _CompactEdgeStorage(NULL) == OK))
+    if (Result == OK && (_CompactEdgeStorage(theGraph) != OK))
     {
-        gp_ErrorMessage("Compaction of a dense or NULL graph gave the wrong result.");
+        gp_ErrorMessage("Compaction of a dense graph gave the wrong result.");
         Result = NOTOK;
     }
+
+    gp_SetQuietMode(QUIETMODE_ALL);
+    if (Result == OK && (_CompactEdgeStorage(NULL) == OK))
+    {
+        gp_ErrorMessage("Compaction of a NULL graph gave the wrong result.");
+        Result = NOTOK;
+    }
+    gp_SetQuietMode(origQuietMode);
 
     if (before != NULL)
         free(before);
