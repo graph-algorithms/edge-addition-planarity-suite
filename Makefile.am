@@ -54,6 +54,8 @@ libplanarity_la_SOURCES = \
 	c/graphLib/homeomorphSearch/graphK33Search_Extensions.c \
 	c/graphLib/homeomorphSearch/graphK33Search.c \
 	c/graphLib/homeomorphSearch/graphK4Search_Extensions.c \ 
+	c/graphLib/graphEdgeDetector.h \
+	c/graphLib/graphEdgeDetector.c \
 	c/graphLib/homeomorphSearch/graphK4Search.c 
 
 

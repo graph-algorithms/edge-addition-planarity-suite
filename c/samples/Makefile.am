@@ -66,6 +66,7 @@ dist_samples_DATA = \
   Petersen.txt.Outerplanarity.out.txt \
   Petersen.txt.Planarity.out.txt \
   Petersen.digraph.txt \
+  Petersen-with-parallel-edges.txt \
   Petersen.digraph.0-based.txt \
   Digraph.transposeTest.txt \
   Digraph.transposeTest.graphml \

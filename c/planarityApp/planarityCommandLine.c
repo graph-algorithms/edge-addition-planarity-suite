@@ -16,6 +16,7 @@ See the LICENSE.TXT file for licensing information.
 #include <unistd.h>
 #endif
 
+int runParallelEdgeTests();
 int runQuickRegressionTests(int argc, char *argv[]);
 int callRandomGraphs(int argc, char *argv[]);
 int callSpecificGraph(int argc, char *argv[]);
@@ -216,7 +217,7 @@ int runQuickRegressionTests(int argc, char *argv[])
 
     if (!getcwd(origDir, 2 * MAXLINE))
         return NOTOK;
-
+   
     // Preserve original behavior before the samplesDir command-line parameter was available
     if (strcmp(samplesDir, "samples") == 0)
     {
@@ -246,8 +247,9 @@ int runQuickRegressionTests(int argc, char *argv[])
             return OK;
         }
     }
-
-    if (runSpecificGraphTests() != OK)
+     if (runParallelEdgeTests() != OK) 
+        retVal =  NOTOK;
+    else if (runSpecificGraphTests() != OK)
         retVal = NOTOK;
     else if (runRandomGraphsTests() != OK)
         retVal = NOTOK;
@@ -3066,4 +3068,49 @@ int runGraphMLTests(void)
         gp_Message("Finished GraphML Tests.\n");
 
     return Result;
+}
+int runParallelEdgeTests(void)
+{
+    graphP G = gp_New();
+    if (G == NULL) return NOTOK;
+    graphP G1 = NULL;
+    unsigned quietModeCache;
+
+    if (gp_Read(G, "Petersen-with-parallel-edges.txt") != OK && 
+        gp_Read(G, "c/samples/Petersen-with-parallel-edges.txt") != OK) {
+        return NOTOK;
+    }
+
+    if (!(G->graphFlags & GRAPHFLAGS_PARALLELEDGEDETECTED)) return NOTOK;
+    if (gp_GetM(G) != 60) return NOTOK;
+
+    G1 = gp_DupGraph(G);
+    if (G1 == NULL) return NOTOK;
+
+    quietModeCache = gp_GetQuietMode();
+    gp_SetQuietMode(QUIETMODE_ALL);
+
+    if (gp_DepthFirstSearch(G1) == OK) return NOTOK;
+    if (gp_ComputeLowpoints(G1) == OK) return NOTOK;
+    if (gp_ComputeLeastAncestors(G1) == OK) return NOTOK;
+    if (gp_Embed(G1, EMBEDFLAGS_PLANAR) == OK) return NOTOK;
+
+    gp_SetQuietMode(quietModeCache);
+
+    // Delete parallel edges and verify exact 15-edge state 
+    if (gp_DeleteParallelEdges(G1) != OK) return NOTOK;
+    if (G1->graphFlags & GRAPHFLAGS_PARALLELEDGEDETECTED) return NOTOK;
+    if (gp_GetM(G1) != 15) return NOTOK;
+    
+    //  Verify embedding and structural integrity of the cleaned graph 
+    if (gp_Embed(G1, EMBEDFLAGS_PLANAR) != NONEMBEDDABLE) return NOTOK;
+
+    if (gp_TestEmbedResultIntegrity(G1, G, NONEMBEDDABLE) != NONEMBEDDABLE) {
+        return NOTOK;
+    }
+    
+    gp_Free(&G);
+    gp_Free(&G1);
+
+    return OK;
 }

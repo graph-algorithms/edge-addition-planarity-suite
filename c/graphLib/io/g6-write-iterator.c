@@ -627,7 +627,12 @@ int _g6_WriteGraphToString(graphP theGraph, char **pOutputStr)
 int _g6_WriteGraphToStrOrFile(graphP theGraph, strOrFileP *pOutputContainer)
 {
     G6WriteIteratorP theG6WriteIterator = NULL;
-
+    if (theGraph->graphFlags & GRAPHFLAGS_PARALLELEDGEDETECTED)
+    {
+        gp_ErrorMessage("Loop edges were previously added to the graph. See gp_DeleteParallelEdges().");
+        return NOTOK;
+    }
+    
     if (!sf_IsValidStrOrFile((*pOutputContainer)))
     {
         gp_ErrorMessage("Invalid G6 output container.");
