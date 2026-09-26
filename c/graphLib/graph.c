@@ -1186,6 +1186,8 @@ int gp_CopyGraph(graphP dstGraph, graphP srcGraph)
     dstGraph->numEdgeHoles = sp_GetCurrentSize((dstGraph)->edgeHoles);
     if (theGraphEdgeDetector(srcGraph) != NULL)
     {
+        if (theGraphEdgeDetector(dstGraph) != NULL)
+            ged_Free(&theGraphEdgeDetector(dstGraph));
         theGraphEdgeDetector(dstGraph) = ged_Duplicate(theGraphEdgeDetector(srcGraph));
         if (theGraphEdgeDetector(dstGraph) == NULL)
             return NOTOK; 
