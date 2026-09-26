@@ -616,8 +616,8 @@ int _CompactEdgeStorage(graphP theGraph)
         {
             int u = gp_GetNeighbor(theGraph, gp_GetTwin(theGraph, eLast));
             int v = gp_GetNeighbor(theGraph, eLast);
-            unsigned short flagsOfLast = theGraph->E[eLast].flags;
-            unsigned short flagsOfLastTwin = theGraph->E[gp_GetTwin(theGraph, eLast)].flags;
+            unsigned flagsOfLast = theGraph->E[eLast].flags;
+            unsigned flagsOfLastTwin = theGraph->E[gp_GetTwin(theGraph, eLast)].flags;
             int eMoved = NIL;
 
             if (gp_EdgeNotInUse(theGraph, eLast))
