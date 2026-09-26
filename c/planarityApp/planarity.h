@@ -25,7 +25,7 @@ extern "C"
 #define YESNOCHOICECHARS "yYnN"
 #define RANDOMGRAPHSOUTPUTCHOICECHARS "aAgG"
 #define GRAPHALGORITHMCHOICES "pdo234"
-#define TRANSFORMGRAPHOUTPUTFORMATCHOICES "gam"
+#define TRANSFORMGRAPHOUTPUTFORMATCHOICES "gsam"
 
     char const *GetProjectTitle(void);
     char const *GetAlgorithmFlags(void);
