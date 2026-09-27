@@ -727,7 +727,7 @@ int _WriteAdjMatrix(graphP theGraph, strOrFileP outputContainer)
     
     if (theGraph->graphFlags & GRAPHFLAGS_PARALLELEDGEDETECTED)
     {
-        gp_ErrorMessage("Loop edges were previously added to the graph. See gp_DeleteParallelEdges().");
+        gp_ErrorMessage("Parallel edges were previously added to the graph. See gp_DeleteParallelEdges().");
         return NOTOK;
     }
 
