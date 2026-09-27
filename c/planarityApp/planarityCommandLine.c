@@ -46,6 +46,7 @@ int testDirectedDFS(void);
 int testPetersenDigraph(void);
 int testDigraphTranspose(void);
 int runDigraphTests(void);
+int runParallelEdgeTests(void);
 int runDrawPlanarNonplanarWriteTest(void);
 int runReadErrorTests(void);
 int runReadWithExtensionAtEofTest(void);
@@ -54,7 +55,6 @@ int runCapacityLimitTests(void);
 int runGraphMLWriteTest(char const *inputFileName, char const *expectedOutputFileName);
 int runBasicGraphMLWriteTest(void);
 int runGraphMLTests(void);
-int runParallelEdgeTests(void);
 
 /****************************************************************************
  Command Line Processor
@@ -245,9 +245,8 @@ int runQuickRegressionTests(int argc, char *argv[])
             return OK;
         }
     }
-    if (runParallelEdgeTests() != OK)
-        retVal = NOTOK;
-    else if (runSpecificGraphTests() != OK)
+
+    if (runSpecificGraphTests() != OK)
         retVal = NOTOK;
     else if (runRandomGraphsTests() != OK)
         retVal = NOTOK;
@@ -265,13 +264,15 @@ int runQuickRegressionTests(int argc, char *argv[])
         retVal = NOTOK;
     else if (runDigraphTests() != OK)
         retVal = NOTOK;
-    else if (runReadErrorTests() != OK)
-        retVal = NOTOK;
-    else if (runReadWithExtensionAtEofTest() != OK)
+    else if (runParallelEdgeTests() != OK)
         retVal = NOTOK;
     else if (runHighByteRoundTripTest() != OK)
         retVal = NOTOK;
     else if (runCapacityLimitTests() != OK)
+        retVal = NOTOK;
+    else if (runReadErrorTests() != OK)
+        retVal = NOTOK;
+    else if (runReadWithExtensionAtEofTest() != OK)
         retVal = NOTOK;
     else if (runSparse6ReadTests() != OK)
         retVal = NOTOK;
@@ -2568,6 +2569,8 @@ int runParallelEdgeTests(void)
     graphP G1 = NULL;
     unsigned quietModeCache;
 
+    gp_Message("Starting Parallel Edge Tests");
+
     if (G == NULL)
         return NOTOK;
 
@@ -2621,6 +2624,8 @@ int runParallelEdgeTests(void)
 
     gp_Free(&G);
     gp_Free(&G1);
+
+    gp_Message("Finished Parallel Edge Tests.\n");
 
     return OK;
 }

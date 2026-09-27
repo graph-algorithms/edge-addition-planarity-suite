@@ -59,6 +59,7 @@ int _ClearObstructionMarksInBicomp(graphP theGraph, int BicompRoot);
 
 int _gp_FindEdge(graphP theGraph, int u, int v);
 
+int _EquipGraphWithParallelEdgeDetector(graphP theGraph, int requiredEdgeCapacity);
 int _CompactEdgeStorage(graphP theGraph);
 
 int _ClearAllVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x);
@@ -318,6 +319,7 @@ int _EnsureVertexCapacity(graphP theGraph, int N)
         (theGraphSortedDFSChildLists(theGraph) = LCNew(VIsize)) == NULL ||
         (theGraphExtFace(theGraph) = (extFaceLinkRecP)calloc(Vsize, sizeof(extFaceLinkRec))) == NULL ||
         (theGraphIC(theGraph) = (isolatorContextP)calloc(1, sizeof(isolatorContextStruct))) == NULL ||
+        _EquipGraphWithParallelEdgeDetector(theGraph, theGraph->edgeCapacity) != OK ||
         0)
     {
         _ClearGraph(theGraph);
@@ -530,35 +532,49 @@ int _EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity)
     for (int e = gp_UpperBoundEdgeStorage(theGraph); e < newEsize; ++e)
         _InitEdgeRec(theGraph, e);
 
-    {
-        graphEdgeDetectorP newDetector = ged_New(requiredEdgeCapacity);
-        int v, e, w, twin_e;
-
-        if (newDetector == NULL)
-            return NOTOK;
-
-        for (e = gp_LowerBoundEdges(theGraph); e < gp_UpperBoundEdges(theGraph); e++)
-        {
-            if (gp_EdgeNotInUse(theGraph, e))
-                continue;
-
-            twin_e = gp_GetTwin(theGraph, e);
-            if (e > twin_e)
-                continue;
-
-            v = gp_GetNeighbor(theGraph, e);
-            w = gp_GetNeighbor(theGraph, twin_e);
-
-            ged_Set(newDetector, v, w);
-        }
-
-        if (theGraphEdgeDetector(theGraph) != NULL)
-        {
-            ged_Free(&theGraphEdgeDetector(theGraph));
-        }
-        theGraphEdgeDetector(theGraph) = newDetector;
-    }
     theGraph->edgeCapacity = requiredEdgeCapacity;
+
+    if (_EquipGraphWithParallelEdgeDetector(theGraph, requiredEdgeCapacity) != OK)
+        return NOTOK;
+
+    return OK;
+}
+
+/********************************************************************
+ _EquipGraphWithParallelEdgeDetector()
+ ********************************************************************/
+
+int _EquipGraphWithParallelEdgeDetector(graphP theGraph, int requiredEdgeCapacity)
+{
+    graphEdgeDetectorP newDetector = NULL;
+    int v, e, w, twin_e;
+
+    if (theGraph == NULL)
+        return NOTOK;
+
+    newDetector = ged_New(requiredEdgeCapacity);
+    if (newDetector == NULL)
+        return NOTOK;
+
+    for (e = gp_LowerBoundEdges(theGraph); e < gp_UpperBoundEdges(theGraph); e += 2)
+    {
+        if (gp_EdgeNotInUse(theGraph, e))
+            continue;
+
+        twin_e = gp_GetTwin(theGraph, e);
+
+        v = gp_GetNeighbor(theGraph, e);
+        w = gp_GetNeighbor(theGraph, twin_e);
+
+        ged_Set(newDetector, v, w);
+    }
+
+    if (theGraphEdgeDetector(theGraph) != NULL)
+    {
+        ged_Free(&theGraphEdgeDetector(theGraph));
+    }
+    theGraphEdgeDetector(theGraph) = newDetector;
+
     return OK;
 }
 
@@ -2259,6 +2275,8 @@ int gp_InsertEdge(graphP theGraph, int u, int e_u, int e_ulink,
             ged_Set(theGraphEdgeDetector(theGraph), min_v, max_v);
         }
     }
+    else
+        return NOTOK;
 
     if (sp_NonEmpty(theGraph->edgeHoles))
     {
