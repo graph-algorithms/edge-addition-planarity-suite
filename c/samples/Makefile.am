@@ -22,6 +22,7 @@ dist_samples_DATA = \
   K10.g6.0-based.AdjList.out.txt \
   K10.g6.0-based.AdjList.out.txt.0-based.G6.out.g6 \
   K10.g6.0-based.AdjMat.out.txt \
+  K10.g6.0-based.S6.out.s6 \
   K23-minus-edge.AdjList.txt\
   K23.AdjList.txt\
   K33-minus-edge.AdjList.txt\
@@ -39,6 +40,7 @@ dist_samples_DATA = \
   N5-all.g6 \
   N5-all.g6.0-based.AdjList.out.txt \
   N5-all.g6.0-based.AdjMat.out.txt \
+  N5-all.g6.0-based.S6.out.s6 \
   N5-all.inc.s6 \
   N5-all.s6 \
   n8.mALL.g6 \
@@ -47,10 +49,12 @@ dist_samples_DATA = \
   nauty_example.g6.0-based.AdjList.out.txt \
   nauty_example.g6.0-based.AdjList.out.txt.0-based.G6.out.g6 \
   nauty_example.g6.0-based.AdjMat.out.txt \
+  nauty_example.g6.0-based.S6.out.s6 \
   nauty_example.s6 \
   nauty_example.s6.0-based.AdjList.out.txt \
   nauty_example.s6.0-based.AdjMat.out.txt \
   nauty_example.s6.0-based.G6.out.g6 \
+  nauty_example.s6.0-based.S6.out.s6 \
   Petersen.0-based.txt \
   Petersen.0-based.txt.ColorVertices.out.txt \
   Petersen.0-based.txt.K23Search.out.txt \

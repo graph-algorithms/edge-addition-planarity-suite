@@ -392,6 +392,10 @@ int gp_SortVertices(graphP theGraph)
     if (gp_ExtendWith_DFSUtils(theGraph) != OK)
         return NOTOK;
 
+    // Noted before the call, since a failure part way through has already
+    // changed the graph
+    gp_NoteModification(theGraph);
+
     return theGraph->functions->fpSortVertices(theGraph);
 }
 
