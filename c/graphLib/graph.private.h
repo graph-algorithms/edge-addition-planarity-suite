@@ -77,6 +77,13 @@ extern "C"
         extFaceLinkRecP extFace;
         isolatorContextP IC;
         graphEdgeDetectorP edgeDetector;
+
+        // Counts the modifications of the graph structure made through the
+        // functions of the graph library, so that a package such as the
+        // sparse6 writer can tell whether the graph is still the one it
+        // saw last. Only functions increment it; the low-level setter
+        // macros do not, so as not to slow the algorithms down.
+        unsigned long long modificationCount;
     };
 
     typedef struct graphPrivateDataStruct graphPrivateDataStruct;
@@ -94,6 +101,11 @@ extern "C"
 #define theGraphExtFace(theGraph) (((graphPrivateDataP)((theGraph)->privateData))->extFace)
 #define theGraphIC(theGraph) (((graphPrivateDataP)((theGraph)->privateData))->IC)
 #define theGraphEdgeDetector(theGraph) (((graphPrivateDataP)((theGraph)->privateData))->edgeDetector)
+
+// Package private access to the modification counter: the getter reads it,
+// and gp_NoteModification() is what a modifying function calls
+#define theGraphModificationCount(theGraph) (((graphPrivateDataP)((theGraph)->privateData))->modificationCount)
+#define gp_NoteModification(theGraph) (theGraphModificationCount(theGraph)++)
 
 /********************************************************************
  Additional edge link accessors and manipulators

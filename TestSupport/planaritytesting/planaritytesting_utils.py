@@ -47,7 +47,7 @@ def EDGE_DELETION_ANALYSIS_SPECIFIERS() -> tuple[str, ...]:
 
 def GRAPH_FORMAT_SPECIFIERS() -> dict[str, str]:
     """Returns dict containing graph format specifiers mapped to extensions"""
-    return {"g": "G6", "a": "AdjList", "m": "AdjMat"}
+    return {"g": "G6", "s": "S6", "a": "AdjList", "m": "AdjMat"}
 
 
 def max_num_edges_for_order(order: int) -> int:
