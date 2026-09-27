@@ -691,6 +691,11 @@ int RandomGraph(char const *const commandString, int extraEdges, int numVertices
                 gp_ErrorMessage("Error saving graph in G6 format.");
                 Result = NOTOK;
             }
+            if (PromptSaveGraph(theGraph, origGraph, extraEdges, WRITE_SPARSE6) != OK)
+            {
+                gp_ErrorMessage("Error saving graph in sparse6 format.");
+                Result = NOTOK;
+            }
         }
     }
     else
@@ -727,6 +732,10 @@ int PromptSaveGraph(graphP theGraph, graphP origGraph, int extraEdges, int saveM
     case WRITE_G6:
         gp_MessagePrompt("Do you want to save the generated graph in G6 format "
                          "(y/n)?");
+        break;
+    case WRITE_SPARSE6:
+        gp_MessagePrompt("Do you want to save the generated graph in sparse6 "
+                         "format (y/n)?");
         break;
     default:
         gp_MessagePrompt("Do you want to save the generated graph in edge list "
@@ -776,9 +785,36 @@ int PromptSaveGraph(graphP theGraph, graphP origGraph, int extraEdges, int saveM
     case WRITE_G6:
         strcat(theFileName, ".g6");
         break;
+    case WRITE_SPARSE6:
+        strcat(theFileName, ".s6");
+        break;
     default:
         strcat(theFileName, "EdgeList.txt");
         break;
+    }
+
+    // Sparse6 is for graphs too large to be worth writing out again as edge
+    // lists, so it writes only the original graph and the result graph
+    if (saveMode == WRITE_SPARSE6)
+    {
+        gp_Message("Saving original graph to \"%.*s\"",
+                   FILENAME_MAX, theFileName);
+        if (gp_Write(origGraph, theFileName, WRITE_SPARSE6) != OK)
+        {
+            gp_ErrorMessage("Failed to save original graph.");
+            return NOTOK;
+        }
+
+        strcat(theFileName, ".out.s6");
+        gp_Message("Saving result graph to \"%.*s\"",
+                   FILENAME_MAX, theFileName);
+        if (gp_Write(theGraph, theFileName, WRITE_SPARSE6) != OK)
+        {
+            gp_ErrorMessage("Failed to save result graph.");
+            return NOTOK;
+        }
+
+        return OK;
     }
 
     gp_Message("Saving edge list format of original graph to \"%.*s\"",
