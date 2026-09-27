@@ -1187,12 +1187,13 @@ int gp_CopyAdjacencyLists(graphP dstGraph, graphP srcGraph)
         gp_SetLastEdge(dstGraph, v, gp_GetLastEdge(srcGraph, v));
     }
 
-    // Copy the adjacency links and neighbor pointers for each edge record
+    // Copy the adjacency links, neighbor values, and edge direction flags
     for (e = gp_LowerBoundEdges(srcGraph); e < gp_UpperBoundEdges(srcGraph); ++e)
     {
         gp_SetNeighbor(dstGraph, e, gp_GetNeighbor(srcGraph, e));
         gp_SetNextEdge(dstGraph, e, gp_GetNextEdge(srcGraph, e));
         gp_SetPrevEdge(dstGraph, e, gp_GetPrevEdge(srcGraph, e));
+        gp_SetDirection(dstGraph, e, gp_GetDirection(srcGraph, e));
     }
 
     // Tell the dstGraph how many edges it now has and where the edge holes are
@@ -1206,10 +1207,14 @@ int gp_CopyAdjacencyLists(graphP dstGraph, graphP srcGraph)
     dstGraph->graphFlags &= ~GRAPHFLAGS_DFSNUMBERED_DIRECTED;
     dstGraph->graphFlags &= ~GRAPHFLAGS_SORTEDBYDFI;
     dstGraph->graphFlags &= ~GRAPHFLAGS_LOWPOINTSCOMPUTED;
+
     dstGraph->graphFlags &= ~GRAPHFLAGS_DIRECTEDEDGEDETECTED;
-    dstGraph->graphFlags &= ~GRAPHFLAGS_PARALLELEDGEDETECTED;
     if (gp_GetGraphFlags(srcGraph) & GRAPHFLAGS_DIRECTEDEDGEDETECTED)
         dstGraph->graphFlags |= GRAPHFLAGS_DIRECTEDEDGEDETECTED;
+
+    dstGraph->graphFlags &= ~GRAPHFLAGS_PARALLELEDGEDETECTED;
+    if (gp_GetGraphFlags(srcGraph) & GRAPHFLAGS_PARALLELEDGEDETECTED)
+        dstGraph->graphFlags |= GRAPHFLAGS_PARALLELEDGEDETECTED;
 
     return OK;
 }
