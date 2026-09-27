@@ -526,23 +526,25 @@ int _EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity)
     if (theGraph->E == NULL)
         return NOTOK;
 
-   // Initialize the new edge records
+    // Initialize the new edge records
     for (int e = gp_UpperBoundEdgeStorage(theGraph); e < newEsize; ++e)
         _InitEdgeRec(theGraph, e);
 
     {
         graphEdgeDetectorP newDetector = ged_New(requiredEdgeCapacity);
-        int v, e, w,twin_e;
+        int v, e, w, twin_e;
 
         if (newDetector == NULL)
-            return NOTOK; 
+            return NOTOK;
 
         for (e = gp_LowerBoundEdges(theGraph); e < gp_UpperBoundEdges(theGraph); e++)
         {
-            if (gp_EdgeNotInUse(theGraph, e)) continue;
+            if (gp_EdgeNotInUse(theGraph, e))
+                continue;
 
             twin_e = gp_GetTwin(theGraph, e);
-            if (e > twin_e) continue; 
+            if (e > twin_e)
+                continue;
 
             v = gp_GetNeighbor(theGraph, e);
             w = gp_GetNeighbor(theGraph, twin_e);
@@ -1312,7 +1314,7 @@ int gp_CopyGraph(graphP dstGraph, graphP srcGraph)
             ged_Free(&theGraphEdgeDetector(dstGraph));
         theGraphEdgeDetector(dstGraph) = ged_Duplicate(theGraphEdgeDetector(srcGraph));
         if (theGraphEdgeDetector(dstGraph) == NULL)
-            return NOTOK; 
+            return NOTOK;
     }
 
     gp_NoteModification(dstGraph);
@@ -2231,6 +2233,28 @@ int gp_InsertEdge(graphP theGraph, int u, int e_u, int e_ulink,
         e_ulink < 0 || e_ulink > 1 || e_vlink < 0 || e_vlink > 1)
         return NOTOK;
 
+    if (theGraphEdgeDetector(theGraph) != NULL)
+    {
+        // Ensure we always pass the smaller vertex first
+        int min_v = (u < v) ? u : v;
+        int max_v = (u > v) ? u : v;
+
+        if (ged_IsSet(theGraphEdgeDetector(theGraph), min_v, max_v) == TRUE)
+        {
+            // The bit is ON. This is either a parallel edge or a hash collision
+
+            if (gp_IsNeighbor(theGraph, min_v, max_v) == TRUE)
+            {
+                // Parallel Edge !!
+                theGraph->graphFlags |= GRAPHFLAGS_PARALLELEDGEDETECTED;
+            }
+        }
+        else
+        {
+            ged_Set(theGraphEdgeDetector(theGraph), min_v, max_v);
+        }
+    }
+
     if (sp_NonEmpty(theGraph->edgeHoles))
     {
         sp_Pop(theGraph->edgeHoles, vpos);
@@ -2257,27 +2281,6 @@ int gp_InsertEdge(graphP theGraph, int u, int e_u, int e_ulink,
     _AttachEdgeRecord(theGraph, v, e_v, e_vlink, vpos);
 
     theGraph->M++;
-    if (theGraphEdgeDetector(theGraph) != NULL)
-    {
-        // Ensure we always pass the smaller vertex first 
-        int min_v = (u < v) ? u : v;
-        int max_v = (u > v) ? u : v;
-
-        if (ged_IsSet(theGraphEdgeDetector(theGraph), min_v, max_v) == TRUE)
-        {
-            // The bit is ON. This is either a parallel edge or a hash collision 
-               
-            if (gp_IsNeighbor(theGraph, min_v, max_v) == TRUE)
-            {
-                // Parallel Edge !!
-                theGraph->graphFlags |= GRAPHFLAGS_PARALLELEDGEDETECTED;
-            }
-        }
-        else
-        {
-            ged_Set(theGraphEdgeDetector(theGraph), min_v, max_v);
-        }
-    }
 
     gp_NoteModification(theGraph);
 
@@ -3271,20 +3274,24 @@ int gp_DeleteParallelEdges(graphP theGraph)
 
     for (e = gp_LowerBoundEdges(theGraph); e < gp_UpperBoundEdges(theGraph); e++)
     {
-        if (gp_EdgeNotInUse(theGraph, e)) continue;
+        if (gp_EdgeNotInUse(theGraph, e))
+            continue;
 
         twin_e = gp_GetTwin(theGraph, e);
-        if (e > twin_e) continue; 
+        if (e > twin_e)
+            continue;
 
         v = gp_GetNeighbor(theGraph, e);
         u = gp_GetNeighbor(theGraph, twin_e);
 
         for (search_e = e + 1; search_e < gp_UpperBoundEdges(theGraph); search_e++)
         {
-            if (gp_EdgeNotInUse(theGraph, search_e)) continue;
+            if (gp_EdgeNotInUse(theGraph, search_e))
+                continue;
 
             search_twin = gp_GetTwin(theGraph, search_e);
-            if (search_e > search_twin) continue; 
+            if (search_e > search_twin)
+                continue;
 
             search_v = gp_GetNeighbor(theGraph, search_e);
             search_u = gp_GetNeighbor(theGraph, search_twin);
