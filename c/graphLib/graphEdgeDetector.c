@@ -8,71 +8,6 @@ See the LICENSE.TXT file for licensing information.
 #include "graph.h"
 #include "graphEdgeDetector.h"
 
-unsigned ged_Hash(graphEdgeDetectorP theDetector, int v, int w)
-{
-    unsigned uv = (unsigned)v;
-    unsigned uw = (unsigned)w;
-    unsigned FNV_PRIME = 16777619u;
-    unsigned FNV_OFFSET_BASIS = 2166136261u;
-    unsigned hash = FNV_OFFSET_BASIS;
-    unsigned totalBits;
-
-    if (uv > uw)
-    {
-        unsigned temp = uv;
-        uv = uw;
-        uw = temp;
-    }
-    hash ^= uv;
-    hash *= FNV_PRIME;
-
-    hash ^= uw;
-    hash *= FNV_PRIME;
-    totalBits = (unsigned)(theDetector->edgeDetectorCapacity) << 5;
-    hash = hash % totalBits;
-
-    return hash;
-}
-
-int ged_Set(graphEdgeDetectorP theDetector, int v, int w)
-{
-    unsigned H;
-    unsigned arrayidx;
-    unsigned bitmask;
-
-    if (theDetector == NULL || theDetector->edgeDetector == NULL)
-    {
-        return NOTOK;
-    }
-    H = ged_Hash(theDetector, v, w);
-    arrayidx = H >> 5;
-    bitmask = 1u << (H & 31);
-    theDetector->edgeDetector[arrayidx] |= bitmask;
-
-    return OK;
-}
-
-int ged_IsSet(graphEdgeDetectorP theDetector, int v, int w)
-{
-    unsigned H;
-    unsigned arrayidx;
-    unsigned bitmask;
-
-    if (theDetector == NULL || theDetector->edgeDetector == NULL)
-    {
-        return FALSE;
-    }
-    H = ged_Hash(theDetector, v, w);
-    arrayidx = H >> 5;
-    bitmask = 1u << (H & 31);
-
-    if (((theDetector->edgeDetector[arrayidx]) & (bitmask)) != 0)
-    {
-        return TRUE;
-    }
-    return FALSE;
-}
-
 graphEdgeDetectorP ged_New(int theCapacity)
 {
     graphEdgeDetectorP theDetector = NULL;
@@ -98,6 +33,78 @@ graphEdgeDetectorP ged_New(int theCapacity)
     theDetector->edgeDetectorCapacity = theCapacity;
 
     return theDetector;
+}
+
+unsigned long long ged_Hash(graphEdgeDetectorP theDetector, int v, int w)
+{
+    unsigned uv = (unsigned)v;
+    unsigned uw = (unsigned)w;
+    unsigned FNV_PRIME = 16777619u;
+    unsigned FNV_OFFSET_BASIS = 2166136261u;
+    unsigned long long hash = FNV_OFFSET_BASIS;
+    unsigned long long totalBits;
+
+    if (uv > uw)
+    {
+        unsigned temp = uv;
+        uv = uw;
+        uw = temp;
+    }
+    hash ^= uv;
+    hash *= FNV_PRIME;
+
+    hash ^= uw;
+    hash *= FNV_PRIME;
+
+    totalBits = ((unsigned long long)(theDetector->edgeDetectorCapacity)) << 5;
+    hash = hash % totalBits;
+
+    return hash;
+}
+
+int ged_Set(graphEdgeDetectorP theDetector, int v, int w)
+{
+    unsigned long long H;
+    unsigned arrayidx;
+    unsigned bitmask;
+
+    if (theDetector == NULL || theDetector->edgeDetector == NULL)
+    {
+        return NOTOK;
+    }
+
+    H = ged_Hash(theDetector, v, w);
+    if ((H >> 5) > INT_MAX)
+    {
+        return NOTOK;
+    }
+
+    arrayidx = (unsigned)(H >> 5);
+    bitmask = 1u << (H & 31);
+    theDetector->edgeDetector[arrayidx] |= bitmask;
+
+    return OK;
+}
+
+int ged_IsSet(graphEdgeDetectorP theDetector, int v, int w)
+{
+    unsigned H;
+    unsigned arrayidx;
+    unsigned bitmask;
+
+    if (theDetector == NULL || theDetector->edgeDetector == NULL)
+    {
+        return FALSE;
+    }
+    H = ged_Hash(theDetector, v, w);
+    arrayidx = H >> 5;
+    bitmask = 1u << (H & 31);
+
+    if (((theDetector->edgeDetector[arrayidx]) & (bitmask)) != 0)
+    {
+        return TRUE;
+    }
+    return FALSE;
 }
 
 graphEdgeDetectorP ged_Duplicate(graphEdgeDetectorP srcDetector)
