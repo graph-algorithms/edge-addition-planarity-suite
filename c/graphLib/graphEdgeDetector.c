@@ -17,7 +17,7 @@ graphEdgeDetectorP ged_New(int theCapacity)
         return NULL;
     }
 
-    theDetector = (graphEdgeDetectorP)malloc(sizeof(graphEdgeDetectorStruct));
+    theDetector = (graphEdgeDetectorP)calloc(1, sizeof(graphEdgeDetectorStruct));
     if (theDetector == NULL)
     {
         return NULL;
@@ -96,6 +96,7 @@ int ged_IsSet(graphEdgeDetectorP theDetector, int v, int w)
     {
         return FALSE;
     }
+    
     H = ged_Hash(theDetector, v, w);
     arrayidx = H >> 5;
     bitmask = 1u << (H & 31);

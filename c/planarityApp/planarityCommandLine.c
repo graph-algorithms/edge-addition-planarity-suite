@@ -47,6 +47,8 @@ int testPetersenDigraph(void);
 int testDigraphTranspose(void);
 int runDigraphTests(void);
 int runParallelEdgeTests(void);
+int runManyParallelEdgesTest(void);
+int runSingleParallelEdgeTest(void);
 int runDrawPlanarNonplanarWriteTest(void);
 int runReadErrorTests(void);
 int runReadWithExtensionAtEofTest(void);
@@ -2565,11 +2567,26 @@ int runGraphMLTests(void)
 
 int runParallelEdgeTests(void)
 {
+    int retVal = OK;
+
+    gp_Message("Starting Parallel Edge Tests");
+
+    if (runManyParallelEdgesTest() != OK)
+        retVal = NOTOK;
+
+    if (runSingleParallelEdgeTest() != OK)
+        retVal = NOTOK;
+
+    gp_Message("Finished Parallel Edge Tests.\n");
+
+    return retVal;
+}
+
+int runManyParallelEdgesTest(void)
+{
     graphP G = gp_New();
     graphP G1 = NULL;
     unsigned quietModeCache;
-
-    gp_Message("Starting Parallel Edge Tests");
 
     if (G == NULL)
         return NOTOK;
@@ -2582,6 +2599,7 @@ int runParallelEdgeTests(void)
 
     if (!(G->graphFlags & GRAPHFLAGS_PARALLELEDGEDETECTED))
         return NOTOK;
+
     if (gp_GetM(G) != 60)
         return NOTOK;
 
@@ -2625,7 +2643,59 @@ int runParallelEdgeTests(void)
     gp_Free(&G);
     gp_Free(&G1);
 
-    gp_Message("Finished Parallel Edge Tests.\n");
-
     return OK;
+}
+
+// Grab the Petersen graph, which is a 15-edge graph.
+// Ensure the parallel edges flag is initially clear.
+// Ensure vertices 1 and 2 report being degree 3.
+// Add one edge known to be parallel, (1, 2).
+// Ensure that one edge has shown up, that vertices
+//     1 and 2 report being degree 4, and that the
+//     parallel edge is now set.
+// Call the method that deletes the parallel edges
+// Ensure that the parallel edge flag is cleared
+// Ensure that the number of edges goes down by 1.
+// Ensure that vertices 1 and 2 report being degree 3.
+int runSingleParallelEdgeTest(void)
+{
+    int retVal = OK;
+    graphP G = gp_New();
+
+    if (G == NULL)
+        retVal = NOTOK;
+
+    else if (gp_Read(G, "Petersen.txt") != OK || gp_GetM(G) != 15)
+        retVal = NOTOK;
+
+    else if (G->graphFlags & GRAPHFLAGS_PARALLELEDGEDETECTED)
+        retVal = NOTOK;
+
+    else if (gp_GetVertexDegree(G, 1) != 3 || gp_GetVertexDegree(G, 1) != 3)
+        retVal = NOTOK;
+
+    else if (gp_AddEdge(G, 1, 0, 2, 0) != OK || gp_GetM(G) != 16)
+        retVal = NOTOK;
+
+    else if (gp_GetVertexDegree(G, 1) != 4 || gp_GetVertexDegree(G, 1) != 4)
+        retVal = NOTOK;
+
+    else if (!(G->graphFlags & GRAPHFLAGS_PARALLELEDGEDETECTED))
+        retVal = NOTOK;
+
+    else if (gp_DeleteParallelEdges(G) != OK)
+        retVal = NOTOK;
+
+    else if (G->graphFlags & GRAPHFLAGS_PARALLELEDGEDETECTED)
+        retVal = NOTOK;
+
+    else if (gp_GetM(G) != 15)
+        retVal = NOTOK;
+
+    else if (gp_GetVertexDegree(G, 1) != 3 || gp_GetVertexDegree(G, 1) != 3)
+        retVal = NOTOK;
+
+    gp_Free(&G);
+
+    return retVal;
 }
