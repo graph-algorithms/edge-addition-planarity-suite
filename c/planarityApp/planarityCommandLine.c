@@ -2584,6 +2584,7 @@ int runParallelEdgeTests(void)
 
 int runManyParallelEdgesTest(void)
 {
+    int retVal = OK;
     graphP G = gp_New();
     graphP G1 = NULL;
     unsigned quietModeCache;
@@ -2594,56 +2595,58 @@ int runManyParallelEdgesTest(void)
     if (gp_Read(G, "Petersen-with-parallel-edges.txt") != OK &&
         gp_Read(G, "c/samples/Petersen-with-parallel-edges.txt") != OK)
     {
-        return NOTOK;
+        retVal = NOTOK;
+    }
+    else if (!(G->graphFlags & GRAPHFLAGS_PARALLELEDGEDETECTED))
+        retVal = NOTOK;
+
+    else if (gp_GetM(G) != 60)
+        retVal = NOTOK;
+
+    else if ((G1 = gp_DupGraph(G)) == NULL)
+        retVal = NOTOK;
+
+    if (retVal == OK)
+    {
+        quietModeCache = gp_GetQuietMode();
+        gp_SetQuietMode(QUIETMODE_ALL);
+
+        if (gp_DepthFirstSearch(G1) == OK)
+            retVal = NOTOK;
+        else if (gp_ComputeLowpoints(G1) == OK)
+            retVal = NOTOK;
+        else if (gp_ComputeLeastAncestors(G1) == OK)
+            retVal = NOTOK;
+        else if (gp_Embed(G1, EMBEDFLAGS_PLANAR) == OK)
+            retVal = NOTOK;
+
+        gp_SetQuietMode(quietModeCache);
     }
 
-    if (!(G->graphFlags & GRAPHFLAGS_PARALLELEDGEDETECTED))
-        return NOTOK;
-
-    if (gp_GetM(G) != 60)
-        return NOTOK;
-
-    G1 = gp_DupGraph(G);
-    if (G1 == NULL)
-        return NOTOK;
-
-    quietModeCache = gp_GetQuietMode();
-    gp_SetQuietMode(QUIETMODE_ALL);
-
-    if (gp_DepthFirstSearch(G1) == OK)
-        return NOTOK;
-    if (gp_ComputeLowpoints(G1) == OK)
-        return NOTOK;
-    if (gp_ComputeLeastAncestors(G1) == OK)
-        return NOTOK;
-    if (gp_Embed(G1, EMBEDFLAGS_PLANAR) == OK)
-        return NOTOK;
-
-    gp_SetQuietMode(quietModeCache);
-
-    // Delete parallel edges and verify exact 15-edge state
-    if (gp_DeleteParallelEdges(G1) != OK)
-        return NOTOK;
-
-    if (G1->graphFlags & GRAPHFLAGS_PARALLELEDGEDETECTED)
-        return NOTOK;
-
-    if (gp_GetM(G1) != 15)
-        return NOTOK;
-
-    //  Verify embedding and structural integrity of the cleaned graph
-    if (gp_Embed(G1, EMBEDFLAGS_PLANAR) != NONEMBEDDABLE)
-        return NOTOK;
-
-    if (gp_TestEmbedResultIntegrity(G1, G, NONEMBEDDABLE) != NONEMBEDDABLE)
+    if (retVal == OK)
     {
-        return NOTOK;
+        // Delete parallel edges and verify exact 15-edge state
+        if (gp_DeleteParallelEdges(G1) != OK)
+            retVal = NOTOK;
+
+        else if (G1->graphFlags & GRAPHFLAGS_PARALLELEDGEDETECTED)
+            retVal = NOTOK;
+
+        else if (gp_GetM(G1) != 15)
+            retVal = NOTOK;
+
+        //  Verify embedding and structural integrity of the cleaned graph
+        else if (gp_Embed(G1, EMBEDFLAGS_PLANAR) != NONEMBEDDABLE)
+            retVal = NOTOK;
+
+        else if (gp_TestEmbedResultIntegrity(G1, G, NONEMBEDDABLE) != NONEMBEDDABLE)
+            retVal = NOTOK;
     }
 
     gp_Free(&G);
     gp_Free(&G1);
 
-    return OK;
+    return retVal;
 }
 
 // Grab the Petersen graph, which is a 15-edge graph.

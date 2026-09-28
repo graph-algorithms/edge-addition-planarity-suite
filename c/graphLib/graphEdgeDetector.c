@@ -80,7 +80,7 @@ int ged_Set(graphEdgeDetectorP theDetector, int v, int w)
     }
 
     arrayidx = (unsigned)(H >> 5);
-    bitmask = 1u << (H & 31);
+    bitmask = 1u << ((unsigned)(H & 31));
     theDetector->edgeDetector[arrayidx] |= bitmask;
 
     return OK;
@@ -88,7 +88,7 @@ int ged_Set(graphEdgeDetectorP theDetector, int v, int w)
 
 int ged_IsSet(graphEdgeDetectorP theDetector, int v, int w)
 {
-    unsigned H;
+    unsigned long long H;
     unsigned arrayidx;
     unsigned bitmask;
 
@@ -96,10 +96,11 @@ int ged_IsSet(graphEdgeDetectorP theDetector, int v, int w)
     {
         return FALSE;
     }
-    
+
     H = ged_Hash(theDetector, v, w);
-    arrayidx = H >> 5;
-    bitmask = 1u << (H & 31);
+
+    arrayidx = (unsigned)(H >> 5);
+    bitmask = 1u << ((unsigned)(H & 31));
 
     if (((theDetector->edgeDetector[arrayidx]) & (bitmask)) != 0)
     {

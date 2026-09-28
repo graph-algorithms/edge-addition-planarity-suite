@@ -102,6 +102,7 @@ int gp_DepthFirstSearch(graphP theGraph)
 
     if (theGraph == NULL)
         return NOTOK;
+        
     if (theGraph->graphFlags & GRAPHFLAGS_PARALLELEDGEDETECTED)
     {
         gp_ErrorMessage("Parallel edges were previously added to the graph. See gp_DeleteParallelEdges().");
