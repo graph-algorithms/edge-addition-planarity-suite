@@ -59,6 +59,7 @@ int _ClearObstructionMarksInBicomp(graphP theGraph, int BicompRoot);
 
 int _gp_FindEdge(graphP theGraph, int u, int v);
 
+int _EquipGraphWithParallelEdgeDetector(graphP theGraph, int requiredEdgeCapacity);
 int _CompactEdgeStorage(graphP theGraph);
 
 int _ClearAllVisitedFlagsOnPath(graphP theGraph, int u, int v, int w, int x);
@@ -318,6 +319,7 @@ int _EnsureVertexCapacity(graphP theGraph, int N)
         (theGraphSortedDFSChildLists(theGraph) = LCNew(VIsize)) == NULL ||
         (theGraphExtFace(theGraph) = (extFaceLinkRecP)calloc(Vsize, sizeof(extFaceLinkRec))) == NULL ||
         (theGraphIC(theGraph) = (isolatorContextP)calloc(1, sizeof(isolatorContextStruct))) == NULL ||
+        _EquipGraphWithParallelEdgeDetector(theGraph, theGraph->edgeCapacity) != OK ||
         0)
     {
         _ClearGraph(theGraph);
@@ -392,6 +394,7 @@ void _ResetGraphStorage(graphP theGraph)
     theGraph->graphFlags &= ~GRAPHFLAGS_SORTEDBYDFI;
     theGraph->graphFlags &= ~GRAPHFLAGS_LOWPOINTSCOMPUTED;
     theGraph->graphFlags &= ~GRAPHFLAGS_DIRECTEDEDGEDETECTED;
+    theGraph->graphFlags &= ~GRAPHFLAGS_PARALLELEDGEDETECTED;
     _InitVertices(theGraph);
     _InitEdges(theGraph);
     _InitIsolatorContext(theGraph);
@@ -529,8 +532,49 @@ int _EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity)
     for (int e = gp_UpperBoundEdgeStorage(theGraph); e < newEsize; ++e)
         _InitEdgeRec(theGraph, e);
 
-    // The new edgeCapacity has been successfully allocated
     theGraph->edgeCapacity = requiredEdgeCapacity;
+
+    if (_EquipGraphWithParallelEdgeDetector(theGraph, requiredEdgeCapacity) != OK)
+        return NOTOK;
+
+    return OK;
+}
+
+/********************************************************************
+ _EquipGraphWithParallelEdgeDetector()
+ ********************************************************************/
+
+int _EquipGraphWithParallelEdgeDetector(graphP theGraph, int requiredEdgeCapacity)
+{
+    graphEdgeDetectorP newDetector = NULL;
+    int v, e, w, twin_e;
+
+    if (theGraph == NULL)
+        return NOTOK;
+
+    newDetector = ged_New(requiredEdgeCapacity);
+    if (newDetector == NULL)
+        return NOTOK;
+
+    for (e = gp_LowerBoundEdges(theGraph); e < gp_UpperBoundEdges(theGraph); e += 2)
+    {
+        if (gp_EdgeNotInUse(theGraph, e))
+            continue;
+
+        twin_e = gp_GetTwin(theGraph, e);
+
+        v = gp_GetNeighbor(theGraph, e);
+        w = gp_GetNeighbor(theGraph, twin_e);
+
+        ged_Set(newDetector, v, w);
+    }
+
+    if (theGraphEdgeDetector(theGraph) != NULL)
+    {
+        ged_Free(&theGraphEdgeDetector(theGraph));
+    }
+    theGraphEdgeDetector(theGraph) = newDetector;
+
     return OK;
 }
 
@@ -1074,6 +1118,7 @@ void _ClearGraph(graphP theGraph)
         free(theGraphIC(theGraph));
         theGraphIC(theGraph) = NULL;
     }
+    ged_Free(&theGraphEdgeDetector(theGraph));
 
     gp_FreeExtensions(theGraph);
 
@@ -1158,12 +1203,13 @@ int gp_CopyAdjacencyLists(graphP dstGraph, graphP srcGraph)
         gp_SetLastEdge(dstGraph, v, gp_GetLastEdge(srcGraph, v));
     }
 
-    // Copy the adjacency links and neighbor pointers for each edge record
+    // Copy the adjacency links, neighbor values, and edge direction flags
     for (e = gp_LowerBoundEdges(srcGraph); e < gp_UpperBoundEdges(srcGraph); ++e)
     {
         gp_SetNeighbor(dstGraph, e, gp_GetNeighbor(srcGraph, e));
         gp_SetNextEdge(dstGraph, e, gp_GetNextEdge(srcGraph, e));
         gp_SetPrevEdge(dstGraph, e, gp_GetPrevEdge(srcGraph, e));
+        gp_SetDirection(dstGraph, e, gp_GetDirection(srcGraph, e));
     }
 
     // Tell the dstGraph how many edges it now has and where the edge holes are
@@ -1177,9 +1223,14 @@ int gp_CopyAdjacencyLists(graphP dstGraph, graphP srcGraph)
     dstGraph->graphFlags &= ~GRAPHFLAGS_DFSNUMBERED_DIRECTED;
     dstGraph->graphFlags &= ~GRAPHFLAGS_SORTEDBYDFI;
     dstGraph->graphFlags &= ~GRAPHFLAGS_LOWPOINTSCOMPUTED;
+
     dstGraph->graphFlags &= ~GRAPHFLAGS_DIRECTEDEDGEDETECTED;
     if (gp_GetGraphFlags(srcGraph) & GRAPHFLAGS_DIRECTEDEDGEDETECTED)
         dstGraph->graphFlags |= GRAPHFLAGS_DIRECTEDEDGEDETECTED;
+
+    dstGraph->graphFlags &= ~GRAPHFLAGS_PARALLELEDGEDETECTED;
+    if (gp_GetGraphFlags(srcGraph) & GRAPHFLAGS_PARALLELEDGEDETECTED)
+        dstGraph->graphFlags |= GRAPHFLAGS_PARALLELEDGEDETECTED;
 
     return OK;
 }
@@ -1278,6 +1329,14 @@ int gp_CopyGraph(graphP dstGraph, graphP srcGraph)
     sp_Copy(dstGraph->theStack, srcGraph->theStack);
     sp_Copy(dstGraph->edgeHoles, srcGraph->edgeHoles);
     dstGraph->numEdgeHoles = sp_GetCurrentSize((dstGraph)->edgeHoles);
+    if (theGraphEdgeDetector(srcGraph) != NULL)
+    {
+        if (theGraphEdgeDetector(dstGraph) != NULL)
+            ged_Free(&theGraphEdgeDetector(dstGraph));
+        theGraphEdgeDetector(dstGraph) = ged_Duplicate(theGraphEdgeDetector(srcGraph));
+        if (theGraphEdgeDetector(dstGraph) == NULL)
+            return NOTOK;
+    }
 
     gp_NoteModification(dstGraph);
 
@@ -2193,6 +2252,30 @@ int gp_InsertEdge(graphP theGraph, int u, int e_u, int e_ulink,
         e_v >= gp_UpperBoundEdges(theGraph) ||
         (gp_IsEdge(theGraph, e_v) && gp_EdgeNotInUse(theGraph, e_v)) ||
         e_ulink < 0 || e_ulink > 1 || e_vlink < 0 || e_vlink > 1)
+        return NOTOK;
+
+    if (theGraphEdgeDetector(theGraph) != NULL)
+    {
+        // Ensure we always pass the smaller vertex first
+        int min_v = (u < v) ? u : v;
+        int max_v = (u > v) ? u : v;
+
+        if (ged_IsSet(theGraphEdgeDetector(theGraph), min_v, max_v) == TRUE)
+        {
+            // The bit is ON. This is either a parallel edge or a hash collision
+
+            if (gp_IsNeighbor(theGraph, min_v, max_v) == TRUE)
+            {
+                // Parallel Edge !!
+                theGraph->graphFlags |= GRAPHFLAGS_PARALLELEDGEDETECTED;
+            }
+        }
+        else
+        {
+            ged_Set(theGraphEdgeDetector(theGraph), min_v, max_v);
+        }
+    }
+    else
         return NOTOK;
 
     if (sp_NonEmpty(theGraph->edgeHoles))
@@ -3203,4 +3286,47 @@ int _GetBicompSize(graphP theGraph, int BicompRoot)
         }
     }
     return theSize;
+}
+int gp_DeleteParallelEdges(graphP theGraph)
+{
+    int e, search_e, twin_e, search_twin;
+    int u, v, search_u, search_v;
+
+    if (theGraph == NULL)
+        return NOTOK;
+
+    for (e = gp_LowerBoundEdges(theGraph); e < gp_UpperBoundEdges(theGraph); e++)
+    {
+        if (gp_EdgeNotInUse(theGraph, e))
+            continue;
+
+        twin_e = gp_GetTwin(theGraph, e);
+        if (e > twin_e)
+            continue;
+
+        v = gp_GetNeighbor(theGraph, e);
+        u = gp_GetNeighbor(theGraph, twin_e);
+
+        for (search_e = e + 1; search_e < gp_UpperBoundEdges(theGraph); search_e++)
+        {
+            if (gp_EdgeNotInUse(theGraph, search_e))
+                continue;
+
+            search_twin = gp_GetTwin(theGraph, search_e);
+            if (search_e > search_twin)
+                continue;
+
+            search_v = gp_GetNeighbor(theGraph, search_e);
+            search_u = gp_GetNeighbor(theGraph, search_twin);
+            if ((u == search_u && v == search_v) || (u == search_v && v == search_u))
+            {
+                if (gp_DeleteEdge(theGraph, search_e) != OK)
+                    return NOTOK;
+            }
+        }
+    }
+
+    theGraph->graphFlags &= ~GRAPHFLAGS_PARALLELEDGEDETECTED;
+
+    return OK;
 }
