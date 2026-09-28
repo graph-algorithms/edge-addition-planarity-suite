@@ -6,7 +6,7 @@ See the LICENSE.TXT file for licensing information.
 
 #ifndef GRAPH_PRIVATE_H
 #define GRAPH_PRIVATE_H
-
+#include "graphEdgeDetector.h"
 #include "extensionSystem/graphExtensions.h"
 #include "extensionSystem/graphExtensions.private.h"
 
@@ -76,6 +76,7 @@ extern "C"
         listCollectionP sortedDFSChildLists;
         extFaceLinkRecP extFace;
         isolatorContextP IC;
+        graphEdgeDetectorP edgeDetector;
 
         // Counts the modifications of the graph structure made through the
         // functions of the graph library, so that a package such as the
@@ -99,6 +100,7 @@ extern "C"
 #define theGraphSortedDFSChildLists(theGraph) (((graphPrivateDataP)((theGraph)->privateData))->sortedDFSChildLists)
 #define theGraphExtFace(theGraph) (((graphPrivateDataP)((theGraph)->privateData))->extFace)
 #define theGraphIC(theGraph) (((graphPrivateDataP)((theGraph)->privateData))->IC)
+#define theGraphEdgeDetector(theGraph) (((graphPrivateDataP)((theGraph)->privateData))->edgeDetector)
 
 // Package private access to the modification counter: the getter reads it,
 // and gp_NoteModification() is what a modifying function calls
