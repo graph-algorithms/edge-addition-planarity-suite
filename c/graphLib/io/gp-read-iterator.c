@@ -317,6 +317,44 @@ int gp_ReadGraph(GPReadIteratorP theGPReadIterator)
     }
 }
 
+/********************************************************************
+ gp_RetrieveGraphChange()
+
+ Tells the caller how the next graph differs from the one in the
+ reader's graph, one edge per call, as s6_RetrieveGraphChange() does
+ for sparse6 input, to which the call is handed. The other formats
+ have no incremental graphs, so for them e, u and v are all set to
+ NIL, which means that no incremental change comes next.
+
+ Returns OK on success, NOTOK otherwise.
+ ********************************************************************/
+
+int gp_RetrieveGraphChange(GPReadIteratorP theGPReadIterator, int *e, int *u, int *v)
+{
+    if (theGPReadIterator == NULL || e == NULL || u == NULL || v == NULL)
+    {
+        gp_ErrorMessage("Invalid parameter: theGPReadIterator, e, u and v "
+                        "must be non-NULL.");
+        return NOTOK;
+    }
+
+    (*e) = (*u) = (*v) = NIL;
+
+    switch (theGPReadIterator->fileType)
+    {
+    case GP_FILE_TYPE_G6:
+        return OK;
+
+    case GP_FILE_TYPE_S6:
+        return s6_RetrieveGraphChange(theGPReadIterator->s6ReadIterator, e, u, v);
+
+    default:
+        gp_ErrorMessage("Unable to retrieve a change, as the reader has not "
+                        "been initialized with an input.");
+        return NOTOK;
+    }
+}
+
 int gp_EndReached(GPReadIteratorP theGPReadIterator)
 {
     if (theGPReadIterator == NULL)

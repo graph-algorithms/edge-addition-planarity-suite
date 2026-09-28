@@ -27,6 +27,7 @@ extern "C"
     int s6_InitReaderWithFileName(S6ReadIteratorP theS6ReadIterator, char const *const infileName);
 
     int s6_ReadGraph(S6ReadIteratorP theS6ReadIterator);
+    int s6_RetrieveGraphChange(S6ReadIteratorP theS6ReadIterator, int *e, int *u, int *v);
 
     int s6_EndReached(S6ReadIteratorP theS6ReadIterator);
     void s6_FreeReader(S6ReadIteratorP *pS6ReadIterator);

@@ -42,6 +42,7 @@ int runGeneralReadIteratorTests(void);
 char *copySparse6TestString(char const *s6Str);
 int runSparse6TestAllGraphsTests(void);
 int runSparse6WriteTests(void);
+int runSparse6LookaheadTests(void);
 int testDirectedDFS(void);
 int testPetersenDigraph(void);
 int testDigraphTranspose(void);
@@ -281,6 +282,8 @@ int runQuickRegressionTests(int argc, char *argv[])
     else if (runGeneralReadIteratorTests() != OK)
         retVal = NOTOK;
     else if (runSparse6WriteTests() != OK)
+        retVal = NOTOK;
+    else if (runSparse6LookaheadTests() != OK)
         retVal = NOTOK;
     else if (runGraphMLTests() != OK)
         retVal = NOTOK;
