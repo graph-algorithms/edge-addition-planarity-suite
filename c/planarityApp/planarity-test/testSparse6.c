@@ -1770,13 +1770,13 @@ static int runSparse6LookaheadLockstepTest(char const *s6FileName, int inputInMe
         numGraphs++;
 
         {
-            char *laStr = NULL, *plainStr = NULL;
+            char *laStr = NULL, *plainStr = NULL; // codespell:ignore lastr
 
             if (gp_GetM(laGraph) != gp_GetM(plainGraph) ||
                 gp_UpperBoundEdges(laGraph) != gp_LowerBoundEdges(laGraph) + (gp_GetM(laGraph) << 1) ||
-                gp_WriteToString(laGraph, &laStr, WRITE_G6) != OK || laStr == NULL ||
+                gp_WriteToString(laGraph, &laStr, WRITE_G6) != OK || laStr == NULL || // codespell:ignore lastr
                 gp_WriteToString(plainGraph, &plainStr, WRITE_G6) != OK || plainStr == NULL ||
-                strcmp(laStr, plainStr) != 0)
+                strcmp(laStr, plainStr) != 0) // codespell:ignore lastr
             {
                 gp_ErrorMessage("Graph %d of \"%s\" read after the lookahead "
                                 "differs from the graph read without it.",
@@ -1784,8 +1784,8 @@ static int runSparse6LookaheadLockstepTest(char const *s6FileName, int inputInMe
                 Result = NOTOK;
             }
 
-            if (laStr != NULL)
-                free(laStr);
+            if (laStr != NULL) // codespell:ignore lastr
+                free(laStr);   // codespell:ignore lastr
             if (plainStr != NULL)
                 free(plainStr);
         }
@@ -2153,9 +2153,9 @@ int runSparse6LookaheadTests(void)
     gp_SetQuietMode(origQuietMode);
 
     if (Result == OK)
-        gp_Message("Sparse6 lookahead tests succeeded.");
+        gp_Message("Sparse6 lookahead tests succeeded.\n");
     else
-        gp_ErrorMessage("Sparse6 lookahead tests FAILED.");
+        gp_ErrorMessage("Sparse6 lookahead tests FAILED.\n");
 
     return Result;
 }
