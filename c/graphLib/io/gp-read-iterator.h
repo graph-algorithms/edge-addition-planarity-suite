@@ -32,6 +32,7 @@ extern "C"
     int gp_InitReaderWithFileName(GPReadIteratorP theGPReadIterator, char const *const infileName);
 
     int gp_ReadGraph(GPReadIteratorP theGPReadIterator);
+    int gp_RetrieveGraphChange(GPReadIteratorP theGPReadIterator, int *e, int *u, int *v);
 
     int gp_EndReached(GPReadIteratorP theGPReadIterator);
     void gp_FreeReader(GPReadIteratorP *pGPReadIterator);

@@ -4,6 +4,7 @@ All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
 
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -17,6 +18,7 @@ extern int _CompactEdgeStorage(graphP theGraph);
 int runSparse6ReadTests(void);
 int runSparse6WriteTests(void);
 int runSparse6TestAllGraphsTests(void);
+int runSparse6LookaheadTests(void);
 char *copySparse6TestString(char const *s6Str);
 
 /* Defined in planarityCommandLine.c */
@@ -902,6 +904,10 @@ int runSparse6ReadTests(void)
         // cut short
         ":~~?? ???\n",
         ":~~???\n",
+        // An edge twice on an incremental line, which lists each changed
+        // edge once (nauty's copyg toggles it twice, but no nauty tool
+        // writes such a line, and the lookahead could not report it)
+        ":D\n;o?~\n",
         // A later graph of a different order, an empty line, and a line
         // beginning with neither ':' nor ';'
         ":D\n:C\n",
@@ -1493,4 +1499,663 @@ int runSparse6TestAllGraphsTests(void)
     }
 
     return retVal;
+}
+
+/****************************************************************************
+ runSparse6LookaheadTests()
+
+ Exercises s6_RetrieveGraphChange() and gp_RetrieveGraphChange(). The
+ files are read twice in lockstep, once with the lookahead and once without
+ it, so the reader without it is the oracle: before each read, the changes
+ retrieved must be edges of the symmetric difference between the graph
+ read last and the next graph, each once, deletions named by an edge record
+ of the graph in use, additions by two vertices the graph does not join,
+ and, when all are retrieved from a ';' line, all of them; after the read,
+ both graphs must be the same. With partial retrieval, s6_ReadGraph() must
+ finish the line. The string scripts pin the calls in between: what is
+ reported before the first graph, before a ':' line, at the end of the
+ input, after an empty ';' line, and what is refused.
+ ****************************************************************************/
+
+#define LOOKAHEAD_DELETE 0
+#define LOOKAHEAD_ADD 1
+
+static int runSparse6LookaheadLockstepTest(char const *s6FileName, int inputInMemFlag, int partial, int expectedNumGraphs);
+static char *getSparse6LineKinds(char const *s6Str, int *pNumLines);
+static int countSymmetricDifference(graphP aGraph, graphP bGraph);
+static int runSparse6LookaheadScript(char const *s6Str, char const *script, int const pairs[][2], char const *expectedG6Line);
+static int runGPLookaheadTests(void);
+
+// Returns the first character of each graph line of s6Str, the header
+// aside, as a string of ':' and ';', and the number of lines.
+static char *getSparse6LineKinds(char const *s6Str, int *pNumLines)
+{
+    char const *header = ">>sparse6<<";
+    char const *p = s6Str;
+    size_t numLines = 0, len = strlen(s6Str);
+    char *kinds = (char *)malloc(len + 1);
+
+    if (kinds == NULL)
+        return NULL;
+
+    if (strncmp(p, header, strlen(header)) == 0)
+        p += strlen(header);
+
+    while (*p != '\0')
+    {
+        kinds[numLines++] = *p;
+
+        while (*p != '\0' && *p != '\n')
+            p++;
+        if (*p == '\n')
+            p++;
+    }
+
+    kinds[numLines] = '\0';
+    (*pNumLines) = (int)numLines;
+
+    return kinds;
+}
+
+// The number of edges in one of the two graphs but not the other. The
+// graphs have the same order, so a vertex is the same index in both.
+static int countSymmetricDifference(graphP aGraph, graphP bGraph)
+{
+    int count = 0;
+    graphP graphs[2] = {aGraph, bGraph};
+
+    for (int i = 0; i < 2; i++)
+    {
+        graphP theGraph = graphs[i], otherGraph = graphs[1 - i];
+
+        for (int e = gp_LowerBoundEdges(theGraph); e < gp_UpperBoundEdges(theGraph); e += 2)
+        {
+            if (gp_EdgeNotInUse(theGraph, e))
+                continue;
+
+            if (!gp_IsEdge(otherGraph, gp_FindEdge(otherGraph, gp_GetNeighbor(theGraph, gp_GetTwin(theGraph, e)), gp_GetNeighbor(theGraph, e))))
+                count++;
+        }
+    }
+
+    return count;
+}
+
+static int runSparse6LookaheadLockstepTest(char const *s6FileName, int inputInMemFlag, int partial, int expectedNumGraphs)
+{
+    int Result = OK;
+    int numGraphs = 0, numLines = 0, order = 0, lb = 0;
+    int numChanges = 0, changeCapacity = 0;
+    int *changes = NULL;
+    char *seen = NULL, *s6InputStr = NULL, *lineKinds = NULL;
+    graphP laGraph = NULL, plainGraph = NULL;
+    S6ReadIteratorP laReader = NULL, plainReader = NULL;
+
+    if ((laGraph = gp_New()) == NULL || (plainGraph = gp_New()) == NULL ||
+        (s6InputStr = ReadTextFileIntoString(s6FileName)) == NULL ||
+        (lineKinds = getSparse6LineKinds(s6InputStr, &numLines)) == NULL)
+        Result = NOTOK;
+
+    if (Result == OK &&
+        (s6_NewReader((&laReader), laGraph) != OK || s6_NewReader((&plainReader), plainGraph) != OK ||
+         s6_InitReaderWithFileName(plainReader, s6FileName) != OK ||
+         (inputInMemFlag ? s6_InitReaderWithString(laReader, s6InputStr)
+                         : s6_InitReaderWithFileName(laReader, s6FileName)) != OK))
+        Result = NOTOK;
+
+    if (Result == OK)
+    {
+        order = gp_GetN(laGraph);
+        lb = gp_LowerBoundVertexStorage(laGraph);
+        if ((seen = (char *)calloc((size_t)order * order, 1)) == NULL)
+            Result = NOTOK;
+    }
+
+    while (Result == OK)
+    {
+        int e = NIL, u = NIL, v = NIL;
+        int limit = partial ? numGraphs % 5 : INT_MAX;
+        int lineKind = numGraphs < numLines ? lineKinds[numGraphs] : '\0';
+
+        // Retrieve the changes to the graph read last, all of them or the
+        // first few, checking each against that graph
+        numChanges = 0;
+        while (Result == OK && numChanges < limit)
+        {
+            int kind = LOOKAHEAD_ADD;
+
+            if (s6_RetrieveGraphChange(laReader, &e, &u, &v) != OK)
+            {
+                gp_ErrorMessage("Retrieving change %d before graph %d of "
+                                "\"%s\" failed.",
+                                numChanges + 1, numGraphs + 1, s6FileName);
+                Result = NOTOK;
+                break;
+            }
+
+            if (e == NIL && u == NIL && v == NIL)
+                break;
+
+            if (e != NIL)
+            {
+                if (u != NIL || v != NIL || e < gp_LowerBoundEdges(laGraph) ||
+                    e >= gp_UpperBoundEdges(laGraph) || gp_EdgeNotInUse(laGraph, e))
+                    Result = NOTOK;
+                else
+                {
+                    kind = LOOKAHEAD_DELETE;
+                    u = gp_GetNeighbor(laGraph, gp_GetTwin(laGraph, e));
+                    v = gp_GetNeighbor(laGraph, e);
+                }
+            }
+            else if (u == NIL || v == NIL || u >= v || gp_IsEdge(laGraph, gp_FindEdge(laGraph, u, v)))
+                Result = NOTOK;
+
+            if (Result != OK)
+            {
+                gp_ErrorMessage("Change %d retrieved before graph %d of \"%s\" "
+                                "is not a deletion of an edge of the graph or "
+                                "an addition of an edge it lacks.",
+                                numChanges + 1, numGraphs + 1, s6FileName);
+                break;
+            }
+
+            if (numChanges == changeCapacity)
+            {
+                int *newChanges = (int *)realloc(changes, (size_t)(changeCapacity * 2 + 16) * 3 * sizeof(int));
+
+                if (newChanges == NULL)
+                {
+                    Result = NOTOK;
+                    break;
+                }
+
+                changes = newChanges;
+                changeCapacity = changeCapacity * 2 + 16;
+            }
+
+            changes[3 * numChanges] = kind;
+            changes[3 * numChanges + 1] = u < v ? u : v;
+            changes[3 * numChanges + 2] = u < v ? v : u;
+            numChanges++;
+        }
+
+        // Once a line is used up, retrieving again still reports no change
+        if (Result == OK && !partial &&
+            (s6_RetrieveGraphChange(laReader, &e, &u, &v) != OK || e != NIL || u != NIL || v != NIL))
+        {
+            gp_ErrorMessage("A change was retrieved before graph %d of \"%s\" "
+                            "after the line was used up.",
+                            numGraphs + 1, s6FileName);
+            Result = NOTOK;
+        }
+
+        // The next graph, read without the lookahead, is the oracle
+        if (Result != OK || s6_ReadGraph(plainReader) != OK)
+        {
+            Result = NOTOK;
+            break;
+        }
+
+        if (s6_EndReached(plainReader) || lineKind != ';')
+        {
+            if (numChanges != 0)
+            {
+                gp_ErrorMessage("A change was retrieved before graph %d of "
+                                "\"%s\", which is not an incremental graph.",
+                                numGraphs + 1, s6FileName);
+                Result = NOTOK;
+            }
+        }
+        else
+        {
+            for (int i = 0; Result == OK && i < numChanges; i++)
+            {
+                int kind = changes[3 * i], cu = changes[3 * i + 1], cv = changes[3 * i + 2];
+                // gp_IsEdge() is the edge record itself in some builds, so it
+                // is made a truth value before it is compared with one
+                int inNext = gp_IsEdge(plainGraph, gp_FindEdge(plainGraph, cu, cv)) ? TRUE : FALSE;
+                char *mark = seen + (size_t)(cu - lb) * order + (cv - lb);
+
+                if ((kind == LOOKAHEAD_DELETE) == inNext || *mark)
+                {
+                    gp_ErrorMessage("Change %d retrieved before graph %d of "
+                                    "\"%s\", on {%d, %d}, is not a change "
+                                    "the graph makes, or is reported twice.",
+                                    i + 1, numGraphs + 1, s6FileName, cu, cv);
+                    Result = NOTOK;
+                }
+
+                *mark = 1;
+            }
+
+            for (int i = 0; i < numChanges; i++)
+                seen[(size_t)(changes[3 * i + 1] - lb) * order + (changes[3 * i + 2] - lb)] = 0;
+
+            if (Result == OK && !partial && numChanges != countSymmetricDifference(laGraph, plainGraph))
+            {
+                gp_ErrorMessage("Retrieved %d changes before graph %d of "
+                                "\"%s\", which makes %d.",
+                                numChanges, numGraphs + 1, s6FileName,
+                                countSymmetricDifference(laGraph, plainGraph));
+                Result = NOTOK;
+            }
+        }
+
+        if (Result != OK)
+            break;
+
+        if (s6_ReadGraph(laReader) != OK)
+        {
+            gp_ErrorMessage("Graph %d of \"%s\" could not be read after the "
+                            "lookahead.",
+                            numGraphs + 1, s6FileName);
+            Result = NOTOK;
+            break;
+        }
+
+        if (s6_EndReached(laReader) || s6_EndReached(plainReader))
+        {
+            if (!s6_EndReached(laReader) || !s6_EndReached(plainReader))
+            {
+                gp_ErrorMessage("The lookahead reader and the plain reader "
+                                "reached the end of \"%s\" at different "
+                                "graphs.",
+                                s6FileName);
+                Result = NOTOK;
+            }
+            break;
+        }
+
+        numGraphs++;
+
+        {
+            char *laStr = NULL, *plainStr = NULL;
+
+            if (gp_GetM(laGraph) != gp_GetM(plainGraph) ||
+                gp_UpperBoundEdges(laGraph) != gp_LowerBoundEdges(laGraph) + (gp_GetM(laGraph) << 1) ||
+                gp_WriteToString(laGraph, &laStr, WRITE_G6) != OK || laStr == NULL ||
+                gp_WriteToString(plainGraph, &plainStr, WRITE_G6) != OK || plainStr == NULL ||
+                strcmp(laStr, plainStr) != 0)
+            {
+                gp_ErrorMessage("Graph %d of \"%s\" read after the lookahead "
+                                "differs from the graph read without it.",
+                                numGraphs, s6FileName);
+                Result = NOTOK;
+            }
+
+            if (laStr != NULL)
+                free(laStr);
+            if (plainStr != NULL)
+                free(plainStr);
+        }
+    }
+
+    if (Result == OK && numGraphs != expectedNumGraphs)
+    {
+        gp_ErrorMessage("Expected %d graphs in \"%s\" but read %d.",
+                        expectedNumGraphs, s6FileName, numGraphs);
+        Result = NOTOK;
+    }
+
+    if (Result == OK)
+        gp_Message("Lookahead over the %d graphs in \"%s\" (read %s, %s "
+                   "retrieval) matches the reader without it.",
+                   numGraphs, s6FileName, inputInMemFlag ? "from a string" : "from the file",
+                   partial ? "partial" : "full");
+
+    s6_FreeReader((&laReader));
+    s6_FreeReader((&plainReader));
+    gp_Free(&laGraph);
+    gp_Free(&plainGraph);
+
+    if (changes != NULL)
+        free(changes);
+    if (seen != NULL)
+        free(seen);
+    if (lineKinds != NULL)
+        free(lineKinds);
+    if (s6InputStr != NULL)
+        free(s6InputStr);
+
+    return Result;
+}
+
+/****************************************************************************
+ runSparse6LookaheadScript()
+
+ Runs a script of calls against a sparse6 reader of s6Str, one character
+ per call: 'r' reads a graph, 'e' reads and must reach the end, 'f' reads
+ and must be refused; 'n' retrieves and must get three NILs, 'a' must get
+ the addition of the next pair of pairs[], 'd' the deletion of an edge
+ record joining the next pair, 'x' must be refused, and 'p' passes a NULL
+ out-pointer, which must be refused; 'm' changes the graph directly, by
+ deleting an edge if it has one and otherwise adding {0, 1}. The pairs are
+ 0-based, as in the file. If expectedG6Line is not NULL, the graph must
+ then have that graph6 encoding.
+ ****************************************************************************/
+
+static int runSparse6LookaheadScript(char const *s6Str, char const *script, int const pairs[][2], char const *expectedG6Line)
+{
+    int Result = OK;
+    int pairIndex = 0;
+    char *s6Copy = NULL, *actualG6 = NULL;
+    graphP theGraph = NULL;
+    S6ReadIteratorP theReader = NULL;
+    char const *step = script;
+
+    if ((s6Copy = copySparse6TestString(s6Str)) == NULL || (theGraph = gp_New()) == NULL ||
+        s6_NewReader((&theReader), theGraph) != OK ||
+        s6_InitReaderWithString(theReader, s6Copy) != OK)
+        Result = NOTOK;
+
+    for (; Result == OK && *step != '\0'; step++)
+    {
+        // The outputs start as values no call reports, so that a call that
+        // returns without setting them is caught
+        int e = -2, u = -2, v = -2, rv = OK;
+        int lb = gp_LowerBoundVertexStorage(theGraph);
+
+        switch (*step)
+        {
+        case 'r':
+        case 'e':
+            if (s6_ReadGraph(theReader) != OK || s6_EndReached(theReader) != (*step == 'e'))
+                Result = NOTOK;
+            break;
+        case 'f':
+            if (s6_ReadGraph(theReader) == OK)
+                Result = NOTOK;
+            break;
+        case 'n':
+            if (s6_RetrieveGraphChange(theReader, &e, &u, &v) != OK || e != NIL || u != NIL || v != NIL)
+                Result = NOTOK;
+            break;
+        case 'a':
+            if (s6_RetrieveGraphChange(theReader, &e, &u, &v) != OK || e != NIL ||
+                u != pairs[pairIndex][0] + lb || v != pairs[pairIndex][1] + lb)
+                Result = NOTOK;
+            pairIndex++;
+            break;
+        case 'd':
+            if (s6_RetrieveGraphChange(theReader, &e, &u, &v) != OK || e == NIL || u != NIL || v != NIL ||
+                gp_EdgeNotInUse(theGraph, e) ||
+                gp_GetNeighbor(theGraph, gp_GetTwin(theGraph, e)) + gp_GetNeighbor(theGraph, e) !=
+                    pairs[pairIndex][0] + pairs[pairIndex][1] + 2 * lb ||
+                (gp_GetNeighbor(theGraph, e) != pairs[pairIndex][0] + lb &&
+                 gp_GetNeighbor(theGraph, e) != pairs[pairIndex][1] + lb))
+                Result = NOTOK;
+            pairIndex++;
+            break;
+        case 'x':
+            if (s6_RetrieveGraphChange(theReader, &e, &u, &v) == OK)
+                Result = NOTOK;
+            break;
+        case 'p':
+            if (s6_RetrieveGraphChange(theReader, NULL, &u, &v) == OK ||
+                s6_RetrieveGraphChange(theReader, &e, &u, NULL) == OK)
+                Result = NOTOK;
+            break;
+        case 'm':
+            e = gp_LowerBoundEdges(theGraph);
+            while (e < gp_UpperBoundEdges(theGraph) && gp_EdgeNotInUse(theGraph, e))
+                e += 2;
+            rv = e < gp_UpperBoundEdges(theGraph) ? gp_DeleteEdge(theGraph, e)
+                                                  : gp_DynamicAddEdge(theGraph, lb, 0, lb + 1, 0);
+            if (rv != OK)
+                Result = NOTOK;
+            break;
+        default:
+            Result = NOTOK;
+            break;
+        }
+    }
+
+    if (Result == OK && expectedG6Line != NULL)
+    {
+        char const *g6Header = ">>graph6<<";
+
+        if (gp_WriteToString(theGraph, &actualG6, WRITE_G6) != OK || actualG6 == NULL ||
+            strncmp(actualG6, g6Header, strlen(g6Header)) != 0 ||
+            strncmp(actualG6 + strlen(g6Header), expectedG6Line, strlen(expectedG6Line)) != 0 ||
+            actualG6[strlen(g6Header) + strlen(expectedG6Line)] != '\n')
+            Result = NOTOK;
+    }
+
+    // A step that fails is followed by the increment of the loop, so step
+    // is one past it; at the end of the script, it is the graph that failed
+    if (Result != OK)
+        gp_ErrorMessage("Lookahead script \"%s\" on sparse6 input \"%s\" "
+                        "failed at step %d of %d.",
+                        script, s6Str, (int)(step - script), (int)strlen(script));
+
+    s6_FreeReader((&theReader));
+    gp_Free(&theGraph);
+
+    if (s6Copy != NULL)
+        free(s6Copy);
+    if (actualG6 != NULL)
+        free(actualG6);
+
+    return Result;
+}
+
+/****************************************************************************
+ runGPLookaheadTests()
+
+ gp_RetrieveGraphChange() reports no change for graph6 input, at any point,
+ and for sparse6 input the same changes as s6_RetrieveGraphChange(), and it
+ refuses NULL parameters and an uninitialized reader.
+ ****************************************************************************/
+
+static int runGPLookaheadTests(void)
+{
+    int Result = OK;
+    int numGraphs = 0;
+    int e = NIL, u = NIL, v = NIL;
+    graphP gpGraph = NULL, s6Graph = NULL;
+    GPReadIteratorP gpReader = NULL;
+    S6ReadIteratorP s6Reader = NULL;
+
+    // Refusals before any input
+    if ((gpGraph = gp_New()) == NULL || gp_NewReader((&gpReader), gpGraph) != OK ||
+        gp_RetrieveGraphChange(gpReader, &e, &u, &v) == OK ||
+        gp_RetrieveGraphChange(NULL, &e, &u, &v) == OK ||
+        s6_RetrieveGraphChange(NULL, &e, &u, &v) == OK)
+    {
+        gp_ErrorMessage("A change was retrieved from a reader with no input.");
+        Result = NOTOK;
+    }
+
+    gp_FreeReader((&gpReader));
+    gp_Free(&gpGraph);
+
+    // Graph6 input has no incremental graphs
+    if (Result == OK &&
+        ((gpGraph = gp_New()) == NULL || gp_NewReader((&gpReader), gpGraph) != OK ||
+         gp_InitReaderWithFileName(gpReader, "N5-all.g6") != OK))
+        Result = NOTOK;
+
+    while (Result == OK)
+    {
+        // The outputs start as values no call reports, so that a call that
+        // returns without setting them is caught
+        e = u = v = -2;
+
+        if (gp_RetrieveGraphChange(gpReader, &e, &u, &v) != OK || e != NIL || u != NIL || v != NIL ||
+            gp_RetrieveGraphChange(gpReader, NULL, &u, &v) == OK)
+        {
+            gp_ErrorMessage("gp_RetrieveGraphChange() did not report no change "
+                            "before graph %d of \"N5-all.g6\".",
+                            numGraphs + 1);
+            Result = NOTOK;
+            break;
+        }
+
+        if (gp_ReadGraph(gpReader) != OK)
+        {
+            Result = NOTOK;
+            break;
+        }
+
+        if (gp_EndReached(gpReader))
+            break;
+
+        numGraphs++;
+    }
+
+    if (Result == OK && numGraphs != 34)
+        Result = NOTOK;
+
+    gp_FreeReader((&gpReader));
+    gp_Free(&gpGraph);
+
+    // Sparse6 input is handed to the sparse6 reader
+    numGraphs = 0;
+    if (Result == OK &&
+        ((gpGraph = gp_New()) == NULL || (s6Graph = gp_New()) == NULL ||
+         gp_NewReader((&gpReader), gpGraph) != OK ||
+         gp_InitReaderWithFileName(gpReader, "N5-all.inc.s6") != OK ||
+         s6_NewReader((&s6Reader), s6Graph) != OK ||
+         s6_InitReaderWithFileName(s6Reader, "N5-all.inc.s6") != OK))
+        Result = NOTOK;
+
+    while (Result == OK)
+    {
+        int ge = NIL, gu = NIL, gv = NIL;
+
+        do
+        {
+            ge = gu = gv = -2;
+            e = u = v = -3;
+
+            if (gp_RetrieveGraphChange(gpReader, &ge, &gu, &gv) != OK ||
+                s6_RetrieveGraphChange(s6Reader, &e, &u, &v) != OK ||
+                ge != e || gu != u || gv != v)
+            {
+                gp_ErrorMessage("gp_RetrieveGraphChange() and "
+                                "s6_RetrieveGraphChange() differ before graph "
+                                "%d of \"N5-all.inc.s6\".",
+                                numGraphs + 1);
+                Result = NOTOK;
+            }
+        } while (Result == OK && (e != NIL || u != NIL));
+
+        if (Result != OK || gp_ReadGraph(gpReader) != OK || s6_ReadGraph(s6Reader) != OK)
+        {
+            Result = NOTOK;
+            break;
+        }
+
+        if (gp_EndReached(gpReader))
+            break;
+
+        numGraphs++;
+    }
+
+    if (Result == OK && numGraphs != 34)
+        Result = NOTOK;
+
+    gp_FreeReader((&gpReader));
+    s6_FreeReader((&s6Reader));
+    gp_Free(&gpGraph);
+    gp_Free(&s6Graph);
+
+    if (Result == OK)
+        gp_Message("gp_RetrieveGraphChange() reports no change for graph6 "
+                   "input and hands sparse6 input to the sparse6 reader.");
+
+    return Result;
+}
+
+int runSparse6LookaheadTests(void)
+{
+    int Result = OK;
+    unsigned origQuietMode = gp_GetQuietMode();
+    size_t i = 0;
+
+    int const pairs04[][2] = {{0, 4}};
+    int const pairs01[][2] = {{0, 1}};
+    int const pairs04and14[][2] = {{0, 4}, {1, 4}};
+
+    // {sparse6 input, script, pairs, graph6 encoding of the final graph}
+    struct
+    {
+        char const *s6Str;
+        char const *script;
+        int const (*pairs)[2];
+        char const *expectedG6Line;
+    } scripts[] = {
+        // Nothing incremental before the first graph, after a used-up line,
+        // at the end of the input, and after the end
+        {":D\n;oN\n", "nrannrnnen", pairs04, "D?_"},
+        // An empty ';' line reports no change and is still a graph, and a
+        // ':' line after it is found and read
+        {":D\n;\n:D\n", "rnrnre", NULL, "D??"},
+        // A deletion is reported as an edge record of the edge
+        {":D\n;oN\n;oN\n", "rrdnre", pairs04, "D??"},
+        // A ':' line found by the lookahead after a ':' line
+        {":A\n:A\n;n\n", "rnranre", pairs01, "A_"},
+        // s6_ReadGraph() finishes a line the lookahead has begun, and then
+        // reads the ':' line after it
+        {":D\n;o@~\n", "rare", pairs04and14, "D?o"},
+        {":D\n;o@~\n:D\n", "rarnre", pairs04, "D??"},
+        // A NULL out-pointer is refused without spoiling the reader
+        {":D\n;oN\n", "rpare", pairs04, "D?_"},
+        // A direct change to the graph before a ':' line does not matter
+        {":D\n:D\n", "rmre", NULL, "D??"},
+        // but it does once an incremental line has been retrieved, even an
+        // empty one
+        {":An\n;\n", "rnmxf", NULL, NULL},
+        // Refused: a pair twice on a ';' line, a loop, a byte out of range,
+        // a line that begins with neither ':' nor ';', and a direct change
+        // to the graph after the last read, before or between retrievals
+        // or before the read, with or without a retrieval
+        {":D\n;o?~\n", "raxfx", pairs04, NULL},
+        {":D\n;o?~\n", "rf", NULL, NULL},
+        {":D\n;B~\n", "rxf", NULL, NULL},
+        {":D\n;o \n", "rxf", NULL, NULL},
+        {":D\nX\n", "rxf", NULL, NULL},
+        {":D\n;oN\n", "ramf", pairs04, NULL},
+        {":D\n;o@~\n", "ramxf", pairs04, NULL},
+        {":D\n;oN\n", "rmxf", NULL, NULL},
+        {":D\n;oN\n", "rmf", NULL, NULL},
+    };
+
+    gp_Message("Start sparse6 lookahead tests");
+
+    if (Result == OK && runSparse6LookaheadLockstepTest("N5-all.inc.s6", FALSE, FALSE, 34) != OK)
+        Result = NOTOK;
+    if (Result == OK && runSparse6LookaheadLockstepTest("N5-all.inc.s6", TRUE, TRUE, 34) != OK)
+        Result = NOTOK;
+    if (Result == OK && runSparse6LookaheadLockstepTest("n8.mALL.inc.s6", TRUE, FALSE, 12346) != OK)
+        Result = NOTOK;
+    if (Result == OK && runSparse6LookaheadLockstepTest("n8.mALL.inc.s6", FALSE, TRUE, 12346) != OK)
+        Result = NOTOK;
+
+    // The refusals report errors, which are expected
+    gp_SetQuietMode(TRUE);
+
+    for (i = 0; Result == OK && i < sizeof(scripts) / sizeof(scripts[0]); i++)
+    {
+        if (runSparse6LookaheadScript(scripts[i].s6Str, scripts[i].script, scripts[i].pairs,
+                                      scripts[i].expectedG6Line) != OK)
+        {
+            gp_SetQuietMode(origQuietMode);
+            gp_ErrorMessage("Lookahead script %d failed.", (int)i + 1);
+            Result = NOTOK;
+        }
+    }
+
+    if (Result == OK && runGPLookaheadTests() != OK)
+        Result = NOTOK;
+
+    gp_SetQuietMode(origQuietMode);
+
+    if (Result == OK)
+        gp_Message("Sparse6 lookahead tests succeeded.");
+    else
+        gp_ErrorMessage("Sparse6 lookahead tests FAILED.");
+
+    return Result;
 }
