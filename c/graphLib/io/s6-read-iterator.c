@@ -31,7 +31,6 @@ int _s6_ValidateHeader(strOrFileP inputContainer);
 int _s6_ReadOrder(strOrFileP inputContainer, int *order, const int lineNum);
 int _s6_GetNumBitsForVertex(int order);
 int _s6_ReadNextByte(strOrFileP inputContainer, int *byteBits, int *endOfLine, unsigned long long *bytePos, const int lineNum);
-void _s6_ReportLineStartError(int firstChar, const int lineNum);
 void _s6_StartLine(S6ReadIteratorP theS6ReadIterator);
 int _s6_DecodeEdges(S6ReadIteratorP theS6ReadIterator, const int stopAtEdge, const int incremental,
                     int *pU, int *pV, int *pEndOfLine, const int lineNum);
@@ -43,6 +42,20 @@ int _s6_ApplyRetrievedChanges(S6ReadIteratorP theS6ReadIterator);
 
 int _s6_ReadGraphFromFile(graphP theGraph, char *pathToS6File);
 int _s6_ReadGraphFromString(graphP theGraph, char *s6EncodedString);
+
+/* Helpful private macro for error reporting in read operations */
+
+#define _s6_ReportLineStartError(firstChar, lineNum)                         \
+    {                                                                        \
+        if (firstChar == '\n' || firstChar == '\r')                          \
+            gp_ErrorMessage("Line %d is empty; expected a sparse6 graph "    \
+                            "beginning with ':' or ';'.",                    \
+                            lineNum);                                        \
+        else                                                                 \
+            gp_ErrorMessage("Line %d does not begin with ':' or ';', so it " \
+                            "is not a sparse6 graph.",                       \
+                            lineNum);                                        \
+    }
 
 /********************************************************************
  Package private structure declaration for read iterator
@@ -982,19 +995,6 @@ int _s6_ReadNextByte(strOrFileP inputContainer, int *byteBits, int *endOfLine, u
     (*byteBits) = theChar - 63;
 
     return OK;
-}
-
-// Reports why a line that should begin a graph does not.
-void _s6_ReportLineStartError(int firstChar, const int lineNum)
-{
-    if (firstChar == '\n' || firstChar == '\r')
-        gp_ErrorMessage("Line %d is empty; expected a sparse6 graph "
-                        "beginning with ':' or ';'.",
-                        lineNum);
-    else
-        gp_ErrorMessage("Line %d does not begin with ':' or ';', so it "
-                        "is not a sparse6 graph.",
-                        lineNum);
 }
 
 // Sets the decoding state for the edge list of a new line, whose first

@@ -2134,7 +2134,7 @@ int runSparse6LookaheadTests(void)
         Result = NOTOK;
 
     // The refusals report errors, which are expected
-    gp_SetQuietMode(TRUE);
+    gp_SetQuietMode(QUIETMODE_ALL);
 
     for (i = 0; Result == OK && i < sizeof(scripts) / sizeof(scripts[0]); i++)
     {
