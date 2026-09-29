@@ -3287,44 +3287,71 @@ int _GetBicompSize(graphP theGraph, int BicompRoot)
     }
     return theSize;
 }
+
+/********************************************************************
+ gp_DeleteParallelEdges()
+
+ In linear time, finds and deletes all parallel edges, leaving
+ one instance of each existing edge. GRAPHFLAGS_PARALLELEDGEDETECTED
+ is cleared by this operation, if successful.
+
+ NOTE: The parallel edge mechanism is designed to help with reducing
+       graphs to simple undirected graphs. So, an in-only edge and
+       an out-only directed edge in the same vertex adjacency list
+       are treated as parallel edges, and one will be removed.
+
+ Returns OK on success, NOTOK on failure.
+ ********************************************************************/
+
 int gp_DeleteParallelEdges(graphP theGraph)
 {
-    int e, search_e, twin_e, search_twin;
-    int u, v, search_u, search_v;
+    int v, e, eNext, neighbor;
 
     if (theGraph == NULL)
         return NOTOK;
 
-    for (e = gp_LowerBoundEdges(theGraph); e < gp_UpperBoundEdges(theGraph); e++)
+    _ClearVertexVisitedFlags(theGraph, FALSE);
+
+    for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
     {
-        if (gp_EdgeNotInUse(theGraph, e))
-            continue;
-
-        twin_e = gp_GetTwin(theGraph, e);
-        if (e > twin_e)
-            continue;
-
-        v = gp_GetNeighbor(theGraph, e);
-        u = gp_GetNeighbor(theGraph, twin_e);
-
-        for (search_e = e + 1; search_e < gp_UpperBoundEdges(theGraph); search_e++)
+        e = gp_GetFirstEdge(theGraph, v);
+        while (gp_IsEdge(theGraph, e))
         {
-            if (gp_EdgeNotInUse(theGraph, search_e))
-                continue;
+            eNext = gp_GetNextEdge(theGraph, e);
+            neighbor = gp_GetNeighbor(theGraph, e);
 
-            search_twin = gp_GetTwin(theGraph, search_e);
-            if (search_e > search_twin)
-                continue;
-
-            search_v = gp_GetNeighbor(theGraph, search_e);
-            search_u = gp_GetNeighbor(theGraph, search_twin);
-            if ((u == search_u && v == search_v) || (u == search_v && v == search_u))
+            if (neighbor == v)
             {
-                if (gp_DeleteEdge(theGraph, search_e) != OK)
+                // Simple vertex visitation is not sufficient for loop edges
+                // because both edge records are in the same adjacency list,
+                // and not necessarily in consecutive locations.
+                gp_ErrorMessage("Method gp_DeleteParallelEdges() does not support loop edges.");
+                return NOTOK;
+            }
+
+            if (gp_GetVisited(theGraph, neighbor))
+            {
+                if (gp_DeleteEdge(theGraph, e) != OK)
                     return NOTOK;
             }
+            else
+            {
+                gp_SetVisited(theGraph, neighbor);
+            }
+
+            e = eNext;
+        }
+
+        e = gp_GetFirstEdge(theGraph, v);
+        while (gp_IsEdge(theGraph, e))
+        {
+            neighbor = gp_GetNeighbor(theGraph, e);
+            gp_ClearVisited(theGraph, neighbor);
+            e = gp_GetNextEdge(theGraph, e);
         }
     }
+
+    _CompactEdgeStorage(theGraph);
 
     theGraph->graphFlags &= ~GRAPHFLAGS_PARALLELEDGEDETECTED;
 
