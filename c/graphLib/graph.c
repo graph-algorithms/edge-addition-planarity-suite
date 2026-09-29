@@ -3315,6 +3315,15 @@ int gp_DeleteParallelEdges(graphP theGraph)
             eNext = gp_GetNextEdge(theGraph, e);
             neighbor = gp_GetNeighbor(theGraph, e);
 
+            if (neighbor == v)
+            {
+                // Simple vertex visitation is not sufficient for loop edges
+                // because both edge records are in the same adjacency list,
+                // and not necessarily in consecutive locations.
+                gp_ErrorMessage("Method gp_DeleteParallelEdges() does not support loop edges.");
+                return NOTOK;
+            }
+
             if (gp_GetVisited(theGraph, neighbor))
             {
                 if (gp_DeleteEdge(theGraph, e) != OK)
