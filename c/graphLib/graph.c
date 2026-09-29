@@ -3295,6 +3295,11 @@ int _GetBicompSize(graphP theGraph, int BicompRoot)
  one instance of each existing edge. GRAPHFLAGS_PARALLELEDGEDETECTED
  is cleared by this operation, if successful.
 
+ NOTE: The parallel edge mechanism is designed to help with reducing
+       graphs to simple undirected graphs. So, an in-only edge and
+       an out-only directed edge in the same vertex adjacency list
+       are treated as parallel edges, and one will be removed.
+
  Returns OK on success, NOTOK on failure.
  ********************************************************************/
 
