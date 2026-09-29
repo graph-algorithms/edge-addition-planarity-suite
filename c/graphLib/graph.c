@@ -3289,43 +3289,47 @@ int _GetBicompSize(graphP theGraph, int BicompRoot)
 }
 int gp_DeleteParallelEdges(graphP theGraph)
 {
-    int e, search_e, twin_e, search_twin;
-    int u, v, search_u, search_v;
+    int v, e, eNext, neighbor;
 
     if (theGraph == NULL)
         return NOTOK;
 
-    for (e = gp_LowerBoundEdges(theGraph); e < gp_UpperBoundEdges(theGraph); e++)
+    _ClearVertexVisitedFlags(theGraph, 0);
+
+    for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
     {
-        if (gp_EdgeNotInUse(theGraph, e))
-            continue;
-
-        twin_e = gp_GetTwin(theGraph, e);
-        if (e > twin_e)
-            continue;
-
-        v = gp_GetNeighbor(theGraph, e);
-        u = gp_GetNeighbor(theGraph, twin_e);
-
-        for (search_e = e + 1; search_e < gp_UpperBoundEdges(theGraph); search_e++)
+        e = gp_GetFirstEdge(theGraph, v);
+        while (gp_IsEdge(theGraph, e))
         {
-            if (gp_EdgeNotInUse(theGraph, search_e))
-                continue;
+            eNext = gp_GetNextEdge(theGraph, e);
+            neighbor = gp_GetNeighbor(theGraph, e);
 
-            search_twin = gp_GetTwin(theGraph, search_e);
-            if (search_e > search_twin)
-                continue;
-
-            search_v = gp_GetNeighbor(theGraph, search_e);
-            search_u = gp_GetNeighbor(theGraph, search_twin);
-            if ((u == search_u && v == search_v) || (u == search_v && v == search_u))
+            if (gp_GetVisited(theGraph, neighbor))
             {
-                if (gp_DeleteEdge(theGraph, search_e) != OK)
+                if (gp_DeleteEdge(theGraph, e) != OK)
                     return NOTOK;
             }
+            else
+            {
+                gp_SetVisited(theGraph, neighbor);
+            }
+
+            e = eNext;
+        }
+
+        e = gp_GetFirstEdge(theGraph, v);
+        while (gp_IsEdge(theGraph, e))
+        {
+            neighbor = gp_GetNeighbor(theGraph, e);
+            gp_ClearVisited(theGraph, neighbor);
+            e = gp_GetNextEdge(theGraph, e);
         }
     }
 
+    _ClearVertexVisitedFlags(theGraph, 0);
+    _CompactEdgeStorage(theGraph);
+
+    
     theGraph->graphFlags &= ~GRAPHFLAGS_PARALLELEDGEDETECTED;
 
     return OK;
