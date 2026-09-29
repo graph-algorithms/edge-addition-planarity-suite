@@ -3287,6 +3287,17 @@ int _GetBicompSize(graphP theGraph, int BicompRoot)
     }
     return theSize;
 }
+
+/********************************************************************
+ gp_DeleteParallelEdges()
+
+ In linear time, finds and deletes all parallel edges, leaving
+ one instance of each existing edge. GRAPHFLAGS_PARALLELEDGEDETECTED
+ is cleared by this operation, if successful.
+
+ Returns OK on success, NOTOK on failure.
+ ********************************************************************/
+
 int gp_DeleteParallelEdges(graphP theGraph)
 {
     int v, e, eNext, neighbor;
@@ -3294,7 +3305,7 @@ int gp_DeleteParallelEdges(graphP theGraph)
     if (theGraph == NULL)
         return NOTOK;
 
-    _ClearVertexVisitedFlags(theGraph, 0);
+    _ClearVertexVisitedFlags(theGraph, FALSE);
 
     for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
     {
@@ -3326,10 +3337,8 @@ int gp_DeleteParallelEdges(graphP theGraph)
         }
     }
 
-    _ClearVertexVisitedFlags(theGraph, 0);
     _CompactEdgeStorage(theGraph);
 
-    
     theGraph->graphFlags &= ~GRAPHFLAGS_PARALLELEDGEDETECTED;
 
     return OK;
