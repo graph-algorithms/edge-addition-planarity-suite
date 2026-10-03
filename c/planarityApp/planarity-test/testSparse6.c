@@ -35,6 +35,13 @@ static int runSparse6AcceptTest(char const *s6Str, char const *expectedG6Line);
 static int runSparse6AcceptEdgesTest(char const *s6Str, int order, int const edges[][2], int numEdges);
 static int runSparse6RejectTest(char const *s6Str);
 static int runSparse6LargeOrderTests(void);
+static int compareSparse6TestPairs(void const *a, void const *b);
+static int collectSparse6TestPairs(graphP theGraph, int **pPairs, int *pNumPairs);
+static int compareSparse6EdgeMultiset(graphP theGraph, int const pairs[][2], int numPairs);
+static int runSparse6AcceptMultigraphTest(char const *s6Str, int order, int const pairs[][2], int numPairs, int expectParallelEdges);
+static int runSparse6WriteMultigraphLineTest(int order, int const pairs[][2], int numPairs, char const *expectedLine);
+static int runSparse6MultigraphContractTests(void);
+static int runSparse6PetersenMultigraphTest(void);
 
 /****************************************************************************
  compareSparse6Output()
@@ -798,6 +805,26 @@ int runSparse6WriteTests(void)
     if (Result == OK)
         Result = runSparse6WriteContractTests();
 
+    // Multigraphs written whole, each line as nauty's own encoder writes it:
+    // a pair twice, the pairs of ":CWG" back in sorted order, a graph of
+    // genrang -m3 -r3, and the padding case for n = 2^k
+    if (Result == OK)
+    {
+        int const pairsAb[][2] = {{0, 1}, {0, 1}};
+        int const pairsCWG[][2] = {{0, 3}, {1, 3}, {0, 3}};
+        int const pairsGenrang[][2] = {{0, 3}, {0, 3}, {2, 3}, {1, 4}, {1, 4}, {2, 4}, {0, 5}, {1, 5}, {2, 5}};
+        int const pairsCpJ[][2] = {{1, 2}, {1, 2}};
+
+        if (runSparse6WriteMultigraphLineTest(2, pairsAb, 2, ":Ab") != OK ||
+            runSparse6WriteMultigraphLineTest(4, pairsCWG, 3, ":Cw@") != OK ||
+            runSparse6WriteMultigraphLineTest(6, pairsGenrang, 9, ":Ek?IPI@J") != OK ||
+            runSparse6WriteMultigraphLineTest(4, pairsCpJ, 2, ":CpJ") != OK)
+            Result = NOTOK;
+    }
+
+    if (Result == OK)
+        Result = runSparse6MultigraphContractTests();
+
     if (Result == OK)
         Result = runCompactEdgeStorageTests();
 
@@ -870,16 +897,33 @@ int runSparse6ReadTests(void)
     // Order 63 uses the four-byte order encoding
     int const order63Edges[][2] = {{25, 62}, {49, 51}};
 
+    // Parallel edges on ':' lines, checked with their multiplicities: a pair
+    // twice; a pair repeated with another edge between, so that the repeat
+    // is not next to the first occurrence; a line of nauty's genrang -m3 -r3;
+    // the padding case for n = 2^k, whose leading 0 bit must not read as a
+    // loop; and a ':' line without parallel edges after one with them, which
+    // must leave the parallel edge flag clear
+    int const pairsAb[][2] = {{0, 1}, {0, 1}};
+    int const pairsCWG[][2] = {{0, 3}, {1, 3}, {0, 3}};
+    int const pairsGenrang[][2] = {{0, 3}, {0, 3}, {2, 3}, {1, 4}, {1, 4}, {2, 4}, {0, 5}, {1, 5}, {2, 5}};
+    int const pairsCpJ[][2] = {{1, 2}, {1, 2}};
+    int const pairsK2[][2] = {{0, 1}};
+
     char const *rejectCases[] = {
         // An incremental line cannot be the first graph
         ";oN\n",
         // Loop edge, including on the single vertex of an order-1 graph
-        // (through the zero-width x field), then parallel edges, the second
-        // separated from the first occurrence by another edge
+        // (through the zero-width x field)
         ":AF\n",
         ":@?\n",
-        ":Ab\n",
-        ":CWG\n",
+        // An incremental line after a graph with parallel edges, even an
+        // empty one, since incremental sparse6 does not support them (nauty's
+        // copyg takes the previous graph modulo 2 and loses edges)
+        ":Ab\n;\n",
+        ":Ab\n;n\n",
+        ":Ek?IPI@J\n;b\n",
+        // and after a pair repeated with another edge between its occurrences
+        ":CWG\n;\n",
         // Bytes outside 63..126 in the edge list. The second and third are
         // chosen so that reading them as data would decode to a valid graph,
         // so they are rejected by the byte range check alone, and the last
@@ -960,6 +1004,60 @@ int runSparse6ReadTests(void)
 
     if (Result == OK && runSparse6AcceptEdgesTest(":~??~xk^pf\n", 63, order63Edges, 2) != OK)
         Result = NOTOK;
+
+    if (Result == OK &&
+        (runSparse6AcceptMultigraphTest(":Ab\n", 2, pairsAb, 2, TRUE) != OK ||
+         runSparse6AcceptMultigraphTest(":CWG\n", 4, pairsCWG, 3, TRUE) != OK ||
+         runSparse6AcceptMultigraphTest(":Ek?IPI@J\n", 6, pairsGenrang, 9, TRUE) != OK ||
+         runSparse6AcceptMultigraphTest(":CpJ\n", 4, pairsCpJ, 2, TRUE) != OK ||
+         runSparse6AcceptMultigraphTest(":Ab\n:An\n", 2, pairsK2, 1, FALSE) != OK))
+        Result = NOTOK;
+
+    if (Result == OK && runSparse6PetersenMultigraphTest() != OK)
+        Result = NOTOK;
+
+    // The reader goes by the ':' line it read, not by the library's parallel
+    // edge flag: a ';' line is applied after a simple graph whose flag is set,
+    // as an insertion refused at the edge capacity leaves it, and refused
+    // after a graph with parallel edges whose flag is clear
+    for (i = 0; Result == OK && i < 2; i++)
+    {
+        char *flagStr = copySparse6TestString(i == 0 ? ":An\n;n\n" : ":Ab\n;\n");
+        graphP flagGraph = gp_New();
+        S6ReadIteratorP flagReader = NULL;
+        int secondRead = NOTOK;
+
+        if (flagStr == NULL || flagGraph == NULL ||
+            s6_NewReader((&flagReader), flagGraph) != OK ||
+            s6_InitReaderWithString(flagReader, flagStr) != OK ||
+            s6_ReadGraph(flagReader) != OK)
+            Result = NOTOK;
+        else
+        {
+            if (i == 0)
+                flagGraph->graphFlags |= GRAPHFLAGS_PARALLELEDGEDETECTED;
+            else
+                flagGraph->graphFlags &= ~GRAPHFLAGS_PARALLELEDGEDETECTED;
+
+            gp_SetQuietMode(QUIETMODE_ALL);
+            secondRead = s6_ReadGraph(flagReader);
+            gp_SetQuietMode(origQuietMode);
+
+            if ((i == 0) != (secondRead == OK))
+            {
+                gp_ErrorMessage("A ';' line was %s after a graph whose parallel "
+                                "edge flag was %s.",
+                                i == 0 ? "refused" : "applied",
+                                i == 0 ? "set without parallel edges" : "clear with parallel edges");
+                Result = NOTOK;
+            }
+        }
+
+        s6_FreeReader((&flagReader));
+        gp_Free(&flagGraph);
+        if (flagStr != NULL)
+            free(flagStr);
+    }
 
     // Order 1, whose vertex field is zero bits wide, is checked directly
     // because the graph6 writer used by the other cases does not encode
@@ -1324,6 +1422,462 @@ static int runSparse6RejectTest(char const *s6Str)
 
     if (s6Copy != NULL)
         free(s6Copy);
+
+    return Result;
+}
+
+// Orders 0-based pairs (smaller, larger) lexicographically.
+static int compareSparse6TestPairs(void const *a, void const *b)
+{
+    int const *pairA = (int const *)a;
+    int const *pairB = (int const *)b;
+
+    if (pairA[0] != pairB[0])
+        return (pairA[0] < pairB[0]) ? -1 : 1;
+
+    if (pairA[1] != pairB[1])
+        return (pairA[1] < pairB[1]) ? -1 : 1;
+
+    return 0;
+}
+
+// Collects the edges of theGraph as sorted 0-based pairs (smaller, larger),
+// one pair per edge, so that parallel edges appear as repeated pairs, in an
+// array the caller frees. An edgeless graph yields a NULL array.
+static int collectSparse6TestPairs(graphP theGraph, int **pPairs, int *pNumPairs)
+{
+    int numEdges = gp_GetM(theGraph);
+    int numPairs = 0;
+    int lower = gp_LowerBoundVertexStorage(theGraph);
+    int *pairs = NULL;
+
+    (*pPairs) = NULL;
+    (*pNumPairs) = 0;
+
+    if (numEdges == 0)
+        return OK;
+
+    if ((pairs = (int *)malloc((size_t)numEdges * 2 * sizeof(int))) == NULL)
+        return NOTOK;
+
+    for (int e = gp_LowerBoundEdges(theGraph); e < gp_UpperBoundEdges(theGraph); e += 2)
+    {
+        int u = 0, v = 0;
+
+        if (!gp_EdgeInUse(theGraph, e))
+            continue;
+
+        if (numPairs == numEdges)
+        {
+            free(pairs);
+            return NOTOK;
+        }
+
+        u = gp_GetNeighbor(theGraph, gp_GetTwin(theGraph, e)) - lower;
+        v = gp_GetNeighbor(theGraph, e) - lower;
+        pairs[2 * numPairs] = (u < v) ? u : v;
+        pairs[2 * numPairs + 1] = (u < v) ? v : u;
+        numPairs++;
+    }
+
+    if (numPairs != numEdges)
+    {
+        free(pairs);
+        return NOTOK;
+    }
+
+    qsort(pairs, (size_t)numPairs, 2 * sizeof(int), compareSparse6TestPairs);
+
+    (*pPairs) = pairs;
+    (*pNumPairs) = numPairs;
+
+    return OK;
+}
+
+// Compares the edges of theGraph with the expected 0-based pairs as
+// multisets, since the graph6 encoding the other cases compare cannot show
+// how many times a pair occurs. The expected pairs may be in any order.
+static int compareSparse6EdgeMultiset(graphP theGraph, int const pairs[][2], int numPairs)
+{
+    int Result = OK;
+    int numActual = 0;
+    int *actual = NULL, *expected = NULL;
+
+    if (collectSparse6TestPairs(theGraph, &actual, &numActual) != OK || numActual != numPairs)
+        Result = NOTOK;
+
+    if (Result == OK && numPairs > 0)
+    {
+        if ((expected = (int *)malloc((size_t)numPairs * 2 * sizeof(int))) == NULL)
+            Result = NOTOK;
+
+        for (int i = 0; Result == OK && i < numPairs; i++)
+        {
+            expected[2 * i] = (pairs[i][0] < pairs[i][1]) ? pairs[i][0] : pairs[i][1];
+            expected[2 * i + 1] = (pairs[i][0] < pairs[i][1]) ? pairs[i][1] : pairs[i][0];
+        }
+
+        if (Result == OK)
+        {
+            qsort(expected, (size_t)numPairs, 2 * sizeof(int), compareSparse6TestPairs);
+
+            if (memcmp(actual, expected, (size_t)numPairs * 2 * sizeof(int)) != 0)
+                Result = NOTOK;
+        }
+    }
+
+    if (actual != NULL)
+        free(actual);
+    if (expected != NULL)
+        free(expected);
+
+    return Result;
+}
+
+// Reads every graph in s6Str with the sparse6 read iterator and requires the
+// last one to have the given order and exactly the given pairs, repeated
+// pairs being parallel edges, and the parallel edge flag set exactly when
+// expectParallelEdges is TRUE.
+static int runSparse6AcceptMultigraphTest(char const *s6Str, int order, int const pairs[][2], int numPairs, int expectParallelEdges)
+{
+    int Result = OK;
+    int numGraphs = 0;
+    int hasParallelEdges = FALSE;
+    char *s6Copy = NULL;
+    graphP theGraph = NULL;
+    S6ReadIteratorP theS6ReadIterator = NULL;
+
+    if ((s6Copy = copySparse6TestString(s6Str)) == NULL || (theGraph = gp_New()) == NULL ||
+        s6_NewReader((&theS6ReadIterator), theGraph) != OK ||
+        s6_InitReaderWithString(theS6ReadIterator, s6Copy) != OK)
+        Result = NOTOK;
+
+    while (Result == OK)
+    {
+        if (s6_ReadGraph(theS6ReadIterator) != OK)
+        {
+            Result = NOTOK;
+            break;
+        }
+
+        if (s6_EndReached(theS6ReadIterator))
+            break;
+
+        numGraphs++;
+    }
+
+    if (Result == OK)
+        hasParallelEdges = (gp_GetGraphFlags(theGraph) & GRAPHFLAGS_PARALLELEDGEDETECTED) ? TRUE : FALSE;
+
+    if (Result == OK &&
+        (numGraphs == 0 || gp_GetN(theGraph) != order ||
+         compareSparse6EdgeMultiset(theGraph, pairs, numPairs) != OK ||
+         hasParallelEdges != expectParallelEdges))
+        Result = NOTOK;
+
+    if (Result != OK)
+        gp_ErrorMessage("Sparse6 input \"%s\" did not decode to the expected "
+                        "graph of order %d with %d edges and the parallel "
+                        "edge flag %s.",
+                        s6Str, order, numPairs, expectParallelEdges ? "set" : "clear");
+
+    s6_FreeReader((&theS6ReadIterator));
+    gp_Free(&theGraph);
+
+    if (s6Copy != NULL)
+        free(s6Copy);
+
+    return Result;
+}
+
+/****************************************************************************
+ runSparse6WriteMultigraphLineTest()
+
+ Builds the multigraph of the given order from the 0-based pairs, which
+ repeat for its parallel edges, and checks that the sparse6 writer produces
+ exactly the line nauty's own encoder writes for it, and that the line
+ reads back to the same pairs with the parallel edge flag set.
+ ****************************************************************************/
+
+static int runSparse6WriteMultigraphLineTest(int order, int const pairs[][2], int numPairs, char const *expectedLine)
+{
+    int Result = OK;
+    graphP theGraph = NULL, readBack = NULL;
+    char *outputStr = NULL;
+    char expected[MAXLINE + 1];
+
+    if ((theGraph = gp_New()) == NULL || (readBack = gp_New()) == NULL ||
+        gp_EnsureVertexCapacity(theGraph, order) != OK)
+        Result = NOTOK;
+
+    for (int i = 0; Result == OK && i < numPairs; i++)
+    {
+        if (gp_DynamicAddEdge(theGraph, pairs[i][0] + gp_LowerBoundVertexStorage(theGraph), 0,
+                              pairs[i][1] + gp_LowerBoundVertexStorage(theGraph), 0) != OK)
+            Result = NOTOK;
+    }
+
+    if (Result == OK && gp_WriteToString(theGraph, &outputStr, WRITE_SPARSE6) != OK)
+    {
+        gp_ErrorMessage("Unable to write a multigraph of order %d as sparse6.", order);
+        Result = NOTOK;
+    }
+
+    if (Result == OK)
+    {
+        snprintf(expected, sizeof(expected), "%s\n", expectedLine);
+        Result = compareSparse6Output(outputStr, expected, "a multigraph");
+    }
+
+    if (Result == OK &&
+        (gp_ReadFromString(readBack, outputStr) != OK ||
+         !(gp_GetGraphFlags(readBack) & GRAPHFLAGS_PARALLELEDGEDETECTED) ||
+         compareSparse6EdgeMultiset(readBack, pairs, numPairs) != OK))
+    {
+        gp_ErrorMessage("The sparse6 line \"%s\" of a multigraph did not read "
+                        "back to the same multigraph.",
+                        expectedLine);
+        Result = NOTOK;
+    }
+
+    if (outputStr != NULL)
+        free(outputStr);
+    gp_Free(&theGraph);
+    gp_Free(&readBack);
+
+    return Result;
+}
+
+/****************************************************************************
+ runSparse6MultigraphContractTests()
+
+ A multigraph is written whole, and after that line no change can be
+ stored, not even a deletion or an addition a simple graph would take,
+ since incremental sparse6 does not support parallel edges. The second
+ instances are then deleted directly, which leaves the library's parallel
+ edge flag set; changes are still refused until the graph is written whole,
+ and then accepted, as the writer goes by the line it wrote, not by the
+ flag. The lines are what nauty writes for these graphs.
+ ****************************************************************************/
+
+static int runSparse6MultigraphContractTests(void)
+{
+    int Result = OK;
+    unsigned origQuietMode = gp_GetQuietMode();
+    graphP theGraph = NULL;
+    S6WriteIteratorP theWriter = NULL;
+    char *outputStr = NULL;
+    int lower = 0;
+    // The multigraph that nauty's genrang -m3 -r3 writes as the first line,
+    // with 0-3 and 1-4 twice each; then the graph without the second
+    // instances, and a ';' line adding {0, 1}, as copyg -i writes them
+    int const pairs[][2] = {{0, 3}, {0, 3}, {2, 3}, {1, 4}, {1, 4}, {2, 4}, {0, 5}, {1, 5}, {2, 5}};
+    char const *expected =
+        ":Ek?IPI@J\n"
+        ":EkAcgCn\n"
+        ";b\n";
+
+    if ((theGraph = gp_New()) == NULL || gp_EnsureVertexCapacity(theGraph, 6) != OK)
+    {
+        gp_Free(&theGraph);
+        return NOTOK;
+    }
+
+    lower = gp_LowerBoundVertexStorage(theGraph);
+
+    for (size_t i = 0; i < sizeof(pairs) / sizeof(pairs[0]); i++)
+    {
+        if (gp_DynamicAddEdge(theGraph, lower + pairs[i][0], 0, lower + pairs[i][1], 0) != OK)
+        {
+            gp_Free(&theGraph);
+            return NOTOK;
+        }
+    }
+
+    if (s6_NewWriter(&theWriter, theGraph) != OK ||
+        s6_InitWriterWithString(theWriter, &outputStr) != OK)
+    {
+        s6_FreeWriter(&theWriter);
+        if (outputStr != NULL)
+            free(outputStr);
+        gp_Free(&theGraph);
+        return NOTOK;
+    }
+
+    gp_SetQuietMode(QUIETMODE_ALL);
+
+    if (s6_WriteGraph(theWriter) != OK)
+    {
+        gp_SetQuietMode(origQuietMode);
+        gp_ErrorMessage("Unable to write a multigraph whole.");
+        Result = NOTOK;
+    }
+
+    // The deletion of an edge with one instance and the addition of an
+    // absent pair are both refused while the graph has parallel edges
+    if (Result == OK &&
+        (s6_StoreGraphChange(theWriter, gp_FindEdge(theGraph, lower + 2, lower + 3), NIL, NIL) == OK ||
+         s6_StoreGraphChange(theWriter, NIL, lower, lower + 1) == OK))
+    {
+        gp_SetQuietMode(origQuietMode);
+        gp_ErrorMessage("A change was stored for a graph with parallel edges.");
+        Result = NOTOK;
+    }
+
+    // The second instances of 0-3 and 1-4 are deleted directly; the flag
+    // stays set, and the last line written still has parallel edges
+    if (Result == OK)
+    {
+        if (gp_DeleteEdge(theGraph, gp_FindEdge(theGraph, lower, lower + 3)) != OK ||
+            gp_DeleteEdge(theGraph, gp_FindEdge(theGraph, lower + 1, lower + 4)) != OK ||
+            !(gp_GetGraphFlags(theGraph) & GRAPHFLAGS_PARALLELEDGEDETECTED))
+        {
+            gp_SetQuietMode(origQuietMode);
+            gp_ErrorMessage("Unable to delete the second instances of the "
+                            "parallel edges.");
+            Result = NOTOK;
+        }
+        else if (s6_StoreGraphChange(theWriter, NIL, lower, lower + 1) == OK)
+        {
+            gp_SetQuietMode(origQuietMode);
+            gp_ErrorMessage("A change was stored after a line with parallel "
+                            "edges.");
+            Result = NOTOK;
+        }
+        else if (s6_WriteGraph(theWriter) != OK)
+        {
+            gp_SetQuietMode(origQuietMode);
+            gp_ErrorMessage("Unable to write the graph whole once its parallel "
+                            "edges were deleted.");
+            Result = NOTOK;
+        }
+        else if (s6_StoreGraphChange(theWriter, NIL, lower, lower + 1) != OK ||
+                 s6_WriteGraph(theWriter) != OK)
+        {
+            gp_SetQuietMode(origQuietMode);
+            gp_ErrorMessage("Unable to write a batch after a whole line "
+                            "without parallel edges, with the parallel edge "
+                            "flag still set.");
+            Result = NOTOK;
+        }
+    }
+
+    // A graph with parallel edges whose flag is clear, as a duplicate added
+    // after gp_CopyAdjacencyLists() leaves it: the line written has a
+    // repeated pair, so a change is refused all the same
+    if (Result == OK)
+    {
+        graphP clearGraph = gp_New();
+        S6WriteIteratorP clearWriter = NULL;
+        char *clearStr = NULL;
+        int clearLower = 0;
+
+        if (clearGraph == NULL || gp_EnsureVertexCapacity(clearGraph, 2) != OK)
+            Result = NOTOK;
+        else
+        {
+            clearLower = gp_LowerBoundVertexStorage(clearGraph);
+
+            if (gp_AddEdge(clearGraph, clearLower, 0, clearLower + 1, 0) != OK ||
+                gp_AddEdge(clearGraph, clearLower, 0, clearLower + 1, 0) != OK)
+                Result = NOTOK;
+        }
+
+        if (Result == OK)
+        {
+            clearGraph->graphFlags &= ~GRAPHFLAGS_PARALLELEDGEDETECTED;
+
+            if (s6_NewWriter(&clearWriter, clearGraph) != OK ||
+                s6_InitWriterWithString(clearWriter, &clearStr) != OK ||
+                s6_WriteGraph(clearWriter) != OK)
+                Result = NOTOK;
+            else if (s6_StoreGraphChange(clearWriter, gp_FindEdge(clearGraph, clearLower, clearLower + 1), NIL, NIL) == OK)
+            {
+                gp_SetQuietMode(origQuietMode);
+                gp_ErrorMessage("A change was stored after a line with parallel "
+                                "edges whose flag was clear.");
+                Result = NOTOK;
+            }
+        }
+
+        s6_FreeWriter(&clearWriter);
+        gp_SetQuietMode(origQuietMode);
+
+        if (Result == OK)
+            Result = compareSparse6Output(clearStr, ":Ab\n", "a multigraph whose flag is clear");
+
+        if (clearStr != NULL)
+            free(clearStr);
+        gp_Free(&clearGraph);
+    }
+
+    gp_SetQuietMode(origQuietMode);
+
+    s6_FreeWriter(&theWriter);
+
+    if (Result == OK)
+        Result = compareSparse6Output(outputStr, expected, "the multigraph contract cases");
+
+    if (outputStr != NULL)
+        free(outputStr);
+    gp_Free(&theGraph);
+
+    return Result;
+}
+
+/****************************************************************************
+ runSparse6PetersenMultigraphTest()
+
+ The Petersen graph with each edge four times is read from its adjacency
+ list, which lists each edge in one direction only and so reads as a
+ digraph, and its direction flags are cleared; it is written as sparse6
+ and read back, and the graph read back must have the parallel edge flag
+ set, the same order and edge count, the same degree at every vertex, and
+ the same edges with the same multiplicities.
+ ****************************************************************************/
+
+static int runSparse6PetersenMultigraphTest(void)
+{
+    int Result = OK;
+    int numPairs = 0;
+    int *pairs = NULL;
+    char *s6Str = NULL;
+    graphP original = NULL, readBack = NULL;
+
+    if ((original = gp_New()) == NULL || (readBack = gp_New()) == NULL ||
+        gp_Read(original, "Petersen-with-parallel-edges.txt") != OK ||
+        gp_ClearEdgeDirectionFlags(original) != OK ||
+        gp_WriteToString(original, &s6Str, WRITE_SPARSE6) != OK ||
+        gp_ReadFromString(readBack, s6Str) != OK)
+        Result = NOTOK;
+
+    if (Result == OK &&
+        (!(gp_GetGraphFlags(readBack) & GRAPHFLAGS_PARALLELEDGEDETECTED) ||
+         gp_GetN(readBack) != gp_GetN(original) ||
+         gp_GetM(original) != 60 || gp_GetM(readBack) != 60))
+        Result = NOTOK;
+
+    for (int v = gp_LowerBoundVertices(original); Result == OK && v < gp_UpperBoundVertices(original); v++)
+    {
+        if (gp_GetVertexDegree(readBack, v) != gp_GetVertexDegree(original, v))
+            Result = NOTOK;
+    }
+
+    if (Result == OK &&
+        (collectSparse6TestPairs(original, &pairs, &numPairs) != OK ||
+         compareSparse6EdgeMultiset(readBack, (int const(*)[2])pairs, numPairs) != OK))
+        Result = NOTOK;
+
+    if (Result != OK)
+        gp_ErrorMessage("The Petersen graph with parallel edges did not come "
+                        "back the same through sparse6.");
+
+    if (pairs != NULL)
+        free(pairs);
+    if (s6Str != NULL)
+        free(s6Str);
+    gp_Free(&original);
+    gp_Free(&readBack);
 
     return Result;
 }
@@ -2061,6 +2615,31 @@ static int runGPLookaheadTests(void)
     gp_Free(&gpGraph);
     gp_Free(&s6Graph);
 
+    // A ';' line after a graph with parallel edges is refused at the gp_
+    // level as at the s6_ level
+    if (Result == OK)
+    {
+        char *multiStr = copySparse6TestString(":Ab\n;n\n");
+
+        e = u = v = -2;
+
+        if (multiStr == NULL || (gpGraph = gp_New()) == NULL ||
+            gp_NewReader((&gpReader), gpGraph) != OK ||
+            gp_InitReaderWithString(gpReader, multiStr) != OK ||
+            gp_ReadGraph(gpReader) != OK ||
+            gp_RetrieveGraphChange(gpReader, &e, &u, &v) == OK)
+        {
+            gp_ErrorMessage("gp_RetrieveGraphChange() did not refuse a ';' "
+                            "line after a graph with parallel edges.");
+            Result = NOTOK;
+        }
+
+        gp_FreeReader((&gpReader));
+        gp_Free(&gpGraph);
+        if (multiStr != NULL)
+            free(multiStr);
+    }
+
     if (Result == OK)
         gp_Message("gp_RetrieveGraphChange() reports no change for graph6 "
                    "input and hands sparse6 input to the sparse6 reader.");
@@ -2120,6 +2699,18 @@ int runSparse6LookaheadTests(void)
         {":D\n;o@~\n", "ramxf", pairs04, NULL},
         {":D\n;oN\n", "rmxf", NULL, NULL},
         {":D\n;oN\n", "rmf", NULL, NULL},
+        // Refused: a ';' line after a graph with parallel edges, empty or
+        // not, by the lookahead and by the read
+        {":Ab\n;n\n", "rxf", NULL, NULL},
+        {":Ab\n;\n", "rxf", NULL, NULL},
+        {":Ab\n;n\n", "rf", NULL, NULL},
+        // A ':' line after a graph with parallel edges is found and read,
+        // and ';' lines apply again after it
+        {":Ab\n:An\n;n\n", "rnrdnre", pairs01, "A?"},
+        // A direct change before the first read is replaced by the first
+        // graph, as by every later ':' line, so it cannot leave the graph
+        // with a parallel edge that the line did not have
+        {":An\n;n\n", "mrdnre", pairs01, "A?"},
     };
 
     gp_Message("Start sparse6 lookahead tests");
