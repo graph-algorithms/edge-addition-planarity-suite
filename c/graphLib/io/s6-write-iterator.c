@@ -100,6 +100,14 @@ struct S6WriteIteratorStruct
     // write, which is the graph the batch is relative to
     unsigned long long countAtLastWrite;
 
+    // Set when the last line written is a ':' line with a repeated pair,
+    // i.e. a graph with parallel edges, which no ';' line may follow. It
+    // is taken from the pairs written rather than from
+    // GRAPHFLAGS_PARALLELEDGEDETECTED, which can be set when the graph has
+    // no parallel edge (after an insertion refused at the edge capacity,
+    // or once the parallel edge is deleted) and clear when it has one.
+    int lastLineHasParallelEdges;
+
     // Set when a write failed after part of its effect was produced,
     // after which neither the output nor the graph is a state that a
     // further write could continue from
@@ -474,11 +482,14 @@ void _s6_ClearChangeBatch(S6WriteIteratorP theS6WriteIterator)
  no stored change is invalidated by another. The change is validated
  against the graph as it is now, which is the graph on the previous
  line as long as nothing has modified it directly: the edge must be
- in use for a deletion, and absent for an addition, since parallel
- edges are not supported; a loop is refused, and so is a pair that
- the batch already holds, because the line would then toggle the edge
- twice. Nothing can be stored before the first full (':') line has
- been written, since a ';' line is relative to the line before it.
+ in use for a deletion, and absent for an addition, since incremental
+ sparse6 does not support parallel edges; for the same reason, nothing
+ can be stored after a whole (':') line with parallel edges until the
+ graph is written whole without them. A loop is refused, and so is a
+ pair that the batch already holds, because the line would then toggle
+ the edge twice.
+ Nothing can be stored before the first full (':') line has been
+ written, since a ';' line is relative to the line before it.
 
  Returns OK on success, NOTOK otherwise, leaving the batch unchanged.
  ********************************************************************/
@@ -516,6 +527,17 @@ int s6_StoreGraphChange(S6WriteIteratorP theS6WriteIterator, int e, int u, int v
     if (_s6_IsDigraph(theS6WriteIterator))
     {
         gp_ErrorMessage("Sparse6 format doesn't support digraphs.");
+        return NOTOK;
+    }
+
+    // A ';' line is the symmetric difference from a graph without parallel
+    // edges, so no change can be stored after a line that has them
+    if (theS6WriteIterator->lastLineHasParallelEdges)
+    {
+        gp_ErrorMessage("Unable to store a change, as the last graph written "
+                        "has parallel edges, which incremental sparse6 does "
+                        "not support; write the graph whole once it has "
+                        "none (see gp_DeleteParallelEdges()).");
         return NOTOK;
     }
 
@@ -572,8 +594,8 @@ int s6_StoreGraphChange(S6WriteIteratorP theS6WriteIterator, int e, int u, int v
         if (gp_IsEdge(theGraph, gp_FindEdge(theGraph, u, v)))
         {
             gp_ErrorMessage("Unable to store the addition of edge {%d, %d}, "
-                            "which is already in the graph; parallel edges "
-                            "are not supported.",
+                            "which is already in the graph; incremental "
+                            "sparse6 does not support parallel edges.",
                             u, v);
             return NOTOK;
         }
@@ -641,9 +663,10 @@ int _s6_NoEdgeIsHidden(graphP theGraph)
 // Collects the edges of the graph as pairs (min, max) of endpoints in
 // the 0-based numbering of the file, two ints per edge, sorted as the
 // format orders them, in an array the caller frees. An edgeless graph
-// yields a NULL array. A loop, a parallel edge, or an edge on a virtual
-// vertex cannot be written, since the reader would refuse or lose it,
-// so each is reported and refused here.
+// yields a NULL array. Parallel edges become repeated pairs, which the
+// sort makes adjacent, as nauty writes them. A loop or an edge on a
+// virtual vertex cannot be written, since the reader would refuse or
+// lose it, so each is reported and refused here.
 int _s6_CollectEdges(graphP theGraph, int **pPairs, int *pNumPairs)
 {
     int numEdges = gp_GetM(theGraph);
@@ -717,21 +740,9 @@ int _s6_CollectEdges(graphP theGraph, int **pPairs, int *pNumPairs)
 
     // The specification orders the pairs by their larger endpoint; the sort
     // is skipped for fewer than two pairs, so that no library ever sees a
-    // null array. Sorted, a parallel edge is a repeated pair.
+    // null array
     if (numPairs > 1)
         qsort(pairs, (size_t)numPairs, 2 * sizeof(int), _s6_ComparePairs);
-
-    for (int p = 1; p < numPairs; p++)
-    {
-        if (pairs[2 * p] == pairs[2 * p - 2] && pairs[2 * p + 1] == pairs[2 * p - 1])
-        {
-            gp_ErrorMessage("Unable to write parallel edges between vertices "
-                            "%d and %d, which sparse6 input does not support.",
-                            pairs[2 * p] + lowerBound, pairs[2 * p + 1] + lowerBound);
-            free(pairs);
-            return NOTOK;
-        }
-    }
 
     (*pPairs) = pairs;
     (*pNumPairs) = numPairs;
@@ -990,6 +1001,8 @@ int _s6_ApplyChangeBatch(S6WriteIteratorP theS6WriteIterator)
  Writes the graph as the next line of the output. With no changes
  stored since the last write, the whole graph is written as a ':'
  line, which is also how a graph that was modified directly is
+ written; parallel edges are written as repeated pairs, and after such
+ a line no change can be stored until a line without them has been
  written. With changes stored, they are written as a ';' line and then
  applied to the graph, provided the graph is still the one written
  last: if it was modified directly since, the batch is not relative
@@ -1060,8 +1073,15 @@ int s6_WriteGraph(S6WriteIteratorP theS6WriteIterator)
 
     if (theS6WriteIterator->numChanges == 0)
     {
+        int hasParallelEdges = FALSE;
+
         if (_s6_CollectEdges(theGraph, &pairs, &numPairs) != OK)
             return NOTOK;
+
+        // Sorted, a parallel edge is a pair equal to the one before it
+        for (int p = 1; p < numPairs && !hasParallelEdges; p++)
+            if (pairs[2 * p] == pairs[2 * p - 2] && pairs[2 * p + 1] == pairs[2 * p - 1])
+                hasParallelEdges = TRUE;
 
         Result = _s6_EncodeLine(theS6WriteIterator, ':', pairs, numPairs, 2);
 
@@ -1074,6 +1094,8 @@ int s6_WriteGraph(S6WriteIteratorP theS6WriteIterator)
             s6_SetOutputErrorFlag(theS6WriteIterator);
             return NOTOK;
         }
+
+        theS6WriteIterator->lastLineHasParallelEdges = hasParallelEdges;
     }
     else
     {
