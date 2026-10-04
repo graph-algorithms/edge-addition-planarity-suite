@@ -50,6 +50,7 @@ typedef struct
 } GraphMLGraphState;
 
 int _ReadGraphMLGraph(graphP theGraph, strOrFileP inputContainer, int readGraphElemOnly);
+int _IsGraphMLInput(char const *const firstLine);
 
 static int _ReadGraphMLStartsWith(graphP theGraph, strOrFileP inputContainer,
                                   int *pLineNum, char const *expected, int *pMatches);
@@ -131,6 +132,29 @@ static int _ReadGraphMLGraphEdge(graphP theGraph, strOrFileP inputContainer,
                                   GraphMLGraphState const *graphState,
                                   int edgeIndex, int nodeCount);
 
+int _IsGraphMLInput(char const *const firstLine)
+{
+    unsigned char const *bytes = (unsigned char const *)firstLine;
+    size_t length = 0;
+
+    if (firstLine == NULL)
+        return FALSE;
+
+    length = strlen(firstLine);
+
+    // These are the legal first bytes of an XML file that are not in common
+    // with any other currently supported file format.
+    if (bytes[0] == '<' || bytes[0] == ' ' || bytes[0] == '\t' ||
+        bytes[0] == '\b' || bytes[0] == '\r' || bytes[0] == '\n' ||
+        bytes[0] == 0xEF || bytes[0] == 0xFE || bytes[0] == 0xFF ||
+        bytes[0] == 0)
+        return TRUE;
+
+    // This is a test for XML in EBCDIC encoding. Not supported but detected.
+    return length >= 3 && bytes[0] == 0x4C &&
+           bytes[1] == 0x6F && bytes[2] == 0xA7;
+}
+
 static int _ReadGraphMLStartsWith(graphP theGraph, strOrFileP inputContainer,
                                   int *pLineNum, char const *expected, int *pMatches)
 {
@@ -140,14 +164,19 @@ static int _ReadGraphMLStartsWith(graphP theGraph, strOrFileP inputContainer,
     size_t length = 0;
 
     (void)theGraph;
-    (void)pLineNum;
-
     if (expected == NULL || pMatches == NULL)
+    {
+        gp_ErrorMessage("Invalid GraphML lookahead request on line %d.", *pLineNum);
         return NOTOK;
+    }
 
     length = strlen(expected);
     if (length > MAXLINE)
+    {
+        gp_ErrorMessage("GraphML lookahead exceeds the supported length on line %d.",
+                        *pLineNum);
         return NOTOK;
+    }
 
     *pMatches = FALSE;
     for (index = 0; index < length; index++)
@@ -156,7 +185,10 @@ static int _ReadGraphMLStartsWith(graphP theGraph, strOrFileP inputContainer,
         if (chars[index] == EOF)
         {
             if (inputContainer->inputErrorFlag)
+            {
+                gp_ErrorMessage("Unable to read GraphML input on line %d.", *pLineNum);
                 return NOTOK;
+            }
             break;
         }
         charsRead++;
@@ -167,7 +199,11 @@ static int _ReadGraphMLStartsWith(graphP theGraph, strOrFileP inputContainer,
     {
         index--;
         if (sf_ungetc(chars[index], inputContainer) != chars[index])
+        {
+            gp_ErrorMessage("Unable to restore GraphML lookahead on line %d.",
+                            *pLineNum);
             return NOTOK;
+        }
     }
 
     if (length == 0)
@@ -198,7 +234,10 @@ static int _ReadGraphMLConsume(graphP theGraph, strOrFileP inputContainer,
     (void)theGraph;
 
     if (expected == NULL)
+    {
+        gp_ErrorMessage("Invalid GraphML content request on line %d.", *pLineNum);
         return NOTOK;
+    }
 
     for (index = 0; expected[index] != '\0'; index++)
     {
@@ -244,23 +283,38 @@ static int _ReadGraphMLSkipWhitespace(graphP theGraph, strOrFileP inputContainer
             if (nextChar == EOF)
             {
                 if (inputContainer->inputErrorFlag)
+                {
+                    gp_ErrorMessage("Unable to read GraphML whitespace on line %d.",
+                                    *pLineNum);
                     return NOTOK;
+                }
                 break;
             }
             if (nextChar == '\n')
                 (*pLineNum)++;
             else if (sf_ungetc(nextChar, inputContainer) != nextChar)
-                    return NOTOK;
+            {
+                gp_ErrorMessage("Unable to restore GraphML whitespace lookahead on line %d.",
+                                *pLineNum);
+                return NOTOK;
+            }
             continue;
         }
 
         if (sf_ungetc(currChar, inputContainer) != currChar)
+        {
+            gp_ErrorMessage("Unable to restore GraphML whitespace lookahead on line %d.",
+                            *pLineNum);
             return NOTOK;
+        }
         break;
     }
 
     if (inputContainer->inputErrorFlag)
+    {
+        gp_ErrorMessage("Unable to read GraphML whitespace on line %d.", *pLineNum);
         return NOTOK;
+    }
 
     if (requireWhitespace && !foundWhitespace)
     {
@@ -302,7 +356,11 @@ static int _ReadGraphMLSkipComment(graphP theGraph, strOrFileP inputContainer,
             if (nextChar == '\n')
                 (*pLineNum)++;
             else if (sf_ungetc(nextChar, inputContainer) != nextChar)
-                    return NOTOK;
+            {
+                gp_ErrorMessage("Unable to restore GraphML comment lookahead on line %d.",
+                                *pLineNum);
+                return NOTOK;
+            }
         }
 
         if (previousPrevious == '-' && previous == '-' && currChar == '>')
@@ -438,7 +496,11 @@ static int _ReadGraphMLReadText(graphP theGraph, strOrFileP inputContainer,
     size_t length = 0;
 
     if (buffer == NULL || bufferSize == 0)
+    {
+        gp_ErrorMessage("Invalid GraphML character-data buffer on line %d.",
+                        *pLineNum);
         return NOTOK;
+    }
     buffer[0] = '\0';
 
     while (1)
@@ -455,7 +517,11 @@ static int _ReadGraphMLReadText(graphP theGraph, strOrFileP inputContainer,
         if (currChar == delimiter)
         {
             if (delimiter == '<' && sf_ungetc(currChar, inputContainer) != currChar)
+            {
+                gp_ErrorMessage("Unable to restore GraphML character-data lookahead on line %d.",
+                                *pLineNum);
                 return NOTOK;
+            }
             return OK;
         }
 
@@ -510,16 +576,23 @@ static int _ReadGraphMLReadName(graphP theGraph, strOrFileP inputContainer,
     (void)theGraph;
 
     if (buffer == NULL || bufferSize == 0)
+    {
+        gp_ErrorMessage("Invalid GraphML name buffer on line %d.", *pLineNum);
         return NOTOK;
+    }
 
     while ((currChar = sf_getc(inputContainer)) != EOF)
     {
-        int allowed = isalnum(currChar) || currChar == '_' || currChar == '-' ||
+        int allowed = isalnum((unsigned char)currChar) || currChar == '_' || currChar == '-' ||
                       currChar == '.' || currChar == ':';
         if (!allowed)
         {
             if (sf_ungetc(currChar, inputContainer) != currChar)
+            {
+                gp_ErrorMessage("Unable to restore GraphML name lookahead on line %d.",
+                                *pLineNum);
                 return NOTOK;
+            }
             break;
         }
         if (length + 1 >= bufferSize)
@@ -553,7 +626,11 @@ static int _ReadGraphMLAttribute(graphP theGraph, strOrFileP inputContainer,
     int foundIndex = -1;
 
     if (specs == NULL || values == NULL || specCount > GRAPHML_MAX_ATTRIBUTES)
+    {
+        gp_ErrorMessage("Invalid GraphML attribute specification on line %d.",
+                        *pLineNum);
         return NOTOK;
+    }
 
     memset(name, '\0', sizeof(name));
     memset(value, '\0', sizeof(value));
@@ -623,7 +700,11 @@ static int _ReadGraphMLAttributeList(graphP theGraph, strOrFileP inputContainer,
 
     if (specs == NULL || values == NULL || pEmptyTag == NULL ||
         specCount > GRAPHML_MAX_ATTRIBUTES)
+    {
+        gp_ErrorMessage("Invalid GraphML attribute-list specification on line %d.",
+                        *pLineNum);
         return NOTOK;
+    }
 
     memset(values, 0, sizeof(*values));
     *pEmptyTag = FALSE;
@@ -640,7 +721,11 @@ static int _ReadGraphMLAttributeList(graphP theGraph, strOrFileP inputContainer,
             return NOTOK;
         }
         if (sf_ungetc(currChar, inputContainer) != currChar)
+        {
+            gp_ErrorMessage("Unable to restore GraphML start-tag lookahead on line %d.",
+                            *pLineNum);
             return NOTOK;
+        }
 
         if (currChar == ' ' || currChar == '\t' || currChar == '\r' || currChar == '\n')
         {
@@ -729,10 +814,11 @@ static int _ReadGraphMLTrim(graphP theGraph, strOrFileP inputContainer,
 
     (void)theGraph;
     (void)inputContainer;
-    (void)pLineNum;
-
     if (value == NULL)
+    {
+        gp_ErrorMessage("Invalid GraphML value on line %d.", *pLineNum);
         return NOTOK;
+    }
 
     while (*start == ' ' || *start == '\t' || *start == '\r' || *start == '\n')
         start++;
@@ -785,7 +871,10 @@ static int _ReadGraphMLParsePositiveInteger(graphP theGraph,
     (void)inputContainer;
 
     if (value == NULL || pParsedValue == NULL || value[0] == '\0')
+    {
+        gp_ErrorMessage("Expected a positive integer on line %d.", *pLineNum);
         return NOTOK;
+    }
 
     for (index = 0; value[index] != '\0'; index++)
     {
@@ -886,7 +975,10 @@ static int _ReadGraphMLParseBoolean(graphP theGraph, strOrFileP inputContainer,
 {
     if (value == NULL || pBoolean == NULL ||
         _ReadGraphMLTrim(theGraph, inputContainer, pLineNum, value) != OK)
+    {
+        gp_ErrorMessage("Expected a GraphML boolean value on line %d.", *pLineNum);
         return NOTOK;
+    }
 
     if (strcmp(value, "true") == 0 || strcmp(value, "1") == 0)
         *pBoolean = TRUE;
@@ -916,7 +1008,11 @@ static int _ReadGraphMLEmptyElementEnd(graphP theGraph,
 
     charsWritten = snprintf(endTag, sizeof(endTag), "</%s>", elementName);
     if (charsWritten < 0 || (size_t)charsWritten >= sizeof(endTag))
+    {
+        gp_ErrorMessage("GraphML end tag exceeds the supported length on line %d.",
+                        *pLineNum);
         return NOTOK;
+    }
 
     return _ReadGraphMLConsume(theGraph, inputContainer, pLineNum, endTag);
 }
@@ -977,7 +1073,7 @@ static int _ReadGraphMLProlog(graphP theGraph, strOrFileP inputContainer,
     firstChar = sf_getc(inputContainer);
     if (firstChar == EOF)
     {
-        gp_ErrorMessage("Empty GraphML input.");
+        gp_ErrorMessage("Empty GraphML input on line %d.", *pLineNum);
         return NOTOK;
     }
 
@@ -998,12 +1094,14 @@ static int _ReadGraphMLProlog(graphP theGraph, strOrFileP inputContainer,
         int secondChar = EOF;
         if (firstChar == 0xFE || firstChar == 0xFF || firstChar == 0)
         {
-            gp_ErrorMessage("UTF-16 GraphML input is not supported.");
+            gp_ErrorMessage("UTF-16 GraphML input is not supported on line %d.",
+                            *pLineNum);
             return NOTOK;
         }
         if (firstChar == 0x4C)
         {
-            gp_ErrorMessage("EBCDIC GraphML input is not supported.");
+            gp_ErrorMessage("EBCDIC GraphML input is not supported on line %d.",
+                            *pLineNum);
             return NOTOK;
         }
         if (firstChar == '<')
@@ -1011,14 +1109,23 @@ static int _ReadGraphMLProlog(graphP theGraph, strOrFileP inputContainer,
             secondChar = sf_getc(inputContainer);
             if (secondChar == 0)
             {
-                gp_ErrorMessage("UTF-16 GraphML input is not supported.");
+                gp_ErrorMessage("UTF-16 GraphML input is not supported on line %d.",
+                                *pLineNum);
                 return NOTOK;
             }
             if (secondChar != EOF && sf_ungetc(secondChar, inputContainer) != secondChar)
+            {
+                gp_ErrorMessage("Unable to restore GraphML prolog lookahead on line %d.",
+                                *pLineNum);
                 return NOTOK;
+            }
         }
         if (sf_ungetc(firstChar, inputContainer) != firstChar)
+        {
+            gp_ErrorMessage("Unable to restore GraphML prolog lookahead on line %d.",
+                            *pLineNum);
             return NOTOK;
+        }
         *pEncoding = GRAPHML_ENCODING_UTF8;
     }
 
@@ -1049,7 +1156,9 @@ static int _ReadGraphMLStartTag(graphP theGraph, strOrFileP inputContainer,
     static GraphMLAttributeSpec const specs[] = {
         {"xmlns", TRUE, "http://graphml.graphdrawing.org/xmlns"},
         {"xmlns:xsi", FALSE, "http://www.w3.org/2001/XMLSchema-instance"},
-        {"xsi:schemaLocation", FALSE, NULL}};
+        {"xsi:schemaLocation", FALSE, NULL},
+        // Used only by the GraphML reader tests to exercise character data.
+        {"testencoding", FALSE, NULL}};
     GraphMLAttributeValues values;
     int emptyTag = FALSE;
 
@@ -1448,7 +1557,8 @@ static int _ReadGraphMLGraphElement(graphP theGraph,
     }
     if (gp_EnsureVertexCapacity(theGraph, nodeCount) != OK)
     {
-        gp_ErrorMessage("Unable to allocate GraphML graph vertices.");
+        gp_ErrorMessage("Unable to allocate GraphML graph vertices on line %d.",
+                        *pLineNum);
         return NOTOK;
     }
     for (vertex = gp_LowerBoundVertices(theGraph);
@@ -1495,7 +1605,8 @@ int _ReadGraphMLGraph(graphP theGraph, strOrFileP inputContainer, int readGraphE
 
     if (theGraph == NULL || !sf_IsValidStrOrFile(inputContainer))
     {
-        gp_ErrorMessage("Invalid parameter supplied to GraphML reader.");
+        gp_ErrorMessage("Invalid parameter supplied to GraphML reader on line %d.",
+                        lineNum);
         return NOTOK;
     }
 

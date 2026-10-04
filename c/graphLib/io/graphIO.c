@@ -28,6 +28,7 @@ extern int _s6_WriteGraphToStrOrFile(graphP theGraph, strOrFileP *pOutputContain
 extern int _s6_ReadGraphFromStrOrFile(graphP theGraph, strOrFileP *pS6InputContainer);
 extern int s6_IsSparse6Input(char const *const firstLine);
 extern int g6_IsGraph6Input(char const *const firstLine);
+extern int _IsGraphMLInput(char const *const firstLine);
 extern int _WriteGraphMLGraph(graphP theGraph, strOrFileP outputContainer);
 
 /* Private functions (exported to system) */
@@ -48,50 +49,6 @@ int _WritePostprocess(graphP theGraph, char **pExtraData);
 /* Private functions */
 char _GetEdgeTypeChar(graphP theGraph, int e);
 char _GetObstructionMarkChar(graphP theGraph, int v);
-static int _ReadInputLooksLikeGraphML(strOrFileP inputContainer, int *pResult);
-
-static int _ReadInputLooksLikeGraphML(strOrFileP inputContainer, int *pResult)
-{
-    int bytes[3] = {EOF, EOF, EOF};
-    int byteCount = 0;
-    int index = 0;
-
-    if (!sf_IsValidStrOrFile(inputContainer) || pResult == NULL)
-        return NOTOK;
-
-    *pResult = FALSE;
-    for (index = 0; index < 3; index++)
-    {
-        bytes[index] = sf_getc(inputContainer);
-        if (bytes[index] == EOF)
-        {
-            if (inputContainer->inputErrorFlag)
-                return NOTOK;
-            break;
-        }
-        byteCount++;
-    }
-
-    for (index = byteCount - 1; index >= 0; index--)
-    {
-        if (sf_ungetc(bytes[index], inputContainer) != bytes[index])
-            return NOTOK;
-    }
-
-    if (byteCount == 0)
-        return OK;
-
-    if (bytes[0] == '<' || bytes[0] == ' ' || bytes[0] == '\t' ||
-        bytes[0] == '\b' || bytes[0] == '\r' || bytes[0] == '\n' ||
-        bytes[0] == 0xEF || bytes[0] == 0xFE || bytes[0] == 0xFF ||
-        bytes[0] == 0)
-        *pResult = TRUE;
-    else if (byteCount == 3 && bytes[0] == 0x4C &&
-             bytes[1] == 0x6F && bytes[2] == 0xA7)
-        *pResult = TRUE;
-
-    return OK;
-}
 
 /********************************************************************
  _ReadAdjMatrix()
@@ -554,25 +511,12 @@ int _ReadGraph(graphP theGraph, strOrFileP *pInputContainer)
     int RetVal = OK;
 
     int extraDataAllowed = FALSE;
-    int graphMLInput = FALSE;
     char lineBuff[MAXLINE + 1];
 
     memset(lineBuff, '\0', (MAXLINE + 1));
 
     if (!sf_IsValidStrOrFile((*pInputContainer)))
         return NOTOK;
-
-    if (_ReadInputLooksLikeGraphML((*pInputContainer), &graphMLInput) != OK)
-    {
-        sf_Free(pInputContainer);
-        return NOTOK;
-    }
-
-    if (graphMLInput)
-    {
-        RetVal = _ReadGraphMLGraph(theGraph, (*pInputContainer), FALSE);
-        goto readComplete;
-    }
 
     if (sf_fgets(lineBuff, MAXLINE, (*pInputContainer)) == NULL)
     {
@@ -602,6 +546,10 @@ int _ReadGraph(graphP theGraph, strOrFileP *pInputContainer)
         if (RetVal == OK)
             extraDataAllowed = TRUE;
     }
+    else if (_IsGraphMLInput(lineBuff))
+    {
+        RetVal = _ReadGraphMLGraph(theGraph, (*pInputContainer), FALSE);
+    }
     else if (s6_IsSparse6Input(lineBuff))
     {
         // A ';' first line is an error that the sparse6 reader reports.
@@ -625,8 +573,6 @@ int _ReadGraph(graphP theGraph, strOrFileP *pInputContainer)
                         "supported formats.");
         RetVal = NOTOK;
     }
-
-readComplete:
 
     // The possibility of "extra data" is not allowed for .g6 format:
     // .g6 files may contain multiple graphs, which are not valid input
