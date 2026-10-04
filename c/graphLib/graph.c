@@ -55,6 +55,8 @@ int _ClearAllVisitedFlagsInOtherBicomps(graphP theGraph, int BicompRoot);
 void _ClearEdgeVisitedFlagsInUnembeddedEdges(graphP theGraph);
 int _FillVertexVisitedIndexes(graphP theGraph, int FillValue);
 int _FillVertexVisitedIndexesInBicomp(graphP theGraph, int BicompRoot, int FillValue);
+int _ClearEdgeTypes(graphP theGraph);
+int _ClearEdgeMarks(graphP theGraph);
 int _ClearObstructionMarksInBicomp(graphP theGraph, int BicompRoot);
 
 int _gp_FindEdge(graphP theGraph, int u, int v);
@@ -1027,6 +1029,40 @@ int _FillVertexVisitedIndexesInBicomp(graphP theGraph, int BicompRoot, int FillV
             e = gp_GetNextEdge(theGraph, e);
         }
     }
+    return OK;
+}
+
+/********************************************************************
+ _ClearEdgeTypes()
+ ********************************************************************/
+int _ClearEdgeTypes(graphP theGraph)
+{
+    if (theGraph == NULL)
+        return NOTOK;
+
+    for (int e = gp_LowerBoundEdges(theGraph); e < gp_UpperBoundEdges(theGraph); ++e)
+    {
+        if (gp_EdgeInUse(theGraph, e))
+            gp_ClearEdgeType(theGraph, e);
+    }
+
+    return OK;
+}
+
+/********************************************************************
+ _ClearEdgeMarks()
+ ********************************************************************/
+int _ClearEdgeMarks(graphP theGraph)
+{
+    if (theGraph == NULL)
+        return NOTOK;
+
+    for (int e = gp_LowerBoundEdges(theGraph); e < gp_UpperBoundEdges(theGraph); ++e)
+    {
+        if (gp_EdgeInUse(theGraph, e))
+            gp_ClearEdgeMarked(theGraph, e);
+    }
+
     return OK;
 }
 
@@ -3148,13 +3184,13 @@ int _RestoreEdgeType(graphP theGraph, int u, int v)
     {
         if (u_orig > v_orig)
         {
-            gp_ResetEdgeType(theGraph, e, EDGE_TYPE_PARENT);
-            gp_ResetEdgeType(theGraph, eTwin, EDGE_TYPE_CHILD);
+            gp_SetEdgeType(theGraph, e, EDGE_TYPE_PARENT);
+            gp_SetEdgeType(theGraph, eTwin, EDGE_TYPE_CHILD);
         }
         else
         {
-            gp_ResetEdgeType(theGraph, eTwin, EDGE_TYPE_PARENT);
-            gp_ResetEdgeType(theGraph, e, EDGE_TYPE_CHILD);
+            gp_SetEdgeType(theGraph, eTwin, EDGE_TYPE_PARENT);
+            gp_SetEdgeType(theGraph, e, EDGE_TYPE_CHILD);
         }
     }
 
@@ -3164,13 +3200,13 @@ int _RestoreEdgeType(graphP theGraph, int u, int v)
     {
         if (u_orig > v_orig)
         {
-            gp_ResetEdgeType(theGraph, e, EDGE_TYPE_BACK);
-            gp_ResetEdgeType(theGraph, eTwin, EDGE_TYPE_FORWARD);
+            gp_SetEdgeType(theGraph, e, EDGE_TYPE_BACK);
+            gp_SetEdgeType(theGraph, eTwin, EDGE_TYPE_FORWARD);
         }
         else
         {
-            gp_ResetEdgeType(theGraph, eTwin, EDGE_TYPE_BACK);
-            gp_ResetEdgeType(theGraph, e, EDGE_TYPE_FORWARD);
+            gp_SetEdgeType(theGraph, eTwin, EDGE_TYPE_BACK);
+            gp_SetEdgeType(theGraph, e, EDGE_TYPE_FORWARD);
         }
     }
 

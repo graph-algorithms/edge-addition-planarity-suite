@@ -1516,11 +1516,11 @@ int _ReduceExternalFacePathToEdge(graphP theGraph, K33SearchContext *context, in
 
     e = gp_GetFirstEdge(theGraph, u);
     context->E[e].pathConnector = v;
-    gp_SetEdgeType(theGraph, e, _ComputeEdgeRecordType(theGraph, u, x, edgeType));
+    gp_ApplyEdgeType(theGraph, e, _ComputeEdgeRecordType(theGraph, u, x, edgeType));
 
     e = gp_GetLastEdge(theGraph, x);
     context->E[e].pathConnector = w;
-    gp_SetEdgeType(theGraph, e, _ComputeEdgeRecordType(theGraph, x, u, edgeType));
+    gp_ApplyEdgeType(theGraph, e, _ComputeEdgeRecordType(theGraph, x, u, edgeType));
 
     /* Set the external face info */
 
@@ -1584,12 +1584,12 @@ int _ReduceXYPathToEdge(graphP theGraph, K33SearchContext *context, int u, int x
     e = gp_GetFirstEdge(theGraph, u);
     e = gp_GetNextEdge(theGraph, e);
     context->E[e].pathConnector = v;
-    gp_SetEdgeType(theGraph, e, _ComputeEdgeRecordType(theGraph, u, x, edgeType));
+    gp_ApplyEdgeType(theGraph, e, _ComputeEdgeRecordType(theGraph, u, x, edgeType));
 
     e = gp_GetFirstEdge(theGraph, x);
     e = gp_GetNextEdge(theGraph, e);
     context->E[e].pathConnector = w;
-    gp_SetEdgeType(theGraph, e, _ComputeEdgeRecordType(theGraph, x, u, edgeType));
+    gp_ApplyEdgeType(theGraph, e, _ComputeEdgeRecordType(theGraph, x, u, edgeType));
 
     return OK;
 }
