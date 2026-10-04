@@ -741,12 +741,6 @@ int _WriteAdjMatrix(graphP theGraph, strOrFileP outputContainer)
     if (theGraph == NULL || !sf_IsValidStrOrFile(outputContainer))
         return NOTOK;
     
-    if (theGraph->graphFlags & GRAPHFLAGS_PARALLELEDGEDETECTED)
-    {
-        gp_ErrorMessage("Parallel edges were previously added to the graph. See gp_DeleteParallelEdges().");
-        return NOTOK;
-    }
-
     if (gp_GetGraphFlags(theGraph) & GRAPHFLAGS_DIRECTEDEDGEDETECTED)
     {
         gp_ErrorMessage("Adjacency matrix writer does not support directed graphs.");
@@ -780,7 +774,15 @@ int _WriteAdjMatrix(graphP theGraph, strOrFileP outputContainer)
                 return NOTOK;
 
             if (gp_GetNeighbor(theGraph, e) > v)
+            {
+                if (Row[gp_GetNeighbor(theGraph, e) - gp_LowerBoundVertices(theGraph)] == '1')
+                {
+                    gp_ErrorMessage("Adjacency matrix writer does not support parallel edges.");
+                    free(Row);
+                    return NOTOK;
+                }
                 Row[gp_GetNeighbor(theGraph, e) - gp_LowerBoundVertices(theGraph)] = '1';
+            }
 
             e = gp_GetNextEdge(theGraph, e);
         }

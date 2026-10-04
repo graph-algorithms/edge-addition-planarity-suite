@@ -2784,9 +2784,6 @@ int runManyParallelEdgesTest(void)
     {
         retVal = NOTOK;
     }
-    else if (!(G->graphFlags & GRAPHFLAGS_PARALLELEDGEDETECTED))
-        retVal = NOTOK;
-
     else if (gp_GetM(G) != 60)
         retVal = NOTOK;
 
@@ -2830,8 +2827,6 @@ int runManyParallelEdgesTest(void)
             retVal = NOTOK;
         else if (gp_ReadFromString(G1, adjListStr) != OK)
             retVal = NOTOK;
-        else if (!(G1->graphFlags & GRAPHFLAGS_PARALLELEDGEDETECTED))
-            retVal = NOTOK;
         else if (gp_GetM(G1) != 60)
             retVal = NOTOK;
         else if (gp_DeleteParallelEdges(G1) != OK || gp_GetM(G1) != 15)
@@ -2849,9 +2844,6 @@ int runManyParallelEdgesTest(void)
             retVal = NOTOK;
 
         else if (gp_DeleteParallelEdges(G1) != OK)
-            retVal = NOTOK;
-
-        else if (G1->graphFlags & GRAPHFLAGS_PARALLELEDGEDETECTED)
             retVal = NOTOK;
 
         else if (gp_GetM(G1) != 15)
@@ -2873,16 +2865,13 @@ int runManyParallelEdgesTest(void)
 }
 
 // Grab the Petersen graph, which is a 15-edge graph.
-// Ensure the parallel edges flag is initially clear.
 // Ensure vertices 1 and 2 report being degree 3.
 // Add one edge known to be parallel, (1, 2).
-// Ensure that one edge has shown up, that vertices
-//     1 and 2 report being degree 4, and that the
-//     parallel edge is now set.
+// Ensure that one edge has shown up and that vertices
+//     1 and 2 report being degree 4.
 // Ensure a copy of the graph still supports the DFS
 //     utilities and is still correctly found nonplanar
 // Call the method that deletes the parallel edges
-// Ensure that the parallel edge flag is cleared
 // Ensure that the number of edges goes down by 1.
 // Ensure that vertices 1 and 2 report being degree 3.
 int runSingleParallelEdgeTest(void)
@@ -2897,9 +2886,6 @@ int runSingleParallelEdgeTest(void)
     else if (gp_Read(G, "Petersen.txt") != OK || gp_GetM(G) != 15)
         retVal = NOTOK;
 
-    else if (G->graphFlags & GRAPHFLAGS_PARALLELEDGEDETECTED)
-        retVal = NOTOK;
-
     else if (gp_GetVertexDegree(G, 1) != 3 || gp_GetVertexDegree(G, 1) != 3)
         retVal = NOTOK;
 
@@ -2907,9 +2893,6 @@ int runSingleParallelEdgeTest(void)
         retVal = NOTOK;
 
     else if (gp_GetVertexDegree(G, 1) != 4 || gp_GetVertexDegree(G, 1) != 4)
-        retVal = NOTOK;
-
-    else if (!(G->graphFlags & GRAPHFLAGS_PARALLELEDGEDETECTED))
         retVal = NOTOK;
 
     else if ((G1 = gp_DupGraph(G)) == NULL)
@@ -2925,9 +2908,6 @@ int runSingleParallelEdgeTest(void)
         retVal = NOTOK;
 
     else if (gp_DeleteParallelEdges(G) != OK)
-        retVal = NOTOK;
-
-    else if (G->graphFlags & GRAPHFLAGS_PARALLELEDGEDETECTED)
         retVal = NOTOK;
 
     else if (gp_GetM(G) != 15)
