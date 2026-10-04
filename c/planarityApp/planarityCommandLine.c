@@ -43,6 +43,7 @@ char *copySparse6TestString(char const *s6Str);
 int runSparse6TestAllGraphsTests(void);
 int runSparse6WriteTests(void);
 int runSparse6LookaheadTests(void);
+int _CheckUndirectedDFSEdgeTypes(graphP theGraph);
 int testDirectedDFS(void);
 int testPetersenDigraph(void);
 int testDigraphTranspose(void);
@@ -2152,6 +2153,34 @@ int callTestAllGraphs(int argc, char *argv[])
     // NOTE: We don't want to write to string, so pOutputStr is NULL
     return TestAllGraphs(commandString, infileName, outfileName, NULL);
 }
+
+/********************************************************************
+ _CheckUndirectedDFSEdgeTypes()
+
+ Returns OK if every edge record carries exactly one of the edge types
+ assigned by an undirected DFS, which fails if any bits of a prior DFS
+ (e.g. EDGE_TYPE_CROSS from a directed DFS) survived in the edge types.
+ ********************************************************************/
+
+int _CheckUndirectedDFSEdgeTypes(graphP theGraph)
+{
+    int e;
+    unsigned edgeType;
+
+    for (e = gp_LowerBoundEdges(theGraph); e < gp_UpperBoundEdges(theGraph); ++e)
+    {
+        if (!gp_EdgeInUse(theGraph, e))
+            continue;
+
+        edgeType = gp_GetEdgeType(theGraph, e);
+        if (edgeType != EDGE_TYPE_CHILD && edgeType != EDGE_TYPE_PARENT &&
+            edgeType != EDGE_TYPE_BACK && edgeType != EDGE_TYPE_FORWARD)
+            return NOTOK;
+    }
+
+    return OK;
+}
+
 /****************************************************************************
  testDirectedDFS()
  ****************************************************************************/
@@ -2159,11 +2188,14 @@ int callTestAllGraphs(int argc, char *argv[])
 int testDirectedDFS(void)
 {
     graphP G = gp_New();
-    graphP G1 = NULL;
+    graphP G1 = NULL, G2 = NULL;
     int const expectedDiscoveryTimes[] = {1, 11, 2, 3, 7, 4};
     int const expectedFinishTimes[] = {10, 12, 9, 6, 8, 5};
-    int lowerVertex, v, e, source, target;
+    char smallDigraph[] = "N=4\n1: 3 4 0\n2: 1 0\n3: 4 0\n4: 3 0\n";
+    int lowerVertex, v, e, source, target, Result;
     unsigned expectedType;
+
+    gp_Message("Testing Directed Depth-First Search");
 
     if (G == NULL)
         return NOTOK;
@@ -2252,7 +2284,41 @@ int testDirectedDFS(void)
         gp_Free(&G1);
         return NOTOK;
     }
+
+    if (_CheckUndirectedDFSEdgeTypes(G1) != OK)
+    {
+        gp_ErrorMessage("Embedding did not replace directed DFS edge types.");
+        gp_Free(&G);
+        gp_Free(&G1);
+        return NOTOK;
+    }
     gp_Free(&G1);
+
+    // Embedding this digraph after a directed DFS crashed while the stale
+    // directed edge types were OR'ed into the new ones rather than replaced.
+    G1 = gp_New();
+    if (G1 == NULL || gp_ReadFromString(G1, smallDigraph) != OK ||
+        (G2 = gp_DupGraph(G1)) == NULL ||
+        gp_DepthFirstSearchEx(G1, DFSMODE_DIRECTED) != OK)
+    {
+        gp_ErrorMessage("Failed to prepare the second directed DFS graph.");
+        gp_Free(&G);
+        gp_Free(&G1);
+        gp_Free(&G2);
+        return NOTOK;
+    }
+
+    Result = gp_Embed(G1, EMBEDFLAGS_PLANAR);
+    if (Result != OK || gp_TestEmbedResultIntegrity(G1, G2, Result) != OK)
+    {
+        gp_ErrorMessage("Embedding after directed DFS failed or was invalid.");
+        gp_Free(&G);
+        gp_Free(&G1);
+        gp_Free(&G2);
+        return NOTOK;
+    }
+    gp_Free(&G1);
+    gp_Free(&G2);
 
     // The legacy DFS must remain available for directed input and replace
     // directed timestamps and flags with its original undirected DFS state.
@@ -2261,6 +2327,13 @@ int testDirectedDFS(void)
         (gp_GetGraphFlags(G) & GRAPHFLAGS_DFSNUMBERED_DIRECTED))
     {
         gp_ErrorMessage("Undirected DFS did not replace directed DFS state.");
+        gp_Free(&G);
+        return NOTOK;
+    }
+
+    if (_CheckUndirectedDFSEdgeTypes(G) != OK)
+    {
+        gp_ErrorMessage("Undirected DFS did not replace directed DFS edge types.");
         gp_Free(&G);
         return NOTOK;
     }
@@ -2290,6 +2363,8 @@ int testPetersenDigraph(void)
     char const *inputFileName = NULL;
     int quietModeCache, v, e, eTwin, eDir, eTwinDir;
     char *dummyStr = NULL; // Safe throwaway pointer for early-outs
+
+    gp_Message("Testing Digraph Read, Embed, Undirected DFS, Convert to Undirected, and Non-Digraph Function Detection");
 
     if (G == NULL)
         return NOTOK;
@@ -2438,6 +2513,8 @@ int testDigraphTranspose(void)
     int preservedEdgeSource = NIL;
     int preservedEdgeTarget = NIL;
     int e = NIL;
+
+    gp_Message("Testing Digraph Transpose");
 
     if (G == NULL)
         return NOTOK;

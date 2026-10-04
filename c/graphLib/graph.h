@@ -72,7 +72,7 @@ extern "C"
     int gp_DeleteEdge(graphP theGraph, int e);
     int gp_ClearEdgeDirectionFlags(graphP theGraph);
     int gp_TransposeDirectedGraph(graphP theGraph);
-    int  gp_DeleteParallelEdges(graphP theGraph);
+    int gp_DeleteParallelEdges(graphP theGraph);
 
     // Intermediate graph structure manipulators
     void gp_HideEdge(graphP theGraph, int e);
@@ -366,7 +366,16 @@ extern "C"
 
 #define gp_GetEdgeType(theGraph, e) (theGraph->E[e].flags & EDGE_TYPE_MASK)
 #define gp_ClearEdgeType(theGraph, e) (theGraph->E[e].flags &= ~EDGE_TYPE_MASK)
-#define gp_SetEdgeType(theGraph, e, type) (theGraph->E[e].flags |= type)
+#define gp_ApplyEdgeType(theGraph, e, type) (theGraph->E[e].flags |= type)
+
+#define gp_SetEdgeType(theGraph, e, type) \
+    (theGraph->E[e].flags = (theGraph->E[e].flags & ~EDGE_TYPE_MASK) | type)
+
+// This is a deprecated function that was needed in earlier releases
+// when gp_SetEdgeType() was defined as gp_ApplyEdgeType() now is.
+// Implementers should change to gp_ApplyEdgeType() if they were using
+// gp_SetEdgeType(), then replace gp_ResetEdgeType() with gp_SetEdgeType()
+// This function may be removed in a future major release.
 #define gp_ResetEdgeType(theGraph, e, type) \
     (theGraph->E[e].flags = (theGraph->E[e].flags & ~EDGE_TYPE_MASK) | type)
 

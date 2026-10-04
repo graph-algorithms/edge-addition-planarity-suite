@@ -1326,8 +1326,8 @@ int _K4_ReducePathToEdge(graphP theGraph, K4SearchContext *context, int edgeType
         context->E[e_A].pathConnector = v_A;
 
         // Also, set the reduction edge's type to preserve the DFS tree structure
-        gp_SetEdgeType(theGraph, e_R, _ComputeEdgeRecordType(theGraph, R, A, edgeType));
-        gp_SetEdgeType(theGraph, e_A, _ComputeEdgeRecordType(theGraph, A, R, edgeType));
+        gp_ApplyEdgeType(theGraph, e_R, _ComputeEdgeRecordType(theGraph, R, A, edgeType));
+        gp_ApplyEdgeType(theGraph, e_A, _ComputeEdgeRecordType(theGraph, A, R, edgeType));
     }
 
     // Set the external face data structure
