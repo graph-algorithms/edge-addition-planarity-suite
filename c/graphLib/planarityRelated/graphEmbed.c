@@ -33,6 +33,9 @@ extern void _InitVertexRec(graphP theGraph, int v);
 
 extern int _gp_FindEdge(graphP theGraph, int u, int v);
 
+extern int _ClearEdgeTypes(graphP theGraph);
+extern int _ClearEdgeMarks(graphP theGraph);
+
 /* Private functions (some are exported to system only) */
 
 int _gp_EmbedFlagsValid(graphP theGraph, int embedFlags);
@@ -554,12 +557,23 @@ int _EmbeddingInitialize_Optimized(graphP theGraph)
 
     _gp_LogLine("graphEmbed.c/_EmbeddingInitialize_Optimized() start\n");
 
-    theStack = theGraph->theStack;
+    // If there was a prior call to directed DFS, then we need to
+    // clear out settings that would affect undirected DFS.
+    if (gp_GetGraphFlags(theGraph) & GRAPHFLAGS_DFSNUMBERED_DIRECTED)
+    {
+        if (_ClearEdgeTypes(theGraph) != OK ||
+            _ClearEdgeMarks(theGraph) != OK ||
+            _FillVertexVisitedIndexes(theGraph, 0) != OK)
+            return NOTOK;
+
+        theGraph->graphFlags &= ~GRAPHFLAGS_DFSNUMBERED_DIRECTED;
+    }
 
     // At most we push 2 integers per edge from a vertex to each *unvisited* neighbor
     // plus one extra (NIL, NIL) at the beginning to represent arriving at a DFS tree
     // root. We ensure that theGraph's stack has this capacity and, if so, we clear
     // the stack for use in the depth-first search (DFS).
+    theStack = theGraph->theStack;
 
     if (sp_GetCapacity(theStack) < 2 * 2 * gp_GetM(theGraph) + 2)
         return NOTOK;
@@ -605,8 +619,8 @@ int _EmbeddingInitialize_Optimized(graphP theGraph)
                 if (gp_IsEdge(theGraph, e))
                 {
                     // (2) Set the edge type values for tree edges
-                    gp_SetEdgeType(theGraph, e, EDGE_TYPE_CHILD);
-                    gp_SetEdgeType(theGraph, gp_GetTwin(theGraph, e), EDGE_TYPE_PARENT);
+                    gp_ApplyEdgeType(theGraph, e, EDGE_TYPE_CHILD);
+                    gp_ApplyEdgeType(theGraph, gp_GetTwin(theGraph, e), EDGE_TYPE_PARENT);
 
                     // (3) Record u in the sortedDFSChildList of uparent
                     gp_SetVertexSortedDFSChildList(theGraph, uparent,
@@ -636,9 +650,9 @@ int _EmbeddingInitialize_Optimized(graphP theGraph)
                     else if (gp_GetEdgeType(theGraph, e) != EDGE_TYPE_PARENT)
                     {
                         // (2) Set the edge type values for back edges
-                        gp_SetEdgeType(theGraph, e, EDGE_TYPE_BACK);
+                        gp_ApplyEdgeType(theGraph, e, EDGE_TYPE_BACK);
                         eTwin = gp_GetTwin(theGraph, e);
-                        gp_SetEdgeType(theGraph, eTwin, EDGE_TYPE_FORWARD);
+                        gp_ApplyEdgeType(theGraph, eTwin, EDGE_TYPE_FORWARD);
 
                         // (4) Move the twin of back edge record e to the sorted FwdEdgeList of the ancestor
                         uneighbor = gp_GetNeighbor(theGraph, e);
