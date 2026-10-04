@@ -145,24 +145,30 @@ int gp_Embed(graphP theGraph, unsigned embedFlags)
     {
         RetVal = OK;
 
-        // Walkup calls establish Pertinence in Step v
-        // Do the Walkup for each cycle edge from v to a DFS descendant W.
+        // WalkUp calls establish Pertinence in Step v
+        // Do the WalkUp for each back edge from v to a DFS descendant W.
         e = gp_GetVertexFwdEdgeList(theGraph, v);
-        while (gp_IsEdge(theGraph, e))
+        if (gp_IsEdge(theGraph, e))
         {
-            // Forward edges parallel to one another are consecutive in the list, so only
-            // the first of them needs a Walkup (and it is the one recorded as pertinent)
-            if (e == gp_GetVertexFwdEdgeList(theGraph, v) ||
-                gp_GetNeighbor(theGraph, e) != gp_GetNeighbor(theGraph, gp_GetPrevEdge(theGraph, e)))
-                theGraph->functions->fpWalkUp(theGraph, v, e);
+            do
+            {
+                // Forward edges parallel to one another are consecutive in the list, so only
+                // the first of them needs a WalkUp. The WalkUp records it as pertinent,
+                // after which we can avoid calling WalkUp again for the same vertex.
+                if (gp_IsNotEdge(theGraph, gp_GetVertexPertinentEdge(theGraph, gp_GetNeighbor(theGraph, e))))
+                    theGraph->functions->fpWalkUp(theGraph, v, e);
 
-            e = gp_GetNextEdge(theGraph, e);
-            if (e == gp_GetVertexFwdEdgeList(theGraph, v))
-                e = NIL;
+                // Get the next edge in the
+                e = gp_GetNextEdge(theGraph, e);
+            } while (e != gp_GetVertexFwdEdgeList(theGraph, v));
         }
+
+        // For speed, the Walkup records the pertinent child bicomps of v itself,
+        // but WalkDown is only intended to merge the pertinent child bicomps of
+        // the descendants of v, so we clear the setting for v here.
         gp_SetVertexPertinentRootsList(theGraph, v, NIL);
 
-        // Work systematically through the DFS children of vertex v, using Walkdown
+        // Work systematically through the DFS children of vertex v, using WalkDown
         // to add the back edges from v to its descendants in each of the DFS subtrees
         c = gp_GetVertexSortedDFSChildList(theGraph, v);
         while (gp_IsVertex(theGraph, c))
