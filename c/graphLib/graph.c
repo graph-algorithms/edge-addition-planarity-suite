@@ -1040,10 +1040,13 @@ int _ClearEdgeTypes(graphP theGraph)
     if (theGraph == NULL)
         return NOTOK;
 
-    for (int e = gp_LowerBoundEdges(theGraph); e < gp_UpperBoundEdges(theGraph); ++e)
+    for (int e = gp_LowerBoundEdges(theGraph); e < gp_UpperBoundEdges(theGraph); e += 2)
     {
         if (gp_EdgeInUse(theGraph, e))
+        {
             gp_ClearEdgeType(theGraph, e);
+            gp_ClearEdgeType(theGraph, gp_GetTwin(theGraph, e));
+        }
     }
 
     return OK;
@@ -1057,10 +1060,13 @@ int _ClearEdgeMarks(graphP theGraph)
     if (theGraph == NULL)
         return NOTOK;
 
-    for (int e = gp_LowerBoundEdges(theGraph); e < gp_UpperBoundEdges(theGraph); ++e)
+    for (int e = gp_LowerBoundEdges(theGraph); e < gp_UpperBoundEdges(theGraph); e += 2)
     {
         if (gp_EdgeInUse(theGraph, e))
+        {
             gp_ClearEdgeMarked(theGraph, e);
+            gp_ClearEdgeMarked(theGraph, gp_GetTwin(theGraph, e));
+        }
     }
 
     return OK;
