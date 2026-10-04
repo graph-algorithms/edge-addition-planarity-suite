@@ -23,6 +23,9 @@ int _SortVertices(graphP theGraph);
 extern void _ClearVertexVisitedFlags(graphP theGraph, int includeVirtualVertices);
 extern int _FillVertexVisitedIndexes(graphP theGraph, int FillValue);
 
+extern int _ClearEdgeTypes(graphP theGraph);
+extern int _ClearEdgeMarks(graphP theGraph);
+
 /********************************************************************
  gp_ExtendWith_DFSUtils()
 
@@ -102,7 +105,7 @@ int gp_DepthFirstSearch(graphP theGraph)
 
     if (theGraph == NULL)
         return NOTOK;
-        
+
     if (theGraph->graphFlags & GRAPHFLAGS_PARALLELEDGEDETECTED)
     {
         gp_ErrorMessage("Parallel edges were previously added to the graph. See gp_DeleteParallelEdges().");
@@ -117,7 +120,17 @@ int gp_DepthFirstSearch(graphP theGraph)
 
     _gp_LogLine("\ngraphDFSUtils.c/gp_DepthFirstSearch() start");
 
-    theStack = theGraph->theStack;
+    // If there was a prior call to directed DFS, then we need to
+    // clear out settings that would affect undirected DFS.
+    if (gp_GetGraphFlags(theGraph) & GRAPHFLAGS_DFSNUMBERED_DIRECTED)
+    {
+        if (_ClearEdgeTypes(theGraph) != OK ||
+            _ClearEdgeMarks(theGraph) != OK ||
+            _FillVertexVisitedIndexes(theGraph, 0) != OK)
+            return NOTOK;
+
+        theGraph->graphFlags &= ~GRAPHFLAGS_DFSNUMBERED_DIRECTED;
+    }
 
     /* There are 2M edge records and for each we can push 2 integers,
         plus one extra (NIL, NIL) at the beginning to represent
@@ -125,6 +138,7 @@ int gp_DepthFirstSearch(graphP theGraph)
         integers suffices.
         This stack is already in theGraph structure, so we make sure
         it has the capacity and, if so, that it's empty. */
+    theStack = theGraph->theStack;
 
     if (sp_GetCapacity(theStack) < 2 * 2 * gp_GetM(theGraph) + 2)
         return NOTOK;
@@ -186,13 +200,6 @@ int gp_DepthFirstSearch(graphP theGraph)
     _gp_LogLine("graphDFSUtils.c/gp_DepthFirstSearch() end\n");
 
     theGraph->graphFlags |= GRAPHFLAGS_DFSNUMBERED;
-
-    if (gp_GetGraphFlags(theGraph) & GRAPHFLAGS_DFSNUMBERED_DIRECTED)
-    {
-        theGraph->graphFlags &= ~GRAPHFLAGS_DFSNUMBERED_DIRECTED;
-        if (_FillVertexVisitedIndexes(theGraph, 0) != OK)
-            return NOTOK;
-    }
 
     return OK;
 }
@@ -259,18 +266,13 @@ int _DepthFirstSearchDirected(graphP theGraph)
     for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
     {
         gp_SetIndex(theGraph, v, 0);
-        gp_SetVertexVisitedIndex(theGraph, v, 0);
         gp_SetVertexParent(theGraph, v, NIL);
     }
 
-    for (e = gp_LowerBoundEdges(theGraph); e < gp_UpperBoundEdges(theGraph); ++e)
-    {
-        if (gp_EdgeInUse(theGraph, e))
-        {
-            gp_ClearEdgeType(theGraph, e);
-            gp_ClearEdgeMarked(theGraph, e);
-        }
-    }
+    if (_ClearEdgeTypes(theGraph) != OK ||
+        _ClearEdgeMarks(theGraph) != OK ||
+        _FillVertexVisitedIndexes(theGraph, 0) != OK)
+        return NOTOK;
 
     // Process each directed DFS tree, including isolated vertices.
     for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
@@ -322,7 +324,7 @@ int _DepthFirstSearchDirected(graphP theGraph)
 
             if (gp_GetIndex(theGraph, w) == 0)
             {
-                gp_ResetEdgeType(theGraph, e, EDGE_TYPE_TREE);
+                gp_SetEdgeType(theGraph, e, EDGE_TYPE_TREE);
                 gp_SetIndex(theGraph, w, timer++);
                 gp_SetVertexParent(theGraph, w, u);
 
@@ -352,11 +354,11 @@ int _DepthFirstSearchDirected(graphP theGraph)
             else
             {
                 if (gp_GetVertexVisitedIndex(theGraph, w) == 0)
-                    gp_ResetEdgeType(theGraph, e, EDGE_TYPE_BACK);
+                    gp_SetEdgeType(theGraph, e, EDGE_TYPE_BACK);
                 else if (gp_GetIndex(theGraph, w) < gp_GetIndex(theGraph, u))
-                    gp_ResetEdgeType(theGraph, e, EDGE_TYPE_CROSS);
+                    gp_SetEdgeType(theGraph, e, EDGE_TYPE_CROSS);
                 else
-                    gp_ResetEdgeType(theGraph, e, EDGE_TYPE_FORWARD);
+                    gp_SetEdgeType(theGraph, e, EDGE_TYPE_FORWARD);
 
                 if (gp_GetEdgeMarked(theGraph, e))
                 {
