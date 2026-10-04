@@ -2195,6 +2195,8 @@ int testDirectedDFS(void)
     int lowerVertex, v, e, source, target, Result;
     unsigned expectedType;
 
+    gp_Message("Testing Directed Depth-First Search");
+
     if (G == NULL)
         return NOTOK;
 
@@ -2362,6 +2364,8 @@ int testPetersenDigraph(void)
     int quietModeCache, v, e, eTwin, eDir, eTwinDir;
     char *dummyStr = NULL; // Safe throwaway pointer for early-outs
 
+    gp_Message("Testing Digraph Read, Embed, Undirected DFS, Convert to Undirected, and Non-Digraph Function Detection");
+
     if (G == NULL)
         return NOTOK;
 
@@ -2509,6 +2513,8 @@ int testDigraphTranspose(void)
     int preservedEdgeSource = NIL;
     int preservedEdgeTarget = NIL;
     int e = NIL;
+
+    gp_Message("Testing Digraph Transpose");
 
     if (G == NULL)
         return NOTOK;
