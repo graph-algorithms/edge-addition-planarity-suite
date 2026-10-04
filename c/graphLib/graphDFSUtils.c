@@ -158,8 +158,8 @@ int gp_DepthFirstSearch(graphP theGraph)
                 gp_SetVertexParent(theGraph, u, uparent);
                 if (gp_IsEdge(theGraph, e))
                 {
-                    gp_SetEdgeType(theGraph, e, EDGE_TYPE_CHILD);
-                    gp_SetEdgeType(theGraph, gp_GetTwin(theGraph, e), EDGE_TYPE_PARENT);
+                    gp_ResetEdgeType(theGraph, e, EDGE_TYPE_CHILD);
+                    gp_ResetEdgeType(theGraph, gp_GetTwin(theGraph, e), EDGE_TYPE_PARENT);
                 }
 
                 /* Push edges to all unvisited neighbors. These will be either
@@ -177,8 +177,8 @@ int gp_DepthFirstSearch(graphP theGraph)
             {
                 // If the edge leads to a visited vertex, then it is
                 // the forward component of a back edge.
-                gp_SetEdgeType(theGraph, e, EDGE_TYPE_FORWARD);
-                gp_SetEdgeType(theGraph, gp_GetTwin(theGraph, e), EDGE_TYPE_BACK);
+                gp_ResetEdgeType(theGraph, e, EDGE_TYPE_FORWARD);
+                gp_ResetEdgeType(theGraph, gp_GetTwin(theGraph, e), EDGE_TYPE_BACK);
             }
         }
     }

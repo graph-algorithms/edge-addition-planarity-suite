@@ -604,8 +604,8 @@ int _EmbeddingInitialize_Optimized(graphP theGraph)
                 if (gp_IsEdge(theGraph, e))
                 {
                     // (2) Set the edge type values for tree edges
-                    gp_SetEdgeType(theGraph, e, EDGE_TYPE_CHILD);
-                    gp_SetEdgeType(theGraph, gp_GetTwin(theGraph, e), EDGE_TYPE_PARENT);
+                    gp_ResetEdgeType(theGraph, e, EDGE_TYPE_CHILD);
+                    gp_ResetEdgeType(theGraph, gp_GetTwin(theGraph, e), EDGE_TYPE_PARENT);
 
                     // (3) Record u in the sortedDFSChildList of uparent
                     gp_SetVertexSortedDFSChildList(theGraph, uparent,
@@ -635,9 +635,9 @@ int _EmbeddingInitialize_Optimized(graphP theGraph)
                     else if (gp_GetEdgeType(theGraph, e) != EDGE_TYPE_PARENT)
                     {
                         // (2) Set the edge type values for back edges
-                        gp_SetEdgeType(theGraph, e, EDGE_TYPE_BACK);
+                        gp_ResetEdgeType(theGraph, e, EDGE_TYPE_BACK);
                         eTwin = gp_GetTwin(theGraph, e);
-                        gp_SetEdgeType(theGraph, eTwin, EDGE_TYPE_FORWARD);
+                        gp_ResetEdgeType(theGraph, eTwin, EDGE_TYPE_FORWARD);
 
                         // (4) Move the twin of back edge record e to the sorted FwdEdgeList of the ancestor
                         uneighbor = gp_GetNeighbor(theGraph, e);
