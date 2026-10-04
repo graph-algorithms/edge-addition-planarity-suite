@@ -103,12 +103,6 @@ int gp_DepthFirstSearch(graphP theGraph)
     if (theGraph == NULL)
         return NOTOK;
         
-    if (theGraph->graphFlags & GRAPHFLAGS_PARALLELEDGEDETECTED)
-    {
-        gp_ErrorMessage("Parallel edges were previously added to the graph. See gp_DeleteParallelEdges().");
-        return NOTOK;
-    }
-
     if (gp_GetGraphFlags(theGraph) & GRAPHFLAGS_DFSNUMBERED)
         return OK;
 
@@ -560,12 +554,6 @@ int gp_ComputeLowpoints(graphP theGraph)
     if (theGraph == NULL)
         return NOTOK;
 
-    if (theGraph->graphFlags & GRAPHFLAGS_PARALLELEDGEDETECTED)
-    {
-        gp_ErrorMessage("Parallel edges were previously added to the graph. See gp_DeleteParallelEdges().");
-        return NOTOK;
-    }
-
     if (gp_GetGraphFlags(theGraph) & GRAPHFLAGS_DIRECTEDEDGEDETECTED)
     {
         gp_ErrorMessage("gp_ComputeLowpoints() does not support directed graphs.");
@@ -692,12 +680,6 @@ int gp_ComputeLeastAncestors(graphP theGraph)
 
     if (theGraph == NULL)
         return NOTOK;
-
-    if (theGraph->graphFlags & GRAPHFLAGS_PARALLELEDGEDETECTED)
-    {
-        gp_ErrorMessage("Parallel edges were previously added to the graph. See gp_DeleteParallelEdges().");
-        return NOTOK;
-    }
 
     if (gp_GetGraphFlags(theGraph) & GRAPHFLAGS_DIRECTEDEDGEDETECTED)
     {

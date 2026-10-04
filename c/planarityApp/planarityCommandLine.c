@@ -2589,8 +2589,7 @@ int runManyParallelEdgesTest(void)
 {
     int retVal = OK;
     graphP G = gp_New();
-    graphP G1 = NULL;
-    unsigned quietModeCache;
+    graphP G1 = NULL, G2 = NULL;
 
     if (G == NULL)
         return NOTOK;
@@ -2611,25 +2610,60 @@ int runManyParallelEdgesTest(void)
 
     if (retVal == OK)
     {
-        quietModeCache = gp_GetQuietMode();
-        gp_SetQuietMode(QUIETMODE_ALL);
-
-        if (gp_DepthFirstSearch(G1) == OK)
+        // The DFS and the embedders accept the parallel edges
+        if (gp_DepthFirstSearch(G1) != OK)
             retVal = NOTOK;
-        else if (gp_ComputeLowpoints(G1) == OK)
+        else if ((G2 = gp_DupGraph(G)) == NULL)
             retVal = NOTOK;
-        else if (gp_ComputeLeastAncestors(G1) == OK)
+        else if (gp_Embed(G2, EMBEDFLAGS_PLANAR) != NONEMBEDDABLE)
             retVal = NOTOK;
-        else if (gp_Embed(G1, EMBEDFLAGS_PLANAR) == OK)
+        else if (gp_TestEmbedResultIntegrity(G2, G, NONEMBEDDABLE) != NONEMBEDDABLE)
             retVal = NOTOK;
-
-        gp_SetQuietMode(quietModeCache);
+        else
+        {
+            gp_Free(&G2);
+            if ((G2 = gp_DupGraph(G)) == NULL)
+                retVal = NOTOK;
+            else if (gp_ExtendWith_K33Search(G2) != OK)
+                retVal = NOTOK;
+            else if (gp_Embed(G2, EMBEDFLAGS_SEARCHFORK33) != NONEMBEDDABLE)
+                retVal = NOTOK;
+            else if (gp_TestEmbedResultIntegrity(G2, G, NONEMBEDDABLE) != NONEMBEDDABLE)
+                retVal = NOTOK;
+        }
     }
 
     if (retVal == OK)
     {
-        // Delete parallel edges and verify exact 15-edge state
-        if (gp_DeleteParallelEdges(G1) != OK)
+        // The adjacency list format preserves the parallel edges
+        char *adjListStr = NULL;
+
+        gp_Free(&G1);
+        if (gp_WriteToString(G, &adjListStr, WRITE_ADJLIST) != OK)
+            retVal = NOTOK;
+        else if ((G1 = gp_New()) == NULL)
+            retVal = NOTOK;
+        else if (gp_ReadFromString(G1, adjListStr) != OK)
+            retVal = NOTOK;
+        else if (!(G1->graphFlags & GRAPHFLAGS_PARALLELEDGEDETECTED))
+            retVal = NOTOK;
+        else if (gp_GetM(G1) != 60)
+            retVal = NOTOK;
+        else if (gp_DeleteParallelEdges(G1) != OK || gp_GetM(G1) != 15)
+            retVal = NOTOK;
+
+        if (adjListStr != NULL)
+            free(adjListStr);
+    }
+
+    if (retVal == OK)
+    {
+        // Delete parallel edges from a fresh copy and verify exact 15-edge state
+        gp_Free(&G1);
+        if ((G1 = gp_DupGraph(G)) == NULL)
+            retVal = NOTOK;
+
+        else if (gp_DeleteParallelEdges(G1) != OK)
             retVal = NOTOK;
 
         else if (G1->graphFlags & GRAPHFLAGS_PARALLELEDGEDETECTED)
@@ -2648,6 +2682,7 @@ int runManyParallelEdgesTest(void)
 
     gp_Free(&G);
     gp_Free(&G1);
+    gp_Free(&G2);
 
     return retVal;
 }
@@ -2659,6 +2694,8 @@ int runManyParallelEdgesTest(void)
 // Ensure that one edge has shown up, that vertices
 //     1 and 2 report being degree 4, and that the
 //     parallel edge is now set.
+// Ensure a copy of the graph still supports the DFS
+//     utilities and is still correctly found nonplanar
 // Call the method that deletes the parallel edges
 // Ensure that the parallel edge flag is cleared
 // Ensure that the number of edges goes down by 1.
@@ -2667,6 +2704,7 @@ int runSingleParallelEdgeTest(void)
 {
     int retVal = OK;
     graphP G = gp_New();
+    graphP G1 = NULL;
 
     if (G == NULL)
         retVal = NOTOK;
@@ -2689,6 +2727,18 @@ int runSingleParallelEdgeTest(void)
     else if (!(G->graphFlags & GRAPHFLAGS_PARALLELEDGEDETECTED))
         retVal = NOTOK;
 
+    else if ((G1 = gp_DupGraph(G)) == NULL)
+        retVal = NOTOK;
+
+    else if (gp_DepthFirstSearch(G1) != OK || gp_ComputeLowpoints(G1) != OK || gp_ComputeLeastAncestors(G1) != OK)
+        retVal = NOTOK;
+
+    else if (gp_Embed(G1, EMBEDFLAGS_PLANAR) != NONEMBEDDABLE)
+        retVal = NOTOK;
+
+    else if (gp_TestEmbedResultIntegrity(G1, G, NONEMBEDDABLE) != NONEMBEDDABLE)
+        retVal = NOTOK;
+
     else if (gp_DeleteParallelEdges(G) != OK)
         retVal = NOTOK;
 
@@ -2702,6 +2752,7 @@ int runSingleParallelEdgeTest(void)
         retVal = NOTOK;
 
     gp_Free(&G);
+    gp_Free(&G1);
 
     return retVal;
 }
