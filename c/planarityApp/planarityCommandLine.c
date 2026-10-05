@@ -34,7 +34,7 @@ int runHideRestoreTests(void);
 int runIdentifyContractTests(void);
 int runSpecificGraphTest(char const *command, char const *infileName, int inputInMemFlag);
 int runGraphTransformationTest(char const *command, char const *infileName, int inputInMemFlag);
-int runTestAllGraphsTest(char const *commandString, char const *infileName, char const *expectedValidationStr);
+int runTestAllGraphsTest(char const *commandString, char const *infileName, char const *expectedValidationStr, int withParallelEdges);
 int runHideRestoreTest(graphP theGraph);
 int runIdentifyContractTest(graphP theGraph);
 int runSparse6ReadTests(void);
@@ -1260,34 +1260,66 @@ int runTestAllGraphsTests(void)
     int retVal = OK;
 
     // Run TestAllGraphs Tests
-    if (runTestAllGraphsTest("-p", "n8.mALL.g6", NULL) != OK)
+    if (runTestAllGraphsTest("-p", "n8.mALL.g6", NULL, FALSE) != OK)
     {
         gp_ErrorMessage("Planarity test on all graphs failed.");
         retVal = NOTOK;
     }
-    if (runTestAllGraphsTest("-d", "n8.mALL.g6", NULL) != OK)
+    if (runTestAllGraphsTest("-d", "n8.mALL.g6", NULL, FALSE) != OK)
     {
         gp_ErrorMessage("Planar graph drawing test on all graphs failed.");
         retVal = NOTOK;
     }
-    if (runTestAllGraphsTest("-o", "n8.mALL.g6", NULL) != OK)
+    if (runTestAllGraphsTest("-o", "n8.mALL.g6", NULL, FALSE) != OK)
     {
         gp_ErrorMessage("Outerplanarity test on all graphs failed.");
         retVal = NOTOK;
     }
-    if (runTestAllGraphsTest("-2", "n8.mALL.g6", NULL) != OK)
+    if (runTestAllGraphsTest("-2", "n8.mALL.g6", NULL, FALSE) != OK)
     {
         gp_ErrorMessage("K2,3 homeomorph search test on all graphs failed.");
         retVal = NOTOK;
     }
-    if (runTestAllGraphsTest("-3", "n8.mALL.g6", NULL) != OK)
+    if (runTestAllGraphsTest("-3", "n8.mALL.g6", NULL, FALSE) != OK)
     {
         gp_ErrorMessage("K3,3 homeomorph search test on all graphs failed.");
         retVal = NOTOK;
     }
-    if (runTestAllGraphsTest("-4", "n8.mALL.g6", NULL) != OK)
+    if (runTestAllGraphsTest("-4", "n8.mALL.g6", NULL, FALSE) != OK)
     {
         gp_ErrorMessage("K4 homeomorph search test on all graphs failed.");
+        retVal = NOTOK;
+    }
+
+    // The same graphs with three parallel edges added to every edge
+    if (runTestAllGraphsTest("-p", "n8.mALL.g6", NULL, TRUE) != OK)
+    {
+        gp_ErrorMessage("Planarity test on all graphs with parallel edges failed.");
+        retVal = NOTOK;
+    }
+    if (runTestAllGraphsTest("-d", "n8.mALL.g6", NULL, TRUE) != OK)
+    {
+        gp_ErrorMessage("Planar graph drawing test on all graphs with parallel edges failed.");
+        retVal = NOTOK;
+    }
+    if (runTestAllGraphsTest("-o", "n8.mALL.g6", NULL, TRUE) != OK)
+    {
+        gp_ErrorMessage("Outerplanarity test on all graphs with parallel edges failed.");
+        retVal = NOTOK;
+    }
+    if (runTestAllGraphsTest("-2", "n8.mALL.g6", NULL, TRUE) != OK)
+    {
+        gp_ErrorMessage("K2,3 homeomorph search test on all graphs with parallel edges failed.");
+        retVal = NOTOK;
+    }
+    if (runTestAllGraphsTest("-3", "n8.mALL.g6", NULL, TRUE) != OK)
+    {
+        gp_ErrorMessage("K3,3 homeomorph search test on all graphs with parallel edges failed.");
+        retVal = NOTOK;
+    }
+    if (runTestAllGraphsTest("-4", "n8.mALL.g6", NULL, TRUE) != OK)
+    {
+        gp_ErrorMessage("K4 homeomorph search test on all graphs with parallel edges failed.");
         retVal = NOTOK;
     }
 
@@ -1657,7 +1689,7 @@ int runIdentifyContractTest(graphP theGraph)
     return Result;
 }
 
-int runTestAllGraphsTest(char const *commandString, char const *infileName, char const *expectedValidationStr)
+int runTestAllGraphsTest(char const *commandString, char const *infileName, char const *expectedValidationStr, int withParallelEdges)
 {
     char *outputStr = NULL;
     int Result = OK;
@@ -1670,7 +1702,8 @@ int runTestAllGraphsTest(char const *commandString, char const *infileName, char
         return NOTOK;
     }
 
-    Result = TestAllGraphs(commandString, infileName, NULL, &outputStr);
+    Result = withParallelEdges ? TestAllGraphsParallel(commandString, infileName, NULL, &outputStr)
+                               : TestAllGraphs(commandString, infileName, NULL, &outputStr);
 
     if (Result == OK && expectedValidationStr != NULL)
     {
