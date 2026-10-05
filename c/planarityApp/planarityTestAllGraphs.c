@@ -5,7 +5,6 @@ See the LICENSE.TXT file for licensing information.
 */
 
 #include "planarity.h"
-#include "../graphLib/lowLevelUtils/stack.h"
 
 typedef struct
 {
@@ -277,39 +276,40 @@ int testAllGraphs(char command, char modifier, char const *const infileName, int
 int addParallelEdges(graphP theGraph)
 {
     int origM = gp_GetM(theGraph);
-    stackP theStack = sp_New(4 * origM + 1);
-    int v, e, w, link;
+    int *neighborList = NULL;
+    int v, e, w, link, neighborCount = 0;
 
-    if (theStack == NULL)
+    if ((neighborList = (int *)calloc(4 * origM + 1, sizeof(int))) == NULL)
         return NOTOK;
 
     for (link = 0; link <= 1; link++)
     {
         for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
         {
-            sp_ClearStack(theStack);
+            neighborCount = 0;
+
             e = gp_GetFirstEdge(theGraph, v);
             while (gp_IsEdge(theGraph, e))
             {
                 w = gp_GetNeighbor(theGraph, e);
                 if (w > v)
-                    sp_Push(theStack, w);
+                    neighborList[neighborCount++] = w;
                 e = gp_GetNextEdge(theGraph, e);
             }
 
-            while (sp_NonEmpty(theStack))
+            for (int i = 0; i < neighborCount; i++)
             {
-                sp_Pop(theStack, w);
+                w = neighborList[i];
                 if (gp_DynamicAddEdge(theGraph, v, link, w, link) != OK)
                 {
-                    sp_Free(&theStack);
+                    free(neighborList);
                     return NOTOK;
                 }
             }
         }
     }
 
-    sp_Free(&theStack);
+    free(neighborList);
     return gp_GetM(theGraph) == 4 * origM ? OK : NOTOK;
 }
 
