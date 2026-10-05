@@ -1265,7 +1265,7 @@ void _WalkUp(graphP theGraph, int v, int e)
 
 int _WalkDown(graphP theGraph, int v, int RootVertex)
 {
-    int RetVal, W, WPrevLink, R, X, XPrevLink, Y, YPrevLink, RootSide, e;
+    int RetVal, W, WPrevLink, R, X, XPrevLink, Y, YPrevLink, RootSide, e, eNext;
     int RootEdgeChild = gp_GetDFSChildFromBicompRoot(theGraph, RootVertex);
 
     sp_ClearStack(theGraph->theStack);
@@ -1284,7 +1284,7 @@ int _WalkDown(graphP theGraph, int v, int RootVertex)
         while (W != RootVertex)
         {
             // Detect unembedded back edge descendant endpoint W
-            if (gp_IsEdge(theGraph, gp_GetVertexPertinentEdge(theGraph, W)))
+            if (gp_IsEdge(theGraph, e = gp_GetVertexPertinentEdge(theGraph, W)))
             {
                 // Merge any bicomps whose cut vertices were traversed to reach W, then add the
                 // edge to W to form a new proper face in the embedding.
@@ -1295,17 +1295,24 @@ int _WalkDown(graphP theGraph, int v, int RootVertex)
                 }
 
                 // Embed the edge to W and any edges parallel to it. The forward edges from
-                // v to W are consecutive in the forward edge list of v, and the Walkup recorded
-                // the first of them in W, so embed forward until the next forward edge leads
-                // to a different descendant (or no forward edges remain).
-                e = gp_GetVertexPertinentEdge(theGraph, W);
-                do
+                // v to W are consecutive in the forward edge list of v, and the WalkUp recorded
+                // the first of them in W, so embed forward edges until the next forward edge
+                // leads to a different descendant (or no forward edges remain).
+                eNext = gp_GetNextEdge(theGraph, e);
+                theGraph->functions->fpEmbedBackEdgeToDescendant(theGraph, RootSide, RootVertex, W, WPrevLink);
+                while (eNext != e && gp_GetNeighbor(theGraph, eNext) == W)
                 {
-                    int eNext = gp_GetNextEdge(theGraph, e);
+                    // Need to grab the next eNext while e=eNext is still in the sorted
+                    // VertexFwdEdgeList because, after embedding, e=eNext will have a
+                    // different next edge (the one in the embedding). Same reason why,
+                    // above this while loop, we grabbed eNext from e before calling
+                    // fpEmbedBackEdgeToDescendant
+                    e = eNext;
+                    eNext = gp_GetNextEdge(theGraph, e);
+
                     gp_SetVertexPertinentEdge(theGraph, W, e);
                     theGraph->functions->fpEmbedBackEdgeToDescendant(theGraph, RootSide, RootVertex, W, WPrevLink);
-                    e = eNext != e && gp_GetNeighbor(theGraph, eNext) == W ? eNext : NIL;
-                } while (gp_IsEdge(theGraph, e));
+                }
 
                 // Clear W's pertinentEdge since the forward edge record it contained has been embedded
                 gp_SetVertexPertinentEdge(theGraph, W, NIL);
