@@ -22,7 +22,7 @@ int runSparse6LookaheadTests(void);
 char *copySparse6TestString(char const *s6Str);
 
 /* Defined in planarityCommandLine.c */
-int runTestAllGraphsTest(char const *commandString, char const *infileName, char const *expectedValidationStr, int withParallelEdges);
+int runTestAllGraphsTest(char const *commandString, char const *infileName, char const *expectedValidationStr, int (*mutatorFunc)(graphP));
 int runGraphTransformationTest(char const *command, char const *infileName, int inputInMemFlag);
 
 static int compareSparse6Output(char const *ours, char const *expected, char const *what);
@@ -1460,39 +1460,39 @@ int runSparse6TestAllGraphsTests(void)
     // results runTestAllGraphsTests() gets from graph6, which exercises the
     // sparse6 read iterator on every algorithm, including planar graph
     // drawing, which requires edge storage without holes.
-    if (runTestAllGraphsTest("-p", "n8.mALL.inc.s6", NULL, FALSE) != OK)
+    if (runTestAllGraphsTest("-p", "n8.mALL.inc.s6", NULL, NULL) != OK)
     {
         gp_ErrorMessage("Planarity test on all graphs in incremental sparse6 failed.");
         retVal = NOTOK;
     }
-    if (runTestAllGraphsTest("-d", "n8.mALL.inc.s6", NULL, FALSE) != OK)
+    if (runTestAllGraphsTest("-d", "n8.mALL.inc.s6", NULL, NULL) != OK)
     {
         gp_ErrorMessage("Planar graph drawing test on all graphs in incremental sparse6 failed.");
         retVal = NOTOK;
     }
-    if (runTestAllGraphsTest("-o", "n8.mALL.inc.s6", NULL, FALSE) != OK)
+    if (runTestAllGraphsTest("-o", "n8.mALL.inc.s6", NULL, NULL) != OK)
     {
         gp_ErrorMessage("Outerplanarity test on all graphs in incremental sparse6 failed.");
         retVal = NOTOK;
     }
-    if (runTestAllGraphsTest("-2", "n8.mALL.inc.s6", NULL, FALSE) != OK)
+    if (runTestAllGraphsTest("-2", "n8.mALL.inc.s6", NULL, NULL) != OK)
     {
         gp_ErrorMessage("K2,3 homeomorph search test on all graphs in incremental sparse6 failed.");
         retVal = NOTOK;
     }
-    if (runTestAllGraphsTest("-3", "n8.mALL.inc.s6", NULL, FALSE) != OK)
+    if (runTestAllGraphsTest("-3", "n8.mALL.inc.s6", NULL, NULL) != OK)
     {
         gp_ErrorMessage("K3,3 homeomorph search test on all graphs in incremental sparse6 failed.");
         retVal = NOTOK;
     }
-    if (runTestAllGraphsTest("-4", "n8.mALL.inc.s6", NULL, FALSE) != OK)
+    if (runTestAllGraphsTest("-4", "n8.mALL.inc.s6", NULL, NULL) != OK)
     {
         gp_ErrorMessage("K4 homeomorph search test on all graphs in incremental sparse6 failed.");
         retVal = NOTOK;
     }
 
     // Plain sparse6 input, where every line is a whole graph
-    if (runTestAllGraphsTest("-p", "N5-all.s6", "-p 34 33 1 SUCCESS", FALSE) != OK)
+    if (runTestAllGraphsTest("-p", "N5-all.s6", "-p 34 33 1 SUCCESS", NULL) != OK)
     {
         gp_ErrorMessage("Planarity test on all graphs in sparse6 failed.");
         retVal = NOTOK;

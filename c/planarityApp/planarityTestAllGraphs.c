@@ -17,9 +17,7 @@ typedef struct
 
 typedef testAllStats *testAllStatsP;
 
-int testAllGraphs(char command, char modifier, char const *const infileName, int addParallelEdges, testAllStatsP stats);
-int addParallelEdges(graphP theGraph);
-int _TestAllGraphs(char const *const commandString, char const *const infileName, char *outfileName, char **pOutputStr, int withParallelEdges);
+int testAllGraphs(char command, char modifier, char const *const infileName, int (*mutatorFunc)(graphP), testAllStatsP stats);
 int outputTestAllGraphsResults(char command, char modifier, testAllStatsP stats, char const *const infileName, char *outfileName, char **pOutputStr);
 
 // #define TESTALLGRAPHS_MEMORY_TIMING_TEST
@@ -30,31 +28,17 @@ int testAllGraphsN8(char command, char modifier, char const *const infileName, t
 
 /****************************************************************************
  TestAllGraphs()
- TestAllGraphsParallel()
- _TestAllGraphs()
- commandString - command to run; e.g.`-(pdo234)` (plus optional modifier
+  commandString - command to run; e.g.`-(pdo234)` (plus optional modifier
     character) to perform the corresponding algorithm on each graph in .g6 file
- infileName - non-NULL and nonempty string containing name of .g6 input file
+ infileName - non-NULL and nonempty string containing name of the input file
  outfileName - name of primary output file, or NULL
- pOutputStr - pointer to string which we wish to use to store the result of
-    applying the chosen graph algorithm extension to all graphs in the .g6 file
+ pOutputStr - pointer to a string in which to store the result of applying
+    the chosen graph algorithm extension to all graphs in the input file
+ mutatorFunc - NULL or function pointer to a function that performs
+    operations on each graph of the input file before applying the
+    chosen algorithm. Mutations may be adding parallel edges, loops, etc.
  ****************************************************************************/
-int TestAllGraphs(char const *const commandString, char const *const infileName, char *outfileName, char **pOutputStr)
-{
-    return _TestAllGraphs(commandString, infileName, outfileName, pOutputStr, FALSE);
-}
-
-/****************************************************************************
- TestAllGraphsParallel()
- Same as TestAllGraphs(), except that three parallel edges are added to each
- edge of each graph before the algorithm is applied (see addParallelEdges()).
- ****************************************************************************/
-int TestAllGraphsParallel(char const *const commandString, char const *const infileName, char *outfileName, char **pOutputStr)
-{
-    return _TestAllGraphs(commandString, infileName, outfileName, pOutputStr, TRUE);
-}
-
-int _TestAllGraphs(char const *const commandString, char const *const infileName, char *outfileName, char **pOutputStr, int withParallelEdges)
+int TestAllGraphs(char const *const commandString, char const *const infileName, char *outfileName, char **pOutputStr, int (*mutatorFunc)(graphP))
 {
     int Result = OK;
 
@@ -84,7 +68,7 @@ int _TestAllGraphs(char const *const commandString, char const *const infileName
     platform_GetTime(start);
 
 #ifndef TESTALLGRAPHS_MEMORY_TIMING_TEST
-    Result = testAllGraphs(command, modifier, infileName, withParallelEdges, &stats);
+    Result = testAllGraphs(command, modifier, infileName, mutatorFunc, &stats);
 #else
     Result = testAllGraphsN8(command, modifier, infileName, &stats);
 #endif
@@ -116,7 +100,7 @@ int _TestAllGraphs(char const *const commandString, char const *const infileName
     return Result;
 }
 
-int testAllGraphs(char command, char modifier, char const *const infileName, int withParallelEdges, testAllStatsP stats)
+int testAllGraphs(char command, char modifier, char const *const infileName, int (*mutatorFunc)(graphP), testAllStatsP stats)
 {
     int Result = OK;
 
@@ -192,9 +176,9 @@ int testAllGraphs(char command, char modifier, char const *const infileName, int
 
         lineNum++;
 
-        if (withParallelEdges && addParallelEdges(origGraphRead) != OK)
+        if (mutatorFunc != NULL && mutatorFunc(origGraphRead) != OK)
         {
-            gp_ErrorMessage("Unable to add parallel edges to graph on line %d.", lineNum);
+            gp_ErrorMessage("Unable to perform required mutation of graph on line %d.", lineNum);
             Result = NOTOK;
             break;
         }
@@ -262,55 +246,6 @@ int testAllGraphs(char command, char modifier, char const *const infileName, int
     gp_Free(&graphForEmbedding);
 
     return Result;
-}
-
-/****************************************************************************
- addParallelEdges()
- Adds three parallel edges to every edge of theGraph. For each vertex v, the
- higher numbered neighbors of v are stacked, and then each is given a second
- edge attached on the link[0] side of v's adjacency list. Then the higher
- numbered neighbors, now including the new edges, are stacked again and each
- is given another edge attached on the link[1] side. The copies of an edge
- are thus interleaved with the copies of the other edges at both endpoints.
- ****************************************************************************/
-int addParallelEdges(graphP theGraph)
-{
-    int origM = gp_GetM(theGraph);
-    int *neighborList = NULL;
-    int v, e, w, link, neighborCount = 0;
-
-    if ((neighborList = (int *)calloc(4 * origM + 1, sizeof(int))) == NULL)
-        return NOTOK;
-
-    for (link = 0; link <= 1; link++)
-    {
-        for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
-        {
-            neighborCount = 0;
-
-            e = gp_GetFirstEdge(theGraph, v);
-            while (gp_IsEdge(theGraph, e))
-            {
-                w = gp_GetNeighbor(theGraph, e);
-                if (w > v)
-                    neighborList[neighborCount++] = w;
-                e = gp_GetNextEdge(theGraph, e);
-            }
-
-            for (int i = 0; i < neighborCount; i++)
-            {
-                w = neighborList[i];
-                if (gp_DynamicAddEdge(theGraph, v, link, w, link) != OK)
-                {
-                    free(neighborList);
-                    return NOTOK;
-                }
-            }
-        }
-    }
-
-    free(neighborList);
-    return gp_GetM(theGraph) == 4 * origM ? OK : NOTOK;
 }
 
 int outputTestAllGraphsResults(char command, char modifier, testAllStatsP stats, char const *const infileName, char *outfileName, char **pOutputStr)

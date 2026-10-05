@@ -474,7 +474,7 @@ int TestAllGraphsMenu(void)
     }
 
     if (Result == OK)
-        Result = TestAllGraphs(commandString, infileName, outfileName, NULL);
+        Result = TestAllGraphs(commandString, infileName, outfileName, NULL, NULL);
 
     if (commandStringFormat != NULL)
     {

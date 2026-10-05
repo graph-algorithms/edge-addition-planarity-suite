@@ -34,7 +34,7 @@ int runHideRestoreTests(void);
 int runIdentifyContractTests(void);
 int runSpecificGraphTest(char const *command, char const *infileName, int inputInMemFlag);
 int runGraphTransformationTest(char const *command, char const *infileName, int inputInMemFlag);
-int runTestAllGraphsTest(char const *commandString, char const *infileName, char const *expectedValidationStr, int withParallelEdges);
+int runTestAllGraphsTest(char const *commandString, char const *infileName, char const *expectedValidationStr, int (*mutatorFunc)(graphP));
 int runHideRestoreTest(graphP theGraph);
 int runIdentifyContractTest(graphP theGraph);
 int runSparse6ReadTests(void);
@@ -51,6 +51,7 @@ int runDigraphTests(void);
 int runParallelEdgeTests(void);
 int runManyParallelEdgesTest(void);
 int runSingleParallelEdgeTest(void);
+int addParallelEdges(graphP theGraph);
 int runDrawPlanarNonplanarWriteTest(void);
 int runReadErrorTests(void);
 int runReadWithExtensionAtEofTest(void);
@@ -1260,64 +1261,64 @@ int runTestAllGraphsTests(void)
     int retVal = OK;
 
     // Run TestAllGraphs Tests
-    if (runTestAllGraphsTest("-p", "n8.mALL.g6", NULL, FALSE) != OK)
+    if (runTestAllGraphsTest("-p", "n8.mALL.g6", NULL, NULL) != OK)
     {
         gp_ErrorMessage("Planarity test on all graphs failed.");
         retVal = NOTOK;
     }
-    if (runTestAllGraphsTest("-d", "n8.mALL.g6", NULL, FALSE) != OK)
+    if (runTestAllGraphsTest("-d", "n8.mALL.g6", NULL, NULL) != OK)
     {
         gp_ErrorMessage("Planar graph drawing test on all graphs failed.");
         retVal = NOTOK;
     }
-    if (runTestAllGraphsTest("-o", "n8.mALL.g6", NULL, FALSE) != OK)
+    if (runTestAllGraphsTest("-o", "n8.mALL.g6", NULL, NULL) != OK)
     {
         gp_ErrorMessage("Outerplanarity test on all graphs failed.");
         retVal = NOTOK;
     }
-    if (runTestAllGraphsTest("-2", "n8.mALL.g6", NULL, FALSE) != OK)
+    if (runTestAllGraphsTest("-2", "n8.mALL.g6", NULL, NULL) != OK)
     {
         gp_ErrorMessage("K2,3 homeomorph search test on all graphs failed.");
         retVal = NOTOK;
     }
-    if (runTestAllGraphsTest("-3", "n8.mALL.g6", NULL, FALSE) != OK)
+    if (runTestAllGraphsTest("-3", "n8.mALL.g6", NULL, NULL) != OK)
     {
         gp_ErrorMessage("K3,3 homeomorph search test on all graphs failed.");
         retVal = NOTOK;
     }
-    if (runTestAllGraphsTest("-4", "n8.mALL.g6", NULL, FALSE) != OK)
+    if (runTestAllGraphsTest("-4", "n8.mALL.g6", NULL, NULL) != OK)
     {
         gp_ErrorMessage("K4 homeomorph search test on all graphs failed.");
         retVal = NOTOK;
     }
 
     // The same graphs with three parallel edges added to every edge
-    if (runTestAllGraphsTest("-p", "n8.mALL.g6", NULL, TRUE) != OK)
+    if (runTestAllGraphsTest("-p", "n8.mALL.g6", NULL, addParallelEdges) != OK)
     {
         gp_ErrorMessage("Planarity test on all graphs with parallel edges failed.");
         retVal = NOTOK;
     }
-    if (runTestAllGraphsTest("-d", "n8.mALL.g6", NULL, TRUE) != OK)
+    if (runTestAllGraphsTest("-d", "n8.mALL.g6", NULL, addParallelEdges) != OK)
     {
         gp_ErrorMessage("Planar graph drawing test on all graphs with parallel edges failed.");
         retVal = NOTOK;
     }
-    if (runTestAllGraphsTest("-o", "n8.mALL.g6", NULL, TRUE) != OK)
+    if (runTestAllGraphsTest("-o", "n8.mALL.g6", NULL, addParallelEdges) != OK)
     {
         gp_ErrorMessage("Outerplanarity test on all graphs with parallel edges failed.");
         retVal = NOTOK;
     }
-    if (runTestAllGraphsTest("-2", "n8.mALL.g6", NULL, TRUE) != OK)
+    if (runTestAllGraphsTest("-2", "n8.mALL.g6", NULL, addParallelEdges) != OK)
     {
         gp_ErrorMessage("K2,3 homeomorph search test on all graphs with parallel edges failed.");
         retVal = NOTOK;
     }
-    if (runTestAllGraphsTest("-3", "n8.mALL.g6", NULL, TRUE) != OK)
+    if (runTestAllGraphsTest("-3", "n8.mALL.g6", NULL, addParallelEdges) != OK)
     {
         gp_ErrorMessage("K3,3 homeomorph search test on all graphs with parallel edges failed.");
         retVal = NOTOK;
     }
-    if (runTestAllGraphsTest("-4", "n8.mALL.g6", NULL, TRUE) != OK)
+    if (runTestAllGraphsTest("-4", "n8.mALL.g6", NULL, addParallelEdges) != OK)
     {
         gp_ErrorMessage("K4 homeomorph search test on all graphs with parallel edges failed.");
         retVal = NOTOK;
@@ -1689,7 +1690,7 @@ int runIdentifyContractTest(graphP theGraph)
     return Result;
 }
 
-int runTestAllGraphsTest(char const *commandString, char const *infileName, char const *expectedValidationStr, int withParallelEdges)
+int runTestAllGraphsTest(char const *commandString, char const *infileName, char const *expectedValidationStr, int (*mutatorFunc)(graphP))
 {
     char *outputStr = NULL;
     int Result = OK;
@@ -1702,8 +1703,7 @@ int runTestAllGraphsTest(char const *commandString, char const *infileName, char
         return NOTOK;
     }
 
-    Result = withParallelEdges ? TestAllGraphsParallel(commandString, infileName, NULL, &outputStr)
-                               : TestAllGraphs(commandString, infileName, NULL, &outputStr);
+    Result = TestAllGraphs(commandString, infileName, NULL, &outputStr, mutatorFunc);
 
     if (Result == OK && expectedValidationStr != NULL)
     {
@@ -2184,7 +2184,7 @@ int callTestAllGraphs(int argc, char *argv[])
     outfileName = argv[4 + offset];
 
     // NOTE: We don't want to write to string, so pOutputStr is NULL
-    return TestAllGraphs(commandString, infileName, outfileName, NULL);
+    return TestAllGraphs(commandString, infileName, outfileName, NULL, NULL);
 }
 
 /********************************************************************
@@ -2865,4 +2865,53 @@ int runSingleParallelEdgeTest(void)
     gp_Free(&G1);
 
     return retVal;
+}
+
+/****************************************************************************
+ addParallelEdges()
+ Adds three parallel edges to every edge of theGraph. For each vertex v, the
+ higher numbered neighbors of v are stacked, and then each is given a second
+ edge attached on the link[0] side of v's adjacency list. Then the higher
+ numbered neighbors, now including the new edges, are stacked again and each
+ is given another edge attached on the link[1] side. The copies of an edge
+ are thus interleaved with the copies of the other edges at both endpoints.
+ ****************************************************************************/
+int addParallelEdges(graphP theGraph)
+{
+    int origM = gp_GetM(theGraph);
+    int *neighborList = NULL;
+    int v, e, w, link, neighborCount = 0;
+
+    if ((neighborList = (int *)calloc(4 * origM + 1, sizeof(int))) == NULL)
+        return NOTOK;
+
+    for (link = 0; link <= 1; link++)
+    {
+        for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
+        {
+            neighborCount = 0;
+
+            e = gp_GetFirstEdge(theGraph, v);
+            while (gp_IsEdge(theGraph, e))
+            {
+                w = gp_GetNeighbor(theGraph, e);
+                if (w > v)
+                    neighborList[neighborCount++] = w;
+                e = gp_GetNextEdge(theGraph, e);
+            }
+
+            for (int i = 0; i < neighborCount; i++)
+            {
+                w = neighborList[i];
+                if (gp_DynamicAddEdge(theGraph, v, link, w, link) != OK)
+                {
+                    free(neighborList);
+                    return NOTOK;
+                }
+            }
+        }
+    }
+
+    free(neighborList);
+    return gp_GetM(theGraph) == 4 * origM ? OK : NOTOK;
 }
