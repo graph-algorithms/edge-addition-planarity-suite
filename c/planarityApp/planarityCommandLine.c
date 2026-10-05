@@ -1292,38 +1292,6 @@ int runTestAllGraphsTests(void)
         retVal = NOTOK;
     }
 
-    // The same graphs with three parallel edges added to every edge
-    if (runTestAllGraphsTest("-p", "n8.mALL.g6", NULL, addParallelEdges) != OK)
-    {
-        gp_ErrorMessage("Planarity test on all graphs with parallel edges failed.");
-        retVal = NOTOK;
-    }
-    if (runTestAllGraphsTest("-d", "n8.mALL.g6", NULL, addParallelEdges) != OK)
-    {
-        gp_ErrorMessage("Planar graph drawing test on all graphs with parallel edges failed.");
-        retVal = NOTOK;
-    }
-    if (runTestAllGraphsTest("-o", "n8.mALL.g6", NULL, addParallelEdges) != OK)
-    {
-        gp_ErrorMessage("Outerplanarity test on all graphs with parallel edges failed.");
-        retVal = NOTOK;
-    }
-    if (runTestAllGraphsTest("-2", "n8.mALL.g6", NULL, addParallelEdges) != OK)
-    {
-        gp_ErrorMessage("K2,3 homeomorph search test on all graphs with parallel edges failed.");
-        retVal = NOTOK;
-    }
-    if (runTestAllGraphsTest("-3", "n8.mALL.g6", NULL, addParallelEdges) != OK)
-    {
-        gp_ErrorMessage("K3,3 homeomorph search test on all graphs with parallel edges failed.");
-        retVal = NOTOK;
-    }
-    if (runTestAllGraphsTest("-4", "n8.mALL.g6", NULL, addParallelEdges) != OK)
-    {
-        gp_ErrorMessage("K4 homeomorph search test on all graphs with parallel edges failed.");
-        retVal = NOTOK;
-    }
-
     // The same graphs in sparse6 formats
     if (runSparse6TestAllGraphsTests() != OK)
         retVal = NOTOK;
@@ -2682,13 +2650,44 @@ int runParallelEdgeTests(void)
 {
     int retVal = OK;
 
-    gp_Message("Starting Parallel Edge Tests");
+    gp_Message("Starting Parallel Edge Tests\n");
+
+    if (runSingleParallelEdgeTest() != OK)
+        retVal = NOTOK;
 
     if (runManyParallelEdgesTest() != OK)
         retVal = NOTOK;
 
-    if (runSingleParallelEdgeTest() != OK)
+    if (runTestAllGraphsTest("-p", "n8.mALL.g6", NULL, addParallelEdges) != OK)
+    {
+        gp_ErrorMessage("Planarity test on all graphs with parallel edges failed.");
         retVal = NOTOK;
+    }
+    if (runTestAllGraphsTest("-d", "n8.mALL.g6", NULL, addParallelEdges) != OK)
+    {
+        gp_ErrorMessage("Planar graph drawing test on all graphs with parallel edges failed.");
+        retVal = NOTOK;
+    }
+    if (runTestAllGraphsTest("-o", "n8.mALL.g6", NULL, addParallelEdges) != OK)
+    {
+        gp_ErrorMessage("Outerplanarity test on all graphs with parallel edges failed.");
+        retVal = NOTOK;
+    }
+    if (runTestAllGraphsTest("-2", "n8.mALL.g6", NULL, addParallelEdges) != OK)
+    {
+        gp_ErrorMessage("K2,3 homeomorph search test on all graphs with parallel edges failed.");
+        retVal = NOTOK;
+    }
+    if (runTestAllGraphsTest("-3", "n8.mALL.g6", NULL, addParallelEdges) != OK)
+    {
+        gp_ErrorMessage("K3,3 homeomorph search test on all graphs with parallel edges failed.");
+        retVal = NOTOK;
+    }
+    if (runTestAllGraphsTest("-4", "n8.mALL.g6", NULL, addParallelEdges) != OK)
+    {
+        gp_ErrorMessage("K4 homeomorph search test on all graphs with parallel edges failed.");
+        retVal = NOTOK;
+    }
 
     gp_Message("Finished Parallel Edge Tests.\n");
 
