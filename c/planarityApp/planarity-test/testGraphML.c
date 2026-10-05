@@ -27,7 +27,7 @@ typedef struct
 {
     int source;
     int target;
-    int direction;
+    unsigned int direction;
 } GraphMLEdgeExpectation;
 
 typedef struct
@@ -473,8 +473,8 @@ static int runGraphMLRejectTests(void)
         {"truncated key start tag", GRAPHML_ROOT_OPEN "<ke"},
         {"truncated default start tag", GRAPHML_ROOT_OPEN
                                         "<key id='graphflags_zerobasedio' for='graph' "
-                                        "attr.name='graphflags_zerobasedio' attr.type='boolean'><defaul"},
-        {"truncated graph start tag", GRAPHML_ROOT_OPEN "<grap"},
+                                        "attr.name='graphflags_zerobasedio' attr.type='boolean'><defaul"}, // codespell:ignore defaul
+        {"truncated graph start tag", GRAPHML_ROOT_OPEN "<grap"}, // codespell:ignore grap
         {"truncated data start tag", GRAPHML_ROOT_OPEN
                                      "<key id='graphflags_zerobasedio' for='graph' "
                                      "attr.name='graphflags_zerobasedio' attr.type='boolean'/>"
@@ -489,9 +489,9 @@ static int runGraphMLRejectTests(void)
         {"truncated default end tag", GRAPHML_ROOT_OPEN
                                       "<key id='graphflags_zerobasedio' for='graph' "
                                       "attr.name='graphflags_zerobasedio' attr.type='boolean'>"
-                                      "<default>true</defaul"},
+                                      "<default>true</defaul"}, // codespell:ignore defaul
         {"truncated graph end tag", GRAPHML_ROOT_OPEN GRAPHML_GRAPH_OPEN
-                                    GRAPHML_VALID_BODY "</grap"},
+                                    GRAPHML_VALID_BODY "</grap"}, // codespell:ignore grap
         {"truncated data end tag", GRAPHML_ROOT_OPEN
                                    "<key id='graphflags_zerobasedio' for='graph' "
                                    "attr.name='graphflags_zerobasedio' attr.type='boolean'/>"
