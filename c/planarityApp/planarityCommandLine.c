@@ -34,7 +34,7 @@ int runHideRestoreTests(void);
 int runIdentifyContractTests(void);
 int runSpecificGraphTest(char const *command, char const *infileName, int inputInMemFlag);
 int runGraphTransformationTest(char const *command, char const *infileName, int inputInMemFlag);
-int runTestAllGraphsTest(char const *commandString, char const *infileName, char const *expectedValidationStr);
+int runTestAllGraphsTest(char const *commandString, char const *infileName, char const *expectedValidationStr, int (*mutatorFunc)(graphP));
 int runHideRestoreTest(graphP theGraph);
 int runIdentifyContractTest(graphP theGraph);
 int runSparse6ReadTests(void);
@@ -51,6 +51,7 @@ int runDigraphTests(void);
 int runParallelEdgeTests(void);
 int runManyParallelEdgesTest(void);
 int runSingleParallelEdgeTest(void);
+int addParallelEdges(graphP theGraph);
 int runDrawPlanarNonplanarWriteTest(void);
 int runReadErrorTests(void);
 int runReadWithExtensionAtEofTest(void);
@@ -387,13 +388,13 @@ int runRandomGraphsTests(void)
     gp_Message("Starting Random Graph Tests");
     platform_GetTime(start);
 
-    if (RandomGraphs("-p", 1000, 20, NULL, TRUE, FALSE) != OK)
+    if (RandomGraphs("-p", 1000, 20, NULL, TRUE, FALSE, NULL) != OK)
     {
         gp_ErrorMessage("gp_CreateRandomGraph() test failed.");
         retVal = NOTOK;
     }
 
-    if (RandomGraphs("-p", 1000, 20, NULL, TRUE, TRUE) != OK)
+    if (RandomGraphs("-p", 1000, 20, NULL, TRUE, TRUE, NULL) != OK)
     {
         gp_ErrorMessage("gp_CreateRandomGraphEx() test failed.");
         retVal = NOTOK;
@@ -1258,32 +1259,32 @@ int runTestAllGraphsTests(void)
     int retVal = OK;
 
     // Run TestAllGraphs Tests
-    if (runTestAllGraphsTest("-p", "n8.mALL.g6", NULL) != OK)
+    if (runTestAllGraphsTest("-p", "n8.mALL.g6", NULL, NULL) != OK)
     {
         gp_ErrorMessage("Planarity test on all graphs failed.");
         retVal = NOTOK;
     }
-    if (runTestAllGraphsTest("-d", "n8.mALL.g6", NULL) != OK)
+    if (runTestAllGraphsTest("-d", "n8.mALL.g6", NULL, NULL) != OK)
     {
         gp_ErrorMessage("Planar graph drawing test on all graphs failed.");
         retVal = NOTOK;
     }
-    if (runTestAllGraphsTest("-o", "n8.mALL.g6", NULL) != OK)
+    if (runTestAllGraphsTest("-o", "n8.mALL.g6", NULL, NULL) != OK)
     {
         gp_ErrorMessage("Outerplanarity test on all graphs failed.");
         retVal = NOTOK;
     }
-    if (runTestAllGraphsTest("-2", "n8.mALL.g6", NULL) != OK)
+    if (runTestAllGraphsTest("-2", "n8.mALL.g6", NULL, NULL) != OK)
     {
         gp_ErrorMessage("K2,3 homeomorph search test on all graphs failed.");
         retVal = NOTOK;
     }
-    if (runTestAllGraphsTest("-3", "n8.mALL.g6", NULL) != OK)
+    if (runTestAllGraphsTest("-3", "n8.mALL.g6", NULL, NULL) != OK)
     {
         gp_ErrorMessage("K3,3 homeomorph search test on all graphs failed.");
         retVal = NOTOK;
     }
-    if (runTestAllGraphsTest("-4", "n8.mALL.g6", NULL) != OK)
+    if (runTestAllGraphsTest("-4", "n8.mALL.g6", NULL, NULL) != OK)
     {
         gp_ErrorMessage("K4 homeomorph search test on all graphs failed.");
         retVal = NOTOK;
@@ -1655,7 +1656,7 @@ int runIdentifyContractTest(graphP theGraph)
     return Result;
 }
 
-int runTestAllGraphsTest(char const *commandString, char const *infileName, char const *expectedValidationStr)
+int runTestAllGraphsTest(char const *commandString, char const *infileName, char const *expectedValidationStr, int (*mutatorFunc)(graphP))
 {
     char *outputStr = NULL;
     int Result = OK;
@@ -1668,7 +1669,7 @@ int runTestAllGraphsTest(char const *commandString, char const *infileName, char
         return NOTOK;
     }
 
-    Result = TestAllGraphs(commandString, infileName, NULL, &outputStr);
+    Result = TestAllGraphs(commandString, infileName, NULL, &outputStr, mutatorFunc);
 
     if (Result == OK && expectedValidationStr != NULL)
     {
@@ -1972,7 +1973,7 @@ int callRandomGraphs(int argc, char *argv[])
     if (argc == (6 + offset))
         outfileName = argv[5 + offset];
 
-    return RandomGraphs(commandString, NumGraphs, SizeOfGraphs, outfileName, FALSE, FALSE);
+    return RandomGraphs(commandString, NumGraphs, SizeOfGraphs, outfileName, FALSE, FALSE, NULL);
 }
 
 /****************************************************************************
@@ -2149,7 +2150,7 @@ int callTestAllGraphs(int argc, char *argv[])
     outfileName = argv[4 + offset];
 
     // NOTE: We don't want to write to string, so pOutputStr is NULL
-    return TestAllGraphs(commandString, infileName, outfileName, NULL);
+    return TestAllGraphs(commandString, infileName, outfileName, NULL, NULL);
 }
 
 /********************************************************************
@@ -2599,13 +2600,120 @@ int runParallelEdgeTests(void)
 {
     int retVal = OK;
 
-    gp_Message("Starting Parallel Edge Tests");
+    gp_Message("Starting Parallel Edge Tests\n");
+
+    if (runSingleParallelEdgeTest() != OK)
+        retVal = NOTOK;
 
     if (runManyParallelEdgesTest() != OK)
         retVal = NOTOK;
 
-    if (runSingleParallelEdgeTest() != OK)
+    if (runTestAllGraphsTest("-p", "n8.mALL.g6", NULL, addParallelEdges) != OK)
+    {
+        gp_ErrorMessage("Planarity test on all graphs with parallel edges failed.");
         retVal = NOTOK;
+    }
+    if (runTestAllGraphsTest("-d", "n8.mALL.g6", NULL, addParallelEdges) != OK)
+    {
+        gp_ErrorMessage("Planar graph drawing test on all graphs with parallel edges failed.");
+        retVal = NOTOK;
+    }
+    if (runTestAllGraphsTest("-o", "n8.mALL.g6", NULL, addParallelEdges) != OK)
+    {
+        gp_ErrorMessage("Outerplanarity test on all graphs with parallel edges failed.");
+        retVal = NOTOK;
+    }
+    if (runTestAllGraphsTest("-2", "n8.mALL.g6", NULL, addParallelEdges) != OK)
+    {
+        gp_ErrorMessage("K2,3 homeomorph search test on all graphs with parallel edges failed.");
+        retVal = NOTOK;
+    }
+    if (runTestAllGraphsTest("-3", "n8.mALL.g6", NULL, addParallelEdges) != OK)
+    {
+        gp_ErrorMessage("K3,3 homeomorph search test on all graphs with parallel edges failed.");
+        retVal = NOTOK;
+    }
+    if (runTestAllGraphsTest("-4", "n8.mALL.g6", NULL, addParallelEdges) != OK)
+    {
+        gp_ErrorMessage("K4 homeomorph search test on all graphs with parallel edges failed.");
+        retVal = NOTOK;
+    }
+
+    gp_Message("Testing random graphs with parallel edges added.");
+
+    if (RandomGraphs("-p", 500, 16, NULL, TRUE, FALSE, addParallelEdges) != OK)
+    {
+        gp_ErrorMessage("gp_CreateRandomGraph() test failed.");
+        retVal = NOTOK;
+    }
+
+    if (RandomGraphs("-p", 500, 16, NULL, TRUE, TRUE, addParallelEdges) != OK)
+    {
+        gp_ErrorMessage("gp_CreateRandomGraphEx() test failed.");
+        retVal = NOTOK;
+    }
+
+    if (RandomGraphs("-d", 500, 16, NULL, TRUE, FALSE, addParallelEdges) != OK)
+    {
+        gp_ErrorMessage("gp_CreateRandomGraph() test failed.");
+        retVal = NOTOK;
+    }
+
+    if (RandomGraphs("-d", 500, 16, NULL, TRUE, TRUE, addParallelEdges) != OK)
+    {
+        gp_ErrorMessage("gp_CreateRandomGraphEx() test failed.");
+        retVal = NOTOK;
+    }
+
+    if (RandomGraphs("-o", 500, 16, NULL, TRUE, FALSE, addParallelEdges) != OK)
+    {
+        gp_ErrorMessage("gp_CreateRandomGraph() test failed.");
+        retVal = NOTOK;
+    }
+
+    if (RandomGraphs("-o", 500, 16, NULL, TRUE, TRUE, addParallelEdges) != OK)
+    {
+        gp_ErrorMessage("gp_CreateRandomGraphEx() test failed.");
+        retVal = NOTOK;
+    }
+
+    if (RandomGraphs("-2", 500, 16, NULL, TRUE, FALSE, addParallelEdges) != OK)
+    {
+        gp_ErrorMessage("gp_CreateRandomGraph() test failed.");
+        retVal = NOTOK;
+    }
+
+    if (RandomGraphs("-2", 500, 16, NULL, TRUE, TRUE, addParallelEdges) != OK)
+    {
+        gp_ErrorMessage("gp_CreateRandomGraphEx() test failed.");
+        retVal = NOTOK;
+    }
+
+    if (RandomGraphs("-3", 500, 16, NULL, TRUE, FALSE, addParallelEdges) != OK)
+    {
+        gp_ErrorMessage("gp_CreateRandomGraph() test failed.");
+        retVal = NOTOK;
+    }
+
+    if (RandomGraphs("-3", 500, 16, NULL, TRUE, TRUE, addParallelEdges) != OK)
+    {
+        gp_ErrorMessage("gp_CreateRandomGraphEx() test failed.");
+        retVal = NOTOK;
+    }
+
+    if (RandomGraphs("-4", 500, 16, NULL, TRUE, FALSE, addParallelEdges) != OK)
+    {
+        gp_ErrorMessage("gp_CreateRandomGraph() test failed.");
+        retVal = NOTOK;
+    }
+
+    if (RandomGraphs("-4", 500, 16, NULL, TRUE, TRUE, addParallelEdges) != OK)
+    {
+        gp_ErrorMessage("gp_CreateRandomGraphEx() test failed.");
+        retVal = NOTOK;
+    }
+
+    gp_Message("Finished testing random graphs with parallel edges added.");
 
     gp_Message("Finished Parallel Edge Tests.\n");
 
@@ -2616,8 +2724,7 @@ int runManyParallelEdgesTest(void)
 {
     int retVal = OK;
     graphP G = gp_New();
-    graphP G1 = NULL;
-    unsigned quietModeCache;
+    graphP G1 = NULL, G2 = NULL;
 
     if (G == NULL)
         return NOTOK;
@@ -2638,25 +2745,60 @@ int runManyParallelEdgesTest(void)
 
     if (retVal == OK)
     {
-        quietModeCache = gp_GetQuietMode();
-        gp_SetQuietMode(QUIETMODE_ALL);
-
-        if (gp_DepthFirstSearch(G1) == OK)
+        // The DFS and the embedders accept the parallel edges
+        if (gp_DepthFirstSearch(G1) != OK)
             retVal = NOTOK;
-        else if (gp_ComputeLowpoints(G1) == OK)
+        else if ((G2 = gp_DupGraph(G)) == NULL)
             retVal = NOTOK;
-        else if (gp_ComputeLeastAncestors(G1) == OK)
+        else if (gp_Embed(G2, EMBEDFLAGS_PLANAR) != NONEMBEDDABLE)
             retVal = NOTOK;
-        else if (gp_Embed(G1, EMBEDFLAGS_PLANAR) == OK)
+        else if (gp_TestEmbedResultIntegrity(G2, G, NONEMBEDDABLE) != NONEMBEDDABLE)
             retVal = NOTOK;
-
-        gp_SetQuietMode(quietModeCache);
+        else
+        {
+            gp_Free(&G2);
+            if ((G2 = gp_DupGraph(G)) == NULL)
+                retVal = NOTOK;
+            else if (gp_ExtendWith_K33Search(G2) != OK)
+                retVal = NOTOK;
+            else if (gp_Embed(G2, EMBEDFLAGS_SEARCHFORK33) != NONEMBEDDABLE)
+                retVal = NOTOK;
+            else if (gp_TestEmbedResultIntegrity(G2, G, NONEMBEDDABLE) != NONEMBEDDABLE)
+                retVal = NOTOK;
+        }
     }
 
     if (retVal == OK)
     {
-        // Delete parallel edges and verify exact 15-edge state
-        if (gp_DeleteParallelEdges(G1) != OK)
+        // The adjacency list format preserves the parallel edges
+        char *adjListStr = NULL;
+
+        gp_Free(&G1);
+        if (gp_WriteToString(G, &adjListStr, WRITE_ADJLIST) != OK)
+            retVal = NOTOK;
+        else if ((G1 = gp_New()) == NULL)
+            retVal = NOTOK;
+        else if (gp_ReadFromString(G1, adjListStr) != OK)
+            retVal = NOTOK;
+        else if (!(G1->graphFlags & GRAPHFLAGS_PARALLELEDGEDETECTED))
+            retVal = NOTOK;
+        else if (gp_GetM(G1) != 60)
+            retVal = NOTOK;
+        else if (gp_DeleteParallelEdges(G1) != OK || gp_GetM(G1) != 15)
+            retVal = NOTOK;
+
+        if (adjListStr != NULL)
+            free(adjListStr);
+    }
+
+    if (retVal == OK)
+    {
+        // Delete parallel edges from a fresh copy and verify exact 15-edge state
+        gp_Free(&G1);
+        if ((G1 = gp_DupGraph(G)) == NULL)
+            retVal = NOTOK;
+
+        else if (gp_DeleteParallelEdges(G1) != OK)
             retVal = NOTOK;
 
         else if (G1->graphFlags & GRAPHFLAGS_PARALLELEDGEDETECTED)
@@ -2675,6 +2817,7 @@ int runManyParallelEdgesTest(void)
 
     gp_Free(&G);
     gp_Free(&G1);
+    gp_Free(&G2);
 
     return retVal;
 }
@@ -2686,6 +2829,8 @@ int runManyParallelEdgesTest(void)
 // Ensure that one edge has shown up, that vertices
 //     1 and 2 report being degree 4, and that the
 //     parallel edge is now set.
+// Ensure a copy of the graph still supports the DFS
+//     utilities and is still correctly found nonplanar
 // Call the method that deletes the parallel edges
 // Ensure that the parallel edge flag is cleared
 // Ensure that the number of edges goes down by 1.
@@ -2694,6 +2839,7 @@ int runSingleParallelEdgeTest(void)
 {
     int retVal = OK;
     graphP G = gp_New();
+    graphP G1 = NULL;
 
     if (G == NULL)
         retVal = NOTOK;
@@ -2716,6 +2862,18 @@ int runSingleParallelEdgeTest(void)
     else if (!(G->graphFlags & GRAPHFLAGS_PARALLELEDGEDETECTED))
         retVal = NOTOK;
 
+    else if ((G1 = gp_DupGraph(G)) == NULL)
+        retVal = NOTOK;
+
+    else if (gp_DepthFirstSearch(G1) != OK || gp_ComputeLowpoints(G1) != OK || gp_ComputeLeastAncestors(G1) != OK)
+        retVal = NOTOK;
+
+    else if (gp_Embed(G1, EMBEDFLAGS_PLANAR) != NONEMBEDDABLE)
+        retVal = NOTOK;
+
+    else if (gp_TestEmbedResultIntegrity(G1, G, NONEMBEDDABLE) != NONEMBEDDABLE)
+        retVal = NOTOK;
+
     else if (gp_DeleteParallelEdges(G) != OK)
         retVal = NOTOK;
 
@@ -2729,6 +2887,56 @@ int runSingleParallelEdgeTest(void)
         retVal = NOTOK;
 
     gp_Free(&G);
+    gp_Free(&G1);
 
     return retVal;
+}
+
+/****************************************************************************
+ addParallelEdges()
+ Adds three parallel edges to every edge of theGraph. For each vertex v, the
+ higher numbered neighbors of v are stacked, and then each is given a second
+ edge attached on the link[0] side of v's adjacency list. Then the higher
+ numbered neighbors, now including the new edges, are stacked again and each
+ is given another edge attached on the link[1] side. The copies of an edge
+ are thus interleaved with the copies of the other edges at both endpoints.
+ ****************************************************************************/
+int addParallelEdges(graphP theGraph)
+{
+    int origM = gp_GetM(theGraph);
+    int *neighborList = NULL;
+    int v, e, w, link, neighborCount = 0;
+
+    if ((neighborList = (int *)calloc(4 * origM + 1, sizeof(int))) == NULL)
+        return NOTOK;
+
+    for (link = 0; link <= 1; link++)
+    {
+        for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
+        {
+            neighborCount = 0;
+
+            e = gp_GetFirstEdge(theGraph, v);
+            while (gp_IsEdge(theGraph, e))
+            {
+                w = gp_GetNeighbor(theGraph, e);
+                if (w > v)
+                    neighborList[neighborCount++] = w;
+                e = gp_GetNextEdge(theGraph, e);
+            }
+
+            for (int i = 0; i < neighborCount; i++)
+            {
+                w = neighborList[i];
+                if (gp_DynamicAddEdge(theGraph, v, link, w, link) != OK)
+                {
+                    free(neighborList);
+                    return NOTOK;
+                }
+            }
+        }
+    }
+
+    free(neighborList);
+    return gp_GetM(theGraph) == 4 * origM ? OK : NOTOK;
 }

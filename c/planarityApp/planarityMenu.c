@@ -143,7 +143,7 @@ int menu(void)
                         Result = SpecificGraph(commandString, NULL, NULL, secondOutfile, NULL, NULL, NULL);
                         break;
                     case 'r':
-                        Result = RandomGraphs(commandString, 0, 0, NULL, FALSE, FALSE);
+                        Result = RandomGraphs(commandString, 0, 0, NULL, FALSE, FALSE, NULL);
                         break;
                     case 'm':
                         Result = RandomGraph(commandString, 0, 0, NULL, NULL);
@@ -474,7 +474,7 @@ int TestAllGraphsMenu(void)
     }
 
     if (Result == OK)
-        Result = TestAllGraphs(commandString, infileName, outfileName, NULL);
+        Result = TestAllGraphs(commandString, infileName, outfileName, NULL, NULL);
 
     if (commandStringFormat != NULL)
     {

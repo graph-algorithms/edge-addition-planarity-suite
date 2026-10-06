@@ -17,7 +17,7 @@ typedef struct
 
 typedef testAllStats *testAllStatsP;
 
-int testAllGraphs(char command, char modifier, char const *const infileName, testAllStatsP stats);
+int testAllGraphs(char command, char modifier, char const *const infileName, int (*mutatorFunc)(graphP), testAllStatsP stats);
 int outputTestAllGraphsResults(char command, char modifier, testAllStatsP stats, char const *const infileName, char *outfileName, char **pOutputStr);
 
 // #define TESTALLGRAPHS_MEMORY_TIMING_TEST
@@ -28,14 +28,17 @@ int testAllGraphsN8(char command, char modifier, char const *const infileName, t
 
 /****************************************************************************
  TestAllGraphs()
- commandString - command to run; e.g.`-(pdo234)` (plus optional modifier
+  commandString - command to run; e.g.`-(pdo234)` (plus optional modifier
     character) to perform the corresponding algorithm on each graph in .g6 file
- infileName - non-NULL and nonempty string containing name of .g6 input file
+ infileName - non-NULL and nonempty string containing name of the input file
  outfileName - name of primary output file, or NULL
- pOutputStr - pointer to string which we wish to use to store the result of
-    applying the chosen graph algorithm extension to all graphs in the .g6 file
+ pOutputStr - pointer to a string in which to store the result of applying
+    the chosen graph algorithm extension to all graphs in the input file
+ mutatorFunc - NULL or function pointer to a function that performs
+    operations on each graph of the input file before applying the
+    chosen algorithm. Mutations may be adding parallel edges, loops, etc.
  ****************************************************************************/
-int TestAllGraphs(char const *const commandString, char const *const infileName, char *outfileName, char **pOutputStr)
+int TestAllGraphs(char const *const commandString, char const *const infileName, char *outfileName, char **pOutputStr, int (*mutatorFunc)(graphP))
 {
     int Result = OK;
 
@@ -65,7 +68,7 @@ int TestAllGraphs(char const *const commandString, char const *const infileName,
     platform_GetTime(start);
 
 #ifndef TESTALLGRAPHS_MEMORY_TIMING_TEST
-    Result = testAllGraphs(command, modifier, infileName, &stats);
+    Result = testAllGraphs(command, modifier, infileName, mutatorFunc, &stats);
 #else
     Result = testAllGraphsN8(command, modifier, infileName, &stats);
 #endif
@@ -97,7 +100,7 @@ int TestAllGraphs(char const *const commandString, char const *const infileName,
     return Result;
 }
 
-int testAllGraphs(char command, char modifier, char const *const infileName, testAllStatsP stats)
+int testAllGraphs(char command, char modifier, char const *const infileName, int (*mutatorFunc)(graphP), testAllStatsP stats)
 {
     int Result = OK;
 
@@ -172,6 +175,13 @@ int testAllGraphs(char command, char modifier, char const *const infileName, tes
             break;
 
         lineNum++;
+
+        if (mutatorFunc != NULL && mutatorFunc(origGraphRead) != OK)
+        {
+            gp_ErrorMessage("Unable to perform required mutation of graph on line %d.", lineNum);
+            Result = NOTOK;
+            break;
+        }
 
         if (gp_CopyGraph(graphForEmbedding, origGraphRead) != OK)
         {

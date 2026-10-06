@@ -23,7 +23,8 @@ int PromptSaveGraph(graphP theGraph, graphP origGraph, int extraEdges, int saveM
 
 #define NUM_MINORS 9
 
-int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraphs, char *outfileName, int forceQuiet, int useExGenerator)
+int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraphs, char *outfileName,
+                 int forceQuiet, int useExGenerator, int (*mutatorFunc)(graphP))
 {
     int savedQuietModeSetting = gp_GetQuietMode();
     int Result = OK;
@@ -172,6 +173,16 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
             Result = gp_CreateRandomGraphEx(theGraph, gp_GetRandomNumber(gp_GetN(theGraph), gp_GetEdgeCapacity(theGraph)));
         else
             Result = gp_CreateRandomGraph(theGraph);
+
+        if (Result == OK)
+        {
+            if (mutatorFunc != NULL && mutatorFunc(theGraph) != OK)
+            {
+                gp_ErrorMessage("Unable to perform required mutation of graph.");
+                Result = NOTOK;
+                break;
+            }
+        }
 
         if (Result == OK)
         {
