@@ -111,12 +111,6 @@ int gp_Embed(graphP theGraph, unsigned embedFlags)
     if (theGraph == NULL || embedFlags == 0 || gp_GetEmbedFlags(theGraph) != 0)
         return NOTOK;
 
-    if (theGraph->graphFlags & GRAPHFLAGS_PARALLELEDGEDETECTED)
-    {
-        gp_ErrorMessage("Parallel edges were previously added to the graph. See gp_DeleteParallelEdges().");
-        return NOTOK;
-    }
-
     // Preprocessing
     if (!_gp_EmbedFlagsValid(theGraph, embedFlags))
     {
@@ -151,25 +145,38 @@ int gp_Embed(graphP theGraph, unsigned embedFlags)
     {
         RetVal = OK;
 
-        // Walkup calls establish Pertinence in Step v
-        // Do the Walkup for each cycle edge from v to a DFS descendant W.
+        // WalkUp calls establish Pertinence in Step v
+        // Do the WalkUp for each back edge from v to a DFS descendant W.
         e = gp_GetVertexFwdEdgeList(theGraph, v);
-        while (gp_IsEdge(theGraph, e))
+        if (gp_IsEdge(theGraph, e))
         {
-            theGraph->functions->fpWalkUp(theGraph, v, e);
+            do
+            {
+                // Forward edges parallel to one another are consecutive in the list, so only
+                // the first of them needs a WalkUp. The WalkUp records it as pertinent,
+                // after which we can avoid calling WalkUp again for the same vertex.
+                if (gp_IsNotEdge(theGraph, gp_GetVertexPertinentEdge(theGraph, gp_GetNeighbor(theGraph, e))))
+                    theGraph->functions->fpWalkUp(theGraph, v, e);
 
-            e = gp_GetNextEdge(theGraph, e);
-            if (e == gp_GetVertexFwdEdgeList(theGraph, v))
-                e = NIL;
+                // Get the next edge in the
+                e = gp_GetNextEdge(theGraph, e);
+            } while (e != gp_GetVertexFwdEdgeList(theGraph, v));
         }
+
+        // For speed, the Walkup records the pertinent child bicomps of v itself,
+        // but WalkDown is only intended to merge the pertinent child bicomps of
+        // the descendants of v, so we clear the setting for v here.
         gp_SetVertexPertinentRootsList(theGraph, v, NIL);
 
-        // Work systematically through the DFS children of vertex v, using Walkdown
+        // Work systematically through the DFS children of vertex v, using WalkDown
         // to add the back edges from v to its descendants in each of the DFS subtrees
         c = gp_GetVertexSortedDFSChildList(theGraph, v);
         while (gp_IsVertex(theGraph, c))
         {
-            if (gp_IsVertex(theGraph, gp_GetVertexPertinentRootsList(theGraph, c)))
+            // The child c is pertinent if a descendant of c is pertinent or if c itself is
+            // the descendant endpoint of a forward edge (one parallel to the DFS tree edge)
+            if (gp_IsVertex(theGraph, gp_GetVertexPertinentRootsList(theGraph, c)) ||
+                gp_IsEdge(theGraph, gp_GetVertexPertinentEdge(theGraph, c)))
             {
                 RetVal = theGraph->functions->fpWalkDown(theGraph, v, gp_GetBicompRootFromDFSChild(theGraph, c));
                 // If Walkdown returns OK, then it is OK to proceed with edge addition.
@@ -1258,7 +1265,7 @@ void _WalkUp(graphP theGraph, int v, int e)
 
 int _WalkDown(graphP theGraph, int v, int RootVertex)
 {
-    int RetVal, W, WPrevLink, R, X, XPrevLink, Y, YPrevLink, RootSide, e;
+    int RetVal, W, WPrevLink, R, X, XPrevLink, Y, YPrevLink, RootSide, e, eNext;
     int RootEdgeChild = gp_GetDFSChildFromBicompRoot(theGraph, RootVertex);
 
     sp_ClearStack(theGraph->theStack);
@@ -1277,7 +1284,7 @@ int _WalkDown(graphP theGraph, int v, int RootVertex)
         while (W != RootVertex)
         {
             // Detect unembedded back edge descendant endpoint W
-            if (gp_IsEdge(theGraph, gp_GetVertexPertinentEdge(theGraph, W)))
+            if (gp_IsEdge(theGraph, e = gp_GetVertexPertinentEdge(theGraph, W)))
             {
                 // Merge any bicomps whose cut vertices were traversed to reach W, then add the
                 // edge to W to form a new proper face in the embedding.
@@ -1286,7 +1293,26 @@ int _WalkDown(graphP theGraph, int v, int RootVertex)
                     if ((RetVal = theGraph->functions->fpMergeBicomps(theGraph, v, RootVertex, W, WPrevLink)) != OK)
                         return RetVal;
                 }
+
+                // Embed the edge to W and any edges parallel to it. The forward edges from
+                // v to W are consecutive in the forward edge list of v, and the WalkUp recorded
+                // the first of them in W, so embed forward edges until the next forward edge
+                // leads to a different descendant (or no forward edges remain).
+                eNext = gp_GetNextEdge(theGraph, e);
                 theGraph->functions->fpEmbedBackEdgeToDescendant(theGraph, RootSide, RootVertex, W, WPrevLink);
+                while (eNext != e && gp_GetNeighbor(theGraph, eNext) == W)
+                {
+                    // Need to grab the next eNext while e=eNext is still in the sorted
+                    // VertexFwdEdgeList because, after embedding, e=eNext will have a
+                    // different next edge (the one in the embedding). Same reason why,
+                    // above this while loop, we grabbed eNext from e before calling
+                    // fpEmbedBackEdgeToDescendant
+                    e = eNext;
+                    eNext = gp_GetNextEdge(theGraph, e);
+
+                    gp_SetVertexPertinentEdge(theGraph, W, e);
+                    theGraph->functions->fpEmbedBackEdgeToDescendant(theGraph, RootSide, RootVertex, W, WPrevLink);
+                }
 
                 // Clear W's pertinentEdge since the forward edge record it contained has been embedded
                 gp_SetVertexPertinentEdge(theGraph, W, NIL);
@@ -1371,8 +1397,14 @@ int _WalkDown(graphP theGraph, int v, int RootVertex)
                         W = gp_GetExtFaceVertex(theGraph, W, WPrevLink);
                         WPrevLink = gp_GetExtFaceVertex(theGraph, W, 0) == X ? 1 : 0;
                     }
-                    gp_SetExtFaceVertex(theGraph, RootVertex, RootSide, W);
-                    gp_SetExtFaceVertex(theGraph, W, WPrevLink, RootVertex);
+                    // If the bicomp consists only of the root edge and edges parallel to it, then
+                    // pushing W back one vertex arrives at RootVertex, and the two-vertex external
+                    // face is unavoidable (and no short-circuit is needed).
+                    if (W != RootVertex)
+                    {
+                        gp_SetExtFaceVertex(theGraph, RootVertex, RootSide, W);
+                        gp_SetExtFaceVertex(theGraph, W, WPrevLink, RootVertex);
+                    }
 
                     // Terminate the Walkdown traversal since it encountered the stopping vertex
                     break;
