@@ -390,13 +390,13 @@ int runRandomGraphsTests(void)
     gp_Message("Starting Random Graph Tests");
     platform_GetTime(start);
 
-    if (RandomGraphs("-p", 1000, 20, NULL, TRUE, FALSE) != OK)
+    if (RandomGraphs("-p", 1000, 20, NULL, TRUE, FALSE, NULL) != OK)
     {
         gp_ErrorMessage("gp_CreateRandomGraph() test failed.");
         retVal = NOTOK;
     }
 
-    if (RandomGraphs("-p", 1000, 20, NULL, TRUE, TRUE) != OK)
+    if (RandomGraphs("-p", 1000, 20, NULL, TRUE, TRUE, NULL) != OK)
     {
         gp_ErrorMessage("gp_CreateRandomGraphEx() test failed.");
         retVal = NOTOK;
@@ -1975,7 +1975,7 @@ int callRandomGraphs(int argc, char *argv[])
     if (argc == (6 + offset))
         outfileName = argv[5 + offset];
 
-    return RandomGraphs(commandString, NumGraphs, SizeOfGraphs, outfileName, FALSE, FALSE);
+    return RandomGraphs(commandString, NumGraphs, SizeOfGraphs, outfileName, FALSE, FALSE, NULL);
 }
 
 /****************************************************************************
@@ -2688,6 +2688,82 @@ int runParallelEdgeTests(void)
         gp_ErrorMessage("K4 homeomorph search test on all graphs with parallel edges failed.");
         retVal = NOTOK;
     }
+
+    gp_Message("Testing random graphs with parallel edges added.");
+
+    if (RandomGraphs("-p", 500, 16, NULL, TRUE, FALSE, addParallelEdges) != OK)
+    {
+        gp_ErrorMessage("gp_CreateRandomGraph() test failed.");
+        retVal = NOTOK;
+    }
+
+    if (RandomGraphs("-p", 500, 16, NULL, TRUE, TRUE, addParallelEdges) != OK)
+    {
+        gp_ErrorMessage("gp_CreateRandomGraphEx() test failed.");
+        retVal = NOTOK;
+    }
+
+    if (RandomGraphs("-d", 500, 16, NULL, TRUE, FALSE, addParallelEdges) != OK)
+    {
+        gp_ErrorMessage("gp_CreateRandomGraph() test failed.");
+        retVal = NOTOK;
+    }
+
+    if (RandomGraphs("-d", 500, 16, NULL, TRUE, TRUE, addParallelEdges) != OK)
+    {
+        gp_ErrorMessage("gp_CreateRandomGraphEx() test failed.");
+        retVal = NOTOK;
+    }
+
+    if (RandomGraphs("-o", 500, 16, NULL, TRUE, FALSE, addParallelEdges) != OK)
+    {
+        gp_ErrorMessage("gp_CreateRandomGraph() test failed.");
+        retVal = NOTOK;
+    }
+
+    if (RandomGraphs("-o", 500, 16, NULL, TRUE, TRUE, addParallelEdges) != OK)
+    {
+        gp_ErrorMessage("gp_CreateRandomGraphEx() test failed.");
+        retVal = NOTOK;
+    }
+
+    if (RandomGraphs("-2", 500, 16, NULL, TRUE, FALSE, addParallelEdges) != OK)
+    {
+        gp_ErrorMessage("gp_CreateRandomGraph() test failed.");
+        retVal = NOTOK;
+    }
+
+    if (RandomGraphs("-2", 500, 16, NULL, TRUE, TRUE, addParallelEdges) != OK)
+    {
+        gp_ErrorMessage("gp_CreateRandomGraphEx() test failed.");
+        retVal = NOTOK;
+    }
+
+    if (RandomGraphs("-3", 500, 16, NULL, TRUE, FALSE, addParallelEdges) != OK)
+    {
+        gp_ErrorMessage("gp_CreateRandomGraph() test failed.");
+        retVal = NOTOK;
+    }
+
+    if (RandomGraphs("-3", 500, 16, NULL, TRUE, TRUE, addParallelEdges) != OK)
+    {
+        gp_ErrorMessage("gp_CreateRandomGraphEx() test failed.");
+        retVal = NOTOK;
+    }
+
+    if (RandomGraphs("-4", 500, 16, NULL, TRUE, FALSE, addParallelEdges) != OK)
+    {
+        gp_ErrorMessage("gp_CreateRandomGraph() test failed.");
+        retVal = NOTOK;
+    }
+
+    if (RandomGraphs("-4", 500, 16, NULL, TRUE, TRUE, addParallelEdges) != OK)
+    {
+        gp_ErrorMessage("gp_CreateRandomGraphEx() test failed.");
+        retVal = NOTOK;
+    }
+
+    gp_Message("Finished testing random graphs with parallel edges added.");
 
     gp_Message("Finished Parallel Edge Tests.\n");
 

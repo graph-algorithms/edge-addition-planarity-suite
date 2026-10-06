@@ -1799,7 +1799,7 @@ static int runSparse6LookaheadLockstepTest(char const *s6FileName, int inputInMe
     }
 
     if (Result == OK)
-        gp_Message("Lookahead over the %d graphs in \"%s\" (read %s, %s "
+        gp_Message("Lookahead on the %d graphs in \"%s\" (read %s, %s "
                    "retrieval) matches the reader without it.",
                    numGraphs, s6FileName, inputInMemFlag ? "from a string" : "from the file",
                    partial ? "partial" : "full");
