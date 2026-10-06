@@ -294,6 +294,22 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
                     gp_SetNextEdge(theGraph, gp_GetPrevEdge(theGraph, e), gp_GetNextEdge(theGraph, e));
 
                     gp_AttachFirstEdge(theGraph, v, e);
+
+                    // If W is adjacent to v by parallel edges, then the index of W
+                    // must now refer to the next of the remaining edge records to W
+                    // in adjList, so that each repeat of W in the adjacency list of
+                    // v is matched to a distinct edge record
+                    e = adjList;
+                    while (gp_IsEdge(theGraph, e))
+                    {
+                        if (gp_GetNeighbor(theGraph, e) == W)
+                        {
+                            gp_SetIndex(theGraph, W, e);
+                            break;
+                        }
+                        if ((e = gp_GetNextEdge(theGraph, e)) == adjList)
+                            e = NIL;
+                    }
                 }
 
                 // If an adjacency node to the lower numbered vertex W does not
