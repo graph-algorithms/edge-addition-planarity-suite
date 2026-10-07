@@ -379,7 +379,7 @@ int _ReadLEDAGraph(graphP theGraph, strOrFileP inputContainer)
 
     int graphType = 0;
     int N = 0, M = 0, u = NIL, v = NIL;
-    int zeroBasedOffset = (gp_LowerBoundVertexStorage(theGraph) == ( 0 )) ? ( 1 ) : ( 0 );
+    int zeroBasedOffset = (gp_LowerBoundVertexStorage(theGraph) == (0)) ? (1) : (0);
     char Line[MAXLINE + 1];
 
     memset(Line, '\0', (MAXLINE + 1));
@@ -740,12 +740,6 @@ int _WriteAdjMatrix(graphP theGraph, strOrFileP outputContainer)
 
     if (theGraph == NULL || !sf_IsValidStrOrFile(outputContainer))
         return NOTOK;
-    
-    if (theGraph->graphFlags & GRAPHFLAGS_PARALLELEDGEDETECTED)
-    {
-        gp_ErrorMessage("Parallel edges were previously added to the graph. See gp_DeleteParallelEdges().");
-        return NOTOK;
-    }
 
     if (gp_GetGraphFlags(theGraph) & GRAPHFLAGS_DIRECTEDEDGEDETECTED)
     {
@@ -777,10 +771,22 @@ int _WriteAdjMatrix(graphP theGraph, strOrFileP outputContainer)
         while (gp_IsEdge(theGraph, e))
         {
             if (gp_GetDirection(theGraph, e) == EDGEFLAG_DIRECTION_INONLY)
+            {
+                gp_ErrorMessage("Adjacency matrix writer does not support directed graphs.");
+                free(Row);
                 return NOTOK;
+            }
 
             if (gp_GetNeighbor(theGraph, e) > v)
+            {
+                if (Row[gp_GetNeighbor(theGraph, e) - gp_LowerBoundVertices(theGraph)] == '1')
+                {
+                    gp_ErrorMessage("Adjacency matrix writer does not support parallel edges.");
+                    free(Row);
+                    return NOTOK;
+                }
                 Row[gp_GetNeighbor(theGraph, e) - gp_LowerBoundVertices(theGraph)] = '1';
+            }
 
             e = gp_GetNextEdge(theGraph, e);
         }
@@ -790,7 +796,11 @@ int _WriteAdjMatrix(graphP theGraph, strOrFileP outputContainer)
 
         // Write the row to the file or string buffer
         if (sf_fputs(Row, outputContainer) == EOF)
+        {
+            gp_ErrorMessage("Error writing line of adjacency matrix output.");
+            free(Row);
             return NOTOK;
+        }
     }
 
     free(Row);
