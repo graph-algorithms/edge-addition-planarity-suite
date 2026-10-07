@@ -892,6 +892,10 @@ int runSparse6ReadTests(void)
         {":D\n;oN\n", "D?_"},
         {":D\n;oN\n;oN\n", "D??"},
         {":D\n;oN\n:D\n", "D??"},
+        // A pair twice on an incremental line toggles its edge twice, as
+        // nauty's copyg reads it: {0, 4}, then {0, 1}, each added and deleted
+        {":D\n;o?~\n", "D??"},
+        {":D\n;_N\n", "D??"},
     };
 
     // Order 63 uses the four-byte order encoding
@@ -909,21 +913,31 @@ int runSparse6ReadTests(void)
     int const pairsCpJ[][2] = {{1, 2}, {1, 2}};
     int const pairsK2[][2] = {{0, 1}};
 
+    // Incremental lines after a graph with parallel edges toggle in sequence,
+    // each occurrence of a pair deleting one instance of its edge if there is
+    // one and adding the edge otherwise: an empty line keeps both instances of
+    // {0, 1}, and {0, 1} once deletes one; {0, 1} is added to the genrang
+    // graph; the maintainer's example of an edge with 5 instances toggled 3,
+    // 6 and 7 times, which leaves 2, 1 and none; and a line over three runs
+    // (larger endpoints 3, 4 and 5) whose pairs repeat with other pairs
+    // between. nauty's copyg, which takes the previous graph modulo 2, reads
+    // the empty line, the genrang line, the 3 toggles and the three runs
+    // differently, and the others the same.
+    int const pairsGenrangPlus01[][2] = {{0, 1}, {0, 3}, {0, 3}, {2, 3}, {1, 4}, {1, 4}, {2, 4}, {0, 5}, {1, 5}, {2, 5}};
+    int const pairsTwo01[][2] = {{0, 1}, {0, 1}};
+    int const pairsThreeRuns[][2] = {{0, 3}, {2, 4}, {2, 4}, {0, 5}, {1, 5}};
+
     char const *rejectCases[] = {
         // An incremental line cannot be the first graph
         ";oN\n",
         // Loop edge, including on the single vertex of an order-1 graph
-        // (through the zero-width x field)
+        // (through the zero-width x field), and on an incremental line after
+        // a valid pair that shares its larger endpoint or after one that
+        // does not
         ":AF\n",
         ":@?\n",
-        // An incremental line after a graph with parallel edges, even an
-        // empty one, since incremental sparse6 does not support them (nauty's
-        // copyg takes the previous graph modulo 2 and loses edges)
-        ":Ab\n;\n",
-        ":Ab\n;n\n",
-        ":Ek?IPI@J\n;b\n",
-        // and after a pair repeated with another edge between its occurrences
-        ":CWG\n;\n",
+        ":D\n;_^\n",
+        ":D\n;an\n",
         // Bytes outside 63..126 in the edge list. The second and third are
         // chosen so that reading them as data would decode to a valid graph,
         // so they are rejected by the byte range check alone, and the last
@@ -948,10 +962,6 @@ int runSparse6ReadTests(void)
         // cut short
         ":~~?? ???\n",
         ":~~???\n",
-        // An edge twice on an incremental line, which lists each changed
-        // edge once (nauty's copyg toggles it twice, but no nauty tool
-        // writes such a line, and the lookahead could not report it)
-        ":D\n;o?~\n",
         // A later graph of a different order, an empty line, and a line
         // beginning with neither ':' nor ';'
         ":D\n:C\n",
@@ -1013,51 +1023,20 @@ int runSparse6ReadTests(void)
          runSparse6AcceptMultigraphTest(":Ab\n:An\n", 2, pairsK2, 1, FALSE) != OK))
         Result = NOTOK;
 
-    if (Result == OK && runSparse6PetersenMultigraphTest() != OK)
+    // The parallel edge flag is not checked after an incremental line, since
+    // a deletion does not clear it
+    if (Result == OK &&
+        (runSparse6AcceptMultigraphTest(":Ab\n;\n", 2, pairsAb, 2, -1) != OK ||
+         runSparse6AcceptMultigraphTest(":Ab\n;n\n", 2, pairsK2, 1, -1) != OK ||
+         runSparse6AcceptMultigraphTest(":Ek?IPI@J\n;b\n", 6, pairsGenrangPlus01, 10, -1) != OK ||
+         runSparse6AcceptMultigraphTest(":A_B\n;_\n", 2, pairsTwo01, 2, -1) != OK ||
+         runSparse6AcceptMultigraphTest(":A_B\n;_?\n", 2, pairsK2, 1, -1) != OK ||
+         runSparse6AcceptMultigraphTest(":A_B\n;_?N\n", 2, pairsK2, 0, -1) != OK ||
+         runSparse6AcceptMultigraphTest(":Ek?EaIN\n;k@?_IgCN\n", 6, pairsThreeRuns, 5, -1) != OK))
         Result = NOTOK;
 
-    // The reader goes by the ':' line it read, not by the library's parallel
-    // edge flag: a ';' line is applied after a simple graph whose flag is set,
-    // as an insertion refused at the edge capacity leaves it, and refused
-    // after a graph with parallel edges whose flag is clear
-    for (i = 0; Result == OK && i < 2; i++)
-    {
-        char *flagStr = copySparse6TestString(i == 0 ? ":An\n;n\n" : ":Ab\n;\n");
-        graphP flagGraph = gp_New();
-        S6ReadIteratorP flagReader = NULL;
-        int secondRead = NOTOK;
-
-        if (flagStr == NULL || flagGraph == NULL ||
-            s6_NewReader((&flagReader), flagGraph) != OK ||
-            s6_InitReaderWithString(flagReader, flagStr) != OK ||
-            s6_ReadGraph(flagReader) != OK)
-            Result = NOTOK;
-        else
-        {
-            if (i == 0)
-                flagGraph->graphFlags |= GRAPHFLAGS_PARALLELEDGEDETECTED;
-            else
-                flagGraph->graphFlags &= ~GRAPHFLAGS_PARALLELEDGEDETECTED;
-
-            gp_SetQuietMode(QUIETMODE_ALL);
-            secondRead = s6_ReadGraph(flagReader);
-            gp_SetQuietMode(origQuietMode);
-
-            if ((i == 0) != (secondRead == OK))
-            {
-                gp_ErrorMessage("A ';' line was %s after a graph whose parallel "
-                                "edge flag was %s.",
-                                i == 0 ? "refused" : "applied",
-                                i == 0 ? "set without parallel edges" : "clear with parallel edges");
-                Result = NOTOK;
-            }
-        }
-
-        s6_FreeReader((&flagReader));
-        gp_Free(&flagGraph);
-        if (flagStr != NULL)
-            free(flagStr);
-    }
+    if (Result == OK && runSparse6PetersenMultigraphTest() != OK)
+        Result = NOTOK;
 
     // Order 1, whose vertex field is zero bits wide, is checked directly
     // because the graph6 writer used by the other cases does not encode
@@ -1536,8 +1515,8 @@ static int compareSparse6EdgeMultiset(graphP theGraph, int const pairs[][2], int
 
 // Reads every graph in s6Str with the sparse6 read iterator and requires the
 // last one to have the given order and exactly the given pairs, repeated
-// pairs being parallel edges, and the parallel edge flag set exactly when
-// expectParallelEdges is TRUE.
+// pairs being parallel edges, and, unless expectParallelEdges is negative,
+// the parallel edge flag set exactly when expectParallelEdges is TRUE.
 static int runSparse6AcceptMultigraphTest(char const *s6Str, int order, int const pairs[][2], int numPairs, int expectParallelEdges)
 {
     int Result = OK;
@@ -1572,14 +1551,14 @@ static int runSparse6AcceptMultigraphTest(char const *s6Str, int order, int cons
     if (Result == OK &&
         (numGraphs == 0 || gp_GetN(theGraph) != order ||
          compareSparse6EdgeMultiset(theGraph, pairs, numPairs) != OK ||
-         hasParallelEdges != expectParallelEdges))
+         (expectParallelEdges >= 0 && hasParallelEdges != expectParallelEdges)))
         Result = NOTOK;
 
     if (Result != OK)
         gp_ErrorMessage("Sparse6 input \"%s\" did not decode to the expected "
-                        "graph of order %d with %d edges and the parallel "
-                        "edge flag %s.",
-                        s6Str, order, numPairs, expectParallelEdges ? "set" : "clear");
+                        "graph of order %d with %d edges%s.",
+                        s6Str, order, numPairs,
+                        expectParallelEdges < 0 ? "" : (expectParallelEdges ? " and the parallel edge flag set" : " and the parallel edge flag clear"));
 
     s6_FreeReader((&theS6ReadIterator));
     gp_Free(&theGraph);
@@ -2615,11 +2594,13 @@ static int runGPLookaheadTests(void)
     gp_Free(&gpGraph);
     gp_Free(&s6Graph);
 
-    // A ';' line after a graph with parallel edges is refused at the gp_
-    // level as at the s6_ level
+    // After a graph with two instances of {0, 1}, a ';' line toggling it once
+    // is reported at the gp_ level as at the s6_ level: one deletion of an
+    // edge record of {0, 1}, then no change, and the read leaves one instance
     if (Result == OK)
     {
         char *multiStr = copySparse6TestString(":Ab\n;n\n");
+        int ne = -2, nu = -2, nv = -2;
 
         e = u = v = -2;
 
@@ -2627,10 +2608,16 @@ static int runGPLookaheadTests(void)
             gp_NewReader((&gpReader), gpGraph) != OK ||
             gp_InitReaderWithString(gpReader, multiStr) != OK ||
             gp_ReadGraph(gpReader) != OK ||
-            gp_RetrieveGraphChange(gpReader, &e, &u, &v) == OK)
+            gp_RetrieveGraphChange(gpReader, &e, &u, &v) != OK ||
+            !gp_IsEdge(gpGraph, e) || u != NIL || v != NIL ||
+            gp_GetNeighbor(gpGraph, e) + gp_GetNeighbor(gpGraph, gp_GetTwin(gpGraph, e)) !=
+                2 * gp_LowerBoundVertexStorage(gpGraph) + 1 ||
+            gp_RetrieveGraphChange(gpReader, &ne, &nu, &nv) != OK ||
+            ne != NIL || nu != NIL || nv != NIL ||
+            gp_ReadGraph(gpReader) != OK || gp_GetM(gpGraph) != 1)
         {
-            gp_ErrorMessage("gp_RetrieveGraphChange() did not refuse a ';' "
-                            "line after a graph with parallel edges.");
+            gp_ErrorMessage("gp_RetrieveGraphChange() did not report the "
+                            "deletion of one instance of a parallel edge.");
             Result = NOTOK;
         }
 
@@ -2643,6 +2630,236 @@ static int runGPLookaheadTests(void)
     if (Result == OK)
         gp_Message("gp_RetrieveGraphChange() reports no change for graph6 "
                    "input and hands sparse6 input to the sparse6 reader.");
+
+    return Result;
+}
+
+/****************************************************************************
+ runSparse6MultigraphLookaheadCase()
+
+ Reads the first graph of s6Str, retrieves the changes of the ';' line after
+ it and requires them to be exactly the expected ones, kinds[c] being 'd' for
+ the deletion of an edge record joining pairs[c] and 'a' for the addition of
+ pairs[c], with every deletion naming a different edge, followed by no
+ change; the read must then leave exactly finalPairs. A second pass
+ retrieves only the first change before the read, which must leave the
+ same graph.
+ ****************************************************************************/
+
+static int runSparse6MultigraphLookaheadCase(char const *s6Str, char const *kinds, int const pairs[][2],
+                                             int const finalPairs[][2], int numFinal)
+{
+    int Result = OK;
+    int numKinds = (int)strlen(kinds);
+
+    for (int partial = 0; Result == OK && partial < 2; partial++)
+    {
+        char *s6Copy = copySparse6TestString(s6Str);
+        graphP theGraph = gp_New();
+        S6ReadIteratorP theReader = NULL;
+        int *seen = (int *)malloc((size_t)(numKinds + 1) * sizeof(int));
+        int numSeen = 0;
+        int lower = 0;
+
+        if (s6Copy == NULL || theGraph == NULL || seen == NULL ||
+            s6_NewReader((&theReader), theGraph) != OK ||
+            s6_InitReaderWithString(theReader, s6Copy) != OK ||
+            s6_ReadGraph(theReader) != OK)
+            Result = NOTOK;
+        else
+            lower = gp_LowerBoundVertexStorage(theGraph);
+
+        for (int c = 0; Result == OK && !(partial && c == 1); c++)
+        {
+            int e = -2, u = -2, v = -2;
+
+            if (s6_RetrieveGraphChange(theReader, &e, &u, &v) != OK)
+                Result = NOTOK;
+            else if (e == NIL && u == NIL && v == NIL)
+            {
+                if (c != numKinds)
+                    Result = NOTOK;
+                break;
+            }
+            else if (c >= numKinds)
+                Result = NOTOK;
+            else if (kinds[c] == 'd')
+            {
+                int twin = 0, a = 0, b = 0, edgeId = 0;
+
+                if (!gp_IsEdge(theGraph, e) || u != NIL || v != NIL)
+                    Result = NOTOK;
+                else
+                {
+                    twin = gp_GetTwin(theGraph, e);
+                    a = gp_GetNeighbor(theGraph, e) - lower;
+                    b = gp_GetNeighbor(theGraph, twin) - lower;
+                    edgeId = (e < twin) ? e : twin;
+
+                    if (!((a == pairs[c][0] && b == pairs[c][1]) || (a == pairs[c][1] && b == pairs[c][0])))
+                        Result = NOTOK;
+
+                    for (int s = 0; Result == OK && s < numSeen; s++)
+                        if (seen[s] == edgeId)
+                            Result = NOTOK;
+
+                    seen[numSeen++] = edgeId;
+                }
+            }
+            else if (e != NIL || u != lower + pairs[c][0] || v != lower + pairs[c][1])
+                Result = NOTOK;
+        }
+
+        if (Result == OK &&
+            (s6_ReadGraph(theReader) != OK ||
+             compareSparse6EdgeMultiset(theGraph, finalPairs, numFinal) != OK))
+            Result = NOTOK;
+
+        if (Result != OK)
+            gp_ErrorMessage("Lookahead over the multigraph input \"%s\" did not "
+                            "report the expected changes%s.",
+                            s6Str, partial ? " when stopped after the first" : "");
+
+        s6_FreeReader((&theReader));
+        gp_Free(&theGraph);
+        if (s6Copy != NULL)
+            free(s6Copy);
+        if (seen != NULL)
+            free(seen);
+    }
+
+    return Result;
+}
+
+/****************************************************************************
+ runSparse6MultigraphLockstepTest()
+
+ Reads s6Str with two sparse6 readers in lockstep, one that only reads and
+ one that retrieves 0, 1, 2 or all of the changes before each read, in turn,
+ and requires both graphs to hold the same edges, with multiplicities, after
+ every read, and the last graph to be finalPairs.
+ ****************************************************************************/
+
+static int runSparse6MultigraphLockstepTest(char const *s6Str, int const finalPairs[][2], int numFinal)
+{
+    int Result = OK;
+    int numGraphs = 0;
+    char *plainStr = copySparse6TestString(s6Str), *lookStr = copySparse6TestString(s6Str);
+    graphP plainGraph = gp_New(), lookGraph = gp_New();
+    S6ReadIteratorP plainReader = NULL, lookReader = NULL;
+
+    if (plainStr == NULL || lookStr == NULL || plainGraph == NULL || lookGraph == NULL ||
+        s6_NewReader((&plainReader), plainGraph) != OK ||
+        s6_InitReaderWithString(plainReader, plainStr) != OK ||
+        s6_NewReader((&lookReader), lookGraph) != OK ||
+        s6_InitReaderWithString(lookReader, lookStr) != OK)
+        Result = NOTOK;
+
+    while (Result == OK)
+    {
+        int toRetrieve = (numGraphs % 4 == 3) ? INT_MAX : numGraphs % 4;
+        int *plainPairs = NULL, *lookPairs = NULL;
+        int numPlain = 0, numLook = 0;
+
+        for (int r = 0; Result == OK && r < toRetrieve; r++)
+        {
+            int e = NIL, u = NIL, v = NIL;
+
+            if (s6_RetrieveGraphChange(lookReader, &e, &u, &v) != OK)
+                Result = NOTOK;
+            else if (e == NIL && u == NIL && v == NIL)
+                break;
+        }
+
+        if (Result == OK && (s6_ReadGraph(plainReader) != OK || s6_ReadGraph(lookReader) != OK))
+            Result = NOTOK;
+
+        if (Result != OK)
+            break;
+
+        if (s6_EndReached(plainReader) || s6_EndReached(lookReader))
+        {
+            if (!s6_EndReached(plainReader) || !s6_EndReached(lookReader))
+                Result = NOTOK;
+            break;
+        }
+
+        numGraphs++;
+
+        if (collectSparse6TestPairs(plainGraph, &plainPairs, &numPlain) != OK ||
+            collectSparse6TestPairs(lookGraph, &lookPairs, &numLook) != OK ||
+            numPlain != numLook ||
+            (numPlain > 0 && memcmp(plainPairs, lookPairs, (size_t)numPlain * 2 * sizeof(int)) != 0))
+        {
+            gp_ErrorMessage("Graph %d differs between the reader with lookahead "
+                            "and the one without.",
+                            numGraphs);
+            Result = NOTOK;
+        }
+
+        if (plainPairs != NULL)
+            free(plainPairs);
+        if (lookPairs != NULL)
+            free(lookPairs);
+    }
+
+    if (Result == OK && compareSparse6EdgeMultiset(plainGraph, finalPairs, numFinal) != OK)
+    {
+        gp_ErrorMessage("The last of %d multigraphs read in lockstep is not the "
+                        "expected one.",
+                        numGraphs);
+        Result = NOTOK;
+    }
+
+    s6_FreeReader((&plainReader));
+    s6_FreeReader((&lookReader));
+    gp_Free(&plainGraph);
+    gp_Free(&lookGraph);
+    if (plainStr != NULL)
+        free(plainStr);
+    if (lookStr != NULL)
+        free(lookStr);
+
+    return Result;
+}
+
+/****************************************************************************
+ runSparse6MultigraphLookaheadTests()
+
+ The lookahead over ';' lines after graphs with parallel edges: the
+ maintainer's example of an edge with 5 instances toggled 3, 6 and 7 times,
+ a line over three runs whose pairs repeat with other pairs between, and 26
+ lines of random toggles on random multigraphs of order 7, whose last graph
+ was worked out by toggling in sequence outside the library.
+ ****************************************************************************/
+
+static int runSparse6MultigraphLookaheadTests(void)
+{
+    int Result = OK;
+    int const ddd[][2] = {{0, 1}, {0, 1}, {0, 1}};
+    int const dddddA[][2] = {{0, 1}, {0, 1}, {0, 1}, {0, 1}, {0, 1}, {0, 1}};
+    int const two01[][2] = {{0, 1}, {0, 1}};
+    int const one01[][2] = {{0, 1}};
+    // {0,3} twice, {1,3}, {2,4} three times and {0,5}, then the line
+    // {0,3} {1,3} {0,3} {2,3} {0,3} {2,3} | {2,4} | {0,5} {1,5} {0,5}
+    int const threeRunChanges[][2] = {{0, 3}, {0, 3}, {0, 3}, {1, 3}, {2, 4}, {0, 5}, {0, 5}, {1, 5}};
+    int const threeRunFinal[][2] = {{0, 3}, {2, 4}, {2, 4}, {0, 5}, {1, 5}};
+    int const lockstepFinal[][2] = {{0, 5}, {2, 4}, {4, 6}};
+
+    if (runSparse6MultigraphLookaheadCase(":A_B\n;_\n", "ddd", ddd, two01, 2) != OK ||
+        runSparse6MultigraphLookaheadCase(":A_B\n;_?\n", "ddddda", dddddA, one01, 1) != OK ||
+        runSparse6MultigraphLookaheadCase(":A_B\n;_?N\n", "ddddd", dddddA, one01, 0) != OK ||
+        runSparse6MultigraphLookaheadCase(":Ek?EaIN\n;k@?_IgCN\n", "ddadddaa", threeRunChanges, threeRunFinal, 5) != OK)
+        Result = NOTOK;
+
+    if (Result == OK &&
+        runSparse6MultigraphLockstepTest(":FkG?BKrN\n;oBB`C^\n;g[CQCQqPCPF\n;g?BB??BCPC\n;orKN\n;g?_MCPG^\n"
+                                         ";ao\n;_GAPF\n;_G?GEMC`G^\n;_KGa\n;o?JaJ\n;aPE??IgAG?B\n;kikxG`SaSaGd\n"
+                                         ":FapGgwN\n;kPCWCM?~\n;b@Fa@TSdKa??\n;kPCPCaEPC@pCR\n;oP\n;kPcPF`?PC^\n"
+                                         ";_?AqfCcP\n;oMS?B\n;kaI???BcPDR\n;o???????gbN\n;kPCWAKKsR\n"
+                                         ";kPCYGgBCPCPC\n;\n",
+                                         lockstepFinal, 3) != OK)
+        Result = NOTOK;
 
     return Result;
 }
@@ -2686,26 +2903,28 @@ int runSparse6LookaheadTests(void)
         // but it does once an incremental line has been retrieved, even an
         // empty one
         {":An\n;\n", "rnmxf", NULL, NULL},
-        // Refused: a pair twice on a ';' line, a loop, a byte out of range,
-        // a line that begins with neither ':' nor ';', and a direct change
-        // to the graph after the last read, before or between retrievals
-        // or before the read, with or without a retrieval
-        {":D\n;o?~\n", "raxfx", pairs04, NULL},
-        {":D\n;o?~\n", "rf", NULL, NULL},
+        // A pair twice on a ';' line nets to no change, so nothing is
+        // reported and the graph stays as it was
+        {":D\n;o?~\n", "rnre", NULL, "D??"},
+        {":D\n;_N\n", "rnre", NULL, "D??"},
+        // Refused: a loop, also after a valid pair of the same run, which the
+        // lookahead decodes before it reports anything, or as the pair that
+        // ends the run of a valid pair, which the lookahead decodes to find
+        // the end of the run, and the reader stays failed; a byte out of
+        // range, a line that begins with neither ':' nor ';', and a direct
+        // change to the graph after the last read, before or between
+        // retrievals or before the read, with or without a retrieval
         {":D\n;B~\n", "rxf", NULL, NULL},
+        {":D\n;_^\n", "rxxf", NULL, NULL},
+        {":D\n;an\n", "rxxf", NULL, NULL},
         {":D\n;o \n", "rxf", NULL, NULL},
         {":D\nX\n", "rxf", NULL, NULL},
         {":D\n;oN\n", "ramf", pairs04, NULL},
         {":D\n;o@~\n", "ramxf", pairs04, NULL},
         {":D\n;oN\n", "rmxf", NULL, NULL},
         {":D\n;oN\n", "rmf", NULL, NULL},
-        // Refused: a ';' line after a graph with parallel edges, empty or
-        // not, by the lookahead and by the read
-        {":Ab\n;n\n", "rxf", NULL, NULL},
-        {":Ab\n;\n", "rxf", NULL, NULL},
-        {":Ab\n;n\n", "rf", NULL, NULL},
         // A ':' line after a graph with parallel edges is found and read,
-        // and ';' lines apply again after it
+        // and the ';' line after it deletes the one instance of {0, 1}
         {":Ab\n:An\n;n\n", "rnrdnre", pairs01, "A?"},
         // A direct change before the first read is replaced by the first
         // graph, as by every later ':' line, so it cannot leave the graph
@@ -2722,6 +2941,9 @@ int runSparse6LookaheadTests(void)
     if (Result == OK && runSparse6LookaheadLockstepTest("n8.mALL.inc.s6", TRUE, FALSE, 12346) != OK)
         Result = NOTOK;
     if (Result == OK && runSparse6LookaheadLockstepTest("n8.mALL.inc.s6", FALSE, TRUE, 12346) != OK)
+        Result = NOTOK;
+
+    if (Result == OK && runSparse6MultigraphLookaheadTests() != OK)
         Result = NOTOK;
 
     // The refusals report errors, which are expected

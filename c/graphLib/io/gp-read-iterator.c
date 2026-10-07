@@ -321,7 +321,7 @@ int gp_ReadGraph(GPReadIteratorP theGPReadIterator)
  gp_RetrieveGraphChange()
 
  Tells the caller how the next graph differs from the one in the
- reader's graph, one edge per call, as s6_RetrieveGraphChange() does
+ reader's graph, one change per call, as s6_RetrieveGraphChange() does
  for sparse6 input, to which the call is handed. The other formats
  have no incremental graphs, so for them e, u and v are all set to
  NIL, which means that no incremental change comes next.

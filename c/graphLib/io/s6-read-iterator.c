@@ -34,10 +34,13 @@ int _s6_ReadNextByte(strOrFileP inputContainer, int *byteBits, int *endOfLine, u
 void _s6_StartLine(S6ReadIteratorP theS6ReadIterator);
 int _s6_DecodeEdges(S6ReadIteratorP theS6ReadIterator, const int stopAtEdge, const int incremental,
                     int *pU, int *pV, int *pEndOfLine, const int lineNum);
-int _s6_CheckEdge(S6ReadIteratorP theS6ReadIterator, int u, int v, const int incremental, const int lineNum);
+int _s6_CheckEdge(int u, int v, const int lineNum);
 int _s6_ApplyEdge(S6ReadIteratorP theS6ReadIterator, int u, int v, const int incremental, const int lineNum);
 int _s6_GrowRetrievedChanges(S6ReadIteratorP theS6ReadIterator);
-int _s6_IsIncrementalLineApplicable(S6ReadIteratorP theS6ReadIterator, const int lineNum);
+int _s6_AddRetrievedChange(S6ReadIteratorP theS6ReadIterator, int kind, int first, int second);
+int _s6_RetrieveNextRun(S6ReadIteratorP theS6ReadIterator, const int lineNum);
+int _s6_WorkOutRunChanges(S6ReadIteratorP theS6ReadIterator, int vFile);
+int _s6_IsGraphAsLastRead(S6ReadIteratorP theS6ReadIterator, const int lineNum);
 int _s6_ApplyRetrievedChanges(S6ReadIteratorP theS6ReadIterator);
 
 int _s6_ReadGraphFromFile(graphP theGraph, char *pathToS6File);
@@ -75,6 +78,14 @@ int _s6_ReadGraphFromString(graphP theGraph, char *s6EncodedString);
  A line beginning with ';' encodes the symmetric difference between
  the graph on the previous line and this one, with the same bit
  stream and no order, so it cannot be the first line of the input.
+ The reader applies it as a sequence of toggles, each pair deleting
+ one instance of its edge if the graph has one and adding the edge
+ otherwise. For a graph without parallel edges that is the symmetric
+ difference, with a pair that occurs more than once toggling its edge
+ each time, as nauty's copyg reads it. It also gives a ';' line a
+ meaning after a graph with parallel edges, which the specification
+ leaves unsupported (copyg takes the previous graph modulo 2 there
+ instead, so the two can differ).
 
  Unlike the graph6 reader, this reader does not buffer a line before
  decoding it. A graph6 line has a fixed length for a given order,
@@ -83,9 +94,9 @@ int _s6_ReadGraphFromString(graphP theGraph, char *s6EncodedString);
  time until the end of the line.
 
  The decoding state of the line is kept in the iterator, so that
- s6_RetrieveGraphChange() can look ahead into a ';' line one edge at
- a time, and s6_ReadGraph() can apply what was retrieved and decode
- the rest of the line from where the lookahead stopped.
+ s6_RetrieveGraphChange() can look ahead into a ';' line one run of
+ pairs at a time, and s6_ReadGraph() can apply what was worked out and
+ decode the rest of the line from where the lookahead stopped.
  ********************************************************************/
 #define S6_LINE_NOT_STARTED 0
 #define S6_LINE_WHOLE_NEXT 1
@@ -113,16 +124,6 @@ struct S6ReadIteratorStruct
     // then has only the edge list of that line left to decode
     int firstLinePrefixConsumed;
 
-    // One entry per vertex, used to detect a repeated edge on a line in
-    // constant time. Each edge {x, v} with x <= v is decoded from a
-    // pair whose x and v are fixed by the edge, and v never decreases
-    // along a line, so a repeat of the edge can only occur while v is
-    // unchanged. The entry for x records the (line, v) of the last edge
-    // decoded on x as lineNum * (order + 1) + v + 1, so the check is a
-    // comparison with no per-line reset. Needs long long because
-    // lineNum and order can each exceed 2^16.
-    long long *edgeStamps;
-
     graphP currGraph;
 
     int endReached;
@@ -132,18 +133,10 @@ struct S6ReadIteratorStruct
     // and the graph may hold part of the line
     int readerFailed;
 
-    // Set when the ':' line last read repeats a pair, so that the graph
-    // holds parallel edges, which no ';' line may follow, and cleared at
-    // the start of the next ':' line. GRAPHFLAGS_PARALLELEDGEDETECTED is
-    // set by the same line, but it does not say whether the graph holds
-    // parallel edges now: an insertion refused at the edge capacity sets
-    // it, and deleting the parallel edge does not clear it.
-    int graphHasParallelEdges;
-
     // How far the lookahead has got into the next line: not started, a
     // ':' line found (the ':' is consumed and the rest of the line is
     // left to s6_ReadGraph()), the end of the input found, or a ';' line
-    // whose edges are being retrieved or have all been retrieved
+    // whose pairs are being decoded or have all been decoded
     int lineState;
 
     // The decoding state of the current line: the data bits of the
@@ -155,12 +148,33 @@ struct S6ReadIteratorStruct
     int currV;
     unsigned long long bytePos;
 
-    // The changes retrieved from the current ';' line, which the next
-    // s6_ReadGraph() applies: three ints per change, the kind, then the
-    // edge record for a deletion or the two vertices for an addition
+    // The changes the lookahead has worked out for the current ';' line,
+    // which the next s6_ReadGraph() applies: three ints per change, the
+    // kind, then the edge record for a deletion or the two vertices for an
+    // addition. The first numChangesReported have been reported; the rest
+    // belong to a run already decoded and are reported by later calls.
     int *changes;
     int numChanges;
+    int numChangesReported;
     int changeCapacity;
+
+    // The lookahead works out the net change of a ';' line one run at a
+    // time, a run being the pairs that share the larger endpoint v. Each
+    // edge {x, v} with x <= v is decoded from a pair whose x and v are
+    // fixed by the edge, and v never decreases along a line, so every
+    // occurrence of an edge lies in the run of its v. runCount[x] counts
+    // the occurrences of {x, v} in the current run, zero outside a run,
+    // and runXs lists each x of the run once, in the order first met. A
+    // run ends at the first pair with another v, which is held as the
+    // carry pair and begins the next run. Only the lookahead uses runs, so
+    // both buffers are allocated, at the order of the graph, when it first
+    // decodes one.
+    long long *runCount;
+    int *runXs;
+    int numRunXs;
+    int hasCarry;
+    int carryU;
+    int carryV;
 
     // The modification counter of the graph after the last graph was
     // read. A ';' line is the difference from that graph, so the edge
@@ -380,12 +394,6 @@ int _s6_InitReaderWithStrOrFile(S6ReadIteratorP theS6ReadIterator, strOrFileP *p
         // from the failed input
         sf_Free(&(theS6ReadIterator->inputContainer));
 
-        if (theS6ReadIterator->edgeStamps != NULL)
-        {
-            free(theS6ReadIterator->edgeStamps);
-            theS6ReadIterator->edgeStamps = NULL;
-        }
-
         theS6ReadIterator->order = 0;
         theS6ReadIterator->numBitsForVertex = 0;
         theS6ReadIterator->firstLinePrefixConsumed = FALSE;
@@ -493,14 +501,6 @@ int _s6_InitReader(S6ReadIteratorP theS6ReadIterator)
 
     // Ensures zero-based flag is set regardless of whether the graph was initialized or reinitialized.
     theS6ReadIterator->currGraph->graphFlags |= GRAPHFLAGS_ZEROBASEDIO;
-
-    theS6ReadIterator->edgeStamps = (long long *)calloc((size_t)order, sizeof(long long));
-
-    if (theS6ReadIterator->edgeStamps == NULL)
-    {
-        gp_ErrorMessage("Unable to allocate memory for edgeStamps.");
-        return NOTOK;
-    }
 
     theS6ReadIterator->order = order;
     theS6ReadIterator->numBitsForVertex = _s6_GetNumBitsForVertex(order);
@@ -691,16 +691,29 @@ int s6_ReadGraph(S6ReadIteratorP theS6ReadIterator)
     else if (theS6ReadIterator->lineState == S6_LINE_INCREMENTAL_OPEN ||
              theS6ReadIterator->lineState == S6_LINE_INCREMENTAL_DONE)
     {
-        // The lookahead has begun this ';' line, so the changes it has
-        // retrieved are applied, and the edges it has not reached yet are
-        // decoded below from where it stopped
+        // The lookahead has begun this ';' line, so the changes it has worked
+        // out for the runs it decoded are applied, reported or not, then the
+        // carry pair it holds, if any, and the pairs it has not reached yet
+        // are decoded below from where it stopped. A run holds every
+        // occurrence of its edges, so the two parts toggle different edges.
         incremental = TRUE;
 
-        if (_s6_IsIncrementalLineApplicable(theS6ReadIterator, lineNum) != OK ||
+        if (_s6_IsGraphAsLastRead(theS6ReadIterator, lineNum) != OK ||
             _s6_ApplyRetrievedChanges(theS6ReadIterator) != OK)
         {
             theS6ReadIterator->readerFailed = TRUE;
             return NOTOK;
+        }
+
+        if (theS6ReadIterator->hasCarry)
+        {
+            theS6ReadIterator->hasCarry = FALSE;
+
+            if (_s6_ApplyEdge(theS6ReadIterator, theS6ReadIterator->carryU, theS6ReadIterator->carryV, TRUE, lineNum) != OK)
+            {
+                theS6ReadIterator->readerFailed = TRUE;
+                return NOTOK;
+            }
         }
     }
     else
@@ -743,15 +756,14 @@ int s6_ReadGraph(S6ReadIteratorP theS6ReadIterator)
             gp_ResetGraphStorage(currGraph);
             // Ensures zero-based flag is set after reinitializing graph.
             currGraph->graphFlags |= GRAPHFLAGS_ZEROBASEDIO;
-            theS6ReadIterator->graphHasParallelEdges = FALSE;
         }
         else if (firstChar == ';')
         {
-            // The line encodes the symmetric difference from the graph on
-            // the previous line, so that graph is modified rather than reset
+            // The line toggles edges of the graph on the previous line, so
+            // that graph is modified rather than reset
             incremental = TRUE;
 
-            if (_s6_IsIncrementalLineApplicable(theS6ReadIterator, lineNum) != OK)
+            if (_s6_IsGraphAsLastRead(theS6ReadIterator, lineNum) != OK)
             {
                 theS6ReadIterator->readerFailed = TRUE;
                 return NOTOK;
@@ -790,6 +802,7 @@ int s6_ReadGraph(S6ReadIteratorP theS6ReadIterator)
 
     theS6ReadIterator->lineState = S6_LINE_NOT_STARTED;
     theS6ReadIterator->numChanges = 0;
+    theS6ReadIterator->numChangesReported = 0;
     theS6ReadIterator->numGraphsRead = lineNum;
     theS6ReadIterator->countAtLastRead = theGraphModificationCount(currGraph);
 
@@ -800,39 +813,40 @@ int s6_ReadGraph(S6ReadIteratorP theS6ReadIterator)
  s6_RetrieveGraphChange()
 
  Tells the caller how the next graph differs from the one in the
- iterator's graph, one edge per call, without changing the graph. On
- a ';' line, each call decodes the next edge of the line: if the graph
- has the edge, e is set to an edge record of it, which the line
- deletes; otherwise u and v are set to its endpoints, u < v, which the
- line adds. The next s6_ReadGraph() applies the retrieved changes,
- then the rest of the line, so the caller may stop retrieving at any
- point. e, u and v are all set to NIL when no incremental change
- comes next: the next line is a ':' line or the first line, the input
- is at its end, or every edge of the ';' line has been retrieved.
- None of these consume a graph; that is still s6_ReadGraph()'s to do,
- including for a ';' line with no edges.
+ iterator's graph, one change per call, without changing the graph. A
+ ';' line toggles its edges in sequence, each occurrence of {u, v}
+ deleting one instance of the edge if the graph has one and adding it
+ otherwise, and what this function reports is the net effect of the
+ line on each edge: for an edge with m instances that the line toggles
+ k times, min(k, m) deletions, each reported as e set to a different
+ edge record of the edge, then, if k exceeds m by an odd number, one
+ addition, reported as u and v set to its endpoints, u < v. To know k,
+ the line is decoded one run at a time, a run being the pairs that
+ share the larger endpoint, since an edge occurs in no other run.
 
- A ';' line is the difference from the graph as last read, so from
- that read until the line has been read, the graph must not be changed
- other than by the reader; a change is detected, through the graph's
- modification counter, and refused, by this function and by
- s6_ReadGraph(), and so are the errors that s6_ReadGraph() would find
- in the part of the line retrieved. A ';' line after a graph with
- parallel edges is refused the same way, since incremental sparse6
- does not support them. After a refusal the reader cannot go on.
+ The next s6_ReadGraph() applies the changes worked out so far, then
+ the rest of the line, so the caller may stop retrieving at any point.
+ e, u and v are all set to NIL when no incremental change comes next:
+ the next line is a ':' line or the first line, the input is at its
+ end, or every change of the ';' line has been reported. None of these
+ consume a graph; that is still s6_ReadGraph()'s to do, including for
+ a ';' line with no net change.
+
+ A ';' line applies to the graph as last read, so from that read until
+ the line has been read, the graph must not be changed other than by
+ the reader; a change is detected, through the graph's modification
+ counter, and refused, by this function and by s6_ReadGraph(), and so
+ are the errors that s6_ReadGraph() would find in the part of the line
+ decoded. After a refusal the reader cannot go on.
 
  Returns OK on success, NOTOK otherwise.
  ********************************************************************/
 
 int s6_RetrieveGraphChange(S6ReadIteratorP theS6ReadIterator, int *e, int *u, int *v)
 {
-    graphP theGraph = NULL;
     int lineNum = 0;
     int firstChar = EOF;
-    int uFile = 0, vFile = 0;
-    int endOfLine = FALSE;
-    int eFound = NIL;
-    int *change = NULL;
+    int const *change = NULL;
 
     if (e == NULL || u == NULL || v == NULL)
     {
@@ -858,8 +872,6 @@ int s6_RetrieveGraphChange(S6ReadIteratorP theS6ReadIterator, int *e, int *u, in
     // The first line is a ':' line, whose prefix initialization has read
     if (theS6ReadIterator->endReached || theS6ReadIterator->firstLinePrefixConsumed)
         return OK;
-
-    theGraph = theS6ReadIterator->currGraph;
 
     // A line is only begun below if s6_ReadGraph() could read it, so a
     // line that is under way always has a line number
@@ -903,61 +915,37 @@ int s6_RetrieveGraphChange(S6ReadIteratorP theS6ReadIterator, int *e, int *u, in
         theS6ReadIterator->lineState != S6_LINE_INCREMENTAL_DONE)
         return OK;
 
-    if (_s6_IsIncrementalLineApplicable(theS6ReadIterator, lineNum) != OK)
+    if (_s6_IsGraphAsLastRead(theS6ReadIterator, lineNum) != OK)
     {
         theS6ReadIterator->readerFailed = TRUE;
         return NOTOK;
     }
 
-    if (theS6ReadIterator->lineState == S6_LINE_INCREMENTAL_DONE)
+    // A run can net to no change, so runs are decoded until one gives a
+    // change to report or the line ends
+    while (theS6ReadIterator->numChangesReported == theS6ReadIterator->numChanges &&
+           theS6ReadIterator->lineState == S6_LINE_INCREMENTAL_OPEN)
+    {
+        if (_s6_RetrieveNextRun(theS6ReadIterator, lineNum) != OK)
+        {
+            theS6ReadIterator->readerFailed = TRUE;
+            return NOTOK;
+        }
+    }
+
+    if (theS6ReadIterator->numChangesReported == theS6ReadIterator->numChanges)
         return OK;
 
-    if (_s6_DecodeEdges(theS6ReadIterator, TRUE, TRUE, &uFile, &vFile, &endOfLine, lineNum) != OK)
-    {
-        theS6ReadIterator->readerFailed = TRUE;
-        return NOTOK;
-    }
+    change = theS6ReadIterator->changes + 3 * theS6ReadIterator->numChangesReported;
+    theS6ReadIterator->numChangesReported++;
 
-    if (endOfLine)
-    {
-        theS6ReadIterator->lineState = S6_LINE_INCREMENTAL_DONE;
-        return OK;
-    }
-
-    if (_s6_CheckEdge(theS6ReadIterator, uFile, vFile, TRUE, lineNum) != OK ||
-        (theS6ReadIterator->numChanges == theS6ReadIterator->changeCapacity &&
-         _s6_GrowRetrievedChanges(theS6ReadIterator) != OK))
-    {
-        theS6ReadIterator->readerFailed = TRUE;
-        return NOTOK;
-    }
-
-    // The sparse6 file is 0-based, but in-memory storage may not be
-    uFile += gp_LowerBoundVertexStorage(theGraph);
-    vFile += gp_LowerBoundVertexStorage(theGraph);
-
-    // Nothing is applied until s6_ReadGraph(), and an edge appears at most
-    // once on a line, so the graph searched is the graph on the previous line
-    eFound = gp_FindEdge(theGraph, uFile, vFile);
-    change = theS6ReadIterator->changes + 3 * theS6ReadIterator->numChanges;
-
-    if (gp_IsEdge(theGraph, eFound))
-    {
-        change[0] = S6_CHANGE_DELETE;
-        change[1] = eFound;
-        change[2] = NIL;
-        (*e) = eFound;
-    }
+    if (change[0] == S6_CHANGE_DELETE)
+        (*e) = change[1];
     else
     {
-        change[0] = S6_CHANGE_ADD;
-        change[1] = uFile;
-        change[2] = vFile;
-        (*u) = uFile;
-        (*v) = vFile;
+        (*u) = change[1];
+        (*v) = change[2];
     }
-
-    theS6ReadIterator->numChanges++;
 
     return OK;
 }
@@ -1014,7 +1002,7 @@ int _s6_ReadNextByte(strOrFileP inputContainer, int *byteBits, int *endOfLine, u
 
 // Sets the decoding state for the edge list of a new line, whose first
 // character, and order for a ':' line, have been read, and empties the
-// list of retrieved changes.
+// list of changes and the run state of the lookahead.
 void _s6_StartLine(S6ReadIteratorP theS6ReadIterator)
 {
     theS6ReadIterator->byteBits = 0;
@@ -1022,6 +1010,9 @@ void _s6_StartLine(S6ReadIteratorP theS6ReadIterator)
     theS6ReadIterator->currV = 0;
     theS6ReadIterator->bytePos = 0;
     theS6ReadIterator->numChanges = 0;
+    theS6ReadIterator->numChangesReported = 0;
+    theS6ReadIterator->numRunXs = 0;
+    theS6ReadIterator->hasCarry = FALSE;
 }
 
 // Decodes (b, x) pairs of the edge list on the current line, following
@@ -1142,19 +1133,11 @@ int _s6_DecodeEdges(S6ReadIteratorP theS6ReadIterator, const int stopAtEdge, con
 
 // Refuses a decoded pair {u, v}, u <= v, that the graph cannot take. The
 // graph library does not support loop edges, so a loop is reported as an
-// error rather than silently dropped. A pair that occurs twice on a ':'
-// line is a parallel edge, which the graph takes like any other edge (and
-// gp_InsertEdge() sets GRAPHFLAGS_PARALLELEDGEDETECTED); the line is noted
-// as having one, since no ';' line may follow it. On a ';' line, which
-// lists the symmetric difference from the previous graph, a pair twice
-// would toggle the edge twice, which the writer never produces and the
-// lookahead could not report, since the second toggle would undo a change
-// already retrieved. Either way the repeat is found through edgeStamps in
-// constant time.
-int _s6_CheckEdge(S6ReadIteratorP theS6ReadIterator, int u, int v, const int incremental, const int lineNum)
+// error rather than silently dropped. A pair may occur more than once on
+// either kind of line: on a ':' line each occurrence is a parallel edge,
+// and on a ';' line each occurrence is one toggle.
+int _s6_CheckEdge(int u, int v, const int lineNum)
 {
-    long long edgeStamp = (long long)lineNum * (theS6ReadIterator->order + 1) + v + 1;
-
     if (u == v)
     {
         gp_ErrorMessage("Loop edge on vertex %d on line %d is not supported.",
@@ -1162,31 +1145,19 @@ int _s6_CheckEdge(S6ReadIteratorP theS6ReadIterator, int u, int v, const int inc
         return NOTOK;
     }
 
-    if (theS6ReadIterator->edgeStamps[u] == edgeStamp)
-    {
-        if (!incremental)
-        {
-            theS6ReadIterator->graphHasParallelEdges = TRUE;
-            return OK;
-        }
-
-        gp_ErrorMessage("Edge between vertices %d and %d appears twice on "
-                        "incremental line %d, which lists each changed "
-                        "edge once.",
-                        u, v, lineNum);
-        return NOTOK;
-    }
-
-    theS6ReadIterator->edgeStamps[u] = edgeStamp;
-
     return OK;
 }
 
 // Applies the decoded pair {u, v}, with u <= v, to the graph. On a ':' line
-// the pair adds an edge; on a ';' line it toggles the edge, since the line
-// is the symmetric difference from the previous graph, so the edge is
-// looked up in the adjacency list of u to know whether the toggle adds or
-// deletes.
+// the pair adds an edge, a parallel one if the graph has the edge already.
+// On a ';' line the pair toggles the edge: it deletes one instance of it if
+// the graph has one, found along the adjacency list of u, and adds the edge
+// otherwise. For a graph without parallel edges this is the symmetric
+// difference of the format specification. After a graph with parallel
+// edges, nauty's copyg takes the previous graph modulo 2 instead, so a ';'
+// line can give a different graph there; the specification does not
+// support parallel edges on ';' lines, and toggling in sequence lets them
+// work rather than fail.
 int _s6_ApplyEdge(S6ReadIteratorP theS6ReadIterator, int u, int v, const int incremental, const int lineNum)
 {
     graphP theGraph = theS6ReadIterator->currGraph;
@@ -1194,7 +1165,7 @@ int _s6_ApplyEdge(S6ReadIteratorP theS6ReadIterator, int u, int v, const int inc
     int uStorage = u + gp_LowerBoundVertexStorage(theGraph);
     int vStorage = v + gp_LowerBoundVertexStorage(theGraph);
 
-    if (_s6_CheckEdge(theS6ReadIterator, u, v, incremental, lineNum) != OK)
+    if (_s6_CheckEdge(u, v, lineNum) != OK)
         return NOTOK;
 
     if (incremental)
@@ -1245,16 +1216,146 @@ int _s6_GrowRetrievedChanges(S6ReadIteratorP theS6ReadIterator)
     return OK;
 }
 
+// Appends a change to the list the lookahead has worked out: a deletion
+// of the edge record first, or an addition of the edge {first, second}.
+int _s6_AddRetrievedChange(S6ReadIteratorP theS6ReadIterator, int kind, int first, int second)
+{
+    int *change = NULL;
+
+    if (theS6ReadIterator->numChanges == theS6ReadIterator->changeCapacity &&
+        _s6_GrowRetrievedChanges(theS6ReadIterator) != OK)
+        return NOTOK;
+
+    change = theS6ReadIterator->changes + 3 * theS6ReadIterator->numChanges;
+    change[0] = kind;
+    change[1] = first;
+    change[2] = second;
+    theS6ReadIterator->numChanges++;
+
+    return OK;
+}
+
+// Decodes the next run of the current ';' line, i.e. the pairs that share
+// the larger endpoint v, beginning with the carry pair if the previous run
+// ended on one, and works out its net changes. The run ends at the first
+// pair with another v, which becomes the carry pair, or at the end of the
+// line, which leaves the line fully decoded.
+int _s6_RetrieveNextRun(S6ReadIteratorP theS6ReadIterator, const int lineNum)
+{
+    int u = 0, v = 0, runV = 0;
+    int runStarted = FALSE;
+    int endOfLine = FALSE;
+
+    if (theS6ReadIterator->runCount == NULL)
+    {
+        theS6ReadIterator->runCount = (long long *)calloc((size_t)theS6ReadIterator->order, sizeof(long long));
+        if (theS6ReadIterator->runCount == NULL)
+        {
+            gp_ErrorMessage("Unable to allocate memory for the run counts.");
+            return NOTOK;
+        }
+    }
+
+    if (theS6ReadIterator->runXs == NULL)
+    {
+        theS6ReadIterator->runXs = (int *)malloc((size_t)theS6ReadIterator->order * sizeof(int));
+        if (theS6ReadIterator->runXs == NULL)
+        {
+            gp_ErrorMessage("Unable to allocate memory for the run list.");
+            return NOTOK;
+        }
+    }
+
+    theS6ReadIterator->numRunXs = 0;
+
+    if (theS6ReadIterator->hasCarry)
+    {
+        theS6ReadIterator->hasCarry = FALSE;
+        u = theS6ReadIterator->carryU;
+        v = theS6ReadIterator->carryV;
+    }
+    else if (_s6_DecodeEdges(theS6ReadIterator, TRUE, TRUE, &u, &v, &endOfLine, lineNum) != OK)
+        return NOTOK;
+
+    while (!endOfLine)
+    {
+        // Checked before the run can end on it, so that an error in the
+        // pair held as the carry is refused by the call that decoded it
+        if (_s6_CheckEdge(u, v, lineNum) != OK)
+            return NOTOK;
+
+        if (runStarted && v != runV)
+        {
+            theS6ReadIterator->hasCarry = TRUE;
+            theS6ReadIterator->carryU = u;
+            theS6ReadIterator->carryV = v;
+            break;
+        }
+
+        runStarted = TRUE;
+        runV = v;
+
+        if (theS6ReadIterator->runCount[u]++ == 0)
+            theS6ReadIterator->runXs[theS6ReadIterator->numRunXs++] = u;
+
+        if (_s6_DecodeEdges(theS6ReadIterator, TRUE, TRUE, &u, &v, &endOfLine, lineNum) != OK)
+            return NOTOK;
+    }
+
+    if (endOfLine)
+        theS6ReadIterator->lineState = S6_LINE_INCREMENTAL_DONE;
+
+    return runStarted ? _s6_WorkOutRunChanges(theS6ReadIterator, runV) : OK;
+}
+
+// Works out the net change of the run whose pairs share the larger endpoint
+// vFile, for each x in the order first met. An edge {x, vFile} toggled k
+// times that has m instances in the graph as last read loses min(k, m) of
+// them, reported as different edge records found along the adjacency list
+// of x, and is added once more if k exceeds m by an odd number, which is
+// what toggling in sequence leaves. Like gp_FindEdge(), the search of the
+// list stops once it has found what it needs, here k instances. The counts
+// are reset for the next run.
+int _s6_WorkOutRunChanges(S6ReadIteratorP theS6ReadIterator, int vFile)
+{
+    graphP theGraph = theS6ReadIterator->currGraph;
+    int lowerBound = gp_LowerBoundVertexStorage(theGraph);
+    int vStorage = vFile + lowerBound;
+
+    for (int i = 0; i < theS6ReadIterator->numRunXs; i++)
+    {
+        int xFile = theS6ReadIterator->runXs[i];
+        int xStorage = xFile + lowerBound;
+        long long k = theS6ReadIterator->runCount[xFile];
+        long long d = 0;
+
+        theS6ReadIterator->runCount[xFile] = 0;
+
+        for (int e = gp_GetFirstEdge(theGraph, xStorage); d < k && gp_IsEdge(theGraph, e); e = gp_GetNextEdge(theGraph, e))
+        {
+            if (gp_GetNeighbor(theGraph, e) != vStorage)
+                continue;
+
+            if (_s6_AddRetrievedChange(theS6ReadIterator, S6_CHANGE_DELETE, e, NIL) != OK)
+                return NOTOK;
+            d++;
+        }
+
+        // Fewer than k deletions means that all m instances are deleted
+        if ((k - d) % 2 == 1 &&
+            _s6_AddRetrievedChange(theS6ReadIterator, S6_CHANGE_ADD, xStorage, vStorage) != OK)
+            return NOTOK;
+    }
+
+    theS6ReadIterator->numRunXs = 0;
+
+    return OK;
+}
+
 // Refuses a ';' line if the graph has been modified since the last graph
-// was read, since the line is the difference from that graph; every
-// function that modifies a graph advances its modification counter. Also
-// refuses it if that graph has parallel edges, since incremental sparse6
-// does not support them: the symmetric difference is not defined for a
-// multigraph, and nauty's copyg takes the previous graph modulo 2, so even
-// an empty ';' line would lose edges. Only a ':' line can give the graph
-// parallel edges, since a ';' line deletes a pair the graph has, adds one
-// it lacks, and refuses a pair twice.
-int _s6_IsIncrementalLineApplicable(S6ReadIteratorP theS6ReadIterator, const int lineNum)
+// was read, since the line is the difference from that graph. Every
+// function that modifies a graph advances its modification counter.
+int _s6_IsGraphAsLastRead(S6ReadIteratorP theS6ReadIterator, const int lineNum)
 {
     if (theGraphModificationCount(theS6ReadIterator->currGraph) != theS6ReadIterator->countAtLastRead)
     {
@@ -1264,22 +1365,13 @@ int _s6_IsIncrementalLineApplicable(S6ReadIteratorP theS6ReadIterator, const int
         return NOTOK;
     }
 
-    if (theS6ReadIterator->graphHasParallelEdges)
-    {
-        gp_ErrorMessage("Unable to apply incremental line %d, as the previous "
-                        "graph has parallel edges, which incremental sparse6 "
-                        "does not support.",
-                        lineNum);
-        return NOTOK;
-    }
-
     return OK;
 }
 
-// Applies the changes retrieved from the current ';' line to the graph, in
-// the order they were retrieved. Holes left by the deletions are compacted
-// by s6_ReadGraph() once the whole line is applied; until then no edge in
-// use moves, so each retrieved edge record still names its edge.
+// Applies the changes the lookahead has worked out for the current ';' line,
+// reported or not, in the order they were worked out. Holes left by the
+// deletions are compacted by s6_ReadGraph() once the whole line is applied;
+// until then no edge in use moves, so each edge record still names its edge.
 int _s6_ApplyRetrievedChanges(S6ReadIteratorP theS6ReadIterator)
 {
     graphP theGraph = theS6ReadIterator->currGraph;
@@ -1298,6 +1390,7 @@ int _s6_ApplyRetrievedChanges(S6ReadIteratorP theS6ReadIterator)
     }
 
     theS6ReadIterator->numChanges = 0;
+    theS6ReadIterator->numChangesReported = 0;
 
     return OK;
 }
@@ -1313,10 +1406,16 @@ void s6_FreeReader(S6ReadIteratorP *pS6ReadIterator)
         (*pS6ReadIterator)->order = 0;
         (*pS6ReadIterator)->numBitsForVertex = 0;
 
-        if ((*pS6ReadIterator)->edgeStamps != NULL)
+        if ((*pS6ReadIterator)->runCount != NULL)
         {
-            free((*pS6ReadIterator)->edgeStamps);
-            (*pS6ReadIterator)->edgeStamps = NULL;
+            free((*pS6ReadIterator)->runCount);
+            (*pS6ReadIterator)->runCount = NULL;
+        }
+
+        if ((*pS6ReadIterator)->runXs != NULL)
+        {
+            free((*pS6ReadIterator)->runXs);
+            (*pS6ReadIterator)->runXs = NULL;
         }
 
         if ((*pS6ReadIterator)->changes != NULL)
