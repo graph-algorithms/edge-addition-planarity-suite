@@ -102,10 +102,8 @@ struct S6WriteIteratorStruct
 
     // Set when the last line written is a ':' line with a repeated pair,
     // i.e. a graph with parallel edges, which no ';' line may follow. It
-    // is taken from the pairs written rather than from
-    // GRAPHFLAGS_PARALLELEDGEDETECTED, which can be set when the graph has
-    // no parallel edge (after an insertion refused at the edge capacity,
-    // or once the parallel edge is deleted) and clear when it has one.
+    // is taken from the pairs written, so it describes the graph that the
+    // next ';' line would be relative to.
     int lastLineHasParallelEdges;
 
     // Set when a write failed after part of its effect was produced,
