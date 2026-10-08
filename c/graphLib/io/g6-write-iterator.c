@@ -25,7 +25,7 @@ int _g6_InitWriterWithStrOrFile(G6WriteIteratorP theG6WriteIterator, strOrFileP 
 int _g6_InitWriter(G6WriteIteratorP theG6WriteIterator);
 int _g6_IsWriterInitialized(G6WriteIteratorP theG6WriteIterator, int reportUninitializedParts);
 void _g6_PrecomputeColumnOffsets(size_t *columnOffsets, int order);
-void _g6_EncodeAdjMatAsG6(G6WriteIteratorP theG6WriteIterator);
+int _g6_EncodeAdjMatAsG6(G6WriteIteratorP theG6WriteIterator);
 void _g6_GetFirstEdgeInUse(graphP theGraph, int *e, int *u, int *v);
 void _g6_GetNextEdgeInUse(graphP theGraph, int *e, int *u, int *v);
 int _g6_WriteEncodedGraph(G6WriteIteratorP theG6WriteIterator);
@@ -368,7 +368,12 @@ int g6_WriteGraph(G6WriteIteratorP theG6WriteIterator)
         return NOTOK;
     }
 
-    _g6_EncodeAdjMatAsG6(theG6WriteIterator);
+    if (_g6_EncodeAdjMatAsG6(theG6WriteIterator) != OK)
+    {
+        gp_ErrorMessage("G6 format doesn't support parallel edges or loops.");
+        g6_SetOutputErrorFlag(theG6WriteIterator);
+        return NOTOK;
+    }
 
     if (_g6_ValidateOrderOfEncodedGraph(theG6WriteIterator->currGraphBuff, theG6WriteIterator->order) != OK)
     {
@@ -395,7 +400,7 @@ int g6_WriteGraph(G6WriteIteratorP theG6WriteIterator)
     return OK;
 }
 
-void _g6_EncodeAdjMatAsG6(G6WriteIteratorP theG6WriteIterator)
+int _g6_EncodeAdjMatAsG6(G6WriteIteratorP theG6WriteIterator)
 {
     char *g6Encoding = NULL;
     size_t *columnOffsets = NULL;
@@ -477,6 +482,8 @@ void _g6_EncodeAdjMatAsG6(G6WriteIteratorP theG6WriteIterator)
         bitPositionPower = 5 - ((columnOffsets[v] + u) % 6);
 
         bitPosition = (1u << bitPositionPower);
+        if (u == v || (g6Encoding[charOffset] & bitPosition))
+            return NOTOK;
         g6Encoding[charOffset] |= bitPosition;
 
         _g6_GetNextEdgeInUse(theGraph, &e, &u, &v);
@@ -487,6 +494,8 @@ void _g6_EncodeAdjMatAsG6(G6WriteIteratorP theG6WriteIterator)
     // now do the same for bytes corresponding to edge lists
     for (size_t i = numCharsForOrder; i < totalNumCharsForOrderAndGraph; i++)
         g6Encoding[i] += 63;
+
+    return OK;
 }
 
 void _g6_GetFirstEdgeInUse(graphP theGraph, int *e, int *u, int *v)
@@ -628,12 +637,6 @@ int _g6_WriteGraphToStrOrFile(graphP theGraph, strOrFileP *pOutputContainer)
 {
     G6WriteIteratorP theG6WriteIterator = NULL;
     
-    if (theGraph->graphFlags & GRAPHFLAGS_PARALLELEDGEDETECTED)
-    {
-        gp_ErrorMessage("Parallel edges were previously added to the graph. See gp_DeleteParallelEdges().");
-        return NOTOK;
-    }
-
     if (!sf_IsValidStrOrFile((*pOutputContainer)))
     {
         gp_ErrorMessage("Invalid G6 output container.");
