@@ -95,7 +95,6 @@ extern "C"
         bits 24-31 reserved for future expansion
 */
 #define GRAPHFLAGS_DIRECTEDEDGEDETECTED 1
-#define GRAPHFLAGS_PARALLELEDGEDETECTED 4
 #define gp_GetGraphFlags(theGraph) ((theGraph)->graphFlags)
 
     // For graph embedding methods and declarations, see graphPlanarity.h
