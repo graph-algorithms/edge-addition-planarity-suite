@@ -30,12 +30,17 @@ int _s6_IsWriterInitialized(S6WriteIteratorP theS6WriteIterator, int reportUnini
 int _s6_IsDigraph(S6WriteIteratorP theS6WriteIterator);
 int _s6_GrowChangeBatch(S6WriteIteratorP theS6WriteIterator);
 size_t _s6_ChangeKeySlot(S6WriteIteratorP theS6WriteIterator, long long key);
-int _s6_ChangeKeyInsert(S6WriteIteratorP theS6WriteIterator, long long key);
+void _s6_ChangeKeyPut(S6WriteIteratorP theS6WriteIterator, long long key, int value);
+long long _s6_EdgeKey(S6WriteIteratorP theS6WriteIterator, int u, int v);
+long long _s6_RecordKey(graphP theGraph, int e);
 void _s6_ClearChangeBatch(S6WriteIteratorP theS6WriteIterator);
+int _s6_CountInstances(graphP theGraph, int u, int v);
+int _s6_IsInAdjacencyList(graphP theGraph, int u, int e);
+int _s6_BuildToggles(S6WriteIteratorP theS6WriteIterator, int **pToggles, int *pNumToggles);
 int _s6_NoEdgeIsHidden(graphP theGraph);
 int _s6_CollectEdges(graphP theGraph, int **pPairs, int *pNumPairs);
 int _s6_ComparePairs(void const *a, void const *b);
-int _s6_EncodeLine(S6WriteIteratorP theS6WriteIterator, char lineChar, int const *pairs, int numPairs, int stride);
+int _s6_EncodeLine(S6WriteIteratorP theS6WriteIterator, char lineChar, int const *pairs, int numPairs);
 int _s6_ApplyChangeBatch(S6WriteIteratorP theS6WriteIterator);
 
 int _s6_WriteGraphToFile(graphP theGraph, char *s6OutputFileName);
@@ -49,9 +54,14 @@ int _s6_WriteGraphToString(graphP theGraph, char **pOutputStr);
  s6-read-iterator.c. A ':' line encodes a whole graph as N(n), the
  order encoding of graph6, followed by a bit stream of (b, x) pairs
  of 1 + k bits each, k being the number of bits needed to represent
- n-1. A ';' line encodes the symmetric difference between the graph
- on the previous line and this one, with the same bit stream and no
- order.
+ n-1. A ';' line has the same bit stream and no order, and lists
+ toggles of the graph on the previous line, which the reader applies
+ in sequence: each pair deletes one instance of its edge if the graph
+ has one and adds the edge otherwise. For a graph without parallel
+ edges that is the symmetric difference of the specification. After
+ a graph with parallel edges the specification does not define the
+ line, and nauty's copyg takes that graph modulo 2 first, so such a
+ file reads differently there.
 
  The writer produces the bytes nauty produces for the same graph: the
  edges are emitted in the order of their larger endpoint, then their
@@ -60,16 +70,18 @@ int _s6_WriteGraphToString(graphP theGraph, char **pOutputStr);
  copyg differ only in the ">>sparse6<<" header, which this writer
  always writes, as the graph6 writer writes its own.
 
- A change batch holds the edges the caller has stored since the last
- write, as pairs of endpoints in the 0-based numbering of the file,
- with the kind of change. It is what the next ';' line encodes, and
- it is applied to the graph only when that line has been written, so
- until then the graph is the one on the previous line. The batch is
- relative to that graph: an edge added or deleted directly between
- writes is not in the batch, and the modification counter of the
- graph, sampled at each write, is how s6_WriteGraph() finds out that
- this has happened and refuses to write a ';' line that the reader
- could not apply.
+ A change batch holds the changes the caller has stored since the
+ last write: deletions of edge records and additions of edges, with
+ the number of instances each edge they touch has, and how many of
+ them the batch deletes and adds. The next ';' line toggles each such
+ edge as many times as the deletions and the additions differ, which
+ the reader turns into the same graph, and the batch is applied to
+ the graph only when that line has been written, so until then the
+ graph is the one on the previous line. The batch is relative to that
+ graph: an edge added or deleted directly between writes is not in
+ the batch, and the modification counter of the graph, sampled at each
+ write, is how s6_WriteGraph() finds out that this has happened and
+ refuses to write a ';' line that the reader could not apply.
  ********************************************************************/
 struct S6WriteIteratorStruct
 {
@@ -84,27 +96,33 @@ struct S6WriteIteratorStruct
 
     int numGraphsWritten;
 
-    // The change batch: three ints per change, the endpoints u < v in
-    // the 0-based numbering of the file and the kind of change
+    // The change batch: S6_CHANGE_INTS ints per change, the endpoints
+    // u < v in the 0-based numbering of the file, the kind of change, and
+    // for a deletion the edge record to delete
     int *changes;
     int numChanges;
     int changeCapacity;
 
-    // Open addressing table of the pair keys in the batch, so that a
-    // pair stored twice in one batch is refused in constant time. The
-    // key of {u, v} is u * order + v + 1, so that zero means empty.
+    // The edges the batch touches: S6_EDGE_INTS ints per edge, the
+    // endpoints u < v in the 0-based numbering of the file, the number
+    // of instances of the edge in the graph, and the numbers of its
+    // deletions and additions in the batch. There are no more of them
+    // than changes, so they share the capacity of the batch.
+    int *changedEdges;
+    int numChangedEdges;
+
+    // Open addressing table over the batch. The key of the edge {u, v}
+    // is u * order + v + 1, and its value is the edge's entry in
+    // changedEdges; the key of a deleted edge record is minus one more
+    // than the lower of its two arc records, so that the same record
+    // is not deleted twice. Zero means an empty slot.
     long long *changeKeys;
+    int *changeValues;
     size_t changeTableSize;
 
     // The modification counter of the graph as it was after the last
     // write, which is the graph the batch is relative to
     unsigned long long countAtLastWrite;
-
-    // Set when the last line written is a ':' line with a repeated pair,
-    // i.e. a graph with parallel edges, which no ';' line may follow. It
-    // is taken from the pairs written, so it describes the graph that the
-    // next ';' line would be relative to.
-    int lastLineHasParallelEdges;
 
     // Set when a write failed after part of its effect was produced,
     // after which neither the output nor the graph is a state that a
@@ -118,6 +136,12 @@ struct S6WriteIteratorStruct
 
 #define S6_CHANGE_DELETE 0
 #define S6_CHANGE_ADD 1
+
+#define S6_CHANGE_INTS 4
+#define S6_EDGE_INTS 5
+#define S6_EDGE_INSTANCES 2
+#define S6_EDGE_DELETIONS 3
+#define S6_EDGE_ADDITIONS 4
 
 #define S6_INITIAL_CHANGE_CAPACITY 16
 
@@ -162,7 +186,9 @@ int s6_NewWriter(S6WriteIteratorP *pS6WriteIterator, graphP theGraph)
     (*pS6WriteIterator)->outputContainer = NULL;
     (*pS6WriteIterator)->currGraph = theGraph;
     (*pS6WriteIterator)->changes = NULL;
+    (*pS6WriteIterator)->changedEdges = NULL;
     (*pS6WriteIterator)->changeKeys = NULL;
+    (*pS6WriteIterator)->changeValues = NULL;
     (*pS6WriteIterator)->lineBuff = NULL;
 
     return OK;
@@ -382,34 +408,48 @@ size_t _s6_ChangeKeySlot(S6WriteIteratorP theS6WriteIterator, long long key)
     return slot;
 }
 
-// Inserts the key, or returns NOTOK if it is already in the table
-int _s6_ChangeKeyInsert(S6WriteIteratorP theS6WriteIterator, long long key)
+// Puts the key with its value in the table, which has room for it, as it
+// holds at most two keys per change and has four slots per change
+void _s6_ChangeKeyPut(S6WriteIteratorP theS6WriteIterator, long long key, int value)
 {
     size_t slot = _s6_ChangeKeySlot(theS6WriteIterator, key);
 
-    if (theS6WriteIterator->changeKeys[slot] == key)
-        return NOTOK;
-
     theS6WriteIterator->changeKeys[slot] = key;
-
-    return OK;
+    theS6WriteIterator->changeValues[slot] = value;
 }
 
-// Doubles the batch and rebuilds its key table at four times the new
-// capacity, so that probing stays short. Both allocations are made before
-// either is published, so that a failure leaves the batch as it was, and
-// the capacity stays below INT_MAX / 3 so that the three ints per change
-// are always addressable.
+// The key of the edge {u, v}, u < v, in the 0-based numbering of the file
+long long _s6_EdgeKey(S6WriteIteratorP theS6WriteIterator, int u, int v)
+{
+    return (long long)u * theS6WriteIterator->order + v + 1;
+}
+
+// The key of the edge record e, the same for both of its arc records
+long long _s6_RecordKey(graphP theGraph, int e)
+{
+    int twin = gp_GetTwin(theGraph, e);
+
+    (void)theGraph;
+
+    return -((long long)(e < twin ? e : twin) + 1);
+}
+
+// Doubles the batch and rebuilds its table at four times the new
+// capacity, so that probing stays short. All allocations are made before
+// any is published, except that a grown buffer replaces its old self as
+// soon as realloc() returns it, so that a failure leaves the batch as it
+// was, only with more room. The capacity stays below INT_MAX /
+// S6_EDGE_INTS so that the ints of every change and edge are addressable.
 int _s6_GrowChangeBatch(S6WriteIteratorP theS6WriteIterator)
 {
     long long newCapacity = (theS6WriteIterator->changeCapacity == 0)
                                 ? S6_INITIAL_CHANGE_CAPACITY
                                 : (long long)theS6WriteIterator->changeCapacity * 2;
     size_t newTableSize = 1;
-    int *newChanges = NULL;
+    int *newChanges = NULL, *newEdges = NULL, *newValues = NULL;
     long long *newKeys = NULL;
 
-    if (newCapacity > INT_MAX / 3 ||
+    if (newCapacity > INT_MAX / S6_EDGE_INTS ||
         (size_t)newCapacity > SIZE_MAX / (4 * sizeof(long long)))
     {
         gp_ErrorMessage("Unable to grow the change batch of the sparse6 writer "
@@ -422,39 +462,56 @@ int _s6_GrowChangeBatch(S6WriteIteratorP theS6WriteIterator)
         newTableSize <<= 1;
 
     newKeys = (long long *)calloc(newTableSize, sizeof(long long));
-    if (newKeys == NULL)
+    newValues = (int *)malloc(newTableSize * sizeof(int));
+    if (newKeys == NULL || newValues == NULL)
     {
         gp_ErrorMessage("Unable to allocate memory for the change table of the "
                         "sparse6 writer.");
+        free(newKeys);
+        free(newValues);
         return NOTOK;
     }
 
-    newChanges = (int *)realloc(theS6WriteIterator->changes, (size_t)newCapacity * 3 * sizeof(int));
-    if (newChanges == NULL)
+    newChanges = (int *)realloc(theS6WriteIterator->changes, (size_t)newCapacity * S6_CHANGE_INTS * sizeof(int));
+    if (newChanges != NULL)
+    {
+        theS6WriteIterator->changes = newChanges;
+        newEdges = (int *)realloc(theS6WriteIterator->changedEdges, (size_t)newCapacity * S6_EDGE_INTS * sizeof(int));
+    }
+
+    if (newChanges == NULL || newEdges == NULL)
     {
         gp_ErrorMessage("Unable to allocate memory for the change batch of the "
                         "sparse6 writer.");
         free(newKeys);
+        free(newValues);
         return NOTOK;
     }
 
-    theS6WriteIterator->changes = newChanges;
+    theS6WriteIterator->changedEdges = newEdges;
     theS6WriteIterator->changeCapacity = (int)newCapacity;
 
-    if (theS6WriteIterator->changeKeys != NULL)
-        free(theS6WriteIterator->changeKeys);
-
+    free(theS6WriteIterator->changeKeys);
+    free(theS6WriteIterator->changeValues);
     theS6WriteIterator->changeKeys = newKeys;
+    theS6WriteIterator->changeValues = newValues;
     theS6WriteIterator->changeTableSize = newTableSize;
 
-    // Re-enter the pairs already in the batch, which are distinct
-    for (int i = 0; i < theS6WriteIterator->numChanges; i++)
+    // Re-enter the edges the batch touches, with their entries, and the
+    // records it deletes
+    for (int i = 0; i < theS6WriteIterator->numChangedEdges; i++)
     {
-        int u = theS6WriteIterator->changes[3 * i];
-        int v = theS6WriteIterator->changes[3 * i + 1];
+        int const *changedEdge = theS6WriteIterator->changedEdges + S6_EDGE_INTS * i;
 
-        if (_s6_ChangeKeyInsert(theS6WriteIterator, (long long)u * theS6WriteIterator->order + v + 1) != OK)
-            return NOTOK;
+        _s6_ChangeKeyPut(theS6WriteIterator, _s6_EdgeKey(theS6WriteIterator, changedEdge[0], changedEdge[1]), i);
+    }
+
+    for (int c = 0; c < theS6WriteIterator->numChanges; c++)
+    {
+        int const *change = theS6WriteIterator->changes + S6_CHANGE_INTS * c;
+
+        if (change[2] == S6_CHANGE_DELETE)
+            _s6_ChangeKeyPut(theS6WriteIterator, _s6_RecordKey(theS6WriteIterator->currGraph, change[3]), -1);
     }
 
     return OK;
@@ -463,9 +520,33 @@ int _s6_GrowChangeBatch(S6WriteIteratorP theS6WriteIterator)
 void _s6_ClearChangeBatch(S6WriteIteratorP theS6WriteIterator)
 {
     theS6WriteIterator->numChanges = 0;
+    theS6WriteIterator->numChangedEdges = 0;
 
     if (theS6WriteIterator->changeKeys != NULL)
         memset(theS6WriteIterator->changeKeys, 0, theS6WriteIterator->changeTableSize * sizeof(long long));
+}
+
+// Counts the instances of the edge {u, v} in the adjacency list of u
+int _s6_CountInstances(graphP theGraph, int u, int v)
+{
+    int numInstances = 0;
+
+    for (int e = gp_GetFirstEdge(theGraph, u); gp_IsEdge(theGraph, e); e = gp_GetNextEdge(theGraph, e))
+        if (gp_GetNeighbor(theGraph, e) == v)
+            numInstances++;
+
+    return numInstances;
+}
+
+// Returns TRUE if the arc record e is in the adjacency list of u, which is
+// where it is unless its edge is hidden
+int _s6_IsInAdjacencyList(graphP theGraph, int u, int e)
+{
+    for (int f = gp_GetFirstEdge(theGraph, u); gp_IsEdge(theGraph, f); f = gp_GetNextEdge(theGraph, f))
+        if (f == e)
+            return TRUE;
+
+    return FALSE;
 }
 
 /********************************************************************
@@ -476,16 +557,19 @@ void _s6_ClearChangeBatch(S6WriteIteratorP theS6WriteIterator)
  and u and v are NIL, or an addition when e is NIL and u and v are
  vertices. Any other combination is refused.
 
- A deletion is stored as the endpoints of e rather than as e, so that
- no stored change is invalidated by another. The change is validated
- against the graph as it is now, which is the graph on the previous
- line as long as nothing has modified it directly: the edge must be
- in use for a deletion, and absent for an addition, since incremental
- sparse6 does not support parallel edges; for the same reason, nothing
- can be stored after a whole (':') line with parallel edges until the
- graph is written whole without them. A loop is refused, and so is a
- pair that the batch already holds, because the line would then toggle
- the edge twice.
+ The change is validated against the graph as it is now, which is the
+ graph on the previous line as long as nothing has modified it
+ directly. A deletion must name an edge record in use and in an
+ adjacency list, since a hidden edge is not in the graph the reader
+ sees, and the batch may delete a record only once; any instance of a
+ parallel edge can be deleted. An addition must join two distinct real
+ vertices, since loops are not supported. The reader applies a ';'
+ line as toggles in sequence, so from an edge with m instances a line
+ can leave any number from 0 to m, and from an edge with none it can
+ add one; a batch that would leave more is refused when the change
+ that would make it so is stored. So an addition is accepted for an
+ edge the graph lacks, once, or in place of an instance the batch has
+ already deleted.
  Nothing can be stored before the first full (':') line has been
  written, since a ';' line is relative to the line before it.
 
@@ -497,7 +581,10 @@ int s6_StoreGraphChange(S6WriteIteratorP theS6WriteIterator, int e, int u, int v
     graphP theGraph = NULL;
     int kind = S6_CHANGE_ADD;
     int uFile = 0, vFile = 0;
-    int *change = NULL;
+    int edgeIndex = -1, numInstances = 0;
+    long long edgeKey = 0;
+    size_t edgeSlot = 0;
+    int *change = NULL, *changedEdge = NULL;
 
     if (!_s6_IsWriterInitialized(theS6WriteIterator, TRUE))
     {
@@ -528,21 +615,8 @@ int s6_StoreGraphChange(S6WriteIteratorP theS6WriteIterator, int e, int u, int v
         return NOTOK;
     }
 
-    // A ';' line is the symmetric difference from a graph without parallel
-    // edges, so no change can be stored after a line that has them
-    if (theS6WriteIterator->lastLineHasParallelEdges)
-    {
-        gp_ErrorMessage("Unable to store a change, as the last graph written "
-                        "has parallel edges, which incremental sparse6 does "
-                        "not support; write the graph whole once it has "
-                        "none (see gp_DeleteParallelEdges()).");
-        return NOTOK;
-    }
-
     if (gp_IsEdge(theGraph, e) && u == NIL && v == NIL)
     {
-        int eFound = NIL;
-
         if (e < gp_LowerBoundEdges(theGraph) || e >= gp_UpperBoundEdges(theGraph) ||
             gp_EdgeNotInUse(theGraph, e))
         {
@@ -559,11 +633,10 @@ int s6_StoreGraphChange(S6WriteIteratorP theS6WriteIterator, int e, int u, int v
         // A hidden edge is in use but in no adjacency list, so the graph
         // the reader sees does not contain it; its deletion is refused
         // rather than written as a toggle that would add it
-        eFound = gp_FindEdge(theGraph, u, v);
-        if (eFound != e && eFound != gp_GetTwin(theGraph, e))
+        if (!_s6_IsInAdjacencyList(theGraph, u, e))
         {
             gp_ErrorMessage("Unable to store the deletion of edge %d, which "
-                            "is hidden or a parallel edge.",
+                            "is hidden.",
                             e);
             return NOTOK;
         }
@@ -589,15 +662,6 @@ int s6_StoreGraphChange(S6WriteIteratorP theS6WriteIterator, int e, int u, int v
             return NOTOK;
         }
 
-        if (gp_IsEdge(theGraph, gp_FindEdge(theGraph, u, v)))
-        {
-            gp_ErrorMessage("Unable to store the addition of edge {%d, %d}, "
-                            "which is already in the graph; incremental "
-                            "sparse6 does not support parallel edges.",
-                            u, v);
-            return NOTOK;
-        }
-
         kind = S6_CHANGE_ADD;
     }
     else
@@ -619,23 +683,80 @@ int s6_StoreGraphChange(S6WriteIteratorP theS6WriteIterator, int e, int u, int v
         vFile = temp;
     }
 
+    // The batch grows before anything else changes it, so that a failure
+    // to grow leaves it as it was
     if (theS6WriteIterator->numChanges == theS6WriteIterator->changeCapacity &&
         _s6_GrowChangeBatch(theS6WriteIterator) != OK)
         return NOTOK;
 
-    if (_s6_ChangeKeyInsert(theS6WriteIterator, (long long)uFile * theS6WriteIterator->order + vFile + 1) != OK)
+    edgeKey = _s6_EdgeKey(theS6WriteIterator, uFile, vFile);
+    edgeSlot = _s6_ChangeKeySlot(theS6WriteIterator, edgeKey);
+
+    if (theS6WriteIterator->changeKeys[edgeSlot] == edgeKey)
     {
-        gp_ErrorMessage("Unable to store a second change of edge {%d, %d} in "
-                        "one batch.",
-                        u, v);
-        return NOTOK;
+        edgeIndex = theS6WriteIterator->changeValues[edgeSlot];
+        changedEdge = theS6WriteIterator->changedEdges + S6_EDGE_INTS * edgeIndex;
+        numInstances = changedEdge[S6_EDGE_INSTANCES];
+    }
+    else
+        numInstances = _s6_CountInstances(theGraph, u, v);
+
+    if (kind == S6_CHANGE_DELETE)
+    {
+        long long recordKey = _s6_RecordKey(theGraph, e);
+
+        if (theS6WriteIterator->changeKeys[_s6_ChangeKeySlot(theS6WriteIterator, recordKey)] == recordKey)
+        {
+            gp_ErrorMessage("Unable to store a second deletion of edge %d in "
+                            "one batch.",
+                            e);
+            return NOTOK;
+        }
+    }
+    else
+    {
+        int numDeleted = (changedEdge != NULL) ? changedEdge[S6_EDGE_DELETIONS] : 0;
+        int numAdded = (changedEdge != NULL) ? changedEdge[S6_EDGE_ADDITIONS] : 0;
+
+        if (numAdded >= numDeleted && (numInstances > 0 || numAdded > 0))
+        {
+            gp_ErrorMessage("Unable to store the addition of edge {%d, %d}, "
+                            "which would leave it with more instances than a "
+                            "';' line can: an instance can be added only to "
+                            "an edge the graph lacks, once, or in place of one "
+                            "the batch deletes.",
+                            u, v);
+            return NOTOK;
+        }
     }
 
-    change = theS6WriteIterator->changes + 3 * theS6WriteIterator->numChanges;
+    // Nothing below can fail, so the batch changes only on success
+    if (changedEdge == NULL)
+    {
+        edgeIndex = theS6WriteIterator->numChangedEdges++;
+        changedEdge = theS6WriteIterator->changedEdges + S6_EDGE_INTS * edgeIndex;
+        changedEdge[0] = uFile;
+        changedEdge[1] = vFile;
+        changedEdge[S6_EDGE_INSTANCES] = numInstances;
+        changedEdge[S6_EDGE_DELETIONS] = 0;
+        changedEdge[S6_EDGE_ADDITIONS] = 0;
+        _s6_ChangeKeyPut(theS6WriteIterator, edgeKey, edgeIndex);
+    }
+
+    change = theS6WriteIterator->changes + S6_CHANGE_INTS * theS6WriteIterator->numChanges;
     change[0] = uFile;
     change[1] = vFile;
     change[2] = kind;
+    change[3] = (kind == S6_CHANGE_DELETE) ? e : NIL;
     theS6WriteIterator->numChanges++;
+
+    if (kind == S6_CHANGE_DELETE)
+    {
+        changedEdge[S6_EDGE_DELETIONS]++;
+        _s6_ChangeKeyPut(theS6WriteIterator, _s6_RecordKey(theGraph, e), -1);
+    }
+    else
+        changedEdge[S6_EDGE_ADDITIONS]++;
 
     return OK;
 }
@@ -820,10 +941,10 @@ static void _s6_PutBits(s6BitWriter *writer, unsigned int value, int width)
 /********************************************************************
  _s6_EncodeLine()
 
- Encodes the given pairs, sorted by _s6_ComparePairs(), as one line
- of the file beginning with lineChar, which is ':' for a whole graph,
- in which case the order is written before the edges, or ';' for the
- symmetric difference from the previous line, which has no order.
+ Encodes the given pairs, two ints each and sorted by
+ _s6_ComparePairs(), as one line of the file beginning with lineChar, which is ':' for a whole graph,
+ in which case the order is written before the edges, or ';' for
+ toggles of the graph on the previous line, which has no order.
 
  The bit stream follows the decoding procedure of the specification
  in reverse. With v the vertex the decoder tracks, starting at 0, an
@@ -836,16 +957,13 @@ static void _s6_PutBits(s6BitWriter *writer, unsigned int value, int width)
  pad, the 1 bits would decode as the loop {n-1, n-1}, so the padding
  begins with a 0 bit.
 
- The pairs are read at the given stride, which lets the change batch,
- which keeps a third int per pair, be encoded in place.
-
  The line, including its terminator, is written to the output
  container in pieces of at most S6_LINE_CHUNK_SIZE bytes, so its length
  is limited only by the order and the number of edges. Returns OK on
  success, NOTOK otherwise.
  ********************************************************************/
 
-int _s6_EncodeLine(S6WriteIteratorP theS6WriteIterator, char lineChar, int const *pairs, int numPairs, int stride)
+int _s6_EncodeLine(S6WriteIteratorP theS6WriteIterator, char lineChar, int const *pairs, int numPairs)
 {
     const int order = theS6WriteIterator->order;
     const int numBitsForVertex = theS6WriteIterator->numBitsForVertex;
@@ -899,8 +1017,8 @@ int _s6_EncodeLine(S6WriteIteratorP theS6WriteIterator, char lineChar, int const
     // Once a piece of the line fails to go out, encoding the rest is wasted
     for (int p = 0; p < numPairs && !writer.failed; p++)
     {
-        const int i = pairs[stride * p];
-        const int j = pairs[stride * p + 1];
+        const int i = pairs[2 * p];
+        const int j = pairs[2 * p + 1];
 
         if (j == lastj)
         {
@@ -946,14 +1064,78 @@ int _s6_EncodeLine(S6WriteIteratorP theS6WriteIterator, char lineChar, int const
 }
 
 /********************************************************************
+ _s6_BuildToggles()
+
+ Lists the toggles of the ';' line for the batch: each edge the batch
+ touches, as many times as its deletions and additions differ, which
+ the reader turns into the graph the batch leaves, since the batch
+ deletes no more instances than the edge has and adds one only to an
+ edge the graph lacks or in place of an instance it deletes. Edges the
+ batch leaves as they were are left out. The pairs are sorted as the
+ format orders them, repeats adjacent, in an array the caller frees,
+ which is NULL when there is no toggle.
+ ********************************************************************/
+
+int _s6_BuildToggles(S6WriteIteratorP theS6WriteIterator, int **pToggles, int *pNumToggles)
+{
+    long long numToggles = 0;
+    int *toggles = NULL;
+    int t = 0;
+
+    (*pToggles) = NULL;
+    (*pNumToggles) = 0;
+
+    for (int i = 0; i < theS6WriteIterator->numChangedEdges; i++)
+    {
+        int const *changedEdge = theS6WriteIterator->changedEdges + S6_EDGE_INTS * i;
+
+        numToggles += abs(changedEdge[S6_EDGE_DELETIONS] - changedEdge[S6_EDGE_ADDITIONS]);
+    }
+
+    if (numToggles == 0)
+        return OK;
+
+    // There are no more toggles than changes, which fit in an int
+    if ((toggles = (int *)malloc((size_t)numToggles * 2 * sizeof(int))) == NULL)
+    {
+        gp_ErrorMessage("Unable to allocate memory for the toggles of the "
+                        "sparse6 line.");
+        return NOTOK;
+    }
+
+    for (int i = 0; i < theS6WriteIterator->numChangedEdges; i++)
+    {
+        int const *changedEdge = theS6WriteIterator->changedEdges + S6_EDGE_INTS * i;
+        int count = abs(changedEdge[S6_EDGE_DELETIONS] - changedEdge[S6_EDGE_ADDITIONS]);
+
+        for (int c = 0; c < count; c++, t++)
+        {
+            toggles[2 * t] = changedEdge[0];
+            toggles[2 * t + 1] = changedEdge[1];
+        }
+    }
+
+    if (numToggles > 1)
+        qsort(toggles, (size_t)numToggles, 2 * sizeof(int), _s6_ComparePairs);
+
+    (*pToggles) = toggles;
+    (*pNumToggles) = (int)numToggles;
+
+    return OK;
+}
+
+/********************************************************************
  _s6_ApplyChangeBatch()
 
  Applies the batch to the graph once its ';' line has been written,
  so that the graph is the one on that line, and compacts the edge
  storage, which the deletions leave with holes that some algorithms
- refuse. Each change is looked up by its endpoints, and its kind must
- still match the graph, which it does unless the graph was modified
- directly, in which case the write should not have happened.
+ refuse. The deletions come first, each by its edge record, which is
+ still in use, since nothing moves an edge record until the
+ compaction and the batch deletes a record only once; the additions
+ then fill the holes they leave. A change that no longer fits the
+ graph means it was modified directly, in which case the write should
+ not have happened.
  ********************************************************************/
 
 int _s6_ApplyChangeBatch(S6WriteIteratorP theS6WriteIterator)
@@ -963,30 +1145,29 @@ int _s6_ApplyChangeBatch(S6WriteIteratorP theS6WriteIterator)
 
     for (int c = 0; c < theS6WriteIterator->numChanges; c++)
     {
-        int const *change = theS6WriteIterator->changes + 3 * c;
-        const int u = change[0] + lowerBound;
-        const int v = change[1] + lowerBound;
-        const int e = gp_FindEdge(theGraph, u, v);
+        int const *change = theS6WriteIterator->changes + S6_CHANGE_INTS * c;
 
-        if (change[2] == S6_CHANGE_DELETE)
+        if (change[2] == S6_CHANGE_DELETE &&
+            (gp_EdgeNotInUse(theGraph, change[3]) || gp_DeleteEdge(theGraph, change[3]) != OK))
         {
-            if (!gp_IsEdge(theGraph, e) || gp_DeleteEdge(theGraph, e) != OK)
-            {
-                gp_ErrorMessage("Unable to delete edge {%d, %d} while applying "
-                                "the written changes to the graph.",
-                                u, v);
-                return NOTOK;
-            }
+            gp_ErrorMessage("Unable to delete edge {%d, %d} while applying "
+                            "the written changes to the graph.",
+                            change[0] + lowerBound, change[1] + lowerBound);
+            return NOTOK;
         }
-        else
+    }
+
+    for (int c = 0; c < theS6WriteIterator->numChanges; c++)
+    {
+        int const *change = theS6WriteIterator->changes + S6_CHANGE_INTS * c;
+
+        if (change[2] == S6_CHANGE_ADD &&
+            gp_DynamicAddEdge(theGraph, change[0] + lowerBound, 0, change[1] + lowerBound, 0) != OK)
         {
-            if (gp_IsEdge(theGraph, e) || gp_DynamicAddEdge(theGraph, u, 0, v, 0) != OK)
-            {
-                gp_ErrorMessage("Unable to add edge {%d, %d} while applying "
-                                "the written changes to the graph.",
-                                u, v);
-                return NOTOK;
-            }
+            gp_ErrorMessage("Unable to add edge {%d, %d} while applying "
+                            "the written changes to the graph.",
+                            change[0] + lowerBound, change[1] + lowerBound);
+            return NOTOK;
         }
     }
 
@@ -999,13 +1180,13 @@ int _s6_ApplyChangeBatch(S6WriteIteratorP theS6WriteIterator)
  Writes the graph as the next line of the output. With no changes
  stored since the last write, the whole graph is written as a ':'
  line, which is also how a graph that was modified directly is
- written; parallel edges are written as repeated pairs, and after such
- a line no change can be stored until a line without them has been
- written. With changes stored, they are written as a ';' line and then
- applied to the graph, provided the graph is still the one written
- last: if it was modified directly since, the batch is not relative
- to the graph the reader holds, so the write is refused and the batch
- is discarded, and a full write is the way to continue.
+ written; parallel edges are written as repeated pairs. With changes
+ stored, they are written as a ';' line of toggles and then applied
+ to the graph, provided the graph is still the one written last: if
+ it was modified directly since, the batch is not relative to the
+ graph the reader holds, so the write is refused and the batch is
+ discarded, and a full write is the way to continue. A batch whose
+ changes cancel out gives an empty ';' line.
 
  A graph with hidden edges is refused in either case, since the file
  could describe neither the graph with them nor the graph without
@@ -1071,17 +1252,10 @@ int s6_WriteGraph(S6WriteIteratorP theS6WriteIterator)
 
     if (theS6WriteIterator->numChanges == 0)
     {
-        int hasParallelEdges = FALSE;
-
         if (_s6_CollectEdges(theGraph, &pairs, &numPairs) != OK)
             return NOTOK;
 
-        // Sorted, a parallel edge is a pair equal to the one before it
-        for (int p = 1; p < numPairs && !hasParallelEdges; p++)
-            if (pairs[2 * p] == pairs[2 * p - 2] && pairs[2 * p + 1] == pairs[2 * p - 1])
-                hasParallelEdges = TRUE;
-
-        Result = _s6_EncodeLine(theS6WriteIterator, ':', pairs, numPairs, 2);
+        Result = _s6_EncodeLine(theS6WriteIterator, ':', pairs, numPairs);
 
         if (pairs != NULL)
             free(pairs);
@@ -1092,12 +1266,10 @@ int s6_WriteGraph(S6WriteIteratorP theS6WriteIterator)
             s6_SetOutputErrorFlag(theS6WriteIterator);
             return NOTOK;
         }
-
-        theS6WriteIterator->lastLineHasParallelEdges = hasParallelEdges;
     }
     else
     {
-        int numAdditions = 0;
+        int numDeletions = 0, numAdditions = 0;
 
         if (theGraphModificationCount(theGraph) != theS6WriteIterator->countAtLastWrite)
         {
@@ -1109,31 +1281,40 @@ int s6_WriteGraph(S6WriteIteratorP theS6WriteIterator)
             return NOTOK;
         }
 
-        // Room for the additions is made before the line is written, so
-        // that applying the batch afterwards cannot fail for lack of it
-        for (int c = 0; c < theS6WriteIterator->numChanges; c++)
-            if (theS6WriteIterator->changes[3 * c + 2] == S6_CHANGE_ADD)
-                numAdditions++;
+        // Nothing is touched yet, so a failure here is a refusal
+        if (_s6_BuildToggles(theS6WriteIterator, &pairs, &numPairs) != OK)
+            return NOTOK;
 
-        // A failure here has already touched the edge storage, so it is not
-        // a refusal the caller can retry
-        if (numAdditions > 0 &&
-            gp_EnsureEdgeCapacity(theGraph, gp_GetM(theGraph) + numAdditions) != OK)
+        for (int c = 0; c < theS6WriteIterator->numChanges; c++)
+        {
+            if (theS6WriteIterator->changes[S6_CHANGE_INTS * c + 2] == S6_CHANGE_ADD)
+                numAdditions++;
+            else
+                numDeletions++;
+        }
+
+        // Room for the additions is made before the line is written, so
+        // that applying the batch afterwards cannot fail for lack of it.
+        // The deletions are applied first and the additions reuse their
+        // holes, so the graph never has more edges than before or after
+        // the batch. A failure here has already touched the edge storage,
+        // so it is not a refusal the caller can retry.
+        if (numAdditions > numDeletions &&
+            gp_EnsureEdgeCapacity(theGraph, gp_GetM(theGraph) + numAdditions - numDeletions) != OK)
         {
             gp_ErrorMessage("Unable to ensure the edge capacity needed to "
                             "apply the stored changes.");
+            if (pairs != NULL)
+                free(pairs);
             theS6WriteIterator->writerFailed = TRUE;
             s6_SetOutputErrorFlag(theS6WriteIterator);
             return NOTOK;
         }
 
-        // The batch is encoded in place: its pairs are sorted like those of
-        // a whole graph, and the kind of a change plays no part in the line
-        if (theS6WriteIterator->numChanges > 1)
-            qsort(theS6WriteIterator->changes, (size_t)theS6WriteIterator->numChanges,
-                  3 * sizeof(int), _s6_ComparePairs);
+        Result = _s6_EncodeLine(theS6WriteIterator, ';', pairs, numPairs);
 
-        Result = _s6_EncodeLine(theS6WriteIterator, ';', theS6WriteIterator->changes, theS6WriteIterator->numChanges, 3);
+        if (pairs != NULL)
+            free(pairs);
 
         // Once the line is out, the graph must become the graph on that line;
         // a failure in either step leaves nothing to continue from
@@ -1175,10 +1356,22 @@ void s6_FreeWriter(S6WriteIteratorP *pS6WriteIterator)
             (*pS6WriteIterator)->changes = NULL;
         }
 
+        if ((*pS6WriteIterator)->changedEdges != NULL)
+        {
+            free((*pS6WriteIterator)->changedEdges);
+            (*pS6WriteIterator)->changedEdges = NULL;
+        }
+
         if ((*pS6WriteIterator)->changeKeys != NULL)
         {
             free((*pS6WriteIterator)->changeKeys);
             (*pS6WriteIterator)->changeKeys = NULL;
+        }
+
+        if ((*pS6WriteIterator)->changeValues != NULL)
+        {
+            free((*pS6WriteIterator)->changeValues);
+            (*pS6WriteIterator)->changeValues = NULL;
         }
 
         if ((*pS6WriteIterator)->lineBuff != NULL)
