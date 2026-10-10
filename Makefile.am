@@ -33,6 +33,7 @@ libplanarity_la_SOURCES = \
 	c/graphLib/io/g6-write-iterator.c \
 	c/graphLib/io/s6-read-iterator.c \
 	c/graphLib/io/s6-write-iterator.c \
+	c/graphLib/io/graphML-reader.c \
 	c/graphLib/io/graphML-writer.c \
 	c/graphLib/io/graphIO.c \
 	c/graphLib/io/strbuf.c \
@@ -97,6 +98,7 @@ planarity_SOURCES = \
 	c/planarityApp/planarityMenu.c \
 	c/planarityApp/planarityRandomGraphs.c \
 	c/planarityApp/planaritySpecificGraph.c \
+	c/planarityApp/planarity-test/testGraphML.c \
 	c/planarityApp/planarity-test/testReadErrors.c \
 	c/planarityApp/planarity-test/testSparse6.c \
 	c/planarityApp/planarityTransformGraph.c \

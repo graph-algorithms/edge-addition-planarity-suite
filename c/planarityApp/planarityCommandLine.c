@@ -58,8 +58,6 @@ int runReadErrorTests(void);
 int runReadWithExtensionAtEofTest(void);
 int runHighByteRoundTripTest(void);
 int runCapacityLimitTests(void);
-int runGraphMLWriteTest(char const *inputFileName, char const *expectedOutputFileName);
-int runBasicGraphMLWriteTest(void);
 int runGraphMLTests(void);
 
 /****************************************************************************
@@ -2597,54 +2595,6 @@ int runDigraphTests(void)
         gp_Message("Finished Digraph Tests.\n");
 
     return retVal;
-}
-
-int runGraphMLWriteTest(char const *inputFileName, char const *expectedOutputFileName)
-{
-    graphP G = gp_New();
-    char *actualOutput = NULL;
-    int Result = OK;
-
-    if (G == NULL)
-        return NOTOK;
-
-    if (gp_Read(G, inputFileName) != OK ||
-        gp_WriteToString(G, &actualOutput, WRITE_GRAPHML) != OK ||
-        actualOutput == NULL ||
-        TextFileMatchesString(expectedOutputFileName, actualOutput) != TRUE)
-        Result = NOTOK;
-
-    if (actualOutput != NULL)
-        free(actualOutput);
-    gp_Free(&G);
-
-    return Result;
-}
-
-int runBasicGraphMLWriteTest(void)
-{
-    if (runGraphMLWriteTest("Digraph.transposeTest.txt", "Digraph.transposeTest.graphml") != OK ||
-        runGraphMLWriteTest("Digraph.transposeTest.0-based.txt", "Digraph.transposeTest.0-based.graphml") != OK)
-        return NOTOK;
-
-    return OK;
-}
-
-int runGraphMLTests(void)
-{
-    int Result = OK;
-
-    gp_Message("Starting GraphML Tests");
-
-    if (runBasicGraphMLWriteTest() != OK)
-    {
-        gp_ErrorMessage("Basic GraphML write test failed.");
-        Result = NOTOK;
-    }
-    else
-        gp_Message("Finished GraphML Tests.\n");
-
-    return Result;
 }
 
 int runParallelEdgeTests(void)

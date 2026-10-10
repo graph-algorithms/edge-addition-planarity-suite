@@ -28,6 +28,7 @@ extern int _s6_WriteGraphToStrOrFile(graphP theGraph, strOrFileP *pOutputContain
 extern int _s6_ReadGraphFromStrOrFile(graphP theGraph, strOrFileP *pS6InputContainer);
 extern int s6_IsSparse6Input(char const *const firstLine);
 extern int g6_IsGraph6Input(char const *const firstLine);
+extern int _IsGraphMLInput(char const *const firstLine);
 extern int _WriteGraphMLGraph(graphP theGraph, strOrFileP outputContainer);
 
 /* Private functions (exported to system) */
@@ -36,6 +37,7 @@ int _ReadGraph(graphP theGraph, strOrFileP *pInputContainer);
 int _ReadAdjMatrix(graphP theGraph, strOrFileP inputContainer);
 int _ReadAdjList(graphP theGraph, strOrFileP inputContainer);
 int _ReadLEDAGraph(graphP theGraph, strOrFileP inputContainer);
+int _ReadGraphMLGraph(graphP theGraph, strOrFileP inputContainer, int readGraphElemOnly);
 int _ReadPostprocess(graphP theGraph, char *extraData);
 
 int _WriteGraph(graphP theGraph, strOrFileP *outputContainer, int Mode);
@@ -559,6 +561,10 @@ int _ReadGraph(graphP theGraph, strOrFileP *pInputContainer)
         RetVal = _ReadAdjMatrix(theGraph, (*pInputContainer));
         if (RetVal == OK)
             extraDataAllowed = TRUE;
+    }
+    else if (_IsGraphMLInput(lineBuff))
+    {
+        RetVal = _ReadGraphMLGraph(theGraph, (*pInputContainer), FALSE);
     }
     else if (s6_IsSparse6Input(lineBuff))
     {
