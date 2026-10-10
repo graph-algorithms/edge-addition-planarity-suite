@@ -51,6 +51,7 @@ int runDigraphTests(void);
 int runParallelEdgeTests(void);
 int runManyParallelEdgesTest(void);
 int runSingleParallelEdgeTest(void);
+int runParallelUndirectedTest(void);
 int addParallelEdges(graphP theGraph);
 int runDrawPlanarNonplanarWriteTest(void);
 int runReadErrorTests(void);
@@ -2608,6 +2609,9 @@ int runParallelEdgeTests(void)
     if (runManyParallelEdgesTest() != OK)
         retVal = NOTOK;
 
+    if (runParallelUndirectedTest() != OK)
+        retVal = NOTOK;
+
     if (runTestAllGraphsTest("-p", "n8.mALL.g6", NULL, addParallelEdges) != OK)
     {
         gp_ErrorMessage("Planarity test on all graphs with parallel edges failed.");
@@ -2735,6 +2739,9 @@ int runManyParallelEdgesTest(void)
         retVal = NOTOK;
     }
     else if (gp_GetM(G) != 60)
+        retVal = NOTOK;
+
+    else if (!(gp_GetGraphFlags(G) & GRAPHFLAGS_DIRECTEDEDGEDETECTED))
         retVal = NOTOK;
 
     else if ((G1 = gp_DupGraph(G)) == NULL)
@@ -2868,6 +2875,31 @@ int runSingleParallelEdgeTest(void)
 
     gp_Free(&G);
     gp_Free(&G1);
+
+    return retVal;
+}
+
+/*************************************************************************
+ Ensure that an adjacency list formatted graph with parallel edges doesn't
+ set the digraph flag if it is undirected.
+ *************************************************************************/
+int runParallelUndirectedTest(void)
+{
+    int retVal = OK;
+    graphP G = gp_New();
+
+    if (G == NULL)
+        return NOTOK;
+
+    if (gp_Read(G, "Petersen-parallel-undirected.txt") != OK &&
+        gp_Read(G, "c/samples/Petersen-parallel-undirected.txt") != OK)
+    {
+        retVal = NOTOK;
+    }
+    else if (gp_GetGraphFlags(G) & GRAPHFLAGS_DIRECTEDEDGEDETECTED)
+        retVal = NOTOK;
+
+    gp_Free(&G);
 
     return retVal;
 }
