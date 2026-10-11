@@ -542,17 +542,19 @@ int _EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity)
  Fills every hole that gp_DeleteEdge() has left in the edge record
  array, so that the edge records in use run from gp_LowerBoundEdges()
  to gp_UpperBoundEdges() without gaps, as they do in a graph that has
- only ever had edges added. Some algorithms require this (e.g. the
- planar drawing), and a reader of a format that deletes edges, or a
- writer that applies deletions, calls this once per graph rather than
- keeping the storage dense after every deletion.
+ only ever had edges added. The planar drawing requires this, so
+ gp_Embed() calls this before it begins a planar drawing of a graph
+ that has holes, rather than the storage being kept dense after every
+ deletion.
 
  A hole is filled by moving the last pair of edge records in use into
- it, through gp_DeleteEdge() and gp_DynamicAddEdge(), so that
- extensions which overload edge deletion and keep parallel edge data
- stay consistent; the flags of both records, direction included, are
- carried over. The moved edge is appended to the adjacency lists of
- its endpoints, so the order of those lists may change. When the last
+ it, through gp_DeleteEdge() and gp_InsertEdge(), so that extensions
+ which overload edge deletion and keep parallel edge data stay
+ consistent; the flags of both records, direction included, are
+ carried over. The moved edge keeps its place in the adjacency lists
+ of its endpoints, so a depth first search done before the compaction
+ still holds; only a loop, whose two records share one list, is moved
+ to the front of that list. When the last
  pair of records is itself a hole, that hole is dropped from the
  record of holes instead, which shrinks the storage in use.
 
@@ -560,15 +562,17 @@ int _EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity)
  is always the one on top of the stack, which keeps each step at
  constant time beyond the edge move itself.
 
- This method must not be called while edges are hidden, since a
- hidden edge is in use but in no adjacency list, and moving it would
- corrupt the list it is to be restored into. Nor is it meant for a
+ A hidden edge is in use but in no adjacency list, and moving it would
+ corrupt the list it is to be restored into, so the method refuses,
+ changing nothing, when an edge it would move is hidden. Nor is it
+ meant for a
  graph in the middle of an algorithm whose extension keeps data per
  edge: the deletion and insertion overloads clear and initialize that
  data for the records concerned, so the moved edge keeps its base
  record flags but not, for example, the path a reduction edge of the
- K4 or K3,3 search stands for. Its callers, the sparse6 reader and
- writer, apply it to graphs that are between algorithms.
+ K4 or K3,3 search stands for. Its caller, gp_Embed(), applies it
+ before the planar drawing begins, while the graph is between
+ algorithms.
 
  That is also why this method is private. As a public method it would
  have to be an overloadable function in the graph's function table, so
@@ -585,6 +589,19 @@ static int _CompareIntsAscending(void const *a, void const *b)
     return (x < y) ? -1 : ((x > y) ? 1 : 0);
 }
 
+// Returns TRUE if edge record e is in the adjacency list it belongs to,
+// which a hidden edge is not: it keeps its own links, but no record or
+// vertex links to it
+static int _IsEdgeRecordInList(graphP theGraph, int e)
+{
+    int ePrev = gp_GetPrevEdge(theGraph, e);
+
+    if (gp_IsEdge(theGraph, ePrev))
+        return gp_GetNextEdge(theGraph, ePrev) == e;
+
+    return gp_GetFirstEdge(theGraph, gp_GetNeighbor(theGraph, gp_GetTwin(theGraph, e))) == e;
+}
+
 int _CompactEdgeStorage(graphP theGraph)
 {
     stackP holes = NULL;
@@ -594,6 +611,15 @@ int _CompactEdgeStorage(graphP theGraph)
 
     if (theGraph->numEdgeHoles == 0)
         return OK;
+
+    // The edges that will move are those in use beyond the storage that
+    // the edge count needs, and none of them may be hidden
+    for (int e = gp_LowerBoundEdges(theGraph) + 2 * gp_GetM(theGraph); e < gp_UpperBoundEdges(theGraph); e += 2)
+    {
+        if (gp_EdgeInUse(theGraph, e) &&
+            (!_IsEdgeRecordInList(theGraph, e) || !_IsEdgeRecordInList(theGraph, gp_GetTwin(theGraph, e))))
+            return NOTOK;
+    }
 
     holes = theGraph->edgeHoles;
 
@@ -622,21 +648,44 @@ int _CompactEdgeStorage(graphP theGraph)
             unsigned flagsOfLastTwin = theGraph->E[gp_GetTwin(theGraph, eLast)].flags;
             int e_u = NIL, e_v = NIL;
 
+            // The records that follow eLast in u's list and its twin in v's
+            // list, before which the edge is put back
+            int eNext_u = gp_GetNextEdge(theGraph, eLast);
+            int eNext_v = gp_GetNextEdge(theGraph, gp_GetTwin(theGraph, eLast));
+
             if (gp_EdgeNotInUse(theGraph, eLast))
                 return NOTOK;
 
-            // Deleting the last pair records no hole, and re-adding the edge
-            // places its record in v's list at the hole on top of the stack
-            // and its record in u's list at the twin of that hole
-            if (gp_DeleteEdge(theGraph, eLast) != OK ||
-                gp_DynamicAddEdge(theGraph, u, 0, v, 0) != OK)
+            // Deleting the last pair records no hole, and putting the edge
+            // back places its record in v's list at the hole on top of the
+            // stack and its record in u's list at the twin of that hole. A
+            // loop has both records in one list, so it is put back at the
+            // front of that list instead.
+            if (gp_DeleteEdge(theGraph, eLast) != OK)
                 return NOTOK;
 
-            // The zeroes in the parameterization of gp_DynamicAddEdge() mean
-            // we are guaranteed to find the new edge records for (u, v) as
-            // the first adjacency list elements (link[0]) of u and v.
-            e_u = gp_GetFirstEdge(theGraph, u);
-            e_v = gp_GetFirstEdge(theGraph, v);
+            if (u == v)
+            {
+                if (gp_DynamicAddEdge(theGraph, u, 0, v, 0) != OK)
+                    return NOTOK;
+
+                // The record for v's list is attached last, so it is first
+                // in the shared list, and the record for u's list follows
+                e_v = gp_GetFirstEdge(theGraph, v);
+                e_u = gp_GetTwin(theGraph, e_v);
+            }
+            else
+            {
+                // Each record goes before the record that followed it, or
+                // at the end of the list if none did, so that the order of
+                // both lists is kept, which a depth first search done
+                // before the compaction relies on
+                if (gp_InsertEdge(theGraph, u, eNext_u, 1, v, eNext_v, 1) != OK)
+                    return NOTOK;
+
+                e_u = gp_IsEdge(theGraph, eNext_u) ? gp_GetPrevEdge(theGraph, eNext_u) : gp_GetLastEdge(theGraph, u);
+                e_v = gp_IsEdge(theGraph, eNext_v) ? gp_GetPrevEdge(theGraph, eNext_v) : gp_GetLastEdge(theGraph, v);
+            }
 
             // The flagsOfLast captured the flags of eLast, which is the
             // edge record with neighbor value assigned to v, which is e_u.
@@ -3309,8 +3358,6 @@ int gp_DeleteParallelEdges(graphP theGraph)
             e = gp_GetNextEdge(theGraph, e);
         }
     }
-
-    _CompactEdgeStorage(theGraph);
 
     return OK;
 }
