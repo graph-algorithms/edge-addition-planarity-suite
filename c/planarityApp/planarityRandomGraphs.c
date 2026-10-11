@@ -457,7 +457,9 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
         errno = 0;
         g6_FreeWriter((&theG6WriteIterator));
 
-        if (Result != NOTOK && (errno != 0 || (writingToStdout && ferror(stdout))))
+        // Note that if Result is already NOTOK, it is OK to write another error
+        // if the FreeWriter call gets an error while closing the output source.
+        if (errno != 0 || (writingToStdout && ferror(stdout)))
         {
             gp_ErrorMessage("Unable to finish writing the generated graphs.");
             Result = NOTOK;

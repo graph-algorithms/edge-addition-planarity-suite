@@ -167,8 +167,8 @@ int _g6_IsReaderInitialized(G6ReadIteratorP theG6ReadIterator, int reportUniniti
     }
     else
     {
-        // The input is closed once its end is read, after which the reader
-        // is still initialized
+        // The reader is uninitialized if the input source is invalid,
+        // except if it was closed due to its end having been reached.
         if (!theG6ReadIterator->endReached && !sf_IsValidStrOrFile(theG6ReadIterator->inputContainer))
         {
             if (reportUninitializedParts)
