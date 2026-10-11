@@ -2856,12 +2856,13 @@ int runManyParallelEdgesTest(void)
         else if (gp_GetM(G1) != 15)
             retVal = NOTOK;
 
-        // The deletions leave holes in the edge storage, which only the
-        // planar drawing needs filled, so they are left for gp_Embed()
+        // The parallel edge deletions leave holes in the edge storage, so
+        // we ensure they exist.
         else if (G1->numEdgeHoles == 0)
             retVal = NOTOK;
 
-        //  Verify embedding and structural integrity of the cleaned graph
+        // Verify embedding and structural integrity of the simple graph
+        // version of G in G1, including tolerating holes in its edge storage
         else if (gp_Embed(G1, EMBEDFLAGS_PLANAR) != NONEMBEDDABLE)
             retVal = NOTOK;
 

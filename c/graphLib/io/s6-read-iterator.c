@@ -1164,7 +1164,8 @@ int _s6_ApplyEdge(S6ReadIteratorP theS6ReadIterator, int u, int v, const int inc
         {
             // The deletion leaves a hole in the edge storage unless the pair
             // it removed was the last one, and a later addition fills it;
-            // gp_Embed() fills any holes left before a planar drawing
+            // if needed, algorithm implementations can call _CompactEdgeStorage()
+            // to fill any holes before performing their main logic.
             return gp_DeleteEdge(theGraph, e);
         }
     }

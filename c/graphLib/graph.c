@@ -542,10 +542,8 @@ int _EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity)
  Fills every hole that gp_DeleteEdge() has left in the edge record
  array, so that the edge records in use run from gp_LowerBoundEdges()
  to gp_UpperBoundEdges() without gaps, as they do in a graph that has
- only ever had edges added. The planar drawing requires this, so
- gp_Embed() calls this before it begins a planar drawing of a graph
- that has holes, rather than the storage being kept dense after every
- deletion.
+ only ever had edges added. If needed, algorithm implementations can 
+ call this method to fill any holes before performing their main logic.
 
  A hole is filled by moving the last pair of edge records in use into
  it, through gp_DeleteEdge() and gp_InsertEdge(), so that extensions
@@ -564,17 +562,15 @@ int _EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity)
 
  A hidden edge is in use but in no adjacency list, and moving it would
  corrupt the list it is to be restored into, so the method refuses,
- changing nothing, when an edge it would move is hidden. Nor is it
- meant for a
- graph in the middle of an algorithm whose extension keeps data per
- edge: the deletion and insertion overloads clear and initialize that
- data for the records concerned, so the moved edge keeps its base
- record flags but not, for example, the path a reduction edge of the
- K4 or K3,3 search stands for. Its caller, gp_Embed(), applies it
- before the planar drawing begins, while the graph is between
- algorithms.
+ changing nothing, when an edge it would move is hidden. 
+ 
+ This method is not intended for a graph in the middle of an algorithm 
+ whose extension keeps data per edge: the deletion and insertion 
+ overloads clear and initialize that data for the records concerned, 
+ so the moved edge keeps its base record information but not
+ extended data.
 
- That is also why this method is private. As a public method it would
+ This is why this method is private. As a public method it would
  have to be an overloadable function in the graph's function table, so
  that each extension moves its own edge data along with the base edge
  records instead of losing it to the deletion overload.
@@ -616,9 +612,15 @@ int _CompactEdgeStorage(graphP theGraph)
     // the edge count needs, and none of them may be hidden
     for (int e = gp_LowerBoundEdges(theGraph) + 2 * gp_GetM(theGraph); e < gp_UpperBoundEdges(theGraph); e += 2)
     {
-        if (gp_EdgeInUse(theGraph, e) &&
-            (!_IsEdgeRecordInList(theGraph, e) || !_IsEdgeRecordInList(theGraph, gp_GetTwin(theGraph, e))))
-            return NOTOK;
+        if (gp_EdgeInUse(theGraph, e))
+        {
+            // This method cannot compact edge storage if any in-use edges
+            // it would need to move are hidden. A hidden edge is detected
+            // based on it being unhooked from its adjacency list.
+            // See gp_HideEdge() and _DetachEdgeRecord()
+            if (!_IsEdgeRecordInList(theGraph, e) || !_IsEdgeRecordInList(theGraph, gp_GetTwin(theGraph, e)))
+                return NOTOK;
+        }
     }
 
     holes = theGraph->edgeHoles;

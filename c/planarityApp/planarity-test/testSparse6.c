@@ -790,6 +790,9 @@ static int runCompactEdgeStorageTests(void)
             eHidden = gp_FindEdge(theGraph, lower + 2, lower + 3);
             gp_HideEdge(theGraph, eHidden);
 
+            // Set all to quiet due to intended failure call
+            gp_SetQuietMode(QUIETMODE_ALL);
+
             if (_CompactEdgeStorage(theGraph) == OK || gp_Embed(theGraph, EMBEDFLAGS_DRAWPLANAR) != NOTOK ||
                 theGraph->numEdgeHoles != 1 || gp_UpperBoundEdges(theGraph) != gp_LowerBoundEdges(theGraph) + 6 ||
                 gp_GetEmbedFlags(theGraph) != 0)
@@ -797,6 +800,8 @@ static int runCompactEdgeStorageTests(void)
                 gp_ErrorMessage("Compaction moved a hidden edge.");
                 Result = NOTOK;
             }
+
+            gp_SetQuietMode(origQuietMode);
 
             gp_RestoreEdge(theGraph, eHidden);
         }
@@ -821,7 +826,7 @@ static int runCompactEdgeStorageTests(void)
 /****************************************************************************
  runEdgeHoleTests()
 
- Deletions leave holes in the edge storage, which only the planar drawing
+ Deletions leave holes in the edge storage, which planar drawing currently
  cannot work with, so gp_Embed() fills them before a drawing and nothing
  else does. The sparse6 reader must leave the hole of a deleted middle edge,
  with every other edge in its record, and fill it with a later addition; a
@@ -1095,20 +1100,31 @@ static int runEdgeHoleTests(void)
             for (int prep = 0; Result == OK && prep < 3; prep++)
             {
                 graphP drawCopy = gp_DupGraph(theGraph), planarCopy = gp_DupGraph(theGraph);
-                int drawResult = NOTOK;
 
                 if (drawCopy == NULL || planarCopy == NULL || gp_DepthFirstSearch(drawCopy) != OK ||
                     (prep == 1 && gp_SortVertices(drawCopy) != OK) ||
                     (prep == 2 && gp_ComputeLowpoints(drawCopy) != OK) ||
-                    gp_ExtendWith_DrawPlanar(drawCopy) != OK ||
-                    (drawResult = gp_Embed(drawCopy, EMBEDFLAGS_DRAWPLANAR)) == NOTOK ||
-                    drawResult != gp_Embed(planarCopy, EMBEDFLAGS_PLANAR) ||
-                    gp_TestEmbedResultIntegrity(drawCopy, theGraph, drawResult) != drawResult)
+                    gp_ExtendWith_DrawPlanar(drawCopy) != OK)
                 {
                     gp_ErrorMessage("The planar drawing of graph %d of \"n8.mALL.inc.s6\" "
-                                    "after a depth first search%s failed.",
-                                    numGraphs, prep == 1 ? " and sorting" : (prep == 2 ? " and lowpoints" : ""));
+                                    "failed prior to embedding.",
+                                    numGraphs);
                     Result = NOTOK;
+                }
+
+                if (Result == OK)
+                {
+                    int drawResult = gp_Embed(drawCopy, EMBEDFLAGS_DRAWPLANAR);
+
+                    if ((drawResult != OK && drawResult != NONEMBEDDABLE) ||
+                        drawResult != gp_Embed(planarCopy, EMBEDFLAGS_PLANAR) ||
+                        gp_TestEmbedResultIntegrity(drawCopy, theGraph, drawResult) != drawResult)
+                    {
+                        gp_ErrorMessage("The planar drawing of graph %d of \"n8.mALL.inc.s6\" "
+                                        "after a depth first search%s failed.",
+                                        numGraphs, prep == 1 ? " and sorting" : (prep == 2 ? " and lowpoints" : ""));
+                        Result = NOTOK;
+                    }
                 }
 
                 gp_Free(&drawCopy);
@@ -2092,7 +2108,8 @@ static int runSparse6ReadBackTest(char const *s6Str, int const *const graphs[], 
 
         for (int i = 0; Result == OK && i <= numGraphs; i++)
         {
-            int toRetrieve = (lookahead == 0) ? 0 : (lookahead == 1 || i % 4 == 3) ? INT_MAX : i % 4;
+            int toRetrieve = (lookahead == 0) ? 0 : (lookahead == 1 || i % 4 == 3) ? INT_MAX
+                                                                                   : i % 4;
 
             for (int r = 0; Result == OK && r < toRetrieve; r++)
             {
@@ -2118,7 +2135,8 @@ static int runSparse6ReadBackTest(char const *s6Str, int const *const graphs[], 
             {
                 gp_ErrorMessage("Graph %d written by the sparse6 writer read back "
                                 "differently%s.",
-                                i + 1, lookahead == 0 ? "" : lookahead == 1 ? " with every change retrieved" : " with some changes retrieved");
+                                i + 1, lookahead == 0 ? "" : lookahead == 1 ? " with every change retrieved"
+                                                                            : " with some changes retrieved");
                 Result = NOTOK;
             }
         }
