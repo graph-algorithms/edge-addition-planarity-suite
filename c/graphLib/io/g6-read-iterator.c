@@ -167,7 +167,9 @@ int _g6_IsReaderInitialized(G6ReadIteratorP theG6ReadIterator, int reportUniniti
     }
     else
     {
-        if (!sf_IsValidStrOrFile(theG6ReadIterator->inputContainer))
+        // The input is closed once its end is read, after which the reader
+        // is still initialized
+        if (!theG6ReadIterator->endReached && !sf_IsValidStrOrFile(theG6ReadIterator->inputContainer))
         {
             if (reportUninitializedParts)
                 gp_ErrorMessage("G6ReadIterator's inputContainer string-or-file "
@@ -567,6 +569,12 @@ int g6_ReadGraph(G6ReadIteratorP theG6ReadIterator)
         gp_ErrorMessage("G6ReadIterator is not initialized.");
         return NOTOK;
     }
+
+    // Once the end is read the input is closed, and a failure to close it
+    // leaves the input error flag set
+    if (theG6ReadIterator->endReached)
+        return theG6ReadIterator->inputContainer->inputErrorFlag ? NOTOK : OK;
+
     if (numCharsForGraphEncoding > INT_MAX || currGraphBuffSize > INT_MAX)
     {
         gp_ErrorMessage("Integer overflow.");
@@ -644,6 +652,14 @@ int g6_ReadGraph(G6ReadIteratorP theG6ReadIterator)
             return NOTOK;
         }
         theG6ReadIterator->endReached = TRUE;
+
+        // The input is closed here, where a failure to close, e.g. of a stream
+        // whose close reports an error, can still be returned
+        if (sf_closeFile(inputContainer) != OK)
+        {
+            gp_ErrorMessage("Unable to close the .g6 input after its last line.");
+            return NOTOK;
+        }
     }
 
     return OK;

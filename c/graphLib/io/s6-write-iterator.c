@@ -1474,6 +1474,15 @@ int _s6_WriteGraphToStrOrFile(graphP theGraph, strOrFileP *pOutputContainer)
         return NOTOK;
     }
 
+    // The writer owns the container, so its file is closed here, where a
+    // failure to close, which s6_FreeWriter() cannot report, is returned
+    if (sf_closeFile(theS6WriteIterator->outputContainer) != OK)
+    {
+        gp_ErrorMessage("Unable to close the sparse6 output.");
+        s6_FreeWriter((&theS6WriteIterator));
+        return NOTOK;
+    }
+
     s6_FreeWriter((&theS6WriteIterator));
 
     return OK;
