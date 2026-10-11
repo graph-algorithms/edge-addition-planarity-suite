@@ -20,7 +20,6 @@ See the LICENSE.TXT file for licensing information.
 #include "../graph.private.h"
 
 /* Private function declarations (exported within system) */
-extern int _CompactEdgeStorage(graphP theGraph);
 int _s6_ReadGraphFromStrOrFile(graphP theGraph, strOrFileP *pInputContainer);
 
 /* Private functions */
@@ -803,17 +802,6 @@ int s6_ReadGraph(S6ReadIteratorP theS6ReadIterator)
         return NOTOK;
     }
 
-    // The deletions of an incremental line leave holes in the edge storage,
-    // which are filled once here rather than after each deletion
-    if (incremental && _CompactEdgeStorage(currGraph) != OK)
-    {
-        gp_ErrorMessage("Unable to keep the edge storage dense after applying "
-                        "line %d.",
-                        lineNum);
-        theS6ReadIterator->readerFailed = TRUE;
-        return NOTOK;
-    }
-
     theS6ReadIterator->lineState = S6_LINE_NOT_STARTED;
     theS6ReadIterator->numChanges = 0;
     theS6ReadIterator->numChangesReported = 0;
@@ -1189,9 +1177,9 @@ int _s6_ApplyEdge(S6ReadIteratorP theS6ReadIterator, int u, int v, const int inc
         if (gp_IsEdge(theGraph, e))
         {
             // The deletion leaves a hole in the edge storage unless the pair
-            // it removed was the last one; s6_ReadGraph() compacts the
-            // storage once the whole line has been applied, since a freshly
-            // read graph must have no holes for algorithms such as DrawPlanar
+            // it removed was the last one, and a later addition fills it;
+            // if needed, algorithm implementations can call _CompactEdgeStorage()
+            // to fill any holes before performing their main logic.
             return gp_DeleteEdge(theGraph, e);
         }
     }
@@ -1383,9 +1371,9 @@ int _s6_IsGraphAsLastRead(S6ReadIteratorP theS6ReadIterator, const int lineNum)
 }
 
 // Applies the changes the lookahead has worked out for the current ';' line,
-// reported or not, in the order they were worked out. Holes left by the
-// deletions are compacted by s6_ReadGraph() once the whole line is applied;
-// until then no edge in use moves, so each edge record still names its edge.
+// reported or not, in the order they were worked out. Deletions leave holes
+// and additions fill them, but no edge in use moves, so each edge record
+// still names its edge.
 int _s6_ApplyRetrievedChanges(S6ReadIteratorP theS6ReadIterator)
 {
     graphP theGraph = theS6ReadIterator->currGraph;

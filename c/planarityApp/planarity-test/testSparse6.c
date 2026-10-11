@@ -30,6 +30,7 @@ static int runSparse6WriteLineTest(char const *g6Str, char const *expectedLine);
 static int runSparse6WriteRoundTripTest(char const *g6FileName, char const *s6FileName, int incremental);
 static int runSparse6WriteContractTests(void);
 static int runCompactEdgeStorageTests(void);
+static int runEdgeHoleTests(void);
 static int runSparse6LockstepTest(char const *g6FileName, char const *s6FileName, int inputInMemFlag, int expectedNumGraphs);
 static int runSparse6AcceptTest(char const *s6Str, char const *expectedG6Line);
 static int runSparse6AcceptEdgesTest(char const *s6Str, int order, int const edges[][2], int numEdges);
@@ -154,7 +155,7 @@ static int runSparse6WriteLineTest(char const *g6Str, char const *expectedLine)
  next, and compares the output with the sparse6 file, which nauty wrote from
  the same graphs, byte for byte. In the incremental case it also checks that
  applying each written batch leaves the writer's graph equal to the graph
- read, with no holes in its edge storage.
+ read.
  ****************************************************************************/
 
 static int runSparse6WriteRoundTripTest(char const *g6FileName, char const *s6FileName, int incremental)
@@ -284,7 +285,7 @@ static int runSparse6WriteRoundTripTest(char const *g6FileName, char const *s6Fi
         }
 
         // Applying the batch must leave the writer's graph equal to the graph
-        // read, and dense
+        // read
         if (Result == OK)
         {
             char *ourG6 = NULL, *readG6 = NULL;
@@ -297,13 +298,6 @@ static int runSparse6WriteRoundTripTest(char const *g6FileName, char const *s6Fi
                                 "rather than \"%s\".",
                                 numGraphs, g6FileName, ourG6 == NULL ? "" : ourG6,
                                 readG6 == NULL ? "" : readG6);
-                Result = NOTOK;
-            }
-            else if (writerGraph->numEdgeHoles != 0)
-            {
-                gp_ErrorMessage("After graph %d of \"%s\" the writer's graph has "
-                                "%d edge holes.",
-                                numGraphs, g6FileName, writerGraph->numEdgeHoles);
                 Result = NOTOK;
             }
 
@@ -367,9 +361,10 @@ static int runSparse6WriteContractTests(void)
     int lower = 0;
     int eFirst = NIL;
     // The path 0-1-2-3-4 is written whole, then {0, 1} is deleted and
-    // {0, 4} added in one batch, then {3, 4} is deleted directly, which
-    // forces a whole write, and then {1, 2} is deleted in a batch; the
-    // lines are what copyg -s and copyg -i write for those graphs
+    // {0, 4} added in one batch, then the graph is edited directly so that
+    // {3, 4} is gone, which forces a whole write, and then {1, 2} is
+    // deleted in a batch; the lines are what copyg -s and copyg -i write
+    // for those graphs
     char const *expected =
         ":DaYn\n"
         ";b?\n"
@@ -477,11 +472,11 @@ static int runSparse6WriteContractTests(void)
         Result = NOTOK;
     }
 
-    // The batch was applied: {0, 1} is gone and {0, 4} is there, densely
+    // The batch was applied: {0, 1} is gone and {0, 4} is there
     if (Result == OK &&
         (gp_IsEdge(theGraph, gp_FindEdge(theGraph, lower, lower + 1)) ||
          !gp_IsEdge(theGraph, gp_FindEdge(theGraph, lower, lower + 4)) ||
-         gp_GetM(theGraph) != 4 || theGraph->numEdgeHoles != 0))
+         gp_GetM(theGraph) != 4))
     {
         gp_SetQuietMode(origQuietMode);
         gp_ErrorMessage("The batch was not applied to the graph as written.");
@@ -489,14 +484,23 @@ static int runSparse6WriteContractTests(void)
     }
 
     // A direct edit after storing a change: the batch is refused and
-    // discarded, a whole write is accepted, and a batch is accepted again
+    // discarded, a whole write is accepted, and a batch is accepted again.
+    // The edit leaves the record of the stored deletion of {1, 2} naming
+    // {2, 3}, an edge in use, so only the edit itself can tell the writer
+    // that the batch no longer fits: {1, 2} and {3, 4} are deleted, the
+    // compaction moves {2, 3} into the hole of {1, 2}, and {1, 2} is added
     if (Result == OK)
     {
-        int eToDelete = gp_FindEdge(theGraph, lower + 3, lower + 4);
+        int eToDelete = gp_FindEdge(theGraph, lower + 1, lower + 2);
 
         if (s6_StoreGraphChange(theWriter, eToDelete, NIL, NIL) != OK ||
             gp_DeleteEdge(theGraph, eToDelete) != OK ||
-            _CompactEdgeStorage(theGraph) != OK)
+            gp_DeleteEdge(theGraph, gp_FindEdge(theGraph, lower + 3, lower + 4)) != OK ||
+            _CompactEdgeStorage(theGraph) != OK ||
+            gp_AddEdge(theGraph, lower + 1, 0, lower + 2, 0) != OK ||
+            gp_EdgeNotInUse(theGraph, eToDelete) ||
+            gp_GetNeighbor(theGraph, eToDelete) == lower + 1 ||
+            gp_GetNeighbor(theGraph, gp_GetTwin(theGraph, eToDelete)) == lower + 1)
         {
             gp_SetQuietMode(origQuietMode);
             gp_ErrorMessage("Unable to set up the direct edit case.");
@@ -576,8 +580,29 @@ static int runSparse6WriteContractTests(void)
  Deletes edges of K5 so that holes lie in the middle and at the end of the
  edge storage, recorded by either record of their pairs, and checks that
  _CompactEdgeStorage() removes every hole while keeping the edge set, the
- edge count and the flags of the moved edge.
+ edge count, the flags of the moved edge and the order of every adjacency
+ list, which a depth first search done before the compaction relies on.
+ A loop in the last pair is moved too, to the front of its list, and an
+ edge to be moved that is hidden makes the compaction refuse.
  ****************************************************************************/
+
+// Writes the neighbors of each vertex of a graph of order 5, in adjacency
+// list order, to five rows filled out with NIL
+static void getNeighborOrder(graphP theGraph, int order[5][5])
+{
+    int lower = gp_LowerBoundVertexStorage(theGraph);
+
+    for (int v = 0; v < 5; v++)
+    {
+        int i = 0;
+
+        for (int e = gp_GetFirstEdge(theGraph, lower + v); gp_IsEdge(theGraph, e) && i < 4;
+             e = gp_GetNextEdge(theGraph, e))
+            order[v][i++] = gp_GetNeighbor(theGraph, e);
+        while (i < 5)
+            order[v][i++] = NIL;
+    }
+}
 
 static int runCompactEdgeStorageTests(void)
 {
@@ -586,6 +611,7 @@ static int runCompactEdgeStorageTests(void)
     char *before = NULL, *after = NULL;
     int lower = 0;
     int eLast = NIL, uLast = NIL, vLast = NIL;
+    int orderBefore[5][5], orderAfter[5][5];
     unsigned origQuietMode = gp_GetQuietMode();
 
     if ((theGraph = gp_New()) == NULL || gp_EnsureVertexCapacity(theGraph, 5) != OK)
@@ -596,23 +622,29 @@ static int runCompactEdgeStorageTests(void)
 
     lower = gp_LowerBoundVertexStorage(theGraph);
 
+    // Each edge goes to the front of the list of its lesser endpoint and to
+    // the end of the other list, so that each edge the compaction moves is
+    // first in one list, ahead of another edge, and last in the other
     for (int u = 0; Result == OK && u < 5; u++)
         for (int v = u + 1; Result == OK && v < 5; v++)
-            if (gp_AddEdge(theGraph, lower + u, 0, lower + v, 0) != OK)
+            if (gp_AddEdge(theGraph, lower + u, 0, lower + v, 1) != OK)
                 Result = NOTOK;
 
-    // Delete the last pair, then a middle pair by its odd record, then the
-    // pair before the last, so that the trailing region is holes
+    // Delete the pair before the last by its odd record and then the last
+    // pair, which leaves a hole as the last pair of the storage in use, then
+    // a middle pair by its odd record and another by its even record
     if (Result == OK &&
-        (gp_DeleteEdge(theGraph, gp_FindEdge(theGraph, lower + 3, lower + 4)) != OK ||
+        (gp_DeleteEdge(theGraph, gp_GetTwin(theGraph, gp_FindEdge(theGraph, lower + 2, lower + 4))) != OK ||
+         gp_DeleteEdge(theGraph, gp_FindEdge(theGraph, lower + 3, lower + 4)) != OK ||
          gp_DeleteEdge(theGraph, gp_GetTwin(theGraph, gp_FindEdge(theGraph, lower + 1, lower + 2))) != OK ||
-         gp_DeleteEdge(theGraph, gp_GetTwin(theGraph, gp_FindEdge(theGraph, lower + 2, lower + 4))) != OK ||
          gp_DeleteEdge(theGraph, gp_FindEdge(theGraph, lower + 0, lower + 3)) != OK))
         Result = NOTOK;
 
-    if (Result == OK && theGraph->numEdgeHoles == 0)
+    if (Result == OK &&
+        (theGraph->numEdgeHoles != 3 || gp_EdgeInUse(theGraph, gp_UpperBoundEdges(theGraph) - 2)))
     {
-        gp_ErrorMessage("The deletions left no edge holes to compact.");
+        gp_ErrorMessage("The deletions did not leave three edge holes, the last "
+                        "pair being one.");
         Result = NOTOK;
     }
 
@@ -633,12 +665,23 @@ static int runCompactEdgeStorageTests(void)
         uLast = gp_GetNeighbor(theGraph, gp_GetTwin(theGraph, eLast));
         vLast = gp_GetNeighbor(theGraph, eLast);
         gp_SetDirection(theGraph, eLast, EDGEFLAG_DIRECTION_OUTONLY);
+        getNeighborOrder(theGraph, orderBefore);
     }
 
     if (Result == OK && _CompactEdgeStorage(theGraph) != OK)
     {
         gp_ErrorMessage("Unable to compact the edge storage.");
         Result = NOTOK;
+    }
+
+    if (Result == OK)
+    {
+        getNeighborOrder(theGraph, orderAfter);
+        if (memcmp(orderBefore, orderAfter, sizeof(orderBefore)) != 0)
+        {
+            gp_ErrorMessage("Compaction changed the order of an adjacency list.");
+            Result = NOTOK;
+        }
     }
 
     if (Result == OK && (theGraph->numEdgeHoles != 0 || gp_GetM(theGraph) != 6 ||
@@ -690,6 +733,87 @@ static int runCompactEdgeStorageTests(void)
     }
     gp_SetQuietMode(origQuietMode);
 
+    // A loop in the last pair, behind the hole of the first, is moved into
+    // that hole and stays a loop, with the flags of both its records
+    if (Result == OK)
+    {
+        int eLoop = NIL, eFirst = NIL;
+
+        gp_ResetGraphStorage(theGraph);
+
+        if (gp_AddEdge(theGraph, lower, 0, lower + 1, 0) != OK ||
+            gp_AddEdge(theGraph, lower + 1, 0, lower + 2, 0) != OK ||
+            gp_AddEdge(theGraph, lower + 2, 0, lower + 2, 0) != OK)
+            Result = NOTOK;
+
+        if (Result == OK)
+        {
+            eLoop = gp_FindEdge(theGraph, lower + 2, lower + 2);
+            theGraph->E[eLoop].flags |= EDGEFLAG_DIRECTION_OUTONLY;
+            theGraph->E[gp_GetTwin(theGraph, eLoop)].flags |= EDGEFLAG_DIRECTION_INONLY;
+            eFirst = gp_LowerBoundEdges(theGraph);
+        }
+
+        if (Result == OK &&
+            (gp_DeleteEdge(theGraph, gp_FindEdge(theGraph, lower, lower + 1)) != OK ||
+             _CompactEdgeStorage(theGraph) != OK ||
+             theGraph->numEdgeHoles != 0 || gp_GetM(theGraph) != 2 ||
+             gp_GetNeighbor(theGraph, eFirst) != lower + 2 ||
+             gp_GetNeighbor(theGraph, eFirst + 1) != lower + 2 ||
+             gp_GetVertexDegree(theGraph, lower + 2) != 3 ||
+             (gp_GetDirection(theGraph, eFirst) | gp_GetDirection(theGraph, eFirst + 1)) !=
+                 (EDGEFLAG_DIRECTION_OUTONLY | EDGEFLAG_DIRECTION_INONLY)))
+        {
+            gp_ErrorMessage("Compaction of a loop gave the wrong result.");
+            Result = NOTOK;
+        }
+    }
+
+    // An edge to be moved that is hidden makes the compaction refuse,
+    // changing nothing, and so the planar drawing too; once the edge is
+    // restored, the compaction goes ahead
+    if (Result == OK)
+    {
+        int eHidden = NIL;
+
+        gp_ResetGraphStorage(theGraph);
+
+        if (gp_AddEdge(theGraph, lower, 0, lower + 1, 0) != OK ||
+            gp_AddEdge(theGraph, lower + 1, 0, lower + 2, 0) != OK ||
+            gp_AddEdge(theGraph, lower + 2, 0, lower + 3, 0) != OK ||
+            gp_DeleteEdge(theGraph, gp_FindEdge(theGraph, lower + 1, lower + 2)) != OK ||
+            gp_ExtendWith_DrawPlanar(theGraph) != OK)
+            Result = NOTOK;
+
+        if (Result == OK)
+        {
+            eHidden = gp_FindEdge(theGraph, lower + 2, lower + 3);
+            gp_HideEdge(theGraph, eHidden);
+
+            // Set all to quiet due to intended failure call
+            gp_SetQuietMode(QUIETMODE_ALL);
+
+            if (_CompactEdgeStorage(theGraph) == OK || gp_Embed(theGraph, EMBEDFLAGS_DRAWPLANAR) != NOTOK ||
+                theGraph->numEdgeHoles != 1 || gp_UpperBoundEdges(theGraph) != gp_LowerBoundEdges(theGraph) + 6 ||
+                gp_GetEmbedFlags(theGraph) != 0)
+            {
+                gp_ErrorMessage("Compaction moved a hidden edge.");
+                Result = NOTOK;
+            }
+
+            gp_SetQuietMode(origQuietMode);
+
+            gp_RestoreEdge(theGraph, eHidden);
+        }
+
+        if (Result == OK && (_CompactEdgeStorage(theGraph) != OK || theGraph->numEdgeHoles != 0 ||
+                             gp_GetVertexDegree(theGraph, lower + 3) != 1))
+        {
+            gp_ErrorMessage("Compaction after restoring a hidden edge gave the wrong result.");
+            Result = NOTOK;
+        }
+    }
+
     if (before != NULL)
         free(before);
     if (after != NULL)
@@ -700,13 +824,335 @@ static int runCompactEdgeStorageTests(void)
 }
 
 /****************************************************************************
+ runEdgeHoleTests()
+
+ Deletions leave holes in the edge storage, which planar drawing currently
+ cannot work with, so gp_Embed() fills them before a drawing and nothing
+ else does. The sparse6 reader must leave the hole of a deleted middle edge,
+ with every other edge in its record, and fill it with a later addition; a
+ copy keeps the hole through the planarity embedding and loses it to the
+ planar drawing, each result being correct. The writer must leave the hole
+ too, then refuse to delete it, delete a record in use beyond twice the
+ edge count once, and fill the hole before it extends the edge storage,
+ also past the edge capacity. Last, every graph of n8.mALL.inc.s6, read with
+ the holes the reader leaves, must be drawn correctly after a depth first
+ search, alone, with the vertices sorted or with the lowpoints computed,
+ since the drawing then compacts a graph whose search is already done.
+ ****************************************************************************/
+
+// Each pair {u, v}, offset by lower, must still be found at its record
+static int edgeRecordsKept(graphP theGraph, int lower, int const pairs[][2], int const records[], int numPairs)
+{
+    for (int i = 0; i < numPairs; i++)
+        if (gp_FindEdge(theGraph, lower + pairs[i][0], lower + pairs[i][1]) != records[i])
+            return FALSE;
+
+    return TRUE;
+}
+
+// A copy of a planar graph with holes must keep them through the planarity
+// embedding and lose them to the planar drawing, both being correct
+static int embedPlanarGraphWithHoles(graphP theGraph, char const *what)
+{
+    int Result = OK;
+    int numHoles = theGraph->numEdgeHoles;
+    graphP planarCopy = gp_DupGraph(theGraph), drawCopy = gp_DupGraph(theGraph);
+
+    if (planarCopy == NULL || drawCopy == NULL || gp_ExtendWith_DrawPlanar(drawCopy) != OK)
+    {
+        gp_ErrorMessage("Unable to copy the %s for embedding.", what);
+        Result = NOTOK;
+    }
+    else if (gp_Embed(planarCopy, EMBEDFLAGS_PLANAR) != OK ||
+             gp_TestEmbedResultIntegrity(planarCopy, theGraph, OK) != OK ||
+             planarCopy->numEdgeHoles != numHoles)
+    {
+        gp_ErrorMessage("The planarity embedding of the %s, with %d edge holes, "
+                        "failed or filled them.",
+                        what, numHoles);
+        Result = NOTOK;
+    }
+    else if (gp_Embed(drawCopy, EMBEDFLAGS_DRAWPLANAR) != OK ||
+             gp_TestEmbedResultIntegrity(drawCopy, theGraph, OK) != OK ||
+             drawCopy->numEdgeHoles != 0)
+    {
+        gp_ErrorMessage("The planar drawing of the %s, with %d edge holes, "
+                        "failed or left them.",
+                        what, numHoles);
+        Result = NOTOK;
+    }
+
+    gp_Free(&planarCopy);
+    gp_Free(&drawCopy);
+
+    return Result;
+}
+
+static int runEdgeHoleTests(void)
+{
+    int Result = OK;
+    unsigned origQuietMode = gp_GetQuietMode();
+    graphP theGraph = NULL;
+    S6ReadIteratorP theReader = NULL;
+    S6WriteIteratorP theWriter = NULL;
+    char *s6Copy = NULL, *outputStr = NULL;
+    int const kept[][2] = {{0, 1}, {2, 3}, {3, 4}};
+    int keptRecords[3] = {NIL, NIL, NIL};
+    int lower = 0, e12 = NIL, e34 = NIL;
+
+    // The path 0-1-2-3-4 is read, then {1, 2} is deleted, then {0, 2} added
+    if ((s6Copy = copySparse6TestString(":DaYn\n;g^\n;gN\n")) == NULL || (theGraph = gp_New()) == NULL ||
+        s6_NewReader(&theReader, theGraph) != OK || s6_InitReaderWithString(theReader, s6Copy) != OK ||
+        s6_ReadGraph(theReader) != OK)
+    {
+        gp_ErrorMessage("Unable to read the path for the edge hole tests.");
+        Result = NOTOK;
+    }
+
+    if (Result == OK)
+    {
+        lower = gp_LowerBoundVertexStorage(theGraph);
+        e12 = gp_FindEdge(theGraph, lower + 1, lower + 2);
+        for (int i = 0; i < 3; i++)
+            keptRecords[i] = gp_FindEdge(theGraph, lower + kept[i][0], lower + kept[i][1]);
+    }
+
+    if (Result == OK &&
+        (s6_ReadGraph(theReader) != OK || theGraph->numEdgeHoles != 1 || gp_GetM(theGraph) != 3 ||
+         !edgeRecordsKept(theGraph, lower, kept, keptRecords, 3)))
+    {
+        gp_ErrorMessage("Deleting a middle edge while reading did not leave its "
+                        "hole and the other edges in their records.");
+        Result = NOTOK;
+    }
+
+    if (Result == OK)
+        Result = embedPlanarGraphWithHoles(theGraph, "graph read");
+
+    if (Result == OK &&
+        (s6_ReadGraph(theReader) != OK || theGraph->numEdgeHoles != 0 || gp_GetM(theGraph) != 4 ||
+         (gp_FindEdge(theGraph, lower, lower + 2) & ~1) != (e12 & ~1) ||
+         !edgeRecordsKept(theGraph, lower, kept, keptRecords, 3)))
+    {
+        gp_ErrorMessage("Adding an edge while reading did not fill the hole.");
+        Result = NOTOK;
+    }
+
+    s6_FreeReader(&theReader);
+    if (s6Copy != NULL)
+        free(s6Copy);
+    gp_Free(&theGraph);
+
+    // The writer: the path is written whole, {1, 2} is deleted, and then
+    // {3, 4} is deleted and {0, 2} and {1, 3} are added; the lines are what
+    // copyg -i writes for those graphs
+    if (Result == OK)
+    {
+        if ((theGraph = gp_New()) == NULL || gp_EnsureVertexCapacity(theGraph, 5) != OK)
+            Result = NOTOK;
+
+        if (Result == OK)
+            lower = gp_LowerBoundVertexStorage(theGraph);
+
+        for (int v = 0; Result == OK && v < 4; v++)
+            if (gp_AddEdge(theGraph, lower + v, 0, lower + v + 1, 0) != OK)
+                Result = NOTOK;
+
+        if (Result == OK &&
+            (s6_NewWriter(&theWriter, theGraph) != OK || s6_InitWriterWithString(theWriter, &outputStr) != OK ||
+             s6_WriteGraph(theWriter) != OK))
+            Result = NOTOK;
+
+        if (Result != OK)
+            gp_ErrorMessage("Unable to write the path for the edge hole tests.");
+    }
+
+    if (Result == OK)
+    {
+        e12 = gp_FindEdge(theGraph, lower + 1, lower + 2);
+        e34 = gp_FindEdge(theGraph, lower + 3, lower + 4);
+        for (int i = 0; i < 3; i++)
+            keptRecords[i] = gp_FindEdge(theGraph, lower + kept[i][0], lower + kept[i][1]);
+
+        if (s6_StoreGraphChange(theWriter, e12, NIL, NIL) != OK || s6_WriteGraph(theWriter) != OK ||
+            theGraph->numEdgeHoles != 1 || gp_GetM(theGraph) != 3 ||
+            !edgeRecordsKept(theGraph, lower, kept, keptRecords, 3))
+        {
+            gp_ErrorMessage("Writing the deletion of a middle edge did not leave "
+                            "its hole and the other edges in their records.");
+            Result = NOTOK;
+        }
+    }
+
+    if (Result == OK)
+        Result = embedPlanarGraphWithHoles(theGraph, "graph written");
+
+    // The hole cannot be deleted; {3, 4}, whose record lies beyond twice the
+    // edge count, can be, but only once
+    if (Result == OK)
+    {
+        gp_SetQuietMode(QUIETMODE_ALL);
+
+        if (e34 < gp_LowerBoundEdges(theGraph) + 2 * gp_GetM(theGraph) ||
+            s6_StoreGraphChange(theWriter, e12, NIL, NIL) == OK ||
+            s6_StoreGraphChange(theWriter, e34, NIL, NIL) != OK ||
+            s6_StoreGraphChange(theWriter, gp_GetTwin(theGraph, e34), NIL, NIL) == OK ||
+            s6_StoreGraphChange(theWriter, NIL, lower, lower + 2) != OK ||
+            s6_StoreGraphChange(theWriter, NIL, lower + 1, lower + 3) != OK)
+        {
+            gp_SetQuietMode(origQuietMode);
+            gp_ErrorMessage("A batch on a graph with an edge hole was not stored as expected.");
+            Result = NOTOK;
+        }
+
+        gp_SetQuietMode(origQuietMode);
+    }
+
+    // The additions fill the hole, and the one left after it the record of
+    // {3, 4}, so the storage does not grow
+    if (Result == OK &&
+        (s6_WriteGraph(theWriter) != OK || theGraph->numEdgeHoles != 0 || gp_GetM(theGraph) != 4 ||
+         gp_UpperBoundEdges(theGraph) != gp_LowerBoundEdges(theGraph) + 8))
+    {
+        gp_ErrorMessage("The additions of a batch did not fill the edge hole.");
+        Result = NOTOK;
+    }
+
+    s6_FreeWriter(&theWriter);
+
+    if (Result == OK)
+        Result = compareSparse6Output(outputStr, ":DaYn\n;g^\n;gHn\n", "the edge hole cases");
+
+    if (outputStr != NULL)
+    {
+        free(outputStr);
+        outputStr = NULL;
+    }
+    gp_Free(&theGraph);
+
+    // At its edge capacity of 9, a graph of order 3 holding 9 instances of
+    // {0, 1} loses the first, then gains {0, 2} and {1, 2}: one addition
+    // fills the hole and the other grows the graph past its capacity
+    if (Result == OK)
+    {
+        if ((theGraph = gp_New()) == NULL || gp_EnsureVertexCapacity(theGraph, 3) != OK ||
+            gp_GetEdgeCapacity(theGraph) != 9)
+            Result = NOTOK;
+
+        if (Result == OK)
+            lower = gp_LowerBoundVertexStorage(theGraph);
+
+        for (int k = 0; Result == OK && k < 9; k++)
+            if (gp_AddEdge(theGraph, lower, 0, lower + 1, 0) != OK)
+                Result = NOTOK;
+
+        if (Result == OK &&
+            (s6_NewWriter(&theWriter, theGraph) != OK || s6_InitWriterWithString(theWriter, &outputStr) != OK ||
+             s6_WriteGraph(theWriter) != OK ||
+             s6_StoreGraphChange(theWriter, gp_LowerBoundEdges(theGraph), NIL, NIL) != OK ||
+             s6_WriteGraph(theWriter) != OK || theGraph->numEdgeHoles != 1 || gp_GetM(theGraph) != 8 ||
+             s6_StoreGraphChange(theWriter, NIL, lower, lower + 2) != OK ||
+             s6_StoreGraphChange(theWriter, NIL, lower + 1, lower + 2) != OK ||
+             s6_WriteGraph(theWriter) != OK || theGraph->numEdgeHoles != 0 || gp_GetM(theGraph) != 10 ||
+             gp_GetEdgeCapacity(theGraph) < 10))
+        {
+            gp_ErrorMessage("A batch past the edge capacity of a graph with an "
+                            "edge hole was not written as expected.");
+            Result = NOTOK;
+        }
+
+        s6_FreeWriter(&theWriter);
+
+        if (Result == OK)
+            Result = compareSparse6Output(outputStr, ":B_???F\n;f\n;oN\n", "a batch past the capacity with a hole");
+
+        if (outputStr != NULL)
+            free(outputStr);
+        gp_Free(&theGraph);
+    }
+
+    // Every graph of n8.mALL.inc.s6 is drawn after a depth first search
+    if (Result == OK)
+    {
+        int numGraphs = 0;
+
+        if ((theGraph = gp_New()) == NULL || s6_NewReader(&theReader, theGraph) != OK ||
+            s6_InitReaderWithFileName(theReader, "n8.mALL.inc.s6") != OK)
+        {
+            gp_ErrorMessage("Unable to open \"n8.mALL.inc.s6\" for the edge hole tests.");
+            Result = NOTOK;
+        }
+
+        while (Result == OK)
+        {
+            if (s6_ReadGraph(theReader) != OK)
+            {
+                gp_ErrorMessage("Unable to read graph %d of \"n8.mALL.inc.s6\".", numGraphs + 1);
+                Result = NOTOK;
+                break;
+            }
+
+            if (s6_EndReached(theReader))
+                break;
+
+            numGraphs++;
+
+            for (int prep = 0; Result == OK && prep < 3; prep++)
+            {
+                graphP drawCopy = gp_DupGraph(theGraph), planarCopy = gp_DupGraph(theGraph);
+
+                if (drawCopy == NULL || planarCopy == NULL || gp_DepthFirstSearch(drawCopy) != OK ||
+                    (prep == 1 && gp_SortVertices(drawCopy) != OK) ||
+                    (prep == 2 && gp_ComputeLowpoints(drawCopy) != OK) ||
+                    gp_ExtendWith_DrawPlanar(drawCopy) != OK)
+                {
+                    gp_ErrorMessage("The planar drawing of graph %d of \"n8.mALL.inc.s6\" "
+                                    "failed prior to embedding.",
+                                    numGraphs);
+                    Result = NOTOK;
+                }
+
+                if (Result == OK)
+                {
+                    int drawResult = gp_Embed(drawCopy, EMBEDFLAGS_DRAWPLANAR);
+
+                    if ((drawResult != OK && drawResult != NONEMBEDDABLE) ||
+                        drawResult != gp_Embed(planarCopy, EMBEDFLAGS_PLANAR) ||
+                        gp_TestEmbedResultIntegrity(drawCopy, theGraph, drawResult) != drawResult)
+                    {
+                        gp_ErrorMessage("The planar drawing of graph %d of \"n8.mALL.inc.s6\" "
+                                        "after a depth first search%s failed.",
+                                        numGraphs, prep == 1 ? " and sorting" : (prep == 2 ? " and lowpoints" : ""));
+                        Result = NOTOK;
+                    }
+                }
+
+                gp_Free(&drawCopy);
+                gp_Free(&planarCopy);
+            }
+        }
+
+        if (Result == OK && numGraphs != 12346)
+        {
+            gp_ErrorMessage("Read %d graphs of \"n8.mALL.inc.s6\" rather than 12346.", numGraphs);
+            Result = NOTOK;
+        }
+
+        s6_FreeReader(&theReader);
+        gp_Free(&theGraph);
+    }
+
+    return Result;
+}
+
+/****************************************************************************
  runSparse6WriteTests()
 
  The writer must produce the bytes nauty produces: single lines with the
  padding cases the specification singles out, then every graph of order 5
  against nauty's own files in both modes, then the contract of the change
- batch, the edge storage compaction it relies on, and the -s transformation
- of the command line.
+ batch, the edge holes it leaves, the edge storage compaction gp_Embed()
+ relies on, and the -s transformation of the command line.
  ****************************************************************************/
 
 int runSparse6WriteTests(void)
@@ -832,6 +1278,9 @@ int runSparse6WriteTests(void)
 
     if (Result == OK)
         Result = runSparse6MultigraphWriteRoundTripTest();
+
+    if (Result == OK)
+        Result = runEdgeHoleTests();
 
     if (Result == OK)
         Result = runCompactEdgeStorageTests();
@@ -1200,11 +1649,8 @@ static int runSparse6LockstepTest(char const *g6FileName, char const *s6FileName
         numGraphs++;
 
         // The edge count is compared as well because a repeated edge would
-        // set the same bit of the graph6 encoding twice and go unnoticed,
-        // and the edge storage must be dense (no holes left by incremental
-        // deletions), which DrawPlanar requires of any graph it embeds
+        // set the same bit of the graph6 encoding twice and go unnoticed
         if (gp_GetM(g6Graph) != gp_GetM(s6Graph) ||
-            gp_UpperBoundEdges(s6Graph) != gp_LowerBoundEdges(s6Graph) + (gp_GetM(s6Graph) << 1) ||
             gp_WriteToString(g6Graph, &g6Str, WRITE_G6) != OK || g6Str == NULL ||
             gp_WriteToString(s6Graph, &s6Str, WRITE_G6) != OK || s6Str == NULL ||
             strcmp(g6Str, s6Str) != 0)
@@ -1662,7 +2108,8 @@ static int runSparse6ReadBackTest(char const *s6Str, int const *const graphs[], 
 
         for (int i = 0; Result == OK && i <= numGraphs; i++)
         {
-            int toRetrieve = (lookahead == 0) ? 0 : (lookahead == 1 || i % 4 == 3) ? INT_MAX : i % 4;
+            int toRetrieve = (lookahead == 0) ? 0 : (lookahead == 1 || i % 4 == 3) ? INT_MAX
+                                                                                   : i % 4;
 
             for (int r = 0; Result == OK && r < toRetrieve; r++)
             {
@@ -1688,7 +2135,8 @@ static int runSparse6ReadBackTest(char const *s6Str, int const *const graphs[], 
             {
                 gp_ErrorMessage("Graph %d written by the sparse6 writer read back "
                                 "differently%s.",
-                                i + 1, lookahead == 0 ? "" : lookahead == 1 ? " with every change retrieved" : " with some changes retrieved");
+                                i + 1, lookahead == 0 ? "" : lookahead == 1 ? " with every change retrieved"
+                                                                            : " with some changes retrieved");
                 Result = NOTOK;
             }
         }
@@ -2771,7 +3219,6 @@ static int runSparse6LookaheadLockstepTest(char const *s6FileName, int inputInMe
             char *laStr = NULL, *plainStr = NULL; // codespell:ignore lastr
 
             if (gp_GetM(laGraph) != gp_GetM(plainGraph) ||
-                gp_UpperBoundEdges(laGraph) != gp_LowerBoundEdges(laGraph) + (gp_GetM(laGraph) << 1) ||
                 gp_WriteToString(laGraph, &laStr, WRITE_G6) != OK || laStr == NULL || // codespell:ignore lastr
                 gp_WriteToString(plainGraph, &plainStr, WRITE_G6) != OK || plainStr == NULL ||
                 strcmp(laStr, plainStr) != 0) // codespell:ignore lastr
