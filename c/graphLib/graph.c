@@ -1288,8 +1288,9 @@ int gp_CopyAdjacencyLists(graphP dstGraph, graphP srcGraph)
  number of vertices as the srcGraph.
 
  NOTE: If the dstGraph has a higher edge capacity than the srcGraph,
- then this call will fail unless the caller first ensures that the
- edge capacity of the srcGraph is increased to match the dstGraph.
+ then the edge records beyond those of the srcGraph are left in their
+ initial state, including the edge data of the extensions of the
+ dstGraph.
 
  Returns OK for success, NOTOK for failure.
  ********************************************************************/

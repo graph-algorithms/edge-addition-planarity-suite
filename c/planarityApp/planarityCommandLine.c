@@ -61,6 +61,7 @@ int runCapacityLimitTests(void);
 int runGraphMLWriteTest(char const *inputFileName, char const *expectedOutputFileName);
 int runBasicGraphMLWriteTest(void);
 int runGraphMLTests(void);
+int runExtensionCopyTests(void);
 
 /****************************************************************************
  Command Line Processor
@@ -289,6 +290,8 @@ int runQuickRegressionTests(int argc, char *argv[])
     else if (runSparse6LookaheadTests() != OK)
         retVal = NOTOK;
     else if (runGraphMLTests() != OK)
+        retVal = NOTOK;
+    else if (runExtensionCopyTests() != OK)
         retVal = NOTOK;
 
     // All done.

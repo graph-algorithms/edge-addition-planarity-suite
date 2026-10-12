@@ -315,6 +315,7 @@ void *_K4Search_DupContext(void *pContext, void *theGraph)
     if (newContext != NULL)
     {
         int Esize = gp_UpperBoundEdgeStorage((graphP)theGraph);
+        int srcEsize = gp_UpperBoundEdgeStorage(context->theGraph);
 
         *newContext = *context;
 
@@ -324,7 +325,8 @@ void *_K4Search_DupContext(void *pContext, void *theGraph)
         _K4Search_ClearStructures(newContext);
         if (((graphP)theGraph)->N > 0)
         {
-            if (_K4Search_CreateStructures(newContext) != OK)
+            // The new graph must have room for the source graph's edge records
+            if (Esize < srcEsize || _K4Search_CreateStructures(newContext) != OK)
             {
                 _K4Search_FreeContext(newContext);
                 newContext = NULL;
@@ -332,7 +334,11 @@ void *_K4Search_DupContext(void *pContext, void *theGraph)
                 return NULL;
             }
 
-            memcpy(newContext->E, context->E, Esize * sizeof(K4Search_EdgeRec));
+            // The edge records the new graph has beyond the source graph's
+            // are reinitialized
+            memcpy(newContext->E, context->E, srcEsize * sizeof(K4Search_EdgeRec));
+            for (int e = srcEsize; e < Esize; e++)
+                _K4Search_InitEdgeRec(newContext, e);
         }
     }
 
@@ -366,14 +372,12 @@ int _K4Search_CopyData(void *dstContext, void *srcContext)
     if (dstEdgeStorage < srcEdgeStorage)
         return NOTOK;
 
-    // If the destination graph has more edge capacity, then we make sure that the
-    // extra edge capacity is reinitialized
-    if (dstEdgeStorage > srcEdgeStorage)
-    {
-        memset(dstK4Context->E, NIL_CHAR, gp_UpperBoundEdgeStorage(dstK4Context->theGraph) * sizeof(K4Search_EdgeRec));
-    }
+    // The source graph's edge records are copied, and if the destination graph
+    // has more edge capacity, then its extra edge records are reinitialized
+    memcpy(dstK4Context->E, srcK4Context->E, srcEdgeStorage * sizeof(K4Search_EdgeRec));
 
-    memcpy(dstK4Context->E, srcK4Context->E, gp_UpperBoundEdgeStorage(dstK4Context->theGraph) * sizeof(K4Search_EdgeRec));
+    for (int e = srcEdgeStorage; e < dstEdgeStorage; e++)
+        _K4Search_InitEdgeRec(dstK4Context, e);
     return OK;
 }
 

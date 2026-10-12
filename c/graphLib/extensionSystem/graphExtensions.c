@@ -458,6 +458,11 @@ int gp_DupExtensions(graphP dstGraph, graphP srcGraph)
         dstGraph->extensionLookupTable == NULL)
         return NOTOK;
 
+    // The extensions duplicate their data per vertex for the vertices of the
+    // dstGraph from those of the srcGraph, so the two must have the same order
+    if (gp_GetN(dstGraph) != gp_GetN(srcGraph))
+        return NOTOK;
+
     gp_FreeExtensions(dstGraph);
 
     next = srcGraph->extensions;
@@ -478,6 +483,14 @@ int gp_DupExtensions(graphP dstGraph, graphP srcGraph)
 
         newNext->moduleID = next->moduleID;
         newNext->context = next->dupContext(next->context, dstGraph);
+
+        // An extension that cannot duplicate its context fails the duplication
+        if (newNext->context == NULL)
+        {
+            free(newNext);
+            gp_FreeExtensions(dstGraph);
+            return NOTOK;
+        }
         newNext->dupContext = next->dupContext;
         newNext->copyData = next->copyData;
         newNext->freeContext = next->freeContext;

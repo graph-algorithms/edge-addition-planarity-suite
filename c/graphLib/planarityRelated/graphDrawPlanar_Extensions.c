@@ -283,6 +283,7 @@ void *_DrawPlanar_DupContext(void *pContext, void *theGraph)
     {
         int VIsize = gp_UpperBoundVertices((graphP)theGraph);
         int Esize = gp_UpperBoundEdgeStorage((graphP)theGraph);
+        int srcEsize = gp_UpperBoundEdgeStorage(context->theGraph);
 
         *newContext = *context;
 
@@ -292,14 +293,18 @@ void *_DrawPlanar_DupContext(void *pContext, void *theGraph)
         _DrawPlanar_ClearStructures(newContext);
         if (((graphP)theGraph)->N > 0)
         {
-            if (_DrawPlanar_CreateStructures(newContext) != OK)
+            // The new graph must have room for the source graph's edge records
+            if (Esize < srcEsize || _DrawPlanar_CreateStructures(newContext) != OK)
             {
                 _DrawPlanar_FreeContext(newContext);
                 return NULL;
             }
 
-            // Initialize custom data structures by copying
-            memcpy(newContext->E, context->E, Esize * sizeof(DrawPlanar_EdgeRec));
+            // Initialize custom data structures by copying, and reinitialize
+            // the edge records the new graph has beyond the source graph's
+            memcpy(newContext->E, context->E, srcEsize * sizeof(DrawPlanar_EdgeRec));
+            for (int e = srcEsize; e < Esize; e++)
+                _DrawPlanar_InitEdgeRec(newContext, e);
             memcpy(newContext->VI, context->VI, VIsize * sizeof(DrawPlanar_VertexInfo));
         }
     }
@@ -336,14 +341,12 @@ int _DrawPlanar_CopyData(void *dstContext, void *srcContext)
     if (dstEdgeStorage < srcEdgeStorage)
         return NOTOK;
 
-    // If the destination graph has more edge capacity, then we make sure that the
-    // extra edge capacity is reinitialized
-    if (dstEdgeStorage > srcEdgeStorage)
-    {
-        memset(dstDrawPlanarContext->E, NIL_CHAR, gp_UpperBoundEdgeStorage(dstDrawPlanarContext->theGraph) * sizeof(DrawPlanar_EdgeRec));
-    }
+    // The source graph's edge records are copied, and if the destination graph
+    // has more edge capacity, then its extra edge records are reinitialized
+    memcpy(dstDrawPlanarContext->E, srcDrawPlanarContext->E, srcEdgeStorage * sizeof(DrawPlanar_EdgeRec));
 
-    memcpy(dstDrawPlanarContext->E, srcDrawPlanarContext->E, gp_UpperBoundEdgeStorage(dstDrawPlanarContext->theGraph) * sizeof(DrawPlanar_EdgeRec));
+    for (int e = srcEdgeStorage; e < dstEdgeStorage; e++)
+        _DrawPlanar_InitEdgeRec(dstDrawPlanarContext, e);
 
     memcpy(dstDrawPlanarContext->VI, srcDrawPlanarContext->VI, gp_UpperBoundVertices(dstDrawPlanarContext->theGraph) * sizeof(DrawPlanar_VertexInfo));
 

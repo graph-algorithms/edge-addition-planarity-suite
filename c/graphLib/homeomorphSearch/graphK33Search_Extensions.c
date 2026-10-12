@@ -354,6 +354,7 @@ void *_K33Search_DupContext(void *pContext, void *theGraph)
     {
         int VIsize = gp_UpperBoundVertices((graphP)theGraph);
         int Esize = gp_UpperBoundEdgeStorage((graphP)theGraph);
+        int srcEsize = gp_UpperBoundEdgeStorage(context->theGraph);
 
         *newContext = *context;
 
@@ -372,7 +373,8 @@ void *_K33Search_DupContext(void *pContext, void *theGraph)
             }
 #endif
 
-            if (_K33Search_CreateStructures(newContext) != OK)
+            // The new graph must have room for the source graph's edge records
+            if (Esize < srcEsize || _K33Search_CreateStructures(newContext) != OK)
             {
                 _K33Search_FreeContext(newContext);
                 newContext = NULL;
@@ -380,7 +382,11 @@ void *_K33Search_DupContext(void *pContext, void *theGraph)
                 return NULL;
             }
 
-            memcpy(newContext->E, context->E, Esize * sizeof(K33Search_EdgeRec));
+            // The edge records the new graph has beyond the source graph's
+            // are reinitialized
+            memcpy(newContext->E, context->E, srcEsize * sizeof(K33Search_EdgeRec));
+            for (int e = srcEsize; e < Esize; e++)
+                _K33Search_InitEdgeRec(newContext, e);
             memcpy(newContext->VI, context->VI, VIsize * sizeof(K33Search_VertexInfo));
             LCCopy(newContext->separatedDFSChildLists, context->separatedDFSChildLists);
         }
@@ -416,14 +422,12 @@ int _K33Search_CopyData(void *dstContext, void *srcContext)
     if (dstEdgeStorage < srcEdgeStorage)
         return NOTOK;
 
-    // If the destination graph has more edge capacity, then we make sure that the
-    // extra edge capacity is reinitialized
-    if (dstEdgeStorage > srcEdgeStorage)
-    {
-        memset(dstK33Context->E, NIL_CHAR, gp_UpperBoundEdgeStorage(dstK33Context->theGraph) * sizeof(K33Search_EdgeRec));
-    }
+    // The source graph's edge records are copied, and if the destination graph
+    // has more edge capacity, then its extra edge records are reinitialized
+    memcpy(dstK33Context->E, srcK33Context->E, srcEdgeStorage * sizeof(K33Search_EdgeRec));
 
-    memcpy(dstK33Context->E, srcK33Context->E, gp_UpperBoundEdgeStorage(dstK33Context->theGraph) * sizeof(K33Search_EdgeRec));
+    for (int e = srcEdgeStorage; e < dstEdgeStorage; e++)
+        _K33Search_InitEdgeRec(dstK33Context, e);
 
     memcpy(dstK33Context->VI, srcK33Context->VI, gp_UpperBoundVertices(dstK33Context->theGraph) * sizeof(K33Search_VertexInfo));
 
