@@ -54,7 +54,7 @@ int runSingleParallelEdgeTest(void);
 int runParallelUndirectedTest(void);
 int addParallelEdges(graphP theGraph);
 int runDrawPlanarNonplanarWriteTest(void);
-int runReadErrorTests(void);
+int runIOErrorTests(void);
 int runReadWithExtensionAtEofTest(void);
 int runHighByteRoundTripTest(void);
 int runCapacityLimitTests(void);
@@ -276,7 +276,7 @@ int runQuickRegressionTests(int argc, char *argv[])
         retVal = NOTOK;
     else if (runCapacityLimitTests() != OK)
         retVal = NOTOK;
-    else if (runReadErrorTests() != OK)
+    else if (runIOErrorTests() != OK)
         retVal = NOTOK;
     else if (runReadWithExtensionAtEofTest() != OK)
         retVal = NOTOK;

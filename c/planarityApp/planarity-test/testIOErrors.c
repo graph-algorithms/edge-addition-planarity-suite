@@ -10,6 +10,7 @@ See the LICENSE.TXT file for licensing information.
 
 #include <errno.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #ifdef __linux__
 #include <unistd.h>
@@ -25,7 +26,7 @@ extern int _g6_ReadGraphFromStrOrFile(graphP theGraph, strOrFileP *input);
 extern int _s6_InitReaderWithStrOrFile(S6ReadIteratorP reader, strOrFileP *input);
 extern int _g6_WriteGraphToStrOrFile(graphP theGraph, strOrFileP *output);
 extern int _s6_WriteGraphToStrOrFile(graphP theGraph, strOrFileP *output);
-int runReadErrorTests(void);
+int runIOErrorTests(void);
 
 #if defined(HAVE_FOPENCOOKIE) || defined(HAVE_FUNOPEN)
 
@@ -591,6 +592,59 @@ static int testGraph6Reads(void)
 }
 
 #ifdef __linux__
+// Makes a new directory in the first of /tmp, /var/tmp and the directories
+// that TMP, TEMP and TMPDIR name that can be written to, for the tests that
+// write through a link to /dev/full, and returns its path in *pDirPath for
+// the caller to free. The tests are skipped, with a message and *pDirPath
+// NULL, when none can be written to, or when making the directory fails
+// because the file system is read only or full or access is denied. Any
+// other failure to make it returns NOTOK.
+static int makeTestTempDir(char **pDirPath)
+{
+    char const *candidates[] = {"/tmp", "/var/tmp", getenv("TMP"), getenv("TEMP"), getenv("TMPDIR")};
+    char const *suffix = "/planarity-close-XXXXXX";
+    char const *base = NULL;
+    int mkdtempErrno = 0;
+
+    (*pDirPath) = NULL;
+
+    for (size_t i = 0; base == NULL && i < sizeof(candidates) / sizeof(candidates[0]); i++)
+    {
+        if (candidates[i] != NULL && candidates[i][0] != '\0' && access(candidates[i], W_OK | X_OK) == 0)
+            base = candidates[i];
+    }
+
+    if (base == NULL)
+    {
+        gp_Message("Skipping the close failure tests through /dev/full, as no "
+                   "temporary directory can be written to.\n");
+        return OK;
+    }
+
+    if (((*pDirPath) = (char *)malloc(strlen(base) + strlen(suffix) + 1)) == NULL)
+        return NOTOK;
+
+    sprintf(*pDirPath, "%s%s", base, suffix);
+
+    errno = 0;
+    if (mkdtemp(*pDirPath) != NULL)
+        return OK;
+
+    mkdtempErrno = errno;
+    free(*pDirPath);
+    (*pDirPath) = NULL;
+
+    if (mkdtempErrno == EROFS || mkdtempErrno == ENOSPC || mkdtempErrno == EACCES)
+    {
+        gp_Message("Skipping the close failure tests through /dev/full, as no "
+                   "temporary directory can be made in \"%s\".\n",
+                   base);
+        return OK;
+    }
+
+    return NOTOK;
+}
+
 // Adds every missing edge, so that the random graph is complete and, from
 // order 5 on, not planar
 static int completeTheGraph(graphP theGraph)
@@ -678,15 +732,19 @@ static int testCloseFailures(void)
         // than the device
         if (failOnClose && access("/dev/full", W_OK) == 0)
         {
-            char dirTemplate[] = "/tmp/planarity-close-XXXXXX";
-            char *dir = mkdtemp(dirTemplate);
-            char link[64];
+            char *dir = NULL, *link = NULL;
             int const modes[] = {WRITE_ADJLIST, WRITE_ADJMATRIX, WRITE_G6, WRITE_GRAPHML, WRITE_SPARSE6};
 
-            CHECK(dir != NULL);
+            CHECK(makeTestTempDir(&dir) == OK);
             if (dir != NULL)
             {
-                snprintf(link, sizeof(link), "%s/out", dir);
+                link = (char *)malloc(strlen(dir) + strlen("/out") + 1);
+                CHECK(link != NULL);
+            }
+
+            if (link != NULL)
+            {
+                sprintf(link, "%s/out", dir);
                 for (size_t m = 0; m < sizeof(modes) / sizeof(modes[0]); m++)
                 {
                     CHECK(symlink("/dev/full", link) == 0);
@@ -707,7 +765,13 @@ static int testCloseFailures(void)
                     gp_SetQuietMode(quietModeCache);
                     unlink(link);
                 }
+                free(link);
+            }
+
+            if (dir != NULL)
+            {
                 rmdir(dir);
+                free(dir);
             }
         }
 #endif
@@ -718,11 +782,11 @@ static int testCloseFailures(void)
     return OK;
 }
 
-int runReadErrorTests(void)
+int runIOErrorTests(void)
 {
     failures = 0;
     checks = 0;
-    gp_Message("Starting Read Error Tests");
+    gp_Message("Starting I/O Error Tests");
     if (testLineReads() != OK)
         return NOTOK;
     if (testCharacterReads() != OK)
@@ -735,15 +799,15 @@ int runReadErrorTests(void)
         return NOTOK;
     if (testCloseFailures() != OK)
         return NOTOK;
-    gp_Message("Read-error regression checks: %d passed, %d failed.\n", checks - failures, failures);
+    gp_Message("I/O error regression checks: %d passed, %d failed.\n", checks - failures, failures);
     return failures == 0 ? OK : NOTOK;
 }
 
 #else
 
-int runReadErrorTests(void)
+int runIOErrorTests(void)
 {
-    gp_Message("Custom FILE read callbacks are unavailable; skipping read-error fault-injection tests.\n");
+    gp_Message("Custom FILE callbacks are unavailable; skipping I/O error fault-injection tests.\n");
     return OK;
 }
 
