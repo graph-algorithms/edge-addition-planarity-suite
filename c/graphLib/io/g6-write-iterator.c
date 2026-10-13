@@ -667,6 +667,15 @@ int _g6_WriteGraphToStrOrFile(graphP theGraph, strOrFileP *pOutputContainer)
         return NOTOK;
     }
 
+    // The writer owns the container, so its file is closed here, where a
+    // failure to close, which g6_FreeWriter() cannot report, is returned
+    if (sf_closeFile(theG6WriteIterator->outputContainer) != OK)
+    {
+        gp_ErrorMessage("Unable to close the graph6 output.");
+        g6_FreeWriter((&theG6WriteIterator));
+        return NOTOK;
+    }
+
     g6_FreeWriter((&theG6WriteIterator));
 
     return OK;

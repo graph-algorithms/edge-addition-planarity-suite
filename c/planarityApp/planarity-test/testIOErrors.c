@@ -10,7 +10,11 @@ See the LICENSE.TXT file for licensing information.
 
 #include <errno.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#ifdef __linux__
+#include <unistd.h>
+#endif
 
 #include "../planarity.h"
 #include "../../graphLib/extensionSystem/graphFunctionTable.h"
@@ -19,7 +23,10 @@ See the LICENSE.TXT file for licensing information.
 extern int _ReadGraph(graphP theGraph, strOrFileP *pInputContainer);
 extern int _g6_InitReaderWithStrOrFile(G6ReadIteratorP reader, strOrFileP *input);
 extern int _g6_ReadGraphFromStrOrFile(graphP theGraph, strOrFileP *input);
-int runReadErrorTests(void);
+extern int _s6_InitReaderWithStrOrFile(S6ReadIteratorP reader, strOrFileP *input);
+extern int _g6_WriteGraphToStrOrFile(graphP theGraph, strOrFileP *output);
+extern int _s6_WriteGraphToStrOrFile(graphP theGraph, strOrFileP *output);
+int runIOErrorTests(void);
 
 #if defined(HAVE_FOPENCOOKIE) || defined(HAVE_FUNOPEN)
 
@@ -29,7 +36,14 @@ typedef struct
     size_t position;
     int failAtEnd;
     int failOnClose;
+    int closeCalls;
 } TestInput;
+
+typedef struct
+{
+    int failOnClose;
+    int closeCalls;
+} TestOutput;
 
 static int failures = 0;
 static int checks = 0;
@@ -75,6 +89,7 @@ static int closeInput(void *cookie)
 {
     TestInput *input = (TestInput *)cookie;
 
+    input->closeCalls++;
     if (input->failOnClose)
     {
         errno = EIO;
@@ -103,6 +118,65 @@ static int newInput(TestInput *input, strOrFileP *pContainer)
         return NOTOK;
     }
     sb_Free(&container->theStrBuf);
+    container->pFile = stream;
+    *pContainer = container;
+    return OK;
+}
+
+// An output stream that takes every byte and whose close can fail
+#ifdef HAVE_FOPENCOOKIE
+static ssize_t writeOutput(void *cookie, const char *buffer, size_t size)
+{
+    (void)cookie;
+    (void)buffer;
+    return (ssize_t)size;
+}
+#else
+static int writeOutput(void *cookie, const char *buffer, int size)
+{
+    (void)cookie;
+    (void)buffer;
+    return size;
+}
+#endif
+
+static int closeOutput(void *cookie)
+{
+    TestOutput *output = (TestOutput *)cookie;
+
+    output->closeCalls++;
+    if (output->failOnClose)
+    {
+        errno = EIO;
+        return EOF;
+    }
+    return 0;
+}
+
+// The container has no file name, so a failed close removes no file
+static int newOutput(TestOutput *output, strOrFileP *pContainer)
+{
+    char *unused = NULL;
+    strOrFileP container = sf_NewOutputContainer(&unused, NULL);
+    FILE *stream = NULL;
+
+#ifdef HAVE_FOPENCOOKIE
+    cookie_io_functions_t functions = {NULL, writeOutput, NULL, closeOutput};
+    stream = fopencookie(output, "w", functions);
+#else
+    stream = funopen(output, NULL, writeOutput, NULL, closeOutput);
+#endif
+    if (container == NULL || stream == NULL)
+    {
+        gp_ErrorMessage("Unable to create test output stream.");
+        sf_Free(&container);
+        free(unused);
+        if (stream != NULL)
+            fclose(stream);
+        return NOTOK;
+    }
+    sb_Free(&container->theStrBuf);
+    container->pOutputStr = NULL;
     container->pFile = stream;
     *pContainer = container;
     return OK;
@@ -517,11 +591,202 @@ static int testGraph6Reads(void)
     return OK;
 }
 
-int runReadErrorTests(void)
+#ifdef __linux__
+// Makes a new directory in the first of /tmp, /var/tmp and the directories
+// that TMP, TEMP and TMPDIR name that can be written to, for the tests that
+// write through a link to /dev/full, and returns its path in *pDirPath for
+// the caller to free. The tests are skipped, with a message and *pDirPath
+// NULL, when none can be written to, or when making the directory fails
+// because the file system is read only or full or access is denied. Any
+// other failure to make it returns NOTOK.
+static int makeTestTempDir(char **pDirPath)
+{
+    char const *candidates[] = {"/tmp", "/var/tmp", getenv("TMP"), getenv("TEMP"), getenv("TMPDIR")};
+    char const *suffix = "/planarity-close-XXXXXX";
+    char const *base = NULL;
+    int mkdtempErrno = 0;
+
+    (*pDirPath) = NULL;
+
+    for (size_t i = 0; base == NULL && i < sizeof(candidates) / sizeof(candidates[0]); i++)
+    {
+        if (candidates[i] != NULL && candidates[i][0] != '\0' && access(candidates[i], W_OK | X_OK) == 0)
+            base = candidates[i];
+    }
+
+    if (base == NULL)
+    {
+        gp_Message("Skipping the close failure tests through /dev/full, as no "
+                   "temporary directory can be written to.\n");
+        return OK;
+    }
+
+    if (((*pDirPath) = (char *)malloc(strlen(base) + strlen(suffix) + 1)) == NULL)
+        return NOTOK;
+
+    sprintf(*pDirPath, "%s%s", base, suffix);
+
+    errno = 0;
+    if (mkdtemp(*pDirPath) != NULL)
+        return OK;
+
+    mkdtempErrno = errno;
+    free(*pDirPath);
+    (*pDirPath) = NULL;
+
+    if (mkdtempErrno == EROFS || mkdtempErrno == ENOSPC || mkdtempErrno == EACCES)
+    {
+        gp_Message("Skipping the close failure tests through /dev/full, as no "
+                   "temporary directory can be made in \"%s\".\n",
+                   base);
+        return OK;
+    }
+
+    return NOTOK;
+}
+
+// Adds every missing edge, so that the random graph is complete and, from
+// order 5 on, not planar
+static int completeTheGraph(graphP theGraph)
+{
+    for (int u = gp_LowerBoundVertices(theGraph); u < gp_UpperBoundVertices(theGraph); u++)
+        for (int v = u + 1; v < gp_UpperBoundVertices(theGraph); v++)
+            if (!gp_IsEdge(theGraph, gp_FindEdge(theGraph, u, v)) && gp_DynamicAddEdge(theGraph, u, 0, v, 0) != OK)
+                return NOTOK;
+    return OK;
+}
+#endif
+
+// The read iterators close their input when they read its end, and the
+// graph6 and sparse6 one-shot writers and gp_Write() close their output
+// before freeing it, so a close that fails is reported, and only once; see
+// issue #345
+static int testCloseFailures(void)
+{
+    unsigned quietModeCache = gp_GetQuietMode();
+
+    for (int failOnClose = 0; failOnClose < 2; failOnClose++)
+    {
+        TestInput g6Input = {"A_\n", 0, FALSE, FALSE, 0};
+        TestInput s6Input = {":An\n", 0, FALSE, FALSE, 0};
+        strOrFileP container = NULL;
+        G6ReadIteratorP g6Reader = NULL;
+        S6ReadIteratorP s6Reader = NULL;
+        graphP graph = gp_New();
+        int expected = failOnClose ? NOTOK : OK;
+
+        g6Input.failOnClose = s6Input.failOnClose = failOnClose;
+
+        if (graph == NULL || newInput(&g6Input, &container) != OK)
+        {
+            gp_Free(&graph);
+            return NOTOK;
+        }
+        CHECK(g6_NewReader(&g6Reader, graph) == OK);
+        CHECK(_g6_InitReaderWithStrOrFile(g6Reader, &container) == OK);
+        CHECK(g6_ReadGraph(g6Reader) == OK && !g6_EndReached(g6Reader));
+        gp_SetQuietMode(QUIETMODE_ALL);
+        CHECK(g6_ReadGraph(g6Reader) == expected);
+        CHECK(g6_ReadGraph(g6Reader) == expected);
+        gp_SetQuietMode(quietModeCache);
+        CHECK(g6_EndReached(g6Reader));
+        g6_FreeReader(&g6Reader);
+        CHECK(g6Input.closeCalls == 1);
+
+        if (newInput(&s6Input, &container) != OK)
+        {
+            gp_Free(&graph);
+            return NOTOK;
+        }
+        CHECK(s6_NewReader(&s6Reader, graph) == OK);
+        CHECK(_s6_InitReaderWithStrOrFile(s6Reader, &container) == OK);
+        CHECK(s6_ReadGraph(s6Reader) == OK && !s6_EndReached(s6Reader));
+        gp_SetQuietMode(QUIETMODE_ALL);
+        CHECK(s6_ReadGraph(s6Reader) == expected);
+        CHECK(s6_ReadGraph(s6Reader) == expected);
+        gp_SetQuietMode(quietModeCache);
+        CHECK(s6_EndReached(s6Reader));
+        s6_FreeReader(&s6Reader);
+        CHECK(s6Input.closeCalls == 1);
+
+        for (int sparse6 = 0; sparse6 < 2; sparse6++)
+        {
+            TestOutput output = {failOnClose, 0};
+
+            if (newOutput(&output, &container) != OK)
+            {
+                gp_Free(&graph);
+                return NOTOK;
+            }
+            gp_SetQuietMode(QUIETMODE_ALL);
+            CHECK((sparse6 ? _s6_WriteGraphToStrOrFile(graph, &container)
+                           : _g6_WriteGraphToStrOrFile(graph, &container)) == expected);
+            gp_SetQuietMode(quietModeCache);
+            CHECK(container == NULL);
+            CHECK(output.closeCalls == 1);
+        }
+
+#ifdef __linux__
+        // gp_Write() opens the file itself, so its close fails through a
+        // symbolic link to /dev/full, which the failed close removes rather
+        // than the device
+        if (failOnClose && access("/dev/full", W_OK) == 0)
+        {
+            char *dir = NULL, *link = NULL;
+            int const modes[] = {WRITE_ADJLIST, WRITE_ADJMATRIX, WRITE_G6, WRITE_GRAPHML, WRITE_SPARSE6};
+
+            CHECK(makeTestTempDir(&dir) == OK);
+            if (dir != NULL)
+            {
+                link = (char *)malloc(strlen(dir) + strlen("/out") + 1);
+                CHECK(link != NULL);
+            }
+
+            if (link != NULL)
+            {
+                sprintf(link, "%s/out", dir);
+                for (size_t m = 0; m < sizeof(modes) / sizeof(modes[0]); m++)
+                {
+                    CHECK(symlink("/dev/full", link) == 0);
+                    gp_SetQuietMode(QUIETMODE_ALL);
+                    CHECK(gp_Write(graph, link, modes[m]) == NOTOK);
+                    gp_SetQuietMode(quietModeCache);
+                    unlink(link);
+                }
+
+                // The random graph generator writes through a graph6 write
+                // iterator and must report the failed close, also when the
+                // last graph is not planar
+                for (int order = 4; order <= 5; order++)
+                {
+                    CHECK(symlink("/dev/full", link) == 0);
+                    gp_SetQuietMode(QUIETMODE_ALL);
+                    CHECK(RandomGraphs("-p", 1, order, link, FALSE, FALSE, order == 5 ? completeTheGraph : NULL) == NOTOK);
+                    gp_SetQuietMode(quietModeCache);
+                    unlink(link);
+                }
+                free(link);
+            }
+
+            if (dir != NULL)
+            {
+                rmdir(dir);
+                free(dir);
+            }
+        }
+#endif
+
+        gp_Free(&graph);
+    }
+
+    return OK;
+}
+
+int runIOErrorTests(void)
 {
     failures = 0;
     checks = 0;
-    gp_Message("Starting Read Error Tests");
+    gp_Message("Starting I/O Error Tests");
     if (testLineReads() != OK)
         return NOTOK;
     if (testCharacterReads() != OK)
@@ -532,15 +797,17 @@ int runReadErrorTests(void)
         return NOTOK;
     if (testGraph6Reads() != OK)
         return NOTOK;
-    gp_Message("Read-error regression checks: %d passed, %d failed.\n", checks - failures, failures);
+    if (testCloseFailures() != OK)
+        return NOTOK;
+    gp_Message("I/O error regression checks: %d passed, %d failed.\n", checks - failures, failures);
     return failures == 0 ? OK : NOTOK;
 }
 
 #else
 
-int runReadErrorTests(void)
+int runIOErrorTests(void)
 {
-    gp_Message("Custom FILE read callbacks are unavailable; skipping read-error fault-injection tests.\n");
+    gp_Message("Custom FILE callbacks are unavailable; skipping I/O error fault-injection tests.\n");
     return OK;
 }
 
