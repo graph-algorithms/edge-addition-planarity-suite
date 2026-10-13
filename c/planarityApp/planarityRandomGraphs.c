@@ -4,6 +4,9 @@ All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
 
+#include <errno.h>
+#include <string.h>
+
 #include "planarity.h"
 
 int GetNumberIfZero(int *pNum, char const *prompt, int min, int max);
@@ -442,7 +445,26 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
 
     FlushConsole(stdout);
 
-    g6_FreeWriter((&theG6WriteIterator));
+    // The writer closes its output when it is freed, and closing a file can
+    // fail where the writes did not, e.g. on a full device, which the void
+    // g6_FreeWriter() reports only through errno. Output to stdout is only
+    // flushed, and a flush that failed above already emptied the buffer, so
+    // there the error indicator of stdout is what shows the failure.
+    if (theG6WriteIterator != NULL)
+    {
+        int writingToStdout = (outfileName != NULL && strcmp(outfileName, "stdout") == 0);
+
+        errno = 0;
+        g6_FreeWriter((&theG6WriteIterator));
+
+        // Note that if Result is already NOTOK, it is OK to write another error
+        // if the FreeWriter call gets an error while closing the output source.
+        if (errno != 0 || (writingToStdout && ferror(stdout)))
+        {
+            gp_ErrorMessage("Unable to finish writing the generated graphs.");
+            Result = NOTOK;
+        }
+    }
 
     // Free the graph structures created before the loop
     gp_Free(&theGraph);

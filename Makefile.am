@@ -97,7 +97,7 @@ planarity_SOURCES = \
 	c/planarityApp/planarityMenu.c \
 	c/planarityApp/planarityRandomGraphs.c \
 	c/planarityApp/planaritySpecificGraph.c \
-	c/planarityApp/planarity-test/testReadErrors.c \
+	c/planarityApp/planarity-test/testIOErrors.c \
 	c/planarityApp/planarity-test/testSparse6.c \
 	c/planarityApp/planarity-test/testExtensionCopy.c \
 	c/planarityApp/planarityTransformGraph.c \
