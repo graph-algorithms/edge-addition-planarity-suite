@@ -125,8 +125,8 @@ int gp_ExtendWith_K33Search(graphP theGraph)
     // Store the K33 search context, including the data structure and the
     // function pointers, as an extension of the graph
     if (gp_AddExtension(theGraph, &K33SEARCH_ID, (void *)context,
-                        _K33Search_DupContext, 
-                        _K33Search_CopyData, 
+                        _K33Search_DupContext,
+                        _K33Search_CopyData,
                         _K33Search_FreeContext,
                         &context->functions) != OK)
     {
@@ -343,56 +343,55 @@ int _K33Search_EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity)
 
 /********************************************************************
  _K33Search_DupContext()
+
+ Receive a source graph's extension context (*pContext) and a 
+ destination graph (theGraph) that must receive a duplicate copy
+ of the source graph's extension. 
  ********************************************************************/
 
 void *_K33Search_DupContext(void *pContext, void *theGraph)
 {
-    K33SearchContext *context = (K33SearchContext *)pContext;
-    K33SearchContext *newContext = (K33SearchContext *)malloc(sizeof(K33SearchContext));
+    K33SearchContext *srcContext = (K33SearchContext *)pContext;
+    K33SearchContext *dstContext = (K33SearchContext *)malloc(sizeof(K33SearchContext));
 
-    if (newContext != NULL)
+    if (dstContext != NULL)
     {
         int VIsize = gp_UpperBoundVertices((graphP)theGraph);
-        int Esize = gp_UpperBoundEdgeStorage((graphP)theGraph);
-        int srcEsize = gp_UpperBoundEdgeStorage(context->theGraph);
+        int dstEsize = gp_UpperBoundEdgeStorage((graphP)theGraph);
+        int srcEsize = gp_UpperBoundEdgeStorage(srcContext->theGraph);
 
-        *newContext = *context;
+        *dstContext = *srcContext;
 
-        newContext->theGraph = (graphP)theGraph;
+        dstContext->theGraph = (graphP)theGraph;
 
-        newContext->initialized = 0;
-        _K33Search_ClearStructures(newContext);
+        dstContext->initialized = 0;
+        _K33Search_ClearStructures(dstContext);
         if (((graphP)theGraph)->N > 0)
         {
-#ifdef INCLUDE_K33SEARCH_EMBEDDER
-            if (_K33Search_TestForEOTreeChildren(context->associatedEONode) == TRUE)
+            // The new 'dst' graph must have room for the source graph's edge records,
+            // and we must be able to successfully create the extension's structures
+            if (dstEsize < srcEsize || _K33Search_CreateStructures(dstContext) != OK)
             {
-                ErrorMessage("_K33Search_DupContext(): Duplicating an embedding obstruction tree is unsupported.\n");
-                _K33Search_FreeContext(newContext);
-                return NULL;
-            }
-#endif
-
-            // The new graph must have room for the source graph's edge records
-            if (Esize < srcEsize || _K33Search_CreateStructures(newContext) != OK)
-            {
-                _K33Search_FreeContext(newContext);
-                newContext = NULL;
+                _K33Search_FreeContext(dstContext);
+                dstContext = NULL;
 
                 return NULL;
             }
 
-            // The edge records the new graph has beyond the source graph's
-            // are reinitialized
-            memcpy(newContext->E, context->E, srcEsize * sizeof(K33Search_EdgeRec));
-            for (int e = srcEsize; e < Esize; e++)
-                _K33Search_InitEdgeRec(newContext, e);
-            memcpy(newContext->VI, context->VI, VIsize * sizeof(K33Search_VertexInfo));
-            LCCopy(newContext->separatedDFSChildLists, context->separatedDFSChildLists);
+            // Copy extension edge records from src context to the new dst Context
+            memcpy(dstContext->E, srcContext->E, srcEsize * sizeof(K33Search_EdgeRec));
+            // Any extension edge records that the new 'dst' graph has beyond the 
+            // source graph's must be initialized.
+            for (int e = srcEsize; e < dstEsize; e++)
+                _K33Search_InitEdgeRec(dstContext, e);
+
+            // Copy vertex-level info from the src context to the new dst context
+            memcpy(dstContext->VI, srcContext->VI, VIsize * sizeof(K33Search_VertexInfo));
+            LCCopy(dstContext->separatedDFSChildLists, srcContext->separatedDFSChildLists);
         }
     }
 
-    return newContext;
+    return dstContext;
 }
 
 /********************************************************************

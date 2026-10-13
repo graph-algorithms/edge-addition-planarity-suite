@@ -272,44 +272,51 @@ int _DrawPlanar_InitStructures(DrawPlanarContext *context)
 
 /********************************************************************
  _DrawPlanar_DupContext()
+
+ Receive a source graph's extension context (*pContext) and a 
+ destination graph (theGraph) that must receive a duplicate copy
+ of the source graph's extension. 
  ********************************************************************/
 
 void *_DrawPlanar_DupContext(void *pContext, void *theGraph)
 {
-    DrawPlanarContext *context = (DrawPlanarContext *)pContext;
-    DrawPlanarContext *newContext = (DrawPlanarContext *)malloc(sizeof(DrawPlanarContext));
+    DrawPlanarContext *srcContext = (DrawPlanarContext *)pContext;
+    DrawPlanarContext *dstContext = (DrawPlanarContext *)malloc(sizeof(DrawPlanarContext));
 
-    if (newContext != NULL)
+    if (dstContext != NULL)
     {
         int VIsize = gp_UpperBoundVertices((graphP)theGraph);
-        int Esize = gp_UpperBoundEdgeStorage((graphP)theGraph);
-        int srcEsize = gp_UpperBoundEdgeStorage(context->theGraph);
+        int dstEsize = gp_UpperBoundEdgeStorage((graphP)theGraph);
+        int srcEsize = gp_UpperBoundEdgeStorage(srcContext->theGraph);
 
-        *newContext = *context;
+        *dstContext = *srcContext;
 
-        newContext->theGraph = (graphP)theGraph;
+        dstContext->theGraph = (graphP)theGraph;
 
-        newContext->initialized = 0;
-        _DrawPlanar_ClearStructures(newContext);
+        dstContext->initialized = 0;
+        _DrawPlanar_ClearStructures(dstContext);
         if (((graphP)theGraph)->N > 0)
         {
             // The new graph must have room for the source graph's edge records
-            if (Esize < srcEsize || _DrawPlanar_CreateStructures(newContext) != OK)
+            if (dstEsize < srcEsize || _DrawPlanar_CreateStructures(dstContext) != OK)
             {
-                _DrawPlanar_FreeContext(newContext);
+                _DrawPlanar_FreeContext(dstContext);
                 return NULL;
             }
 
-            // Initialize custom data structures by copying, and reinitialize
-            // the edge records the new graph has beyond the source graph's
-            memcpy(newContext->E, context->E, srcEsize * sizeof(DrawPlanar_EdgeRec));
-            for (int e = srcEsize; e < Esize; e++)
-                _DrawPlanar_InitEdgeRec(newContext, e);
-            memcpy(newContext->VI, context->VI, VIsize * sizeof(DrawPlanar_VertexInfo));
+            // Copy extension edge records from src context to the new dst context
+            memcpy(dstContext->E, srcContext->E, srcEsize * sizeof(DrawPlanar_EdgeRec));
+            // Any extension edge records that the new 'dst' graph has beyond the 
+            // source graph's must be initialized.
+            for (int e = srcEsize; e < dstEsize; e++)
+                _DrawPlanar_InitEdgeRec(dstContext, e);
+
+            // Copy vertex-level info from the src context to the new dst context
+            memcpy(dstContext->VI, srcContext->VI, VIsize * sizeof(DrawPlanar_VertexInfo));
         }
     }
 
-    return newContext;
+    return dstContext;
 }
 
 /********************************************************************

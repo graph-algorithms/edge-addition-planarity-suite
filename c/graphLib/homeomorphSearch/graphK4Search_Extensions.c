@@ -305,44 +305,49 @@ int _K4Search_EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity)
 
 /********************************************************************
  _K4Search_DupContext()
+
+ Receive a source graph's extension context (*pContext) and a 
+ destination graph (theGraph) that must receive a duplicate copy
+ of the source graph's extension. 
  ********************************************************************/
 
 void *_K4Search_DupContext(void *pContext, void *theGraph)
 {
-    K4SearchContext *context = (K4SearchContext *)pContext;
-    K4SearchContext *newContext = (K4SearchContext *)malloc(sizeof(K4SearchContext));
+    K4SearchContext *srcContext = (K4SearchContext *)pContext;
+    K4SearchContext *dstContext = (K4SearchContext *)malloc(sizeof(K4SearchContext));
 
-    if (newContext != NULL)
+    if (dstContext != NULL)
     {
-        int Esize = gp_UpperBoundEdgeStorage((graphP)theGraph);
-        int srcEsize = gp_UpperBoundEdgeStorage(context->theGraph);
+        int dstEsize = gp_UpperBoundEdgeStorage((graphP)theGraph);
+        int srcEsize = gp_UpperBoundEdgeStorage(srcContext->theGraph);
 
-        *newContext = *context;
+        *dstContext = *srcContext;
 
-        newContext->theGraph = (graphP)theGraph;
+        dstContext->theGraph = (graphP)theGraph;
 
-        newContext->initialized = 0;
-        _K4Search_ClearStructures(newContext);
+        dstContext->initialized = 0;
+        _K4Search_ClearStructures(dstContext);
         if (((graphP)theGraph)->N > 0)
         {
-            // The new graph must have room for the source graph's edge records
-            if (Esize < srcEsize || _K4Search_CreateStructures(newContext) != OK)
+            // The new 'dst' graph must have room for the source graph's edge records
+            if (dstEsize < srcEsize || _K4Search_CreateStructures(dstContext) != OK)
             {
-                _K4Search_FreeContext(newContext);
-                newContext = NULL;
+                _K4Search_FreeContext(dstContext);
+                dstContext = NULL;
 
                 return NULL;
             }
 
-            // The edge records the new graph has beyond the source graph's
-            // are reinitialized
-            memcpy(newContext->E, context->E, srcEsize * sizeof(K4Search_EdgeRec));
-            for (int e = srcEsize; e < Esize; e++)
-                _K4Search_InitEdgeRec(newContext, e);
+            // Copy extension edge records from src context to the new dst context
+            memcpy(dstContext->E, srcContext->E, srcEsize * sizeof(K4Search_EdgeRec));
+            // Any extension edge records that the new 'dst' graph has beyond the 
+            // source graph's must be initialized.
+            for (int e = srcEsize; e < dstEsize; e++)
+                _K4Search_InitEdgeRec(dstContext, e);
         }
     }
 
-    return newContext;
+    return dstContext;
 }
 
 /********************************************************************
