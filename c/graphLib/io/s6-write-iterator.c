@@ -18,7 +18,6 @@ See the LICENSE.TXT file for licensing information.
 
 /* Imported functions */
 extern int _s6_GetNumBitsForVertex(int order);
-extern int _CompactEdgeStorage(graphP theGraph);
 
 /* Private function declarations (exported within system) */
 int _s6_WriteGraphToStrOrFile(graphP theGraph, strOrFileP *pOutputContainer);
@@ -1128,12 +1127,11 @@ int _s6_BuildToggles(S6WriteIteratorP theS6WriteIterator, int **pToggles, int *p
  _s6_ApplyChangeBatch()
 
  Applies the batch to the graph once its ';' line has been written,
- so that the graph is the one on that line, and compacts the edge
- storage, which the deletions leave with holes that some algorithms
- refuse. The deletions come first, each by its edge record, which is
- still in use, since nothing moves an edge record until the
- compaction and the batch deletes a record only once; the additions
- then fill the holes they leave. A change that no longer fits the
+ so that the graph is the one on that line. The deletions come first,
+ each by its edge record, which is still in use, since nothing moves
+ an edge record and the batch deletes a record only once; the
+ additions then fill the holes they leave, and any holes left over
+ stay until later additions fill them. A change that no longer fits the
  graph means it was modified directly, in which case the write should
  not have happened.
  ********************************************************************/
@@ -1171,7 +1169,7 @@ int _s6_ApplyChangeBatch(S6WriteIteratorP theS6WriteIterator)
         }
     }
 
-    return _CompactEdgeStorage(theGraph);
+    return OK;
 }
 
 /********************************************************************
@@ -1470,6 +1468,15 @@ int _s6_WriteGraphToStrOrFile(graphP theGraph, strOrFileP *pOutputContainer)
         // handed back as a result
         gp_ErrorMessage("Unable to write graph using S6WriteIterator.");
         s6_SetOutputErrorFlag(theS6WriteIterator);
+        s6_FreeWriter((&theS6WriteIterator));
+        return NOTOK;
+    }
+
+    // The writer owns the container, so its file is closed here, where a
+    // failure to close, which s6_FreeWriter() cannot report, is returned
+    if (sf_closeFile(theS6WriteIterator->outputContainer) != OK)
+    {
+        gp_ErrorMessage("Unable to close the sparse6 output.");
         s6_FreeWriter((&theS6WriteIterator));
         return NOTOK;
     }

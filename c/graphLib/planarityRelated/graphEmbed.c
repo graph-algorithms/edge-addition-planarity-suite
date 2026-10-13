@@ -36,6 +36,8 @@ extern int _gp_FindEdge(graphP theGraph, int u, int v);
 extern int _ClearEdgeTypes(graphP theGraph);
 extern int _ClearEdgeMarks(graphP theGraph);
 
+extern int _CompactEdgeStorage(graphP theGraph);
+
 /* Private functions (some are exported to system only) */
 
 int _gp_EmbedFlagsValid(graphP theGraph, int embedFlags);
@@ -132,6 +134,12 @@ int gp_Embed(graphP theGraph, unsigned embedFlags)
         else
             return NOTOK;
     }
+
+    // The planar drawing does not tolerate edge holes, which edge deletions
+    // leave behind, so they are filled before the embedding begins
+    if (embedFlags == EMBEDFLAGS_DRAWPLANAR && theGraph->numEdgeHoles > 0 &&
+        _CompactEdgeStorage(theGraph) != OK)
+        return NOTOK;
 
     theGraph->embedFlags = embedFlags;
 

@@ -1020,6 +1020,16 @@ int gp_Write(graphP theGraph, char const *fileName, int writeMode)
 
     RetVal = _WriteGraph(theGraph, &outputContainer, writeMode);
 
+    // The graph6 and sparse6 writers take the container and close it
+    // themselves; for the other formats the file is closed here, since
+    // fclose() can fail where the writes did not, e.g. on a full device,
+    // and sf_Free() cannot report it
+    if (outputContainer != NULL && sf_closeFile(outputContainer) != OK && RetVal == OK)
+    {
+        gp_ErrorMessage("Unable to close the output file \"%s\".", fileName);
+        RetVal = NOTOK;
+    }
+
     sf_Free(&outputContainer);
 
     return RetVal;

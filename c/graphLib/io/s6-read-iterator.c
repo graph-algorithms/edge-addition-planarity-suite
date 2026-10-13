@@ -20,7 +20,6 @@ See the LICENSE.TXT file for licensing information.
 #include "../graph.private.h"
 
 /* Private function declarations (exported within system) */
-extern int _CompactEdgeStorage(graphP theGraph);
 int _s6_ReadGraphFromStrOrFile(graphP theGraph, strOrFileP *pInputContainer);
 
 /* Private functions */
@@ -130,7 +129,8 @@ struct S6ReadIteratorStruct
 
     // Set when a read or a retrieval fails after it has begun to consume
     // a line, since the input is then no longer at the start of a line
-    // and the graph may hold part of the line
+    // and the graph may hold part of the line, and when the input cannot
+    // be closed once its end is read
     int readerFailed;
 
     // How far the lookahead has got into the next line: not started, a
@@ -263,7 +263,9 @@ int _s6_IsReaderInitialized(S6ReadIteratorP theS6ReadIterator, int reportUniniti
     }
     else
     {
-        if (!sf_IsValidStrOrFile(theS6ReadIterator->inputContainer))
+        // The reader is uninitialized if the input source is invalid,
+        // except if it was closed due to its end having been reached.
+        if (!theS6ReadIterator->endReached && !sf_IsValidStrOrFile(theS6ReadIterator->inputContainer))
         {
             if (reportUninitializedParts)
                 gp_ErrorMessage("S6ReadIterator's inputContainer string-or-file "
@@ -657,7 +659,7 @@ int s6_ReadGraph(S6ReadIteratorP theS6ReadIterator)
     if (theS6ReadIterator->readerFailed)
     {
         gp_ErrorMessage("Unable to read a graph, as an earlier read or "
-                        "retrieval failed part way through a line.");
+                        "retrieval failed.");
         return NOTOK;
     }
 
@@ -731,6 +733,17 @@ int s6_ReadGraph(S6ReadIteratorP theS6ReadIterator)
         if (firstChar == EOF)
         {
             theS6ReadIterator->endReached = TRUE;
+
+            // The input is closed here, where a failure to close, e.g. of a
+            // stream whose close reports an error, can still be returned
+            if (sf_closeFile(inputContainer) != OK)
+            {
+                gp_ErrorMessage("Unable to close the sparse6 input after its "
+                                "last line.");
+                theS6ReadIterator->readerFailed = TRUE;
+                return NOTOK;
+            }
+
             return OK;
         }
         else if (firstChar == ':')
@@ -784,17 +797,6 @@ int s6_ReadGraph(S6ReadIteratorP theS6ReadIterator)
     {
         gp_ErrorMessage("Unable to interpret bits on line %d to populate "
                         "the graph.",
-                        lineNum);
-        theS6ReadIterator->readerFailed = TRUE;
-        return NOTOK;
-    }
-
-    // The deletions of an incremental line leave holes in the edge storage,
-    // which are filled once here rather than after each deletion
-    if (incremental && _CompactEdgeStorage(currGraph) != OK)
-    {
-        gp_ErrorMessage("Unable to keep the edge storage dense after applying "
-                        "line %d.",
                         lineNum);
         theS6ReadIterator->readerFailed = TRUE;
         return NOTOK;
@@ -865,7 +867,7 @@ int s6_RetrieveGraphChange(S6ReadIteratorP theS6ReadIterator, int *e, int *u, in
     if (theS6ReadIterator->readerFailed)
     {
         gp_ErrorMessage("Unable to retrieve a change, as an earlier read or "
-                        "retrieval failed part way through a line.");
+                        "retrieval failed.");
         return NOTOK;
     }
 
@@ -1175,9 +1177,9 @@ int _s6_ApplyEdge(S6ReadIteratorP theS6ReadIterator, int u, int v, const int inc
         if (gp_IsEdge(theGraph, e))
         {
             // The deletion leaves a hole in the edge storage unless the pair
-            // it removed was the last one; s6_ReadGraph() compacts the
-            // storage once the whole line has been applied, since a freshly
-            // read graph must have no holes for algorithms such as DrawPlanar
+            // it removed was the last one, and a later addition fills it;
+            // if needed, algorithm implementations can call _CompactEdgeStorage()
+            // to fill any holes before performing their main logic.
             return gp_DeleteEdge(theGraph, e);
         }
     }
@@ -1369,9 +1371,9 @@ int _s6_IsGraphAsLastRead(S6ReadIteratorP theS6ReadIterator, const int lineNum)
 }
 
 // Applies the changes the lookahead has worked out for the current ';' line,
-// reported or not, in the order they were worked out. Holes left by the
-// deletions are compacted by s6_ReadGraph() once the whole line is applied;
-// until then no edge in use moves, so each edge record still names its edge.
+// reported or not, in the order they were worked out. Deletions leave holes
+// and additions fill them, but no edge in use moves, so each edge record
+// still names its edge.
 int _s6_ApplyRetrievedChanges(S6ReadIteratorP theS6ReadIterator)
 {
     graphP theGraph = theS6ReadIterator->currGraph;
