@@ -237,7 +237,7 @@ int runExtensionCopyTests(void)
         {"K4 search", gp_ExtendWith_K4Search, &K4SEARCH_ID, getK4SearchEdgeData, sizeof(K4Search_EdgeRec)},
     };
 
-    gp_Message("Testing the copy of extension edge data between graphs of different edge capacity.");
+    gp_Message("Testing the copy of extension edge data between graphs of different edge capacities.");
 
     for (size_t x = 0; Result == OK && x < sizeof(exts) / sizeof(exts[0]); x++)
     {
@@ -251,6 +251,11 @@ int runExtensionCopyTests(void)
             testDupExtensionsRefused(ext, 10, 100, "into less edge storage") != OK)
             Result = NOTOK;
     }
+
+    if (Result == OK)
+        gp_Message("Test succeeded.\n");
+    else
+        gp_ErrorMessage("Failed test of copying extension edge data between graphs of different edge capacities.\n");
 
     return Result;
 }
