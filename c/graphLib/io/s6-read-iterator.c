@@ -129,7 +129,8 @@ struct S6ReadIteratorStruct
 
     // Set when a read or a retrieval fails after it has begun to consume
     // a line, since the input is then no longer at the start of a line
-    // and the graph may hold part of the line
+    // and the graph may hold part of the line, and when the input cannot
+    // be closed once its end is read
     int readerFailed;
 
     // How far the lookahead has got into the next line: not started, a
@@ -262,7 +263,9 @@ int _s6_IsReaderInitialized(S6ReadIteratorP theS6ReadIterator, int reportUniniti
     }
     else
     {
-        if (!sf_IsValidStrOrFile(theS6ReadIterator->inputContainer))
+        // The reader is uninitialized if the input source is invalid,
+        // except if it was closed due to its end having been reached.
+        if (!theS6ReadIterator->endReached && !sf_IsValidStrOrFile(theS6ReadIterator->inputContainer))
         {
             if (reportUninitializedParts)
                 gp_ErrorMessage("S6ReadIterator's inputContainer string-or-file "
@@ -656,7 +659,7 @@ int s6_ReadGraph(S6ReadIteratorP theS6ReadIterator)
     if (theS6ReadIterator->readerFailed)
     {
         gp_ErrorMessage("Unable to read a graph, as an earlier read or "
-                        "retrieval failed part way through a line.");
+                        "retrieval failed.");
         return NOTOK;
     }
 
@@ -730,6 +733,17 @@ int s6_ReadGraph(S6ReadIteratorP theS6ReadIterator)
         if (firstChar == EOF)
         {
             theS6ReadIterator->endReached = TRUE;
+
+            // The input is closed here, where a failure to close, e.g. of a
+            // stream whose close reports an error, can still be returned
+            if (sf_closeFile(inputContainer) != OK)
+            {
+                gp_ErrorMessage("Unable to close the sparse6 input after its "
+                                "last line.");
+                theS6ReadIterator->readerFailed = TRUE;
+                return NOTOK;
+            }
+
             return OK;
         }
         else if (firstChar == ':')
@@ -853,7 +867,7 @@ int s6_RetrieveGraphChange(S6ReadIteratorP theS6ReadIterator, int *e, int *u, in
     if (theS6ReadIterator->readerFailed)
     {
         gp_ErrorMessage("Unable to retrieve a change, as an earlier read or "
-                        "retrieval failed part way through a line.");
+                        "retrieval failed.");
         return NOTOK;
     }
 
