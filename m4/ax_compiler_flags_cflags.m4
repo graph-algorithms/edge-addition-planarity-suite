@@ -130,6 +130,7 @@ AC_DEFUN([AX_COMPILER_FLAGS_CFLAGS],[
             -Wreturn-type dnl
             -Wswitch-enum dnl
             -Wswitch-default dnl
+            -Wunreachable-code dnl
             -Wduplicated-cond dnl
             -Wduplicated-branches dnl
             -Wlogical-op dnl
