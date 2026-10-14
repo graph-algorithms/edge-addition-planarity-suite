@@ -37,18 +37,26 @@ dist_samples_DATA = \
   maxPlanar5.txt.DrawPlanar.out.txt \
   maxPlanar5.txt.DrawPlanar.out.txt.render.txt \
   maxPlanar5.txt.Planarity.out.txt \
+  N4-all.d6 \
+  N5-all.d6 \
   N5-all.g6 \
   N5-all.g6.0-based.AdjList.out.txt \
   N5-all.g6.0-based.AdjMat.out.txt \
+  N5-all.g6.0-based.D6.out.d6 \
   N5-all.g6.0-based.S6.out.s6 \
   N5-all.inc.s6 \
   N5-all.s6 \
+  N6-oriented.d6 \
   n8.mALL.g6 \
   n8.mALL.inc.s6 \
+  nauty_example.d6 \
+  nauty_example.d6.0-based.AdjList.out.txt \
+  nauty_example.d6.0-based.D6.out.d6 \
   nauty_example.g6 \
   nauty_example.g6.0-based.AdjList.out.txt \
   nauty_example.g6.0-based.AdjList.out.txt.0-based.G6.out.g6 \
   nauty_example.g6.0-based.AdjMat.out.txt \
+  nauty_example.g6.0-based.D6.out.d6 \
   nauty_example.g6.0-based.S6.out.s6 \
   nauty_example.s6 \
   nauty_example.s6.0-based.AdjList.out.txt \
@@ -70,9 +78,11 @@ dist_samples_DATA = \
   Petersen.txt.Outerplanarity.out.txt \
   Petersen.txt.Planarity.out.txt \
   Petersen.digraph.txt \
+  Petersen.digraph.txt.0-based.D6.out.d6 \
   Petersen-with-parallel-edges.txt \
   Petersen-parallel-undirected.txt \
   Petersen.digraph.0-based.txt \
+  Petersen.digraph.0-based.txt.0-based.D6.out.d6 \
   Digraph.transposeTest.txt \
   Digraph.transposeTest.graphml \
   Digraph.transposeTest.0-based.txt \

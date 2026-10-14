@@ -31,6 +31,8 @@ extern "C"
 #include "io/g6-write-iterator.h"
 #include "io/s6-read-iterator.h"
 #include "io/s6-write-iterator.h"
+#include "io/d6-read-iterator.h"
+#include "io/d6-write-iterator.h"
 
 // Depth-first search public API methods and definitions
 #include "graphDFSUtils.h"

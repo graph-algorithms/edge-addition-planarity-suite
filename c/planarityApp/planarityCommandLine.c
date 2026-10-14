@@ -45,6 +45,8 @@ int _CheckUndirectedDFSEdgeTypes(graphP theGraph);
 int testDirectedDFS(void);
 int testPetersenDigraph(void);
 int testDigraphTranspose(void);
+int testPetersenDigraph6(void);
+int testDigraph6Iterators(void);
 int runDigraphTests(void);
 
 int runParallelEdgeTests(void);
@@ -68,6 +70,7 @@ char *copySparse6TestString(char const *s6Str);
 int runSparse6TestAllGraphsTests(void);
 int runSparse6WriteTests(void);
 int runSparse6LookaheadTests(void);
+int runDigraph6Tests(void);
 
 int runGraphMLWriteTest(char const *inputFileName, char const *expectedOutputFileName);
 int runBasicGraphMLWriteTest(void);
@@ -302,6 +305,8 @@ int runQuickRegressionTests(int argc, char *argv[])
     else if (runSparse6WriteTests() != OK)
         retVal = NOTOK;
     else if (runSparse6LookaheadTests() != OK)
+        retVal = NOTOK;
+    else if (runDigraph6Tests() != OK)
         retVal = NOTOK;
     else if (runGraphMLTests() != OK)
         retVal = NOTOK;
@@ -897,7 +902,8 @@ int runGeneralReadIteratorTests(void)
     unsigned origQuietMode = gp_GetQuietMode();
     size_t i = 0;
 
-    // {input string, graph6 encoding of the first graph it contains}
+    // {input string, encoding of the first graph it contains}, in graph6
+    // except for the digraph6 cases, whose graphs graph6 cannot hold
     char const *acceptCases[][2] = {
         // graph6, with and without its header
         {"D?{\n", "D?{"},
@@ -907,12 +913,16 @@ int runGeneralReadIteratorTests(void)
         {":Fa@x^\n", "Fw??G"},
         {":D\n;oN\n", "D??"},
         {">>sparse6<<:Fa@x^\n", "Fw??G"},
+        // digraph6, with and without its header: the arc 1 -> 0, then on the
+        // second line the arc 0 -> 1
+        {"&AG\n&AO\n", "&AG"},
+        {">>digraph6<<&AG\n", "&AG"},
     };
 
     // Inputs in none of the formats the iterator reads
     char const *rejectCases[] = {
-        // digraph6, which neither reader accepts
-        "&AG\n",
+        // A '&' without the order that digraph6 puts after it
+        "&\n",
         // GraphML, whose first character is below the graph6 range
         "<graphml>\n",
         // An adjacency list, which gp_Read() recognizes by its "N=" but a
@@ -930,39 +940,50 @@ int runGeneralReadIteratorTests(void)
     };
 
     char const *g6Header = ">>graph6<<";
+    char const *d6Header = ">>digraph6<<";
     graphP theGraph = NULL;
     GPReadIteratorP theReadIterator = NULL;
     char *actualEncoding = NULL;
 
-    // {first line, expected s6_IsSparse6Input(), expected g6_IsGraph6Input()}
+    // {first line, expected s6_IsSparse6Input(), expected g6_IsGraph6Input(),
+    // expected d6_IsDigraph6Input()}
     struct
     {
         char const *firstLine;
         int isSparse6;
         int isGraph6;
+        int isDigraph6;
     } predicateCases[] = {
-        {">>sparse6<<:Fa@x^", TRUE, FALSE},
-        {":Fa@x^", TRUE, FALSE},
-        {";oN", TRUE, FALSE},
-        {">>graph6<<D?{", FALSE, TRUE},
-        {"D?{", FALSE, TRUE},
+        {">>sparse6<<:Fa@x^", TRUE, FALSE, FALSE},
+        {":Fa@x^", TRUE, FALSE, FALSE},
+        {";oN", TRUE, FALSE, FALSE},
+        {">>graph6<<D?{", FALSE, TRUE, FALSE},
+        {"D?{", FALSE, TRUE, FALSE},
         // The order byte spans 63 to 126, and 126 introduces the longer
         // order encodings; a graph of order 0 or 1 is its order byte alone,
         // with or without the line terminator sf_fgets() leaves on it
-        {"?", FALSE, TRUE},
-        {"@\n", FALSE, TRUE},
-        {"~~~~", FALSE, TRUE},
-        // digraph6, GraphML, and a line whose first byte is below the range
-        {"&AG", FALSE, FALSE},
-        {"<graphml>", FALSE, FALSE},
+        {"?", FALSE, TRUE, FALSE},
+        {"@\n", FALSE, TRUE, FALSE},
+        {"~~~~", FALSE, TRUE, FALSE},
+        // digraph6, with and without its header, its order byte at either end
+        // of the range, and a '&' followed by no order byte
+        {">>digraph6<<&AG", FALSE, FALSE, TRUE},
+        {"&AG", FALSE, FALSE, TRUE},
+        {"&?", FALSE, FALSE, TRUE},
+        {"&~??~", FALSE, FALSE, TRUE},
+        {"&", FALSE, FALSE, FALSE},
+        {"&\n", FALSE, FALSE, FALSE},
+        {"& ", FALSE, FALSE, FALSE},
+        // GraphML, and a line whose first byte is below the range
+        {"<graphml>", FALSE, FALSE, FALSE},
         // An adjacency list: the first byte is in the range, the second is not
-        {"N=3", FALSE, FALSE},
+        {"N=3", FALSE, FALSE, FALSE},
         // The byte after the range, and one with the high bit set
-        {"\x7f", FALSE, FALSE},
-        {"\xff", FALSE, FALSE},
-        {"\n", FALSE, FALSE},
-        {"", FALSE, FALSE},
-        {NULL, FALSE, FALSE},
+        {"\x7f", FALSE, FALSE, FALSE},
+        {"\xff", FALSE, FALSE, FALSE},
+        {"\n", FALSE, FALSE, FALSE},
+        {"", FALSE, FALSE, FALSE},
+        {NULL, FALSE, FALSE, FALSE},
     };
 
     gp_Message("Starting Generalized Read Iterator Tests");
@@ -970,12 +991,14 @@ int runGeneralReadIteratorTests(void)
     for (i = 0; i < (sizeof(predicateCases) / sizeof(predicateCases[0])); i++)
     {
         if (s6_IsSparse6Input(predicateCases[i].firstLine) != predicateCases[i].isSparse6 ||
-            g6_IsGraph6Input(predicateCases[i].firstLine) != predicateCases[i].isGraph6)
+            g6_IsGraph6Input(predicateCases[i].firstLine) != predicateCases[i].isGraph6 ||
+            d6_IsDigraph6Input(predicateCases[i].firstLine) != predicateCases[i].isDigraph6)
         {
-            gp_ErrorMessage("Format of \"%s\" was decided as sparse6=%d graph6=%d.",
+            gp_ErrorMessage("Format of \"%s\" was decided as sparse6=%d graph6=%d digraph6=%d.",
                             predicateCases[i].firstLine == NULL ? "(null)" : predicateCases[i].firstLine,
                             s6_IsSparse6Input(predicateCases[i].firstLine),
-                            g6_IsGraph6Input(predicateCases[i].firstLine));
+                            g6_IsGraph6Input(predicateCases[i].firstLine),
+                            d6_IsDigraph6Input(predicateCases[i].firstLine));
             return NOTOK;
         }
     }
@@ -1009,10 +1032,11 @@ int runGeneralReadIteratorTests(void)
             gp_ErrorMessage("Unable to read the first graph of accept case %d.", (int)i);
             Result = NOTOK;
         }
-        else if (gp_WriteToString(theGraph, (&actualEncoding), WRITE_G6) != OK ||
+        else if (gp_WriteToString(theGraph, (&actualEncoding),
+                                  acceptCases[i][1][0] == '&' ? WRITE_DIGRAPH6 : WRITE_G6) != OK ||
                  actualEncoding == NULL ||
-                 strncmp(actualEncoding + strlen(g6Header), acceptCases[i][1],
-                         strlen(acceptCases[i][1])) != 0)
+                 strncmp(actualEncoding + strlen(acceptCases[i][1][0] == '&' ? d6Header : g6Header),
+                         acceptCases[i][1], strlen(acceptCases[i][1])) != 0)
         {
             gp_ErrorMessage("Graph of accept case %d is \"%s\" rather than \"%s\".",
                             (int)i, actualEncoding == NULL ? "" : actualEncoding,
@@ -1936,10 +1960,10 @@ int runGraphTransformationTest(char const *command, char const *infileName, int 
     char transformationCode = '\0';
 
     // runGraphTransformationTest will not test performing an algorithm on a given
-    // input graph; it will only support "-(gsam)"
+    // input graph; it will only support "-(gsdam)"
     if (command == NULL || strlen(command) < 2)
     {
-        gp_ErrorMessage("runGraphTransformationTest only supports -(gsam).");
+        gp_ErrorMessage("runGraphTransformationTest only supports -(gsdam).");
         return NOTOK;
     }
     else if (strlen(command) == 2)
@@ -2674,6 +2698,16 @@ int runDigraphTests(void)
     else if (testDigraphTranspose() != OK)
     {
         gp_ErrorMessage("Digraph transpose test failed.");
+        retVal = NOTOK;
+    }
+    else if (testPetersenDigraph6() != OK)
+    {
+        gp_ErrorMessage("Petersen digraph6 test failed.");
+        retVal = NOTOK;
+    }
+    else if (testDigraph6Iterators() != OK)
+    {
+        gp_ErrorMessage("Digraph6 iterator test failed.");
         retVal = NOTOK;
     }
     else
