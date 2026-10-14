@@ -28,36 +28,46 @@ int runSpecificGraphTests(void);
 int runRandomGraphsTests(void);
 int runGraphTransformationTests(void);
 int runTestAllGraphsTests(void);
-int runFaceListTest(void);
-int runAddInsertEdgeTests(void);
-int runHideRestoreTests(void);
-int runIdentifyContractTests(void);
+
 int runSpecificGraphTest(char const *command, char const *infileName, int inputInMemFlag);
 int runGraphTransformationTest(char const *command, char const *infileName, int inputInMemFlag);
 int runTestAllGraphsTest(char const *commandString, char const *infileName, char const *expectedValidationStr, int (*mutatorFunc)(graphP));
+
+int runFaceListTest(void);
+int runAddInsertEdgeTests(void);
+
+int runHideRestoreTests(void);
+int runIdentifyContractTests(void);
 int runHideRestoreTest(graphP theGraph);
 int runIdentifyContractTest(graphP theGraph);
+
+int _CheckUndirectedDFSEdgeTypes(graphP theGraph);
+int testDirectedDFS(void);
+int testPetersenDigraph(void);
+int testDigraphTranspose(void);
+int runDigraphTests(void);
+
+int runParallelEdgeTests(void);
+int runManyParallelEdgesTest(void);
+int runSingleParallelEdgeTest(void);
+int runParallelUndirectedTest(void);
+int addParallelEdges(graphP theGraph);
+
+int runDrawPlanarNonplanarWriteTest(void);
+int runReadWithExtensionAtEofTest(void);
+int runHighByteRoundTripTest(void);
+int runCapacityLimitTests(void);
+int runExtensionCopyTests(void);
+
+int runIOErrorTests(void);
+
 int runSparse6ReadTests(void);
 int runGeneralReadIteratorTests(void);
 char *copySparse6TestString(char const *s6Str);
 int runSparse6TestAllGraphsTests(void);
 int runSparse6WriteTests(void);
 int runSparse6LookaheadTests(void);
-int _CheckUndirectedDFSEdgeTypes(graphP theGraph);
-int testDirectedDFS(void);
-int testPetersenDigraph(void);
-int testDigraphTranspose(void);
-int runDigraphTests(void);
-int runParallelEdgeTests(void);
-int runManyParallelEdgesTest(void);
-int runSingleParallelEdgeTest(void);
-int runParallelUndirectedTest(void);
-int addParallelEdges(graphP theGraph);
-int runDrawPlanarNonplanarWriteTest(void);
-int runIOErrorTests(void);
-int runReadWithExtensionAtEofTest(void);
-int runHighByteRoundTripTest(void);
-int runCapacityLimitTests(void);
+
 int runGraphMLWriteTest(char const *inputFileName, char const *expectedOutputFileName);
 int runBasicGraphMLWriteTest(void);
 int runGraphMLTests(void);
@@ -276,13 +286,15 @@ int runQuickRegressionTests(int argc, char *argv[])
         retVal = NOTOK;
     else if (runCapacityLimitTests() != OK)
         retVal = NOTOK;
+    else if (runExtensionCopyTests() != OK)
+        retVal = NOTOK;
     else if (runIOErrorTests() != OK)
         retVal = NOTOK;
     else if (runReadWithExtensionAtEofTest() != OK)
         retVal = NOTOK;
-    else if (runSparse6ReadTests() != OK)
-        retVal = NOTOK;
     else if (runGeneralReadIteratorTests() != OK)
+        retVal = NOTOK;
+    else if (runSparse6ReadTests() != OK)
         retVal = NOTOK;
     else if (runSparse6WriteTests() != OK)
         retVal = NOTOK;

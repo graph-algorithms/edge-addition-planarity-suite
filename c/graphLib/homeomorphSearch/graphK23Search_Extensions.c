@@ -86,8 +86,8 @@ int gp_ExtendWith_K23Search(graphP theGraph)
     // Store the K23 search context, including the data structure and the
     // function pointers, as an extension of the graph
     if (gp_AddExtension(theGraph, &K23SEARCH_ID, (void *)context,
-                        _K23Search_DupContext, 
-                        _K23Search_CopyData, 
+                        _K23Search_DupContext,
+                        _K23Search_CopyData,
                         _K23Search_FreeContext,
                         &context->functions) != OK)
     {
@@ -111,11 +111,15 @@ int gp_Detach_K23Search(graphP theGraph)
 
 /********************************************************************
  _K23Search_DupContext()
+
+ Receive a source graph's extension context (*pContext) and a
+ destination graph (theGraph) that must receive a duplicate copy
+ of the source graph's extension.
  ********************************************************************/
 
 void *_K23Search_DupContext(void *pContext, void *theGraph)
 {
-    K23SearchContext *context = (K23SearchContext *)pContext;
+    K23SearchContext *srcContext = (K23SearchContext *)pContext;
     K23SearchContext *newContext = (K23SearchContext *)malloc(sizeof(K23SearchContext));
 
     // Suppresses an unused-parameter warning for a parameter we intend to keep
@@ -123,7 +127,7 @@ void *_K23Search_DupContext(void *pContext, void *theGraph)
 
     if (newContext != NULL)
     {
-        *newContext = *context;
+        *newContext = *srcContext;
     }
 
     return newContext;
