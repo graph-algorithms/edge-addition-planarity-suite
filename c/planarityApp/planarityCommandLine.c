@@ -62,6 +62,7 @@ int runExtensionCopyTests(void);
 int runIOErrorTests(void);
 
 int runSparse6ReadTests(void);
+int runStringInputLineTests(void);
 int runGeneralReadIteratorTests(void);
 char *copySparse6TestString(char const *s6Str);
 int runSparse6TestAllGraphsTests(void);
@@ -291,6 +292,8 @@ int runQuickRegressionTests(int argc, char *argv[])
     else if (runIOErrorTests() != OK)
         retVal = NOTOK;
     else if (runReadWithExtensionAtEofTest() != OK)
+        retVal = NOTOK;
+    else if (runStringInputLineTests() != OK)
         retVal = NOTOK;
     else if (runGeneralReadIteratorTests() != OK)
         retVal = NOTOK;
@@ -819,6 +822,74 @@ int runCapacityLimitTests(void)
  and that an input in none of the formats is refused rather than handed
  to a reader that cannot make sense of it.
  ****************************************************************************/
+
+/****************************************************************************
+ runStringInputLineTests()
+
+ Reading a line from a string, as from a file, stops after its newline,
+ so that a read iterator initialized with a string of several graphs
+ reads each of them: here graph6 graphs with 4, 1 and 2 edges.
+ ****************************************************************************/
+
+int runStringInputLineTests(void)
+{
+    char lines[] = "a\nbc\n";
+    char graphs[] = "D?{\nD?_\nD?o\n";
+    int const expectedNumEdges[] = {4, 1, 2};
+    char buffer[16];
+    strOrFileP inputContainer = NULL;
+    graphP theGraph = NULL;
+    GPReadIteratorP theReadIterator = NULL;
+    int numGraphs = 0;
+    int Result = OK;
+
+    gp_Message("Starting String Input Line Tests");
+
+    if ((inputContainer = sf_NewInputContainer(lines, NULL)) == NULL)
+        return NOTOK;
+
+    if (sf_fgets(buffer, sizeof(buffer), inputContainer) == NULL || strcmp(buffer, "a\n") != 0 ||
+        sf_fgets(buffer, sizeof(buffer), inputContainer) == NULL || strcmp(buffer, "bc\n") != 0 ||
+        sf_fgets(buffer, sizeof(buffer), inputContainer) != NULL)
+    {
+        gp_ErrorMessage("Reading lines from a string did not return one line per read.");
+        Result = NOTOK;
+    }
+
+    sf_Free(&inputContainer);
+
+    if (Result == OK &&
+        ((theGraph = gp_New()) == NULL ||
+         gp_NewReader((&theReadIterator), theGraph) != OK ||
+         gp_InitReaderWithString(theReadIterator, graphs) != OK))
+        Result = NOTOK;
+
+    while (Result == OK)
+    {
+        if (gp_ReadGraph(theReadIterator) != OK)
+            Result = NOTOK;
+        else if (gp_EndReached(theReadIterator))
+            break;
+        else if (numGraphs == 3 || gp_GetM(theGraph) != expectedNumEdges[numGraphs])
+            Result = NOTOK;
+        else
+            numGraphs++;
+    }
+
+    if (Result != OK || numGraphs != 3)
+    {
+        gp_ErrorMessage("Reading the graph6 graphs of a string read %d of the 3.", numGraphs);
+        Result = NOTOK;
+    }
+
+    gp_FreeReader((&theReadIterator));
+    gp_Free(&theGraph);
+
+    if (Result == OK)
+        gp_Message("Finished String Input Line Tests.\n");
+
+    return Result;
+}
 
 int runGeneralReadIteratorTests(void)
 {
