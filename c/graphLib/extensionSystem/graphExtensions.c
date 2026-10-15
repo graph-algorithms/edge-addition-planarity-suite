@@ -452,49 +452,64 @@ graphExtensionP _FindNearestOverload(graphP theGraph, graphExtensionP target, in
 
 int gp_DupExtensions(graphP dstGraph, graphP srcGraph)
 {
-    graphExtensionP next = NULL, newNext = NULL, newLast = NULL;
+    graphExtensionP srcNext = NULL, dstNext = NULL, dstLast = NULL;
 
     if (srcGraph == NULL || dstGraph == NULL ||
         dstGraph->extensionLookupTable == NULL)
         return NOTOK;
 
+    // The extensions duplicate their data per vertex for the vertices of the
+    // dstGraph from those of the srcGraph, so the two must have the same order
+    if (gp_GetN(dstGraph) != gp_GetN(srcGraph))
+        return NOTOK;
+
     gp_FreeExtensions(dstGraph);
 
-    next = srcGraph->extensions;
+    srcNext = srcGraph->extensions;
 
-    while (next != NULL)
+    while (srcNext != NULL)
     {
-        if (next->moduleID <= 0 || next->moduleID > MAXNUMSUPPORTEDEXTENSIONS)
+        if (srcNext->moduleID <= 0 || srcNext->moduleID > MAXNUMSUPPORTEDEXTENSIONS)
         {
             gp_FreeExtensions(dstGraph);
             return NOTOK;
         }
 
-        if ((newNext = (graphExtensionP)malloc(sizeof(graphExtensionStruct))) == NULL)
+        if ((dstNext = (graphExtensionP)malloc(sizeof(graphExtensionStruct))) == NULL)
         {
             gp_FreeExtensions(dstGraph);
             return NOTOK;
         }
 
-        newNext->moduleID = next->moduleID;
-        newNext->context = next->dupContext(next->context, dstGraph);
-        newNext->dupContext = next->dupContext;
-        newNext->copyData = next->copyData;
-        newNext->freeContext = next->freeContext;
-        newNext->functions = next->functions;
-        newNext->next = NULL;
+        dstNext->moduleID = srcNext->moduleID;
+        dstNext->context = srcNext->dupContext(srcNext->context, dstGraph);
+
+        // An extension that cannot duplicate its context fails the duplication
+        if (dstNext->context == NULL)
+        {
+            free(dstNext);
+            gp_FreeExtensions(dstGraph);
+            return NOTOK;
+        }
+        dstNext->dupContext = srcNext->dupContext;
+        dstNext->copyData = srcNext->copyData;
+        dstNext->freeContext = srcNext->freeContext;
+        dstNext->functions = srcNext->functions;
+        dstNext->next = NULL;
 
         // Add the new extension to the dstGraph extension lookup table
-        dstGraph->extensionLookupTable[newNext->moduleID] = newNext;
+        dstGraph->extensionLookupTable[dstNext->moduleID] = dstNext;
 
         // Add the new extension to the dstGraph extensions linked list
-        if (newLast != NULL)
-            newLast->next = (struct graphExtensionStruct *)newNext;
+        if (dstLast != NULL)
+            dstLast->next = (struct graphExtensionStruct *)dstNext;
         else
-            dstGraph->extensions = newNext;
+            dstGraph->extensions = dstNext;
 
-        newLast = newNext;
-        next = (graphExtensionP)next->next;
+        dstLast = dstNext;
+
+        // Proceed to the next srcGraph extension, if any
+        srcNext = (graphExtensionP)srcNext->next;
     }
 
     return OK;

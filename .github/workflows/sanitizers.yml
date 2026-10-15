@@ -1,4 +1,4 @@
-name: Sanitisers
+name: Sanitizers
 on:
   workflow_dispatch:
   pull_request:
@@ -10,7 +10,7 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
-  sanitisers:
+  sanitizers:
     timeout-minutes: 60
     runs-on: ubuntu-26.04
     env:
