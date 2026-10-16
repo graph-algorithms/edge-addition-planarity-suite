@@ -48,6 +48,7 @@ int testDigraphTranspose(void);
 int runDigraphTests(void);
 
 int runParallelEdgeTests(void);
+int runDirectedParallelEdgeModeTest(void);
 int runManyParallelEdgesTest(void);
 int runSingleParallelEdgeTest(void);
 int runParallelUndirectedTest(void);
@@ -2665,6 +2666,9 @@ int runParallelEdgeTests(void)
 
     gp_Message("Starting Parallel Edge Tests\n");
 
+    if (runDirectedParallelEdgeModeTest() != OK)
+        retVal = NOTOK;
+
     if (runSingleParallelEdgeTest() != OK)
         retVal = NOTOK;
 
@@ -2848,7 +2852,7 @@ int runManyParallelEdgesTest(void)
             retVal = NOTOK;
         else if (gp_GetM(G1) != 60)
             retVal = NOTOK;
-        else if (gp_DeleteParallelEdges(G1) != OK || gp_GetM(G1) != 15)
+        else if (gp_DeleteParallelEdges(G1, TRUE) != OK || gp_GetM(G1) != 15)
             retVal = NOTOK;
 
         if (adjListStr != NULL)
@@ -2862,7 +2866,7 @@ int runManyParallelEdgesTest(void)
         if ((G1 = gp_DupGraph(G)) == NULL)
             retVal = NOTOK;
 
-        else if (gp_DeleteParallelEdges(G1) != OK)
+        else if (gp_DeleteParallelEdges(G1, TRUE) != OK)
             retVal = NOTOK;
 
         else if (gp_GetM(G1) != 15)
@@ -2932,7 +2936,7 @@ int runSingleParallelEdgeTest(void)
     else if (gp_TestEmbedResultIntegrity(G1, G, NONEMBEDDABLE) != NONEMBEDDABLE)
         retVal = NOTOK;
 
-    else if (gp_DeleteParallelEdges(G) != OK)
+    else if (gp_DeleteParallelEdges(G, TRUE) != OK)
         retVal = NOTOK;
 
     else if (gp_GetM(G) != 15)
@@ -2943,6 +2947,65 @@ int runSingleParallelEdgeTest(void)
 
     gp_Free(&G);
     gp_Free(&G1);
+
+    return retVal;
+}
+
+int runDirectedParallelEdgeModeTest(void)
+{
+    int retVal = OK;
+    graphP G = gp_New();
+    graphP G1 = NULL;
+    graphP G2 = NULL;
+
+    if (G == NULL)
+        retVal = NOTOK;
+
+    else if (gp_EnsureEdgeCapacity(G, 6) != OK || gp_EnsureVertexCapacity(G, 2) != OK)
+        retVal = NOTOK;
+
+    else if (gp_AddEdge(G, 1, 0, 2, 0) != OK)
+        retVal = NOTOK;
+    else
+        gp_SetDirection(G, gp_GetFirstEdge(G, 1), EDGEFLAG_DIRECTION_OUTONLY);
+
+    if (retVal == OK)
+    {
+        if (gp_AddEdge(G, 1, 0, 2, 0) != OK)
+            retVal = NOTOK;
+        else
+            gp_SetDirection(G, gp_GetFirstEdge(G, 1), EDGEFLAG_DIRECTION_OUTONLY);
+    }
+
+    if (retVal == OK)
+    {
+        if (gp_AddEdge(G, 2, 0, 1, 0) != OK)
+            retVal = NOTOK;
+        else
+            gp_SetDirection(G, gp_GetFirstEdge(G, 2), EDGEFLAG_DIRECTION_OUTONLY);
+    }
+
+    if (retVal == OK && gp_GetM(G) != 3)
+        retVal = NOTOK;
+
+    if (retVal == OK && (G1 = gp_DupGraph(G)) == NULL)
+        retVal = NOTOK;
+
+    if (retVal == OK && (G2 = gp_DupGraph(G)) == NULL)
+        retVal = NOTOK;
+
+    if (retVal == OK && (gp_DeleteParallelEdges(G1, TRUE) != OK || gp_GetM(G1) != 1))
+        retVal = NOTOK;
+
+    if (retVal == OK && (gp_DeleteParallelEdges(G2, FALSE) != OK || gp_GetM(G2) != 2))
+        retVal = NOTOK;
+
+    if (retVal != OK)
+        gp_ErrorMessage("Directed parallel edge mode test failed.");
+
+    gp_Free(&G);
+    gp_Free(&G1);
+    gp_Free(&G2);
 
     return retVal;
 }

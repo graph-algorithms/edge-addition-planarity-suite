@@ -3309,12 +3309,18 @@ int _GetBicompSize(graphP theGraph, int BicompRoot)
  NOTE: The parallel edge mechanism is designed to help with reducing
        graphs to simple undirected graphs. So, an in-only edge and
        an out-only directed edge in the same vertex adjacency list
-       are treated as parallel edges, and one will be removed.
+       are treated as parallel edges, and one will be removed when
+       includingInOnlyEdges is TRUE. When it is FALSE, in-only edge
+       records are skipped; their out-only twins are processed at the
+       source vertex.
+
+ includingInOnlyEdges: TRUE to preserve the existing behavior, or FALSE
+                       to treat opposite directed edges as distinct.
 
  Returns OK on success, NOTOK on failure.
  ********************************************************************/
 
-int gp_DeleteParallelEdges(graphP theGraph)
+int gp_DeleteParallelEdges(graphP theGraph, int includingInOnlyEdges)
 {
     int v, e, eNext, neighbor;
 
@@ -3329,6 +3335,13 @@ int gp_DeleteParallelEdges(graphP theGraph)
         while (gp_IsEdge(theGraph, e))
         {
             eNext = gp_GetNextEdge(theGraph, e);
+
+            if (!includingInOnlyEdges && gp_GetDirection(theGraph, e) == EDGEFLAG_DIRECTION_INONLY)
+            {
+                e = eNext;
+                continue;
+            }
+
             neighbor = gp_GetNeighbor(theGraph, e);
 
             if (neighbor == v)
