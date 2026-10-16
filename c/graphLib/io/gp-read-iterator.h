@@ -22,6 +22,7 @@ extern "C"
 #define GP_FILE_TYPE_UNKNOWN 0
 #define GP_FILE_TYPE_G6 1
 #define GP_FILE_TYPE_S6 2
+#define GP_FILE_TYPE_D6 3
 
     typedef struct GPReadIteratorStruct GPReadIteratorStruct;
     typedef GPReadIteratorStruct *GPReadIteratorP;

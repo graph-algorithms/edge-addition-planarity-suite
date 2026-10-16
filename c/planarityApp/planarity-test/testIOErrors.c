@@ -26,6 +26,10 @@ extern int _g6_ReadGraphFromStrOrFile(graphP theGraph, strOrFileP *input);
 extern int _s6_InitReaderWithStrOrFile(S6ReadIteratorP reader, strOrFileP *input);
 extern int _g6_WriteGraphToStrOrFile(graphP theGraph, strOrFileP *output);
 extern int _s6_WriteGraphToStrOrFile(graphP theGraph, strOrFileP *output);
+extern int _d6_InitReaderWithStrOrFile(D6ReadIteratorP reader, strOrFileP *input);
+extern int _d6_ReadGraphFromStrOrFile(graphP theGraph, strOrFileP *input);
+extern int _d6_WriteGraphToStrOrFile(graphP theGraph, strOrFileP *output);
+extern int _d6_InitWriterWithStrOrFile(D6WriteIteratorP writer, strOrFileP *output);
 int runIOErrorTests(void);
 
 #if defined(HAVE_FOPENCOOKIE) || defined(HAVE_FUNOPEN)
@@ -591,6 +595,149 @@ static int testGraph6Reads(void)
     return OK;
 }
 
+// The digraph6 reader handles a read failure as the graph6 reader does: at
+// the end of the input, in its one-shot use, while reading a multibyte
+// order, and when freeing closes the input
+static int testDigraph6Reads(void)
+{
+    unsigned quietModeCache = gp_GetQuietMode();
+
+    for (int failAtEnd = FALSE; failAtEnd <= TRUE; failAtEnd++)
+    {
+        TestInput input = {"&A?\n", 0, failAtEnd, FALSE, 0};
+        strOrFileP container = NULL;
+        D6ReadIteratorP reader = NULL;
+        graphP graph = gp_New();
+        int readResult = NOTOK;
+
+        if (graph == NULL || newInput(&input, &container) != OK)
+        {
+            gp_Free(&graph);
+            return NOTOK;
+        }
+        CHECK(d6_NewReader(&reader, graph) == OK);
+        CHECK(_d6_InitReaderWithStrOrFile(reader, &container) == OK);
+        CHECK(container == NULL);
+        CHECK(d6_ReadGraph(reader) == OK);
+        CHECK(d6_EndReached(reader) == FALSE);
+        gp_SetQuietMode(QUIETMODE_ALL);
+        readResult = d6_ReadGraph(reader);
+        gp_SetQuietMode(quietModeCache);
+        CHECK(readResult == (failAtEnd ? NOTOK : OK));
+        CHECK(d6_EndReached(reader) == !failAtEnd);
+        d6_FreeReader(&reader);
+
+        input.data = "&A?";
+        input.position = 0;
+        if (newInput(&input, &container) != OK)
+        {
+            gp_Free(&graph);
+            return NOTOK;
+        }
+        gp_SetQuietMode(QUIETMODE_ALL);
+        readResult = _d6_ReadGraphFromStrOrFile(graph, &container);
+        gp_SetQuietMode(quietModeCache);
+        CHECK(readResult == (failAtEnd ? NOTOK : OK));
+        CHECK(container == NULL);
+        gp_Free(&graph);
+    }
+
+    for (size_t length = 2; length <= 4; length++)
+    {
+        char order[] = "&~???";
+        TestInput input = {order, 0, TRUE, FALSE, 0};
+        strOrFileP container = NULL;
+        D6ReadIteratorP reader = NULL;
+        graphP graph = gp_New();
+        int initResult = NOTOK;
+
+        order[length] = '\0';
+        if (graph == NULL || newInput(&input, &container) != OK)
+        {
+            gp_Free(&graph);
+            return NOTOK;
+        }
+        CHECK(d6_NewReader(&reader, graph) == OK);
+        gp_SetQuietMode(QUIETMODE_ALL);
+        initResult = _d6_InitReaderWithStrOrFile(reader, &container);
+        gp_SetQuietMode(quietModeCache);
+        CHECK(initResult == NOTOK);
+        d6_FreeReader(&reader);
+        sf_Free(&container);
+        gp_Free(&graph);
+    }
+
+    {
+        TestInput input = {"&A?\n", 0, FALSE, TRUE, 0};
+        strOrFileP container = NULL;
+        D6ReadIteratorP reader = NULL;
+        graphP graph = gp_New();
+        int closeError = 0;
+
+        if (graph == NULL || newInput(&input, &container) != OK)
+        {
+            gp_Free(&graph);
+            return NOTOK;
+        }
+        CHECK(d6_NewReader(&reader, graph) == OK);
+        CHECK(_d6_InitReaderWithStrOrFile(reader, &container) == OK);
+        CHECK(d6_ReadGraph(reader) == OK);
+        errno = 0;
+        d6_FreeReader(&reader);
+        closeError = errno;
+        CHECK(reader == NULL);
+        CHECK(closeError == EIO);
+        CHECK(input.closeCalls == 1);
+        gp_Free(&graph);
+    }
+
+    // A reader or writer that fails to initialize closes and frees the
+    // input or output it took then, rather than keeping it to be lost by
+    // a second initialization
+    {
+        TestInput input = {"AG\n", 0, FALSE, FALSE, 0};
+        TestOutput output = {FALSE, 0};
+        strOrFileP container = NULL;
+        D6ReadIteratorP reader = NULL;
+        D6WriteIteratorP writer = NULL;
+        graphP graph = gp_New();
+        int initResult = OK;
+
+        if (graph == NULL || newInput(&input, &container) != OK)
+        {
+            gp_Free(&graph);
+            return NOTOK;
+        }
+        CHECK(d6_NewReader(&reader, graph) == OK);
+        gp_SetQuietMode(QUIETMODE_ALL);
+        initResult = _d6_InitReaderWithStrOrFile(reader, &container);
+        gp_SetQuietMode(quietModeCache);
+        CHECK(initResult == NOTOK);
+        CHECK(container == NULL);
+        CHECK(input.closeCalls == 1);
+        d6_FreeReader(&reader);
+        CHECK(input.closeCalls == 1);
+
+        if (gp_EnsureVertexCapacity(graph, 100001) != OK || newOutput(&output, &container) != OK)
+        {
+            gp_Free(&graph);
+            return NOTOK;
+        }
+        CHECK(d6_NewWriter(&writer, graph) == OK);
+        gp_SetQuietMode(QUIETMODE_ALL);
+        initResult = _d6_InitWriterWithStrOrFile(writer, &container);
+        gp_SetQuietMode(quietModeCache);
+        CHECK(initResult == NOTOK);
+        CHECK(container == NULL);
+        CHECK(output.closeCalls == 1);
+        d6_FreeWriter(&writer);
+        CHECK(output.closeCalls == 1);
+        gp_Free(&graph);
+    }
+
+    return OK;
+}
+
 #ifdef __linux__
 // Makes a new directory in the first of /tmp, /var/tmp and the directories
 // that TMP, TEMP and TMPDIR name that can be written to, for the tests that
@@ -658,7 +805,7 @@ static int completeTheGraph(graphP theGraph)
 #endif
 
 // The read iterators close their input when they read its end, and the
-// graph6 and sparse6 one-shot writers and gp_Write() close their output
+// graph6, sparse6 and digraph6 one-shot writers and gp_Write() close their output
 // before freeing it, so a close that fails is reported, and only once; see
 // issue #345
 static int testCloseFailures(void)
@@ -669,13 +816,15 @@ static int testCloseFailures(void)
     {
         TestInput g6Input = {"A_\n", 0, FALSE, FALSE, 0};
         TestInput s6Input = {":An\n", 0, FALSE, FALSE, 0};
+        TestInput d6Input = {"&AW\n", 0, FALSE, FALSE, 0};
         strOrFileP container = NULL;
         G6ReadIteratorP g6Reader = NULL;
         S6ReadIteratorP s6Reader = NULL;
+        D6ReadIteratorP d6Reader = NULL;
         graphP graph = gp_New();
         int expected = failOnClose ? NOTOK : OK;
 
-        g6Input.failOnClose = s6Input.failOnClose = failOnClose;
+        g6Input.failOnClose = s6Input.failOnClose = d6Input.failOnClose = failOnClose;
 
         if (graph == NULL || newInput(&g6Input, &container) != OK)
         {
@@ -709,7 +858,23 @@ static int testCloseFailures(void)
         s6_FreeReader(&s6Reader);
         CHECK(s6Input.closeCalls == 1);
 
-        for (int sparse6 = 0; sparse6 < 2; sparse6++)
+        if (newInput(&d6Input, &container) != OK)
+        {
+            gp_Free(&graph);
+            return NOTOK;
+        }
+        CHECK(d6_NewReader(&d6Reader, graph) == OK);
+        CHECK(_d6_InitReaderWithStrOrFile(d6Reader, &container) == OK);
+        CHECK(d6_ReadGraph(d6Reader) == OK && !d6_EndReached(d6Reader));
+        gp_SetQuietMode(QUIETMODE_ALL);
+        CHECK(d6_ReadGraph(d6Reader) == expected);
+        CHECK(d6_ReadGraph(d6Reader) == expected);
+        gp_SetQuietMode(quietModeCache);
+        CHECK(d6_EndReached(d6Reader));
+        d6_FreeReader(&d6Reader);
+        CHECK(d6Input.closeCalls == 1);
+
+        for (int format = 0; format < 3; format++)
         {
             TestOutput output = {failOnClose, 0};
 
@@ -719,8 +884,9 @@ static int testCloseFailures(void)
                 return NOTOK;
             }
             gp_SetQuietMode(QUIETMODE_ALL);
-            CHECK((sparse6 ? _s6_WriteGraphToStrOrFile(graph, &container)
-                           : _g6_WriteGraphToStrOrFile(graph, &container)) == expected);
+            CHECK((format == 2   ? _d6_WriteGraphToStrOrFile(graph, &container)
+                   : format == 1 ? _s6_WriteGraphToStrOrFile(graph, &container)
+                                 : _g6_WriteGraphToStrOrFile(graph, &container)) == expected);
             gp_SetQuietMode(quietModeCache);
             CHECK(container == NULL);
             CHECK(output.closeCalls == 1);
@@ -733,7 +899,7 @@ static int testCloseFailures(void)
         if (failOnClose && access("/dev/full", W_OK) == 0)
         {
             char *dir = NULL, *link = NULL;
-            int const modes[] = {WRITE_ADJLIST, WRITE_ADJMATRIX, WRITE_G6, WRITE_GRAPHML, WRITE_SPARSE6};
+            int const modes[] = {WRITE_ADJLIST, WRITE_ADJMATRIX, WRITE_G6, WRITE_GRAPHML, WRITE_SPARSE6, WRITE_DIGRAPH6};
 
             CHECK(makeTestTempDir(&dir) == OK);
             if (dir != NULL)
@@ -796,6 +962,8 @@ int runIOErrorTests(void)
     if (testGraphReads() != OK)
         return NOTOK;
     if (testGraph6Reads() != OK)
+        return NOTOK;
+    if (testDigraph6Reads() != OK)
         return NOTOK;
     if (testCloseFailures() != OK)
         return NOTOK;

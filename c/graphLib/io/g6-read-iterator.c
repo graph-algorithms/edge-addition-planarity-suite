@@ -444,11 +444,9 @@ int _g6_ValidateHeader(strOrFileP inputContainer)
     if (strcmp(g6Header, headerCandidateChars) != 0)
     {
         if (strcmp(sparse6Header, headerCandidateChars) == 0)
-            gp_ErrorMessage("Graph file is sparse6 format, which is not "
-                            "supported.");
+            gp_ErrorMessage("Graph file is sparse6 format, not graph6.");
         else if (strcmp(digraph6Header, headerCandidateChars) == 0)
-            gp_ErrorMessage("Graph file is digraph6 format, which is not "
-                            "supported.");
+            gp_ErrorMessage("Graph file is digraph6 format, not graph6.");
         else
             gp_ErrorMessage("Invalid header for .g6 file.");
 

@@ -27,6 +27,7 @@ extern "C"
 #define WRITE_G6 4
 #define WRITE_GRAPHML 5
 #define WRITE_SPARSE6 6
+#define WRITE_DIGRAPH6 7
 
 // Graph Flags: see gp_GetGraphFlags()
 //       GRAPHFLAGS_ZEROBASEDIO is typically set by gp_Read() to indicate that the

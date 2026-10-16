@@ -28,6 +28,9 @@ extern int _s6_WriteGraphToStrOrFile(graphP theGraph, strOrFileP *pOutputContain
 extern int _s6_ReadGraphFromStrOrFile(graphP theGraph, strOrFileP *pS6InputContainer);
 extern int s6_IsSparse6Input(char const *const firstLine);
 extern int g6_IsGraph6Input(char const *const firstLine);
+extern int _d6_ReadGraphFromStrOrFile(graphP theGraph, strOrFileP *pD6InputContainer);
+extern int _d6_WriteGraphToStrOrFile(graphP theGraph, strOrFileP *pOutputContainer);
+extern int d6_IsDigraph6Input(char const *const firstLine);
 extern int _WriteGraphMLGraph(graphP theGraph, strOrFileP outputContainer);
 
 /* Private functions (exported to system) */
@@ -567,6 +570,12 @@ int _ReadGraph(graphP theGraph, strOrFileP *pInputContainer)
         // read iterator, so (*pInputContainer) is NULL after this call.
         RetVal = _s6_ReadGraphFromStrOrFile(theGraph, pInputContainer);
     }
+    else if (d6_IsDigraph6Input(lineBuff))
+    {
+        // As for .g6 below, ownership of inputContainer passes to the
+        // read iterator, so (*pInputContainer) is NULL after this call.
+        RetVal = _d6_ReadGraphFromStrOrFile(theGraph, pInputContainer);
+    }
     else if (g6_IsGraph6Input(lineBuff))
     {
         // N.B. Unlike the other _Read functions, we are relinquishing
@@ -990,10 +999,11 @@ int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer)
  gp_Write()
  Writes theGraph into the file.
  Pass "stdout" or "stderr" to fileName to write to the corresponding stream
- Pass WRITE_G6, WRITE_SPARSE6, WRITE_GRAPHML, WRITE_ADJLIST, WRITE_ADJMATRIX, or
- WRITE_DEBUGINFO for writeMode.
+ Pass WRITE_G6, WRITE_SPARSE6, WRITE_DIGRAPH6, WRITE_GRAPHML, WRITE_ADJLIST,
+ WRITE_ADJMATRIX, or WRITE_DEBUGINFO for writeMode.
 
- NOTE: For digraphs, only WRITE_ADJLIST and WRITE_GRAPHML are supported.
+ NOTE: For digraphs, only WRITE_DIGRAPH6, WRITE_ADJLIST and WRITE_GRAPHML are
+       supported.
 
  Returns NOTOK on error, OK on success.
  ********************************************************************/
@@ -1037,10 +1047,12 @@ int gp_Write(graphP theGraph, char const *fileName, int writeMode)
  * The string is owned by the caller and should be released with
  * free() when the caller doesn't need the string anymore.
  * The format of the content written into the returned string is based
- * on writeMode: WRITE_G6, WRITE_SPARSE6, WRITE_GRAPHML, WRITE_ADJLIST, or WRITE_ADJMATRIX
+ * on writeMode: WRITE_G6, WRITE_SPARSE6, WRITE_DIGRAPH6, WRITE_GRAPHML, WRITE_ADJLIST,
+ * or WRITE_ADJMATRIX
  * (the WRITE_DEBUGINFO writeMode is not supported at this time)
 
- NOTE: For digraphs, only WRITE_ADJLIST and WRITE_GRAPHML are supported.
+ NOTE: For digraphs, only WRITE_DIGRAPH6, WRITE_ADJLIST and WRITE_GRAPHML are
+       supported.
 
  Returns NOTOK on error, or OK on success along with an allocated string
          *pOutputStr that the caller must free()
@@ -1078,10 +1090,11 @@ int gp_WriteToString(graphP theGraph, char **pOutputStr, int writeMode)
  _WriteGraph()
  Writes theGraph into the strOrFile container.
 
- Pass WRITE_G6, WRITE_SPARSE6, WRITE_GRAPHML, WRITE_ADJLIST, WRITE_ADJMATRIX, or
- WRITE_DEBUGINFO for the Mode.
+ Pass WRITE_G6, WRITE_SPARSE6, WRITE_DIGRAPH6, WRITE_GRAPHML, WRITE_ADJLIST,
+ WRITE_ADJMATRIX, or WRITE_DEBUGINFO for the Mode.
 
- NOTE: For digraphs, only WRITE_ADJLIST and WRITE_GRAPHML are supported.
+ NOTE: For digraphs, only WRITE_DIGRAPH6, WRITE_ADJLIST and WRITE_GRAPHML are
+       supported.
 
  Returns NOTOK on error, OK on success.
  ********************************************************************/
@@ -1101,6 +1114,10 @@ int _WriteGraph(graphP theGraph, strOrFileP *pOutputContainer, int Mode)
     case WRITE_SPARSE6:
         // Likewise takes ownership of the outputContainer
         RetVal = _s6_WriteGraphToStrOrFile(theGraph, pOutputContainer);
+        break;
+    case WRITE_DIGRAPH6:
+        // Likewise takes ownership of the outputContainer
+        RetVal = _d6_WriteGraphToStrOrFile(theGraph, pOutputContainer);
         break;
     case WRITE_ADJLIST:
         RetVal = _WriteAdjList(theGraph, (*pOutputContainer));
