@@ -48,10 +48,12 @@ int testDigraphTranspose(void);
 int runDigraphTests(void);
 
 int runParallelEdgeTests(void);
-int runDirectedParallelEdgeModeTest(void);
 int runManyParallelEdgesTest(void);
 int runSingleParallelEdgeTest(void);
 int runParallelUndirectedTest(void);
+int runDirectedParallelEdgeModeTest(void);
+int runRandomParallelEdgeGraphTests(void);
+int runParallelEdgeTestAllGraphsTests(void);
 int addParallelEdges(graphP theGraph);
 
 int runDrawPlanarNonplanarWriteTest(void);
@@ -2660,14 +2662,14 @@ int runGraphMLTests(void)
     return Result;
 }
 
+/*************************************************************************
+ *************************************************************************/
+
 int runParallelEdgeTests(void)
 {
     int retVal = OK;
 
     gp_Message("Starting Parallel Edge Tests\n");
-
-    if (runDirectedParallelEdgeModeTest() != OK)
-        retVal = NOTOK;
 
     if (runSingleParallelEdgeTest() != OK)
         retVal = NOTOK;
@@ -2678,123 +2680,33 @@ int runParallelEdgeTests(void)
     if (runParallelUndirectedTest() != OK)
         retVal = NOTOK;
 
-    if (runTestAllGraphsTest("-p", "n8.mALL.g6", NULL, addParallelEdges) != OK)
-    {
-        gp_ErrorMessage("Planarity test on all graphs with parallel edges failed.");
+    if (runDirectedParallelEdgeModeTest() != OK)
         retVal = NOTOK;
-    }
-    if (runTestAllGraphsTest("-d", "n8.mALL.g6", NULL, addParallelEdges) != OK)
-    {
-        gp_ErrorMessage("Planar graph drawing test on all graphs with parallel edges failed.");
-        retVal = NOTOK;
-    }
-    if (runTestAllGraphsTest("-o", "n8.mALL.g6", NULL, addParallelEdges) != OK)
-    {
-        gp_ErrorMessage("Outerplanarity test on all graphs with parallel edges failed.");
-        retVal = NOTOK;
-    }
-    if (runTestAllGraphsTest("-2", "n8.mALL.g6", NULL, addParallelEdges) != OK)
-    {
-        gp_ErrorMessage("K2,3 homeomorph search test on all graphs with parallel edges failed.");
-        retVal = NOTOK;
-    }
-    if (runTestAllGraphsTest("-3", "n8.mALL.g6", NULL, addParallelEdges) != OK)
-    {
-        gp_ErrorMessage("K3,3 homeomorph search test on all graphs with parallel edges failed.");
-        retVal = NOTOK;
-    }
-    if (runTestAllGraphsTest("-4", "n8.mALL.g6", NULL, addParallelEdges) != OK)
-    {
-        gp_ErrorMessage("K4 homeomorph search test on all graphs with parallel edges failed.");
-        retVal = NOTOK;
-    }
 
-    gp_Message("Testing random graphs with parallel edges added.");
-
-    if (RandomGraphs("-p", 500, 16, NULL, TRUE, FALSE, addParallelEdges) != OK)
-    {
-        gp_ErrorMessage("gp_CreateRandomGraph() test failed.");
+    if (runRandomParallelEdgeGraphTests() != OK)
         retVal = NOTOK;
-    }
 
-    if (RandomGraphs("-p", 500, 16, NULL, TRUE, TRUE, addParallelEdges) != OK)
-    {
-        gp_ErrorMessage("gp_CreateRandomGraphEx() test failed.");
+    if (runParallelEdgeTestAllGraphsTests() != OK)
         retVal = NOTOK;
-    }
 
-    if (RandomGraphs("-d", 500, 16, NULL, TRUE, FALSE, addParallelEdges) != OK)
-    {
-        gp_ErrorMessage("gp_CreateRandomGraph() test failed.");
-        retVal = NOTOK;
-    }
-
-    if (RandomGraphs("-d", 500, 16, NULL, TRUE, TRUE, addParallelEdges) != OK)
-    {
-        gp_ErrorMessage("gp_CreateRandomGraphEx() test failed.");
-        retVal = NOTOK;
-    }
-
-    if (RandomGraphs("-o", 500, 16, NULL, TRUE, FALSE, addParallelEdges) != OK)
-    {
-        gp_ErrorMessage("gp_CreateRandomGraph() test failed.");
-        retVal = NOTOK;
-    }
-
-    if (RandomGraphs("-o", 500, 16, NULL, TRUE, TRUE, addParallelEdges) != OK)
-    {
-        gp_ErrorMessage("gp_CreateRandomGraphEx() test failed.");
-        retVal = NOTOK;
-    }
-
-    if (RandomGraphs("-2", 500, 16, NULL, TRUE, FALSE, addParallelEdges) != OK)
-    {
-        gp_ErrorMessage("gp_CreateRandomGraph() test failed.");
-        retVal = NOTOK;
-    }
-
-    if (RandomGraphs("-2", 500, 16, NULL, TRUE, TRUE, addParallelEdges) != OK)
-    {
-        gp_ErrorMessage("gp_CreateRandomGraphEx() test failed.");
-        retVal = NOTOK;
-    }
-
-    if (RandomGraphs("-3", 500, 16, NULL, TRUE, FALSE, addParallelEdges) != OK)
-    {
-        gp_ErrorMessage("gp_CreateRandomGraph() test failed.");
-        retVal = NOTOK;
-    }
-
-    if (RandomGraphs("-3", 500, 16, NULL, TRUE, TRUE, addParallelEdges) != OK)
-    {
-        gp_ErrorMessage("gp_CreateRandomGraphEx() test failed.");
-        retVal = NOTOK;
-    }
-
-    if (RandomGraphs("-4", 500, 16, NULL, TRUE, FALSE, addParallelEdges) != OK)
-    {
-        gp_ErrorMessage("gp_CreateRandomGraph() test failed.");
-        retVal = NOTOK;
-    }
-
-    if (RandomGraphs("-4", 500, 16, NULL, TRUE, TRUE, addParallelEdges) != OK)
-    {
-        gp_ErrorMessage("gp_CreateRandomGraphEx() test failed.");
-        retVal = NOTOK;
-    }
-
-    gp_Message("Finished testing random graphs with parallel edges added.");
-
-    gp_Message("Finished Parallel Edge Tests.\n");
+    if (retVal == OK)
+        gp_Message("Finished Parallel Edge Tests.\n");
+    else
+        gp_ErrorMessage("A test of parallel edges has failed.");
 
     return retVal;
 }
+
+/*************************************************************************
+ *************************************************************************/
 
 int runManyParallelEdgesTest(void)
 {
     int retVal = OK;
     graphP G = gp_New();
     graphP G1 = NULL, G2 = NULL;
+
+    gp_Message("Testing APIs on graph with many parallel edges.");
 
     if (G == NULL)
         return NOTOK;
@@ -2886,6 +2798,9 @@ int runManyParallelEdgesTest(void)
             retVal = NOTOK;
     }
 
+    if (retVal != OK)
+        gp_ErrorMessage("Failed test of APIs on graph with many parallel edges.");
+
     gp_Free(&G);
     gp_Free(&G1);
     gp_Free(&G2);
@@ -2893,6 +2808,7 @@ int runManyParallelEdgesTest(void)
     return retVal;
 }
 
+/*************************************************************************
 // Grab the Petersen graph, which is a 15-edge graph.
 // Ensure vertices 1 and 2 report being degree 3.
 // Add one edge known to be parallel, (1, 2).
@@ -2903,11 +2819,15 @@ int runManyParallelEdgesTest(void)
 // Call the method that deletes the parallel edges
 // Ensure that the number of edges goes down by 1.
 // Ensure that vertices 1 and 2 report being degree 3.
+ *************************************************************************/
+
 int runSingleParallelEdgeTest(void)
 {
     int retVal = OK;
     graphP G = gp_New();
     graphP G1 = NULL;
+
+    gp_Message("Testing APIs when adding a single parallel edge.");
 
     if (G == NULL)
         retVal = NOTOK;
@@ -2945,11 +2865,17 @@ int runSingleParallelEdgeTest(void)
     else if (gp_GetVertexDegree(G, 1) != 3 || gp_GetVertexDegree(G, 1) != 3)
         retVal = NOTOK;
 
+    if (retVal != OK)
+        gp_ErrorMessage("Failed test of APIs when adding a single parallel edge.");
+
     gp_Free(&G);
     gp_Free(&G1);
 
     return retVal;
 }
+
+/*************************************************************************
+ *************************************************************************/
 
 int runDirectedParallelEdgeModeTest(void)
 {
@@ -2957,6 +2883,8 @@ int runDirectedParallelEdgeModeTest(void)
     graphP G = gp_New();
     graphP G1 = NULL;
     graphP G2 = NULL;
+
+    gp_Message("Testing modes of deleting parallel directed edges.");
 
     if (G == NULL)
         retVal = NOTOK;
@@ -3001,7 +2929,7 @@ int runDirectedParallelEdgeModeTest(void)
         retVal = NOTOK;
 
     if (retVal != OK)
-        gp_ErrorMessage("Directed parallel edge mode test failed.");
+        gp_ErrorMessage("Failed test of modes of deleting parallel directed edges.");
 
     gp_Free(&G);
     gp_Free(&G1);
@@ -3019,6 +2947,8 @@ int runParallelUndirectedTest(void)
     int retVal = OK;
     graphP G = gp_New();
 
+    gp_Message("Testing digraph flag clear when reading undirected graph with parallel edges.");
+
     if (G == NULL)
         return NOTOK;
 
@@ -3030,7 +2960,143 @@ int runParallelUndirectedTest(void)
     else if (gp_GetGraphFlags(G) & GRAPHFLAGS_DIRECTEDEDGEDETECTED)
         retVal = NOTOK;
 
+    if (retVal != OK)
+        gp_ErrorMessage("Failed digraph flag test when reading undirected graph with parallel edges.");
+
     gp_Free(&G);
+
+    return retVal;
+}
+
+/*************************************************************************
+ *************************************************************************/
+
+int runRandomParallelEdgeGraphTests(void)
+{
+    int retVal = OK;
+
+    gp_Message("Testing random graphs with parallel edges added.");
+
+    if (RandomGraphs("-p", 500, 16, NULL, TRUE, FALSE, addParallelEdges) != OK)
+    {
+        gp_ErrorMessage("gp_CreateRandomGraph() test failed.");
+        retVal = NOTOK;
+    }
+
+    if (RandomGraphs("-p", 500, 16, NULL, TRUE, TRUE, addParallelEdges) != OK)
+    {
+        gp_ErrorMessage("gp_CreateRandomGraphEx() test failed.");
+        retVal = NOTOK;
+    }
+
+    if (RandomGraphs("-d", 500, 16, NULL, TRUE, FALSE, addParallelEdges) != OK)
+    {
+        gp_ErrorMessage("gp_CreateRandomGraph() test failed.");
+        retVal = NOTOK;
+    }
+
+    if (RandomGraphs("-d", 500, 16, NULL, TRUE, TRUE, addParallelEdges) != OK)
+    {
+        gp_ErrorMessage("gp_CreateRandomGraphEx() test failed.");
+        retVal = NOTOK;
+    }
+
+    if (RandomGraphs("-o", 500, 16, NULL, TRUE, FALSE, addParallelEdges) != OK)
+    {
+        gp_ErrorMessage("gp_CreateRandomGraph() test failed.");
+        retVal = NOTOK;
+    }
+
+    if (RandomGraphs("-o", 500, 16, NULL, TRUE, TRUE, addParallelEdges) != OK)
+    {
+        gp_ErrorMessage("gp_CreateRandomGraphEx() test failed.");
+        retVal = NOTOK;
+    }
+
+    if (RandomGraphs("-2", 500, 16, NULL, TRUE, FALSE, addParallelEdges) != OK)
+    {
+        gp_ErrorMessage("gp_CreateRandomGraph() test failed.");
+        retVal = NOTOK;
+    }
+
+    if (RandomGraphs("-2", 500, 16, NULL, TRUE, TRUE, addParallelEdges) != OK)
+    {
+        gp_ErrorMessage("gp_CreateRandomGraphEx() test failed.");
+        retVal = NOTOK;
+    }
+
+    if (RandomGraphs("-3", 500, 16, NULL, TRUE, FALSE, addParallelEdges) != OK)
+    {
+        gp_ErrorMessage("gp_CreateRandomGraph() test failed.");
+        retVal = NOTOK;
+    }
+
+    if (RandomGraphs("-3", 500, 16, NULL, TRUE, TRUE, addParallelEdges) != OK)
+    {
+        gp_ErrorMessage("gp_CreateRandomGraphEx() test failed.");
+        retVal = NOTOK;
+    }
+
+    if (RandomGraphs("-4", 500, 16, NULL, TRUE, FALSE, addParallelEdges) != OK)
+    {
+        gp_ErrorMessage("gp_CreateRandomGraph() test failed.");
+        retVal = NOTOK;
+    }
+
+    if (RandomGraphs("-4", 500, 16, NULL, TRUE, TRUE, addParallelEdges) != OK)
+    {
+        gp_ErrorMessage("gp_CreateRandomGraphEx() test failed.");
+        retVal = NOTOK;
+    }
+
+    if (retVal != OK)
+        gp_ErrorMessage("Failed testing of random graphs with parallel edges added.");
+
+    return retVal;
+}
+
+/*************************************************************************
+ *************************************************************************/
+
+int runParallelEdgeTestAllGraphsTests(void)
+{
+    int retVal = OK;
+
+    gp_Message("Test planarity-related algorithms with parallel edges.\n");
+
+    if (runTestAllGraphsTest("-p", "n8.mALL.g6", NULL, addParallelEdges) != OK)
+    {
+        gp_ErrorMessage("Planarity test on all graphs with parallel edges failed.");
+        retVal = NOTOK;
+    }
+    if (runTestAllGraphsTest("-d", "n8.mALL.g6", NULL, addParallelEdges) != OK)
+    {
+        gp_ErrorMessage("Planar graph drawing test on all graphs with parallel edges failed.");
+        retVal = NOTOK;
+    }
+    if (runTestAllGraphsTest("-o", "n8.mALL.g6", NULL, addParallelEdges) != OK)
+    {
+        gp_ErrorMessage("Outerplanarity test on all graphs with parallel edges failed.");
+        retVal = NOTOK;
+    }
+    if (runTestAllGraphsTest("-2", "n8.mALL.g6", NULL, addParallelEdges) != OK)
+    {
+        gp_ErrorMessage("K2,3 homeomorph search test on all graphs with parallel edges failed.");
+        retVal = NOTOK;
+    }
+    if (runTestAllGraphsTest("-3", "n8.mALL.g6", NULL, addParallelEdges) != OK)
+    {
+        gp_ErrorMessage("K3,3 homeomorph search test on all graphs with parallel edges failed.");
+        retVal = NOTOK;
+    }
+    if (runTestAllGraphsTest("-4", "n8.mALL.g6", NULL, addParallelEdges) != OK)
+    {
+        gp_ErrorMessage("K4 homeomorph search test on all graphs with parallel edges failed.");
+        retVal = NOTOK;
+    }
+
+    if (retVal != OK)
+        gp_ErrorMessage("Failed parallel edges test of a planarity-related algorithm.");
 
     return retVal;
 }
