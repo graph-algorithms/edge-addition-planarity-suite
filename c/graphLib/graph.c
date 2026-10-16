@@ -3304,13 +3304,19 @@ int _GetBicompSize(graphP theGraph, int BicompRoot)
  gp_HasParallelEdges()
 
  In linear time, determines whether any two edges join the same pair
- of vertices. As in gp_DeleteParallelEdges(), the directions of the
- edges do not matter, so an edge directed from u to v and one directed
- from v to u are parallel edges.
+ of vertices.
+
+ If includingInOnlyEdges is TRUE, the directions of the edges do not
+ matter, as in gp_DeleteParallelEdges(): an edge directed from u to v
+ and one directed from v to u are parallel edges, as the two arcs of a
+ directed 2-cycle. If it is FALSE, the in-only edge records are left
+ out, so that u -> v and v -> u are distinct edges, while two edges
+ directed from u to v, or an undirected edge and a directed edge
+ between u and v, are still parallel edges.
 
  A loop edge has both of its edge records in the adjacency list of its
  vertex and is not parallel to itself, but two loops on one vertex are
- parallel edges.
+ parallel edges; loop records are counted whatever their direction.
 
  Only the edges in the adjacency lists are inspected, so hidden edges
  are not.
@@ -3323,7 +3329,7 @@ int _GetBicompSize(graphP theGraph, int BicompRoot)
  if theGraph is NULL.
  ********************************************************************/
 
-int gp_HasParallelEdges(graphP theGraph)
+int gp_HasParallelEdges(graphP theGraph, int includingInOnlyEdges)
 {
     int v, e, neighbor, numLoopRecords;
     int Result = FALSE;
@@ -3347,6 +3353,10 @@ int gp_HasParallelEdges(graphP theGraph)
                 if (++numLoopRecords > 2)
                     Result = TRUE;
             }
+            // An in-only record is the arc from the neighbor, whose own
+            // out-only record is counted at the neighbor
+            else if (!includingInOnlyEdges && gp_GetDirection(theGraph, e) == EDGEFLAG_DIRECTION_INONLY)
+                ;
             else if (gp_GetVisited(theGraph, neighbor))
                 Result = TRUE;
             else

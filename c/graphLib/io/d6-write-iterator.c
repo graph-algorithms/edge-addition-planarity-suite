@@ -326,10 +326,10 @@ int _d6_InitWriter(D6WriteIteratorP theD6WriteIterator)
  written as the two arcs u -> v and v -> u, which the reader reads back
  as one undirected edge, and a directed edge as its one arc.
 
- The format cannot represent parallel edges, including the two edges of
- the arcs u -> v and v -> u, which would be read back as one undirected
- edge, nor can the reader read a loop, so a graph with either is not
- written. Neither is a graph with hidden edges, which are not in the
+ The format cannot represent parallel edges, including the two edges
+ directed u -> v and v -> u, which would be written as the two arcs of
+ a 2-cycle and read back as one undirected edge, nor can the reader
+ read a loop, so a graph with either is not written. Neither is a graph with hidden edges, which are not in the
  adjacency lists that gp_HasParallelEdges() inspects; they are to be
  restored first.
 
@@ -366,7 +366,10 @@ int d6_WriteGraph(D6WriteIteratorP theD6WriteIterator)
         return NOTOK;
     }
 
-    if (gp_HasParallelEdges(theGraph))
+    // Two edges directed u -> v and v -> u count as parallel here, since
+    // they would be written as the two arcs of a 2-cycle and read back as
+    // one undirected edge
+    if (gp_HasParallelEdges(theGraph, TRUE))
     {
         gp_ErrorMessage("D6 format doesn't support parallel edges.");
         d6_SetOutputErrorFlag(theD6WriteIterator);

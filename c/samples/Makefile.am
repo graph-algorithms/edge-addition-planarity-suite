@@ -39,6 +39,7 @@ dist_samples_DATA = \
   maxPlanar5.txt.Planarity.out.txt \
   N4-all.d6 \
   N5-all.d6 \
+  N5-digraphs.d6 \
   N5-all.g6 \
   N5-all.g6.0-based.AdjList.out.txt \
   N5-all.g6.0-based.AdjMat.out.txt \

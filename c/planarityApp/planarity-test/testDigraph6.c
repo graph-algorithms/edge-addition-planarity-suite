@@ -639,7 +639,8 @@ static int runDigraph6FileTest(char const *inFileName, char const *expectedFileN
  runHasParallelEdgesTests()
 
  Checks gp_HasParallelEdges() on simple graphs and on graphs with each kind
- of parallel edges, and that it leaves every visited flag clear.
+ of parallel edges, with in-only edges included and left out, and that it
+ leaves every visited flag clear.
  ****************************************************************************/
 
 static int runHasParallelEdgesTests(void)
@@ -648,43 +649,72 @@ static int runHasParallelEdgesTests(void)
     // 0, so the marks of one vertex's neighbors must be cleared before the
     // next vertex's are set
     digraph6TestArc const path[] = {{0, 1, FALSE}, {1, 2, FALSE}};
+    digraph6TestArc const directedPath[] = {{0, 1, TRUE}, {1, 2, TRUE}};
     digraph6TestArc const parallelUndirected[] = {{0, 1, FALSE}, {1, 2, FALSE}, {2, 1, FALSE}};
+    // The two arcs of a directed 2-cycle are parallel only when in-only
+    // edges are included
     digraph6TestArc const parallelOpposite[] = {{0, 1, FALSE}, {1, 2, TRUE}, {2, 1, TRUE}};
+    digraph6TestArc const parallelSameWay[] = {{0, 1, FALSE}, {1, 2, TRUE}, {1, 2, TRUE}};
+    digraph6TestArc const parallelMixed[] = {{0, 1, FALSE}, {1, 2, FALSE}, {1, 2, TRUE}};
+    digraph6TestArc const parallelMixedBackward[] = {{0, 1, FALSE}, {1, 2, FALSE}, {2, 1, TRUE}};
     digraph6TestArc const oneLoop[] = {{0, 1, FALSE}, {1, 1, FALSE}};
     digraph6TestArc const twoLoops[] = {{0, 1, FALSE}, {1, 1, FALSE}, {1, 1, FALSE}};
-    digraph6TestArc const *const cases[] = {path, parallelUndirected, parallelOpposite, oneLoop, twoLoops};
-    int const numArcs[] = {2, 3, 3, 2, 3};
-    int const expected[] = {FALSE, TRUE, TRUE, FALSE, TRUE};
+    struct
+    {
+        digraph6TestArc const *arcs;
+        int numArcs;
+        int expectedIncluding, expectedExcluding;
+    } const cases[] = {
+        {path, 2, FALSE, FALSE},
+        {directedPath, 2, FALSE, FALSE},
+        {parallelUndirected, 3, TRUE, TRUE},
+        {parallelOpposite, 3, TRUE, FALSE},
+        {parallelSameWay, 3, TRUE, TRUE},
+        {parallelMixed, 3, TRUE, TRUE},
+        {parallelMixedBackward, 3, TRUE, TRUE},
+        {oneLoop, 2, FALSE, FALSE},
+        {twoLoops, 3, TRUE, TRUE},
+    };
     graphP theGraph = NULL;
     int Result = OK;
 
-    if (gp_HasParallelEdges(NULL) != FALSE)
+    if (gp_HasParallelEdges(NULL, TRUE) != FALSE || gp_HasParallelEdges(NULL, FALSE) != FALSE)
     {
         gp_ErrorMessage("gp_HasParallelEdges(NULL) did not return FALSE.");
         return NOTOK;
     }
 
-    for (int i = 0; Result == OK && i < 5; i++)
+    for (size_t i = 0; Result == OK && i < sizeof(cases) / sizeof(cases[0]); i++)
     {
-        if ((theGraph = makeDigraph6TestGraph(3, cases[i], numArcs[i])) == NULL)
+        if ((theGraph = makeDigraph6TestGraph(3, cases[i].arcs, cases[i].numArcs)) == NULL)
             return NOTOK;
 
-        for (int v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); v++)
-            gp_SetVisited(theGraph, v);
-
-        if (gp_HasParallelEdges(theGraph) != expected[i])
+        // Each mode is called with every visited flag set and must leave
+        // them all clear, also after an early TRUE
+        for (int m = 0; Result == OK && m < 2; m++)
         {
-            gp_ErrorMessage("gp_HasParallelEdges() returned %s for case %d.",
-                            expected[i] ? "FALSE" : "TRUE", i);
-            Result = NOTOK;
-        }
+            int const includingInOnlyEdges = (m == 0) ? TRUE : FALSE;
+            int const expected = (m == 0) ? cases[i].expectedIncluding : cases[i].expectedExcluding;
+            int got = FALSE;
 
-        for (int v = gp_LowerBoundVertices(theGraph); Result == OK && v < gp_UpperBoundVertices(theGraph); v++)
-        {
-            if (gp_GetVisited(theGraph, v))
+            for (int v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); v++)
+                gp_SetVisited(theGraph, v);
+
+            if ((got = gp_HasParallelEdges(theGraph, includingInOnlyEdges)) != expected)
             {
-                gp_ErrorMessage("gp_HasParallelEdges() left vertex %d visited in case %d.", v, i);
+                gp_ErrorMessage("gp_HasParallelEdges() with includingInOnlyEdges %d returned %d for case %d, want %d.",
+                                includingInOnlyEdges, got, (int)i, expected);
                 Result = NOTOK;
+            }
+
+            for (int v = gp_LowerBoundVertices(theGraph); Result == OK && v < gp_UpperBoundVertices(theGraph); v++)
+            {
+                if (gp_GetVisited(theGraph, v))
+                {
+                    gp_ErrorMessage("gp_HasParallelEdges() with includingInOnlyEdges %d left vertex %d visited in case %d.",
+                                    includingInOnlyEdges, v, (int)i);
+                    Result = NOTOK;
+                }
             }
         }
 
@@ -886,8 +916,8 @@ int testDigraph6Iterators(void)
 
  Tests reading and writing digraph6, gp_HasParallelEdges(), the samples
  that nauty wrote, the transformations to and from digraph6, and the
- algorithms on all the oriented graphs of order 6, which they must treat
- as the undirected graphs beneath them.
+ algorithms on all the oriented graphs of order 6 and all the digraphs of
+ order 5, which they must treat as the undirected graphs beneath them.
  ****************************************************************************/
 
 int runDigraph6Tests(void)
@@ -907,11 +937,12 @@ int runDigraph6Tests(void)
         gp_ErrorMessage("gp_HasParallelEdges() tests failed.");
         Result = NOTOK;
     }
-    // N4-all.d6 is every digraph of order 4 as nauty's directg wrote it, so
-    // with 2-cycles, which read as undirected edges; N6-oriented.d6 is every
-    // oriented graph of order 6 (directg -o); N5-all.d6 is nauty's copyg -z
-    // of N5-all.g6
+    // N4-all.d6 and N5-digraphs.d6 are every digraph of order 4 and of order
+    // 5 as nauty's directg wrote them, so with 2-cycles, which read as
+    // undirected edges; N6-oriented.d6 is every oriented graph of order 6
+    // (directg -o); N5-all.d6 is nauty's copyg -z of N5-all.g6
     else if (runDigraph6FileTest("N4-all.d6", "N4-all.d6", 218) != OK ||
+             runDigraph6FileTest("N5-digraphs.d6", "N5-digraphs.d6", 9608) != OK ||
              runDigraph6FileTest("N6-oriented.d6", "N6-oriented.d6", 21480) != OK ||
              runDigraph6FileTest("N5-all.g6", "N5-all.d6", 34) != OK)
         Result = NOTOK;
@@ -935,6 +966,18 @@ int runDigraph6Tests(void)
              runTestAllGraphsTest("-4", "N6-oriented.d6", "-4 21480 4662 16818 SUCCESS", NULL) != OK)
     {
         gp_ErrorMessage("Testing the algorithms on N6-oriented.d6 failed.");
+        Result = NOTOK;
+    }
+    // Likewise for the 34 graphs of order 5 weighted by the number of their
+    // digraphs in N5-digraphs.d6, whose 2-cycles read as undirected edges
+    else if (runTestAllGraphsTest("-p", "N5-digraphs.d6", "-p 9608 9026 582 SUCCESS", NULL) != OK ||
+             runTestAllGraphsTest("-d", "N5-digraphs.d6", "-d 9608 9026 582 SUCCESS", NULL) != OK ||
+             runTestAllGraphsTest("-o", "N5-digraphs.d6", "-o 9608 3211 6397 SUCCESS", NULL) != OK ||
+             runTestAllGraphsTest("-2", "N5-digraphs.d6", "-2 9608 3667 5941 SUCCESS", NULL) != OK ||
+             runTestAllGraphsTest("-3", "N5-digraphs.d6", "-3 9608 9608 0 SUCCESS", NULL) != OK ||
+             runTestAllGraphsTest("-4", "N5-digraphs.d6", "-4 9608 3560 6048 SUCCESS", NULL) != OK)
+    {
+        gp_ErrorMessage("Testing the algorithms on N5-digraphs.d6 failed.");
         Result = NOTOK;
     }
 
