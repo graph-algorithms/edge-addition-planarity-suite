@@ -542,7 +542,7 @@ int _EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity)
  Fills every hole that gp_DeleteEdge() has left in the edge record
  array, so that the edge records in use run from gp_LowerBoundEdges()
  to gp_UpperBoundEdges() without gaps, as they do in a graph that has
- only ever had edges added. If needed, algorithm implementations can 
+ only ever had edges added. If needed, algorithm implementations can
  call this method to fill any holes before performing their main logic.
 
  A hole is filled by moving the last pair of edge records in use into
@@ -562,11 +562,11 @@ int _EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity)
 
  A hidden edge is in use but in no adjacency list, and moving it would
  corrupt the list it is to be restored into, so the method refuses,
- changing nothing, when an edge it would move is hidden. 
- 
- This method is not intended for a graph in the middle of an algorithm 
- whose extension keeps data per edge: the deletion and insertion 
- overloads clear and initialize that data for the records concerned, 
+ changing nothing, when an edge it would move is hidden.
+
+ This method is not intended for a graph in the middle of an algorithm
+ whose extension keeps data per edge: the deletion and insertion
+ overloads clear and initialize that data for the records concerned,
  so the moved edge keeps its base record information but not
  extended data.
 
@@ -3384,15 +3384,17 @@ int gp_HasParallelEdges(graphP theGraph, int includingInOnlyEdges)
  In linear time, finds and deletes all parallel edges, leaving
  one instance of each existing edge.
 
- NOTE: The parallel edge mechanism is designed to help with reducing
-       graphs to simple undirected graphs. So, an in-only edge and
-       an out-only directed edge in the same vertex adjacency list
-       are treated as parallel edges, and one will be removed.
+ includingInOnlyEdges:
+    TRUE to treat in-only directed edges as parallel to out-only
+        and undirected edges. Use this setting to help convert
+        a multigraph to a simple graph.
+    FALSE to treat in-only directed edges as non-parallel to
+        out-only and undirected edges.
 
  Returns OK on success, NOTOK on failure.
  ********************************************************************/
 
-int gp_DeleteParallelEdges(graphP theGraph)
+int gp_DeleteParallelEdges(graphP theGraph, int includingInOnlyEdges)
 {
     int v, e, eNext, neighbor;
 
@@ -3407,6 +3409,15 @@ int gp_DeleteParallelEdges(graphP theGraph)
         while (gp_IsEdge(theGraph, e))
         {
             eNext = gp_GetNextEdge(theGraph, e);
+
+            // Detect and skip in-only directed edges if they are not being
+            // included in the analysis/deletion of parallel edges.
+            if (!includingInOnlyEdges && gp_GetDirection(theGraph, e) == EDGEFLAG_DIRECTION_INONLY)
+            {
+                e = eNext;
+                continue;
+            }
+
             neighbor = gp_GetNeighbor(theGraph, e);
 
             if (neighbor == v)

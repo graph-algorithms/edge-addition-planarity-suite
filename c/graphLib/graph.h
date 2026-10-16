@@ -73,7 +73,7 @@ extern "C"
     int gp_DeleteEdge(graphP theGraph, int e);
     int gp_ClearEdgeDirectionFlags(graphP theGraph);
     int gp_TransposeDirectedGraph(graphP theGraph);
-    int gp_DeleteParallelEdges(graphP theGraph);
+    int gp_DeleteParallelEdges(graphP theGraph, int includingInOnlyEdges);
 
     // Intermediate graph structure manipulators
     void gp_HideEdge(graphP theGraph, int e);
