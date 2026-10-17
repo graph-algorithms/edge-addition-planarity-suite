@@ -219,7 +219,7 @@ static int runGraphMLRejectTest(GraphMLRejectCase const *testCase)
 static int runGraphMLAcceptTests(void)
 {
     static GraphMLAcceptCase const acceptCases[] = {
-        {"whitespace, comments, and paired empty elements",
+        {"Whitespace, comments, and paired empty elements",
          " \t\r\n<!--top-->" GRAPHML_ROOT_OPEN GRAPHML_GRAPH_OPEN
          "<node id='n0'/><node id='n1'></node>"
          "<edge source='n0' target='n1'></edge></graph>",
@@ -227,7 +227,8 @@ static int runGraphMLAcceptTests(void)
          1,
          FALSE,
          {{0, 1, 0}}},
-        {"UTF-8 BOM, key default, and character decoding",
+
+        {"UTF-8 BOM, key default, character decoding, default digraph",
          "\xEF\xBB\xBF<?xml version='1.0' encoding='UTF-8' standalone='yes'?>"
          "<!--prolog--><graphml xmlns='" GRAPHML_XMLNS "' "
          "xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' "
@@ -245,7 +246,8 @@ static int runGraphMLAcceptTests(void)
          1,
          TRUE,
          {{0, 1, EDGEFLAG_DIRECTION_OUTONLY}}},
-        {"ISO-8859-1 declaration and false graph flag",
+
+        {"ISO-8859-1 declaration, false graph zero-based IO flag, undirected edge in digraph",
          "<?xml version='1.0' encoding='ISO-8859-1'?>" GRAPHML_ROOT_OPEN
          "<key id='graphflags_zerobasedio' for='graph' "
          "attr.name='graphflags_zerobasedio' attr.type='boolean'/>"
@@ -253,31 +255,34 @@ static int runGraphMLAcceptTests(void)
          "parse.edgeids='canonical' parse.order='nodesfirst'>"
          "<data key='graphflags_zerobasedio'> false </data>"
          "<node id='n0'/><node id='n1'/>"
-         "<edge source='n0' target='n1' directed='false'/></graph>",
+         "<edge source='n0' target='n1' directed=' false '/>"
+         "</graph>",
          2,
          1,
          FALSE,
          {{0, 1, 0}}},
-        {"undirected default with directed override",
+
+        {"Undirected graph default with directed edge override",
          GRAPHML_ROOT_OPEN
          "<graph edgedefault='undirected' parse.nodes='3' parse.edges='2' "
          "parse.nodeids='canonical' parse.edgeids='canonical' "
          "parse.order='nodesfirst'>"
          "<node id='n0'/><node id='n1'/><node id='n2'/>"
          "<edge id='e0' source='n0' target='n1'/>"
-         "<edge id='e1' source='n1' target='n2' directed='true'/></graph>",
+         "<edge id='e1' source='n1' target='n2' directed=' true '/></graph>",
          3,
          2,
          FALSE,
          {{0, 1, 0}, {1, 2, EDGEFLAG_DIRECTION_OUTONLY}}},
-        {"directed default with undirected override",
+
+        {"Digraph default with undirected edge override",
          GRAPHML_ROOT_OPEN
          "<graph edgedefault='directed' parse.nodes='3' parse.edges='2' "
          "parse.nodeids='canonical' parse.edgeids='canonical' "
          "parse.order='nodesfirst'>"
          "<node id='n0'/><node id='n1'/><node id='n2'/>"
-         "<edge id='e0' source='n0' target='n1'/>"
-         "<edge id='e1' source='n1' target='n2' directed='false'/></graph>",
+         "<edge id='e0' source='n0' target='n1' directed=' 1 '/>"
+         "<edge id='e1' source='n1' target='n2' directed=' 0 '/></graph>",
          3,
          2,
          FALSE,

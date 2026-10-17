@@ -1594,9 +1594,17 @@ static int _ReadGraphMLGraphEdge(graphP theGraph, strOrFileP inputContainer,
 
     if ((values.seen & (1U << 3)) != 0)
     {
-        if (strcmp(values.values[3], "true") == 0)
+        if (_ReadGraphMLTrim(theGraph, inputContainer,
+                             pLineNum, values.values[3]) != OK)
+        {
+            gp_ErrorMessage("Internal function failed while processing edge directed attribute on line %d.",
+                            *pLineNum);
+            return NOTOK;
+        }
+
+        if (strcmp(values.values[3], "true") == 0 || strcmp(values.values[3], "1") == 0)
             directed = TRUE;
-        else if (strcmp(values.values[3], "false") == 0)
+        else if (strcmp(values.values[3], "false") == 0 || strcmp(values.values[3], "0") == 0)
             directed = FALSE;
         else
         {
