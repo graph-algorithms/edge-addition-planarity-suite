@@ -61,8 +61,8 @@ static int _ReadGraphMLSkipWhitespace(graphP theGraph, strOrFileP inputContainer
 static int _ReadGraphMLSkipComment(graphP theGraph, strOrFileP inputContainer,
                                    int *pLineNum);
 static int _ReadGraphMLSkipWhitespaceAndComments(graphP theGraph,
-                                                  strOrFileP inputContainer,
-                                                  int *pLineNum);
+                                                 strOrFileP inputContainer,
+                                                 int *pLineNum);
 static int _ReadGraphMLReadText(graphP theGraph, strOrFileP inputContainer,
                                 int *pLineNum, GraphMLEncoding encoding,
                                 int delimiter, char *buffer, size_t bufferSize);
@@ -82,55 +82,55 @@ static int _ReadGraphMLTrim(graphP theGraph, strOrFileP inputContainer,
 static int _ReadGraphMLValidateID(graphP theGraph, strOrFileP inputContainer,
                                   int *pLineNum, char *value);
 static int _ReadGraphMLParsePositiveInteger(graphP theGraph,
-                                             strOrFileP inputContainer,
-                                             int *pLineNum, char const *value,
-                                             int *pParsedValue);
+                                            strOrFileP inputContainer,
+                                            int *pLineNum, char const *value,
+                                            int *pParsedValue);
 static int _ReadGraphMLParseCanonicalID(graphP theGraph,
-                                         strOrFileP inputContainer,
-                                         int *pLineNum, char const *value,
-                                         int prefix, int *pParsedValue);
+                                        strOrFileP inputContainer,
+                                        int *pLineNum, char const *value,
+                                        int prefix, int *pParsedValue);
 static int _ReadGraphMLIsCanonicalID(graphP theGraph,
-                                      strOrFileP inputContainer,
-                                      int *pLineNum, char const *value);
+                                     strOrFileP inputContainer,
+                                     int *pLineNum, char const *value);
 static int _ReadGraphMLParseBoolean(graphP theGraph, strOrFileP inputContainer,
                                     int *pLineNum, char *value, int *pBoolean);
 static int _ReadGraphMLEmptyElementEnd(graphP theGraph,
-                                        strOrFileP inputContainer,
-                                        int *pLineNum, char const *elementName,
-                                        int emptyTag);
-static int _ReadGraphMLProlog(graphP theGraph, strOrFileP inputContainer,
-                               int *pLineNum, GraphMLEncoding *pEncoding);
-static int _ReadGraphMLXMLDeclaration(graphP theGraph,
                                        strOrFileP inputContainer,
-                                       int *pLineNum, int hadUTF8BOM,
-                                       GraphMLEncoding *pEncoding);
+                                       int *pLineNum, char const *elementName,
+                                       int emptyTag);
+static int _ReadGraphMLProlog(graphP theGraph, strOrFileP inputContainer,
+                              int *pLineNum, GraphMLEncoding *pEncoding);
+static int _ReadGraphMLXMLDeclaration(graphP theGraph,
+                                      strOrFileP inputContainer,
+                                      int *pLineNum, int hadUTF8BOM,
+                                      GraphMLEncoding *pEncoding);
 static int _ReadGraphMLStartTag(graphP theGraph, strOrFileP inputContainer,
-                                 int *pLineNum, GraphMLEncoding encoding);
+                                int *pLineNum, GraphMLEncoding encoding);
 static int _ReadGraphMLKeys(graphP theGraph, strOrFileP inputContainer,
-                             int *pLineNum, GraphMLEncoding encoding,
-                             GraphMLKeyState *keyState);
-static int _ReadGraphMLKey(graphP theGraph, strOrFileP inputContainer,
                             int *pLineNum, GraphMLEncoding encoding,
                             GraphMLKeyState *keyState);
+static int _ReadGraphMLKey(graphP theGraph, strOrFileP inputContainer,
+                           int *pLineNum, GraphMLEncoding encoding,
+                           GraphMLKeyState *keyState);
 static int _ReadGraphMLGraphElement(graphP theGraph,
-                                     strOrFileP inputContainer,
-                                     int *pLineNum, GraphMLEncoding encoding,
-                                     GraphMLKeyState const *keyState);
+                                    strOrFileP inputContainer,
+                                    int *pLineNum, GraphMLEncoding encoding,
+                                    GraphMLKeyState const *keyState);
 static int _ReadGraphMLGraphElementStartTag(graphP theGraph,
-                                             strOrFileP inputContainer,
-                                             int *pLineNum,
-                                             GraphMLEncoding encoding,
-                                             GraphMLGraphState *graphState);
+                                            strOrFileP inputContainer,
+                                            int *pLineNum,
+                                            GraphMLEncoding encoding,
+                                            GraphMLGraphState *graphState);
 static int _ReadGraphMLGraphData(graphP theGraph, strOrFileP inputContainer,
-                                  int *pLineNum, GraphMLEncoding encoding,
-                                  GraphMLKeyState const *keyState);
+                                 int *pLineNum, GraphMLEncoding encoding,
+                                 GraphMLKeyState const *keyState);
 static int _ReadGraphMLGraphNode(graphP theGraph, strOrFileP inputContainer,
-                                  int *pLineNum, GraphMLEncoding encoding,
-                                  int expectedIndex);
+                                 int *pLineNum, GraphMLEncoding encoding,
+                                 int expectedIndex);
 static int _ReadGraphMLGraphEdge(graphP theGraph, strOrFileP inputContainer,
-                                  int *pLineNum, GraphMLEncoding encoding,
-                                  GraphMLGraphState const *graphState,
-                                  int edgeIndex, int nodeCount);
+                                 int *pLineNum, GraphMLEncoding encoding,
+                                 GraphMLGraphState const *graphState,
+                                 int edgeIndex, int nodeCount);
 
 int _IsGraphMLInput(char const *const firstLine)
 {
@@ -332,7 +332,10 @@ static int _ReadGraphMLSkipComment(graphP theGraph, strOrFileP inputContainer,
     int previousPrevious = 0;
 
     if (_ReadGraphMLConsume(theGraph, inputContainer, pLineNum, "<!--") != OK)
+    {
+        gp_ErrorMessage("Unable to consume start of comment on line %d.", *pLineNum);
         return NOTOK;
+    }
 
     while (1)
     {
@@ -389,29 +392,39 @@ static int _ReadGraphMLSkipComment(graphP theGraph, strOrFileP inputContainer,
 }
 
 static int _ReadGraphMLSkipWhitespaceAndComments(graphP theGraph,
-                                                  strOrFileP inputContainer,
-                                                  int *pLineNum)
+                                                 strOrFileP inputContainer,
+                                                 int *pLineNum)
 {
     while (1)
     {
         int matches = FALSE;
 
-        if (_ReadGraphMLSkipWhitespace(theGraph, inputContainer, pLineNum, FALSE) != OK ||
-            _ReadGraphMLStartsWith(theGraph, inputContainer, pLineNum, "<!--", &matches) != OK)
+        if (_ReadGraphMLSkipWhitespace(theGraph, inputContainer, pLineNum, FALSE) != OK)
+        {
+            gp_ErrorMessage("Unable to skip whitespace on line %d.", *pLineNum);
             return NOTOK;
+        }
+        if (_ReadGraphMLStartsWith(theGraph, inputContainer, pLineNum, "<!--", &matches) != OK)
+        {
+            gp_ErrorMessage("Failed test for comment to skip on line %d.", *pLineNum);
+            return NOTOK;
+        }
 
         if (!matches)
             return OK;
 
         if (_ReadGraphMLSkipComment(theGraph, inputContainer, pLineNum) != OK)
+        {
+            gp_ErrorMessage("Failed to skip comment on line %d.", *pLineNum);
             return NOTOK;
+        }
     }
 }
 
 static int _ReadGraphMLAppendCharacter(graphP theGraph, strOrFileP inputContainer,
-                                        int *pLineNum, char *buffer,
-                                        size_t bufferSize, size_t *pLength,
-                                        int character)
+                                       int *pLineNum, char *buffer,
+                                       size_t bufferSize, size_t *pLength,
+                                       int character)
 {
     (void)theGraph;
     (void)inputContainer;
@@ -437,8 +450,8 @@ static int _ReadGraphMLAppendCharacter(graphP theGraph, strOrFileP inputContaine
 }
 
 static int _ReadGraphMLEntity(graphP theGraph, strOrFileP inputContainer,
-                               int *pLineNum, char *buffer, size_t bufferSize,
-                               size_t *pLength)
+                              int *pLineNum, char *buffer, size_t bufferSize,
+                              size_t *pLength)
 {
     char entity[7];
     size_t index = 0;
@@ -486,9 +499,10 @@ static int _ReadGraphMLEntity(graphP theGraph, strOrFileP inputContainer,
     }
 
     return _ReadGraphMLAppendCharacter(theGraph, inputContainer, pLineNum,
-                                        buffer, bufferSize, pLength, decoded);
+                                       buffer, bufferSize, pLength, decoded);
 }
 
+// Reads XML character data (text), such as an attribute value or element text content
 static int _ReadGraphMLReadText(graphP theGraph, strOrFileP inputContainer,
                                 int *pLineNum, GraphMLEncoding encoding,
                                 int delimiter, char *buffer, size_t bufferSize)
@@ -536,7 +550,10 @@ static int _ReadGraphMLReadText(graphP theGraph, strOrFileP inputContainer,
         {
             if (_ReadGraphMLEntity(theGraph, inputContainer, pLineNum,
                                    buffer, bufferSize, &length) != OK)
+            {
+                gp_ErrorMessage("Failed to read entity on line %d.", *pLineNum);
                 return NOTOK;
+            }
             continue;
         }
 
@@ -554,7 +571,10 @@ static int _ReadGraphMLReadText(graphP theGraph, strOrFileP inputContainer,
             converted = currChar == 0xC2 ? nextChar : nextChar + 0x40;
             if (_ReadGraphMLAppendCharacter(theGraph, inputContainer, pLineNum,
                                             buffer, bufferSize, &length, converted) != OK)
+            {
+                gp_ErrorMessage("Internal function failed on line %d.", *pLineNum);
                 return NOTOK;
+            }
             continue;
         }
 
@@ -563,10 +583,14 @@ static int _ReadGraphMLReadText(graphP theGraph, strOrFileP inputContainer,
 
         if (_ReadGraphMLAppendCharacter(theGraph, inputContainer, pLineNum,
                                         buffer, bufferSize, &length, currChar) != OK)
+        {
+            gp_ErrorMessage("Internal function failed on line %d.", *pLineNum);
             return NOTOK;
+        }
     }
 }
 
+// Reads an attribute name or element name
 static int _ReadGraphMLReadName(graphP theGraph, strOrFileP inputContainer,
                                 int *pLineNum, char *buffer, size_t bufferSize)
 {
@@ -635,8 +659,11 @@ static int _ReadGraphMLAttribute(graphP theGraph, strOrFileP inputContainer,
     memset(name, '\0', sizeof(name));
     memset(value, '\0', sizeof(value));
     if (_ReadGraphMLReadName(theGraph, inputContainer, pLineNum,
-                            name, sizeof(name)) != OK)
+                             name, sizeof(name)) != OK)
+    {
+        gp_ErrorMessage("Failed to read attribute name on line %d.", *pLineNum);
         return NOTOK;
+    }
 
     for (index = 0; index < specCount; index++)
     {
@@ -663,7 +690,10 @@ static int _ReadGraphMLAttribute(graphP theGraph, strOrFileP inputContainer,
     if (_ReadGraphMLSkipWhitespace(theGraph, inputContainer, pLineNum, FALSE) != OK ||
         _ReadGraphMLConsume(theGraph, inputContainer, pLineNum, "=") != OK ||
         _ReadGraphMLSkipWhitespace(theGraph, inputContainer, pLineNum, FALSE) != OK)
+    {
+        gp_ErrorMessage("Failed to skip attribute name-value separators on line %d.", *pLineNum);
         return NOTOK;
+    }
 
     quote = sf_getc(inputContainer);
     if (quote != '\'' && quote != '"')
@@ -675,7 +705,10 @@ static int _ReadGraphMLAttribute(graphP theGraph, strOrFileP inputContainer,
 
     if (_ReadGraphMLReadText(theGraph, inputContainer, pLineNum, encoding,
                              quote, value, sizeof(value)) != OK)
+    {
+        gp_ErrorMessage("Failed to read attribute value on line %d.", *pLineNum);
         return NOTOK;
+    }
 
     if (specs[foundIndex].expectedValue != NULL &&
         strcmp(value, specs[foundIndex].expectedValue) != 0)
@@ -730,7 +763,10 @@ static int _ReadGraphMLAttributeList(graphP theGraph, strOrFileP inputContainer,
         if (currChar == ' ' || currChar == '\t' || currChar == '\r' || currChar == '\n')
         {
             if (_ReadGraphMLSkipWhitespace(theGraph, inputContainer, pLineNum, TRUE) != OK)
+            {
+                gp_ErrorMessage("Failed to skip whitespace in attribute list on line %d.", *pLineNum);
                 return NOTOK;
+            }
         }
         else
         {
@@ -738,19 +774,28 @@ static int _ReadGraphMLAttributeList(graphP theGraph, strOrFileP inputContainer,
             {
                 if (_ReadGraphMLStartsWith(theGraph, inputContainer, pLineNum,
                                            "?>", &matches) != OK)
+                {
+                    gp_ErrorMessage("Internal function failed while reading XML declaration on line %d.", *pLineNum);
                     return NOTOK;
+                }
             }
             else if (allowEmptyTag)
             {
                 if (_ReadGraphMLStartsWith(theGraph, inputContainer, pLineNum,
                                            "/>", &matches) != OK)
+                {
+                    gp_ErrorMessage("Internal function failed while testing for an empty element tag on line %d.", *pLineNum);
                     return NOTOK;
+                }
             }
             if (!matches && !xmlDeclaration)
             {
                 if (_ReadGraphMLStartsWith(theGraph, inputContainer, pLineNum,
                                            ">", &matches) != OK)
+                {
+                    gp_ErrorMessage("Internal function failed while testing for end of start tag on line %d.", *pLineNum);
                     return NOTOK;
+                }
             }
             if (!matches)
             {
@@ -762,33 +807,48 @@ static int _ReadGraphMLAttributeList(graphP theGraph, strOrFileP inputContainer,
 
         if (xmlDeclaration &&
             _ReadGraphMLStartsWith(theGraph, inputContainer, pLineNum,
-                                   "?>", &matches) == OK && matches)
+                                   "?>", &matches) == OK &&
+            matches)
         {
             if (_ReadGraphMLConsume(theGraph, inputContainer, pLineNum, "?>") != OK)
+            {
+                gp_ErrorMessage("Internal function failed to consume end of XML declaration on line %d.", *pLineNum);
                 return NOTOK;
+            }
             break;
         }
         if (!xmlDeclaration && allowEmptyTag &&
             _ReadGraphMLStartsWith(theGraph, inputContainer, pLineNum,
-                                   "/>", &matches) == OK && matches)
+                                   "/>", &matches) == OK &&
+            matches)
         {
             if (_ReadGraphMLConsume(theGraph, inputContainer, pLineNum, "/>") != OK)
+            {
+                gp_ErrorMessage("Internal function failed to consume end of empty tag on line %d.", *pLineNum);
                 return NOTOK;
+            }
             *pEmptyTag = TRUE;
             break;
         }
         if (!xmlDeclaration &&
             _ReadGraphMLStartsWith(theGraph, inputContainer, pLineNum,
-                                   ">", &matches) == OK && matches)
+                                   ">", &matches) == OK &&
+            matches)
         {
             if (_ReadGraphMLConsume(theGraph, inputContainer, pLineNum, ">") != OK)
+            {
+                gp_ErrorMessage("Internal function failed to consume end of start tag on line %d.", *pLineNum);
                 return NOTOK;
+            }
             break;
         }
 
         if (_ReadGraphMLAttribute(theGraph, inputContainer, pLineNum, encoding,
                                   specs, specCount, values) != OK)
+        {
+            gp_ErrorMessage("Failed to read attribute on line %d.", *pLineNum);
             return NOTOK;
+        }
     }
 
     for (index = 0; index < specCount; index++)
@@ -805,6 +865,8 @@ static int _ReadGraphMLAttributeList(graphP theGraph, strOrFileP inputContainer,
     return OK;
 }
 
+// Trims leading and trailing whitespace, which is needed to process
+// character data values like booleans and ID attribute values.
 static int _ReadGraphMLTrim(graphP theGraph, strOrFileP inputContainer,
                             int *pLineNum, char *value)
 {
@@ -860,9 +922,9 @@ static int _ReadGraphMLValidateID(graphP theGraph, strOrFileP inputContainer,
 }
 
 static int _ReadGraphMLParsePositiveInteger(graphP theGraph,
-                                             strOrFileP inputContainer,
-                                             int *pLineNum, char const *value,
-                                             int *pParsedValue)
+                                            strOrFileP inputContainer,
+                                            int *pLineNum, char const *value,
+                                            int *pParsedValue)
 {
     long result = 0;
     size_t index = 0;
@@ -905,9 +967,9 @@ static int _ReadGraphMLParsePositiveInteger(graphP theGraph,
 }
 
 static int _ReadGraphMLParseCanonicalID(graphP theGraph,
-                                         strOrFileP inputContainer,
-                                         int *pLineNum, char const *value,
-                                         int prefix, int *pParsedValue)
+                                        strOrFileP inputContainer,
+                                        int *pLineNum, char const *value,
+                                        int prefix, int *pParsedValue)
 {
     long result = 0;
     size_t index = 1;
@@ -947,8 +1009,8 @@ static int _ReadGraphMLParseCanonicalID(graphP theGraph,
 }
 
 static int _ReadGraphMLIsCanonicalID(graphP theGraph,
-                                      strOrFileP inputContainer,
-                                      int *pLineNum, char const *value)
+                                     strOrFileP inputContainer,
+                                     int *pLineNum, char const *value)
 {
     size_t index = 1;
 
@@ -993,9 +1055,9 @@ static int _ReadGraphMLParseBoolean(graphP theGraph, strOrFileP inputContainer,
 }
 
 static int _ReadGraphMLEmptyElementEnd(graphP theGraph,
-                                        strOrFileP inputContainer,
-                                        int *pLineNum, char const *elementName,
-                                        int emptyTag)
+                                       strOrFileP inputContainer,
+                                       int *pLineNum, char const *elementName,
+                                       int emptyTag)
 {
     char endTag[MAXLINE + 1];
     int charsWritten = 0;
@@ -1004,7 +1066,11 @@ static int _ReadGraphMLEmptyElementEnd(graphP theGraph,
         return OK;
 
     if (_ReadGraphMLSkipWhitespaceAndComments(theGraph, inputContainer, pLineNum) != OK)
+    {
+        gp_ErrorMessage("Failed to skip whitespace between start and end tags on line %d.",
+                        *pLineNum);
         return NOTOK;
+    }
 
     charsWritten = snprintf(endTag, sizeof(endTag), "</%s>", elementName);
     if (charsWritten < 0 || (size_t)charsWritten >= sizeof(endTag))
@@ -1018,9 +1084,9 @@ static int _ReadGraphMLEmptyElementEnd(graphP theGraph,
 }
 
 static int _ReadGraphMLXMLDeclaration(graphP theGraph,
-                                       strOrFileP inputContainer,
-                                       int *pLineNum, int hadUTF8BOM,
-                                       GraphMLEncoding *pEncoding)
+                                      strOrFileP inputContainer,
+                                      int *pLineNum, int hadUTF8BOM,
+                                      GraphMLEncoding *pEncoding)
 {
     static GraphMLAttributeSpec const specs[] = {
         {"version", TRUE, "1.0"},
@@ -1034,7 +1100,11 @@ static int _ReadGraphMLXMLDeclaration(graphP theGraph,
                                   GRAPHML_ENCODING_UTF8, specs,
                                   sizeof(specs) / sizeof(specs[0]),
                                   &values, TRUE, FALSE, &emptyTag) != OK)
+    {
+        gp_ErrorMessage("Failed to process start of XML declaration on line %d.",
+                        *pLineNum);
         return NOTOK;
+    }
 
     if ((values.seen & (1U << 1)) != 0)
     {
@@ -1064,7 +1134,7 @@ static int _ReadGraphMLXMLDeclaration(graphP theGraph,
 }
 
 static int _ReadGraphMLProlog(graphP theGraph, strOrFileP inputContainer,
-                               int *pLineNum, GraphMLEncoding *pEncoding)
+                              int *pLineNum, GraphMLEncoding *pEncoding)
 {
     int firstChar = EOF;
     int hadUTF8BOM = FALSE;
@@ -1131,15 +1201,27 @@ static int _ReadGraphMLProlog(graphP theGraph, strOrFileP inputContainer,
 
     if (_ReadGraphMLStartsWith(theGraph, inputContainer, pLineNum,
                                "<?xml", &matches) != OK)
+    {
+        gp_ErrorMessage("Failed while trying to match start of XML declaration on line %d.",
+                        *pLineNum);
         return NOTOK;
+    }
     if (matches && _ReadGraphMLXMLDeclaration(theGraph, inputContainer, pLineNum,
-                                               hadUTF8BOM, pEncoding) != OK)
+                                              hadUTF8BOM, pEncoding) != OK)
+    {
+        gp_ErrorMessage("Failed to process XML declaration on line %d.",
+                        *pLineNum);
         return NOTOK;
+    }
 
     if (_ReadGraphMLSkipWhitespaceAndComments(theGraph, inputContainer, pLineNum) != OK ||
         _ReadGraphMLStartsWith(theGraph, inputContainer, pLineNum,
                                "<graphml", &matches) != OK)
+    {
+        gp_ErrorMessage("Failed to reach start of root document element (graphml) on line %d.",
+                        *pLineNum);
         return NOTOK;
+    }
 
     if (!matches)
     {
@@ -1151,7 +1233,7 @@ static int _ReadGraphMLProlog(graphP theGraph, strOrFileP inputContainer,
 }
 
 static int _ReadGraphMLStartTag(graphP theGraph, strOrFileP inputContainer,
-                                 int *pLineNum, GraphMLEncoding encoding)
+                                int *pLineNum, GraphMLEncoding encoding)
 {
     static GraphMLAttributeSpec const specs[] = {
         {"xmlns", TRUE, "http://graphml.graphdrawing.org/xmlns"},
@@ -1179,8 +1261,8 @@ static int _ReadGraphMLStartTag(graphP theGraph, strOrFileP inputContainer,
 }
 
 static int _ReadGraphMLKey(graphP theGraph, strOrFileP inputContainer,
-                            int *pLineNum, GraphMLEncoding encoding,
-                            GraphMLKeyState *keyState)
+                           int *pLineNum, GraphMLEncoding encoding,
+                           GraphMLKeyState *keyState)
 {
     static GraphMLAttributeSpec const specs[] = {
         {"id", TRUE, NULL},
@@ -1196,7 +1278,11 @@ static int _ReadGraphMLKey(graphP theGraph, strOrFileP inputContainer,
         _ReadGraphMLAttributeList(theGraph, inputContainer, pLineNum, encoding,
                                   specs, sizeof(specs) / sizeof(specs[0]),
                                   &values, FALSE, TRUE, &emptyTag) != OK)
+    {
+        gp_ErrorMessage("Failed to process GraphML key element start tag on line %d.",
+                        *pLineNum);
         return NOTOK;
+    }
 
     if (_ReadGraphMLValidateID(theGraph, inputContainer, pLineNum,
                                values.values[0]) != OK ||
@@ -1217,7 +1303,15 @@ static int _ReadGraphMLKey(graphP theGraph, strOrFileP inputContainer,
     if (_ReadGraphMLSkipWhitespaceAndComments(theGraph, inputContainer, pLineNum) != OK ||
         _ReadGraphMLStartsWith(theGraph, inputContainer, pLineNum,
                                "<default>", &matches) != OK)
+    {
+        gp_ErrorMessage("Internal function failed while searching for default element start tag on line %d.", *pLineNum);
         return NOTOK;
+    }
+
+    // The following code has been written under the assumption of
+    // supporting the only key element defined for the Part 1 reader.
+    // It will need to be generalized later, once support for other
+    // key elements is added, such as for vertex and edge data.
     if (!matches)
     {
         gp_ErrorMessage("Expected a default element inside key on line %d.",
@@ -1230,17 +1324,25 @@ static int _ReadGraphMLKey(graphP theGraph, strOrFileP inputContainer,
                              '<', defaultValue, sizeof(defaultValue)) != OK ||
         _ReadGraphMLConsume(theGraph, inputContainer, pLineNum, "</default>") != OK ||
         _ReadGraphMLParseBoolean(theGraph, inputContainer, pLineNum,
-                                 defaultValue, &keyState->keyDefault) != OK ||
-        _ReadGraphMLSkipWhitespaceAndComments(theGraph, inputContainer, pLineNum) != OK ||
-        _ReadGraphMLConsume(theGraph, inputContainer, pLineNum, "</key>") != OK)
+                                 defaultValue, &keyState->keyDefault) != OK)
+    {
+        gp_ErrorMessage("Internal function failed while processing default element on line %d.", *pLineNum);
         return NOTOK;
+    }
+
+    if (_ReadGraphMLSkipWhitespaceAndComments(theGraph, inputContainer, pLineNum) != OK ||
+        _ReadGraphMLConsume(theGraph, inputContainer, pLineNum, "</key>") != OK)
+    {
+        gp_ErrorMessage("Internal function failed while processing key element end tag on line %d.", *pLineNum);
+        return NOTOK;
+    }
 
     return OK;
 }
 
 static int _ReadGraphMLKeys(graphP theGraph, strOrFileP inputContainer,
-                             int *pLineNum, GraphMLEncoding encoding,
-                             GraphMLKeyState *keyState)
+                            int *pLineNum, GraphMLEncoding encoding,
+                            GraphMLKeyState *keyState)
 {
     int matches = FALSE;
 
@@ -1249,16 +1351,25 @@ static int _ReadGraphMLKeys(graphP theGraph, strOrFileP inputContainer,
     if (_ReadGraphMLSkipWhitespaceAndComments(theGraph, inputContainer, pLineNum) != OK ||
         _ReadGraphMLStartsWith(theGraph, inputContainer, pLineNum,
                                "<key", &matches) != OK)
+    {
+        gp_ErrorMessage("Internal function failed while searching for key element start tag on line %d.", *pLineNum);
         return NOTOK;
+    }
 
     if (matches)
     {
-        if (_ReadGraphMLKey(theGraph, inputContainer, pLineNum,
-                            encoding, keyState) != OK ||
-            _ReadGraphMLSkipWhitespaceAndComments(theGraph, inputContainer, pLineNum) != OK ||
+        if (_ReadGraphMLKey(theGraph, inputContainer, pLineNum, encoding, keyState) != OK)
+        {
+            gp_ErrorMessage("Failed to read key element on line %d.", *pLineNum);
+            return NOTOK;
+        }
+        if (_ReadGraphMLSkipWhitespaceAndComments(theGraph, inputContainer, pLineNum) != OK ||
             _ReadGraphMLStartsWith(theGraph, inputContainer, pLineNum,
                                    "<key", &matches) != OK)
+        {
+            gp_ErrorMessage("Failed attempting to process content after key element on line %d.", *pLineNum);
             return NOTOK;
+        }
         if (matches)
         {
             gp_ErrorMessage("Only one GraphML key is supported on line %d.", *pLineNum);
@@ -1270,10 +1381,10 @@ static int _ReadGraphMLKeys(graphP theGraph, strOrFileP inputContainer,
 }
 
 static int _ReadGraphMLGraphElementStartTag(graphP theGraph,
-                                             strOrFileP inputContainer,
-                                             int *pLineNum,
-                                             GraphMLEncoding encoding,
-                                             GraphMLGraphState *graphState)
+                                            strOrFileP inputContainer,
+                                            int *pLineNum,
+                                            GraphMLEncoding encoding,
+                                            GraphMLGraphState *graphState)
 {
     static GraphMLAttributeSpec const specs[] = {
         {"id", FALSE, NULL},
@@ -1294,14 +1405,25 @@ static int _ReadGraphMLGraphElementStartTag(graphP theGraph,
         _ReadGraphMLAttributeList(theGraph, inputContainer, pLineNum, encoding,
                                   specs, sizeof(specs) / sizeof(specs[0]),
                                   &values, FALSE, FALSE, &emptyTag) != OK)
+    {
+        gp_ErrorMessage("Internal function failed while processing graph element start tag on line %d.", *pLineNum);
         return NOTOK;
+    }
 
     if ((values.seen & 1U) != 0)
     {
         char *id = values.values[0];
-        if (_ReadGraphMLValidateID(theGraph, inputContainer, pLineNum, id) != OK ||
-            strcmp(id, "graphflags_zerobasedio") == 0)
+
+        if (_ReadGraphMLValidateID(theGraph, inputContainer, pLineNum, id) != OK)
+        {
+            gp_ErrorMessage("Invalid ID attribute value for graph element on line %d.", *pLineNum);
             return NOTOK;
+        }
+        if (strcmp(id, "graphflags_zerobasedio") == 0)
+        {
+            gp_ErrorMessage("The graph element ID attribute value on line %d conflicts with ID reserved for a key element.", *pLineNum);
+            return NOTOK;
+        }
         if (_ReadGraphMLIsCanonicalID(theGraph, inputContainer, pLineNum, id))
         {
             gp_ErrorMessage("Graph id conflicts with canonical node or edge ids on line %d.",
@@ -1323,8 +1445,8 @@ static int _ReadGraphMLGraphElementStartTag(graphP theGraph,
 
     if ((values.seen & (1U << 2)) != 0 &&
         (_ReadGraphMLParsePositiveInteger(theGraph, inputContainer, pLineNum,
-                                           values.values[2],
-                                           &graphState->expectedNodes) != OK ||
+                                          values.values[2],
+                                          &graphState->expectedNodes) != OK ||
          graphState->expectedNodes < 2))
     {
         gp_ErrorMessage("GraphML parse.nodes must be at least 2 on line %d.",
@@ -1333,8 +1455,8 @@ static int _ReadGraphMLGraphElementStartTag(graphP theGraph,
     }
     if ((values.seen & (1U << 3)) != 0 &&
         (_ReadGraphMLParsePositiveInteger(theGraph, inputContainer, pLineNum,
-                                           values.values[3],
-                                           &graphState->expectedEdges) != OK ||
+                                          values.values[3],
+                                          &graphState->expectedEdges) != OK ||
          graphState->expectedEdges < 1))
     {
         gp_ErrorMessage("GraphML parse.edges must be at least 1 on line %d.",
@@ -1346,11 +1468,12 @@ static int _ReadGraphMLGraphElementStartTag(graphP theGraph,
 }
 
 static int _ReadGraphMLGraphData(graphP theGraph, strOrFileP inputContainer,
-                                  int *pLineNum, GraphMLEncoding encoding,
-                                  GraphMLKeyState const *keyState)
+                                 int *pLineNum, GraphMLEncoding encoding,
+                                 GraphMLKeyState const *keyState)
 {
-    static GraphMLAttributeSpec const specs[] = {
-        {"key", TRUE, "graphflags_zerobasedio"}};
+    static GraphMLAttributeSpec const specs[] =
+        {
+            {"key", TRUE, "graphflags_zerobasedio"}};
     GraphMLAttributeValues values;
     char dataValue[MAXLINE + 1];
     int emptyTag = FALSE;
@@ -1372,7 +1495,10 @@ static int _ReadGraphMLGraphData(graphP theGraph, strOrFileP inputContainer,
         _ReadGraphMLConsume(theGraph, inputContainer, pLineNum, "</data>") != OK ||
         _ReadGraphMLParseBoolean(theGraph, inputContainer, pLineNum,
                                  dataValue, &zeroBased) != OK)
+    {
+        gp_ErrorMessage("Internal function failed while processing data element on line %d.", *pLineNum);
         return NOTOK;
+    }
 
     if (zeroBased)
         theGraph->graphFlags |= GRAPHFLAGS_ZEROBASEDIO;
@@ -1382,9 +1508,10 @@ static int _ReadGraphMLGraphData(graphP theGraph, strOrFileP inputContainer,
     return OK;
 }
 
+// Reads a node element representing a vertex
 static int _ReadGraphMLGraphNode(graphP theGraph, strOrFileP inputContainer,
-                                  int *pLineNum, GraphMLEncoding encoding,
-                                  int expectedIndex)
+                                 int *pLineNum, GraphMLEncoding encoding,
+                                 int expectedIndex)
 {
     static GraphMLAttributeSpec const specs[] = {
         {"id", TRUE, NULL}};
@@ -1395,8 +1522,12 @@ static int _ReadGraphMLGraphNode(graphP theGraph, strOrFileP inputContainer,
     if (_ReadGraphMLConsume(theGraph, inputContainer, pLineNum, "<node") != OK ||
         _ReadGraphMLAttributeList(theGraph, inputContainer, pLineNum, encoding,
                                   specs, sizeof(specs) / sizeof(specs[0]),
-                                  &values, FALSE, TRUE, &emptyTag) != OK ||
-        _ReadGraphMLValidateID(theGraph, inputContainer, pLineNum,
+                                  &values, FALSE, TRUE, &emptyTag) != OK)
+    {
+        gp_ErrorMessage("Internal function failed while processing node element on line %d.", *pLineNum);
+        return NOTOK;
+    }
+    if (_ReadGraphMLValidateID(theGraph, inputContainer, pLineNum,
                                values.values[0]) != OK ||
         _ReadGraphMLParseCanonicalID(theGraph, inputContainer, pLineNum,
                                      values.values[0], 'n', &actualIndex) != OK ||
@@ -1408,13 +1539,13 @@ static int _ReadGraphMLGraphNode(graphP theGraph, strOrFileP inputContainer,
     }
 
     return _ReadGraphMLEmptyElementEnd(theGraph, inputContainer, pLineNum,
-                                        "node", emptyTag);
+                                       "node", emptyTag);
 }
 
 static int _ReadGraphMLGraphEdge(graphP theGraph, strOrFileP inputContainer,
-                                  int *pLineNum, GraphMLEncoding encoding,
-                                  GraphMLGraphState const *graphState,
-                                  int edgeIndex, int nodeCount)
+                                 int *pLineNum, GraphMLEncoding encoding,
+                                 GraphMLGraphState const *graphState,
+                                 int edgeIndex, int nodeCount)
 {
     static GraphMLAttributeSpec const specs[] = {
         {"id", FALSE, NULL},
@@ -1433,7 +1564,10 @@ static int _ReadGraphMLGraphEdge(graphP theGraph, strOrFileP inputContainer,
         _ReadGraphMLAttributeList(theGraph, inputContainer, pLineNum, encoding,
                                   specs, sizeof(specs) / sizeof(specs[0]),
                                   &values, FALSE, TRUE, &emptyTag) != OK)
+    {
+        gp_ErrorMessage("Internal function failed while processing edge element on line %d.", *pLineNum);
         return NOTOK;
+    }
 
     if ((values.seen & 1U) != 0 &&
         (_ReadGraphMLValidateID(theGraph, inputContainer, pLineNum,
@@ -1473,8 +1607,14 @@ static int _ReadGraphMLGraphEdge(graphP theGraph, strOrFileP inputContainer,
     }
 
     if (_ReadGraphMLEmptyElementEnd(theGraph, inputContainer, pLineNum,
-                                    "edge", emptyTag) != OK ||
-        gp_DynamicAddEdge(theGraph, source + vertexOffset, 0,
+                                    "edge", emptyTag) != OK)
+    {
+        gp_ErrorMessage("Failed to read the end of the edge element on line %d.",
+                        *pLineNum);
+        return NOTOK;
+    }
+
+    if (gp_DynamicAddEdge(theGraph, source + vertexOffset, 0,
                           target + vertexOffset, 0) != OK)
     {
         gp_ErrorMessage("Unable to add GraphML edge e%d on line %d.",
@@ -1493,9 +1633,9 @@ static int _ReadGraphMLGraphEdge(graphP theGraph, strOrFileP inputContainer,
 }
 
 static int _ReadGraphMLGraphElement(graphP theGraph,
-                                     strOrFileP inputContainer,
-                                     int *pLineNum, GraphMLEncoding encoding,
-                                     GraphMLKeyState const *keyState)
+                                    strOrFileP inputContainer,
+                                    int *pLineNum, GraphMLEncoding encoding,
+                                    GraphMLKeyState const *keyState)
 {
     GraphMLGraphState graphState;
     int matches = FALSE;
@@ -1505,26 +1645,41 @@ static int _ReadGraphMLGraphElement(graphP theGraph,
 
     if (_ReadGraphMLGraphElementStartTag(theGraph, inputContainer, pLineNum,
                                          encoding, &graphState) != OK)
+    {
+        gp_ErrorMessage("Failed to read graph element start tag on line %d.", *pLineNum);
         return NOTOK;
+    }
 
     if (keyState->keyPresent && keyState->keyDefault)
         theGraph->graphFlags |= GRAPHFLAGS_ZEROBASEDIO;
     else
         theGraph->graphFlags &= ~GRAPHFLAGS_ZEROBASEDIO;
 
+    /////////////////////////////////
+    // Read the data elements, if any
+    /////////////////////////////////
     if (_ReadGraphMLSkipWhitespaceAndComments(theGraph, inputContainer, pLineNum) != OK ||
         _ReadGraphMLStartsWith(theGraph, inputContainer, pLineNum,
                                "<data", &matches) != OK)
+    {
+        gp_ErrorMessage("Internal function failed while seeking first child element of graph element on line %d.", *pLineNum);
         return NOTOK;
+    }
     if (matches)
     {
         if (_ReadGraphMLGraphData(theGraph, inputContainer, pLineNum,
                                   encoding, keyState) != OK)
+        {
+            gp_ErrorMessage("Failed to process data element child of graph element on line %d.", *pLineNum);
             return NOTOK;
+        }
         if (_ReadGraphMLSkipWhitespaceAndComments(theGraph, inputContainer, pLineNum) != OK ||
             _ReadGraphMLStartsWith(theGraph, inputContainer, pLineNum,
                                    "<data", &matches) != OK)
+        {
+            gp_ErrorMessage("Internal function failed while seeking next child element of graph element on line %d.", *pLineNum);
             return NOTOK;
+        }
         if (matches)
         {
             gp_ErrorMessage("Only one graph-level data element is supported on line %d.",
@@ -1533,31 +1688,43 @@ static int _ReadGraphMLGraphElement(graphP theGraph,
         }
     }
 
+    ////////////////////
+    // Read the vertices
+    ////////////////////
     if (_ReadGraphMLStartsWith(theGraph, inputContainer, pLineNum,
                                "<node", &matches) != OK)
+    {
+        gp_ErrorMessage("Internal function failed while seeking first node child element of graph element on line %d.", *pLineNum);
         return NOTOK;
+    }
     while (matches)
     {
         if (_ReadGraphMLGraphNode(theGraph, inputContainer, pLineNum,
                                   encoding, nodeCount) != OK)
+        {
+            gp_ErrorMessage("Failed to process a node element on line %d.", *pLineNum);
             return NOTOK;
+        }
         nodeCount++;
         if (_ReadGraphMLSkipWhitespaceAndComments(theGraph, inputContainer, pLineNum) != OK ||
             _ReadGraphMLStartsWith(theGraph, inputContainer, pLineNum,
                                    "<node", &matches) != OK)
+        {
+            gp_ErrorMessage("Internal function failed while seeking next child element of graph element on line %d.", *pLineNum);
             return NOTOK;
+        }
     }
 
     if (nodeCount < 2 ||
         (graphState.expectedNodes >= 0 && nodeCount != graphState.expectedNodes))
     {
-        gp_ErrorMessage("GraphML node count does not match the declared count on line %d.",
+        gp_ErrorMessage("GraphML node count is too small or does not match the declared count on line %d.",
                         *pLineNum);
         return NOTOK;
     }
     if (gp_EnsureVertexCapacity(theGraph, nodeCount) != OK)
     {
-        gp_ErrorMessage("Unable to allocate GraphML graph vertices on line %d.",
+        gp_ErrorMessage("Unable to allocate graph based on vertices read up to line %d.",
                         *pLineNum);
         return NOTOK;
     }
@@ -1565,31 +1732,46 @@ static int _ReadGraphMLGraphElement(graphP theGraph,
          vertex < gp_UpperBoundVertices(theGraph); vertex++)
         gp_SetIndex(theGraph, vertex, vertex);
 
+    /////////////////
+    // Read the edges
+    /////////////////
     if (_ReadGraphMLStartsWith(theGraph, inputContainer, pLineNum,
                                "<edge", &matches) != OK)
+    {
+        gp_ErrorMessage("Internal function failed while seeking first edge child element of graph element on line %d.", *pLineNum);
         return NOTOK;
+    }
     while (matches)
     {
         if (_ReadGraphMLGraphEdge(theGraph, inputContainer, pLineNum,
                                   encoding, &graphState, edgeCount, nodeCount) != OK)
+        {
+            gp_ErrorMessage("Failed to process an edge element on line %d.", *pLineNum);
             return NOTOK;
+        }
         edgeCount++;
         if (_ReadGraphMLSkipWhitespaceAndComments(theGraph, inputContainer, pLineNum) != OK ||
             _ReadGraphMLStartsWith(theGraph, inputContainer, pLineNum,
                                    "<edge", &matches) != OK)
+        {
+            gp_ErrorMessage("Internal function failed while seeking next child element or end of graph element on line %d.", *pLineNum);
             return NOTOK;
+        }
     }
 
     if (edgeCount < 1 ||
         (graphState.expectedEdges >= 0 && edgeCount != graphState.expectedEdges))
     {
-        gp_ErrorMessage("GraphML edge count does not match the declared count on line %d.",
+        gp_ErrorMessage("GraphML edge count is too small or does not match the declared count on line %d.",
                         *pLineNum);
         return NOTOK;
     }
 
     if (_ReadGraphMLConsume(theGraph, inputContainer, pLineNum, "</graph>") != OK)
+    {
+        gp_ErrorMessage("Failed to read graph element end tag on line %d.", *pLineNum);
         return NOTOK;
+    }
 
     return OK;
 }
@@ -1616,13 +1798,27 @@ int _ReadGraphMLGraph(graphP theGraph, strOrFileP inputContainer, int readGraphE
             _ReadGraphMLStartTag(theGraph, inputContainer, &lineNum, encoding) != OK ||
             _ReadGraphMLKeys(theGraph, inputContainer, &lineNum,
                              encoding, &keyState) != OK)
+        {
+            gp_ErrorMessage("Internal function failed reading content before graph element on line %d.",
+                            lineNum);
             return NOTOK;
+        }
     }
 
-    if (_ReadGraphMLSkipWhitespaceAndComments(theGraph, inputContainer, &lineNum) != OK ||
-        _ReadGraphMLGraphElement(theGraph, inputContainer, &lineNum,
-                                 encoding, &keyState) != OK)
+    if (_ReadGraphMLSkipWhitespaceAndComments(theGraph, inputContainer, &lineNum) != OK)
+    {
+        gp_ErrorMessage("Internal function failed before reading graph element on line %d.",
+                        lineNum);
         return NOTOK;
+    }
+
+    if (_ReadGraphMLGraphElement(theGraph, inputContainer, &lineNum,
+                                 encoding, &keyState) != OK)
+    {
+        gp_ErrorMessage("Internal function failed while reading graph element on line %d.",
+                        lineNum);
+        return NOTOK;
+    }
 
     return OK;
 }
