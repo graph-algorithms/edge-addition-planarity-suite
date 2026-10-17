@@ -12,7 +12,7 @@ See the LICENSE.TXT file for licensing information.
 
 #define GRAPHML_XMLNS "http://graphml.graphdrawing.org/xmlns"
 #define GRAPHML_ROOT_OPEN "<graphml xmlns='" GRAPHML_XMLNS "'>"
-#define GRAPHML_GRAPH_OPEN \
+#define GRAPHML_GRAPH_OPEN                                       \
     "<graph edgedefault='undirected' parse.nodeids='canonical' " \
     "parse.edgeids='canonical' parse.order='nodesfirst'>"
 #define GRAPHML_VALID_BODY \
@@ -86,11 +86,16 @@ static int runGraphMLWriteTest(char const *inputFileName,
 
 static int runBasicGraphMLWriteTest(void)
 {
+    gp_Message("Run basic GraphML writer tests.");
+
     if (runGraphMLWriteTest("Digraph.transposeTest.txt",
                             "Digraph.transposeTest.graphml") != OK ||
         runGraphMLWriteTest("Digraph.transposeTest.0-based.txt",
                             "Digraph.transposeTest.0-based.graphml") != OK)
+    {
+        gp_ErrorMessage("Failed basic GraphML writer tests.");
         return NOTOK;
+    }
 
     return OK;
 }
@@ -118,9 +123,14 @@ static int runGraphMLReadWriteTest(char const *inputFileName)
 
 static int runBasicGraphMLReadTest(void)
 {
+    gp_Message("Run basic GraphML read/write tests.");
+
     if (runGraphMLReadWriteTest("Digraph.transposeTest.graphml") != OK ||
         runGraphMLReadWriteTest("Digraph.transposeTest.0-based.graphml") != OK)
+    {
+        gp_ErrorMessage("Failed basic GraphML read/write tests.");
         return NOTOK;
+    }
 
     return OK;
 }
@@ -209,69 +219,72 @@ static int runGraphMLRejectTest(GraphMLRejectCase const *testCase)
 static int runGraphMLAcceptTests(void)
 {
     static GraphMLAcceptCase const acceptCases[] = {
-        {
-            "whitespace, comments, and paired empty elements",
-            " \t\r\n<!--top-->" GRAPHML_ROOT_OPEN GRAPHML_GRAPH_OPEN
-            "<node id='n0'/><node id='n1'></node>"
-            "<edge source='n0' target='n1'></edge></graph>",
-            2, 1, FALSE, {{0, 1, 0}}
-        },
-        {
-            "UTF-8 BOM, key default, and character decoding",
-            "\xEF\xBB\xBF<?xml version='1.0' encoding='UTF-8' standalone='yes'?>"
-            "<!--prolog--><graphml xmlns='" GRAPHML_XMLNS "' "
-            "xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' "
-            "xsi:schemaLocation='caf\xC3\xA9 &amp; test' "
-            "testencoding='\xC2\xA0\xC3\xBF &lt;&gt;&amp;&apos;&quot;'>"
-            "<key id=' graphflags_zerobasedio ' for='graph' "
-            "attr.name=' graphflags_zerobasedio ' attr.type='boolean'>"
-            "<!--default--><default> 1 </default></key>"
-            "<graph edgedefault='directed' parse.nodes='2' parse.edges='1' "
-            "parse.nodeids='canonical' parse.edgeids='canonical' "
-            "parse.order='nodesfirst'>"
-            "<node id='n0'/><!--nodes--><node id='n1'/>"
-            "<edge id='e0' source='n0' target='n1'/></graph>",
-            2, 1, TRUE, {{0, 1, EDGEFLAG_DIRECTION_OUTONLY}}
-        },
-        {
-            "ISO-8859-1 declaration and false graph flag",
-            "<?xml version='1.0' encoding='ISO-8859-1'?>"
-            GRAPHML_ROOT_OPEN
-            "<key id='graphflags_zerobasedio' for='graph' "
-            "attr.name='graphflags_zerobasedio' attr.type='boolean'/>"
-            "<graph edgedefault='directed' parse.nodeids='canonical' "
-            "parse.edgeids='canonical' parse.order='nodesfirst'>"
-            "<data key='graphflags_zerobasedio'> false </data>"
-            "<node id='n0'/><node id='n1'/>"
-            "<edge source='n0' target='n1' directed='false'/></graph>",
-            2, 1, FALSE, {{0, 1, 0}}
-        },
-        {
-            "undirected default with directed override",
-            GRAPHML_ROOT_OPEN
-            "<graph edgedefault='undirected' parse.nodes='3' parse.edges='2' "
-            "parse.nodeids='canonical' parse.edgeids='canonical' "
-            "parse.order='nodesfirst'>"
-            "<node id='n0'/><node id='n1'/><node id='n2'/>"
-            "<edge id='e0' source='n0' target='n1'/>"
-            "<edge id='e1' source='n1' target='n2' directed='true'/></graph>",
-            3, 2, FALSE,
-            {{0, 1, 0}, {1, 2, EDGEFLAG_DIRECTION_OUTONLY}}
-        },
-        {
-            "directed default with undirected override",
-            GRAPHML_ROOT_OPEN
-            "<graph edgedefault='directed' parse.nodes='3' parse.edges='2' "
-            "parse.nodeids='canonical' parse.edgeids='canonical' "
-            "parse.order='nodesfirst'>"
-            "<node id='n0'/><node id='n1'/><node id='n2'/>"
-            "<edge id='e0' source='n0' target='n1'/>"
-            "<edge id='e1' source='n1' target='n2' directed='false'/></graph>",
-            3, 2, FALSE,
-            {{0, 1, EDGEFLAG_DIRECTION_OUTONLY}, {1, 2, 0}}
-        }
-    };
+        {"whitespace, comments, and paired empty elements",
+         " \t\r\n<!--top-->" GRAPHML_ROOT_OPEN GRAPHML_GRAPH_OPEN
+         "<node id='n0'/><node id='n1'></node>"
+         "<edge source='n0' target='n1'></edge></graph>",
+         2,
+         1,
+         FALSE,
+         {{0, 1, 0}}},
+        {"UTF-8 BOM, key default, and character decoding",
+         "\xEF\xBB\xBF<?xml version='1.0' encoding='UTF-8' standalone='yes'?>"
+         "<!--prolog--><graphml xmlns='" GRAPHML_XMLNS "' "
+         "xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' "
+         "xsi:schemaLocation='caf\xC3\xA9 &amp; test' "
+         "testencoding='\xC2\xA0\xC3\xBF &lt;&gt;&amp;&apos;&quot;'>"
+         "<key id=' graphflags_zerobasedio ' for='graph' "
+         "attr.name=' graphflags_zerobasedio ' attr.type='boolean'>"
+         "<!--default--><default> 1 </default></key>"
+         "<graph edgedefault='directed' parse.nodes='2' parse.edges='1' "
+         "parse.nodeids='canonical' parse.edgeids='canonical' "
+         "parse.order='nodesfirst'>"
+         "<node id='n0'/><!--nodes--><node id='n1'/>"
+         "<edge id='e0' source='n0' target='n1'/></graph>",
+         2,
+         1,
+         TRUE,
+         {{0, 1, EDGEFLAG_DIRECTION_OUTONLY}}},
+        {"ISO-8859-1 declaration and false graph flag",
+         "<?xml version='1.0' encoding='ISO-8859-1'?>" GRAPHML_ROOT_OPEN
+         "<key id='graphflags_zerobasedio' for='graph' "
+         "attr.name='graphflags_zerobasedio' attr.type='boolean'/>"
+         "<graph edgedefault='directed' parse.nodeids='canonical' "
+         "parse.edgeids='canonical' parse.order='nodesfirst'>"
+         "<data key='graphflags_zerobasedio'> false </data>"
+         "<node id='n0'/><node id='n1'/>"
+         "<edge source='n0' target='n1' directed='false'/></graph>",
+         2,
+         1,
+         FALSE,
+         {{0, 1, 0}}},
+        {"undirected default with directed override",
+         GRAPHML_ROOT_OPEN
+         "<graph edgedefault='undirected' parse.nodes='3' parse.edges='2' "
+         "parse.nodeids='canonical' parse.edgeids='canonical' "
+         "parse.order='nodesfirst'>"
+         "<node id='n0'/><node id='n1'/><node id='n2'/>"
+         "<edge id='e0' source='n0' target='n1'/>"
+         "<edge id='e1' source='n1' target='n2' directed='true'/></graph>",
+         3,
+         2,
+         FALSE,
+         {{0, 1, 0}, {1, 2, EDGEFLAG_DIRECTION_OUTONLY}}},
+        {"directed default with undirected override",
+         GRAPHML_ROOT_OPEN
+         "<graph edgedefault='directed' parse.nodes='3' parse.edges='2' "
+         "parse.nodeids='canonical' parse.edgeids='canonical' "
+         "parse.order='nodesfirst'>"
+         "<node id='n0'/><node id='n1'/><node id='n2'/>"
+         "<edge id='e0' source='n0' target='n1'/>"
+         "<edge id='e1' source='n1' target='n2' directed='false'/></graph>",
+         3,
+         2,
+         FALSE,
+         {{0, 1, EDGEFLAG_DIRECTION_OUTONLY}, {1, 2, 0}}}};
     size_t index = 0;
+
+    gp_Message("Running GraphML reader accept cases tests.");
 
     for (index = 0; index < sizeof(acceptCases) / sizeof(acceptCases[0]); index++)
     {
@@ -293,217 +306,184 @@ static int runGraphMLRejectTests(void)
         {"missing namespace", "<graphml>" GRAPHML_GRAPH_OPEN GRAPHML_VALID_BODY "</graph>"},
         {"wrong namespace", "<graphml xmlns='wrong'>" GRAPHML_GRAPH_OPEN GRAPHML_VALID_BODY "</graph>"},
         {"schema location without xsi namespace",
-         "<graphml xmlns='" GRAPHML_XMLNS "' xsi:schemaLocation='value'>"
-         GRAPHML_GRAPH_OPEN GRAPHML_VALID_BODY "</graph>"},
-        {"graphml attribute", "<graphml xmlns='" GRAPHML_XMLNS "' extra='no'>"
-                              GRAPHML_GRAPH_OPEN GRAPHML_VALID_BODY "</graph>"},
+         "<graphml xmlns='" GRAPHML_XMLNS "' xsi:schemaLocation='value'>" GRAPHML_GRAPH_OPEN GRAPHML_VALID_BODY "</graph>"},
+        {"graphml attribute", "<graphml xmlns='" GRAPHML_XMLNS "' extra='no'>" GRAPHML_GRAPH_OPEN GRAPHML_VALID_BODY "</graph>"},
         {"graph attribute", GRAPHML_ROOT_OPEN
-                            "<graph extra='no' edgedefault='undirected' "
-                            "parse.nodeids='canonical' parse.edgeids='canonical' "
-                            "parse.order='nodesfirst'>" GRAPHML_VALID_BODY "</graph>"},
+         "<graph extra='no' edgedefault='undirected' "
+         "parse.nodeids='canonical' parse.edgeids='canonical' "
+         "parse.order='nodesfirst'>" GRAPHML_VALID_BODY "</graph>"},
         {"node attribute", GRAPHML_ROOT_OPEN GRAPHML_GRAPH_OPEN
-                           "<node id='n0' extra='no'/><node id='n1'/>"
-                           "<edge source='n0' target='n1'/></graph>"},
+         "<node id='n0' extra='no'/><node id='n1'/>"
+         "<edge source='n0' target='n1'/></graph>"},
         {"edge attribute", GRAPHML_ROOT_OPEN GRAPHML_GRAPH_OPEN
-                           "<node id='n0'/><node id='n1'/>"
-                           "<edge source='n0' target='n1' extra='no'/></graph>"},
+         "<node id='n0'/><node id='n1'/>"
+         "<edge source='n0' target='n1' extra='no'/></graph>"},
         {"key attribute", GRAPHML_ROOT_OPEN
-                          "<key id='graphflags_zerobasedio' for='graph' "
-                          "attr.name='graphflags_zerobasedio' attr.type='boolean' extra='no'/>"
-                          GRAPHML_GRAPH_OPEN GRAPHML_VALID_BODY "</graph>"},
+         "<key id='graphflags_zerobasedio' for='graph' "
+         "attr.name='graphflags_zerobasedio' attr.type='boolean' extra='no'/>" GRAPHML_GRAPH_OPEN GRAPHML_VALID_BODY "</graph>"},
         {"data attribute", GRAPHML_ROOT_OPEN
-                           "<key id='graphflags_zerobasedio' for='graph' "
-                           "attr.name='graphflags_zerobasedio' attr.type='boolean'/>"
-                           GRAPHML_GRAPH_OPEN "<data key='graphflags_zerobasedio' extra='no'>true</data>"
-                           GRAPHML_VALID_BODY "</graph>"},
-        {"unsupported graphml child", GRAPHML_ROOT_OPEN "<bogus/>" GRAPHML_GRAPH_OPEN
-                                       GRAPHML_VALID_BODY "</graph>"},
-        {"unsupported graph child", GRAPHML_ROOT_OPEN GRAPHML_GRAPH_OPEN "<bogus/>"
-                                     GRAPHML_VALID_BODY "</graph>"},
+         "<key id='graphflags_zerobasedio' for='graph' "
+         "attr.name='graphflags_zerobasedio' attr.type='boolean'/>" GRAPHML_GRAPH_OPEN "<data key='graphflags_zerobasedio' extra='no'>true</data>" GRAPHML_VALID_BODY "</graph>"},
+        {"unsupported graphml child", GRAPHML_ROOT_OPEN "<bogus/>" GRAPHML_GRAPH_OPEN GRAPHML_VALID_BODY "</graph>"},
+        {"unsupported graph child", GRAPHML_ROOT_OPEN GRAPHML_GRAPH_OPEN "<bogus/>" GRAPHML_VALID_BODY "</graph>"},
         {"unsupported node child", GRAPHML_ROOT_OPEN GRAPHML_GRAPH_OPEN
-                                    "<node id='n0'><bogus/></node><node id='n1'/>"
-                                    "<edge source='n0' target='n1'/></graph>"},
+         "<node id='n0'><bogus/></node><node id='n1'/>"
+         "<edge source='n0' target='n1'/></graph>"},
         {"unsupported edge child", GRAPHML_ROOT_OPEN GRAPHML_GRAPH_OPEN
-                                    "<node id='n0'/><node id='n1'/>"
-                                    "<edge source='n0' target='n1'><bogus/></edge></graph>"},
+         "<node id='n0'/><node id='n1'/>"
+         "<edge source='n0' target='n1'><bogus/></edge></graph>"},
         {"unsupported key child", GRAPHML_ROOT_OPEN
-                                   "<key id='graphflags_zerobasedio' for='graph' "
-                                   "attr.name='graphflags_zerobasedio' attr.type='boolean'>"
-                                   "<bogus/></key>" GRAPHML_GRAPH_OPEN GRAPHML_VALID_BODY "</graph>"},
+         "<key id='graphflags_zerobasedio' for='graph' "
+         "attr.name='graphflags_zerobasedio' attr.type='boolean'>"
+         "<bogus/></key>" GRAPHML_GRAPH_OPEN GRAPHML_VALID_BODY "</graph>"},
         {"unsupported data child", GRAPHML_ROOT_OPEN
-                                    "<key id='graphflags_zerobasedio' for='graph' "
-                                    "attr.name='graphflags_zerobasedio' attr.type='boolean'/>"
-                                    GRAPHML_GRAPH_OPEN
-                                    "<data key='graphflags_zerobasedio'><bogus/></data>"
-                                    GRAPHML_VALID_BODY "</graph>"},
+         "<key id='graphflags_zerobasedio' for='graph' "
+         "attr.name='graphflags_zerobasedio' attr.type='boolean'/>" GRAPHML_GRAPH_OPEN
+         "<data key='graphflags_zerobasedio'><bogus/></data>" GRAPHML_VALID_BODY "</graph>"},
         {"unsupported key id", GRAPHML_ROOT_OPEN
-                               "<key id='other' for='graph' attr.name='graphflags_zerobasedio' "
-                               "attr.type='boolean'/>" GRAPHML_GRAPH_OPEN GRAPHML_VALID_BODY "</graph>"},
+         "<key id='other' for='graph' attr.name='graphflags_zerobasedio' "
+         "attr.type='boolean'/>" GRAPHML_GRAPH_OPEN GRAPHML_VALID_BODY "</graph>"},
         {"unsupported key for", GRAPHML_ROOT_OPEN
-                                "<key id='graphflags_zerobasedio' for='node' "
-                                "attr.name='graphflags_zerobasedio' attr.type='boolean'/>"
-                                GRAPHML_GRAPH_OPEN GRAPHML_VALID_BODY "</graph>"},
+         "<key id='graphflags_zerobasedio' for='node' "
+         "attr.name='graphflags_zerobasedio' attr.type='boolean'/>" GRAPHML_GRAPH_OPEN GRAPHML_VALID_BODY "</graph>"},
         {"unsupported key name", GRAPHML_ROOT_OPEN
-                                 "<key id='graphflags_zerobasedio' for='graph' "
-                                 "attr.name='other' attr.type='boolean'/>"
-                                 GRAPHML_GRAPH_OPEN GRAPHML_VALID_BODY "</graph>"},
+         "<key id='graphflags_zerobasedio' for='graph' "
+         "attr.name='other' attr.type='boolean'/>" GRAPHML_GRAPH_OPEN GRAPHML_VALID_BODY "</graph>"},
         {"unsupported key type", GRAPHML_ROOT_OPEN
-                                 "<key id='graphflags_zerobasedio' for='graph' "
-                                 "attr.name='graphflags_zerobasedio' attr.type='string'/>"
-                                 GRAPHML_GRAPH_OPEN GRAPHML_VALID_BODY "</graph>"},
+         "<key id='graphflags_zerobasedio' for='graph' "
+         "attr.name='graphflags_zerobasedio' attr.type='string'/>" GRAPHML_GRAPH_OPEN GRAPHML_VALID_BODY "</graph>"},
         {"second key", GRAPHML_ROOT_OPEN
-                       "<key id='graphflags_zerobasedio' for='graph' "
-                       "attr.name='graphflags_zerobasedio' attr.type='boolean'/>"
-                       "<key id='graphflags_zerobasedio' for='graph' "
-                       "attr.name='graphflags_zerobasedio' attr.type='boolean'/>"
-                       GRAPHML_GRAPH_OPEN GRAPHML_VALID_BODY "</graph>"},
+         "<key id='graphflags_zerobasedio' for='graph' "
+         "attr.name='graphflags_zerobasedio' attr.type='boolean'/>"
+         "<key id='graphflags_zerobasedio' for='graph' "
+         "attr.name='graphflags_zerobasedio' attr.type='boolean'/>" GRAPHML_GRAPH_OPEN GRAPHML_VALID_BODY "</graph>"},
         {"unsupported data key", GRAPHML_ROOT_OPEN
-                                 "<key id='graphflags_zerobasedio' for='graph' "
-                                 "attr.name='graphflags_zerobasedio' attr.type='boolean'/>"
-                                 GRAPHML_GRAPH_OPEN "<data key='other'>true</data>"
-                                 GRAPHML_VALID_BODY "</graph>"},
+         "<key id='graphflags_zerobasedio' for='graph' "
+         "attr.name='graphflags_zerobasedio' attr.type='boolean'/>" GRAPHML_GRAPH_OPEN "<data key='other'>true</data>" GRAPHML_VALID_BODY "</graph>"},
         {"non-boolean graph data", GRAPHML_ROOT_OPEN
-                                    "<key id='graphflags_zerobasedio' for='graph' "
-                                    "attr.name='graphflags_zerobasedio' attr.type='boolean'/>"
-                                    GRAPHML_GRAPH_OPEN
-                                    "<data key='graphflags_zerobasedio'>perhaps</data>"
-                                    GRAPHML_VALID_BODY "</graph>"},
+         "<key id='graphflags_zerobasedio' for='graph' "
+         "attr.name='graphflags_zerobasedio' attr.type='boolean'/>" GRAPHML_GRAPH_OPEN
+         "<data key='graphflags_zerobasedio'>perhaps</data>" GRAPHML_VALID_BODY "</graph>"},
         {"edgedefault", GRAPHML_ROOT_OPEN
-                        "<graph edgedefault='sometimes' parse.nodeids='canonical' "
-                        "parse.edgeids='canonical' parse.order='nodesfirst'>"
-                        GRAPHML_VALID_BODY "</graph>"},
+         "<graph edgedefault='sometimes' parse.nodeids='canonical' "
+         "parse.edgeids='canonical' parse.order='nodesfirst'>" GRAPHML_VALID_BODY "</graph>"},
         {"parse.nodeids", GRAPHML_ROOT_OPEN
-                          "<graph edgedefault='undirected' parse.nodeids='free' "
-                          "parse.edgeids='canonical' parse.order='nodesfirst'>"
-                          GRAPHML_VALID_BODY "</graph>"},
+         "<graph edgedefault='undirected' parse.nodeids='free' "
+         "parse.edgeids='canonical' parse.order='nodesfirst'>" GRAPHML_VALID_BODY "</graph>"},
         {"parse.edgeids", GRAPHML_ROOT_OPEN
-                          "<graph edgedefault='undirected' parse.nodeids='canonical' "
-                          "parse.edgeids='free' parse.order='nodesfirst'>"
-                          GRAPHML_VALID_BODY "</graph>"},
+         "<graph edgedefault='undirected' parse.nodeids='canonical' "
+         "parse.edgeids='free' parse.order='nodesfirst'>" GRAPHML_VALID_BODY "</graph>"},
         {"parse.order", GRAPHML_ROOT_OPEN
-                        "<graph edgedefault='undirected' parse.nodeids='canonical' "
-                        "parse.edgeids='canonical' parse.order='free'>"
-                        GRAPHML_VALID_BODY "</graph>"},
+         "<graph edgedefault='undirected' parse.nodeids='canonical' "
+         "parse.edgeids='canonical' parse.order='free'>" GRAPHML_VALID_BODY "</graph>"},
         {"parse.nodes malformed", GRAPHML_ROOT_OPEN
-                                  "<graph edgedefault='undirected' parse.nodes='two' "
-                                  "parse.nodeids='canonical' parse.edgeids='canonical' "
-                                  "parse.order='nodesfirst'>" GRAPHML_VALID_BODY "</graph>"},
+         "<graph edgedefault='undirected' parse.nodes='two' "
+         "parse.nodeids='canonical' parse.edgeids='canonical' "
+         "parse.order='nodesfirst'>" GRAPHML_VALID_BODY "</graph>"},
         {"parse.edges malformed", GRAPHML_ROOT_OPEN
-                                  "<graph edgedefault='undirected' parse.edges='one' "
-                                  "parse.nodeids='canonical' parse.edgeids='canonical' "
-                                  "parse.order='nodesfirst'>" GRAPHML_VALID_BODY "</graph>"},
+         "<graph edgedefault='undirected' parse.edges='one' "
+         "parse.nodeids='canonical' parse.edgeids='canonical' "
+         "parse.order='nodesfirst'>" GRAPHML_VALID_BODY "</graph>"},
         {"parse.nodes mismatch", GRAPHML_ROOT_OPEN
-                                 "<graph edgedefault='undirected' parse.nodes='3' "
-                                 "parse.nodeids='canonical' parse.edgeids='canonical' "
-                                 "parse.order='nodesfirst'>" GRAPHML_VALID_BODY "</graph>"},
+         "<graph edgedefault='undirected' parse.nodes='3' "
+         "parse.nodeids='canonical' parse.edgeids='canonical' "
+         "parse.order='nodesfirst'>" GRAPHML_VALID_BODY "</graph>"},
         {"parse.edges mismatch", GRAPHML_ROOT_OPEN
-                                 "<graph edgedefault='undirected' parse.edges='2' "
-                                 "parse.nodeids='canonical' parse.edgeids='canonical' "
-                                 "parse.order='nodesfirst'>" GRAPHML_VALID_BODY "</graph>"},
+         "<graph edgedefault='undirected' parse.edges='2' "
+         "parse.nodeids='canonical' parse.edgeids='canonical' "
+         "parse.order='nodesfirst'>" GRAPHML_VALID_BODY "</graph>"},
         {"noncanonical node id", GRAPHML_ROOT_OPEN GRAPHML_GRAPH_OPEN
-                                 "<node id='node0'/><node id='n1'/>"
-                                 "<edge source='n0' target='n1'/></graph>"},
+         "<node id='node0'/><node id='n1'/>"
+         "<edge source='n0' target='n1'/></graph>"},
         {"nonsequential node id", GRAPHML_ROOT_OPEN GRAPHML_GRAPH_OPEN
-                                  "<node id='n0'/><node id='n2'/>"
-                                  "<edge source='n0' target='n1'/></graph>"},
+         "<node id='n0'/><node id='n2'/>"
+         "<edge source='n0' target='n1'/></graph>"},
         {"noncanonical edge id", GRAPHML_ROOT_OPEN GRAPHML_GRAPH_OPEN
-                                 "<node id='n0'/><node id='n1'/>"
-                                 "<edge id='edge0' source='n0' target='n1'/></graph>"},
+         "<node id='n0'/><node id='n1'/>"
+         "<edge id='edge0' source='n0' target='n1'/></graph>"},
         {"nonsequential edge id", GRAPHML_ROOT_OPEN
-                                  "<graph edgedefault='undirected' parse.nodeids='canonical' "
-                                  "parse.edgeids='canonical' parse.order='nodesfirst'>"
-                                  "<node id='n0'/><node id='n1'/><node id='n2'/>"
-                                  "<edge id='e0' source='n0' target='n1'/>"
-                                  "<edge id='e2' source='n1' target='n2'/></graph>"},
+         "<graph edgedefault='undirected' parse.nodeids='canonical' "
+         "parse.edgeids='canonical' parse.order='nodesfirst'>"
+         "<node id='n0'/><node id='n1'/><node id='n2'/>"
+         "<edge id='e0' source='n0' target='n1'/>"
+         "<edge id='e2' source='n1' target='n2'/></graph>"},
         {"node after edge", GRAPHML_ROOT_OPEN GRAPHML_GRAPH_OPEN
-                            "<node id='n0'/><node id='n1'/>"
-                            "<edge source='n0' target='n1'/><node id='n2'/></graph>"},
+         "<node id='n0'/><node id='n1'/>"
+         "<edge source='n0' target='n1'/><node id='n2'/></graph>"},
         {"data after node", GRAPHML_ROOT_OPEN
-                            "<key id='graphflags_zerobasedio' for='graph' "
-                            "attr.name='graphflags_zerobasedio' attr.type='boolean'/>"
-                            GRAPHML_GRAPH_OPEN "<node id='n0'/><node id='n1'/>"
-                            "<data key='graphflags_zerobasedio'>true</data>"
-                            "<edge source='n0' target='n1'/></graph>"},
+         "<key id='graphflags_zerobasedio' for='graph' "
+         "attr.name='graphflags_zerobasedio' attr.type='boolean'/>" GRAPHML_GRAPH_OPEN "<node id='n0'/><node id='n1'/>"
+         "<data key='graphflags_zerobasedio'>true</data>"
+         "<edge source='n0' target='n1'/></graph>"},
         {"source is not canonical", GRAPHML_ROOT_OPEN GRAPHML_GRAPH_OPEN
-                                    "<node id='n0'/><node id='n1'/>"
-                                    "<edge source='xyz' target='n1'/></graph>"},
+         "<node id='n0'/><node id='n1'/>"
+         "<edge source='xyz' target='n1'/></graph>"},
         {"source is outside graph", GRAPHML_ROOT_OPEN GRAPHML_GRAPH_OPEN
-                                    "<node id='n0'/><node id='n1'/>"
-                                    "<edge source='n1000' target='n1'/></graph>"},
+         "<node id='n0'/><node id='n1'/>"
+         "<edge source='n1000' target='n1'/></graph>"},
         {"target is not canonical", GRAPHML_ROOT_OPEN GRAPHML_GRAPH_OPEN
-                                    "<node id='n0'/><node id='n1'/>"
-                                    "<edge source='n0' target='xyz'/></graph>"},
+         "<node id='n0'/><node id='n1'/>"
+         "<edge source='n0' target='xyz'/></graph>"},
         {"target is outside graph", GRAPHML_ROOT_OPEN GRAPHML_GRAPH_OPEN
-                                    "<node id='n0'/><node id='n1'/>"
-                                    "<edge source='n0' target='n1000'/></graph>"},
+         "<node id='n0'/><node id='n1'/>"
+         "<edge source='n0' target='n1000'/></graph>"},
         {"directed value", GRAPHML_ROOT_OPEN GRAPHML_GRAPH_OPEN
-                           "<node id='n0'/><node id='n1'/>"
-                           "<edge source='n0' target='n1' directed='1'/></graph>"},
+         "<node id='n0'/><node id='n1'/>"
+         "<edge source='n0' target='n1' directed='1'/></graph>"},
         {"raw less-than in attribute", "<graphml xmlns='" GRAPHML_XMLNS
-                                         "' testencoding='bad < value'>"
-                                         GRAPHML_GRAPH_OPEN GRAPHML_VALID_BODY "</graph>"},
+                                       "' testencoding='bad < value'>" GRAPHML_GRAPH_OPEN GRAPHML_VALID_BODY "</graph>"},
         {"raw ampersand in attribute", "<graphml xmlns='" GRAPHML_XMLNS
-                                         "' testencoding='bad & value'>"
-                                         GRAPHML_GRAPH_OPEN GRAPHML_VALID_BODY "</graph>"},
+                                       "' testencoding='bad & value'>" GRAPHML_GRAPH_OPEN GRAPHML_VALID_BODY "</graph>"},
         {"unknown entity", "<graphml xmlns='" GRAPHML_XMLNS
-                            "' testencoding='bad &unknown; value'>"
-                            GRAPHML_GRAPH_OPEN GRAPHML_VALID_BODY "</graph>"},
+                           "' testencoding='bad &unknown; value'>" GRAPHML_GRAPH_OPEN GRAPHML_VALID_BODY "</graph>"},
         {"single quote in single-quoted value", "<graphml xmlns='" GRAPHML_XMLNS
-                                                  "' testencoding='bad ' quote'>"
-                                                  GRAPHML_GRAPH_OPEN GRAPHML_VALID_BODY "</graph>"},
+                                                "' testencoding='bad ' quote'>" GRAPHML_GRAPH_OPEN GRAPHML_VALID_BODY "</graph>"},
         {"double quote in double-quoted value", "<graphml xmlns='" GRAPHML_XMLNS
-                                                  "' testencoding=\"bad \" quote\">"
-                                                  GRAPHML_GRAPH_OPEN GRAPHML_VALID_BODY "</graph>"},
+                                                "' testencoding=\"bad \" quote\">" GRAPHML_GRAPH_OPEN GRAPHML_VALID_BODY "</graph>"},
         {"bad UTF-8 C2 continuation", "<graphml xmlns='" GRAPHML_XMLNS
-                                       "' testencoding='\xC2\x7F'>"
-                                       GRAPHML_GRAPH_OPEN GRAPHML_VALID_BODY "</graph>"},
+                                      "' testencoding='\xC2\x7F'>" GRAPHML_GRAPH_OPEN GRAPHML_VALID_BODY "</graph>"},
         {"bad UTF-8 C3 continuation", "<graphml xmlns='" GRAPHML_XMLNS
-                                       "' testencoding='\xC3\x7F'>"
-                                       GRAPHML_GRAPH_OPEN GRAPHML_VALID_BODY "</graph>"},
+                                      "' testencoding='\xC3\x7F'>" GRAPHML_GRAPH_OPEN GRAPHML_VALID_BODY "</graph>"},
         {"unsupported UTF-8 lead byte", "<graphml xmlns='" GRAPHML_XMLNS
-                                          "' testencoding='\xC4\x80'>"
-                                          GRAPHML_GRAPH_OPEN GRAPHML_VALID_BODY "</graph>"},
+                                        "' testencoding='\xC4\x80'>" GRAPHML_GRAPH_OPEN GRAPHML_VALID_BODY "</graph>"},
         {"UTF-8 BOM conflicts with declaration",
-         "\xEF\xBB\xBF<?xml version='1.0' encoding='ISO-8859-1'?>"
-         GRAPHML_VALID_DOCUMENT},
+         "\xEF\xBB\xBF<?xml version='1.0' encoding='ISO-8859-1'?>" GRAPHML_VALID_DOCUMENT},
         {"UTF-16 big-endian BOM", "\xFE\xFF\x00\x3C"},
         {"UTF-16 little-endian BOM", "\xFF\xFE\x3C\x00"},
         {"EBCDIC signature", "\x4C\x6F\xA7\x94"},
         {"truncated graphml start tag", "<graphm"},
         {"truncated key start tag", GRAPHML_ROOT_OPEN "<ke"},
         {"truncated default start tag", GRAPHML_ROOT_OPEN
-                                        "<key id='graphflags_zerobasedio' for='graph' "
-                                        "attr.name='graphflags_zerobasedio' attr.type='boolean'><defaul"}, // codespell:ignore defaul
-        {"truncated graph start tag", GRAPHML_ROOT_OPEN "<grap"}, // codespell:ignore grap
+         "<key id='graphflags_zerobasedio' for='graph' "
+         "attr.name='graphflags_zerobasedio' attr.type='boolean'><defaul"}, // codespell:ignore defaul
+        {"truncated graph start tag", GRAPHML_ROOT_OPEN "<grap"},           // codespell:ignore grap
         {"truncated data start tag", GRAPHML_ROOT_OPEN
-                                     "<key id='graphflags_zerobasedio' for='graph' "
-                                     "attr.name='graphflags_zerobasedio' attr.type='boolean'/>"
-                                     GRAPHML_GRAPH_OPEN "<dat"},
+         "<key id='graphflags_zerobasedio' for='graph' "
+         "attr.name='graphflags_zerobasedio' attr.type='boolean'/>" GRAPHML_GRAPH_OPEN "<dat"},
         {"truncated node start tag", GRAPHML_ROOT_OPEN GRAPHML_GRAPH_OPEN "<nod"},
         {"truncated edge start tag", GRAPHML_ROOT_OPEN GRAPHML_GRAPH_OPEN
-                                     "<node id='n0'/><node id='n1'/><edg"},
+         "<node id='n0'/><node id='n1'/><edg"},
         {"truncated key end tag", GRAPHML_ROOT_OPEN
-                                  "<key id='graphflags_zerobasedio' for='graph' "
-                                  "attr.name='graphflags_zerobasedio' attr.type='boolean'>"
-                                  "<default>true</default></key"},
+         "<key id='graphflags_zerobasedio' for='graph' "
+         "attr.name='graphflags_zerobasedio' attr.type='boolean'>"
+         "<default>true</default></key"},
         {"truncated default end tag", GRAPHML_ROOT_OPEN
-                                      "<key id='graphflags_zerobasedio' for='graph' "
-                                      "attr.name='graphflags_zerobasedio' attr.type='boolean'>"
-                                      "<default>true</defaul"}, // codespell:ignore defaul
-        {"truncated graph end tag", GRAPHML_ROOT_OPEN GRAPHML_GRAPH_OPEN
-                                    GRAPHML_VALID_BODY "</grap"}, // codespell:ignore grap
+         "<key id='graphflags_zerobasedio' for='graph' "
+         "attr.name='graphflags_zerobasedio' attr.type='boolean'>"
+         "<default>true</defaul"},                                                                     // codespell:ignore defaul
+        {"truncated graph end tag", GRAPHML_ROOT_OPEN GRAPHML_GRAPH_OPEN GRAPHML_VALID_BODY "</grap"}, // codespell:ignore grap
         {"truncated data end tag", GRAPHML_ROOT_OPEN
-                                   "<key id='graphflags_zerobasedio' for='graph' "
-                                   "attr.name='graphflags_zerobasedio' attr.type='boolean'/>"
-                                   GRAPHML_GRAPH_OPEN
-                                   "<data key='graphflags_zerobasedio'>true</dat"},
+         "<key id='graphflags_zerobasedio' for='graph' "
+         "attr.name='graphflags_zerobasedio' attr.type='boolean'/>" GRAPHML_GRAPH_OPEN
+         "<data key='graphflags_zerobasedio'>true</dat"},
         {"truncated node end tag", GRAPHML_ROOT_OPEN GRAPHML_GRAPH_OPEN
-                                   "<node id='n0'></nod"},
+         "<node id='n0'></nod"},
         {"truncated edge end tag", GRAPHML_ROOT_OPEN GRAPHML_GRAPH_OPEN
-                                   "<node id='n0'/><node id='n1'/>"
-                                   "<edge source='n0' target='n1'></edg"}
-    };
+         "<node id='n0'/><node id='n1'/>"
+         "<edge source='n0' target='n1'></edg"}};
     size_t index = 0;
+
+    gp_Message("Running GraphML reader reject cases tests.");
 
     for (index = 0; index < sizeof(rejectCases) / sizeof(rejectCases[0]); index++)
     {
@@ -517,6 +497,8 @@ static int runGraphMLRejectTests(void)
 static int runGraphMLControlCharacterTests(void)
 {
     unsigned int character = 0;
+
+    gp_Message("Running GraphML reader reject control characters test.");
 
     for (character = 0x01; character <= 0x1F; character++)
     {
@@ -570,17 +552,18 @@ int runGraphMLTests(void)
         gp_ErrorMessage("Basic GraphML write test failed.");
         Result = NOTOK;
     }
-    else if (runBasicGraphMLReadTest() != OK)
+    if (runBasicGraphMLReadTest() != OK)
     {
         gp_ErrorMessage("Basic GraphML read test failed.");
         Result = NOTOK;
     }
-    else if (runGraphMLReaderStringTests() != OK)
+    if (runGraphMLReaderStringTests() != OK)
     {
         gp_ErrorMessage("GraphML reader string test failed.");
         Result = NOTOK;
     }
-    else
+
+    if (Result == OK)
         gp_Message("Finished GraphML Tests.\n");
 
     return Result;
