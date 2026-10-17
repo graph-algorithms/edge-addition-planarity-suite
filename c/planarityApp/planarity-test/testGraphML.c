@@ -143,6 +143,7 @@ static int runGraphMLAcceptTest(GraphMLAcceptCase const *testCase)
     int Result = OK;
     int edgeIndex = 0;
     int vertexOffset = 0;
+    int edge = NIL;
 
     if (G == NULL || inputCopy == NULL || gp_ReadFromString(G, inputCopy) != OK)
         Result = NOTOK;
@@ -156,9 +157,20 @@ static int runGraphMLAcceptTest(GraphMLAcceptCase const *testCase)
         vertexOffset = gp_LowerBoundVertexStorage(G);
         for (edgeIndex = 0; edgeIndex < testCase->size; edgeIndex++)
         {
-            int edge = gp_FindEdge(G,
+            if (testCase->edges[edgeIndex].direction == 0)
+            {
+                edge = gp_FindEdge(G,
                                    vertexOffset + testCase->edges[edgeIndex].source,
                                    vertexOffset + testCase->edges[edgeIndex].target);
+            }
+            else
+            {
+                edge = gp_FindDirectedEdge(G,
+                                           vertexOffset + testCase->edges[edgeIndex].source,
+                                           vertexOffset + testCase->edges[edgeIndex].target,
+                                           testCase->edges[edgeIndex].direction);
+            }
+
             if (edge == NIL ||
                 gp_GetDirection(G, edge) != testCase->edges[edgeIndex].direction)
             {
@@ -286,7 +298,7 @@ static int runGraphMLAcceptTests(void)
          3,
          2,
          FALSE,
-         {{0, 1, EDGEFLAG_DIRECTION_OUTONLY}, {1, 2, 0}}}};
+         {{1, 0, EDGEFLAG_DIRECTION_INONLY}, {1, 2, 0}}}};
     size_t index = 0;
 
     gp_Message("Running GraphML reader accept cases tests.");
@@ -408,7 +420,7 @@ static int runGraphMLRejectTests(void)
          "<graph edgedefault='undirected' parse.nodeids='canonical' "
          "parse.edgeids='free-for-all' parse.order='nodesfirst'>" GRAPHML_VALID_BODY "</graph>"},
 
-        {"Usupported parse.order attribute value", GRAPHML_ROOT_OPEN
+        {"Unsupported parse.order attribute value", GRAPHML_ROOT_OPEN
          "<graph edgedefault='undirected' parse.nodeids='canonical' "
          "parse.edgeids='canonical' parse.order='free-for-all'>" GRAPHML_VALID_BODY "</graph>"},
 
