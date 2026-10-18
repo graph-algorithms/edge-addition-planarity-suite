@@ -4,17 +4,18 @@ All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "../lowLevelUtils/apiutils.h"
 #include "strOrFile.h"
+#include "../graph.h"
 
 #include "gp-read-iterator.h"
 #include "g6-read-iterator.h"
 #include "s6-read-iterator.h"
 #include "d6-read-iterator.h"
-
-#include "../lowLevelUtils/apiutils.h"
 
 /* Imported functions */
 extern int _g6_InitReaderWithStrOrFile(G6ReadIteratorP theG6ReadIterator, strOrFileP *pInputContainer);
@@ -26,6 +27,14 @@ int _gp_IsReaderInitialized(GPReadIteratorP theGPReadIterator);
 int _gp_SetFileType(GPReadIteratorP theGPReadIterator, char const *const firstLine);
 int _gp_NewChildReader(GPReadIteratorP theGPReadIterator);
 void _gp_FreeChildReader(GPReadIteratorP theGPReadIterator);
+
+// The formats a read iterator can be reading. The type is decided from the
+// first line of the input when the iterator is initialized, and the other
+// methods dispatch on it.
+#define GP_FILE_TYPE_UNKNOWN 0
+#define GP_FILE_TYPE_G6 1
+#define GP_FILE_TYPE_S6 2
+#define GP_FILE_TYPE_D6 3
 
 /********************************************************************
  Package private structure declaration for the read iterator

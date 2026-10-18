@@ -40,7 +40,7 @@ int TransformGraph(char const *const commandString, char const *const infileName
     if (commandString[0] == '-')
     {
         if (commandString[1] == 'g')
-            outputFormat = WRITE_G6;
+            outputFormat = WRITE_GRAPH6;
         else if (commandString[1] == 's')
             outputFormat = WRITE_SPARSE6;
         else if (commandString[1] == 'd')
@@ -72,7 +72,7 @@ int TransformGraph(char const *const commandString, char const *const infileName
             // the input did, and the text formats follow the input
             if (outputBase != NULL)
             {
-                if (outputFormat == WRITE_G6 || outputFormat == WRITE_SPARSE6 || outputFormat == WRITE_DIGRAPH6)
+                if (outputFormat == WRITE_GRAPH6 || outputFormat == WRITE_SPARSE6 || outputFormat == WRITE_DIGRAPH6)
                     (*outputBase) = 1;
                 else
                     (*outputBase) = (gp_GetGraphFlags(theGraph) & GRAPHFLAGS_ZEROBASEDIO) ? 1 : 0;

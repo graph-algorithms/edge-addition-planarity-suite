@@ -841,8 +841,6 @@ int testDigraph6Iterators(void)
 
     while (Result == OK)
     {
-        int embedResult = NOTOK;
-
         if (d6_ReadGraph(theD6Reader) != OK)
             Result = NOTOK;
         else if (d6_EndReached(theD6Reader))
@@ -875,9 +873,10 @@ int testDigraph6Iterators(void)
 
             if (Result == OK)
             {
-                embedResult = gp_Embed(theEmbedding, EMBEDFLAGS_PLANAR);
+                int embedResult = gp_Embed(theEmbedding, EMBEDFLAGS_PLANAR);
 
-                if (embedResult == NOTOK || gp_TestEmbedResultIntegrity(theEmbedding, theGraph, embedResult) != embedResult)
+                if ((embedResult != OK && embedResult != NONEMBEDDABLE) ||
+                    gp_TestEmbedResultIntegrity(theEmbedding, theGraph, embedResult) != embedResult)
                 {
                     gp_ErrorMessage("Embedding graph %d read from digraph6 failed.", numRead + 1);
                     Result = NOTOK;

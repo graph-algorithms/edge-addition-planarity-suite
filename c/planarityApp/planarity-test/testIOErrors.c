@@ -899,7 +899,7 @@ static int testCloseFailures(void)
         if (failOnClose && access("/dev/full", W_OK) == 0)
         {
             char *dir = NULL, *link = NULL;
-            int const modes[] = {WRITE_ADJLIST, WRITE_ADJMATRIX, WRITE_G6, WRITE_GRAPHML, WRITE_SPARSE6, WRITE_DIGRAPH6};
+            int const modes[] = {WRITE_ADJLIST, WRITE_ADJMATRIX, WRITE_GRAPH6, WRITE_GRAPHML, WRITE_SPARSE6, WRITE_DIGRAPH6};
 
             CHECK(makeTestTempDir(&dir) == OK);
             if (dir != NULL)

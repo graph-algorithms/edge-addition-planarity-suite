@@ -20,14 +20,15 @@ extern "C"
     int gp_Write(graphP theGraph, char const *fileName, int writeMode);
     int gp_WriteToString(graphP theGraph, char **pOutputStr, int writeMode);
 
-// Mode values for gp_Write() and gp_WriteToString()
+// The valid writeMode parameter values for gp_Write() and gp_WriteToString()
 #define WRITE_ADJLIST 1
 #define WRITE_ADJMATRIX 2
 #define WRITE_DEBUGINFO 3
 #define WRITE_G6 4
-#define WRITE_GRAPHML 5
-#define WRITE_SPARSE6 6
-#define WRITE_DIGRAPH6 7
+#define WRITE_GRAPH6 WRITE_G6
+#define WRITE_SPARSE6 5
+#define WRITE_DIGRAPH6 6
+#define WRITE_GRAPHML 7
 
 // Graph Flags: see gp_GetGraphFlags()
 //       GRAPHFLAGS_ZEROBASEDIO is typically set by gp_Read() to indicate that the

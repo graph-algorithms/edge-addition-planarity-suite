@@ -1034,7 +1034,7 @@ int runGeneralReadIteratorTests(void)
             Result = NOTOK;
         }
         else if (gp_WriteToString(theGraph, (&actualEncoding),
-                                  acceptCases[i][1][0] == '&' ? WRITE_DIGRAPH6 : WRITE_G6) != OK ||
+                                  acceptCases[i][1][0] == '&' ? WRITE_DIGRAPH6 : WRITE_GRAPH6) != OK ||
                  actualEncoding == NULL ||
                  strncmp(actualEncoding + strlen(acceptCases[i][1][0] == '&' ? d6Header : g6Header),
                          acceptCases[i][1], strlen(acceptCases[i][1])) != 0)
@@ -1171,7 +1171,7 @@ int runGeneralReadIteratorTests(void)
                 gp_ErrorMessage("Unable to read the first graph of \"%s\".", fileCases[i][0]);
                 Result = NOTOK;
             }
-            else if (gp_WriteToString(theGraph, (&actualEncoding), WRITE_G6) != OK ||
+            else if (gp_WriteToString(theGraph, (&actualEncoding), WRITE_GRAPH6) != OK ||
                      actualEncoding == NULL ||
                      strncmp(actualEncoding + strlen(g6Header), fileCases[i][1],
                              strlen(fileCases[i][1])) != 0)
@@ -2559,7 +2559,7 @@ int testPetersenDigraph(void)
     if (gp_DepthFirstSearch(G) != OK ||
         gp_ComputeLowpoints(G) == OK ||
         gp_ComputeLeastAncestors(G) == OK ||
-        gp_WriteToString(G, &dummyStr, WRITE_G6) == OK ||
+        gp_WriteToString(G, &dummyStr, WRITE_GRAPH6) == OK ||
         gp_WriteToString(G, &dummyStr, WRITE_ADJMATRIX) == OK)
     {
         gp_SetQuietMode(quietModeCache);
