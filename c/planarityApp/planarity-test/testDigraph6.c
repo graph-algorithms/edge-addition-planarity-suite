@@ -9,6 +9,9 @@ See the LICENSE.TXT file for licensing information.
 
 #include "../planarity.h"
 
+#include "../../graphLib/io/d6-read-iterator.h"
+#include "../../graphLib/io/d6-write-iterator.h"
+
 /* Called from planarityCommandLine.c */
 int testPetersenDigraph6(void);
 int testDigraph6Iterators(void);

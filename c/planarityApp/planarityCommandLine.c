@@ -5,7 +5,16 @@ See the LICENSE.TXT file for licensing information.
 */
 
 #include "planarity.h"
+
+// TODO: These need to be removed as part of moving the gp iterator testing
+//       to a separate source file in planarity-test
 #include "../graphLib/io/strOrFile.h"
+#include "../graphLib/io/g6-read-iterator.h"
+#include "../graphLib/io/g6-write-iterator.h"
+#include "../graphLib/io/s6-read-iterator.h"
+#include "../graphLib/io/s6-write-iterator.h"
+#include "../graphLib/io/d6-read-iterator.h"
+#include "../graphLib/io/d6-write-iterator.h"
 
 #if defined(_MSC_VER) && !defined(__llvm__) && !defined(__INTEL_COMPILER)
 // MSVC under Windows doesn't have unistd.h, but does define functions like getcwd and chdir
