@@ -3301,6 +3301,84 @@ int _GetBicompSize(graphP theGraph, int BicompRoot)
 }
 
 /********************************************************************
+ gp_HasParallelEdges()
+
+ In linear time, determines whether any two edges join the same pair
+ of vertices.
+
+ If includingInOnlyEdges is TRUE, the directions of the edges do not
+ matter, as in gp_DeleteParallelEdges(): an edge directed from u to v
+ and one directed from v to u are parallel edges, as the two arcs of a
+ directed 2-cycle. If it is FALSE, the in-only edge records are left
+ out, so that u -> v and v -> u are distinct edges, while two edges
+ directed from u to v, or an undirected edge and a directed edge
+ between u and v, are still parallel edges.
+
+ A loop edge has both of its edge records in the adjacency list of its
+ vertex and is not parallel to itself, but two loops on one vertex are
+ parallel edges; loop records are counted whatever their direction.
+
+ Only the edges in the adjacency lists are inspected, so hidden edges
+ are not.
+
+ NOTE: The visited flags of the vertices are used to mark neighbors,
+       as in gp_DeleteParallelEdges(), and they are all clear when this
+       method returns.
+
+ Returns TRUE if the graph has parallel edges, FALSE if it has none or
+ if theGraph is NULL.
+ ********************************************************************/
+
+int gp_HasParallelEdges(graphP theGraph, int includingInOnlyEdges)
+{
+    int v, e, neighbor, numLoopRecords;
+    int Result = FALSE;
+
+    if (theGraph == NULL)
+        return FALSE;
+
+    _ClearVertexVisitedFlags(theGraph, FALSE);
+
+    for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph) && Result == FALSE; ++v)
+    {
+        numLoopRecords = 0;
+
+        e = gp_GetFirstEdge(theGraph, v);
+        while (gp_IsEdge(theGraph, e) && Result == FALSE)
+        {
+            neighbor = gp_GetNeighbor(theGraph, e);
+
+            if (neighbor == v)
+            {
+                if (++numLoopRecords > 2)
+                    Result = TRUE;
+            }
+            // An in-only record is the arc from the neighbor, whose own
+            // out-only record is counted at the neighbor
+            else if (!includingInOnlyEdges && gp_GetDirection(theGraph, e) == EDGEFLAG_DIRECTION_INONLY)
+                ;
+            else if (gp_GetVisited(theGraph, neighbor))
+                Result = TRUE;
+            else
+                gp_SetVisited(theGraph, neighbor);
+
+            e = gp_GetNextEdge(theGraph, e);
+        }
+
+        // The neighbors of v are unmarked before those of the next vertex
+        // are marked, and before returning
+        e = gp_GetFirstEdge(theGraph, v);
+        while (gp_IsEdge(theGraph, e))
+        {
+            gp_ClearVisited(theGraph, gp_GetNeighbor(theGraph, e));
+            e = gp_GetNextEdge(theGraph, e);
+        }
+    }
+
+    return Result;
+}
+
+/********************************************************************
  gp_DeleteParallelEdges()
 
  In linear time, finds and deletes all parallel edges, leaving

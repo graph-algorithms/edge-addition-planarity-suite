@@ -5,7 +5,16 @@ See the LICENSE.TXT file for licensing information.
 */
 
 #include "planarity.h"
+
+// TODO: These need to be removed as part of moving the gp iterator testing
+//       to a separate source file in planarity-test
 #include "../graphLib/io/strOrFile.h"
+#include "../graphLib/io/g6-read-iterator.h"
+#include "../graphLib/io/g6-write-iterator.h"
+#include "../graphLib/io/s6-read-iterator.h"
+#include "../graphLib/io/s6-write-iterator.h"
+#include "../graphLib/io/d6-read-iterator.h"
+#include "../graphLib/io/d6-write-iterator.h"
 
 #if defined(_MSC_VER) && !defined(__llvm__) && !defined(__INTEL_COMPILER)
 // MSVC under Windows doesn't have unistd.h, but does define functions like getcwd and chdir
@@ -43,8 +52,14 @@ int runIdentifyContractTest(graphP theGraph);
 
 int _CheckUndirectedDFSEdgeTypes(graphP theGraph);
 int testDirectedDFS(void);
-int testPetersenDigraph(void);
-int testDigraphTranspose(void);
+int testPetersenDigraph(const char *);
+int testDigraphTranspose(
+    char const *inputFileName,
+    char const *expectedOutputFileName,
+    int preservedEdgeSource,
+    int preservedEdgeTarget);
+int testPetersenDigraph6(const char *);
+int testDigraph6Iterators(void);
 int runDigraphTests(void);
 
 int runParallelEdgeTests(void);
@@ -65,11 +80,13 @@ int runExtensionCopyTests(void);
 int runIOErrorTests(void);
 
 int runSparse6ReadTests(void);
+int runStringInputLineTests(void);
 int runGeneralReadIteratorTests(void);
 char *copySparse6TestString(char const *s6Str);
 int runSparse6TestAllGraphsTests(void);
 int runSparse6WriteTests(void);
 int runSparse6LookaheadTests(void);
+int runDigraph6Tests(void);
 
 int runGraphMLTests(void);
 
@@ -293,6 +310,8 @@ int runQuickRegressionTests(int argc, char *argv[])
         retVal = NOTOK;
     else if (runReadWithExtensionAtEofTest() != OK)
         retVal = NOTOK;
+    else if (runStringInputLineTests() != OK)
+        retVal = NOTOK;
     else if (runGeneralReadIteratorTests() != OK)
         retVal = NOTOK;
     else if (runSparse6ReadTests() != OK)
@@ -300,6 +319,8 @@ int runQuickRegressionTests(int argc, char *argv[])
     else if (runSparse6WriteTests() != OK)
         retVal = NOTOK;
     else if (runSparse6LookaheadTests() != OK)
+        retVal = NOTOK;
+    else if (runDigraph6Tests() != OK)
         retVal = NOTOK;
     else if (runGraphMLTests() != OK)
         retVal = NOTOK;
@@ -821,13 +842,82 @@ int runCapacityLimitTests(void)
  to a reader that cannot make sense of it.
  ****************************************************************************/
 
+/****************************************************************************
+ runStringInputLineTests()
+
+ Reading a line from a string, as from a file, stops after its newline,
+ so that a read iterator initialized with a string of several graphs
+ reads each of them: here graph6 graphs with 4, 1 and 2 edges.
+ ****************************************************************************/
+
+int runStringInputLineTests(void)
+{
+    char lines[] = "a\nbc\n";
+    char graphs[] = "D?{\nD?_\nD?o\n";
+    int const expectedNumEdges[] = {4, 1, 2};
+    char buffer[16];
+    strOrFileP inputContainer = NULL;
+    graphP theGraph = NULL;
+    GPReadIteratorP theReadIterator = NULL;
+    int numGraphs = 0;
+    int Result = OK;
+
+    gp_Message("Starting String Input Line Tests");
+
+    if ((inputContainer = sf_NewInputContainer(lines, NULL)) == NULL)
+        return NOTOK;
+
+    if (sf_fgets(buffer, sizeof(buffer), inputContainer) == NULL || strcmp(buffer, "a\n") != 0 ||
+        sf_fgets(buffer, sizeof(buffer), inputContainer) == NULL || strcmp(buffer, "bc\n") != 0 ||
+        sf_fgets(buffer, sizeof(buffer), inputContainer) != NULL)
+    {
+        gp_ErrorMessage("Reading lines from a string did not return one line per read.");
+        Result = NOTOK;
+    }
+
+    sf_Free(&inputContainer);
+
+    if (Result == OK &&
+        ((theGraph = gp_New()) == NULL ||
+         gp_NewReader((&theReadIterator), theGraph) != OK ||
+         gp_InitReaderWithString(theReadIterator, graphs) != OK))
+        Result = NOTOK;
+
+    while (Result == OK)
+    {
+        if (gp_ReadGraph(theReadIterator) != OK)
+            Result = NOTOK;
+        else if (gp_EndReached(theReadIterator))
+            break;
+        else if (numGraphs == 3 || gp_GetM(theGraph) != expectedNumEdges[numGraphs])
+            Result = NOTOK;
+        else
+            numGraphs++;
+    }
+
+    if (Result != OK || numGraphs != 3)
+    {
+        gp_ErrorMessage("Reading the graph6 graphs of a string read %d of the 3.", numGraphs);
+        Result = NOTOK;
+    }
+
+    gp_FreeReader((&theReadIterator));
+    gp_Free(&theGraph);
+
+    if (Result == OK)
+        gp_Message("Finished String Input Line Tests.\n");
+
+    return Result;
+}
+
 int runGeneralReadIteratorTests(void)
 {
     int Result = OK;
     unsigned origQuietMode = gp_GetQuietMode();
     size_t i = 0;
 
-    // {input string, graph6 encoding of the first graph it contains}
+    // {input string, encoding of the first graph it contains}, in graph6
+    // except for the digraph6 cases, whose graphs graph6 cannot hold
     char const *acceptCases[][2] = {
         // graph6, with and without its header
         {"D?{\n", "D?{"},
@@ -837,12 +927,16 @@ int runGeneralReadIteratorTests(void)
         {":Fa@x^\n", "Fw??G"},
         {":D\n;oN\n", "D??"},
         {">>sparse6<<:Fa@x^\n", "Fw??G"},
+        // digraph6, with and without its header: the arc 1 -> 0, then on the
+        // second line the arc 0 -> 1
+        {"&AG\n&AO\n", "&AG"},
+        {">>digraph6<<&AG\n", "&AG"},
     };
 
     // Inputs in none of the formats the iterator reads
     char const *rejectCases[] = {
-        // digraph6, which neither reader accepts
-        "&AG\n",
+        // A '&' without the order that digraph6 puts after it
+        "&\n",
         // GraphML, whose first character is below the graph6 range
         "<graphml>\n",
         // An adjacency list, which gp_Read() recognizes by its "N=" but a
@@ -860,39 +954,50 @@ int runGeneralReadIteratorTests(void)
     };
 
     char const *g6Header = ">>graph6<<";
+    char const *d6Header = ">>digraph6<<";
     graphP theGraph = NULL;
     GPReadIteratorP theReadIterator = NULL;
     char *actualEncoding = NULL;
 
-    // {first line, expected s6_IsSparse6Input(), expected g6_IsGraph6Input()}
+    // {first line, expected s6_IsSparse6Input(), expected g6_IsGraph6Input(),
+    // expected d6_IsDigraph6Input()}
     struct
     {
         char const *firstLine;
         int isSparse6;
         int isGraph6;
+        int isDigraph6;
     } predicateCases[] = {
-        {">>sparse6<<:Fa@x^", TRUE, FALSE},
-        {":Fa@x^", TRUE, FALSE},
-        {";oN", TRUE, FALSE},
-        {">>graph6<<D?{", FALSE, TRUE},
-        {"D?{", FALSE, TRUE},
+        {">>sparse6<<:Fa@x^", TRUE, FALSE, FALSE},
+        {":Fa@x^", TRUE, FALSE, FALSE},
+        {";oN", TRUE, FALSE, FALSE},
+        {">>graph6<<D?{", FALSE, TRUE, FALSE},
+        {"D?{", FALSE, TRUE, FALSE},
         // The order byte spans 63 to 126, and 126 introduces the longer
         // order encodings; a graph of order 0 or 1 is its order byte alone,
         // with or without the line terminator sf_fgets() leaves on it
-        {"?", FALSE, TRUE},
-        {"@\n", FALSE, TRUE},
-        {"~~~~", FALSE, TRUE},
-        // digraph6, GraphML, and a line whose first byte is below the range
-        {"&AG", FALSE, FALSE},
-        {"<graphml>", FALSE, FALSE},
+        {"?", FALSE, TRUE, FALSE},
+        {"@\n", FALSE, TRUE, FALSE},
+        {"~~~~", FALSE, TRUE, FALSE},
+        // digraph6, with and without its header, its order byte at either end
+        // of the range, and a '&' followed by no order byte
+        {">>digraph6<<&AG", FALSE, FALSE, TRUE},
+        {"&AG", FALSE, FALSE, TRUE},
+        {"&?", FALSE, FALSE, TRUE},
+        {"&~??~", FALSE, FALSE, TRUE},
+        {"&", FALSE, FALSE, FALSE},
+        {"&\n", FALSE, FALSE, FALSE},
+        {"& ", FALSE, FALSE, FALSE},
+        // GraphML, and a line whose first byte is below the range
+        {"<graphml>", FALSE, FALSE, FALSE},
         // An adjacency list: the first byte is in the range, the second is not
-        {"N=3", FALSE, FALSE},
+        {"N=3", FALSE, FALSE, FALSE},
         // The byte after the range, and one with the high bit set
-        {"\x7f", FALSE, FALSE},
-        {"\xff", FALSE, FALSE},
-        {"\n", FALSE, FALSE},
-        {"", FALSE, FALSE},
-        {NULL, FALSE, FALSE},
+        {"\x7f", FALSE, FALSE, FALSE},
+        {"\xff", FALSE, FALSE, FALSE},
+        {"\n", FALSE, FALSE, FALSE},
+        {"", FALSE, FALSE, FALSE},
+        {NULL, FALSE, FALSE, FALSE},
     };
 
     gp_Message("Starting Generalized Read Iterator Tests");
@@ -900,12 +1005,14 @@ int runGeneralReadIteratorTests(void)
     for (i = 0; i < (sizeof(predicateCases) / sizeof(predicateCases[0])); i++)
     {
         if (s6_IsSparse6Input(predicateCases[i].firstLine) != predicateCases[i].isSparse6 ||
-            g6_IsGraph6Input(predicateCases[i].firstLine) != predicateCases[i].isGraph6)
+            g6_IsGraph6Input(predicateCases[i].firstLine) != predicateCases[i].isGraph6 ||
+            d6_IsDigraph6Input(predicateCases[i].firstLine) != predicateCases[i].isDigraph6)
         {
-            gp_ErrorMessage("Format of \"%s\" was decided as sparse6=%d graph6=%d.",
+            gp_ErrorMessage("Format of \"%s\" was decided as sparse6=%d graph6=%d digraph6=%d.",
                             predicateCases[i].firstLine == NULL ? "(null)" : predicateCases[i].firstLine,
                             s6_IsSparse6Input(predicateCases[i].firstLine),
-                            g6_IsGraph6Input(predicateCases[i].firstLine));
+                            g6_IsGraph6Input(predicateCases[i].firstLine),
+                            d6_IsDigraph6Input(predicateCases[i].firstLine));
             return NOTOK;
         }
     }
@@ -939,10 +1046,11 @@ int runGeneralReadIteratorTests(void)
             gp_ErrorMessage("Unable to read the first graph of accept case %d.", (int)i);
             Result = NOTOK;
         }
-        else if (gp_WriteToString(theGraph, (&actualEncoding), WRITE_G6) != OK ||
+        else if (gp_WriteToString(theGraph, (&actualEncoding),
+                                  acceptCases[i][1][0] == '&' ? WRITE_DIGRAPH6 : WRITE_GRAPH6) != OK ||
                  actualEncoding == NULL ||
-                 strncmp(actualEncoding + strlen(g6Header), acceptCases[i][1],
-                         strlen(acceptCases[i][1])) != 0)
+                 strncmp(actualEncoding + strlen(acceptCases[i][1][0] == '&' ? d6Header : g6Header),
+                         acceptCases[i][1], strlen(acceptCases[i][1])) != 0)
         {
             gp_ErrorMessage("Graph of accept case %d is \"%s\" rather than \"%s\".",
                             (int)i, actualEncoding == NULL ? "" : actualEncoding,
@@ -1076,7 +1184,7 @@ int runGeneralReadIteratorTests(void)
                 gp_ErrorMessage("Unable to read the first graph of \"%s\".", fileCases[i][0]);
                 Result = NOTOK;
             }
-            else if (gp_WriteToString(theGraph, (&actualEncoding), WRITE_G6) != OK ||
+            else if (gp_WriteToString(theGraph, (&actualEncoding), WRITE_GRAPH6) != OK ||
                      actualEncoding == NULL ||
                      strncmp(actualEncoding + strlen(g6Header), fileCases[i][1],
                              strlen(fileCases[i][1])) != 0)
@@ -1866,10 +1974,10 @@ int runGraphTransformationTest(char const *command, char const *infileName, int 
     char transformationCode = '\0';
 
     // runGraphTransformationTest will not test performing an algorithm on a given
-    // input graph; it will only support "-(gsam)"
+    // input graph; it will only support "-(gsdam)"
     if (command == NULL || strlen(command) < 2)
     {
-        gp_ErrorMessage("runGraphTransformationTest only supports -(gsam).");
+        gp_ErrorMessage("runGraphTransformationTest only supports -(gsdam).");
         return NOTOK;
     }
     else if (strlen(command) == 2)
@@ -2371,218 +2479,254 @@ int testDirectedDFS(void)
  testPetersenDigraph()
  ****************************************************************************/
 
-int testPetersenDigraph(void)
+int testPetersenDigraph(const char *inputFileName)
 {
-    graphP G = gp_New();
-    graphP G1 = NULL;
-    char const *inputFileName = NULL;
-    int quietModeCache, v, e, eTwin, eDir, eTwinDir;
-    char *dummyStr = NULL; // Safe throwaway pointer for early-outs
+    int retVal = OK;
 
-    gp_Message("Testing Digraph Read, Embed, Undirected DFS, Convert to Undirected, and Non-Digraph Function Detection");
-
-    if (G == NULL)
-        return NOTOK;
+    if (inputFileName == NULL)
+    {
+        gp_Message("Testing Digraph Read, Embed, Undirected DFS, Convert to Undirected, and Non-Digraph Function Detection");
 
 #ifdef USE_1BASEDARRAYS
-    inputFileName = "Petersen.digraph.txt";
-#else
-    inputFileName = "Petersen.digraph.0-based.txt";
+        if (testPetersenDigraph("Petersen.digraph.txt") != OK)
+        {
+            gp_ErrorMessage("Test of Digraphs failed on Petersen.digraph.txt");
+            retVal = NOTOK;
+        }
 #endif
-
-    if (gp_Read(G, inputFileName) != OK)
-    {
-        gp_ErrorMessage("Failed to read Petersen digraph sample.");
-        gp_Free(&G);
-        return NOTOK;
-    }
-
-    //  Verify edges and flags
-    if (gp_GetM(G) != 15)
-    {
-        gp_ErrorMessage("Petersen Digraph should have exactly 15 edges.");
-        gp_Free(&G);
-        return NOTOK;
-    }
-
-    // Verify the directed edge flag detected and that all edges are directed
-    if (!(gp_GetGraphFlags(G) & GRAPHFLAGS_DIRECTEDEDGEDETECTED))
-    {
-        gp_ErrorMessage("Directed edge flag was not set upon reading digraph.");
-        gp_Free(&G);
-        return NOTOK;
-    }
-
-    for (v = gp_LowerBoundVertices(G); v < gp_UpperBoundVertices(G); ++v)
-    {
-        e = gp_GetFirstEdge(G, v);
-        while (gp_IsEdge(G, e))
+        if (testPetersenDigraph("Petersen.digraph.0-based.txt") != OK)
         {
-            eTwin = gp_GetTwin(G, e);
-            eDir = gp_GetDirection(G, e);
-            eTwinDir = gp_GetDirection(G, eTwin);
-
-            if (eDir == 0 || eTwinDir == 0 || eDir == eTwinDir)
-            {
-                gp_ErrorMessage("Edge direction mismatch found.");
-                gp_Free(&G);
-                return NOTOK;
-            }
-            e = gp_GetNextEdge(G, e);
+            gp_ErrorMessage("Test of Digraphs failed on Petersen.digraph.0-based.txt");
+            retVal = NOTOK;
         }
     }
-
-    // Test that the planarity algorithm works on digraphs
-    if ((G1 = gp_DupGraph(G)) == NULL)
+    else
     {
-        gp_Free(&G);
-        return NOTOK;
-    }
+        graphP G = gp_New();
+        graphP G1 = NULL;
+        int quietModeCache, v, e, eTwin, eDir, eTwinDir;
+        char *dummyStr = NULL; // Safe throwaway pointer for early-outs
 
-    if (gp_Embed(G1, EMBEDFLAGS_PLANAR) != NONEMBEDDABLE)
-    {
-        gp_ErrorMessage("Digraph embed did not return expected result.");
-        gp_Free(&G);
+        if (G == NULL)
+            return NOTOK;
+
+        if (gp_Read(G, inputFileName) != OK)
+        {
+            gp_ErrorMessage("Failed to read Petersen digraph sample.");
+            gp_Free(&G);
+            return NOTOK;
+        }
+
+        //  Verify edges and flags
+        if (gp_GetM(G) != 15)
+        {
+            gp_ErrorMessage("Petersen Digraph should have exactly 15 edges.");
+            gp_Free(&G);
+            return NOTOK;
+        }
+
+        // Verify the directed edge flag detected and that all edges are directed
+        if (!(gp_GetGraphFlags(G) & GRAPHFLAGS_DIRECTEDEDGEDETECTED))
+        {
+            gp_ErrorMessage("Directed edge flag was not set upon reading digraph.");
+            gp_Free(&G);
+            return NOTOK;
+        }
+
+        for (v = gp_LowerBoundVertices(G); v < gp_UpperBoundVertices(G); ++v)
+        {
+            e = gp_GetFirstEdge(G, v);
+            while (gp_IsEdge(G, e))
+            {
+                eTwin = gp_GetTwin(G, e);
+                eDir = gp_GetDirection(G, e);
+                eTwinDir = gp_GetDirection(G, eTwin);
+
+                if (eDir == 0 || eTwinDir == 0 || eDir == eTwinDir)
+                {
+                    gp_ErrorMessage("Edge direction mismatch found.");
+                    gp_Free(&G);
+                    return NOTOK;
+                }
+                e = gp_GetNextEdge(G, e);
+            }
+        }
+
+        // Test that the planarity algorithm works on digraphs
+        if ((G1 = gp_DupGraph(G)) == NULL)
+        {
+            gp_Free(&G);
+            return NOTOK;
+        }
+
+        if (gp_Embed(G1, EMBEDFLAGS_PLANAR) != NONEMBEDDABLE)
+        {
+            gp_ErrorMessage("Digraph embed did not return expected result.");
+            gp_Free(&G);
+            gp_Free(&G1);
+            return NOTOK;
+        }
+
+        if (gp_TestEmbedResultIntegrity(G1, G, NONEMBEDDABLE) != NONEMBEDDABLE)
+        {
+            gp_ErrorMessage("Embed integrity check failed.");
+            gp_Free(&G);
+            gp_Free(&G1);
+            return NOTOK;
+        }
+
         gp_Free(&G1);
-        return NOTOK;
-    }
 
-    if (gp_TestEmbedResultIntegrity(G1, G, NONEMBEDDABLE) != NONEMBEDDABLE)
-    {
-        gp_ErrorMessage("Embed integrity check failed.");
-        gp_Free(&G);
-        gp_Free(&G1);
-        return NOTOK;
-    }
+        // Run early-outs quietly (with a dummy string for write operations)
+        quietModeCache = gp_GetQuietMode();
+        gp_SetQuietMode(QUIETMODE_ALL);
 
-    gp_Free(&G1);
+        if (gp_DepthFirstSearch(G) != OK ||
+            gp_ComputeLowpoints(G) == OK ||
+            gp_ComputeLeastAncestors(G) == OK ||
+            gp_WriteToString(G, &dummyStr, WRITE_GRAPH6) == OK ||
+            gp_WriteToString(G, &dummyStr, WRITE_ADJMATRIX) == OK)
+        {
+            gp_SetQuietMode(quietModeCache);
+            gp_ErrorMessage("Digraph early-out test failed.");
+            gp_Free(&G);
+            if (dummyStr != NULL)
+                free(dummyStr);
+            return NOTOK;
+        }
 
-    // Run early-outs quietly (with a dummy string for write operations)
-    quietModeCache = gp_GetQuietMode();
-    gp_SetQuietMode(QUIETMODE_ALL);
-
-    if (gp_DepthFirstSearch(G) != OK ||
-        gp_ComputeLowpoints(G) == OK ||
-        gp_ComputeLeastAncestors(G) == OK ||
-        gp_WriteToString(G, &dummyStr, WRITE_G6) == OK ||
-        gp_WriteToString(G, &dummyStr, WRITE_ADJMATRIX) == OK)
-    {
         gp_SetQuietMode(quietModeCache);
-        gp_ErrorMessage("Digraph early-out test failed.");
-        gp_Free(&G);
-        if (dummyStr != NULL)
-            free(dummyStr);
-        return NOTOK;
-    }
 
-    gp_SetQuietMode(quietModeCache);
-
-    //  Clear edge direction flags, and verify
-    if (gp_ClearEdgeDirectionFlags(G) != OK)
-    {
-        gp_Free(&G);
-        return NOTOK;
-    }
-
-    if (gp_GetGraphFlags(G) & GRAPHFLAGS_DIRECTEDEDGEDETECTED)
-    {
-        gp_ErrorMessage("Directed edge detected flag should be but is not clear.");
-        gp_Free(&G);
-        return NOTOK;
-    }
-
-    for (v = gp_LowerBoundVertices(G); v < gp_UpperBoundVertices(G); ++v)
-    {
-        e = gp_GetFirstEdge(G, v);
-        while (gp_IsEdge(G, e))
+        //  Clear edge direction flags, and verify
+        if (gp_ClearEdgeDirectionFlags(G) != OK)
         {
-            eTwin = gp_GetTwin(G, e);
-            eDir = gp_GetDirection(G, e);
-            eTwinDir = gp_GetDirection(G, eTwin);
-
-            if (eDir != 0 || eTwinDir != 0)
-            {
-                gp_ErrorMessage("Unexpected directed edge found.");
-                gp_Free(&G);
-                return NOTOK;
-            }
-            e = gp_GetNextEdge(G, e);
+            gp_Free(&G);
+            return NOTOK;
         }
+
+        if (gp_GetGraphFlags(G) & GRAPHFLAGS_DIRECTEDEDGEDETECTED)
+        {
+            gp_ErrorMessage("Directed edge detected flag should be but is not clear.");
+            gp_Free(&G);
+            return NOTOK;
+        }
+
+        for (v = gp_LowerBoundVertices(G); v < gp_UpperBoundVertices(G); ++v)
+        {
+            e = gp_GetFirstEdge(G, v);
+            while (gp_IsEdge(G, e))
+            {
+                eTwin = gp_GetTwin(G, e);
+                eDir = gp_GetDirection(G, e);
+                eTwinDir = gp_GetDirection(G, eTwin);
+
+                if (eDir != 0 || eTwinDir != 0)
+                {
+                    gp_ErrorMessage("Unexpected directed edge found.");
+                    gp_Free(&G);
+                    return NOTOK;
+                }
+                e = gp_GetNextEdge(G, e);
+            }
+        }
+
+        gp_Free(&G);
+
+        return OK;
     }
 
-    gp_Free(&G);
-
-    return OK;
+    return retVal;
 }
 
 /****************************************************************************
  testDigraphTranspose()
  ****************************************************************************/
 
-int testDigraphTranspose(void)
+int testDigraphTranspose(
+    char const *inputFileName,
+    char const *expectedOutputFileName,
+    int preservedEdgeSource,
+    int preservedEdgeTarget)
 {
-    graphP G = gp_New();
-    char *actualOutput = NULL;
-    char const *inputFileName = NULL;
-    char const *expectedOutputFileName = NULL;
-    int preservedEdgeSource = NIL;
-    int preservedEdgeTarget = NIL;
-    int e = NIL;
+    int retVal = OK;
 
-    gp_Message("Testing Digraph Transpose");
-
-    if (G == NULL)
-        return NOTOK;
+    if (inputFileName == NULL)
+    {
+        gp_Message("Testing Digraph Transpose");
 
 #ifdef USE_1BASEDARRAYS
-    inputFileName = "Petersen.digraph.txt";
-    expectedOutputFileName = "Digraph.transposeTest.txt";
-    preservedEdgeSource = 5;
-    preservedEdgeTarget = 1;
+        if (testDigraphTranspose("Petersen.digraph.txt", "Digraph.transposeTest.txt", 5, 1) != OK)
+        {
+            gp_ErrorMessage("Digraph Transpose Test failed on Petersen.digraph.txt");
+            retVal = NOTOK;
+        }
+        preservedEdgeSource = 5;
+        preservedEdgeTarget = 1;
 #else
-    inputFileName = "Petersen.digraph.0-based.txt";
-    expectedOutputFileName = "Digraph.transposeTest.0-based.txt";
-    preservedEdgeSource = 4;
-    preservedEdgeTarget = 0;
+        preservedEdgeSource = 4;
+        preservedEdgeTarget = 0;
 #endif
 
-    if (gp_Read(G, inputFileName) != OK)
+        if (testDigraphTranspose(
+            "Petersen.digraph.0-based.txt", 
+            "Digraph.transposeTest.0-based.txt", 
+            preservedEdgeSource, preservedEdgeTarget) != OK)
+        {
+            gp_ErrorMessage("Digraph Transpose Test failed on Petersen.digraph.txt");
+            retVal = NOTOK;
+        }
+    }
+    else
     {
-        gp_ErrorMessage("Failed to read Petersen digraph sample for transpose test.");
+        graphP G = gp_New();
+        char *actualOutput = NULL;
+        int e = NIL;
+
+        gp_Message("Testing Digraph Transpose");
+
+        if (G == NULL)
+            return NOTOK;
+
+        if (gp_Read(G, inputFileName) != OK)
+        {
+            gp_ErrorMessage("Failed to read Petersen digraph sample for transpose test.");
+            gp_Free(&G);
+            return NOTOK;
+        }
+
+        // Preserve one undirected edge while transposing all directed edges.
+        e = gp_FindDirectedEdge(G, preservedEdgeSource, preservedEdgeTarget, EDGEFLAG_DIRECTION_OUTONLY);
+        if (e == NIL)
+        {
+            gp_ErrorMessage("Failed to find directed edge to preserve during transpose.");
+            gp_Free(&G);
+            return NOTOK;
+        }
+        gp_SetDirection(G, e, 0);
+
+        if (gp_TransposeDirectedGraph(G) != OK)
+        {
+            gp_ErrorMessage("Directed graph transpose returned an unexpected result.");
+            gp_Free(&G);
+            return NOTOK;
+        }
+
+        if (gp_WriteToString(G, &actualOutput, WRITE_ADJLIST) != OK || actualOutput == NULL ||
+            TextFileMatchesString(expectedOutputFileName, actualOutput) != TRUE)
+        {
+            gp_ErrorMessage("Directed graph transpose output did not match the expected sample.");
+            gp_Free(&G);
+            if (actualOutput != NULL)
+                free(actualOutput);
+            return NOTOK;
+        }
+
         gp_Free(&G);
-        return NOTOK;
+        free(actualOutput);
+        return OK;
     }
 
-    // Preserve one undirected edge while transposing all directed edges.
-    e = gp_FindDirectedEdge(G, preservedEdgeSource, preservedEdgeTarget, EDGEFLAG_DIRECTION_OUTONLY);
-    if (e == NIL)
-    {
-        gp_ErrorMessage("Failed to find directed edge to preserve during transpose.");
-        gp_Free(&G);
-        return NOTOK;
-    }
-    gp_SetDirection(G, e, 0);
-
-    if (gp_TransposeDirectedGraph(G) != OK)
-    {
-        gp_ErrorMessage("Directed graph transpose returned an unexpected result.");
-        gp_Free(&G);
-        return NOTOK;
-    }
-
-    if (gp_WriteToString(G, &actualOutput, WRITE_ADJLIST) != OK || actualOutput == NULL ||
-        TextFileMatchesString(expectedOutputFileName, actualOutput) != TRUE)
-    {
-        gp_ErrorMessage("Directed graph transpose output did not match the expected sample.");
-        gp_Free(&G);
-        if (actualOutput != NULL)
-            free(actualOutput);
-        return NOTOK;
-    }
-
-    gp_Free(&G);
-    free(actualOutput);
-    return OK;
+    return retVal;
 }
 
 int runDigraphTests(void)
@@ -2596,14 +2740,24 @@ int runDigraphTests(void)
         gp_ErrorMessage("Directed DFS test failed.");
         retVal = NOTOK;
     }
-    else if (testPetersenDigraph() != OK)
+    else if (testPetersenDigraph(NULL) != OK)
     {
         gp_ErrorMessage("Petersen Digraph test failed.");
         retVal = NOTOK;
     }
-    else if (testDigraphTranspose() != OK)
+    else if (testDigraphTranspose(NULL, NULL, NIL, NIL) != OK)
     {
         gp_ErrorMessage("Digraph transpose test failed.");
+        retVal = NOTOK;
+    }
+    else if (testPetersenDigraph6(NULL) != OK)
+    {
+        gp_ErrorMessage("Petersen digraph6 test failed.");
+        retVal = NOTOK;
+    }
+    else if (testDigraph6Iterators() != OK)
+    {
+        gp_ErrorMessage("Digraph6 iterator test failed.");
         retVal = NOTOK;
     }
     else

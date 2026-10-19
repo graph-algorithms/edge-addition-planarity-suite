@@ -12,17 +12,6 @@ extern "C"
 {
 #endif
 
-#include <stdio.h>
-
-#include "../graph.h"
-
-// The formats a read iterator can be reading. The type is decided from the
-// first line of the input when the iterator is initialized, and the other
-// methods dispatch on it.
-#define GP_FILE_TYPE_UNKNOWN 0
-#define GP_FILE_TYPE_G6 1
-#define GP_FILE_TYPE_S6 2
-
     typedef struct GPReadIteratorStruct GPReadIteratorStruct;
     typedef GPReadIteratorStruct *GPReadIteratorP;
 
