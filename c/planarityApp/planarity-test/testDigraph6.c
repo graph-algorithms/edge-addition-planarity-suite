@@ -13,7 +13,7 @@ See the LICENSE.TXT file for licensing information.
 #include "../../graphLib/io/d6-write-iterator.h"
 
 /* Called from planarityCommandLine.c */
-int testPetersenDigraph6(void);
+int testPetersenDigraph6(const char *);
 int testDigraph6Iterators(void);
 int runDigraph6Tests(void);
 
@@ -735,40 +735,55 @@ static int runHasParallelEdgesTests(void)
  same edges with the same directions.
  ****************************************************************************/
 
-int testPetersenDigraph6(void)
+int testPetersenDigraph6(const char *inputFileName)
 {
-    graphP theGraph = gp_New();
-    graphP theReadBackGraph = gp_New();
-    char const *inputFileName = NULL;
-    char *d6Str = NULL;
-    int Result = OK;
+    int retVal = OK;
 
-    gp_Message("Testing the digraph6 write and read of the Petersen digraph");
+    if (inputFileName == NULL)
+    {
+        gp_Message("Testing the digraph6 write and read of the Petersen digraph");
 
 #ifdef USE_1BASEDARRAYS
-    inputFileName = "Petersen.digraph.txt";
-#else
-    inputFileName = "Petersen.digraph.0-based.txt";
+        if (testPetersenDigraph6("Petersen.digraph.txt") != OK)
+        {
+            gp_ErrorMessage("Digraph6 failed on Petersen.digraph.txt");
+            retVal = NOTOK;
+        }
 #endif
-
-    if (theGraph == NULL || theReadBackGraph == NULL)
-        Result = NOTOK;
-    else if (gp_Read(theGraph, inputFileName) != OK ||
-             gp_WriteToString(theGraph, &d6Str, WRITE_DIGRAPH6) != OK ||
-             gp_ReadFromString(theReadBackGraph, d6Str) != OK)
-    {
-        gp_ErrorMessage("Unable to write the Petersen digraph as digraph6 and read it back.");
-        Result = NOTOK;
+        if (testPetersenDigraph6("Petersen.digraph.0-based.txt") != OK)
+        {
+            gp_ErrorMessage("Digraph6 test failed on Petersen.digraph.0-based.txt");
+            retVal = NOTOK;
+        }
     }
-    else if (gp_GetM(theGraph) != 15 || compareDigraph6Arcs(theGraph, theReadBackGraph, "Petersen digraph") != OK)
-        Result = NOTOK;
+    else
+    {
+        graphP theGraph = gp_New();
+        graphP theReadBackGraph = gp_New();
+        char *d6Str = NULL;
+        int Result = OK;
 
-    if (d6Str != NULL)
-        free(d6Str);
-    gp_Free(&theGraph);
-    gp_Free(&theReadBackGraph);
+        if (theGraph == NULL || theReadBackGraph == NULL)
+            Result = NOTOK;
+        else if (gp_Read(theGraph, inputFileName) != OK ||
+                 gp_WriteToString(theGraph, &d6Str, WRITE_DIGRAPH6) != OK ||
+                 gp_ReadFromString(theReadBackGraph, d6Str) != OK)
+        {
+            gp_ErrorMessage("Unable to write the Petersen digraph as digraph6 and read it back.");
+            Result = NOTOK;
+        }
+        else if (gp_GetM(theGraph) != 15 || compareDigraph6Arcs(theGraph, theReadBackGraph, "Petersen digraph") != OK)
+            Result = NOTOK;
 
-    return Result;
+        if (d6Str != NULL)
+            free(d6Str);
+        gp_Free(&theGraph);
+        gp_Free(&theReadBackGraph);
+
+        return Result;
+    }
+
+    return retVal;
 }
 
 /****************************************************************************
