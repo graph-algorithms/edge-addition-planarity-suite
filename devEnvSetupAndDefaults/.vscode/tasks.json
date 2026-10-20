@@ -28,6 +28,7 @@
                 "-Wformat=2",
                 "-Wimplicit-function-declaration",
                 // "-Wincompatible-pointer-types-discards-qualifiers", // Clang spelling; GCC uses -Wdiscarded-qualifiers
+                "-Wdiscarded-qualifiers",
                 "-Wignored-qualifiers",
                 "-Winit-self",
                 "-Winline",
@@ -56,10 +57,9 @@
                 "-Wswitch-default",
                 "-Wswitch-enum",
                 "-Wundef",
-                "-Wunreachable-code",
+                // "-Wunreachable-code", // gcc ignores this since v4.5 in 2010
                 "-Wunused-but-set-variable",
                 "-Wwrite-strings",
-                "-Wdiscarded-qualifiers",
                 "-Wunused-result",
                 "-g", // Generate debug symbols
                 "${workspaceFolder}\\c\\planarityApp\\**.c",
@@ -109,6 +109,7 @@
                 "-Wformat=2",
                 "-Wimplicit-function-declaration",
                 // "-Wincompatible-pointer-types-discards-qualifiers", // Clang spelling; GCC uses -Wdiscarded-qualifiers
+                "-Wdiscarded-qualifiers",
                 "-Wignored-qualifiers",
                 "-Winit-self",
                 "-Winline",
@@ -137,10 +138,9 @@
                 "-Wswitch-default",
                 "-Wswitch-enum",
                 "-Wundef",
-                "-Wunreachable-code",
+                // "-Wunreachable-code", // gcc ignores this since v4.5 in 2010
                 "-Wunused-but-set-variable",
                 "-Wwrite-strings",
-                "-Wdiscarded-qualifiers",
                 "-Wunused-result",
                 // "-g", // Uncomment to generate debug symbols for Release build and debug with VSCode
                 "${workspaceFolder}\\c\\planarityApp\\**.c",
@@ -188,6 +188,7 @@
                 "-Wformat=2",
                 "-Wimplicit-function-declaration",
                 // "-Wincompatible-pointer-types-discards-qualifiers", // Clang spelling; GCC uses -Wdiscarded-qualifiers
+                "-Wdiscarded-qualifiers",
                 "-Wignored-qualifiers",
                 "-Winit-self",
                 "-Winline",
@@ -216,10 +217,9 @@
                 "-Wswitch-default",
                 "-Wswitch-enum",
                 "-Wundef",
-                "-Wunreachable-code",
+                // "-Wunreachable-code", // gcc ignores this since v4.5 in 2010
                 "-Wunused-but-set-variable",
                 "-Wwrite-strings",
-                "-Wdiscarded-qualifiers",
                 "-Wunused-result",
                 "-g", // Generate debug symbols
                 "${workspaceFolder}/c/planarityApp/**.c",
@@ -268,6 +268,7 @@
                 "-Wformat=2",
                 "-Wimplicit-function-declaration",
                 // "-Wincompatible-pointer-types-discards-qualifiers", // Clang spelling; GCC uses -Wdiscarded-qualifiers
+                "-Wdiscarded-qualifiers",
                 "-Wignored-qualifiers",
                 "-Winit-self",
                 "-Winline",
@@ -296,10 +297,9 @@
                 "-Wswitch-default",
                 "-Wswitch-enum",
                 "-Wundef",
-                "-Wunreachable-code",
+                // "-Wunreachable-code", // gcc ignores this since v4.5 in 2010
                 "-Wunused-but-set-variable",
                 "-Wwrite-strings",
-                "-Wdiscarded-qualifiers",
                 "-Wunused-result",
                 "-g", // Generate debug symbols
                 "${workspaceFolder}/c/planarityApp/**.c",
@@ -346,6 +346,7 @@
                 "-Wformat=2",
                 "-Wimplicit-function-declaration",
                 // "-Wincompatible-pointer-types-discards-qualifiers", // Clang spelling; GCC uses -Wdiscarded-qualifiers
+                "-Wdiscarded-qualifiers",
                 "-Wignored-qualifiers",
                 "-Winit-self",
                 "-Winline",
@@ -374,10 +375,9 @@
                 "-Wswitch-default",
                 "-Wswitch-enum",
                 "-Wundef",
-                "-Wunreachable-code",
+                // "-Wunreachable-code", // gcc ignores this since v4.5 in 2010
                 "-Wunused-but-set-variable",
                 "-Wwrite-strings",
-                "-Wdiscarded-qualifiers",
                 "-Wunused-result",
                 // "-g", // Uncomment to generate debug symbols for Release build and debug with VSCode
                 "${workspaceFolder}/c/planarityApp/**.c",
