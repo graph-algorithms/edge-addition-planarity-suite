@@ -33,6 +33,9 @@ libplanarity_la_SOURCES = \
 	c/graphLib/io/g6-write-iterator.c \
 	c/graphLib/io/s6-read-iterator.c \
 	c/graphLib/io/s6-write-iterator.c \
+	c/graphLib/io/d6-read-iterator.c \
+	c/graphLib/io/d6-write-iterator.c \
+	c/graphLib/io/graphML-reader.c \
 	c/graphLib/io/graphML-writer.c \
 	c/graphLib/io/graphIO.c \
 	c/graphLib/io/strbuf.c \
@@ -78,6 +81,8 @@ nobase_pkginclude_HEADERS = \
 	c/graphLib/io/g6-write-iterator.h \
 	c/graphLib/io/s6-read-iterator.h \
 	c/graphLib/io/s6-write-iterator.h \
+	c/graphLib/io/d6-read-iterator.h \
+	c/graphLib/io/d6-write-iterator.h \
 	c/graphLib/graphDFSUtils.h \
 	c/graphLib/planarityRelated/graphPlanarity.h \
 	c/graphLib/planarityRelated/graphOuterplanarity.h \
@@ -97,8 +102,10 @@ planarity_SOURCES = \
 	c/planarityApp/planarityMenu.c \
 	c/planarityApp/planarityRandomGraphs.c \
 	c/planarityApp/planaritySpecificGraph.c \
+	c/planarityApp/planarity-test/testGraphML.c \
 	c/planarityApp/planarity-test/testIOErrors.c \
 	c/planarityApp/planarity-test/testSparse6.c \
+	c/planarityApp/planarity-test/testDigraph6.c \
 	c/planarityApp/planarity-test/testExtensionCopy.c \
 	c/planarityApp/planarityTransformGraph.c \
 	c/planarityApp/planarityTestAllGraphs.c \

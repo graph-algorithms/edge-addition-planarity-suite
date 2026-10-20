@@ -451,7 +451,7 @@ int _s6_InitReader(S6ReadIteratorP theS6ReadIterator)
     }
     else if (firstChar == '&')
     {
-        gp_ErrorMessage("Line %d is digraph6 format, which is not supported.",
+        gp_ErrorMessage("Line %d is digraph6 format, not sparse6.",
                         lineNum);
         return NOTOK;
     }
@@ -544,8 +544,9 @@ int _s6_ValidateHeader(strOrFileP inputContainer)
                             "with the graph6 reader rather than the sparse6 "
                             "reader.");
         else if (strncmp(digraph6Header, headerCandidateChars, sparse6HeaderLen) == 0)
-            gp_ErrorMessage("Input is digraph6 format, which is not "
-                            "supported.");
+            gp_ErrorMessage("Input has a digraph6 header, so it must be read "
+                            "with the digraph6 reader rather than the sparse6 "
+                            "reader.");
         else
             gp_ErrorMessage("Invalid header for sparse6 input.");
 

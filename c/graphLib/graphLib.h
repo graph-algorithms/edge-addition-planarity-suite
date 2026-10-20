@@ -26,11 +26,18 @@ extern "C"
 
 // Graph I/O public API methods and definitions
 #include "io/graphIO.h"
-#include "io/g6-read-iterator.h"
 #include "io/gp-read-iterator.h"
+
+// The g6 read/write iterators are deprecated and, as a future
+// breaking change, will be removed in the next major release.
+#include "io/g6-read-iterator.h"
 #include "io/g6-write-iterator.h"
-#include "io/s6-read-iterator.h"
-#include "io/s6-write-iterator.h"
+// Meanwhile, the s6 and d6 iterators remain private and are
+// offered via the gp level read and write iterators
+// #include "io/s6-read-iterator.h"
+// #include "io/s6-write-iterator.h"
+// #include "io/d6-read-iterator.h"
+// #include "io/d6-write-iterator.h"
 
 // Depth-first search public API methods and definitions
 #include "graphDFSUtils.h"

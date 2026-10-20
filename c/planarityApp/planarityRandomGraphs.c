@@ -719,7 +719,7 @@ int RandomGraph(char const *const commandString, int extraEdges, int numVertices
                 gp_ErrorMessage("Error saving graph in adjacency list format.");
                 Result = NOTOK;
             }
-            if (PromptSaveGraph(theGraph, origGraph, extraEdges, WRITE_G6) != OK)
+            if (PromptSaveGraph(theGraph, origGraph, extraEdges, WRITE_GRAPH6) != OK)
             {
                 gp_ErrorMessage("Error saving graph in G6 format.");
                 Result = NOTOK;
@@ -762,7 +762,7 @@ int PromptSaveGraph(graphP theGraph, graphP origGraph, int extraEdges, int saveM
         gp_MessagePrompt("Do you want to save the generated graph in adjacency "
                          "matrix format (y/n)?");
         break;
-    case WRITE_G6:
+    case WRITE_GRAPH6:
         gp_MessagePrompt("Do you want to save the generated graph in G6 format "
                          "(y/n)?");
         break;
@@ -815,7 +815,7 @@ int PromptSaveGraph(graphP theGraph, graphP origGraph, int extraEdges, int saveM
     case WRITE_ADJMATRIX:
         strcat(theFileName, "AdjMatrix.txt");
         break;
-    case WRITE_G6:
+    case WRITE_GRAPH6:
         strcat(theFileName, ".g6");
         break;
     case WRITE_SPARSE6:
@@ -887,7 +887,7 @@ int PromptSaveGraph(graphP theGraph, graphP origGraph, int extraEdges, int saveM
         SaveAsciiGraph(origGraph, theFileName);
 
     // Save the result graph
-    if (saveMode == WRITE_G6)
+    if (saveMode == WRITE_GRAPH6)
         strcat(theFileName, ".out.g6");
     else
         strcat(theFileName, ".out.txt");

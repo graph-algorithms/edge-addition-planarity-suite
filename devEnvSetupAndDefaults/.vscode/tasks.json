@@ -11,7 +11,6 @@
                 "-fdiagnostics-color=always",
                 "-DDEBUG", // Added so that _DEBUG is defined; see appconst.h
                 //"-DUSE_0BASEDARRAYS", // Commented out to use faster 1-based array indexing
-                "-Wall",
                 "-fno-strict-aliasing",
                 "-pedantic",
                 "-Wall",
@@ -19,6 +18,7 @@
                 "-Wcast-align",
                 "-Wdeclaration-after-statement",
                 "-Wdouble-promotion",
+                // "-Wdeprecated-non-prototype", // Clang-only; GCC rejects this flag
                 "-Wduplicated-branches",
                 "-Wduplicated-cond",
                 "-Werror",
@@ -27,6 +27,9 @@
                 "-Wformat-security",
                 "-Wformat=2",
                 "-Wimplicit-function-declaration",
+                // "-Wincompatible-pointer-types-discards-qualifiers", // Clang spelling; GCC uses -Wdiscarded-qualifiers
+                "-Wdiscarded-qualifiers",
+                "-Wignored-qualifiers",
                 "-Winit-self",
                 "-Winline",
                 "-Wjump-misses-init",
@@ -54,10 +57,9 @@
                 "-Wswitch-default",
                 "-Wswitch-enum",
                 "-Wundef",
-                "-Wunreachable-code",
+                // "-Wunreachable-code", // gcc ignores this since v4.5 in 2010
                 "-Wunused-but-set-variable",
                 "-Wwrite-strings",
-                "-Wdiscarded-qualifiers",
                 "-Wunused-result",
                 "-g", // Generate debug symbols
                 "${workspaceFolder}\\c\\planarityApp\\**.c",
@@ -90,7 +92,6 @@
             "args": [
                 "-O3",
                 //"-DUSE_0BASEDARRAYS", // Commented out to use faster 1-based array indexing
-                "-Wall",
                 "-fno-strict-aliasing",
                 "-pedantic",
                 "-Wall",
@@ -98,6 +99,7 @@
                 "-Wcast-align",
                 "-Wdeclaration-after-statement",
                 "-Wdouble-promotion",
+                // "-Wdeprecated-non-prototype", // Clang-only; GCC rejects this flag
                 "-Wduplicated-branches",
                 "-Wduplicated-cond",
                 "-Werror",
@@ -106,6 +108,9 @@
                 "-Wformat-security",
                 "-Wformat=2",
                 "-Wimplicit-function-declaration",
+                // "-Wincompatible-pointer-types-discards-qualifiers", // Clang spelling; GCC uses -Wdiscarded-qualifiers
+                "-Wdiscarded-qualifiers",
+                "-Wignored-qualifiers",
                 "-Winit-self",
                 "-Winline",
                 "-Wjump-misses-init",
@@ -133,10 +138,9 @@
                 "-Wswitch-default",
                 "-Wswitch-enum",
                 "-Wundef",
-                "-Wunreachable-code",
+                // "-Wunreachable-code", // gcc ignores this since v4.5 in 2010
                 "-Wunused-but-set-variable",
                 "-Wwrite-strings",
-                "-Wdiscarded-qualifiers",
                 "-Wunused-result",
                 // "-g", // Uncomment to generate debug symbols for Release build and debug with VSCode
                 "${workspaceFolder}\\c\\planarityApp\\**.c",
@@ -174,6 +178,7 @@
                 "-Wcast-align",
                 "-Wdeclaration-after-statement",
                 "-Wdouble-promotion",
+                // "-Wdeprecated-non-prototype", // Clang-only; GCC rejects this flag
                 "-Wduplicated-branches",
                 "-Wduplicated-cond",
                 "-Werror",
@@ -182,6 +187,9 @@
                 "-Wformat-security",
                 "-Wformat=2",
                 "-Wimplicit-function-declaration",
+                // "-Wincompatible-pointer-types-discards-qualifiers", // Clang spelling; GCC uses -Wdiscarded-qualifiers
+                "-Wdiscarded-qualifiers",
+                "-Wignored-qualifiers",
                 "-Winit-self",
                 "-Winline",
                 "-Wjump-misses-init",
@@ -192,6 +200,7 @@
                 "-Wmissing-noreturn",
                 "-Wmissing-prototypes",
                 "-Wnested-externs",
+                "-Wno-error=suggest-attribute=format",
                 "-Wno-error=missing-field-initializers",
                 "-Wno-missing-field-initializers",
                 "-Wnull-dereference",
@@ -208,10 +217,9 @@
                 "-Wswitch-default",
                 "-Wswitch-enum",
                 "-Wundef",
-                "-Wunreachable-code",
+                // "-Wunreachable-code", // gcc ignores this since v4.5 in 2010
                 "-Wunused-but-set-variable",
                 "-Wwrite-strings",
-                "-Wdiscarded-qualifiers",
                 "-Wunused-result",
                 "-g", // Generate debug symbols
                 "${workspaceFolder}/c/planarityApp/**.c",
@@ -250,6 +258,7 @@
                 "-Wcast-align",
                 "-Wdeclaration-after-statement",
                 "-Wdouble-promotion",
+                // "-Wdeprecated-non-prototype", // Clang-only; GCC rejects this flag
                 "-Wduplicated-branches",
                 "-Wduplicated-cond",
                 "-Werror",
@@ -258,6 +267,9 @@
                 "-Wformat-security",
                 "-Wformat=2",
                 "-Wimplicit-function-declaration",
+                // "-Wincompatible-pointer-types-discards-qualifiers", // Clang spelling; GCC uses -Wdiscarded-qualifiers
+                "-Wdiscarded-qualifiers",
+                "-Wignored-qualifiers",
                 "-Winit-self",
                 "-Winline",
                 "-Wjump-misses-init",
@@ -268,6 +280,7 @@
                 "-Wmissing-noreturn",
                 "-Wmissing-prototypes",
                 "-Wnested-externs",
+                "-Wno-error=suggest-attribute=format",
                 "-Wno-error=missing-field-initializers",
                 "-Wno-missing-field-initializers",
                 "-Wnull-dereference",
@@ -284,10 +297,9 @@
                 "-Wswitch-default",
                 "-Wswitch-enum",
                 "-Wundef",
-                "-Wunreachable-code",
+                // "-Wunreachable-code", // gcc ignores this since v4.5 in 2010
                 "-Wunused-but-set-variable",
                 "-Wwrite-strings",
-                "-Wdiscarded-qualifiers",
                 "-Wunused-result",
                 "-g", // Generate debug symbols
                 "${workspaceFolder}/c/planarityApp/**.c",
@@ -324,6 +336,7 @@
                 "-Wcast-align",
                 "-Wdeclaration-after-statement",
                 "-Wdouble-promotion",
+                // "-Wdeprecated-non-prototype", // Clang-only; GCC rejects this flag
                 "-Wduplicated-branches",
                 "-Wduplicated-cond",
                 "-Werror",
@@ -332,6 +345,9 @@
                 "-Wformat-security",
                 "-Wformat=2",
                 "-Wimplicit-function-declaration",
+                // "-Wincompatible-pointer-types-discards-qualifiers", // Clang spelling; GCC uses -Wdiscarded-qualifiers
+                "-Wdiscarded-qualifiers",
+                "-Wignored-qualifiers",
                 "-Winit-self",
                 "-Winline",
                 "-Wjump-misses-init",
@@ -342,6 +358,7 @@
                 "-Wmissing-noreturn",
                 "-Wmissing-prototypes",
                 "-Wnested-externs",
+                "-Wno-error=suggest-attribute=format",
                 "-Wno-error=missing-field-initializers",
                 "-Wno-missing-field-initializers",
                 "-Wnull-dereference",
@@ -358,10 +375,9 @@
                 "-Wswitch-default",
                 "-Wswitch-enum",
                 "-Wundef",
-                "-Wunreachable-code",
+                // "-Wunreachable-code", // gcc ignores this since v4.5 in 2010
                 "-Wunused-but-set-variable",
                 "-Wwrite-strings",
-                "-Wdiscarded-qualifiers",
                 "-Wunused-result",
                 // "-g", // Uncomment to generate debug symbols for Release build and debug with VSCode
                 "${workspaceFolder}/c/planarityApp/**.c",
@@ -530,6 +546,8 @@
                 "-Wcast-align",
                 "-Wdeclaration-after-statement",
                 "-Wdouble-promotion",
+                // "-Wduplicated-branches", // GCC-only; Clang rejects this flag
+                // "-Wduplicated-cond", // GCC-only; Clang rejects this flag
                 "-Werror",
                 "-Wextra",
                 "-Wformat-nonliteral",
@@ -538,6 +556,8 @@
                 "-Wimplicit-function-declaration",
                 "-Winit-self",
                 "-Winline",
+                // "-Wjump-misses-init", // GCC-only; Clang rejects this flag
+                // "-Wlogical-op", // GCC-only; Clang rejects this flag
                 "-Wmissing-declarations",
                 "-Wmissing-format-attribute",
                 "-Wmissing-include-dirs",
@@ -551,6 +571,7 @@
                 "-Wpacked",
                 "-Wpointer-arith",
                 "-Wredundant-decls",
+                // "-Wrestrict", // GCC-only; Clang rejects this flag
                 "-Wreturn-type",
                 "-Wshadow",
                 "-Wsign-compare",
@@ -563,8 +584,10 @@
                 "-Wunused-but-set-variable",
                 "-Wwrite-strings",
                 "-Wdeprecated-non-prototype",
+                // "-Wdiscarded-qualifiers", // GCC spelling; Clang uses -Wincompatible-pointer-types-discards-qualifiers
                 "-Wincompatible-pointer-types-discards-qualifiers",
                 "-Wignored-qualifiers",
+                "-Wunused-result",
                 "-g", // Generate debug symbols
                 "${workspaceFolder}/c/planarityApp/**.c",
                 "${workspaceFolder}/c/planarityApp/planarity-test/**.c",
@@ -595,7 +618,7 @@
                 "-fansi-escape-codes",
                 "-fno-strict-aliasing",
                 "-fsanitize=address",
-                "-Wno-deprecated-declarations",
+                "-Wno-deprecated-declarations", // macOS SDK deprecates sprintf; keep the sanitizer task focused on sanitizer findings
                 "-DDEBUG", // Added so that _DEBUG is defined; see appconst.h
                 //"-DUSE_0BASEDARRAYS", // Commented out to use default of 1-based array indexing
                 "-Wall",
@@ -604,6 +627,8 @@
                 "-Wcast-align",
                 "-Wdeclaration-after-statement",
                 "-Wdouble-promotion",
+                // "-Wduplicated-branches", // GCC-only; Clang rejects this flag
+                // "-Wduplicated-cond", // GCC-only; Clang rejects this flag
                 "-Werror",
                 "-Wextra",
                 "-Wformat-nonliteral",
@@ -612,6 +637,8 @@
                 "-Wimplicit-function-declaration",
                 "-Winit-self",
                 "-Winline",
+                // "-Wjump-misses-init", // GCC-only; Clang rejects this flag
+                // "-Wlogical-op", // GCC-only; Clang rejects this flag
                 "-Wmissing-declarations",
                 "-Wmissing-format-attribute",
                 "-Wmissing-include-dirs",
@@ -625,6 +652,7 @@
                 "-Wpacked",
                 "-Wpointer-arith",
                 "-Wredundant-decls",
+                // "-Wrestrict", // GCC-only; Clang rejects this flag
                 "-Wreturn-type",
                 "-Wshadow",
                 "-Wsign-compare",
@@ -637,8 +665,10 @@
                 "-Wunused-but-set-variable",
                 "-Wwrite-strings",
                 "-Wdeprecated-non-prototype",
+                // "-Wdiscarded-qualifiers", // GCC spelling; Clang uses -Wincompatible-pointer-types-discards-qualifiers
                 "-Wincompatible-pointer-types-discards-qualifiers",
                 "-Wignored-qualifiers",
+                "-Wunused-result",
                 "-g", // Generate debug symbols
                 "${workspaceFolder}/c/planarityApp/**.c",
                 "${workspaceFolder}/c/planarityApp/planarity-test/**.c",
@@ -674,6 +704,8 @@
                 "-Wcast-align",
                 "-Wdeclaration-after-statement",
                 "-Wdouble-promotion",
+                // "-Wduplicated-branches", // GCC-only; Clang rejects this flag
+                // "-Wduplicated-cond", // GCC-only; Clang rejects this flag
                 "-Werror",
                 "-Wextra",
                 "-Wformat-nonliteral",
@@ -682,6 +714,8 @@
                 "-Wimplicit-function-declaration",
                 "-Winit-self",
                 "-Winline",
+                // "-Wjump-misses-init", // GCC-only; Clang rejects this flag
+                // "-Wlogical-op", // GCC-only; Clang rejects this flag
                 "-Wmissing-declarations",
                 "-Wmissing-format-attribute",
                 "-Wmissing-include-dirs",
@@ -695,6 +729,7 @@
                 "-Wpacked",
                 "-Wpointer-arith",
                 "-Wredundant-decls",
+                // "-Wrestrict", // GCC-only; Clang rejects this flag
                 "-Wreturn-type",
                 "-Wshadow",
                 "-Wsign-compare",
@@ -707,8 +742,10 @@
                 "-Wunused-but-set-variable",
                 "-Wwrite-strings",
                 "-Wdeprecated-non-prototype",
+                // "-Wdiscarded-qualifiers", // GCC spelling; Clang uses -Wincompatible-pointer-types-discards-qualifiers
                 "-Wincompatible-pointer-types-discards-qualifiers",
                 "-Wignored-qualifiers",
+                "-Wunused-result",
                 // "-g", // Uncomment to generate debug symbols for Release build and debug with VSCode
                 "${workspaceFolder}/c/planarityApp/**.c",
                 "${workspaceFolder}/c/planarityApp/planarity-test/**.c",
