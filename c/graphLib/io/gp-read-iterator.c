@@ -4,26 +4,37 @@ All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "../lowLevelUtils/apiutils.h"
 #include "strOrFile.h"
+#include "../graph.h"
 
 #include "gp-read-iterator.h"
 #include "g6-read-iterator.h"
 #include "s6-read-iterator.h"
-
-#include "../lowLevelUtils/apiutils.h"
+#include "d6-read-iterator.h"
 
 /* Imported functions */
 extern int _g6_InitReaderWithStrOrFile(G6ReadIteratorP theG6ReadIterator, strOrFileP *pInputContainer);
 extern int _s6_InitReaderWithStrOrFile(S6ReadIteratorP theS6ReadIterator, strOrFileP *pInputContainer);
+extern int _d6_InitReaderWithStrOrFile(D6ReadIteratorP theD6ReadIterator, strOrFileP *pInputContainer);
 
 /* Private functions */
 int _gp_IsReaderInitialized(GPReadIteratorP theGPReadIterator);
 int _gp_SetFileType(GPReadIteratorP theGPReadIterator, char const *const firstLine);
 int _gp_NewChildReader(GPReadIteratorP theGPReadIterator);
 void _gp_FreeChildReader(GPReadIteratorP theGPReadIterator);
+
+// The formats a read iterator can be reading. The type is decided from the
+// first line of the input when the iterator is initialized, and the other
+// methods dispatch on it.
+#define GP_FILE_TYPE_UNKNOWN 0
+#define GP_FILE_TYPE_G6 1
+#define GP_FILE_TYPE_S6 2
+#define GP_FILE_TYPE_D6 3
 
 /********************************************************************
  Package private structure declaration for the read iterator
@@ -43,6 +54,7 @@ struct GPReadIteratorStruct
 
     G6ReadIteratorP g6ReadIterator;
     S6ReadIteratorP s6ReadIterator;
+    D6ReadIteratorP d6ReadIterator;
 };
 
 /********************************************************************
@@ -82,6 +94,7 @@ int gp_NewReader(GPReadIteratorP *pGPReadIterator, graphP theGraph)
     (*pGPReadIterator)->fileType = GP_FILE_TYPE_UNKNOWN;
     (*pGPReadIterator)->g6ReadIterator = NULL;
     (*pGPReadIterator)->s6ReadIterator = NULL;
+    (*pGPReadIterator)->d6ReadIterator = NULL;
 
     return OK;
 }
@@ -104,11 +117,13 @@ int _gp_SetFileType(GPReadIteratorP theGPReadIterator, char const *const firstLi
         theGPReadIterator->fileType = GP_FILE_TYPE_G6;
     else if (s6_IsSparse6Input(firstLine))
         theGPReadIterator->fileType = GP_FILE_TYPE_S6;
+    else if (d6_IsDigraph6Input(firstLine))
+        theGPReadIterator->fileType = GP_FILE_TYPE_D6;
     else
     {
         gp_ErrorMessage("The input is in none of the formats that contain "
-                        "multiple graphs, i.e. it is neither graph6 nor "
-                        "sparse6.");
+                        "multiple graphs, i.e. it is not graph6, sparse6 or "
+                        "digraph6.");
         return NOTOK;
     }
 
@@ -131,6 +146,9 @@ int _gp_NewChildReader(GPReadIteratorP theGPReadIterator)
     case GP_FILE_TYPE_S6:
         return s6_NewReader((&theGPReadIterator->s6ReadIterator), theGPReadIterator->currGraph);
 
+    case GP_FILE_TYPE_D6:
+        return d6_NewReader((&theGPReadIterator->d6ReadIterator), theGPReadIterator->currGraph);
+
     default:
         return NOTOK;
     }
@@ -151,6 +169,9 @@ void _gp_FreeChildReader(GPReadIteratorP theGPReadIterator)
 
     if (theGPReadIterator->s6ReadIterator != NULL)
         s6_FreeReader((&theGPReadIterator->s6ReadIterator));
+
+    if (theGPReadIterator->d6ReadIterator != NULL)
+        d6_FreeReader((&theGPReadIterator->d6ReadIterator));
 
     theGPReadIterator->fileType = GP_FILE_TYPE_UNKNOWN;
 }
@@ -196,6 +217,10 @@ int gp_InitReaderWithString(GPReadIteratorP theGPReadIterator, char *inputString
 
     case GP_FILE_TYPE_S6:
         Result = s6_InitReaderWithString(theGPReadIterator->s6ReadIterator, inputString);
+        break;
+
+    case GP_FILE_TYPE_D6:
+        Result = d6_InitReaderWithString(theGPReadIterator->d6ReadIterator, inputString);
         break;
 
     default:
@@ -276,6 +301,10 @@ int gp_InitReaderWithFileName(GPReadIteratorP theGPReadIterator, char const *con
         Result = _s6_InitReaderWithStrOrFile(theGPReadIterator->s6ReadIterator, (&inputContainer));
         break;
 
+    case GP_FILE_TYPE_D6:
+        Result = _d6_InitReaderWithStrOrFile(theGPReadIterator->d6ReadIterator, (&inputContainer));
+        break;
+
     default:
         Result = NOTOK;
         break;
@@ -310,6 +339,9 @@ int gp_ReadGraph(GPReadIteratorP theGPReadIterator)
     case GP_FILE_TYPE_S6:
         return s6_ReadGraph(theGPReadIterator->s6ReadIterator);
 
+    case GP_FILE_TYPE_D6:
+        return d6_ReadGraph(theGPReadIterator->d6ReadIterator);
+
     default:
         gp_ErrorMessage("Unable to read a graph, as the reader has not been "
                         "initialized with an input.");
@@ -343,6 +375,7 @@ int gp_RetrieveGraphChange(GPReadIteratorP theGPReadIterator, int *e, int *u, in
     switch (theGPReadIterator->fileType)
     {
     case GP_FILE_TYPE_G6:
+    case GP_FILE_TYPE_D6:
         return OK;
 
     case GP_FILE_TYPE_S6:
@@ -367,6 +400,9 @@ int gp_EndReached(GPReadIteratorP theGPReadIterator)
 
     case GP_FILE_TYPE_S6:
         return s6_EndReached(theGPReadIterator->s6ReadIterator);
+
+    case GP_FILE_TYPE_D6:
+        return d6_EndReached(theGPReadIterator->d6ReadIterator);
 
     default:
         return TRUE;

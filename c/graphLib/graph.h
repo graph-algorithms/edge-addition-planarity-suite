@@ -54,6 +54,7 @@ extern "C"
     int gp_IsNeighbor(graphP theGraph, int u, int v);
     int gp_FindEdge(graphP theGraph, int u, int v);
     int gp_GetVertexDegree(graphP theGraph, int v);
+    int gp_HasParallelEdges(graphP theGraph, int includingInOnlyEdges);
 
     // Basic interrogators for directed graphs
     // The direction can be EDGEFLAG_DIRECTION_INONLY or EDGEFLAG_DIRECTION_OUTONLY
@@ -72,7 +73,7 @@ extern "C"
     int gp_DeleteEdge(graphP theGraph, int e);
     int gp_ClearEdgeDirectionFlags(graphP theGraph);
     int gp_TransposeDirectedGraph(graphP theGraph);
-    int gp_DeleteParallelEdges(graphP theGraph);
+    int gp_DeleteParallelEdges(graphP theGraph, int includingInOnlyEdges);
 
     // Intermediate graph structure manipulators
     void gp_HideEdge(graphP theGraph, int e);

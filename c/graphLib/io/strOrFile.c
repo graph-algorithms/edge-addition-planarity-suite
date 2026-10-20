@@ -841,6 +841,13 @@ char *sf_fgets(char *str, int count, strOrFileP theStrOrFile)
             if (theUnreadSubstr != NULL && numUnreadChars > 0)
             {
                 int charsReadFromStrBuf = 0;
+                // As fgets() does, the reading stops after a newline, so that
+                // the next call begins with the next line
+                char const *newline = (char const *)memchr(theUnreadSubstr, '\n', (size_t)charsToReadFromStrBuf);
+
+                if (newline != NULL)
+                    charsToReadFromStrBuf = (int)(newline - theUnreadSubstr) + 1;
+
                 // The str parameter is expected to have a capacity of count
                 // characters, so that count-1 characters can be read, and
                 // then str[count-1] can receive a null terminator.

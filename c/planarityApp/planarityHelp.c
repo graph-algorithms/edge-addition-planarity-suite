@@ -86,8 +86,8 @@ int helpMessage(char *param)
             "'planarity -s [-q] C I O [O2]': Specific graph\n"
             "'planarity -rm [-q] N O [O2]': Random maximal planar graph\n"
             "'planarity -rn [-q] N O [O2]': Random nonplanar graph (maximal planar + edge)\n"
-            "'planarity -t [-q] C I O': Test algorithm on graph(s) in .g6, .s6 or .inc.s6 file\n"
-            "'planarity -x [-q] -(gsam) I O': Transform graph to .g6 (g), sparse6 (s), Adjacency List (a), or Adjacency Matrix (m)\n"
+            "'planarity -t [-q] C I O': Test algorithm on graph(s) in .g6, .s6, .inc.s6 or .d6 file\n"
+            "'planarity -x [-q] -(gsdam) I O': Transform graph to .g6 (g), sparse6 (s), digraph6 (d), Adjacency List (a), or Adjacency Matrix (m)\n"
             "'planarity I O [-n O2]': Legacy command-line (default -s -p)\n");
 
         gp_Message("-q is for quiet mode (no messages to stdout and stderr)\n");
