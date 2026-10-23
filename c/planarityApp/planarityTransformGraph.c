@@ -11,8 +11,8 @@ int transformString(graphP theGraph, char *inputStr);
 
 /****************************************************************************
  TransformGraph()
- commandString - command to run; i.e. `-(gsam)` to transform graph to .g6, sparse6, adjacency
- list, or adjacency matrix format
+ commandString - command to run; i.e. `-(gsdam)` to transform graph to .g6, sparse6, digraph6,
+ adjacency list, or adjacency matrix format
  infileName - name of file to read, or NULL to cause the program to prompt the user for a file name
  inputStr - string containing input graph, or NULL to cause the program to fall back on reading from file
  outputBase - pointer to the flag set for whether output is 0- or 1-based
@@ -40,16 +40,18 @@ int TransformGraph(char const *const commandString, char const *const infileName
     if (commandString[0] == '-')
     {
         if (commandString[1] == 'g')
-            outputFormat = WRITE_G6;
+            outputFormat = WRITE_GRAPH6;
         else if (commandString[1] == 's')
             outputFormat = WRITE_SPARSE6;
+        else if (commandString[1] == 'd')
+            outputFormat = WRITE_DIGRAPH6;
         else if (commandString[1] == 'a')
             outputFormat = WRITE_ADJLIST;
         else if (commandString[1] == 'm')
             outputFormat = WRITE_ADJMATRIX;
         else
         {
-            gp_ErrorMessage("Invalid argument; only -(gsam) is allowed.");
+            gp_ErrorMessage("Invalid argument; only -(gsdam) is allowed.");
             gp_Free(&theGraph);
             return NOTOK;
         }
@@ -65,12 +67,12 @@ int TransformGraph(char const *const commandString, char const *const infileName
         }
         else
         {
-            // Want to know whether the output is 0- or 1-based: the graph6 and
-            // sparse6 formats number vertices from 0 whatever the input did,
-            // and the text formats follow the input
+            // Want to know whether the output is 0- or 1-based: the graph6,
+            // sparse6 and digraph6 formats number vertices from 0 whatever
+            // the input did, and the text formats follow the input
             if (outputBase != NULL)
             {
-                if (outputFormat == WRITE_G6 || outputFormat == WRITE_SPARSE6)
+                if (outputFormat == WRITE_GRAPH6 || outputFormat == WRITE_SPARSE6 || outputFormat == WRITE_DIGRAPH6)
                     (*outputBase) = 1;
                 else
                     (*outputBase) = (gp_GetGraphFlags(theGraph) & GRAPHFLAGS_ZEROBASEDIO) ? 1 : 0;

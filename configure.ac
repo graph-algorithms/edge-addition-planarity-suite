@@ -54,11 +54,12 @@ AC_ARG_ENABLE([compile-warnings],
 AC_MSG_CHECKING([whether enable compiler warnings])
 AC_MSG_RESULT([$enable_compile_warnings])
 
-AS_IF([test "x$enable_compile_warnings" != "xno"],
-  [ax_enable_compile_warnings=$enable_compile_warnings
-   AX_COMPILER_FLAGS_CFLAGS([WARNING_CFLAGS], [], [ dnl
-       -pedantic dnl])
-   AC_SUBST([WARNING_CFLAGS])])
+# The macro also probes base non-warning flags such as
+# -fno-strict-aliasing, so invoke it even when warnings are disabled.
+ax_enable_compile_warnings=$enable_compile_warnings
+AX_COMPILER_FLAGS_CFLAGS([WARNING_CFLAGS], [], [ dnl
+    -pedantic dnl])
+AC_SUBST([WARNING_CFLAGS])
 
 # Build with -funsigned-char so that CI can exercise unsigned-plain-char
 # behavior (e.g. the Linux ABIs for AArch64, ARM, PowerPC, s390x) on any

@@ -9,7 +9,11 @@ See the LICENSE.TXT file for licensing information.
 #include <string.h>
 
 #include "../planarity.h"
+
 #include "../../graphLib/io/strOrFile.h"
+
+#include "../../graphLib/io/s6-read-iterator.h"
+#include "../../graphLib/io/s6-write-iterator.h"
 
 /* Library-private function the edge storage tests call directly */
 extern int _CompactEdgeStorage(graphP theGraph);
@@ -290,8 +294,8 @@ static int runSparse6WriteRoundTripTest(char const *g6FileName, char const *s6Fi
         {
             char *ourG6 = NULL, *readG6 = NULL;
 
-            if (gp_WriteToString(writerGraph, &ourG6, WRITE_G6) != OK ||
-                gp_WriteToString(theGraph, &readG6, WRITE_G6) != OK ||
+            if (gp_WriteToString(writerGraph, &ourG6, WRITE_GRAPH6) != OK ||
+                gp_WriteToString(theGraph, &readG6, WRITE_GRAPH6) != OK ||
                 strcmp(ourG6, readG6) != 0)
             {
                 gp_ErrorMessage("After graph %d of \"%s\" the writer's graph is \"%s\" "
@@ -650,7 +654,7 @@ static int runCompactEdgeStorageTests(void)
 
     // The edge set before compaction, taken while the graph is undirected,
     // since setting a direction below marks it as a digraph for graph6
-    if (Result == OK && gp_WriteToString(theGraph, &before, WRITE_G6) != OK)
+    if (Result == OK && gp_WriteToString(theGraph, &before, WRITE_GRAPH6) != OK)
     {
         gp_ErrorMessage("Unable to write the graph before compaction.");
         Result = NOTOK;
@@ -706,7 +710,7 @@ static int runCompactEdgeStorageTests(void)
     }
 
     // The edge set after compaction, once the graph is undirected again
-    if (Result == OK && gp_WriteToString(theGraph, &after, WRITE_G6) != OK)
+    if (Result == OK && gp_WriteToString(theGraph, &after, WRITE_GRAPH6) != OK)
     {
         gp_ErrorMessage("Unable to write the graph after compaction.");
         Result = NOTOK;
@@ -1651,8 +1655,8 @@ static int runSparse6LockstepTest(char const *g6FileName, char const *s6FileName
         // The edge count is compared as well because a repeated edge would
         // set the same bit of the graph6 encoding twice and go unnoticed
         if (gp_GetM(g6Graph) != gp_GetM(s6Graph) ||
-            gp_WriteToString(g6Graph, &g6Str, WRITE_G6) != OK || g6Str == NULL ||
-            gp_WriteToString(s6Graph, &s6Str, WRITE_G6) != OK || s6Str == NULL ||
+            gp_WriteToString(g6Graph, &g6Str, WRITE_GRAPH6) != OK || g6Str == NULL ||
+            gp_WriteToString(s6Graph, &s6Str, WRITE_GRAPH6) != OK || s6Str == NULL ||
             strcmp(g6Str, s6Str) != 0)
         {
             gp_ErrorMessage("Graph %d of \"%s\" does not match graph %d of "
@@ -1737,7 +1741,7 @@ static int runSparse6AcceptTest(char const *s6Str, char const *expectedG6Line)
     }
 
     if (Result == OK &&
-        (gp_WriteToString(theGraph, &actualG6, WRITE_G6) != OK || actualG6 == NULL ||
+        (gp_WriteToString(theGraph, &actualG6, WRITE_GRAPH6) != OK || actualG6 == NULL ||
          strcmp(actualG6, expectedG6) != 0))
         Result = NOTOK;
 
@@ -1788,8 +1792,8 @@ static int runSparse6AcceptEdgesTest(char const *s6Str, int order, int const edg
         Result = NOTOK;
 
     if (Result == OK &&
-        (gp_WriteToString(actualGraph, &actualG6, WRITE_G6) != OK || actualG6 == NULL ||
-         gp_WriteToString(expectedGraph, &expectedG6, WRITE_G6) != OK || expectedG6 == NULL ||
+        (gp_WriteToString(actualGraph, &actualG6, WRITE_GRAPH6) != OK || actualG6 == NULL ||
+         gp_WriteToString(expectedGraph, &expectedG6, WRITE_GRAPH6) != OK || expectedG6 == NULL ||
          strcmp(actualG6, expectedG6) != 0))
         Result = NOTOK;
 
@@ -3219,8 +3223,8 @@ static int runSparse6LookaheadLockstepTest(char const *s6FileName, int inputInMe
             char *laStr = NULL, *plainStr = NULL; // codespell:ignore lastr
 
             if (gp_GetM(laGraph) != gp_GetM(plainGraph) ||
-                gp_WriteToString(laGraph, &laStr, WRITE_G6) != OK || laStr == NULL || // codespell:ignore lastr
-                gp_WriteToString(plainGraph, &plainStr, WRITE_G6) != OK || plainStr == NULL ||
+                gp_WriteToString(laGraph, &laStr, WRITE_GRAPH6) != OK || laStr == NULL || // codespell:ignore lastr
+                gp_WriteToString(plainGraph, &plainStr, WRITE_GRAPH6) != OK || plainStr == NULL ||
                 strcmp(laStr, plainStr) != 0) // codespell:ignore lastr
             {
                 gp_ErrorMessage("Graph %d of \"%s\" read after the lookahead "
@@ -3360,7 +3364,7 @@ static int runSparse6LookaheadScript(char const *s6Str, char const *script, int 
     {
         char const *g6Header = ">>graph6<<";
 
-        if (gp_WriteToString(theGraph, &actualG6, WRITE_G6) != OK || actualG6 == NULL ||
+        if (gp_WriteToString(theGraph, &actualG6, WRITE_GRAPH6) != OK || actualG6 == NULL ||
             strncmp(actualG6, g6Header, strlen(g6Header)) != 0 ||
             strncmp(actualG6 + strlen(g6Header), expectedG6Line, strlen(expectedG6Line)) != 0 ||
             actualG6[strlen(g6Header) + strlen(expectedG6Line)] != '\n')
