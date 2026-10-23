@@ -73,6 +73,7 @@ extern "C"
     int gp_ClearEdgeDirectionFlags(graphP theGraph);
     int gp_TransposeDirectedGraph(graphP theGraph);
     int gp_DeleteParallelEdges(graphP theGraph, int includingInOnlyEdges);
+    int gp_DeleteLoopEdges(graphP theGraph);
 
     // Intermediate graph structure manipulators
     void gp_HideEdge(graphP theGraph, int e);
@@ -384,8 +385,7 @@ extern "C"
 #define gp_ClearEdgeFlagInverted(theGraph, e) (theGraph->E[e].flags &= (~EDGEFLAG_INVERTED_MASK))
 #define gp_XorEdgeFlagInverted(theGraph, e) (theGraph->E[e].flags ^= EDGEFLAG_INVERTED_MASK)
 
-#define EDGEFLAG_DIRECTION_INONLY 64
-#define EDGEFLAG_DIRECTION_OUTONLY 128
+ 
 #define EDGEFLAG_DIRECTION_MASK 192
 
 // NOTE: Edge 'flags' bit 8 used by EDGE_TYPE_CROSS above,
