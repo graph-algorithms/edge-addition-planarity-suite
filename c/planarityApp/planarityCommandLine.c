@@ -922,6 +922,10 @@ int runGeneralReadIteratorTests(void)
         // graph6, with and without its header
         {"D?{\n", "D?{"},
         {">>graph6<<D?{\n", "D?{"},
+        // The order-1 graph has an empty adjacency matrix, with or without a
+        // final line terminator
+        {"@\n", "@"},
+        {"@", "@"},
         // sparse6 and incremental sparse6, the latter with the whole graph
         // that its second line modifies
         {":Fa@x^\n", "Fw??G"},
@@ -951,6 +955,9 @@ int runGeneralReadIteratorTests(void)
     // ends before their edges do.
     char const *readFailCases[] = {
         "D?\n",
+        // The order byte alone is a complete line only when its graph has no
+        // adjacency-matrix bytes
+        "D",
     };
 
     char const *g6Header = ">>graph6<<";
