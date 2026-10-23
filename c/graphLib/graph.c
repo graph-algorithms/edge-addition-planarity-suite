@@ -1938,11 +1938,6 @@ int gp_GetVertexDegree(graphP theGraph, int v)
     if (theGraph == NULL ||
         v < gp_LowerBoundVertexStorage(theGraph) || v >= gp_UpperBoundVertexStorage(theGraph))
     {
-#ifdef DEBUG
-        NOTOK;
-        ;
-#endif
-
         return 0;
     }
 
@@ -1951,22 +1946,7 @@ int gp_GetVertexDegree(graphP theGraph, int v)
     e = gp_GetFirstEdge(theGraph, v);
     while (gp_IsEdge(theGraph, e))
     {
-        int neighbor = gp_GetNeighbor(theGraph, e);
-        if (neighbor != v) 
-        {
-            degree++;
-        }
-        else 
-        {
-            int isOutOnly = theGraph->E[e].flags & EDGEFLAG_DIRECTION_OUTONLY;
-            int isInOnly = theGraph->E[e].flags & EDGEFLAG_DIRECTION_INONLY;
-            
-            if (isOutOnly || (!isOutOnly && !isInOnly && e < gp_GetTwin(theGraph, e))) 
-            {
-                degree++;
-            }
-        }
-         
+        degree++;
         e = gp_GetNextEdge(theGraph, e);
     }
 
