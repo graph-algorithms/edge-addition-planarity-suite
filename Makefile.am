@@ -6,6 +6,9 @@ lib_LTLIBRARIES = libplanarity.la
 
 AM_CFLAGS = $(WARNING_CFLAGS)
 
+AM_DISTCHECK_CONFIGURE_FLAGS = \
+	--enable-compile-warnings=$(ENABLE_COMPILE_WARNINGS)
+
 libplanarity_la_SOURCES = \
 	c/graphLib/lowLevelUtils/apiutils.private.h \
 	c/graphLib/lowLevelUtils/listcoll.h \
@@ -57,8 +60,8 @@ libplanarity_la_SOURCES = \
 	c/graphLib/homeomorphSearch/graphK23Search.c \
 	c/graphLib/homeomorphSearch/graphK33Search_Extensions.c \
 	c/graphLib/homeomorphSearch/graphK33Search.c \
-	c/graphLib/homeomorphSearch/graphK4Search_Extensions.c \ 
-	c/graphLib/homeomorphSearch/graphK4Search.c 
+	c/graphLib/homeomorphSearch/graphK4Search_Extensions.c \
+	c/graphLib/homeomorphSearch/graphK4Search.c
 
 
 libplanarity_la_LDFLAGS = -no-undefined $(AM_LDFLAGS) -version-info @LT_CURRENT@:@LT_REVISION@:@LT_AGE@

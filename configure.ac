@@ -53,6 +53,7 @@ AC_ARG_ENABLE([compile-warnings],
     [enable_compile_warnings=no])
 AC_MSG_CHECKING([whether enable compiler warnings])
 AC_MSG_RESULT([$enable_compile_warnings])
+AC_SUBST([ENABLE_COMPILE_WARNINGS], [$enable_compile_warnings])
 
 # The macro also probes base non-warning flags such as
 # -fno-strict-aliasing, so invoke it even when warnings are disabled.
