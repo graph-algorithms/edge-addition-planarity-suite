@@ -649,6 +649,22 @@ int g6_ReadGraph(G6ReadIteratorP theG6ReadIterator)
             gp_ErrorMessage("Unable to read line %d of .g6 input due to a file read error.", lineNum);
             return NOTOK;
         }
+
+        // The first line was begun when the reader was initialized. Reaching
+        // EOF here is valid only for the order-1 graph, whose upper-triangular
+        // adjacency matrix has no bytes; every larger graph is truncated.
+        if (lineNum == 1)
+        {
+            if (numCharsForGraphEncoding != 0)
+            {
+                gp_ErrorMessage("Line 1 of .g6 input ends after the order of its graph.");
+                return NOTOK;
+            }
+
+            theG6ReadIterator->numGraphsRead = lineNum;
+            return OK;
+        }
+
         theG6ReadIterator->endReached = TRUE;
 
         // The input is closed here, where a failure to close, e.g. of a stream
