@@ -245,6 +245,14 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
             // Read the value indicating the next adjacent vertex (or the list end)
             if (sf_ReadSkipWhitespace(inputContainer) != OK)
                 return NOTOK;
+            
+            int hasPlus = FALSE;
+            int peekChar = sf_getc(inputContainer);
+            if (peekChar == '+')
+                hasPlus = TRUE;
+            if (peekChar != EOF)
+                sf_ungetc(peekChar, inputContainer);
+
             if (sf_ReadInteger(&W, inputContainer) != OK)
                 return NOTOK;
             if (sf_ReadSkipWhitespace(inputContainer) != OK)
@@ -267,7 +275,13 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
 
             // Loop edges are not supported
             else if (W == v)
-                return NOTOK;
+            {
+                if ((ErrorCode = gp_DynamicAddEdge(theGraph, v, 0, W, 0)) != OK)
+                    return ErrorCode;
+                
+                if (hasPlus)
+                    gp_SetDirection(theGraph, gp_GetFirstEdge(theGraph, v), EDGEFLAG_DIRECTION_OUTONLY);
+            }
 
             // If the adjacency is to a succeeding, higher numbered vertex,
             // then we'll add an undirected edge for now
@@ -434,7 +448,7 @@ int _ReadLEDAGraph(graphP theGraph, strOrFileP inputContainer)
     if (sf_ReadSkipWhitespace(inputContainer) != OK)
         return NOTOK;
 
-    /* Read and add each edge, omitting loops and parallel edges */
+    /* Read and add each edge, omitting parallel edges (loops are now supported) */
     for (int m = 0; m < M; m++)
     {
         if (sf_ReadSkipWhitespace(inputContainer) != OK)
@@ -448,7 +462,8 @@ int _ReadLEDAGraph(graphP theGraph, strOrFileP inputContainer)
         if (sf_ReadSkipLineRemainder(inputContainer) != OK)
             return NOTOK;
 
-        if (u != v && !gp_IsNeighbor(theGraph, u - zeroBasedOffset, v - zeroBasedOffset))
+        // Removed the u != v restriction to allow loop edges
+        if (!gp_IsNeighbor(theGraph, u - zeroBasedOffset, v - zeroBasedOffset))
         {
             if ((ErrorCode = gp_DynamicAddEdge(theGraph, u - zeroBasedOffset, 0, v - zeroBasedOffset, 0)) != OK)
                 return ErrorCode;
@@ -460,7 +475,6 @@ int _ReadLEDAGraph(graphP theGraph, strOrFileP inputContainer)
 
     return OK;
 }
-
 /********************************************************************
  gp_Read()
 
@@ -712,17 +726,49 @@ int _WriteAdjList(graphP theGraph, strOrFileP outputContainer)
         e = gp_GetLastEdge(theGraph, v);
         while (gp_IsEdge(theGraph, e))
         {
-            if (gp_GetDirection(theGraph, e) != EDGEFLAG_DIRECTION_INONLY)
+            int neighbor = gp_GetNeighbor(theGraph, e);
+            int dir = gp_GetDirection(theGraph, e);
+            int shouldPrint = 0;
+            int isDirectedLoop = 0;
+
+            if (neighbor != v)
             {
-                if (sprintf(numberStr, " %d", gp_GetNeighbor(theGraph, e) - zeroBasedVertexOffset) < 1)
-                    return NOTOK;
+                if (dir != EDGEFLAG_DIRECTION_INONLY)
+                    shouldPrint = 1;
+            }
+            else
+            {
+                if (dir == EDGEFLAG_DIRECTION_OUTONLY)
+                {
+                    shouldPrint = 1;
+                    isDirectedLoop = 1; // Needs a '+' sign
+                }
+                else if (dir != EDGEFLAG_DIRECTION_INONLY && e < gp_GetTwin(theGraph, e))
+                {
+                    shouldPrint = 1;
+                }
+            }
+
+            if (shouldPrint)
+            {
+                if (isDirectedLoop)
+                {
+                    // Print with a '+' sign
+                    if (sprintf(numberStr, " +%d", neighbor - zeroBasedVertexOffset) < 1)
+                        return NOTOK;
+                }
+                else
+                {
+                    if (sprintf(numberStr, " %d", neighbor - zeroBasedVertexOffset) < 1)
+                        return NOTOK;
+                }
+                
                 if (sf_fputs(numberStr, outputContainer) == EOF)
                     return NOTOK;
             }
 
             e = gp_GetPrevEdge(theGraph, e);
         }
-
         // Write NIL at the end of the adjacency list (in zero-based I/O, NIL was -1)
         if (sprintf(numberStr, " %d\n", adjacencyListTerminator) < 1)
             return NOTOK;
