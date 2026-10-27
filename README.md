@@ -40,9 +40,9 @@ Once one has set up the development environment and is able to work with the cod
 2. Open `bash` (e.g., on Windows, open the start menu and start typing "MSYS2 UCRT64" to open the correct terminal app), then within `bash` navigate to the root of the `edge-addition-planarity-suite` repository (i.e., the directory containing `configure.ac` and the `c` subdirectory)
 3. Enter the following commands:
     1. `autoreconf -fi`
-    2. `./configure`
+    2. `./configure --enable-compile-warnings=error`
     3. `make dist`
-    4. `make distcheck`
+    4. `make distcheck DISTCHECK_CONFIGURE_FLAGS="--enable-compile-warnings=error"`
 
 The result is a validated `planarity-N.N.N.N.tar.gz` distribution, where `N.N.N.N` is the version number expressed in the `AC_INIT` line of the `configure.ac` file. 
 
