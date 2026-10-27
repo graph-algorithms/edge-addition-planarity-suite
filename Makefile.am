@@ -6,9 +6,6 @@ lib_LTLIBRARIES = libplanarity.la
 
 AM_CFLAGS = $(WARNING_CFLAGS)
 
-AM_DISTCHECK_CONFIGURE_FLAGS = \
-	--enable-compile-warnings=$(ENABLE_COMPILE_WARNINGS)
-
 libplanarity_la_SOURCES = \
 	c/graphLib/lowLevelUtils/apiutils.private.h \
 	c/graphLib/lowLevelUtils/listcoll.h \
