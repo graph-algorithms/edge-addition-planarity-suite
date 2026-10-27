@@ -112,14 +112,13 @@ int _g6_ValidateGraphEncoding(char *graphBuff, const int order, const size_t num
     size_t expectedNumPaddingZeroes = 0, expectedNumChars = 0;
     char finalByte = '\0';
 
-    if (graphBuff == NULL || strlen(graphBuff) == 0)
+    if (graphBuff == NULL)
     {
-        gp_ErrorMessage("Invalid encoding: graphBuff is NULL or empty.");
+        gp_ErrorMessage("Invalid encoding: graphBuff is NULL.");
         return NOTOK;
     }
 
     expectedNumPaddingZeroes = _g6_GetExpectedNumPaddingZeroes(order, numChars);
-    finalByte = graphBuff[numChars - 1] - 63;
 
     // Num edges of the graph (and therefore the number of bits) is (n * (n-1))/2, and
     // since each resulting byte needs to correspond to an ascii character between 63 and 126,
@@ -136,6 +135,14 @@ int _g6_ValidateGraphEncoding(char *graphBuff, const int order, const size_t num
                         (int)expectedNumChars);
         return NOTOK;
     }
+
+    // Orders 0 and 1 have an empty upper-triangular adjacency matrix. Order 0
+    // is refused when the reader or writer is initialized, while the empty
+    // encoding of the supported order-1 graph is already fully validated.
+    if (numChars == 0)
+        return OK;
+
+    finalByte = graphBuff[numChars - 1] - 63;
 
     // Check that characters are valid ASCII characters between 62 and 126
     for (size_t i = 0; i < numChars; i++)

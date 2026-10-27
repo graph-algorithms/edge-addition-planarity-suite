@@ -442,7 +442,7 @@ int _g6_EncodeAdjMatAsG6(G6WriteIteratorP theG6WriteIterator)
             g6Encoding[3 - i] += 63;
         }
     }
-    else if (order > 1 && order < 63)
+    else if (order > 0 && order < 63)
     {
         g6Encoding[0] = (char)(order + 63);
     }
