@@ -14,7 +14,7 @@ jobs:
   tests:
     name: ${{ matrix.compiler }}${{ matrix.unsigned-char == 'yes' && ' (unsigned char)' || '' }}
     timeout-minutes: 60
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       CC: ${{ matrix.compiler }}
     strategy:
