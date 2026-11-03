@@ -13,6 +13,8 @@ int GetNumberIfZero(int *pNum, char const *prompt, int min, int max);
 void ResetGraphStorage(graphP *pGraph, int ReuseGraphs, char command);
 graphP MakeGraph(int Size, char command);
 int PromptSaveGraph(graphP theGraph, graphP origGraph, int extraEdges, int saveMode);
+const char *_WriteModeSuffix(int writeMode);
+const char *_WriteModeName(int writeMode);
 
 /****************************************************************************
  * RandomGraphs()
@@ -709,25 +711,15 @@ int RandomGraph(char const *const commandString, int extraEdges, int numVertices
         // then we ask the user if they want to save in various formats.
         else if (!(gp_GetQuietMode() & QUIETMODE_MESSAGES))
         {
-            if (PromptSaveGraph(theGraph, origGraph, extraEdges, 0) != OK)
+            int saveModes[] = {0, WRITE_ADJLIST, WRITE_GRAPH6, WRITE_SPARSE6, WRITE_GRAPHML};
+
+            for (int i = 0; i < (int)(sizeof(saveModes) / sizeof(saveModes[0])); i++)
             {
-                gp_ErrorMessage("Error saving graph in edge list format.");
-                Result = NOTOK;
-            }
-            if (PromptSaveGraph(theGraph, origGraph, extraEdges, WRITE_ADJLIST) != OK)
-            {
-                gp_ErrorMessage("Error saving graph in adjacency list format.");
-                Result = NOTOK;
-            }
-            if (PromptSaveGraph(theGraph, origGraph, extraEdges, WRITE_GRAPH6) != OK)
-            {
-                gp_ErrorMessage("Error saving graph in G6 format.");
-                Result = NOTOK;
-            }
-            if (PromptSaveGraph(theGraph, origGraph, extraEdges, WRITE_SPARSE6) != OK)
-            {
-                gp_ErrorMessage("Error saving graph in sparse6 format.");
-                Result = NOTOK;
+                if (PromptSaveGraph(theGraph, origGraph, extraEdges, saveModes[i]) != OK)
+                {
+                    gp_ErrorMessage("Error saving graph in %s format.", _WriteModeName(saveModes[i]));
+                    Result = NOTOK;
+                }
             }
         }
     }
@@ -751,31 +743,11 @@ int PromptSaveGraph(graphP theGraph, graphP origGraph, int extraEdges, int saveM
     memset(theFileName, '\0', (MAXLINE + 1));
     memset(lineBuff, '\0', (MAXLINE + 1));
 
-    // Select the prompt string
-    switch (saveMode)
-    {
-    case WRITE_ADJLIST:
-        gp_MessagePrompt("Do you want to save the generated graph in adjacency "
-                         "list format (y/n)?");
-        break;
-    case WRITE_ADJMATRIX:
-        gp_MessagePrompt("Do you want to save the generated graph in adjacency "
-                         "matrix format (y/n)?");
-        break;
-    case WRITE_GRAPH6:
-        gp_MessagePrompt("Do you want to save the generated graph in G6 format "
-                         "(y/n)?");
-        break;
-    case WRITE_SPARSE6:
-        gp_MessagePrompt("Do you want to save the generated graph in sparse6 "
-                         "format (y/n)?");
-        break;
-    default:
-        gp_MessagePrompt("Do you want to save the generated graph in edge list "
-                         "format (y/n)?");
-        break;
-    }
-    // Prompt the user
+    // Print the prompt message
+    gp_MessagePrompt("Do you want to save the generated graph in %s format (y/n)?",
+                     _WriteModeName(saveMode));
+
+    // Get the user input
     while (1)
     {
         if (GetLineFromStdin(lineBuff, MAXLINE) != OK)
@@ -810,54 +782,19 @@ int PromptSaveGraph(graphP theGraph, graphP origGraph, int extraEdges, int saveM
     switch (saveMode)
     {
     case WRITE_ADJLIST:
-        strcat(theFileName, "AdjList.txt");
+        strcat(theFileName, "AdjList");
         break;
     case WRITE_ADJMATRIX:
-        strcat(theFileName, "AdjMatrix.txt");
+        strcat(theFileName, "AdjMatrix");
         break;
-    case WRITE_GRAPH6:
-        strcat(theFileName, ".g6");
-        break;
-    case WRITE_SPARSE6:
-        strcat(theFileName, ".s6");
+    case 0:
+        strcat(theFileName, "EdgeList");
         break;
     default:
-        strcat(theFileName, "EdgeList.txt");
         break;
     }
 
-    // Sparse6 is for graphs too large to be worth writing out again as edge
-    // lists, so it writes only the original graph and the result graph
-    if (saveMode == WRITE_SPARSE6)
-    {
-        gp_Message("Saving original graph to \"%.*s\"",
-                   FILENAME_MAX, theFileName);
-        if (gp_Write(origGraph, theFileName, WRITE_SPARSE6) != OK)
-        {
-            gp_ErrorMessage("Failed to save original graph.");
-            return NOTOK;
-        }
-
-        strcat(theFileName, ".out.s6");
-        gp_Message("Saving result graph to \"%.*s\"",
-                   FILENAME_MAX, theFileName);
-        if (gp_Write(theGraph, theFileName, WRITE_SPARSE6) != OK)
-        {
-            gp_ErrorMessage("Failed to save result graph.");
-            return NOTOK;
-        }
-
-        return OK;
-    }
-
-    gp_Message("Saving edge list format of original graph to \"%.*s\"",
-               FILENAME_MAX, theFileName);
-    SaveAsciiGraph(origGraph, theFileName);
-
-    strcat(theFileName, ".out.txt");
-    gp_Message("Saving edge list format of result to \"%.*s\"",
-               FILENAME_MAX, theFileName);
-    SaveAsciiGraph(theGraph, theFileName);
+    strcat(theFileName, _WriteModeSuffix(saveMode));
 
     // Save the original graph
     gp_Message("Saving original graph to \"%.*s\"",
@@ -887,10 +824,8 @@ int PromptSaveGraph(graphP theGraph, graphP origGraph, int extraEdges, int saveM
         SaveAsciiGraph(origGraph, theFileName);
 
     // Save the result graph
-    if (saveMode == WRITE_GRAPH6)
-        strcat(theFileName, ".out.g6");
-    else
-        strcat(theFileName, ".out.txt");
+    strcat(theFileName, ".out");
+    strcat(theFileName, _WriteModeSuffix(saveMode));
 
     gp_Message("Saving result graph to \"%.*s\"",
                FILENAME_MAX, theFileName);
@@ -907,4 +842,62 @@ int PromptSaveGraph(graphP theGraph, graphP origGraph, int extraEdges, int saveM
         SaveAsciiGraph(theGraph, theFileName);
 
     return OK;
+}
+
+const char *_WriteModeSuffix(int writeMode)
+{
+    const char *suffix = ".txt";
+
+    switch (writeMode)
+    {
+    case WRITE_GRAPH6:
+        suffix = ".g6";
+        break;
+    case WRITE_SPARSE6:
+        suffix = ".s6";
+        break;
+    case WRITE_DIGRAPH6:
+        suffix = ".d6";
+        break;
+    case WRITE_GRAPHML:
+        suffix = ".graphml";
+    default:
+        break;
+    }
+
+    return suffix;
+}
+
+const char *_WriteModeName(int writeMode)
+{
+    const char *name = "???";
+
+    switch (writeMode)
+    {
+    case WRITE_ADJLIST:
+        name = "adjacency list";
+        break;
+    case WRITE_ADJMATRIX:
+        name = "adjacency matrix";
+        break;
+    case WRITE_GRAPH6:
+        name = "graph6";
+        break;
+    case WRITE_SPARSE6:
+        name = "sparse6";
+        break;
+    case WRITE_DIGRAPH6:
+        name = "digraph6";
+        break;
+    case WRITE_GRAPHML:
+        name = "GraphML";
+        break;
+    case 0:
+        name = "edge list";
+        break;
+    default:
+        break;
+    }
+
+    return name;
 }
