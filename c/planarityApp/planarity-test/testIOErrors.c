@@ -14,6 +14,8 @@ See the LICENSE.TXT file for licensing information.
 
 #include "../planarity.h"
 
+#include "../../graphLib/extensionSystem/graphFunctionTable.h"
+
 #include "../../graphLib/io/strOrFile.h"
 
 #include "../../graphLib/io/g6-read-iterator.h"
