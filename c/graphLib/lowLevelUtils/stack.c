@@ -5,8 +5,9 @@ See the LICENSE.TXT file for licensing information.
 */
 
 #include "appconst.h"
+#include "apiutils.h"
+
 #include "stack.h"
-#include <stdlib.h>
 
 stackP sp_New(int capacity)
 {

@@ -6,9 +6,6 @@ See the LICENSE.TXT file for licensing information.
 
 #include "planarity.h"
 
-#include <limits.h>
-#include <stdint.h>
-
 /****************************************************************************
  Configuration
  ****************************************************************************/

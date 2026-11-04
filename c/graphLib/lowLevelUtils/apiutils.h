@@ -12,7 +12,13 @@ extern "C"
 #endif
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <limits.h>
+#include <string.h>
+#include <ctype.h>
+#include <stdint.h>
+#include <stdarg.h>
+#include <errno.h>
 
 #define MAXLINE 1024
 

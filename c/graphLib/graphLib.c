@@ -6,8 +6,6 @@ See the LICENSE.TXT file for licensing information.
 
 #include "graphLib.h"
 
-#include <stdlib.h>
-
 /********************************************************************
  gp_GetProjectVersionFull()
  Return full major.minor.maint.tweak version string for the graph planarity project

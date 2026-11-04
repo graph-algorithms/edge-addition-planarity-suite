@@ -4,9 +4,7 @@ All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
 
-#include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
+#include "../lowLevelUtils/apiutils.h"
 
 #include "graphIO.h"
 

@@ -4,13 +4,13 @@ All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
 
+#include "../lowLevelUtils/apiutils.h"
+
 #include "graphDrawPlanar.h"
 #include "graphDrawPlanar.private.h"
 
 // Need to save and restore a graph flag related to IO
 #include "../io/graphIO.h"
-
-#include <stdlib.h>
 
 extern void _ClearVertexVisitedFlags(graphP theGraph, int includeVirtualVertices);
 

@@ -8,16 +8,12 @@ See the LICENSE.TXT file for licensing information.
 #define _GNU_SOURCE
 #endif
 
-#include <errno.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #ifdef __linux__
 #include <unistd.h>
 #endif
 
 #include "../planarity.h"
-#include "../../graphLib/extensionSystem/graphFunctionTable.h"
+
 #include "../../graphLib/io/strOrFile.h"
 
 #include "../../graphLib/io/g6-read-iterator.h"

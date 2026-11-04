@@ -4,9 +4,6 @@ All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
 
-#include <errno.h>
-#include <string.h>
-
 #include "planarity.h"
 
 int GetNumberIfZero(int *pNum, char const *prompt, int min, int max);

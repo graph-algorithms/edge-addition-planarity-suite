@@ -4,8 +4,6 @@ All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
 
-#include <string.h>
-
 #include "../planarity.h"
 #include "../../graphLib/planarityRelated/graphDrawPlanar.private.h"
 #include "../../graphLib/homeomorphSearch/graphK33Search.private.h"

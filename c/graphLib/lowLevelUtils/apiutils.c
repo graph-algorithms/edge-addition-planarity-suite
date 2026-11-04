@@ -4,10 +4,6 @@ All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
 
-#include <limits.h>
-#include <stdarg.h>
-#include <stdlib.h>
-
 #include "appconst.h"
 
 #include "apiutils.h"

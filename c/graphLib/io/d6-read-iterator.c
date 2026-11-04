@@ -4,10 +4,7 @@ All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
 
-#include <limits.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
+#include "../lowLevelUtils/apiutils.h"
 
 #include "strOrFile.h"
 

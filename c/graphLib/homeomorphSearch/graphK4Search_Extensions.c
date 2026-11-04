@@ -4,7 +4,7 @@ All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
 
-#include <stdlib.h>
+#include "../lowLevelUtils/apiutils.h"
 
 #include "graphK4Search.h"
 #include "graphK4Search.private.h"
@@ -114,7 +114,7 @@ int gp_ExtendWith_K4Search(graphP theGraph)
     // function pointers, as an extension of the graph
     if (gp_AddExtension(theGraph, &K4SEARCH_ID, (void *)context,
                         _K4Search_DupContext,
-                        _K4Search_CopyData, 
+                        _K4Search_CopyData,
                         _K4Search_FreeContext,
                         &context->functions) != OK)
     {
@@ -306,9 +306,9 @@ int _K4Search_EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity)
 /********************************************************************
  _K4Search_DupContext()
 
- Receive a source graph's extension context (*pContext) and a 
+ Receive a source graph's extension context (*pContext) and a
  destination graph (theGraph) that must receive a duplicate copy
- of the source graph's extension. 
+ of the source graph's extension.
  ********************************************************************/
 
 void *_K4Search_DupContext(void *pContext, void *theGraph)
@@ -340,7 +340,7 @@ void *_K4Search_DupContext(void *pContext, void *theGraph)
 
             // Copy extension edge records from src context to the new dst context
             memcpy(dstContext->E, srcContext->E, srcEsize * sizeof(K4Search_EdgeRec));
-            // Any extension edge records that the new 'dst' graph has beyond the 
+            // Any extension edge records that the new 'dst' graph has beyond the
             // source graph's must be initialized.
             for (int e = srcEsize; e < dstEsize; e++)
                 _K4Search_InitEdgeRec(dstContext, e);
