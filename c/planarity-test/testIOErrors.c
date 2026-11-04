@@ -12,18 +12,18 @@ See the LICENSE.TXT file for licensing information.
 #include <unistd.h>
 #endif
 
-#include "../planarity.h"
+#include "../planarityApp/planarity.h"
 
-#include "../../graphLib/extensionSystem/graphFunctionTable.h"
+#include "../graphLib/extensionSystem/graphFunctionTable.h"
 
-#include "../../graphLib/io/strOrFile.h"
+#include "../graphLib/io/strOrFile.h"
 
-#include "../../graphLib/io/g6-read-iterator.h"
-#include "../../graphLib/io/g6-write-iterator.h"
-#include "../../graphLib/io/s6-read-iterator.h"
-#include "../../graphLib/io/s6-write-iterator.h"
-#include "../../graphLib/io/d6-read-iterator.h"
-#include "../../graphLib/io/d6-write-iterator.h"
+#include "../graphLib/io/g6-read-iterator.h"
+#include "../graphLib/io/g6-write-iterator.h"
+#include "../graphLib/io/s6-read-iterator.h"
+#include "../graphLib/io/s6-write-iterator.h"
+#include "../graphLib/io/d6-read-iterator.h"
+#include "../graphLib/io/d6-write-iterator.h"
 
 extern int _ReadGraph(graphP theGraph, strOrFileP *pInputContainer);
 extern int _g6_InitReaderWithStrOrFile(G6ReadIteratorP reader, strOrFileP *input);

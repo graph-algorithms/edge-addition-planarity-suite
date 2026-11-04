@@ -4,12 +4,12 @@ All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
 
-#include "../planarity.h"
+#include "../planarityApp/planarity.h"
 
-#include "../../graphLib/io/strOrFile.h"
+#include "../graphLib/io/strOrFile.h"
 
-#include "../../graphLib/io/s6-read-iterator.h"
-#include "../../graphLib/io/s6-write-iterator.h"
+#include "../graphLib/io/s6-read-iterator.h"
+#include "../graphLib/io/s6-write-iterator.h"
 
 /* Library-private function the edge storage tests call directly */
 extern int _CompactEdgeStorage(graphP theGraph);

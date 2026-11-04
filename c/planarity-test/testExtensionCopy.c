@@ -4,11 +4,12 @@ All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
 
-#include "../planarity.h"
-#include "../../graphLib/planarityRelated/graphDrawPlanar.private.h"
-#include "../../graphLib/homeomorphSearch/graphK33Search.private.h"
-#include "../../graphLib/homeomorphSearch/graphK4Search.private.h"
-#include "../../graphLib/extensionSystem/graphExtensions.h"
+#include "../planarityApp/planarity.h"
+
+#include "../graphLib/planarityRelated/graphDrawPlanar.private.h"
+#include "../graphLib/homeomorphSearch/graphK33Search.private.h"
+#include "../graphLib/homeomorphSearch/graphK4Search.private.h"
+#include "../graphLib/extensionSystem/graphExtensions.h"
 
 int runExtensionCopyTests(void);
 
