@@ -10,8 +10,7 @@ See the LICENSE.TXT file for licensing information.
 // For definition of zero-based IO flag
 #include "../io/graphIO.h"
 
-// For C Libs and LOGGING-related declarations
-#include "../lowLevelUtils/apiutils.h"
+// For LOGGING-related declarations
 #include "../lowLevelUtils/apiutils.private.h"
 
 extern void _ClearAllVisitedFlagsInGraph(graphP theGraph);

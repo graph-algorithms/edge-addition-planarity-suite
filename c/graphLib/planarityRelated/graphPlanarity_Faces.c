@@ -4,8 +4,6 @@ All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
 
-#include "../lowLevelUtils/apiutils.h"
-
 #include "graphPlanarity.h"
 #include "graphPlanarity.private.h"
 #include "../io/strbuf.h"

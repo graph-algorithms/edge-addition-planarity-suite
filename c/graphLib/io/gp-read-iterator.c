@@ -4,10 +4,8 @@ All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
 
-#include "../lowLevelUtils/apiutils.h"
-
-#include "../lowLevelUtils/apiutils.h"
 #include "strOrFile.h"
+
 #include "../graph.h"
 
 #include "gp-read-iterator.h"

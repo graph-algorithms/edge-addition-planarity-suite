@@ -105,11 +105,11 @@ planarity_SOURCES = \
 	c/planarityApp/planarityTransformGraph.c \
 	c/planarityApp/planarityTestAllGraphs.c \
 	c/planarityApp/planarityUtils.c \
-	c/planarity-test/testGraphML.c \
-	c/planarity-test/testIOErrors.c \
-	c/planarity-test/testSparse6.c \
-	c/planarity-test/testDigraph6.c \
-	c/planarity-test/testExtensionCopy.c
+	c/test/testGraphML.c \
+	c/test/testIOErrors.c \
+	c/test/testSparse6.c \
+	c/test/testDigraph6.c \
+	c/test/testExtensionCopy.c
 
 man1_MANS = c/planarityApp/planarity.1
 EXTRA_DIST=$(man1_MANS)
