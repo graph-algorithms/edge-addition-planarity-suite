@@ -17,7 +17,6 @@ extern "C"
 // For C lib includes, get/set quiet mode, gp_ErrorMessage(), gp_Message()
 #include "lowLevelUtils/apiutils.h"
 
-
     ///////////////////////////////////////////////////////////////////////////////
     // The top-level operations at the graph, vertex, and edge levels
     ///////////////////////////////////////////////////////////////////////////////
@@ -77,6 +76,7 @@ extern "C"
     int gp_ClearEdgeDirectionFlags(graphP theGraph);
     int gp_TransposeDirectedGraph(graphP theGraph);
     int gp_DeleteParallelEdges(graphP theGraph, int includingInOnlyEdges);
+    int gp_DeleteLoopEdges(graphP theGraph);
 
     // Intermediate graph structure manipulators
     void gp_HideEdge(graphP theGraph, int e);
@@ -390,6 +390,7 @@ extern "C"
 
 #define EDGEFLAG_DIRECTION_INONLY 64
 #define EDGEFLAG_DIRECTION_OUTONLY 128
+
 #define EDGEFLAG_DIRECTION_MASK 192
 
 // NOTE: Edge 'flags' bit 8 used by EDGE_TYPE_CROSS above,

@@ -1936,11 +1936,6 @@ int gp_GetVertexDegree(graphP theGraph, int v)
     if (theGraph == NULL ||
         v < gp_LowerBoundVertexStorage(theGraph) || v >= gp_UpperBoundVertexStorage(theGraph))
     {
-#ifdef DEBUG
-        NOTOK;
-        ;
-#endif
-
         return 0;
     }
 
@@ -1988,8 +1983,25 @@ int gp_GetVertexInDegree(graphP theGraph, int v)
     e = gp_GetFirstEdge(theGraph, v);
     while (gp_IsEdge(theGraph, e))
     {
-        if (gp_GetDirection(theGraph, e) != EDGEFLAG_DIRECTION_OUTONLY)
-            degree++;
+        int neighbor = gp_GetNeighbor(theGraph, e);
+        int dir = gp_GetDirection(theGraph, e);
+
+        if (neighbor != v)
+        {
+            if (dir != EDGEFLAG_DIRECTION_OUTONLY)
+            {
+                degree++;
+            }
+        }
+        else
+        {
+            if (dir == EDGEFLAG_DIRECTION_INONLY ||
+                (dir != EDGEFLAG_DIRECTION_INONLY && dir != EDGEFLAG_DIRECTION_OUTONLY && e > gp_GetTwin(theGraph, e)))
+            {
+                degree++;
+            }
+        }
+
         e = gp_GetNextEdge(theGraph, e);
     }
 
@@ -2028,11 +2040,27 @@ int gp_GetVertexOutDegree(graphP theGraph, int v)
     e = gp_GetFirstEdge(theGraph, v);
     while (gp_IsEdge(theGraph, e))
     {
-        if (gp_GetDirection(theGraph, e) != EDGEFLAG_DIRECTION_INONLY)
-            degree++;
+        int neighbor = gp_GetNeighbor(theGraph, e);
+        int dir = gp_GetDirection(theGraph, e);
+
+        if (neighbor != v)
+        {
+            if (dir != EDGEFLAG_DIRECTION_INONLY)
+            {
+                degree++;
+            }
+        }
+        else
+        {
+            if (dir == EDGEFLAG_DIRECTION_OUTONLY ||
+                (dir != EDGEFLAG_DIRECTION_INONLY && dir != EDGEFLAG_DIRECTION_OUTONLY && e < gp_GetTwin(theGraph, e)))
+            {
+                degree++;
+            }
+        }
+
         e = gp_GetNextEdge(theGraph, e);
     }
-
     return degree;
 }
 
@@ -2178,6 +2206,10 @@ int gp_AddEdge(graphP theGraph, int u, int ulink, int v, int vlink)
     {
         return NOTOK;
     }
+    if (u == v && ulink != vlink)
+    {
+        return NOTOK;
+    }
 
     if (gp_InsertEdge(theGraph, u, NIL, ulink, v, NIL, vlink) != OK)
         return NOTOK;
@@ -2287,6 +2319,24 @@ int gp_InsertEdge(graphP theGraph, int u, int e_u, int e_ulink,
         (gp_IsEdge(theGraph, e_v) && gp_EdgeNotInUse(theGraph, e_v)) ||
         e_ulink < 0 || e_ulink > 1 || e_vlink < 0 || e_vlink > 1)
         return NOTOK;
+
+    if (e_u != NIL)
+    {
+        if (gp_GetNeighbor(theGraph, gp_GetTwin(theGraph, e_u)) != u)
+            return NOTOK;
+    }
+
+    if (e_v != NIL)
+    {
+        if (gp_GetNeighbor(theGraph, gp_GetTwin(theGraph, e_v)) != v)
+            return NOTOK;
+    }
+
+    if (u == v)
+    {
+        if (e_u != e_v || e_ulink != e_vlink)
+            return NOTOK;
+    }
 
     if (sp_NonEmpty(theGraph->edgeHoles))
     {
@@ -3394,7 +3444,7 @@ int gp_HasParallelEdges(graphP theGraph, int includingInOnlyEdges)
 
 int gp_DeleteParallelEdges(graphP theGraph, int includingInOnlyEdges)
 {
-    int v, e, eNext, neighbor;
+    int v = NIL, e = NIL, eNext = NIL, neighbor = NIL, keptLoopEdge = NIL;
 
     if (theGraph == NULL)
         return NOTOK;
@@ -3418,23 +3468,46 @@ int gp_DeleteParallelEdges(graphP theGraph, int includingInOnlyEdges)
 
             neighbor = gp_GetNeighbor(theGraph, e);
 
-            if (neighbor == v)
+            if (neighbor != v)
             {
-                // Simple vertex visitation is not sufficient for loop edges
-                // because both edge records are in the same adjacency list,
-                // and not necessarily in consecutive locations.
-                gp_ErrorMessage("Method gp_DeleteParallelEdges() does not support loop edges.");
-                return NOTOK;
+                if (gp_GetVisited(theGraph, neighbor))
+                {
+                    if (gp_DeleteEdge(theGraph, e) != OK)
+                        return NOTOK;
+                }
+                else
+                {
+                    gp_SetVisited(theGraph, neighbor);
+                }
             }
 
-            if (gp_GetVisited(theGraph, neighbor))
+            e = eNext;
+        }
+
+        e = gp_GetFirstEdge(theGraph, v);
+        while (gp_IsEdge(theGraph, e))
+        {
+            eNext = gp_GetNextEdge(theGraph, e);
+
+            if (!includingInOnlyEdges && gp_GetDirection(theGraph, e) == EDGEFLAG_DIRECTION_INONLY)
             {
-                if (gp_DeleteEdge(theGraph, e) != OK)
-                    return NOTOK;
+                e = eNext;
+                continue;
             }
-            else
+
+            neighbor = gp_GetNeighbor(theGraph, e);
+
+            if (neighbor == v)
             {
-                gp_SetVisited(theGraph, neighbor);
+                if (keptLoopEdge == NIL)
+                {
+                    keptLoopEdge = e;
+                }
+                else if (e != gp_GetTwin(theGraph, keptLoopEdge))
+                {
+                    if (gp_DeleteEdge(theGraph, e) != OK)
+                        return NOTOK;
+                }
             }
 
             e = eNext;
@@ -3444,8 +3517,37 @@ int gp_DeleteParallelEdges(graphP theGraph, int includingInOnlyEdges)
         while (gp_IsEdge(theGraph, e))
         {
             neighbor = gp_GetNeighbor(theGraph, e);
-            gp_ClearVisited(theGraph, neighbor);
+            if (neighbor != v)
+            {
+                gp_ClearVisited(theGraph, neighbor);
+            }
             e = gp_GetNextEdge(theGraph, e);
+        }
+    }
+
+    return OK;
+}
+int gp_DeleteLoopEdges(graphP theGraph)
+{
+    int v, e, eNext;
+
+    if (theGraph == NULL)
+        return NOTOK;
+
+    for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
+    {
+        e = gp_GetFirstEdge(theGraph, v);
+        while (gp_IsEdge(theGraph, e))
+        {
+            eNext = gp_GetNextEdge(theGraph, e);
+
+            if (gp_GetNeighbor(theGraph, e) == v)
+            {
+                if (gp_DeleteEdge(theGraph, e) != OK)
+                    return NOTOK;
+            }
+
+            e = eNext;
         }
     }
 

@@ -453,7 +453,7 @@ int sf_ReadInteger(int *intToRead, strOrFileP theStrOrFile)
 
     int intCandidate = 0, intCandidateIndex = 0;
     int currChar = '\0', nextChar = '\0';
-    int startedReadingInt = FALSE, isNegative = FALSE;
+    int startedReadingInt = FALSE, hasSign = FALSE, isNegative = FALSE; 
     char intCandidateStr[MAXCHARSFOR32BITINT + 1];
     memset(intCandidateStr, '\0', (MAXCHARSFOR32BITINT + 1) * sizeof(char));
 
@@ -475,7 +475,7 @@ int sf_ReadInteger(int *intToRead, strOrFileP theStrOrFile)
             break;
         }
 
-        if (currChar == '-')
+        if (currChar == '-' || currChar == '+')
         {
             if (startedReadingInt)
             {
@@ -504,7 +504,8 @@ int sf_ReadInteger(int *intToRead, strOrFileP theStrOrFile)
                 else
                 {
                     intCandidateStr[intCandidateIndex++] = (char)currChar;
-                    isNegative = TRUE;
+                    hasSign = TRUE;
+                    if (currChar == '-') isNegative = TRUE; 
                 }
             }
         }
@@ -521,8 +522,8 @@ int sf_ReadInteger(int *intToRead, strOrFileP theStrOrFile)
         }
 
         if (
-            (!isNegative && (intCandidateIndex == (MAXCHARSFOR32BITINT - 2))) ||
-            (isNegative && (intCandidateIndex == (MAXCHARSFOR32BITINT - 1))))
+            (!hasSign && (intCandidateIndex == (MAXCHARSFOR32BITINT - 2))) ||
+            (hasSign && (intCandidateIndex == (MAXCHARSFOR32BITINT - 1))))
         {
             if (sscanf(intCandidateStr, "%d", &intCandidate) != 1)
                 exitCode = NOTOK;
@@ -540,6 +541,8 @@ int sf_ReadInteger(int *intToRead, strOrFileP theStrOrFile)
                     // length of the string representation of a signed 32-bit integer (10 for
                     // positive and 11 for negative)
                     int underflowThreshold = (INT32_MIN / 10), overflowThreshold = (INT32_MAX / 10);
+                    
+                    // We keep isNegative here because we need to know if the math is negative or positive
                     if (isNegative)
                     {
                         if (intCandidate < underflowThreshold)
@@ -580,7 +583,6 @@ int sf_ReadInteger(int *intToRead, strOrFileP theStrOrFile)
 
     return exitCode;
 }
-
 /********************************************************************
  sf_ReadSkipInteger()
 
