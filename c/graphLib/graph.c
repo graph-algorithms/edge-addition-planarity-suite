@@ -1995,13 +1995,13 @@ int gp_GetVertexInDegree(graphP theGraph, int v)
         }
         else
         {
-            if (dir == EDGEFLAG_DIRECTION_INONLY || 
-               (dir != EDGEFLAG_DIRECTION_INONLY && dir != EDGEFLAG_DIRECTION_OUTONLY && e > gp_GetTwin(theGraph, e)))
+            if (dir == EDGEFLAG_DIRECTION_INONLY ||
+                (dir != EDGEFLAG_DIRECTION_INONLY && dir != EDGEFLAG_DIRECTION_OUTONLY && e > gp_GetTwin(theGraph, e)))
             {
                 degree++;
             }
         }
-        
+
         e = gp_GetNextEdge(theGraph, e);
     }
 
@@ -2052,13 +2052,13 @@ int gp_GetVertexOutDegree(graphP theGraph, int v)
         }
         else
         {
-            if (dir == EDGEFLAG_DIRECTION_OUTONLY || 
-               (dir != EDGEFLAG_DIRECTION_INONLY && dir != EDGEFLAG_DIRECTION_OUTONLY && e < gp_GetTwin(theGraph, e)))
+            if (dir == EDGEFLAG_DIRECTION_OUTONLY ||
+                (dir != EDGEFLAG_DIRECTION_INONLY && dir != EDGEFLAG_DIRECTION_OUTONLY && e < gp_GetTwin(theGraph, e)))
             {
                 degree++;
             }
         }
-        
+
         e = gp_GetNextEdge(theGraph, e);
     }
     return degree;
@@ -3444,7 +3444,7 @@ int gp_HasParallelEdges(graphP theGraph, int includingInOnlyEdges)
 
 int gp_DeleteParallelEdges(graphP theGraph, int includingInOnlyEdges)
 {
-    int v, e, eNext, neighbor;
+    int v = NIL, e = NIL, eNext = NIL, neighbor = NIL, keptLoopEdge = NIL;
 
     if (theGraph == NULL)
         return NOTOK;
@@ -3484,7 +3484,6 @@ int gp_DeleteParallelEdges(graphP theGraph, int includingInOnlyEdges)
             e = eNext;
         }
 
-        int keptLoopEdge = NIL;
         e = gp_GetFirstEdge(theGraph, v);
         while (gp_IsEdge(theGraph, e))
         {

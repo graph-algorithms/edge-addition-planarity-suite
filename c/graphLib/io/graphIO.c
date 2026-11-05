@@ -141,6 +141,9 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
     int N = 0, v = NIL, W = NIL, adjList = NIL, e = NIL, indexValue = NIL;
     int zeroBased = FALSE, inputOffset = NIL, inputTerminatorLowerBound = NIL;
 
+    int hasPlus = FALSE;
+    int peekChar = '\0';
+
     if (!sf_IsValidStrOrFile(inputContainer))
         return NOTOK;
 
@@ -241,9 +244,8 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
             // Read the value indicating the next adjacent vertex (or the list end)
             if (sf_ReadSkipWhitespace(inputContainer) != OK)
                 return NOTOK;
-            
-            int hasPlus = FALSE;
-            int peekChar = sf_getc(inputContainer);
+
+            peekChar = sf_getc(inputContainer);
             if (peekChar == '+')
                 hasPlus = TRUE;
             if (peekChar != EOF)
@@ -274,7 +276,7 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
             {
                 if ((ErrorCode = gp_DynamicAddEdge(theGraph, v, 0, W, 0)) != OK)
                     return ErrorCode;
-                
+
                 if (hasPlus)
                     gp_SetDirection(theGraph, gp_GetFirstEdge(theGraph, v), EDGEFLAG_DIRECTION_OUTONLY);
             }
@@ -758,7 +760,7 @@ int _WriteAdjList(graphP theGraph, strOrFileP outputContainer)
                     if (sprintf(numberStr, " %d", neighbor - zeroBasedVertexOffset) < 1)
                         return NOTOK;
                 }
-                
+
                 if (sf_fputs(numberStr, outputContainer) == EOF)
                     return NOTOK;
             }
