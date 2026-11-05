@@ -4,15 +4,13 @@ All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
 
-#include <stdlib.h>
-#include <string.h>
-
 #include "../lowLevelUtils/appconst.h"
+#include "../lowLevelUtils/apiutils.h"
+
 #include "../graph.private.h"
 
 #include "graphExtensions.private.h"
 #include "graphExtensions.h"
-#include "graphFunctionTable.h"
 
 /* Imported functions */
 
@@ -54,7 +52,7 @@ static int moduleIDGenerator = 0;
      An instance of this context structure is passed to the "context"
      parameter of gp_AddExtension().
 
-  3) Define a function capable of copying your context data. It receives 
+  3) Define a function capable of copying your context data. It receives
      void pointers to destination and source contexts, and then copies the
      extension-specific data from source to destination. This function's
      pointer is passed to the "copyData" parameter of gp_AddExtension()
@@ -125,10 +123,10 @@ static int moduleIDGenerator = 0;
         EdgeRec data members, if any.
 
      d) The _Feature_CopyData() should invoke just the functions needed
-        to copy the custom VertexRec, VertexInfo and EdgeRec data members, 
-        if any, from a source extension context to a destination extension 
-        context. For custom EdgeRec arrays, if the destination has more 
-        capacitiy than the source, then the implementation should also 
+        to copy the custom VertexRec, VertexInfo and EdgeRec data members,
+        if any, from a source extension context to a destination extension
+        context. For custom EdgeRec arrays, if the destination has more
+        capacitiy than the source, then the implementation should also
         ensure the extra EdgeRecs are initialized in the destination.
 
   8) Define a function gp_Detach_Feature() that invokes gp_RemoveExtension()
@@ -171,7 +169,7 @@ int gp_AddExtension(graphP theGraph,
                     int *pModuleID,
                     void *context,
                     void *(*dupContext)(void *, void *),
-                    int  (*copyData)(void *, void *),
+                    int (*copyData)(void *, void *),
                     void (*freeContext)(void *),
                     graphFunctionTableP functions)
 {
@@ -515,7 +513,6 @@ int gp_DupExtensions(graphP dstGraph, graphP srcGraph)
     return OK;
 }
 
-
 /********************************************************************
  gp_CopyExtensions()
  ********************************************************************/
@@ -580,7 +577,7 @@ void gp_FreeExtensions(graphP theGraph)
         theGraph->extensions = NULL;
         if (theGraph->extensionLookupTable != NULL)
         {
-            memset(theGraph->extensionLookupTable, 0, (MAXNUMSUPPORTEDEXTENSIONS+1)*sizeof(graphExtensionP));
+            memset(theGraph->extensionLookupTable, 0, (MAXNUMSUPPORTEDEXTENSIONS + 1) * sizeof(graphExtensionP));
         }
         _InitFunctionTable(theGraph);
     }

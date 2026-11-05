@@ -4,11 +4,7 @@ All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include "../planarity.h"
+#include "../planarityApp/planarity.h"
 
 #define GRAPHML_XMLNS "http://graphml.graphdrawing.org/xmlns"
 #define GRAPHML_ROOT_OPEN "<graphml xmlns='" GRAPHML_XMLNS "'>"

@@ -10,8 +10,6 @@ See the LICENSE.TXT file for licensing information.
 // Need to save and restore a graph flag related to IO
 #include "../io/graphIO.h"
 
-#include <stdlib.h>
-
 extern void _ClearVertexVisitedFlags(graphP theGraph, int includeVirtualVertices);
 
 extern void _CollectDrawingData(DrawPlanarContext *context, int RootVertex, int W, int WPrevLink);

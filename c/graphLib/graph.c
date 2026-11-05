@@ -13,8 +13,6 @@ See the LICENSE.TXT file for licensing information.
 #include "planarityRelated/graphPlanarity.private.h"
 #include "planarityRelated/graphOuterplanarity.h"
 
-#include <stdlib.h>
-
 /* Imported functions for FUNCTION POINTERS */
 
 extern int _EmbeddingInitialize(graphP theGraph);

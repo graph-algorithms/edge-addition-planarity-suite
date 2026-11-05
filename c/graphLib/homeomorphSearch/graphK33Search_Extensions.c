@@ -4,8 +4,6 @@ All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
 
-#include <stdlib.h>
-
 #include "graphK33Search.h"
 #include "graphK33Search.private.h"
 
@@ -344,9 +342,9 @@ int _K33Search_EnsureEdgeCapacity(graphP theGraph, int requiredEdgeCapacity)
 /********************************************************************
  _K33Search_DupContext()
 
- Receive a source graph's extension context (*pContext) and a 
+ Receive a source graph's extension context (*pContext) and a
  destination graph (theGraph) that must receive a duplicate copy
- of the source graph's extension. 
+ of the source graph's extension.
  ********************************************************************/
 
 void *_K33Search_DupContext(void *pContext, void *theGraph)
@@ -380,7 +378,7 @@ void *_K33Search_DupContext(void *pContext, void *theGraph)
 
             // Copy extension edge records from src context to the new dst Context
             memcpy(dstContext->E, srcContext->E, srcEsize * sizeof(K33Search_EdgeRec));
-            // Any extension edge records that the new 'dst' graph has beyond the 
+            // Any extension edge records that the new 'dst' graph has beyond the
             // source graph's must be initialized.
             for (int e = srcEsize; e < dstEsize; e++)
                 _K33Search_InitEdgeRec(dstContext, e);

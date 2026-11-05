@@ -4,13 +4,10 @@ All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
 
-#include <stdlib.h>
-#include <string.h>
+#include "../planarityApp/planarity.h"
 
-#include "../planarity.h"
-
-#include "../../graphLib/io/d6-read-iterator.h"
-#include "../../graphLib/io/d6-write-iterator.h"
+#include "../graphLib/io/d6-read-iterator.h"
+#include "../graphLib/io/d6-write-iterator.h"
 
 /* Called from planarityCommandLine.c */
 int testPetersenDigraph6(const char *);

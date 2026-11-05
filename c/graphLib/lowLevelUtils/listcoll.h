@@ -12,9 +12,6 @@ extern "C"
 {
 #endif
 
-/* This include is needed for memset and memcpy */
-#include <string.h>
-
         typedef struct
         {
                 int prev, next;

@@ -13,10 +13,6 @@ See the LICENSE.TXT file for licensing information.
 // For LOGGING-related declarations
 #include "../lowLevelUtils/apiutils.private.h"
 
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
-
 extern void _ClearAllVisitedFlagsInGraph(graphP theGraph);
 
 /* Private functions exported to system */

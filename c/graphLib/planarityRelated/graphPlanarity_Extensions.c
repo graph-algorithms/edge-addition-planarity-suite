@@ -7,8 +7,6 @@ See the LICENSE.TXT file for licensing information.
 #include "graphPlanarity.h"
 #include "graphPlanarity.private.h"
 
-#include <stdlib.h>
-
 /****************************************************************************
  gp_ExtendWith_Planarity()
 

@@ -7,8 +7,9 @@ See the LICENSE.TXT file for licensing information.
 #define _LISTCOLL_C
 
 #include "appconst.h"
+#include "apiutils.h"
+
 #include "listcoll.h"
-#include <stdlib.h>
 
 /*****************************************************************************
  The data structure defined by this module manages a set of N objects

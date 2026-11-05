@@ -12,9 +12,9 @@ extern "C"
 {
 #endif
 
-#include <stdio.h>
-
+#include "../lowLevelUtils/apiutils.h"
 #include "../lowLevelUtils/stack.h"
+
 #include "strbuf.h"
 
 #define INPUT_CONTAINER 1
