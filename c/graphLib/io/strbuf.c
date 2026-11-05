@@ -6,10 +6,8 @@ See the LICENSE.TXT file for licensing information.
 
 #include "../lowLevelUtils/appconst.h"
 #include "../lowLevelUtils/apiutils.h"
+
 #include "strbuf.h"
-#include <stdlib.h>
-#include <ctype.h>
-#include <stdio.h>
 
 /********************************************************************
  sb_New()

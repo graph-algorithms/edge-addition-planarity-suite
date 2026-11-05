@@ -12,8 +12,6 @@ extern "C"
 {
 #endif
 
-#include <stdio.h>
-
 #include "../graph.h"
 
     typedef struct D6ReadIteratorStruct D6ReadIteratorStruct;

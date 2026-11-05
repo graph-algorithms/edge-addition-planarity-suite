@@ -14,6 +14,9 @@ extern "C"
 
 // Basic declarations, such as for OK, NOTOK, and NIL
 #include "lowLevelUtils/appconst.h"
+// For C lib includes, get/set quiet mode, gp_ErrorMessage(), gp_Message()
+#include "lowLevelUtils/apiutils.h"
+
 
     ///////////////////////////////////////////////////////////////////////////////
     // The top-level operations at the graph, vertex, and edge levels

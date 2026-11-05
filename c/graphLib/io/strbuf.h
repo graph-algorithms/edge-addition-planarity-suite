@@ -12,9 +12,6 @@ extern "C"
 {
 #endif
 
-// includes mem functions like memcpy
-#include <string.h>
-
         typedef struct
         {
                 char *buf;

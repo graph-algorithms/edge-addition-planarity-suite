@@ -7,7 +7,7 @@ See the LICENSE.TXT file for licensing information.
 #include "planarity.h"
 
 // TODO: These need to be removed as part of moving the gp iterator testing
-//       to a separate source file in planarity-test
+//       to a separate source file in the /test directory
 #include "../graphLib/io/strOrFile.h"
 #include "../graphLib/io/g6-read-iterator.h"
 #include "../graphLib/io/g6-write-iterator.h"

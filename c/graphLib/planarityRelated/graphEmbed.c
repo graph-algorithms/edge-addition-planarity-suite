@@ -4,8 +4,6 @@ All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
 
-#include <stdlib.h>
-
 // This source file implements the main graph planarity/outerplanarity method, gp_Embed()
 #include "../planarityRelated/graphPlanarity.h"
 #include "../planarityRelated/graphPlanarity.private.h"

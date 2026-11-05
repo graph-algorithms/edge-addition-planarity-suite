@@ -12,9 +12,6 @@ extern "C"
 {
 #endif
 
-// includes mem functions like memcpy
-#include <string.h>
-
         struct stackStruct
         {
                 int *S;

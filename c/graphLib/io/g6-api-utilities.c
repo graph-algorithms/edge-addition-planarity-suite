@@ -3,9 +3,9 @@ Copyright (c) 1997-2026, John M. Boyer
 All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
-#include <string.h>
 
 #include "../lowLevelUtils/appconst.h"
+#include "../lowLevelUtils/apiutils.h"
 
 /* Private function declarations (exported within system) */
 size_t _g6_GetNumCharsForEncoding(int order);
