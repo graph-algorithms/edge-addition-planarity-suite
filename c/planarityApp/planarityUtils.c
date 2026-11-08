@@ -232,9 +232,15 @@ void SaveAsciiGraph(graphP theGraph, char *fileName)
     // The fileName may specify a directory that doesn't exist
     if (outfile == NULL)
     {
-        gp_ErrorMessage("Failed to write to \"%.*s\"\nMake the directory if "
-                        "not present.",
-                        FILENAME_MAX, fileName);
+        char cwd[MAXLINE + 1];
+        if (getcwd(cwd, MAXLINE) != NULL)
+            gp_ErrorMessage("Failed to open file '%s' for writing. "
+                            "Current working directory is '%s'",
+                            fileName, cwd);
+        else
+            gp_ErrorMessage("Failed to open file '%s' for writing. "
+                            "Unable to get current working directory",
+                            fileName);
         return;
     }
 
@@ -283,7 +289,17 @@ char *ReadTextFileIntoString(char const *infileName)
     if (infileName == NULL || strlen(infileName) == 0)
         gp_ErrorMessage("Unable to fopen() with NULL or empty infileName.");
     else if ((infile = fopen(infileName, "r")) == NULL)
-        gp_ErrorMessage("fopen() failed.");
+    {
+        char cwd[MAXLINE + 1];
+        if (getcwd(cwd, MAXLINE) != NULL)
+            gp_ErrorMessage("Failed to open file '%s' for reading. "
+                            "Current working directory is '%s'",
+                            infileName, cwd);
+        else
+            gp_ErrorMessage("Failed to open file '%s' for reading. "
+                            "Unable to get current working directory",
+                            infileName);
+    }
     else
     {
         long filePos = ftell(infile);
@@ -337,7 +353,21 @@ int TextFileMatchesString(char const *theFileName, char const *theString)
     FILE *infile = NULL;
 
     if (theFileName != NULL)
+    {
         infile = fopen(theFileName, "r");
+        if (infile == NULL)
+        {
+            char cwd[MAXLINE + 1];
+            if (getcwd(cwd, MAXLINE) != NULL)
+                gp_ErrorMessage("Failed to open file '%s' for reading. "
+                                "Current working directory is '%s'",
+                                theFileName, cwd);
+            else
+                gp_ErrorMessage("Failed to open file '%s' for reading. "
+                                "Unable to get current working directory",
+                                theFileName);
+        }
+    }
 
     if (infile == NULL || theString == NULL)
         Result = FALSE;
@@ -395,7 +425,34 @@ int TextFilesEqual(char *file1Name, char *file2Name)
     FILE *infile1 = NULL, *infile2 = NULL;
 
     infile1 = fopen(file1Name, "r");
-    infile2 = fopen(file2Name, "r");
+    if (infile1 == NULL)
+    {
+        char cwd[MAXLINE + 1];
+        if (getcwd(cwd, MAXLINE) != NULL)
+            gp_ErrorMessage("Failed to open file '%s' for reading. "
+                            "Current working directory is '%s'",
+                            file1Name, cwd);
+        else
+            gp_ErrorMessage("Failed to open file '%s' for reading. "
+                            "Unable to get current working directory",
+                            file1Name);
+    }
+    else
+    {
+        infile2 = fopen(file2Name, "r");
+        if (infile2 == NULL)
+        {
+            char cwd[MAXLINE + 1];
+            if (getcwd(cwd, MAXLINE) != NULL)
+                gp_ErrorMessage("Failed to open file '%s' for reading. "
+                                "Current working directory is '%s'",
+                                file2Name, cwd);
+            else
+                gp_ErrorMessage("Failed to open file '%s' for reading. "
+                                "Unable to get current working directory",
+                                file2Name);
+        }
+    }
 
     if (infile1 == NULL || infile2 == NULL)
         Result = FALSE;
@@ -462,7 +519,34 @@ int BinaryFilesEqual(char *file1Name, char *file2Name)
     FILE *infile1 = NULL, *infile2 = NULL;
 
     infile1 = fopen(file1Name, "r");
-    infile2 = fopen(file2Name, "r");
+    if (infile1 == NULL)
+    {
+        char cwd[MAXLINE + 1];
+        if (getcwd(cwd, MAXLINE) != NULL)
+            gp_ErrorMessage("Failed to open file '%s' for reading. "
+                            "Current working directory is '%s'",
+                            file1Name, cwd);
+        else
+            gp_ErrorMessage("Failed to open file '%s' for reading. "
+                            "Unable to get current working directory",
+                            file1Name);
+    }
+    else
+    {
+        infile2 = fopen(file2Name, "r");
+        if (infile2 == NULL)
+        {
+            char cwd[MAXLINE + 1];
+            if (getcwd(cwd, MAXLINE) != NULL)
+                gp_ErrorMessage("Failed to open file '%s' for reading. "
+                                "Current working directory is '%s'",
+                                file2Name, cwd);
+            else
+                gp_ErrorMessage("Failed to open file '%s' for reading. "
+                                "Unable to get current working directory",
+                                file2Name);
+        }
+    }
 
     if (infile1 == NULL || infile2 == NULL)
         Result = FALSE;

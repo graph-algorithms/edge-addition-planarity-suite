@@ -102,7 +102,6 @@ int gp_GetRandomNumber(int NMin, int NMax)
     return (int)(N & 0x7FFFFFFF) + NMin;
 }
 
-
 /********************************************************************
  debugNOTOK()
 
@@ -154,11 +153,20 @@ void _Log(char const *Str)
     {
         triedlogfile = TRUE;
         if (atexit(closeLogFileAtExit) != 0)
-            gp_ErrorMessage("Unable to set up atexit() to close Edge_Addition_Planarity_Suite log file on exit");
+            gp_ErrorMessage("Unable to set up atexit() to close EAPS.LOG on exit");
         else
         {
-            if ((logfile = fopen("Edge_Addition_Planarity_Suite.LOG", WRITETEXT)) == NULL)
-                gp_ErrorMessage("Unable to open the Edge_Addition_Planarity_Suite log file");
+            if ((logfile = fopen("EAPS.LOG", WRITETEXT)) == NULL)
+            {
+                char cwd[MAXLINE + 1];
+                if (getcwd(cwd, MAXLINE) != NULL)
+                    gp_ErrorMessage("Failed to open EAPS.LOG for writing. "
+                                    "Current working directory is '%s'",
+                                    cwd);
+                else
+                    gp_ErrorMessage("Failed to open EAPS.LOG for writing. "
+                                    "Unable to get current working directory");
+            }
         }
     }
 

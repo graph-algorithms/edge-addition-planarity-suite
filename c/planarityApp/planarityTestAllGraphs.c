@@ -340,7 +340,19 @@ int outputTestAllGraphsResults(char command, char modifier, testAllStatsP stats,
             Result = OK;
         }
         else
+        {
+            char cwd[MAXLINE + 1];
+            if (getcwd(cwd, MAXLINE) != NULL)
+                gp_ErrorMessage("Failed to open file '%s' for writing. "
+                                "Current working directory is '%s'",
+                                outfileName, cwd);
+            else
+                gp_ErrorMessage("Failed to open file '%s' for writing. "
+                                "Unable to get current working directory",
+                                outfileName);
+
             Result = NOTOK;
+        }
 
         free(theOutputStr);
         theOutputStr = NULL;
