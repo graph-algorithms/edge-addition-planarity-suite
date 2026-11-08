@@ -11,7 +11,7 @@
                 "-fdiagnostics-color=always",
                 "-DDEBUG", // Added so that _DEBUG is defined; see appconst.h
                 //"-DUSE_0BASEDARRAYS", // Commented out to use faster 1-based array indexing
-                "-fno-strict-aliasing",
+                "-fstrict-aliasing",
                 "-pedantic",
                 "-Wall",
                 "-Warray-bounds",
@@ -92,7 +92,7 @@
             "args": [
                 "-O3",
                 //"-DUSE_0BASEDARRAYS", // Commented out to use faster 1-based array indexing
-                "-fno-strict-aliasing",
+                "-fstrict-aliasing",
                 "-pedantic",
                 "-Wall",
                 "-Warray-bounds",
@@ -169,7 +169,7 @@
             "command": "/usr/bin/gcc",
             "args": [
                 "-fdiagnostics-color=always",
-                "-fno-strict-aliasing",
+                "-fstrict-aliasing",
                 "-DDEBUG", // Added so that _DEBUG is defined; see appconst.h
                 //"-DUSE_0BASEDARRAYS", // Commented out to use default of 1-based array indexing
                 "-pedantic",
@@ -248,7 +248,7 @@
             "command": "/usr/bin/gcc",
             "args": [
                 "-fdiagnostics-color=always",
-                "-fno-strict-aliasing",
+                "-fstrict-aliasing",
                 "-fsanitize=address",
                 "-DDEBUG", // Added so that _DEBUG is defined; see appconst.h
                 //"-DUSE_0BASEDARRAYS", // Commented out to use default of 1-based array indexing
@@ -328,7 +328,7 @@
             "command": "/usr/bin/gcc",
             "args": [
                 "-O3",
-                "-fno-strict-aliasing",
+                "-fstrict-aliasing",
                 //"-DUSE_0BASEDARRAYS", // Commented out to use default of 1-based array indexing
                 "-pedantic",
                 "-Wall",
@@ -537,7 +537,7 @@
             "args": [
                 "-fcolor-diagnostics",
                 "-fansi-escape-codes",
-                "-fno-strict-aliasing",
+                "-fstrict-aliasing",
                 "-DDEBUG", // Added so that _DEBUG is defined; see appconst.h
                 //"-DUSE_0BASEDARRAYS", // Commented out to use default of 1-based array indexing
                 "-Wall",
@@ -616,7 +616,7 @@
             "args": [
                 "-fcolor-diagnostics",
                 "-fansi-escape-codes",
-                "-fno-strict-aliasing",
+                "-fstrict-aliasing",
                 "-fsanitize=address",
                 "-Wno-deprecated-declarations", // macOS SDK deprecates sprintf; keep the sanitizer task focused on sanitizer findings
                 "-DDEBUG", // Added so that _DEBUG is defined; see appconst.h
@@ -696,7 +696,7 @@
             "command": "clang",
             "args": [
                 "-O3",
-                "-fno-strict-aliasing",
+                "-fstrict-aliasing",
                 //"-DUSE_0BASEDARRAYS", // Commented out to use default of 1-based array indexing
                 "-Wall",
                 "-pedantic",

@@ -18,7 +18,7 @@ jobs:
       CFLAGS: -fno-omit-frame-pointer -g -O1
     strategy:
       matrix:
-        type: [address, undefined]
+        type: [address, undefined, type]
         include:
           - type: undefined
             extra_cflags: -fno-sanitize-merge
