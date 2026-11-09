@@ -25,6 +25,8 @@ const char *_WriteModeName(int writeMode);
 
 #define NUM_MINORS 9
 
+// #define STABLE_TIMING_TEST
+
 int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraphs, char *outfileName,
                  int forceQuiet, int useExGenerator, int (*mutatorFunc)(graphP))
 {
@@ -146,7 +148,12 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
     // Seed the random number generator with "now". Do it after any prompting
     // to tie randomness to human process of answering the prompt.
     // Acceptable downcast of time_t to unsigned int (seeding benefits from the lower bits of now)
+
+#ifndef STABLE_TIMING_TEST
     srand((unsigned int)time(NULL));
+#else
+    srand((unsigned int)1);
+#endif
 
     // Select a counter update frequency that updates more frequently with larger graphs
     // and which is relatively prime with 10 so that all digits of the count will change
@@ -349,6 +356,7 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
         // Reset (or recreate) graph for next iteration
         ResetGraphStorage(&theGraph, ReuseGraphs, command);
 
+#ifndef STABLE_TIMING_TEST
         // Show progress, but not so often that it bogs down progress
         if (!(gp_GetQuietMode() & QUIETMODE_MESSAGES))
         {
@@ -358,6 +366,7 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
                 fflush(stdout);
             }
         }
+#endif
     }
 
     // Stop the timer
