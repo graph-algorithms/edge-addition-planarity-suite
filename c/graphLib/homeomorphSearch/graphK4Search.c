@@ -37,7 +37,7 @@ extern int _SetVertexTypesForMarkingXYPath(graphP theGraph);
 extern int _MarkHighestXYPath(graphP theGraph);
 extern int _MarkPathAlongBicompExtFace(graphP theGraph, int startVert, int endVert);
 extern int _AddAndMarkEdge(graphP theGraph, int ancestor, int descendant);
-extern int _DeleteUnmarkedVerticesAndEdges(graphP theGraph);
+extern int _DeleteUnvisitedVerticesAndEdges(graphP theGraph);
 
 extern int _IsolateOuterplanarityObstructionA(graphP theGraph);
 // extern int  _IsolateOuterplanarityObstructionB(graphP theGraph);
@@ -154,7 +154,7 @@ int _SearchForK4InBicomp(graphP theGraph, K4SearchContext *context, int v, int R
 
             // Isolate the K4 homeomorph
             if (_K4_IsolateMinorA1(theGraph) != OK ||
-                _DeleteUnmarkedVerticesAndEdges(theGraph) != OK)
+                _DeleteUnvisitedVerticesAndEdges(theGraph) != OK)
                 return NOTOK;
 
             // Indicate success by returning NONEMBEDDABLE
@@ -209,7 +209,7 @@ int _SearchForK4InBicomp(graphP theGraph, K4SearchContext *context, int v, int R
 
             // Isolate the K4 homeomorph
             if (_K4_IsolateMinorA2(theGraph) != OK ||
-                _DeleteUnmarkedVerticesAndEdges(theGraph) != OK)
+                _DeleteUnvisitedVerticesAndEdges(theGraph) != OK)
                 return NOTOK;
 
             // Indicate success by returning NONEMBEDDABLE
@@ -276,7 +276,7 @@ int _SearchForK4InBicomp(graphP theGraph, K4SearchContext *context, int v, int R
 
             // Isolate the K4 homeomorph
             if (_K4_IsolateMinorB1(theGraph) != OK ||
-                _DeleteUnmarkedVerticesAndEdges(theGraph) != OK)
+                _DeleteUnvisitedVerticesAndEdges(theGraph) != OK)
                 return NOTOK;
 
             // Indicate success by returning NONEMBEDDABLE
@@ -322,7 +322,7 @@ int _SearchForK4InBicomp(graphP theGraph, K4SearchContext *context, int v, int R
 
             // Isolate the K4 homeomorph
             if (_K4_IsolateMinorB2(theGraph) != OK ||
-                _DeleteUnmarkedVerticesAndEdges(theGraph) != OK)
+                _DeleteUnvisitedVerticesAndEdges(theGraph) != OK)
                 return NOTOK;
 
             // Indicate success by returning NONEMBEDDABLE
@@ -377,7 +377,7 @@ int _SearchForK4InBicomp(graphP theGraph, K4SearchContext *context, int v, int R
 
         // Isolate the K4 homeomorph
         if (_IsolateOuterplanarityObstructionE(theGraph) != OK ||
-            _DeleteUnmarkedVerticesAndEdges(theGraph) != OK)
+            _DeleteUnvisitedVerticesAndEdges(theGraph) != OK)
             return NOTOK;
 
         // Return indication that K4 homeomorph has been found

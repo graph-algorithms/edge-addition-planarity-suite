@@ -25,7 +25,7 @@ const char *_WriteModeName(int writeMode);
 
 #define NUM_MINORS 9
 
-// #define STABLE_TIMING_TEST
+#define STABLE_TIMING_TEST
 
 int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraphs, char *outfileName,
                  int forceQuiet, int useExGenerator, int (*mutatorFunc)(graphP))
@@ -225,6 +225,9 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
             //     break;
             // }
 
+#ifndef STABLE_TIMING_TEST
+            // For timing tests, we don't need to take a copy of the original graph
+            // because we don't need it to test integrity of results below.
             if ((Result = gp_CopyGraph(origGraph, theGraph)) != OK)
             {
                 gp_ErrorMessage("Unable to make a copy of graph number %d "
@@ -232,7 +235,13 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
                                 K);
                 break;
             }
+#endif
 
+#ifndef STABLE_TIMING_TEST
+            // For timing tests, we'd like to test the optimized version of gp_Embed()
+            // When not doing timing tests, we'd like to test the functionality of
+            // incremental initialization, because the optimized version is also
+            // tested/exercised by SpecificGraph testing
             if ((Result = gp_DepthFirstSearch(theGraph)) != OK)
             {
                 gp_ErrorMessage("Unable to depth first search graph number %d before embedding.", K);
@@ -250,6 +259,7 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
                 gp_ErrorMessage("Unable to compute lowpoints for graph number %d before embedding.", K);
                 break;
             }
+#endif
 
             Result = gp_Embed(theGraph, embedFlags);
             if (Result != OK && Result != NONEMBEDDABLE)
@@ -258,6 +268,9 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
                 break;
             }
 
+#ifndef STABLE_TIMING_TEST
+            // For timing tests, we'd like to know the speed of gp_Embed() without also
+            // having the cost of integrity checking.
             if (gp_TestEmbedResultIntegrity(theGraph, origGraph, Result) != Result)
             {
                 gp_ErrorMessage("Embed integrity check failed on graph number %d.", K);
@@ -282,6 +295,7 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
                     }
                 }
             }
+#endif
 
             if (Result == OK)
             {

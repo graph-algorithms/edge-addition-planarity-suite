@@ -25,7 +25,7 @@ extern int _MarkPathAlongBicompExtFace(graphP theGraph, int startVert, int endVe
 
 extern int _AddAndMarkEdge(graphP theGraph, int ancestor, int descendant);
 
-extern int _DeleteUnmarkedVerticesAndEdges(graphP theGraph);
+extern int _DeleteUnvisitedVerticesAndEdges(graphP theGraph);
 
 extern int _ChooseTypeOfNonOuterplanarityMinor(graphP theGraph, int v, int R);
 extern int _IsolateOuterplanarityObstructionA(graphP theGraph);
@@ -77,7 +77,7 @@ int _SearchForK23InBicomp(graphP theGraph, int v, int R)
                 return NOTOK;
         }
 
-        if (_DeleteUnmarkedVerticesAndEdges(theGraph) != OK)
+        if (_DeleteUnvisitedVerticesAndEdges(theGraph) != OK)
             return NOTOK;
 
         return NONEMBEDDABLE;
@@ -103,7 +103,7 @@ int _SearchForK23InBicomp(graphP theGraph, int v, int R)
         if (_IsolateOuterplanarityObstructionE1orE2(theGraph) != OK)
             return NOTOK;
 
-        if (_DeleteUnmarkedVerticesAndEdges(theGraph) != OK)
+        if (_DeleteUnvisitedVerticesAndEdges(theGraph) != OK)
             return NOTOK;
 
         return NONEMBEDDABLE;
@@ -127,7 +127,7 @@ int _SearchForK23InBicomp(graphP theGraph, int v, int R)
         if (_IsolateOuterplanarityObstructionE3orE4(theGraph) != OK)
             return NOTOK;
 
-        if (_DeleteUnmarkedVerticesAndEdges(theGraph) != OK)
+        if (_DeleteUnvisitedVerticesAndEdges(theGraph) != OK)
             return NOTOK;
 
         return NONEMBEDDABLE;
