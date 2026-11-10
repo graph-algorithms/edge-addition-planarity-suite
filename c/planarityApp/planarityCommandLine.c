@@ -82,6 +82,7 @@ int runIOErrorTests(void);
 int runSparse6ReadTests(void);
 int runStringInputLineTests(void);
 int runGeneralReadIteratorTests(void);
+int runGeneralWriteIteratorTests(void);
 char *copySparse6TestString(char const *s6Str);
 int runSparse6TestAllGraphsTests(void);
 int runSparse6WriteTests(void);
@@ -313,6 +314,8 @@ int runQuickRegressionTests(int argc, char *argv[])
     else if (runStringInputLineTests() != OK)
         retVal = NOTOK;
     else if (runGeneralReadIteratorTests() != OK)
+        retVal = NOTOK;
+    else if (runGeneralWriteIteratorTests() != OK)
         retVal = NOTOK;
     else if (runSparse6ReadTests() != OK)
         retVal = NOTOK;
@@ -1245,6 +1248,454 @@ int runGeneralReadIteratorTests(void)
         gp_Message("Successfully finished Generalized Read Iterator Tests.\n");
     else
         gp_Message("Error detected in Generalized Read Iterator Tests.\n");
+
+    return Result;
+}
+
+/****************************************************************************
+ runGeneralWriteIteratorFormatsTest()
+
+ Reads the graphs of N5-all.s6 with a general read iterator and writes
+ each of them with a general write iterator for each of graph6,
+ sparse6 and digraph6, all three on the reader's graph, then compares
+ each output with the sample file of its format.
+ ****************************************************************************/
+
+static int runGeneralWriteIteratorFormatsTest(void)
+{
+    int Result = OK;
+    graphP theGraph = NULL;
+    GPReadIteratorP theReadIterator = NULL;
+    int const writeModes[] = {WRITE_G6, WRITE_SPARSE6, WRITE_DIGRAPH6};
+    char const *expectedFileNames[] = {"N5-all.g6", "N5-all.s6", "N5-all.d6"};
+    GPWriteIteratorP theWriteIterators[] = {NULL, NULL, NULL};
+    char *outputStrings[] = {NULL, NULL, NULL};
+    int numGraphs = 0;
+    size_t i = 0;
+
+    if ((theGraph = gp_New()) == NULL ||
+        gp_NewReader((&theReadIterator), theGraph) != OK ||
+        gp_InitReaderWithFileName(theReadIterator, "N5-all.s6") != OK)
+    {
+        gp_ErrorMessage("Unable to open \"N5-all.s6\" for the general write iterator test.");
+        Result = NOTOK;
+    }
+
+    // Initializing the reader gives the graph its order, which the writers
+    // need, so they are created after it and before any graph is read
+    for (i = 0; Result == OK && i < sizeof(writeModes) / sizeof(writeModes[0]); i++)
+    {
+        if (gp_NewWriter((&theWriteIterators[i]), theGraph, writeModes[i]) != OK ||
+            gp_InitWriterWithString(theWriteIterators[i], (&outputStrings[i])) != OK)
+        {
+            gp_ErrorMessage("Unable to create the writer for \"%s\".", expectedFileNames[i]);
+            Result = NOTOK;
+        }
+    }
+
+    while (Result == OK)
+    {
+        if (gp_ReadGraph(theReadIterator) != OK)
+        {
+            gp_ErrorMessage("Unable to read graph %d of \"N5-all.s6\".", numGraphs + 1);
+            Result = NOTOK;
+            break;
+        }
+
+        if (gp_EndReached(theReadIterator))
+            break;
+
+        numGraphs++;
+
+        for (i = 0; Result == OK && i < sizeof(writeModes) / sizeof(writeModes[0]); i++)
+        {
+            if (gp_WriteGraph(theWriteIterators[i]) != OK)
+            {
+                gp_ErrorMessage("Unable to write graph %d of \"N5-all.s6\" for \"%s\".",
+                                numGraphs, expectedFileNames[i]);
+                Result = NOTOK;
+            }
+        }
+    }
+
+    // Freeing a writer hands its output string over
+    for (i = 0; i < sizeof(writeModes) / sizeof(writeModes[0]); i++)
+    {
+        gp_FreeWriter((&theWriteIterators[i]));
+
+        if (theWriteIterators[i] != NULL)
+        {
+            gp_ErrorMessage("The writer for \"%s\" was not cleared when freed.", expectedFileNames[i]);
+            Result = NOTOK;
+        }
+    }
+
+    if (Result == OK && numGraphs != 34)
+    {
+        gp_ErrorMessage("Read %d graphs of \"N5-all.s6\" rather than 34.", numGraphs);
+        Result = NOTOK;
+    }
+
+    for (i = 0; Result == OK && i < sizeof(writeModes) / sizeof(writeModes[0]); i++)
+    {
+        if (outputStrings[i] == NULL ||
+            TextFileMatchesString(expectedFileNames[i], outputStrings[i]) != TRUE)
+        {
+            gp_ErrorMessage("The general write iterator's output differs from \"%s\".",
+                            expectedFileNames[i]);
+            Result = NOTOK;
+        }
+    }
+
+    for (i = 0; i < sizeof(writeModes) / sizeof(writeModes[0]); i++)
+        if (outputStrings[i] != NULL)
+            free(outputStrings[i]);
+
+    gp_FreeReader((&theReadIterator));
+    gp_Free(&theGraph);
+
+    return Result;
+}
+
+/****************************************************************************
+ runGeneralWriteIteratorIncrementalTest()
+
+ Regenerates N5-all.inc.s6 with a sparse6 general write iterator: the
+ first graph is written whole, and before each later graph is read, the
+ changes that the general read iterator retrieves for it are stored in
+ the writer, which then writes them as an incremental line.
+
+ The writer applies each batch to its graph once the line is written,
+ and the reader must not see its graph changed by anything but itself,
+ so the writer works on a copy of the first graph. A deletion names an
+ edge record of the reader's graph, so the writer is given its own
+ record of the same edge. The regenerated bytes equal the file's when
+ no line toggles an edge more than once and the file has one ':' line,
+ both true of this sample: a second ':' line would leave the copy
+ behind, which the comparison of the graphs after each write reports.
+ ****************************************************************************/
+
+static int runGeneralWriteIteratorIncrementalTest(void)
+{
+    int Result = OK;
+    graphP theGraph = NULL;
+    graphP writerGraph = NULL;
+    GPReadIteratorP theReadIterator = NULL;
+    GPWriteIteratorP theWriteIterator = NULL;
+    char *outputStr = NULL;
+    int numGraphs = 0;
+    int e = NIL, u = NIL, v = NIL;
+
+    if ((theGraph = gp_New()) == NULL ||
+        gp_NewReader((&theReadIterator), theGraph) != OK ||
+        gp_InitReaderWithFileName(theReadIterator, "N5-all.inc.s6") != OK)
+    {
+        gp_ErrorMessage("Unable to open \"N5-all.inc.s6\" for the general write iterator test.");
+        Result = NOTOK;
+    }
+
+    while (Result == OK)
+    {
+        // Once the first graph is written, store the changes to the next one
+        while (Result == OK && theWriteIterator != NULL)
+        {
+            if (gp_RetrieveGraphChange(theReadIterator, &e, &u, &v) != OK)
+            {
+                gp_ErrorMessage("Unable to retrieve a change to graph %d of \"N5-all.inc.s6\".",
+                                numGraphs + 1);
+                Result = NOTOK;
+            }
+            else if (e == NIL && u == NIL && v == NIL)
+                break;
+            else if (e != NIL)
+            {
+                int writerEdge = gp_FindEdge(writerGraph,
+                                             gp_GetNeighbor(theGraph, gp_GetTwin(theGraph, e)),
+                                             gp_GetNeighbor(theGraph, e));
+
+                if (!gp_IsEdge(writerGraph, writerEdge))
+                {
+                    gp_ErrorMessage("The writer's graph lacks an edge deleted before graph %d "
+                                    "of \"N5-all.inc.s6\".",
+                                    numGraphs + 1);
+                    Result = NOTOK;
+                }
+                else if (gp_StoreGraphChange(theWriteIterator, writerEdge, NIL, NIL) != OK)
+                {
+                    gp_ErrorMessage("Unable to store a deletion for graph %d of \"N5-all.inc.s6\".",
+                                    numGraphs + 1);
+                    Result = NOTOK;
+                }
+            }
+            else if (gp_StoreGraphChange(theWriteIterator, NIL, u, v) != OK)
+            {
+                gp_ErrorMessage("Unable to store an addition for graph %d of \"N5-all.inc.s6\".",
+                                numGraphs + 1);
+                Result = NOTOK;
+            }
+        }
+
+        if (Result != OK)
+            break;
+
+        if (gp_ReadGraph(theReadIterator) != OK)
+        {
+            gp_ErrorMessage("Unable to read graph %d of \"N5-all.inc.s6\".", numGraphs + 1);
+            Result = NOTOK;
+            break;
+        }
+
+        if (gp_EndReached(theReadIterator))
+            break;
+
+        numGraphs++;
+
+        if (theWriteIterator == NULL)
+        {
+            if ((writerGraph = gp_New()) == NULL ||
+                gp_EnsureVertexCapacity(writerGraph, gp_GetN(theGraph)) != OK ||
+                gp_CopyGraph(writerGraph, theGraph) != OK ||
+                gp_NewWriter((&theWriteIterator), writerGraph, WRITE_SPARSE6) != OK ||
+                gp_InitWriterWithString(theWriteIterator, (&outputStr)) != OK ||
+                gp_WriteGraph(theWriteIterator) != OK)
+            {
+                gp_ErrorMessage("Unable to write the first graph of \"N5-all.inc.s6\".");
+                Result = NOTOK;
+            }
+
+            continue;
+        }
+
+        if (gp_WriteGraph(theWriteIterator) != OK)
+        {
+            gp_ErrorMessage("Unable to write the changes for graph %d of \"N5-all.inc.s6\".",
+                            numGraphs);
+            Result = NOTOK;
+        }
+        else
+        {
+            // Applying the batch must leave the writer's graph equal to the
+            // graph read
+            char *writerG6 = NULL, *readG6 = NULL;
+
+            if (gp_WriteToString(writerGraph, (&writerG6), WRITE_GRAPH6) != OK ||
+                gp_WriteToString(theGraph, (&readG6), WRITE_GRAPH6) != OK ||
+                strcmp(writerG6, readG6) != 0)
+            {
+                gp_ErrorMessage("After graph %d of \"N5-all.inc.s6\" the writer's graph "
+                                "is \"%s\" rather than \"%s\".",
+                                numGraphs, writerG6 == NULL ? "" : writerG6,
+                                readG6 == NULL ? "" : readG6);
+                Result = NOTOK;
+            }
+
+            if (writerG6 != NULL)
+                free(writerG6);
+            if (readG6 != NULL)
+                free(readG6);
+        }
+    }
+
+    // The string is handed over when the writer is freed
+    gp_FreeWriter((&theWriteIterator));
+
+    if (Result == OK && numGraphs != 34)
+    {
+        gp_ErrorMessage("Read %d graphs of \"N5-all.inc.s6\" rather than 34.", numGraphs);
+        Result = NOTOK;
+    }
+
+    if (Result == OK &&
+        (outputStr == NULL || TextFileMatchesString("N5-all.inc.s6", outputStr) != TRUE))
+    {
+        gp_ErrorMessage("The general write iterator's output differs from \"N5-all.inc.s6\".");
+        Result = NOTOK;
+    }
+
+    if (outputStr != NULL)
+        free(outputStr);
+
+    gp_FreeReader((&theReadIterator));
+    gp_Free(&writerGraph);
+    gp_Free(&theGraph);
+
+    return Result;
+}
+
+/****************************************************************************
+ runGeneralWriteIteratorRefusalTests()
+
+ Checks that the general write iterator refuses invalid parameters,
+ leaves nothing allocated when it refuses to be created, and refuses
+ incremental changes for the formats that have none.
+ ****************************************************************************/
+
+static int runGeneralWriteIteratorRefusalTests(void)
+{
+    int Result = OK;
+    unsigned origQuietMode = gp_GetQuietMode();
+    graphP theGraph = NULL;
+    graphP emptyGraph = NULL;
+    GPWriteIteratorP theWriteIterator = NULL;
+    GPWriteIteratorP nullWriteIterator = NULL;
+    char *outputStr = NULL;
+    // Formats that hold one graph, a non-format and the slots around the range
+    int const invalidModes[] = {0, WRITE_ADJLIST, WRITE_ADJMATRIX, WRITE_DEBUGINFO, WRITE_GRAPHML, -1, 99};
+    int const singleOnlyModes[] = {WRITE_G6, WRITE_DIGRAPH6};
+    int const allModes[] = {WRITE_G6, WRITE_SPARSE6, WRITE_DIGRAPH6};
+    // A path no test environment has, so that opening it for writing fails
+    char badFileName[] = "no-such-directory-for-planarity-tests/graphs.out";
+    size_t i = 0;
+
+    if ((theGraph = gp_New()) == NULL || gp_EnsureVertexCapacity(theGraph, 3) != OK ||
+        (emptyGraph = gp_New()) == NULL)
+    {
+        gp_ErrorMessage("Unable to create the graphs for the general write iterator refusal tests.");
+        gp_Free(&theGraph);
+        gp_Free(&emptyGraph);
+        return NOTOK;
+    }
+
+    gp_SetQuietMode(QUIETMODE_ALL);
+
+    if (gp_NewWriter(NULL, theGraph, WRITE_G6) == OK)
+        Result = NOTOK;
+    else if (gp_NewWriter((&theWriteIterator), NULL, WRITE_G6) == OK || theWriteIterator != NULL)
+        Result = NOTOK;
+    // The writer of the format refuses a graph without vertices, which must
+    // leave nothing allocated
+    else if (gp_NewWriter((&theWriteIterator), emptyGraph, WRITE_SPARSE6) == OK || theWriteIterator != NULL)
+        Result = NOTOK;
+
+    for (i = 0; Result == OK && i < sizeof(invalidModes) / sizeof(invalidModes[0]); i++)
+        if (gp_NewWriter((&theWriteIterator), theGraph, invalidModes[i]) == OK || theWriteIterator != NULL)
+            Result = NOTOK;
+
+    // Allocating over an existing writer would lose it
+    if (Result == OK)
+    {
+        GPWriteIteratorP theSameWriteIterator = NULL;
+
+        if (gp_NewWriter((&theWriteIterator), theGraph, WRITE_SPARSE6) != OK)
+            Result = NOTOK;
+        else
+        {
+            theSameWriteIterator = theWriteIterator;
+
+            if (gp_NewWriter((&theSameWriteIterator), theGraph, WRITE_G6) == OK ||
+                theSameWriteIterator != theWriteIterator)
+                Result = NOTOK;
+        }
+
+        gp_FreeWriter((&theWriteIterator));
+    }
+
+    // Formats without incremental lines refuse a change even after a write
+    for (i = 0; Result == OK && i < sizeof(singleOnlyModes) / sizeof(singleOnlyModes[0]); i++)
+    {
+        if (gp_NewWriter((&theWriteIterator), theGraph, singleOnlyModes[i]) != OK ||
+            gp_InitWriterWithString(theWriteIterator, (&outputStr)) != OK ||
+            gp_WriteGraph(theWriteIterator) != OK ||
+            gp_StoreGraphChange(theWriteIterator, NIL, gp_LowerBoundVertices(theGraph),
+                                gp_LowerBoundVertices(theGraph) + 1) == OK)
+            Result = NOTOK;
+
+        gp_FreeWriter((&theWriteIterator));
+
+        // The refusal leaves the output intact
+        if (outputStr == NULL)
+            Result = NOTOK;
+        else
+        {
+            free(outputStr);
+            outputStr = NULL;
+        }
+    }
+
+    // Initializing with a file that cannot be created is refused for each
+    // format, and leaves the writer free to be initialized with a string
+    for (i = 0; Result == OK && i < sizeof(allModes) / sizeof(allModes[0]); i++)
+    {
+        if (gp_NewWriter((&theWriteIterator), theGraph, allModes[i]) != OK ||
+            gp_InitWriterWithFileName(theWriteIterator, badFileName) == OK ||
+            gp_InitWriterWithString(theWriteIterator, (&outputStr)) != OK ||
+            gp_WriteGraph(theWriteIterator) != OK)
+            Result = NOTOK;
+
+        gp_FreeWriter((&theWriteIterator));
+
+        if (outputStr == NULL)
+            Result = NOTOK;
+        else
+        {
+            free(outputStr);
+            outputStr = NULL;
+        }
+    }
+
+    // The error flag makes the writer withhold its output when freed
+    if (Result == OK)
+    {
+        if (gp_NewWriter((&theWriteIterator), theGraph, WRITE_G6) != OK ||
+            gp_InitWriterWithString(theWriteIterator, (&outputStr)) != OK ||
+            gp_WriteGraph(theWriteIterator) != OK)
+            Result = NOTOK;
+
+        gp_SetOutputErrorFlag(theWriteIterator);
+        gp_FreeWriter((&theWriteIterator));
+
+        if (outputStr != NULL)
+        {
+            free(outputStr);
+            outputStr = NULL;
+            Result = NOTOK;
+        }
+    }
+
+    // A missing iterator is refused, and the void methods ignore it
+    if (Result == OK &&
+        (gp_InitWriterWithString(NULL, (&outputStr)) == OK ||
+         gp_InitWriterWithFileName(NULL, badFileName) == OK ||
+         gp_StoreGraphChange(NULL, NIL, NIL, NIL) == OK ||
+         gp_WriteGraph(NULL) == OK))
+        Result = NOTOK;
+
+    gp_SetOutputErrorFlag(NULL);
+    gp_FreeWriter(NULL);
+    gp_FreeWriter((&nullWriteIterator));
+
+    gp_SetQuietMode(origQuietMode);
+
+    if (Result != OK)
+        gp_ErrorMessage("The general write iterator accepted an invalid call.");
+
+    gp_Free(&emptyGraph);
+    gp_Free(&theGraph);
+
+    return Result;
+}
+
+/****************************************************************************
+ runGeneralWriteIteratorTests()
+ ****************************************************************************/
+
+int runGeneralWriteIteratorTests(void)
+{
+    int Result = OK;
+
+    gp_Message("Starting Generalized Write Iterator Tests");
+
+    if (Result == OK)
+        Result = runGeneralWriteIteratorFormatsTest();
+    if (Result == OK)
+        Result = runGeneralWriteIteratorIncrementalTest();
+    if (Result == OK)
+        Result = runGeneralWriteIteratorRefusalTests();
+
+    if (Result == OK)
+        gp_Message("Successfully finished Generalized Write Iterator Tests.\n");
+    else
+        gp_Message("Error detected in Generalized Write Iterator Tests.\n");
 
     return Result;
 }
