@@ -30,6 +30,7 @@ libplanarity_la_SOURCES = \
 	c/graphLib/io/g6-api-utilities.c \
 	c/graphLib/io/g6-read-iterator.c \
 	c/graphLib/io/gp-read-iterator.c \
+	c/graphLib/io/gp-write-iterator.c \
 	c/graphLib/io/g6-write-iterator.c \
 	c/graphLib/io/s6-read-iterator.c \
 	c/graphLib/io/s6-write-iterator.c \
@@ -78,6 +79,7 @@ nobase_pkginclude_HEADERS = \
 	c/graphLib/io/graphIO.h \
 	c/graphLib/io/g6-read-iterator.h \
 	c/graphLib/io/gp-read-iterator.h \
+	c/graphLib/io/gp-write-iterator.h \
 	c/graphLib/io/g6-write-iterator.h \
 	c/graphLib/io/s6-read-iterator.h \
 	c/graphLib/io/s6-write-iterator.h \

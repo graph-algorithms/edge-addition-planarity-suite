@@ -23,6 +23,7 @@ extern "C"
 // Graph I/O public API methods and definitions
 #include "io/graphIO.h"
 #include "io/gp-read-iterator.h"
+#include "io/gp-write-iterator.h"
 
 // The g6 read/write iterators are deprecated and, as a future
 // breaking change, will be removed in the next major release.
