@@ -850,6 +850,12 @@ int _WriteAdjMatrix(graphP theGraph, strOrFileP outputContainer)
                 }
                 Row[gp_GetNeighbor(theGraph, e) - gp_LowerBoundVertices(theGraph)] = '1';
             }
+            else if (gp_GetNeighbor(theGraph, e) == v)
+            {
+                    gp_ErrorMessage("Adjacency matrix writer does not support loop edges.");
+                    free(Row);
+                    return NOTOK;
+            }
 
             e = gp_GetNextEdge(theGraph, e);
         }

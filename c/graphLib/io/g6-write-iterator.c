@@ -479,8 +479,14 @@ int _g6_EncodeAdjMatAsG6(G6WriteIteratorP theG6WriteIterator)
         bitPositionPower = 5 - ((columnOffsets[v] + u) % 6);
 
         bitPosition = (1u << bitPositionPower);
+
+        // The graph6 format does not support loops nor parallel edges
         if (u == v || (g6Encoding[charOffset] & bitPosition))
+        {
+            gp_ErrorMessage("The graph6 format does not support loops nor parallel edges.");
             return NOTOK;
+        }
+
         g6Encoding[charOffset] |= bitPosition;
 
         _g6_GetNextEdgeInUse(theGraph, &e, &u, &v);
@@ -633,7 +639,7 @@ int _g6_WriteGraphToString(graphP theGraph, char **pOutputStr)
 int _g6_WriteGraphToStrOrFile(graphP theGraph, strOrFileP *pOutputContainer)
 {
     G6WriteIteratorP theG6WriteIterator = NULL;
-    
+
     if (!sf_IsValidStrOrFile((*pOutputContainer)))
     {
         gp_ErrorMessage("Invalid G6 output container.");
