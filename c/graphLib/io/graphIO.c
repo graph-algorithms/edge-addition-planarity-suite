@@ -687,9 +687,11 @@ int _WriteAdjList(graphP theGraph, strOrFileP outputContainer)
 {
     int v = NIL, e = NIL;
     int zeroBasedVertexOffset = 0, adjacencyListTerminator = NIL;
-    char numberStr[MAXCHARSFOR32BITINT + 1];
+    int neighbor = NIL, dir = 0, printAdjacency = FALSE, isDirectedLoopEdge = FALSE;
+    // 2 for "N=", ":", or " +"; MAXCHARSFOR32BITINT for -/+integer; 2 for "\r\n"; 1 for \0
+    char numberStr[2 + MAXCHARSFOR32BITINT + 2 + 1];
 
-    memset(numberStr, '\0', (MAXCHARSFOR32BITINT + 1) * sizeof(char));
+    memset(numberStr, '\0', (2 + MAXCHARSFOR32BITINT + 2 + 1) * sizeof(char));
 
     if (theGraph == NULL || !sf_IsValidStrOrFile(outputContainer))
         return NOTOK;
@@ -724,32 +726,36 @@ int _WriteAdjList(graphP theGraph, strOrFileP outputContainer)
         e = gp_GetLastEdge(theGraph, v);
         while (gp_IsEdge(theGraph, e))
         {
-            int neighbor = gp_GetNeighbor(theGraph, e);
-            int dir = gp_GetDirection(theGraph, e);
-            int shouldPrint = 0;
-            int isDirectedLoop = 0;
+            neighbor = gp_GetNeighbor(theGraph, e);
+            dir = gp_GetDirection(theGraph, e);
+
+            printAdjacency = isDirectedLoopEdge = FALSE;
 
             if (neighbor != v)
             {
+                // For non-loop edges, print adjacency if undirected or out-only
                 if (dir != EDGEFLAG_DIRECTION_INONLY)
-                    shouldPrint = 1;
+                    printAdjacency = TRUE;
             }
             else
             {
-                if (dir == EDGEFLAG_DIRECTION_OUTONLY)
+                if (dir == 0)
                 {
-                    shouldPrint = 1;
-                    isDirectedLoop = 1; // Needs a '+' sign
+                    // For an undirected loop edge, we only print one adjacency
+                    // from among the two edge records in the vertex's list
+                    if (e < gp_GetTwin(theGraph, e))
+                        printAdjacency = TRUE;
                 }
-                else if (dir != EDGEFLAG_DIRECTION_INONLY && e < gp_GetTwin(theGraph, e))
+                else if (dir == EDGEFLAG_DIRECTION_OUTONLY)
                 {
-                    shouldPrint = 1;
+                    printAdjacency = TRUE;
+                    isDirectedLoopEdge = TRUE; // Directed loop needs a '+' sign
                 }
             }
 
-            if (shouldPrint)
+            if (printAdjacency)
             {
-                if (isDirectedLoop)
+                if (isDirectedLoopEdge)
                 {
                     // Print with a '+' sign
                     if (sprintf(numberStr, " +%d", neighbor - zeroBasedVertexOffset) < 1)
