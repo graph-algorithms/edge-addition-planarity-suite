@@ -25,7 +25,7 @@ const char *_WriteModeName(int writeMode);
 
 #define NUM_MINORS 9
 
-#define STABLE_TIMING_TEST
+// #define STABLE_TIMING_TEST
 
 int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraphs, char *outfileName,
                  int forceQuiet, int useExGenerator, int (*mutatorFunc)(graphP))
