@@ -1757,9 +1757,7 @@ int gp_IsNeighbor(graphP theGraph, int u, int v)
         u < gp_LowerBoundVertexStorage(theGraph) || u >= gp_UpperBoundVertexStorage(theGraph) ||
         v < gp_LowerBoundVertexStorage(theGraph) || v >= gp_UpperBoundVertexStorage(theGraph))
     {
-#ifdef DEBUG
-        NOTOK;
-#endif
+        gp_ErrorMessage("Invalid parameters.");
         return FALSE;
     }
 
@@ -1796,9 +1794,7 @@ int gp_IsNeighborDirected(graphP theGraph, int u, int v, unsigned direction)
         v < gp_LowerBoundVertexStorage(theGraph) || v >= gp_UpperBoundVertexStorage(theGraph) ||
         (direction != 0 && direction != EDGEFLAG_DIRECTION_INONLY && direction != EDGEFLAG_DIRECTION_OUTONLY))
     {
-#ifdef DEBUG
-        NOTOK;
-#endif
+        gp_ErrorMessage("Invalid parameters.");
         return FALSE;
     }
 
@@ -1836,10 +1832,7 @@ int gp_FindEdge(graphP theGraph, int u, int v)
         u < gp_LowerBoundVertexStorage(theGraph) || u >= gp_UpperBoundVertexStorage(theGraph) ||
         v < gp_LowerBoundVertexStorage(theGraph) || v >= gp_UpperBoundVertexStorage(theGraph))
     {
-#ifdef DEBUG
-        NOTOK;
-#endif
-
+        gp_ErrorMessage("Invalid parameters.");
         return NIL;
     }
 
@@ -1889,10 +1882,7 @@ int gp_FindDirectedEdge(graphP theGraph, int u, int v, unsigned direction)
         v < gp_LowerBoundVertexStorage(theGraph) || v >= gp_UpperBoundVertexStorage(theGraph) ||
         (direction != 0 && direction != EDGEFLAG_DIRECTION_INONLY && direction != EDGEFLAG_DIRECTION_OUTONLY))
     {
-#ifdef DEBUG
-        NOTOK;
-#endif
-
+        gp_ErrorMessage("Invalid parameters.");
         return NIL;
     }
 
@@ -1936,6 +1926,7 @@ int gp_GetVertexDegree(graphP theGraph, int v)
     if (theGraph == NULL ||
         v < gp_LowerBoundVertexStorage(theGraph) || v >= gp_UpperBoundVertexStorage(theGraph))
     {
+        gp_ErrorMessage("Invalid parameters.");
         return 0;
     }
 
@@ -1971,10 +1962,7 @@ int gp_GetVertexInDegree(graphP theGraph, int v)
     if (theGraph == NULL ||
         v < gp_LowerBoundVertexStorage(theGraph) || v >= gp_UpperBoundVertexStorage(theGraph))
     {
-#ifdef DEBUG
-        NOTOK;
-#endif
-
+        gp_ErrorMessage("Invalid parameters.");
         return 0;
     }
 
@@ -2028,10 +2016,7 @@ int gp_GetVertexOutDegree(graphP theGraph, int v)
     if (theGraph == NULL ||
         v < gp_LowerBoundVertexStorage(theGraph) || v >= gp_UpperBoundVertexStorage(theGraph))
     {
-#ifdef DEBUG
-        NOTOK;
-#endif
-
+        gp_ErrorMessage("Invalid parameters.");
         return 0;
     }
 
@@ -2546,9 +2531,7 @@ void gp_HideEdge(graphP theGraph, int e)
         e < gp_LowerBoundEdges(theGraph) || e >= gp_UpperBoundEdges(theGraph) ||
         gp_EdgeNotInUse(theGraph, e))
     {
-#ifdef DEBUG
-        NOTOK;
-#endif
+        gp_ErrorMessage("Invalid parameters.");
         return;
     }
 
@@ -2586,9 +2569,7 @@ void gp_RestoreEdge(graphP theGraph, int e)
         e < gp_LowerBoundEdges(theGraph) || e >= gp_UpperBoundEdges(theGraph) ||
         gp_EdgeNotInUse(theGraph, e))
     {
-#ifdef DEBUG
-        NOTOK;
-#endif
+        gp_ErrorMessage("Invalid parameters.");
         return;
     }
 

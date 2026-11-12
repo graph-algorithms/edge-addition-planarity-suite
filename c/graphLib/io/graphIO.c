@@ -797,8 +797,9 @@ int _WriteAdjMatrix(graphP theGraph, strOrFileP outputContainer)
 {
     int v = NIL, e = NIL;
     char *Row = NULL;
-    char numberStr[MAXCHARSFOR32BITINT + 1];
-    memset(numberStr, '\0', (MAXCHARSFOR32BITINT + 1) * sizeof(char));
+    // For the integer, possible \r\n, then null terminator
+    char numberStr[MAXCHARSFOR32BITINT + 2 + 1];
+    memset(numberStr, '\0', (MAXCHARSFOR32BITINT + 2 + 1) * sizeof(char));
 
     if (theGraph == NULL || !sf_IsValidStrOrFile(outputContainer))
         return NOTOK;
@@ -886,6 +887,8 @@ char _GetEdgeTypeChar(graphP theGraph, int e)
         type = 'P';
     else if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_BACK)
         type = 'B';
+    else if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_CROSS)
+        type = 'X';
     else if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_TREE)
         type = 'T';
 

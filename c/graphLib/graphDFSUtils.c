@@ -794,10 +794,7 @@ int gp_GetParent(graphP theGraph, int v)
     if (theGraph == NULL ||
         v < gp_LowerBoundVertices(theGraph) || v >= gp_UpperBoundVertices(theGraph))
     {
-#ifdef DEBUG
-        NOTOK;
-        ;
-#endif
+        gp_ErrorMessage("Invalid parameters.");
         return NIL;
     }
 
@@ -815,10 +812,7 @@ int gp_GetVisitedIndex(graphP theGraph, int v)
     if (theGraph == NULL ||
         v < gp_LowerBoundVertices(theGraph) || v >= gp_UpperBoundVertices(theGraph))
     {
-#ifdef DEBUG
-        NOTOK;
-        ;
-#endif
+        gp_ErrorMessage("Invalid parameters.");
         return NIL;
     }
 
@@ -839,10 +833,7 @@ int gp_GetLeastAncestor(graphP theGraph, int v)
     if (theGraph == NULL ||
         v < gp_LowerBoundVertices(theGraph) || v >= gp_UpperBoundVertices(theGraph))
     {
-#ifdef DEBUG
-        NOTOK;
-        ;
-#endif
+        gp_ErrorMessage("Invalid parameters.");
         return NIL;
     }
 
@@ -861,10 +852,7 @@ int gp_GetLowpoint(graphP theGraph, int v)
     if (theGraph == NULL ||
         v < gp_LowerBoundVertices(theGraph) || v >= gp_UpperBoundVertices(theGraph))
     {
-#ifdef DEBUG
-        NOTOK;
-        ;
-#endif
+        gp_ErrorMessage("Invalid parameters.");
         return NIL;
     }
 

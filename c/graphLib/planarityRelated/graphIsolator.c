@@ -771,9 +771,7 @@ void _AddBackEdge(graphP theGraph, int ancestor, int descendant)
 
     if (gp_IsNotEdge(theGraph, fwdEdgeRec))
     {
-#ifdef DEBUG
-        NOTOK;
-#endif
+        gp_ErrorMessage("Expected forward edge.");
         return;
     }
 

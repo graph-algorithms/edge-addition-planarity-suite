@@ -1278,9 +1278,7 @@ int _K4_ReducePathToEdge(graphP theGraph, K4SearchContext *context, int edgeType
         {
             if (_K4_RestoreReducedPath(theGraph, context, e_R) != OK)
             {
-#ifdef DEBUG
-                NOTOK;
-#endif
+                gp_ErrorMessage("Failed to restore reduced path.");
                 return NIL;
             }
 
@@ -1293,9 +1291,7 @@ int _K4_ReducePathToEdge(graphP theGraph, K4SearchContext *context, int edgeType
         {
             if (_K4_RestoreReducedPath(theGraph, context, e_A) != OK)
             {
-#ifdef DEBUG
-                NOTOK;
-#endif
+                gp_ErrorMessage("Failed to restore reduced path.");
                 return NIL;
             }
             e_A = gp_GetEdgeByLink(theGraph, A, Alink);
