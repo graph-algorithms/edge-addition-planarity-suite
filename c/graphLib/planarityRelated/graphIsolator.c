@@ -814,7 +814,7 @@ void _AddBackEdge(graphP theGraph, int ancestor, int descendant)
 
  For each vertex, traverse its adjacency list and delete all unvisited edges.
  This function has been replaced by _DeleteUnvisitedVerticesAndEdges(),
- which is an optimzed version. It has been left in place for now for easy
+ which is an optimized version. It has been left in place for now for easy
  speed comparisons.
  ****************************************************************************/
 
