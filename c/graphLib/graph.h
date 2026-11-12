@@ -50,7 +50,7 @@ extern "C"
     int gp_CreateRandomGraphEx(graphP theGraph, int numEdges);
 
     // Basic graph I/O methods: see graphIO.h
-    // Intermediate graph I/O methods: see g6-read-iterator.h and g6-write-iterator.h
+    // Intermediate graph I/O methods: see gp-read-iterator.h and gp-write-iterator.h
 
     // Basic vertex interrogators
     int gp_IsNeighbor(graphP theGraph, int u, int v);

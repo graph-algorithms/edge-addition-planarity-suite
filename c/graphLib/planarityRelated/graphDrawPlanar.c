@@ -12,6 +12,7 @@ See the LICENSE.TXT file for licensing information.
 
 // For LOGGING-related declarations
 #include "../lowLevelUtils/apiutils.private.h"
+#include "../lowLevelUtils/apiutils.h"
 
 extern void _ClearAllVisitedFlagsInGraph(graphP theGraph);
 
@@ -940,7 +941,22 @@ int gp_DrawPlanar_RenderToFile(graphP theEmbedding, char *theFileName)
         else if (strcmp(theFileName, "stderr") == 0)
             outfile = stderr;
         else
+        {
             outfile = fopen(theFileName, WRITETEXT);
+
+            if (outfile == NULL)
+            {
+                char cwd[MAXLINE + 1];
+                if (getcwd(cwd, MAXLINE) != NULL)
+                    gp_ErrorMessage("Failed to open file '%s' for writing. "
+                                    "Current working directory is '%s'",
+                                    theFileName, cwd);
+                else
+                    gp_ErrorMessage("Failed to open file '%s' for writing. "
+                                    "Unable to get current working directory",
+                                    theFileName);
+            }
+        }
 
         if (outfile == NULL)
             return NOTOK;
@@ -1117,7 +1133,7 @@ int gp_DrawPlanar_GetVertexPosition(graphP theEmbedding, int v)
         return -1;
     }
 
-    return context->VI[v].pos;               
+    return context->VI[v].pos;
 }
 
 /********************************************************************
@@ -1142,7 +1158,7 @@ int gp_DrawPlanar_GetVertexStart(graphP theEmbedding, int v)
         return -1;
     }
 
-    return context->VI[v].start;               
+    return context->VI[v].start;
 }
 
 /********************************************************************
@@ -1167,7 +1183,7 @@ int gp_DrawPlanar_GetVertexEnd(graphP theEmbedding, int v)
         return -1;
     }
 
-    return context->VI[v].end;               
+    return context->VI[v].end;
 }
 
 /********************************************************************
@@ -1243,5 +1259,5 @@ int gp_DrawPlanar_GetEdgeEnd(graphP theEmbedding, int e)
         return -1;
     }
 
-    return  context->E[e].end;
+    return context->E[e].end;
 }

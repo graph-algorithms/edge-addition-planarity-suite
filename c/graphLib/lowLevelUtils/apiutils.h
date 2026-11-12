@@ -27,6 +27,15 @@ extern "C"
 #define MAXCHARSFOR32BITINT 11
 
 #if defined(_MSC_VER) && !defined(__llvm__) && !defined(__INTEL_COMPILER)
+// MSVC under Windows doesn't have unistd.h, but does define functions like getcwd and chdir
+#include <direct.h>
+#define getcwd _getcwd
+#define chdir _chdir
+#else
+#include <unistd.h>
+#endif
+
+#if defined(_MSC_VER) && !defined(__llvm__) && !defined(__INTEL_COMPILER)
 #define APPLY_FORMAT_ATTRIBUTE 0
 #elif defined(__has_attribute)
 #define APPLY_FORMAT_ATTRIBUTE __has_attribute(format)

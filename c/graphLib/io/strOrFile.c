@@ -4,9 +4,6 @@ All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
 
-#include "../lowLevelUtils/appconst.h"
-#include "../lowLevelUtils/apiutils.h"
-
 #include "strOrFile.h"
 
 char *_sf_DuplicateString(char const *const str);
@@ -106,6 +103,16 @@ strOrFileP sf_NewInputContainer(char const *const inputStr, char const *const fi
                 if (theStrOrFile->fileName == NULL ||
                     (theStrOrFile->pFile = fopen(fileName, READTEXT)) == NULL)
                 {
+                    char cwd[MAXLINE + 1];
+                    if (getcwd(cwd, MAXLINE) != NULL)
+                        gp_ErrorMessage("Failed to open file '%s' for reading. "
+                                        "Current working directory is '%s'",
+                                        fileName, cwd);
+                    else
+                        gp_ErrorMessage("Failed to open file '%s' for reading. "
+                                        "Unable to get current working directory",
+                                        fileName);
+
                     sf_Free(&theStrOrFile);
                     theStrOrFile = NULL;
                     return NULL;
@@ -204,6 +211,16 @@ strOrFileP sf_NewOutputContainer(char **pOutputStr, char const *const fileName)
                 if (theStrOrFile->fileName == NULL ||
                     (theStrOrFile->pFile = fopen(fileName, WRITETEXT)) == NULL)
                 {
+                    char cwd[MAXLINE + 1];
+                    if (getcwd(cwd, MAXLINE) != NULL)
+                        gp_ErrorMessage("Failed to open file '%s' for writing. "
+                                        "Current working directory is '%s'",
+                                        fileName, cwd);
+                    else
+                        gp_ErrorMessage("Failed to open file '%s' for writing. "
+                                        "Unable to get current working directory",
+                                        fileName);
+
                     sf_Free(&theStrOrFile);
                     theStrOrFile = NULL;
                     return NULL;

@@ -12,6 +12,7 @@ extern "C"
 {
 #endif
 
+#include "../lowLevelUtils/appconst.h"
 #include "../lowLevelUtils/apiutils.h"
 #include "../lowLevelUtils/stack.h"
 
