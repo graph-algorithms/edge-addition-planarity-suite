@@ -22,8 +22,8 @@ extern "C"
 
 #define MAXLINE 1024
 
-// The string representation for an integer must account for: an optional '-',
-// then 10 digits (max signed 32-bit int), and a null-terminator
+// The string representation for an integer must account for: an optional '-/+', then
+// 10 digits (max signed 32-bit int). Always add one to this for a null terminator.
 #define MAXCHARSFOR32BITINT 11
 
 #if defined(_MSC_VER) && !defined(__llvm__) && !defined(__INTEL_COMPILER)

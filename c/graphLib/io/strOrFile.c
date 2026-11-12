@@ -505,7 +505,8 @@ int sf_ReadInteger(int *intToRead, strOrFileP theStrOrFile)
                 {
                     intCandidateStr[intCandidateIndex++] = (char)currChar;
                     hasSign = TRUE;
-                    if (currChar == '-') isNegative = TRUE; 
+                    if (currChar == '-') 
+                        isNegative = TRUE; 
                 }
             }
         }

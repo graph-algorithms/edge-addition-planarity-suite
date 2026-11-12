@@ -245,11 +245,11 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
             if (sf_ReadSkipWhitespace(inputContainer) != OK)
                 return NOTOK;
 
-            peekChar = sf_getc(inputContainer);
-            if (peekChar == '+')
-                hasPlus = TRUE;
-            if (peekChar != EOF)
+            // Find out if the coming integer has a leading + because when W==v
+            // a leading + indicates that the loop edge is directed
+            if ((peekChar = sf_getc(inputContainer)) != EOF)
                 sf_ungetc(peekChar, inputContainer);
+            hasPlus = (peekChar == '+') ? TRUE : FALSE;
 
             if (sf_ReadInteger(&W, inputContainer) != OK)
                 return NOTOK;
@@ -271,7 +271,7 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
             if (W >= gp_UpperBoundVertices(theGraph))
                 return NOTOK;
 
-            // Loop edges are not supported
+            // Loop edges are supported
             else if (W == v)
             {
                 if ((ErrorCode = gp_DynamicAddEdge(theGraph, v, 0, W, 0)) != OK)
@@ -446,7 +446,7 @@ int _ReadLEDAGraph(graphP theGraph, strOrFileP inputContainer)
     if (sf_ReadSkipWhitespace(inputContainer) != OK)
         return NOTOK;
 
-    /* Read and add each edge, omitting parallel edges (loops are now supported) */
+    /* Read and add each edge, including parallel edges and loops */
     for (int m = 0; m < M; m++)
     {
         if (sf_ReadSkipWhitespace(inputContainer) != OK)
@@ -460,12 +460,8 @@ int _ReadLEDAGraph(graphP theGraph, strOrFileP inputContainer)
         if (sf_ReadSkipLineRemainder(inputContainer) != OK)
             return NOTOK;
 
-        // Removed the u != v restriction to allow loop edges
-        if (!gp_IsNeighbor(theGraph, u - zeroBasedOffset, v - zeroBasedOffset))
-        {
-            if ((ErrorCode = gp_DynamicAddEdge(theGraph, u - zeroBasedOffset, 0, v - zeroBasedOffset, 0)) != OK)
-                return ErrorCode;
-        }
+        if ((ErrorCode = gp_DynamicAddEdge(theGraph, u - zeroBasedOffset, 0, v - zeroBasedOffset, 0)) != OK)
+            return ErrorCode;
     }
 
     if (zeroBasedOffset)
@@ -773,6 +769,7 @@ int _WriteAdjList(graphP theGraph, strOrFileP outputContainer)
 
             e = gp_GetPrevEdge(theGraph, e);
         }
+
         // Write NIL at the end of the adjacency list (in zero-based I/O, NIL was -1)
         if (sprintf(numberStr, " %d\n", adjacencyListTerminator) < 1)
             return NOTOK;
