@@ -2346,9 +2346,6 @@ int gp_DeleteEdge(graphP theGraph, int e)
 
 int _DeleteEdge(graphP theGraph, int e)
 {
-    // An edge deletion changes the graph, so note the modification
-    gp_NoteModification(theGraph);
-
     // Delete the edge records e and eTwin from their adjacency lists.
     _DetachEdgeRecord(theGraph, e);
     _DetachEdgeRecord(theGraph, gp_GetTwin(theGraph, e));
@@ -2375,6 +2372,9 @@ int _DeleteEdge(graphP theGraph, int e)
         sp_Push(theGraph->edgeHoles, e);
         theGraph->numEdgeHoles = sp_GetCurrentSize(theGraph->edgeHoles);
     }
+
+    // An edge deletion changes the graph, so note the modification
+    gp_NoteModification(theGraph);
 
     // Return a success result.
     return OK;
