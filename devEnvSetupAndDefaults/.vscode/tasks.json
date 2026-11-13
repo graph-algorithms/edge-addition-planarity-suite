@@ -3,7 +3,7 @@
         {
             "type": "cppbuild",
             "label": "C/C++: (Windows) [Debug] gcc.exe build planarity project",
-            // Please be sure to include the path to gcc in your environment variables, 
+            // Please be sure to include the path to gcc in your environment variables,
             // or change this to "command": "C:\\msys64\\ucrt64\\bin\\gcc.exe" or similar,
             // based on the installation path you used for gcc
             "command": "gcc.exe",
@@ -85,7 +85,7 @@
         {
             "type": "cppbuild",
             "label": "C/C++: (Windows) [Release] gcc.exe build planarity project",
-            // Please be sure to include the path to gcc in your environment variables, 
+            // Please be sure to include the path to gcc in your environment variables,
             // or change this to "command": "C:\\msys64\\ucrt64\\bin\\gcc.exe" or similar,
             // based on the installation path you used for gcc
             "command": "gcc.exe",

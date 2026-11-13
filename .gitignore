@@ -85,7 +85,7 @@ test-driver
 planarity-*
 planarity-*/*
 libplanarity.pc
-m4/
+m4/*
 
 # Except the exact repo files we need to be able to track
 !m4/ax_append_compile_flags.m4

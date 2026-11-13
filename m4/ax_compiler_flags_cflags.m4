@@ -116,7 +116,7 @@ AC_DEFUN([AX_COMPILER_FLAGS_CFLAGS],[
             -Wformat-nonliteral dnl
             -Wformat-security dnl
             -Wsign-compare dnl
-            -Wstrict-aliasing=3 dnl
+            -Wstrict-aliasing dnl
             -Wshadow dnl
             -Winline dnl
             -Wpacked dnl
