@@ -1935,7 +1935,21 @@ int gp_GetVertexDegree(graphP theGraph, int v)
     e = gp_GetFirstEdge(theGraph, v);
     while (gp_IsEdge(theGraph, e))
     {
-        degree++;
+        if (gp_GetNeighbor(theGraph, e) != v)
+        {
+            degree++;
+        }
+        else
+        {
+            // For a loop edge, we want to count only one of its two edge records,
+            // so we count the out-only edge record of directed loop edges and
+            // the lower-numbered edge record for undirected loop edges
+            if (gp_GetDirection(theGraph, e) == EDGEFLAG_DIRECTION_INONLY ||
+                (gp_GetDirection(theGraph, e) == 0 && e > gp_GetTwin(theGraph, e)))
+            {
+                degree++;
+            }
+        }
         e = gp_GetNextEdge(theGraph, e);
     }
 
@@ -1971,20 +1985,20 @@ int gp_GetVertexInDegree(graphP theGraph, int v)
     e = gp_GetFirstEdge(theGraph, v);
     while (gp_IsEdge(theGraph, e))
     {
-        int neighbor = gp_GetNeighbor(theGraph, e);
-        int dir = gp_GetDirection(theGraph, e);
-
-        if (neighbor != v)
+        if (gp_GetNeighbor(theGraph, e) != v)
         {
-            if (dir != EDGEFLAG_DIRECTION_OUTONLY)
+            if (gp_GetDirection(theGraph, e) != EDGEFLAG_DIRECTION_OUTONLY)
             {
                 degree++;
             }
         }
         else
         {
-            if (dir == EDGEFLAG_DIRECTION_INONLY ||
-                (dir != EDGEFLAG_DIRECTION_INONLY && dir != EDGEFLAG_DIRECTION_OUTONLY && e > gp_GetTwin(theGraph, e)))
+            // For a loop edge, we want to count only one of its two edge records,
+            // so we count the out-only edge record of directed loop edges and
+            // the lower-numbered edge record for undirected loop edges
+            if (gp_GetDirection(theGraph, e) == EDGEFLAG_DIRECTION_INONLY ||
+                (gp_GetDirection(theGraph, e) == 0 && e > gp_GetTwin(theGraph, e)))
             {
                 degree++;
             }
@@ -2025,20 +2039,20 @@ int gp_GetVertexOutDegree(graphP theGraph, int v)
     e = gp_GetFirstEdge(theGraph, v);
     while (gp_IsEdge(theGraph, e))
     {
-        int neighbor = gp_GetNeighbor(theGraph, e);
-        int dir = gp_GetDirection(theGraph, e);
-
-        if (neighbor != v)
+        if (gp_GetNeighbor(theGraph, e) != v)
         {
-            if (dir != EDGEFLAG_DIRECTION_INONLY)
+            if (gp_GetDirection(theGraph, e) != EDGEFLAG_DIRECTION_INONLY)
             {
                 degree++;
             }
         }
         else
         {
-            if (dir == EDGEFLAG_DIRECTION_OUTONLY ||
-                (dir != EDGEFLAG_DIRECTION_INONLY && dir != EDGEFLAG_DIRECTION_OUTONLY && e < gp_GetTwin(theGraph, e)))
+            // For a loop edge, we want to count only one of its two edge records,
+            // so we count the out-only edge record of directed loop edges and
+            // the lower-numbered edge record for undirected loop edges
+            if (gp_GetDirection(theGraph, e) == EDGEFLAG_DIRECTION_OUTONLY ||
+                (gp_GetDirection(theGraph, e) == 0 && e < gp_GetTwin(theGraph, e)))
             {
                 degree++;
             }
