@@ -36,6 +36,7 @@ int _MarkDFSPath(graphP theGraph, int ancestor, int descendant);
 int _AddAndMarkEdge(graphP theGraph, int ancestor, int descendant);
 void _AddBackEdge(graphP theGraph, int ancestor, int descendant);
 int _DeleteUnmarkedVerticesAndEdges(graphP theGraph);
+int _DeleteUnvisitedVerticesAndEdges(graphP theGraph);
 
 int _InitializeIsolatorContext(graphP theGraph);
 
@@ -95,7 +96,9 @@ int _IsolateKuratowskiSubgraph(graphP theGraph, int v, int R)
     /* Delete the unmarked edges and vertices, and return */
 
     if (RetVal == OK)
-        RetVal = _DeleteUnmarkedVerticesAndEdges(theGraph);
+        // RetVal = _DeleteUnmarkedVerticesAndEdges(theGraph);
+        // Use optimized version:
+        RetVal = _DeleteUnvisitedVerticesAndEdges(theGraph);
 
     return RetVal;
 }
@@ -810,6 +813,9 @@ void _AddBackEdge(graphP theGraph, int ancestor, int descendant)
  _DeleteUnmarkedVerticesAndEdges()
 
  For each vertex, traverse its adjacency list and delete all unvisited edges.
+ This function has been replaced by _DeleteUnvisitedVerticesAndEdges(),
+ which is an optimized version. It has been left in place for now for easy
+ speed comparisons.
  ****************************************************************************/
 
 int _DeleteUnmarkedVerticesAndEdges(graphP theGraph)
@@ -838,6 +844,89 @@ int _DeleteUnmarkedVerticesAndEdges(graphP theGraph)
             eNext = gp_GetNextEdge(theGraph, e);
             if (!gp_GetEdgeVisited(theGraph, e))
                 gp_DeleteEdge(theGraph, e);
+            e = eNext;
+        }
+    }
+
+    return OK;
+}
+
+/**********************************************************************
+ _DeleteUnvisitedVerticesAndEdges()
+
+ For each vertex, we remove all unembedded back edges that are still
+ in the vertex's forward edge list (those needed for an embedding
+ obstruction have already been embedded), and we delete all unvisited
+ embedded edges of each vertex because the visited embedded edges are
+ the ones in the identified embedding obstruction.
+
+ This is an optimization of _DeleteUnmarkedVerticesAndEdges().
+
+ The STABLE_TIMING_TEST currently uses about 30% of its time generating
+ random graphs and resetting the graph to receive the next random
+ graph, which can be measured by commenting out gp_Embed().
+
+ Excluding generation time and resetting times, the main cost of the
+ STABLE_TIMING_TEST loop is gp_Embed(). For 1 million 100-vertex graphs,
+ we get about 9.2% better performance on non-planar graphs. Virtually
+ 10% of the graphs are planar, to which this function is not applied,
+ so the benefit over all of the graphs is about 8.3%. If one runs the
+ test, one will see about a 6% improvement, which is because the timing
+ results from STABLE_TIMING_TEST include the cost of random generation
+ and resetting of graphs.
+ **********************************************************************/
+int _DeleteUnvisitedVerticesAndEdges(graphP theGraph)
+{
+    int v, e, eNext, eTwin;
+
+    for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
+    {
+        // Delete the unembedded back edges listed in v's forward edge list
+        while (gp_IsEdge(theGraph, e = gp_GetVertexFwdEdgeList(theGraph, v)))
+        {
+            // If the edge is alone in the list, then just make the list empty
+            if (gp_GetNextEdge(theGraph, e) == e)
+                gp_SetVertexFwdEdgeList(theGraph, v, NIL);
+
+            // Otherwise, the list contains more than one edge, so...
+            else
+            {
+                // If the edge is first in the list, advance the head pointer
+                if (gp_GetVertexFwdEdgeList(theGraph, v) == e)
+                    gp_SetVertexFwdEdgeList(theGraph, v, gp_GetNextEdge(theGraph, e));
+
+                //// Unhook the edge from the rest of the list
+                // We don't need to do this because fpDeleteEdge() does it
+                // gp_SetNextEdge(theGraph, gp_GetPrevEdge(theGraph, e), gp_GetNextEdge(theGraph, e));
+                // gp_SetPrevEdge(theGraph, gp_GetNextEdge(theGraph, e), gp_GetPrevEdge(theGraph, e));
+            }
+
+            //// Set the next and previous links of the forward edge record to point to itself
+            //// so that fpDeleteEdge() will not perturb other edge records' links.
+            // We don't need to do this, now that we are letting fpDeleteEdge() do the unhooking
+            // gp_SetNextEdge(theGraph, e, e);
+            // gp_SetPrevEdge(theGraph, e, e);
+
+            // Set the next and previous links of the twin edge record to point to the twin
+            // so that the unhook behavior of fpDeleteEdge() will have no effect on any
+            // vertex's links nor any other edge records' links.
+            eTwin = gp_GetTwin(theGraph, e);
+            gp_SetNextEdge(theGraph, eTwin, eTwin);
+            gp_SetPrevEdge(theGraph, eTwin, eTwin);
+
+            // Now delete the edge, which deletes e and eTwin. We call the function pointer so
+            // we can avoid the cost of the parameter validity checks of the public function
+            // but still get any overload behavior if there is an extension attached.
+            theGraph->functions->fpDeleteEdge(theGraph, e);
+        }
+
+        // Delete the unvisted embedded edges from v's adjacency list
+        e = gp_GetFirstEdge(theGraph, v);
+        while (gp_IsEdge(theGraph, e))
+        {
+            eNext = gp_GetNextEdge(theGraph, e);
+            if (!gp_GetEdgeVisited(theGraph, e))
+                theGraph->functions->fpDeleteEdge(theGraph, e);
             e = eNext;
         }
     }

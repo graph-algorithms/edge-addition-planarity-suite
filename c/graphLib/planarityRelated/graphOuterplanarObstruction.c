@@ -24,7 +24,7 @@ extern int _MarkPathAlongBicompExtFace(graphP theGraph, int startVert, int endVe
 
 extern int _AddAndMarkEdge(graphP theGraph, int ancestor, int descendant);
 
-extern int _DeleteUnmarkedVerticesAndEdges(graphP theGraph);
+extern int _DeleteUnvisitedVerticesAndEdges(graphP theGraph);
 
 /* Private function declarations (exported to system) */
 
@@ -141,7 +141,7 @@ int _IsolateOuterplanarObstruction(graphP theGraph, int v, int R)
     /* Delete the unmarked edges and vertices, and return */
 
     if (RetVal == OK)
-        RetVal = _DeleteUnmarkedVerticesAndEdges(theGraph);
+        RetVal = _DeleteUnvisitedVerticesAndEdges(theGraph);
 
     return RetVal;
 }

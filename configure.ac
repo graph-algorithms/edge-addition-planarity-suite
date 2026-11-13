@@ -55,7 +55,7 @@ AC_MSG_CHECKING([whether enable compiler warnings])
 AC_MSG_RESULT([$enable_compile_warnings])
 
 # The macro also probes base non-warning flags such as
-# -fno-strict-aliasing, so invoke it even when warnings are disabled.
+# -fstrict-aliasing, so invoke it even when warnings are disabled.
 ax_enable_compile_warnings=$enable_compile_warnings
 AX_COMPILER_FLAGS_CFLAGS([WARNING_CFLAGS], [], [ dnl
     -pedantic dnl])

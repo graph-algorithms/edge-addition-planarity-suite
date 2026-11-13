@@ -25,6 +25,8 @@ const char *_WriteModeName(int writeMode);
 
 #define NUM_MINORS 9
 
+// #define STABLE_TIMING_TEST
+
 int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraphs, char *outfileName,
                  int forceQuiet, int useExGenerator, int (*mutatorFunc)(graphP))
 {
@@ -146,7 +148,12 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
     // Seed the random number generator with "now". Do it after any prompting
     // to tie randomness to human process of answering the prompt.
     // Acceptable downcast of time_t to unsigned int (seeding benefits from the lower bits of now)
+
+#ifndef STABLE_TIMING_TEST
     srand((unsigned int)time(NULL));
+#else
+    srand((unsigned int)1);
+#endif
 
     // Select a counter update frequency that updates more frequently with larger graphs
     // and which is relatively prime with 10 so that all digits of the count will change
@@ -218,6 +225,9 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
             //     break;
             // }
 
+#ifndef STABLE_TIMING_TEST
+            // For timing tests, we don't need to take a copy of the original graph
+            // because we don't need it to test integrity of results below.
             if ((Result = gp_CopyGraph(origGraph, theGraph)) != OK)
             {
                 gp_ErrorMessage("Unable to make a copy of graph number %d "
@@ -225,7 +235,13 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
                                 K);
                 break;
             }
+#endif
 
+#ifndef STABLE_TIMING_TEST
+            // For timing tests, we'd like to test the optimized version of gp_Embed()
+            // When not doing timing tests, we'd like to test the functionality of
+            // incremental initialization, because the optimized version is also
+            // tested/exercised by SpecificGraph testing
             if ((Result = gp_DepthFirstSearch(theGraph)) != OK)
             {
                 gp_ErrorMessage("Unable to depth first search graph number %d before embedding.", K);
@@ -243,6 +259,7 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
                 gp_ErrorMessage("Unable to compute lowpoints for graph number %d before embedding.", K);
                 break;
             }
+#endif
 
             Result = gp_Embed(theGraph, embedFlags);
             if (Result != OK && Result != NONEMBEDDABLE)
@@ -251,6 +268,9 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
                 break;
             }
 
+#ifndef STABLE_TIMING_TEST
+            // For timing tests, we'd like to know the speed of gp_Embed() without also
+            // having the cost of integrity checking.
             if (gp_TestEmbedResultIntegrity(theGraph, origGraph, Result) != Result)
             {
                 gp_ErrorMessage("Embed integrity check failed on graph number %d.", K);
@@ -275,6 +295,7 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
                     }
                 }
             }
+#endif
 
             if (Result == OK)
             {
@@ -349,6 +370,7 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
         // Reset (or recreate) graph for next iteration
         ResetGraphStorage(&theGraph, ReuseGraphs, command);
 
+#ifndef STABLE_TIMING_TEST
         // Show progress, but not so often that it bogs down progress
         if (!(gp_GetQuietMode() & QUIETMODE_MESSAGES))
         {
@@ -358,6 +380,7 @@ int RandomGraphs(char const *const commandString, int NumGraphs, int SizeOfGraph
                 fflush(stdout);
             }
         }
+#endif
     }
 
     // Stop the timer
