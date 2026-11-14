@@ -2183,11 +2183,9 @@ void _DetachEdgeRecord(graphP theGraph, int e)
        expectation of being in initial state includes data stored in
        parallel edge record extension arrays.
 
- NOTE: This method does not forbid the addition of duplicate and loop
-       edges. Use with care because other API endpoints do not all
-       support nor check for and eliminate duplicates and loops. The
-       caller can guard against these conditions by pre-testing that
-       u != v and that gp_FindEdge() returns NIL.
+NOTE: The caller is allowed to create parallel edges and loop edges.
+       For loop edges, ulink must equal vlink to cause loop edge records
+       to appear consecutively in an adjacency list.
 
  Returns OK on success, NOTOK on failure (including when adding the
          edge would exceed the graph's edge capacity; the caller can
@@ -2199,19 +2197,28 @@ int gp_AddEdge(graphP theGraph, int u, int ulink, int v, int vlink)
     if (theGraph == NULL ||
         u < gp_LowerBoundVertexStorage(theGraph) || v < gp_LowerBoundVertexStorage(theGraph) ||
         u >= gp_UpperBoundVertexStorage(theGraph) || v >= gp_UpperBoundVertexStorage(theGraph))
+    {
+        gp_ErrorMessage("Invalid parameters.");
         return NOTOK;
+    }
 
     if ((ulink != 0 && ulink != 1) || (vlink != 0 && vlink != 1))
     {
+        gp_ErrorMessage("Invalid parameters.");
         return NOTOK;
     }
+
     if (u == v && ulink != vlink)
     {
+        gp_ErrorMessage("Invalid parameters. For a loop edge, ulink should equal vlink.");
         return NOTOK;
     }
 
     if (gp_InsertEdge(theGraph, u, NIL, ulink, v, NIL, vlink) != OK)
+    {
+        gp_ErrorMessage("Called function failed.");
         return NOTOK;
+    }
 
     return OK;
 }
@@ -2290,6 +2297,9 @@ int gp_DynamicInsertEdge(graphP theGraph, int u, int e_u, int e_ulink,
  If e_u (or e_v) is not an edge, then e_ulink (e_vlink) indicates
  whether to prepend or append to the adjacency list for u (v).
 
+ If e_u (or e_v) is an edge, then it must be an edge in the
+ adjacency list of u (or v).
+
  NOTE: See notes on gp_AddEdge().
 
  Returns OK on success, NOTOK on failure, or AT_EDGE_CAPACITY_LIMIT if
@@ -2317,24 +2327,27 @@ int gp_InsertEdge(graphP theGraph, int u, int e_u, int e_ulink,
         e_v >= gp_UpperBoundEdges(theGraph) ||
         (gp_IsEdge(theGraph, e_v) && gp_EdgeNotInUse(theGraph, e_v)) ||
         e_ulink < 0 || e_ulink > 1 || e_vlink < 0 || e_vlink > 1)
+    {
+        gp_ErrorMessage("Invalid parameters.");
         return NOTOK;
-
-    if (e_u != NIL)
-    {
-        if (gp_GetNeighbor(theGraph, gp_GetTwin(theGraph, e_u)) != u)
-            return NOTOK;
     }
 
-    if (e_v != NIL)
+    if (e_u != NIL && gp_GetNeighbor(theGraph, gp_GetTwin(theGraph, e_u)) != u)
     {
-        if (gp_GetNeighbor(theGraph, gp_GetTwin(theGraph, e_v)) != v)
-            return NOTOK;
+        gp_ErrorMessage("Invalid parameters. e_u must be an edge in the adjacency list of u.");
+        return NOTOK;
     }
 
-    if (u == v)
+    if (e_v != NIL && gp_GetNeighbor(theGraph, gp_GetTwin(theGraph, e_v)) != v)
     {
-        if (e_u != e_v || e_ulink != e_vlink)
-            return NOTOK;
+        gp_ErrorMessage("Invalid parameters. e_v must be an edge in the adjacency list of v.");
+        return NOTOK;
+    }
+
+    if (u == v && (e_u != e_v || e_ulink != e_vlink))
+    {
+        gp_ErrorMessage("Invalid parameters. For loops, e_u must equal e_v and e_ulink must equal e_vlink.");
+        return NOTOK;
     }
 
     if (sp_NonEmpty(theGraph->edgeHoles))
