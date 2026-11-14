@@ -141,6 +141,9 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
     int N = 0, v = NIL, W = NIL, adjList = NIL, e = NIL, indexValue = NIL;
     int zeroBased = FALSE, inputOffset = NIL, inputTerminatorLowerBound = NIL;
 
+    int hasPlus = FALSE;
+    int peekChar = '\0';
+
     if (!sf_IsValidStrOrFile(inputContainer))
         return NOTOK;
 
@@ -241,6 +244,13 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
             // Read the value indicating the next adjacent vertex (or the list end)
             if (sf_ReadSkipWhitespace(inputContainer) != OK)
                 return NOTOK;
+
+            // Find out if the coming integer has a leading + because when W==v
+            // a leading + indicates that the loop edge is directed
+            if ((peekChar = sf_getc(inputContainer)) != EOF)
+                sf_ungetc(peekChar, inputContainer);
+            hasPlus = (peekChar == '+') ? TRUE : FALSE;
+
             if (sf_ReadInteger(&W, inputContainer) != OK)
                 return NOTOK;
             if (sf_ReadSkipWhitespace(inputContainer) != OK)
@@ -261,9 +271,15 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
             if (W >= gp_UpperBoundVertices(theGraph))
                 return NOTOK;
 
-            // Loop edges are not supported
+            // Loop edges are supported
             else if (W == v)
-                return NOTOK;
+            {
+                if ((ErrorCode = gp_DynamicAddEdge(theGraph, v, 0, W, 0)) != OK)
+                    return ErrorCode;
+
+                if (hasPlus)
+                    gp_SetDirection(theGraph, gp_GetFirstEdge(theGraph, v), EDGEFLAG_DIRECTION_OUTONLY);
+            }
 
             // If the adjacency is to a succeeding, higher numbered vertex,
             // then we'll add an undirected edge for now
@@ -430,7 +446,7 @@ int _ReadLEDAGraph(graphP theGraph, strOrFileP inputContainer)
     if (sf_ReadSkipWhitespace(inputContainer) != OK)
         return NOTOK;
 
-    /* Read and add each edge, omitting loops and parallel edges */
+    /* Read and add each edge, including parallel edges and loops */
     for (int m = 0; m < M; m++)
     {
         if (sf_ReadSkipWhitespace(inputContainer) != OK)
@@ -444,11 +460,8 @@ int _ReadLEDAGraph(graphP theGraph, strOrFileP inputContainer)
         if (sf_ReadSkipLineRemainder(inputContainer) != OK)
             return NOTOK;
 
-        if (u != v && !gp_IsNeighbor(theGraph, u - zeroBasedOffset, v - zeroBasedOffset))
-        {
-            if ((ErrorCode = gp_DynamicAddEdge(theGraph, u - zeroBasedOffset, 0, v - zeroBasedOffset, 0)) != OK)
-                return ErrorCode;
-        }
+        if ((ErrorCode = gp_DynamicAddEdge(theGraph, u - zeroBasedOffset, 0, v - zeroBasedOffset, 0)) != OK)
+            return ErrorCode;
     }
 
     if (zeroBasedOffset)
@@ -456,7 +469,6 @@ int _ReadLEDAGraph(graphP theGraph, strOrFileP inputContainer)
 
     return OK;
 }
-
 /********************************************************************
  gp_Read()
 
@@ -671,9 +683,11 @@ int _WriteAdjList(graphP theGraph, strOrFileP outputContainer)
 {
     int v = NIL, e = NIL;
     int zeroBasedVertexOffset = 0, adjacencyListTerminator = NIL;
-    char numberStr[MAXCHARSFOR32BITINT + 1];
+    int neighbor = NIL, dir = 0, printAdjacency = FALSE, isDirectedLoopEdge = FALSE;
+    // 2 for "N=", ":", or " +"; MAXCHARSFOR32BITINT for -/+integer; 2 for "\r\n"; 1 for \0
+    char numberStr[2 + MAXCHARSFOR32BITINT + 2 + 1];
 
-    memset(numberStr, '\0', (MAXCHARSFOR32BITINT + 1) * sizeof(char));
+    memset(numberStr, '\0', (2 + MAXCHARSFOR32BITINT + 2 + 1) * sizeof(char));
 
     if (theGraph == NULL || !sf_IsValidStrOrFile(outputContainer))
         return NOTOK;
@@ -708,10 +722,47 @@ int _WriteAdjList(graphP theGraph, strOrFileP outputContainer)
         e = gp_GetLastEdge(theGraph, v);
         while (gp_IsEdge(theGraph, e))
         {
-            if (gp_GetDirection(theGraph, e) != EDGEFLAG_DIRECTION_INONLY)
+            neighbor = gp_GetNeighbor(theGraph, e);
+            dir = gp_GetDirection(theGraph, e);
+
+            printAdjacency = isDirectedLoopEdge = FALSE;
+
+            if (neighbor != v)
             {
-                if (sprintf(numberStr, " %d", gp_GetNeighbor(theGraph, e) - zeroBasedVertexOffset) < 1)
-                    return NOTOK;
+                // For non-loop edges, print adjacency if undirected or out-only
+                if (dir != EDGEFLAG_DIRECTION_INONLY)
+                    printAdjacency = TRUE;
+            }
+            else
+            {
+                if (dir == 0)
+                {
+                    // For an undirected loop edge, we only print one adjacency
+                    // from among the two edge records in the vertex's list
+                    if (e < gp_GetTwin(theGraph, e))
+                        printAdjacency = TRUE;
+                }
+                else if (dir == EDGEFLAG_DIRECTION_OUTONLY)
+                {
+                    printAdjacency = TRUE;
+                    isDirectedLoopEdge = TRUE; // Directed loop needs a '+' sign
+                }
+            }
+
+            if (printAdjacency)
+            {
+                if (isDirectedLoopEdge)
+                {
+                    // Print with a '+' sign
+                    if (sprintf(numberStr, " +%d", neighbor - zeroBasedVertexOffset) < 1)
+                        return NOTOK;
+                }
+                else
+                {
+                    if (sprintf(numberStr, " %d", neighbor - zeroBasedVertexOffset) < 1)
+                        return NOTOK;
+                }
+
                 if (sf_fputs(numberStr, outputContainer) == EOF)
                     return NOTOK;
             }
@@ -746,8 +797,9 @@ int _WriteAdjMatrix(graphP theGraph, strOrFileP outputContainer)
 {
     int v = NIL, e = NIL;
     char *Row = NULL;
-    char numberStr[MAXCHARSFOR32BITINT + 1];
-    memset(numberStr, '\0', (MAXCHARSFOR32BITINT + 1) * sizeof(char));
+    // For the integer, possible \r\n, then null terminator
+    char numberStr[MAXCHARSFOR32BITINT + 2 + 1];
+    memset(numberStr, '\0', (MAXCHARSFOR32BITINT + 2 + 1) * sizeof(char));
 
     if (theGraph == NULL || !sf_IsValidStrOrFile(outputContainer))
         return NOTOK;
@@ -798,6 +850,12 @@ int _WriteAdjMatrix(graphP theGraph, strOrFileP outputContainer)
                 }
                 Row[gp_GetNeighbor(theGraph, e) - gp_LowerBoundVertices(theGraph)] = '1';
             }
+            else if (gp_GetNeighbor(theGraph, e) == v)
+            {
+                    gp_ErrorMessage("Adjacency matrix writer does not support loop edges.");
+                    free(Row);
+                    return NOTOK;
+            }
 
             e = gp_GetNextEdge(theGraph, e);
         }
@@ -835,6 +893,8 @@ char _GetEdgeTypeChar(graphP theGraph, int e)
         type = 'P';
     else if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_BACK)
         type = 'B';
+    else if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_CROSS)
+        type = 'X';
     else if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_TREE)
         type = 'T';
 

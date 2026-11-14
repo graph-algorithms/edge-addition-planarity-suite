@@ -760,7 +760,7 @@ static int runCompactEdgeStorageTests(void)
              theGraph->numEdgeHoles != 0 || gp_GetM(theGraph) != 2 ||
              gp_GetNeighbor(theGraph, eFirst) != lower + 2 ||
              gp_GetNeighbor(theGraph, eFirst + 1) != lower + 2 ||
-             gp_GetVertexDegree(theGraph, lower + 2) != 3 ||
+             gp_GetVertexDegree(theGraph, lower + 2) != 2 ||
              (gp_GetDirection(theGraph, eFirst) | gp_GetDirection(theGraph, eFirst + 1)) !=
                  (EDGEFLAG_DIRECTION_OUTONLY | EDGEFLAG_DIRECTION_INONLY)))
         {
