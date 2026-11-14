@@ -91,14 +91,14 @@ struct S6WriteIteratorStruct
     int numGraphsWritten;
 
     // The change batch: S6_CHANGE_INTS ints per change, the endpoints
-    // u < v in the 0-based numbering of the file, the kind of change, and
+    // u <= v in the 0-based numbering of the file, the kind of change, and
     // for a deletion the edge record to delete
     int *changes;
     int numChanges;
     int changeCapacity;
 
     // The edges the batch touches: S6_EDGE_INTS ints per edge, the
-    // endpoints u < v in the 0-based numbering of the file, the number
+    // endpoints u <= v in the 0-based numbering of the file, the number
     // of instances of the edge in the graph, and the numbers of its
     // deletions and additions in the batch. There are no more of them
     // than changes, so they share the capacity of the batch.
@@ -412,7 +412,7 @@ void _s6_ChangeKeyPut(S6WriteIteratorP theS6WriteIterator, long long key, int va
     theS6WriteIterator->changeValues[slot] = value;
 }
 
-// The key of the edge {u, v}, u < v, in the 0-based numbering of the file
+// The key of the edge {u, v}, u <= v, in the 0-based numbering of the file
 long long _s6_EdgeKey(S6WriteIteratorP theS6WriteIterator, int u, int v)
 {
     return (long long)u * theS6WriteIterator->order + v + 1;
@@ -520,13 +520,15 @@ void _s6_ClearChangeBatch(S6WriteIteratorP theS6WriteIterator)
         memset(theS6WriteIterator->changeKeys, 0, theS6WriteIterator->changeTableSize * sizeof(long long));
 }
 
-// Counts the instances of the edge {u, v} in the adjacency list of u
+// Counts the instances of the edge {u, v} in the adjacency list of u. A
+// loop has both of its edge records in that list, so it is counted by
+// the lower of the two.
 int _s6_CountInstances(graphP theGraph, int u, int v)
 {
     int numInstances = 0;
 
     for (int e = gp_GetFirstEdge(theGraph, u); gp_IsEdge(theGraph, e); e = gp_GetNextEdge(theGraph, e))
-        if (gp_GetNeighbor(theGraph, e) == v)
+        if (gp_GetNeighbor(theGraph, e) == v && (u != v || e < gp_GetTwin(theGraph, e)))
             numInstances++;
 
     return numInstances;
@@ -556,14 +558,14 @@ int _s6_IsInAdjacencyList(graphP theGraph, int u, int e)
  directly. A deletion must name an edge record in use and in an
  adjacency list, since a hidden edge is not in the graph the reader
  sees, and the batch may delete a record only once; any instance of a
- parallel edge can be deleted. An addition must join two distinct real
- vertices, since loops are not supported. The reader applies a ';'
- line as toggles in sequence, so from an edge with m instances a line
- can leave any number from 0 to m, and from an edge with none it can
- add one; a batch that would leave more is refused when the change
- that would make it so is stored. So an addition is accepted for an
- edge the graph lacks, once, or in place of an instance the batch has
- already deleted.
+ parallel edge can be deleted, and a loop by either of its records. An
+ addition must join two real vertices, which are the same vertex for a
+ loop. The reader applies a ';' line as toggles in sequence, so from an
+ edge with m instances a line can leave any number from 0 to m, and
+ from an edge with none it can add one; a batch that would leave more
+ is refused when the change that would make it so is stored. So an
+ addition is accepted for an edge the graph lacks, once, or in place of
+ an instance the batch has already deleted.
  Nothing can be stored before the first full (':') line has been
  written, since a ';' line is relative to the line before it.
 
@@ -645,14 +647,6 @@ int s6_StoreGraphChange(S6WriteIteratorP theS6WriteIterator, int e, int u, int v
             gp_ErrorMessage("Unable to store the addition of edge {%d, %d}, "
                             "as a vertex is out of range.",
                             u, v);
-            return NOTOK;
-        }
-
-        if (u == v)
-        {
-            gp_ErrorMessage("Unable to store the addition of a loop edge on "
-                            "vertex %d, which is not supported.",
-                            u);
             return NOTOK;
         }
 
@@ -777,9 +771,10 @@ int _s6_NoEdgeIsHidden(graphP theGraph)
 // the 0-based numbering of the file, two ints per edge, sorted as the
 // format orders them, in an array the caller frees. An edgeless graph
 // yields a NULL array. Parallel edges become repeated pairs, which the
-// sort makes adjacent, as nauty writes them. A loop or an edge on a
-// virtual vertex cannot be written, since the reader would refuse or
-// lose it, so each is reported and refused here.
+// sort makes adjacent, as nauty writes them, and a loop becomes the pair
+// (v, v), which sorts after the other pairs of v, where nauty writes it.
+// An edge on a virtual vertex cannot be written, since the reader would
+// lose it, so it is reported and refused here.
 int _s6_CollectEdges(graphP theGraph, int **pPairs, int *pNumPairs)
 {
     int numEdges = gp_GetM(theGraph);
@@ -820,15 +815,6 @@ int _s6_CollectEdges(graphP theGraph, int **pPairs, int *pNumPairs)
 
         u = gp_GetNeighbor(theGraph, gp_GetTwin(theGraph, e)) - lowerBound;
         v = gp_GetNeighbor(theGraph, e) - lowerBound;
-
-        if (u == v)
-        {
-            gp_ErrorMessage("Unable to write a loop edge on vertex %d, which "
-                            "sparse6 input does not support.",
-                            u + lowerBound);
-            free(pairs);
-            return NOTOK;
-        }
 
         if (u < 0 || u >= order || v < 0 || v >= order)
         {
@@ -942,9 +928,10 @@ static void _s6_PutBits(s6BitWriter *writer, unsigned int value, int width)
 
  The bit stream follows the decoding procedure of the specification
  in reverse. With v the vertex the decoder tracks, starting at 0, an
- edge {i, j} with i < j is emitted as (0, i) if j is v, as (1, i) if
+ edge {i, j} with i <= j is emitted as (0, i) if j is v, as (1, i) if
  j is v+1, since the b bit moves v there, and otherwise as (1, j)
- followed by (0, i), the first pair moving v to j. The bits are
+ followed by (0, i), the first pair moving v to j; a loop has i equal
+ to j and decodes as the edge {j, j} in each case. The bits are
  padded to a multiple of six with 1 bits, except in the one case the
  specification singles out: when n is a power of two, the last edge
  has n-2 as its larger endpoint and there are at least k+1 bits to

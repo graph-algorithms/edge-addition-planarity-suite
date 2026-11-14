@@ -28,8 +28,7 @@ int _s6_ReadNextByte(strOrFileP inputContainer, int *byteBits, int *endOfLine, u
 void _s6_StartLine(S6ReadIteratorP theS6ReadIterator);
 int _s6_DecodeEdges(S6ReadIteratorP theS6ReadIterator, const int stopAtEdge, const int incremental,
                     int *pU, int *pV, int *pEndOfLine, const int lineNum);
-int _s6_CheckEdge(int u, int v, const int lineNum);
-int _s6_ApplyEdge(S6ReadIteratorP theS6ReadIterator, int u, int v, const int incremental, const int lineNum);
+int _s6_ApplyEdge(S6ReadIteratorP theS6ReadIterator, int u, int v, const int incremental);
 int _s6_GrowRetrievedChanges(S6ReadIteratorP theS6ReadIterator);
 int _s6_AddRetrievedChange(S6ReadIteratorP theS6ReadIterator, int kind, int first, int second);
 int _s6_RetrieveNextRun(S6ReadIteratorP theS6ReadIterator, const int lineNum);
@@ -707,7 +706,7 @@ int s6_ReadGraph(S6ReadIteratorP theS6ReadIterator)
         {
             theS6ReadIterator->hasCarry = FALSE;
 
-            if (_s6_ApplyEdge(theS6ReadIterator, theS6ReadIterator->carryU, theS6ReadIterator->carryV, TRUE, lineNum) != OK)
+            if (_s6_ApplyEdge(theS6ReadIterator, theS6ReadIterator->carryU, theS6ReadIterator->carryV, TRUE) != OK)
             {
                 theS6ReadIterator->readerFailed = TRUE;
                 return NOTOK;
@@ -818,9 +817,11 @@ int s6_ReadGraph(S6ReadIteratorP theS6ReadIterator)
  line on each edge: for an edge with m instances that the line toggles
  k times, min(k, m) deletions, each reported as e set to a different
  edge record of the edge, then, if k exceeds m by an odd number, one
- addition, reported as u and v set to its endpoints, u < v. To know k,
- the line is decoded one run at a time, a run being the pairs that
- share the larger endpoint, since an edge occurs in no other run.
+ addition, reported as u and v set to its endpoints, u <= v. A loop is
+ the pair {v, v}: its deletion names the lower of its two edge records,
+ and its addition has u equal to v. To know k, the line is decoded one
+ run at a time, a run being the pairs that share the larger endpoint,
+ since an edge occurs in no other run.
 
  The next s6_ReadGraph() applies the changes worked out so far, then
  the rest of the line, so the caller may stop retrieving at any point.
@@ -1111,7 +1112,7 @@ int _s6_DecodeEdges(S6ReadIteratorP theS6ReadIterator, const int stopAtEdge, con
                 break;
             }
 
-            if (_s6_ApplyEdge(theS6ReadIterator, x, v, incremental, lineNum) != OK)
+            if (_s6_ApplyEdge(theS6ReadIterator, x, v, incremental) != OK)
             {
                 Result = NOTOK;
                 break;
@@ -1129,46 +1130,34 @@ int _s6_DecodeEdges(S6ReadIteratorP theS6ReadIterator, const int stopAtEdge, con
     return Result;
 }
 
-// Refuses a decoded pair {u, v}, u <= v, that the graph cannot take. The
-// graph library does not support loop edges, so a loop is reported as an
-// error rather than silently dropped. A pair may occur more than once on
-// either kind of line: on a ':' line each occurrence is a parallel edge,
-// and on a ';' line each occurrence is one toggle.
-int _s6_CheckEdge(int u, int v, const int lineNum)
-{
-    if (u == v)
-    {
-        gp_ErrorMessage("Loop edge on vertex %d on line %d is not supported.",
-                        u, lineNum);
-        return NOTOK;
-    }
-
-    return OK;
-}
-
-// Applies the decoded pair {u, v}, with u <= v, to the graph. On a ':' line
-// the pair adds an edge, a parallel one if the graph has the edge already.
-// On a ';' line the pair toggles the edge: it deletes one instance of it if
-// the graph has one, found along the adjacency list of u, and adds the edge
-// otherwise. For a graph without parallel edges this is the symmetric
-// difference of the format specification. After a graph with parallel
-// edges, nauty's copyg takes the previous graph modulo 2 instead, so a ';'
-// line can give a different graph there; the specification does not
-// support parallel edges on ';' lines, and toggling in sequence lets them
-// work rather than fail.
-int _s6_ApplyEdge(S6ReadIteratorP theS6ReadIterator, int u, int v, const int incremental, const int lineNum)
+// Applies the decoded pair {u, v}, with u <= v, to the graph; the pair
+// {v, v} is a loop. A pair may occur more than once on either kind of
+// line. On a ':' line the pair adds an edge, a parallel one if the graph
+// has the edge already. On a ';' line the pair toggles the edge: it
+// deletes one instance of it if the graph has one, found along the
+// adjacency list of u, and adds the edge otherwise. For a graph without
+// parallel edges this is the symmetric difference of the format
+// specification. After a graph with parallel edges, nauty's copyg takes
+// the previous graph modulo 2 instead, so a ';' line can give a different
+// graph there; the specification does not support parallel edges on ';'
+// lines, and toggling in sequence lets them work rather than fail.
+int _s6_ApplyEdge(S6ReadIteratorP theS6ReadIterator, int u, int v, const int incremental)
 {
     graphP theGraph = theS6ReadIterator->currGraph;
     // The sparse6 file is 0-based, but in-memory storage may not be
     int uStorage = u + gp_LowerBoundVertexStorage(theGraph);
     int vStorage = v + gp_LowerBoundVertexStorage(theGraph);
 
-    if (_s6_CheckEdge(u, v, lineNum) != OK)
-        return NOTOK;
-
     if (incremental)
     {
         int e = gp_FindEdge(theGraph, uStorage, vStorage);
+
+        // A loop has both of its edge records in the list of its vertex.
+        // It is found by the lower of the two, as the lookahead finds it,
+        // so that both ways of reading a line delete the same record.
+        while (uStorage == vStorage && gp_IsEdge(theGraph, e) &&
+               (gp_GetNeighbor(theGraph, e) != vStorage || e > gp_GetTwin(theGraph, e)))
+            e = gp_GetNextEdge(theGraph, e);
 
         if (gp_IsEdge(theGraph, e))
         {
@@ -1277,11 +1266,6 @@ int _s6_RetrieveNextRun(S6ReadIteratorP theS6ReadIterator, const int lineNum)
 
     while (!endOfLine)
     {
-        // Checked before the run can end on it, so that an error in the
-        // pair held as the carry is refused by the call that decoded it
-        if (_s6_CheckEdge(u, v, lineNum) != OK)
-            return NOTOK;
-
         if (runStarted && v != runV)
         {
             theS6ReadIterator->hasCarry = TRUE;
@@ -1332,6 +1316,11 @@ int _s6_WorkOutRunChanges(S6ReadIteratorP theS6ReadIterator, int vFile)
         for (int e = gp_GetFirstEdge(theGraph, xStorage); d < k && gp_IsEdge(theGraph, e); e = gp_GetNextEdge(theGraph, e))
         {
             if (gp_GetNeighbor(theGraph, e) != vStorage)
+                continue;
+
+            // A loop has both of its edge records in this list; it is one
+            // instance, reported by the lower of the two
+            if (xStorage == vStorage && e > gp_GetTwin(theGraph, e))
                 continue;
 
             if (_s6_AddRetrievedChange(theS6ReadIterator, S6_CHANGE_DELETE, e, NIL) != OK)
