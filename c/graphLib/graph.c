@@ -1914,6 +1914,9 @@ NOTE: For digraphs, this method returns the total degree of the
     Other functions are defined to get the in-degree or out-degree
     of a vertex.
 
+NOTE: Self-loop edges are counted twice, so that the so-called
+    "Handshake Lemma" remains true (sum of degrees == 2|E|).
+
 NOTE: This function determines the degree by counting. An extension
     could cache the degree value of each vertex and update the
     cached value as edges are added and deleted.
@@ -1935,21 +1938,7 @@ int gp_GetVertexDegree(graphP theGraph, int v)
     e = gp_GetFirstEdge(theGraph, v);
     while (gp_IsEdge(theGraph, e))
     {
-        if (gp_GetNeighbor(theGraph, e) != v)
-        {
-            degree++;
-        }
-        else
-        {
-            // For a loop edge, we want to count only one of its two edge records,
-            // so we count the out-only edge record of directed loop edges and
-            // the lower-numbered edge record for undirected loop edges
-            if (gp_GetDirection(theGraph, e) == EDGEFLAG_DIRECTION_INONLY ||
-                (gp_GetDirection(theGraph, e) == 0 && e > gp_GetTwin(theGraph, e)))
-            {
-                degree++;
-            }
-        }
+        degree++;
         e = gp_GetNextEdge(theGraph, e);
     }
 
