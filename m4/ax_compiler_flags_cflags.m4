@@ -67,7 +67,7 @@ AC_DEFUN([AX_COMPILER_FLAGS_CFLAGS],[
 
     # Base flags
     AX_APPEND_COMPILE_FLAGS([ dnl
-        -fno-strict-aliasing dnl
+        -fstrict-aliasing dnl
         $3 dnl
     ],ax_warn_cflags_variable,[$ax_compiler_flags_test])
 

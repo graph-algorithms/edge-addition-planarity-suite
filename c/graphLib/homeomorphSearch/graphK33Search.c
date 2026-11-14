@@ -43,7 +43,7 @@ extern int _MarkPathAlongBicompExtFace(graphP theGraph, int startVert, int endVe
 
 extern int _AddAndMarkEdge(graphP theGraph, int ancestor, int descendant);
 
-extern int _DeleteUnmarkedVerticesAndEdges(graphP theGraph);
+extern int _DeleteUnvisitedVerticesAndEdges(graphP theGraph);
 
 extern int _IsolateMinorE1(graphP theGraph);
 
@@ -183,7 +183,7 @@ int _SearchForK33InBicomp(graphP theGraph, K33SearchContext *context, int v, int
     if ((tempResult = _RunExtraK33Tests(theGraph, context)) != OK)
     {
         if (tempResult == NONEMBEDDABLE)
-            if (_DeleteUnmarkedVerticesAndEdges(theGraph) != OK)
+            if (_DeleteUnvisitedVerticesAndEdges(theGraph) != OK)
                 return NOTOK;
 
         return tempResult;
@@ -898,7 +898,7 @@ int _FindK33WithMergeBlocker(graphP theGraph, K33SearchContext *context, int v, 
 
     /* Do the final clean-up to obtain the K_{3,3} */
 
-    if (_DeleteUnmarkedVerticesAndEdges(theGraph) != OK)
+    if (_DeleteUnvisitedVerticesAndEdges(theGraph) != OK)
         return NOTOK;
 
     return OK;

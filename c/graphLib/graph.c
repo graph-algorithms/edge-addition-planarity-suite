@@ -2390,10 +2390,6 @@ int gp_DeleteEdge(graphP theGraph, int e)
         gp_EdgeNotInUse(theGraph, e))
         return NOTOK;
 
-    // The deletion has changed the graph even if it then fails to record
-    // the hole, so the modification is noted whatever the result
-    gp_NoteModification(theGraph);
-
     return theGraph->functions->fpDeleteEdge(theGraph, e);
 }
 
@@ -2426,7 +2422,10 @@ int _DeleteEdge(graphP theGraph, int e)
         theGraph->numEdgeHoles = sp_GetCurrentSize(theGraph->edgeHoles);
     }
 
-    // Return the previously calculated successor of e.
+    // An edge deletion changes the graph, so note the modification
+    gp_NoteModification(theGraph);
+
+    // Return a success result.
     return OK;
 }
 
