@@ -733,8 +733,7 @@ static int runCompactEdgeStorageTests(void)
     }
     gp_SetQuietMode(origQuietMode);
 
-    // A loop in the last pair, behind the hole of the first, is moved into
-    // that hole and stays a loop, with the flags of both its records
+    // Test edge deletion and compaction of loop edges
     if (Result == OK)
     {
         int eLoop = NIL, eFirst = NIL;
@@ -746,6 +745,49 @@ static int runCompactEdgeStorageTests(void)
             gp_AddEdge(theGraph, lower + 2, 0, lower + 2, 0) != OK)
             Result = NOTOK;
 
+        // Try deleting loop edge when it's the last added edge
+        if (Result == OK)
+        {
+            if (gp_DeleteEdge(theGraph, gp_FindEdge(theGraph, lower + 2, lower + 2)) != OK ||
+                gp_GetVertexDegree(theGraph, lower) != 1 ||
+                gp_GetVertexDegree(theGraph, lower + 1) != 2 ||
+                gp_GetVertexDegree(theGraph, lower + 2) != 1 ||
+                theGraph->numEdgeHoles != 0 || gp_GetM(theGraph) != 2 ||
+                gp_AddEdge(theGraph, lower + 2, 0, lower + 2, 0) != OK)
+            {
+                Result = NOTOK;
+            }
+        }
+
+        // Try deleting loop edge when it's not the last added edge
+        if (Result == OK)
+        {
+            if (gp_AddEdge(theGraph, lower, 0, lower + 2, 0) != OK ||
+                gp_DeleteEdge(theGraph, gp_FindEdge(theGraph, lower + 2, lower + 2)) != OK ||
+                gp_GetVertexDegree(theGraph, lower) != 2 ||
+                gp_GetVertexDegree(theGraph, lower + 1) != 2 ||
+                gp_GetVertexDegree(theGraph, lower + 2) != 2 ||
+                theGraph->numEdgeHoles != 1 || gp_GetM(theGraph) != 3)
+            {
+                Result = NOTOK;
+            }
+
+            if (Result == OK)
+            {
+                if (_CompactEdgeStorage(theGraph) != OK ||
+                    theGraph->numEdgeHoles != 0 || gp_GetM(theGraph) != 3 ||
+                    gp_GetVertexDegree(theGraph, lower) != 2 ||
+                    gp_GetVertexDegree(theGraph, lower + 1) != 2 ||
+                    gp_GetVertexDegree(theGraph, lower + 2) != 2 ||
+                    gp_DeleteEdge(theGraph, gp_FindEdge(theGraph, lower, lower + 2)) != OK ||
+                    gp_AddEdge(theGraph, lower + 2, 0, lower + 2, 0) != OK)
+                {
+                    Result = NOTOK;
+                }
+            }
+        }
+
+        // Make the loop edge directed
         if (Result == OK)
         {
             eLoop = gp_FindEdge(theGraph, lower + 2, lower + 2);
@@ -754,6 +796,8 @@ static int runCompactEdgeStorageTests(void)
             eFirst = gp_LowerBoundEdges(theGraph);
         }
 
+        // A loop in the last pair, behind the hole of the first, is moved into
+        // that hole and stays a loop, with the flags of both its records
         if (Result == OK &&
             (gp_DeleteEdge(theGraph, gp_FindEdge(theGraph, lower, lower + 1)) != OK ||
              _CompactEdgeStorage(theGraph) != OK ||
