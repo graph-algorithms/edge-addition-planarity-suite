@@ -3530,9 +3530,19 @@ int gp_DeleteParallelEdges(graphP theGraph, int includingInOnlyEdges)
 
     return OK;
 }
+
+/********************************************************************
+ gp_DeleteLoopEdges()
+
+ In linear time, finds and deletes all parallel loop edges, leaving
+ one instance of each existing loop edge.
+
+ Returns OK on success, NOTOK on failure.
+ ********************************************************************/
+
 int gp_DeleteLoopEdges(graphP theGraph)
 {
-    int v, e, eNext;
+    int v = NIL, e = NIL, eNext = NIL;
 
     if (theGraph == NULL)
         return NOTOK;
@@ -3546,6 +3556,11 @@ int gp_DeleteLoopEdges(graphP theGraph)
 
             if (gp_GetNeighbor(theGraph, e) == v)
             {
+                // When we delete the loop edge e, its twin edge record will also be deleted,
+                // so if eNext equals the twin, then we need to get the twin's successor.
+                if (eNext == gp_GetTwin(theGraph, e))
+                    eNext = gp_GetNextEdge(theGraph, e);
+
                 if (gp_DeleteEdge(theGraph, e) != OK)
                     return NOTOK;
             }
@@ -3555,4 +3570,82 @@ int gp_DeleteLoopEdges(graphP theGraph)
     }
 
     return OK;
+}
+
+/********************************************************************
+ gp_HasLoopEdges()
+
+ In linear time, determines whether the graph has any loop edges.
+
+ Returns TRUE if the given graph has at least one loop edge, and
+    FALSE otherwise (plus an error message on failure).
+ ********************************************************************/
+
+int gp_HasLoopEdges(graphP theGraph)
+{
+    int v = NIL, e = NIL;
+
+    if (theGraph == NULL)
+    {
+        gp_ErrorMessage("Invalid parameters.");
+        return FALSE;
+    }
+
+    for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
+    {
+        e = gp_GetFirstEdge(theGraph, v);
+        while (gp_IsEdge(theGraph, e))
+        {
+            if (gp_GetNeighbor(theGraph, e) == v)
+                return TRUE;
+            e = gp_GetNextEdge(theGraph, e);
+        }
+    }
+
+    return FALSE;
+}
+
+/********************************************************************
+ gp_HasDirectedEdges()
+
+ In linear time, determines whether the graph has any directed edges.
+ Sets GRAPHFLAGS_DIRECTEDEDGEDETECTED if any directed edges were
+ detected, and clears it otherwise. 
+
+ Almost always, the caller can discover that a graph is a digraph 
+ with gp_GetGraphFlags(theGraph) & GRAPHFLAGS_DIRECTEDEDGEDETECTED.
+ However, if the caller uses gp_SetDirection() to clear some edge
+ direction flags, without calling gp_ClearEdgeDirectionFlags(),
+ then this method can be used to reset the graph flag appropriately.
+
+ Returns TRUE if the graph contains any directed edges, and FALSE
+    otherwise (plus an error message if there is an error).
+ ********************************************************************/
+
+int gp_HasDirectedEdges(graphP theGraph)
+{
+    int v = NIL, e = NIL;
+
+    if (theGraph == NULL)
+    {
+        gp_ErrorMessage("Invalid parameters.");
+        return FALSE;
+    }
+
+    for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
+    {
+        e = gp_GetFirstEdge(theGraph, v);
+        while (gp_IsEdge(theGraph, e))
+        {
+            if (gp_GetDirection(theGraph, e))
+            {
+                theGraph->graphFlags |= GRAPHFLAGS_DIRECTEDEDGEDETECTED;
+                return TRUE;
+            }
+            e = gp_GetNextEdge(theGraph, e);
+        }
+    }
+
+    theGraph->graphFlags &= ~GRAPHFLAGS_DIRECTEDEDGEDETECTED;
+    return FALSE;
 }

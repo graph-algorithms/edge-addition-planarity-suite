@@ -52,6 +52,7 @@ int runIdentifyContractTest(graphP theGraph);
 
 int _CheckUndirectedDFSEdgeTypes(graphP theGraph);
 int testDirectedDFS(void);
+int _testAllEdgesDirected(graphP G);
 int testPetersenDigraph(const char *);
 int testDigraphTranspose(
     char const *inputFileName,
@@ -2934,7 +2935,44 @@ int testDirectedDFS(void)
 }
 
 /****************************************************************************
+ _testAllEdgesDirected()
+
+ Support routine for testPetersenDigraph()
+ ****************************************************************************/
+
+int _testAllEdgesDirected(graphP G)
+{
+    int v = NIL, e = NIL, eTwin = NIL, eDir = 0, eTwinDir = 0;
+
+    if (G == NULL)
+    {
+        gp_ErrorMessage("Invalid parameters.");
+        return FALSE;
+    }
+
+    for (v = gp_LowerBoundVertices(G); v < gp_UpperBoundVertices(G); ++v)
+    {
+        e = gp_GetFirstEdge(G, v);
+        while (gp_IsEdge(G, e))
+        {
+            eTwin = gp_GetTwin(G, e);
+            eDir = gp_GetDirection(G, e);
+            eTwinDir = gp_GetDirection(G, eTwin);
+
+            if (eDir == 0 || eTwinDir == 0 || eDir == eTwinDir)
+                return FALSE;
+
+            e = gp_GetNextEdge(G, e);
+        }
+    }
+
+    return TRUE;
+}
+
+/****************************************************************************
  testPetersenDigraph()
+
+ Test various digraph features using the Petersen digraph.
  ****************************************************************************/
 
 int testPetersenDigraph(const char *inputFileName)
@@ -2962,7 +3000,7 @@ int testPetersenDigraph(const char *inputFileName)
     {
         graphP G = gp_New();
         graphP G1 = NULL;
-        int quietModeCache, v, e, eTwin, eDir, eTwinDir;
+        int quietModeCache;
         char *dummyStr = NULL; // Safe throwaway pointer for early-outs
 
         if (G == NULL)
@@ -2991,35 +3029,40 @@ int testPetersenDigraph(const char *inputFileName)
             return NOTOK;
         }
 
-        for (v = gp_LowerBoundVertices(G); v < gp_UpperBoundVertices(G); ++v)
+        if (!_testAllEdgesDirected(G))
         {
-            e = gp_GetFirstEdge(G, v);
-            while (gp_IsEdge(G, e))
-            {
-                eTwin = gp_GetTwin(G, e);
-                eDir = gp_GetDirection(G, e);
-                eTwinDir = gp_GetDirection(G, eTwin);
-
-                if (eDir == 0 || eTwinDir == 0 || eDir == eTwinDir)
-                {
-                    gp_ErrorMessage("Edge direction mismatch found.");
-                    gp_Free(&G);
-                    return NOTOK;
-                }
-                e = gp_GetNextEdge(G, e);
-            }
+            gp_ErrorMessage("Unexpected undirected edge or edge direction mismatch found.");
+            gp_Free(&G);
+            return NOTOK;
         }
 
-        // Test that the planarity algorithm works on digraphs
+        // Test digraph duplication
         if ((G1 = gp_DupGraph(G)) == NULL)
         {
             gp_Free(&G);
             return NOTOK;
         }
 
+        if (!gp_HasDirectedEdges(G1))
+        {
+            gp_ErrorMessage("gp_HasDirectedEdges() returned unexpected FALSE value result.");
+            gp_Free(&G);
+            gp_Free(&G1);
+            return NOTOK;
+        }
+
+        if (!_testAllEdgesDirected(G1))
+        {
+            gp_ErrorMessage("Unexpected undirected edge or edge direction mismatch found.");
+            gp_Free(&G);
+            gp_Free(&G1);
+            return NOTOK;
+        }
+
+        // Test that the digraph is embeddable
         if (gp_Embed(G1, EMBEDFLAGS_PLANAR) != NONEMBEDDABLE)
         {
-            gp_ErrorMessage("Digraph embed did not return expected result.");
+            gp_ErrorMessage("Call to embed digraph did not return expected result.");
             gp_Free(&G);
             gp_Free(&G1);
             return NOTOK;
@@ -3064,28 +3107,16 @@ int testPetersenDigraph(const char *inputFileName)
 
         if (gp_GetGraphFlags(G) & GRAPHFLAGS_DIRECTEDEDGEDETECTED)
         {
-            gp_ErrorMessage("Directed edge detected flag should be but is not clear.");
+            gp_ErrorMessage("Directed edge detected flag should be clear but is not clear.");
             gp_Free(&G);
             return NOTOK;
         }
 
-        for (v = gp_LowerBoundVertices(G); v < gp_UpperBoundVertices(G); ++v)
+        if (gp_HasDirectedEdges(G))
         {
-            e = gp_GetFirstEdge(G, v);
-            while (gp_IsEdge(G, e))
-            {
-                eTwin = gp_GetTwin(G, e);
-                eDir = gp_GetDirection(G, e);
-                eTwinDir = gp_GetDirection(G, eTwin);
-
-                if (eDir != 0 || eTwinDir != 0)
-                {
-                    gp_ErrorMessage("Unexpected directed edge found.");
-                    gp_Free(&G);
-                    return NOTOK;
-                }
-                e = gp_GetNextEdge(G, e);
-            }
+            gp_ErrorMessage("gp_HasDirectedEdges() returned unexpected TRUE result.");
+            gp_Free(&G);
+            return NOTOK;
         }
 
         gp_Free(&G);
@@ -3126,9 +3157,9 @@ int testDigraphTranspose(
 #endif
 
         if (testDigraphTranspose(
-            "Petersen.digraph.0-based.txt", 
-            "Digraph.transposeTest.0-based.txt", 
-            preservedEdgeSource, preservedEdgeTarget) != OK)
+                "Petersen.digraph.0-based.txt",
+                "Digraph.transposeTest.0-based.txt",
+                preservedEdgeSource, preservedEdgeTarget) != OK)
         {
             gp_ErrorMessage("Digraph Transpose Test failed on Petersen.digraph.txt");
             retVal = NOTOK;

@@ -49,6 +49,11 @@ extern "C"
     int gp_CreateRandomGraph(graphP theGraph);
     int gp_CreateRandomGraphEx(graphP theGraph, int numEdges);
 
+    // Basic detectors for digraph and multigraph features
+    int gp_HasDirectedEdges(graphP theGraph);
+    int gp_HasParallelEdges(graphP theGraph, int includingInOnlyEdges);
+    int gp_HasLoopEdges(graphP theGraph);
+    
     // Basic graph I/O methods: see graphIO.h
     // Intermediate graph I/O methods: see gp-read-iterator.h and gp-write-iterator.h
 
@@ -56,7 +61,6 @@ extern "C"
     int gp_IsNeighbor(graphP theGraph, int u, int v);
     int gp_FindEdge(graphP theGraph, int u, int v);
     int gp_GetVertexDegree(graphP theGraph, int v);
-    int gp_HasParallelEdges(graphP theGraph, int includingInOnlyEdges);
 
     // Basic interrogators for directed graphs
     // The direction can be EDGEFLAG_DIRECTION_INONLY or EDGEFLAG_DIRECTION_OUTONLY
@@ -73,8 +77,10 @@ extern "C"
     int gp_DynamicInsertEdge(graphP theGraph, int u, int e_u, int e_ulink,
                              int v, int e_v, int e_vlink);
     int gp_DeleteEdge(graphP theGraph, int e);
-    int gp_ClearEdgeDirectionFlags(graphP theGraph);
+
     int gp_TransposeDirectedGraph(graphP theGraph);
+
+    int gp_ClearEdgeDirectionFlags(graphP theGraph);
     int gp_DeleteParallelEdges(graphP theGraph, int includingInOnlyEdges);
     int gp_DeleteLoopEdges(graphP theGraph);
 
