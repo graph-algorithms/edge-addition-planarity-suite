@@ -39,6 +39,8 @@ dist_samples_DATA = \
   maxPlanar5.txt.Planarity.out.txt \
   N3-loops.d6 \
   N4-all.d6 \
+  N4-loops.inc.s6 \
+  N4-loops.s6 \
   N5-all.d6 \
   N5-digraphs.d6 \
   N5-all.g6 \
