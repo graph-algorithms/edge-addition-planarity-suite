@@ -83,6 +83,7 @@ dist_samples_DATA = \
   Petersen.txt.Planarity.out.txt \
   Petersen.digraph.txt \
   Petersen.digraph.txt.0-based.D6.out.d6 \
+  Petersen-with-loop-edges.txt \
   Petersen-with-parallel-edges.txt \
   Petersen-parallel-undirected.txt \
   Petersen.digraph.0-based.txt \

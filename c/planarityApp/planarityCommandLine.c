@@ -72,6 +72,10 @@ int runRandomParallelEdgeGraphTests(void);
 int runParallelEdgeTestAllGraphsTests(void);
 int addParallelEdges(graphP theGraph);
 
+int runLoopEdgeTests(void);
+int runBasicLoopEdgeTests(void);
+int runDFSandEmbeddingLoopEdgeTests(void);
+
 int runDrawPlanarNonplanarWriteTest(void);
 int runReadWithExtensionAtEofTest(void);
 int runHighByteRoundTripTest(void);
@@ -301,6 +305,8 @@ int runQuickRegressionTests(int argc, char *argv[])
     else if (runDigraphTests() != OK)
         retVal = NOTOK;
     else if (runParallelEdgeTests() != OK)
+        retVal = NOTOK;
+    else if (runLoopEdgeTests() != OK)
         retVal = NOTOK;
     else if (runHighByteRoundTripTest() != OK)
         retVal = NOTOK;
@@ -3254,6 +3260,42 @@ int runDigraphTests(void)
 
     return retVal;
 }
+
+/*************************************************************************
+ *************************************************************************/
+
+int runLoopEdgeTests(void)
+{
+    int retVal = OK;
+
+    gp_Message("Starting Loop Edge Tests\n");
+
+    if (runBasicLoopEdgeTests() != OK)
+        retVal = NOTOK;
+
+    if (runDFSandEmbeddingLoopEdgeTests() != OK)
+        retVal = NOTOK;
+
+    if (retVal == OK)
+        gp_Message("Finished Loop Edge Tests.\n");
+    else
+        gp_ErrorMessage("A test of loop edges has failed.");
+
+    return retVal;
+}
+
+int runBasicLoopEdgeTests(void)
+{
+    return OK;
+}
+
+int runDFSandEmbeddingLoopEdgeTests(void)
+{
+    return OK;
+}
+
+/*************************************************************************
+ *************************************************************************/
 
 int runParallelEdgeTests(void)
 {
