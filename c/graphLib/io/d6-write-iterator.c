@@ -320,14 +320,16 @@ int _d6_InitWriter(D6WriteIteratorP theD6WriteIterator)
 
  Writes the writer's graph as one digraph6 line. An undirected edge is
  written as the two arcs u -> v and v -> u, which the reader reads back
- as one undirected edge, and a directed edge as its one arc.
+ as one undirected edge, and a directed edge as its one arc. A loop is
+ written as its bit of the diagonal, whatever direction its edge records
+ carry, and the reader reads it back as an undirected loop.
 
  The format cannot represent parallel edges, including the two edges
  directed u -> v and v -> u, which would be written as the two arcs of
- a 2-cycle and read back as one undirected edge, nor can the reader
- read a loop, so a graph with either is not written. Neither is a graph with hidden edges, which are not in the
- adjacency lists that gp_HasParallelEdges() inspects; they are to be
- restored first.
+ a 2-cycle and read back as one undirected edge, and two loops on one
+ vertex, so a graph with any of these is not written. Neither is a graph
+ with hidden edges, which are not in the adjacency lists that
+ gp_HasParallelEdges() inspects; they are to be restored first.
 
  Returns OK on success, NOTOK on failure, in which case the output
  error flag is set, so that a partial output is not kept.
@@ -435,20 +437,27 @@ int _d6_EncodeGraph(D6WriteIteratorP theD6WriteIterator)
         v = gp_GetNeighbor(theGraph, e) - lowerBound;
         direction = gp_GetDirection(theGraph, e);
 
-        if (u == v)
-        {
-            gp_ErrorMessage("Unable to write a loop edge on vertex %d, which "
-                            "digraph6 input does not support.",
-                            u + lowerBound);
-            return NOTOK;
-        }
-
         if (u < 0 || u >= order || v < 0 || v >= order)
         {
             gp_ErrorMessage("Unable to write edge {%d, %d}, which is not "
                             "between two of the %d vertices of the graph.",
                             u + lowerBound, v + lowerBound, order);
             return NOTOK;
+        }
+
+        // A loop is its own reverse arc, so it is the one bit (u, u) of the
+        // diagonal, whatever direction its edge records carry, also when
+        // both of them carry both directions
+        if (u == v)
+        {
+            if (_d6_SetArcBit(graphEncodingChars, order, u, u) != OK)
+            {
+                gp_ErrorMessage("Unable to write the loop on vertex %d, which "
+                                "is parallel to another loop.",
+                                u + lowerBound);
+                return NOTOK;
+            }
+            continue;
         }
 
         if (direction == EDGEFLAG_DIRECTION_MASK)
