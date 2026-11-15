@@ -1152,15 +1152,18 @@ int _s6_ApplyEdge(S6ReadIteratorP theS6ReadIterator, int u, int v, const int inc
     {
         int e = gp_FindEdge(theGraph, uStorage, vStorage);
 
-        // A loop has both of its edge records in the list of its vertex.
-        // It is found by the lower of the two, as the lookahead finds it,
-        // so that both ways of reading a line delete the same record.
-        while (uStorage == vStorage && gp_IsEdge(theGraph, e) &&
-               (gp_GetNeighbor(theGraph, e) != vStorage || e > gp_GetTwin(theGraph, e)))
-            e = gp_GetNextEdge(theGraph, e);
-
         if (gp_IsEdge(theGraph, e))
         {
+            // A loop edge has both of its edge records in the list of its vertex.
+            // We obtain the lower of the two, because that is how the lookahead
+            // finds it, so that both ways of reading a line delete the same record
+            // and record the exact same edge hole.
+            if (uStorage == vStorage)
+            {
+                if (e > gp_GetTwin(theGraph, e))
+                    e = gp_GetTwin(theGraph, e);
+            }
+
             // The deletion leaves a hole in the edge storage unless the pair
             // it removed was the last one, and a later addition fills it;
             // if needed, algorithm implementations can call _CompactEdgeStorage()
