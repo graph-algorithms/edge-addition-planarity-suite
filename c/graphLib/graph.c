@@ -3501,6 +3501,13 @@ int gp_DeleteParallelEdges(graphP theGraph, int includingInOnlyEdges)
                 }
                 else if (e != gp_GetTwin(theGraph, keptLoopEdge))
                 {
+                    // When we delete the loop edge e, its twin edge record will also be deleted,
+                    // so if eNext equals the twin, then we need to get the twin's successor.
+                    if (eNext == gp_GetTwin(theGraph, e))
+                        eNext = gp_GetNextEdge(theGraph, e);
+
+                    // e is a loop edge other than the one we have kept (and its twin),
+                    // so we delete it because it is a parallel loop edge
                     if (gp_DeleteEdge(theGraph, e) != OK)
                         return NOTOK;
                 }
