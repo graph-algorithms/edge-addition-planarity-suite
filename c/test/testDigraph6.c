@@ -38,6 +38,13 @@ static int runDigraph6WriteRefusalTest(graphP theGraph, char const *what);
 static int runDigraph6WriteTests(void);
 static int runDigraph6FileTest(char const *inFileName, char const *expectedFileName, int expectedNumGraphs);
 static int runHasParallelEdgesTests(void);
+static int digraph6MatrixBit(int order, unsigned matrixBits, int u, int v);
+static int checkDigraph6MatrixGraph(graphP theGraph, int order, unsigned matrixBits, char const *what);
+static int buildDigraph6MatrixGraph(graphP theGraph, int order, unsigned matrixBits);
+static int runDigraph6LoopSampleTest(char const *d6FileName, int order, int expectedNumGraphs);
+static int runDigraph6LoopOrderTest(void);
+static int runDigraph6DirectedLoopTest(void);
+static int runDigraph6LoopTests(void);
 
 /****************************************************************************
  copyDigraph6TestString()
@@ -275,12 +282,22 @@ static int runDigraph6ReadTests(void)
     digraph6TestArc const backwardArc[] = {{1, 0, TRUE}};
     // Bits 010 001 010: 0->1 alone, and both arcs between 1 and 2
     digraph6TestArc const mixed[] = {{0, 1, TRUE}, {1, 2, FALSE}};
+    // A set bit of the diagonal is a loop, which has no direction. Bits
+    // 1000: a loop on 0; 1101: loops on 0 and 1 and the arc 0->1; 0101: the
+    // arc 0->1 and a loop on 1; 1111: both loops and the edge {0, 1}
+    digraph6TestArc const loopOnZero[] = {{0, 0, FALSE}};
+    digraph6TestArc const loopsAndArc[] = {{0, 0, FALSE}, {0, 1, TRUE}, {1, 1, FALSE}};
+    digraph6TestArc const arcAndLoop[] = {{0, 1, TRUE}, {1, 1, FALSE}};
+    digraph6TestArc const loopsAndEdge[] = {{0, 0, FALSE}, {0, 1, FALSE}, {1, 1, FALSE}};
+    // Bits 010 100 001: the edge {0, 1} and a loop on 2
+    digraph6TestArc const edgeAndLoop[] = {{0, 1, FALSE}, {2, 2, FALSE}};
+    // The last bit of the matrix is the loop on the last vertex
+    digraph6TestArc const loopOnThree[] = {{3, 3, FALSE}};
+    digraph6TestArc const loopOnSixtyTwo[] = {{62, 62, FALSE}};
     char *order63Str = NULL;
     int Result = OK;
 
     char const *rejectCases[] = {
-        // A loop on vertex 0 (bits 1000)
-        "&A_\n",
         // A padding bit set (bits 0000 10)
         "&AA\n",
         // A byte out of range, a line too long and one too short, and a first
@@ -320,6 +337,17 @@ static int runDigraph6ReadTests(void)
         runDigraph6AcceptTest("&@?\n", 1, NULL, 0) != OK)
         Result = NOTOK;
 
+    // Loops, in the bytes nauty writes for them
+    if (Result == OK &&
+        (runDigraph6AcceptTest("&A_\n", 2, loopOnZero, 1) != OK ||
+         runDigraph6AcceptTest("&@_\n", 1, loopOnZero, 1) != OK ||
+         runDigraph6AcceptTest("&As\n", 2, loopsAndArc, 3) != OK ||
+         runDigraph6AcceptTest("&AS\n", 2, arcAndLoop, 2) != OK ||
+         runDigraph6AcceptTest("&A{\n", 2, loopsAndEdge, 3) != OK ||
+         runDigraph6AcceptTest("&BSG\n", 3, edgeAndLoop, 2) != OK ||
+         runDigraph6AcceptTest("&C??C\n", 4, loopOnThree, 1) != OK))
+        Result = NOTOK;
+
     // Order 63 takes the four-byte order and 662 bytes for its 3969 bits
     if (Result == OK)
     {
@@ -333,6 +361,13 @@ static int runDigraph6ReadTests(void)
             memset(order63Str + 5, '?', 662);
             strcpy(order63Str + 5 + 662, "\n");
             Result = runDigraph6AcceptTest(order63Str, 63, NULL, 0);
+
+            // The last of the 3969 bits is the loop on vertex 62
+            if (Result == OK)
+            {
+                order63Str[5 + 661] = 'G';
+                Result = runDigraph6AcceptTest(order63Str, 63, loopOnSixtyTwo, 1);
+            }
             free(order63Str);
         }
     }
@@ -481,7 +516,13 @@ static int runDigraph6WriteTests(void)
     digraph6TestArc const mixed[] = {{0, 1, TRUE}, {1, 2, FALSE}};
     digraph6TestArc const parallelUndirected[] = {{0, 1, FALSE}, {1, 2, FALSE}, {0, 1, FALSE}};
     digraph6TestArc const parallelOpposite[] = {{0, 1, TRUE}, {1, 0, TRUE}};
-    digraph6TestArc const loop[] = {{0, 1, FALSE}, {2, 2, FALSE}};
+    digraph6TestArc const loopOnZero[] = {{0, 0, FALSE}};
+    digraph6TestArc const loopsAndArc[] = {{0, 0, FALSE}, {0, 1, TRUE}, {1, 1, FALSE}};
+    digraph6TestArc const arcAndLoop[] = {{0, 1, TRUE}, {1, 1, FALSE}};
+    digraph6TestArc const loopsAndEdge[] = {{0, 0, FALSE}, {0, 1, FALSE}, {1, 1, FALSE}};
+    digraph6TestArc const edgeAndLoop[] = {{0, 1, FALSE}, {2, 2, FALSE}};
+    digraph6TestArc const loopOnThree[] = {{3, 3, FALSE}};
+    digraph6TestArc const twoLoops[] = {{0, 1, FALSE}, {2, 2, FALSE}, {2, 2, FALSE}};
     graphP theGraph = NULL;
     D6WriteIteratorP theWriter = NULL;
     char *actualOutput = NULL;
@@ -498,13 +539,24 @@ static int runDigraph6WriteTests(void)
         runDigraph6WriteLineTest(1, NULL, 0, ">>digraph6<<&@?\n") != OK)
         Result = NOTOK;
 
+    // A loop is written as its bit of the diagonal, as nauty writes it
+    if (Result == OK &&
+        (runDigraph6WriteLineTest(2, loopOnZero, 1, ">>digraph6<<&A_\n") != OK ||
+         runDigraph6WriteLineTest(1, loopOnZero, 1, ">>digraph6<<&@_\n") != OK ||
+         runDigraph6WriteLineTest(2, loopsAndArc, 3, ">>digraph6<<&As\n") != OK ||
+         runDigraph6WriteLineTest(2, arcAndLoop, 2, ">>digraph6<<&AS\n") != OK ||
+         runDigraph6WriteLineTest(2, loopsAndEdge, 3, ">>digraph6<<&A{\n") != OK ||
+         runDigraph6WriteLineTest(3, edgeAndLoop, 2, ">>digraph6<<&BSG\n") != OK ||
+         runDigraph6WriteLineTest(4, loopOnThree, 1, ">>digraph6<<&C??C\n") != OK))
+        Result = NOTOK;
+
     // Parallel edges, including two edges in opposite directions, which
-    // would be read back as one undirected edge, and a loop
+    // would be read back as one undirected edge, and two loops on a vertex
     if (Result == OK)
     {
-        digraph6TestArc const *const refused[] = {parallelUndirected, parallelOpposite, loop};
-        int const numArcs[] = {3, 2, 2};
-        char const *const what[] = {"parallel undirected edges", "opposite directed edges", "a loop"};
+        digraph6TestArc const *const refused[] = {parallelUndirected, parallelOpposite, twoLoops};
+        int const numArcs[] = {3, 2, 3};
+        char const *const what[] = {"parallel undirected edges", "opposite directed edges", "two loops on a vertex"};
 
         for (int i = 0; Result == OK && i < 3; i++)
         {
@@ -514,6 +566,17 @@ static int runDigraph6WriteTests(void)
                 Result = runDigraph6WriteRefusalTest(theGraph, what[i]);
             gp_Free(&theGraph);
         }
+    }
+
+    // A loop on a virtual vertex is not between two vertices of the graph
+    if (Result == OK)
+    {
+        if ((theGraph = makeDigraph6TestGraph(3, edgeAndLoop, 2)) == NULL ||
+            gp_AddEdge(theGraph, gp_UpperBoundVertices(theGraph), 0, gp_UpperBoundVertices(theGraph), 0) != OK)
+            Result = NOTOK;
+        else
+            Result = runDigraph6WriteRefusalTest(theGraph, "a loop on a virtual vertex");
+        gp_Free(&theGraph);
     }
 
     // A hidden edge is refused until it is restored
@@ -725,6 +788,370 @@ static int runHasParallelEdgesTests(void)
 }
 
 /****************************************************************************
+ digraph6MatrixBit()
+
+ Returns entry (u, v) of the adjacency matrix of the given order whose
+ entries, row by row, spell matrixBits in binary.
+ ****************************************************************************/
+
+static int digraph6MatrixBit(int order, unsigned matrixBits, int u, int v)
+{
+    return (int)((matrixBits >> (order * order - 1 - (order * u + v))) & 1u);
+}
+
+/****************************************************************************
+ checkDigraph6MatrixGraph()
+
+ Checks that theGraph is the graph of the given adjacency matrix: between
+ two vertices u < v no edge, one undirected edge for both arcs or one edge
+ directed as the single arc, and on a vertex whose diagonal entry is set
+ one loop, with both of its edge records in the list of the vertex and no
+ direction. The directed edge flag is set exactly when an edge is directed.
+ ****************************************************************************/
+
+static int checkDigraph6MatrixGraph(graphP theGraph, int order, unsigned matrixBits, char const *what)
+{
+    int lowerBound = gp_LowerBoundVertexStorage(theGraph);
+    int numEdges = 0, anyDirected = FALSE;
+
+    if (gp_GetN(theGraph) != order)
+    {
+        gp_ErrorMessage("%s: expected order %d, got %d.", what, order, gp_GetN(theGraph));
+        return NOTOK;
+    }
+
+    for (int u = 0; u < order; u++)
+    {
+        for (int v = u; v < order; v++)
+        {
+            int forward = digraph6MatrixBit(order, matrixBits, u, v);
+            int backward = digraph6MatrixBit(order, matrixBits, v, u);
+            unsigned expectedDirection = 0, expectedTwinDirection = 0;
+            int numRecords = 0, found = NIL, isRight = TRUE;
+
+            for (int e = gp_GetFirstEdge(theGraph, u + lowerBound); gp_IsEdge(theGraph, e); e = gp_GetNextEdge(theGraph, e))
+            {
+                if (gp_GetNeighbor(theGraph, e) == v + lowerBound)
+                {
+                    numRecords++;
+                    found = e;
+                }
+            }
+
+            if (forward && !backward)
+            {
+                expectedDirection = EDGEFLAG_DIRECTION_OUTONLY;
+                expectedTwinDirection = EDGEFLAG_DIRECTION_INONLY;
+            }
+            else if (backward && !forward)
+            {
+                expectedDirection = EDGEFLAG_DIRECTION_INONLY;
+                expectedTwinDirection = EDGEFLAG_DIRECTION_OUTONLY;
+            }
+
+            if (!forward && !backward)
+                isRight = (numRecords == 0) ? TRUE : FALSE;
+            else if (numRecords != ((u == v) ? 2 : 1) ||
+                     gp_GetNeighbor(theGraph, gp_GetTwin(theGraph, found)) != u + lowerBound ||
+                     gp_GetDirection(theGraph, found) != expectedDirection ||
+                     gp_GetDirection(theGraph, gp_GetTwin(theGraph, found)) != expectedTwinDirection)
+                isRight = FALSE;
+            else
+            {
+                numEdges++;
+                if (expectedDirection != 0)
+                    anyDirected = TRUE;
+            }
+
+            if (!isRight)
+            {
+                gp_ErrorMessage("%s: the edge between %d and %d is not as the matrix has it.", what, u, v);
+                return NOTOK;
+            }
+        }
+    }
+
+    if (gp_GetM(theGraph) != numEdges ||
+        ((gp_GetGraphFlags(theGraph) & GRAPHFLAGS_DIRECTEDEDGEDETECTED) ? TRUE : FALSE) != anyDirected)
+    {
+        gp_ErrorMessage("%s: the edge count or the directed edge flag is wrong.", what);
+        return NOTOK;
+    }
+
+    return OK;
+}
+
+/****************************************************************************
+ buildDigraph6MatrixGraph()
+
+ Empties theGraph and gives it the edges of the given adjacency matrix, as
+ checkDigraph6MatrixGraph() expects them, added from the last vertex to the
+ first and each loop before the other edges of its vertex, which is not the
+ order in which the reader adds them.
+ ****************************************************************************/
+
+static int buildDigraph6MatrixGraph(graphP theGraph, int order, unsigned matrixBits)
+{
+    int lowerBound = gp_LowerBoundVertexStorage(theGraph);
+
+    gp_ResetGraphStorage(theGraph);
+
+    for (int v = order - 1; v >= 0; v--)
+    {
+        if (digraph6MatrixBit(order, matrixBits, v, v) &&
+            gp_DynamicAddEdge(theGraph, v + lowerBound, 0, v + lowerBound, 0) != OK)
+            return NOTOK;
+
+        for (int u = v - 1; u >= 0; u--)
+        {
+            int forward = digraph6MatrixBit(order, matrixBits, u, v);
+            int backward = digraph6MatrixBit(order, matrixBits, v, u);
+
+            if (!forward && !backward)
+                continue;
+
+            if (gp_DynamicAddEdge(theGraph, u + lowerBound, 0, v + lowerBound, 0) != OK)
+                return NOTOK;
+
+            if (forward && !backward)
+            {
+                gp_SetDirection(theGraph, gp_GetFirstEdge(theGraph, u + lowerBound), EDGEFLAG_DIRECTION_OUTONLY);
+            }
+            else if (backward && !forward)
+            {
+                gp_SetDirection(theGraph, gp_GetFirstEdge(theGraph, u + lowerBound), EDGEFLAG_DIRECTION_INONLY);
+            }
+        }
+    }
+
+    return OK;
+}
+
+/****************************************************************************
+ runDigraph6LoopSampleTest()
+
+ Reads a sample file that nauty's amtog wrote from every adjacency matrix
+ of the given order, in which the entries of matrix i, from 0, spell i in
+ binary row by row, so that the loops occur with every combination of
+ arcs and 2-cycles. Every graph read must be the graph of its matrix. The
+ graph read is written by a general write iterator, and a graph built
+ from the matrix through the API by a digraph6 write iterator, and each
+ output must be the file again.
+ ****************************************************************************/
+
+static int runDigraph6LoopSampleTest(char const *d6FileName, int order, int expectedNumGraphs)
+{
+    graphP theGraph = gp_New();
+    graphP builtGraph = gp_New();
+    GPReadIteratorP theReader = NULL;
+    GPWriteIteratorP theWriter = NULL;
+    D6WriteIteratorP builtWriter = NULL;
+    char *readOutput = NULL, *builtOutput = NULL;
+    int numGraphs = 0;
+    int Result = OK;
+
+    if (theGraph == NULL || builtGraph == NULL ||
+        gp_EnsureVertexCapacity(builtGraph, order) != OK ||
+        gp_NewReader(&theReader, theGraph) != OK ||
+        gp_InitReaderWithFileName(theReader, d6FileName) != OK)
+        Result = NOTOK;
+
+    while (Result == OK)
+    {
+        if (gp_ReadGraph(theReader) != OK)
+            Result = NOTOK;
+        else if (gp_EndReached(theReader))
+            break;
+        else if (numGraphs == expectedNumGraphs ||
+                 checkDigraph6MatrixGraph(theGraph, order, (unsigned)numGraphs, d6FileName) != OK ||
+                 buildDigraph6MatrixGraph(builtGraph, order, (unsigned)numGraphs) != OK ||
+                 checkDigraph6MatrixGraph(builtGraph, order, (unsigned)numGraphs, "The graph built from a matrix") != OK)
+            Result = NOTOK;
+        else if (theWriter == NULL &&
+                 (gp_NewWriter(&theWriter, theGraph, WRITE_DIGRAPH6) != OK ||
+                  gp_InitWriterWithString(theWriter, &readOutput) != OK ||
+                  d6_NewWriter(&builtWriter, builtGraph) != OK ||
+                  d6_InitWriterWithString(builtWriter, &builtOutput) != OK))
+            Result = NOTOK;
+        else if (gp_WriteGraph(theWriter) != OK || d6_WriteGraph(builtWriter) != OK)
+            Result = NOTOK;
+        else
+            numGraphs++;
+    }
+
+    if (Result != OK)
+        gp_ErrorMessage("Graph %d of %s was not read and written with its loops.", numGraphs + 1, d6FileName);
+
+    // The strings are handed over when the writers are freed
+    gp_FreeWriter(&theWriter);
+    d6_FreeWriter(&builtWriter);
+
+    if (Result == OK && (numGraphs != expectedNumGraphs || readOutput == NULL || builtOutput == NULL ||
+                         TextFileMatchesString(d6FileName, readOutput) != TRUE ||
+                         TextFileMatchesString(d6FileName, builtOutput) != TRUE))
+    {
+        gp_ErrorMessage("Writing the %d graphs of %s did not reproduce the file.", numGraphs, d6FileName);
+        Result = NOTOK;
+    }
+
+    if (readOutput != NULL)
+        free(readOutput);
+    if (builtOutput != NULL)
+        free(builtOutput);
+    gp_FreeReader(&theReader);
+    gp_Free(&builtGraph);
+    gp_Free(&theGraph);
+
+    return Result;
+}
+
+/****************************************************************************
+ runDigraph6LoopOrderTest()
+
+ The reader adds the loop of a vertex v after the edges between v and the
+ vertices before it, each record first in its list, where nauty's sparse6
+ has the pair {v, v}. Reads the graph of order 3 with every arc and loop
+ and checks the neighbors along each adjacency list.
+ ****************************************************************************/
+
+static int runDigraph6LoopOrderTest(void)
+{
+    int const expectedNeighbors[3][4] = {{2, 1, 0, 0}, {2, 1, 1, 0}, {2, 2, 1, 0}};
+    graphP theGraph = gp_New();
+    char *inputStr = copyDigraph6TestString("&B~w\n");
+    int lowerBound = 0;
+    int Result = OK;
+
+    if (theGraph == NULL || inputStr == NULL || gp_ReadFromString(theGraph, inputStr) != OK)
+        Result = NOTOK;
+    else
+        lowerBound = gp_LowerBoundVertexStorage(theGraph);
+
+    for (int v = 0; Result == OK && v < 3; v++)
+    {
+        int numRecords = 0;
+
+        for (int e = gp_GetFirstEdge(theGraph, v + lowerBound); gp_IsEdge(theGraph, e); e = gp_GetNextEdge(theGraph, e))
+        {
+            if (numRecords == 4 || gp_GetNeighbor(theGraph, e) != expectedNeighbors[v][numRecords] + lowerBound)
+            {
+                Result = NOTOK;
+                break;
+            }
+            numRecords++;
+        }
+
+        if (numRecords != 4)
+            Result = NOTOK;
+    }
+
+    if (Result != OK)
+        gp_ErrorMessage("The adjacency lists read from the digraph6 string \"&B~w\" are not in the expected order.");
+
+    if (inputStr != NULL)
+        free(inputStr);
+    gp_Free(&theGraph);
+
+    return Result;
+}
+
+/****************************************************************************
+ runDigraph6DirectedLoopTest()
+
+ A loop is its own reverse arc, so it is written as its diagonal bit
+ whatever direction its edge records carry, and is read back undirected.
+ Directs a loop out of its lower record, into it, and out of each of its
+ two records in turn, which leaves both directions on both of them, and
+ checks the bytes written and the graph read back from them.
+ ****************************************************************************/
+
+static int runDigraph6DirectedLoopTest(void)
+{
+    // The edge {0, 1} and a loop on 2, which nauty writes as &BSG
+    digraph6TestArc const loop[] = {{0, 1, FALSE}, {2, 2, FALSE}};
+    int Result = OK;
+
+    for (int i = 0; Result == OK && i < 3; i++)
+    {
+        graphP theGraph = makeDigraph6TestGraph(3, loop, 2);
+        graphP theReadBackGraph = gp_New();
+        char *d6Str = NULL;
+        int e = NIL;
+
+        if (theGraph == NULL || theReadBackGraph == NULL)
+            Result = NOTOK;
+        else
+        {
+            e = gp_FindEdge(theGraph, 2 + gp_LowerBoundVertexStorage(theGraph), 2 + gp_LowerBoundVertexStorage(theGraph));
+            if (!gp_IsEdge(theGraph, e))
+                Result = NOTOK;
+            else if (e > gp_GetTwin(theGraph, e))
+                e = gp_GetTwin(theGraph, e);
+        }
+
+        if (Result == OK)
+        {
+            if (i == 1)
+            {
+                gp_SetDirection(theGraph, e, EDGEFLAG_DIRECTION_INONLY);
+            }
+            else
+            {
+                gp_SetDirection(theGraph, e, EDGEFLAG_DIRECTION_OUTONLY);
+            }
+            if (i == 2)
+            {
+                gp_SetDirection(theGraph, gp_GetTwin(theGraph, e), EDGEFLAG_DIRECTION_OUTONLY);
+            }
+
+            if ((i == 2 && (gp_GetDirection(theGraph, e) != EDGEFLAG_DIRECTION_MASK ||
+                            gp_GetDirection(theGraph, gp_GetTwin(theGraph, e)) != EDGEFLAG_DIRECTION_MASK)) ||
+                gp_WriteToString(theGraph, &d6Str, WRITE_DIGRAPH6) != OK || d6Str == NULL ||
+                strcmp(d6Str, ">>digraph6<<&BSG\n") != 0 ||
+                gp_ReadFromString(theReadBackGraph, d6Str) != OK ||
+                checkDigraph6Arcs(theReadBackGraph, 3, loop, 2, "A directed loop read back") != OK)
+            {
+                gp_ErrorMessage("A loop whose records carry a direction was not written as its bit of the diagonal and read back undirected.");
+                Result = NOTOK;
+            }
+        }
+
+        if (d6Str != NULL)
+            free(d6Str);
+        gp_Free(&theReadBackGraph);
+        gp_Free(&theGraph);
+    }
+
+    return Result;
+}
+
+/****************************************************************************
+ runDigraph6LoopTests()
+
+ Loop edges in digraph6: the order of the adjacency lists read, loops whose
+ records carry a direction, and nauty's sample of every adjacency matrix
+ of order 3. The single lines with loops are among the read and write
+ tests.
+ ****************************************************************************/
+
+static int runDigraph6LoopTests(void)
+{
+    int Result = OK;
+
+    gp_Message("Starting digraph6 loop tests");
+
+    if (runDigraph6LoopOrderTest() != OK ||
+        runDigraph6DirectedLoopTest() != OK ||
+        runDigraph6LoopSampleTest("N3-loops.d6", 3, 512) != OK)
+        Result = NOTOK;
+
+    if (Result == OK)
+        gp_Message("Finished digraph6 loop tests.\n");
+
+    return Result;
+}
+
+/****************************************************************************
  testPetersenDigraph6()
 
  Reads the Petersen digraph, whose every edge is directed, writes it as
@@ -928,7 +1355,7 @@ int testDigraph6Iterators(void)
 /****************************************************************************
  runDigraph6Tests()
 
- Tests reading and writing digraph6, gp_HasParallelEdges(), the samples
+ Tests reading and writing digraph6, loop edges, gp_HasParallelEdges(), the samples
  that nauty wrote, the transformations to and from digraph6, and the
  algorithms on all the oriented graphs of order 6 and all the digraphs of
  order 5, which they must treat as the undirected graphs beneath them.
@@ -945,6 +1372,8 @@ int runDigraph6Tests(void)
     else if (runDigraph6InitRetryTests() != OK)
         Result = NOTOK;
     else if (runDigraph6WriteTests() != OK)
+        Result = NOTOK;
+    else if (runDigraph6LoopTests() != OK)
         Result = NOTOK;
     else if (runHasParallelEdgesTests() != OK)
     {

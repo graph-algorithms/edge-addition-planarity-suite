@@ -589,9 +589,8 @@ int d6_ReadGraph(D6ReadIteratorP theD6ReadIterator)
 }
 
 // Checks that the encoding of a graph on line lineNum has numChars bytes,
-// each in the range 63 to 126, that the bits after the n*n bits of the
-// adjacency matrix are zero, as the format pads them, and that no bit of
-// the diagonal is set, since the graph library does not support loops.
+// each in the range 63 to 126, and that the bits after the n*n bits of
+// the adjacency matrix are zero, as the format pads them.
 int _d6_ValidateGraphEncoding(char *graphBuff, const int order, const size_t numChars, const int lineNum)
 {
     size_t numBits = (size_t)order * (size_t)order;
@@ -623,16 +622,6 @@ int _d6_ValidateGraphEncoding(char *graphBuff, const int order, const size_t num
         return NOTOK;
     }
 
-    for (int v = 0; v < order; v++)
-    {
-        if (_d6_GetArcBit(graphBuff, order, v, v))
-        {
-            gp_ErrorMessage("Loop edge on vertex %d on line %d is not supported.",
-                            v, lineNum);
-            return NOTOK;
-        }
-    }
-
     return OK;
 }
 
@@ -642,6 +631,11 @@ int _d6_ValidateGraphEncoding(char *graphBuff, const int order, const size_t num
 // arc alone is a directed edge. The pairs are visited in the order the
 // graph6 reader visits them, so that an undirected graph gets the same
 // adjacency lists from either format.
+//
+// A set bit of the diagonal is a loop on its vertex. A loop is its own
+// reverse arc, so by the same rule it is an undirected edge. The loop of
+// v is added after the edges between v and the vertices before it, which
+// is where sparse6 has the pair {v, v}.
 int _d6_DecodeGraph(char *graphBuff, const int order, graphP theGraph)
 {
     int lowerBound = 0;
@@ -658,7 +652,7 @@ int _d6_DecodeGraph(char *graphBuff, const int order, graphP theGraph)
     // The .d6 format is 0-based, but in-memory storage may not be
     lowerBound = gp_LowerBoundVertexStorage(theGraph);
 
-    for (int v = 1; v < order; v++)
+    for (int v = 0; v < order; v++)
     {
         for (int u = 0; u < v; u++)
         {
@@ -683,6 +677,10 @@ int _d6_DecodeGraph(char *graphBuff, const int order, graphP theGraph)
                 gp_SetDirection(theGraph, e, EDGEFLAG_DIRECTION_INONLY);
             }
         }
+
+        if (_d6_GetArcBit(graphBuff, order, v, v) &&
+            gp_DynamicAddEdge(theGraph, v + lowerBound, 0, v + lowerBound, 0) != OK)
+            return NOTOK;
     }
 
     return OK;
