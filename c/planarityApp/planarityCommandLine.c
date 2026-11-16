@@ -73,6 +73,7 @@ int runParallelEdgeTestAllGraphsTests(void);
 int addParallelEdges(graphP theGraph);
 
 int runLoopEdgeTests(void);
+int _checkForExpectedLoopEdges(graphP theGraph);
 int runBasicLoopEdgeTests(void);
 int runDFSandEmbeddingLoopEdgeTests(void);
 
@@ -3268,7 +3269,7 @@ int runLoopEdgeTests(void)
 {
     int retVal = OK;
 
-    gp_Message("Starting Loop Edge Tests\n");
+    gp_Message("Starting Loop Edge Tests");
 
     if (runBasicLoopEdgeTests() != OK)
         retVal = NOTOK;
@@ -3279,14 +3280,79 @@ int runLoopEdgeTests(void)
     if (retVal == OK)
         gp_Message("Finished Loop Edge Tests.\n");
     else
-        gp_ErrorMessage("A test of loop edges has failed.");
+        gp_ErrorMessage("A test of loop edges has failed.\n");
 
     return retVal;
 }
 
+int _checkForExpectedLoopEdges(graphP theGraph)
+{
+    int v = NIL, e = NIL;
+
+    if (theGraph == NULL)
+    {
+        gp_ErrorMessage("Invalid parameters.");
+        return FALSE;
+    }
+
+    for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
+    {
+        int numLoops = 0, numDirectedLoops = 0;
+
+        e = gp_GetFirstEdge(theGraph, v);
+        while (gp_IsEdge(theGraph, e))
+        {
+            if (gp_GetNeighbor(theGraph, e) == v && e < gp_GetTwin(theGraph, e))
+            {
+                numLoops++;
+                if (gp_GetDirection(theGraph, e))
+                    numDirectedLoops++;
+            }
+            e = gp_GetNextEdge(theGraph, e);
+        }
+
+        if (numLoops != 3 || numDirectedLoops != 1)
+            return FALSE;
+    }
+
+    return TRUE;
+}
+
 int runBasicLoopEdgeTests(void)
 {
-    return OK;
+    int retVal = OK;
+    graphP G = gp_New();
+    graphP G1 = gp_New();
+    char *graphSerialization = NULL;
+
+    if (G == NULL || G1 == NULL)
+    {
+        gp_ErrorMessage("Unable to allocate a graph.");
+        retVal = NOTOK;
+    }
+
+    else if (gp_Read(G, "Petersen-with-loop-edges.txt") != OK ||
+             gp_GetM(G) != 45 ||
+             !_checkForExpectedLoopEdges(G))
+    {
+        gp_ErrorMessage("Failed to correctly read graph with loop edges.");
+        retVal = NOTOK;
+    }
+    else if (gp_WriteToString(G, &graphSerialization, WRITE_ADJLIST) != OK ||
+             gp_ReadFromString(G1, graphSerialization) != OK ||
+             gp_GetM(G1) != 45 ||
+             !_checkForExpectedLoopEdges(G1))
+    {
+        gp_ErrorMessage("Failed to correctly write graph with loop edges.");
+        retVal = NOTOK;
+    }
+
+    gp_Free(&G);
+    gp_Free(&G1);
+    if (graphSerialization != NULL)
+        free(graphSerialization);
+
+    return retVal;
 }
 
 int runDFSandEmbeddingLoopEdgeTests(void)
@@ -3324,7 +3390,7 @@ int runParallelEdgeTests(void)
     if (retVal == OK)
         gp_Message("Finished Parallel Edge Tests.\n");
     else
-        gp_ErrorMessage("A test of parallel edges has failed.");
+        gp_ErrorMessage("A test of parallel edges has failed.\n");
 
     return retVal;
 }
