@@ -22,6 +22,10 @@ extern "C"
 
 #define MAXLINE 1024
 
+// The string representation for an integer must account for: an optional '-/+', then
+// 10 digits (max signed 32-bit int). Always add one to this for a null terminator.
+#define MAXCHARSFOR32BITINT 11
+
 #if defined(_MSC_VER) && !defined(__llvm__) && !defined(__INTEL_COMPILER)
 // MSVC under Windows doesn't have unistd.h, but does define functions like getcwd and chdir
 #include <direct.h>
@@ -30,10 +34,6 @@ extern "C"
 #else
 #include <unistd.h>
 #endif
-
-// The string representation for an integer must account for: an optional '-',
-// then 10 digits (max signed 32-bit int), and a null-terminator
-#define MAXCHARSFOR32BITINT 11
 
 #if defined(_MSC_VER) && !defined(__llvm__) && !defined(__INTEL_COMPILER)
 #define APPLY_FORMAT_ATTRIBUTE 0

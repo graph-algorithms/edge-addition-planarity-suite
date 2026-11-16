@@ -1757,9 +1757,7 @@ int gp_IsNeighbor(graphP theGraph, int u, int v)
         u < gp_LowerBoundVertexStorage(theGraph) || u >= gp_UpperBoundVertexStorage(theGraph) ||
         v < gp_LowerBoundVertexStorage(theGraph) || v >= gp_UpperBoundVertexStorage(theGraph))
     {
-#ifdef DEBUG
-        NOTOK;
-#endif
+        gp_ErrorMessage("Invalid parameters.");
         return FALSE;
     }
 
@@ -1796,9 +1794,7 @@ int gp_IsNeighborDirected(graphP theGraph, int u, int v, unsigned direction)
         v < gp_LowerBoundVertexStorage(theGraph) || v >= gp_UpperBoundVertexStorage(theGraph) ||
         (direction != 0 && direction != EDGEFLAG_DIRECTION_INONLY && direction != EDGEFLAG_DIRECTION_OUTONLY))
     {
-#ifdef DEBUG
-        NOTOK;
-#endif
+        gp_ErrorMessage("Invalid parameters.");
         return FALSE;
     }
 
@@ -1836,10 +1832,7 @@ int gp_FindEdge(graphP theGraph, int u, int v)
         u < gp_LowerBoundVertexStorage(theGraph) || u >= gp_UpperBoundVertexStorage(theGraph) ||
         v < gp_LowerBoundVertexStorage(theGraph) || v >= gp_UpperBoundVertexStorage(theGraph))
     {
-#ifdef DEBUG
-        NOTOK;
-#endif
-
+        gp_ErrorMessage("Invalid parameters.");
         return NIL;
     }
 
@@ -1889,10 +1882,7 @@ int gp_FindDirectedEdge(graphP theGraph, int u, int v, unsigned direction)
         v < gp_LowerBoundVertexStorage(theGraph) || v >= gp_UpperBoundVertexStorage(theGraph) ||
         (direction != 0 && direction != EDGEFLAG_DIRECTION_INONLY && direction != EDGEFLAG_DIRECTION_OUTONLY))
     {
-#ifdef DEBUG
-        NOTOK;
-#endif
-
+        gp_ErrorMessage("Invalid parameters.");
         return NIL;
     }
 
@@ -1924,6 +1914,9 @@ NOTE: For digraphs, this method returns the total degree of the
     Other functions are defined to get the in-degree or out-degree
     of a vertex.
 
+NOTE: Self-loop edges are counted twice, so that the so-called
+    "Handshake Lemma" remains true (sum of degrees == 2|E|).
+
 NOTE: This function determines the degree by counting. An extension
     could cache the degree value of each vertex and update the
     cached value as edges are added and deleted.
@@ -1936,11 +1929,7 @@ int gp_GetVertexDegree(graphP theGraph, int v)
     if (theGraph == NULL ||
         v < gp_LowerBoundVertexStorage(theGraph) || v >= gp_UpperBoundVertexStorage(theGraph))
     {
-#ifdef DEBUG
-        NOTOK;
-        ;
-#endif
-
+        gp_ErrorMessage("Invalid parameters.");
         return 0;
     }
 
@@ -1976,10 +1965,7 @@ int gp_GetVertexInDegree(graphP theGraph, int v)
     if (theGraph == NULL ||
         v < gp_LowerBoundVertexStorage(theGraph) || v >= gp_UpperBoundVertexStorage(theGraph))
     {
-#ifdef DEBUG
-        NOTOK;
-#endif
-
+        gp_ErrorMessage("Invalid parameters.");
         return 0;
     }
 
@@ -1988,8 +1974,25 @@ int gp_GetVertexInDegree(graphP theGraph, int v)
     e = gp_GetFirstEdge(theGraph, v);
     while (gp_IsEdge(theGraph, e))
     {
-        if (gp_GetDirection(theGraph, e) != EDGEFLAG_DIRECTION_OUTONLY)
-            degree++;
+        if (gp_GetNeighbor(theGraph, e) != v)
+        {
+            if (gp_GetDirection(theGraph, e) != EDGEFLAG_DIRECTION_OUTONLY)
+            {
+                degree++;
+            }
+        }
+        else
+        {
+            // For a loop edge, we want to count only one of its two edge records,
+            // so we count the out-only edge record of directed loop edges and
+            // the lower-numbered edge record for undirected loop edges
+            if (gp_GetDirection(theGraph, e) == EDGEFLAG_DIRECTION_INONLY ||
+                (gp_GetDirection(theGraph, e) == 0 && e > gp_GetTwin(theGraph, e)))
+            {
+                degree++;
+            }
+        }
+
         e = gp_GetNextEdge(theGraph, e);
     }
 
@@ -2016,10 +2019,7 @@ int gp_GetVertexOutDegree(graphP theGraph, int v)
     if (theGraph == NULL ||
         v < gp_LowerBoundVertexStorage(theGraph) || v >= gp_UpperBoundVertexStorage(theGraph))
     {
-#ifdef DEBUG
-        NOTOK;
-#endif
-
+        gp_ErrorMessage("Invalid parameters.");
         return 0;
     }
 
@@ -2028,11 +2028,27 @@ int gp_GetVertexOutDegree(graphP theGraph, int v)
     e = gp_GetFirstEdge(theGraph, v);
     while (gp_IsEdge(theGraph, e))
     {
-        if (gp_GetDirection(theGraph, e) != EDGEFLAG_DIRECTION_INONLY)
-            degree++;
+        if (gp_GetNeighbor(theGraph, e) != v)
+        {
+            if (gp_GetDirection(theGraph, e) != EDGEFLAG_DIRECTION_INONLY)
+            {
+                degree++;
+            }
+        }
+        else
+        {
+            // For a loop edge, we want to count only one of its two edge records,
+            // so we count the out-only edge record of directed loop edges and
+            // the lower-numbered edge record for undirected loop edges
+            if (gp_GetDirection(theGraph, e) == EDGEFLAG_DIRECTION_OUTONLY ||
+                (gp_GetDirection(theGraph, e) == 0 && e < gp_GetTwin(theGraph, e)))
+            {
+                degree++;
+            }
+        }
+
         e = gp_GetNextEdge(theGraph, e);
     }
-
     return degree;
 }
 
@@ -2156,11 +2172,9 @@ void _DetachEdgeRecord(graphP theGraph, int e)
        expectation of being in initial state includes data stored in
        parallel edge record extension arrays.
 
- NOTE: This method does not forbid the addition of duplicate and loop
-       edges. Use with care because other API endpoints do not all
-       support nor check for and eliminate duplicates and loops. The
-       caller can guard against these conditions by pre-testing that
-       u != v and that gp_FindEdge() returns NIL.
+NOTE: The caller is allowed to create parallel edges and loop edges.
+       For loop edges, ulink must equal vlink to cause loop edge records
+       to appear consecutively in an adjacency list.
 
  Returns OK on success, NOTOK on failure (including when adding the
          edge would exceed the graph's edge capacity; the caller can
@@ -2172,15 +2186,28 @@ int gp_AddEdge(graphP theGraph, int u, int ulink, int v, int vlink)
     if (theGraph == NULL ||
         u < gp_LowerBoundVertexStorage(theGraph) || v < gp_LowerBoundVertexStorage(theGraph) ||
         u >= gp_UpperBoundVertexStorage(theGraph) || v >= gp_UpperBoundVertexStorage(theGraph))
+    {
+        gp_ErrorMessage("Invalid parameters.");
         return NOTOK;
+    }
 
     if ((ulink != 0 && ulink != 1) || (vlink != 0 && vlink != 1))
     {
+        gp_ErrorMessage("Invalid parameters.");
+        return NOTOK;
+    }
+
+    if (u == v && ulink != vlink)
+    {
+        gp_ErrorMessage("Invalid parameters. For a loop edge, ulink should equal vlink.");
         return NOTOK;
     }
 
     if (gp_InsertEdge(theGraph, u, NIL, ulink, v, NIL, vlink) != OK)
+    {
+        gp_ErrorMessage("Called function failed.");
         return NOTOK;
+    }
 
     return OK;
 }
@@ -2259,6 +2286,9 @@ int gp_DynamicInsertEdge(graphP theGraph, int u, int e_u, int e_ulink,
  If e_u (or e_v) is not an edge, then e_ulink (e_vlink) indicates
  whether to prepend or append to the adjacency list for u (v).
 
+ If e_u (or e_v) is an edge, then it must be an edge in the
+ adjacency list of u (or v).
+
  NOTE: See notes on gp_AddEdge().
 
  Returns OK on success, NOTOK on failure, or AT_EDGE_CAPACITY_LIMIT if
@@ -2286,7 +2316,28 @@ int gp_InsertEdge(graphP theGraph, int u, int e_u, int e_ulink,
         e_v >= gp_UpperBoundEdges(theGraph) ||
         (gp_IsEdge(theGraph, e_v) && gp_EdgeNotInUse(theGraph, e_v)) ||
         e_ulink < 0 || e_ulink > 1 || e_vlink < 0 || e_vlink > 1)
+    {
+        gp_ErrorMessage("Invalid parameters.");
         return NOTOK;
+    }
+
+    if (e_u != NIL && gp_GetNeighbor(theGraph, gp_GetTwin(theGraph, e_u)) != u)
+    {
+        gp_ErrorMessage("Invalid parameters. e_u must be an edge in the adjacency list of u.");
+        return NOTOK;
+    }
+
+    if (e_v != NIL && gp_GetNeighbor(theGraph, gp_GetTwin(theGraph, e_v)) != v)
+    {
+        gp_ErrorMessage("Invalid parameters. e_v must be an edge in the adjacency list of v.");
+        return NOTOK;
+    }
+
+    if (u == v && (e_u != e_v || e_ulink != e_vlink))
+    {
+        gp_ErrorMessage("Invalid parameters. For loops, e_u must equal e_v and e_ulink must equal e_vlink.");
+        return NOTOK;
+    }
 
     if (sp_NonEmpty(theGraph->edgeHoles))
     {
@@ -2495,9 +2546,7 @@ void gp_HideEdge(graphP theGraph, int e)
         e < gp_LowerBoundEdges(theGraph) || e >= gp_UpperBoundEdges(theGraph) ||
         gp_EdgeNotInUse(theGraph, e))
     {
-#ifdef DEBUG
-        NOTOK;
-#endif
+        gp_ErrorMessage("Invalid parameters.");
         return;
     }
 
@@ -2535,9 +2584,7 @@ void gp_RestoreEdge(graphP theGraph, int e)
         e < gp_LowerBoundEdges(theGraph) || e >= gp_UpperBoundEdges(theGraph) ||
         gp_EdgeNotInUse(theGraph, e))
     {
-#ifdef DEBUG
-        NOTOK;
-#endif
+        gp_ErrorMessage("Invalid parameters.");
         return;
     }
 
@@ -3306,14 +3353,18 @@ int _GetBicompSize(graphP theGraph, int BicompRoot)
  If includingInOnlyEdges is TRUE, the directions of the edges do not
  matter, as in gp_DeleteParallelEdges(): an edge directed from u to v
  and one directed from v to u are parallel edges, as the two arcs of a
- directed 2-cycle. If it is FALSE, the in-only edge records are left
+ directed 2-cycle.
+
+ If includingInOnlyEdges is FALSE, the in-only edge records are left
  out, so that u -> v and v -> u are distinct edges, while two edges
  directed from u to v, or an undirected edge and a directed edge
  between u and v, are still parallel edges.
 
  A loop edge has both of its edge records in the adjacency list of its
  vertex and is not parallel to itself, but two loops on one vertex are
- parallel edges; loop records are counted whatever their direction.
+ parallel edges. If includingInOnlyEdges is FALSE, then loop edge
+ records having either direction are skipped because we must skip the
+ out-only loop edge record that matches the in-only loop edge record.
 
  Only the edges in the adjacency lists are inspected, so hidden edges
  are not.
@@ -3347,8 +3398,13 @@ int gp_HasParallelEdges(graphP theGraph, int includingInOnlyEdges)
 
             if (neighbor == v)
             {
-                if (++numLoopRecords > 2)
-                    Result = TRUE;
+                // For loop edges, if we are not including in-only edge records, then
+                // we need to skip the in-only and out-only loop edge records.
+                if (includingInOnlyEdges || !gp_GetDirection(theGraph, e))
+                {
+                    if (++numLoopRecords > 2)
+                        Result = TRUE;
+                }
             }
             // An in-only record is the arc from the neighbor, whose own
             // out-only record is counted at the neighbor
@@ -3386,14 +3442,17 @@ int gp_HasParallelEdges(graphP theGraph, int includingInOnlyEdges)
         and undirected edges. Use this setting to help convert
         a multigraph to a simple graph.
     FALSE to treat in-only directed edges as non-parallel to
-        out-only and undirected edges.
+        out-only and undirected edges. Note that for loop edges,
+        this is equivalent to excluding directed loops because
+        deleting the out-only edge record would also delete the
+        in-only edge record.
 
  Returns OK on success, NOTOK on failure.
  ********************************************************************/
 
 int gp_DeleteParallelEdges(graphP theGraph, int includingInOnlyEdges)
 {
-    int v, e, eNext, neighbor;
+    int v = NIL, e = NIL, eNext = NIL, neighbor = NIL, keptLoopEdge = NIL;
 
     if (theGraph == NULL)
         return NOTOK;
@@ -3417,23 +3476,58 @@ int gp_DeleteParallelEdges(graphP theGraph, int includingInOnlyEdges)
 
             neighbor = gp_GetNeighbor(theGraph, e);
 
-            if (neighbor == v)
+            if (neighbor != v)
             {
-                // Simple vertex visitation is not sufficient for loop edges
-                // because both edge records are in the same adjacency list,
-                // and not necessarily in consecutive locations.
-                gp_ErrorMessage("Method gp_DeleteParallelEdges() does not support loop edges.");
-                return NOTOK;
+                if (gp_GetVisited(theGraph, neighbor))
+                {
+                    if (gp_DeleteEdge(theGraph, e) != OK)
+                        return NOTOK;
+                }
+                else
+                {
+                    gp_SetVisited(theGraph, neighbor);
+                }
             }
 
-            if (gp_GetVisited(theGraph, neighbor))
+            e = eNext;
+        }
+
+        keptLoopEdge = NIL;
+        e = gp_GetFirstEdge(theGraph, v);
+        while (gp_IsEdge(theGraph, e))
+        {
+            eNext = gp_GetNextEdge(theGraph, e);
+
+            // This loop processes only loop edges. When we are not including in-only edges,
+            // then for a loop edge, we must skip the edge record if it is in-only or out-only
+            // because if we don't skip the out-only edge record, then deleting it will also
+            // delete the in-only edge record.
+            if (!includingInOnlyEdges && gp_GetDirection(theGraph, e))
             {
-                if (gp_DeleteEdge(theGraph, e) != OK)
-                    return NOTOK;
+                e = eNext;
+                continue;
             }
-            else
+
+            neighbor = gp_GetNeighbor(theGraph, e);
+
+            if (neighbor == v)
             {
-                gp_SetVisited(theGraph, neighbor);
+                if (keptLoopEdge == NIL)
+                {
+                    keptLoopEdge = e;
+                }
+                else if (e != gp_GetTwin(theGraph, keptLoopEdge))
+                {
+                    // When we delete the loop edge e, its twin edge record will also be deleted,
+                    // so if eNext equals the twin, then we need to get the twin's successor.
+                    if (eNext == gp_GetTwin(theGraph, e))
+                        eNext = gp_GetNextEdge(theGraph, eNext);
+
+                    // e is a loop edge other than the one we have kept (and its twin),
+                    // so we delete it because it is a parallel loop edge
+                    if (gp_DeleteEdge(theGraph, e) != OK)
+                        return NOTOK;
+                }
             }
 
             e = eNext;
@@ -3443,10 +3537,132 @@ int gp_DeleteParallelEdges(graphP theGraph, int includingInOnlyEdges)
         while (gp_IsEdge(theGraph, e))
         {
             neighbor = gp_GetNeighbor(theGraph, e);
-            gp_ClearVisited(theGraph, neighbor);
+            if (neighbor != v)
+            {
+                gp_ClearVisited(theGraph, neighbor);
+            }
             e = gp_GetNextEdge(theGraph, e);
         }
     }
 
     return OK;
+}
+
+/********************************************************************
+ gp_DeleteLoopEdges()
+
+ In linear time, finds and deletes all parallel loop edges, leaving
+ one instance of each existing loop edge.
+
+ Returns OK on success, NOTOK on failure.
+ ********************************************************************/
+
+int gp_DeleteLoopEdges(graphP theGraph)
+{
+    int v = NIL, e = NIL, eNext = NIL;
+
+    if (theGraph == NULL)
+        return NOTOK;
+
+    for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
+    {
+        e = gp_GetFirstEdge(theGraph, v);
+        while (gp_IsEdge(theGraph, e))
+        {
+            eNext = gp_GetNextEdge(theGraph, e);
+
+            if (gp_GetNeighbor(theGraph, e) == v)
+            {
+                // When we delete the loop edge e, its twin edge record will also be deleted,
+                // so if eNext equals the twin, then we need to get the twin's successor.
+                if (eNext == gp_GetTwin(theGraph, e))
+                    eNext = gp_GetNextEdge(theGraph, eNext);
+
+                if (gp_DeleteEdge(theGraph, e) != OK)
+                    return NOTOK;
+            }
+
+            e = eNext;
+        }
+    }
+
+    return OK;
+}
+
+/********************************************************************
+ gp_HasLoopEdges()
+
+ In linear time, determines whether the graph has any loop edges.
+
+ Returns TRUE if the given graph has at least one loop edge, and
+    FALSE otherwise (plus an error message on failure).
+ ********************************************************************/
+
+int gp_HasLoopEdges(graphP theGraph)
+{
+    int v = NIL, e = NIL;
+
+    if (theGraph == NULL)
+    {
+        gp_ErrorMessage("Invalid parameters.");
+        return FALSE;
+    }
+
+    for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
+    {
+        e = gp_GetFirstEdge(theGraph, v);
+        while (gp_IsEdge(theGraph, e))
+        {
+            if (gp_GetNeighbor(theGraph, e) == v)
+                return TRUE;
+            e = gp_GetNextEdge(theGraph, e);
+        }
+    }
+
+    return FALSE;
+}
+
+/********************************************************************
+ gp_HasDirectedEdges()
+
+ In linear time, determines whether the graph has any directed edges.
+ Sets GRAPHFLAGS_DIRECTEDEDGEDETECTED if any directed edges were
+ detected, and clears it otherwise.
+
+ Almost always, the caller can discover that a graph is a digraph
+ with gp_GetGraphFlags(theGraph) & GRAPHFLAGS_DIRECTEDEDGEDETECTED.
+ However, if the caller uses gp_SetDirection() to clear some edge
+ direction flags, without calling gp_ClearEdgeDirectionFlags(),
+ then this method can be used to reset the graph flag appropriately.
+
+ Returns TRUE if the graph contains any directed edges, and FALSE
+    otherwise (plus an error message if there is an error).
+ ********************************************************************/
+
+int gp_HasDirectedEdges(graphP theGraph)
+{
+    int v = NIL, e = NIL;
+
+    if (theGraph == NULL)
+    {
+        gp_ErrorMessage("Invalid parameters.");
+        return FALSE;
+    }
+
+    for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
+    {
+        e = gp_GetFirstEdge(theGraph, v);
+        while (gp_IsEdge(theGraph, e))
+        {
+            if (gp_GetDirection(theGraph, e))
+            {
+                theGraph->graphFlags |= GRAPHFLAGS_DIRECTEDEDGEDETECTED;
+                return TRUE;
+            }
+            e = gp_GetNextEdge(theGraph, e);
+        }
+    }
+
+    theGraph->graphFlags &= ~GRAPHFLAGS_DIRECTEDEDGEDETECTED;
+    return FALSE;
 }
