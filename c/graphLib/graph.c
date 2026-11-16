@@ -3353,14 +3353,18 @@ int _GetBicompSize(graphP theGraph, int BicompRoot)
  If includingInOnlyEdges is TRUE, the directions of the edges do not
  matter, as in gp_DeleteParallelEdges(): an edge directed from u to v
  and one directed from v to u are parallel edges, as the two arcs of a
- directed 2-cycle. If it is FALSE, the in-only edge records are left
+ directed 2-cycle.
+
+ If includingInOnlyEdges is FALSE, the in-only edge records are left
  out, so that u -> v and v -> u are distinct edges, while two edges
  directed from u to v, or an undirected edge and a directed edge
  between u and v, are still parallel edges.
 
  A loop edge has both of its edge records in the adjacency list of its
  vertex and is not parallel to itself, but two loops on one vertex are
- parallel edges; loop records are counted whatever their direction.
+ parallel edges. If includingInOnlyEdges is FALSE, then loop edge
+ records having either direction are skipped because we must skip the
+ out-only loop edge record that matches the in-only loop edge record.
 
  Only the edges in the adjacency lists are inspected, so hidden edges
  are not.
@@ -3394,8 +3398,13 @@ int gp_HasParallelEdges(graphP theGraph, int includingInOnlyEdges)
 
             if (neighbor == v)
             {
-                if (++numLoopRecords > 2)
-                    Result = TRUE;
+                // For loop edges, if we are not including in-only edge records, then
+                // we need to skip the in-only and out-only loop edge records.
+                if (includingInOnlyEdges || !gp_GetDirection(theGraph, e))
+                {
+                    if (++numLoopRecords > 2)
+                        Result = TRUE;
+                }
             }
             // An in-only record is the arc from the neighbor, whose own
             // out-only record is counted at the neighbor
@@ -3433,7 +3442,10 @@ int gp_HasParallelEdges(graphP theGraph, int includingInOnlyEdges)
         and undirected edges. Use this setting to help convert
         a multigraph to a simple graph.
     FALSE to treat in-only directed edges as non-parallel to
-        out-only and undirected edges.
+        out-only and undirected edges. Note that for loop edges,
+        this is equivalent to excluding directed loops because
+        deleting the out-only edge record would also delete the
+        in-only edge record.
 
  Returns OK on success, NOTOK on failure.
  ********************************************************************/
@@ -3480,12 +3492,17 @@ int gp_DeleteParallelEdges(graphP theGraph, int includingInOnlyEdges)
             e = eNext;
         }
 
+        keptLoopEdge = NIL;
         e = gp_GetFirstEdge(theGraph, v);
         while (gp_IsEdge(theGraph, e))
         {
             eNext = gp_GetNextEdge(theGraph, e);
 
-            if (!includingInOnlyEdges && gp_GetDirection(theGraph, e) == EDGEFLAG_DIRECTION_INONLY)
+            // This loop processes only loop edges. When we are not including in-only edges,
+            // then for a loop edge, we must skip the edge record if it is in-only or out-only
+            // because if we don't skip the out-only edge record, then deleting it will also
+            // delete the in-only edge record.
+            if (!includingInOnlyEdges && gp_GetDirection(theGraph, e))
             {
                 e = eNext;
                 continue;
@@ -3504,7 +3521,7 @@ int gp_DeleteParallelEdges(graphP theGraph, int includingInOnlyEdges)
                     // When we delete the loop edge e, its twin edge record will also be deleted,
                     // so if eNext equals the twin, then we need to get the twin's successor.
                     if (eNext == gp_GetTwin(theGraph, e))
-                        eNext = gp_GetNextEdge(theGraph, e);
+                        eNext = gp_GetNextEdge(theGraph, eNext);
 
                     // e is a loop edge other than the one we have kept (and its twin),
                     // so we delete it because it is a parallel loop edge
@@ -3559,7 +3576,7 @@ int gp_DeleteLoopEdges(graphP theGraph)
                 // When we delete the loop edge e, its twin edge record will also be deleted,
                 // so if eNext equals the twin, then we need to get the twin's successor.
                 if (eNext == gp_GetTwin(theGraph, e))
-                    eNext = gp_GetNextEdge(theGraph, e);
+                    eNext = gp_GetNextEdge(theGraph, eNext);
 
                 if (gp_DeleteEdge(theGraph, e) != OK)
                     return NOTOK;
@@ -3610,9 +3627,9 @@ int gp_HasLoopEdges(graphP theGraph)
 
  In linear time, determines whether the graph has any directed edges.
  Sets GRAPHFLAGS_DIRECTEDEDGEDETECTED if any directed edges were
- detected, and clears it otherwise. 
+ detected, and clears it otherwise.
 
- Almost always, the caller can discover that a graph is a digraph 
+ Almost always, the caller can discover that a graph is a digraph
  with gp_GetGraphFlags(theGraph) & GRAPHFLAGS_DIRECTEDEDGEDETECTED.
  However, if the caller uses gp_SetDirection() to clear some edge
  direction flags, without calling gp_ClearEdgeDirectionFlags(),

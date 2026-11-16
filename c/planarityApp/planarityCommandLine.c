@@ -73,7 +73,8 @@ int runParallelEdgeTestAllGraphsTests(void);
 int addParallelEdges(graphP theGraph);
 
 int runLoopEdgeTests(void);
-int _checkForExpectedLoopEdges(graphP theGraph);
+int _checkForExpectedLoopEdges(graphP theGraph, int expectedNumLoops, int expectedNumDirectedLoops);
+int _checkForExpectedDegreesInLoopEdgeGraph(graphP theGraph);
 int runBasicLoopEdgeTests(void);
 int runDFSandEmbeddingLoopEdgeTests(void);
 
@@ -3285,21 +3286,19 @@ int runLoopEdgeTests(void)
     return retVal;
 }
 
-int _checkForExpectedLoopEdges(graphP theGraph)
+int _checkForExpectedLoopEdges(graphP theGraph, int expectedNumLoops, int expectedNumDirectedLoops)
 {
-    int v = NIL, e = NIL;
-
     if (theGraph == NULL)
     {
         gp_ErrorMessage("Invalid parameters.");
         return FALSE;
     }
 
-    for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
+    for (int v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
     {
         int numLoops = 0, numDirectedLoops = 0;
 
-        e = gp_GetFirstEdge(theGraph, v);
+        int e = gp_GetFirstEdge(theGraph, v);
         while (gp_IsEdge(theGraph, e))
         {
             if (gp_GetNeighbor(theGraph, e) == v && e < gp_GetTwin(theGraph, e))
@@ -3311,7 +3310,30 @@ int _checkForExpectedLoopEdges(graphP theGraph)
             e = gp_GetNextEdge(theGraph, e);
         }
 
-        if (numLoops != 3 || numDirectedLoops != 1)
+        if (numLoops != expectedNumLoops)
+            return FALSE;
+        if (expectedNumDirectedLoops >= 0 && numDirectedLoops != expectedNumDirectedLoops)
+            return FALSE;
+    }
+
+    return TRUE;
+}
+
+int _checkForExpectedDegreesInLoopEdgeGraph(graphP theGraph)
+{
+    if (theGraph == NULL)
+    {
+        gp_ErrorMessage("Invalid parameters.");
+        return FALSE;
+    }
+
+    for (int v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
+    {
+        if (gp_GetVertexDegree(theGraph, v) != 9)
+            return FALSE;
+        if (gp_GetVertexInDegree(theGraph, v) != 6)
+            return FALSE;
+        if (gp_GetVertexOutDegree(theGraph, v) != 6)
             return FALSE;
     }
 
@@ -3333,7 +3355,7 @@ int runBasicLoopEdgeTests(void)
 
     else if (gp_Read(G, "Petersen-with-loop-edges.txt") != OK ||
              gp_GetM(G) != 45 ||
-             !_checkForExpectedLoopEdges(G))
+             !_checkForExpectedLoopEdges(G, 3, 1))
     {
         gp_ErrorMessage("Failed to correctly read graph with loop edges.");
         retVal = NOTOK;
@@ -3341,10 +3363,105 @@ int runBasicLoopEdgeTests(void)
     else if (gp_WriteToString(G, &graphSerialization, WRITE_ADJLIST) != OK ||
              gp_ReadFromString(G1, graphSerialization) != OK ||
              gp_GetM(G1) != 45 ||
-             !_checkForExpectedLoopEdges(G1))
+             !_checkForExpectedLoopEdges(G1, 3, 1))
     {
         gp_ErrorMessage("Failed to correctly write graph with loop edges.");
         retVal = NOTOK;
+    }
+    else
+    {
+        gp_Free(&G1);
+
+        if ((G1 = gp_DupGraph(G)) == NULL ||
+            gp_GetM(G1) != 45 ||
+            !_checkForExpectedLoopEdges(G1, 3, 1))
+        {
+            gp_ErrorMessage("Failed to correctly duplicate graph with loop edges.");
+            retVal = NOTOK;
+        }
+        else if (!_checkForExpectedDegreesInLoopEdgeGraph(G1))
+        {
+            gp_ErrorMessage("Unexpected degree values for vertices in graph with loop edges.");
+            retVal = NOTOK;
+        }
+        else if (!gp_HasLoopEdges(G1))
+        {
+            gp_ErrorMessage("Unexpected result from gp_HasLoopEdges().");
+            retVal = NOTOK;
+        }
+        else if (!gp_HasParallelEdges(G1, TRUE) || !gp_HasParallelEdges(G1, FALSE))
+        {
+            gp_ErrorMessage("Unexpected result from gp_HasParallelEdges().");
+            retVal = NOTOK;
+        }
+        else if (gp_DeleteParallelEdges(G1, FALSE) != OK ||
+                 gp_GetM(G1) != 35 ||
+                 !_checkForExpectedLoopEdges(G1, 2, 1))
+        {
+            gp_ErrorMessage("Failed to delete parallel undirected loop edges.");
+            retVal = NOTOK;
+        }
+        else if (!gp_HasLoopEdges(G1))
+        {
+            gp_ErrorMessage("Unexpected result from gp_HasLoopEdges().");
+            retVal = NOTOK;
+        }
+        else if (!gp_HasParallelEdges(G1, TRUE) || gp_HasParallelEdges(G1, FALSE))
+        {
+            gp_ErrorMessage("Unexpected result from gp_HasParallelEdges().");
+            retVal = NOTOK;
+        }
+        else if (gp_DeleteParallelEdges(G1, TRUE) != OK ||
+                 gp_GetM(G1) != 25 ||
+                 !_checkForExpectedLoopEdges(G1, 1, -1))
+        {
+            gp_ErrorMessage("Failed to delete parallel loop edges. %d", gp_GetM(G1));
+            retVal = NOTOK;
+        }
+        else if (!gp_HasLoopEdges(G1))
+        {
+            gp_ErrorMessage("Unexpected result from gp_HasLoopEdges().");
+            retVal = NOTOK;
+        }
+        else if (gp_HasParallelEdges(G1, TRUE) || gp_HasParallelEdges(G1, FALSE))
+        {
+            gp_ErrorMessage("Unexpected result from gp_HasParallelEdges().");
+            retVal = NOTOK;
+        }
+        else if (gp_DeleteLoopEdges(G1) != OK ||
+                 gp_GetM(G1) != 15)
+        {
+            gp_ErrorMessage("Failed to delete loop edges.");
+            retVal = NOTOK;
+        }
+        else if (gp_HasLoopEdges(G1))
+        {
+            gp_ErrorMessage("Unexpected result from gp_HasLoopEdges().");
+            retVal = NOTOK;
+        }
+        else
+        {
+            gp_Free(&G1);
+
+            if ((G1 = gp_DupGraph(G)) == NULL ||
+                gp_GetM(G1) != 45 ||
+                !_checkForExpectedLoopEdges(G1, 3, 1))
+            {
+                gp_ErrorMessage("Failed to correctly duplicate graph with loop edges.");
+                retVal = NOTOK;
+            }
+            else if (gp_DeleteLoopEdges(G1) != OK ||
+                     gp_GetM(G1) != 15)
+            {
+                gp_ErrorMessage("Failed to delete loop edges.");
+                retVal = NOTOK;
+            }
+            else if (gp_HasLoopEdges(G1))
+            {
+                gp_ErrorMessage("Unexpected result from gp_HasLoopEdges().");
+                retVal = NOTOK;
+            }
+        }
     }
 
     gp_Free(&G);
