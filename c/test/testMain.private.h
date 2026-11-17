@@ -12,10 +12,10 @@ extern "C"
 {
 #endif
 
-    extern int runSpecificGraphTests(void);       /* test/graphLib/testSpecificGraphs.c */
-    extern int runRandomGraphsTests(void);        /* test/graphLib/testRandomGraphs.c */
+    extern int runSpecificGraphTests(void);       /* test/systemVerification/testSpecificGraphs.c */
+    extern int runRandomGraphsTests(void);        /* test/systemVerification/testRandomGraphs.c */
     extern int runGraphTransformationTests(void); /* test/graphLib/io/testGraphTransformations.c */
-    extern int runTestAllGraphsTests(void);       /* test/graphLib/testAllGraphs.c */
+    extern int runTestAllGraphsTests(void);       /* test/systemVerification/testAllGraphs.c */
     // extern int runDigraphTests(void);             /* test/graphLib/testDigraphs.c */
     extern int runParallelEdgeTests(void);        /* test/graphLib/testParallelEdges.c */
     extern int runLoopEdgeTests(void);            /* test/graphlib/testLoopEdges.c */
