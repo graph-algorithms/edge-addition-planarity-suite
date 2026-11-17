@@ -11,7 +11,7 @@ See the LICENSE.TXT file for licensing information.
 
 extern void _ClearAllVisitedFlagsInGraph(graphP theGraph);
 
-extern int _JoinBicomps(graphP theGraph);
+extern int _JoinBicomps(graphP theGraph, int includeLoopEdges);
 
 extern int _InitializeNonplanarityContext(graphP theGraph, int v, int R);
 extern int _MarkHighestXYPath(graphP theGraph);
@@ -157,7 +157,7 @@ int _IsolateOuterplanarityObstructionA(graphP theGraph)
     if (_MarkPathAlongBicompExtFace(theGraph, IC->r, IC->r) != OK ||
         theGraph->functions->fpMarkDFSPath(theGraph, IC->v, IC->r) != OK ||
         theGraph->functions->fpMarkDFSPath(theGraph, IC->w, IC->dw) != OK ||
-        _JoinBicomps(theGraph) != OK ||
+        _JoinBicomps(theGraph, FALSE) != OK ||
         _AddAndMarkEdge(theGraph, IC->v, IC->dw) != OK)
         return NOTOK;
 
@@ -174,7 +174,7 @@ int _IsolateOuterplanarityObstructionB(graphP theGraph)
 
     if (_MarkPathAlongBicompExtFace(theGraph, IC->r, IC->r) != OK ||
         theGraph->functions->fpMarkDFSPath(theGraph, IC->w, IC->dw) != OK ||
-        _JoinBicomps(theGraph) != OK ||
+        _JoinBicomps(theGraph, FALSE) != OK ||
         _AddAndMarkEdge(theGraph, IC->v, IC->dw) != OK)
         return NOTOK;
 
@@ -191,7 +191,7 @@ int _IsolateOuterplanarityObstructionE(graphP theGraph)
 
     if (_MarkPathAlongBicompExtFace(theGraph, IC->r, IC->r) != OK ||
         theGraph->functions->fpMarkDFSPath(theGraph, IC->w, IC->dw) != OK ||
-        _JoinBicomps(theGraph) != OK ||
+        _JoinBicomps(theGraph, FALSE) != OK ||
         _AddAndMarkEdge(theGraph, IC->v, IC->dw) != OK)
         return NOTOK;
 

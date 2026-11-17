@@ -13,7 +13,7 @@ extern void _ClearAllVisitedFlagsInGraph(graphP theGraph);
 
 extern int _GetNeighborOnExtFace(graphP theGraph, int curVertex, int *pPrevLink);
 extern int _OrientVerticesInBicomp(graphP theGraph, int BicompRoot, int PreserveSigns);
-extern int _JoinBicomps(graphP theGraph);
+extern int _JoinBicomps(graphP theGraph, int includeLoopEdges);
 
 extern int _MarkHighestXYPath(graphP theGraph);
 
@@ -191,7 +191,7 @@ int _IsolateOuterplanarityObstructionE1orE2(graphP theGraph)
 
     if (_FindUnembeddedEdgeToCurVertex(theGraph, IC->w, &IC->dw) != TRUE ||
         theGraph->functions->fpMarkDFSPath(theGraph, IC->w, IC->dw) != OK ||
-        _JoinBicomps(theGraph) != OK ||
+        _JoinBicomps(theGraph, FALSE) != OK ||
         _AddAndMarkEdge(theGraph, IC->v, IC->dw) != OK)
         return NOTOK;
 
@@ -248,7 +248,7 @@ int _IsolateOuterplanarityObstructionE3orE4(graphP theGraph)
         if (theGraph->functions->fpMarkDFSPath(theGraph, u, IC->v) != OK ||
             theGraph->functions->fpMarkDFSPath(theGraph, XorY, d) != OK ||
             theGraph->functions->fpMarkDFSPath(theGraph, IC->w, IC->dw) != OK ||
-            _JoinBicomps(theGraph) != OK ||
+            _JoinBicomps(theGraph, FALSE) != OK ||
             _AddAndMarkEdge(theGraph, u, d) != OK ||
             _AddAndMarkEdge(theGraph, IC->v, IC->dw) != OK)
             return NOTOK;

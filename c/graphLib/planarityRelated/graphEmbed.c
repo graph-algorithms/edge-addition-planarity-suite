@@ -61,7 +61,10 @@ int _EmbedPostprocess(graphP theGraph, int v, int edgeEmbeddingResult);
 int _OrientVerticesInEmbedding(graphP theGraph);
 int _OrientVerticesInBicomp(graphP theGraph, int BicompRoot, int PreserveSigns);
 int _OrientExternalFacePath(graphP theGraph, int u, int v, int w, int x);
-int _JoinBicomps(graphP theGraph);
+
+int _JoinBicomps(graphP theGraph, int includeLoopEdges);
+int _JoinLoopEdgeBicomps(graphP theGraph);
+int _RemoveLoopEdgeBicomps(graphP theGraph);
 
 /********************************************************************
  gp_Embed()
@@ -1639,7 +1642,7 @@ int _EmbedPostprocess(graphP theGraph, int v, int edgeEmbeddingResult)
     if (edgeEmbeddingResult == OK)
     {
         if (_OrientVerticesInEmbedding(theGraph) != OK ||
-            _JoinBicomps(theGraph) != OK)
+            _JoinBicomps(theGraph, TRUE) != OK)
             RetVal = NOTOK;
     }
 
@@ -1744,14 +1747,21 @@ int _OrientVerticesInBicomp(graphP theGraph, int BicompRoot, int PreserveSigns)
 
 /********************************************************************
  _JoinBicomps()
+
  The embedding algorithm works by only joining bicomps once the result
  forms a larger bicomp.  However, if the original graph was separable
  or disconnected, then the result of the embed function will be a
  graph that contains each bicomp as a distinct entity.  This function
- merges the bicomps into one connected graph.
+ merges the bicomps into each connected component of the graph.
+
+ includeLoopEdges: 
+    TRUE places any previously separated loop edges into the graph,
+         such as when completing an embedding
+    FALSE deletes any previously separated loop edges, such as
+        when isolating a minimal subgraph that obstructs embedding
  ********************************************************************/
 
-int _JoinBicomps(graphP theGraph)
+int _JoinBicomps(graphP theGraph, int includeLoopEdges)
 {
     for (int R = gp_LowerBoundVirtualVertices(theGraph); R < gp_UpperBoundVirtualVertices(theGraph); ++R)
     {
@@ -1759,6 +1769,108 @@ int _JoinBicomps(graphP theGraph)
         // then merge it with its parent copy vertex (non-virtual)
         if (gp_VirtualVertexInUse(theGraph, R))
             _MergeVertex(theGraph, _gp_GetVertexFromBicompRoot(theGraph, R), 0, R);
+    }
+
+    if (theGraphLoopEdgeBicompList(theGraph) != NIL)
+    {
+        if (includeLoopEdges)
+            return _JoinLoopEdgeBicomps(theGraph);
+        else
+            return _RemoveLoopEdgeBicomps(theGraph);
+    }
+
+    return OK;
+}
+
+/********************************************************************
+ _JoinLoopEdgeBicomps()
+
+ Whenever the graph is separated into distinct bicomps, such as during
+ planar embedding, any loop edges are stored in loopEdgeBicompList 
+ because a loop edge is a degenerate bicomp. This function restores the 
+ loop edges to the adjacency lists of their endpoint vertices.
+ ********************************************************************/
+int _JoinLoopEdgeBicomps(graphP theGraph)
+{
+    int e = NIL, nextLoopEdge = NIL, v = NIL, eTwin = NIL;
+
+    while ((e = theGraphLoopEdgeBicompList(theGraph)) != NIL)
+    {
+        nextLoopEdge = gp_GetNextEdge(theGraph, e);
+
+        // If e is the last loop edge, then just set the loopEdgeBicompList to NIL
+        if (nextLoopEdge == e)
+            theGraphLoopEdgeBicompList(theGraph) = NIL;
+
+        // Otherwise, remove e from the loopEdgeBicompList
+        else
+        {
+            gp_SetPrevEdge(theGraph, nextLoopEdge, gp_GetPrevEdge(theGraph, e));
+            gp_SetNextEdge(theGraph, gp_GetPrevEdge(theGraph, e), nextLoopEdge);
+            theGraphLoopEdgeBicompList(theGraph) = nextLoopEdge;
+        }
+
+        // Now insert e and eTwin into the endpoint vertex of the loop
+        v = gp_GetNeighbor(theGraph, e);
+        eTwin = gp_GetTwin(theGraph, e);
+
+        if (gp_IsNotEdge(theGraph, gp_GetFirstEdge(theGraph, v)))
+            gp_SetLastEdge(theGraph, v, eTwin);
+        gp_SetNextEdge(theGraph, eTwin, gp_GetFirstEdge(theGraph, v));
+        gp_SetPrevEdge(theGraph, eTwin, e);
+        gp_SetNextEdge(theGraph, e, eTwin);
+        gp_SetPrevEdge(theGraph, e, NIL);
+        gp_SetFirstEdge(theGraph, v, e);
+    }
+
+    return OK;
+}
+
+/********************************************************************
+ _RemoveLoopEdgeBicomps()
+
+ When loop edges have been separated into the loopEdgeBicompList,
+ it may be necessary to delete the loop edges rather than putting
+ them back into the graph. This may occur, for example, if the
+ embedding process determined that the graph is NONEMBEDDABLE.
+ When that happens, the loop edges are not needed as part of
+ isolating a _minimal_ subgraph obstructing embeddability because
+ loop edges are always embeddable.
+ ********************************************************************/
+
+int _RemoveLoopEdgeBicomps(graphP theGraph)
+{
+    int e = NIL, nextLoopEdge = NIL, eTwin = NIL;
+
+    while ((e = theGraphLoopEdgeBicompList(theGraph)) != NIL)
+    {
+        nextLoopEdge = gp_GetNextEdge(theGraph, e);
+
+        // If e is the last loop edge, then just set the loopEdgeBicompList to NIL
+        if (nextLoopEdge == e)
+            theGraphLoopEdgeBicompList(theGraph) = NIL;
+
+        // Otherwise, remove e from the loopEdgeBicompList
+        else
+        {
+            gp_SetPrevEdge(theGraph, nextLoopEdge, gp_GetPrevEdge(theGraph, e));
+            gp_SetNextEdge(theGraph, gp_GetPrevEdge(theGraph, e), nextLoopEdge);
+            theGraphLoopEdgeBicompList(theGraph) = nextLoopEdge;
+        }
+
+        // Now we begin the deletion of the loop edge
+        eTwin = gp_GetTwin(theGraph, e);
+
+        // Both e and eTwin are converted to singleton circular lists so that
+        // fpDeleteEdge doesn't attempt to detach them from anywhere else.
+        gp_SetPrevEdge(theGraph, e, e);
+        gp_SetNextEdge(theGraph, e, e);
+        gp_SetPrevEdge(theGraph, eTwin, eTwin);
+        gp_SetNextEdge(theGraph, eTwin, eTwin);
+
+        // If fpDeleteEdge() has a problem, then we pass that on
+        if (theGraph->functions->fpDeleteEdge(theGraph, e) != OK)
+            return NOTOK;
     }
 
     return OK;
