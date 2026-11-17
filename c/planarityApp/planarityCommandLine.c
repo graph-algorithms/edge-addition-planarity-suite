@@ -57,7 +57,6 @@ int runDigraphTests(void);
 int runReadWithExtensionAtEofTest(void);
 int runHighByteRoundTripTest(void);
 int runCapacityLimitTests(void);
-int runExtensionCopyTests(void);
 
 int runIOErrorTests(void);
 

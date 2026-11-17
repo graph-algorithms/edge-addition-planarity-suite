@@ -23,6 +23,7 @@ extern "C"
     // extern int runSparse6Tests(void);             /* test/graphLib/io/testSparse6.c */
     // extern int runDigraph6Tests(void);            /* test/graphLib/io/testDigraph6.c */
     // extern int runGraphMLTests(void);             /* test/graphLib/io/testGraphML.c */
+    extern int runExtensionCopyTests(void);       /* test/graphLib/extensionSystem/testExtensionCopy.c */
 
 #ifdef __cplusplus
 }

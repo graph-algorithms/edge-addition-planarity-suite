@@ -16,7 +16,6 @@ See the LICENSE.TXT file for licensing information.
 #include "testMain.h"
 #include "testMain.private.h"
 
-// // FIXME: need to move this into the new location from planarityCommandLine.c
 // extern int runRandomGraphsTests(void);
 
 // extern int runFaceListTest(void);
@@ -28,7 +27,6 @@ See the LICENSE.TXT file for licensing information.
 // extern int runReadWithExtensionAtEofTest(void);
 // extern int runHighByteRoundTripTest(void);
 // extern int runCapacityLimitTests(void);
-// extern int runExtensionCopyTests(void);
 
 // extern int runIOErrorTests(void);
 
@@ -115,8 +113,8 @@ int runTestMain(int argc, char *argv[])
     //     retVal = NOTOK;
     // else if (runCapacityLimitTests() != OK)
     //     retVal = NOTOK;
-    // else if (runExtensionCopyTests() != OK)
-    //     retVal = NOTOK;
+    else if (runExtensionCopyTests() != OK)
+        retVal = NOTOK;
     // else if (runIOErrorTests() != OK)
     //     retVal = NOTOK;
     // else if (runReadWithExtensionAtEofTest() != OK)
