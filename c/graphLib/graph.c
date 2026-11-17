@@ -173,9 +173,10 @@ graphP gp_New(void)
 /********************************************************************
  _InitFunctionTable()
 
- If you add functions to the function table, then they must be
- initialized here, but you must also add the new function pointer
- to the definition of the graphFunctionTableStruct in graphFunctionTable.h
+ If you add functions to the function table, by adding a new function
+ pointer in the graphFunctionTableStruct in graphFunctionTable.h, then
+ the new function pointer must be initialized here, and it must also
+ be adding to the comparison function _AreFunctionTablesEqual().
 
  Function headers for the functions used to initialize the table are
  classified at the top of this file as either imported from other
@@ -378,8 +379,6 @@ void gp_ResetGraphStorage(graphP theGraph)
         return;
 
     theGraph->functions->fpResetGraphStorage(theGraph);
-
-    gp_NoteModification(theGraph);
 }
 
 void _ResetGraphStorage(graphP theGraph)
@@ -401,6 +400,8 @@ void _ResetGraphStorage(graphP theGraph)
     sp_ClearStack(theGraph->theStack);
     sp_ClearStack(theGraph->edgeHoles);
     theGraph->numEdgeHoles = 0;
+
+    gp_NoteModification(theGraph);
 }
 
 /********************************************************************
@@ -1263,8 +1264,6 @@ int gp_CopyAdjacencyLists(graphP dstGraph, graphP srcGraph)
     sp_Copy(dstGraph->edgeHoles, srcGraph->edgeHoles);
     dstGraph->numEdgeHoles = sp_GetCurrentSize(dstGraph->edgeHoles);
 
-    gp_NoteModification(dstGraph);
-
     dstGraph->graphFlags &= ~GRAPHFLAGS_DFSNUMBERED;
     dstGraph->graphFlags &= ~GRAPHFLAGS_DFSNUMBERED_DIRECTED;
     dstGraph->graphFlags &= ~GRAPHFLAGS_SORTEDBYDFI;
@@ -1273,6 +1272,8 @@ int gp_CopyAdjacencyLists(graphP dstGraph, graphP srcGraph)
     dstGraph->graphFlags &= ~GRAPHFLAGS_DIRECTEDEDGEDETECTED;
     if (gp_GetGraphFlags(srcGraph) & GRAPHFLAGS_DIRECTEDEDGEDETECTED)
         dstGraph->graphFlags |= GRAPHFLAGS_DIRECTEDEDGEDETECTED;
+
+    gp_NoteModification(dstGraph);
 
     return OK;
 }
@@ -1324,7 +1325,7 @@ int gp_CopyGraph(graphP dstGraph, graphP srcGraph)
     }
 
     // Copy the vertices (non-virtual only).  Augmentations to vertices created
-    // by extensions are copied below by gp_CopyExtensions()
+    // by extensions are copied below by gp_CopyDataOfExtensions()
     for (v = gp_LowerBoundVertices(srcGraph); v < gp_UpperBoundVertices(srcGraph); ++v)
     {
         _gp_CopyVertexRec(dstGraph, v, srcGraph, v);
@@ -1337,7 +1338,7 @@ int gp_CopyGraph(graphP dstGraph, graphP srcGraph)
     }
 
     // Copy the virtual vertices.  Augmentations to virtual vertices created
-    // by extensions are copied below by gp_CopyExtensions()
+    // by extensions are copied below by gp_CopyDataOfExtensions()
     for (v = gp_LowerBoundVirtualVertices(srcGraph); v < gp_UpperBoundVirtualVertices(srcGraph); ++v)
     {
         _gp_CopyVertexRec(dstGraph, v, srcGraph, v);
@@ -1346,12 +1347,12 @@ int gp_CopyGraph(graphP dstGraph, graphP srcGraph)
     }
 
     // Copy the basic EdgeRec structures.  Augmentations to the edgeRec structure
-    // created by extensions are copied below by gp_CopyExtensions()
+    // created by extensions are copied below by gp_CopyDataOfExtensions()
     for (e = gp_LowerBoundEdgeStorage(srcGraph); e < gp_UpperBoundEdgeStorage(srcGraph); e++)
         _gp_CopyEdgeRec(dstGraph, e, srcGraph, e);
 
     // If the dstGraph has more edge storage than the srcGraph, then we clear the extra
-    // base edgeRec structures. In gp_CopyExtensions(), the various extensions' copyData()
+    // base edgeRec structures. In gp_CopyDataOfExtensions(), the various extensions' copyData()
     // functions are expected to clear out any extension-specific extra edgeRec structures
     if (gp_UpperBoundEdgeStorage(dstGraph) > gp_UpperBoundEdgeStorage(srcGraph))
     {
@@ -1372,18 +1373,18 @@ int gp_CopyGraph(graphP dstGraph, graphP srcGraph)
     sp_Copy(dstGraph->theStack, srcGraph->theStack);
     sp_Copy(dstGraph->edgeHoles, srcGraph->edgeHoles);
     dstGraph->numEdgeHoles = sp_GetCurrentSize((dstGraph)->edgeHoles);
-    gp_NoteModification(dstGraph);
 
     // Copy the set of extensions, which includes copying the
-    // extension data as well as the function overload tables
-    if (gp_CopyExtensions(dstGraph, srcGraph) != OK)
-        return NOTOK;
-
-    // We do not copy the function table of srcGraph to the dstGraph
+    // extension data for relevant extensions (the ones in dstGraph).
+    // This excludes copying the function table of srcGraph to dstGraph
     // because copy extensions now copies all possible data from
     // srcGraph to dstGraph, but it does not extend dstGraph with
     // any extensions it doesn't already have, so the dstGraph
     // function table is already correct for its type.
+    if (gp_CopyDataOfExtensions(dstGraph, srcGraph) != OK)
+        return NOTOK;
+
+    gp_NoteModification(dstGraph);
 
     return OK;
 }
@@ -2551,14 +2552,14 @@ void gp_HideEdge(graphP theGraph, int e)
     }
 
     theGraph->functions->fpHideEdge(theGraph, e);
-
-    gp_NoteModification(theGraph);
 }
 
 void _HideEdge(graphP theGraph, int e)
 {
     _DetachEdgeRecord(theGraph, e);
     _DetachEdgeRecord(theGraph, gp_GetTwin(theGraph, e));
+
+    gp_NoteModification(theGraph);
 }
 
 /********************************************************************
@@ -2589,14 +2590,14 @@ void gp_RestoreEdge(graphP theGraph, int e)
     }
 
     theGraph->functions->fpRestoreEdge(theGraph, e);
-
-    gp_NoteModification(theGraph);
 }
 
 void _RestoreEdge(graphP theGraph, int e)
 {
     _RestoreEdgeRecord(theGraph, gp_GetTwin(theGraph, e));
     _RestoreEdgeRecord(theGraph, e);
+
+    gp_NoteModification(theGraph);
 }
 
 /********************************************************************
@@ -2827,10 +2828,6 @@ int gp_IdentifyVertices(graphP theGraph, int u, int v, int eBefore)
         return NOTOK;
     }
 
-    // Noted before the call, since a failure part way through has already
-    // changed the graph
-    gp_NoteModification(theGraph);
-
     return theGraph->functions->fpIdentifyVertices(theGraph, u, v, eBefore);
 }
 
@@ -2987,6 +2984,8 @@ int _IdentifyVertices(graphP theGraph, int u, int v, int eBefore)
         gp_SetLastEdge(theGraph, v, NIL);
     }
 
+    gp_NoteModification(theGraph);
+
     return OK;
 }
 
@@ -3036,10 +3035,6 @@ int gp_RestoreVertex(graphP theGraph)
 {
     if (theGraph == NULL)
         return NOTOK;
-
-    // Noted before the call, since a failure part way through has already
-    // changed the graph
-    gp_NoteModification(theGraph);
 
     return theGraph->functions->fpRestoreVertex(theGraph);
 }
@@ -3116,7 +3111,13 @@ int _RestoreVertex(graphP theGraph)
     }
 
     sp_Pop(theGraph->theStack, HESB);
-    return _RestoreHiddenEdges(theGraph, HESB);
+
+    if (_RestoreHiddenEdges(theGraph, HESB) != OK)
+        return NOTOK;
+
+    gp_NoteModification(theGraph);
+
+    return OK;
 }
 
 /********************************************************************
