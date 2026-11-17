@@ -113,6 +113,7 @@ planarity_SOURCES = \
 	c/test/graphLib/testSpecificGraphs.c \
 	c/test/graphLib/testRandomGraphs.c \
 	c/test/graphLib/testAllGraphs.c \
+	c/test/graphLib/testParallelEdges.c \
 	c/test/graphLib/io/testGraphTransformations.c \
 	c/test/testGraphML.c \
 	c/test/testIOErrors.c \

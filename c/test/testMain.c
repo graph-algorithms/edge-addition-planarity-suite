@@ -107,8 +107,8 @@ int runTestMain(int argc, char *argv[])
     //     retVal = NOTOK;
     // else if (runDigraphTests() != OK)
     //     retVal = NOTOK;
-    // else if (runParallelEdgeTests() != OK)
-    //     retVal = NOTOK;
+    else if (runParallelEdgeTests() != OK)
+        retVal = NOTOK;
     // else if (runLoopEdgeTests() != OK)
     //     retVal = NOTOK;
     // else if (runHighByteRoundTripTest() != OK)
