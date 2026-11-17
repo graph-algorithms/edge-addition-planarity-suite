@@ -84,7 +84,9 @@ int runTestMain(int argc, char *argv[])
     }
 
     /* GraphLib Tests */
-    if (runLoopEdgeTests() != OK)
+    if (runDigraphTests() != OK)
+        retVal = NOTOK;
+    else if (runLoopEdgeTests() != OK)
         retVal = NOTOK;
     else if (runParallelEdgeTests() != OK)
         retVal = NOTOK;
@@ -108,8 +110,6 @@ int runTestMain(int argc, char *argv[])
     // else if (runHideRestoreTests() != OK)
     //     retVal = NOTOK;
     // else if (runIdentifyContractTests() != OK)
-    //     retVal = NOTOK;
-    // else if (runDigraphTests() != OK)
     //     retVal = NOTOK;
     // else if (runHighByteRoundTripTest() != OK)
     //     retVal = NOTOK;

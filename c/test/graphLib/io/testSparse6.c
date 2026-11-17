@@ -75,6 +75,8 @@ int runSparse6Tests(void)
 
     if (Result == OK)
         gp_Message("Finished sparse6 tests.\n");
+    else
+        gp_Message("Error detected in sparse6 tests.\n");
 
     return Result;
 }

@@ -14,8 +14,6 @@ extern int runTestAllGraphsTest(char const *commandString, char const *infileNam
 extern int runGraphTransformationTest(char const *command, char const *infileName, int inputInMemFlag);
 
 /* Private function declarations (exported within system) */
-int testPetersenDigraph6(const char *);
-int testDigraph6Iterators(void);
 int runDigraph6Tests(void);
 
 // An arc u -> v of a test graph when directed is TRUE, otherwise the
@@ -26,6 +24,8 @@ typedef struct
 } digraph6TestArc;
 
 /* Private functions */
+static int testPetersenDigraph6(const char *);
+static int testDigraph6Iterators(void);
 static char *copyDigraph6TestString(char const *str);
 static int checkDigraph6Arcs(graphP theGraph, int order, digraph6TestArc const arcs[], int numArcs, char const *what);
 static int compareDigraph6Arcs(graphP theGraph, graphP theOtherGraph, char const *what);
@@ -1424,9 +1424,21 @@ int runDigraph6Tests(void)
         gp_ErrorMessage("Testing the algorithms on N5-digraphs.d6 failed.");
         Result = NOTOK;
     }
+    else if (testPetersenDigraph6(NULL) != OK)
+    {
+        gp_ErrorMessage("Petersen digraph6 test failed.");
+        Result = NOTOK;
+    }
+    else if (testDigraph6Iterators() != OK)
+    {
+        gp_ErrorMessage("Digraph6 iterator test failed.");
+        Result = NOTOK;
+    }
 
     if (Result == OK)
         gp_Message("Finished digraph6 tests.\n");
+    else
+        gp_Message("Error detected in digraph6 tests.\n");
 
     return Result;
 }
