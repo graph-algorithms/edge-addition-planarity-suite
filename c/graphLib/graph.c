@@ -246,11 +246,11 @@ void _InitFunctionTable(graphP theGraph)
      depth-first search can push (NIL, NIL) to start at a DFS tree root.
 
  The BicompRootLists and sortedDFSChildLists are set to a size of N,
-     and they start out empty.
+     and they start out empty. The loopEdgeBicompList is set to NIL.
 
  DVI and PVI are set to store N of their respective vertex info records.
 
- An instance of the isolator context is created.
+ An initialized instance of the isolator context is created.
 
  Returns OK on success, NOTOK on any failure.
           On NOTOK, graph extensions are freed so that the graph is
@@ -362,6 +362,7 @@ void _InitEdges(graphP theGraph)
 
 #ifdef USE_1BASEDARRAYS
 #else
+    // When we USE_0BASEDARRAYS, NIL_CHAR is not 0, so the edge flags must be zeroed separately
     for (int e = gp_LowerBoundEdgeStorage(theGraph); e < gp_UpperBoundEdgeStorage(theGraph); ++e)
         gp_InitEdgeFlags(theGraph, e);
 #endif
@@ -396,6 +397,7 @@ void _ResetGraphStorage(graphP theGraph)
     _InitIsolatorContext(theGraph);
 
     LCReset(theGraphBicompRootLists(theGraph));
+    theGraphLoopEdgeBicompList(theGraph) = NIL;
     LCReset(theGraphSortedDFSChildLists(theGraph));
     sp_ClearStack(theGraph->theStack);
     sp_ClearStack(theGraph->edgeHoles);
@@ -1144,6 +1146,7 @@ void _ClearGraph(graphP theGraph)
 
     sp_Free(&theGraph->theStack);
     LCFree(&theGraphBicompRootLists(theGraph));
+    theGraphLoopEdgeBicompList(theGraph) = NIL;
     if (theGraphDVI(theGraph) != NULL)
     {
         free(theGraphDVI(theGraph));
@@ -1368,19 +1371,21 @@ int gp_CopyGraph(graphP dstGraph, graphP srcGraph)
 
     dstGraph->graphFlags = gp_GetGraphFlags(srcGraph);
 
-    LCCopy(theGraphBicompRootLists(dstGraph), theGraphBicompRootLists(srcGraph));
-    LCCopy(theGraphSortedDFSChildLists(dstGraph), theGraphSortedDFSChildLists(srcGraph));
     sp_Copy(dstGraph->theStack, srcGraph->theStack);
     sp_Copy(dstGraph->edgeHoles, srcGraph->edgeHoles);
     dstGraph->numEdgeHoles = sp_GetCurrentSize((dstGraph)->edgeHoles);
 
-    // Copy the set of extensions, which includes copying the
-    // extension data for relevant extensions (the ones in dstGraph).
+    // Copy the data of the DFSUtilsGraph extension
+    LCCopy(theGraphBicompRootLists(dstGraph), theGraphBicompRootLists(srcGraph));
+    theGraphLoopEdgeBicompList(dstGraph) = theGraphLoopEdgeBicompList(srcGraph);
+    LCCopy(theGraphSortedDFSChildLists(dstGraph), theGraphSortedDFSChildLists(srcGraph));
+
+    // Copy the data of the relevant extensions, i.e., only those 
+    // extensions of the srcGraph that are in dstGraph.
     // This excludes copying the function table of srcGraph to dstGraph
-    // because copy extensions now copies all possible data from
-    // srcGraph to dstGraph, but it does not extend dstGraph with
+    // because copying the data only does not extend dstGraph with
     // any extensions it doesn't already have, so the dstGraph
-    // function table is already correct for its type.
+    // function table is already set correctly for its type.
     if (gp_CopyDataOfExtensions(dstGraph, srcGraph) != OK)
         return NOTOK;
 
