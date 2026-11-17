@@ -109,8 +109,8 @@ int runTestMain(int argc, char *argv[])
     //     retVal = NOTOK;
     else if (runParallelEdgeTests() != OK)
         retVal = NOTOK;
-    // else if (runLoopEdgeTests() != OK)
-    //     retVal = NOTOK;
+    else if (runLoopEdgeTests() != OK)
+        retVal = NOTOK;
     // else if (runHighByteRoundTripTest() != OK)
     //     retVal = NOTOK;
     // else if (runCapacityLimitTests() != OK)
