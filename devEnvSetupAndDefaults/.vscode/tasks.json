@@ -64,6 +64,8 @@
                 "-g", // Generate debug symbols
                 "${workspaceFolder}\\c\\planarityApp\\**.c",
                 "${workspaceFolder}\\c\\test\\**.c",
+                "${workspaceFolder}\\c\\test\\graphLib\\**.c",
+                "${workspaceFolder}\\c\\test\\graphLib\\io\\**.c",
                 "${workspaceFolder}\\c\\graphLib\\**.c",
                 "${workspaceFolder}\\c\\graphLib\\extensionSystem\\**.c",
                 "${workspaceFolder}\\c\\graphLib\\homeomorphSearch\\**.c",
@@ -145,6 +147,8 @@
                 // "-g", // Uncomment to generate debug symbols for Release build and debug with VSCode
                 "${workspaceFolder}\\c\\planarityApp\\**.c",
                 "${workspaceFolder}\\c\\test\\**.c",
+                "${workspaceFolder}\\c\\test\\graphLib\\**.c",
+                "${workspaceFolder}\\c\\test\\graphLib\\io\\**.c",
                 "${workspaceFolder}\\c\\graphLib\\**.c",
                 "${workspaceFolder}\\c\\graphLib\\extensionSystem\\**.c",
                 "${workspaceFolder}\\c\\graphLib\\homeomorphSearch\\**.c",
@@ -224,6 +228,8 @@
                 "-g", // Generate debug symbols
                 "${workspaceFolder}/c/planarityApp/**.c",
                 "${workspaceFolder}/c/test/**.c",
+                "${workspaceFolder}/c/test/graphLib/**.c",
+                "${workspaceFolder}/c/test/graphLib/io/**.c",
                 "${workspaceFolder}/c/graphLib/**.c",
                 "${workspaceFolder}/c/graphLib/extensionSystem/**.c",
                 "${workspaceFolder}/c/graphLib/homeomorphSearch/**.c",
@@ -304,6 +310,8 @@
                 "-g", // Generate debug symbols
                 "${workspaceFolder}/c/planarityApp/**.c",
                 "${workspaceFolder}/c/test/**.c",
+                "${workspaceFolder}/c/test/graphLib/**.c",
+                "${workspaceFolder}/c/test/graphLib/io/**.c",
                 "${workspaceFolder}/c/graphLib/**.c",
                 "${workspaceFolder}/c/graphLib/extensionSystem/**.c",
                 "${workspaceFolder}/c/graphLib/homeomorphSearch/**.c",
@@ -382,6 +390,8 @@
                 // "-g", // Uncomment to generate debug symbols for Release build and debug with VSCode
                 "${workspaceFolder}/c/planarityApp/**.c",
                 "${workspaceFolder}/c/test/**.c",
+                "${workspaceFolder}/c/test/graphLib/**.c",
+                "${workspaceFolder}/c/test/graphLib/io/**.c",
                 "${workspaceFolder}/c/graphLib/**.c",
                 "${workspaceFolder}/c/graphLib/extensionSystem/**.c",
                 "${workspaceFolder}/c/graphLib/homeomorphSearch/**.c",
@@ -426,6 +436,8 @@
                 "/Fe${workspaceFolder}\\Debug\\planarity.exe",
                 "${workspaceFolder}\\c\\planarityApp\\**.c",
                 "${workspaceFolder}\\c\\test\\**.c",
+                "${workspaceFolder}\\c\\test\\graphLib\\**.c",
+                "${workspaceFolder}\\c\\test\\graphLib\\io\\**.c",
                 "${workspaceFolder}\\c\\graphLib\\**.c",
                 "${workspaceFolder}\\c\\graphLib\\extensionSystem\\**.c",
                 "${workspaceFolder}\\c\\graphLib\\homeomorphSearch\\**.c",
@@ -471,6 +483,8 @@
                 "/Fe${workspaceFolder}\\AddressSanitizer\\planarity.exe",
                 "${workspaceFolder}\\c\\planarityApp\\**.c",
                 "${workspaceFolder}\\c\\test\\**.c",
+                "${workspaceFolder}\\c\\test\\graphLib\\**.c",
+                "${workspaceFolder}\\c\\test\\graphLib\\io\\**.c",
                 "${workspaceFolder}\\c\\graphLib\\**.c",
                 "${workspaceFolder}\\c\\graphLib\\extensionSystem\\**.c",
                 "${workspaceFolder}\\c\\graphLib\\homeomorphSearch\\**.c",
@@ -512,6 +526,8 @@
                 "/Fe${workspaceFolder}\\Release\\planarity.exe",
                 "${workspaceFolder}\\c\\planarityApp\\**.c",
                 "${workspaceFolder}\\c\\test\\**.c",
+                "${workspaceFolder}\\c\\test\\graphLib\\**.c",
+                "${workspaceFolder}\\c\\test\\graphLib\\io\\**.c",
                 "${workspaceFolder}\\c\\graphLib\\**.c",
                 "${workspaceFolder}\\c\\graphLib\\extensionSystem\\**.c",
                 "${workspaceFolder}\\c\\graphLib\\homeomorphSearch\\**.c",
@@ -591,6 +607,8 @@
                 "-g", // Generate debug symbols
                 "${workspaceFolder}/c/planarityApp/**.c",
                 "${workspaceFolder}/c/test/**.c",
+                "${workspaceFolder}/c/test/graphLib/**.c",
+                "${workspaceFolder}/c/test/graphLib/io/**.c",
                 "${workspaceFolder}/c/graphLib/**.c",
                 "${workspaceFolder}/c/graphLib/extensionSystem/**.c",
                 "${workspaceFolder}/c/graphLib/homeomorphSearch/**.c",
@@ -672,6 +690,8 @@
                 "-g", // Generate debug symbols
                 "${workspaceFolder}/c/planarityApp/**.c",
                 "${workspaceFolder}/c/test/**.c",
+                "${workspaceFolder}/c/test/graphLib/**.c",
+                "${workspaceFolder}/c/test/graphLib/io/**.c",
                 "${workspaceFolder}/c/graphLib/**.c",
                 "${workspaceFolder}/c/graphLib/extensionSystem/**.c",
                 "${workspaceFolder}/c/graphLib/homeomorphSearch/**.c",
@@ -749,6 +769,8 @@
                 // "-g", // Uncomment to generate debug symbols for Release build and debug with VSCode
                 "${workspaceFolder}/c/planarityApp/**.c",
                 "${workspaceFolder}/c/test/**.c",
+                "${workspaceFolder}/c/test/graphLib/**.c",
+                "${workspaceFolder}/c/test/graphLib/io/**.c",
                 "${workspaceFolder}/c/graphLib/**.c",
                 "${workspaceFolder}/c/graphLib/extensionSystem/**.c",
                 "${workspaceFolder}/c/graphLib/homeomorphSearch/**.c",

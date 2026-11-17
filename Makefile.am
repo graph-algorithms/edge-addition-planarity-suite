@@ -107,6 +107,13 @@ planarity_SOURCES = \
 	c/planarityApp/planarityTransformGraph.c \
 	c/planarityApp/planarityTestAllGraphs.c \
 	c/planarityApp/planarityUtils.c \
+	c/test/testMain.h \
+	c/test/testMain.private.h \
+	c/test/testMain.c \
+	c/test/graphLib/testSpecificGraphs.c \
+	c/test/graphLib/testRandomGraphs.c \
+	c/test/graphLib/testAllGraphs.c \
+	c/test/graphLib/io/testGraphTransformations.c \
 	c/test/testGraphML.c \
 	c/test/testIOErrors.c \
 	c/test/testSparse6.c \

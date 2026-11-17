@@ -9,14 +9,15 @@ See the LICENSE.TXT file for licensing information.
 #include "../graphLib/io/d6-read-iterator.h"
 #include "../graphLib/io/d6-write-iterator.h"
 
+/* Private function declarations (exported within system) */
 /* Called from planarityCommandLine.c */
 int testPetersenDigraph6(const char *);
 int testDigraph6Iterators(void);
 int runDigraph6Tests(void);
 
-/* Defined in planarityCommandLine.c */
-int runTestAllGraphsTest(char const *commandString, char const *infileName, char const *expectedValidationStr, int (*mutatorFunc)(graphP));
-int runGraphTransformationTest(char const *command, char const *infileName, int inputInMemFlag);
+/* Imported functions */
+extern int runTestAllGraphsTest(char const *commandString, char const *infileName, char const *expectedValidationStr, int (*mutatorFunc)(graphP));
+extern int runGraphTransformationTest(char const *command, char const *infileName, int inputInMemFlag);
 
 // An arc u -> v of a test graph when directed is TRUE, otherwise the
 // undirected edge {u, v}; vertices are numbered from 0, as in the format
