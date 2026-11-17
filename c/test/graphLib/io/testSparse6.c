@@ -4,28 +4,30 @@ All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
 
-#include "../planarityApp/planarity.h"
+#include "../../../planarityApp/planarity.h"
 
-#include "../graphLib/io/strOrFile.h"
+#include "../../../graphLib/io/strOrFile.h"
 
-#include "../graphLib/io/s6-read-iterator.h"
-#include "../graphLib/io/s6-write-iterator.h"
+#include "../../../graphLib/io/s6-read-iterator.h"
+#include "../../../graphLib/io/s6-write-iterator.h"
 
+/* Imported functions */
 /* Library-private functions the edge storage and loop tests call directly */
 extern int _CompactEdgeStorage(graphP theGraph);
 extern int _s6_CountInstances(graphP theGraph, int u, int v);
 
-/* Called from planarityCommandLine.c */
-int runSparse6ReadTests(void);
-int runSparse6WriteTests(void);
-int runSparse6TestAllGraphsTests(void);
-int runSparse6LookaheadTests(void);
-char *copySparse6TestString(char const *s6Str);
+extern int runTestAllGraphsTest(char const *commandString, char const *infileName, char const *expectedValidationStr, int (*mutatorFunc)(graphP)); /* test/systemVerification/testAllGraphs.c */
+extern int runGraphTransformationTest(char const *command, char const *infileName, int inputInMemFlag);                                            /* test/graphLib/io/testGraphTransformations.c */
 
-/* Defined in planarityCommandLine.c */
-int runTestAllGraphsTest(char const *commandString, char const *infileName, char const *expectedValidationStr, int (*mutatorFunc)(graphP));
-int runGraphTransformationTest(char const *command, char const *infileName, int inputInMemFlag);
+/* Private function declarations (exported within system) */
+int runSparse6Tests(void);
+char *copySparse6TestString(char const *s6Str); // FIXME: this needs to be made into a generalized test string copy function in a shared test/testUtils.c
 
+/* Private functions */
+static int runSparse6ReadTests(void);
+static int runSparse6WriteTests(void);
+static int runSparse6TestAllGraphsTests(void);
+static int runSparse6LookaheadTests(void);
 static int compareSparse6Output(char const *ours, char const *expected, char const *what);
 static int runSparse6WriteLineTest(char const *g6Str, char const *expectedLine);
 static int runSparse6WriteRoundTripTest(char const *g6FileName, char const *s6FileName, int incremental);
@@ -47,6 +49,35 @@ static int runSparse6ReadBackTest(char const *s6Str, int const *const graphs[], 
 static int runSparse6MultigraphContractTests(void);
 static int runSparse6MultigraphWriteRoundTripTest(void);
 static int runSparse6PetersenMultigraphTest(void);
+
+/****************************************************************************
+ runSparse6Tests()
+
+ ****************************************************************************/
+
+int runSparse6Tests(void)
+{
+    int Result = OK;
+
+    gp_Message("Starting sparse6 tests");
+
+    if (runSparse6ReadTests() != OK)
+        Result = NOTOK;
+    // FIXME: this test doesn't seem to exist; probably need equivalent
+    // else if (runSparse6InitRetryTests() != OK)
+    //     Result = NOTOK;
+    else if (runSparse6WriteTests() != OK)
+        Result = NOTOK;
+    else if (runSparse6TestAllGraphsTests() != OK)
+        Result = NOTOK;
+    else if (runSparse6LookaheadTests() != OK)
+        Result = NOTOK;
+
+    if (Result == OK)
+        gp_Message("Finished sparse6 tests.\n");
+
+    return Result;
+}
 
 /****************************************************************************
  compareSparse6Output()
@@ -3922,7 +3953,7 @@ static int runSparse6LoopSampleTest(char const *s6FileName, int incremental)
         }
 
         if (numGraphs >= expectedNumGraphs || gp_GetN(theGraph) != 4 ||
-            compareSparse6EdgeMultiset(theGraph, (int const (*)[2])expectedPairs, numExpected) != OK)
+            compareSparse6EdgeMultiset(theGraph, (int const(*)[2])expectedPairs, numExpected) != OK)
         {
             gp_ErrorMessage("Graph %d of \"%s\" does not have the edges and loops expected.",
                             numGraphs + 1, s6FileName);
@@ -3952,7 +3983,7 @@ static int runSparse6LoopSampleTest(char const *s6FileName, int incremental)
 
         if (gp_WriteGraph(theWriter) != OK ||
             (incremental &&
-             compareSparse6EdgeMultiset(writerGraph, (int const (*)[2])expectedPairs, numExpected) != OK))
+             compareSparse6EdgeMultiset(writerGraph, (int const(*)[2])expectedPairs, numExpected) != OK))
         {
             gp_ErrorMessage("Unable to write graph %d of \"%s\".", numGraphs, s6FileName);
             Result = NOTOK;

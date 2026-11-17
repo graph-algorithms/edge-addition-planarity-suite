@@ -16,8 +16,6 @@ See the LICENSE.TXT file for licensing information.
 #include "testMain.h"
 #include "testMain.private.h"
 
-// extern int runRandomGraphsTests(void);
-
 // extern int runFaceListTest(void);
 // extern int runAddInsertEdgeTests(void);
 
@@ -27,8 +25,6 @@ See the LICENSE.TXT file for licensing information.
 // extern int runReadWithExtensionAtEofTest(void);
 // extern int runHighByteRoundTripTest(void);
 // extern int runCapacityLimitTests(void);
-
-// extern int runIOErrorTests(void);
 
 // extern int runStringInputLineTests(void);
 // extern int runGeneralReadIteratorTests(void);
@@ -87,14 +83,24 @@ int runTestMain(int argc, char *argv[])
         }
     }
 
-    if (runSpecificGraphTests() != OK)
+    /* GraphLib Tests */
+    if (runLoopEdgeTests() != OK)
         retVal = NOTOK;
-    else if (runRandomGraphsTests() != OK)
+    else if (runParallelEdgeTests() != OK)
+        retVal = NOTOK;
+    else if (runExtensionCopyTests() != OK)
+        retVal = NOTOK;
+    else if (runDigraph6Tests() != OK)
+        retVal = NOTOK;
+    else if (runGraphMLTests() != OK)
         retVal = NOTOK;
     else if (runGraphTransformationTests() != OK)
         retVal = NOTOK;
-    else if (runTestAllGraphsTests() != OK)
+    else if (runIOErrorTests() != OK)
         retVal = NOTOK;
+    else if (runSparse6Tests() != OK)
+        retVal = NOTOK;
+
     // else if (runFaceListTest() != OK)
     //     retVal = NOTOK;
     // else if (runAddInsertEdgeTests() != OK)
@@ -105,17 +111,9 @@ int runTestMain(int argc, char *argv[])
     //     retVal = NOTOK;
     // else if (runDigraphTests() != OK)
     //     retVal = NOTOK;
-    else if (runParallelEdgeTests() != OK)
-        retVal = NOTOK;
-    else if (runLoopEdgeTests() != OK)
-        retVal = NOTOK;
     // else if (runHighByteRoundTripTest() != OK)
     //     retVal = NOTOK;
     // else if (runCapacityLimitTests() != OK)
-    //     retVal = NOTOK;
-    else if (runExtensionCopyTests() != OK)
-        retVal = NOTOK;
-    // else if (runIOErrorTests() != OK)
     //     retVal = NOTOK;
     // else if (runReadWithExtensionAtEofTest() != OK)
     //     retVal = NOTOK;
@@ -125,16 +123,14 @@ int runTestMain(int argc, char *argv[])
     //     retVal = NOTOK;
     // else if (runGeneralWriteIteratorTests() != OK)
     //     retVal = NOTOK;
-    // else if (runSparse6ReadTests() != OK)
-    //     retVal = NOTOK;
-    // else if (runSparse6WriteTests() != OK)
-    //     retVal = NOTOK;
-    // else if (runSparse6LookaheadTests() != OK)
-    //     retVal = NOTOK;
-    // else if (runDigraph6Tests() != OK)
-    //     retVal = NOTOK;
-    // else if (runGraphMLTests() != OK)
-    //     retVal = NOTOK;
+
+    /* System Verification Tests */
+    else if (runTestAllGraphsTests() != OK)
+        retVal = NOTOK;
+    else if (runRandomGraphsTests() != OK)
+        retVal = NOTOK;
+    else if (runSpecificGraphTests() != OK)
+        retVal = NOTOK;
 
     // All done.
     if (retVal == OK)

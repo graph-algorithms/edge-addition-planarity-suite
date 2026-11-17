@@ -70,10 +70,10 @@
                 "${workspaceFolder}\\c\\graphLib\\lowLevelUtils\\**.c",
                 "${workspaceFolder}\\c\\graphLib\\planarityRelated\\**.c",
                 "${workspaceFolder}\\c\\test\\**.c",
-                "${workspaceFolder}\\c\\test\\systemVerification\\**.c",
                 "${workspaceFolder}\\c\\test\\graphLib\\**.c",
                 "${workspaceFolder}\\c\\test\\graphLib\\extensionSystem\\**.c",
                 "${workspaceFolder}\\c\\test\\graphLib\\io\\**.c",
+                "${workspaceFolder}\\c\\test\\systemVerification\\**.c",
                 "-o",
                 "${workspaceFolder}\\Debug\\planarity.exe"
             ],
@@ -155,10 +155,10 @@
                 "${workspaceFolder}\\c\\graphLib\\lowLevelUtils\\**.c",
                 "${workspaceFolder}\\c\\graphLib\\planarityRelated\\**.c",
                 "${workspaceFolder}\\c\\test\\**.c",
-                "${workspaceFolder}\\c\\test\\systemVerification\\**.c",
                 "${workspaceFolder}\\c\\test\\graphLib\\**.c",
                 "${workspaceFolder}\\c\\test\\graphLib\\extensionSystem\\**.c",
                 "${workspaceFolder}\\c\\test\\graphLib\\io\\**.c",
+                "${workspaceFolder}\\c\\test\\systemVerification\\**.c",
                 "-o",
                 "${workspaceFolder}\\Release\\planarity.exe"
             ],
@@ -238,10 +238,10 @@
                 "${workspaceFolder}/c/graphLib/lowLevelUtils/**.c",
                 "${workspaceFolder}/c/graphLib/planarityRelated/**.c",
                 "${workspaceFolder}/c/test/**.c",
-                "${workspaceFolder}/c/test/systemVerification/**.c",
                 "${workspaceFolder}/c/test/graphLib/**.c",
                 "${workspaceFolder}/c/test/graphLib/extensionSystem/**.c",
                 "${workspaceFolder}/c/test/graphLib/io/**.c",
+                "${workspaceFolder}/c/test/systemVerification/**.c",
                 "-o",
                 "${workspaceFolder}/Debug/planarity"
             ],
@@ -322,10 +322,10 @@
                 "${workspaceFolder}/c/graphLib/lowLevelUtils/**.c",
                 "${workspaceFolder}/c/graphLib/planarityRelated/**.c",
                 "${workspaceFolder}/c/test/**.c",
-                "${workspaceFolder}/c/test/systemVerification/**.c",
                 "${workspaceFolder}/c/test/graphLib/**.c",
                 "${workspaceFolder}/c/test/graphLib/extensionSystem/**.c",
                 "${workspaceFolder}/c/test/graphLib/io/**.c",
+                "${workspaceFolder}/c/test/systemVerification/**.c",
                 "-o",
                 "${workspaceFolder}/AddressSanitizer/planarity"
             ],
@@ -404,10 +404,10 @@
                 "${workspaceFolder}/c/graphLib/lowLevelUtils/**.c",
                 "${workspaceFolder}/c/graphLib/planarityRelated/**.c",
                 "${workspaceFolder}/c/test/**.c",
-                "${workspaceFolder}/c/test/systemVerification/**.c",
                 "${workspaceFolder}/c/test/graphLib/**.c",
                 "${workspaceFolder}/c/test/graphLib/extensionSystem/**.c",
                 "${workspaceFolder}/c/test/graphLib/io/**.c",
+                "${workspaceFolder}/c/test/systemVerification/**.c",
                 "-o",
                 "${workspaceFolder}/Release/planarity"
             ],
@@ -452,10 +452,10 @@
                 "${workspaceFolder}\\c\\graphLib\\lowLevelUtils\\**.c",
                 "${workspaceFolder}\\c\\graphLib\\planarityRelated\\**.c",
                 "${workspaceFolder}\\c\\test\\**.c",
-                "${workspaceFolder}\\c\\test\\systemVerification\\**.c",
                 "${workspaceFolder}\\c\\test\\graphLib\\**.c",
                 "${workspaceFolder}\\c\\test\\graphLib\\extensionSystem\\**.c",
-                "${workspaceFolder}\\c\\test\\graphLib\\io\\**.c"
+                "${workspaceFolder}\\c\\test\\graphLib\\io\\**.c",
+                "${workspaceFolder}\\c\\test\\systemVerification\\**.c"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"
@@ -501,10 +501,10 @@
                 "${workspaceFolder}\\c\\graphLib\\lowLevelUtils\\**.c",
                 "${workspaceFolder}\\c\\graphLib\\planarityRelated\\**.c",
                 "${workspaceFolder}\\c\\test\\**.c",
-                "${workspaceFolder}\\c\\test\\systemVerification\\**.c",
                 "${workspaceFolder}\\c\\test\\graphLib\\**.c",
                 "${workspaceFolder}\\c\\test\\graphLib\\extensionSystem\\**.c",
-                "${workspaceFolder}\\c\\test\\graphLib\\io\\**.c"
+                "${workspaceFolder}\\c\\test\\graphLib\\io\\**.c",
+                "${workspaceFolder}\\c\\test\\systemVerification\\**.c"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"
@@ -546,10 +546,10 @@
                 "${workspaceFolder}\\c\\graphLib\\lowLevelUtils\\**.c",
                 "${workspaceFolder}\\c\\graphLib\\planarityRelated\\**.c",
                 "${workspaceFolder}\\c\\test\\**.c",
-                "${workspaceFolder}\\c\\test\\systemVerification\\**.c",
                 "${workspaceFolder}\\c\\test\\graphLib\\**.c",
                 "${workspaceFolder}\\c\\test\\graphLib\\extensionSystem\\**.c",
-                "${workspaceFolder}\\c\\test\\graphLib\\io\\**.c"
+                "${workspaceFolder}\\c\\test\\graphLib\\io\\**.c",
+                "${workspaceFolder}\\c\\test\\systemVerification\\**.c"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"
@@ -629,10 +629,10 @@
                 "${workspaceFolder}/c/graphLib/lowLevelUtils/**.c",
                 "${workspaceFolder}/c/graphLib/planarityRelated/**.c",
                 "${workspaceFolder}/c/test/**.c",
-                "${workspaceFolder}/c/test/systemVerification/**.c",
                 "${workspaceFolder}/c/test/graphLib/**.c",
                 "${workspaceFolder}/c/test/graphLib/extensionSystem/**.c",
                 "${workspaceFolder}/c/test/graphLib/io/**.c",
+                "${workspaceFolder}/c/test/systemVerification/**.c",
                 "-o",
                 "${workspaceFolder}/Debug/planarity"
             ],
@@ -714,10 +714,10 @@
                 "${workspaceFolder}/c/graphLib/lowLevelUtils/**.c",
                 "${workspaceFolder}/c/graphLib/planarityRelated/**.c",
                 "${workspaceFolder}/c/test/**.c",
-                "${workspaceFolder}/c/test/systemVerification/**.c",
                 "${workspaceFolder}/c/test/graphLib/**.c",
                 "${workspaceFolder}/c/test/graphLib/extensionSystem/**.c",
                 "${workspaceFolder}/c/test/graphLib/io/**.c",
+                "${workspaceFolder}/c/test/systemVerification/**.c",
                 "-o",
                 "${workspaceFolder}/AddressSanitizer/planarity"
             ],
@@ -795,10 +795,10 @@
                 "${workspaceFolder}/c/graphLib/lowLevelUtils/**.c",
                 "${workspaceFolder}/c/graphLib/planarityRelated/**.c",
                 "${workspaceFolder}/c/test/**.c",
-                "${workspaceFolder}/c/test/systemVerification/**.c",
                 "${workspaceFolder}/c/test/graphLib/**.c",
                 "${workspaceFolder}/c/test/graphLib/extensionSystem/**.c",
                 "${workspaceFolder}/c/test/graphLib/io/**.c",
+                "${workspaceFolder}/c/test/systemVerification/**.c",
                 "-o",
                 "${workspaceFolder}/Release/planarity"
             ],

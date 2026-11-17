@@ -4,20 +4,19 @@ All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
 
-#include "../planarityApp/planarity.h"
+#include "../../../planarityApp/planarity.h"
 
-#include "../graphLib/io/d6-read-iterator.h"
-#include "../graphLib/io/d6-write-iterator.h"
-
-/* Private function declarations (exported within system) */
-/* Called from planarityCommandLine.c */
-int testPetersenDigraph6(const char *);
-int testDigraph6Iterators(void);
-int runDigraph6Tests(void);
+#include "../../../graphLib/io/d6-read-iterator.h"
+#include "../../../graphLib/io/d6-write-iterator.h"
 
 /* Imported functions */
 extern int runTestAllGraphsTest(char const *commandString, char const *infileName, char const *expectedValidationStr, int (*mutatorFunc)(graphP));
 extern int runGraphTransformationTest(char const *command, char const *infileName, int inputInMemFlag);
+
+/* Private function declarations (exported within system) */
+int testPetersenDigraph6(const char *);
+int testDigraph6Iterators(void);
+int runDigraph6Tests(void);
 
 // An arc u -> v of a test graph when directed is TRUE, otherwise the
 // undirected edge {u, v}; vertices are numbered from 0, as in the format
@@ -26,6 +25,7 @@ typedef struct
     int u, v, directed;
 } digraph6TestArc;
 
+/* Private functions */
 static char *copyDigraph6TestString(char const *str);
 static int checkDigraph6Arcs(graphP theGraph, int order, digraph6TestArc const arcs[], int numArcs, char const *what);
 static int compareDigraph6Arcs(graphP theGraph, graphP theOtherGraph, char const *what);
