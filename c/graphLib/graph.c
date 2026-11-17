@@ -77,6 +77,11 @@ int _ClearInvertedFlagsInBicomp(graphP theGraph, int BicompRoot);
 
 void _InitFunctionTable(graphP theGraph);
 
+void _AttachEdgeRecord(graphP theGraph, int v, int e, int link, int newEdge);
+void _DetachEdgeRecord(graphP theGraph, int e);
+void _RestoreEdgeRecord(graphP theGraph, int e);
+int _DeleteEdge(graphP theGraph, int e);
+
 /********************************************************************
  Private functions.
  ********************************************************************/
@@ -103,11 +108,6 @@ int _AddRandomGraphEdgeCandidate(randomGraphEdgeRec *edgeList, int edgeListCapac
 int _ProcessRandomGraphOptionalEdge(graphP theGraph, randomGraphEdgeRec *edgeList, int edgeListCapacity,
                                     int *pEdgeListCount, int addImmediately, int u, int v);
 void _ShuffleRandomGraphEdgeCandidates(randomGraphEdgeRec *edgeList, int edgeCount);
-
-void _AttachEdgeRecord(graphP theGraph, int v, int e, int link, int newEdge);
-void _DetachEdgeRecord(graphP theGraph, int e);
-void _RestoreEdgeRecord(graphP theGraph, int e);
-int _DeleteEdge(graphP theGraph, int e);
 
 /* Private functions for which there are FUNCTION POINTERS */
 
