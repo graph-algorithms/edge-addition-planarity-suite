@@ -170,14 +170,29 @@ int gp_DepthFirstSearch(graphP theGraph)
                     gp_SetEdgeType(theGraph, gp_GetTwin(theGraph, e), EDGE_TYPE_PARENT);
                 }
 
-                /* Push edges to all unvisited neighbors. These will be either
-                      tree edges to children or forward edge records of back edges */
-
+                // From all edges in the vertex, we push the edges leading to all unvisited neighbors. 
+                // These will be either tree edges to children or forward edge records of back edges.
+                // Additionally, loop edges are processed here by simply marking them as back edges.
                 e = gp_GetFirstEdge(theGraph, u);
                 while (gp_IsEdge(theGraph, e))
                 {
                     if (!gp_GetVisited(theGraph, gp_GetNeighbor(theGraph, e)))
+                    {
                         sp_Push2(theStack, u, e);
+                    }
+                    // Label loop edges as back edges now (rather than pushing them now,
+                    // then later popping and labeling them in the else below). 
+                    else if (gp_GetNeighbor(theGraph, e) == u) 
+                    {
+                        // To avoid labeling twice, we only process the lower-numbered edge
+                        // record and then set the type for both edge records at the same time.
+                        if (e < gp_GetTwin(theGraph, e))
+                        {
+                            gp_SetEdgeType(theGraph, e, EDGE_TYPE_BACK);
+                            gp_SetEdgeType(theGraph, gp_GetTwin(theGraph, e), EDGE_TYPE_FORWARD);
+                        }
+                    }
+
                     e = gp_GetNextEdge(theGraph, e);
                 }
             }

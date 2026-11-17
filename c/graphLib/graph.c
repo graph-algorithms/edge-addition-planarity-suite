@@ -1985,8 +1985,8 @@ int gp_GetVertexInDegree(graphP theGraph, int v)
         else
         {
             // For a loop edge, we want to count only one of its two edge records,
-            // so we count the out-only edge record of directed loop edges and
-            // the lower-numbered edge record for undirected loop edges
+            // so we count the in-only edge record of directed loop edges and
+            // the higher-numbered edge record for undirected loop edges
             if (gp_GetDirection(theGraph, e) == EDGEFLAG_DIRECTION_INONLY ||
                 (gp_GetDirection(theGraph, e) == 0 && e > gp_GetTwin(theGraph, e)))
             {
