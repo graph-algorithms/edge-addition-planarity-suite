@@ -16,12 +16,13 @@ See the LICENSE.TXT file for licensing information.
 
 extern void _InitFunctionTable(graphP theGraph);
 
-/* Private function */
+/* Private functions */
 
 void _FreeExtension(graphExtensionP extension);
 void _OverloadFunctions(graphP theGraph, graphFunctionTableP functions);
 void _FixupFunctionTables(graphP theGraph, graphExtensionP curr);
 graphExtensionP _FindNearestOverload(graphP theGraph, graphExtensionP target, int functionIndex);
+int _AreFunctionTablesEqual(graphFunctionTableP dstFunctionTable, graphFunctionTableP srcFunctionTable);
 
 /********************************************************************
  * The moduleIDGenerator is used to help ensure that all extensions
@@ -446,6 +447,11 @@ graphExtensionP _FindNearestOverload(graphP theGraph, graphExtensionP target, in
 
 /********************************************************************
  gp_DupExtensions()
+
+ All dstGraph extensions are freed, and those of the srcGraph are
+ duplicated in the dstGraph. Since this makes dstGraph be of the
+ same "subclass" as srcGraph, the srcGraph's function table is
+ copied to dstGraph.
  ********************************************************************/
 
 int gp_DupExtensions(graphP dstGraph, graphP srcGraph)
@@ -510,14 +516,28 @@ int gp_DupExtensions(graphP dstGraph, graphP srcGraph)
         srcNext = (graphExtensionP)srcNext->next;
     }
 
+    // Once all extensions are duplicated, the dstGraph is the same "subclass"
+    // as srcGraph, so its function table needs to be copied to dstGraph so
+    // dstGraph's function pointers will indicate the function overloads
+    // associated with its "subclass"
+    *(dstGraph->functions) = *(srcGraph->functions);
+
     return OK;
 }
 
 /********************************************************************
- gp_CopyExtensions()
+ gp_CopyDataOfExtensions()
+
+ For each extension of the srcGraph that are also extensions of the 
+ dstGraph, the extension's data is copied from the srcGraph's 
+ extension to the dstGraph's extension.
+
+ The function tables of the dstGraph and its extensions are not
+ changed because we are not changing its "subclass", which may 
+ be different than the subclass of the srcGraph. 
  ********************************************************************/
 
-int gp_CopyExtensions(graphP dstGraph, graphP srcGraph)
+int gp_CopyDataOfExtensions(graphP dstGraph, graphP srcGraph)
 {
     graphExtensionP dstExtension = NULL, srcExtension = NULL;
 
@@ -552,12 +572,63 @@ int gp_CopyExtensions(graphP dstGraph, graphP srcGraph)
 }
 
 /********************************************************************
+ _AreFunctionTablesEqual()
+
+ Returns TRUE if every function pointer value in srcFunctionTable
+ equals the value of the same pointer in the dstFunctionTable.
+ Returns FALSE if there is any difference in pointer values.
+ ********************************************************************/
+int _AreFunctionTablesEqual(graphFunctionTableP dstFunctionTable, graphFunctionTableP srcFunctionTable)
+{
+    if (dstFunctionTable == NULL || srcFunctionTable == NULL)
+        return FALSE;
+
+    if (
+        dstFunctionTable->fpEmbeddingInitialize == srcFunctionTable->fpEmbeddingInitialize &&
+        dstFunctionTable->fpEmbedBackEdgeToDescendant == srcFunctionTable->fpEmbedBackEdgeToDescendant &&
+        dstFunctionTable->fpWalkUp == srcFunctionTable->fpWalkUp &&
+        dstFunctionTable->fpWalkDown == srcFunctionTable->fpWalkDown &&
+        dstFunctionTable->fpMergeBicomps == srcFunctionTable->fpMergeBicomps &&
+        dstFunctionTable->fpMergeVertex == srcFunctionTable->fpMergeVertex &&
+        dstFunctionTable->fpHandleBlockedBicomp == srcFunctionTable->fpHandleBlockedBicomp &&
+        dstFunctionTable->fpHandleInactiveVertex == srcFunctionTable->fpHandleInactiveVertex &&
+        dstFunctionTable->fpEmbedPostprocess == srcFunctionTable->fpEmbedPostprocess &&
+        dstFunctionTable->fpMarkDFSPath == srcFunctionTable->fpMarkDFSPath &&
+        dstFunctionTable->fpCheckEmbeddingIntegrity == srcFunctionTable->fpCheckEmbeddingIntegrity &&
+        dstFunctionTable->fpCheckObstructionIntegrity == srcFunctionTable->fpCheckObstructionIntegrity &&
+
+        dstFunctionTable->fpEnsureVertexCapacity == srcFunctionTable->fpEnsureVertexCapacity &&
+        dstFunctionTable->fpResetGraphStorage == srcFunctionTable->fpResetGraphStorage &&
+        dstFunctionTable->fpEnsureEdgeCapacity == srcFunctionTable->fpEnsureEdgeCapacity &&
+        dstFunctionTable->fpSortVertices == srcFunctionTable->fpSortVertices &&
+
+        dstFunctionTable->fpReadPostprocess == srcFunctionTable->fpReadPostprocess &&
+        dstFunctionTable->fpWritePostprocess == srcFunctionTable->fpWritePostprocess &&
+
+        dstFunctionTable->fpDeleteEdge == srcFunctionTable->fpDeleteEdge &&
+        dstFunctionTable->fpHideEdge == srcFunctionTable->fpHideEdge &&
+        dstFunctionTable->fpRestoreEdge == srcFunctionTable->fpRestoreEdge &&
+        dstFunctionTable->fpHideVertex == srcFunctionTable->fpHideVertex &&
+        dstFunctionTable->fpRestoreVertex == srcFunctionTable->fpRestoreVertex &&
+        dstFunctionTable->fpContractEdge == srcFunctionTable->fpContractEdge &&
+        dstFunctionTable->fpIdentifyVertices == srcFunctionTable->fpIdentifyVertices &&
+        TRUE)
+        return TRUE;
+
+    return FALSE;
+}
+
+/********************************************************************
  gp_FreeExtensions()
 
  @param pFirst - pointer to head pointer of graph extension list
 
  Each graph extension is freed, including invoking the freeContext
  function provided when the extension was added.
+
+ The function table of theGraph is also put back to the initial
+ settings for a base graph because those function pointers *must*
+ no longer point at functions associated with freed extensions.
  ********************************************************************/
 
 void gp_FreeExtensions(graphP theGraph)

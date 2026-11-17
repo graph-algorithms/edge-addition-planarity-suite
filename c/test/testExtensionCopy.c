@@ -216,6 +216,38 @@ static int testDupExtensionsRefused(EdgeDataExtension const *ext, int dstOrder, 
 }
 
 /****************************************************************************
+ The function table in the src graph should be copied into dup, such that
+ an advanced embedding algorithm performed on dup should produce the same 
+ result as on src. 
+ ****************************************************************************/
+
+static int testDupExtendedGraph(void)
+{
+    int retVal = OK;
+    graphP src = gp_New(), dup = NULL;
+    int l;
+
+    gp_EnsureVertexCapacity(src, 5);
+    l = gp_LowerBoundVertexStorage(src);
+    for (int u = 0; u < 5; u++)
+        for (int v = u + 1; v < 5; v++)
+            gp_AddEdge(src, l + u, 0, l + v, 0);
+    gp_ExtendWith_K33Search(src);
+    dup = gp_DupGraph(src);
+
+    if (gp_Embed(src, EMBEDFLAGS_SEARCHFORK33) != OK)
+        retVal = NOTOK;
+
+    else if (gp_Embed(dup, EMBEDFLAGS_SEARCHFORK33) != OK)
+        retVal = NOTOK;
+
+    gp_Free(&src);
+    gp_Free(&dup);
+
+    return retVal;
+}
+
+/****************************************************************************
  runExtensionCopyTests()
 
  For each extension that keeps data per edge record: copying a graph into
@@ -250,6 +282,9 @@ int runExtensionCopyTests(void)
             testDupExtensionsRefused(ext, 10, 100, "into less edge storage") != OK)
             Result = NOTOK;
     }
+
+    if (testDupExtendedGraph() != OK)
+        Result = NOTOK;
 
     if (Result == OK)
         gp_Message("Test succeeded.\n");
