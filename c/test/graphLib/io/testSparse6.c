@@ -4,33 +4,34 @@ All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
 
-#include "../planarityApp/planarity.h"
+#include "../../../planarityApp/planarity.h"
 
-#include "../graphLib/io/strOrFile.h"
+#include "../../../graphLib/io/strOrFile.h"
 
-#include "../graphLib/io/s6-read-iterator.h"
-#include "../graphLib/io/s6-write-iterator.h"
+#include "../../../graphLib/io/s6-read-iterator.h"
+#include "../../../graphLib/io/s6-write-iterator.h"
 
+/* Imported functions */
 /* Library-private functions the edge storage and loop tests call directly */
 extern int _CompactEdgeStorage(graphP theGraph);
 extern int _s6_CountInstances(graphP theGraph, int u, int v);
 
-/* Called from planarityCommandLine.c */
-int runSparse6ReadTests(void);
-int runSparse6WriteTests(void);
-int runSparse6TestAllGraphsTests(void);
-int runSparse6LookaheadTests(void);
-char *copySparse6TestString(char const *s6Str);
+extern int runTestAllGraphsTest(char const *commandString, char const *infileName, char const *expectedValidationStr, int (*mutatorFunc)(graphP)); /* test/systemVerification/testAllGraphs.c */
+extern int runGraphTransformationTest(char const *command, char const *infileName, int inputInMemFlag);                                            /* test/graphLib/io/testGraphTransformations.c */
 
-/* Defined in planarityCommandLine.c */
-int runTestAllGraphsTest(char const *commandString, char const *infileName, char const *expectedValidationStr, int (*mutatorFunc)(graphP));
-int runGraphTransformationTest(char const *command, char const *infileName, int inputInMemFlag);
+/* Private function declarations (exported within system) */
+int runSparse6Tests(void);
+char *copySparse6TestString(char const *s6Str); // TODO: replace with a generalized test string copy function in a shared test utilities sourcefile
 
+/* Private functions */
+static int runSparse6ReadTests(void);
+static int runSparse6WriteTests(void);
+static int runSparse6TestAllGraphsTests(void);
+static int runSparse6LookaheadTests(void);
 static int compareSparse6Output(char const *ours, char const *expected, char const *what);
 static int runSparse6WriteLineTest(char const *g6Str, char const *expectedLine);
 static int runSparse6WriteRoundTripTest(char const *g6FileName, char const *s6FileName, int incremental);
 static int runSparse6WriteContractTests(void);
-static int runCompactEdgeStorageTests(void);
 static int runEdgeHoleTests(void);
 static int runSparse6LockstepTest(char const *g6FileName, char const *s6FileName, int inputInMemFlag, int expectedNumGraphs);
 static int runSparse6AcceptTest(char const *s6Str, char const *expectedG6Line);
@@ -47,6 +48,36 @@ static int runSparse6ReadBackTest(char const *s6Str, int const *const graphs[], 
 static int runSparse6MultigraphContractTests(void);
 static int runSparse6MultigraphWriteRoundTripTest(void);
 static int runSparse6PetersenMultigraphTest(void);
+
+/****************************************************************************
+ runSparse6Tests()
+ ****************************************************************************/
+
+int runSparse6Tests(void)
+{
+    int Result = OK;
+
+    gp_Message("Starting sparse6 tests");
+
+    if (runSparse6ReadTests() != OK)
+        Result = NOTOK;
+    // TODO: might be nice to have an equivalent to runDigraph6InitRetryTests()
+    // else if (runSparse6InitRetryTests() != OK)
+    //     Result = NOTOK;
+    else if (runSparse6WriteTests() != OK)
+        Result = NOTOK;
+    else if (runSparse6TestAllGraphsTests() != OK)
+        Result = NOTOK;
+    else if (runSparse6LookaheadTests() != OK)
+        Result = NOTOK;
+
+    if (Result == OK)
+        gp_Message("Finished sparse6 tests.\n");
+    else
+        gp_Message("Error detected in sparse6 tests.\n");
+
+    return Result;
+}
 
 /****************************************************************************
  compareSparse6Output()
@@ -575,299 +606,6 @@ static int runSparse6WriteContractTests(void)
 }
 
 /****************************************************************************
- runCompactEdgeStorageTests()
-
- Deletes edges of K5 so that holes lie in the middle and at the end of the
- edge storage, recorded by either record of their pairs, and checks that
- _CompactEdgeStorage() removes every hole while keeping the edge set, the
- edge count, the flags of the moved edge and the order of every adjacency
- list, which a depth first search done before the compaction relies on.
- A loop in the last pair is moved too, to the front of its list, and an
- edge to be moved that is hidden makes the compaction refuse.
- ****************************************************************************/
-
-// Writes the neighbors of each vertex of a graph of order 5, in adjacency
-// list order, to five rows filled out with NIL
-static void getNeighborOrder(graphP theGraph, int order[5][5])
-{
-    int lower = gp_LowerBoundVertexStorage(theGraph);
-
-    for (int v = 0; v < 5; v++)
-    {
-        int i = 0;
-
-        for (int e = gp_GetFirstEdge(theGraph, lower + v); gp_IsEdge(theGraph, e) && i < 4;
-             e = gp_GetNextEdge(theGraph, e))
-            order[v][i++] = gp_GetNeighbor(theGraph, e);
-        while (i < 5)
-            order[v][i++] = NIL;
-    }
-}
-
-static int runCompactEdgeStorageTests(void)
-{
-    int Result = OK;
-    graphP theGraph = NULL;
-    char *before = NULL, *after = NULL;
-    int lower = 0;
-    int eLast = NIL, uLast = NIL, vLast = NIL;
-    int orderBefore[5][5], orderAfter[5][5];
-    unsigned origQuietMode = gp_GetQuietMode();
-
-    if ((theGraph = gp_New()) == NULL || gp_EnsureVertexCapacity(theGraph, 5) != OK)
-    {
-        gp_Free(&theGraph);
-        return NOTOK;
-    }
-
-    lower = gp_LowerBoundVertexStorage(theGraph);
-
-    // Each edge goes to the front of the list of its lesser endpoint and to
-    // the end of the other list, so that each edge the compaction moves is
-    // first in one list, ahead of another edge, and last in the other
-    for (int u = 0; Result == OK && u < 5; u++)
-        for (int v = u + 1; Result == OK && v < 5; v++)
-            if (gp_AddEdge(theGraph, lower + u, 0, lower + v, 1) != OK)
-                Result = NOTOK;
-
-    // Delete the pair before the last by its odd record and then the last
-    // pair, which leaves a hole as the last pair of the storage in use, then
-    // a middle pair by its odd record and another by its even record
-    if (Result == OK &&
-        (gp_DeleteEdge(theGraph, gp_GetTwin(theGraph, gp_FindEdge(theGraph, lower + 2, lower + 4))) != OK ||
-         gp_DeleteEdge(theGraph, gp_FindEdge(theGraph, lower + 3, lower + 4)) != OK ||
-         gp_DeleteEdge(theGraph, gp_GetTwin(theGraph, gp_FindEdge(theGraph, lower + 1, lower + 2))) != OK ||
-         gp_DeleteEdge(theGraph, gp_FindEdge(theGraph, lower + 0, lower + 3)) != OK))
-        Result = NOTOK;
-
-    if (Result == OK &&
-        (theGraph->numEdgeHoles != 3 || gp_EdgeInUse(theGraph, gp_UpperBoundEdges(theGraph) - 2)))
-    {
-        gp_ErrorMessage("The deletions did not leave three edge holes, the last "
-                        "pair being one.");
-        Result = NOTOK;
-    }
-
-    // The edge set before compaction, taken while the graph is undirected,
-    // since setting a direction below marks it as a digraph for graph6
-    if (Result == OK && gp_WriteToString(theGraph, &before, WRITE_GRAPH6) != OK)
-    {
-        gp_ErrorMessage("Unable to write the graph before compaction.");
-        Result = NOTOK;
-    }
-
-    // Flag the last pair in use, so that its move can be checked
-    if (Result == OK)
-    {
-        eLast = gp_UpperBoundEdges(theGraph) - 2;
-        while (eLast >= gp_LowerBoundEdges(theGraph) && gp_EdgeNotInUse(theGraph, eLast))
-            eLast -= 2;
-        uLast = gp_GetNeighbor(theGraph, gp_GetTwin(theGraph, eLast));
-        vLast = gp_GetNeighbor(theGraph, eLast);
-        gp_SetDirection(theGraph, eLast, EDGEFLAG_DIRECTION_OUTONLY);
-        getNeighborOrder(theGraph, orderBefore);
-    }
-
-    if (Result == OK && _CompactEdgeStorage(theGraph) != OK)
-    {
-        gp_ErrorMessage("Unable to compact the edge storage.");
-        Result = NOTOK;
-    }
-
-    if (Result == OK)
-    {
-        getNeighborOrder(theGraph, orderAfter);
-        if (memcmp(orderBefore, orderAfter, sizeof(orderBefore)) != 0)
-        {
-            gp_ErrorMessage("Compaction changed the order of an adjacency list.");
-            Result = NOTOK;
-        }
-    }
-
-    if (Result == OK && (theGraph->numEdgeHoles != 0 || gp_GetM(theGraph) != 6 ||
-                         gp_UpperBoundEdges(theGraph) != gp_LowerBoundEdges(theGraph) + 12))
-    {
-        gp_ErrorMessage("Compaction left %d holes, %d edges and an upper bound of %d.",
-                        theGraph->numEdgeHoles, gp_GetM(theGraph), gp_UpperBoundEdges(theGraph));
-        Result = NOTOK;
-    }
-
-    if (Result == OK)
-    {
-        int eMoved = gp_FindEdge(theGraph, uLast, vLast);
-
-        if (!gp_IsEdge(theGraph, eMoved) || gp_GetDirection(theGraph, eMoved) != EDGEFLAG_DIRECTION_OUTONLY)
-        {
-            gp_ErrorMessage("Compaction lost the direction of the moved edge.");
-            Result = NOTOK;
-        }
-        else if (gp_ClearEdgeDirectionFlags(theGraph) != OK)
-            Result = NOTOK;
-    }
-
-    // The edge set after compaction, once the graph is undirected again
-    if (Result == OK && gp_WriteToString(theGraph, &after, WRITE_GRAPH6) != OK)
-    {
-        gp_ErrorMessage("Unable to write the graph after compaction.");
-        Result = NOTOK;
-    }
-
-    if (Result == OK && strcmp(before, after) != 0)
-    {
-        gp_ErrorMessage("Compaction changed the graph from %s to %s.", before, after);
-        Result = NOTOK;
-    }
-
-    // Compacting a dense graph, and a NULL graph, behave as documented
-    if (Result == OK && (_CompactEdgeStorage(theGraph) != OK))
-    {
-        gp_ErrorMessage("Compaction of a dense graph gave the wrong result.");
-        Result = NOTOK;
-    }
-
-    gp_SetQuietMode(QUIETMODE_ALL);
-    if (Result == OK && (_CompactEdgeStorage(NULL) == OK))
-    {
-        gp_ErrorMessage("Compaction of a NULL graph gave the wrong result.");
-        Result = NOTOK;
-    }
-    gp_SetQuietMode(origQuietMode);
-
-    // Test edge deletion and compaction of loop edges
-    if (Result == OK)
-    {
-        int eLoop = NIL, eFirst = NIL;
-
-        gp_ResetGraphStorage(theGraph);
-
-        if (gp_AddEdge(theGraph, lower, 0, lower + 1, 0) != OK ||
-            gp_AddEdge(theGraph, lower + 1, 0, lower + 2, 0) != OK ||
-            gp_AddEdge(theGraph, lower + 2, 0, lower + 2, 0) != OK)
-            Result = NOTOK;
-
-        // Try deleting loop edge when it's the last added edge
-        if (Result == OK)
-        {
-            if (gp_DeleteEdge(theGraph, gp_FindEdge(theGraph, lower + 2, lower + 2)) != OK ||
-                gp_GetVertexDegree(theGraph, lower) != 1 ||
-                gp_GetVertexDegree(theGraph, lower + 1) != 2 ||
-                gp_GetVertexDegree(theGraph, lower + 2) != 1 ||
-                theGraph->numEdgeHoles != 0 || gp_GetM(theGraph) != 2 ||
-                gp_AddEdge(theGraph, lower + 2, 0, lower + 2, 0) != OK)
-            {
-                Result = NOTOK;
-            }
-        }
-
-        // Try deleting loop edge when it's not the last added edge
-        if (Result == OK)
-        {
-            if (gp_AddEdge(theGraph, lower, 0, lower + 2, 0) != OK ||
-                gp_DeleteEdge(theGraph, gp_FindEdge(theGraph, lower + 2, lower + 2)) != OK ||
-                gp_GetVertexDegree(theGraph, lower) != 2 ||
-                gp_GetVertexDegree(theGraph, lower + 1) != 2 ||
-                gp_GetVertexDegree(theGraph, lower + 2) != 2 ||
-                theGraph->numEdgeHoles != 1 || gp_GetM(theGraph) != 3)
-            {
-                Result = NOTOK;
-            }
-
-            if (Result == OK)
-            {
-                if (_CompactEdgeStorage(theGraph) != OK ||
-                    theGraph->numEdgeHoles != 0 || gp_GetM(theGraph) != 3 ||
-                    gp_GetVertexDegree(theGraph, lower) != 2 ||
-                    gp_GetVertexDegree(theGraph, lower + 1) != 2 ||
-                    gp_GetVertexDegree(theGraph, lower + 2) != 2 ||
-                    gp_DeleteEdge(theGraph, gp_FindEdge(theGraph, lower, lower + 2)) != OK ||
-                    gp_AddEdge(theGraph, lower + 2, 0, lower + 2, 0) != OK)
-                {
-                    Result = NOTOK;
-                }
-            }
-        }
-
-        // Make the loop edge directed
-        if (Result == OK)
-        {
-            eLoop = gp_FindEdge(theGraph, lower + 2, lower + 2);
-            theGraph->E[eLoop].flags |= EDGEFLAG_DIRECTION_OUTONLY;
-            theGraph->E[gp_GetTwin(theGraph, eLoop)].flags |= EDGEFLAG_DIRECTION_INONLY;
-            eFirst = gp_LowerBoundEdges(theGraph);
-        }
-
-        // A loop in the last pair, behind the hole of the first, is moved into
-        // that hole and stays a loop, with the flags of both its records
-        if (Result == OK &&
-            (gp_DeleteEdge(theGraph, gp_FindEdge(theGraph, lower, lower + 1)) != OK ||
-             _CompactEdgeStorage(theGraph) != OK ||
-             theGraph->numEdgeHoles != 0 || gp_GetM(theGraph) != 2 ||
-             gp_GetNeighbor(theGraph, eFirst) != lower + 2 ||
-             gp_GetNeighbor(theGraph, eFirst + 1) != lower + 2 ||
-             gp_GetVertexDegree(theGraph, lower + 2) != 3 ||
-             (gp_GetDirection(theGraph, eFirst) | gp_GetDirection(theGraph, eFirst + 1)) !=
-                 (EDGEFLAG_DIRECTION_OUTONLY | EDGEFLAG_DIRECTION_INONLY)))
-        {
-            gp_ErrorMessage("Compaction of a loop gave the wrong result.");
-            Result = NOTOK;
-        }
-    }
-
-    // An edge to be moved that is hidden makes the compaction refuse,
-    // changing nothing, and so the planar drawing too; once the edge is
-    // restored, the compaction goes ahead
-    if (Result == OK)
-    {
-        int eHidden = NIL;
-
-        gp_ResetGraphStorage(theGraph);
-
-        if (gp_AddEdge(theGraph, lower, 0, lower + 1, 0) != OK ||
-            gp_AddEdge(theGraph, lower + 1, 0, lower + 2, 0) != OK ||
-            gp_AddEdge(theGraph, lower + 2, 0, lower + 3, 0) != OK ||
-            gp_DeleteEdge(theGraph, gp_FindEdge(theGraph, lower + 1, lower + 2)) != OK ||
-            gp_ExtendWith_DrawPlanar(theGraph) != OK)
-            Result = NOTOK;
-
-        if (Result == OK)
-        {
-            eHidden = gp_FindEdge(theGraph, lower + 2, lower + 3);
-            gp_HideEdge(theGraph, eHidden);
-
-            // Set all to quiet due to intended failure call
-            gp_SetQuietMode(QUIETMODE_ALL);
-
-            if (_CompactEdgeStorage(theGraph) == OK || gp_Embed(theGraph, EMBEDFLAGS_DRAWPLANAR) != NOTOK ||
-                theGraph->numEdgeHoles != 1 || gp_UpperBoundEdges(theGraph) != gp_LowerBoundEdges(theGraph) + 6 ||
-                gp_GetEmbedFlags(theGraph) != 0)
-            {
-                gp_ErrorMessage("Compaction moved a hidden edge.");
-                Result = NOTOK;
-            }
-
-            gp_SetQuietMode(origQuietMode);
-
-            gp_RestoreEdge(theGraph, eHidden);
-        }
-
-        if (Result == OK && (_CompactEdgeStorage(theGraph) != OK || theGraph->numEdgeHoles != 0 ||
-                             gp_GetVertexDegree(theGraph, lower + 3) != 1))
-        {
-            gp_ErrorMessage("Compaction after restoring a hidden edge gave the wrong result.");
-            Result = NOTOK;
-        }
-    }
-
-    if (before != NULL)
-        free(before);
-    if (after != NULL)
-        free(after);
-    gp_Free(&theGraph);
-
-    return Result;
-}
-
-/****************************************************************************
  runEdgeHoleTests()
 
  Deletions leave holes in the edge storage, which planar drawing currently
@@ -1327,9 +1065,6 @@ int runSparse6WriteTests(void)
         Result = runEdgeHoleTests();
 
     if (Result == OK)
-        Result = runCompactEdgeStorageTests();
-
-    if (Result == OK)
         Result = runSparse6LargeOrderTests();
 
     // The -s transformation, from a file and from a string, of graph6 and of
@@ -1359,6 +1094,21 @@ int runSparse6WriteTests(void)
 
     return Result;
 }
+
+/********************************************************************
+ runSparse6ReadTests()
+
+ Exercises the sparse6 and incremental sparse6 read iterator (EPIC #38).
+
+ N5-all.s6 and N5-all.inc.s6 were produced from N5-all.g6 by nauty's
+ copyg (-s and -i respectively), and nauty_example.s6 from
+ nauty_example.g6 in the same way, so the graph6 reader serves as
+ the oracle: every graph read through the sparse6 reader must encode
+ to the same graph6 line as the graph read from the .g6 file. The
+ string cases pin the corners of the encoding (the padding rules, an
+ incomplete final pair, CRLF, the four-byte order, the incremental
+ toggle) and the inputs the reader must reject.
+ ********************************************************************/
 
 int runSparse6ReadTests(void)
 {
@@ -3922,7 +3672,7 @@ static int runSparse6LoopSampleTest(char const *s6FileName, int incremental)
         }
 
         if (numGraphs >= expectedNumGraphs || gp_GetN(theGraph) != 4 ||
-            compareSparse6EdgeMultiset(theGraph, (int const (*)[2])expectedPairs, numExpected) != OK)
+            compareSparse6EdgeMultiset(theGraph, (int const(*)[2])expectedPairs, numExpected) != OK)
         {
             gp_ErrorMessage("Graph %d of \"%s\" does not have the edges and loops expected.",
                             numGraphs + 1, s6FileName);
@@ -3952,7 +3702,7 @@ static int runSparse6LoopSampleTest(char const *s6FileName, int incremental)
 
         if (gp_WriteGraph(theWriter) != OK ||
             (incremental &&
-             compareSparse6EdgeMultiset(writerGraph, (int const (*)[2])expectedPairs, numExpected) != OK))
+             compareSparse6EdgeMultiset(writerGraph, (int const(*)[2])expectedPairs, numExpected) != OK))
         {
             gp_ErrorMessage("Unable to write graph %d of \"%s\".", numGraphs, s6FileName);
             Result = NOTOK;
