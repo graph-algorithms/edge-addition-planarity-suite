@@ -1393,6 +1393,21 @@ int runSparse6WriteTests(void)
     return Result;
 }
 
+/********************************************************************
+ runSparse6ReadTests()
+
+ Exercises the sparse6 and incremental sparse6 read iterator (EPIC #38).
+
+ N5-all.s6 and N5-all.inc.s6 were produced from N5-all.g6 by nauty's
+ copyg (-s and -i respectively), and nauty_example.s6 from
+ nauty_example.g6 in the same way, so the graph6 reader serves as
+ the oracle: every graph read through the sparse6 reader must encode
+ to the same graph6 line as the graph read from the .g6 file. The
+ string cases pin the corners of the encoding (the padding rules, an
+ incomplete final pair, CRLF, the four-byte order, the incremental
+ toggle) and the inputs the reader must reject.
+ ********************************************************************/
+
 int runSparse6ReadTests(void)
 {
     int Result = OK;

@@ -26,9 +26,6 @@ See the LICENSE.TXT file for licensing information.
 // extern int runHighByteRoundTripTest(void);
 // extern int runCapacityLimitTests(void);
 
-// extern int runStringInputLineTests(void);
-// extern int runGeneralReadIteratorTests(void);
-
 /****************************************************************************
  Quick regression test
  ****************************************************************************/
@@ -86,6 +83,8 @@ int runTestMain(int argc, char *argv[])
     /* GraphLib Tests */
     if (runDigraphTests() != OK)
         retVal = NOTOK;
+    if (runFileIteratorsTests() != OK)
+        retVal = NOTOK;
     else if (runLoopEdgeTests() != OK)
         retVal = NOTOK;
     else if (runParallelEdgeTests() != OK)
@@ -116,12 +115,6 @@ int runTestMain(int argc, char *argv[])
     // else if (runCapacityLimitTests() != OK)
     //     retVal = NOTOK;
     // else if (runReadWithExtensionAtEofTest() != OK)
-    //     retVal = NOTOK;
-    // else if (runStringInputLineTests() != OK)
-    //     retVal = NOTOK;
-    // else if (runGeneralReadIteratorTests() != OK)
-    //     retVal = NOTOK;
-    // else if (runGeneralWriteIteratorTests() != OK)
     //     retVal = NOTOK;
 
     /* System Verification Tests */

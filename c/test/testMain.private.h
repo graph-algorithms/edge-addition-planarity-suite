@@ -17,6 +17,7 @@ extern "C"
     extern int runParallelEdgeTests(void);        /* test/graphLib/testParallelEdges.c */
     extern int runExtensionCopyTests(void);       /* test/graphLib/extensionSystem/testExtensionCopy.c */
     extern int runDigraph6Tests(void);            /* test/graphLib/io/testDigraph6.c */
+    extern int runFileIteratorsTests(void);       /* test/graphLib/io/testFileIterator.c */
     extern int runGraphMLTests(void);             /* test/graphLib/io/testGraphML.c */
     extern int runGraphTransformationTests(void); /* test/graphLib/io/testGraphTransformations.c */
     extern int runIOErrorTests(void);             /* test/graphLib/io/testIOErrors.c */
