@@ -16,16 +16,6 @@ See the LICENSE.TXT file for licensing information.
 #include "testMain.h"
 #include "testMain.private.h"
 
-// extern int runFaceListTest(void);
-// extern int runAddInsertEdgeTests(void);
-
-// extern int runHideRestoreTests(void);
-// extern int runIdentifyContractTests(void);
-
-// extern int runReadWithExtensionAtEofTest(void);
-// extern int runHighByteRoundTripTest(void);
-// extern int runCapacityLimitTests(void);
-
 /****************************************************************************
  Quick regression test
  ****************************************************************************/
@@ -81,7 +71,10 @@ int runTestMain(int argc, char *argv[])
     }
 
     /* GraphLib Tests */
-    if (runDigraphTests() != OK)
+    // NOTE: We want to test specific behaviors first to fail early in case of critical error.
+    if (runSpecificBehaviorsTests() != OK)
+        retVal = NOTOK;
+    else if (runDigraphTests() != OK)
         retVal = NOTOK;
     else if (runHideRestoreIdentifyContractTests() != OK)
         retVal = NOTOK;
@@ -103,21 +96,6 @@ int runTestMain(int argc, char *argv[])
         retVal = NOTOK;
     else if (runSparse6Tests() != OK)
         retVal = NOTOK;
-
-    // else if (runFaceListTest() != OK)
-    //     retVal = NOTOK;
-    // else if (runAddInsertEdgeTests() != OK)
-    //     retVal = NOTOK;
-    // else if (runHideRestoreTests() != OK)
-    //     retVal = NOTOK;
-    // else if (runIdentifyContractTests() != OK)
-    //     retVal = NOTOK;
-    // else if (runHighByteRoundTripTest() != OK)
-    //     retVal = NOTOK;
-    // else if (runCapacityLimitTests() != OK)
-    //     retVal = NOTOK;
-    // else if (runReadWithExtensionAtEofTest() != OK)
-    //     retVal = NOTOK;
 
     /* System Verification Tests */
     else if (runTestAllGraphsTests() != OK)

@@ -16,6 +16,7 @@ extern "C"
     extern int runHideRestoreIdentifyContractTests(void); /* test/graphLib/testHideRestoreIdentifyContract.c */
     extern int runLoopEdgeTests(void);                    /* test/graphlib/testLoopEdges.c */
     extern int runParallelEdgeTests(void);                /* test/graphLib/testParallelEdges.c */
+    extern int runSpecificBehaviorsTests(void);           /* test/graphLib/testSpecificBehaviors.c */
     extern int runExtensionCopyTests(void);               /* test/graphLib/extensionSystem/testExtensionCopy.c */
     extern int runDigraph6Tests(void);                    /* test/graphLib/io/testDigraph6.c */
     extern int runFileIteratorsTests(void);               /* test/graphLib/io/testFileIterator.c */

@@ -6,8 +6,6 @@ See the LICENSE.TXT file for licensing information.
 
 #include "../../planarityApp/planarity.h"
 
-/* Imported functions */
-
 /* Private function declarations (exported within system) */
 int runHideRestoreIdentifyContractTests(void);
 
