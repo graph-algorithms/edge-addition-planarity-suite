@@ -371,9 +371,11 @@ int _EmbeddingInitialize_Incremental(graphP theGraph)
     // Use the stack and visited flags to traverse the previously created DFS tree to
     // do initializations that build up the sorted DFS child lists of each vertex, to
     // associate each tree edge with the bicomp root associated with the child endpoint,
-    // and to remove the back edges from being embedded in the graph and instead put
-    // their forward edge records in the forward edge lists of the ancestor endpoints
-    // (so back edges from a vertex to its descendants can be easily processed).
+    // and to remove the back edges from the graph as they have not been embedded yet.
+    // Instead, for back edges that are not loop edges, their forward edge record twins
+    // are put into the forward edge lists of the ancestor endpoints (so "back" edges 
+    // from a vertex to its descendants can be easily processed). For back edges that
+    // are loop edges, they are instead placed into the loopEdgeBicompList.
     theStack = theGraph->theStack;
 
     if (sp_GetCapacity(theStack) < 2 * 2 * gp_GetM(theGraph) + 2)
@@ -429,37 +431,72 @@ int _EmbeddingInitialize_Incremental(graphP theGraph)
                     else if (gp_GetEdgeType(theGraph, e) == EDGE_TYPE_BACK)
                     {
                         // For each back edge record, we get the associated forward
-                        // edge record (into eTwin) and info about it.
+                        // edge record (into eTwin).
                         eTwin = gp_GetTwin(theGraph, e);
-                        uneighbor = gp_GetNeighbor(theGraph, e);
-                        ePrev = gp_GetPrevEdge(theGraph, eTwin);
-                        eNext = gp_GetNextEdge(theGraph, eTwin);
 
-                        // The forward edge record is then removed from the adjacency list
-                        // of the ancestor (uneighbor), and...
-                        if (gp_IsEdge(theGraph, ePrev))
-                            gp_SetNextEdge(theGraph, ePrev, eNext);
-                        else
-                            gp_SetFirstEdge(theGraph, uneighbor, eNext);
-                        if (gp_IsEdge(theGraph, eNext))
-                            gp_SetPrevEdge(theGraph, eNext, ePrev);
-                        else
-                            gp_SetLastEdge(theGraph, uneighbor, ePrev);
-
-                        // ... placed into the forward edge list of the ancestor (uneighbor)
-                        if (gp_IsEdge(theGraph, f = gp_GetVertexFwdEdgeList(theGraph, uneighbor)))
+                        // Decide whether we have a back edge to an ancestor or a loop edge
+                        if ((uneighbor = gp_GetNeighbor(theGraph, e)) != u)
                         {
-                            ePrev = gp_GetPrevEdge(theGraph, f);
-                            gp_SetPrevEdge(theGraph, eTwin, ePrev);
-                            gp_SetNextEdge(theGraph, eTwin, f);
-                            gp_SetPrevEdge(theGraph, f, eTwin);
-                            gp_SetNextEdge(theGraph, ePrev, eTwin);
+                            ePrev = gp_GetPrevEdge(theGraph, eTwin);
+                            eNext = gp_GetNextEdge(theGraph, eTwin);
+
+                            // The forward edge record is then removed from the adjacency list
+                            // of the ancestor (uneighbor), and...
+                            if (gp_IsEdge(theGraph, ePrev))
+                                gp_SetNextEdge(theGraph, ePrev, eNext);
+                            else
+                                gp_SetFirstEdge(theGraph, uneighbor, eNext);
+                            if (gp_IsEdge(theGraph, eNext))
+                                gp_SetPrevEdge(theGraph, eNext, ePrev);
+                            else
+                                gp_SetLastEdge(theGraph, uneighbor, ePrev);
+
+                            // ... placed into the forward edge list of the ancestor (uneighbor)
+                            if (gp_IsEdge(theGraph, f = gp_GetVertexFwdEdgeList(theGraph, uneighbor)))
+                            {
+                                ePrev = gp_GetPrevEdge(theGraph, f);
+                                gp_SetPrevEdge(theGraph, eTwin, ePrev);
+                                gp_SetNextEdge(theGraph, eTwin, f);
+                                gp_SetPrevEdge(theGraph, f, eTwin);
+                                gp_SetNextEdge(theGraph, ePrev, eTwin);
+                            }
+                            else
+                            {
+                                gp_SetVertexFwdEdgeList(theGraph, uneighbor, eTwin);
+                                gp_SetPrevEdge(theGraph, eTwin, eTwin);
+                                gp_SetNextEdge(theGraph, eTwin, eTwin);
+                            }
                         }
+                        // Edge e is a loop edge, so pull e and eTwin out of the adjacency list
+                        // of u/uneighbor, then put e into the loopEdgeBicompList.
                         else
                         {
-                            gp_SetVertexFwdEdgeList(theGraph, uneighbor, eTwin);
-                            gp_SetPrevEdge(theGraph, eTwin, eTwin);
-                            gp_SetNextEdge(theGraph, eTwin, eTwin);
+                            // Save the index of the next edge to which iteration must advance before
+                            // changing the links that attach e and eTwin into u's adjacency list
+                            if ((eNext = gp_GetNextEdge(theGraph, e)) == eTwin)
+                                eNext = gp_GetNextEdge(theGraph, eTwin);
+
+                            // Take e and eTwin out of u's adjacency list
+                            _DetachEdgeRecord(theGraph, e);
+                            _DetachEdgeRecord(theGraph, eTwin);
+
+                            // Put e into the loopEdgeBicompList. If it is non-empty, then e becomes
+                            // the new previous edge of the list's head. Otherwise, we make the head
+                            // of the list and configure its links to form a singleton circular list.
+                            if (theGraphLoopEdgeBicompList(theGraph) != NIL)
+                            {
+                                _AttachEdgeRecord(theGraph, NIL, theGraphLoopEdgeBicompList(theGraph), 1, e);
+                            }
+                            else
+                            {
+                                theGraphLoopEdgeBicompList(theGraph) = e;
+                                gp_SetPrevEdge(theGraph, e, e);
+                                gp_SetNextEdge(theGraph, e, e);
+                            }
+
+                            // Different iteration advancement for loop edges
+                            e = eNext;
+                            continue;
                         }
                     }
 
@@ -668,8 +705,8 @@ int _EmbeddingInitialize_Optimized(graphP theGraph)
                     else if (gp_GetEdgeType(theGraph, e) != EDGE_TYPE_PARENT)
                     {
                         // (2) Set the edge type values for back edges
-                        gp_ApplyEdgeType(theGraph, e, EDGE_TYPE_BACK);
                         eTwin = gp_GetTwin(theGraph, e);
+                        gp_ApplyEdgeType(theGraph, e, EDGE_TYPE_BACK);
                         gp_ApplyEdgeType(theGraph, eTwin, EDGE_TYPE_FORWARD);
 
                         // Decide whether we have a back edge to an ancestor or a loop edge
@@ -1810,7 +1847,7 @@ int _JoinBicomps(graphP theGraph, int includeLoopEdges)
             _MergeVertex(theGraph, _gp_GetVertexFromBicompRoot(theGraph, R), 0, R);
     }
 
-    if (theGraphLoopEdgeBicompList(theGraph) != NIL)
+    if (gp_IsEdge(theGraph, theGraphLoopEdgeBicompList(theGraph)))
     {
         if (includeLoopEdges)
             return _JoinLoopEdgeBicomps(theGraph);
