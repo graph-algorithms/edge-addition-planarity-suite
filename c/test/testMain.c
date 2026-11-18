@@ -83,7 +83,9 @@ int runTestMain(int argc, char *argv[])
     /* GraphLib Tests */
     if (runDigraphTests() != OK)
         retVal = NOTOK;
-    if (runFileIteratorsTests() != OK)
+    else if (runHideRestoreIdentifyContractTests() != OK)
+        retVal = NOTOK;
+    else if (runFileIteratorsTests() != OK)
         retVal = NOTOK;
     else if (runLoopEdgeTests() != OK)
         retVal = NOTOK;

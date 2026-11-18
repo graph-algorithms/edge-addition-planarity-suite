@@ -52,7 +52,6 @@ static int runSparse6PetersenMultigraphTest(void);
 
 /****************************************************************************
  runSparse6Tests()
-
  ****************************************************************************/
 
 int runSparse6Tests(void)

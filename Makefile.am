@@ -111,6 +111,7 @@ planarity_SOURCES = \
 	c/test/testMain.private.h \
 	c/test/testMain.c \
 	c/test/graphLib/testDigraphs.c \
+	c/test/graphLib/testHideRestoreIdentifyContract.c \
 	c/test/graphLib/testLoopEdges.c \
 	c/test/graphLib/testParallelEdges.c \
 	c/test/graphLib/extensionSystem/testExtensionCopy.c \
