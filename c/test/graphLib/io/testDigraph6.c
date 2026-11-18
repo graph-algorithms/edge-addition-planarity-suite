@@ -26,7 +26,7 @@ typedef struct
 /* Private functions */
 static int testPetersenDigraph6(const char *);
 static int testDigraph6Iterators(void);
-static char *copyDigraph6TestString(char const *str);
+static char *copyDigraph6TestString(char const *str); // TODO: replace with a generalized test string copy function in a shared test utilities sourcefile
 static int checkDigraph6Arcs(graphP theGraph, int order, digraph6TestArc const arcs[], int numArcs, char const *what);
 static int compareDigraph6Arcs(graphP theGraph, graphP theOtherGraph, char const *what);
 static graphP makeDigraph6TestGraph(int order, digraph6TestArc const arcs[], int numArcs);

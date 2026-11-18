@@ -21,7 +21,7 @@ extern int runGraphTransformationTest(char const *command, char const *infileNam
 
 /* Private function declarations (exported within system) */
 int runSparse6Tests(void);
-char *copySparse6TestString(char const *s6Str); // FIXME: this needs to be made into a generalized test string copy function in a shared test/testUtils.c
+char *copySparse6TestString(char const *s6Str); // TODO: replace with a generalized test string copy function in a shared test utilities sourcefile
 
 /* Private functions */
 static int runSparse6ReadTests(void);
@@ -61,7 +61,7 @@ int runSparse6Tests(void)
 
     if (runSparse6ReadTests() != OK)
         Result = NOTOK;
-    // FIXME: this test doesn't seem to exist; probably need equivalent
+    // TODO: might be nice to have an equivalent to runDigraph6InitRetryTests()
     // else if (runSparse6InitRetryTests() != OK)
     //     Result = NOTOK;
     else if (runSparse6WriteTests() != OK)

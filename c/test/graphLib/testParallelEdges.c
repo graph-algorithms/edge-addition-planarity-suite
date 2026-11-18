@@ -6,6 +6,9 @@ See the LICENSE.TXT file for licensing information.
 
 #include "../../planarityApp/planarity.h"
 
+/* Imported functions */
+extern int runTestAllGraphsTest(char const *commandString, char const *infileName, char const *expectedValidationStr, int (*mutatorFunc)(graphP));
+
 /* Private function declarations (exported within system) */
 int runParallelEdgeTests(void);
 
@@ -19,6 +22,7 @@ static int runParallelEdgeTestAllGraphsTests(void);
 static int addParallelEdges(graphP theGraph);
 
 /*************************************************************************
+ runParallelEdgeTests()
  *************************************************************************/
 
 int runParallelEdgeTests(void)
@@ -54,6 +58,7 @@ int runParallelEdgeTests(void)
 }
 
 /*************************************************************************
+ runManyParallelEdgesTest()
  *************************************************************************/
 
 int runManyParallelEdgesTest(void)
@@ -165,16 +170,18 @@ int runManyParallelEdgesTest(void)
 }
 
 /*************************************************************************
-// Grab the Petersen graph, which is a 15-edge graph.
-// Ensure vertices 1 and 2 report being degree 3.
-// Add one edge known to be parallel, (1, 2).
-// Ensure that one edge has shown up and that vertices
-//     1 and 2 report being degree 4.
-// Ensure a copy of the graph still supports the DFS
-//     utilities and is still correctly found nonplanar
-// Call the method that deletes the parallel edges
-// Ensure that the number of edges goes down by 1.
-// Ensure that vertices 1 and 2 report being degree 3.
+ runSingleParallelEdgeTest()
+
+ Grab the Petersen graph, which is a 15-edge graph.
+ Ensure vertices 1 and 2 report being degree 3.
+ Add one edge known to be parallel, (1, 2).
+ Ensure that one edge has shown up and that vertices 1 and 2 report being degree
+ 4.
+ Ensure a copy of the graph still supports the DFS utilities and is still
+ correctly found nonplanar.
+ Call the method that deletes the parallel edges.
+ Ensure that the number of edges goes down by 1.
+ Ensure that vertices 1 and 2 report being degree 3.
  *************************************************************************/
 
 int runSingleParallelEdgeTest(void)
@@ -231,6 +238,7 @@ int runSingleParallelEdgeTest(void)
 }
 
 /*************************************************************************
+ runDirectedParallelEdgeModeTest()
  *************************************************************************/
 
 int runDirectedParallelEdgeModeTest(void)
@@ -295,6 +303,8 @@ int runDirectedParallelEdgeModeTest(void)
 }
 
 /*************************************************************************
+ runParallelUndirectedTest()
+
  Ensure that an adjacency list formatted graph with parallel edges doesn't
  set the digraph flag if it is undirected.
  *************************************************************************/
@@ -325,6 +335,7 @@ int runParallelUndirectedTest(void)
 }
 
 /*************************************************************************
+ runRandomParallelEdgeGraphTests()
  *************************************************************************/
 
 int runRandomParallelEdgeGraphTests(void)
@@ -412,9 +423,8 @@ int runRandomParallelEdgeGraphTests(void)
 }
 
 /*************************************************************************
+ runParallelEdgeTestAllGraphsTests()
  *************************************************************************/
-// FIXME: This will be removed when runParallelEdgeTestAllGraphsTests() is moved from planarityCommandLine.c into the parallel edge test sourcefile, and runTestAllGraphsTest() is moved into a common testUtils.c
-extern int runTestAllGraphsTest(char const *commandString, char const *infileName, char const *expectedValidationStr, int (*mutatorFunc)(graphP));
 
 int runParallelEdgeTestAllGraphsTests(void)
 {
@@ -468,6 +478,7 @@ int runParallelEdgeTestAllGraphsTests(void)
  is given another edge attached on the link[1] side. The copies of an edge
  are thus interleaved with the copies of the other edges at both endpoints.
  ****************************************************************************/
+
 int addParallelEdges(graphP theGraph)
 {
     int origM = gp_GetM(theGraph);
