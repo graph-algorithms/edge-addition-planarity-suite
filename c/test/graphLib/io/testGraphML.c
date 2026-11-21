@@ -4,7 +4,7 @@ All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
 
-#include "../planarityApp/planarity.h"
+#include "../../../planarityApp/planarity.h"
 
 #define GRAPHML_XMLNS "http://graphml.graphdrawing.org/xmlns"
 #define GRAPHML_ROOT_OPEN "<graphml xmlns='" GRAPHML_XMLNS "'>"
@@ -16,7 +16,7 @@ See the LICENSE.TXT file for licensing information.
 #define GRAPHML_VALID_DOCUMENT \
     GRAPHML_ROOT_OPEN GRAPHML_GRAPH_OPEN GRAPHML_VALID_BODY "</graph></graphml>"
 
-/* Called from planarityCommandLine.c */
+/* Private function declarations (exported within system) */
 int runGraphMLTests(void);
 
 typedef struct

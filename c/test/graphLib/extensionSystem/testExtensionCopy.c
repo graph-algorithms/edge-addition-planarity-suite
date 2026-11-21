@@ -4,13 +4,14 @@ All rights reserved.
 See the LICENSE.TXT file for licensing information.
 */
 
-#include "../planarityApp/planarity.h"
+#include "../../../planarityApp/planarity.h"
 
-#include "../graphLib/planarityRelated/graphDrawPlanar.private.h"
-#include "../graphLib/homeomorphSearch/graphK33Search.private.h"
-#include "../graphLib/homeomorphSearch/graphK4Search.private.h"
-#include "../graphLib/extensionSystem/graphExtensions.h"
+#include "../../../graphLib/planarityRelated/graphDrawPlanar.private.h"
+#include "../../../graphLib/homeomorphSearch/graphK33Search.private.h"
+#include "../../../graphLib/homeomorphSearch/graphK4Search.private.h"
+#include "../../../graphLib/extensionSystem/graphExtensions.h"
 
+/* Private function declarations (exported within system) */
 int runExtensionCopyTests(void);
 
 /****************************************************************************
@@ -217,8 +218,8 @@ static int testDupExtensionsRefused(EdgeDataExtension const *ext, int dstOrder, 
 
 /****************************************************************************
  The function table in the src graph should be copied into dup, such that
- an advanced embedding algorithm performed on dup should produce the same 
- result as on src. 
+ an advanced embedding algorithm performed on dup should produce the same
+ result as on src.
  ****************************************************************************/
 
 static int testDupExtendedGraph(void)

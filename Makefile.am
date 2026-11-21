@@ -107,11 +107,24 @@ planarity_SOURCES = \
 	c/planarityApp/planarityTransformGraph.c \
 	c/planarityApp/planarityTestAllGraphs.c \
 	c/planarityApp/planarityUtils.c \
-	c/test/testGraphML.c \
-	c/test/testIOErrors.c \
-	c/test/testSparse6.c \
-	c/test/testDigraph6.c \
-	c/test/testExtensionCopy.c
+	c/test/testMain.h \
+	c/test/testMain.private.h \
+	c/test/testMain.c \
+	c/test/graphLib/testDigraphs.c \
+	c/test/graphLib/testHideRestoreIdentifyContract.c \
+	c/test/graphLib/testLoopEdges.c \
+	c/test/graphLib/testParallelEdges.c \
+	c/test/graphLib/testSpecificBehaviors.c \
+	c/test/graphLib/extensionSystem/testExtensionCopy.c \
+	c/test/graphLib/io/testDigraph6.c \
+	c/test/graphLib/io/testFileIterators.c \
+	c/test/graphLib/io/testGraphML.c \
+	c/test/graphLib/io/testGraphTransformations.c \
+	c/test/graphLib/io/testIOErrors.c \
+	c/test/graphLib/io/testSparse6.c \
+	c/test/systemVerification/testAllGraphs.c \
+	c/test/systemVerification/testRandomGraphs.c \
+	c/test/systemVerification/testSpecificGraphs.c
 
 man1_MANS = c/planarityApp/planarity.1
 EXTRA_DIST=$(man1_MANS)
