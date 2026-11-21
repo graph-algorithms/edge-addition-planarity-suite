@@ -12,19 +12,20 @@ See the LICENSE.TXT file for licensing information.
 #include <unistd.h>
 #endif
 
-#include "../planarityApp/planarity.h"
+#include "../../../planarityApp/planarity.h"
 
-#include "../graphLib/extensionSystem/graphFunctionTable.h"
+#include "../../../graphLib/extensionSystem/graphFunctionTable.h"
 
-#include "../graphLib/io/strOrFile.h"
+#include "../../../graphLib/io/strOrFile.h"
 
-#include "../graphLib/io/g6-read-iterator.h"
-#include "../graphLib/io/g6-write-iterator.h"
-#include "../graphLib/io/s6-read-iterator.h"
-#include "../graphLib/io/s6-write-iterator.h"
-#include "../graphLib/io/d6-read-iterator.h"
-#include "../graphLib/io/d6-write-iterator.h"
+#include "../../../graphLib/io/g6-read-iterator.h"
+#include "../../../graphLib/io/g6-write-iterator.h"
+#include "../../../graphLib/io/s6-read-iterator.h"
+#include "../../../graphLib/io/s6-write-iterator.h"
+#include "../../../graphLib/io/d6-read-iterator.h"
+#include "../../../graphLib/io/d6-write-iterator.h"
 
+/* Imported functions */
 extern int _ReadGraph(graphP theGraph, strOrFileP *pInputContainer);
 extern int _g6_InitReaderWithStrOrFile(G6ReadIteratorP reader, strOrFileP *input);
 extern int _g6_ReadGraphFromStrOrFile(graphP theGraph, strOrFileP *input);
@@ -35,6 +36,8 @@ extern int _d6_InitReaderWithStrOrFile(D6ReadIteratorP reader, strOrFileP *input
 extern int _d6_ReadGraphFromStrOrFile(graphP theGraph, strOrFileP *input);
 extern int _d6_WriteGraphToStrOrFile(graphP theGraph, strOrFileP *output);
 extern int _d6_InitWriterWithStrOrFile(D6WriteIteratorP writer, strOrFileP *output);
+
+/* Private function declarations (exported within system) */
 int runIOErrorTests(void);
 
 #if defined(HAVE_FOPENCOOKIE) || defined(HAVE_FUNOPEN)
