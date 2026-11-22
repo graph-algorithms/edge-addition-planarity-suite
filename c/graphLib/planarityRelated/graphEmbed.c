@@ -136,14 +136,23 @@ int gp_Embed(graphP theGraph, unsigned embedFlags)
         // For other Graph subclasses, the caller must have invoked their
         // ExtendWith method prior to calling gp_Embed()
         else
+        {
+            gp_ErrorMessage("The base graph must be extended appropriately to support the given embedFlags");
             return NOTOK;
+        }
     }
 
-    // The planar drawing does not tolerate edge holes, which edge deletions
-    // leave behind, so they are filled before the embedding begins
-    if (embedFlags == EMBEDFLAGS_DRAWPLANAR && theGraph->numEdgeHoles > 0 &&
-        _CompactEdgeStorage(theGraph) != OK)
-        return NOTOK;
+    // The planar drawing does not support loop edges nor tolerate edge holes,
+    // so the loop edges, if any, are deleted and then the edge storage is
+    // compacted (which does not support compaction if edges are hidden).
+    if (embedFlags == EMBEDFLAGS_DRAWPLANAR)
+    {
+        if (gp_DeleteLoopEdges(theGraph) != OK || _CompactEdgeStorage(theGraph) != OK)
+        {
+            gp_ErrorMessage("Failed to delete loop edges or compact edge storage.");
+            return NOTOK;
+        }
+    }
 
     theGraph->embedFlags = embedFlags;
 
@@ -373,7 +382,7 @@ int _EmbeddingInitialize_Incremental(graphP theGraph)
     // associate each tree edge with the bicomp root associated with the child endpoint,
     // and to remove the back edges from the graph as they have not been embedded yet.
     // Instead, for back edges that are not loop edges, their forward edge record twins
-    // are put into the forward edge lists of the ancestor endpoints (so "back" edges 
+    // are put into the forward edge lists of the ancestor endpoints (so "back" edges
     // from a vertex to its descendants can be easily processed). For back edges that
     // are loop edges, they are instead placed into the loopEdgeBicompList.
     theStack = theGraph->theStack;

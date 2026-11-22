@@ -301,7 +301,6 @@ int runDFSandEmbeddingLoopEdgeTests(void)
         gp_ErrorMessage("Unable to allocate a graph.");
         retVal = NOTOK;
     }
-
     else if (gp_Read(G, "Petersen-with-loop-edges.txt") != OK ||
              gp_GetM(G) != 45 ||
              !_checkForExpectedLoopEdges(G, 3, 1))
@@ -326,7 +325,9 @@ int runDFSandEmbeddingLoopEdgeTests(void)
         gp_ErrorMessage("Loop edges were not all marked as back edges after undirected DFS.");
         retVal = NOTOK;
     }
-    else
+
+    // Test embedding of non-planar graph with loop edges
+    if (retVal == OK)
     {
         gp_Message("Testing planar embedding with loop edges, non-planarity detection, optimized initialization variant.");
 
@@ -365,6 +366,60 @@ int runDFSandEmbeddingLoopEdgeTests(void)
                      gp_TestEmbedResultIntegrity(G1, G, NONEMBEDDABLE) != NONEMBEDDABLE)
             {
                 gp_ErrorMessage("Embedding with loop edges failed to detect non-planar result, incremental initialization variant.");
+                retVal = NOTOK;
+            }
+        }
+    }
+
+    // Start next test fresh.
+    gp_Free(&G);
+    gp_Free(&G1);
+
+    // Test planar graph embedding and planar drawing
+    if (retVal == OK)
+    {
+        gp_Message("Testing planar graph embedding with loop edges.");
+
+        if ((G = gp_New()) == NULL || gp_Read(G, "Petersen-with-loop-edges.txt") != OK)
+        {
+            gp_ErrorMessage("Unable to allocate graph or read graph with loop edges");
+            retVal = NOTOK;
+        }
+        // Planarize Petersen by removing two edges that don't share endpoints, then duplicate
+        else if (gp_DeleteEdge(G, gp_FindEdge(G, 1, 2)) != OK ||
+                 gp_DeleteEdge(G, gp_FindEdge(G, 3, 4)) != OK ||
+                 (G1 = gp_DupGraph(G)) == NULL ||
+                 gp_GetM(G1) != 43)
+        {
+            gp_ErrorMessage("Failed to planarize or duplicate graph with loop edges.");
+            retVal = NOTOK;
+        }
+        else if (gp_Embed(G1, EMBEDFLAGS_PLANAR) != OK ||
+                 gp_TestEmbedResultIntegrity(G1, G, OK) != OK ||
+                 gp_GetM(G1) != 43)
+        {
+            gp_ErrorMessage("Embedding with loop edges failed to embed planar graph with loop edges.");
+            retVal = NOTOK;
+        }
+        else
+        {
+            gp_Message("Testing planar graph drawing with loop edges.");
+
+            gp_Free(&G1);
+
+            if ((G1 = gp_DupGraph(G)) == NULL ||
+                gp_GetM(G1) != 43 ||
+                gp_ExtendWith_DrawPlanar(G1) != OK)
+            {
+                gp_ErrorMessage("Failed to duplicate or extend graph with loop edges.");
+                retVal = NOTOK;
+            }
+            else if (gp_Embed(G1, EMBEDFLAGS_DRAWPLANAR) != OK ||
+                     gp_DeleteLoopEdges(G) != OK ||
+                     gp_TestEmbedResultIntegrity(G1, G, OK) != OK ||
+                     gp_GetM(G1) != 13)
+            {
+                gp_ErrorMessage("Planar graph drawing with loop edges failed.");
                 retVal = NOTOK;
             }
         }
