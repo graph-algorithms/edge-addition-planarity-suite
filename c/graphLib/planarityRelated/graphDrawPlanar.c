@@ -50,19 +50,34 @@ void _LogEdgeList(graphP theEmbedding, listCollectionP edgeList, int edgeListHea
 int _ComputeVisibilityRepresentation(DrawPlanarContext *context)
 {
     if (sp_NonEmpty(context->theGraph->edgeHoles))
+    {
+        gp_ErrorMessage("Graphs with edge holes not supported by this procedure.");
         return NOTOK;
+    }
 
     if (_ComputeVertexPositions(context) != OK)
+    {
+        gp_ErrorMessage("Failed to compute vertex positions.");
         return NOTOK;
+    }
 
     if (_ComputeEdgePositions(context) != OK)
+    {
+        gp_ErrorMessage("Failed to compute edge positions.");
         return NOTOK;
+    }
 
     if (_ComputeVertexRanges(context) != OK)
+    {
+        gp_ErrorMessage("Failed to compute vertex ranges.");
         return NOTOK;
+    }
 
     if (_ComputeEdgeRanges(context) != OK)
+    {
+        gp_ErrorMessage("Failed to compute edge ranges.");
         return NOTOK;
+    }
 
     return OK;
 }
@@ -91,7 +106,10 @@ int _ComputeVertexPositions(DrawPlanarContext *context)
         if (_gp_IsDFSTreeRoot(theEmbedding, v))
         {
             if (_ComputeVertexPositionsInComponent(context, v, &vertpos) != OK)
+            {
+                gp_ErrorMessage("Failed to compute vertex positions in component.");
                 return NOTOK;
+            }
         }
     }
 
@@ -198,7 +216,10 @@ int _ComputeVertexPositionsInComponent(DrawPlanarContext *context, int root, int
     int W, P, C, V, e;
 
     if (theOrder == NULL)
+    {
+        gp_ErrorMessage("Memory allocation failure.");
         return NOTOK;
+    }
 
     // Determine the vertex order using a depth first search with
     // pre-order visitation.
@@ -230,7 +251,10 @@ int _ComputeVertexPositionsInComponent(DrawPlanarContext *context, int root, int
         {
             // An unresolved tie is an error
             if (context->VI[W].drawingFlag == DRAWINGFLAG_TIE)
+            {
+                gp_ErrorMessage("Unresolved tie in vertex positions.");
                 return NOTOK;
+            }
 
             // If W is the child of a DFS root, then there is no vertex C
             // between it and some ancestor V.  Both V and C are not a vertex,
@@ -350,6 +374,7 @@ int _ComputeEdgePositions(DrawPlanarContext *context)
 
     if ((vertexOrder = (int *)malloc(gp_GetN(theEmbedding) * sizeof(int))) == NULL)
     {
+        gp_ErrorMessage("Memory allocation failed.");
         return NOTOK;
     }
 
@@ -367,7 +392,7 @@ int _ComputeEdgePositions(DrawPlanarContext *context)
     {
         free(vertexOrder);
         vertexOrder = NULL;
-
+        gp_ErrorMessage("Memory allocation failed.");
         return NOTOK;
     }
 
@@ -571,7 +596,10 @@ int _ComputeEdgeRanges(DrawPlanarContext *context)
     // Deleted edges are not supported, nor should they be in the embedding, so
     // this is just a reality check that avoids an in-use test inside the loop
     if (sp_NonEmpty(theEmbedding->edgeHoles))
+    {
+        gp_ErrorMessage("Graphs with edge holes not supported by this procedure.");
         return NOTOK;
+    }
 
     for (e = gp_LowerBoundEdges(theEmbedding); e < gp_UpperBoundEdges(theEmbedding); e += 2)
     {
@@ -746,7 +774,10 @@ int _BreakTie(DrawPlanarContext *context, int BicompRoot, int W, int WPrevLink)
         not is an error */
 
     if (context->VI[W].tie[WPrevLink] != context->VI[WPred].tie[WPredNextLink])
+    {
+        gp_ErrorMessage("Internal function failed.");
         return NOTOK;
+    }
 
     /* If there is a tie, it can now be resolved. */
     if (gp_IsVertex(theEmbedding, context->VI[W].tie[WPrevLink]))
@@ -815,7 +846,10 @@ char *_RenderToString(graphP theEmbedding)
         char numBuffer[32];
 
         if (visRep == NULL)
+        {
+            gp_ErrorMessage("Memory allocation failed.");
             return NULL;
+        }
 
         // If edges were deleted from the embedding, then the visibility representation is
         // no longer valid. (This is a necessary condition but not sufficient to guarantee
@@ -825,7 +859,7 @@ char *_RenderToString(graphP theEmbedding)
         {
             free(visRep);
             visRep = NULL;
-
+            gp_ErrorMessage("Graphs with edge holes not supported by this procedure.");
             return NULL;
         }
 
@@ -894,6 +928,7 @@ char *_RenderToString(graphP theEmbedding)
         return visRep;
     }
 
+    gp_ErrorMessage("Internal function failed.");
     return NULL;
 }
 
@@ -909,9 +944,15 @@ char *_RenderToString(graphP theEmbedding)
 
 int gp_DrawPlanar_RenderToString(graphP theEmbedding, char **pRenditionString)
 {
-    if (theEmbedding != NULL && sp_IsEmpty(theEmbedding->edgeHoles) && pRenditionString != NULL)
+    if (theEmbedding == NULL || pRenditionString == NULL)
+        gp_ErrorMessage("Invalid parameters.");
+    else if (!sp_IsEmpty(theEmbedding->edgeHoles))
+        gp_ErrorMessage("Graphs with edge holes not supported by this procedure.");
+    else
     {
         *pRenditionString = _RenderToString(theEmbedding);
+        if (*pRenditionString == NULL)
+            gp_ErrorMessage("Failed to generate string rendition.");
         return *pRenditionString != NULL ? OK : NOTOK;
     }
 
@@ -931,7 +972,11 @@ int gp_DrawPlanar_RenderToFile(graphP theEmbedding, char *theFileName)
 {
     int Result = OK;
 
-    if (theEmbedding != NULL && sp_IsEmpty(theEmbedding->edgeHoles))
+    if (theEmbedding == NULL || theFileName == NULL)
+        gp_ErrorMessage("Invalid parameters.");
+    else if (!sp_IsEmpty(theEmbedding->edgeHoles))
+        gp_ErrorMessage("Graphs with edge holes not supported by this procedure.");
+    else
     {
         FILE *outfile;
         char *theRendition;
@@ -975,7 +1020,10 @@ int gp_DrawPlanar_RenderToFile(graphP theEmbedding, char *theFileName)
             fflush(outfile);
 
         else if (fclose(outfile) != 0)
+        {
+            gp_ErrorMessage("Failed to close output file '%s'.", theFileName);
             return NOTOK;
+        }
 
         return Result;
     }
@@ -993,7 +1041,10 @@ int _CheckVisibilityRepresentationIntegrity(DrawPlanarContext *context)
     int v, e, eTwin, epos, eposIndex;
 
     if (sp_NonEmpty(context->theGraph->edgeHoles))
+    {
+        gp_ErrorMessage("Graphs with edge holes not supported by this procedure.");
         return NOTOK;
+    }
 
     _ClearAllVisitedFlagsInGraph(theEmbedding);
 
@@ -1009,12 +1060,18 @@ int _CheckVisibilityRepresentationIntegrity(DrawPlanarContext *context)
                 context->VI[v].start < 0 ||
                 context->VI[v].start > context->VI[v].end ||
                 context->VI[v].end >= gp_GetM(theEmbedding))
+            {
+                gp_ErrorMessage("Internal function failed.");
                 return NOTOK;
+            }
         }
 
         // Has the vertex position been used by a vertex before vertex v?
         if (gp_GetVisited(theEmbedding, context->VI[v].pos + gp_LowerBoundVertexStorage(theEmbedding)))
+        {
+            gp_ErrorMessage("Internal function failed.");
             return NOTOK;
+        }
 
         // Mark the vertex position as used by vertex v.
         // Note that this marking is made on some other vertex unrelated to v
@@ -1039,7 +1096,10 @@ int _CheckVisibilityRepresentationIntegrity(DrawPlanarContext *context)
             context->E[e].start < 0 ||
             context->E[e].start > context->E[e].end ||
             context->E[e].end >= gp_GetN(theEmbedding))
+        {
+            gp_ErrorMessage("Internal function failed.");
             return NOTOK;
+        }
 
         /* Get the recorded horizontal position of that edge,
             a number between 0 and M-1 */
@@ -1054,7 +1114,10 @@ int _CheckVisibilityRepresentationIntegrity(DrawPlanarContext *context)
         eTwin = gp_GetTwin(theEmbedding, eposIndex);
 
         if (gp_GetEdgeVisited(theEmbedding, eposIndex) || gp_GetEdgeVisited(theEmbedding, eTwin))
+        {
+            gp_ErrorMessage("Internal function failed.");
             return NOTOK;
+        }
 
         gp_SetEdgeVisited(theEmbedding, eposIndex);
         gp_SetEdgeVisited(theEmbedding, eTwin);
@@ -1077,12 +1140,18 @@ int _CheckVisibilityRepresentationIntegrity(DrawPlanarContext *context)
                    at the top or bottom of the edge,  */
                 if (context->E[e].start != context->VI[v].pos &&
                     context->E[e].end != context->VI[v].pos)
+                {
+                    gp_ErrorMessage("Internal function failed.");
                     return NOTOK;
+                }
 
                 /* The horizontal edge position must be in the range of the vertex */
                 if (context->E[e].pos < context->VI[v].start ||
                     context->E[e].pos > context->VI[v].end)
+                {
+                    gp_ErrorMessage("Internal function failed.");
                     return NOTOK;
+                }
             }
 
             /* If the vertex is not an endpoint of the edge... */
@@ -1100,7 +1169,10 @@ int _CheckVisibilityRepresentationIntegrity(DrawPlanarContext *context)
 
                     if (context->VI[v].start <= context->E[e].pos &&
                         context->VI[v].end >= context->E[e].pos)
+                    {
+                        gp_ErrorMessage("Internal function failed.");
                         return NOTOK;
+                    }
                 }
             }
         }
