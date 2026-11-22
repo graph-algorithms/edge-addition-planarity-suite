@@ -425,6 +425,55 @@ int runDFSandEmbeddingLoopEdgeTests(void)
         }
     }
 
+    // Start next test fresh.
+    gp_Free(&G);
+    gp_Free(&G1);
+
+    // Test homeomorph search, found and not found cases
+    if (retVal == OK)
+    {
+        gp_Message("Testing homeomorph search with found result.");
+        if ((G = gp_New()) == NULL || gp_Read(G, "Petersen-with-loop-edges.txt") != OK)
+        {
+            gp_ErrorMessage("Unable to allocate graph or read graph with loop edges");
+            retVal = NOTOK;
+        }
+        else if ((G1 = gp_DupGraph(G)) == NULL ||
+                 gp_GetM(G1) != 45 ||
+                 !_checkForExpectedLoopEdges(G1, 3, 1) ||
+                 gp_ExtendWith_K33Search(G1) != OK)
+        {
+            gp_ErrorMessage("Unable to duplicate graph or extend it with homeomorph search");
+            retVal = NOTOK;
+        }
+        else if (gp_Embed(G1, EMBEDFLAGS_SEARCHFORK33) != NONEMBEDDABLE ||
+                 gp_TestEmbedResultIntegrity(G1, G, NONEMBEDDABLE) != NONEMBEDDABLE)
+        {
+            gp_ErrorMessage("Failed loop edge test of homeomorph search with found result.");
+            retVal = NOTOK;
+        }
+        else
+        {
+            gp_Free(&G1);
+
+            if (gp_DeleteEdge(G, gp_FindEdge(G, 1, 2)) != OK ||
+                gp_DeleteEdge(G, gp_FindEdge(G, 3, 4)) != OK ||
+                (G1 = gp_DupGraph(G)) == NULL ||
+                gp_ExtendWith_K33Search(G1) != OK ||
+                gp_GetM(G1) != 43)
+            {
+                gp_ErrorMessage("Unable to planarize, duplicate, or extend graph with loop edges.");
+                retVal = NOTOK;
+            }
+            else if (gp_Embed(G1, EMBEDFLAGS_SEARCHFORK33) != OK ||
+                     gp_TestEmbedResultIntegrity(G1, G, OK) != OK)
+            {
+                gp_ErrorMessage("Failed loop edge test of homeomorph search with found result.");
+                retVal = NOTOK;
+            }
+        }
+    }
+
     gp_Free(&G);
     gp_Free(&G1);
 
