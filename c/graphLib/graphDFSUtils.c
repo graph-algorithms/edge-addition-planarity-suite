@@ -105,7 +105,7 @@ int gp_DepthFirstSearch(graphP theGraph)
 
     if (theGraph == NULL)
         return NOTOK;
-        
+
     if (gp_GetGraphFlags(theGraph) & GRAPHFLAGS_DFSNUMBERED)
         return OK;
 
@@ -170,7 +170,7 @@ int gp_DepthFirstSearch(graphP theGraph)
                     gp_SetEdgeType(theGraph, gp_GetTwin(theGraph, e), EDGE_TYPE_PARENT);
                 }
 
-                // From all edges in the vertex, we push the edges leading to all unvisited neighbors. 
+                // From all edges in the vertex, we push the edges leading to all unvisited neighbors.
                 // These will be either tree edges to children or forward edge records of back edges.
                 // Additionally, loop edges are processed here by simply marking them as back edges.
                 e = gp_GetFirstEdge(theGraph, u);
@@ -181,8 +181,8 @@ int gp_DepthFirstSearch(graphP theGraph)
                         sp_Push2(theStack, u, e);
                     }
                     // Label loop edges as back edges now (rather than pushing them now,
-                    // then later popping and labeling them in the else below). 
-                    else if (gp_GetNeighbor(theGraph, e) == u) 
+                    // then later popping and labeling them in the else below).
+                    else if (gp_GetNeighbor(theGraph, e) == u)
                     {
                         // To avoid labeling twice, we only process the lower-numbered edge
                         // record and then set the type for both edge records at the same time.
@@ -300,12 +300,29 @@ int _DepthFirstSearchDirected(graphP theGraph)
         {
             if (gp_GetDirection(theGraph, e) != EDGEFLAG_DIRECTION_INONLY)
             {
-                // This first-pushed edge is the last edge that will be
-                // processed for v because the stack reverses the order.
-                if (numEdgesPushed == 0)
-                    gp_SetEdgeMarked(theGraph, e);
-                sp_Push(theStack, e);
-                ++numEdgesPushed;
+                // If the edge is not a loop edge, then process it as normal for a directed DFS.
+                if (gp_GetNeighbor(theGraph, e) != v)
+                {
+                    // This first-pushed edge is the last edge that will be
+                    // processed for v because the stack reverses the order.
+                    if (numEdgesPushed == 0)
+                        gp_SetEdgeMarked(theGraph, e);
+                    sp_Push(theStack, e);
+                    ++numEdgesPushed;
+                }
+                // For a loop edge, we have the outbound edge record e (out-only or undirected)
+                // so we give it a type of back edge (to v).
+                else
+                {
+                    // For directed edges, the out-only edge record is the back edge record.
+                    // For undirected edges, we take the convention that the lower-numbered
+                    // edge record is the back edge record.
+                    if (gp_GetDirection(theGraph, e) == EDGEFLAG_DIRECTION_OUTONLY || e < gp_GetTwin(theGraph, e))
+                    {
+                        gp_SetEdgeType(theGraph, e, EDGE_TYPE_BACK);
+                        gp_SetEdgeType(theGraph, gp_GetTwin(theGraph, e), EDGE_TYPE_FORWARD);
+                    }
+                }
             }
             e = gp_GetNextEdge(theGraph, e);
         }
@@ -349,10 +366,27 @@ int _DepthFirstSearchDirected(graphP theGraph)
                 {
                     if (gp_GetDirection(theGraph, e) != EDGEFLAG_DIRECTION_INONLY)
                     {
-                        if (numEdgesPushed == 0)
-                            gp_SetEdgeMarked(theGraph, e);
-                        sp_Push(theStack, e);
-                        ++numEdgesPushed;
+                        // If the edge is not a loop edge, then process it as normal for a directed DFS.
+                        if (gp_GetNeighbor(theGraph, e) != w)
+                        {
+                            if (numEdgesPushed == 0)
+                                gp_SetEdgeMarked(theGraph, e);
+                            sp_Push(theStack, e);
+                            ++numEdgesPushed;
+                        }
+                        // For a loop edge, we have the outbound edge record e (out-only or undirected)
+                        // so we give it a type of back edge (to v).
+                        else
+                        {
+                            // For directed edges, the out-only edge record is the back edge record.
+                            // For undirected edges, we take the convention that the lower-numbered
+                            // edge record is the back edge record.
+                            if (gp_GetDirection(theGraph, e) == EDGEFLAG_DIRECTION_OUTONLY || e < gp_GetTwin(theGraph, e))
+                            {
+                                gp_SetEdgeType(theGraph, e, EDGE_TYPE_BACK);
+                                gp_SetEdgeType(theGraph, gp_GetTwin(theGraph, e), EDGE_TYPE_FORWARD);
+                            }
+                        }
                     }
                     e = gp_GetNextEdge(theGraph, e);
                 }

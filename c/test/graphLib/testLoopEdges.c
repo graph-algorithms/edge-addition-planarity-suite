@@ -291,12 +291,12 @@ static int _VerifyLoopsAreBackEdges(graphP theGraph, int observeDirection)
 int runDFSandEmbeddingLoopEdgeTests(void)
 {
     int retVal = OK;
-    graphP G = gp_New();
-    graphP G1 = NULL;
+    graphP G = NULL, G1 = NULL;
 
-    gp_Message("Testing undirected depth-first search behavior on loop edges.");
+    // Test directed DFS with loop edges
+    gp_Message("Testing directed depth-first search behavior on loop edges.");
 
-    if (G == NULL)
+    if ((G = gp_New()) == NULL)
     {
         gp_ErrorMessage("Unable to allocate a graph.");
         retVal = NOTOK;
@@ -315,15 +315,55 @@ int runDFSandEmbeddingLoopEdgeTests(void)
         gp_ErrorMessage("Failed to duplicate graph with loop edges.");
         retVal = NOTOK;
     }
-    else if (gp_DepthFirstSearchEx(G1, DFSMODE_UNDIRECTED) != OK)
+    else if (gp_DepthFirstSearchEx(G1, DFSMODE_DIRECTED) != OK)
     {
-        gp_ErrorMessage("Undirected DFS failed on graph with loop edges.");
+        gp_ErrorMessage("Directed DFS failed on graph with loop edges.");
         retVal = NOTOK;
     }
-    else if (!_VerifyLoopsAreBackEdges(G1, FALSE))
+    else if (!_VerifyLoopsAreBackEdges(G1, TRUE))
     {
-        gp_ErrorMessage("Loop edges were not all marked as back edges after undirected DFS.");
+        gp_ErrorMessage("Loop edges were not all correctly set to be back edges after directed DFS.");
         retVal = NOTOK;
+    }
+
+    // Start next test fresh.
+    gp_Free(&G);
+    gp_Free(&G1);
+
+    // Test undirected DFS with loop edges
+    if (retVal == OK)
+    {
+        gp_Message("Testing undirected depth-first search behavior on loop edges.");
+
+        if ((G = gp_New()) == NULL)
+        {
+            gp_ErrorMessage("Unable to allocate a graph.");
+            retVal = NOTOK;
+        }
+        else if (gp_Read(G, "Petersen-with-loop-edges.txt") != OK ||
+                 gp_GetM(G) != 45 ||
+                 !_checkForExpectedLoopEdges(G, 3, 1))
+        {
+            gp_ErrorMessage("Failed to correctly read graph with loop edges.");
+            retVal = NOTOK;
+        }
+        else if ((G1 = gp_DupGraph(G)) == NULL ||
+                 gp_GetM(G1) != 45 ||
+                 !_checkForExpectedLoopEdges(G1, 3, 1))
+        {
+            gp_ErrorMessage("Failed to duplicate graph with loop edges.");
+            retVal = NOTOK;
+        }
+        else if (gp_DepthFirstSearchEx(G1, DFSMODE_UNDIRECTED) != OK)
+        {
+            gp_ErrorMessage("Undirected DFS failed on graph with loop edges.");
+            retVal = NOTOK;
+        }
+        else if (!_VerifyLoopsAreBackEdges(G1, FALSE))
+        {
+            gp_ErrorMessage("Loop edges were not all correctly set to be back edges after undirected DFS.");
+            retVal = NOTOK;
+        }
     }
 
     // Test embedding of non-planar graph with loop edges
