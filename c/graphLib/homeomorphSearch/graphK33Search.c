@@ -23,7 +23,7 @@ extern int _ComputeEdgeRecordType(graphP theGraph, int a, int b, int edgeType);
 extern int _RestoreEdgeType(graphP theGraph, int u, int v);
 
 extern int _GetNeighborOnExtFace(graphP theGraph, int curVertex, int *pPrevLink);
-extern int _JoinBicomps(graphP theGraph);
+extern int _JoinBicomps(graphP theGraph, int includeLoopEdges);
 extern int _OrientVerticesInBicomp(graphP theGraph, int BicompRoot, int PreserveSigns);
 extern int _OrientVerticesInEmbedding(graphP theGraph);
 // extern void _InvertVertex(graphP theGraph, int V);
@@ -1894,7 +1894,7 @@ int _IsolateMinorE5(graphP theGraph)
         theGraph->functions->fpMarkDFSPath(theGraph, MIN3(IC->ux, IC->uy, IC->uz),
                                            MAX3(IC->ux, IC->uy, IC->uz)) != OK ||
         _MarkDFSPathsToDescendants(theGraph) != OK ||
-        _JoinBicomps(theGraph) != OK ||
+        _JoinBicomps(theGraph, FALSE) != OK ||
         _AddAndMarkUnembeddedEdges(theGraph) != OK)
         return NOTOK;
 
@@ -1943,7 +1943,7 @@ int _IsolateMinorE6(graphP theGraph, K33SearchContext *context)
 
     if (theGraph->functions->fpMarkDFSPath(theGraph, u_min, u_max) != OK ||
         _MarkDFSPathsToDescendants(theGraph) != OK ||
-        _JoinBicomps(theGraph) != OK ||
+        _JoinBicomps(theGraph, FALSE) != OK ||
         _AddAndMarkUnembeddedEdges(theGraph) != OK ||
         _AddAndMarkEdge(theGraph, u_d, d) != OK)
         return NOTOK;
@@ -1991,7 +1991,7 @@ int _IsolateMinorE7(graphP theGraph, K33SearchContext *context)
 
     if (theGraph->functions->fpMarkDFSPath(theGraph, u_min, u_max) != OK ||
         _MarkDFSPathsToDescendants(theGraph) != OK ||
-        _JoinBicomps(theGraph) != OK ||
+        _JoinBicomps(theGraph, FALSE) != OK ||
         _AddAndMarkUnembeddedEdges(theGraph) != OK ||
         _AddAndMarkEdge(theGraph, u_d, d) != OK)
         return NOTOK;

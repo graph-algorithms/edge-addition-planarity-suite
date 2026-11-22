@@ -24,14 +24,14 @@ extern "C"
     typedef struct listCollectionStruct listCollectionStruct;
     typedef listCollectionStruct *listCollectionP;
 
-    // Declaration of package-private data type for managing additional 
+    // Declaration of package-private data type for managing additional
     // DFS--related information associated with each non-virtual vertex
     typedef struct DFSUtils_VertexInfo DFSUtils_VertexInfo;
     typedef DFSUtils_VertexInfo *DFSUtils_VertexInfoP;
 
     // PLANARITY-RELATED ONLY
 
-    // Declaration of package-private data type for managing additional 
+    // Declaration of package-private data type for managing additional
     // planarity-related information associated with each non-virtual vertex
     typedef struct Planarity_VertexInfo Planarity_VertexInfo;
     typedef Planarity_VertexInfo *Planarity_VertexInfoP;
@@ -46,28 +46,38 @@ extern "C"
     typedef struct isolatorContextStruct isolatorContextStruct;
     typedef isolatorContextStruct *isolatorContextP;
 
-
     /********************************************************************
      A structure for package private data associated with a graph.
 
         BicompRootLists: storage for bicomp root lists (DFSUtils) or, for
-                            Planarity, pertinent child bicomp lists that develop
-                        during embedding
+             pertinent child bicomp lists that develop during embedding
+        loopEdgeBicompList: loop edges, if any, are degenerate bicomps, so
+             they are stored in this list when the graph is represented as
+             separated bicomps, such as during planar embedding. This is
+             NIL when bicomps are joined and indicates an edge record when
+             in use. The edge record is the head of a circular linked list
+             of edge records representing all loop edges from all vertices.
+             Only one edge record per loop edge is in the loopEdgeBicompList.
+             The twin of each edge record is also removed from the vertex
+             containing it when bicomps are separated. Both edge records of
+             each loop edge are restored to the owning vertex when bicomps
+             are re-joined, such as in planar embedding post-processing.
         DVI: package private pointer; if the graph is extended to DFSUtils,
-                then N instances of DFSUtils vertex info records are allocated
+             then N instances of DFSUtils vertex info records are allocated
 
         PVI: package private pointer; if the graph is extended to Planarity,
-                then N instances of Planarity vertex info records are allocated
-        IC: contains additional useful variables for Kuratowski subgraph isolation.
-        sortedDFSChildLists: for Planarity graphs, storage for the sorted DFS child
-                lists of each vertex
-        extFace: For Planarity graphs, an array of (N + NV) external face
-                short circuit records
+             then N instances of Planarity vertex info records are allocated
+        IC:  contains eseful variables for Kuratowski subgraph isolation.
+        sortedDFSChildLists: for Planarity graphs, storage for the sorted
+             DFS child lists of each vertex
+        extFace: An array of (N + NV) external face short circuit records
+             that expedite bicomp external face traversal during embedding.
      ********************************************************************/
     struct graphPrivateDataStruct
     {
         // Private Data members specific to a DFSUtilsGraph subclass
         listCollectionP BicompRootLists;
+        int loopEdgeBicompList;
         DFSUtils_VertexInfoP DVI;
 
         // Private data members specific to a PlanarityGraph subclass
@@ -89,9 +99,10 @@ extern "C"
 
 // These macros describe how to currently get access to additional data structures
 // used in DFSUtils Graphs and Planarity Graphs. Once full extensions are
-// developed for those, then these definitions can change to access the data 
-// from the extensions, and the data can be removed from graphPrivateDataStruct. 
+// developed for those, then these definitions can change to access the data
+// from the extensions, and the data can be removed from graphPrivateDataStruct.
 #define theGraphBicompRootLists(theGraph) (((graphPrivateDataP)((theGraph)->privateData))->BicompRootLists)
+#define theGraphLoopEdgeBicompList(theGraph) (((graphPrivateDataP)((theGraph)->privateData))->loopEdgeBicompList)
 #define theGraphDVI(theGraph) (((graphPrivateDataP)((theGraph)->privateData))->DVI)
 
 #define theGraphPVI(theGraph) (((graphPrivateDataP)((theGraph)->privateData))->PVI)

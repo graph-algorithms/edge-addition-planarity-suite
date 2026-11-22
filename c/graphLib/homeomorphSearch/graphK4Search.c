@@ -20,7 +20,7 @@ extern int _ComputeEdgeRecordType(graphP theGraph, int a, int b, int edgeType);
 extern int _RestoreEdgeType(graphP theGraph, int u, int v);
 
 extern int _GetNeighborOnExtFace(graphP theGraph, int curVertex, int *pPrevLink);
-extern int _JoinBicomps(graphP theGraph);
+extern int _JoinBicomps(graphP theGraph, int includeLoopEdges);
 // extern void _FindActiveVertices(graphP theGraph, int R, int *pX, int *pY);
 extern int _OrientVerticesInBicomp(graphP theGraph, int BicompRoot, int PreserveSigns);
 extern int _OrientVerticesInEmbedding(graphP theGraph);
@@ -797,7 +797,7 @@ int _K4_IsolateMinorB1(graphP theGraph)
     if (_MarkPathAlongBicompExtFace(theGraph, IC->r, IC->r) != OK)
         return NOTOK;
 
-    if (_JoinBicomps(theGraph) != OK)
+    if (_JoinBicomps(theGraph, FALSE) != OK)
         return NOTOK;
 
     if (_AddAndMarkEdge(theGraph, IC->ux, IC->dx) != OK)

@@ -15,7 +15,7 @@ See the LICENSE.TXT file for licensing information.
 extern void _ClearAllVisitedFlagsInGraph(graphP theGraph);
 
 extern int _GetNeighborOnExtFace(graphP theGraph, int curVertex, int *pPrevLink);
-extern int _JoinBicomps(graphP theGraph);
+extern int _JoinBicomps(graphP theGraph, int includeLoopEdges);
 
 extern int _ChooseTypeOfNonplanarityMinor(graphP theGraph, int v, int R);
 
@@ -161,7 +161,7 @@ int _IsolateMinorA(graphP theGraph)
     if (_MarkPathAlongBicompExtFace(theGraph, IC->r, IC->r) != OK ||
         theGraph->functions->fpMarkDFSPath(theGraph, MIN(IC->ux, IC->uy), IC->r) != OK ||
         _MarkDFSPathsToDescendants(theGraph) != OK ||
-        _JoinBicomps(theGraph) != OK ||
+        _JoinBicomps(theGraph, FALSE) != OK ||
         _AddAndMarkUnembeddedEdges(theGraph) != OK)
         return NOTOK;
 
@@ -180,7 +180,7 @@ int _IsolateMinorB(graphP theGraph)
         theGraph->functions->fpMarkDFSPath(theGraph, MIN3(IC->ux, IC->uy, IC->uz),
                                            MAX3(IC->ux, IC->uy, IC->uz)) != OK ||
         _MarkDFSPathsToDescendants(theGraph) != OK ||
-        _JoinBicomps(theGraph) != OK ||
+        _JoinBicomps(theGraph, FALSE) != OK ||
         _AddAndMarkUnembeddedEdges(theGraph) != OK)
         return NOTOK;
 
@@ -212,7 +212,7 @@ int _IsolateMinorC(graphP theGraph)
     // Note: The x-y path is already marked, due to identifying the type of non-planarity minor
     if (_MarkDFSPathsToDescendants(theGraph) != OK ||
         theGraph->functions->fpMarkDFSPath(theGraph, MIN(IC->ux, IC->uy), IC->r) != OK ||
-        _JoinBicomps(theGraph) != OK ||
+        _JoinBicomps(theGraph, FALSE) != OK ||
         _AddAndMarkUnembeddedEdges(theGraph) != OK)
         return NOTOK;
 
@@ -231,7 +231,7 @@ int _IsolateMinorD(graphP theGraph)
     if (_MarkPathAlongBicompExtFace(theGraph, IC->x, IC->y) != OK ||
         theGraph->functions->fpMarkDFSPath(theGraph, MIN(IC->ux, IC->uy), IC->r) != OK ||
         _MarkDFSPathsToDescendants(theGraph) != OK ||
-        _JoinBicomps(theGraph) != OK ||
+        _JoinBicomps(theGraph, FALSE) != OK ||
         _AddAndMarkUnembeddedEdges(theGraph) != OK)
         return NOTOK;
 
@@ -272,7 +272,7 @@ int _IsolateMinorE(graphP theGraph)
     if (_MarkPathAlongBicompExtFace(theGraph, IC->r, IC->r) != OK ||
         theGraph->functions->fpMarkDFSPath(theGraph, MIN3(IC->ux, IC->uy, IC->uz), IC->r) != OK ||
         _MarkDFSPathsToDescendants(theGraph) != OK ||
-        _JoinBicomps(theGraph) != OK ||
+        _JoinBicomps(theGraph, FALSE) != OK ||
         _AddAndMarkUnembeddedEdges(theGraph) != OK)
         return NOTOK;
 
@@ -365,7 +365,7 @@ int _IsolateMinorE3(graphP theGraph)
     // Note: The x-y path is already marked, due to identifying E as the type of non-planarity minor
     if (theGraph->functions->fpMarkDFSPath(theGraph, MIN3(IC->ux, IC->uy, IC->uz), IC->r) != OK ||
         _MarkDFSPathsToDescendants(theGraph) != OK ||
-        _JoinBicomps(theGraph) != OK ||
+        _JoinBicomps(theGraph, FALSE) != OK ||
         _AddAndMarkUnembeddedEdges(theGraph) != OK)
         return NOTOK;
 
@@ -398,7 +398,7 @@ int _IsolateMinorE4(graphP theGraph)
     if (theGraph->functions->fpMarkDFSPath(theGraph, MIN3(IC->ux, IC->uy, IC->uz),
                                            MAX3(IC->ux, IC->uy, IC->uz)) != OK ||
         _MarkDFSPathsToDescendants(theGraph) != OK ||
-        _JoinBicomps(theGraph) != OK ||
+        _JoinBicomps(theGraph, FALSE) != OK ||
         _AddAndMarkUnembeddedEdges(theGraph) != OK)
         return NOTOK;
 
@@ -918,7 +918,7 @@ int _DeleteUnvisitedVerticesAndEdges(graphP theGraph)
             theGraph->functions->fpDeleteEdge(theGraph, e);
         }
 
-        // Delete the unvisted embedded edges from v's adjacency list
+        // Delete the unvisited embedded edges from v's adjacency list
         e = gp_GetFirstEdge(theGraph, v);
         while (gp_IsEdge(theGraph, e))
         {
