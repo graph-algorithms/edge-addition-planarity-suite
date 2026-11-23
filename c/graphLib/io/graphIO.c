@@ -66,18 +66,30 @@ int _ReadAdjMatrix(graphP theGraph, strOrFileP inputContainer)
     int v = NIL, w = NIL, Flag = NIL;
 
     if (!sf_IsValidStrOrFile(inputContainer))
+    {
+        gp_ErrorMessage("Invalid parameters.");
         return NOTOK;
+    }
 
     // Read the number of vertices from the first line of the file
     if (sf_ReadSkipWhitespace(inputContainer) != OK)
+    {
+        gp_ErrorMessage("Internal function failed.");
         return NOTOK;
+    }
 
     if (sf_ReadInteger(&N, inputContainer) != OK)
+    {
+        gp_ErrorMessage("Failed to read number of vertices.");
         return NOTOK;
+    }
 
     // Initialize the graph based on the number of vertices
     if (gp_EnsureVertexCapacity(theGraph, N) != OK)
+    {
+        gp_ErrorMessage("Failed to allocate space for graph.");
         return NOTOK;
+    }
 
     // Read an upper-triangular matrix row for each vertex
     // Note that for the last vertex, zero flags are read, per the upper triangular format
@@ -88,20 +100,33 @@ int _ReadAdjMatrix(graphP theGraph, strOrFileP inputContainer)
         {
             // Read each of v's w-neighbor flags
             if (sf_ReadSkipWhitespace(inputContainer) != OK)
+            {
+                gp_ErrorMessage("Internal function failed.");
                 return NOTOK;
+            }
 
             if (sf_ReadSingleDigit(&Flag, inputContainer) != OK)
+            {
+                gp_ErrorMessage("Internal function failed.");
                 return NOTOK;
+            }
+
             // N.B. Currently do not allow edge-weights in Adjacency
             // Matrix format
             if (Flag != 0 && Flag != 1)
+            {
+                gp_ErrorMessage("Adjacency matrix value must be 0 or 1.");
                 return NOTOK;
+            }
 
             // Add the edge (v, w) if the flag is raised
             if (Flag)
             {
                 if (gp_DynamicAddEdge(theGraph, v, 0, w, 0) != OK)
+                {
+                    gp_ErrorMessage("Failed to add edge.");
                     return NOTOK;
+                }
             }
         }
     }
@@ -145,27 +170,48 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
     int peekChar = '\0';
 
     if (!sf_IsValidStrOrFile(inputContainer))
+    {
+        gp_ErrorMessage("Invalid parameters.");
         return NOTOK;
+    }
 
     // Skip the "N=" and then read the N value for number of vertices
     if (sf_ReadSkipChar(inputContainer) != OK)
+    {
+        gp_ErrorMessage("Internal function failed.");
         return NOTOK;
+    }
 
     if (sf_ReadSkipChar(inputContainer) != OK)
+    {
+        gp_ErrorMessage("Internal function failed.");
         return NOTOK;
+    }
 
     if (sf_ReadSkipWhitespace(inputContainer) != OK)
+    {
+        gp_ErrorMessage("Internal function failed.");
         return NOTOK;
+    }
 
     if (sf_ReadInteger(&N, inputContainer) != OK)
+    {
+        gp_ErrorMessage("Failed to read number of vertices.");
         return NOTOK;
+    }
 
     if (sf_ReadSkipWhitespace(inputContainer) != OK)
+    {
+        gp_ErrorMessage("Internal function failed.");
         return NOTOK;
+    }
 
     // Initialize theGraph based on the number of vertices in the input
     if (gp_EnsureVertexCapacity(theGraph, N) != OK)
+    {
+        gp_ErrorMessage("Failed to allocate space for graph.");
         return NOTOK;
+    }
 
     // Clear the index members of the vertices so they can be used
     // during the adjacency list read operation
@@ -177,11 +223,20 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
     {
         // Read the vertex number
         if (sf_ReadSkipWhitespace(inputContainer) != OK)
+        {
+            gp_ErrorMessage("Internal function failed.");
             return NOTOK;
+        }
         if (sf_ReadInteger(&indexValue, inputContainer) != OK)
+        {
+            gp_ErrorMessage("Failed to read vertex index.");
             return NOTOK;
+        }
         if (sf_ReadSkipWhitespace(inputContainer) != OK)
+        {
+            gp_ErrorMessage("Internal function failed.");
             return NOTOK;
+        }
 
         if (v == gp_LowerBoundVertexStorage(theGraph))
         {
@@ -203,7 +258,10 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
 
         // Skip the colon after the vertex number
         if (sf_ReadSkipChar(inputContainer) != OK)
+        {
+            gp_ErrorMessage("Internal function failed.");
             return NOTOK;
+        }
 
         // If the vertex already has a non-empty adjacency list, then it is
         // the result of adding edges during processing of preceding vertices.
@@ -243,7 +301,10 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
         {
             // Read the value indicating the next adjacent vertex (or the list end)
             if (sf_ReadSkipWhitespace(inputContainer) != OK)
+            {
+                gp_ErrorMessage("Internal function failed.");
                 return NOTOK;
+            }
 
             // Find out if the coming integer has a leading + because when W==v
             // a leading + indicates that the loop edge is directed
@@ -252,9 +313,15 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
             hasPlus = (peekChar == '+') ? TRUE : FALSE;
 
             if (sf_ReadInteger(&W, inputContainer) != OK)
+            {
+                gp_ErrorMessage("Failed to read vertex adjacency.");
                 return NOTOK;
+            }
             if (sf_ReadSkipWhitespace(inputContainer) != OK)
+            {
+                gp_ErrorMessage("Internal function failed.");
                 return NOTOK;
+            }
 
             // The adjacency list terminator belongs to the input numbering base,
             // so detect it before converting labels to storage locations.
@@ -264,18 +331,20 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
             W += inputOffset;
 
             // A value outside the valid range is an error.
-            if (W < gp_LowerBoundVertices(theGraph))
+            if (W < gp_LowerBoundVertices(theGraph) || W >= gp_UpperBoundVertices(theGraph))
+            {
+                gp_ErrorMessage("Vertex adjacency value out of range (%d).", W);
                 return NOTOK;
-
-            // A value above the valid range is an error
-            if (W >= gp_UpperBoundVertices(theGraph))
-                return NOTOK;
+            }
 
             // Loop edges are supported
             else if (W == v)
             {
                 if ((ErrorCode = gp_DynamicAddEdge(theGraph, v, 0, W, 0)) != OK)
+                {
+                    gp_ErrorMessage("Failed to add loop edge (%d, %d).", v, W);
                     return ErrorCode;
+                }
 
                 if (hasPlus)
                     gp_SetDirection(theGraph, gp_GetFirstEdge(theGraph, v), EDGEFLAG_DIRECTION_OUTONLY);
@@ -286,7 +355,10 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
             else if (v < W)
             {
                 if ((ErrorCode = gp_DynamicAddEdge(theGraph, v, 0, W, 0)) != OK)
+                {
+                    gp_ErrorMessage("Failed to add edge (%d, %d).", v, W);
                     return ErrorCode;
+                }
             }
 
             // If the adjacency is to a preceding, lower numbered vertex, then
@@ -336,7 +408,10 @@ int _ReadAdjList(graphP theGraph, strOrFileP inputContainer)
                 {
                     // It is added as the new first edge in both vertices
                     if ((ErrorCode = gp_DynamicAddEdge(theGraph, v, 0, W, 0)) != OK)
+                    {
+                        gp_ErrorMessage("Failed to add directed edge (%d -> %d).", v, W);
                         return ErrorCode;
+                    }
 
                     // Note that this call also sets OUTONLY on the twin edge record
                     gp_SetDirection(theGraph, gp_GetFirstEdge(theGraph, W), EDGEFLAG_DIRECTION_INONLY);
@@ -402,7 +477,10 @@ int _ReadLEDAGraph(graphP theGraph, strOrFileP inputContainer)
     memset(Line, '\0', (MAXLINE + 1));
 
     if (!sf_IsValidStrOrFile(inputContainer))
+    {
+        gp_ErrorMessage("Invalid parameters.");
         return NOTOK;
+    }
 
     /*
         N.B. Skip the lines that say LEDA.GRAPH and give the node and
@@ -411,57 +489,108 @@ int _ReadLEDAGraph(graphP theGraph, strOrFileP inputContainer)
     */
     for (int i = 0; i < 3; i++)
         if (sf_ReadSkipLineRemainder(inputContainer) != OK)
+        {
+            gp_ErrorMessage("Internal function failed.");
             return NOTOK;
+        }
 
     if (sf_ReadInteger(&graphType, inputContainer) != OK)
+    {
+        gp_ErrorMessage("Failed to read graph type.");
         return NOTOK;
+    }
 
     // N.B. We currently only support undirected graphs
     if (graphType != -2)
+    {
+        gp_ErrorMessage("This LEDA native graph file format reader only supports reading undirected graphs.");
         return NOTOK;
+    }
 
     /*
         Skip any preceding whitespace, read the number of vertices N,
         and skip any subsequent whitespace.
     */
     if (sf_ReadSkipWhitespace(inputContainer) != OK)
+    {
+        gp_ErrorMessage("Internal function failed.");
         return NOTOK;
+    }
     if (sf_ReadInteger(&N, inputContainer) != OK)
+    {
+        gp_ErrorMessage("Failed to read number of vertices.");
         return NOTOK;
+    }
     if (sf_ReadSkipWhitespace(inputContainer) != OK)
+    {
+        gp_ErrorMessage("Internal function failed.");
         return NOTOK;
+    }
 
     if (gp_EnsureVertexCapacity(theGraph, N) != OK)
+    {
+        gp_ErrorMessage("Failed to allocate space for graph.");
         return NOTOK;
+    }
 
     for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
         if (sf_fgets(Line, MAXLINE, inputContainer) == NULL)
+        {
+            gp_ErrorMessage("Failed to read vertex line for vertex %d.", v);
             return NOTOK;
+        }
 
     /* Read the number of edges */
     if (sf_ReadSkipWhitespace(inputContainer) != OK)
+    {
+        gp_ErrorMessage("Internal function failed.");
         return NOTOK;
+    }
     if (sf_ReadInteger(&M, inputContainer) != OK)
+    {
+        gp_ErrorMessage("Failed to read number of edges.");
         return NOTOK;
+    }
     if (sf_ReadSkipWhitespace(inputContainer) != OK)
+    {
+        gp_ErrorMessage("Internal function failed.");
         return NOTOK;
+    }
 
     /* Read and add each edge, including parallel edges and loops */
     for (int m = 0; m < M; m++)
     {
         if (sf_ReadSkipWhitespace(inputContainer) != OK)
+        {
+            gp_ErrorMessage("Failed to read part of edge %d.", (m + 1));
             return NOTOK;
+        }
         if (sf_ReadInteger(&u, inputContainer) != OK)
+        {
+            gp_ErrorMessage("Failed to read part of edge %d.", (m + 1));
             return NOTOK;
+        }
         if (sf_ReadSkipWhitespace(inputContainer) != OK)
+        {
+            gp_ErrorMessage("Failed to read part of edge %d.", (m + 1));
             return NOTOK;
+        }
         if (sf_ReadInteger(&v, inputContainer) != OK)
+        {
+            gp_ErrorMessage("Failed to read part of edge %d.", (m + 1));
             return NOTOK;
+        }
         if (sf_ReadSkipLineRemainder(inputContainer) != OK)
+        {
+            gp_ErrorMessage("Failed to read part of edge %d.", (m + 1));
             return NOTOK;
+        }
 
         if ((ErrorCode = gp_DynamicAddEdge(theGraph, u - zeroBasedOffset, 0, v - zeroBasedOffset, 0)) != OK)
+        {
+            gp_ErrorMessage("Failed to add edge for (%d, %d).", u, v);
             return ErrorCode;
+        }
     }
 
     if (zeroBasedOffset)
@@ -485,10 +614,16 @@ int gp_Read(graphP theGraph, char const *fileName)
     strOrFileP inputContainer = NULL;
 
     if (theGraph == NULL || fileName == NULL || strlen(fileName) == 0)
+    {
+        gp_ErrorMessage("Invalid parameters.");
         return NOTOK;
+    }
 
     if ((inputContainer = sf_NewInputContainer(NULL, fileName)) == NULL)
+    {
+        gp_ErrorMessage("Failed to set up an input management object.");
         return NOTOK;
+    }
 
     return _ReadGraph(theGraph, (&inputContainer));
 }
@@ -510,10 +645,16 @@ int gp_ReadFromString(graphP theGraph, char *inputStr)
     strOrFileP inputContainer = NULL;
 
     if (theGraph == NULL || inputStr == NULL || strlen(inputStr) == 0)
+    {
+        gp_ErrorMessage("Invalid parameters.");
         return NOTOK;
+    }
 
     if ((inputContainer = sf_NewInputContainer(inputStr, NULL)) == NULL)
+    {
+        gp_ErrorMessage("Failed to set up an input management object.");
         return NOTOK;
+    }
 
     return _ReadGraph(theGraph, (&inputContainer));
 }
@@ -543,16 +684,21 @@ int _ReadGraph(graphP theGraph, strOrFileP *pInputContainer)
     memset(lineBuff, '\0', (MAXLINE + 1));
 
     if (!sf_IsValidStrOrFile((*pInputContainer)))
+    {
+        gp_ErrorMessage("Invalid parameters.");
         return NOTOK;
+    }
 
     if (sf_fgets(lineBuff, MAXLINE, (*pInputContainer)) == NULL)
     {
+        gp_ErrorMessage("Failed to get first line of content for file type detection.");
         sf_Free(pInputContainer);
         return NOTOK;
     }
 
     if (sf_ungets(lineBuff, (*pInputContainer)) != OK)
     {
+        gp_ErrorMessage("Internal function failed.");
         sf_Free(pInputContainer);
         return NOTOK;
     }
@@ -560,22 +706,30 @@ int _ReadGraph(graphP theGraph, strOrFileP *pInputContainer)
     if (strncmp(lineBuff, "LEDA.GRAPH", strlen("LEDA.GRAPH")) == 0)
     {
         RetVal = _ReadLEDAGraph(theGraph, (*pInputContainer));
+        if (RetVal != OK)
+            gp_ErrorMessage("Error reading LEDA graph.");
     }
     else if (strncmp(lineBuff, "N=", strlen("N=")) == 0)
     {
         RetVal = _ReadAdjList(theGraph, (*pInputContainer));
         if (RetVal == OK)
             extraDataAllowed = TRUE;
+        if (RetVal != OK)
+            gp_ErrorMessage("Error reading adjacency list graph.");
     }
     else if (isdigit(lineBuff[0]))
     {
         RetVal = _ReadAdjMatrix(theGraph, (*pInputContainer));
         if (RetVal == OK)
             extraDataAllowed = TRUE;
+        if (RetVal != OK)
+            gp_ErrorMessage("Error reading adjacency matrix graph.");
     }
     else if (_IsGraphMLInput(lineBuff))
     {
         RetVal = _ReadGraphMLGraph(theGraph, (*pInputContainer), FALSE);
+        if (RetVal != OK)
+            gp_ErrorMessage("Error reading GraphML graph.");
     }
     else if (s6_IsSparse6Input(lineBuff))
     {
@@ -583,12 +737,16 @@ int _ReadGraph(graphP theGraph, strOrFileP *pInputContainer)
         // As for .g6 below, ownership of inputContainer passes to the
         // read iterator, so (*pInputContainer) is NULL after this call.
         RetVal = _s6_ReadGraphFromStrOrFile(theGraph, pInputContainer);
+        if (RetVal != OK)
+            gp_ErrorMessage("Error reading Sparse6 graph.");
     }
     else if (d6_IsDigraph6Input(lineBuff))
     {
         // As for .g6 below, ownership of inputContainer passes to the
         // read iterator, so (*pInputContainer) is NULL after this call.
         RetVal = _d6_ReadGraphFromStrOrFile(theGraph, pInputContainer);
+        if (RetVal != OK)
+            gp_ErrorMessage("Error reading digraph6 graph.");
     }
     else if (g6_IsGraph6Input(lineBuff))
     {
@@ -597,6 +755,8 @@ int _ReadGraph(graphP theGraph, strOrFileP *pInputContainer)
         // calls sf_Free() when ending iteration. This will mean that
         // (*pInputContainer) is NULL after we return from this call.
         RetVal = _g6_ReadGraphFromStrOrFile(theGraph, pInputContainer);
+        if (RetVal != OK)
+            gp_ErrorMessage("Error reading graph6 graph.");
     }
     else
     {
@@ -618,28 +778,42 @@ int _ReadGraph(graphP theGraph, strOrFileP *pInputContainer)
         if ((charAfterGraphRead = sf_getc((*pInputContainer))) != EOF)
         {
             if (sf_ungetc(charAfterGraphRead, (*pInputContainer)) != charAfterGraphRead)
+            {
+                gp_ErrorMessage("Internal function failed.");
                 RetVal = NOTOK;
+            }
             else
             {
                 strBufP extraData = sb_New(0);
                 if (extraData == NULL)
+                {
+                    gp_ErrorMessage("Failed to allocate memory.");
                     RetVal = NOTOK;
+                }
                 else
                 {
                     while (sf_fgets(lineBuff, MAXLINE, (*pInputContainer)) != NULL)
                     {
                         if (sb_ConcatString(extraData, lineBuff) != OK)
                         {
+                            gp_ErrorMessage("Internal function failed.");
                             RetVal = NOTOK;
                             break;
                         }
                     }
 
                     if ((*pInputContainer)->inputErrorFlag)
+                    {
+                        gp_ErrorMessage("An input error was detected.");
                         RetVal = NOTOK;
+                    }
 
                     if (RetVal == OK && sb_GetSize(extraData) > 0)
+                    {
                         RetVal = theGraph->functions->fpReadPostprocess(theGraph, sb_GetReadString(extraData));
+                        if (RetVal != OK)
+                            gp_ErrorMessage("Read postprocessing failed.");
+                    }
 
                     sb_Free(&extraData);
                     extraData = NULL;
@@ -649,7 +823,10 @@ int _ReadGraph(graphP theGraph, strOrFileP *pInputContainer)
     }
 
     if (*pInputContainer != NULL && (*pInputContainer)->inputErrorFlag)
+    {
+        gp_ErrorMessage("An input error was detected.");
         RetVal = NOTOK;
+    }
 
     // This is a no-op if pInputContainer or *pInputContainer is already NULL,
     // such as in the case of G6 file processing. This cleans up for the other
@@ -690,13 +867,22 @@ int _WriteAdjList(graphP theGraph, strOrFileP outputContainer)
     memset(numberStr, '\0', (2 + MAXCHARSFOR32BITINT + 2 + 1) * sizeof(char));
 
     if (theGraph == NULL || !sf_IsValidStrOrFile(outputContainer))
+    {
+        gp_ErrorMessage("Invalid parameters.");
         return NOTOK;
+    }
 
     // Write the number of vertices of the graph to the file or string buffer
     if (sprintf(numberStr, "N=%d\n", gp_GetN(theGraph)) < 1)
+    {
+        gp_ErrorMessage("Internal function failed.");
         return NOTOK;
+    }
     if (sf_fputs(numberStr, outputContainer) == EOF)
+    {
+        gp_ErrorMessage("Internal function failed.");
         return NOTOK;
+    }
 
     // If we are supposed to write 0-based output, then we have to adjust the vertex offset and the
     // adjacency list terminator based on whether this library has been compiled with 0-based or
@@ -715,9 +901,15 @@ int _WriteAdjList(graphP theGraph, strOrFileP outputContainer)
     for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
     {
         if (sprintf(numberStr, "%d:", v - zeroBasedVertexOffset) < 1)
+        {
+            gp_ErrorMessage("Internal function failed.");
             return NOTOK;
+        }
         if (sf_fputs(numberStr, outputContainer) == EOF)
+        {
+            gp_ErrorMessage("Internal function failed.");
             return NOTOK;
+        }
 
         e = gp_GetLastEdge(theGraph, v);
         while (gp_IsEdge(theGraph, e))
@@ -755,16 +947,25 @@ int _WriteAdjList(graphP theGraph, strOrFileP outputContainer)
                 {
                     // Print with a '+' sign
                     if (sprintf(numberStr, " +%d", neighbor - zeroBasedVertexOffset) < 1)
+                    {
+                        gp_ErrorMessage("Internal function failed.");
                         return NOTOK;
+                    }
                 }
                 else
                 {
                     if (sprintf(numberStr, " %d", neighbor - zeroBasedVertexOffset) < 1)
+                    {
+                        gp_ErrorMessage("Internal function failed.");
                         return NOTOK;
+                    }
                 }
 
                 if (sf_fputs(numberStr, outputContainer) == EOF)
+                {
+                    gp_ErrorMessage("Internal function failed.");
                     return NOTOK;
+                }
             }
 
             e = gp_GetPrevEdge(theGraph, e);
@@ -772,9 +973,15 @@ int _WriteAdjList(graphP theGraph, strOrFileP outputContainer)
 
         // Write NIL at the end of the adjacency list (in zero-based I/O, NIL was -1)
         if (sprintf(numberStr, " %d\n", adjacencyListTerminator) < 1)
+        {
+            gp_ErrorMessage("Internal function failed.");
             return NOTOK;
+        }
         if (sf_fputs(numberStr, outputContainer) == EOF)
+        {
+            gp_ErrorMessage("Internal function failed.");
             return NOTOK;
+        }
     }
 
     return OK;
@@ -802,7 +1009,10 @@ int _WriteAdjMatrix(graphP theGraph, strOrFileP outputContainer)
     memset(numberStr, '\0', (MAXCHARSFOR32BITINT + 2 + 1) * sizeof(char));
 
     if (theGraph == NULL || !sf_IsValidStrOrFile(outputContainer))
+    {
+        gp_ErrorMessage("Invalid parameters.");
         return NOTOK;
+    }
 
     if (gp_GetGraphFlags(theGraph) & GRAPHFLAGS_DIRECTEDEDGEDETECTED)
     {
@@ -812,14 +1022,23 @@ int _WriteAdjMatrix(graphP theGraph, strOrFileP outputContainer)
 
     // Write the number of vertices in the graph to the file or string buffer
     if (sprintf(numberStr, "%d\n", gp_GetN(theGraph)) < 1)
+    {
+        gp_ErrorMessage("Internal function failed.");
         return NOTOK;
+    }
     if (sf_fputs(numberStr, outputContainer) == EOF)
+    {
+        gp_ErrorMessage("Internal function failed.");
         return NOTOK;
+    }
 
     // Allocate memory for storing a string expression of one row at a time
     Row = (char *)malloc((gp_GetN(theGraph) + 2) * sizeof(char));
     if (Row == NULL)
+    {
+        gp_ErrorMessage("Memory allocation failed.");
         return NOTOK;
+    }
 
     // Construct the upper triangular matrix representation one row at a time
     for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
@@ -852,9 +1071,9 @@ int _WriteAdjMatrix(graphP theGraph, strOrFileP outputContainer)
             }
             else if (gp_GetNeighbor(theGraph, e) == v)
             {
-                    gp_ErrorMessage("Adjacency matrix writer does not support loop edges.");
-                    free(Row);
-                    return NOTOK;
+                gp_ErrorMessage("Adjacency matrix writer does not support loop edges.");
+                free(Row);
+                return NOTOK;
             }
 
             e = gp_GetNextEdge(theGraph, e);
@@ -935,13 +1154,22 @@ int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer)
     memset(lineBuf, '\0', (MAXLINE + 1) * sizeof(char));
 
     if (theGraph == NULL || !sf_IsValidStrOrFile(outputContainer))
+    {
+        gp_ErrorMessage("Invalid parameters.");
         return NOTOK;
+    }
 
     /* Print parent copy vertices and their adjacency lists */
     if (sprintf(lineBuf, "DEBUG N=%d M=%d\n", gp_GetN(theGraph), gp_GetM(theGraph)) < 1)
+    {
+        gp_ErrorMessage("Internal function failed.");
         return NOTOK;
+    }
     if (sf_fputs(lineBuf, outputContainer) == EOF)
+    {
+        gp_ErrorMessage("Internal function failed.");
         return NOTOK;
+    }
 
     for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
     {
@@ -950,24 +1178,42 @@ int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer)
                     gp_GetVertexLeastAncestor(theGraph, v),
                     gp_GetVertexLowpoint(theGraph, v),
                     gp_GetIndex(theGraph, v)) < 1)
+        {
+            gp_ErrorMessage("Internal function failed.");
             return NOTOK;
+        }
         if (sf_fputs(lineBuf, outputContainer) == EOF)
+        {
+            gp_ErrorMessage("Internal function failed.");
             return NOTOK;
+        }
 
         e = gp_GetFirstEdge(theGraph, v);
         while (gp_IsEdge(theGraph, e))
         {
             if (sprintf(lineBuf, " %d(e=%d)", gp_GetNeighbor(theGraph, e), e) < 1)
+            {
+                gp_ErrorMessage("Internal function failed.");
                 return NOTOK;
+            }
             if (sf_fputs(lineBuf, outputContainer) == EOF)
+            {
+                gp_ErrorMessage("Internal function failed.");
                 return NOTOK;
+            }
             e = gp_GetNextEdge(theGraph, e);
         }
 
         if (sprintf(lineBuf, " %d\n", NIL) < 1)
+        {
+            gp_ErrorMessage("Internal function failed.");
             return NOTOK;
+        }
         if (sf_fputs(lineBuf, outputContainer) == EOF)
+        {
+            gp_ErrorMessage("Internal function failed.");
             return NOTOK;
+        }
     }
 
     /* Print any root copy vertices and their adjacency lists */
@@ -980,30 +1226,51 @@ int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer)
         if (sprintf(lineBuf, "%d(copy of=%d, DFS child=%d):",
                     v, gp_GetIndex(theGraph, v),
                     gp_GetDFSChildFromBicompRoot(theGraph, v)) < 1)
+        {
+            gp_ErrorMessage("Internal function failed.");
             return NOTOK;
+        }
         if (sf_fputs(lineBuf, outputContainer) == EOF)
+        {
+            gp_ErrorMessage("Internal function failed.");
             return NOTOK;
+        }
 
         e = gp_GetFirstEdge(theGraph, v);
         while (gp_IsEdge(theGraph, e))
         {
             if (sprintf(lineBuf, " %d(e=%d)", gp_GetNeighbor(theGraph, e), e) < 1)
+            {
+                gp_ErrorMessage("Internal function failed.");
                 return NOTOK;
+            }
             if (sf_fputs(lineBuf, outputContainer) == EOF)
+            {
+                gp_ErrorMessage("Internal function failed.");
                 return NOTOK;
+            }
 
             e = gp_GetNextEdge(theGraph, e);
         }
 
         if (sprintf(lineBuf, " %d\n", NIL) < 1)
+        {
+            gp_ErrorMessage("Internal function failed.");
             return NOTOK;
+        }
         if (sf_fputs(lineBuf, outputContainer) == EOF)
+        {
+            gp_ErrorMessage("Internal function failed.");
             return NOTOK;
+        }
     }
 
     /* Print information about vertices and root copy (virtual) vertices */
     if (sf_fputs("\nVERTEX INFORMATION\n", outputContainer) == EOF)
+    {
+        gp_ErrorMessage("Internal function failed.");
         return NOTOK;
+    }
 
     for (v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
     {
@@ -1015,7 +1282,10 @@ int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer)
                     gp_GetLastEdge(theGraph, v)) < 1)
             return NOTOK;
         if (sf_fputs(lineBuf, outputContainer) == EOF)
+        {
+            gp_ErrorMessage("Internal function failed.");
             return NOTOK;
+        }
     }
     for (v = gp_LowerBoundVirtualVertices(theGraph); v < gp_UpperBoundVirtualVertices(theGraph); ++v)
     {
@@ -1028,15 +1298,24 @@ int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer)
                     (gp_IsVirtualVertex(theGraph, v) ? 'X' : _GetObstructionMarkChar(theGraph, v)),
                     gp_GetFirstEdge(theGraph, v),
                     gp_GetLastEdge(theGraph, v)) < 1)
+        {
+            gp_ErrorMessage("Internal function failed.");
             return NOTOK;
+        }
         if (sf_fputs(lineBuf, outputContainer) == EOF)
+        {
+            gp_ErrorMessage("Internal function failed.");
             return NOTOK;
+        }
     }
 
     /* Print information about edges */
 
     if (sf_fputs("\nEDGE INFORMATION\n", outputContainer) == EOF)
+    {
+        gp_ErrorMessage("Internal function failed.");
         return NOTOK;
+    }
 
     for (e = gp_LowerBoundEdges(theGraph); e < gp_UpperBoundEdges(theGraph); ++e)
     {
@@ -1048,9 +1327,15 @@ int _WriteDebugInfo(graphP theGraph, strOrFileP outputContainer)
                         _GetEdgeTypeChar(theGraph, e),
                         gp_GetNextEdge(theGraph, e),
                         gp_GetPrevEdge(theGraph, e)) < 1)
+            {
+                gp_ErrorMessage("Internal function failed.");
                 return NOTOK;
+            }
             if (sf_fputs(lineBuf, outputContainer) == EOF)
+            {
+                gp_ErrorMessage("Internal function failed.");
                 return NOTOK;
+            }
         }
     }
 
@@ -1076,15 +1361,23 @@ int gp_Write(graphP theGraph, char const *fileName, int writeMode)
     strOrFileP outputContainer = NULL;
 
     if (theGraph == NULL || fileName == NULL || strlen(fileName) == 0)
+    {
+        gp_ErrorMessage("Invalid parameters.");
         return NOTOK;
+    }
 
     if (strcmp(fileName, "nullwrite") == 0)
         return OK;
 
     if ((outputContainer = sf_NewOutputContainer(NULL, fileName)) == NULL)
+    {
+        gp_ErrorMessage("Failed to allocate output management object.");
         return NOTOK;
+    }
 
     RetVal = _WriteGraph(theGraph, &outputContainer, writeMode);
+    if (RetVal != OK)
+        gp_ErrorMessage("Failed to write graph.");
 
     // The graph6 and sparse6 writers take the container and close it
     // themselves; for the other formats the file is closed here, since
@@ -1126,22 +1419,32 @@ int gp_WriteToString(graphP theGraph, char **pOutputStr, int writeMode)
     strOrFileP outputContainer = NULL;
 
     if (theGraph == NULL || pOutputStr == NULL || (*pOutputStr) != NULL)
+    {
+        gp_ErrorMessage("Invalid parameters.");
         return NOTOK;
+    }
 
     if ((outputContainer = sf_NewOutputContainer(pOutputStr, NULL)) == NULL)
+    {
+        gp_ErrorMessage("Failed to allocate output management object.");
         return NOTOK;
+    }
 
     RetVal = _WriteGraph(theGraph, &outputContainer, writeMode);
+    if (RetVal != OK)
+        gp_ErrorMessage("Failed to write graph.");
 
     sf_Free(&outputContainer);
 
     // NOTE: If the output string is NULL or empty, need to report NOTOK
     if (pOutputStr != NULL && (*pOutputStr) == NULL)
         RetVal = NOTOK;
-    else if (pOutputStr != NULL && strlen(*pOutputStr) == 0)
+    else if (pOutputStr != NULL && ((*pOutputStr) == NULL || strlen(*pOutputStr) == 0))
     {
-        free((*pOutputStr));
+        if ((*pOutputStr) != NULL)
+            free((*pOutputStr));
         pOutputStr = NULL;
+        gp_ErrorMessage("Failed to get output string containing graph.");
         RetVal = NOTOK;
     }
 
@@ -1172,32 +1475,47 @@ int _WriteGraph(graphP theGraph, strOrFileP *pOutputContainer, int Mode)
         // This call takes ownership of the outputContainer, so (*pOutputContainer)
         // will be NULL upon return from this function.
         RetVal = _g6_WriteGraphToStrOrFile(theGraph, pOutputContainer);
+        if (RetVal != OK)
+            gp_ErrorMessage("Failed to write graph in graph6 format.");
         break;
     case WRITE_SPARSE6:
         // Likewise takes ownership of the outputContainer
         RetVal = _s6_WriteGraphToStrOrFile(theGraph, pOutputContainer);
+        if (RetVal != OK)
+            gp_ErrorMessage("Failed to write graph in sparse6 format.");
         break;
     case WRITE_DIGRAPH6:
         // Likewise takes ownership of the outputContainer
         RetVal = _d6_WriteGraphToStrOrFile(theGraph, pOutputContainer);
+        if (RetVal != OK)
+            gp_ErrorMessage("Failed to write graph in digraph6 format.");
         break;
     case WRITE_ADJLIST:
         RetVal = _WriteAdjList(theGraph, (*pOutputContainer));
+        if (RetVal != OK)
+            gp_ErrorMessage("Failed to write graph in adjacency list format.");
         if (RetVal == OK)
             extraDataAllowed = TRUE;
         break;
     case WRITE_ADJMATRIX:
         RetVal = _WriteAdjMatrix(theGraph, (*pOutputContainer));
+        if (RetVal != OK)
+            gp_ErrorMessage("Failed to write graph in adjacency matrix format.");
         if (RetVal == OK)
             extraDataAllowed = TRUE;
         break;
     case WRITE_DEBUGINFO:
         RetVal = _WriteDebugInfo(theGraph, (*pOutputContainer));
+        if (RetVal != OK)
+            gp_ErrorMessage("Failed to write graph debug info.");
         break;
     case WRITE_GRAPHML:
         RetVal = _WriteGraphMLGraph(theGraph, (*pOutputContainer));
+        if (RetVal != OK)
+            gp_ErrorMessage("Failed to write graph in GraphML format.");
         break;
     default:
+        gp_ErrorMessage("Unrecognized write mode.");
         RetVal = NOTOK;
         break;
     }
@@ -1207,8 +1525,10 @@ int _WriteGraph(graphP theGraph, strOrFileP *pOutputContainer, int Mode)
         char *extraData = NULL;
 
         RetVal = theGraph->functions->fpWritePostprocess(theGraph, &extraData);
+        if (RetVal != OK)
+            gp_ErrorMessage("Write postprocessing failed.");
 
-        if (extraData != NULL)
+        if (RetVal == OK && extraData != NULL)
         {
             if (sf_fputs(extraData, (*pOutputContainer)) == EOF)
                 RetVal = NOTOK;
