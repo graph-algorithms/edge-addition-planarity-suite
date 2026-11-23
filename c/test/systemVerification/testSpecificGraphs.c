@@ -18,7 +18,6 @@ int runSpecificGraphTests(void)
 {
     int retVal = OK;
 
-#ifdef USE_1BASEDARRAYS
     gp_Message("\n\tStarting 1-based Array Index Tests\n");
 
     if (runSpecificGraphTest("-p", "maxPlanar5.txt", TRUE) != OK)
@@ -76,7 +75,6 @@ int runSpecificGraphTests(void)
     }
 
     gp_Message("\tFinished 1-based Array Index Tests.\n");
-#endif
 
     if (runSpecificGraphTest("-p", "maxPlanar5.0-based.txt", FALSE) != OK)
     {

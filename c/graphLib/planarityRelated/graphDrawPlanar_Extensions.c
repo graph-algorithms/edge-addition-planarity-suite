@@ -250,17 +250,7 @@ int _DrawPlanar_CreateStructures(DrawPlanarContext *context)
  ********************************************************************/
 int _DrawPlanar_InitStructures(DrawPlanarContext *context)
 {
-#ifdef USE_1BASEDARRAYS
     memset(context->VI, NIL_CHAR, gp_UpperBoundVertices(context->theGraph) * sizeof(DrawPlanar_VertexInfo));
-#else
-    graphP theGraph = context->theGraph;
-    if (gp_GetN(theGraph) <= 0)
-        return NOTOK;
-
-    for (int v = gp_LowerBoundVertices(theGraph); v < gp_UpperBoundVertices(theGraph); ++v)
-        _DrawPlanar_InitVertexInfo(context, v);
-#endif
-
     memset(context->E, 0, gp_UpperBoundEdgeStorage(context->theGraph) * sizeof(DrawPlanar_EdgeRec));
 
     context->drawingDataValid = FALSE;
@@ -812,9 +802,7 @@ int _DrawPlanar_WritePostprocess(graphP theGraph, char **pExtraData)
                 return NOTOK;
 
             // If we are supposed to write 0-based output, then we have to set these two variables to indicate
-            // how much to subtract from each vertex and edge index based on whether this library has been
-            // compiled with 0-based or 1-based array indexing for the in-memory data structure (i.e., compiled
-            // with USE_1BASEDARRAYS USE_0BASEDARRAYS). The macros invoked are responsive to the difference.
+            // how much to subtract from each vertex and edge index.
             if (gp_GetGraphFlags(theGraph) & GRAPHFLAGS_ZEROBASEDIO)
             {
                 zeroBasedVertexOffset = gp_LowerBoundVertexStorage(theGraph);

@@ -175,12 +175,7 @@ extern "C"
 
 // The original N non-virtual vertices of a graph start at the lowest allowed storage location.
 // The upper bound is one-past-the-end of the storage for the N non-virtual vertices.
-#ifdef USE_1BASEDARRAYS
 #define gp_LowerBoundVertices(theGraph) (1)
-#else
-#define gp_LowerBoundVertices(theGraph) (0)
-#endif
-
 #define gp_UpperBoundVertices(theGraph) (gp_LowerBoundVertexStorage(theGraph) + gp_GetN(theGraph))
 
 // The virtual vertices start at the one-past-the-end upper bound of the non-virtual vertices.
@@ -193,27 +188,12 @@ extern "C"
 #define gp_LowerBoundVertexStorage(theGraph) gp_LowerBoundVertices(theGraph)
 #define gp_UpperBoundVertexStorage(theGraph) gp_UpperBoundVirtualVertices(theGraph)
 
-#ifdef USE_1BASEDARRAYS
 // The use of *Vertex* alone consistently refers to the first N vertices.
 // The use of *VirtualVertex* refers to vertex array locations after the first N.
 #ifndef DEBUG
 #define gp_IsVertex(theGraph, v) (v)
 #define gp_IsVirtualVertex(theGraph, v) ((v) > gp_GetN(theGraph))
 #else
-// See below for definitions common to 1-based and 0-based
-#endif
-
-#else // Using 0-based Arrays
-#ifndef DEBUG
-#define gp_IsVertex(theGraph, v) ((v) != NIL)
-#define gp_IsVirtualVertex(theGraph, v) ((v) >= gp_GetN(theGraph))
-#else
-// See below for definitions common to 1-based and 0-based
-#endif
-#endif // End of 0-based Arrays
-
-// The same for 1-based and 0-based when debugging
-#ifdef DEBUG
 #define gp_IsVertex(theGraph, v) \
     ((v) == NIL ? 0 : ((v) < gp_LowerBoundVertices(theGraph) ? (NOTOK, 0) : ((v) >= gp_UpperBoundVertices(theGraph) ? (NOTOK, 0) : 1)))
 
@@ -312,13 +292,8 @@ extern "C"
 // gp_IsEdge() helps detect the end of an
 // adjacency list iteration loop
 ////////////////////////////////////////////
-#ifdef USE_1BASEDARRAYS
 #define gp_IsEdge(theGraph, e) (e)
 #define gp_IsNotEdge(theGraph, e) (!(e))
-#else
-#define gp_IsEdge(theGraph, e) ((e) != NIL)
-#define gp_IsNotEdge(theGraph, e) ((e) == NIL)
-#endif
 
 // Get/set 'neighbor' member indicated by edge record e
 #define gp_GetNeighbor(theGraph, e) (theGraph->E[e].neighbor)
@@ -435,20 +410,11 @@ extern "C"
     }
 
 // Iterate through all edges with gp_LowerBoundEdges, gp_UpperBoundEdges, and gp_EdgeInUse
-#ifdef USE_1BASEDARRAYS
 #define gp_LowerBoundEdges(theGraph) (2)
 #define gp_UpperBoundEdges(theGraph) (gp_LowerBoundEdges(theGraph) + ((gp_GetM(theGraph) + (theGraph)->numEdgeHoles) << 1))
 
 #define gp_EdgeInUse(theGraph, e) (gp_GetNeighbor(theGraph, e))
 #define gp_EdgeNotInUse(theGraph, e) (!gp_GetNeighbor(theGraph, e))
-
-#else
-#define gp_LowerBoundEdges(theGraph) (0)
-#define gp_UpperBoundEdges(theGraph) (gp_LowerBoundEdges(theGraph) + ((gp_GetM(theGraph) + (theGraph)->numEdgeHoles) << 1))
-
-#define gp_EdgeInUse(theGraph, e) (gp_GetNeighbor(theGraph, e) != NIL)
-#define gp_EdgeNotInUse(theGraph, e) (gp_GetNeighbor(theGraph, e) == NIL)
-#endif
 
 // These lower and upper bounds for edge storage are used for tasks like initializing that
 // must iterate through all of the edge storage, including space not yet containing edges.

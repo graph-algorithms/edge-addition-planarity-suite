@@ -1168,13 +1168,12 @@ int testPetersenDigraph6(const char *inputFileName)
     {
         gp_Message("Testing the digraph6 write and read of the Petersen digraph");
 
-#ifdef USE_1BASEDARRAYS
         if (testPetersenDigraph6("Petersen.digraph.txt") != OK)
         {
             gp_ErrorMessage("Digraph6 failed on Petersen.digraph.txt");
             retVal = NOTOK;
         }
-#endif
+
         if (testPetersenDigraph6("Petersen.digraph.0-based.txt") != OK)
         {
             gp_ErrorMessage("Digraph6 test failed on Petersen.digraph.0-based.txt");

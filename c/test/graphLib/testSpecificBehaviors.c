@@ -64,15 +64,9 @@ int runFaceListTest(void)
     char const *infileName = NULL, *expectedOutfileName = NULL, *expectedDrawingFileName = NULL;
     int embedResult, retVal = OK;
 
-#ifdef USE_1BASEDARRAYS
     infileName = "faceListComponents.txt";
     expectedOutfileName = "faceListComponents.out.txt";
     expectedDrawingFileName = "faceListComponents.Drawing.txt";
-#else
-    infileName = "faceListComponents.0-based.txt";
-    expectedOutfileName = "faceListComponents.0-based.out.txt";
-    expectedDrawingFileName = "faceListComponents.0-based.Drawing.txt";
-#endif
 
     gp_Message("Starting Face List Test");
 

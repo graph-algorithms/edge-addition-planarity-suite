@@ -65,29 +65,9 @@ extern int debugNOTOK(void);
 #define NULL ((void *)0)
 #endif
 
-// Define one of these to use 1-based arrays or the original 0-based arrays
-// It used to be true that the 1-based arrays were faster, but compiler
-// optimizations have come a long way in two decades.
-//
-// The main advantages of 1-based arrays are readability of the data,
-// that NIL is still an index within array bounds, that 1-based supports
-// 0-based files but not the reverse, and continuing the long-time default.
-#define USE_1BASEDARRAYS
-// #define USE_0BASEDARRAYS
-
-#ifdef USE_0BASEDARRAYS
-#undef USE_1BASEDARRAYS
-#endif
-
 /* Array indexes are used as pointers, and NIL means bad pointer */
-#ifdef USE_1BASEDARRAYS
 // This definition is used with 1-based array indexing
 #define NIL 0
 #define NIL_CHAR 0x00
-#else
-// This definition is used with 0-based array indexing
-#define NIL -1
-#define NIL_CHAR 0xFF
-#endif
 
 #endif

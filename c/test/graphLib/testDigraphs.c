@@ -266,13 +266,11 @@ int testPetersenDigraph(const char *inputFileName)
     {
         gp_Message("Testing Digraph Read, Embed, Undirected DFS, Convert to Undirected, and Non-Digraph Function Detection");
 
-#ifdef USE_1BASEDARRAYS
         if (testPetersenDigraph("Petersen.digraph.txt") != OK)
         {
             gp_ErrorMessage("Test of Digraphs failed on Petersen.digraph.txt");
             retVal = NOTOK;
         }
-#endif
         if (testPetersenDigraph("Petersen.digraph.0-based.txt") != OK)
         {
             gp_ErrorMessage("Test of Digraphs failed on Petersen.digraph.0-based.txt");
@@ -461,23 +459,15 @@ int testDigraphTranspose(
     {
         gp_Message("Testing Digraph Transpose");
 
-#ifdef USE_1BASEDARRAYS
         if (testDigraphTranspose("Petersen.digraph.txt", "Digraph.transposeTest.txt", 5, 1) != OK)
         {
             gp_ErrorMessage("Digraph Transpose Test failed on Petersen.digraph.txt");
             retVal = NOTOK;
         }
-        preservedEdgeSource = 5;
-        preservedEdgeTarget = 1;
-#else
-        preservedEdgeSource = 4;
-        preservedEdgeTarget = 0;
-#endif
 
         if (testDigraphTranspose(
                 "Petersen.digraph.0-based.txt",
-                "Digraph.transposeTest.0-based.txt",
-                preservedEdgeSource, preservedEdgeTarget) != OK)
+                "Digraph.transposeTest.0-based.txt", 5, 1) != OK)
         {
             gp_ErrorMessage("Digraph Transpose Test failed on Petersen.digraph.txt");
             retVal = NOTOK;

@@ -344,13 +344,6 @@ void _InitVertices(graphP theGraph)
 
     memset(theGraphPVI(theGraph), NIL_CHAR, gp_UpperBoundVertices(theGraph) * sizeof(Planarity_VertexInfo));
     memset(theGraphExtFace(theGraph), NIL_CHAR, gp_UpperBoundVertexStorage(theGraph) * sizeof(extFaceLinkRec));
-
-#ifdef USE_1BASEDARRAYS
-// For 1-based arrays, the memset() initializes the flags correctly
-#else
-    for (int v = gp_LowerBoundVertexStorage(theGraph); v < gp_UpperBoundVertexStorage(theGraph); ++v)
-        gp_InitFlags(theGraph, v);
-#endif
 }
 
 /********************************************************************
@@ -359,13 +352,6 @@ void _InitVertices(graphP theGraph)
 void _InitEdges(graphP theGraph)
 {
     memset(theGraph->E, NIL_CHAR, gp_UpperBoundEdgeStorage(theGraph) * sizeof(edgeRec));
-
-#ifdef USE_1BASEDARRAYS
-#else
-    // When we USE_0BASEDARRAYS, NIL_CHAR is not 0, so the edge flags must be zeroed separately
-    for (int e = gp_LowerBoundEdgeStorage(theGraph); e < gp_UpperBoundEdgeStorage(theGraph); ++e)
-        gp_InitEdgeFlags(theGraph, e);
-#endif
 }
 
 /********************************************************************
@@ -2409,12 +2395,7 @@ int _DeleteEdge(graphP theGraph, int e)
 
     // Clear the two edge records
     // (the bit twiddle (e & ~1) chooses the lesser of e and its twin)
-#ifdef USE_1BASEDARRAYS
     memset(theGraph->E + (e & ~1), NIL_CHAR, sizeof(edgeRec) << 1);
-#else
-    _InitEdgeRec(theGraph, e);
-    _InitEdgeRec(theGraph, gp_GetTwin(theGraph, e));
-#endif
 
     // Now we reduce the number of edges in the data structure
     theGraph->M--;

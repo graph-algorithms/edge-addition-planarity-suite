@@ -885,15 +885,13 @@ int _WriteAdjList(graphP theGraph, strOrFileP outputContainer)
     }
 
     // If we are supposed to write 0-based output, then we have to adjust the vertex offset and the
-    // adjacency list terminator based on whether this library has been compiled with 0-based or
-    // 1-based array indexing for the in-memory data structure (i.e., compiled with
-    // USE_1BASEDARRAYS USE_0BASEDARRAYS). The macro invoked is responsive to the difference.
+    // adjacency list terminator to account for the fact that the least vertex index is not 0.
     if (gp_GetGraphFlags(theGraph) & GRAPHFLAGS_ZEROBASEDIO)
     {
         zeroBasedVertexOffset = gp_LowerBoundVertexStorage(theGraph);
         // If the graph must be written 0-based, then the adjacency list terminator must be -1,
-        // even if the internal representation is 1-based (i.e. when USE_1BASEDARRAYS, NIL == 0,
-        // but the output needs to be -1 for 0-based output)
+        // rather than using NIL, which is defined to be 0, because the very early versions of
+        // this software that used 0-based arrays used -1 for NIL.
         adjacencyListTerminator = -1;
     }
 
